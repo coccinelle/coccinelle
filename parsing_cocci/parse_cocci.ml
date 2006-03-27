@@ -418,37 +418,15 @@ let parse file =
 	  (parse_one PC.main file minus_tokens,
 	   parse_one PC.main file plus_tokens) in
 	Check_meta.check_meta metavars minus_res plus_res;
+
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop () in
-	  (minus_res::minus_ress,plus_res::plus_ress)
-	else ([minus_res],[plus_res]) in
+	  ((minus_res, metavars)::minus_ress,(plus_res, metavars)::plus_ress)
+	else ([minus_res, metavars],[plus_res, metavars]) in
       loop ()
   | (false,[(PC.TArobArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule"
-
-
-(*
-let parse_and_merge file  =
-  if file = "" then failwith "filename required";
-  try
-    let (minus,plus) = parse file in
-    let xs = 
-    List.map2
-      (function minus ->
-	function plus ->
-	  let minus = Arity.minus_arity minus in
-	  (match plus with
-	    Some plus ->
-	      let plus = Arity.plus_arity plus in
-	      let replus = Plus.plus plus in
-	      Merge.do_merge minus replus
-	  | None -> ());
-	  minus)
-      minus plus in
-    xs
-  with Failure s -> Printf.printf "%s" s; []
-*)
 
 
 
@@ -457,13 +435,14 @@ let process file verbose =
   try
     let (minus,plus) = parse file in
     List.map2
-      (function minus ->
-	function plus ->
+      (function (minus, metavars) ->
+	function (plus, metavars) ->
 	  let minus = Arity.minus_arity minus in
 	  let plus = Arity.plus_arity plus in
 	  let replus = Plus.plus plus in
 	  Merge.do_merge minus replus;
 	  if verbose then Unparse_cocci.unparse minus;
-	  minus)
+	  (metavars, minus)
+      )
       minus plus
   with Failure s -> Printf.printf "%s" s; []

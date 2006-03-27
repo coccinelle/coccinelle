@@ -21,12 +21,11 @@ SOURCEMAIN = aux.ml \
 	parsing_cocci/semantic_cocci.ml                                parsing_cocci/parser_cocci.ml parsing_cocci/lexer_cocci.ml  parsing_cocci/unparse_cocci.ml parsing_cocci/parse_cocci.ml      \
 	\
 	cocci.ml   main.ml
-#SOURCEMAIN = flag.ml ast_c.ml visitor_c.ml parsing_c/semantic_c.ml         parsing_c/lexer_parser.ml parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml   
 
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma 
 COMMONDIR=commons
-SUBDIRS=commons
+SUBDIRS=commons parsing_c parsing_cocci
 
 
 ADDONSPATH = -I $(COMMONDIR) -I parsing_c -I parsing_cocci 
@@ -84,11 +83,6 @@ commons/%:
 clean::
 	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i clean; done 
 
-clean::
-	rm -f parsing_c/*.cm[iox] parsing_c/*.o
-
-clean::
-	rm -f parsing_cocci/*.cm[iox] parsing_cocci/*.o
 
 
 parsing_c/lexer_c.ml: parsing_c/lexer_c.mll

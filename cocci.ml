@@ -13,10 +13,11 @@ module B = Ast_c
 less: debugging info => unparse_statement, and unparse_rule_elem
 *)
 
-let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit) = fun semantic_patch error_words cfile ->
+let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.program2 ->  unit) = fun semantic_patch error_words cfile ->
   
 
-  semantic_patch +> List.iter (fun rule -> 
+  semantic_patch +> List.iter (fun (metavars, rule) -> 
+    
    rule +> List.iter (fun toplevel -> 
     cfile +> List.iter (fun (cunit, info) -> 
       let (filename, (pos1, pos2), stre, toks) = info in 

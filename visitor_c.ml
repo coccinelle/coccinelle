@@ -167,6 +167,8 @@ and visitor_type_k = fun bigf t ->
 
     | (_, (TypeName (s),_)) -> ()
 
+    | (_, (ParenType t,_)) -> f (k, bigf) t
+
 
   in f (k, bigf) t
 
@@ -362,6 +364,8 @@ and visitor_type_k_s = fun bigf t ->
     | (q, (EnumName  s,ii)) -> t
 
     | (q, (TypeName (s),ii)) -> t
+
+    | (q, (ParenType t,ii)) -> let t' = f (k, bigf) t in  (q, (ParenType t',ii))
 
 
   in f (k, bigf) t

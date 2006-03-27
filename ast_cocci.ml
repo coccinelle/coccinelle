@@ -216,6 +216,8 @@ and top_level =
 
 and rule = top_level list
 
+and rule_with_metavars = metavar list * rule
+
 and anything =
     FullTypeTag         of fullType
   | BaseTypeTag         of baseType
