@@ -311,7 +311,7 @@ let main () =
     | "parse_cocci", [file] -> 
         if not (file =~ ".*\\.cocci") then pr2 "warning: seems not a .cocci file";
         (try 
-          let xs = Parse_cocci.parse_and_merge file in
+          let xs = Parse_cocci.process file false in
           ()
         with x -> pr2 "BAD"               )
 
@@ -346,7 +346,7 @@ let main () =
           let semantic_patch = 
             begin
               pr2 ("processing semantic patch file: " ^ !Flag.cocci_file);
-              Parse_cocci.parse_and_merge !Flag.cocci_file
+              Parse_cocci.process !Flag.cocci_file false
             end
           in
           let error_words = 

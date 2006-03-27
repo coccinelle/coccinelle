@@ -15,10 +15,10 @@ SOURCEMAIN = aux.ml \
 	visitor_c.ml control_flow_c.ml \
 	pattern.ml \
 	\
-        parsing_cocci/ast0_cocci.ml parsing_cocci/check_meta.ml parsing_cocci/arity.ml parsing_cocci/plus.ml parsing_cocci/merge.ml  parsing_cocci/data.ml \
+        parsing_cocci/ast0_cocci.ml parsing_cocci/top_level.ml parsing_cocci/check_meta.ml parsing_cocci/arity.ml parsing_cocci/plus.ml parsing_cocci/merge.ml  parsing_cocci/data.ml \
 	\
 	parsing_c/semantic_c.ml          parsing_c/lexer_parser.ml     parsing_c/parser_c.ml         parsing_c/lexer_c.ml          parsing_c/parse_c.ml  	   parsing_c/unparse_c.ml \
-	parsing_cocci/semantic_cocci.ml                                parsing_cocci/parser_cocci.ml parsing_cocci/lexer_cocci.ml  parsing_cocci/parse_cocci.ml    parsing_cocci/unparse_cocci.ml  \
+	parsing_cocci/semantic_cocci.ml                                parsing_cocci/parser_cocci.ml parsing_cocci/lexer_cocci.ml  parsing_cocci/unparse_cocci.ml parsing_cocci/parse_cocci.ml      \
 	\
 	cocci.ml   main.ml
 #SOURCEMAIN = flag.ml ast_c.ml visitor_c.ml parsing_c/semantic_c.ml         parsing_c/lexer_parser.ml parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml   

@@ -6,10 +6,12 @@ classic_patch.cmo: commons/fullcommon.cmo commons/dumper.cmi \
     commons/commonop.cmi 
 classic_patch.cmx: commons/fullcommon.cmx commons/dumper.cmx \
     commons/commonop.cmx 
-cocci.cmo: pattern.cmo control_flow_c.cmo commons/commonop.cmi \
-    commons/common.cmi ast_cocci.cmo ast_c.cmo 
-cocci.cmx: pattern.cmx control_flow_c.cmx commons/commonop.cmx \
-    commons/common.cmx ast_cocci.cmx ast_c.cmx 
+cocci.cmo: parsing_cocci/unparse_cocci.cmi pattern.cmo commons/dumper.cmi \
+    control_flow_c.cmo commons/commonop.cmi commons/common.cmi ast_cocci.cmo \
+    ast_c.cmo 
+cocci.cmx: parsing_cocci/unparse_cocci.cmx pattern.cmx commons/dumper.cmx \
+    control_flow_c.cmx commons/commonop.cmx commons/common.cmx ast_cocci.cmx \
+    ast_c.cmx 
 control_flow_c.cmo: visitor_c.cmo commons/ograph_extended.cmo \
     commons/oassocb.cmo commons/oassoc.cmi commons/dumper.cmi \
     commons/commonop.cmi commons/common.cmi ast_c.cmo 
@@ -75,10 +77,11 @@ parsing_cocci/arity.cmi: ast_cocci.cmo parsing_cocci/ast0_cocci.cmo
 parsing_cocci/check_meta.cmi: ast_cocci.cmo parsing_cocci/ast0_cocci.cmo 
 parsing_cocci/data.cmi: parsing_cocci/ast0_cocci.cmo 
 parsing_cocci/merge.cmi: ast_cocci.cmo 
-parsing_cocci/parse_cocci.cmi: ast_cocci.cmo parsing_cocci/ast0_cocci.cmo 
+parsing_cocci/parse_cocci.cmi: ast_cocci.cmo 
 parsing_cocci/parser_cocci.cmi: parsing_cocci/data.cmi ast_cocci.cmo \
     parsing_cocci/ast0_cocci.cmo 
 parsing_cocci/plus.cmi: ast_cocci.cmo 
+parsing_cocci/top_level.cmi: parsing_cocci/ast0_cocci.cmo 
 parsing_cocci/unparse_cocci.cmi: ast_cocci.cmo 
 parsing_cocci/arity.cmo: ast_cocci.cmo parsing_cocci/ast0_cocci.cmo \
     parsing_cocci/arity.cmi 
@@ -102,22 +105,30 @@ parsing_cocci/main.cmo: parsing_cocci/parse_cocci.cmi
 parsing_cocci/main.cmx: parsing_cocci/parse_cocci.cmx 
 parsing_cocci/merge.cmo: ast_cocci.cmo parsing_cocci/merge.cmi 
 parsing_cocci/merge.cmx: ast_cocci.cmx parsing_cocci/merge.cmi 
-parsing_cocci/parse_cocci.cmo: parsing_cocci/semantic_cocci.cmo \
-    parsing_cocci/plus.cmi parsing_cocci/parser_cocci.cmi \
-    parsing_cocci/merge.cmi parsing_cocci/lexer_cocci.cmo \
-    parsing_cocci/data.cmi commons/common.cmi parsing_cocci/check_meta.cmi \
-    parsing_cocci/arity.cmi parsing_cocci/parse_cocci.cmi 
-parsing_cocci/parse_cocci.cmx: parsing_cocci/semantic_cocci.cmx \
-    parsing_cocci/plus.cmx parsing_cocci/parser_cocci.cmx \
-    parsing_cocci/merge.cmx parsing_cocci/lexer_cocci.cmx \
-    parsing_cocci/data.cmx commons/common.cmx parsing_cocci/check_meta.cmx \
-    parsing_cocci/arity.cmx parsing_cocci/parse_cocci.cmi 
-parsing_cocci/parser_cocci.cmo: parsing_cocci/data.cmi ast_cocci.cmo \
-    parsing_cocci/ast0_cocci.cmo parsing_cocci/parser_cocci.cmi 
-parsing_cocci/parser_cocci.cmx: parsing_cocci/data.cmx ast_cocci.cmx \
-    parsing_cocci/ast0_cocci.cmx parsing_cocci/parser_cocci.cmi 
+parsing_cocci/parse_cocci.cmo: parsing_cocci/unparse_cocci.cmi \
+    parsing_cocci/semantic_cocci.cmo parsing_cocci/plus.cmi \
+    parsing_cocci/parser_cocci.cmi parsing_cocci/merge.cmi \
+    parsing_cocci/lexer_cocci.cmo parsing_cocci/data.cmi commons/common.cmi \
+    parsing_cocci/check_meta.cmi parsing_cocci/arity.cmi \
+    parsing_cocci/parse_cocci.cmi 
+parsing_cocci/parse_cocci.cmx: parsing_cocci/unparse_cocci.cmx \
+    parsing_cocci/semantic_cocci.cmx parsing_cocci/plus.cmx \
+    parsing_cocci/parser_cocci.cmx parsing_cocci/merge.cmx \
+    parsing_cocci/lexer_cocci.cmx parsing_cocci/data.cmx commons/common.cmx \
+    parsing_cocci/check_meta.cmx parsing_cocci/arity.cmx \
+    parsing_cocci/parse_cocci.cmi 
+parsing_cocci/parser_cocci.cmo: parsing_cocci/top_level.cmi \
+    parsing_cocci/data.cmi ast_cocci.cmo parsing_cocci/ast0_cocci.cmo \
+    parsing_cocci/parser_cocci.cmi 
+parsing_cocci/parser_cocci.cmx: parsing_cocci/top_level.cmx \
+    parsing_cocci/data.cmx ast_cocci.cmx parsing_cocci/ast0_cocci.cmx \
+    parsing_cocci/parser_cocci.cmi 
 parsing_cocci/plus.cmo: ast_cocci.cmo parsing_cocci/plus.cmi 
 parsing_cocci/plus.cmx: ast_cocci.cmx parsing_cocci/plus.cmi 
+parsing_cocci/top_level.cmo: parsing_cocci/ast0_cocci.cmo \
+    parsing_cocci/top_level.cmi 
+parsing_cocci/top_level.cmx: parsing_cocci/ast0_cocci.cmx \
+    parsing_cocci/top_level.cmi 
 parsing_cocci/unparse_cocci.cmo: ast_cocci.cmo \
     parsing_cocci/unparse_cocci.cmi 
 parsing_cocci/unparse_cocci.cmx: ast_cocci.cmx \

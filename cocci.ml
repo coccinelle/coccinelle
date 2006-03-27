@@ -17,6 +17,7 @@ let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit
   
 
   semantic_patch +> List.iter (fun rule -> 
+   rule +> List.iter (fun toplevel -> 
     cfile +> List.iter (fun (cunit, info) -> 
       let (filename, (pos1, pos2), stre, toks) = info in 
       let stre2 = Str.global_replace (Str.regexp "\n") " " stre in (* cos caml regexp dont like \n ... *)
@@ -49,9 +50,9 @@ let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit
 
 (*              let _ = Control_flow_c.print_control_flow cflow in  *)
 
-              match rule with
-              | A.FUNCTION [(A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs)] 
-              | A.STATEMENTS (A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs) -> 
+              match toplevel with
+              | A.FUNCTION (A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs) 
+              | A.CODE (A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs) -> 
                   pr2 "searching a statement";
 
                   (* todo: look at order ? *)
@@ -75,7 +76,7 @@ let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit
                   );
                   pr2 (Dumper.dump (Pattern._sg_metavars_binding));
 
-              | A.FUNCTION xs -> raise Todo
+              | _ -> raise Todo
 
 
             end
@@ -86,6 +87,7 @@ let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit
       
       
     );
+  );
 
 
 (*
