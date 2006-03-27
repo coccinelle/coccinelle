@@ -1,0 +1,1 @@
+module_init(parport_arc_init)

@@ -1,0 +1,94 @@
+--- v2.5.0/linux/drivers/acorn/block/fd1772.c	Sun Aug 12 10:38:48 2001
++++ linux/drivers/acorn/block/fd1772.c	Sun Dec 16 12:23:05 2001
+
++ test1 test2 gg(a,b,c) ff(a,c)
+- test1 test3 gg(a,b)   ff(a,c)
+
+test2
+- tes test3
++ tes test2
+
++ xxx
+
+- yyy
+
++ a
++ a
++ a
++ a
++ a
++ a
++ a
+
++ a
++ a
++ a
+- b
+- b
+- b
+- b
+
++extern func1(void)
++func2(void)
+
+-extern void ia_suni_pm7345_init (IADEV *iadev);
+
+-extern int dpm_runtime_suspend(struct device *, u32);
+
+- *    Questions/Comments/Bugfixes to arrays@compaq.com
+
++#define HCI_BCM92035		0x20
+
++/* If you want the memory alloc debug functionality, change define below */
+
++#include <linux/cdev.h>
+
+-	       DRM(mem_stats)[area].name , ##arg)
+
++struct drm_driver {
++	int (*preinit)(struct drm_device *, unsigned long flags);
+
+
++	u32 driver_features;
+
++extern int           drm_init(struct drm_driver *driver);
+
+-extern void	     DRM(mem_init)(void);
+
++static DEFINE_SPINLOCK(DRM(mem_lock));
+
+
++typedef struct drm_radeon_surface_free {
++	unsigned int address;
++} drm_radeon_surface_free_t;
+
+
++#	define RADEON_Z_HIERARCHY_ENABLE	(1 << 8)
+
+-// src  = index value to substitute.
+
+
+-qla2x00_read_ram_word(scsi_qla_host_t *, uint16_t, uint16_t *);
+-extern int
+-qla2x00_write_ram_word(scsi_qla_host_t *, uint16_t, uint16_t);
+-extern int
+-qla2x00_write_ram_word_ext(scsi_qla_host_t *, uint32_t, uint16_t);
+-
+-extern int
+
+
+-sym_build_sge(hcb_p np, struct sym_tblmove *data, u64 badd, int len)
++sym_build_sge(struct sym_hcb *np, struct sym_tblmove *data, u64 badd, int len)
+
++#define resolv_event(a,b)	do { } while (0)
+
+
++	&sn9c102_probe_mi0343, /* strong detection based on SENSOR ids */     \
+
++typedef void (* w1_slave_found_callback)(unsigned long, u64);
+
+
+--- v2.5.0/linux/acorn/block/fd1772.c	Sun Aug 12 10:38:48 2001
++++ linux/acorn/block/fd1772.c	Sun Dec 16 12:23:05 2001
+
++ test3

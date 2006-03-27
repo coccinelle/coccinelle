@@ -1,0 +1,3 @@
+This directory contains a second attempt at a cocci parser.  At the moment
+it is just here to benefit from CVS, and is not connected to the rest of
+the implementation.

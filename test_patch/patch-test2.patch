@@ -1,0 +1,12 @@
+--- v2.5.0/linux/drivers/acorn/block/fd1772.c	Sun Aug 12 10:38:48 2001
++++ linux/drivers/acorn/block/fd1772.c	Sun Dec 16 12:23:05 2001
+
++ test1
+test2 test4 test5
+- test1 test3
+
+
+--- v2.5.0/linux/acorn/block/fd1772.c	Sun Aug 12 10:38:48 2001
++++ linux/acorn/block/fd1772.c	Sun Dec 16 12:23:05 2001
+
++ test3
