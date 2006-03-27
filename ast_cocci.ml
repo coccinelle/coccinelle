@@ -9,10 +9,11 @@ type 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-type 'a mcode =
-    MINUS       of 'a * info * anything list list ref
-  | PLUS        of 'a * info
-  | CONTEXT     of 'a * info * anything befaft ref
+type 'a mcode = 'a * mcodekind
+ and mcodekind =
+    MINUS       of info * anything list list ref
+  | PLUS        of info
+  | CONTEXT     of info * anything befaft ref
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)

@@ -55,11 +55,11 @@ let print_around printer term plus_streams =
       print_anything ">>> " (ref aft)
 
 let mcode fn = function
-    Ast.MINUS(x,info,plus_stream) ->
+    x, Ast.MINUS(info,plus_stream) ->
       print_string "-"; fn x; print_anything ">>> " plus_stream
-  | Ast.CONTEXT(x,info,plus_streams) ->
+  | x, Ast.CONTEXT(info,plus_streams) ->
       print_around fn x plus_streams
-  | Ast.PLUS(x,info) -> fn x
+  | x, Ast.PLUS(info) -> fn x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

@@ -20,7 +20,7 @@ type res =
   | Closed of (Ast.anything * int * int * int * int) list
 
 let mcode fn = function
-    Ast.PLUS(term,info) ->
+    term, Ast.PLUS(info) ->
       let line = info.Ast.line in
       let lline = info.Ast.logical_line in
       Open (fn term,line,line,lline,lline)

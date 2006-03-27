@@ -57,9 +57,9 @@ let mcode2arity (_,_,arity,_,_) = arity
 let mcode(term,line_type,_,real_line,logical_line) =
   let info = { Ast.line = real_line; Ast.logical_line = logical_line } in
   match line_type with
-    Ast0.MINUS -> Ast.MINUS(term,info,ref [])
-  | Ast0.PLUS -> Ast.PLUS(term,info)
-  | Ast0.CONTEXT -> Ast.CONTEXT(term,info,ref Ast.NOTHING)
+    Ast0.MINUS -> term, Ast.MINUS(info,ref [])
+  | Ast0.PLUS -> term, Ast.PLUS(info)
+  | Ast0.CONTEXT -> term, Ast.CONTEXT(info,ref Ast.NOTHING)
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)

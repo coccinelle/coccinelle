@@ -6,10 +6,12 @@ module A = Ast_cocci
 module B = Ast_c
 module F = Control_flow_c
 
+(*
 let unmcode = function
-  | A.MINUS (e, _, _) -> e
-  | A.CONTEXT (e, _, _) -> e
-  | A.PLUS _ -> internal_error "cant have PLUS in Final ast_cocci"
+  | e, A.MINUS ( _, _) -> e
+  | e, A.CONTEXT ( _, _) -> e
+  | e, A.PLUS _ -> internal_error "cant have PLUS in Final ast_cocci"
+*)
 
 let undots = function
   | A.DOTS e -> e
@@ -85,8 +87,8 @@ let rec (match_re_node: Ast_cocci.rule_elem -> Control_flow_c.node -> bool) = fu
       | A.FunDecl (stoa, ida, _, paramsa, _),   (retb, paramsb, isvaargs, _) -> 
           (
            match ida with
-           | (A.Id samcode) when unmcode samcode =$= idb ->   true
-           | (A.MetaFunc samcode) -> check_add_metavars_binding (MetaFunc (unmcode samcode, idb))
+           | (A.Id (ida, mcode)) when ida =$= idb ->   true
+           | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (MetaFunc (ida, idb))
            | _ -> false
           ) && 
            match_params paramsa paramsb
@@ -127,10 +129,10 @@ and match_re_decl = fun re decl ->
 
 and match_e_e = fun ep ec -> 
   match ep, ec with
-  | A.Assignment (ea1, opa, ea2),   (B.Assignment (eb1, opb, eb2), ii) -> 
+  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), ii) -> 
       match_e_e ea1 eb1 &&
       match_e_e ea2 eb2 &&
-      equal_assignOp (unmcode opa)  opb
+      equal_assignOp opa  opb
 
   (* cas general = a MetaIdExpr can match everything ? *)
 
@@ -155,21 +157,21 @@ and match_e_e = fun ep ec ->
 
 and match_t_t typa typb = 
   match typa, typb with
-  | A.StructUnionName (sa, sua),    (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
-      equal_structUnion (unmcode sua) sub &&
-      (unmcode sa) =$= sb
+  | A.StructUnionName ((sa,_), (sua, _)),    (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
+      equal_structUnion sua sub &&
+      sa =$= sb
   | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
       match_t_t typa typb
 
-  | A.BaseType (baseamcode, signopt),   (qu, (B.BaseType baseb, _)) -> 
-      (match unmcode baseamcode, baseb with
+  | A.BaseType ((basea, mcode), signopt),   (qu, (B.BaseType baseb, _)) -> 
+      (match basea, baseb with
       | A.CharType,  B.IntType B.CChar -> true
       | A.IntType,   B.IntType (B.Si (sign, B.CInt)) -> true
       | x, y -> 
           let _ = 1+2 in
           false
       )
-  | A.TypeName sam,  (qu, (B.TypeName sb, _)) when unmcode sam =$= sb -> true
+  | A.TypeName (sa, _),  (qu, (B.TypeName sb, _)) when sa =$= sb -> true
   | _, _ -> false
 
 
@@ -188,8 +190,8 @@ and match_params pas pbs =
 
 and match_ident ida idb = 
   match ida with
-  | (A.Id samcode) when unmcode samcode =$= idb ->   true
-  | (A.MetaId samcode) -> check_add_metavars_binding (MetaId (unmcode samcode, idb))
+  | (A.Id (ida, _)) when ida =$= idb ->   true
+  | (A.MetaId (ida, _)) -> check_add_metavars_binding (MetaId (ida, idb))
   | _ -> false
 
 

@@ -18,13 +18,13 @@ type position =
   | Bad of Ast.info
 
 let mcode = function
-    Ast.MINUS(_,info,plus_stream) -> Minus (info,plus_stream)
-  | Ast.CONTEXT(_,info,plus_stream) -> Context (info,plus_stream)
+    _,Ast.MINUS(info,plus_stream) -> Minus (info,plus_stream)
+  | _,Ast.CONTEXT(info,plus_stream) -> Context (info,plus_stream)
   | _ -> failwith "not possible 1"
 
 let bad_mcode = function
-    Ast.MINUS(_,info,plus_stream) -> Bad(info)
-  | Ast.CONTEXT(_,info,plus_stream) -> Bad(info)
+    _,Ast.MINUS(info,plus_stream) -> Bad(info)
+  | _,Ast.CONTEXT(info,plus_stream) -> Bad(info)
   | _ -> failwith "not possible 2"
 
 let make_bad l =
