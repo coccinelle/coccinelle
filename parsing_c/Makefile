@@ -1,3 +1,6 @@
+# Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
+
+
 #############################################################################
 # Configuration section
 #############################################################################
@@ -13,7 +16,7 @@ VERSION = 0.1
 #PP =  -pp "./fix_caml.pl -version=$(VERSION) $(OPTS) aspect.pl" 
 #-pp cpp ##BUG: if add that, then zarb line reporting  by ocaml backtrace, or ocaml replay
 
-TARGET=coccinelle
+TARGET=parser
 SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml           lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
 #SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml                        lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
 

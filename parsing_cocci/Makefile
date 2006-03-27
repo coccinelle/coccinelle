@@ -1,3 +1,5 @@
+# Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
+
 SOURCES = aux.ml ast_cocci.ml ast0_cocci.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
