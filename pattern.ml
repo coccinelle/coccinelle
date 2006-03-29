@@ -35,6 +35,7 @@ let empty_metavars_binding = {
 (*
 version0: (Ast_cocci.rule_elem -> Control_flow_c.node -> bool)
   type ('a, 'b) matcher = 'a -> 'b -> bool
+
 version1: same but with a global variable holding the current binding
  BUT bug
   - can have multiple possibilities
@@ -46,14 +47,14 @@ version1: same but with a global variable holding the current binding
         => have to undo the binding !!!
      (can handle that too with a global, by saving the global, ... but sux)
    => better not use global
+
 version2: (binding -> Ast_cocci.rule_elem -> Control_flow_c.node -> binding list)
   type ('a, 'b) matcher = binding -> 'a -> 'b -> binding list
- empty list mean failure
- let matchfailure = []
- in fact to be able to have prettier code, have to use partial application powa, and so the type is in fact
+ empty list mean failure (let matchfailure = [])
+ to be able to have pretty code, have to use partial application powa, and so the type is in fact
   type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
  then by defining the correct combinators, can have quite pretty code (that looks like the 
-   clean code of the first version
+   clean code of version0)
 
 opti: return a lazy list of possible matchs ?
 *)
@@ -228,10 +229,10 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.Ident ida,                (B.Constant (B.Ident idb) , ii) ->
       match_ident ida idb
 
-  | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), ii) when sa =$= sb -> return true
-  | A.Constant (A.Char sa, _),    (B.Constant (B.Char (sb, _)), ii) when sa =$= sb -> return true
-  | A.Constant (A.Int sa, _),     (B.Constant (B.Int (sb)), ii) when sa =$= sb -> return true
-  | A.Constant (A.Float sa, _),   (B.Constant (B.Float (sb, ftyp)), ii) when sa =$= sb -> return true
+  | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), ii)    when sa =$= sb -> return true
+  | A.Constant (A.Char sa, _),    (B.Constant (B.Char   (sb, _)), ii)    when sa =$= sb -> return true
+  | A.Constant (A.Int sa, _),     (B.Constant (B.Int    (sb)), ii)       when sa =$= sb -> return true
+  | A.Constant (A.Float sa, _),   (B.Constant (B.Float  (sb, ftyp)), ii) when sa =$= sb -> return true
 
   | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), ii) -> 
 
@@ -246,10 +247,10 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         eas' ebs'
      )
 
-  | A.EComma _, _ -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Edots _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Estars _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
   | _, _ -> return false
 
 
@@ -268,13 +269,14 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
       | x::xs, ys -> 
           (match x, ys with
           | A.Edots (_, optexpr), ys -> 
+              (* todo: if optexpr, then a WHEN and so may have to filter yys *)
               let yys = Common.tails ys in (* '...' can take more or less the beginnings of the arguments *)
               yys +> List.fold_left (fun acc ys -> 
                 acc >||>  match_arguments seqstyle xs ys
                   ) (return false)
 
           | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
-          | A.Estars (_,_), ys -> raise Impossible (* in Ordered mode *)
+          | A.Estars (_,_), ys   -> raise Impossible (* in Ordered mode *)
           | x, y::ys -> 
               match_e_e x y >&&> 
               match_arguments seqstyle xs ys
