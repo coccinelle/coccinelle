@@ -143,6 +143,7 @@ and expressionbis =
                   | Char   of (string * isWchar) (* normally it is equivalent to Int *)
 		  | Int    of (string            (* * intType*)) (* -2 is not a constant, it is the unary operator - apply to constant 2, => string must represent a positive integer only *)
 		  | Float  of (string * floatType)
+
                   | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
          and isWchar = IsWchar | IsChar
 

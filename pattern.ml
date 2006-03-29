@@ -8,28 +8,29 @@ module F = Control_flow_c
 
 (******************************************************************************)
 
-let (=$=) = fun s1 s2 -> s1 = s2
+let ((=$=): string -> string -> bool) = fun s1 s2 -> s1 = s2
 
 let undots = function
-  | A.DOTS e -> e
+  | A.DOTS    e -> e
   | A.CIRCLES e -> e
-  | A.STARS e -> e
+  | A.STARS   e -> e
+
+type sequence_processing_style = Ordered | Unordered
 
 (******************************************************************************)
 
 type metavars_binding = {
   mutable metaId: (string,  string) assoc;
   mutable metaFunc: (string, string) assoc;
+  mutable metaExpr: (string, Ast_c.expression) assoc;
   } 
+
 let empty_metavars_binding = {
   metaId = [];
   metaFunc = [];
+  metaExpr = [];
 } 
 
-(* todo?: differentiate more the type, so forbid mistake such as adding a binding for Metafunc in Metaid  *)
-type metavar_binding = 
-  | MetaId   of (string * string)
-  | MetaFunc of (string * string)
 
 (*
 version0: (Ast_cocci.rule_elem -> Control_flow_c.node -> bool)
@@ -74,15 +75,21 @@ let return res = fun binding ->
   | false -> []
   | true -> [binding]
 
+(* other combinator for choice ?
+   there is 2 or ? Or and Xor ? (the Disj for instance seems to be a Xor)
+    in fact it is a Xor I think everytime
+*)
+
+
 
 
 (******************************************************************************)
 
-let check_add k valu anassoc = 
+let check_add k valu (===) anassoc = 
   (match optionise (fun () -> (anassoc +> List.find (function (k', _) -> k' = k))) with
       | Some (k', valu') ->
           assert (k = k');
-          (valu = valu',  anassoc)
+          (valu === valu',  anassoc)
       | None -> 
           (true, anassoc +> insert_assoc (k, valu))
   )
@@ -111,21 +118,34 @@ let with_metaalvars_binding binding f =
   res
 *)
 
+(* todo?: differentiate more the type, so forbid mistake such as adding a binding for Metafunc in Metaid  *)
+type metavar_binding = 
+  | MetaId   of (string * string)
+  | MetaFunc of (string * string)
+  | MetaExpr of (string * Ast_c.expression)
+
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
 
 let check_add_metavars_binding = fun addon binding -> 
   match addon with
   | MetaId (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 binding.metaId in
+      let (good, newbinding) = check_add s1 s2 (=$=) binding.metaId in
       if good 
       then _GoodMatch {binding with metaId = newbinding}
       else _MatchFailure
           
   | MetaFunc (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 binding.metaFunc in
+      let (good, newbinding) = check_add s1 s2 (=$=) binding.metaFunc in
       if good 
       then _GoodMatch {binding with metaFunc = newbinding}
+      else _MatchFailure
+
+(* todo, aa_expr  before comparing !!! *)
+  | MetaExpr (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaExpr in
+      if good 
+      then _GoodMatch {binding with metaExpr = newbinding}
       else _MatchFailure
 
 (******************************************************************************)
@@ -199,25 +219,64 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       else return false
             
 
-  (* cas general = a MetaIdExpr can match everything ? *)
+  (* cas general = a MetaExpr can match everything *)
+  | A.MetaExpr ((ida,_), opttypa),  expb -> 
+      check_add_metavars_binding (MetaExpr (ida, expb))
 
   | A.Ident ida,                (B.Constant (B.Ident idb) , ii) ->
       match_ident ida idb
 
+  | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), ii) when sa =$= sb -> return true
+  | A.Constant (A.Char sa, _),    (B.Constant (B.Char (sb, _)), ii) when sa =$= sb -> return true
+  | A.Constant (A.Int sa, _),     (B.Constant (B.Int (sb)), ii) when sa =$= sb -> return true
+  | A.Constant (A.Float sa, _),   (B.Constant (B.Float (sb, ftyp)), ii) when sa =$= sb -> return true
+
   | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), ii) -> 
-      let eas = undots eas in
-      let ebs = ebs +> List.map fst +> List.map (function
+
+      match_e_e ea1 eb1  >&&> (
+
+      let eas' = undots eas +> List.filter (function A.EComma _ -> false | _ -> true) in
+      let ebs' = ebs +> List.map fst +> List.map (function
         | Left e -> e
         | Right typ -> raise Todo
         ) in
+      match_arguments (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
+        eas' ebs'
+     )
+
+  | A.EComma _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | _, _ -> return false
+
+
+and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, Ast_c.expression list) matcher) = fun seqstyle eas ebs ->
+(* old:
       if List.length eas = List.length ebs
       then
-        match_e_e ea1 eb1  >&&> 
         (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> acc >&&> match_e_e ea eb) (return true))
       else return false
+*)
+  match seqstyle with
+  | Ordered -> 
+      (match eas, ebs with
+      | [], [] -> return true
+      | [], y::ys -> return false
+      | x::xs, ys -> 
+          (match x, ys with
+          | A.Edots (_, optexpr), ys -> 
+              let yys = Common.tails ys in
+              yys +> List.fold_left (fun acc ys -> 
+                acc >||>  match_arguments seqstyle xs ys
+                  ) (return false)
 
-  | _, _ -> return false
-      
+          | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
+          | A.Estars (_,_), ys -> raise Impossible (* in Ordered mode *)
+          | x, y::ys -> 
+              match_e_e x y >&&> 
+              match_arguments seqstyle xs ys
+          | x, [] -> return false
+          )
+      )
+  | Unordered -> raise Todo
 
 
 

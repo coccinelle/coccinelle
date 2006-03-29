@@ -79,7 +79,9 @@ let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.pro
                       else ()
                     );
                   );
-                  pr2 (Dumper.dump current_bindings);
+                  pr2 "possible bindings:";
+                  !current_bindings +> List.iter (fun x -> pr2 (Dumper.dump x));
+
 
               | _ -> raise Todo
 
