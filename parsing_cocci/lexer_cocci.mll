@@ -193,6 +193,8 @@ rule token = parse
   | [' ' '\t'  ]+             { start_line false; token lexbuf }
   | ['\n' '\r' '\011' '\012'] { reset_line(); token lexbuf }
 
+  | "//" [^ '\n']* { start_line false; token lexbuf }
+
   | "@@" { start_line true; in_atat := not(!in_atat); TArobArob }
 
   | "WHEN"
