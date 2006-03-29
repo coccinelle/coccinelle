@@ -1,11 +1,43 @@
 /* simple example */
 static void f() {
 
+  switch(3) {
+  case 1: switch1();
+  case 2: switch2(); break;
+  case 3: switch3(); break;
+  case 4: switch4(); 
+  default: switchdefault(); 
+    goto error;
+  }
+
+  while(1) {
+    foowhile();
+    if(1) { break; }
+    foowhile2();
+    
+  }
+
+  for(i=1; i<3; i++) {
+    foofor();
+    if(1) { 
+      break; 
+      //i++; // must generate exn DeadCode
+    }
+  }
+
+  for(i=1; i<3; i++) {
+    foofor();
+    if (1) { continue; }
+    foofor2();
+  }
+
+
+
   if(g(h(3))) {
-    foo();
+    fooif();
     x = 1;
   } else {
-    bar();
+    fooelse();
     x = 2;
     goto error;
     //x = 3;  //  must generate exception DeadCode
@@ -13,23 +45,31 @@ static void f() {
   foobar();
   foobar();
   while(1) {
-    foo1();
+    foowhile();
     
   }
   if(1) {
     return 3;
   }
+  
+  do {
+    foodowhile();
+    // goto out:
+   
+  } while(1);
+  
+
 
 out:
-  foo2();
+  fooout();
 
 error:
-  foo3();
+  fooerror();
   goto last; // would generate exception DeadCode too (with first (buggy) version of deadcode detection)
 
 last:
-  foo4();
-  foo5(TOTO, "toto\n");
+  foolast();
+  foolast(TOTO, "toto\n");
 
   return; // was returning deadcode with first (buggy) version
 

@@ -48,9 +48,11 @@ and 'a dots =
 
 and ident =
     Id of string mcode
+
   | MetaId of string mcode
   | MetaFunc of string mcode
   | MetaLocalFunc of string mcode
+
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -70,23 +72,29 @@ and expression =
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
   | Binary         of expression * binaryOp mcode * expression
-  | Paren          of string mcode (* ( *) * expression *
-                      string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
   | Cast           of string mcode (* ( *) * fullType * string mcode (* ) *) *
                       expression
+
+  | Paren          of string mcode (* ( *) * expression *
+                      string mcode (* ) *)
+
   | MetaConst      of string mcode * fullType list option
   | MetaExpr       of string mcode * fullType list option
   | MetaExprList   of string mcode (* only in arg lists *)
+
   | EComma         of string mcode (* only in arg lists *)
+
   | DisjExpr       of expression list
   | NestExpr       of expression dots
+
   | Edots          of string mcode (* ... *) * expression option
   | Ecircles       of string mcode (* ooo *) * expression option
   | Estars         of string mcode (* *** *) * expression option
+
   | OptExp         of expression
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
@@ -117,7 +125,9 @@ and typeC =
 	               expression option * string mcode (* ] *)
   | StructUnionName of tagged_string * structUnion mcode
   | TypeName        of string mcode
+
   | MetaType        of string mcode
+
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
@@ -140,6 +150,7 @@ and declaration =
     Init of fullType * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
+
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
@@ -150,11 +161,15 @@ and declaration =
 and parameterTypeDef =
     VoidParam     of fullType
   | Param         of ident * value_qualif mcode option * fullType
+
   | MetaParam     of string mcode
   | MetaParamList of string mcode
+
   | PComma        of string mcode
+
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
+
   | OptParam      of parameterTypeDef
   | UniqueParam   of parameterTypeDef
 
@@ -175,8 +190,10 @@ and rule_elem =
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
   | Decl          of declaration
+
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
+
   | ExprStatement of expression * string mcode (*;*)
   | IfHeader      of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
@@ -194,14 +211,19 @@ and rule_elem =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
+
   | MetaStmt      of string mcode  
   | MetaStmtList  of string mcode  
+
   | Disj          of rule_elem dots list
   | Nest          of rule_elem dots
+
   | Exp           of expression
+
   | Dots          of string mcode (* ... *) * rule_elem dots option
   | Circles       of string mcode (* ooo *) * rule_elem dots option
   | Stars         of string mcode (* *** *) * rule_elem dots option
+
   | OptRuleElem   of rule_elem list
   | UniqueRuleElem of rule_elem list
   | MultiRuleElem  of rule_elem list (* only allowed in nests *)

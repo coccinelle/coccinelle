@@ -1,6 +1,8 @@
 open Commonop open Common
+
+(*------------------------------------------------------------------------------*)
 (*
- deadCode detection
+ note: deadCode detection
   what is dead code ? when there is no starti  to start from ? => make starti an option too ?
    si on arrive sur un label: au moment d'un deadCode, on peut verifier les predecesseurs de ce label,
    auquel cas si y'en a, ca veut dire qu'en fait c pas du deadCode et que dont on peut se permettre
@@ -14,15 +16,29 @@ open Commonop open Common
             (todo: if the pb is at a fake node, then try first successos that is non fake)
   => make starti  an option too (so type is now  int option -> statement -> int option)
  old: I think that DeadCode is too aggressive, what if  have both return in else/then ? 
-   
+
+
+ todo: to generate less exception with the breakInsideLoop, analyse correctly the
+   loop deguisé  comme list_for_each (qui sont actuellement retourné comme des Tif par le lexer)
 
  todo: expression, linearize,  funcall (and launch exn  with StatementExpr )
 
- todo: complete (break, continue, ...)
-
  todo?: steal code from CIL ? (but seems complicated ... again)
 
+ todo: can have code (and so nodes) in many places, in the size of an array, in the init of initializer, 
+  but also in StatementExpr, ...
+
+ todo:
+  for switch, pass int ref (compteur) too ? (cos need know order of the case if then later want to 
+  go from CFG to (original) AST
+
+
+ todo: add info in nodes, to later be able to pretty print back
+
+ checktodo: after a switch, need check that all the st in the compound start with a case: ?
+
 *)
+(*------------------------------------------------------------------------------*)
 
 open Ograph_extended
 open Oassoc
@@ -39,19 +55,25 @@ and node1 =
   | Enter 
   | Exit
   | NestedFunCall of expression   (* cos "fake" node *)
-  | Statement of statement
-  | Declaration of declaration
+  | Statement     of statement
+  | Declaration   of declaration
   | Fake
 
 type edge = 
   | Direct
-  (* if, while, for *)
+  (* if, while, dowhile, for *)
   | ChoiceTrue
   | ChoiceFalse 
   (* todo: and with switch ? *)
 
 
 exception DeadCode of (Common.parse_info option)
+exception CaseNoSwitch      of (Common.parse_info)
+exception OnlyBreakInSwitch of (Common.parse_info)
+exception NoEnclosingLoop   of (Common.parse_info)
+
+
+type additionnal_info = NoInfo | LoopInfo of int * int (* start, end *) | SwitchInfo of int * int (* start, end *)
 
 (*------------------------------------------------------------------------------*)
 let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcdef ->
@@ -92,7 +114,7 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
            | Labeled (Label (s, st)),ii -> 
                let newi = !g#add_node (Statement statement, s ^ ":") +> adjust_g_i in
                begin
-                 assert (not (!h#haskey s)); (* label already exist ? *)
+                 assert (not (!h#haskey s)); (* label already exist ? todo: replace assert with a raise DuplicatedLabel *)
                  h := !h#add (s, newi);
                  k st;
                end
@@ -105,17 +127,20 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
 
   let labels_assoc = compute_labels topstatement in
 
-  (* take start, return end *)
-  (*   old: old code was returning an int, but goto has no end => aux_statement should return   int option 
-       old: old code was taking an int, but should also take int option
+  (* take start, return end 
+      old: old code was returning an int, but goto has no end => aux_statement should return   int option 
+      old: old code was taking an int, but should also take int option
+     addon: to complete (break, continue (and enclosing loop),   switch (and associated case, casedefault))
+      need pass additionnal info:  the start/exit when enter in a loop,     so know the current 'for'
+
   *)
-  let rec (aux_statement: int option -> statement -> int option) = fun starti statement ->
+  let rec (aux_statement: (int option * additionnal_info) -> statement -> int option) = fun (starti, auxinfo) statement ->
     match statement with
     | Compound (declxs_statxs), ii -> 
         (* old: declxs_statxs +> map_filter (function Right stat -> Some stat | _ -> None) +> (fun statxs -> *)
-        declxs_statxs +> List.fold_left (fun starti st ->
+        declxs_statxs +> List.fold_left (fun (starti, auxinfo) st ->
           match st with
-          | Right stat -> aux_statement starti stat 
+          | Right stat -> aux_statement (starti, auxinfo) stat,  auxinfo
           | Left decl -> 
               let s = 
                 (match decl with
@@ -126,25 +151,33 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
               let newi = !g#add_node (Declaration (decl), s) +> adjust_g_i in
               (match starti with None -> () | Some starti -> 
                 !g#add_arc ((starti, newi), Direct) +> adjust_g);
-              Some newi
-        ) starti
+              Some newi,  auxinfo
+        ) (starti, auxinfo)
+        +> fst
         
     | Labeled (Label (s, st)), ii -> 
         let ilabel = labels_assoc#find s in
         (match starti with None -> () | Some starti -> 
           !g#add_arc ((starti, ilabel), Direct) +> adjust_g);
-        aux_statement (Some ilabel) st
+        aux_statement (Some ilabel, auxinfo) st
+
+
+    | Jump (Goto s), ii -> 
+        (* could build a, additional node, to see it in dot but ... *)
+        let ilabel = labels_assoc#find s in
+        (match starti with None -> () | Some starti -> 
+          !g#add_arc ((starti, ilabel), Direct) +> adjust_g);
+        None
         
-(* todo:
-    | Labeled (Case  (e, st)) -> 
-    | Labeled (CaseRange  (e, e2, st)) -> 
-    | Labeled (Default st) -> 
-*)
+
+
+        
     | ExprStatement (None), ii -> starti
     | ExprStatement (Some e), ii -> 
         let s = 
           (match e with
           | (FunCall ((Constant (Ident f), _),ii3),ii2) -> f ^ "(...)"
+          (* todo?: do special case too for assignment ? *)                                                                 
           | _ -> "statement"
           )
         in
@@ -168,23 +201,65 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
         let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
-        let finalthen = aux_statement (Some newfakethen) st1 in
-        let finalelse = aux_statement (Some newfakeelse) st2 in
+        let finalthen = aux_statement (Some newfakethen, auxinfo) st1 in
+        let finalelse = aux_statement (Some newfakeelse, auxinfo) st2 in
         (match finalthen, finalelse with 
           | (None, None) -> None
           | _ -> 
               begin
-           (match finalthen with None -> () | Some finalthen -> 
-             !g#add_arc ((finalthen, lasti), Direct) +> adjust_g);
-           (match finalelse with None -> () | Some finalelse -> 
-             !g#add_arc ((finalelse, lasti), Direct) +> adjust_g);
-             Some lasti
+                (match finalthen with None -> () | Some finalthen -> 
+                  !g#add_arc ((finalthen, lasti), Direct) +> adjust_g);
+                (match finalelse with None -> () | Some finalelse -> 
+                  !g#add_arc ((finalelse, lasti), Direct) +> adjust_g);
+                Some lasti
              end
         )
         
         
 
-(* todo:    | Selection  (Switch (e, st)) -> *)
+    | Selection  (Switch (e, st)), ii -> 
+        let newi = !g#add_node (Statement (statement), "switch") +> adjust_g_i in
+        (match starti with None -> () | Some starti -> 
+          !g#add_arc ((starti, newi), Direct) +> adjust_g);
+
+        let newfakeelse = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
+    
+        (* the newi is for the labels to know where to attach, the newfakeelse (endi) is for the 'break' *)
+        let newauxinfo = SwitchInfo (newi, newfakeelse) in
+       
+        let finalthen = aux_statement (None, newauxinfo) st in
+        (match finalthen with None -> () | Some finalthen -> 
+          !g#add_arc ((finalthen, newfakeelse), Direct) +> adjust_g);
+        Some newfakeelse
+
+
+    | Labeled (Case  (e, st)), ii -> 
+        let newi = !g#add_node (Statement (statement), "case:") +> adjust_g_i in
+        (match starti with None -> () | Some starti -> 
+          !g#add_arc ((starti, newi), Direct) +> adjust_g);
+        (match auxinfo with
+        | SwitchInfo (switchstarti, switchendi) -> 
+              !g#add_arc ((switchstarti, newi), Direct) +> adjust_g;
+        | _ -> raise (CaseNoSwitch (List.hd ii))
+        );
+        aux_statement (Some newi, auxinfo) st
+        
+
+    | Labeled (Default st), ii -> 
+
+        let newi = !g#add_node (Statement (statement), "case default:") +> adjust_g_i in
+        (match starti with None -> () | Some starti -> 
+          !g#add_arc ((starti, newi), Direct) +> adjust_g);
+        (match auxinfo with
+        | SwitchInfo (switchstarti, switchendi) -> 
+          !g#add_arc ((switchstarti, newi), Direct) +> adjust_g;
+        | _ -> raise (CaseNoSwitch (List.hd ii))
+        );
+        aux_statement (Some newi, auxinfo) st
+
+(* todo:
+    | Labeled (CaseRange  (e, e2, st)) -> 
+*)
 
     | Iteration  (While (e, st)), ii -> 
        (* starti -> newi ---> newfakethen -> ... -> finalthen -
@@ -197,26 +272,95 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
           !g#add_arc ((starti, newi), Direct) +> adjust_g);
         let newfakethen = !g#add_node (Fake, "[whiletrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[endwhile]") +> adjust_g_i in
+
+        let newauxinfo = LoopInfo (newi, newfakeelse) in
+
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
-        let finalthen = aux_statement (Some newfakethen) st in
+        let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
         (match finalthen with None -> () | Some finalthen -> 
           !g#add_arc ((finalthen, newi), Direct) +> adjust_g);
         Some newfakeelse
 
         
         
-(* todo:
-    | Iteration  (DoWhile (st, e)) -> (* this time, may return None, for instance if goto in body of dowhile (whereas While cant return None) *)
-    | Iteration  (For (e1opt, e2opt, e3opt, st)) -> 
-*)
-    | Jump (Goto s), ii -> 
-        (* could build a, additional node, to see it in dot but ... *)
-        let ilabel = labels_assoc#find s in
+    | Iteration  (DoWhile (st, e)), ii -> 
+       (* starti -> newi ---> newfakethen --> ... ---> finalthen --->   finali
+                      |--------------------------------------------------|  |---> newfakelse 
+
+       *)
+        let newi = !g#add_node (Statement (statement), "do") +> adjust_g_i in
+        (* todo?: make a special node ? cos have to repeat the info, need reput a Statement statement 
+            a Fake node for the while (of dowhile) may not be enough. how found the corresponding condition ?
+           peut etre a juste inverser les Fake et Statement, les mettre en fait dans newi et finali respectively
+        *)
+        let finali = !g#add_node (Fake, "while (of dowhile)") +> adjust_g_i in
         (match starti with None -> () | Some starti -> 
-          !g#add_arc ((starti, ilabel), Direct) +> adjust_g);
-        None
+          !g#add_arc ((starti, newi), Direct) +> adjust_g);
+        let newfakethen = !g#add_node (Fake, "[dowhiletrue]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (Fake, "[enddowhile]") +> adjust_g_i in
+
+        (* this time, may return None, for instance if goto in body of dowhile (whereas While cant return None) *)
+        (* the code of while case (different from dowhile) is put in comment, to illustrate the difference *)
+
+        let newauxinfo = LoopInfo (finali, newfakeelse) in
+
+        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g; 
+
+        !g#add_arc (((*newi*)finali, newfakethen), ChoiceTrue) +> adjust_g; 
+        !g#add_arc (((*newi*)finali, newfakeelse), ChoiceFalse) +> adjust_g;
+
+        let finalthen = aux_statement (Some newfakethen, auxinfo) st in 
+
+        (* code of while case (different from dowhile) 
+        (match finalthen with None -> () | Some finalthen -> 
+          !g#add_arc ((finalthen, newi), Direct) +> adjust_g);
+        Some newfakeelse
+        *)
+        (match finalthen with 
+        | None -> None
+        | Some finalthen -> 
+            !g#add_arc ((finalthen, (*newi*)finali), Direct) +> adjust_g;
+            Some newfakeelse
+         )
         
+
+    | Iteration  (For (e1opt, e2opt, e3opt, st)), ii -> 
+        let newi = !g#add_node (Statement (statement), "for") +> adjust_g_i in
+        (match starti with None -> () | Some starti -> 
+          !g#add_arc ((starti, newi), Direct) +> adjust_g);
+        let newfakethen = !g#add_node (Fake, "[fortrue]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (Fake, "[endfor]") +> adjust_g_i in
+
+        let newauxinfo = LoopInfo (newi, newfakeelse) in
+
+        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
+        let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
+        (match finalthen with None -> () | Some finalthen -> 
+          !g#add_arc ((finalthen, newi), Direct) +> adjust_g);
+        Some newfakeelse
+
+    | Jump ((Continue|Break) as x),ii ->  
+        let starti = some starti in
+        (match auxinfo with
+        | LoopInfo (loopstarti, loopendi) -> 
+            let desti = (match x with Break -> loopendi | Continue -> loopstarti | x -> error_cant_have x) in
+            !g#add_arc ((starti, desti), Direct) +> adjust_g;
+            None
+        | SwitchInfo (loopstarti, loopendi) -> 
+            if x = Break then
+              begin
+                !g#add_arc ((starti, loopendi), Direct) +> adjust_g;
+                None
+              end
+            else raise (OnlyBreakInSwitch (List.hd ii))
+        | NoInfo -> raise (NoEnclosingLoop (List.hd ii))
+        )        
+
+
+
+
 
     | Jump (Return), ii -> 
         (* could build an additional node, to see it in dot but ... *)
@@ -230,18 +374,19 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
              !g#add_arc ((starti, newi), Direct) +> adjust_g);
            !g#add_arc ((newi, exiti), Direct) +> adjust_g;
            None
+
+        
 (* todo:
-    | Jump (Continue|Break) -> 
     | Asm -> 
 *)
-    | _ -> raise Todo
+    | x -> error_cant_have x
 
   in
 
   (* todocheck: assert ? such as we have "consommer" tous les labels
   *)
 
-  let lasti = aux_statement (Some enteri) topstatement in
+  let lasti = aux_statement (Some enteri, NoInfo) topstatement in
 
  (* old raise DeadCode:, but maybe not, in fact if have 2 return in the then and else of an if ? *)
  (* alt: but can assert that at least there exist a node to exiti,  just check #pred of exiti *)

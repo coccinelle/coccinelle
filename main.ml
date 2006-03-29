@@ -157,7 +157,7 @@ let foo xs =
                      +> (fun (program2, stat) -> 
                           program2 +> List.map (fun (e, info) -> 
                             let (filename, (pos1, pos2), stre, toks) = info in 
-                            let (filename, evo_file) = 
+                            let (filenameabridged, evo_file) = 
                               if filename =~ ".*bugs/\\([0-9]+\\)/.*/linux-\\([0-9]\\.[0-9]\\.[0-9]+/.*\\)" 
                               then matched2 filename +> swap
                               else filename, "none"
@@ -191,7 +191,7 @@ let foo xs =
                                   if found && is_in_bad then 
                                     begin
                                       pr "##############################################################################";
-                                      pr ("SLICEEEEEEEEEEEEEEEEEE, on " ^ filename ^ " = "); 
+                                      pr ("SLICEEEEEEEEEEEEEEEEEE, on " ^ filenameabridged ^ " = "); 
                                       pr ("CONTAINNNNNNNNNNN = " ^ (join " " errorwords_elems));
                                       pr stre; 
                                       pr "##############################################################################";
@@ -207,9 +207,47 @@ let foo xs =
                              if !have_found_one_in_bad then incr badly_parsed_sites;
                              if !have_found_one && not !have_found_one_in_bad then incr correctly_parsed_sites;
 
+
+
+                                if !have_found_one then
+                                  begin
+                                    match e with 
+                                    | Definition ((funcs, functype, sto, compound, ii) as deffunc) -> 
+
+                                        let cflow = 
+                                          (try 
+                                            Control_flow_c.build_control_flow deffunc
+                                          with 
+                                          | Control_flow_c.DeadCode None      -> 
+                                              pr2 "DEADCODE DETECTED, but cant trace back the place. perhaps because of iffdef"; 
+                                              (new Ograph_extended.ograph_extended)
+                                          | Control_flow_c.DeadCode Some info -> 
+                                              pr2 ("DEADCODE DETECTED (perhaps because of ifdef): " ^ (Common.error_message filename ("", info.charpos) )); 
+                                              (new Ograph_extended.ograph_extended)
+                                          | Control_flow_c.CaseNoSwitch info ->
+                                              pr2 ("CFG:a case but not inside a switch :( " ^ (Common.error_message filename ("", info.charpos) )); 
+                                              (new Ograph_extended.ograph_extended)
+                                          | Control_flow_c.OnlyBreakInSwitch info ->
+                                              pr2 ("CFG: inside a switch only a break is allowed, not a continue:" ^ (Common.error_message filename ("", info.charpos) )); 
+                                             (new Ograph_extended.ograph_extended)
+                                          | Control_flow_c.NoEnclosingLoop info ->
+                                              pr2 ("CFG: a continue or break but no enclosing loop (perhaps a cause d'un for deguisé, comme list_for_each) :(" ^ (Common.error_message filename ("", info.charpos) )); 
+                                              (new Ograph_extended.ograph_extended)
+
+                                          ) in
+                                         let _ = if !Flag.debug_cfg then Control_flow_c.print_control_flow cflow in
+
+                                        ()
+                                    | _ -> ()
+                                  end;
+
+
+
                             if !have_found_one
                             then ((e, Unparse_c.PPnormal), info)
                             else ((e, Unparse_c.PPviatok), info)
+
+
 
                             )
                           +> (fun program2_with_selection -> 
@@ -257,6 +295,8 @@ let main () =
         (* still?: dont forget to add -action tokens, and to get rid of no_verbose_parsing *)
         "-debug_lexer",        Arg.Set        Flag.debug_lexer , " ";
         "-debug_etdt",         Arg.Set        Flag.debug_etdt , "  ";
+
+        "-debug_cfg",          Arg.Set        Flag.debug_cfg , "  ";
 
         "-action",             Arg.Set_string Flag.action , ("   (default_value = " ^ !Flag.action ^")"
        ^ "\n\t possibles actions are:
@@ -326,7 +366,8 @@ let main () =
                   pr2 funcs;
                   (try 
                     Control_flow_c.test def
-                  with Control_flow_c.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"
+                  with 
+                  | Control_flow_c.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"
                   | Control_flow_c.DeadCode Some info -> pr2 ("deadcode detected: " ^ (error_message file ("", info.charpos) ))
                         
                   )
@@ -340,36 +381,39 @@ let main () =
 
 
     | "cocci", [file] -> 
-        if (!Flag.cocci_file = "")
-        then failwith "I need a cocci file,  use -cocci_file <filename>"
-        else
-          let semantic_patch = 
+        if (!Flag.cocci_file = "") then failwith "I need a cocci file,  use -cocci_file <filename>";
+        let error_words = 
+          if !Flag.cocci_error_words = "" 
+          then []
+          else [ !Flag.cocci_error_words ]
+        in
+        let patchinfo = 
+          if !Flag.classic_patch_file = ""
+          then None
+          else 
             begin
-              pr2 ("processing semantic patch file: " ^ !Flag.cocci_file);
-              Parse_cocci.process !Flag.cocci_file false
+              pr2 ("processing classic patch file: " ^ !Flag.classic_patch_file);
+                    (* Some (Classic_patch.parse_patch (cat Ast_cocci.ex2_patch))  *)
+              Some (cat !Flag.classic_patch_file +> Classic_patch.filter_driver_sound +> Classic_patch.parse_patch)
             end
-          in
-          let error_words = 
-            if !Flag.cocci_error_words = "" 
-            then []
-            else [ !Flag.cocci_error_words ]
-          in
-          let patchinfo = 
-            if !Flag.classic_patch_file = ""
-            then None
-            else 
-              begin
-                pr2 ("processing classic patch file: " ^ !Flag.classic_patch_file);
-                      (* Some (Classic_patch.parse_patch (cat Ast_cocci.ex2_patch))  *)
-                Some (cat !Flag.classic_patch_file +> Classic_patch.filter_driver_sound +> Classic_patch.parse_patch)
-              end
-          in
-          let (ast_cfile, _stat) = Parse_c.parse_print_error_heuristic file in
-          Cocci.cocci_grep  semantic_patch error_words  ast_cfile
+        in
+        let _ = pr2 ("processing C file: " ^ file) in
+        let (ast_cfile, _stat) = Parse_c.parse_print_error_heuristic file in
+        let _ = pr2 ("processing semantic patch file: " ^ !Flag.cocci_file) in
+        let semantic_patch     = Parse_cocci.process !Flag.cocci_file false in
+
+        Cocci.cocci_grep  semantic_patch error_words  ast_cfile
 
 
 
-    | "special_foo", x::xs -> foo (x::xs )
+    | "special_foo", x::xs -> 
+        let fullxs = 
+          if !Flag.dir 
+          then (assert (xs = []); process_output_to_list ("find " ^ x ^" -name \"*.c\"")) 
+          else x::xs 
+        in
+        foo fullxs
+
           
     | "special_request", _ -> ()
    

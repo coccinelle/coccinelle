@@ -183,7 +183,8 @@ and statementbis =
   and exprStatement = (expression option)
 
   and selection     = If     of expression * statement * statement        
-                    | Switch of expression * statement
+                    | Switch of expression * statement (* need check that all elements in the compound start with a case: (otherwise unreachable code)  *)
+
 
   and iteration     = While   of expression * statement
 		    | DoWhile of statement * expression

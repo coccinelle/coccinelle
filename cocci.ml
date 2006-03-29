@@ -15,6 +15,7 @@ less: debugging info => unparse_statement, and unparse_rule_elem
 
 let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.program2 ->  unit) = fun semantic_patch error_words cfile ->
   
+  let current_bindings = ref [(Pattern.empty_metavars_binding)] in
 
   semantic_patch +> List.iter (fun (metavars, rule) -> 
     
@@ -61,7 +62,9 @@ let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.pro
                   
                     let nodes = cflow#nodes  in
                     nodes#tolist +> List.iter (fun (i, node) -> 
-                      if Pattern.match_re_node re node
+
+                      let xs = !current_bindings +> List.map (Pattern.match_re_node re node) +> List.flatten in
+                      if xs <> []
                       then 
                         begin 
                           pr2 ("FOUND");
@@ -70,12 +73,13 @@ let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.pro
                           print_string ("SP : ");
                           ignore(Unparse_cocci.rule_elem "" re);
                           Format.force_newline(); Format.print_flush();
+                          current_bindings := xs;
                         end
 
                       else ()
                     );
                   );
-                  pr2 (Dumper.dump (Pattern._sg_metavars_binding));
+                  pr2 (Dumper.dump current_bindings);
 
               | _ -> raise Todo
 
