@@ -91,9 +91,10 @@ and expression =
   | DisjExpr       of expression list
   | NestExpr       of expression dots
 
-  | Edots          of string mcode (* ... *) * expression option (* pad: the option is the WHEN ? *)
-  | Ecircles       of string mcode (* ooo *) * expression option (* pad: the option is the WHEN ? *)
-  | Estars         of string mcode (* *** *) * expression option (* pad: the option is the WHEN ? *)
+  (* only in arg lists *)
+  | Edots          of string mcode (* ... *) * expression option (* the option is the WHEN  *)
+  | Ecircles       of string mcode (* ooo *) * expression option (* the option is the WHEN  *)
+  | Estars         of string mcode (* *** *) * expression option (* the option is the WHEN  *)
 
   | OptExp         of expression
   | UniqueExp      of expression

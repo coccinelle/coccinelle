@@ -60,7 +60,9 @@ opti: return a lazy list of possible matchs ?
 
 type ('a, 'b) matcher = 'a -> 'b -> metavars_binding -> metavars_binding list
 
-(* monad like stuff *)
+(* monad like stuff
+   src: the papers on parser combinators in haskell (cf a pearl by meijer in ICFP I believe)
+ *)
 
 let (>&&>) m1 m2 = fun binding ->
   let xs = m1 binding in
@@ -245,6 +247,9 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
      )
 
   | A.EComma _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Edots _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Estars _, _ -> raise Impossible (* can have EComma only in arg lists *)
   | _, _ -> return false
 
 
@@ -263,7 +268,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
       | x::xs, ys -> 
           (match x, ys with
           | A.Edots (_, optexpr), ys -> 
-              let yys = Common.tails ys in
+              let yys = Common.tails ys in (* '...' can take more or less the beginnings of the arguments *)
               yys +> List.fold_left (fun acc ys -> 
                 acc >||>  match_arguments seqstyle xs ys
                   ) (return false)
