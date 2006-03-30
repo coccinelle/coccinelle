@@ -24,6 +24,7 @@ type metavars_binding = {
   metaFunc: (string, string) assoc;
   metaExpr: (string, Ast_c.expression) assoc;
   metaType: (string, Ast_c.fullType) assoc;
+  metaStmt: (string, Ast_c.statement) assoc;
   } 
 
 let empty_metavars_binding = {
@@ -31,6 +32,7 @@ let empty_metavars_binding = {
   metaFunc = [];
   metaExpr = [];
   metaType = [];
+  metaStmt = [];
 } 
 
 
@@ -129,6 +131,7 @@ type metavar_binding =
   | MetaFunc of (string * string)
   | MetaExpr of (string * Ast_c.expression)
   | MetaType of (string * Ast_c.fullType)
+  | MetaStmt of (string * Ast_c.statement)
 
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
@@ -164,6 +167,15 @@ let check_add_metavars_binding = fun addon binding ->
       let (good, newbinding) = check_add s1 s2 (=) binding.metaType in
       if good 
       then _GoodMatch {binding with metaType = newbinding}
+      else _MatchFailure
+
+(* todo, aa_stmt  before comparing !!! 
+   and maybe accept when they match modulo iso ? not just =
+*)
+  | MetaStmt (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaStmt in
+      if good 
+      then _GoodMatch {binding with metaStmt = newbinding}
       else _MatchFailure
 
 (******************************************************************************)
@@ -206,24 +218,32 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
 
 and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -> 
   match re, st with
+
+  (* cas general: a Meta can match everything *)
+  | A.MetaStmt ((ida,_)),  stb -> 
+      check_add_metavars_binding (MetaStmt (ida, stb))
+
+
   | A.ExprStatement (ep, _),         (B.ExprStatement (Some ec) , ii) -> 
       match_e_e ep ec
 
 
-  (* todo: the other cases *)
 
-  (* If/For/While/DoWhile *)
+  (* todo: If/For/While/DoWhile *)
 
-  (* Return, => have such node in Ast ? *)
+  (* todo: Return, ReturnExpr => have such node in Ast ? *)
 
-  (* MetaStm, easy? *)
 
-  (* MetaStmList ? *)
+
+
+  (* not me?: MetaStmList ? *)
 
   (* not me?: Disj *)
   
+
   (* Nest ? *)
   (* Exp ? *)
+
 
   (* not me: Dots/Circles/Stars *)
   (* todo: Opt/Unique/Multi *)
@@ -438,8 +458,8 @@ and (match_t_t: (Ast_cocci.fullType, Ast_c.fullType) matcher) = fun   typa typb 
           (* todo?: also match signed CChar2 ? *)
           return true
       | A.ShortType, B.IntType (B.Si (signb, B.CShort)) -> match_sign signaopt signb
-      | A.IntType,   B.IntType (B.Si (signb, B.CInt)) -> match_sign signaopt signb
-      | A.LongType,  B.IntType (B.Si (signb, B.CLong)) -> match_sign signaopt signb
+      | A.IntType,   B.IntType (B.Si (signb, B.CInt))   -> match_sign signaopt signb
+      | A.LongType,  B.IntType (B.Si (signb, B.CLong))  -> match_sign signaopt signb
       | A.FloatType, B.FloatType (B.CFloat) -> 
           assert (signaopt = None); (* no sign on float in C *)
           return true
