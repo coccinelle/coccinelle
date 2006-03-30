@@ -3,12 +3,12 @@ open Common open Commonop
 (* 
   could have more precise type in fullType, in expression, etc
     but it requires to do too much things in parsing (checking no conflicting structname, computing value, ...)
-    better to separate concern, so i put '=>' to mean what we would really like, in fact
+    better to separate concern, so I put '=>' to mean what we would really like, in fact
     what we really like is a fullType2, after all many stuff are just sugar
   
   inv: Array and FunctionType have also typeQualifier but they dont have any sense.
-   I put this to factorise some code, if you see the grammar, you see that we can never specify const
-   for the array himself (but we can do it for pointer)
+   I put this to factorise some code. If you see the grammar, you see that we can never specify const
+   for the array himself (but we can do it for pointer).
 *)
 
 (*
@@ -179,7 +179,7 @@ and statementbis =
 	      |	Default of statement
 
   and compound = (*  old: (declaration list * statement list) *)
-                  ((declaration, statement) either) list (* cppext: (or because of cpp ...) *)
+                  ((declaration, statement) either) list (* cppext: (or because of cpp) *)
 
   and exprStatement = (expression option)
 
@@ -234,13 +234,13 @@ type program = programElement list
                         | FinalDef of info
 
 
-         (* before i had functionDefType = functionDeclType, and i said that 
+         (* before I had functionDefType = functionDeclType, and I said that 
             "in old C rule, you can just say name, and then state
              type, but normally after function check, we must transform it so that 
              we dont have this anymore"
              but i prefer have a clean abstractSyntax type, prototype and definition 
              are different, they dont
-             have the same constraint, so i do more job in parsing for this case only
+             have the same constraint, so I do more job in parsing for this case only
 	 *)
 
 

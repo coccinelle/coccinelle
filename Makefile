@@ -13,6 +13,7 @@ SOURCEMAIN = aux.ml \
 	ast_c.ml \
 	ast_cocci.ml \
 	visitor_c.ml control_flow_c.ml \
+	isomorphisms.ml \
 	pattern.ml \
 	\
         parsing_cocci/ast0_cocci.ml parsing_cocci/top_level.ml parsing_cocci/check_meta.ml parsing_cocci/arity.ml parsing_cocci/plus.ml parsing_cocci/merge.ml  parsing_cocci/data.ml \

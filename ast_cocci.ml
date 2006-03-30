@@ -91,7 +91,7 @@ and expression =
   | DisjExpr       of expression list
   | NestExpr       of expression dots
 
-  (* only in arg lists *)
+  (* can appear in arg lists, and also inside Nest, as in:  if(< ... X ... Y ...>)    *)
   | Edots          of string mcode (* ... *) * expression option (* the option is the WHEN  *)
   | Ecircles       of string mcode (* ooo *) * expression option (* the option is the WHEN  *)
   | Estars         of string mcode (* *** *) * expression option (* the option is the WHEN  *)

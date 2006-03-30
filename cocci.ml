@@ -60,6 +60,7 @@ let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.pro
                   (* todo: look at order ? *)
                   rexs +> List.iter (fun re -> 
                   
+                    let re = Isomorphisms.isomorphisms_re re in
                     let nodes = cflow#nodes  in
                     nodes#tolist +> List.iter (fun (i, node) -> 
 

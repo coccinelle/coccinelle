@@ -220,7 +220,6 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       if equal_assignOp opa  opb
       then (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
       else return false
-            
 
   (* cas general = a MetaExpr can match everything *)
   | A.MetaExpr ((ida,_), opttypa),  expb -> 
@@ -248,9 +247,28 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
      )
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
+ (* todo: in fact can also have the Edots family inside nest, as in if(<... x ... y ...>) *)
   | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
   | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
+
+
+  | A.DisjExpr eas, eb -> 
+      eas +> List.fold_left (fun acc ea -> acc >||>  match_e_e ea eb) (return false)
+
+      
+
+  | A.Unary (ea, (opa,_)), (B.Unary (eb, opb), ii) -> 
+      return (equal_unaryOp opa opb) >&&>
+      match_e_e ea eb
+
+  | A.Binary (ea1, (opa,_), ea2), (B.Binary (eb1, opb, eb2), ii) -> 
+      return (equal_binaryOp opa opb) >&&>
+      match_e_e ea1 eb1 >&&> 
+      match_e_e ea2 eb2
+
+
+
   | _, _ -> return false
 
 
@@ -334,9 +352,20 @@ and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb ->
 
 
 (******************************************************************************)
-(* normally Ast_cocci  could reuse some types of Ast_c, so those functions
-   should be useless *)
+(* normally Ast_cocci  should reuse some types of Ast_c, 
+   so those functions  should not exists *)
 (******************************************************************************)
+
+and equal_unaryOp a b = 
+  match a, b with
+  | A.GetRef   , B.GetRef  -> true
+  | A.DeRef    , B.DeRef   -> true
+  | A.UnPlus   , B.UnPlus  -> true
+  | A.UnMinus  , B.UnMinus -> true
+  | A.Tilde    , B.Tilde   -> true
+  | A.Not      , B.Not     -> true
+  | _, _ -> false
+
 
 and equal_assignOp a b = 
   match a, b with
@@ -345,6 +374,18 @@ and equal_assignOp a b =
       equal_arithOp a b
   | _ -> false
 
+
+and equal_fixOp a b = 
+  match a, b with
+  | A.Dec, B.Dec -> true
+  | A.Inc, B.Inc -> true
+  | _ -> false
+
+and equal_binaryOp a b = 
+  match a, b with
+  | A.Arith a,    B.Arith b ->   equal_arithOp a b
+  | A.Logical a,  B.Logical b -> equal_logicalOp a b
+  | _ -> false
 
 and equal_arithOp a b = 
   match a, b with
@@ -359,6 +400,20 @@ and equal_arithOp a b =
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
   | _          , _          -> false
+
+and equal_logicalOp a b = 
+  match a, b with
+  | A.Inf    , B.Inf    -> true
+  | A.Sup    , B.Sup    -> true
+  | A.InfEq  , B.InfEq  -> true
+  | A.SupEq  , B.SupEq  -> true
+  | A.Eq     , B.Eq     -> true
+  | A.NotEq  , B.NotEq  -> true
+  | A.AndLog , B.AndLog -> true
+  | A.OrLog  , B.OrLog  -> true
+  | _          , _          -> false
+  
+
 
 and equal_structUnion a b = 
   match a, b with
