@@ -20,15 +20,17 @@ type sequence_processing_style = Ordered | Unordered
 (******************************************************************************)
 
 type metavars_binding = {
-  mutable metaId: (string,  string) assoc;
-  mutable metaFunc: (string, string) assoc;
-  mutable metaExpr: (string, Ast_c.expression) assoc;
+  metaId: (string,  string) assoc;
+  metaFunc: (string, string) assoc;
+  metaExpr: (string, Ast_c.expression) assoc;
+  metaType: (string, Ast_c.fullType) assoc;
   } 
 
 let empty_metavars_binding = {
   metaId = [];
   metaFunc = [];
   metaExpr = [];
+  metaType = [];
 } 
 
 
@@ -126,6 +128,7 @@ type metavar_binding =
   | MetaId   of (string * string)
   | MetaFunc of (string * string)
   | MetaExpr of (string * Ast_c.expression)
+  | MetaType of (string * Ast_c.fullType)
 
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
@@ -144,11 +147,23 @@ let check_add_metavars_binding = fun addon binding ->
       then _GoodMatch {binding with metaFunc = newbinding}
       else _MatchFailure
 
-(* todo, aa_expr  before comparing !!! *)
+(* todo, aa_expr  before comparing !!! 
+   and maybe accept when they match ?
+   note that here we have Astc._expression, so it is a match modulo isomorphism
+   (there is not metavariable involved here,  just isomorphisms)
+*)
   | MetaExpr (s1, s2) -> 
       let (good, newbinding) = check_add s1 s2 (=) binding.metaExpr in
       if good 
       then _GoodMatch {binding with metaExpr = newbinding}
+      else _MatchFailure
+(* todo, aa_type  before comparing !!! 
+   and maybe accept when they match modulo iso ? not just =
+*)
+  | MetaType (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaType in
+      if good 
+      then _GoodMatch {binding with metaType = newbinding}
       else _MatchFailure
 
 (******************************************************************************)
@@ -170,9 +185,15 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
           ( match ida with
            | (A.Id (ida, mcode)) when ida =$= idb ->   return true
            | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (MetaFunc (ida, idb))
+            (* todo: a MetaId can not match a func ? 
+               todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? 
+               todo: as usual, handle the Opt/Unique/Multi
+            *)
            | _ -> return false
           ) 
            >&&>
+           (* todo: stoa vs stob *)
+           (* todo: isvaargs ? retb ? *)
            (match_params paramsa paramsb)
           
 
@@ -187,6 +208,25 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
   match re, st with
   | A.ExprStatement (ep, _),         (B.ExprStatement (Some ec) , ii) -> 
       match_e_e ep ec
+
+
+  (* todo: the other cases *)
+
+  (* If/For/While/DoWhile *)
+
+  (* Return, => have such node in Ast ? *)
+
+  (* MetaStm, easy? *)
+
+  (* MetaStmList ? *)
+
+  (* not me?: Disj *)
+  
+  (* Nest ? *)
+  (* Exp ? *)
+
+  (* not me: Dots/Circles/Stars *)
+  (* todo: Opt/Unique/Multi *)
   | _, _ -> return false
 
 
@@ -199,14 +239,18 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
         acc >||>
         (match var with
         | (Some (sb, iniopt,_), typb, sto), _ ->
+         (* isomorphisms handled here, good?  cos allow an initializer (iniopt) where a SP does not mention one *)
+         (* todo, use sto? lack of sto in Ast_cocci *)
             match_t_t  typa typb >&&>
-            match_ident sa sb (* the order is still important ? *)
+            match_ident sa sb
         | (None, typ, sto), _ -> return false
         )
        ) (return false)
-(*
+(* todo:
   | Decl (Init (typa, sa, _, expa, _)),  
 *)
+
+  (* todo: Opt/Unique/Multi *)
   | _, _ -> return false
 
 
@@ -216,27 +260,33 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
 
 and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec -> 
   match ep, ec with
-  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), ii) -> 
-      if equal_assignOp opa  opb
-      then (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
-      else return false
-
-  (* cas general = a MetaExpr can match everything *)
+  (* cas general: a MetaExpr can match everything *)
   | A.MetaExpr ((ida,_), opttypa),  expb -> 
+      (* todo: use type *)
       check_add_metavars_binding (MetaExpr (ida, expb))
+
+  (* todo: MetaConst *)
 
   | A.Ident ida,                (B.Constant (B.Ident idb) , ii) ->
       match_ident ida idb
 
+ (* todo: handle some isomorphisms in int/float ? can have different format 1l can match a 1 *)
+ (* todo: normally string can contain some metavar too, so should recurse on the string *)
   | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), ii)    when sa =$= sb -> return true
   | A.Constant (A.Char sa, _),    (B.Constant (B.Char   (sb, _)), ii)    when sa =$= sb -> return true
   | A.Constant (A.Int sa, _),     (B.Constant (B.Int    (sb)), ii)       when sa =$= sb -> return true
   | A.Constant (A.Float sa, _),   (B.Constant (B.Float  (sb, ftyp)), ii) when sa =$= sb -> return true
 
   | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), ii) -> 
+     (* todo: do special case to allow IdMetaFunc, cos doing the recursive call will be too late,
+          match_ident will not have the info whether it was a function
+        todo: but how detect when do x.field = f;  how know that f is a Func ?
+          by having computed some information before the matching
+     *)
 
       match_e_e ea1 eb1  >&&> (
 
+      (* for the pattern phase, no need the EComma *)
       let eas' = undots eas +> List.filter (function A.EComma _ -> false | _ -> true) in
       let ebs' = ebs +> List.map fst +> List.map (function
         | Left e -> e
@@ -246,17 +296,30 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         eas' ebs'
      )
 
-  | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
- (* todo: in fact can also have the Edots family inside nest, as in if(<... x ... y ...>) *)
-  | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), ii) -> 
+      return (equal_assignOp opa  opb) >&&>
+      (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
 
 
-  | A.DisjExpr eas, eb -> 
-      eas +> List.fold_left (fun acc ea -> acc >||>  match_e_e ea eb) (return false)
+  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), ii) -> 
 
-      
+      match_e_e ea1 eb1 >&&>
+      (match ea2opt, eb2 with
+      | None, (B.NoExpr, ii) -> return true
+      | Some ea2, _ -> match_e_e ea2 eb2
+      | _,_ -> return false
+      ) >&&>
+      match_e_e ea3 eb3
+   
+  (* todo?: handle some isomorphisms here ? *)
+
+  | A.Postfix (ea, (opa,_)), (B.Postfix (eb, opb), ii) -> 
+      return (equal_fixOp opa opb) >&&>
+      match_e_e ea eb
+
+  | A.Infix (ea, (opa,_)), (B.Infix (eb, opb), ii) -> 
+      return (equal_fixOp opa opb) >&&>
+      match_e_e ea eb
 
   | A.Unary (ea, (opa,_)), (B.Unary (eb, opb), ii) -> 
       return (equal_unaryOp opa opb) >&&>
@@ -267,7 +330,53 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       match_e_e ea1 eb1 >&&> 
       match_e_e ea2 eb2
 
+        
+  (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
 
+  | A.ArrayAccess (ea1, _, ea2, _), (B.ArrayAccess (eb1, eb2), ii) -> 
+      match_e_e ea1 eb1 >&&>
+      match_e_e ea2 eb2
+
+
+  (* todo?: handle some isomorphisms here ? *)
+
+  | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), ii) ->
+      match_e_e ea eb >&&>
+      match_ident ida idb
+
+  | A.RecordPtAccess (ea, _, ida), (B.RecordPtAccess (eb, idb), ii) ->
+      match_e_e ea eb >&&>
+      match_ident ida idb
+
+  (* todo?: handle some isomorphisms here ? *)
+
+  | A.Cast (_, typa, _, ea), (B.Cast (typb, eb), ii) ->
+      match_t_t typa typb >&&>
+      match_e_e ea eb
+
+  (* todo? iso ? allow all the combinations ? *)
+
+  | A.Paren (_, ea, _), (B.ParenExpr (eb), ii) -> 
+      match_e_e ea eb
+
+
+
+  | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
+
+  | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
+
+  (* todo: in fact can also have the Edots family inside nest, as in if(<... x ... y ...>) *)
+  | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
+  | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
+
+
+  | A.DisjExpr eas, eb -> 
+      eas +> List.fold_left (fun acc ea -> acc >||>  match_e_e ea eb) (return false)
+
+  (* todo: Nest *)      
+
+  (* todo: Opt/Unique/Multi *)
 
   | _, _ -> return false
 
@@ -279,6 +388,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
         (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> acc >&&> match_e_e ea eb) (return true))
       else return false
 *)
+(* todo: MetaExprList *)
   match seqstyle with
   | Ordered -> 
       (match eas, ebs with
@@ -307,20 +417,62 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
 
 and (match_t_t: (Ast_cocci.fullType, Ast_c.fullType) matcher) = fun   typa typb -> 
   match typa, typb with
-  | A.StructUnionName ((sa,_), (sua, _)),    (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
-     if equal_structUnion sua sub &&  sa =$= sb
-     then return true
-     else return false
+
+  (* cas general *)
+  | A.MetaType (ida,_),  typb -> 
+      check_add_metavars_binding (MetaType (ida, typb))
+
+  | A.BaseType ((basea, mcode), signaopt),   (qu, (B.BaseType baseb, _)) -> 
+      let match_sign signa signb = 
+        (match signa, signb with
+         (* iso on sign, if not mentionned then free.  tochange? *)
+        | None, _ -> return true
+        | Some (a,_), b -> return (equal_sign a b)
+        ) in
+
+
+      (* handle some iso on type ? (cf complex C rule for possible implicit casting) *)
+      (match basea, baseb with
+      | A.VoidType,  B.Void -> assert (signaopt = None); return true
+      | A.CharType,  B.IntType B.CChar -> 
+          (* todo?: also match signed CChar2 ? *)
+          return true
+      | A.ShortType, B.IntType (B.Si (signb, B.CShort)) -> match_sign signaopt signb
+      | A.IntType,   B.IntType (B.Si (signb, B.CInt)) -> match_sign signaopt signb
+      | A.LongType,  B.IntType (B.Si (signb, B.CLong)) -> match_sign signaopt signb
+      | A.FloatType, B.FloatType (B.CFloat) -> 
+          assert (signaopt = None); (* no sign on float in C *)
+          return true
+      | A.DoubleType, B.FloatType (B.CDouble) -> 
+          assert (signaopt = None); (* no sign on float in C *)
+          return true
+          
+          
+      | x, y -> return false
+      )
+
+  (* todo? iso with array *)
   | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
       match_t_t typa typb
 
-  | A.BaseType ((basea, mcode), signopt),   (qu, (B.BaseType baseb, _)) -> 
-      (match basea, baseb with
-      | A.CharType,  B.IntType B.CChar -> return true
-      | A.IntType,   B.IntType (B.Si (sign, B.CInt)) -> return true
-      | x, y -> return false
+  | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
+      match_t_t typa typb >&&>
+      (match eaopt, ebopt with
+       (* todo: handle the iso on optionnal size specifification ? *)
+      | None, None -> return true
+      | Some ea, Some eb -> match_e_e ea eb
+      | _, _ -> return false
       )
+
+
+  | A.StructUnionName ((sa,_), (sua, _)),    (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
+     (* todo: could also match a Struct that has provided a name *)
+     return (equal_structUnion sua sub &&  sa =$= sb)
+
   | A.TypeName (sa, _),  (qu, (B.TypeName sb, _)) when sa =$= sb -> return true
+
+
+  (* todo: Opt/Unique/Multi *)
   | _, _ -> return false
 
 
@@ -334,7 +486,7 @@ and (match_params: (Ast_cocci.parameter_list, ((Ast_c.parameterTypeDef * Ast_c.i
     | A.Param (ida, qua, typa), ((hasreg, idb, typb, _), ii) -> 
         acc >&&>
         match_t_t typa typb >&&>
-        match_ident ida idb  (* the order is still important ? *)
+        match_ident ida idb  
     | x -> error_cant_have x
     ) (return true)
   )
@@ -346,6 +498,10 @@ and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb ->
   match ida with
   | (A.Id (ida, _)) when ida =$= idb -> return true
   | (A.MetaId (ida, _)) ->  check_add_metavars_binding (MetaId (ida, idb))
+
+  (* todo: and other cases ? too late ? or need more info on idb !! its type ? *)
+
+  (* todo: Opt/Unique/Multi *)
   | _ -> return false
 
 
@@ -419,4 +575,11 @@ and equal_structUnion a b =
   match a, b with
   | A.Struct, B.Struct -> true
   | A.Union,  B.Union -> true
+  | _, _ -> false
+
+
+and equal_sign a b = 
+  match a, b with
+  | A.Signed, B.Signed -> true
+  | A.Unsigned,  B.UnSigned -> true
   | _, _ -> false
