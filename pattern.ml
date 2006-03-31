@@ -23,6 +23,7 @@ type metavars_binding = {
   metaId: (string,  string) assoc;
   metaFunc: (string, string) assoc;
   metaExpr: (string, Ast_c.expression) assoc;
+  metaExprList: (string, Ast_c.expression list) assoc;
   metaType: (string, Ast_c.fullType) assoc;
   metaStmt: (string, Ast_c.statement) assoc;
   } 
@@ -31,6 +32,7 @@ let empty_metavars_binding = {
   metaId = [];
   metaFunc = [];
   metaExpr = [];
+  metaExprList = [];
   metaType = [];
   metaStmt = [];
 } 
@@ -90,6 +92,8 @@ let return res = fun binding ->
 
 
 
+
+
 (******************************************************************************)
 
 let check_add k valu (===) anassoc = 
@@ -130,6 +134,7 @@ type metavar_binding =
   | MetaId   of (string * string)
   | MetaFunc of (string * string)
   | MetaExpr of (string * Ast_c.expression)
+  | MetaExprList of (string * Ast_c.expression list)
   | MetaType of (string * Ast_c.fullType)
   | MetaStmt of (string * Ast_c.statement)
 
@@ -160,6 +165,12 @@ let check_add_metavars_binding = fun addon binding ->
       if good 
       then _GoodMatch {binding with metaExpr = newbinding}
       else _MatchFailure
+  | MetaExprList (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaExprList in
+      if good 
+      then _GoodMatch {binding with metaExprList = newbinding}
+      else _MatchFailure
+
 (* todo, aa_type  before comparing !!! 
    and maybe accept when they match modulo iso ? not just =
 *)
@@ -228,13 +239,32 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
       match_e_e ep ec
 
 
+  (* I have just to manage the node itself, so just the head of the if/while/for,  not its body *)
+  | A.IfHeader (_,_, ea, _), (B.Selection  (B.If (eb, st1b, st2b)), ii) -> 
+      match_e_e ea eb
 
-  (* todo: If/For/While/DoWhile *)
+  | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
+      match_e_e ea eb
+
+  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> 
+      match_opt match_e_e ea1opt eb1opt >&&>
+      match_opt match_e_e ea2opt eb2opt >&&>
+      match_opt match_e_e ea3opt eb3opt >&&>
+      return true
+      
+      
+
+      
+
+
+
+  (* todo: Else, Do WhileTail, *)
 
   (* todo: Return, ReturnExpr => have such node in Ast ? *)
 
 
 
+  (* not me?: SeqStart SeqEnd ? *)
 
   (* not me?: MetaStmList ? *)
 
@@ -425,6 +455,17 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
 
           | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
           | A.Estars (_,_), ys   -> raise Impossible (* in Ordered mode *)
+
+          | A.MetaExprList (ida,_), ys -> 
+              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) in
+              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+                acc >||> (
+                check_add_metavars_binding (MetaExprList (ida, startxs)) >&&>
+                match_arguments seqstyle xs endxs
+             )) (return false)
+
+              
+
           | x, y::ys -> 
               match_e_e x y >&&> 
               match_arguments seqstyle xs ys
@@ -526,6 +567,13 @@ and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb ->
 
 
 
+
+and match_opt f eaopt ebopt =
+      (match eaopt, ebopt with
+      | None, None -> return true
+      | Some ea, Some eb -> f ea eb
+      | _, _ -> return false
+      )
 
 (******************************************************************************)
 (* normally Ast_cocci  should reuse some types of Ast_c, 
