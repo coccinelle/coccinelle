@@ -26,6 +26,8 @@ type metavars_binding = {
   metaExprList: (string, Ast_c.expression list) assoc;
   metaType: (string, Ast_c.fullType) assoc;
   metaStmt: (string, Ast_c.statement) assoc;
+  metaParam: (string, ((Ast_c.parameterTypeDef * Ast_c.il) )) assoc;
+  metaParamList: (string, ((Ast_c.parameterTypeDef * Ast_c.il) list)) assoc;
   } 
 
 let empty_metavars_binding = {
@@ -35,6 +37,8 @@ let empty_metavars_binding = {
   metaExprList = [];
   metaType = [];
   metaStmt = [];
+  metaParam = [];
+  metaParamList = [];
 } 
 
 
@@ -137,6 +141,8 @@ type metavar_binding =
   | MetaExprList of (string * Ast_c.expression list)
   | MetaType of (string * Ast_c.fullType)
   | MetaStmt of (string * Ast_c.statement)
+  | MetaParam of (string * ((Ast_c.parameterTypeDef * Ast_c.il) ))
+  | MetaParamList of (string * ((Ast_c.parameterTypeDef * Ast_c.il) list))
 
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
@@ -189,6 +195,17 @@ let check_add_metavars_binding = fun addon binding ->
       then _GoodMatch {binding with metaStmt = newbinding}
       else _MatchFailure
 
+  | MetaParam (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaParam in
+      if good 
+      then _GoodMatch {binding with metaParam = newbinding}
+      else _MatchFailure
+  | MetaParamList (s1, s2) -> 
+      let (good, newbinding) = check_add s1 s2 (=) binding.metaParamList in
+      if good 
+      then _GoodMatch {binding with metaParamList = newbinding}
+      else _MatchFailure
+
 (******************************************************************************)
 
 let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fun re (node, s) -> 
@@ -217,7 +234,13 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
            >&&>
            (* todo: stoa vs stob *)
            (* todo: isvaargs ? retb ? *)
-           (match_params paramsa paramsb)
+
+          (
+          (* for the pattern phase, no need the EComma *)
+           let paramsa' = undots paramsa +> List.filter (function A.PComma _ -> false | _ -> true) in
+           match_params (match paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
+             paramsa' paramsb
+          )
           
 
       | _, _ -> return false
@@ -456,6 +479,8 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
           | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
           | A.Estars (_,_), ys   -> raise Impossible (* in Ordered mode *)
 
+          | A.EComma (_), ys -> raise Impossible (* filtered by the caller, in the case for FunCall *)
+
           | A.MetaExprList (ida,_), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
@@ -464,6 +489,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
                 match_arguments seqstyle xs endxs
              )) (return false)
 
+          (* todo: Opt/Unique/Multi *)
               
 
           | x, y::ys -> 
@@ -537,9 +563,10 @@ and (match_t_t: (Ast_cocci.fullType, Ast_c.fullType) matcher) = fun   typa typb 
   | _, _ -> return false
 
 
-and (match_params: (Ast_cocci.parameter_list, ((Ast_c.parameterTypeDef * Ast_c.il) list)) matcher) = fun pas pbs ->
+and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list, ((Ast_c.parameterTypeDef * Ast_c.il) list)) matcher) = fun seqstyle pas pbs ->
   (* todo: if contain metavar ? => recurse on two list and consomme *)
-  let pas' = pas +> undots +> List.filter (function A.Param (x,y,z) -> true | _ -> false) in
+(* old:
+  let pas' = pas +> List.filter (function A.Param (x,y,z) -> true | _ -> false) in
   if (List.length pas' = List.length pbs) 
   then
   (zip pas' pbs +> List.fold_left (fun acc param -> 
@@ -552,6 +579,66 @@ and (match_params: (Ast_cocci.parameter_list, ((Ast_c.parameterTypeDef * Ast_c.i
     ) (return true)
   )
   else return false
+*)
+
+  match seqstyle with
+  | Ordered -> 
+      (match pas, pbs with
+      | [], [] -> return true
+      | [], y::ys -> return false
+      | x::xs, ys -> 
+          (match x, ys with
+          | A.Pdots (_), ys -> 
+
+              let yys = Common.tails ys in (* '...' can take more or less the beginnings of the arguments *)
+              yys +> List.fold_left (fun acc ys -> 
+                acc >||>  match_params seqstyle xs ys
+                  ) (return false)
+
+
+          | A.MetaParamList (ida,_), ys -> 
+              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) in
+              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+                acc >||> (
+                check_add_metavars_binding (MetaParamList (ida, startxs)) >&&>
+                match_params seqstyle xs endxs
+             )) (return false)
+
+
+          | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
+
+          | A.PComma (_), ys -> raise Impossible (* filtered by the caller, in the case for FunDecl *)
+
+          (* todo: Opt/Unique/Multi *)
+
+          | A.MetaParam ((ida,_)), y::ys -> 
+              (* todo: use quaopt, hasreg ? *)
+              check_add_metavars_binding (MetaParam (ida, y)) >&&> 
+              match_params seqstyle xs ys
+
+          | A.Param (ida, quaopt, typa), ((hasreg, idb, typb, _), ii)::ys -> 
+              (* todo: use quaopt, hasreg ? *)
+              (match_t_t typa typb >&&>
+              match_ident ida idb
+              ) >&&> 
+              match_params seqstyle xs ys
+
+          | x, [] -> return false
+
+          | (A.VoidParam _ | A.UniqueParam _ | A.OptParam _), _ -> raise Todo
+                                
+          )
+      )
+
+  | Unordered -> raise Todo
+
+(*
+    VoidParam     of fullType
+
+  | MetaParam     of string mcode
+  | MetaParamList of string mcode
+
+*)
 
 
 
