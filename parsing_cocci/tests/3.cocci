@@ -1,40 +1,43 @@
 @@
 struct Scsi_Host_Template sht;
-!local function proc_info;
+!local function proc_info_func;
 @@
 
-sht.proc_info = proc_info;
+sht.proc_info = proc_info_func;
 
 @@
-identifier buffer, start, offset, length, hostno, inout;
-identifier host;
-statement S1, S2;
-expression E;
+identifier buffer, start, offset, length, inout, hostptr, hostno;
 @@
 
-- proc_info (char *buffer, char **start, off_t offset, int length, int hostno, int inout) {
-+ proc_info (struct Scsi_Host *host, char *buffer, char **start, off_t offset, int length, int inout) {
+  proc_info_func(
++      struct Scsi_Host *hostptr,
+       char *buffer, char **start, off_t offset,
+       int length, 
+-      int hostno, 
+       int inout) {
     ...
--   struct Scsi_Host *host;
+-   struct Scsi_Host *hostptr;
     ...
--   host = scsi_host_hn_get(hostno);
+-   hostptr = scsi_host_hn_get(hostno);
     ...
-?-  if (host == NULL) S1 else S2
-+   S2
+?-  if (hostptr == NULL) { ... }
     ...
-?-  scsi_host_put(host);
+?-  scsi_host_put(hostptr);
     ...
   }
 
-proc_info(...)
-  {
+@@
+expression E;
+@@
+
+proc_info_func(...) {
     <...
 (
 -   E->host_no == hostno
-+   E == shpnt
++   E == hostptr
 |
 -   hostno
-+   shpnt->host_no
++   hostptr->host_no
 )
     ...>
   }
