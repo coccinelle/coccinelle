@@ -1,12 +1,17 @@
 @@
-expression A, B, C, D, E;
-identifier X;
+expression A, C, E;
+identifier B, D, X, Y;
 @@
 
 (
--  atomic_dec(&(mddev_to_conf(A))->B[C].rdev->nr_pending)
-+  rdev_dec_pending((mddev_to_conf(A))->B[C].rdev,A)
+   X = mddev_to_conf(A);
+   ...
+-  atomic_dec(&X->B[C].rdev->nr_pending)
++  rdev_dec_pending(X->B[C].rdev,A)
+   ...
 |
--  atomic_dec(&X->D[E].rdev->nr_pending)
-+  rdev_dec_pending(X->D[E].rdev,X->mddev)
+   ...
+-  atomic_dec(&Y->D[E].rdev->nr_pending)
++  rdev_dec_pending(Y->D[E].rdev,Y->mddev)
+   ...
 )

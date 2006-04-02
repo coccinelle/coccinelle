@@ -7,7 +7,7 @@ expression E;
 
 @@
 struct gendisk *A;
-expression B, E;
+expression B, E, C, E1;
 @@
 
 (
@@ -21,9 +21,12 @@ expression B, E;
 |
   add_gendisk(C+E1);
   ooo
-- A[minor(B)].nr_structs;
-+ get_capacity(C[&DEVICE_NR(B)]);
+- A[minor(B)].nr_structs
++ get_capacity(C[&DEVICE_NR(B)])
+  ooo
 |
+  ...
 - A->part[B].nr_structs
 + get_capacity(A)
+  ...
 )

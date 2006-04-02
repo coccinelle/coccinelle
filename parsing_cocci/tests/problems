@@ -1,4 +1,4 @@
-1.cocci: don't allow includes
+1.cocci: ok
 
 2.cocci: ok
 
@@ -30,32 +30,32 @@
 
 15.cocci: ok
 
-16.cocci: don't allow filename specifications
+16.cocci: ok
 
 17.cocci: don't allow ( | ) with only + fragments
 
 18.cocci: ok
 
-19.cocci: don't allow mixing statements and expressions in an ( | )
+19.cocci: ok
 
 20.cocci: ok
 
 21.cocci: ok
 
-22.cocci: don't support filename - and + syntax
+22.cocci: ok
 
 23.cocci: rule not yet written
 
 24.cocci: rule not yet written
 
-25.cocci: don't know
+25.cocci: ok
 
 26.cocci: ok
 
 27.cocci: ok
 
-28.cocci: don't allow | in expressions
+28.cocci: ok
 
 29.cocci: ok
 
-30.cocci: don't allow a ( | ) branch that only removes things
+30.cocci: ok

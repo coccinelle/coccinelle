@@ -1,9 +1,9 @@
 @@
-struct IsndCard v;
+struct IsdnCard v;
 local function fn;
 @@
 
-v.irq_state = fn;
+v.irq_func = &fn;
 
 @@
 identifier intno, dev_id, regs;
