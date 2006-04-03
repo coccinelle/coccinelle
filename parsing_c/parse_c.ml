@@ -556,7 +556,7 @@ let parse_print_error_heuristic file =
 
 
   let current_line () = 
-    let info = info_from_token !cur_tok in
+    let (info,_) = info_from_token !cur_tok in
     fst table.(info.charpos)
    in
 
@@ -631,9 +631,9 @@ let parse_print_error_heuristic file =
     with e -> 
       begin
         (match e with
-         | Lexer_c.Lexical s ->          pr2 ("lexical error " ^ s ^ "\n =" ^  (error_message file (wrap_parse_info (info_from_token !cur_tok)  ) ))
-         | Parsing.Parse_error ->        pr2 ("parse error \n = " ^            (error_message file (wrap_parse_info (info_from_token !cur_tok)  ) ))
-         | Semantic_c.Semantic (s, i) -> pr2 ("semantic error " ^ s ^ "\n =" ^ (error_message file (wrap_parse_info (info_from_token !cur_tok)  ) ))
+         | Lexer_c.Lexical s ->          pr2 ("lexical error " ^ s ^ "\n =" ^  (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
+         | Parsing.Parse_error ->        pr2 ("parse error \n = " ^            (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
+         | Semantic_c.Semantic (s, i) -> pr2 ("semantic error " ^ s ^ "\n =" ^ (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
          | e -> 
             raise e
         );
@@ -644,7 +644,7 @@ let parse_print_error_heuristic file =
           let rec next_sync () =
             let v = (try pop2 all_tokens with _ -> raise End_of_file) in
             cur_tok := v;
-            let (line, col) = (table.((info_from_token v).charpos)) in
+            let (line, col) = (table.((info_from_token v +> fst).charpos)) in
             passed_tok2 := v::!passed_tok2;
 
             (* enough ? *)

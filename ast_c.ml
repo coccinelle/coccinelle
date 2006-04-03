@@ -18,7 +18,7 @@ open Common open Commonop
 *)
 (*******************************************************************************)
 
-type info = Common.parse_info  (* forunparser: *)
+type info = Common.parse_info * unit  (* forunparser: *)
 type il = info list
 
 let iitodovide = []

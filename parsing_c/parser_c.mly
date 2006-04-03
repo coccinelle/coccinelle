@@ -20,9 +20,9 @@ let warning s v =
 (* parse auxillary function *)
 type shortLong      = Short  | Long | LongLong
 
-type decl = {storageD: storage                                               * parse_info list
-	    ;typeD: ((sign option) * (shortLong option) * (typeCbis option)) * parse_info list
-	    ;qualifD: typeQualifierbis                                       * parse_info list
+type decl = {storageD: storage                                               * Ast_c.info list
+	    ;typeD: ((sign option) * (shortLong option) * (typeCbis option)) * Ast_c.info list
+	    ;qualifD: typeQualifierbis                                       * Ast_c.info list
             (*todo: full_info: parse_info list;  to remember ordering between storage, qualifier, type *)
 	    } 
 let nullDecl = {storageD = NoSto, [];typeD = (None, None, None), [];qualifD = nullQualif}
@@ -175,44 +175,44 @@ let fix_add_params_ident = function
     
 %}
 
-%token <Common.parse_info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
+%token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
 
 
-%token <(string * Ast_c.isWchar) * Common.parse_info> TString
-%token <(string * Ast_c.isWchar) * Common.parse_info> TChar
-%token <string * Common.parse_info> TIdent TypedefIdent
-%token <string * Common.parse_info>   TInt
-%token <(string * Ast_c.floatType) * Common.parse_info> TFloat
+%token <(string * Ast_c.isWchar) * Ast_c.info> TString
+%token <(string * Ast_c.isWchar) * Ast_c.info> TChar
+%token <string * Ast_c.info> TIdent TypedefIdent
+%token <string * Ast_c.info>   TInt
+%token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 
 
 
-%token <Common.parse_info> TOPar TCPar TOBrace TCBrace TOCro TCCro 
-%token <Common.parse_info> TDot TComma TPtrOp 
-%token <Common.parse_info> TInc TDec
-%token <Ast_c.assignOp * Common.parse_info> TAssign 
-%token <Common.parse_info> TEq
-%token <Common.parse_info> TWhy  TTilde TBang
-%token <Common.parse_info> TEllipsis
-%token <Common.parse_info> TDotDot
+%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro 
+%token <Ast_c.info> TDot TComma TPtrOp 
+%token <Ast_c.info> TInc TDec
+%token <Ast_c.assignOp * Ast_c.info> TAssign 
+%token <Ast_c.info> TEq
+%token <Ast_c.info> TWhy  TTilde TBang
+%token <Ast_c.info> TEllipsis
+%token <Ast_c.info> TDotDot
 
-%token <Common.parse_info> TPtVirg
-%token <Common.parse_info> TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
+%token <Ast_c.info> TPtVirg
+%token <Ast_c.info> TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
        TPlus TMinus TMul TDiv TMod 
 
-%token <Common.parse_info>
+%token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
        Tauto Tregister Textern Tstatic 
        Tconst Tvolatile
        Tstruct Tenum Ttypedef Tunion
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn Tgoto Tdefault
        Tsizeof  
-%token <Common.parse_info> Tasm
-%token <Common.parse_info> Tattribute
+%token <Ast_c.info> Tasm
+%token <Ast_c.info> Tattribute
 
-%token <Common.parse_info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
+%token <Ast_c.info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
 
 
-%token <Common.parse_info> EOF
+%token <Ast_c.info> EOF
 
 
 %left TOrLog

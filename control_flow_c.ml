@@ -177,7 +177,7 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
         let s = 
           (match e with
           | (FunCall ((Constant (Ident f), _),ii3),ii2) -> f ^ "(...)"
-          (* todo?: do special case too for assignment ? *)                                                                 
+          | (Assignment ((Constant (Ident var), _), SimpleAssign, e), _) -> var ^ " = ... ;"
           | _ -> "statement"
           )
         in
@@ -240,7 +240,7 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
         (match auxinfo with
         | SwitchInfo (switchstarti, switchendi) -> 
               !g#add_arc ((switchstarti, newi), Direct) +> adjust_g;
-        | _ -> raise (CaseNoSwitch (List.hd ii))
+        | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
         );
         aux_statement (Some newi, auxinfo) st
         
@@ -253,7 +253,7 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
         (match auxinfo with
         | SwitchInfo (switchstarti, switchendi) -> 
           !g#add_arc ((switchstarti, newi), Direct) +> adjust_g;
-        | _ -> raise (CaseNoSwitch (List.hd ii))
+        | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
         );
         aux_statement (Some newi, auxinfo) st
 
@@ -354,8 +354,8 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
                 !g#add_arc ((starti, loopendi), Direct) +> adjust_g;
                 None
               end
-            else raise (OnlyBreakInSwitch (List.hd ii))
-        | NoInfo -> raise (NoEnclosingLoop (List.hd ii))
+            else raise (OnlyBreakInSwitch (fst (List.hd ii)))
+        | NoInfo -> raise (NoEnclosingLoop (fst (List.hd ii)))
         )        
 
 
@@ -398,7 +398,7 @@ let (build_control_flow: definition -> (node, edge) ograph_extended) = fun funcd
     let pred = !g#predecessors k in
     if pred#null then 
       (match node with
-      | Statement (st,ii::iis) -> raise (DeadCode (Some ii))
+      | Statement (st,ii::iis) -> raise (DeadCode (Some (fst ii)))
 
       | HeadFunc _ -> ()
       (* old: | Enter -> () *)

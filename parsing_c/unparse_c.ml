@@ -29,10 +29,10 @@ let pp_program file x =
    let toks = (Parse_c.tokens file) in 
    let toks = ref (toks +> List.map (fun tok -> (tok, Parse_c.info_from_token tok))) in
    
-   let sync elem = 
+   let sync (elem,()) = 
      assert (elem <> fake_parse_info);
      (* todo: if fake_parse_info ?  print the comments that are here ? *)
-      let (before, after) = !toks +> span (fun (tok, info) -> info.charpos < elem.charpos)   in
+      let (before, after) = !toks +> span (fun (tok, (info,())) -> info.charpos < elem.charpos)   in
       toks := after;
 
       let (commentsbefore, passed) = before +> List.rev +> span (fun (tok, tokinfo) -> 
@@ -48,25 +48,25 @@ let pp_program file x =
 
       passed +> List.iter (fun (tok, tokinfo) -> 
            (match tok with
-            | TComment i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | TCommentCpp i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | TCommentAttrOrMacro i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | _ -> pr2 ("pp_passing_token: " ^ tokinfo.str);
+            | TComment (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | TCommentCpp (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | TCommentAttrOrMacro (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | _ -> pr2 ("pp_passing_token: " ^ (fst tokinfo).str);
            )
          );
 
       commentsbefore +> List.iter (fun (tok, tokinfo) -> 
           (match tok with
-          | TComment            i -> pr i.str
-          | TCommentSpace       i -> pr i.str
-          | TCommentCpp         i -> pr i.str
-          | TCommentAttrOrMacro i -> pr i.str
+          | TComment            (i,_) -> pr i.str
+          | TCommentSpace       (i,_) -> pr i.str
+          | TCommentCpp         (i,_) -> pr i.str
+          | TCommentAttrOrMacro (i,_) -> pr i.str
           | x -> error_cant_have x
           );
          );
    
       let (tok, tokinfo) = pop2 toks in 
-      assert_equal tokinfo.charpos elem.charpos;
+      assert_equal (fst tokinfo).charpos elem.charpos;
       (* pasforcement: assert_equal tokinfo.str elem.str;
          indeed we may have "reused" a token to keep its related comment  and just change
          its value (e.g. if decide to transform every 0 in 1, we will reuse the info from 0)
@@ -74,13 +74,13 @@ let pp_program file x =
       ()
         
    in
-   let _lastasked = ref fake_parse_info in
+   let _lastasked = ref (fake_parse_info, ()) in
    let pr_elem e = 
-     if not (e.charpos > !_lastasked.charpos)
+     if not ((fst e).charpos > (fst !_lastasked).charpos)
      then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
 
      _lastasked := e;
-     sync e; pr e.str 
+     sync e; pr (fst e).str 
    in
 
 
@@ -242,12 +242,12 @@ let pp_program file x =
      let get_sto sto = match sto with None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis  in
      let print_sto_qu (sto, (qu, iiqu)) = 
        let all_ii = get_sto sto ++ iiqu in
-       all_ii +> List.sort (fun i1 i2 -> compare i1.charpos i2.charpos) +> List.iter pr_elem;
+       all_ii +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos) +> List.iter pr_elem;
        
      in
      let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
        let all_ii = get_sto sto ++ iiqu ++ iity in
-       let all_ii2 = all_ii +> List.sort (fun i1 i2 -> compare i1.charpos i2.charpos) in
+       let all_ii2 = all_ii +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos) in
        if all_ii <> all_ii2 
        then begin pr2 "STRANGEORDER"; all_ii2 +> List.iter pr_elem end
        else all_ii2 +> List.iter pr_elem
@@ -591,7 +591,7 @@ let pp_program file x =
    match ppmethod with
    | PPviatok -> 
        (match e with
-       | FinalDef ii -> pr_elem {ii with str = ""} (* todo: less: assert that FinalDef is the last one in the list *)
+       | FinalDef (ii,()) -> pr_elem ({ii with str = ""},()) (* todo: less: assert that FinalDef is the last one in the list *)
        | e -> toks +> List.iter (fun x -> pr_elem x)
        )
 
@@ -646,7 +646,7 @@ let pp_program file x =
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
 
-     | FinalDef ii -> pr_elem {ii with str = ""}
+     | FinalDef (ii,()) -> pr_elem ({ii with str = ""},())
 
      | x -> error_cant_have x
      )

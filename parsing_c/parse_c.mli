@@ -9,7 +9,7 @@ type parsing_stat = {
   } 
 
 val tokens: filename -> Parser_c.token list
-val info_from_token: Parser_c.token -> Common.parse_info
+val info_from_token: Parser_c.token -> Ast_c.info
 
 
 

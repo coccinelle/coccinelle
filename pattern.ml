@@ -461,7 +461,6 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
         (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> acc >&&> match_e_e ea eb) (return true))
       else return false
 *)
-(* todo: MetaExprList *)
   match seqstyle with
   | Ordered -> 
       (match eas, ebs with
