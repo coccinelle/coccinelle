@@ -2,13 +2,11 @@
 expression E;
 @@
 
-- if (
 (
--     (E->flags & (1 << TTY_DO_WRITE_WAKEUP)) && E->ldisc.write_wakeup
+- if ((E->flags & (1 << TTY_DO_WRITE_WAKEUP)) && E->ldisc.write_wakeup)
 |
--     test_bit(TTY_DO_WRITE_WAKEUP, &E->flags) && E->ldisc.write_wakeup
+- if (test_bit(TTY_DO_WRITE_WAKEUP, &E->flags) && E->ldisc.write_wakeup)
 )
--   )
 -    (E->ldisc.write_wakeup)(E);
 + tty_wakeup(E);
   ooo

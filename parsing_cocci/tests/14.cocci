@@ -34,4 +34,3 @@ local function fn;
 +   synchronize_irq(X2)
     ...>
   }
-

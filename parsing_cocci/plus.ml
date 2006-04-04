@@ -148,6 +148,7 @@ let rec expression x =
     | Ast.Cast(lp,ty,rp,exp) ->
 	[mcode mk_token lp; typeC ty; mcode mk_token rp; expression exp]
     | Ast.MetaConst(name,ty)  -> [mcode mk_token name]
+    | Ast.MetaErr(name)  -> [mcode mk_token name]
     | Ast.MetaExpr(name,ty)  -> [mcode mk_token name]
     | Ast.MetaExprList(name) -> [mcode mk_token name]
     | Ast.EComma(cm)         -> [mcode mk_token cm]
@@ -270,7 +271,8 @@ let top_level x =
     | Ast.INCLUDE(inc,name) -> [mcode mk_token inc; mcode mk_token name]
     | Ast.FILEINFO(_,_) -> [Closed []]
     | Ast.FUNCTION(rule_elem_dots) -> [dots rule_elem rule_elem_dots]
-    | Ast.CODE(rule_elem_dots) -> [dots rule_elem rule_elem_dots] in
+    | Ast.CODE(rule_elem_dots) -> [dots rule_elem rule_elem_dots]
+    | Ast.ERRORWORDS(exps) -> [Closed []] in
   test (Ast.Code x) subterms
 
 let rule code = List.map top_level code

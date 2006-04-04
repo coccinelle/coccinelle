@@ -89,6 +89,8 @@ let id_tokens s =
   | "local" ->      check_arity_context_linetype s; TLocal
   | "list" ->       check_arity_context_linetype s; Tlist
   | "fresh" ->      check_arity_context_linetype s; TFresh
+  | "error" ->      check_arity_context_linetype s; TError
+  | "words" ->      check_context_linetype s; TWords
 
   | "char" ->       Tchar   !current_line_type
   | "short" ->      Tshort  !current_line_type
@@ -135,6 +137,9 @@ let init _ =
     (let fn tyopt name clt = TMetaConst(name,tyopt,clt) in
     (function tyopt -> function name -> 
       Hashtbl.replace metavariables name (fn tyopt name)));
+  Data.add_err_meta :=
+    (let fn name clt = TMetaErr(name,clt) in
+    (function name -> Hashtbl.replace metavariables name (fn name)));
   Data.add_exp_meta :=
     (let fn tyopt name clt = TMetaExp(name,tyopt,clt) in
     (function tyopt -> function name ->
@@ -319,7 +324,7 @@ rule token = parse
   | "&"            { start_line true; TAnd    !current_line_type }
   | "^"            { start_line true; TXor    !current_line_type }
 
-  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+ as file) '"'
+  | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude
 	  (let str = tok lexbuf in
 	  let start = String.index str '"' in

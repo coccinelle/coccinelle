@@ -51,6 +51,7 @@ type expression =
   | Cast           of string mcode (* ( *) * fullType * string mcode (* ) *) *
                       expression
   | MetaConst      of string mcode * fullType list option
+  | MetaErr        of string mcode
   | MetaExpr       of string mcode * fullType list option
   | MetaExprList   of string mcode (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
@@ -148,6 +149,7 @@ type top_level =
   | DECL of declaration
   | INCLUDE of string mcode (* #include *) * string mcode (* file *)
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
+  | ERRORWORDS of expression list
   | CODE of statement dots
   | OTHER of statement (* temporary, disappears after top_level.ml *)
 

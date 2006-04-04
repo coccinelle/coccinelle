@@ -252,6 +252,10 @@ let rec top_expression in_nest opt_allowed tgt exp =
       let name = mcode name in
       let ty = get_option (List.map (typeC Ast0.NONE)) ty in
       make_exp tgt arity (Ast.MetaConst(name,ty))
+  | Ast0.MetaErr(name)  ->
+      let arity = exp_same (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_exp tgt arity (Ast.MetaErr(name))
   | Ast0.MetaExpr(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
@@ -595,6 +599,8 @@ let top_level tgt = function
       Ast.FUNCTION(top_dots(statement false tgt stmt))
   | Ast0.CODE(rule_elem_dots) ->
       Ast.CODE(concat_dots (statement false tgt) rule_elem_dots)
+  | Ast0.ERRORWORDS(exps) ->
+      Ast.ERRORWORDS(List.map (top_expression false false Ast0.NONE) exps)
   | Ast0.OTHER(_) -> failwith "eliminated by top_level"
 
 let rule tgt = List.map (top_level tgt)

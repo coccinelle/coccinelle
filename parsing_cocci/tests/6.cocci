@@ -14,11 +14,11 @@ identifier subaddr;
 -         ooo
 - 	  <ooo
 - 	  i2c_sendbyte(...)
--          ooo>
+-           ooo>
 -         ooo
--          <ooo
+-           <ooo
 - 	  i2c_readbyte(...)
--	  ooo>
+- 	  ooo>
 -         ooo
 - not   }
 -       ...
@@ -163,6 +163,7 @@ expression E;
     ...
   }
 
+error words = [i2c_register_driver, i2c_unregister_driver]
 @@
 identifier device;
 identifier coder;
@@ -246,6 +247,7 @@ error expression error_code;
    ...>
  }
 
+error words = [attach_fn: device->data]
 @@
 identifier device;
 fresh identifier client;

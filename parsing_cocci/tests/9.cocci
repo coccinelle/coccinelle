@@ -1,5 +1,6 @@
 @@
 expression E1, E2;
+expression X, Y;
 @@
 
 (

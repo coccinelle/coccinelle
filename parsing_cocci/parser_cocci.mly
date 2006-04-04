@@ -66,7 +66,7 @@ let top_dots l =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TWhy0 TPlus0 TBang0 Tlist TFresh TConstant
+%token TWhy0 TPlus0 TBang0 Tlist TFresh TConstant TError TWords
 
 %token<Data.line_type * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong Tvoid
 %token<Data.line_type * int * int> Tstruct Tunion
@@ -76,7 +76,7 @@ let top_dots l =
 
 %token <Data.line_type * int * int> TIf TElse TWhile TFor TDo TReturn
 %token <string * (Data.line_type * int * int)> TIdent TFunName TMetaFunName
-%token <string * (Data.line_type * int * int)> TMetaId TMetaType
+%token <string * (Data.line_type * int * int)> TMetaId TMetaType TMetaErr
 %token <string * (Data.line_type * int * int)> TMetaParam TMetaParamList
 %token <string * (Data.line_type * int * int)> TMetaStm TMetaStmList TMetaFunc
 %token <string * (Data.line_type * int * int)> TMetaLocalFunc TMetaExpList
@@ -182,6 +182,12 @@ meta_var:
 	  !Data.add_paramlist_meta name;
 	  Ast.MetaParamListDecl($1,name))
 	$4 } 
+| arity TError pure_ident_or_meta_ident_list TPtVirg
+    { List.map
+	(function name ->
+	  !Data.add_err_meta name;
+	  Ast.MetaErrDecl($1,name))
+	$3 }
 | arity TExpression pure_ident_or_meta_ident_list TPtVirg
     { List.map
 	(function name ->
@@ -503,6 +509,8 @@ primary_expr: ident   { Ast0.Ident($1) }
 		Ast0.Constant (clt2mcode (Ast.Char x) clt) }
 	    | TMetaConst
 		{ let (nm,ty,clt) = $1 in Ast0.MetaConst(clt2mcode nm clt,ty) }
+	    | TMetaErr
+		{ let (nm,clt) = $1 in Ast0.MetaErr(clt2mcode nm clt) }
 	    | TMetaExp
 		{ let (nm,ty,clt) = $1 in Ast0.MetaExpr(clt2mcode nm clt,ty) }
 	    | TOPar eexpr TCPar
@@ -585,6 +593,8 @@ eprimary_expr: ident  { Ast0.Ident($1) }
 		Ast0.Constant (clt2mcode (Ast.Char x) clt) }
 	    | TMetaConst
 		{ let (nm,ty,clt) = $1 in Ast0.MetaConst(clt2mcode nm clt,ty) }
+	    | TMetaErr
+		{ let (nm,clt) = $1 in Ast0.MetaErr(clt2mcode nm clt) }
 	    | TMetaExp
 		{ let (nm,ty,clt) = $1 in Ast0.MetaExpr(clt2mcode nm clt,ty) }
 	    | TOPar eexpr TCPar
@@ -636,6 +646,7 @@ pure_ident_or_meta_ident:
      | TMetaExpList     { $1 }
      | TMetaConst       { let (name,_,info) = $1 in (name,info) }
      | TMetaExp         { let (name,_,info) = $1 in (name,info) }
+     | TMetaErr         { $1 }
 
 ident: TIdent           { Ast0.Id(id2mcode $1) }
      | TMetaId          { Ast0.MetaId(id2mcode $1) }
@@ -762,13 +773,21 @@ fun_exp_decl_statement_list:
       { Ast0.FILEINFO(id2mcode $1,id2mcode $2)::$3 }
 
 /* ---------------------------------------------------------------------- */
+
+error_words:
+    TError TWords TEq TOCro dotless_eexpr_list TCCro
+      { Ast0.ERRORWORDS($5) }
+
+/* ---------------------------------------------------------------------- */
 /* sequences of statements and expressions */
 
 /* a mix of declarations, statements and expressions.  an expression may
 appear by itself.  always nonempty and cannot just be dots. */
 
 function_decl_statement_or_expression:
-    fun_exp_decl_statement_list
+    error_words /* only at the end */
+      { [$1] }
+  | fun_exp_decl_statement_list
       { $1 }
   | fun_exp_decl_statement_list TEllipsis
       function_decl_statement_or_expression_dots
@@ -1084,6 +1103,12 @@ pre_post_decl_statement_and_expression_opt_mid:
       pre_post_decl_statement_and_expression_opt_mid { Ast0.DOTS([])::$2 }
 
 /* ---------------------------------------------------------------------- */
+
+dotless_eexpr_list:
+    eexpr
+      { [$1] }
+  | eexpr TComma dotless_eexpr_list
+      { $1::Ast0.EComma(clt2mcode "," $2)::$3 }
 
 eexpr_list:
   eexpr_list_start

@@ -1,5 +1,6 @@
 @@
 expression A, C, E;
+mdk_rdev_t *rdev;
 identifier B, D, X, Y;
 @@
 
@@ -11,7 +12,13 @@ identifier B, D, X, Y;
    ...
 |
    ...
--  atomic_dec(&Y->D[E].rdev->nr_pending)
-+  rdev_dec_pending(Y->D[E].rdev,Y->mddev)
+-  atomic_dec(&rdev->nr_pending)
++  rdev_dec_pending(rdev,Y->mddev)
    ...
 )
+
+@@
+expression F;
+@@
+
+error words = [atomic_dec(&F->nr_pending)]

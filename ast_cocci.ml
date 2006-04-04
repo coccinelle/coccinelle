@@ -27,6 +27,7 @@ and metavar =
   | MetaParamDecl of arity * string (* name *)
   | MetaParamListDecl of arity * string (* name *)
   | MetaConstDecl of arity * string (* name *)
+  | MetaErrDecl of arity * string (* name *)
   | MetaExpDecl of arity * string (* name *)
   | MetaExpListDecl of arity * string (* name *)
   | MetaStmDecl of arity * string (* name *)
@@ -83,6 +84,7 @@ and expression =
                       string mcode (* ) *)
 
   | MetaConst      of string mcode * fullType list option
+  | MetaErr        of string mcode
   | MetaExpr       of string mcode * fullType list option
   | MetaExprList   of string mcode (* only in arg lists *)
 
@@ -91,10 +93,12 @@ and expression =
   | DisjExpr       of expression list
   | NestExpr       of expression dots
 
-  (* can appear in arg lists, and also inside Nest, as in:  if(< ... X ... Y ...>)    *)
-  | Edots          of string mcode (* ... *) * expression option (* the option is the WHEN  *)
-  | Ecircles       of string mcode (* ooo *) * expression option (* the option is the WHEN  *)
-  | Estars         of string mcode (* *** *) * expression option (* the option is the WHEN  *)
+  (* can appear in arg lists, and also inside Nest, as in:
+   if(< ... X ... Y ...>)
+   In the following, the expression option is the WHEN  *)
+  | Edots          of string mcode (* ... *) * expression option
+  | Ecircles       of string mcode (* ooo *) * expression option
+  | Estars         of string mcode (* *** *) * expression option
 
   | OptExp         of expression
   | UniqueExp      of expression
@@ -235,6 +239,7 @@ and top_level =
   | DECL of declaration
   | INCLUDE of string mcode (* #include *) * string mcode (* file *)
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
+  | ERRORWORDS of expression list
   | CODE of rule_elem dots
 
 and rule = top_level list

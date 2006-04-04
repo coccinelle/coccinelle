@@ -22,6 +22,8 @@ let token2c (tok,_) =
   | PC.TLocal -> "local"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
+  | PC.TError -> "error"
+  | PC.TWords -> "words"
 
   | PC.Tchar(clt) -> "char"
   | PC.Tshort(clt) -> "short"
@@ -82,6 +84,7 @@ let token2c (tok,_) =
   | PC.TMetaParam(_,clt) -> "parammeta"
   | PC.TMetaParamList(_,clt) -> "paramlistmeta"
   | PC.TMetaConst(_,_,clt) -> "constmeta"
+  | PC.TMetaErr(_,clt) -> "errmeta"
   | PC.TMetaExp(_,_,clt) -> "expmeta"
   | PC.TMetaExpList(_,clt) -> "explistmeta"
   | PC.TMetaId(_,clt)    -> "idmeta"
@@ -174,7 +177,8 @@ let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh -> ([t],[t])
+  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TError | PC.TWords -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -190,7 +194,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt)
   | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt)
   | PC.TMetaId(_,clt) | PC.TMetaType(_,clt)
-  | PC.TMetaStm(_,clt) | PC.TMetaStmList(_,clt)
+  | PC.TMetaStm(_,clt) | PC.TMetaStmList(_,clt) | PC.TMetaErr(_,clt)
   | PC.TMetaFunc(_,clt) | PC.TMetaLocalFunc(_,clt) -> split t clt
   | PC.TArobArob -> ([t],[t])
 

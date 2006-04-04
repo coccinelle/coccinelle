@@ -88,6 +88,7 @@ let rec expression = function
   | Ast.Cast(lp,ty,rp,exp) ->
       (mcode lp) :: (typeC ty) @ (mcode rp) :: (expression exp)
   | Ast.MetaConst(name,ty) -> [mcode name]
+  | Ast.MetaErr(name) -> [mcode name]
   | Ast.MetaExpr(name,ty) -> [mcode name]
   | Ast.MetaExprList(name) -> [mcode name]
   | Ast.EComma(cm) -> [mcode cm]
@@ -195,6 +196,7 @@ let top_level = function
   | Ast.FILEINFO(old_file,new_file) -> [bad_mcode old_file; bad_mcode new_file]
   | Ast.FUNCTION(rule_elem_dots) -> dots rule_elem rule_elem_dots
   | Ast.CODE(rule_elem_dots) -> dots rule_elem rule_elem_dots
+  | Ast.ERRORWORDS(exps) -> make_bad (List.concat (List.map expression exps))
 
 let rule code = List.concat (List.map top_level code)
 

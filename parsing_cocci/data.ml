@@ -22,6 +22,9 @@ let add_paramlist_meta: (string -> unit) ref =
 let add_const_meta: (Ast0.fullType list option -> string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
+let add_err_meta: (string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta") 
+
 let add_exp_meta: (Ast0.fullType list option -> string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 

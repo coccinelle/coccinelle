@@ -6,6 +6,7 @@ struct IsdnCard card;
   card.irq_func = f
 
 @@
+fresh identifier mode_switch;
 @@
 
   f(...

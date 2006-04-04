@@ -33,7 +33,7 @@ statement S;
 @@
 
 - ret = usb_register_dev(E1, E2, E3);
-+ ret = usb_register_dev(fops, minor, E2, E3);
++ ret = usb_register_dev(fops_val, minor_val, E2, E3);
 - if (ret) {
 -   if (ret != -ENODEV) S
 -   ...

@@ -139,6 +139,7 @@ let rec expression = function
       print_between (function _ -> print_string ", ") true_fn
 	(function x -> typeC x; true) ty;
       print_string "*/"
+  | Ast.MetaErr(name) -> mcode print_string name
   | Ast.MetaExpr(name,None) -> mcode print_string name
   | Ast.MetaExpr(name,Some ty) ->
       mcode print_string name; print_string "/*";
@@ -393,6 +394,11 @@ let top_level = function
       dots force_newline (rule_elem "") not_brace rule_elem_dots; true
   | Ast.CODE(rule_elem_dots) ->
       dots force_newline (rule_elem "") not_brace rule_elem_dots; true
+  | Ast.ERRORWORDS(exps) ->
+      print_string "error words = [";
+      print_between (function _ -> print_string ", ") true_fn
+	(function x -> expression x; true) exps;
+      print_string "]"; true
 
 let rule = print_between force_newline true_fn top_level
 

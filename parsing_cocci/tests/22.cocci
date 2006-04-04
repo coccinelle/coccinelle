@@ -35,3 +35,8 @@ expression Y;
 
 - usb_rcvctrlpipe (X->pusb_dev, Y)
 + X->recv_ctrl_pipe
+
+@@
+@@
+
+error words = [usb_sndbulkpipe, usb_rcvbulkpipe, usb_sndctrlpipe, usb_rcvctrlpipe]
