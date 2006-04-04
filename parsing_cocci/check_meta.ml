@@ -100,7 +100,7 @@ let rec expression context table minus = function
       typeC table minus ty; expression ID table minus exp
   | Ast0.MetaConst(name,ty) -> if minus then check_table table minus name
   | Ast0.MetaExpr(name,ty)  -> if minus then check_table table minus name
-  | Ast0.MetaErr(name)      -> if minus then check_table table minus name
+  | Ast0.MetaErr(name)      -> check_table table minus name
   | Ast0.MetaExprList(name) -> if minus then check_table table minus name
   | Ast0.DisjExpr(exps) ->
       List.iter (expression ID table minus) exps
@@ -232,14 +232,14 @@ let check_meta metavars minus plus =
     List.partition (function Ast.MetaFreshIdDecl(_,_) -> true | _ -> false)
       metavars in
   let (err,other) =
-    List.partition (function Ast.MetaErrDecl(_,_) -> Printf.fprintf stderr "found an err\n"; true | _ -> false)
+    List.partition (function Ast.MetaErrDecl(_,_) -> true | _ -> false)
       metavars in
   let fresh_table = make_table fresh in
-  let err_table   = make_table err in
+  let err_table = make_table err in
   let other_table = make_table other in
   add_to_fresh_table fresh;
   rule [other_table;err_table] true minus;
   check_all_marked "metavariable" other_table;
   rule [fresh_table;err_table] false plus;
   check_all_marked "fresh identifier metavariable" fresh_table;
-  check_all_marked "error metavariable" err_table;
+  check_all_marked "error metavariable" err_table

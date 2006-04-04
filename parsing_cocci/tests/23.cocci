@@ -1,7 +1,7 @@
 @@
 expression X, Y, E;
 identifier field;
-error erry;
+error err;
 @@
 
 - Y = init_etherdev(NULL,X);
@@ -10,11 +10,11 @@ error erry;
   Y.field = E;
 + if (!register_netdev(Y)) {
 +   kfree(Y);
-+   return erry;
++   return err;
 + }
 
 @@
-error errx;
+error err;
 @@
 
   Y = alloc_etherdev(X);
@@ -23,7 +23,9 @@ error errx;
     ...
 -   unregister_netdev(Y)
     ...
-    return errx;
+    return err;
   }
   ...>
+  ...
   register_netdev(Y)
+  ...
