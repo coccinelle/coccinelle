@@ -1,6 +1,16 @@
 /* simple example */
 static void f() {
 
+  /*
+  while(1) {
+    while1();
+  insidewhile: 
+    insidewhile();
+  }
+  goto insidewhile;
+  */
+  
+
   switch(3) {
   case 1: switch1();
   case 2: switch2(); break;
@@ -10,12 +20,15 @@ static void f() {
     goto error;
   }
 
+
   while(1) {
     foowhile();
     if(1) { break; }
     foowhile2();
     
   }
+
+
 
   for(i=1; i<3; i++) {
     foofor();
@@ -32,7 +45,6 @@ static void f() {
   }
 
 
-
   if(g(h(3))) {
     fooif();
     x = 1;
@@ -46,19 +58,20 @@ static void f() {
   foobar();
   while(1) {
     foowhile();
-    
   }
+
+
   if(1) {
     return 3;
   }
   
+
   do {
     foodowhile();
-    // goto out:
+    goto out;
    
   } while(1);
   
-
 
 out:
   fooout();

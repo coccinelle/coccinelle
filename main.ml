@@ -216,7 +216,7 @@ let foo xs =
 
                                         let cflow = 
                                           (try 
-                                            Control_flow_c.build_control_flow deffunc
+                                            Control_flow_c.ast_to_control_flow deffunc
                                           with 
                                           | Control_flow_c.DeadCode None      -> 
                                               pr2 "DEADCODE DETECTED, but cant trace back the place. perhaps because of iffdef"; 

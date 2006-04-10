@@ -19,7 +19,7 @@ let tokinfo lexbuf  =
     str     = tok lexbuf  
   },()
 
-let tok_add_s s info = raise Todo
+let tok_add_s s (info,()) = {info with str = info.str ^ s}, ()
 
 }
 

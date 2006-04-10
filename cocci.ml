@@ -43,14 +43,14 @@ let (cocci_grep: Ast_cocci.rule_with_metavars list ->   string list -> Ast_c.pro
 
               let cflow = 
                 (try 
-                  Control_flow_c.build_control_flow deffunc
+                  Control_flow_c.ast_to_control_flow deffunc
                 with 
                 | Control_flow_c.DeadCode None      -> failwith "deadcode detected, but cant trace back the place"
                 | Control_flow_c.DeadCode Some info -> failwith ("deadcode detected: " ^ (Common.error_message filename ("", info.charpos) ))
                 ) in
 
 
-(*              let _ = Control_flow_c.print_control_flow cflow in  *)
+              let _ = Control_flow_c.print_control_flow cflow in  
 
               match toplevel with
               | A.FUNCTION (A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs) 
