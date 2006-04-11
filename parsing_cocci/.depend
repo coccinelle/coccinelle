@@ -1,4 +1,5 @@
-arity.cmi: ast_cocci.cmo ast0_cocci.cmo 
+arity.cmi: ast0_cocci.cmo 
+ast0toast.cmi: ast_cocci.cmo ast0_cocci.cmo 
 check_meta.cmi: ast_cocci.cmo ast0_cocci.cmo 
 data.cmi: ast0_cocci.cmo 
 merge.cmi: ast_cocci.cmo ast0_cocci.cmo 
@@ -11,8 +12,10 @@ arity.cmo: ast_cocci.cmo ast0_cocci.cmo arity.cmi
 arity.cmx: ast_cocci.cmx ast0_cocci.cmx arity.cmi 
 ast0_cocci.cmo: ast_cocci.cmo 
 ast0_cocci.cmx: ast_cocci.cmx 
-ast0toast.cmo: ast_cocci.cmo ast0_cocci.cmo 
-ast0toast.cmx: ast_cocci.cmx ast0_cocci.cmx 
+ast0toast.cmo: ast_cocci.cmo ast0_cocci.cmo ast0toast.cmi 
+ast0toast.cmx: ast_cocci.cmx ast0_cocci.cmx ast0toast.cmi 
+ast0toctl.cmo: ast_cocci.cmo ast0_cocci.cmo 
+ast0toctl.cmx: ast_cocci.cmx ast0_cocci.cmx 
 check_meta.cmo: ast_cocci.cmo ast0_cocci.cmo check_meta.cmi 
 check_meta.cmx: ast_cocci.cmx ast0_cocci.cmx check_meta.cmi 
 data.cmo: ast0_cocci.cmo data.cmi 
@@ -27,7 +30,7 @@ merge.cmo: ast_cocci.cmo ast0_cocci.cmo merge.cmi
 merge.cmx: ast_cocci.cmx ast0_cocci.cmx merge.cmi 
 parse_cocci.cmo: unparse_cocci.cmi semantic_cocci.cmo plus.cmi \
     parser_cocci.cmi merge.cmi lexer_cocci.cmo data.cmi ../commons/common.cmi \
-    check_meta.cmi ast0toast.cmo arity.cmi parse_cocci.cmi 
+    check_meta.cmi ast0toast.cmi arity.cmi parse_cocci.cmi 
 parse_cocci.cmx: unparse_cocci.cmx semantic_cocci.cmx plus.cmx \
     parser_cocci.cmx merge.cmx lexer_cocci.cmx data.cmx ../commons/common.cmx \
     check_meta.cmx ast0toast.cmx arity.cmx parse_cocci.cmi 
