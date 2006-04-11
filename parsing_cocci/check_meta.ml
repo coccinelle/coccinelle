@@ -19,7 +19,8 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus (name,_,_,rl,_) =
+let check_table table minus (name,_,mcodekind) =
+  let rl = Ast.get_real_line mcodekind in
   if minus
   then
     (try (find_loop table name) := true
@@ -55,7 +56,8 @@ let is_ifdef name =
   String.length name > 2 && String.uppercase name = name
 
 let ident context table minus = function
-    Ast0.Id(name,_,_,rl,_) ->
+    Ast0.Id(name,_,mcodekind) ->
+      let rl = Ast.get_real_line mcodekind in
       (match context with
 	ID ->
 	  if not (is_ifdef name)
@@ -66,6 +68,8 @@ let ident context table minus = function
   | Ast0.MetaId(name) -> check_table table minus name
   | Ast0.MetaFunc(name) -> if minus then check_table table minus name
   | Ast0.MetaLocalFunc(name) -> if minus then check_table table minus name
+  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
+      failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -130,6 +134,8 @@ let declaration context table minus = function
       ident context table minus id; expression ID table minus exp
   | Ast0.UnInit(ty,id,sem) ->
       typeC table minus ty; ident context table minus id
+  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
+      failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -176,7 +182,7 @@ let rec statement table minus = function
       ident FN table minus name;
       parameter_list table minus params;
       dots (statement table minus) body
-  | _ -> () (* no metavariabl subterms *)
+  | _ -> () (* no metavariable subterms *)
 
 (* --------------------------------------------------------------------- *)
 (* Rules *)
@@ -210,7 +216,7 @@ let metavar2name = function
 let make_table l =
   let table = (Hashtbl.create(List.length l) : (string, bool ref) Hashtbl.t) in
   List.iter
-    (function x -> Printf.printf "adding %s\n" (metavar2name x);Hashtbl.add table (metavar2name x) (ref false)) l;
+    (function x -> Hashtbl.add table (metavar2name x) (ref false)) l;
   table
 
 let add_to_fresh_table l =
@@ -223,7 +229,6 @@ let check_all_marked err table =
   Hashtbl.iter
     (function name ->
       function (cell) ->
-	Printf.printf "considering %s\n" name;
 	if not (!cell)
 	then failwith (Printf.sprintf "%s %s not used" err name))
     table
@@ -235,11 +240,9 @@ let check_meta metavars minus plus =
   let (err,other) =
     List.partition (function Ast.MetaErrDecl(_,_) -> true | _ -> false)
       metavars in
-  Printf.printf "other %d err %d\n" (List.length other) (List.length err);
   let fresh_table = make_table fresh in
   let err_table = make_table err in
   let other_table = make_table other in
-  Printf.printf "made tables\n";
   add_to_fresh_table fresh;
   rule [other_table;err_table] true minus;
   check_all_marked "metavariable" other_table;

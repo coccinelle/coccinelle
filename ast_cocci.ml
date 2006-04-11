@@ -267,3 +267,14 @@ and anything =
   | ValueQualifTag      of value_qualif
   | Token               of string
   | Code                of top_level
+
+
+let get_real_line = function
+    MINUS(info,_) -> info.line
+  | PLUS(info) -> info.line
+  | CONTEXT(info,_) -> info.line
+
+let get_logical_line = function
+    MINUS(info,_) -> info.logical_line
+  | PLUS(info) -> info.logical_line
+  | CONTEXT(info,_) -> info.logical_line

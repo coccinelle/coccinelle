@@ -422,7 +422,6 @@ let parse file =
 	  (parse_one PC.main file minus_tokens,
 	   parse_one PC.main file plus_tokens) in
 	Check_meta.check_meta metavars minus_res plus_res;
-
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop () in
@@ -442,9 +441,10 @@ let process file verbose =
       (function (minus, metavars) ->
 	function (plus, metavars) ->
 	  let minus = Arity.minus_arity minus in
-	  let plus = Arity.plus_arity plus in
+	  let plus = Ast0toast.ast0toast plus in
 	  let replus = Plus.plus plus in
 	  Merge.do_merge minus replus;
+	  let minus = Ast0toast.ast0toast minus in
 	  if verbose then Unparse_cocci.unparse minus;
 	  (metavars, minus)
       )

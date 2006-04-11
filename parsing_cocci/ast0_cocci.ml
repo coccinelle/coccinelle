@@ -3,11 +3,9 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type line_type = CONTEXT | MINUS | PLUS
 type arity = OPT | UNIQUE | MULTI | NONE
 
-type 'a mcode =
-    'a * line_type * arity * int (* real_line *) * int (* logical_line *)
+type 'a mcode = 'a * arity * Ast.mcodekind
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -26,6 +24,10 @@ type ident =
   | MetaId of string mcode
   | MetaFunc of string mcode
   | MetaLocalFunc of string mcode
+  | OptIdent      of ident
+  | UniqueIdent   of ident
+  | MultiIdent    of ident (* only allowed in nests *)
+
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -60,6 +62,9 @@ type expression =
   | Edots          of string mcode (* ... *) * expression option
   | Ecircles       of string mcode (* ooo *) * expression option
   | Estars         of string mcode (* *** *) * expression option
+  | OptExp         of expression
+  | UniqueExp      of expression
+  | MultiExp       of expression (* only allowed in nests *)
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -73,6 +78,9 @@ and typeC =
   | StructUnionName of tagged_string * Ast.structUnion mcode
   | TypeName        of string mcode
   | MetaType        of string mcode
+  | OptType         of typeC
+  | UniqueType      of typeC
+  | MultiType       of typeC
 
 and tagged_string = string mcode
 
@@ -85,6 +93,9 @@ type declaration =
     Init of fullType * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
+  | OptDecl    of declaration
+  | UniqueDecl of declaration
+  | MultiDecl  of declaration (* only allowed in nests *)
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -97,6 +108,8 @@ type parameterTypeDef =
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
+  | OptParam      of parameterTypeDef
+  | UniqueParam   of parameterTypeDef
 
 and parameter_list = parameterTypeDef dots
 
@@ -140,6 +153,9 @@ type statement =
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
+  | OptStm   of statement
+  | UniqueStm of statement
+  | MultiStm  of statement (* only allowed in nests *)
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

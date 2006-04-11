@@ -24,23 +24,31 @@ let clt2info (_,line,logical_line) = make_info line logical_line
 
 let clt2mcode str = function
     (Data.MINUS,line,lline)       ->
-      (str,Ast0.MINUS,Ast0.NONE,line,lline)
+      (str,Ast0.NONE,
+       (Ast.MINUS({Ast.line=line;Ast.logical_line=lline},ref[])))
   | (Data.OPTMINUS,line,lline)    ->
-      (str,Ast0.MINUS,Ast0.OPT,line,lline)
+      (str,Ast0.OPT,
+       (Ast.MINUS({Ast.line=line;Ast.logical_line=lline},ref[])))
   | (Data.UNIQUEMINUS,line,lline) ->
-      (str,Ast0.MINUS,Ast0.UNIQUE,line,lline)
+      (str,Ast0.UNIQUE,
+       (Ast.MINUS({Ast.line=line;Ast.logical_line=lline},ref[])))
   | (Data.MULTIMINUS,line,lline) ->
-      (str,Ast0.MINUS,Ast0.MULTI,line,lline)
+      (str,Ast0.MULTI,
+       (Ast.MINUS({Ast.line=line;Ast.logical_line=lline},ref[])))
   | (Data.PLUS,line,lline)        ->
-      (str,Ast0.PLUS,Ast0.NONE,line,lline)
+      (str,Ast0.NONE,Ast.PLUS({Ast.line=line;Ast.logical_line=lline}))
   | (Data.CONTEXT,line,lline)     ->
-      (str,Ast0.CONTEXT,Ast0.NONE,line,lline)
+      (str,Ast0.NONE,
+       Ast.CONTEXT({Ast.line=line;Ast.logical_line=lline},ref Ast.NOTHING))
   | (Data.OPT,line,lline)         ->
-      (str,Ast0.CONTEXT,Ast0.OPT,line,lline)
+      (str,Ast0.OPT,
+       Ast.CONTEXT({Ast.line=line;Ast.logical_line=lline},ref Ast.NOTHING))
   | (Data.UNIQUE,line,lline)      ->
-      (str,Ast0.CONTEXT,Ast0.UNIQUE,line,lline)
+      (str,Ast0.UNIQUE,
+       Ast.CONTEXT({Ast.line=line;Ast.logical_line=lline},ref Ast.NOTHING))
   | (Data.MULTI,line,lline)      ->
-      (str,Ast0.CONTEXT,Ast0.MULTI,line,lline)
+      (str,Ast0.MULTI,
+       Ast.CONTEXT({Ast.line=line;Ast.logical_line=lline},ref Ast.NOTHING))
 
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt

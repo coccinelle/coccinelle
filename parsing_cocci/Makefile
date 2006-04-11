@@ -1,6 +1,6 @@
 # Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
 
-SOURCES = ast_cocci.ml ast0_cocci.ml top_level.ml check_meta.ml \
+SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
 lexer_cocci.mll parser_cocci.mly parse_cocci.ml 
@@ -17,8 +17,8 @@ LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
 GENERATED= parser_cocci.ml parser_cocci.mli lexer_cocci.ml
-OBJS = ast_cocci.cmo ast0_cocci.cmo top_level.cmo check_meta.cmo \
-unparse_cocci.cmo arity.cmo \
+OBJS = ast_cocci.cmo ast0_cocci.cmo ast0toast.cmo top_level.cmo \
+check_meta.cmo unparse_cocci.cmo arity.cmo \
 plus.cmo merge.cmo semantic_cocci.cmo data.cmo lexer_cocci.cmo \
 parser_cocci.cmo parse_cocci.cmo 
 OPTOBJS = $(OBJS:.cmo=.cmx)

@@ -7,6 +7,7 @@ plus.ml as well.  This problem is dealt with by the logical line field,
 which is not incremented for blank lines. *)
 
 module Ast = Ast_cocci
+module Ast0 = Ast0_cocci
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -18,13 +19,13 @@ type position =
   | Bad of Ast.info
 
 let mcode = function
-    _,Ast.MINUS(info,plus_stream) -> Minus (info,plus_stream)
-  | _,Ast.CONTEXT(info,plus_stream) -> Context (info,plus_stream)
+    (_,_,Ast.MINUS(info,plus_stream)) -> Minus (info,plus_stream)
+  | (_,_,Ast.CONTEXT(info,plus_stream)) -> Context (info,plus_stream)
   | _ -> failwith "not possible 1"
 
 let bad_mcode = function
-    _,Ast.MINUS(info,plus_stream) -> Bad(info)
-  | _,Ast.CONTEXT(info,plus_stream) -> Bad(info)
+    (_,_,Ast.MINUS(info,plus_stream)) -> Bad(info)
+  | (_,_,Ast.CONTEXT(info,plus_stream)) -> Bad(info)
   | _ -> failwith "not possible 2"
 
 let make_bad l =
@@ -44,81 +45,81 @@ let get_option fn x =
 (* Dots *)
 
 let dots fn = function
-    Ast.DOTS(l) -> List.concat (List.map fn l)
-  | Ast.CIRCLES(l) -> List.concat (List.map fn l)
-  | Ast.STARS(l) -> List.concat (List.map fn l)
+    Ast0.DOTS(l) -> List.concat (List.map fn l)
+  | Ast0.CIRCLES(l) -> List.concat (List.map fn l)
+  | Ast0.STARS(l) -> List.concat (List.map fn l)
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let rec ident = function
-    Ast.Id(name) -> [mcode name]
-  | Ast.MetaId(name) -> [mcode name]
-  | Ast.MetaFunc(name) -> [mcode name]
-  | Ast.MetaLocalFunc(name) -> [mcode name]
-  | Ast.OptIdent(id) -> ident id
-  | Ast.UniqueIdent(id) -> ident id
-  | Ast.MultiIdent(id) -> ident id
+    Ast0.Id(name) -> [mcode name]
+  | Ast0.MetaId(name) -> [mcode name]
+  | Ast0.MetaFunc(name) -> [mcode name]
+  | Ast0.MetaLocalFunc(name) -> [mcode name]
+  | Ast0.OptIdent(id) -> ident id
+  | Ast0.UniqueIdent(id) -> ident id
+  | Ast0.MultiIdent(id) -> ident id
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
 let rec expression = function
-    Ast.Ident(id) -> ident id
-  | Ast.Constant(const) -> [mcode const]
-  | Ast.FunCall(fn,lp,args,rp) ->
+    Ast0.Ident(id) -> ident id
+  | Ast0.Constant(const) -> [mcode const]
+  | Ast0.FunCall(fn,lp,args,rp) ->
       (expression fn) @ (mcode lp) :: (dots expression args) @ [mcode rp]
-  | Ast.Assignment(left,op,right) ->
+  | Ast0.Assignment(left,op,right) ->
       (expression left) @ (mcode op) :: (expression right)
-  | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
+  | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       (expression exp1) @ (mcode why) :: (get_option expression exp2) @
       (mcode colon) :: (expression exp3)
-  | Ast.Postfix(exp,op) -> (expression exp) @ [mcode op]
-  | Ast.Infix(exp,op) -> (mcode op) :: (expression exp)
-  | Ast.Unary(exp,op) -> (mcode op) :: (expression exp)
-  | Ast.Binary(left,op,right) ->
+  | Ast0.Postfix(exp,op) -> (expression exp) @ [mcode op]
+  | Ast0.Infix(exp,op) -> (mcode op) :: (expression exp)
+  | Ast0.Unary(exp,op) -> (mcode op) :: (expression exp)
+  | Ast0.Binary(left,op,right) ->
       (expression left) @ [mcode op] @ (expression right)
-  | Ast.Paren(lp,exp,rp) -> (mcode lp) :: (expression exp) @ [mcode rp]
-  | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
+  | Ast0.Paren(lp,exp,rp) -> (mcode lp) :: (expression exp) @ [mcode rp]
+  | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
       (expression exp1) @ (mcode lb) :: (expression exp2) @ [mcode rb]
-  | Ast.RecordAccess(exp,pt,field) ->
+  | Ast0.RecordAccess(exp,pt,field) ->
       (expression exp) @ (mcode pt) :: (ident field)
-  | Ast.RecordPtAccess(exp,ar,field) ->
+  | Ast0.RecordPtAccess(exp,ar,field) ->
       (expression exp) @ (mcode ar) :: (ident field)
-  | Ast.Cast(lp,ty,rp,exp) ->
+  | Ast0.Cast(lp,ty,rp,exp) ->
       (mcode lp) :: (typeC ty) @ (mcode rp) :: (expression exp)
-  | Ast.MetaConst(name,ty) -> [mcode name]
-  | Ast.MetaErr(name) -> [mcode name]
-  | Ast.MetaExpr(name,ty) -> [mcode name]
-  | Ast.MetaExprList(name) -> [mcode name]
-  | Ast.EComma(cm) -> [mcode cm]
-  | Ast.DisjExpr(expr_dots_list) ->
+  | Ast0.MetaConst(name,ty) -> [mcode name]
+  | Ast0.MetaErr(name) -> [mcode name]
+  | Ast0.MetaExpr(name,ty) -> [mcode name]
+  | Ast0.MetaExprList(name) -> [mcode name]
+  | Ast0.EComma(cm) -> [mcode cm]
+  | Ast0.DisjExpr(expr_dots_list) ->
       List.concat (List.map expression expr_dots_list)
-  | Ast.NestExpr(expr_dots) -> dots expression expr_dots
-  | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
-  | Ast.Estars(dots,whencode) ->
+  | Ast0.NestExpr(expr_dots) -> dots expression expr_dots
+  | Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
+  | Ast0.Estars(dots,whencode) ->
       (bad_mcode dots) ::
       (get_option (function x -> make_bad(expression x)) whencode)
-  | Ast.OptExp(exp) -> expression exp
-  | Ast.UniqueExp(exp) -> expression exp
-  | Ast.MultiExp(exp) -> expression exp
+  | Ast0.OptExp(exp) -> expression exp
+  | Ast0.UniqueExp(exp) -> expression exp
+  | Ast0.MultiExp(exp) -> expression exp
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
 and typeC ty =
   match ty with
-    Ast.BaseType(ty,Some sign) -> [mcode sign;mcode ty]
-  | Ast.BaseType(ty,None) -> [mcode ty]
-  | Ast.Pointer(ty,star) -> (typeC ty) @ [mcode star]
-  | Ast.Array(ty,lb,size,rb) ->
+    Ast0.BaseType(ty,Some sign) -> [mcode sign;mcode ty]
+  | Ast0.BaseType(ty,None) -> [mcode ty]
+  | Ast0.Pointer(ty,star) -> (typeC ty) @ [mcode star]
+  | Ast0.Array(ty,lb,size,rb) ->
       (typeC ty) @ (mcode lb) :: (get_option expression size) @ [mcode rb]
-  | Ast.StructUnionName(name,kind) -> [mcode name;mcode kind]
-  | Ast.TypeName(name) -> [mcode name]
-  | Ast.MetaType(name) -> [mcode name]
-  | Ast.OptType(ty) -> typeC ty
-  | Ast.UniqueType(ty) -> typeC ty
-  | Ast.MultiType(ty) -> typeC ty
+  | Ast0.StructUnionName(name,kind) -> [mcode name;mcode kind]
+  | Ast0.TypeName(name) -> [mcode name]
+  | Ast0.MetaType(name) -> [mcode name]
+  | Ast0.OptType(ty) -> typeC ty
+  | Ast0.UniqueType(ty) -> typeC ty
+  | Ast0.MultiType(ty) -> typeC ty
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -126,77 +127,83 @@ and typeC ty =
    split out into multiple declarations of a single variable each. *)
 
 let rec declaration = function
-    Ast.Init(ty,id,eq,exp,sem) ->
+    Ast0.Init(ty,id,eq,exp,sem) ->
       (typeC ty) @ (ident id) @ (mcode eq) :: (expression exp) @ [mcode sem]
-  | Ast.UnInit(ty,id,sem) ->
+  | Ast0.UnInit(ty,id,sem) ->
       (typeC ty) @ (ident id) @ [mcode sem]
-  | Ast.OptDecl(decl) -> declaration decl
-  | Ast.UniqueDecl(decl) -> declaration decl
-  | Ast.MultiDecl(decl) -> declaration decl
+  | Ast0.OptDecl(decl) -> declaration decl
+  | Ast0.UniqueDecl(decl) -> declaration decl
+  | Ast0.MultiDecl(decl) -> declaration decl
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
 let rec parameterTypeDef = function
-    Ast.VoidParam(ty) -> typeC ty
-  | Ast.Param(id,None,ty) -> (typeC ty) @ (ident id)
-  | Ast.Param(id,Some vs,ty) -> (typeC ty) @ (mcode vs) :: (ident id)
-  | Ast.MetaParam(name) -> [mcode name]
-  | Ast.MetaParamList(name) -> [mcode name]
-  | Ast.PComma(cm) -> [mcode cm]
-  | Ast.Pdots(dots) -> [bad_mcode dots]
-  | Ast.Pcircles(dots) -> [bad_mcode dots]
-  | Ast.OptParam(param) -> parameterTypeDef param
-  | Ast.UniqueParam(param) -> parameterTypeDef param
+    Ast0.VoidParam(ty) -> typeC ty
+  | Ast0.Param(id,None,ty) -> (typeC ty) @ (ident id)
+  | Ast0.Param(id,Some vs,ty) -> (typeC ty) @ (mcode vs) :: (ident id)
+  | Ast0.MetaParam(name) -> [mcode name]
+  | Ast0.MetaParamList(name) -> [mcode name]
+  | Ast0.PComma(cm) -> [mcode cm]
+  | Ast0.Pdots(dots) -> [bad_mcode dots]
+  | Ast0.Pcircles(dots) -> [bad_mcode dots]
+  | Ast0.OptParam(param) -> parameterTypeDef param
+  | Ast0.UniqueParam(param) -> parameterTypeDef param
 
 let parameter_list = dots parameterTypeDef
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec rule_elem = function
-    Ast.FunDecl(stg,name,lp,params,rp) ->
+let rec statement = function
+    Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
       (get_option (function x -> [mcode x]) stg) @ (ident name) @ (mcode lp) ::
-      (parameter_list params) @ [mcode rp]
-  | Ast.Decl(decl) -> declaration decl
-  | Ast.SeqStart(brace) -> [mcode brace]
-  | Ast.SeqEnd(brace) -> [mcode brace]
-  | Ast.ExprStatement(exp,sem) -> (expression exp) @ [mcode sem]
-  | Ast.IfHeader(iff,lp,exp,rp) ->
+      (parameter_list params) @ [mcode rp; mcode lbrace] @
+      (dots statement body) @ [mcode lbrace]
+  | Ast0.Decl(decl) -> declaration decl
+  | Ast0.Seq(lbrace,body,rbrace) ->
+      [mcode lbrace] @ (dots statement body) @ [mcode rbrace]
+  | Ast0.ExprStatement(exp,sem) -> (expression exp) @ [mcode sem]
+  | Ast0.IfThen(iff,lp,exp,rp,branch1) ->
       [mcode iff; mcode lp] @ (expression exp) @ [mcode rp]
-  | Ast.Else(els) -> [mcode els]
-  | Ast.WhileHeader(whl,lp,exp,rp) ->
-      [mcode whl; mcode lp] @ (expression exp) @ [mcode rp]
-  | Ast.Do(d) -> [mcode d]
-  | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-      [mcode whl; mcode lp] @ (expression exp) @ [mcode rp;mcode sem]
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+      @ (statement branch1)
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      [mcode iff; mcode lp] @ (expression exp) @ [mcode rp]
+      @ (statement branch1) @ [mcode els] @ (statement branch2)
+  | Ast0.While(whl,lp,exp,rp,body) ->
+      [mcode whl; mcode lp] @ (expression exp) @ [mcode rp] @ (statement body)
+  | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
+      [mcode d] @ (statement body) @
+	[mcode whl; mcode lp] @ (expression exp) @ [mcode rp;mcode sem]
+  | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body) ->
       [mcode fr; mcode lp] @ (get_option expression e1) @ (mcode sem1) ::
       (get_option expression e2) @ (mcode sem2) :: (get_option expression e3) @
-      [mcode rp]
-  | Ast.Return(ret,sem) -> [mcode ret; mcode sem]
-  | Ast.ReturnExpr(ret,exp,sem) ->
+      [mcode rp] @ (statement body)
+  | Ast0.Return(ret,sem) -> [mcode ret; mcode sem]
+  | Ast0.ReturnExpr(ret,exp,sem) ->
       (mcode ret) :: (expression exp) @ [mcode sem]
-  | Ast.MetaStmt(name) -> [mcode name]
-  | Ast.MetaStmtList(name) -> [mcode name]
-  | Ast.Disj(rule_elem_dots_list) ->
-      List.concat (List.map (dots rule_elem) rule_elem_dots_list)
-  | Ast.Nest(rule_elem_dots) -> dots rule_elem rule_elem_dots
-  | Ast.Exp(exp) -> expression exp
-  | Ast.Dots(d,whencode) | Ast.Circles(d,whencode) | Ast.Stars(d,whencode) ->
+  | Ast0.MetaStmt(name) -> [mcode name]
+  | Ast0.MetaStmtList(name) -> [mcode name]
+  | Ast0.Disj(statement_dots_list) ->
+      List.concat (List.map (dots statement) statement_dots_list)
+  | Ast0.Nest(statement_dots) -> dots statement statement_dots
+  | Ast0.Exp(exp) -> expression exp
+  | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
+  | Ast0.Stars(d,whencode) ->
       (bad_mcode d) ::
-      (get_option (function x -> make_bad(dots rule_elem x)) whencode)
-  | Ast.OptRuleElem(re) -> List.concat (List.map rule_elem re)
-  | Ast.UniqueRuleElem(re) -> List.concat (List.map rule_elem re)
-  | Ast.MultiRuleElem(re) -> List.concat (List.map rule_elem re)
+      (get_option (function x -> make_bad(dots statement x)) whencode)
+  | Ast0.OptStm(re) -> statement re
+  | Ast0.UniqueStm(re) -> statement re
+  | Ast0.MultiStm(re) -> statement re
 
 let top_level = function
-    Ast.DECL(decl) -> declaration decl
-  | Ast.INCLUDE(inc,name) -> [mcode inc;mcode name]
-  | Ast.FILEINFO(old_file,new_file) -> [bad_mcode old_file; bad_mcode new_file]
-  | Ast.FUNCTION(rule_elem_dots) -> dots rule_elem rule_elem_dots
-  | Ast.CODE(rule_elem_dots) -> dots rule_elem rule_elem_dots
-  | Ast.ERRORWORDS(exps) -> make_bad (List.concat (List.map expression exps))
+    Ast0.DECL(decl) -> declaration decl
+  | Ast0.INCLUDE(inc,name) -> [mcode inc;mcode name]
+  | Ast0.FILEINFO(old_file,new_file) -> [bad_mcode old_file; bad_mcode new_file]
+  | Ast0.FUNCTION(statement_dots) -> statement statement_dots
+  | Ast0.CODE(statement_dots) -> dots statement statement_dots
+  | Ast0.ERRORWORDS(exps) -> make_bad (List.concat (List.map expression exps))
+  | Ast0.OTHER(_) -> failwith "unexpected code"
 
 let rule code = List.concat (List.map top_level code)
 
