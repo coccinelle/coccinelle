@@ -1,5 +1,8 @@
 open Commonop open Common
 
+(********************************************************************************)
+(********************************************************************************)
+
 (*------------------------------------------------------------------------------*)
 (*
  note: deadCode detection
@@ -27,7 +30,7 @@ open Commonop open Common
    have to add some nodes in the graph.
   as for special_cfg_ast, normally not needed by a normal compiler.
   done: return,  break/continue (for while/for/dowhile/if),  break/continue  (for switch), 
- todo?: goto,  compute target level (but rare that different I think)
+  todo?: goto,  compute target level (but rare that different I think)
         ver1: just do init,  
         ver2: compute depth of label (easy, intercept compound in the visitor)
 
@@ -84,8 +87,9 @@ and node1 =
      kind of "brace_identifier". 
      used mostly for debugging or for checks.
   *)
-  | StartBrace of int
+  | StartBrace of int * statement (* special_cfg_ast *)
   | EndBrace   of int
+
 
 type edge = 
   | Direct
@@ -100,9 +104,34 @@ exception CaseNoSwitch      of (Common.parse_info)
 exception OnlyBreakInSwitch of (Common.parse_info)
 exception NoEnclosingLoop   of (Common.parse_info)
 
-type nodei = int
-(* type depthi = Depth of int*) (* obsolete: *)
 
+type nodei = int
+
+
+
+(*------------------------------------------------------------------------------*)
+let get_next_node g nodei = 
+    (match (g#successors nodei)#tolist with
+    | [nexti, Direct] -> nexti,  g#nodes#find nexti
+    | x -> error_cant_have x
+    ) 
+
+let get_next_2node g nodei = 
+    (match (g#successors nodei)#tolist with
+    | [nexti, ChoiceTrue; nexti2, ChoiceFalse] -> (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
+    | [nexti, ChoiceFalse; nexti2, ChoiceTrue] -> (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
+    | x -> error_cant_have x
+    ) 
+
+let get_first_node g () = 
+    let starti = g#nodes#tolist +> List.find (fun (i, (node, nodes)) -> 
+    match node with HeadFunc _ -> true | _ -> false
+    ) +> fst 
+    in
+    starti 
+
+(********************************************************************************)
+(********************************************************************************)
 type additionnal_info = 
     additionnal_info2 * 
     nodei list (* special_cfg_braces: current imbrication depth (contain the must-close '}' ) *)
@@ -110,6 +139,8 @@ type additionnal_info =
   | NoInfo 
   | LoopInfo   of nodei * nodei (* start, end *) * nodei list         (* special_cfg_braces: *)
   | SwitchInfo of nodei * nodei (* start, end *) * nodei * nodei list (* special_cfg_braces: *)
+
+(* type depthi = Depth of int*) (* obsolete: *)
 
 (*------------------------------------------------------------------------------*)
 let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun funcdef ->
@@ -204,7 +235,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
         (* special_cfg_braces: *)
         let _ = incr counter in 
-        let newi = !g#add_node (StartBrace !counter, "{" ^ i_to_s !counter) +> adjust_g_i in
+        let newi = !g#add_node (StartBrace (!counter, statement), "{" ^ i_to_s !counter) +> adjust_g_i in
         let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
         let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
@@ -270,7 +301,14 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
 
         
-    | ExprStatement (None), ii -> starti
+    | ExprStatement (None), ii -> 
+        (* old: starti *)
+        (* special_cfg_ast: *)
+        let newi = !g#add_node (Statement (statement), ("emptyinstr;")) +> adjust_g_i in
+        attach_to_previous_node starti newi;
+        Some newi
+
+
     | ExprStatement (Some e), ii -> 
         let s = 
           (match e with
@@ -340,7 +378,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
          
                  (* special_cfg_braces: *)
                  let _ = incr counter in 
-                 let newi = !g#add_node (StartBrace !counter, "{" ^ i_to_s !counter) +> adjust_g_i in
+                 let newi = !g#add_node (StartBrace (!counter, statement), "{" ^ i_to_s !counter) +> adjust_g_i in
                  let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
                  let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
@@ -546,11 +584,6 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
            let newi = special_cfg_insert_all_braces (snd auxinfo) newi in
 
-           (* old:
-          (match starti with None -> () | Some starti -> 
-            !g#add_arc ((starti, exiti), Direct) +> adjust_g);
-           *)
-
            !g#add_arc ((newi, exiti), Direct) +> adjust_g;
            None
 
@@ -562,6 +595,13 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
            !g#add_arc ((newi, exiti), Direct) +> adjust_g;
            None
+
+           (* old:
+             (match starti with None -> () | Some starti -> 
+            !g#add_arc ((starti, exiti), Direct) +> adjust_g);
+           *)
+
+        
 
         
 (* todo:
@@ -598,8 +638,134 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
   !g
 
+(********************************************************************************)
+(********************************************************************************)
+
+(*------------------------------------------------------------------------------*)
+(*
+
+ statement, compound, 
+ return,
+ if, 
+ for, while, dowhile
+ break/continue
+ goto, labels
+ switch
+
+ todo: maintain a todo list of labels
+ if two todos, then ambiguity (can disambiguate some case by analysing and look if 
+   dependency, if one label  lead to another "naturally" (by a sequence of Direct without jump, in
+   a compound)
+
+*)
+
+(*------------------------------------------------------------------------------*)
+type returnkind = LastCurrentNode of nodei | NoNextNode
 
 
+(*------------------------------------------------------------------------------*)
+let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
+  
+  let nodes = g#nodes  in
+  let starti = get_first_node g () in
+
+(*  let visited = ref (new oassocb []) in *)
+
+
+  let funcdef =  match fst (nodes#find starti) with | HeadFunc funcdef -> funcdef  | _ -> raise Todo in
+  let (funcs, functype, sto, __compound, iifunc) = funcdef in
+
+
+  let rec (rebuild_compound: nodei -> (statement * returnkind)) = fun   starti ->
+    match nodes#find starti with
+    | (StartBrace (level, (Compound __st, ii)), s) -> 
+        (match get_next_node g starti with
+        | (nexti, st) -> 
+            let (compound, return) = rebuild_compound_instr_list  nexti level in
+            (Compound compound, ii),  return
+        )
+    | x -> error_cant_have x
+
+  and (rebuild_compound_instr_list: nodei -> int -> (compound * returnkind)) = fun starti level -> 
+    match nodes#find starti with
+    | (EndBrace level2, s) -> 
+        if level = level2 
+        then [], LastCurrentNode starti
+        else raise Todo
+(*    | (Declaration decl, s) -> *)
+    | x -> 
+        let (st, return) = rebuild_statement starti in
+        (match return with
+        | NoNextNode -> [Right st], return
+        | LastCurrentNode nodei -> 
+            let nexti = get_next_node g nodei +> fst in
+            let (compound, return) = rebuild_compound_instr_list nexti level in
+            Right st::compound, return
+        )
+        
+(*    | x -> error_cant_have x *)
+
+  and (rebuild_statement: nodei -> (statement * returnkind)) = fun starti -> 
+    match nodes#find starti with
+    | (Statement ((ExprStatement (None), ii) as st), s) -> 
+        st, LastCurrentNode starti
+    | (Statement ((ExprStatement (Some e), ii) as st), s) -> 
+        st, LastCurrentNode starti
+
+    | (Statement ((Jump (Return), ii) as st), s) -> 
+        st, NoNextNode
+    | (Statement ((Jump (ReturnExpr e), ii) as st), s) -> 
+        st, NoNextNode
+
+          
+    | (StartBrace (level,st), s) -> 
+        rebuild_compound starti
+
+    | (Statement (Selection  (If (e, __st1, __st2)), ii), s) -> 
+        let ((theni, nodethen), (elsei, nodeelse)) = get_next_2node g starti in
+
+        let (theni', fakethen) = get_next_node g theni in
+        let (elsei', fakeelse) = get_next_node g elsei in
+
+        let (st1, return1) = rebuild_statement theni' in
+        let (st2, return2) = rebuild_statement elsei' in
+        raise Todo
+
+
+    | x -> error_cant_have x
+          
+
+  in
+
+
+
+
+  let (topcompound, returnkind) = 
+    (match get_next_node g starti with
+    | (nexti,  (Enter, s)) -> 
+        (match get_next_node g nexti with
+        | (nextii, (StartBrace (level,st), _)) -> 
+            rebuild_compound nextii
+        | x -> error_cant_have x
+        );
+    | x -> error_cant_have x
+    ) 
+  in
+  (* todo?: assert stuff on returnkind ? normally lead to an exit node, or nothing *)
+
+  let topcompound2 = match topcompound with | (Compound st, ii) -> st  | x -> error_cant_have x in
+
+  (funcs, functype, sto, topcompound2, iifunc)
+ 
+
+    
+
+
+
+
+
+(*******************************************************************************)
+(*******************************************************************************)
 (*------------------------------------------------------------------------------*)
 let print_control_flow g = 
   with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
@@ -634,11 +800,9 @@ let print_control_flow g =
 let (check_control_flow: (node, edge) ograph_extended -> unit) = fun g ->
 
   let nodes = g#nodes  in
-  let starti = nodes#tolist +> List.find (fun (i, (node, nodes)) -> 
-    match node with HeadFunc _ -> true | _ -> false
-    ) +> fst 
-  in
-  
+  let starti = get_first_node g () in
+
+
   let visited = ref (new oassocb []) in
 
   let print_trace_error xs =  pr2 "PB with flow:";  pr2 (Dumper.dump xs);  (* assert false *)  in
@@ -671,7 +835,7 @@ let (check_control_flow: (node, edge) ograph_extended -> unit) = fun g ->
       *)
       let newdepth = 
         (match fst (nodes#find nodei),  startbraces with
-        | StartBrace i, xs  -> i::xs
+        | StartBrace (i,_), xs  -> i::xs
         | EndBrace i, j::xs -> 
             if i = j 
             then xs
@@ -708,6 +872,7 @@ let test statement =
   let g = ast_to_control_flow statement in
   check_control_flow g;
   print_control_flow g;
+  assert (statement = statement +> ast_to_control_flow +> control_flow_to_ast);
   pr2 "done";
   
 

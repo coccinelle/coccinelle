@@ -9,7 +9,8 @@ static void f() {
   }
   goto insidewhile;
   */
-  
+
+  /*  
 
   switch(3) {
   case 1: switch1();
@@ -45,6 +46,8 @@ static void f() {
   }
 
 
+  */
+  /*
   if(g(h(3))) {
     fooif();
     x = 1;
@@ -56,23 +59,28 @@ static void f() {
   }
   foobar();
   foobar();
+  */
+
+  /*
   while(1) {
     foowhile();
   }
+  */
 
 
   if(1) {
     return 3;
   }
   
-
+  /*
   do {
     foodowhile();
     goto out;
    
   } while(1);
-  
+  */
 
+  /*
 out:
   fooout();
 
@@ -85,6 +93,7 @@ last:
   foolast(TOTO, "toto\n");
 
   return; // was returning deadcode with first (buggy) version
+  */
 
 }
 
