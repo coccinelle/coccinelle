@@ -210,7 +210,7 @@ let metavar2name = function
 let make_table l =
   let table = (Hashtbl.create(List.length l) : (string, bool ref) Hashtbl.t) in
   List.iter
-    (function x -> Hashtbl.add table (metavar2name x) (ref false)) l;
+    (function x -> Printf.printf "adding %s\n" (metavar2name x);Hashtbl.add table (metavar2name x) (ref false)) l;
   table
 
 let add_to_fresh_table l =
@@ -223,6 +223,7 @@ let check_all_marked err table =
   Hashtbl.iter
     (function name ->
       function (cell) ->
+	Printf.printf "considering %s\n" name;
 	if not (!cell)
 	then failwith (Printf.sprintf "%s %s not used" err name))
     table
@@ -234,9 +235,11 @@ let check_meta metavars minus plus =
   let (err,other) =
     List.partition (function Ast.MetaErrDecl(_,_) -> true | _ -> false)
       metavars in
+  Printf.printf "other %d err %d\n" (List.length other) (List.length err);
   let fresh_table = make_table fresh in
   let err_table = make_table err in
   let other_table = make_table other in
+  Printf.printf "made tables\n";
   add_to_fresh_table fresh;
   rule [other_table;err_table] true minus;
   check_all_marked "metavariable" other_table;
