@@ -97,6 +97,7 @@ type edge =
   | ChoiceTrue
   | ChoiceFalse 
   (* todo: and with switch ? *)
+  | SpecialEdge
 
 
 exception DeadCode of (Common.parse_info option)
@@ -333,6 +334,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newfakethen = !g#add_node (Fake, "[then]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[else]") +> adjust_g_i in
         let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
+        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g;
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, auxinfo) st1 in
