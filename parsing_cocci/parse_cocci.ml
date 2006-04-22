@@ -431,10 +431,8 @@ let parse file =
   | (false,[(PC.TArobArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule"
 
-
-
 (* parse to ast0 and then convert to ast *)
-let process file verbose =
+let do_process file verbose =
   try
     let (minus,plus) = parse file in
     List.map2
@@ -444,9 +442,18 @@ let process file verbose =
 	  let plus = Ast0toast.ast0toast plus in
 	  let replus = Plus.plus plus in
 	  Merge.do_merge minus replus;
-	  let minus = Ast0toast.ast0toast minus in
-	  if verbose then Unparse_cocci.unparse minus;
-	  (metavars, minus)
+	  let minus_ast = Ast0toast.ast0toast minus in
+	  if verbose then Unparse_cocci.unparse minus_ast;
+	  ((metavars, minus_ast), minus)
       )
       minus plus
   with Failure s -> Printf.printf "%s" s; []
+
+let process file verbose =
+  let (old_info,new_info) = List.split(do_process file verbose) in
+  old_info
+
+let process_for_ctl file verbose =
+  let (old_info,new_info) = List.split(do_process file verbose) in
+  let (_,old_info) = List.split old_info in
+  List.combine old_info new_info

@@ -431,3 +431,35 @@ let unparse x =
   force_newline();
   rule x;
   force_newline()
+
+let rule_elem_to_string x =
+  let o = open_out "/tmp/out" in
+  Format.set_formatter_out_channel o;
+  let _ = rule_elem "" x in
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in "/tmp/out" in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  String.concat "\n" (List.rev !lines)
+
+let unparse_to_string x =
+  let o = open_out "/tmp/out" in
+  Format.set_formatter_out_channel o;
+  let _ = unparse x in
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in "/tmp/out" in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  String.concat "\n" (List.rev !lines)

@@ -4,7 +4,7 @@ SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
 lexer_cocci.mll parser_cocci.mly parse_cocci.ml 
-TARGET=parser
+TARGET=cocci_parser
 
 # The Caml compilers.
 CAMLC =ocamlc -g
