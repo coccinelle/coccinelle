@@ -1,6 +1,6 @@
 # Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
 
-SOURCES = pattern.ml ast_ctl.ml ast0toctl.ml ctltotex.ml
+SOURCES = isomorphisms.ml pattern.ml ast_ctl.ml ast0toctl.ml ctltotex.ml
 TARGET=engine
 
 # The Caml compilers.
@@ -14,7 +14,7 @@ LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
 GENERATED=
-OBJS = pattern.cmo ast_ctl.cmo ast0toctl.cmo ctltotex.cmo 
+OBJS = isomorphisms.cmo pattern.cmo ast_ctl.cmo ast0toctl.cmo ctltotex.cmo 
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 INCLUDE_PATH = -I ../commons -I .. -I ../parsing_c -I ../parsing_cocci
