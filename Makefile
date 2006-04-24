@@ -14,7 +14,7 @@ SOURCEMAIN = aux.ml \
 	ast_cocci.ml \
 	visitor_c.ml control_flow_c.ml \
 	isomorphisms.ml \
-	pattern.ml \
+	engine/pattern.ml \
 	\
 	parsing_c/semantic_c.ml parsing_c/lexer_parser.ml \
 	parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml \
@@ -107,7 +107,7 @@ clean::
 	rm -f *~ .*~ gmon.out #*#
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml parsing_c/*.mli parsing_c/*.ml > .depend
+	$(OCAMLDEP) *.mli *.ml parsing_c/*.mli parsing_c/*.ml engine/*.ml engine/*.mli > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
 include .depend

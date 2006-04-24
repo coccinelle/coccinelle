@@ -97,7 +97,7 @@ type edge =
   | ChoiceTrue
   | ChoiceFalse 
   (* todo: and with switch ? *)
-  | SpecialEdge
+  | SpecialEdge (* for julia *)
 
 
 exception DeadCode of (Common.parse_info option)
@@ -334,7 +334,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newfakethen = !g#add_node (Fake, "[then]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[else]") +> adjust_g_i in
         let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
-        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g;
+
+        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g; (* for julia *)
+
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, auxinfo) st1 in
@@ -358,6 +360,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         attach_to_previous_node starti newi;
 
         let newfakeelse = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
+
+        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g; (* for julia *)
     
         (* the newi is for the labels to know where to attach, the newfakeelse (endi) is for the 'break' *)
         (* let newauxinfo = SwitchInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in *)
@@ -470,6 +474,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newfakethen = !g#add_node (Fake, "[whiletrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[endwhile]") +> adjust_g_i in
 
+(*        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g;  not needed, just follow ChoiceFalse *)
+
         let newauxinfo = LoopInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in
 
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
@@ -495,6 +501,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (Fake, "[dowhiletrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[enddowhile]") +> adjust_g_i in
+
 
         (* this time, may return None, for instance if goto in body of dowhile (whereas While cant return None) *)
         (* the code of while case (different from dowhile) is put in comment, to illustrate the difference *)
@@ -527,6 +534,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (Fake, "[fortrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (Fake, "[endfor]") +> adjust_g_i in
+
 
         let newauxinfo = LoopInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in
 

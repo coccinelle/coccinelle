@@ -3,7 +3,7 @@ ast0toast.cmi: ast_cocci.cmo ast0_cocci.cmo
 check_meta.cmi: ast_cocci.cmo ast0_cocci.cmo 
 data.cmi: ast0_cocci.cmo 
 merge.cmi: ast_cocci.cmo ast0_cocci.cmo 
-parse_cocci.cmi: ast_cocci.cmo 
+parse_cocci.cmi: ast_cocci.cmo ast0_cocci.cmo 
 parser_cocci.cmi: data.cmi ast_cocci.cmo ast0_cocci.cmo 
 plus.cmi: ast_cocci.cmo 
 top_level.cmi: ast0_cocci.cmo 
@@ -14,8 +14,8 @@ ast0_cocci.cmo: ast_cocci.cmo
 ast0_cocci.cmx: ast_cocci.cmx 
 ast0toast.cmo: ast_cocci.cmo ast0_cocci.cmo ast0toast.cmi 
 ast0toast.cmx: ast_cocci.cmx ast0_cocci.cmx ast0toast.cmi 
-ast0toctl.cmo: ast_cocci.cmo ast0_cocci.cmo 
-ast0toctl.cmx: ast_cocci.cmx ast0_cocci.cmx 
+aux.cmo: aux.cmi 
+aux.cmx: aux.cmi 
 check_meta.cmo: ast_cocci.cmo ast0_cocci.cmo check_meta.cmi 
 check_meta.cmx: ast_cocci.cmx ast0_cocci.cmx check_meta.cmi 
 data.cmo: ast0_cocci.cmo data.cmi 

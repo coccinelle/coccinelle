@@ -21,14 +21,14 @@ static void f() {
     goto error;
   }
 
-
+  */
   while(1) {
     foowhile();
     if(1) { break; }
     foowhile2();
     
   }
-
+  /*
 
 
   for(i=1; i<3; i++) {
