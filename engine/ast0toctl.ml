@@ -403,7 +403,7 @@ let rec add_quantifiers quantified = function
   | CTL.EX(f) -> CTL.EX(add_quantifiers quantified f)
   | CTL.EG(f) -> CTL.EG(add_quantifiers quantified f)
   | CTL.EU(f1,f2) ->
-      binop f1 f2 quantified (function x -> function y -> CTL.EU(x,y))
+      CTL.EU(add_quantifiers quantified f1,add_quantifiers quantified f2)
 
 and binop f1 f2 quantified fn =
   let f1vars = Hashtbl.find free_table f1 in
