@@ -5,6 +5,18 @@ module B = Ast_c
 module F = Control_flow_c
 
 (******************************************************************************)
+type metavars_binding = (string, metavar_binding_kind) assoc
+  and metavar_binding_kind = 
+  | MetaId        of string
+  | MetaFunc      of string
+  | MetaExpr      of Ast_c.expression
+  | MetaExprList  of Ast_c.expression list
+  | MetaType      of Ast_c.fullType
+  | MetaStmt      of Ast_c.statement
+  | MetaParam     of (Ast_c.parameterTypeDef * Ast_c.il)
+  | MetaParamList of (Ast_c.parameterTypeDef * Ast_c.il) list
+
+let empty_metavars_binding = []
 
 (******************************************************************************)
 
@@ -18,28 +30,6 @@ let undots = function
 type sequence_processing_style = Ordered | Unordered
 
 (******************************************************************************)
-
-type metavars_binding = {
-  metaId: (string,  string) assoc;
-  metaFunc: (string, string) assoc;
-  metaExpr: (string, Ast_c.expression) assoc;
-  metaExprList: (string, Ast_c.expression list) assoc;
-  metaType: (string, Ast_c.fullType) assoc;
-  metaStmt: (string, Ast_c.statement) assoc;
-  metaParam: (string, ((Ast_c.parameterTypeDef * Ast_c.il) )) assoc;
-  metaParamList: (string, ((Ast_c.parameterTypeDef * Ast_c.il) list)) assoc;
-  } 
-
-let empty_metavars_binding = {
-  metaId = [];
-  metaFunc = [];
-  metaExpr = [];
-  metaExprList = [];
-  metaType = [];
-  metaStmt = [];
-  metaParam = [];
-  metaParamList = [];
-} 
 
 
 (*
@@ -100,15 +90,6 @@ let return res = fun binding ->
 
 (******************************************************************************)
 
-let check_add k valu (===) anassoc = 
-  (match optionise (fun () -> (anassoc +> List.find (function (k', _) -> k' = k))) with
-      | Some (k', valu') ->
-          assert (k = k');
-          (valu === valu',  anassoc)
-      | None -> 
-          (true, anassoc +> insert_assoc (k, valu))
-  )
-          
 
 (* old: semiglobal for metavar binding (logic vars) *)
 (* old:
@@ -131,80 +112,64 @@ let with_metaalvars_binding binding f =
   let res = f _sg_metavars_binding in
   let _ = _sg_metavars_binding := oldbinding in
   res
+
 *)
 
-(* todo?: differentiate more the type, so forbid mistake such as adding a binding for Metafunc in Metaid  *)
-type metavar_binding = 
-  | MetaId   of (string * string)
-  | MetaFunc of (string * string)
-  | MetaExpr of (string * Ast_c.expression)
-  | MetaExprList of (string * Ast_c.expression list)
-  | MetaType of (string * Ast_c.fullType)
-  | MetaStmt of (string * Ast_c.statement)
-  | MetaParam of (string * ((Ast_c.parameterTypeDef * Ast_c.il) ))
-  | MetaParamList of (string * ((Ast_c.parameterTypeDef * Ast_c.il) list))
+(* old:
+let check_add k valu (===) anassoc = 
+  (match optionise (fun () -> (anassoc +> List.find (function (k', _) -> k' = k))) with
+      | Some (k', valu') ->
+          assert (k = k');
+          (valu === valu',  anassoc)
+      | None -> 
+          (true, anassoc +> insert_assoc (k, valu))
+  )
+
+*)
 
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
 
-let check_add_metavars_binding = fun addon binding -> 
-  match addon with
-  | MetaId (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=$=) binding.metaId in
-      if good 
-      then _GoodMatch {binding with metaId = newbinding}
-      else _MatchFailure
-          
-  | MetaFunc (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=$=) binding.metaFunc in
-      if good 
-      then _GoodMatch {binding with metaFunc = newbinding}
-      else _MatchFailure
-
-(* todo, aa_expr  before comparing !!! 
-   and maybe accept when they match ?
-   note that here we have Astc._expression, so it is a match modulo isomorphism
-   (there is not metavariable involved here,  just isomorphisms)
+(* pre: if have declared a new metavar that hide another one, then must be passed
+   with a binding that deleted this metavar
 *)
-  | MetaExpr (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaExpr in
-      if good 
-      then _GoodMatch {binding with metaExpr = newbinding}
-      else _MatchFailure
-  | MetaExprList (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaExprList in
-      if good 
-      then _GoodMatch {binding with metaExprList = newbinding}
-      else _MatchFailure
 
-(* todo, aa_type  before comparing !!! 
-   and maybe accept when they match modulo iso ? not just =
-*)
-  | MetaType (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaType in
-      if good 
-      then _GoodMatch {binding with metaType = newbinding}
-      else _MatchFailure
+let check_add_metavars_binding = fun (k, valu) binding -> 
+  (match optionise (fun () -> (binding +> List.find (function (k', _) -> k' = k))) with
+      | Some (k', valu') ->
+          assert (k = k');
 
-(* todo, aa_stmt  before comparing !!! 
-   and maybe accept when they match modulo iso ? not just =
-*)
-  | MetaStmt (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaStmt in
-      if good 
-      then _GoodMatch {binding with metaStmt = newbinding}
-      else _MatchFailure
+         if
+          (match valu, valu' with
+          | MetaId a, MetaId b -> a =$= b
+          | MetaFunc a, MetaFunc b -> a =$= b
+          (* todo, aa_expr  before comparing !!! 
+             and maybe accept when they match ?
+             note that here we have Astc._expression, so it is a match modulo isomorphism
+             (there is not metavariable involved here,  just isomorphisms)
+          *)
+          | MetaExpr a, MetaExpr b -> a = b 
+          | MetaExprList a, MetaExprList b -> a = b 
+          (* todo, aa_type  before comparing !!! 
+             and maybe accept when they match modulo iso ? not just =
+          *)
+          | MetaType a, MetaType b -> a = b
+         (* todo, aa_stmt  before comparing !!! 
+            and maybe accept when they match modulo iso ? not just =
+         *)
+          | MetaStmt a, MetaStmt b -> a = b
+          | MetaParam a, MetaParam b -> a = b
+          | MetaParamList a, MetaParamList b -> a = b
+          | x -> error_cant_have x
+          ) 
+          then _GoodMatch binding
+          else _MatchFailure
 
-  | MetaParam (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaParam in
-      if good 
-      then _GoodMatch {binding with metaParam = newbinding}
-      else _MatchFailure
-  | MetaParamList (s1, s2) -> 
-      let (good, newbinding) = check_add s1 s2 (=) binding.metaParamList in
-      if good 
-      then _GoodMatch {binding with metaParamList = newbinding}
-      else _MatchFailure
+      | None -> 
+          _GoodMatch   (binding +> insert_assoc (k, valu))
+  )
+  
+
 
 (******************************************************************************)
 
@@ -229,7 +194,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
       | A.FunDecl (stoa, ida, _, paramsa, _),   (retb, paramsb, isvaargs, _) -> 
           ( match ida with
            | (A.Id (ida, mcode)) when ida =$= idb ->   return true
-           | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (MetaFunc (ida, idb))
+           | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (ida, (MetaFunc idb))
             (* todo: a MetaId can not match a func ? 
                todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? 
                todo: as usual, handle the Opt/Unique/Multi
@@ -260,7 +225,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
 
   (* cas general: a Meta can match everything *)
   | A.MetaStmt ((ida,_)),  stb -> 
-      check_add_metavars_binding (MetaStmt (ida, stb))
+      check_add_metavars_binding (ida, MetaStmt (stb))
 
 
   | A.ExprStatement (ep, _),         (B.ExprStatement (Some ec) , ii) -> 
@@ -341,7 +306,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   (* cas general: a MetaExpr can match everything *)
   | A.MetaExpr ((ida,_), opttypa),  expb -> 
       (* todo: use type *)
-      check_add_metavars_binding (MetaExpr (ida, expb))
+      check_add_metavars_binding (ida, MetaExpr (expb))
 
   (* todo: MetaConst *)
 
@@ -489,7 +454,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
-                check_add_metavars_binding (MetaExprList (ida, startxs)) >&&>
+                check_add_metavars_binding (ida, MetaExprList (startxs)) >&&>
                 match_arguments seqstyle xs endxs
              )) (return false)
 
@@ -511,7 +476,7 @@ and (match_t_t: (Ast_cocci.fullType, Ast_c.fullType) matcher) = fun   typa typb 
 
   (* cas general *)
   | A.MetaType (ida,_),  typb -> 
-      check_add_metavars_binding (MetaType (ida, typb))
+      check_add_metavars_binding (ida, MetaType (typb))
 
   | A.BaseType ((basea, mcode), signaopt),   (qu, (B.BaseType baseb, _)) -> 
       let match_sign signa signb = 
@@ -604,7 +569,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
-                check_add_metavars_binding (MetaParamList (ida, startxs)) >&&>
+                check_add_metavars_binding (ida, MetaParamList (startxs)) >&&>
                 match_params seqstyle xs endxs
              )) (return false)
 
@@ -617,7 +582,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
 
           | A.MetaParam ((ida,_)), y::ys -> 
               (* todo: use quaopt, hasreg ? *)
-              check_add_metavars_binding (MetaParam (ida, y)) >&&> 
+              check_add_metavars_binding (ida, MetaParam (y)) >&&> 
               match_params seqstyle xs ys
 
           | A.Param (ida, quaopt, typa), ((hasreg, idb, typb, _), ii)::ys -> 
@@ -649,7 +614,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
 and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb -> 
   match ida with
   | (A.Id (ida, _)) when ida =$= idb -> return true
-  | (A.MetaId (ida, _)) ->  check_add_metavars_binding (MetaId (ida, idb))
+  | (A.MetaId (ida, _)) ->  check_add_metavars_binding (ida, MetaId (idb))
 
   (* todo: and other cases ? too late ? or need more info on idb !! its type ? *)
 

@@ -1,5 +1,3 @@
-ast_c.cmo: commons/commonop.cmi commons/common.cmi 
-ast_c.cmx: commons/commonop.cmx commons/common.cmx 
 aux.cmo: aux.cmi 
 aux.cmx: aux.cmi 
 classic_patch.cmo: commons/fullcommon.cmo commons/dumper.cmi \
@@ -7,87 +5,22 @@ classic_patch.cmo: commons/fullcommon.cmo commons/dumper.cmi \
 classic_patch.cmx: commons/fullcommon.cmx commons/dumper.cmx \
     commons/commonop.cmx 
 cocci.cmo: parsing_cocci/unparse_cocci.cmi isomorphisms.cmo \
-    commons/dumper.cmi control_flow_c.cmo commons/commonop.cmi \
-    commons/common.cmi ast_cocci.cmo ast_c.cmo 
+    commons/dumper.cmi parsing_c/control_flow_c.cmo commons/commonop.cmi \
+    commons/common.cmi parsing_cocci/ast_cocci.cmo parsing_c/ast_c.cmo 
 cocci.cmx: parsing_cocci/unparse_cocci.cmx isomorphisms.cmx \
-    commons/dumper.cmx control_flow_c.cmx commons/commonop.cmx \
-    commons/common.cmx ast_cocci.cmx ast_c.cmx 
-control_flow_c.cmo: visitor_c.cmo commons/ograph_extended.cmo \
-    commons/oassocb.cmo commons/oassoc.cmi commons/dumper.cmi \
-    commons/commonop.cmi commons/common.cmi ast_c.cmo 
-control_flow_c.cmx: visitor_c.cmx commons/ograph_extended.cmx \
-    commons/oassocb.cmx commons/oassoc.cmx commons/dumper.cmx \
-    commons/commonop.cmx commons/common.cmx ast_c.cmx 
-isomorphisms.cmo: commons/commonop.cmi commons/common.cmi ast_cocci.cmo 
-isomorphisms.cmx: commons/commonop.cmx commons/common.cmx ast_cocci.cmx 
-main.cmo: visitor_c.cmo parsing_c/unparse_c.cmi parsing_cocci/parse_cocci.cmi \
-    parsing_c/parse_c.cmi commons/ograph_extended.cmo commons/fullcommon.cmo \
-    flag.cmo commons/dumper.cmi control_flow_c.cmo commons/common.cmi \
-    cocci.cmo classic_patch.cmo ast_c.cmo 
-main.cmx: visitor_c.cmx parsing_c/unparse_c.cmx parsing_cocci/parse_cocci.cmx \
-    parsing_c/parse_c.cmx commons/ograph_extended.cmx commons/fullcommon.cmx \
-    flag.cmx commons/dumper.cmx control_flow_c.cmx commons/common.cmx \
-    cocci.cmx classic_patch.cmx ast_c.cmx 
-visitor_c.cmo: commons/commonop.cmi commons/common.cmi ast_c.cmo 
-visitor_c.cmx: commons/commonop.cmx commons/common.cmx ast_c.cmx 
-parsing_c/parse_c.cmi: parsing_c/parser_c.cmi commons/common.cmi ast_c.cmo 
-parsing_c/parser_c.cmi: ast_c.cmo 
-parsing_c/unparse_c.cmi: commons/common.cmi ast_c.cmo 
-parsing_c/ast_c.cmo: commons/commonop.cmi commons/common.cmi 
-parsing_c/ast_c.cmx: commons/commonop.cmx commons/common.cmx 
-parsing_c/lexer_c.cmo: parsing_c/parser_c.cmi parsing_c/lexer_parser.cmo \
-    commons/commonop.cmi commons/common.cmi ast_c.cmo 
-parsing_c/lexer_c.cmx: parsing_c/parser_c.cmx parsing_c/lexer_parser.cmx \
-    commons/commonop.cmx commons/common.cmx ast_c.cmx 
-parsing_c/lexer_parser.cmo: commons/commonop.cmi commons/common.cmi 
-parsing_c/lexer_parser.cmx: commons/commonop.cmx commons/common.cmx 
-parsing_c/main.cmo: parsing_c/unparse_c.cmi parsing_c/parse_c.cmi \
-    commons/fullcommon.cmo flag.cmo commons/dumper.cmi ast_c.cmo 
-parsing_c/main.cmx: parsing_c/unparse_c.cmx parsing_c/parse_c.cmx \
-    commons/fullcommon.cmx flag.cmx commons/dumper.cmx ast_c.cmx 
-parsing_c/parse_c.cmo: parsing_c/semantic_c.cmo parsing_c/parser_c.cmi \
-    parsing_c/lexer_parser.cmo parsing_c/lexer_c.cmo commons/fullcommon.cmo \
-    flag.cmo commons/dumper.cmi commons/common.cmi ast_c.cmo \
-    parsing_c/parse_c.cmi 
-parsing_c/parse_c.cmx: parsing_c/semantic_c.cmx parsing_c/parser_c.cmx \
-    parsing_c/lexer_parser.cmx parsing_c/lexer_c.cmx commons/fullcommon.cmx \
-    flag.cmx commons/dumper.cmx commons/common.cmx ast_c.cmx \
-    parsing_c/parse_c.cmi 
-parsing_c/parser_c.cmo: parsing_c/semantic_c.cmo parsing_c/lexer_parser.cmo \
-    flag.cmo commons/commonop.cmi commons/common.cmi ast_c.cmo \
-    parsing_c/parser_c.cmi 
-parsing_c/parser_c.cmx: parsing_c/semantic_c.cmx parsing_c/lexer_parser.cmx \
-    flag.cmx commons/commonop.cmx commons/common.cmx ast_c.cmx \
-    parsing_c/parser_c.cmi 
-parsing_c/semantic_c.cmo: commons/common.cmi 
-parsing_c/semantic_c.cmx: commons/common.cmx 
-parsing_c/transformation.cmo: visitor_c.cmo commons/commonop.cmi \
-    commons/common.cmi ast_c.cmo 
-parsing_c/transformation.cmx: visitor_c.cmx commons/commonop.cmx \
-    commons/common.cmx ast_c.cmx 
-parsing_c/unparse_c.cmo: parsing_c/parser_c.cmi parsing_c/parse_c.cmi \
-    commons/dumper.cmi commons/commonop.cmi commons/common.cmi ast_c.cmo \
-    parsing_c/unparse_c.cmi 
-parsing_c/unparse_c.cmx: parsing_c/parser_c.cmx parsing_c/parse_c.cmx \
-    commons/dumper.cmx commons/commonop.cmx commons/common.cmx ast_c.cmx \
-    parsing_c/unparse_c.cmi 
-parsing_c/visitor_c.cmo: commons/commonop.cmi commons/common.cmi ast_c.cmo 
-parsing_c/visitor_c.cmx: commons/commonop.cmx commons/common.cmx ast_c.cmx 
-engine/ast0toctl.cmo: parsing_cocci/unparse_cocci.cmi commons/common.cmi \
-    ast_cocci.cmo parsing_cocci/ast0toast.cmi parsing_cocci/ast0_cocci.cmo \
-    engine/ast0toctl.cmi 
-engine/ast0toctl.cmx: parsing_cocci/unparse_cocci.cmx commons/common.cmx \
-    ast_cocci.cmx parsing_cocci/ast0toast.cmx parsing_cocci/ast0_cocci.cmx \
-    engine/ast0toctl.cmi 
-engine/ctltotex.cmo: parsing_cocci/unparse_cocci.cmi engine/ctltotex.cmi 
-engine/ctltotex.cmx: parsing_cocci/unparse_cocci.cmx engine/ctltotex.cmi 
-engine/main.cmo: parsing_cocci/parse_cocci.cmi 
-engine/main.cmx: parsing_cocci/parse_cocci.cmx 
-engine/pattern.cmo: control_flow_c.cmo commons/commonop.cmi \
-    commons/common.cmi ast_cocci.cmo ast_c.cmo engine/pattern.cmi 
-engine/pattern.cmx: control_flow_c.cmx commons/commonop.cmx \
-    commons/common.cmx ast_cocci.cmx ast_c.cmx engine/pattern.cmi 
-engine/ast0toctl.cmi: ast_cocci.cmo parsing_cocci/ast0_cocci.cmo 
-engine/ctltotex.cmi: ast_cocci.cmo 
-engine/pattern.cmi: control_flow_c.cmo commons/common.cmi ast_cocci.cmo \
-    ast_c.cmo 
+    commons/dumper.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
+    commons/common.cmx parsing_cocci/ast_cocci.cmx parsing_c/ast_c.cmx 
+isomorphisms.cmo: commons/commonop.cmi commons/common.cmi \
+    parsing_cocci/ast_cocci.cmo 
+isomorphisms.cmx: commons/commonop.cmx commons/common.cmx \
+    parsing_cocci/ast_cocci.cmx 
+main.cmo: parsing_c/visitor_c.cmo parsing_c/unparse_c.cmi \
+    parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
+    commons/ograph_extended.cmo commons/fullcommon.cmo flag.cmo \
+    commons/dumper.cmi parsing_c/control_flow_c.cmo commons/common.cmi \
+    cocci.cmo classic_patch.cmo parsing_c/ast_c.cmo 
+main.cmx: parsing_c/visitor_c.cmx parsing_c/unparse_c.cmx \
+    parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
+    commons/ograph_extended.cmx commons/fullcommon.cmx flag.cmx \
+    commons/dumper.cmx parsing_c/control_flow_c.cmx commons/common.cmx \
+    cocci.cmx classic_patch.cmx parsing_c/ast_c.cmx 

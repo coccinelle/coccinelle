@@ -6,20 +6,21 @@ TARGET=coccinelle
 
 #############################################################################
 
-SOURCEMAIN = aux.ml \
+SOURCEMAIN = \
 	flag.ml  \
 	classic_patch.ml  \
-	\
-	ast_c.ml \
-	ast_cocci.ml \
-	visitor_c.ml control_flow_c.ml \
 	isomorphisms.ml \
-	engine/pattern.ml \
-	\
-	parsing_c/semantic_c.ml parsing_c/lexer_parser.ml \
-	parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml \
-	parsing_c/unparse_c.ml \
 	cocci.ml   main.ml
+
+# aux.ml
+#	ast_c.ml \
+#	ast_cocci.ml \
+#	visitor_c.ml control_flow_c.ml \
+#	isomorphisms.ml \
+#	\
+#	parsing_c/semantic_c.ml parsing_c/lexer_parser.ml \
+#	parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml \
+#	parsing_c/unparse_c.ml \
 
 EXEC=$(TARGET)
 OPTEXEC=$(EXEC).opt
@@ -28,11 +29,11 @@ OBJS = $(SOURCEMAIN:.ml=.cmo)
 OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
 
 SYSLIBS = str.cma unix.cma
-LIBS=commons/commons.cma parsing_cocci/cocci_parser.cma engine/engine.cma
+LIBS=commons/commons.cma parsing_c/c_parser.cma parsing_cocci/cocci_parser.cma engine/engine.cma
 SUBDIRS=commons parsing_c parsing_cocci engine
-MAKESUBDIRS=commons parsing_cocci engine
+MAKESUBDIRS=commons parsing_c parsing_cocci engine
 
-ADDONSPATH = -I commons -I parsing_c -I parsing_cocci 
+ADDONSPATH = -I commons -I parsing_c -I parsing_cocci  -I engine
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM
@@ -70,22 +71,6 @@ clean::
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
-parsing_c/lexer_c.ml: parsing_c/lexer_c.mll
-	$(OCAMLLEX) $<
-clean::
-	rm -f parsing_c/lexer_c.ml
-beforedepend:: parsing_c/lexer_c.ml
-
-
-parsing_c/parser_c.ml parsing_c/parser_c.mli: parsing_c/parser_c.mly
-	$(OCAMLYACC) $<
-clean::
-	rm -f parsing_c/parser_c.ml parsing_c/parser_c.mli parsing_c/parser_c.output
-beforedepend:: parsing_c/parser_c.ml parsing_c/parser_c.mli
-
-
-
-
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -106,9 +91,13 @@ clean::
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
+beforedepend:
+
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml parsing_c/*.mli parsing_c/*.ml engine/*.ml engine/*.mli > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+
+#parsing_c/*.mli parsing_c/*.ml engine/*.ml engine/*.mli
 
 include .depend
 

@@ -1,0 +1,21 @@
+ast0toctl.cmi: ast_ctl.cmo ../parsing_cocci/ast_cocci.cmo \
+    ../parsing_cocci/ast0_cocci.cmo 
+ctltotex.cmi: ast_ctl.cmo ../parsing_cocci/ast_cocci.cmo 
+pattern.cmi: ../parsing_c/control_flow_c.cmo ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmo ../parsing_c/ast_c.cmo 
+ast0toctl.cmo: ../parsing_cocci/unparse_cocci.cmi ../commons/common.cmi \
+    ast_ctl.cmo ../parsing_cocci/ast_cocci.cmo ../parsing_cocci/ast0toast.cmi \
+    ../parsing_cocci/ast0_cocci.cmo ast0toctl.cmi 
+ast0toctl.cmx: ../parsing_cocci/unparse_cocci.cmx ../commons/common.cmx \
+    ast_ctl.cmx ../parsing_cocci/ast_cocci.cmx ../parsing_cocci/ast0toast.cmx \
+    ../parsing_cocci/ast0_cocci.cmx ast0toctl.cmi 
+ctltotex.cmo: ../parsing_cocci/unparse_cocci.cmi ast_ctl.cmo ctltotex.cmi 
+ctltotex.cmx: ../parsing_cocci/unparse_cocci.cmx ast_ctl.cmx ctltotex.cmi 
+main.cmo: ../parsing_cocci/parse_cocci.cmi ctltotex.cmi ast0toctl.cmi 
+main.cmx: ../parsing_cocci/parse_cocci.cmx ctltotex.cmx ast0toctl.cmx 
+pattern.cmo: ../parsing_c/control_flow_c.cmo ../commons/commonop.cmi \
+    ../commons/common.cmi ../parsing_cocci/ast_cocci.cmo \
+    ../parsing_c/ast_c.cmo pattern.cmi 
+pattern.cmx: ../parsing_c/control_flow_c.cmx ../commons/commonop.cmx \
+    ../commons/common.cmx ../parsing_cocci/ast_cocci.cmx \
+    ../parsing_c/ast_c.cmx pattern.cmi 

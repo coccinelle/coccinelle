@@ -16,8 +16,8 @@ VERSION = 0.1
 #PP =  -pp "./fix_caml.pl -version=$(VERSION) $(OPTS) aspect.pl" 
 #-pp cpp ##BUG: if add that, then zarb line reporting  by ocaml backtrace, or ocaml replay
 
-TARGET=parser
-SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml           lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
+TARGET=c_parser
+SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml           lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
 #SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml                        lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
 
 SYSLIBS = str.cma unix.cma threads.cma
@@ -50,7 +50,7 @@ OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
 
 
 
-all: $(TARGET)   
+all: $(TARGET) $(LIB)
 #$(TARGET).top
 #$(TARGET).opt
 
@@ -60,6 +60,10 @@ $(TARGET): $(OBJS) $(LIBS)
 
 $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
+
+
+$(TARGET).cma: $(OBJS) $(LIBS)
+	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt
