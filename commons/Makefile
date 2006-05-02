@@ -15,8 +15,10 @@ SRC = dumper.ml suffix_tree.ml \
 TARGET = commons
 
 # The Caml compilers.
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
 CAMLC =ocamlc -g $(PP)
-CAMLOPT=ocamlopt  $(PP) -inline 0
+CAMLOPT=ocamlopt  $(PP)
 CAMLLEX = ocamllex
 CAMLYACC= ocamlyacc
 CAMLDEP = ocamldep $(PP)

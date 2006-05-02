@@ -52,6 +52,16 @@ class ['a,'b] ograph_extended =
         succ = succ#add (i, build_set() );
         free_index = i + 1;
        >}, i)
+
+    method add_nodei i (e: 'a) = 
+      ({< 
+        nods = nods#add (i, e); 
+        pred = pred#add (i, build_set() );
+        succ = succ#add (i, build_set() );
+        free_index = (max free_index i) + 1;
+       >}, i)
+
+
     method del_node (i, (e: 'a)) = 
       {<
         nods = nods#delkey i; (* check: e is effectively the index associated with e, and check that already in *)
@@ -74,10 +84,9 @@ class ['a,'b] ograph_extended =
     method predecessors e = pred#find e
 
     method nodes = nods
-
+    method allsuccessors = succ
 
 (*
-    method nodes = nods 
 
 
     method ancestors xs = 
