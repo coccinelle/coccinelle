@@ -365,6 +365,8 @@ val ( $<=$ ) : 'a set -> 'a set -> bool
 val ( $=$ ) : 'a set -> 'a set -> bool
 val ( $@$ ) : 'a list -> 'a list -> 'a list
 type ('a, 'b) assoc = ('a * 'b) list
+val assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)
+
 val empty_assoc : ('a, 'b) assoc
 val fold_assoc : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 val insert_assoc : 'a -> 'a list -> 'a list

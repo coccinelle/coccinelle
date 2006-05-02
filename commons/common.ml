@@ -1788,6 +1788,13 @@ let rec intersect x y =
 (************************************************************************************)
 type ('a,'b) assoc  = ('a * 'b) list
 
+
+let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
+  xs +> List.fold_left (fun acc (k, v) -> 
+    (fun k' -> 
+      if k = k' then v else acc k'
+    )) (fun k -> failwith "no key in this assoc")
+
 let (empty_assoc: ('a, 'b) assoc) = []
 let fold_assoc = List.fold_left
 let insert_assoc = fun x xs -> x::xs
