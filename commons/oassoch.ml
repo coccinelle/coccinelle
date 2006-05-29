@@ -21,7 +21,7 @@ class ['a,'b] oassoch xs =
     method assoc k = 
       try 
         Hashtbl.find data k
-      with Not_found -> (log ("pb assoc with k = " ^ (Dumper.dump k)); raise Not_found) 
+      with Not_found -> (log2 ("pb assoc with k = " ^ (Dumper.dump k)); raise Not_found) 
         
     method delkey k = (Hashtbl.remove data k; o)
 end     

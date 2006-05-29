@@ -5,6 +5,11 @@ open Commonop
 (*******************************************************************************)
 
 (* 
+
+ try extract all the quite generic function from lfs
+  le execute_and_show_progress, timeout_func, ...
+ make a generic timeout function in caml
+
  a tracer/logger/profiler, (sux to put let _ = pr Here in, ou les Timing) 
    en + kan ca boucle ocamldebug c bof 
  aimerait voir la valeur des arguments aux fonc kan le truc a crashé, comme en perl quoi
@@ -97,7 +102,6 @@ fif?
 
 apply fcts in turn while having the time
 
-make a generic timeout function in caml
 
 *)
 
@@ -173,6 +177,9 @@ let rec enum x n =
 let (list_of_string: string -> char list) = fun s -> 
   (enum 0 ((String.length s) - 1) +> List.map (String.get s))
 
+let push2 v l =
+  l := v :: !l
+
 (*******************************************************************************)
 (* Debugging/logging *)
 (*******************************************************************************)
@@ -182,12 +189,13 @@ let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr)
 
 include Printf
 
-(*  CONFIG *)
 let _chan = ref stderr
+let verbose_level = ref 1
 let start_log_file () = _chan := open_out ("/tmp/debugml" ^ (string_of_int (Unix.getuid ())) ^ ":" ^ (string_of_int (Unix.getpid())))
-let log s = (output_string !_chan (s ^ "\n"); flush !_chan)
-let log s = (pr2 s; log s)
-(* let log s = () *)
+let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
+let log s =  if !verbose_level >= 1 then dolog s
+let log2 s = if !verbose_level >= 2 then dolog s
+let log3 s = if !verbose_level >= 3 then dolog s
 
 let pause () = (pr2 "pause: type return"; ignore(read_line ()))
 
@@ -574,6 +582,11 @@ let (add_hook: ('a -> ('a -> 'b) -> 'b) ref  -> ('a -> ('a -> 'b) -> 'b) -> unit
   let oldvar = !var in 
   var := fun arg k -> f arg (fun x -> oldvar x k)
 
+let (add_hook_action: ('a -> unit) ->   ('a -> unit) list ref -> unit) = fun f hooks -> 
+  push2 f hooks
+
+let (run_hooks_action: 'a -> ('a -> unit) list ref -> unit) = fun obj hooks -> 
+  !hooks +> List.iter (fun f -> try f obj with _ -> ())
 
 
 type 'a mylazy = (unit -> 'a)
@@ -961,10 +974,34 @@ let _ = example (filesuffix "toto.c" = "c")
 let _ = example (fileprefix "toto.c" = "toto")
 
 (*
+assert (s = fileprefix s ^ filesuffix s)
+
 let withoutExtension s = global_replace (regexp "\\..*$") "" s
 let () = example "without"
     (withoutExtension "toto.s.toto" = "toto")
 *)
+
+
+(******************************************************************************************)
+(* Dates *)
+(******************************************************************************************)
+
+let int_to_month i = 
+  assert (i <= 12 && i >= 1);
+  match i with
+  | 1 -> "January"
+  | 2 -> "February"
+  | 3 -> "March"
+  | 4 -> "April"
+  | 5 -> "May"
+  | 6 -> "June"
+  | 7 -> "July"
+  | 8 -> "August"
+  | 9 -> "September"
+  | 10 -> "October"
+  | 11 -> "November"
+  | 12 -> "December"
+  | _ -> raise Impossible
 
 
 (******************************************************************************************)
@@ -1054,6 +1091,9 @@ let echo s = printf "%s" s; flush stdout; s
 
 let usleep s = for i = 1 to s do () done
 
+let command2 s = ignore(Sys.command s)
+
+
 let process_output_to_list = fun command -> 
   let chan = Unix.open_process_in command in
   let rec aux () =  
@@ -1093,8 +1133,12 @@ let (readdir_to_kind_list: string -> Unix.file_kind -> string list) = fun path k
   Sys.readdir path 
   +> Array.to_list 
   +> List.filter (fun s -> 
-    let stat = Unix.lstat (path ^ "/" ^  s) in
-    stat.Unix.st_kind = kind
+    try 
+      let stat = Unix.lstat (path ^ "/" ^  s) in
+      stat.Unix.st_kind = kind
+    with e -> 
+      pr2 ("EXN pb stating file: " ^ s);
+      false
     )
 
 let (readdir_to_dir_list: string -> string list) = fun path -> 
@@ -1155,6 +1199,37 @@ let (with_open_infile: filename -> ((in_channel) -> 'a) -> 'a) = fun file f ->
     res)
     (fun e -> close_in chan)
 
+
+
+(* it seems that the toplevel block such signals, even with this explicit command :( 
+let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigalrm]
+*)
+
+(* subtil: have to make sure that timeout is not intercepted before here, so *)
+(*   avoid exn handle such as try (...) with _ ->    cos timeout will not bubble up enough *)
+(*   in such case, add a case before such as  with Timeout -> raise Timeout | _ -> ... *)
+let timeout_function timeoutval = fun f -> 
+  try 
+    begin
+      Sys.set_signal Sys.sigalrm (Sys.Signal_handle   (fun _ -> raise Timeout ));
+      ignore(Unix.alarm timeoutval);
+      let x = f() in
+      ignore(Unix.alarm 0);
+      x
+    end
+  with Timeout -> 
+    begin 
+      log "timeout (we abort)";
+      raise Timeout;
+    end
+  | e -> 
+          (* subtil: important to disable the alarm before relaunching the exn, otherwise the alarm is still running *)
+          (* robust?: and if alarm launch after the log (...) ? *)
+      begin 
+        log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e);
+        ignore(Unix.alarm 0);
+        raise e
+      end
 
 
 (************************************************************************************)
@@ -1597,7 +1672,7 @@ let surEnsemble  liste_el liste_liste_el =
 let rec realCombinaison = function
   | []  -> []
   | [a] -> [[a]]
-  | a::l as res3 -> 
+  | a::l  -> 
       let res  = realCombinaison l in
       let res2 = List.map (function x -> a::x) res in
       res2 ++ res ++ [[a]]
@@ -1913,9 +1988,10 @@ let (top: 'a stack -> 'a) = List.hd
 let (pop: 'a stack -> 'a stack) = List.tl
 
 
-
+(* now at top 
 let push2 v l =
   l := v :: !l
+*)
 
 let pop2 l = 
   let v = List.hd !l in

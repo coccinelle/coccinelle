@@ -14,6 +14,7 @@ class virtual ['a] oset :
     method invariant : unit -> unit
     method is_singleton : bool
     method is_subset_of : 'b -> bool
+    method is_equal : 'b -> bool
     method virtual iter : ('a -> unit) -> unit
     method length : int
     method virtual mem : 'a -> bool
@@ -34,5 +35,6 @@ val ( $??$ ) : 'a -> < mem : 'a -> 'b; .. > -> 'b
 val ( $++$ ) : < union : 'a -> 'b; .. > -> 'a -> 'b
 val ( $**$ ) : < inter : 'a -> 'b; .. > -> 'a -> 'b
 val ( $--$ ) : < minus : 'a -> 'b; .. > -> 'a -> 'b
-val ( $<<$ ) : < is_subset_of : 'a -> 'b; .. > -> 'a -> 'b
+val ( $<<=$ ) : < is_subset_of : 'a -> 'b; .. > -> 'a -> 'b
+val ( $==$ ) : < is_equal : 'a -> 'b; .. > -> 'a -> 'b
 val mapo : ('a -> 'b) -> 'b oset -> 'a oset -> 'b oset

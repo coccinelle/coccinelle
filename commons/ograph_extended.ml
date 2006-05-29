@@ -33,7 +33,7 @@ open Osetb
 
 class ['a,'b] ograph_extended =
   let build_assoc () = new oassocb [] in (* opti?: = oassoch *)
-  let build_set ()   = new osetb Setb.Empty in
+  let build_set ()   = new osetb Setb.empty in
   object(o)
     (* inherit ['a] ograph *)
       

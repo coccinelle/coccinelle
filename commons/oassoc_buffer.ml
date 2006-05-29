@@ -63,6 +63,12 @@ class ['a,'b] oassoc_buffer max cached =
       (o#myflush;
       !wrapped#iter f
       )
+
+    method length = 
+      o#myflush;
+      !wrapped#length
+
+
     method view = raise Todo
 
     method del (k,v) = 
