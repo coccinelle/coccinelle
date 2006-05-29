@@ -15,20 +15,20 @@ lexer_c.cmx: parser_c.cmx lexer_parser.cmx ../commons/commonop.cmx \
     ../commons/common.cmx ast_c.cmx 
 lexer_parser.cmo: ../commons/commonop.cmi ../commons/common.cmi 
 lexer_parser.cmx: ../commons/commonop.cmx ../commons/common.cmx 
-main.cmo: unparse_c.cmi parse_c.cmi ../commons/fullcommon.cmo flag.cmo \
+main.cmo: unparse_c.cmi parse_c.cmi ../commons/fullcommon.cmo \
     ../commons/dumper.cmi ast_c.cmo 
-main.cmx: unparse_c.cmx parse_c.cmx ../commons/fullcommon.cmx flag.cmx \
+main.cmx: unparse_c.cmx parse_c.cmx ../commons/fullcommon.cmx \
     ../commons/dumper.cmx ast_c.cmx 
 parse_c.cmo: semantic_c.cmo parser_c.cmi lexer_parser.cmo lexer_c.cmo \
-    ../commons/fullcommon.cmo flag.cmo ../commons/dumper.cmi \
-    ../commons/common.cmi ast_c.cmo parse_c.cmi 
+    ../commons/fullcommon.cmo ../commons/dumper.cmi ../commons/common.cmi \
+    ast_c.cmo parse_c.cmi 
 parse_c.cmx: semantic_c.cmx parser_c.cmx lexer_parser.cmx lexer_c.cmx \
-    ../commons/fullcommon.cmx flag.cmx ../commons/dumper.cmx \
-    ../commons/common.cmx ast_c.cmx parse_c.cmi 
-parser_c.cmo: semantic_c.cmo lexer_parser.cmo flag.cmo \
-    ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo parser_c.cmi 
-parser_c.cmx: semantic_c.cmx lexer_parser.cmx flag.cmx \
-    ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx parser_c.cmi 
+    ../commons/fullcommon.cmx ../commons/dumper.cmx ../commons/common.cmx \
+    ast_c.cmx parse_c.cmi 
+parser_c.cmo: semantic_c.cmo lexer_parser.cmo ../commons/commonop.cmi \
+    ../commons/common.cmi ast_c.cmo parser_c.cmi 
+parser_c.cmx: semantic_c.cmx lexer_parser.cmx ../commons/commonop.cmx \
+    ../commons/common.cmx ast_c.cmx parser_c.cmi 
 semantic_c.cmo: ../commons/common.cmi 
 semantic_c.cmx: ../commons/common.cmx 
 transformation.cmo: visitor_c.cmo ../commons/commonop.cmi \

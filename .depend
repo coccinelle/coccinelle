@@ -1,26 +1,20 @@
 aux.cmo: aux.cmi 
 aux.cmx: aux.cmi 
-classic_patch.cmo: commons/fullcommon.cmo commons/dumper.cmi \
-    commons/commonop.cmi 
-classic_patch.cmx: commons/fullcommon.cmx commons/dumper.cmx \
-    commons/commonop.cmx 
-cocci.cmo: parsing_cocci/unparse_cocci.cmi isomorphisms.cmo \
-    commons/dumper.cmi parsing_c/control_flow_c.cmo commons/commonop.cmi \
-    commons/common.cmi parsing_cocci/ast_cocci.cmo parsing_c/ast_c.cmo 
-cocci.cmx: parsing_cocci/unparse_cocci.cmx isomorphisms.cmx \
-    commons/dumper.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
-    commons/common.cmx parsing_cocci/ast_cocci.cmx parsing_c/ast_c.cmx 
-isomorphisms.cmo: commons/commonop.cmi commons/common.cmi \
-    parsing_cocci/ast_cocci.cmo 
-isomorphisms.cmx: commons/commonop.cmx commons/common.cmx \
-    parsing_cocci/ast_cocci.cmx 
+cocci.cmo: parsing_cocci/unparse_cocci.cmi engine/pattern.cmo \
+    engine/isomorphisms.cmo commons/dumper.cmi parsing_c/control_flow_c.cmo \
+    commons/commonop.cmi commons/common.cmi parsing_cocci/ast_cocci.cmo \
+    parsing_c/ast_c.cmo 
+cocci.cmx: parsing_cocci/unparse_cocci.cmx engine/pattern.cmx \
+    engine/isomorphisms.cmx commons/dumper.cmx parsing_c/control_flow_c.cmx \
+    commons/commonop.cmx commons/common.cmx parsing_cocci/ast_cocci.cmx \
+    parsing_c/ast_c.cmx 
 main.cmo: parsing_c/visitor_c.cmo parsing_c/unparse_c.cmi \
     parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
     commons/ograph_extended.cmo commons/fullcommon.cmo flag.cmo \
     commons/dumper.cmi parsing_c/control_flow_c.cmo commons/common.cmi \
-    cocci.cmo classic_patch.cmo parsing_c/ast_c.cmo 
+    cocci.cmo misc/classic_patch.cmo parsing_c/ast_c.cmo 
 main.cmx: parsing_c/visitor_c.cmx parsing_c/unparse_c.cmx \
     parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
     commons/ograph_extended.cmx commons/fullcommon.cmx flag.cmx \
     commons/dumper.cmx parsing_c/control_flow_c.cmx commons/common.cmx \
-    cocci.cmx classic_patch.cmx parsing_c/ast_c.cmx 
+    cocci.cmx misc/classic_patch.cmx parsing_c/ast_c.cmx 
