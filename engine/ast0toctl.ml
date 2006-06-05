@@ -81,8 +81,8 @@ let make_seq first = function
 let make_match code =
   let v = fresh_var() in
   if Ast.contains_modif code
-  then CTL.Exists(v,CTL.Pred(MatchModif(code,v)))
-  else CTL.Exists(v,CTL.Pred(Match(code,v)))
+  then CTL.Pred(MatchModif(code,v))
+  else CTL.Pred(Match(code,v))
 
 let rec statement stmt after =
   match stmt with
@@ -381,12 +381,12 @@ let add_quants formula variables =
 let rec add_quantifiers quantified = function
     CTL.False -> CTL.False
   | CTL.True -> CTL.True
-  | CTL.Pred(Match(p,_))
-  | CTL.Pred(MatchModif(p,_)) as x ->
+  | CTL.Pred(Match(p,v))
+  | CTL.Pred(MatchModif(p,v)) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
-      add_quants x fresh
+      add_quants (CTL.Exists(v,x)) fresh
   | CTL.Pred(p) -> CTL.Pred(p)
   | CTL.Not(f) -> CTL.Not(add_quantifiers quantified f)
   | CTL.Exists(vars,f) -> CTL.Exists(vars,add_quantifiers quantified f)
