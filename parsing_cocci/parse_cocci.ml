@@ -2,7 +2,7 @@
 separately (thus duplicating work for the parsing of the context elements) *)
 
 module D = Data
-module PC = Parser_cocci
+module PC = Parser_cocci_menhir
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -135,6 +135,7 @@ let token2c (tok,_) =
 
   | PC.EOF -> "eof"
   | PC.TLineEnd -> "line end"
+  | PC.TInvalid -> "invalid"
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
@@ -230,7 +231,7 @@ let split_token ((tok,_) as t) =
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) -> split t clt
 
-  | PC.EOF | PC.TLineEnd -> ([t],[t])
+  | PC.EOF | PC.TLineEnd | PC.TInvalid -> ([t],[t])
 
 let split_token_stream tokens =
   let rec loop = function
@@ -389,7 +390,7 @@ let parse_one parsefn file toks =
 	(pr "lexical error %s\n =%s\n" s
 	   (Common.error_message file (get_s_starts !cur_tok) ));
       failwith ""
-  | Parsing.Parse_error ->
+  | Parser_cocci_menhir.Error ->
       pr2
 	(pr "parse error \n = %s\n" 
 	   (Common.error_message file (get_s_starts !cur_tok) ));

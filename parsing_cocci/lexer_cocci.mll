@@ -1,5 +1,5 @@
 {
-open Parser_cocci
+open Parser_cocci_menhir
 module D = Data
 module Ast = Ast_cocci
 exception Lexical of string

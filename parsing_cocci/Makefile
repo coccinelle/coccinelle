@@ -3,24 +3,24 @@
 SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
-lexer_cocci.mll parser_cocci.mly parse_cocci.ml 
+lexer_cocci.mll parser_cocci_menhir.mly parse_cocci.ml 
 TARGET=cocci_parser
 
 # The Caml compilers.
 CAMLC =ocamlc -g
 CAMLOPT = ocamlopt
 CAMLLEX = ocamllex
-CAMLYACC= ocamlyacc -v
+CAMLYACC= menhir
 CAMLDEP = ocamldep
 EXEC=$(TARGET)
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
-GENERATED= parser_cocci.ml parser_cocci.mli lexer_cocci.ml
+GENERATED= parser_cocci_menhir.ml parser_cocci_menhir.mli lexer_cocci.ml
 OBJS = ast_cocci.cmo ast0_cocci.cmo ast0toast.cmo top_level.cmo \
 check_meta.cmo unparse_cocci.cmo arity.cmo \
 plus.cmo merge.cmo semantic_cocci.cmo data.cmo lexer_cocci.cmo \
-parser_cocci.cmo parse_cocci.cmo 
+parser_cocci_menhir.cmo parse_cocci.cmo 
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 INCLUDE_PATH = -I ../commons
@@ -78,8 +78,8 @@ dellinks:
 lexer_cocci.ml :	lexer_cocci.mll
 	$(CAMLLEX) lexer_cocci.mll
 
-parser_cocci.ml parser_cocci.mli : parser_cocci.mly
-	$(CAMLYACC) parser_cocci.mly
+parser_cocci_menhir.ml parser_cocci_menhir.mli : parser_cocci_menhir.mly
+	$(CAMLYACC) parser_cocci_menhir.mly
 
 clean::
 	rm -f $(GENERATED)
@@ -95,5 +95,5 @@ depend: $(GENERATED)
 include .depend
 
 lexer_cocci.ml: lexer_cocci.mll
-parser_cocci.ml: parser_cocci.mly lexer_cocci.mll
-parser_cocci.mli: parser_cocci.mly lexer_cocci.mll
+parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll
+parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll

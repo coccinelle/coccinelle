@@ -4,6 +4,7 @@ check_meta.cmi: ast_cocci.cmo ast0_cocci.cmo
 data.cmi: ast0_cocci.cmo 
 merge.cmi: ast_cocci.cmo ast0_cocci.cmo 
 parse_cocci.cmi: ast_cocci.cmo ast0_cocci.cmo 
+parser_cocci_menhir.cmi: data.cmi ast_cocci.cmo ast0_cocci.cmo 
 parser_cocci.cmi: data.cmi ast_cocci.cmo ast0_cocci.cmo 
 plus.cmi: ast_cocci.cmo 
 top_level.cmi: ast0_cocci.cmo 
@@ -18,26 +19,36 @@ check_meta.cmo: ast_cocci.cmo ast0_cocci.cmo check_meta.cmi
 check_meta.cmx: ast_cocci.cmx ast0_cocci.cmx check_meta.cmi 
 data.cmo: ast0_cocci.cmo data.cmi 
 data.cmx: ast0_cocci.cmx data.cmi 
-lexer_cocci.cmo: parser_cocci.cmi data.cmi ../commons/common.cmi \
+lexer_cocci.cmo: parser_cocci_menhir.cmi data.cmi ../commons/common.cmi \
     ast_cocci.cmo 
-lexer_cocci.cmx: parser_cocci.cmx data.cmx ../commons/common.cmx \
+lexer_cocci.cmx: parser_cocci_menhir.cmx data.cmx ../commons/common.cmx \
     ast_cocci.cmx 
 main.cmo: parse_cocci.cmi 
 main.cmx: parse_cocci.cmx 
 merge.cmo: ast_cocci.cmo ast0_cocci.cmo merge.cmi 
 merge.cmx: ast_cocci.cmx ast0_cocci.cmx merge.cmi 
 parse_cocci.cmo: unparse_cocci.cmi semantic_cocci.cmo plus.cmi \
-    parser_cocci.cmi merge.cmi lexer_cocci.cmo data.cmi ../commons/common.cmi \
-    check_meta.cmi ast0toast.cmi arity.cmi parse_cocci.cmi 
+    parser_cocci_menhir.cmi merge.cmi lexer_cocci.cmo data.cmi \
+    ../commons/common.cmi check_meta.cmi ast0toast.cmi arity.cmi \
+    parse_cocci.cmi 
 parse_cocci.cmx: unparse_cocci.cmx semantic_cocci.cmx plus.cmx \
-    parser_cocci.cmx merge.cmx lexer_cocci.cmx data.cmx ../commons/common.cmx \
-    check_meta.cmx ast0toast.cmx arity.cmx parse_cocci.cmi 
+    parser_cocci_menhir.cmx merge.cmx lexer_cocci.cmx data.cmx \
+    ../commons/common.cmx check_meta.cmx ast0toast.cmx arity.cmx \
+    parse_cocci.cmi 
+parser_cocci_menhir.cmo: top_level.cmi data.cmi ast_cocci.cmo ast0_cocci.cmo \
+    parser_cocci_menhir.cmi 
+parser_cocci_menhir.cmx: top_level.cmx data.cmx ast_cocci.cmx ast0_cocci.cmx \
+    parser_cocci_menhir.cmi 
 parser_cocci.cmo: top_level.cmi data.cmi ast_cocci.cmo ast0_cocci.cmo \
     parser_cocci.cmi 
 parser_cocci.cmx: top_level.cmx data.cmx ast_cocci.cmx ast0_cocci.cmx \
     parser_cocci.cmi 
 plus.cmo: ast_cocci.cmo plus.cmi 
 plus.cmx: ast_cocci.cmx plus.cmi 
+small.cmo: small.cmi 
+small.cmx: small.cmi 
+tmp.cmo: top_level.cmi data.cmi ast_cocci.cmo ast0_cocci.cmo 
+tmp.cmx: top_level.cmx data.cmx ast_cocci.cmx ast0_cocci.cmx 
 top_level.cmo: ast0_cocci.cmo top_level.cmi 
 top_level.cmx: ast0_cocci.cmx top_level.cmi 
 unparse_cocci.cmo: ast_cocci.cmo unparse_cocci.cmi 
