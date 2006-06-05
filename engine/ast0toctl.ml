@@ -81,8 +81,8 @@ let make_seq first = function
 let make_match code =
   let v = fresh_var() in
   if Ast.contains_modif code
-  then CTL.Exists(v,CTL.Pred(MatchModif code))
-  else CTL.Exists(v,CTL.Pred(Match code))
+  then CTL.Exists(v,CTL.Pred(MatchModif(code,v)))
+  else CTL.Exists(v,CTL.Pred(Match(code,v)))
 
 let rec statement stmt after =
   match stmt with
@@ -101,18 +101,15 @@ let rec statement stmt after =
 	(Some(dots statement body (Some (make_seq end_brace after))))
   | Ast0.ExprStatement(exp,sem) ->
       make_seq
-	(CTL.Pred
-	   (Match
-	      (Ast.ExprStatement
-		 (Ast0toast.expression exp,Ast0toast.mcode sem))))
+	(make_match
+	   (Ast.ExprStatement (Ast0toast.expression exp,Ast0toast.mcode sem)))
 	after
   | Ast0.IfThen(iff,lp,exp,rp,branch) ->
       let if_header =
-	CTL.Pred
-	  (Match
-	     (Ast.IfHeader
-		(Ast0toast.mcode iff,Ast0toast.mcode lp,
-		  Ast0toast.expression exp,Ast0toast.mcode rp))) in
+	make_match
+	  (Ast.IfHeader
+	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
+	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
 	CTL.Implies(CTL.Pred(TrueBranch),statement branch None) in
       let else_line = CTL.Implies(CTL.Pred(FalseBranch),CTL.False) in
@@ -124,11 +121,10 @@ let rec statement stmt after =
 	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
       let if_header =
-	CTL.Pred
-	  (Match
-	     (Ast.IfHeader
-		(Ast0toast.mcode iff,Ast0toast.mcode lp,
-		  Ast0toast.expression exp,Ast0toast.mcode rp))) in
+	make_match
+	  (Ast.IfHeader
+	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
+	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
 	CTL.Implies(CTL.Pred(TrueBranch),statement branch1 None) in
       let else_line =
@@ -141,11 +137,10 @@ let rec statement stmt after =
 	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
   | Ast0.While(wh,lp,exp,rp,body) ->
       let while_header =
-	CTL.Pred
-	  (Match
-	     (Ast.WhileHeader
-		(Ast0toast.mcode wh,Ast0toast.mcode lp,
-		 Ast0toast.expression exp,Ast0toast.mcode rp))) in
+	make_match
+	  (Ast.WhileHeader
+	     (Ast0toast.mcode wh,Ast0toast.mcode lp,
+	      Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let body_line = CTL.Implies(CTL.Pred(TrueBranch),statement body None) in
       let after_line =
 	match after with
@@ -160,7 +155,7 @@ let rec statement stmt after =
       let return = 
 	Ast.ReturnExpr
 	  (Ast0toast.mcode ret,Ast0toast.expression exp,Ast0toast.mcode sem) in
-      make_seq (CTL.Pred (Match return)) after
+      make_seq (make_match return) after
   | Ast0.MetaStmt(name) ->
       make_seq (make_match(Ast.MetaStmt(Ast0toast.mcode name))) after
   | Ast0.MetaStmtList(name) ->
@@ -357,8 +352,8 @@ let rec free_vars x =
     match x with
       CTL.False -> []
     | CTL.True -> []
-    | CTL.Pred(CTL.Match(p)) -> fvrule_elem p
-    | CTL.Pred(CTL.MatchModif(p)) -> fvrule_elem p
+    | CTL.Pred(Match(p,_)) -> fvrule_elem p
+    | CTL.Pred(MatchModif(p,_)) -> fvrule_elem p
     | CTL.Pred(Paren(p)) -> [p]
     | CTL.Pred(p) -> []
     | CTL.Not(f) -> free_vars f
@@ -386,8 +381,8 @@ let add_quants formula variables =
 let rec add_quantifiers quantified = function
     CTL.False -> CTL.False
   | CTL.True -> CTL.True
-  | CTL.Pred(CTL.Match(p)) as x
-  | CTL.Pred(CTL.MatchModif(p)) as x ->
+  | CTL.Pred(Match(p,_))
+  | CTL.Pred(MatchModif(p,_)) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
