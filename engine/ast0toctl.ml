@@ -10,10 +10,10 @@ let warning s = Printf.fprintf stderr "warning: %s\n" s
 (* --------------------------------------------------------------------- *)
 
 type predicate =
-    State of string
-  | TrueBranch | FalseBranch | After
+    TrueBranch | FalseBranch | After
   | Paren of string
-  | Match of Ast.rule_elem
+  | Match of Ast.rule_elem * string
+  | MatchModif of Ast.rule_elem * string
 
 let texify s =
   let len = String.length s in
@@ -30,12 +30,15 @@ let texify s =
   Printf.sprintf "\\mita{%s}" (loop 0)
 
 let pred2c = function
-    State(s) -> "\\msf{State}("^s^")"
-  | TrueBranch -> "\\msf{TrueBranch}"
+    TrueBranch -> "\\msf{TrueBranch}"
   | FalseBranch -> "\\msf{FalseBranch}"
   | After -> "\\msf{After}"
   | Paren(s) -> "\\msf{Paren}("^s^")"
-  | Match(re) -> texify(Unparse_cocci.rule_elem_to_string re)
+  | Match(re,v)
+  | MatchModif(re,v) ->
+      Printf.sprintf "%s_{%s}"
+	(texify(Unparse_cocci.rule_elem_to_string re))
+	v
 
 (* --------------------------------------------------------------------- *)
 
@@ -71,26 +74,28 @@ let fresh_var _ =
   ctr := !ctr + 1;
   Printf.sprintf "v%d" c
 
-let make_seq first rest =
-  let template f =
-    let sv = fresh_var() in
-    CTL.Exists(sv,f(CTL.And(CTL.Pred(State sv),first))) in
-  match rest with
-    None -> template (function x -> x)
-  | Some rest -> template (function x -> CTL.And(x,CTL.AX(rest)))
+let make_seq first = function
+    None -> first
+  | Some rest -> CTL.And(first,CTL.AX(rest))
+
+let make_match code =
+  let v = fresh_var() in
+  if Ast.contains_modif code
+  then CTL.Exists(v,CTL.Pred(MatchModif code))
+  else CTL.Exists(v,CTL.Pred(Match code))
 
 let rec statement stmt after =
   match stmt with
     Ast0.Decl(decl) ->
-      make_seq (CTL.Pred(Match(Ast.Decl(Ast0toast.declaration decl)))) after
+      make_seq (make_match(Ast.Decl(Ast0toast.declaration decl))) after
   | Ast0.Seq(lbrace,body,rbrace) ->
       let v = fresh_var() in
       let start_brace =
-	CTL.And(CTL.Pred(Match(Ast.SeqStart(Ast0toast.mcode lbrace))),
+	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
 		CTL.Pred(Paren v)) in
       let end_brace =
 	CTL.And
-	  (CTL.Pred(Match(Ast.SeqEnd(Ast0toast.mcode rbrace))),
+	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
 	   CTL.Pred(Paren v)) in
       make_seq start_brace
 	(Some(dots statement body (Some (make_seq end_brace after))))
@@ -149,7 +154,7 @@ let rec statement stmt after =
       make_seq while_header (Some (CTL.And(body_line,after_line)))
   | Ast0.Return(ret,sem) ->
       make_seq
-	(CTL.Pred(Match(Ast.Return(Ast0toast.mcode ret,Ast0toast.mcode sem))))
+	(make_match(Ast.Return(Ast0toast.mcode ret,Ast0toast.mcode sem)))
 	after
   | Ast0.ReturnExpr(ret,exp,sem) ->
       let return = 
@@ -157,11 +162,11 @@ let rec statement stmt after =
 	  (Ast0toast.mcode ret,Ast0toast.expression exp,Ast0toast.mcode sem) in
       make_seq (CTL.Pred (Match return)) after
   | Ast0.MetaStmt(name) ->
-      make_seq (CTL.Pred(Match(Ast.MetaStmt(Ast0toast.mcode name)))) after
+      make_seq (make_match(Ast.MetaStmt(Ast0toast.mcode name))) after
   | Ast0.MetaStmtList(name) ->
-      make_seq (CTL.Pred(Match(Ast.MetaStmtList(Ast0toast.mcode name)))) after
+      make_seq (make_match(Ast.MetaStmtList(Ast0toast.mcode name))) after
   | Ast0.Exp(exp) ->
-      make_seq (CTL.Pred(Match(Ast.Exp(Ast0toast.expression exp)))) after
+      make_seq (make_match(Ast.Exp(Ast0toast.expression exp))) after
   | Ast0.Disj(rule_elem_dots_list) ->
       List.fold_right
 	(function cur ->
@@ -191,14 +196,14 @@ let rec statement stmt after =
       let params = Ast0toast.parameter_list params in
       let rp = Ast0toast.mcode rp in
       let function_header =
-	CTL.Pred(Match(Ast.FunDecl(stg,name,lp,params,rp))) in
+	make_match(Ast.FunDecl(stg,name,lp,params,rp)) in
       let v = fresh_var() in
       let start_brace =
-	CTL.And(CTL.Pred(Match(Ast.SeqStart(Ast0toast.mcode lbrace))),
+	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
 		CTL.Pred(Paren v)) in
       let end_brace =
 	CTL.And
-	  (CTL.Pred(Match(Ast.SeqEnd(Ast0toast.mcode rbrace))),
+	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
 	   CTL.Pred(Paren v)) in
       make_seq function_header
 	(Some
@@ -352,7 +357,8 @@ let rec free_vars x =
     match x with
       CTL.False -> []
     | CTL.True -> []
-    | CTL.Pred(Match(p)) -> fvrule_elem p
+    | CTL.Pred(CTL.Match(p)) -> fvrule_elem p
+    | CTL.Pred(CTL.MatchModif(p)) -> fvrule_elem p
     | CTL.Pred(Paren(p)) -> [p]
     | CTL.Pred(p) -> []
     | CTL.Not(f) -> free_vars f
@@ -380,11 +386,12 @@ let add_quants formula variables =
 let rec add_quantifiers quantified = function
     CTL.False -> CTL.False
   | CTL.True -> CTL.True
-  | (CTL.Pred(Match(p))) as x ->
+  | CTL.Pred(CTL.Match(p)) as x
+  | CTL.Pred(CTL.MatchModif(p)) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
-      add_quants (CTL.Pred(Match(p))) fresh
+      add_quants x fresh
   | CTL.Pred(p) -> CTL.Pred(p)
   | CTL.Not(f) -> CTL.Not(add_quantifiers quantified f)
   | CTL.Exists(vars,f) -> CTL.Exists(vars,add_quantifiers quantified f)
