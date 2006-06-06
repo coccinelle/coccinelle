@@ -8,7 +8,7 @@ open Commonop
 
  try extract all the quite generic function from lfs
   le execute_and_show_progress, timeout_func, ...
- make a generic timeout function in caml
+ make a generic timeout function in caml (or call timeout(1))
 
  a tracer/logger/profiler, (sux to put let _ = pr Here in, ou les Timing) 
    en + kan ca boucle ocamldebug c bof 
@@ -106,19 +106,19 @@ apply fcts in turn while having the time
 *)
 
 (* 
- solved,  style
+ solved:  style
 
  let (fixed_int_to_posmap: fixed_int -> posmap) = fun fixed -> 
   let v = ((fix_to_i fixed) / (power 2 16)) in
   let _ = Printf.printf "coord xy = %d\n" v in
   v
  the need for printf make me force to name stuff => :(( how avoid ? use 'it' special keyword ?)
- update= in fact dont have to name it, use +> (fun v -> ...)  so when want erase debug just
+ update: in fact dont have to name it, use +> (fun v -> ...)  so when want erase debug just
   have to erase one line
 
  un fichier option.ml qui contient toutes les constantes/... qui peuvent etre modifier
   a runtime et un main.ml avec un getopt qui les modifie
- update= just need call the Arg. module ?
+ update: just need call the Arg. module ?
 
 *)
 
@@ -618,6 +618,35 @@ open Dumper
 let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
 
 exception Timeout
+
+(******************************************************************************************)
+(* Equality *)
+(******************************************************************************************)
+
+(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
+(* To infer all the code that use an equal, and that should be transformed, is not
+   that easy, because (=) is used by many functions, such as List.find, List.mem, and so on,
+   so the strategy is to turn what you were previously using into a function, because
+   (=) return an exception when applied to a function, then you simply use ocamldebug
+   to infer where the code has to be transformed 
+*)
+
+
+
+(* src: caml list ? *)
+let (=|=) : int    -> int    -> bool = (=)
+let (=<=) : char   -> char   -> bool = (=)
+let (=$=) : string -> string -> bool = (=)
+let (=:=) : bool   -> bool   -> bool = (=)
+
+(* the evil generic (=). I define another symbol to more easily detect it, cos
+   the '=' sign is syntaxically overloaded in caml. It is also used to define function.
+*)
+let (=*=) = (=)
+
+(* If want forbid
+let (=) = (=|=)
+*)
 
 (******************************************************************************************)
 (* Bool *)

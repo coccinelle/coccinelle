@@ -22,6 +22,9 @@ CAMLOPT=ocamlopt  $(PP)
 CAMLLEX = ocamllex
 CAMLYACC= ocamlyacc
 CAMLDEP = ocamldep $(PP)
+CAMLMKTOP=ocamlmktop -g -custom
+
+SYSLIBS=str.cma unix.cma
 
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
@@ -32,6 +35,8 @@ OPTOBJS = $(SRC:.ml=.cmx)
 all: $(LIB)
 all.opt: $(OPTLIB)
 
+common.top: $(LIB)
+	$(CAMLMKTOP) -o common.top $(SYSLIBS) $(OBJS)
 
 $(LIB):  $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)

@@ -1,5 +1,4 @@
-open Common
-open Commonop
+open Common open Commonop
 
 open Ocollection
 open Oset
@@ -13,11 +12,11 @@ open Osetb
  graph: 
   node: index -> nodevalue
   arc: (index * index) * edgevalue
- how ? matrix ? but no growing array, so lourd.
+ how ? matrix ? but no growing array, so :(
  when need index ? 
-  must have an index, when cant just use nodevalue as key,  cos sometimes may have 2 times same key, but
+  must have an index, when cant just use nodevalue as a key,  cos sometimes may have 2 times the same key, but
   it must be 2 different nodes (for instance in program   f(); f();   we want 2 nodes, one per  f(); 
-  hence the index. if each node is different, then no problem, can omit index
+  hence the index). If each node is different, then no problem, can omit index.
 
  todo?: prend en parametre le type de finitemap et set a prendre
  todo?: add_arc doit ramer, car del la key, puis add => better to have a ref to a set 
@@ -30,6 +29,8 @@ open Osetb
  invariant: key in pred is also in succ (completness) and value in either assoc is a key also
  
 *)
+
+type nodei = int
 
 class ['a,'b] ograph_extended =
   let build_assoc () = new oassocb [] in (* opti?: = oassoch *)
@@ -68,6 +69,12 @@ class ['a,'b] ograph_extended =
         pred = pred#delkey i;
         succ = succ#delkey i;
         >}
+
+    method replace_node (i, (e: 'a)) = 
+      assert (nods#haskey i);
+      {<
+        nods = nods#replkey (i, e);
+       >}
 
     method add_arc ((a,b),(v: 'b)) = 
       {< 
@@ -115,3 +122,23 @@ class ['a,'b] ograph_extended =
 *)
 
   end   
+
+
+let (print_control_flow: (('node * string), 'edge) ograph_extended -> unit) = fun g ->
+  with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
+    pr "digraph misc {\n" ;
+    let nodes = g#nodes in
+    nodes#iter (fun (k,(node, s)) -> 
+      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k); (* so can see if nodes without arcs were created *) (*  (Dumper.dump node)); *)
+    );
+
+    nodes#iter (fun (k,node) -> 
+      let succ = g#successors k in
+      succ#iter (fun (j,edge) ->
+        pr (sprintf "%d -> %d;\n" k j);
+      );
+    );
+    pr "}\n" ;
+    );
+  let _status = Unix.system "dot /tmp/test.dot -Tps  -o /tmp/test.ps; gv /tmp/test.ps" in
+  ()
