@@ -12,8 +12,7 @@ let warning s = Printf.fprintf stderr "warning: %s\n" s
 type predicate =
     TrueBranch | FalseBranch | After
   | Paren of string
-  | Match of Ast.rule_elem * string
-  | MatchModif of Ast.rule_elem * string
+  | Match of Ast.rule_elem
 
 let texify s =
   let len = String.length s in
@@ -34,11 +33,8 @@ let pred2c = function
   | FalseBranch -> "\\msf{FalseBranch}"
   | After -> "\\msf{After}"
   | Paren(s) -> "\\msf{Paren}("^s^")"
-  | Match(re,v)
-  | MatchModif(re,v) ->
-      Printf.sprintf "%s_{%s}"
-	(texify(Unparse_cocci.rule_elem_to_string re))
-	v
+  | Match(re) ->
+      Printf.sprintf "%s" (texify(Unparse_cocci.rule_elem_to_string re))
 
 (* --------------------------------------------------------------------- *)
 
@@ -81,8 +77,8 @@ let make_seq first = function
 let make_match code =
   let v = fresh_var() in
   if Ast.contains_modif code
-  then CTL.Pred(MatchModif(code,v))
-  else CTL.Pred(Match(code,v))
+  then CTL.Pred(Match(code),CTL.Modif v)
+  else CTL.Pred(Match(code),CTL.UnModif v)
 
 let rec statement stmt after =
   match stmt with
@@ -92,11 +88,11 @@ let rec statement stmt after =
       let v = fresh_var() in
       let start_brace =
 	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		CTL.Pred(Paren v)) in
+		CTL.Pred(Paren v,CTL.Control)) in
       let end_brace =
 	CTL.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   CTL.Pred(Paren v)) in
+	   CTL.Pred(Paren v,CTL.Control)) in
       make_seq start_brace
 	(Some(dots statement body (Some (make_seq end_brace after))))
   | Ast0.ExprStatement(exp,sem) ->
@@ -111,12 +107,13 @@ let rec statement stmt after =
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	CTL.Implies(CTL.Pred(TrueBranch),statement branch None) in
-      let else_line = CTL.Implies(CTL.Pred(FalseBranch),CTL.False) in
+	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),statement branch None) in
+      let else_line =
+	CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),CTL.False) in
       let after_line =
 	match after with
 	  None -> CTL.True
-	| Some after ->	CTL.Implies(CTL.Pred(After),after) in
+	| Some after ->	CTL.Implies(CTL.Pred(After,CTL.Control),after) in
       make_seq if_header
 	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
@@ -126,13 +123,15 @@ let rec statement stmt after =
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	CTL.Implies(CTL.Pred(TrueBranch),statement branch1 None) in
+	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),
+		    statement branch1 None) in
       let else_line =
-	CTL.Implies(CTL.Pred(FalseBranch),statement branch2 None) in
+	CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),
+		    statement branch2 None) in
       let after_line =
 	match after with
 	  None -> CTL.True
-	| Some after ->	CTL.Implies(CTL.Pred(After),after) in
+	| Some after ->	CTL.Implies(CTL.Pred(After,CTL.Control),after) in
       make_seq if_header
 	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
   | Ast0.While(wh,lp,exp,rp,body) ->
@@ -141,11 +140,12 @@ let rec statement stmt after =
 	  (Ast.WhileHeader
 	     (Ast0toast.mcode wh,Ast0toast.mcode lp,
 	      Ast0toast.expression exp,Ast0toast.mcode rp)) in
-      let body_line = CTL.Implies(CTL.Pred(TrueBranch),statement body None) in
+      let body_line =
+	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),statement body None) in
       let after_line =
 	match after with
 	  None -> CTL.True
-	| Some after -> CTL.Implies(CTL.Pred(FalseBranch),after) in
+	| Some after -> CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),after) in
       make_seq while_header (Some (CTL.And(body_line,after_line)))
   | Ast0.Return(ret,sem) ->
       make_seq
@@ -195,11 +195,11 @@ let rec statement stmt after =
       let v = fresh_var() in
       let start_brace =
 	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		CTL.Pred(Paren v)) in
+		CTL.Pred(Paren v,CTL.Control)) in
       let end_brace =
 	CTL.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   CTL.Pred(Paren v)) in
+	   CTL.Pred(Paren v,CTL.Control)) in
       make_seq function_header
 	(Some
 	   (make_seq start_brace
@@ -352,10 +352,9 @@ let rec free_vars x =
     match x with
       CTL.False -> []
     | CTL.True -> []
-    | CTL.Pred(Match(p,_)) -> fvrule_elem p
-    | CTL.Pred(MatchModif(p,_)) -> fvrule_elem p
-    | CTL.Pred(Paren(p)) -> [p]
-    | CTL.Pred(p) -> []
+    | CTL.Pred(Match(p),_) -> fvrule_elem p
+    | CTL.Pred(Paren(p),_) -> [p]
+    | CTL.Pred(p,_) -> []
     | CTL.Not(f) -> free_vars f
     | CTL.Exists(vars,f) -> free_vars f
     | CTL.And(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
@@ -378,16 +377,21 @@ let add_quants formula variables =
   List.fold_left (function prev -> function v -> CTL.Exists (v,prev))
     formula variables
 
+let pred2exists = function
+  | CTL.Pred(p,CTL.Modif(v)) as x -> CTL.Exists(v,x)
+  | CTL.Pred(p,CTL.UnModif(v)) as x -> CTL.Exists(v,x)
+  | CTL.Pred(p,CTL.Control) as x -> x
+  | _ -> failwith "not possible"
+
 let rec add_quantifiers quantified = function
     CTL.False -> CTL.False
   | CTL.True -> CTL.True
-  | CTL.Pred(Match(p,v))
-  | CTL.Pred(MatchModif(p,v)) as x ->
+  | CTL.Pred(Match(p),_) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
-      add_quants (CTL.Exists(v,x)) fresh
-  | CTL.Pred(p) -> CTL.Pred(p)
+      add_quants (pred2exists x) fresh
+  | CTL.Pred(p,v) as x -> pred2exists x
   | CTL.Not(f) -> CTL.Not(add_quantifiers quantified f)
   | CTL.Exists(vars,f) -> CTL.Exists(vars,add_quantifiers quantified f)
   | CTL.And(f1,f2) ->

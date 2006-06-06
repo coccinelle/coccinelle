@@ -1,8 +1,7 @@
 type predicate =
     TrueBranch | FalseBranch | After
   | Paren of string
-  | Match of Ast_cocci.rule_elem * string
-  | MatchModif of Ast_cocci.rule_elem * string
+  | Match of Ast_cocci.rule_elem
 
 val pred2c : predicate -> string
 

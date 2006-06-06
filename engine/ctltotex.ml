@@ -35,12 +35,18 @@ let texify s =
       | c -> Printf.sprintf "%c%s" c (loop (n+1)) in
   Printf.sprintf "\\mita{%s}" (loop 0)
 
+let modif2c pv = function
+    CTL.Modif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
+  | CTL.UnModif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
+  | CTL.Control -> ""
+
 let rec ctl2c ct pp pv = function
     CTL.False -> ("\\msf{false}",5)
   | CTL.True -> ("\\msf{true}",4)
-  | CTL.Pred(p) ->
+  | CTL.Pred(p,v) ->
       let res = pp p in
-      (res,ct+String.length res)
+      let resv = modif2c pv v in
+      (res^resv,ct+String.length res+String.length resv)
   | CTL.Not(f) ->
       let (res,ct) = wrap (ct+1) pp pv f in
       ("\\neg "^res,ct)

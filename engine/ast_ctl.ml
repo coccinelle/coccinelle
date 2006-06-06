@@ -10,11 +10,12 @@
 (* Generic Types to be instantiated                                     *)
 (* -------------------------------------------------------------------- *)
 
+
 (* CTL parameterised on basic predicates and metavar's*)
 type ('a,'b)generic_ctl = 
     False
   | True
-  | Pred of 'a
+  | Pred of 'a * 'b modif
   | Not of ('a,'b)generic_ctl
   | Exists of 'b * ('a,'b)generic_ctl		(* !!! *)
   | And of ('a,'b)generic_ctl * ('a,'b)generic_ctl
@@ -28,7 +29,8 @@ type ('a,'b)generic_ctl =
   | EX of ('a,'b)generic_ctl
   | EG of ('a,'b)generic_ctl
   | EU of ('a,'b)generic_ctl * ('a,'b)generic_ctl
-;;
+
+and 'b modif = Modif of 'b | UnModif of 'b | Control
 
 (* Subst's parameterised on (meta-)var's and result *)
 type ('a,'b)generic_substitution = ('a * 'b) list list;;
