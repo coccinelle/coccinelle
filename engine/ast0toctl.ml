@@ -62,6 +62,75 @@ let dots fn l after =
   | Ast0.STARS(x) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)
+(* Whenify *)
+(* For A ... B, neither A nor B should occur in the code matched by the ...
+We add these to any when code associated with the dots *)
+
+let rec when_dots before after = function
+    Ast0.DOTS(l) -> Ast0.DOTS(dots_list before after l)
+  | Ast0.CIRCLES(l) -> Ast0.CIRCLES(dots_list before after l)
+  | Ast0.STARS(l) -> Ast0.STARS(dots_list before after l)
+
+and dots_list before after = function
+    [] -> []
+  | [x] -> [when_statement before after x]
+  | (cur::((aft::_) as rest)) ->
+      (when_statement before (Some aft) cur)::
+      (dots_list (Some cur) after rest)
+
+and when_statement before after = function
+    Ast0.Decl(decl) as x -> x
+  | Ast0.Seq(lbrace,body,rbrace) ->
+      Ast0.Seq(lbrace,when_dots None None body,rbrace)
+  | Ast0.ExprStatement(exp,sem) as x -> x
+  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+      Ast0.IfThen(iff,lp,exp,rp,when_statement None None branch)
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      Ast0.IfThenElse(iff,lp,exp,rp,
+	when_statement None None branch1,els,when_statement None None branch2)
+  | Ast0.While(wh,lp,exp,rp,body) ->
+      Ast0.While(wh,lp,exp,rp,when_statement None None body)
+  | Ast0.Return(ret,sem) as x -> x
+  | Ast0.ReturnExpr(ret,exp,sem) as x -> x
+  | Ast0.MetaStmt(name) as x -> x
+  | Ast0.MetaStmtList(name) as x -> x
+  | Ast0.Exp(exp) as x -> x
+  | Ast0.Disj(rule_elem_dots_list) ->
+      Ast0.Disj(List.map (when_dots before after) rule_elem_dots_list)
+  | Ast0.Nest(rule_elem_dots) ->
+      Ast0.Nest(when_dots None None rule_elem_dots)
+  | Ast0.Dots(d,None) as x ->
+      (match (before,after) with
+	(None,None) -> x
+      |	(None,Some aft) -> Ast0.Dots(d,Some(Ast0.DOTS([aft])))
+      |	(Some bef,None) -> Ast0.Dots(d,Some(Ast0.DOTS([bef])))
+      |	(Some bef,Some aft) ->
+	  let new_when = Ast0.Disj([Ast0.DOTS([bef]);Ast0.DOTS([aft])]) in
+	  Ast0.Dots(d,Some(Ast0.DOTS([new_when]))))
+  | Ast0.Dots(d,Some statement_dots) as x ->
+      (match (before,after) with
+	(None,None) -> x
+      |	(None,Some aft) ->
+	  let new_when =
+	    Ast0.Disj([Ast0.DOTS([aft]);statement_dots]) in
+	  Ast0.Dots(d,Some(Ast0.DOTS([new_when])))
+      |	(Some bef,None) ->
+	  let new_when =
+	    Ast0.Disj([Ast0.DOTS([bef]);statement_dots]) in
+	  Ast0.Dots(d,Some(Ast0.DOTS([new_when])))
+      |	(Some bef,Some aft) ->
+	  let new_when =
+	    Ast0.Disj([Ast0.DOTS([bef]);Ast0.DOTS([aft]);statement_dots]) in
+	  Ast0.Dots(d,Some(Ast0.DOTS([new_when]))))
+  | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+      Ast0.FunDecl(stg,name,lp,params,rp,lbrace,when_dots None None body,
+		   rbrace)
+  | Ast0.OptStm(stm) -> Ast0.OptStm(when_statement None None stm)
+  | Ast0.UniqueStm(stm) -> Ast0.UniqueStm(when_statement None None stm)
+  | Ast0.MultiStm(stm) -> Ast0.MultiStm(when_statement None None stm)
+  | _ -> failwith "not supported"
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let ctr = ref 0
@@ -163,10 +232,11 @@ let rec statement stmt after =
   | Ast0.Exp(exp) ->
       make_seq (make_match(Ast.Exp(Ast0toast.expression exp))) after
   | Ast0.Disj(rule_elem_dots_list) ->
-      List.fold_right
-	(function cur ->
-	  function rest -> CTL.Or(dots statement cur None,rest))
-	rule_elem_dots_list CTL.False
+      let rec loop = function
+	  [] -> CTL.False
+	| [cur] -> dots statement cur None
+	| cur::rest -> CTL.Or(dots statement cur None,loop rest) in
+      loop rule_elem_dots_list
   | Ast0.Nest(rule_elem_dots) ->
       let dots_pattern = dots statement rule_elem_dots None in
       (match after with
@@ -431,11 +501,11 @@ let top_level = function
   | Ast0.INCLUDE(inc,s) -> failwith "not supported"
   | Ast0.FILEINFO(old_file,new_file) -> failwith "not supported"
   | Ast0.FUNCTION(stmt) ->
-      let start = statement stmt None in
+      let start = statement (when_statement None None stmt) None in
       let _ = free_vars start in
       add_quantifiers [] start
   | Ast0.CODE(rule_elem_dots) ->
-      let start = dots statement rule_elem_dots None in
+      let start = dots statement (when_dots None None rule_elem_dots) None in
       let _ = free_vars start in
       add_quantifiers [] start
   | Ast0.ERRORWORDS(exps) -> failwith "not supported"

@@ -587,8 +587,7 @@ exp_decl_statement_list:
 
 fun_exp_decl_statement_list:
     expr                        { [Ast0.OTHER(Ast0.Exp($1))] }
-  | f=fun_decl_statement        { f }
-  | f=fun_decl_statement fs=fun_exp_decl_statement_list { f@fs }
+  | f=nonempty_list(fun_decl_statement)        { List.concat f }
 
 %inline fun_decl_statement:
     decl_statement
