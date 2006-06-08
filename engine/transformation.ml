@@ -110,7 +110,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
 
   | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), ii) -> 
       let ii' = tagge_symbols [i2;i3] ii  binding in
-      let eas' = undots eas in
+      let eas' = A.undots eas in
       let seqstyle = (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
       
       B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), ii'

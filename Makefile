@@ -30,7 +30,7 @@ OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
-all: $(EXEC) $(TARGET).top
+all: rec $(EXEC) $(TARGET).top
 opt: rec.opt $(OPTEXEC)
 
 rec:
@@ -83,7 +83,7 @@ clean::
 beforedepend:
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
 include .depend

@@ -84,6 +84,9 @@ clean::
 depend: $(GENERATED)
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
+.depend:
+	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+
 include .depend
 
 lexer_cocci.ml: lexer_cocci.mll

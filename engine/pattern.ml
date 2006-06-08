@@ -186,7 +186,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
 
           (
           (* for the pattern phase, no need the EComma *)
-           let paramsa' = undots paramsa +> List.filter (function A.PComma _ -> false | _ -> true) in
+           let paramsa' = A.undots paramsa +> List.filter (function A.PComma _ -> false | _ -> true) in
            match_params (match paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
              paramsa' paramsb
           )
@@ -309,7 +309,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       match_e_e ea1 eb1  >&&> (
 
       (* for the pattern phase, no need the EComma *)
-      let eas' = undots eas +> List.filter (function A.EComma _ -> false | _ -> true) in
+      let eas' = A.undots eas +> List.filter (function A.EComma _ -> false | _ -> true) in
       let ebs' = ebs +> List.map fst +> List.map (function
         | Left e -> e
         | Right typ -> raise Todo

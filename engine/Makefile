@@ -72,4 +72,7 @@ beforedepend:
 depend: beforedepend
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
+.depend: 
+	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+
 include .depend

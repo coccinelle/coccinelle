@@ -1,22 +1,15 @@
-dynArray.cmi: enum.cmi 
 oarray.cmi: ocollection.cmi 
 oassoc.cmi: ocollection.cmi 
 ograph.cmi: oset.cmi 
 ograph_extended.cmi: osetb.cmo oassocb.cmo 
 osequence.cmi: ocollection.cmi 
 oset.cmi: seti.cmo setb.cmi setPt.cmo ocollection.cmi 
-ANSITerminal.cmo: ANSITerminal.cmi 
-ANSITerminal.cmx: ANSITerminal.cmi 
 common.cmo: dumper.cmi commonop.cmi common.cmi 
 common.cmx: dumper.cmx commonop.cmx common.cmi 
 commonop.cmo: commonop.cmi 
 commonop.cmx: commonop.cmi 
 dumper.cmo: dumper.cmi 
 dumper.cmx: dumper.cmi 
-dynArray.cmo: enum.cmi dynArray.cmi 
-dynArray.cmx: enum.cmx dynArray.cmi 
-enum.cmo: enum.cmi 
-enum.cmx: enum.cmi 
 fullcommon.cmo: oseti.cmo osetb.cmo oset.cmi ograph2way.cmo ograph.cmi \
     oassoch.cmo oassocb.cmo oassoc_buffer.cmo oassoc.cmi oarray.cmi \
     commonop.cmi common.cmi 
@@ -31,8 +24,6 @@ oassoc_buffer.cmo: setb.cmi osetb.cmo oassocb.cmo oassoc.cmi common.cmi
 oassoc_buffer.cmx: setb.cmx osetb.cmx oassocb.cmx oassoc.cmx common.cmx 
 oassocb.cmo: oassoc.cmi mapb.cmo common.cmi 
 oassocb.cmx: oassoc.cmx mapb.cmx common.cmx 
-oassocbtree.cmo: oassoc.cmi dumper.cmi common.cmi 
-oassocbtree.cmx: oassoc.cmx dumper.cmx common.cmx 
 oassocdbm.cmo: oassoc.cmi common.cmi 
 oassocdbm.cmx: oassoc.cmx common.cmx 
 oassoch.cmo: oassoc.cmi dumper.cmi common.cmi 
@@ -69,5 +60,3 @@ seti.cmo: commonop.cmi common.cmi
 seti.cmx: commonop.cmx common.cmx 
 suffix_tree.cmo: suffix_tree.cmi 
 suffix_tree.cmx: suffix_tree.cmi 
-suffix_tree_ext.cmo: dynArray.cmi suffix_tree_ext.cmi 
-suffix_tree_ext.cmx: dynArray.cmx suffix_tree_ext.cmi 

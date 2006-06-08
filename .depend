@@ -1,18 +1,18 @@
 cocci.cmi: parsing_c/parse_c.cmi commons/ograph_extended.cmi \
-    engine/ctlcocci_integration.cmo parsing_c/control_flow_c.cmi \
+    engine/ctlcocci_integration.cmi parsing_c/control_flow_c.cmi \
     commons/common.cmi ctl/ast_ctl.cmo parsing_cocci/ast_cocci.cmo \
     parsing_c/ast_c.cmo engine/ast0toctl.cmi parsing_cocci/ast0_cocci.cmo 
 cocci.cmo: parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
-    commons/ograph_extended.cmi engine/ctlcocci_integration.cmo \
+    commons/ograph_extended.cmi engine/ctlcocci_integration.cmi \
     ctl/ctl_engine.cmi parsing_c/control_flow_c.cmi commons/commonop.cmi \
     commons/common.cmi parsing_c/ast_c.cmo engine/ast0toctl.cmi cocci.cmi 
 cocci.cmx: parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
-    commons/ograph_extended.cmx engine/ctlcocci_integration.cmx \
+    commons/ograph_extended.cmx engine/ctlcocci_integration.cmi \
     ctl/ctl_engine.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
     commons/common.cmx parsing_c/ast_c.cmx engine/ast0toctl.cmx cocci.cmi 
 main.cmo: parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi flag.cmo \
     commons/dumper.cmi parsing_c/control_flow_c.cmi commons/commonop.cmi \
-    commons/common.cmi misc/classic_patch.cmo parsing_c/ast_c.cmo 
+    commons/common.cmi misc/classic_patch.cmi parsing_c/ast_c.cmo 
 main.cmx: parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx flag.cmx \
     commons/dumper.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
     commons/common.cmx misc/classic_patch.cmx parsing_c/ast_c.cmx 
@@ -20,3 +20,8 @@ test.cmo: parsing_c/control_flow_c.cmi commons/commonop.cmi \
     commons/common.cmi cocci.cmi 
 test.cmx: parsing_c/control_flow_c.cmx commons/commonop.cmx \
     commons/common.cmx cocci.cmx 
+misc/classic_patch.cmi: commons/fullcommon.cmo 
+misc/classic_patch.cmo: commons/fullcommon.cmo commons/dumper.cmi \
+    commons/commonop.cmi misc/classic_patch.cmi 
+misc/classic_patch.cmx: commons/fullcommon.cmx commons/dumper.cmx \
+    commons/commonop.cmx misc/classic_patch.cmi 
