@@ -1,5 +1,53 @@
 open Fullcommon
 
+
+(******************************************************************************)
+
+type parsing_stat = {
+    filename: filename;
+    mutable passing_through_lines: int;
+    mutable have_timeout: bool;
+
+    mutable correct: int;  mutable bad: int;
+  } 
+
+
+(* todo: stat per dir ?  give in terms of func_or_decl numbers:   
+    nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
+   note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les valeurs 
+    alors on parsera correctemet tout le fichier et pourtant y'aura aucune def  et donc 
+    aucune couverture en fait.   
+   ==> TODO evaluer les parties non parsé ? 
+*)
+let print_parsing_stat_list = fun statxs -> 
+        let total = (List.length statxs) in
+        let perfect = (statxs +> List.filter (function {have_timeout = false; bad = 0} -> true | _ -> false) +> List.length) in
+        pr2 "\n\n\n---------------------------------------------------------------";
+        pr2 "pbs with files:";
+        statxs 
+          +> List.filter (function {have_timeout = true} -> true | {bad = n} when n > 0 -> true | _ -> false)
+          +> List.iter (function {filename = file; have_timeout = timeout; bad = n} -> 
+                 pr2 (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
+            );
+        pr2 "\n\n\n---------------------------------------------------------------";
+        pr2 (
+          (sprintf "NB total files = %d; " total) ^
+          (sprintf "perfect = %d; " perfect) ^
+          (sprintf "pbs = %d; "     (statxs +> List.filter (function {have_timeout = b; bad = n} when n > 0 -> true | _ -> false) +> List.length)) ^
+          (sprintf "timeout = %d; " (statxs +> List.filter (function {have_timeout = true; bad = n} -> true | _ -> false) +> List.length)) ^
+          (sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
+                                                          
+         );
+        let good = (statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0) in
+        let bad  = (statxs +> List.fold_left (fun acc {bad = x} -> acc+x) 0)  in
+        pr2 (
+          (sprintf "nb good = %d,  nb bad = %d    " good bad) ^
+          (sprintf "=========> %d"  (100 * good / (good+bad))) ^ "%"
+         )
+
+
+
+
 (******************************************************************************)
 let pr2 s = 
   if !Flag.verbose_parsing 
@@ -10,15 +58,6 @@ let pr2 s =
 (******************************************************************************)
 let wrap_lexbuf_info lexbuf     = (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 let wrap_parse_info  parse_info = (parse_info.str,       parse_info.charpos)    
-
-type parsing_stat = {
-    filename: filename;
-    mutable passing_through_lines: int;
-    mutable have_timeout: bool;
-
-    mutable correct: int;  mutable bad: int;
-  } 
-
 
 (******************************************************************************)
 

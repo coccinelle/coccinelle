@@ -36,7 +36,7 @@ let addStorageD  = function
 let addTypeD     = function 
   | ((Left3 Signed,ii)   ,({typeD = ((Some Signed,  b,c),ii2)} as v)) -> warning "duplicate 'signed'"   v
   | ((Left3 UnSigned,ii) ,({typeD = ((Some UnSigned,b,c),ii2)} as v)) -> warning "duplicate 'unsigned'" v
-  | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as v)) -> 
+  | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as _v)) -> 
       raise (Semantic ("both signed and unsigned specified", fake_parse_info))
   | ((Left3 x,ii),        ({typeD = ((None,b,c),ii2)} as v))   -> {v with typeD = (Some x,b,c),ii ++ ii2}
 
@@ -47,11 +47,11 @@ let addTypeD     = function
   | ((Middle3 Long,ii),   ({typeD = ((a,Some Long ,c),ii2)} as v)) -> { v with typeD = (a, Some LongLong, c),ii++ii2 }
   | ((Middle3 Long,ii),   ({typeD = ((a,Some LongLong ,c),ii2)} as v)) -> warning "triplicate 'long'" v
 
-  | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as v)) -> 
+  | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as _v)) -> 
       raise (Semantic ("both long and short specified", fake_parse_info))
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  -> {v with typeD = (a, Some x,c),ii++ii2}
 
-  | ((Right3 t,ii),       ({typeD = ((a,b,Some _),ii2)} as v)) -> 
+  | ((Right3 t,ii),       ({typeD = ((a,b,Some _),ii2)} as _v)) -> 
       raise (Semantic ("two or more data types", fake_parse_info))
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   -> {v with typeD = (a,b, Some t),ii++ii2}
 
@@ -127,7 +127,7 @@ let fixDeclSpecForFuncDef x =
 *)
 let (fixOldCDecl: fullType -> fullType) = fun ty ->
   match snd ty with
-  | ((FunctionType (fullt, Classic (params, b, iitodo1)) as v),iitodo) -> 
+  | ((FunctionType (fullt, Classic (params, b, iitodo1)) as _v),iitodo) -> 
        (* stdC: If the prototype declaration declares a parameter for a function that you 
 	  are defining (it is part of a function definition), then you must write a name 
 	  within the declarator. Otherwise, you can omit the name.
@@ -352,7 +352,7 @@ argument_expr_list: assign_expr { [Left $1, []] }
 
 decl_spec3: decl_spec { et "decl_spec3" (); $1 }
 
-primary_expr: TIdent  { Constant (Ident  (fst $1)), [snd $1] }
+primary_expr: TIdent  { (Ident  (fst $1)), [snd $1] }
             | TInt    { Constant (Int    (fst $1)), [snd $1] }
 	    | TFloat  { Constant (Float  (fst $1)), [snd $1] }
 	    | TString { Constant (String (fst $1)), [snd $1] }

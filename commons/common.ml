@@ -1898,6 +1898,10 @@ let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
     (fun k' -> 
       if k = k' then v else acc k'
     )) (fun k -> failwith "no key in this assoc")
+(* simpler: 
+let (assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)) = fun xs ->
+  fun k -> List.assoc k xs
+*)
 
 let (empty_assoc: ('a, 'b) assoc) = []
 let fold_assoc = List.fold_left

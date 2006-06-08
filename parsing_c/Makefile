@@ -3,26 +3,26 @@
 TARGET=c_parser
 
 SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml \
-	    lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
+	    lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml main.ml
 
-SYSLIBS = str.cma unix.cma threads.cma
-LIBS=../commons/commons.cma
-COMMONDIR=../commons
-SUBDIRS=../commons
+SYSLIBS = str.cma unix.cma 
 
-
-ADDONSPATH = -I $(COMMONDIR) 
+# parsing_c now depends on cocci_parser because we decorate the token in Ast_c with
+# some parse info and we make some place to welcome some mcode.
+LIBS=../commons/commons.cma  ../parsing_cocci/cocci_parser.cma
+ADDONSPATH= -I ../commons -I  ../parsing_cocci 
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM
 
-# -w A ?
-OCAMLC=ocamlc -g  $(PP) $(ADDONSPATH) -thread
-OCAMLOPT=ocamlopt  $(PP) $(ADDONSPATH) -thread -p -inline 0
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
+OCAMLC=ocamlc -g   $(ADDONSPATH) 
+OCAMLOPT=ocamlopt   $(ADDONSPATH)
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(PP) $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(PP) -thread $(ADDONSPATH)
+OCAMLDEP=ocamldep  $(ADDONSPATH)
+OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 
 OBJS = $(SOURCEMAIN:.ml=.cmo)
@@ -30,12 +30,12 @@ OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
 
 
 
-all: $(TARGET) $(TARGET).cma
+all: $(TARGET).byte $(TARGET).cma
 #$(TARGET).top
 #$(TARGET).opt
 
-$(TARGET): $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(TARGET) $(SYSLIBS) $(LIBS) $(OBJS)
+$(TARGET).byte: $(OBJS) $(LIBS)
+	$(OCAMLC) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
@@ -44,7 +44,7 @@ $(TARGET).cma: $(OBJS) $(LIBS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
 clean::
-	rm -f $(TARGET) $(TARGET).opt
+	rm -f $(TARGET).byte $(TARGET).opt
 
 
 $(TARGET).top: $(OBJS) $(LIBS)
@@ -54,24 +54,9 @@ clean::
 
 links:
 	ln -s ../flag.ml
-#	ln -s ../ast_c.ml
-#	ln -s ../visitor_c.ml
-#	ln -s ../commons
 
 dellinks:
 	rm -f flag.ml 
-#ast_c.ml visitor_c.ml commons
-
-../commons/commons.cmxa:
-	cd commons; $(MAKE) commons.cmxa
-
-commons/%: 
-	cd commons; $(MAKE)
-
-
-
-clean::
-	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i clean; done 
 
 clean::
 	rm -f *.cm[iox] *.o

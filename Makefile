@@ -1,35 +1,36 @@
-TARGET=coccinelle
+TARGET=maxicoccinelle
 
 SOURCEMAIN = \
 	flag.ml  \
 	misc/classic_patch.ml  \
-	cocci.ml   main.ml
+	cocci.ml   test.ml main.ml
 
-EXEC=$(TARGET)
+EXEC=$(TARGET).byte
 OPTEXEC=$(EXEC).opt
 
 OBJS = $(SOURCEMAIN:.ml=.cmo)
 OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
 
 SYSLIBS = str.cma unix.cma
-LIBS=commons/commons.cma parsing_c/c_parser.cma parsing_cocci/cocci_parser.cma engine/engine.cma
-SUBDIRS=commons parsing_c parsing_cocci engine
-MAKESUBDIRS=commons parsing_c parsing_cocci engine
+LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
+MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
+ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
 
-ADDONSPATH = -I commons -I parsing_c -I parsing_cocci  -I engine -I misc
+#ocamlc -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci  -I ../engine -I ../misc
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM
 
-# -w A ?
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLC=ocamlc -g   $(ADDONSPATH)
-OCAMLOPT=ocamlopt   $(ADDONSPATH) -p -inline 0
+OCAMLOPT=ocamlopt   $(ADDONSPATH) 
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
-all: rec $(EXEC)
+all: $(EXEC) $(TARGET).top
 opt: rec.opt $(OPTEXEC)
 
 rec:
@@ -41,6 +42,8 @@ rec.opt:
 $(EXEC): $(OBJS) $(LIBS)
 	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS)
 
+$(TARGET).top: $(OBJS) $(LIBS)
+	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(OPTEXEC): $(OPTOBJS) $(OPTLIBS)
 	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa) $(OPTOBJS)
@@ -70,6 +73,9 @@ clean::
 
 clean::
 	rm -f *.cm[iox] *.o
+
+clean::
+	rm -f misc/*.cm[iox] *.o
 
 clean::
 	rm -f *~ .*~ gmon.out #*#

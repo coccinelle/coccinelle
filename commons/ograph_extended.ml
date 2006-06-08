@@ -124,7 +124,7 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let (print_control_flow: (('node * string), 'edge) ograph_extended -> unit) = fun g ->
+let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) = fun g ->
   with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in

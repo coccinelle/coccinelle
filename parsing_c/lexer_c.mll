@@ -17,9 +17,9 @@ let tokinfo lexbuf  =
   { 
     charpos = Lexing.lexeme_start lexbuf; 
     str     = tok lexbuf  
-  },()
+  }, Ast_c.dumb_annot
 
-let tok_add_s s (info,()) = {info with str = info.str ^ s}, ()
+let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 
 }
 
@@ -462,7 +462,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
 
 
 (*******************************************************************************)
-  | eof            { let (w,()) = tokinfo lexbuf in EOF ( { w with Common.str = "EOF"}, ()) }
+  | eof            { let (w,annot) = tokinfo lexbuf in EOF ( { w with Common.str = "EOF"},annot) }
 
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 

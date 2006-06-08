@@ -2,6 +2,7 @@ open Common open Commonop
 
 type ppmethod = PPviatok | PPnormal
 
+(**************************************************************************************)
 (*
 todo:
  take care of priority. because of the transformations, for instance
@@ -12,16 +13,19 @@ todo:
 todo: if add instruction,  then try keep same indentation ! so introduce some spacing
 
 *)
+(**************************************************************************************)
 
 open Ast_c
 open Parser_c
+
+
 
 let pp_program file x = 
 
   
   with_open_outfile "/tmp/output.c" (fun (pr,_) -> 
 
-   let table = Common.full_charpos_to_pos file in
+   let _table = Common.full_charpos_to_pos file in
 
    (* note: that not exactly same tokens as in parsing, cos in parsing there is some transformation of tokens 
          such as TIdent in Typedef, TIdent in TString, but for what we are interested here, it is not really important
@@ -29,10 +33,13 @@ let pp_program file x =
    let toks = (Parse_c.tokens file) in 
    let toks = ref (toks +> List.map (fun tok -> (tok, Parse_c.info_from_token tok))) in
    
-   let sync (elem,()) = 
-     assert (elem <> fake_parse_info);
+
+
+   (* ---------------------- *)
+   let sync (elem,_ANNOT) = 
+     assert (elem <> Common.fake_parse_info);
      (* todo: if fake_parse_info ?  print the comments that are here ? *)
-      let (before, after) = !toks +> span (fun (tok, (info,())) -> info.charpos < elem.charpos)   in
+      let (before, after) = !toks +> span (fun (tok, (info,_ANNOT)) -> info.charpos < elem.charpos)   in
       toks := after;
 
       let (commentsbefore, passed) = before +> List.rev +> span (fun (tok, tokinfo) -> 
@@ -74,18 +81,47 @@ let pp_program file x =
       ()
         
    in
-   let _lastasked = ref (fake_parse_info, ()) in
-   let pr_elem e = 
+
+
+   (* ---------------------- *)
+   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumb_annot) in
+
+   let rec pr_elem ((info,(mcode,env)) as e) = 
      if not ((fst e).charpos > (fst !_lastasked).charpos)
      then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
 
      _lastasked := e;
-     sync e; pr (fst e).str 
-   in
+     sync e; 
+     (* pr info.str *)
+     let s = info.str in
+
+     match mcode with
+     | Ast_cocci.MINUS (i, any_xxs) -> 
+         pp_list_list_any env  !any_xxs 
+     | Ast_cocci.CONTEXT (i, any_befaft) -> 
+         (match !any_befaft with
+         | Ast_cocci.NOTHING -> pr s
+               
+         | Ast_cocci.BEFORE xxs -> 
+             pp_list_list_any env xxs;
+             pr s;
+         | Ast_cocci.AFTER xxs -> 
+             pr s;
+             pp_list_list_any env xxs;
+         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
+             pp_list_list_any env xxs;
+             pr s;
+             pp_list_list_any env yys;
+             
+         )
+     | Ast_cocci.PLUS i -> raise Impossible
 
 
 
-   let rec pp_expression = function
+
+
+   (* ---------------------- *)
+   and pp_expression = function
     | Constant (String s),        is     -> is +> List.iter pr_elem
     | Constant (c),         [i]     -> pr_elem i
     | FunCall  (e, es),     [i1;i2] -> 
@@ -581,17 +617,78 @@ let pp_program file x =
 
 
      | x -> error_cant_have x
+
+
+  (* ---------------------- *)
+
+  (* assert: normally there is only CONTEXT NOTHING tokens in any *)
+  and pp_any env x = match x with
+  | Ast_cocci.ExpressionTag exp -> pp_cocci_expr env exp
+  | Ast_cocci.Rule_elemTag rule -> pp_cocci_rule env rule
+  | Ast_cocci.IdentTag ident -> pp_cocci_ident env ident
+  | _ -> raise Todo
+
+  and pp_list_list_any env xxs =
+    (* TODO: put some  \n sometimes *)
+    xxs +> List.iter (fun xs -> xs +> List.iter (fun any -> pp_any env any))
+
+
+  and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
+  | Ast_cocci.Ident id -> pp_cocci_ident env id
+  | Ast_cocci.MetaExpr ((s,_),_typeTODO) -> 
+      let v = List.assoc s env in
+      (match v with 
+      | Ast_c.MetaExpr exp -> 
+          pp_expression exp
+      | _ -> raise Impossible
+      )
+
+  | Ast_cocci.Constant (Ast_cocci.Int (i),_) -> pr i
+
+  | Ast_cocci.FunCall (e, (lp,_), es, (rp,_)) -> 
+      pp_cocci_expr env e; pr lp; List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr rp
+
+  | Ast_cocci.EComma (com,_) -> pr com
+
+  | Ast_cocci.DisjExpr _ -> raise Impossible
+  | Ast_cocci.Edots _ -> raise Impossible
+  | _ -> raise Todo
+    
+
+  and pp_cocci_rule env x = match x with
+  | Ast_cocci.SeqStart (brace,_) -> pr brace
+  | Ast_cocci.SeqEnd   (brace,_) -> pr brace
+
+  | Ast_cocci.ExprStatement (e,  (sem,_)) -> pp_cocci_expr env e; pr sem
+
+
+
+  | Ast_cocci.IfHeader ((iff,_), (lp,_), e, (rp,_)) -> pr iff; pr lp; pp_cocci_expr env e; pr rp
+  | Ast_cocci.Else     (str,_) -> pr str
+
+  | Ast_cocci.Disj _ -> raise Impossible
+  | Ast_cocci.Dots _ -> raise Impossible
+  | Ast_cocci.Nest _ -> raise Impossible
+  | _ -> raise Todo
+
+  and pp_cocci_ident env x = raise Todo
+
+
+
    in
-   (**************************************************************************************)
-   (* start point *)
-   (**************************************************************************************)
+
+
+
+  (* ---------------------- *)
+  (* start point *)
+  (* ---------------------- *)
 
    x +> List.iter (fun ((e, ppmethod), info) -> 
    let (filename, (pos1, pos2), stre, toks) = info in 
    match ppmethod with
    | PPviatok -> 
        (match e with
-       | FinalDef (ii,()) -> pr_elem ({ii with str = ""},()) (* todo: less: assert that FinalDef is the last one in the list *)
+       | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumb_annot) (* todo: less: assert that FinalDef is the last one in the list *)
        | e -> toks +> List.iter (fun x -> pr_elem x)
        )
 
@@ -646,7 +743,7 @@ let pp_program file x =
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
 
-     | FinalDef (ii,()) -> pr_elem ({ii with str = ""},())
+     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumb_annot)
 
      | x -> error_cant_have x
      )

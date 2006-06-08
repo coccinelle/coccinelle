@@ -2,6 +2,7 @@ dynArray.cmi: enum.cmi
 oarray.cmi: ocollection.cmi 
 oassoc.cmi: ocollection.cmi 
 ograph.cmi: oset.cmi 
+ograph_extended.cmi: osetb.cmo oassocb.cmo 
 osequence.cmi: ocollection.cmi 
 oset.cmi: seti.cmo setb.cmi setPt.cmo ocollection.cmi 
 ANSITerminal.cmo: ANSITerminal.cmi 
@@ -47,9 +48,9 @@ ograph2way.cmo: setb.cmi osetb.cmo oset.cmi ograph.cmi ocollection.cmi \
 ograph2way.cmx: setb.cmx osetb.cmx oset.cmx ograph.cmx ocollection.cmx \
     commonop.cmx common.cmx 
 ograph_extended.cmo: setb.cmi osetb.cmo oset.cmi ocollection.cmi oassocb.cmo \
-    oassoc.cmi commonop.cmi common.cmi 
+    oassoc.cmi commonop.cmi common.cmi ograph_extended.cmi 
 ograph_extended.cmx: setb.cmx osetb.cmx oset.cmx ocollection.cmx oassocb.cmx \
-    oassoc.cmx commonop.cmx common.cmx 
+    oassoc.cmx commonop.cmx common.cmx ograph_extended.cmi 
 osequence.cmo: oassoc.cmi osequence.cmi 
 osequence.cmx: oassoc.cmx osequence.cmi 
 oset.cmo: seti.cmo setb.cmi setPt.cmo ocollection.cmi common.cmi oset.cmi 

@@ -281,6 +281,14 @@ let get_logical_line = function
 
 (* --------------------------------------------------------------------- *)
 
+let undots = function
+  | DOTS    e -> e
+  | CIRCLES e -> e
+  | STARS   e -> e
+
+(* --------------------------------------------------------------------- *)
+
+
 let modif_option f = function
     None -> false
   | Some x -> f x
@@ -417,3 +425,4 @@ let rec contains_modif = function
   | Dots(dots,_) | Circles(dots,_) | Stars(dots,_) -> modif_mcode dots
   | OptRuleElem(re) | UniqueRuleElem(re) | MultiRuleElem(re) ->
       List.exists contains_modif re
+

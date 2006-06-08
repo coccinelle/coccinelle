@@ -1,5 +1,3 @@
-# Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
-
 SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
@@ -12,7 +10,7 @@ CAMLOPT = ocamlopt
 CAMLLEX = ocamllex
 CAMLYACC= menhir
 CAMLDEP = ocamldep
-EXEC=$(TARGET)
+EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
@@ -55,12 +53,6 @@ clean::
 	rm -f $(TARGET)
 
 
-links: 
-	ln -s ../ast_cocci.ml
-#	ln -s ../commons
-
-dellinks:
-	rm -f ast_cocci.ml
 
 
 .SUFFIXES:

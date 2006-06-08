@@ -1,7 +1,7 @@
 # Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
 
-SOURCES = isomorphisms.ml pattern.ml ast_ctl.ml ast0toctl.ml ctltotex.ml
-TARGET=engine
+SOURCES = isomorphisms.ml pattern.ml transformation.ml ast0toctl.ml ctltotex.ml ctlcocci_integration.ml
+TARGET=cocciengine
 
 # The Caml compilers.
 CAMLC =ocamlc -g
@@ -9,23 +9,22 @@ CAMLOPT = ocamlopt
 CAMLLEX = ocamllex
 CAMLYACC= ocamlyacc -v
 CAMLDEP = ocamldep
-EXEC=$(TARGET)
+
+EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
-GENERATED=
-OBJS = isomorphisms.cmo pattern.cmo ast_ctl.cmo ast0toctl.cmo ctltotex.cmo 
+OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
-INCLUDE_PATH = -I ../commons -I .. -I ../parsing_c -I ../parsing_cocci
+INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci
 
-#all: $(LIB)
 all: $(EXEC) $(LIB)
 
 all.opt: $(OPTLIB)
 
 
-$(LIB): $(GENERATED) $(OBJS)
+$(LIB): $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)
 
 # clean rule for LIB
@@ -33,10 +32,10 @@ clean::
 	rm -f $(LIB)
 
 
-$(OPTLIB): $(GENERATED) $(OPTOBJS) 
+$(OPTLIB): $(OPTOBJS) 
 	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
-LIBS=../commons/commons.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma 
+LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma 
 SYSLIBS = str.cma unix.cma
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
@@ -48,13 +47,6 @@ clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
 	rm -f $(TARGET)
 
-
-links: 
-	ln -s ../ast_cocci.ml
-#	ln -s ../commons
-
-dellinks:
-	rm -f ast_cocci.ml
 
 
 .SUFFIXES:
@@ -75,7 +67,9 @@ clean::
 	rm -f *.cm[iox] *.o 
 	rm -f *~ .*~ #*# 
 
-depend: $(GENERATED)
+beforedepend:
+
+depend: beforedepend
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 include .depend

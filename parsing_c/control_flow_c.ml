@@ -1,9 +1,7 @@
 open Commonop open Common
 
 (********************************************************************************)
-(********************************************************************************)
 
-(*------------------------------------------------------------------------------*)
 (*
  note: deadCode detection
   what is dead code ? when there is no starti  to start from ? => make starti an option too ?
@@ -57,7 +55,6 @@ open Commonop open Common
 
 
 *)
-(*------------------------------------------------------------------------------*)
 
 open Ograph_extended
 open Oassoc
@@ -68,6 +65,7 @@ open Visitor_c
 
 
 (*------------------------------------------------------------------------------*)
+
 type node = node1 * string (* to debug *)
 and node1 = 
   | HeadFunc of definition
@@ -75,7 +73,8 @@ and node1 =
   | Enter 
   | Exit
 
-  | NestedFunCall of expression   (* cos "fake" node *)
+  | NestedFunCall of expression   (* cos "fake" node *) (* TODO *)
+
   | Statement     of statement
   | Declaration   of declaration
 
@@ -86,6 +85,7 @@ and node1 =
      two pairwise { } share the same number.
      kind of "brace_identifier". 
      used mostly for debugging or for checks.
+     update: used also with CTL engine ? 
   *)
   | StartBrace of int * statement (* special_cfg_ast *)
   | EndBrace   of int
@@ -106,32 +106,7 @@ exception OnlyBreakInSwitch of (Common.parse_info)
 exception NoEnclosingLoop   of (Common.parse_info)
 
 
-type nodei = int
 
-
-
-(*------------------------------------------------------------------------------*)
-let get_next_node g nodei = 
-    (match (g#successors nodei)#tolist with
-    | [nexti, Direct] -> nexti,  g#nodes#find nexti
-    | x -> error_cant_have x
-    ) 
-
-let get_next_2node g nodei = 
-    (match (g#successors nodei)#tolist with
-    | [nexti, ChoiceTrue; nexti2, ChoiceFalse] -> (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
-    | [nexti, ChoiceFalse; nexti2, ChoiceTrue] -> (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
-    | x -> error_cant_have x
-    ) 
-
-let get_first_node g () = 
-    let starti = g#nodes#tolist +> List.find (fun (i, (node, nodes)) -> 
-    match node with HeadFunc _ -> true | _ -> false
-    ) +> fst 
-    in
-    starti 
-
-(********************************************************************************)
 (********************************************************************************)
 type additionnal_info = 
     additionnal_info2 * 
@@ -313,8 +288,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
     | ExprStatement (Some e), ii -> 
         let s = 
           (match e with
-          | (FunCall ((Constant (Ident f), _),ii3),ii2) -> f ^ "(...)"
-          | (Assignment ((Constant (Ident var), _), SimpleAssign, e), _) -> var ^ " = ... ;"
+          | (FunCall (( (Ident f), _),ii3),ii2) -> f ^ "(...)"
+          | (Assignment (((Ident var), _), SimpleAssign, e), _) -> var ^ " = ... ;"
           | _ -> "statement"
           )
         in
@@ -335,7 +310,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newfakeelse = !g#add_node (Fake, "[else]") +> adjust_g_i in
         let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
 
-        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g; (* for julia *)
+(* TOFIX if add that, have to update cflow_to_ast and do a get_next_node3 *)
+(*        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g; (* for julia *) *) 
 
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
@@ -507,7 +483,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         (* the code of while case (different from dowhile) is put in comment, to illustrate the difference *)
 
         (* TODO, not used ????? *)
-        let newauxinfo = LoopInfo (finali, newfakeelse, snd auxinfo) in
+        let _newauxinfo = LoopInfo (finali, newfakeelse, snd auxinfo) in
 
         !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g; 
 
@@ -614,9 +590,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         
 
         
-(* todo:
-    | Asm -> 
-*)
+    | Asm, ii -> raise Todo
+
     | x -> error_cant_have x
 
   in
@@ -649,9 +624,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
   !g
 
 (********************************************************************************)
-(********************************************************************************)
 
-(*------------------------------------------------------------------------------*)
 (*
 
  statement, compound, 
@@ -669,9 +642,29 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
 *)
 
-(*------------------------------------------------------------------------------*)
 type returnkind = LastCurrentNode of nodei | NoNextNode
 
+
+(*------------------------------------------------------------------------------*)
+let get_next_node g nodei = 
+    (match (g#successors nodei)#tolist with
+    | [nexti, Direct] -> nexti,  g#nodes#find nexti
+    | x -> error_cant_have x
+    ) 
+
+let get_next_2node g nodei = 
+    (match (g#successors nodei)#tolist with
+    | [nexti, ChoiceTrue; nexti2, ChoiceFalse] -> (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
+    | [nexti, ChoiceFalse; nexti2, ChoiceTrue] -> (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
+    | x -> error_cant_have x
+    ) 
+
+let get_first_node g () = 
+    let starti = g#nodes#tolist +> List.find (fun (i, (node, nodes)) -> 
+    match node with HeadFunc _ -> true | _ -> false
+    ) +> fst 
+    in
+    starti 
 
 (*------------------------------------------------------------------------------*)
 let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
@@ -739,10 +732,17 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
 
         let (st1, return1) = rebuild_statement theni' in
         let (st2, return2) = rebuild_statement elsei' in
-        raise Todo
+
+        (* assert next of return1 = next of return 2 *)
+        (match return1, return2 with
+        | LastCurrentNode return1, LastCurrentNode return2 -> 
+            assert (get_next_node g return1 =*= get_next_node g return2);
+            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return1 +> fst)
+        | x -> raise Todo
+        )
 
 
-    | x -> error_cant_have x
+    | x -> raise Todo
           
 
   in
@@ -775,29 +775,6 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
 
 
 (*******************************************************************************)
-(*******************************************************************************)
-(*------------------------------------------------------------------------------*)
-let print_control_flow g = 
-  with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
-    pr "digraph misc {\n" ;
-    let nodes = g#nodes in
-    nodes#iter (fun (k,(node, s)) -> 
-      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k); (* so can see if nodes without arcs were created *) (*  (Dumper.dump node)); *)
-    );
-
-    nodes#iter (fun (k,node) -> 
-      let succ = g#successors k in
-      succ#iter (fun (j,edge) ->
-        pr (sprintf "%d -> %d;\n" k j);
-      );
-    );
-    pr "}\n" ;
-    );
-  let status = Unix.system "dot /tmp/test.dot -Tps  -o /tmp/test.ps; gv /tmp/test.ps" in
-  ()
-
-
-(*------------------------------------------------------------------------------*)
 
 (*
   special_cfg_braces: 
@@ -876,12 +853,12 @@ let (check_control_flow: (node, edge) ograph_extended -> unit) = fun g ->
   dfs (starti, (* Depth 0*) [], [])
 
   
-(*------------------------------------------------------------------------------*)
+(*******************************************************************************)
 
 let test statement = 
   let g = ast_to_control_flow statement in
   check_control_flow g;
-  print_control_flow g;
+  print_ograph_extended g;
   assert (statement = statement +> ast_to_control_flow +> control_flow_to_ast);
   pr2 "done";
   

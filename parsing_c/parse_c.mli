@@ -8,6 +8,8 @@ type parsing_stat = {
     mutable bad: int;
   } 
 
+val print_parsing_stat_list: parsing_stat list -> unit
+
 val tokens: filename -> Parser_c.token list
 val info_from_token: Parser_c.token -> Ast_c.info
 

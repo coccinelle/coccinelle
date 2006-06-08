@@ -1,40 +1,42 @@
+control_flow_c.cmi: ../commons/ograph_extended.cmi ../commons/common.cmi \
+    ast_c.cmo 
 parse_c.cmi: parser_c.cmi ../commons/common.cmi ast_c.cmo 
 parser_c.cmi: ast_c.cmo 
 unparse_c.cmi: ../commons/common.cmi ast_c.cmo 
-ast_c.cmo: ../commons/commonop.cmi ../commons/common.cmi 
-ast_c.cmx: ../commons/commonop.cmx ../commons/common.cmx 
-control_flow_c.cmo: visitor_c.cmo ../commons/ograph_extended.cmo \
+ast_c.cmo: ../commons/commonop.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmo 
+ast_c.cmx: ../commons/commonop.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx 
+control_flow_c.cmo: visitor_c.cmo ../commons/ograph_extended.cmi \
     ../commons/oassocb.cmo ../commons/oassoc.cmi ../commons/dumper.cmi \
-    ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo 
+    ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo \
+    control_flow_c.cmi 
 control_flow_c.cmx: visitor_c.cmx ../commons/ograph_extended.cmx \
     ../commons/oassocb.cmx ../commons/oassoc.cmx ../commons/dumper.cmx \
-    ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx 
+    ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx \
+    control_flow_c.cmi 
 lexer_c.cmo: parser_c.cmi lexer_parser.cmo ../commons/commonop.cmi \
     ../commons/common.cmi ast_c.cmo 
 lexer_c.cmx: parser_c.cmx lexer_parser.cmx ../commons/commonop.cmx \
     ../commons/common.cmx ast_c.cmx 
 lexer_parser.cmo: ../commons/commonop.cmi ../commons/common.cmi 
 lexer_parser.cmx: ../commons/commonop.cmx ../commons/common.cmx 
-main.cmo: unparse_c.cmi parse_c.cmi ../commons/fullcommon.cmo \
+main.cmo: unparse_c.cmi parse_c.cmi ../commons/fullcommon.cmo flag.cmo \
     ../commons/dumper.cmi ast_c.cmo 
-main.cmx: unparse_c.cmx parse_c.cmx ../commons/fullcommon.cmx \
+main.cmx: unparse_c.cmx parse_c.cmx ../commons/fullcommon.cmx flag.cmx \
     ../commons/dumper.cmx ast_c.cmx 
 parse_c.cmo: semantic_c.cmo parser_c.cmi lexer_parser.cmo lexer_c.cmo \
-    ../commons/fullcommon.cmo ../commons/dumper.cmi ../commons/common.cmi \
-    ast_c.cmo parse_c.cmi 
+    ../commons/fullcommon.cmo flag.cmo ../commons/dumper.cmi \
+    ../commons/common.cmi ast_c.cmo parse_c.cmi 
 parse_c.cmx: semantic_c.cmx parser_c.cmx lexer_parser.cmx lexer_c.cmx \
-    ../commons/fullcommon.cmx ../commons/dumper.cmx ../commons/common.cmx \
-    ast_c.cmx parse_c.cmi 
-parser_c.cmo: semantic_c.cmo lexer_parser.cmo ../commons/commonop.cmi \
-    ../commons/common.cmi ast_c.cmo parser_c.cmi 
-parser_c.cmx: semantic_c.cmx lexer_parser.cmx ../commons/commonop.cmx \
-    ../commons/common.cmx ast_c.cmx parser_c.cmi 
+    ../commons/fullcommon.cmx flag.cmx ../commons/dumper.cmx \
+    ../commons/common.cmx ast_c.cmx parse_c.cmi 
+parser_c.cmo: semantic_c.cmo lexer_parser.cmo flag.cmo \
+    ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo parser_c.cmi 
+parser_c.cmx: semantic_c.cmx lexer_parser.cmx flag.cmx \
+    ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx parser_c.cmi 
 semantic_c.cmo: ../commons/common.cmi 
 semantic_c.cmx: ../commons/common.cmx 
-transformation.cmo: visitor_c.cmo ../commons/commonop.cmi \
-    ../commons/common.cmi ast_c.cmo 
-transformation.cmx: visitor_c.cmx ../commons/commonop.cmx \
-    ../commons/common.cmx ast_c.cmx 
 unparse_c.cmo: parser_c.cmi parse_c.cmi ../commons/dumper.cmi \
     ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo unparse_c.cmi 
 unparse_c.cmx: parser_c.cmx parse_c.cmx ../commons/dumper.cmx \

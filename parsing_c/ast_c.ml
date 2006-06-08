@@ -1,30 +1,41 @@
 open Common open Commonop
+
 (*******************************************************************************)
 (* 
   could have more precise type in fullType, in expression, etc
     but it requires to do too much things in parsing (checking no conflicting structname, computing value, ...)
     better to separate concern, so I put '=>' to mean what we would really like, in fact
-    what we really like is a fullType2, after all many stuff are just sugar
+    what we really like is a fullType2, after all many stuff are just sugar.
   
   inv: Array and FunctionType have also typeQualifier but they dont have any sense.
    I put this to factorise some code. If you see the grammar, you see that we can never specify const
    for the array himself (but we can do it for pointer).
-*)
 
-(*
+
  because of ExprStatement,  can have more 'new scope',  but rare I think
   for instance array of constExpression => possibly an exprstatement and a new (local) struct defined
  same for Constructor
 *)
-(*******************************************************************************)
-
-type info = Common.parse_info * unit  (* forunparser: *)
-type il = info list
-
-let iitodovide = []
 
 (*******************************************************************************)
-type fullType = typeQualifier * typeC
+(* 
+   Each token will be decorated in the futur by the mcode of cocci.
+    It is the job of the pretty printer to look at this information to print or not
+    the token (and also the pending '+' associated sometimes with the token).
+    The first time that we parse the original C file, the mcode is empty, or more precisely
+    all is tagged as a CONTEXT with NOTHING associated.
+    This is what I call a "clean expr/statement/...".
+
+   Each token will also be decorated in the futur with an environment, because the pending
+    '+' may contain metavariables that refer to some C code.
+*)
+
+type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding)   (* forunparser: *)
+and il = info list
+
+
+(*******************************************************************************)
+and fullType = typeQualifier * typeC
 and  typeC = typeCbis * il (* forunparser: *)
 
 and typeCbis =
@@ -97,12 +108,15 @@ and typeQualifierbis = {const: bool; volatile: bool}
 
 
 
-
+(* ------------------------------------------------------------------------------ *)
 
 and expression = expressionbis * il (* forunparser: *)
 and expressionbis = 
+  | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
   | Constant       of constant                                  
-  | FunCall        of expression * (((expression, (fullType * (storage * il))) either) * il) list (* cppext: normmally just   expression * expression list *)
+  | FunCall        of expression * (((expression, (fullType * (storage * il))) either) * il) list 
+  (* cppext: normmally just   expression * expression list *)
+  (* the il correspond to the ',' and it is associated to the argument that follows *)
   | CondExpr       of expression * expression * expression       (*   x ? : y --> x ? x : y;  if the then part is NoExpr, then we must return the same value as in the condition, cf gccext manual *)
 
   (* should be considered as statements, bad C langage *)
@@ -144,7 +158,6 @@ and expressionbis =
 		  | Int    of (string            (* * intType*)) (* -2 is not a constant, it is the unary operator - apply to constant 2, => string must represent a positive integer only *)
 		  | Float  of (string * floatType)
 
-                  | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
          and isWchar = IsWchar | IsChar
 
      and  unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
@@ -159,6 +172,7 @@ and expressionbis =
 
 
 
+(* ------------------------------------------------------------------------------ *)
 
 (* note: that assignement is not a statement but an expression; wonderful C langage *)
 (* note: I use  'and' for type definition cos gccext allow statement as expression, so need mutual recursive type definition *)
@@ -199,13 +213,14 @@ and statementbis =
 
 
 
+(* ------------------------------------------------------------------------------ *)
 
 (* (string * ...) option cos can have empty declaration or struct tag declaration 
-   .  
+     
    before I had Typedef constructor, but why make this special case and not have StructDef, EnumDef, ...
     so that struc t {...} v will generate 2 declaration ? So I try to generalise and not have
     not Typedef too, this require more work in parsing. Better to separate concern.
-   .
+   
    Before unparser, I didn't have a DeclList but just a Decl.
 *)
 and declaration = DeclList of ((((string * ((initialiser * info) option) * (info)) option) * fullType * storage) * il) list * (il * info) (* ilsto, infoptvirg *)
@@ -219,12 +234,12 @@ and declaration = DeclList of ((((string * ((initialiser * info) option) * (info
                           | InitGccRange of expression * expression * initialiser
 
 
-type definition = (string * functionDefType * storage * compound                               * (info * il * il))
+and definition = (string * functionDefType * storage * compound                               * (info * il * il))
          and functionDefType = fullType * ((parameterTypeDef * il) list) * bool (* has... *)   * (il * il)
              and parameterTypeDef = (bool (* hasregister *) * string * fullType                * (il * info))
 
 
-type program = programElement list
+and program = programElement list
      and programElement = Declaration of declaration
                         | Definition of definition
                         | EmptyDef of il  (* gccext: allow redundant ; *)
@@ -246,6 +261,22 @@ type program = programElement list
 
 
 (*******************************************************************************)
+(* Was previously in pattern.ml, but because of the transformer, 
+   we need to decorate each token with some cocci code AND the environment 
+   for this cocci code.
+ *)
+and metavars_binding = (string, metavar_binding_kind) assoc
+  and metavar_binding_kind = 
+  | MetaId        of string
+  | MetaFunc      of string
+  | MetaExpr      of expression (* a "clean expr" *)
+  | MetaExprList  of expression list
+  | MetaType      of fullType
+  | MetaStmt      of statement
+  | MetaParam     of (parameterTypeDef * il)
+  | MetaParamList of (parameterTypeDef * il) list
+
+(*******************************************************************************)
 
 type info_item = (filename * (pos_file *  pos_file) * string * il)
 
@@ -260,5 +291,12 @@ let nQ = nullQualif
 
 let default_int = (BaseType (IntType (Si (Signed, CInt))))
 
+let iitodovide = []
+
+let empty_metavars_binding = ([]: metavars_binding)
+
+let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1; }, 
+                                    {contents = Ast_cocci.NOTHING}),
+                  empty_metavars_binding)
 (*******************************************************************************)
 
