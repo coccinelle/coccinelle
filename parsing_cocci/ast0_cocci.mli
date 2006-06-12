@@ -1,11 +1,9 @@
-module Ast = Ast_cocci
-
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
 type arity = OPT | UNIQUE | MULTI | NONE
 
-type 'a mcode = 'a * arity * Ast.mcodekind
+type 'a mcode = 'a * arity * Ast_cocci.mcodekind
 
 type logline = Good of int | Bad of int
 type line_info = {logical_start : logline; logical_end : logline}
@@ -38,16 +36,16 @@ type ident =
 
 type base_expression = 
     Ident          of ident
-  | Constant       of Ast.constant mcode
+  | Constant       of Ast_cocci.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast.assignOp mcode * expression
+  | Assignment     of expression * Ast_cocci.assignOp mcode * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
-  | Postfix        of expression * Ast.fixOp mcode
-  | Infix          of expression * Ast.fixOp mcode
-  | Unary          of expression * Ast.unaryOp mcode
-  | Binary         of expression * Ast.binaryOp mcode * expression
+  | Postfix        of expression * Ast_cocci.fixOp mcode
+  | Infix          of expression * Ast_cocci.fixOp mcode
+  | Unary          of expression * Ast_cocci.unaryOp mcode
+  | Binary         of expression * Ast_cocci.binaryOp mcode * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
@@ -76,17 +74,17 @@ and expression = base_expression * line_info
 (* Types *)
 
 and base_fullType =
-    Type            of Ast.const_vol mcode option * typeC
+    Type            of Ast_cocci.const_vol mcode option * typeC
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType
 
 and base_typeC = 
-    BaseType        of Ast.baseType mcode * Ast.sign mcode option
+    BaseType        of Ast_cocci.baseType mcode * Ast_cocci.sign mcode option
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of tagged_string * Ast.structUnion mcode
+  | StructUnionName of tagged_string * Ast_cocci.structUnion mcode
   | TypeName        of string mcode
   | MetaType        of string mcode
 
@@ -164,7 +162,7 @@ type base_statement =
   | Dots          of string mcode (* ... *) * statement dots option
   | Circles       of string mcode (* ooo *) * statement dots option
   | Stars         of string mcode (* *** *) * statement dots option
-  | FunDecl of Ast.storage mcode option * ident (* name *) *
+  | FunDecl of Ast_cocci.storage mcode option * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
@@ -191,6 +189,6 @@ type rule = top_level list
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
-let wrap x = (x,{logical_start = Good (-1); logical_end = Good (-1)})
-let unwrap (x,_) = x
-let rewrap (_,info) x = (x,info)
+val wrap : 'a -> 'a * line_info
+val unwrap : 'a * line_info -> 'a
+val rewrap : 'a * line_info -> 'a -> 'a * line_info

@@ -63,7 +63,8 @@ let addQualif = function
   | ({volatile=true}, v) -> {v with volatile=true}
   | _ -> internal_error "there is no noconst or novolatile keyword"
 
-let addQualifD   = fun ((qu,ii), ({qualifD = (v,ii2)} as x)) -> { x with qualifD = (addQualif (qu, v),ii::ii2) }
+let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
+  { x with qualifD = (addQualif (qu, v),ii::ii2) }
 
 
 (**************************************)

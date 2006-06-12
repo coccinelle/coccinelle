@@ -439,6 +439,7 @@ let do_process file verbose =
     List.map2
       (function (minus, metavars) ->
 	function (plus, metavars) ->
+	  let minus = Compute_lines.compute_lines minus in
 	  let minus = Arity.minus_arity minus in
 	  let plus = Ast0toast.ast0toast plus in
 	  let replus = Plus.plus plus in

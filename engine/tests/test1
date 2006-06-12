@@ -1,4 +1,14 @@
 @@
+expression X,Y,Z;
+@@
+
+- f(X);
++ f(Z);
+  ...
+  g(Y);
+  h(Z);
+
+@@
 expression X;
 @@
 

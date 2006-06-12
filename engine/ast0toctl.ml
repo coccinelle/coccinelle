@@ -51,7 +51,7 @@ let get_list_option fn = function
 (* Dots *)
 
 let dots fn l after =
-  match l with
+  match Ast0.unwrap l with
     Ast0.DOTS(x) ->
       let rec loop = function
 	  [] -> (match after with Some x -> x | None -> CTL.True)
@@ -66,10 +66,12 @@ let dots fn l after =
 (* For A ... B, neither A nor B should occur in the code matched by the ...
 We add these to any when code associated with the dots *)
 
-let rec when_dots before after = function
-    Ast0.DOTS(l) -> Ast0.DOTS(dots_list before after l)
-  | Ast0.CIRCLES(l) -> Ast0.CIRCLES(dots_list before after l)
-  | Ast0.STARS(l) -> Ast0.STARS(dots_list before after l)
+let rec when_dots before after d =
+  Ast0.rewrap d
+    (match Ast0.unwrap d with
+      Ast0.DOTS(l) -> Ast0.DOTS(dots_list before after l)
+    | Ast0.CIRCLES(l) -> Ast0.CIRCLES(dots_list before after l)
+    | Ast0.STARS(l) -> Ast0.STARS(dots_list before after l))
 
 and dots_list before after = function
     [] -> []
@@ -78,57 +80,68 @@ and dots_list before after = function
       (when_statement before (Some aft) cur)::
       (dots_list (Some cur) after rest)
 
-and when_statement before after = function
-    Ast0.Decl(decl) as x -> x
-  | Ast0.Seq(lbrace,body,rbrace) ->
-      Ast0.Seq(lbrace,when_dots None None body,rbrace)
-  | Ast0.ExprStatement(exp,sem) as x -> x
-  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
-      Ast0.IfThen(iff,lp,exp,rp,when_statement None None branch)
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
-      Ast0.IfThenElse(iff,lp,exp,rp,
-	when_statement None None branch1,els,when_statement None None branch2)
-  | Ast0.While(wh,lp,exp,rp,body) ->
-      Ast0.While(wh,lp,exp,rp,when_statement None None body)
-  | Ast0.Return(ret,sem) as x -> x
-  | Ast0.ReturnExpr(ret,exp,sem) as x -> x
-  | Ast0.MetaStmt(name) as x -> x
-  | Ast0.MetaStmtList(name) as x -> x
-  | Ast0.Exp(exp) as x -> x
-  | Ast0.Disj(rule_elem_dots_list) ->
-      Ast0.Disj(List.map (when_dots before after) rule_elem_dots_list)
-  | Ast0.Nest(rule_elem_dots) ->
-      Ast0.Nest(when_dots None None rule_elem_dots)
-  | Ast0.Dots(d,None) as x ->
-      (match (before,after) with
-	(None,None) -> x
-      |	(None,Some aft) -> Ast0.Dots(d,Some(Ast0.DOTS([aft])))
-      |	(Some bef,None) -> Ast0.Dots(d,Some(Ast0.DOTS([bef])))
-      |	(Some bef,Some aft) ->
-	  let new_when = Ast0.Disj([Ast0.DOTS([bef]);Ast0.DOTS([aft])]) in
-	  Ast0.Dots(d,Some(Ast0.DOTS([new_when]))))
-  | Ast0.Dots(d,Some statement_dots) as x ->
-      (match (before,after) with
-	(None,None) -> x
-      |	(None,Some aft) ->
-	  let new_when =
-	    Ast0.Disj([Ast0.DOTS([aft]);statement_dots]) in
-	  Ast0.Dots(d,Some(Ast0.DOTS([new_when])))
-      |	(Some bef,None) ->
-	  let new_when =
-	    Ast0.Disj([Ast0.DOTS([bef]);statement_dots]) in
-	  Ast0.Dots(d,Some(Ast0.DOTS([new_when])))
-      |	(Some bef,Some aft) ->
-	  let new_when =
-	    Ast0.Disj([Ast0.DOTS([bef]);Ast0.DOTS([aft]);statement_dots]) in
-	  Ast0.Dots(d,Some(Ast0.DOTS([new_when]))))
-  | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
-      Ast0.FunDecl(stg,name,lp,params,rp,lbrace,when_dots None None body,
-		   rbrace)
-  | Ast0.OptStm(stm) -> Ast0.OptStm(when_statement None None stm)
-  | Ast0.UniqueStm(stm) -> Ast0.UniqueStm(when_statement None None stm)
-  | Ast0.MultiStm(stm) -> Ast0.MultiStm(when_statement None None stm)
-  | _ -> failwith "not supported"
+and when_statement before after s =
+  Ast0.rewrap s
+    (match Ast0.unwrap s with
+      Ast0.Decl(decl) as x -> x
+    | Ast0.Seq(lbrace,body,rbrace) ->
+	Ast0.Seq(lbrace,when_dots None None body,rbrace)
+    | Ast0.ExprStatement(exp,sem) as x -> x
+    | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+	Ast0.IfThen(iff,lp,exp,rp,when_statement None None branch)
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+	Ast0.IfThenElse(iff,lp,exp,rp,
+	  when_statement None None branch1,els,
+	  when_statement None None branch2)
+    | Ast0.While(wh,lp,exp,rp,body) ->
+	Ast0.While(wh,lp,exp,rp,when_statement None None body)
+    | Ast0.Return(ret,sem) as x -> x
+    | Ast0.ReturnExpr(ret,exp,sem) as x -> x
+    | Ast0.MetaStmt(name) as x -> x
+    | Ast0.MetaStmtList(name) as x -> x
+    | Ast0.Exp(exp) as x -> x
+    | Ast0.Disj(rule_elem_dots_list) ->
+	Ast0.Disj(List.map (when_dots before after) rule_elem_dots_list)
+    | Ast0.Nest(rule_elem_dots) ->
+	Ast0.Nest(when_dots None None rule_elem_dots)
+    | Ast0.Dots(d,None) as x ->
+	(* don't care about line numbers any more, and never cared in when *)
+	(match (before,after) with
+	  (None,None) -> x
+	| (None,Some aft) -> Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([aft]))))
+	| (Some bef,None) -> Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([bef]))))
+	| (Some bef,Some aft) ->
+	    let new_when =
+	      Ast0.wrap(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));
+				    Ast0.wrap(Ast0.DOTS([aft]))])) in
+	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when])))))
+    | Ast0.Dots(d,Some statement_dots) as x ->
+	(* don't care about line numbers any more, and never cared in when *)
+	(match (before,after) with
+	  (None,None) -> x
+	| (None,Some aft) ->
+	    let new_when =
+	      Ast0.wrap
+		(Ast0.Disj([Ast0.wrap(Ast0.DOTS([aft]));statement_dots])) in
+	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when]))))
+	| (Some bef,None) ->
+	    let new_when =
+	      Ast0.wrap
+		(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));statement_dots])) in
+	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when]))))
+	| (Some bef,Some aft) ->
+	    let new_when =
+	      Ast0.wrap(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));
+				    Ast0.wrap(Ast0.DOTS([aft]));
+				    statement_dots])) in
+	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when])))))
+    | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(stg,name,lp,params,rp,lbrace,when_dots None None body,
+		     rbrace)
+    | Ast0.OptStm(stm) -> Ast0.OptStm(when_statement None None stm)
+    | Ast0.UniqueStm(stm) -> Ast0.UniqueStm(when_statement None None stm)
+    | Ast0.MultiStm(stm) -> Ast0.MultiStm(when_statement None None stm)
+    | _ -> failwith "not supported")
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -150,7 +163,7 @@ let make_match code =
   else CTL.Pred(Match(code),CTL.UnModif v)
 
 let rec statement stmt after =
-  match stmt with
+  match Ast0.unwrap stmt with
     Ast0.Decl(decl) ->
       make_seq (make_match(Ast.Decl(Ast0toast.declaration decl))) after
   | Ast0.Seq(lbrace,body,rbrace) ->
@@ -294,18 +307,69 @@ let fvdots fn = function
     Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
       List.fold_left Common.union_set [] (List.map fn l)
 
-let mcode (x,_) = x
+let metaid (x,_) = x
 
-let rec fvident = function
+(* Note that we would really rather attach + code to - or context code that
+shares the same variables, if there is such.  If we attach it to something
+else, the we increase the scope of the variable, and may allow less
+variation.  Perhaps this is never a problem, because multiple control-flow
+paths are only possible when there are dots, and + code can't attach to
+dots.  If there are two options for attaching the + code, then both options
+necessarily occur the same number of times in the matched code, so it
+doesn't matter where the quantifier goes. *)
+
+let rec mcode (_,mcodekind) =
+  let process_anything_list_list anythings =
+    List.fold_left Common.union_set []
+      (List.map
+	 (function l ->
+	   List.fold_left Common.union_set [] (List.map fvanything l))
+	 anythings) in
+  match mcodekind with
+    Ast.MINUS(_,anythings) -> process_anything_list_list !anythings
+  | Ast.CONTEXT(_,befaft) ->
+      (match !befaft with
+	Ast.BEFORE(ll) -> process_anything_list_list ll
+      | Ast.AFTER(ll) -> process_anything_list_list ll
+      | Ast.BEFOREAFTER(llb,lla) ->
+	  Common.union_set
+	    (process_anything_list_list lla)
+	    (process_anything_list_list llb)
+      | Ast.NOTHING -> [])
+  | _ -> failwith "unexpected plus code"
+
+and fvanything = function
+    Ast.FullTypeTag(fullType) -> fvfullType fullType
+  | Ast.BaseTypeTag(baseType) -> []
+  | Ast.StructUnionTag(structUnion) -> []
+  | Ast.SignTag(sign) -> []
+  | Ast.IdentTag(ident) -> fvident ident
+  | Ast.ExpressionTag(expression) -> fvexpr expression
+  | Ast.ConstantTag(constant) -> []
+  | Ast.UnaryOpTag(unaryOp) -> []
+  | Ast.AssignOpTag(assignOp) -> []
+  | Ast.FixOpTag(fixOp) -> []
+  | Ast.BinaryOpTag(binaryOp) -> []
+  | Ast.ArithOpTag(arithOp) -> []
+  | Ast.LogicalOpTag(logicalOp) -> []
+  | Ast.DeclarationTag(declaration) -> fvdeclaration declaration
+  | Ast.ParameterTypeDefTag(ptd) -> fvparameterTypeDef ptd
+  | Ast.StorageTag(storage) -> []
+  | Ast.Rule_elemTag(rule_elem) -> fvrule_elem rule_elem
+  | Ast.ConstVolTag(const_vol) -> []
+  | Ast.Token(string) -> []
+  | Ast.Code(top_level) -> fvtop_level top_level
+
+and fvident = function
     Ast.Id(name) -> []
-  | Ast.MetaId(name) -> [mcode name]
-  | Ast.MetaFunc(name) -> [mcode name]
-  | Ast.MetaLocalFunc(name) -> [mcode name]
+  | Ast.MetaId(name) -> [metaid name]
+  | Ast.MetaFunc(name) -> [metaid name]
+  | Ast.MetaLocalFunc(name) -> [metaid name]
   | Ast.OptIdent(id) -> fvident id
   | Ast.UniqueIdent(id) -> fvident id
   | Ast.MultiIdent(id) -> fvident id
 
-let rec fvexpr = function
+and fvexpr = function
     Ast.Ident(id) -> ((fvident id) : string list)
   | Ast.Constant(const) -> []
   | Ast.FunCall(fn,lp,args,rp) ->
@@ -327,11 +391,11 @@ let rec fvexpr = function
       Common.union_set (fvexpr exp) (fvident field)
   | Ast.RecordPtAccess(exp,ar,field) ->
       Common.union_set (fvexpr exp) (fvident field)
-  | Ast.Cast(lp,ty,rp,exp) -> Common.union_set (fvtypeC ty) (fvexpr exp)
-  | Ast.MetaConst(name,_) -> [mcode name]
-  | Ast.MetaErr(name) -> [mcode name]
-  | Ast.MetaExpr(name,_) -> [mcode name]
-  | Ast.MetaExprList(name) -> [mcode name]
+  | Ast.Cast(lp,ty,rp,exp) -> Common.union_set (fvfullType ty) (fvexpr exp)
+  | Ast.MetaConst(name,_) -> [metaid name]
+  | Ast.MetaErr(name) -> [metaid name]
+  | Ast.MetaExpr(name,_) -> [metaid name]
+  | Ast.MetaExprList(name) -> [metaid name]
   | Ast.EComma(cm) -> []
   | Ast.DisjExpr(exp_list) ->
       List.fold_left Common.union_set [] (List.map fvexpr exp_list)
@@ -345,41 +409,44 @@ let rec fvexpr = function
   | Ast.UniqueExp(exp) -> fvexpr exp
   | Ast.MultiExp(exp) -> fvexpr exp
 
+and fvfullType = function
+    Ast.Type(cv,ty) -> fvtypeC ty
+  | Ast.OptType(ty) -> fvfullType ty
+  | Ast.UniqueType(ty) -> fvfullType ty
+  | Ast.MultiType(ty) -> fvfullType ty
+
 and fvtypeC = function
     Ast.BaseType(ty,_) -> []
-  | Ast.Pointer(ty,star) -> fvtypeC ty
-  | Ast.Array(ty,lb,None,rb) -> fvtypeC ty
+  | Ast.Pointer(ty,star) -> fvfullType ty
+  | Ast.Array(ty,lb,None,rb) -> fvfullType ty
   | Ast.Array(ty,lb,Some size,rb) ->
-      Common.union_set (fvtypeC ty) (fvexpr size)
+      Common.union_set (fvfullType ty) (fvexpr size)
   | Ast.StructUnionName(name,kind) -> []
   | Ast.TypeName(name)-> []
-  | Ast.MetaType(name)-> [mcode name]
-  | Ast.OptType(ty) -> fvtypeC ty
-  | Ast.UniqueType(ty) -> fvtypeC ty
-  | Ast.MultiType(ty) -> fvtypeC ty
+  | Ast.MetaType(name)-> [metaid name]
 
-let rec fvdeclaration = function
+and fvdeclaration = function
     Ast.Init(ty,id,eq,exp,sem) ->
-      Common.union_set (fvtypeC ty)
+      Common.union_set (fvfullType ty)
 	(Common.union_set (fvident id) (fvexpr exp))
-  | Ast.UnInit(ty,id,sem) -> Common.union_set (fvtypeC ty) (fvident id)
+  | Ast.UnInit(ty,id,sem) -> Common.union_set (fvfullType ty) (fvident id)
   | Ast.OptDecl(decl) -> fvdeclaration decl
   | Ast.UniqueDecl(decl) -> fvdeclaration decl
   | Ast.MultiDecl(decl) -> fvdeclaration decl
 
-let rec fvparameterTypeDef = function
-    Ast.VoidParam(ty) -> fvtypeC ty
-  | Ast.Param(id,_,ty) -> Common.union_set (fvtypeC ty) (fvident id)
-  | Ast.MetaParam(name) -> [mcode name]
-  | Ast.MetaParamList(name) -> [mcode name]
+and fvparameterTypeDef = function
+    Ast.VoidParam(ty) -> fvfullType ty
+  | Ast.Param(id,ty) -> Common.union_set (fvfullType ty) (fvident id)
+  | Ast.MetaParam(name) -> [metaid name]
+  | Ast.MetaParamList(name) -> [metaid name]
   | Ast.PComma(cm) -> []
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> []
   | Ast.OptParam(param) -> fvparameterTypeDef param
   | Ast.UniqueParam(param) -> fvparameterTypeDef param
 
-let fvparameter_list = fvdots fvparameterTypeDef
+and fvparameter_list x = fvdots fvparameterTypeDef x
 
-let rec fvrule_elem = function
+and fvrule_elem = function
     Ast.FunDecl(stg,name,lp,params,rp) -> fvparameter_list params
   | Ast.Decl(decl) -> fvdeclaration decl
   | Ast.SeqStart(brace) -> []
@@ -396,8 +463,8 @@ let rec fvrule_elem = function
 	   (get_list_option fvexpr e3))
   | Ast.Return(ret,sem) -> []
   | Ast.ReturnExpr(ret,exp,sem) -> fvexpr exp
-  | Ast.MetaStmt(name) -> [mcode name]
-  | Ast.MetaStmtList(name) -> [mcode name]
+  | Ast.MetaStmt(name) -> [metaid name]
+  | Ast.MetaStmtList(name) -> [metaid name]
   | Ast.Disj(rule_elem_dots_list) ->
       List.fold_left Common.union_set []
 	(List.map (function x -> fvdots fvrule_elem x) rule_elem_dots_list)
@@ -412,6 +479,14 @@ let rec fvrule_elem = function
       List.fold_left Common.union_set [] (List.map fvrule_elem re)
   | Ast.MultiRuleElem(re) ->
       List.fold_left Common.union_set [] (List.map fvrule_elem re)
+
+and fvtop_level = function
+    Ast.FUNCTION(rule_elem_dots) -> fvdots fvrule_elem rule_elem_dots
+  | Ast.DECL(decl) -> fvdeclaration decl
+  | Ast.INCLUDE(incl,fl) -> []
+  | Ast.FILEINFO(oldfile,newfile) -> []
+  | Ast.ERRORWORDS(explist) -> []
+  | Ast.CODE(rule_elem_dots) -> fvdots fvrule_elem rule_elem_dots
 
 let free_table =
   (Hashtbl.create(50) :

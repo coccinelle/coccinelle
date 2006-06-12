@@ -41,7 +41,8 @@ let get_opt fn = function
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn = function
+let dots fn d =
+  match Ast0.unwrap d with
     Ast0.DOTS(x) -> List.iter fn x
   | Ast0.CIRCLES(x) -> List.iter fn x
   | Ast0.STARS(x) -> List.iter fn x
@@ -74,7 +75,8 @@ let ident context table minus = function
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec expression context table minus = function
+let rec expression context table minus e =
+  match Ast0.unwrap e with
     Ast0.Ident(id) -> ident context table minus id
   | Ast0.FunCall(fn,lp,args,rp) ->
       expression FN table minus fn; dots (expression ID table minus) args
@@ -101,7 +103,7 @@ let rec expression context table minus = function
   | Ast0.RecordPtAccess(exp,ar,field) ->
       expression ID table minus exp; ident FIELD table minus field
   | Ast0.Cast(lp,ty,rp,exp) ->
-      typeC table minus ty; expression ID table minus exp
+      fullType table minus ty; expression ID table minus exp
   | Ast0.MetaConst(name,ty) -> if minus then check_table table minus name
   | Ast0.MetaExpr(name,ty)  -> if minus then check_table table minus name
   | Ast0.MetaErr(name)      -> check_table table minus name
@@ -116,10 +118,18 @@ let rec expression context table minus = function
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and typeC table minus = function
-    Ast0.Pointer(ty,star) -> typeC table minus ty
+and fullType table minus ft =
+  match Ast0.unwrap ft with
+    Ast0.Type(cv,ty) -> typeC table minus ty
+  | Ast0.OptType(ty) -> fullType table minus ty
+  | Ast0.UniqueType(ty) -> fullType table minus ty
+  | Ast0.MultiType(ty) -> fullType table minus ty
+
+and typeC table minus t =
+  match Ast0.unwrap t with
+    Ast0.Pointer(ty,star) -> fullType table minus ty
   | Ast0.Array(ty,lb,size,rb) ->
-      typeC table minus ty; get_opt (expression ID table minus) size
+      fullType table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name) -> if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
@@ -128,20 +138,22 @@ and typeC table minus = function
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let declaration context table minus = function
+let declaration context table minus d =
+  match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
-      typeC table minus ty;
+      fullType table minus ty;
       ident context table minus id; expression ID table minus exp
   | Ast0.UnInit(ty,id,sem) ->
-      typeC table minus ty; ident context table minus id
+      fullType table minus ty; ident context table minus id
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let parameterTypeDef table minus = function
-    Ast0.Param(id,vs,ty) -> ident ID table minus id; typeC table minus ty
+let parameterTypeDef table minus param =
+  match Ast0.unwrap param with
+    Ast0.Param(id,ty) -> ident ID table minus id; fullType table minus ty
   | Ast0.MetaParam(name) -> if minus then check_table table minus name
   | Ast0.MetaParamList(name) -> if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
@@ -151,7 +163,8 @@ let parameter_list table minus = dots (parameterTypeDef table minus)
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec statement table minus = function
+let rec statement table minus s =
+  match Ast0.unwrap s with
     Ast0.Decl(decl) -> declaration ID table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement table minus) body
   | Ast0.ExprStatement(exp,sem) -> expression ID table minus exp

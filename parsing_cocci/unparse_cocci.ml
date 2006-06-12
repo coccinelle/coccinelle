@@ -113,7 +113,7 @@ let rec expression = function
       print_string " "; expression right
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
       expression exp1; print_string " "; mcode print_string why;
-      (match exp2 with None -> () | Some e -> print_string " "; expression e);
+      print_option (function e -> print_string " "; expression e) exp2;
       print_string " "; mcode print_string colon; expression exp3
   | Ast.Postfix(exp,op) -> expression exp; mcode fixOp op
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
@@ -131,20 +131,20 @@ let rec expression = function
   | Ast.RecordPtAccess(exp,ar,field) ->
       expression exp; mcode print_string ar; ident field
   | Ast.Cast(lp,ty,rp,exp) ->
-      mcode print_string lp; typeC ty; mcode print_string rp;
+      mcode print_string lp; fullType ty; mcode print_string rp;
       expression exp
   | Ast.MetaConst(name,None) -> mcode print_string name
   | Ast.MetaConst(name,Some ty) ->
       mcode print_string name; print_string "/* ";
       print_between (function _ -> print_string ", ") true_fn
-	(function x -> typeC x; true) ty;
+	(function x -> fullType x; true) ty;
       print_string "*/"
   | Ast.MetaErr(name) -> mcode print_string name
   | Ast.MetaExpr(name,None) -> mcode print_string name
   | Ast.MetaExpr(name,Some ty) ->
       mcode print_string name; print_string "/*";
       print_between (function _ -> print_string ", ") true_fn
-	(function x -> typeC x; true) ty;
+	(function x -> fullType x; true) ty;
       print_string "*/"
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -219,20 +219,24 @@ and constant = function
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
+and fullType = function
+    Ast.Type(cv,ty) ->
+      print_option (function x -> mcode const_vol x; print_string " ") cv;
+      typeC ty
+  | Ast.OptType(ty) -> print_string "?"; fullType ty
+  | Ast.UniqueType(ty) -> print_string "!"; fullType ty
+  | Ast.MultiType(ty) -> print_string "\\+"; fullType ty
+
 and typeC = function
-    Ast.BaseType(ty,Some sgn) -> mcode baseType ty; mcode sign sgn
-  | Ast.BaseType(ty,None) -> mcode baseType ty
-  | Ast.Pointer(ty,star) -> typeC ty; mcode print_string star
+    Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
+  | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.Array(ty,lb,size,rb) ->
-      typeC ty; mcode print_string lb; print_option expression size;
+      fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
   | Ast.StructUnionName(name,kind) ->
       mcode structUnion kind; mcode print_string name; print_string " "
   | Ast.TypeName(name)-> mcode print_string name; print_string " "
   | Ast.MetaType(name)-> mcode print_string name; print_string " "
-  | Ast.OptType(ty) -> print_string "?"; typeC ty
-  | Ast.UniqueType(ty) -> print_string "!"; typeC ty
-  | Ast.MultiType(ty) -> print_string "\\+"; typeC ty
 
 and baseType = function
     Ast.VoidType -> print_string "void "
@@ -251,6 +255,10 @@ and sign = function
     Ast.Signed -> print_string "signed "
   | Ast.Unsigned -> print_string "unsigned "
 
+and const_vol = function
+    Ast.Const -> print_string "const"
+  | Ast.Volatile -> print_string "volatile"
+
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
@@ -258,9 +266,9 @@ and sign = function
 
 let rec declaration = function
     Ast.Init(ty,id,eq,exp,sem) ->
-      typeC ty; ident id; mcode print_string eq; expression exp;
+      fullType ty; ident id; mcode print_string eq; expression exp;
       mcode print_string sem
-  | Ast.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
+  | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
@@ -269,10 +277,8 @@ let rec declaration = function
 (* Parameter *)
 
 let rec parameterTypeDef = function
-    Ast.VoidParam(ty) -> typeC ty
-  | Ast.Param(id,None,ty) -> typeC ty; ident id
-  | Ast.Param(id,Some vs,ty) ->
-      mcode value_qualif vs; print_string " "; typeC ty; ident id
+    Ast.VoidParam(ty) -> fullType ty
+  | Ast.Param(id,ty) -> fullType ty; ident id
   | Ast.MetaParam(name) -> mcode print_string name
   | Ast.MetaParamList(name) -> mcode print_string name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
@@ -280,10 +286,6 @@ let rec parameterTypeDef = function
   | Ast.Pcircles(dots) -> mcode print_string dots
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
-
-and value_qualif = function
-    Ast.Const -> print_string "const"
-  | Ast.Volatile -> print_string "volatile"
 
 let parameter_list =
   dots (function _ -> ()) (function x -> parameterTypeDef x; false) true_fn
@@ -404,7 +406,7 @@ let rule = print_between force_newline true_fn top_level
 
 let _ =
   anything := function
-      Ast.FullTypeTag(x) -> typeC x
+      Ast.FullTypeTag(x) -> fullType x
     | Ast.BaseTypeTag(x) -> baseType x
     | Ast.StructUnionTag(x) -> structUnion x
     | Ast.SignTag(x) -> sign x
@@ -421,7 +423,7 @@ let _ =
     | Ast.ParameterTypeDefTag(x) -> parameterTypeDef x
     | Ast.StorageTag(x) -> storage x
     | Ast.Rule_elemTag(x) -> let _ = rule_elem "" x in ()
-    | Ast.ValueQualifTag(x) -> value_qualif x
+    | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
 

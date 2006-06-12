@@ -122,7 +122,12 @@ and constant =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and fullType = typeC
+and fullType =
+    Type            of const_vol mcode option * typeC
+  | OptType         of fullType
+  | UniqueType      of fullType
+  | MultiType       of fullType
+
 and typeC = 
     BaseType        of baseType mcode * sign mcode option
   | Pointer         of fullType * string mcode (* * *)
@@ -133,10 +138,6 @@ and typeC =
 
   | MetaType        of string mcode
 
-  | OptType         of typeC
-  | UniqueType      of typeC
-  | MultiType       of typeC
-
 and tagged_string = string mcode
      
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
@@ -145,6 +146,8 @@ and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 and structUnion = Struct | Union
 
 and sign = Signed | Unsigned
+
+and const_vol = Const | Volatile
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -165,7 +168,7 @@ and declaration =
 
 and parameterTypeDef =
     VoidParam     of fullType
-  | Param         of ident * value_qualif mcode option * fullType
+  | Param         of ident * fullType
 
   | MetaParam     of string mcode
   | MetaParamList of string mcode
@@ -179,8 +182,6 @@ and parameterTypeDef =
   | UniqueParam   of parameterTypeDef
 
 and parameter_list = parameterTypeDef dots
-
-and value_qualif = Const | Volatile
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -264,7 +265,7 @@ and anything =
   | ParameterTypeDefTag of parameterTypeDef
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
-  | ValueQualifTag      of value_qualif
+  | ConstVolTag         of const_vol
   | Token               of string
   | Code                of top_level
 
@@ -312,8 +313,6 @@ let rec modif_ident = function
   | UniqueIdent(id) -> modif_ident id
   | MultiIdent(id) -> modif_ident id
 
-
-
 and modif_expression = function
     Ident(id) -> modif_ident id
   | Constant(const) -> modif_mcode const
@@ -341,7 +340,7 @@ and modif_expression = function
   | RecordPtAccess(exp,ar,field) ->
       modif_expression exp or modif_mcode ar or modif_ident field
   | Cast(lp,ty,rp,exp) ->
-      modif_mcode lp or modif_ty ty or modif_mcode rp or modif_expression exp
+      modif_mcode lp or modif_fullType ty or modif_mcode rp or modif_expression exp
   | MetaConst(name,_) -> modif_mcode name
   | MetaErr(name) -> modif_mcode name
   | MetaExpr(name,_) -> modif_mcode name
@@ -352,33 +351,35 @@ and modif_expression = function
   | Edots(dots,_) | Ecircles(dots,_) | Estars(dots,_) -> modif_mcode dots
   | OptExp(exp) | UniqueExp(exp) | MultiExp(exp) -> modif_expression exp
 
-and modif_ty = function
+and modif_fullType = function
+    Type(cv,ty) -> modif_typeC ty
+  | OptType(ty) -> modif_fullType ty
+  | UniqueType(ty) -> modif_fullType ty
+  | MultiType(ty) -> modif_fullType ty
+
+and modif_typeC = function
     BaseType(ty,sgn) -> modif_mcode ty or modif_option modif_mcode sgn
-  | Pointer(ty,star) -> modif_ty ty or modif_mcode star
+  | Pointer(ty,star) -> modif_fullType ty or modif_mcode star
   | Array(ty,lb,size,rb) ->
-      modif_ty ty or modif_mcode lb or modif_option modif_expression size or
-      modif_mcode rb
+      modif_fullType ty or modif_mcode lb or
+      modif_option modif_expression size or modif_mcode rb
   | StructUnionName(name,kind) -> modif_mcode kind or modif_mcode name
-  | TypeName(name)-> modif_mcode name
-  | MetaType(name)-> modif_mcode name
-  | OptType(ty) -> modif_ty ty
-  | UniqueType(ty) -> modif_ty ty
-  | MultiType(ty) -> modif_ty ty
+  | TypeName(name) -> modif_mcode name
+  | MetaType(name) -> modif_mcode name
 
 let rec modif_declaration = function
     Init(ty,id,eq,exp,sem) ->
-      modif_ty ty or modif_ident id or modif_mcode eq or
+      modif_fullType ty or modif_ident id or modif_mcode eq or
 	modif_expression exp or modif_mcode sem
   | UnInit(ty,id,sem) ->
-      modif_ty ty or modif_ident id or modif_mcode sem
+      modif_fullType ty or modif_ident id or modif_mcode sem
   | OptDecl(decl) -> modif_declaration decl
   | UniqueDecl(decl) -> modif_declaration decl
   | MultiDecl(decl) -> modif_declaration decl
 
 let rec modif_parameterTypeDef = function
-    VoidParam(ty) -> modif_ty ty
-  | Param(id,None,ty) -> modif_ty ty or modif_ident id
-  | Param(id,Some vs,ty) -> modif_mcode vs or modif_ty ty or modif_ident id
+    VoidParam(ty) -> modif_fullType ty
+  | Param(id,ty) -> modif_fullType ty or modif_ident id
   | MetaParam(name) -> modif_mcode name
   | MetaParamList(name) -> modif_mcode name
   | PComma(cm) -> modif_mcode cm

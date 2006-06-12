@@ -20,7 +20,7 @@ type res =
   | Closed of (Ast.anything * int * int * int * int) list
 
 let mcode fn = function
-    term, Ast.PLUS(info) ->
+    (term, Ast.PLUS(info)) ->
       let line = info.Ast.line in
       let lline = info.Ast.logical_line in
       Open (fn term,line,line,lline,lline)
@@ -42,7 +42,7 @@ let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag x
 let mk_storage x          = Ast.StorageTag x
 let mk_rule_elem x        = Ast.Rule_elemTag x
-let mk_value_qualif x     = Ast.ValueQualifTag x
+let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x            = Ast.Token x
 
 let get_real_start = function
@@ -146,7 +146,7 @@ let rec expression x =
     | Ast.RecordPtAccess(exp,ar,field) ->
 	[expression exp; mcode mk_token ar; ident field]
     | Ast.Cast(lp,ty,rp,exp) ->
-	[mcode mk_token lp; typeC ty; mcode mk_token rp; expression exp]
+	[mcode mk_token lp; fullType ty; mcode mk_token rp; expression exp]
     | Ast.MetaConst(name,ty)  -> [mcode mk_token name]
     | Ast.MetaErr(name)  -> [mcode mk_token name]
     | Ast.MetaExpr(name,ty)  -> [mcode mk_token name]
@@ -165,22 +165,24 @@ let rec expression x =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and typeC x =
-  let subterms =
-    match x with
-      Ast.BaseType(ty,Some sign) -> [mcode mk_sign sign; mcode mk_baseType ty]
-    | Ast.BaseType(ty,None) -> [mcode mk_baseType ty]
-    | Ast.Pointer(ty,star)  -> [typeC ty; mcode mk_token star]
+and fullType x =
+  let subterms = function
+      Ast.BaseType(ty,sign) ->
+	(get_option (mcode mk_sign) sign) @ [mcode mk_baseType ty]
+    | Ast.Pointer(ty,star)  -> [fullType ty; mcode mk_token star]
     | Ast.Array(ty,lb,size,rb)  ->
-	[typeC ty; mcode mk_token lb] @ (get_option expression size) @
+	[fullType ty; mcode mk_token lb] @ (get_option expression size) @
 	[mcode mk_token rb]
     | Ast.StructUnionName(name,kind) ->
 	[mcode mk_structUnion kind; mcode mk_token name]
     | Ast.TypeName(name)         -> [mcode mk_token name]
-    | Ast.MetaType(name)         -> [mcode mk_token name]
-    | Ast.OptType(_) | Ast.UniqueType(_) | Ast.MultiType(_) ->
-	failwith "impossible" in
-  test (Ast.FullTypeTag x) subterms
+    | Ast.MetaType(name)         -> [mcode mk_token name] in
+  match x with
+    Ast.Type(cv,ty) ->
+      test (Ast.FullTypeTag x)
+	((get_option (mcode mk_const_vol) cv) @ (subterms ty))
+  | Ast.OptType(_) | Ast.UniqueType(_) | Ast.MultiType(_) ->
+      failwith "impossible"
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -191,9 +193,9 @@ let declaration x =
   let subterms =
     match x with
       Ast.Init(ty,id,eq,exp,sem) ->
-	[typeC ty; ident id; mcode mk_token eq; expression exp;
+	[fullType ty; ident id; mcode mk_token eq; expression exp;
 	  mcode mk_token sem]
-    | Ast.UnInit(ty,id,sem) -> [typeC ty; ident id; mcode mk_token sem]
+    | Ast.UnInit(ty,id,sem) -> [fullType ty; ident id; mcode mk_token sem]
     | Ast.OptDecl(_) | Ast.UniqueDecl(_) | Ast.MultiDecl(_) ->
 	failwith "impossible" in
   test (Ast.DeclarationTag x) subterms
@@ -204,10 +206,8 @@ let declaration x =
 let parameterTypeDef x =
   let subterms =
     match x with
-      Ast.VoidParam(ty)        -> [typeC ty]
-    | Ast.Param(id,None,ty)    -> [typeC ty; ident id]
-    | Ast.Param(id,Some vs,ty) ->
-	[mcode mk_value_qualif vs; typeC ty; ident id]
+      Ast.VoidParam(ty)        -> [fullType ty]
+    | Ast.Param(id,ty)         -> [fullType ty; ident id]
     | Ast.MetaParam(name)      -> [mcode mk_token name]
     | Ast.MetaParamList(name)  -> [mcode mk_token name]
     | Ast.PComma(cm)           -> [mcode mk_token cm]

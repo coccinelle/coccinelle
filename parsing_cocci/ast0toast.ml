@@ -21,7 +21,8 @@ let mcode(term,_,mcodekind) = (term,mcodekind)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn = function
+let dots fn d =
+  match Ast0.unwrap d with
     Ast0.DOTS(x) -> Ast.DOTS(List.map fn x)
   | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
   | Ast0.STARS(x) -> Ast.STARS(List.map fn x)
@@ -55,7 +56,8 @@ let top_dots l =
     then Ast.DOTS(l)
     else failwith "inconsistent dots usage"
 
-let concat_dots fn = function
+let concat_dots fn d =
+  match Ast0.unwrap d with
     Ast0.DOTS(x) ->
       let l = List.concat(List.map fn x) in
       if only_dots l
@@ -72,7 +74,8 @@ let concat_dots fn = function
       then Ast.STARS(l)
       else failwith "inconsistent dots usage"
 
-let flat_concat_dots fn = function
+let flat_concat_dots fn d =
+  match Ast0.unwrap d with
     Ast0.DOTS(x) -> List.concat(List.map fn x)
   | Ast0.CIRCLES(x) -> List.concat(List.map fn x)
   | Ast0.STARS(x) -> List.concat(List.map fn x)
@@ -93,7 +96,8 @@ let rec ident = function
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec expression = function
+let rec expression e =
+  match Ast0.unwrap e with
     Ast0.Ident(id) -> Ast.Ident(ident id)
   | Ast0.Constant(const) ->
       Ast.Constant(mcode const)
@@ -129,15 +133,15 @@ let rec expression = function
   | Ast0.RecordPtAccess(exp,ar,field) ->
       Ast.RecordPtAccess(expression exp,mcode ar,ident field)
   | Ast0.Cast(lp,ty,rp,exp) ->
-      Ast.Cast(mcode lp,typeC ty,mcode rp,expression exp)
+      Ast.Cast(mcode lp,fullType ty,mcode rp,expression exp)
   | Ast0.MetaConst(name,ty)  ->
       let name = mcode name in
-      let ty = get_option (List.map typeC) ty in
+      let ty = get_option (List.map fullType) ty in
       Ast.MetaConst(name,ty)
   | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name)
   | Ast0.MetaExpr(name,ty)  ->
       let name = mcode name in
-      let ty = get_option (List.map typeC) ty in
+      let ty = get_option (List.map fullType) ty in
       Ast.MetaExpr(name,ty)
   | Ast0.MetaExprList(name) -> Ast.MetaExprList(mcode name)
   | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
@@ -162,34 +166,39 @@ let rec expression = function
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and typeC = function
-    Ast0.BaseType(ty,Some sign) -> Ast.BaseType(mcode ty,Some (mcode sign))
-  | Ast0.BaseType(ty,None) -> Ast.BaseType(mcode ty,None)
-  | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
+and fullType ft =
+  match Ast0.unwrap ft with
+    Ast0.Type(cv,ty) -> Ast.Type(get_option mcode cv,typeC ty)
+  | Ast0.OptType(ty) -> Ast.OptType(fullType ty)
+  | Ast0.UniqueType(ty) -> Ast.UniqueType(fullType ty)
+  | Ast0.MultiType(ty) -> Ast.MultiType(fullType ty)
+
+and typeC t =
+  match Ast0.unwrap t with
+    Ast0.BaseType(ty,sign) -> Ast.BaseType(mcode ty,get_option mcode sign)
+  | Ast0.Pointer(ty,star) -> Ast.Pointer(fullType ty,mcode star)
   | Ast0.Array(ty,lb,size,rb) ->
-      Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
+      Ast.Array(fullType ty,mcode lb,get_option expression size,mcode rb)
   | Ast0.StructUnionName(name,kind) ->
       Ast.StructUnionName(mcode name,mcode kind)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name) -> Ast.MetaType(mcode name)
-  | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
-  | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
-  | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty)
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration = function
+let rec declaration d =
+  match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
-      let ty = typeC ty in
+      let ty = fullType ty in
       let id = ident id in
       let eq = mcode eq in
       let exp = expression exp in
       let sem = mcode sem in
       Ast.Init(ty,id,eq,exp,sem)
-  | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
+  | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(fullType ty,ident id,mcode sem)
   | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
   | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
   | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)
@@ -197,10 +206,10 @@ let rec declaration = function
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec parameterTypeDef  = function
-    Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
-  | Ast0.Param(id,None,ty) -> Ast.Param(ident id,None,typeC ty)
-  | Ast0.Param(id,Some vs,ty) -> Ast.Param(ident id,Some (mcode vs),typeC ty)
+let rec parameterTypeDef p =
+  match Ast0.unwrap p with
+    Ast0.VoidParam(ty) -> Ast.VoidParam(fullType ty)
+  | Ast0.Param(id,ty) -> Ast.Param(ident id,fullType ty)
   | Ast0.MetaParam(name) -> Ast.MetaParam(mcode name)
   | Ast0.MetaParamList(name) -> Ast.MetaParamList(mcode name)
   | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -214,7 +223,8 @@ let parameter_list = dots parameterTypeDef
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec statement = function
+let rec statement s =
+  match Ast0.unwrap s with
     Ast0.Decl(decl) -> [Ast.Decl(declaration decl)]
   | Ast0.Seq(lbrace,body,rbrace) -> 
       let lbrace = mcode lbrace in

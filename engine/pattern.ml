@@ -188,9 +188,8 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
                todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? 
                todo: as usual, handle the Opt/Unique/Multi
             *)
-           | _ -> return false
-          ) 
-           >&&>
+          | _ -> return false) 
+            >&&>
            (* todo: stoa vs stob *)
            (* todo: isvaargs ? retb ? *)
 
@@ -273,7 +272,7 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
         | (Some (sb, iniopt,_), typb, sto), _ ->
          (* isomorphisms handled here, good?  cos allow an initializer (iniopt) where a SP does not mention one *)
          (* todo, use sto? lack of sto in Ast_cocci *)
-            match_t_t  typa typb >&&>
+            match_ft_ft typa typb >&&>
             match_ident sa sb
         | (None, typ, sto), _ -> return false
         )
@@ -383,7 +382,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   (* todo?: handle some isomorphisms here ? *)
 
   | A.Cast (_, typa, _, ea), (B.Cast (typb, eb), ii) ->
-      match_t_t typa typb >&&>
+      match_ft_ft typa typb >&&>
       match_e_e ea eb
 
   (* todo? iso ? allow all the combinations ? *)
@@ -458,68 +457,94 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
       )
   | Unordered -> raise Todo
 
+and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
+  fun typa typb ->
+    match (typa,typb) with
+      (A.Type(cv,ty1),((qu,il),ty2)) ->
+	(* drop out the const/volatile part that has been matched *)
+	let new_il todrop =
+	  List.filter (function (pi,_) -> not(pi.Common.str = todrop)) in
+	(match cv with
+	  None -> match_t_t ty1 typb
+	| Some(A.Const,_) ->
+	    if qu.B.const
+	    then
+	      match_t_t ty1
+		(({qu with B.const = false},new_il "const" il),ty2)
+	    else return false
+	| Some(A.Volatile,_) ->
+	    if qu.B.volatile
+	    then
+	      match_t_t ty1
+		(({qu with B.volatile = false},new_il "volatile" il),ty2)
+	    else return false)
+    | (A.OptType(ty),typb) ->
+	Printf.fprintf stderr "warning: ignoring ? arity on type";
+	match_ft_ft ty typb
+    | (A.UniqueType(ty),typb) ->
+	Printf.fprintf stderr "warning: ignoring ! arity on type";
+	match_ft_ft ty typb
+    | (A.MultiType(ty),typb) ->
+	Printf.fprintf stderr "warning: ignoring + arity on type";
+	match_ft_ft ty typb
 
+and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
+  fun typa typb -> 
+    match typa, typb with
 
-and (match_t_t: (Ast_cocci.fullType, Ast_c.fullType) matcher) = fun   typa typb -> 
-  match typa, typb with
+      (* cas general *)
+      A.MetaType (ida,_),  typb -> 
+	check_add_metavars_binding (ida, B.MetaType typb)
 
-  (* cas general *)
-  | A.MetaType (ida,_),  typb -> 
-      check_add_metavars_binding (ida, Ast_c.MetaType (typb))
-
-  | A.BaseType ((basea, mcode), signaopt),   (qu, (B.BaseType baseb, _)) -> 
-      let match_sign signa signb = 
-        (match signa, signb with
-         (* iso on sign, if not mentionned then free.  tochange? *)
-        | None, _ -> return true
-        | Some (a,_), b -> return (equal_sign a b)
-        ) in
-
-
-      (* handle some iso on type ? (cf complex C rule for possible implicit casting) *)
-      (match basea, baseb with
-      | A.VoidType,  B.Void -> assert (signaopt = None); return true
-      | A.CharType,  B.IntType B.CChar -> 
+    | A.BaseType ((basea, mcode), signaopt),   (qu, (B.BaseType baseb, _)) -> 
+	let match_sign signa signb = 
+          (match signa, signb with
+         (* iso on sign, if not mentioned then free.  tochange? *)
+          | None, _ -> return true
+          | Some (a,_), b -> return (equal_sign a b)) in
+	
+	
+      (* handle some iso on type ? (cf complex C rule for possible implicit
+	 casting) *)
+	(match basea, baseb with
+	| A.VoidType,  B.Void -> assert (signaopt = None); return true
+	| A.CharType,  B.IntType B.CChar -> 
           (* todo?: also match signed CChar2 ? *)
-          return true
-      | A.ShortType, B.IntType (B.Si (signb, B.CShort)) -> match_sign signaopt signb
-      | A.IntType,   B.IntType (B.Si (signb, B.CInt))   -> match_sign signaopt signb
-      | A.LongType,  B.IntType (B.Si (signb, B.CLong))  -> match_sign signaopt signb
-      | A.FloatType, B.FloatType (B.CFloat) -> 
-          assert (signaopt = None); (* no sign on float in C *)
-          return true
-      | A.DoubleType, B.FloatType (B.CDouble) -> 
-          assert (signaopt = None); (* no sign on float in C *)
-          return true
-          
-          
-      | x, y -> return false
-      )
-
+            return true
+	| A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
+	    match_sign signaopt signb
+	| A.IntType,   B.IntType (B.Si (signb, B.CInt))   ->
+	    match_sign signaopt signb
+	| A.LongType,  B.IntType (B.Si (signb, B.CLong))  ->
+	    match_sign signaopt signb
+	| A.FloatType, B.FloatType (B.CFloat) -> 
+            assert (signaopt = None); (* no sign on float in C *)
+            return true
+	| A.DoubleType, B.FloatType (B.CDouble) -> 
+            assert (signaopt = None); (* no sign on float in C *)
+            return true
+	| x, y -> return false)
+	  
   (* todo? iso with array *)
-  | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
-      match_t_t typa typb
-
-  | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
-      match_t_t typa typb >&&>
-      (match eaopt, ebopt with
+    | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
+	match_ft_ft typa typb
+	  
+    | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
+	match_ft_ft typa typb >&&>
+	(match eaopt, ebopt with
        (* todo: handle the iso on optionnal size specifification ? *)
-      | None, None -> return true
-      | Some ea, Some eb -> match_e_e ea eb
-      | _, _ -> return false
-      )
-
-
-  | A.StructUnionName ((sa,_), (sua, _)),    (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
+	| None, None -> return true
+	| Some ea, Some eb -> match_e_e ea eb
+	| _, _ -> return false)
+	  
+    | A.StructUnionName((sa,_), (sua, _)),
+	(qu, (B.StructUnionName ((sb,_), sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
-     return (equal_structUnion sua sub &&  sa =$= sb)
-
-  | A.TypeName (sa, _),  (qu, (B.TypeName sb, _)) when sa =$= sb -> return true
-
-
-  (* todo: Opt/Unique/Multi *)
-  | _, _ -> return false
-
+	return (equal_structUnion sua sub && sa =$= sb)
+	  
+    | A.TypeName (sa, _),  (qu, (B.TypeName sb, _)) ->
+	return (sa =$= sb)
+    | (_,_) -> return false (* incompatible constructors *)
 
 and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list, ((Ast_c.parameterTypeDef * Ast_c.il) list)) matcher) = fun seqstyle pas pbs ->
   (* todo: if contain metavar ? => recurse on two list and consomme *)
@@ -531,7 +556,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
    match param with
     | A.Param (ida, qua, typa), ((hasreg, idb, typb, _), ii) -> 
         acc >&&>
-        match_t_t typa typb >&&>
+        match_ft_ft typa typb >&&>
         match_ident ida idb  
     | x -> error_cant_have x
     ) (return true)
@@ -574,9 +599,9 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
               check_add_metavars_binding (ida, Ast_c.MetaParam (y)) >&&> 
               match_params seqstyle xs ys
 
-          | A.Param (ida, quaopt, typa), ((hasreg, idb, typb, _), ii)::ys -> 
+          | A.Param (ida, typa), ((hasreg, idb, typb, _), ii)::ys -> 
               (* todo: use quaopt, hasreg ? *)
-              (match_t_t typa typb >&&>
+              (match_ft_ft typa typb >&&>
               match_ident ida idb
               ) >&&> 
               match_params seqstyle xs ys

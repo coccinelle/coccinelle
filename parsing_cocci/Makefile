@@ -1,9 +1,11 @@
 TARGET=cocci_parser
 
+LEXER_SOURCES = lexer_cocci.mll
+PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
-unparse_cocci.ml arity.ml \
+unparse_cocci.ml arity.ml compute_lines.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
-lexer_cocci.mll parser_cocci_menhir.mly parse_cocci.ml 
+$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) parse_cocci.ml
 
 LIBS=../commons/commons.cma
 SYSLIBS = str.cma unix.cma
@@ -15,17 +17,15 @@ INCLUDE_PATH = -I ../commons
 CAMLC =ocamlc -g
 CAMLOPT = ocamlopt
 CAMLLEX = ocamllex
-CAMLYACC= menhir
+CAMLYACC= menhir --explain
 CAMLDEP = ocamldep
 EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
-GENERATED= parser_cocci_menhir.ml parser_cocci_menhir.mli lexer_cocci.ml
-OBJS = ast_cocci.cmo ast0_cocci.cmo ast0toast.cmo top_level.cmo \
-check_meta.cmo unparse_cocci.cmo arity.cmo \
-plus.cmo merge.cmo semantic_cocci.cmo data.cmo lexer_cocci.cmo \
-parser_cocci_menhir.cmo parse_cocci.cmo 
+GENERATED= $(LEXER_SOURCES:.mll=.ml) \
+$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli)
+OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
@@ -71,11 +71,11 @@ clean::
 .ml.cmx:
 	$(CAMLOPT) $(INCLUDE_PATH) -c $<
 
-lexer_cocci.ml :	lexer_cocci.mll
-	$(CAMLLEX) lexer_cocci.mll
+$(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
+	$(CAMLLEX) $(LEXER_SOURCES)
 
-parser_cocci_menhir.ml parser_cocci_menhir.mli : parser_cocci_menhir.mly
-	$(CAMLYACC) parser_cocci_menhir.mly
+$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
+	$(CAMLYACC) $(PARSER_SOURCES)
 
 clean::
 	rm -f $(GENERATED)

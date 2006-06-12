@@ -1,7 +1,7 @@
 oarray.cmi: ocollection.cmi 
 oassoc.cmi: ocollection.cmi 
-ograph.cmi: oset.cmi 
 ograph_extended.cmi: osetb.cmo oassocb.cmo 
+ograph.cmi: oset.cmi 
 osequence.cmi: ocollection.cmi 
 oset.cmi: seti.cmo setb.cmi setPt.cmo ocollection.cmi 
 common.cmo: dumper.cmi commonop.cmi common.cmi 
@@ -18,22 +18,20 @@ fullcommon.cmx: oseti.cmx osetb.cmx oset.cmx ograph2way.cmx ograph.cmx \
     commonop.cmx common.cmx 
 oarray.cmo: osequence.cmi common.cmi oarray.cmi 
 oarray.cmx: osequence.cmx common.cmx oarray.cmi 
-oassoc.cmo: ocollection.cmi oassoc.cmi 
-oassoc.cmx: ocollection.cmx oassoc.cmi 
-oassoc_buffer.cmo: setb.cmi osetb.cmo oassocb.cmo oassoc.cmi common.cmi 
-oassoc_buffer.cmx: setb.cmx osetb.cmx oassocb.cmx oassoc.cmx common.cmx 
 oassocb.cmo: oassoc.cmi mapb.cmo common.cmi 
 oassocb.cmx: oassoc.cmx mapb.cmx common.cmx 
+oassoc_buffer.cmo: setb.cmi osetb.cmo oassocb.cmo oassoc.cmi common.cmi 
+oassoc_buffer.cmx: setb.cmx osetb.cmx oassocb.cmx oassoc.cmx common.cmx 
 oassocdbm.cmo: oassoc.cmi common.cmi 
 oassocdbm.cmx: oassoc.cmx common.cmx 
 oassoch.cmo: oassoc.cmi dumper.cmi common.cmi 
 oassoch.cmx: oassoc.cmx dumper.cmx common.cmx 
 oassocid.cmo: oassoc.cmi common.cmi 
 oassocid.cmx: oassoc.cmx common.cmx 
+oassoc.cmo: ocollection.cmi oassoc.cmi 
+oassoc.cmx: ocollection.cmx oassoc.cmi 
 ocollection.cmo: commonop.cmi common.cmi ocollection.cmi 
 ocollection.cmx: commonop.cmx common.cmx ocollection.cmi 
-ograph.cmo: oset.cmi commonop.cmi common.cmi ograph.cmi 
-ograph.cmx: oset.cmx commonop.cmx common.cmx ograph.cmi 
 ograph2way.cmo: setb.cmi osetb.cmo oset.cmi ograph.cmi ocollection.cmi \
     commonop.cmi common.cmi 
 ograph2way.cmx: setb.cmx osetb.cmx oset.cmx ograph.cmx ocollection.cmx \
@@ -42,16 +40,18 @@ ograph_extended.cmo: setb.cmi osetb.cmo oset.cmi ocollection.cmi oassocb.cmo \
     oassoc.cmi commonop.cmi common.cmi ograph_extended.cmi 
 ograph_extended.cmx: setb.cmx osetb.cmx oset.cmx ocollection.cmx oassocb.cmx \
     oassoc.cmx commonop.cmx common.cmx ograph_extended.cmi 
+ograph.cmo: oset.cmi commonop.cmi common.cmi ograph.cmi 
+ograph.cmx: oset.cmx commonop.cmx common.cmx ograph.cmi 
 osequence.cmo: oassoc.cmi osequence.cmi 
 osequence.cmx: oassoc.cmx osequence.cmi 
-oset.cmo: seti.cmo setb.cmi setPt.cmo ocollection.cmi common.cmi oset.cmi 
-oset.cmx: seti.cmx setb.cmx setPt.cmx ocollection.cmx common.cmx oset.cmi 
 osetb.cmo: setb.cmi oset.cmi ocollection.cmi 
 osetb.cmx: setb.cmx oset.cmx ocollection.cmx 
 oseth.cmo: oset.cmi common.cmi 
 oseth.cmx: oset.cmx common.cmx 
 oseti.cmo: seti.cmo oset.cmi ocollection.cmi 
 oseti.cmx: seti.cmx oset.cmx ocollection.cmx 
+oset.cmo: seti.cmo setb.cmi setPt.cmo ocollection.cmi common.cmi oset.cmi 
+oset.cmx: seti.cmx setb.cmx setPt.cmx ocollection.cmx common.cmx oset.cmi 
 osetpt.cmo: setPt.cmo oset.cmi ocollection.cmi 
 osetpt.cmx: setPt.cmx oset.cmx ocollection.cmx 
 setb.cmo: setb.cmi 

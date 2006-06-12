@@ -44,7 +44,8 @@ let get_option fn x =
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots fn = function
+let dots fn d =
+  match Ast0.unwrap d with
     Ast0.DOTS(l) -> List.concat (List.map fn l)
   | Ast0.CIRCLES(l) -> List.concat (List.map fn l)
   | Ast0.STARS(l) -> List.concat (List.map fn l)
@@ -64,7 +65,8 @@ let rec ident = function
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec expression = function
+let rec expression e =
+  match Ast0.unwrap e with
     Ast0.Ident(id) -> ident id
   | Ast0.Constant(const) -> [mcode const]
   | Ast0.FunCall(fn,lp,args,rp) ->
@@ -87,7 +89,7 @@ let rec expression = function
   | Ast0.RecordPtAccess(exp,ar,field) ->
       (expression exp) @ (mcode ar) :: (ident field)
   | Ast0.Cast(lp,ty,rp,exp) ->
-      (mcode lp) :: (typeC ty) @ (mcode rp) :: (expression exp)
+      (mcode lp) :: (fullType ty) @ (mcode rp) :: (expression exp)
   | Ast0.MetaConst(name,ty) -> [mcode name]
   | Ast0.MetaErr(name) -> [mcode name]
   | Ast0.MetaExpr(name,ty) -> [mcode name]
@@ -103,34 +105,39 @@ let rec expression = function
   | Ast0.OptExp(exp) -> expression exp
   | Ast0.UniqueExp(exp) -> expression exp
   | Ast0.MultiExp(exp) -> expression exp
-
+  
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and typeC ty =
-  match ty with
+and fullType ft =
+  match Ast0.unwrap ft with
+    Ast0.Type(cv,ty) -> (get_option (function x -> [mcode x]) cv) @ typeC ty
+  | Ast0.OptType(ty) -> fullType ty
+  | Ast0.UniqueType(ty) -> fullType ty
+  | Ast0.MultiType(ty) -> fullType ty
+
+and typeC t =
+  match Ast0.unwrap t with
     Ast0.BaseType(ty,Some sign) -> [mcode sign;mcode ty]
   | Ast0.BaseType(ty,None) -> [mcode ty]
-  | Ast0.Pointer(ty,star) -> (typeC ty) @ [mcode star]
+  | Ast0.Pointer(ty,star) -> (fullType ty) @ [mcode star]
   | Ast0.Array(ty,lb,size,rb) ->
-      (typeC ty) @ (mcode lb) :: (get_option expression size) @ [mcode rb]
+      (fullType ty) @ (mcode lb) :: (get_option expression size) @ [mcode rb]
   | Ast0.StructUnionName(name,kind) -> [mcode name;mcode kind]
   | Ast0.TypeName(name) -> [mcode name]
   | Ast0.MetaType(name) -> [mcode name]
-  | Ast0.OptType(ty) -> typeC ty
-  | Ast0.UniqueType(ty) -> typeC ty
-  | Ast0.MultiType(ty) -> typeC ty
-
+  
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration = function
+let rec declaration d =
+  match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
-      (typeC ty) @ (ident id) @ (mcode eq) :: (expression exp) @ [mcode sem]
+      (fullType ty) @ (ident id) @ (mcode eq) :: (expression exp) @ [mcode sem]
   | Ast0.UnInit(ty,id,sem) ->
-      (typeC ty) @ (ident id) @ [mcode sem]
+      (fullType ty) @ (ident id) @ [mcode sem]
   | Ast0.OptDecl(decl) -> declaration decl
   | Ast0.UniqueDecl(decl) -> declaration decl
   | Ast0.MultiDecl(decl) -> declaration decl
@@ -138,10 +145,10 @@ let rec declaration = function
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec parameterTypeDef = function
-    Ast0.VoidParam(ty) -> typeC ty
-  | Ast0.Param(id,None,ty) -> (typeC ty) @ (ident id)
-  | Ast0.Param(id,Some vs,ty) -> (typeC ty) @ (mcode vs) :: (ident id)
+let rec parameterTypeDef p =
+  match Ast0.unwrap p with
+    Ast0.VoidParam(ty) -> fullType ty
+  | Ast0.Param(id,ty) -> (fullType ty) @ (ident id)
   | Ast0.MetaParam(name) -> [mcode name]
   | Ast0.MetaParamList(name) -> [mcode name]
   | Ast0.PComma(cm) -> [mcode cm]
@@ -155,7 +162,8 @@ let parameter_list = dots parameterTypeDef
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec statement = function
+let rec statement s =
+  match Ast0.unwrap s with
     Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
       (get_option (function x -> [mcode x]) stg) @ (ident name) @ (mcode lp) ::
       (parameter_list params) @ [mcode rp; mcode lbrace] @
@@ -199,7 +207,7 @@ let rec statement = function
 let top_level = function
     Ast0.DECL(decl) -> declaration decl
   | Ast0.INCLUDE(inc,name) -> [mcode inc;mcode name]
-  | Ast0.FILEINFO(old_file,new_file) -> [bad_mcode old_file; bad_mcode new_file]
+  | Ast0.FILEINFO(old_file,new_file) -> [bad_mcode old_file;bad_mcode new_file]
   | Ast0.FUNCTION(statement_dots) -> statement statement_dots
   | Ast0.CODE(statement_dots) -> dots statement statement_dots
   | Ast0.ERRORWORDS(exps) -> make_bad (List.concat (List.map expression exps))
@@ -240,11 +248,19 @@ let drop_lines l = List.map (List.map (function (x,_,_,_,_) -> x)) l
 let rec merge minus_stream plus_stream =
   match (minus_stream,plus_stream) with
     (_,[]) -> ()
-  | ([],_) -> failwith "minus stream ran out before plus stream"
+  | ([],plus::plus_stream) ->
+      failwith
+	(Printf.sprintf
+	   "minus stream ran out before plus stream\n(plus code begins on line %d)\n"
+	   (get_real_start plus))
   | (Bad(info)::minus_stream,plus::plus_stream) ->
       let pfinish = get_finish plus in
       if info.Ast.logical_line > pfinish
-      then failwith "error in merge"
+      then
+	failwith
+	  (Printf.sprintf
+	     "plus code starting on line %d has no minus or context code to attach to\n"
+	     (get_real_start plus))
       else merge minus_stream (plus::plus_stream)
   | (((Minus(info,cell)::minus_stream) as all_minus),plus::plus_stream) ->
       let mline = info.Ast.logical_line in
