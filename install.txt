@@ -1,0 +1,45 @@
+You must first install a recent version of 
+ - OCaml (at least 3.09.2, see http://caml.inria.fr/download.en.html) 
+ - the Menhir parser generator (see http://cristal.inria.fr/~fpottier/menhir/)
+
+Then simply type make.
+
+There is a special toplevel called spatch.top that is built during
+the make process. It helps in testing new functions.
+
+In the following example I launch this toplevel in the shell, but it is better
+to launch it in emacs, via M-x run-caml  ./spatch.top -I commons -I ...
+
+[1] ./spatch.top -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
+
+        Objective Caml version 3.09.2
+
+# Isomorphisms_c_c.iso_e_e Isomorphisms_c_c.ex1 Isomorphisms_c_c.ex2;;
+- : bool = true
+# Ast_c.al_expr Ast_c.ex1;;
+- : Ast_c.expression =
+(Ast_c.FunCall
+  ((Ast_c.Ident "f",
+    [({Common.str = "f"; Common.charpos = -10},
+      (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
+        {contents = Ast_cocci.NOTHING}),
+       []))]),
+  [(Common.Left
+     (Ast_c.Constant (Ast_c.Int "1"),
+      [({Common.str = "1"; Common.charpos = -10},
+        (Ast_cocci.CONTEXT
+          ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
+          {contents = Ast_cocci.NOTHING}),
+         []))]),
+    [])]),
+ [({Common.str = "("; Common.charpos = -10},
+   (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
+     {contents = Ast_cocci.NOTHING}),
+    []));
+  ({Common.str = ")"; Common.charpos = -10},
+   (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
+     {contents = Ast_cocci.NOTHING}),
+    []))])
+# Ast_c.al_expr Ast_c.ex1 = Ast_c.ex1final;;
+- : bool = true
+# 
