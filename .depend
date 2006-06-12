@@ -7,15 +7,17 @@ cocci.cmo: parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
     ctl/ctl_engine.cmi parsing_c/control_flow_c.cmi commons/commonop.cmi \
     commons/common.cmi parsing_c/ast_c.cmo engine/ast0toctl.cmi cocci.cmi 
 cocci.cmx: parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
-    commons/ograph_extended.cmx engine/ctlcocci_integration.cmi \
+    commons/ograph_extended.cmx engine/ctlcocci_integration.cmx \
     ctl/ctl_engine.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
     commons/common.cmx parsing_c/ast_c.cmx engine/ast0toctl.cmx cocci.cmi 
-main.cmo: parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi flag.cmo \
-    commons/dumper.cmi parsing_c/control_flow_c.cmi commons/commonop.cmi \
-    commons/common.cmi misc/classic_patch.cmi parsing_c/ast_c.cmo 
-main.cmx: parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx flag.cmx \
-    commons/dumper.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
-    commons/common.cmx misc/classic_patch.cmx parsing_c/ast_c.cmx 
+main.cmo: test.cmo parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
+    flag.cmo commons/dumper.cmi parsing_c/control_flow_c.cmi \
+    commons/commonop.cmi commons/common.cmi misc/classic_patch.cmi \
+    parsing_c/ast_c.cmo 
+main.cmx: test.cmx parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
+    flag.cmx commons/dumper.cmx parsing_c/control_flow_c.cmx \
+    commons/commonop.cmx commons/common.cmx misc/classic_patch.cmx \
+    parsing_c/ast_c.cmx 
 test.cmo: parsing_c/control_flow_c.cmi commons/commonop.cmi \
     commons/common.cmi cocci.cmi 
 test.cmx: parsing_c/control_flow_c.cmx commons/commonop.cmx \

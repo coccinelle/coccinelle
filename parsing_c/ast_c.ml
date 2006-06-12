@@ -28,6 +28,8 @@ open Common open Commonop
 
    Each token will also be decorated in the futur with an environment, because the pending
     '+' may contain metavariables that refer to some C code.
+
+   convention: I often use 'ii' for the name of a list of info.
 *)
 
 type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding)   (* forunparser: *)
@@ -300,7 +302,9 @@ let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_lin
                   empty_metavars_binding)
 (*******************************************************************************)
 
-let al_info _x = { charpos = -10; str = "" }, dumb_annot
+(* al for  Abstract Line information *)
+
+let al_info x = { charpos = -10; str = (fst x).str }, dumb_annot
 
 let rec (al_expr: expression -> expression) = fun (exp, ii) -> 
   let ii' = List.map (fun i -> al_info i) ii in
@@ -322,5 +326,51 @@ let rec (al_expr: expression -> expression) = fun (exp, ii) ->
 
   | _ -> raise Todo
   ), ii'
+and (al_statement: statement -> statement) = fun (stat, ii) -> 
+  raise Todo
+and (al_type: fullType -> fullType) = fun (stat, ii) -> 
+  raise Todo
 
 
+
+
+let ex1 = 
+           (FunCall
+                 ((Ident "f",
+                   [({str = "f"; charpos = 26},
+                     (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
+                       {contents = Ast_cocci.NOTHING}),
+                      []))]),
+                 [(Left
+                    (Constant (Int "1"),
+                     [({str = "1"; charpos = 28},
+                       (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
+                         {contents = Ast_cocci.NOTHING}),
+                        []))]),
+                   [])]),
+                [({str = "("; charpos = 27},
+                  (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
+                    {contents = Ast_cocci.NOTHING}),
+                   []));
+                 ({str = ")"; charpos = 29},
+                  (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
+                    {contents = Ast_cocci.NOTHING}),
+                   []))])
+
+let ex1final = 
+           (FunCall
+            ((Ident "f",
+              [({str = "f"; charpos = -10},
+                (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []))]),
+            [(Left
+               (Constant (Int "1"),
+                [({str = "1"; charpos = -10},
+                  (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []))]),
+              [])]),
+           [({str = "("; charpos = -10},
+             (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []));
+            ({str = ")"; charpos = -10},
+             (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []))])
+    
+
+let _ = assert (al_expr ex1 = ex1final)
