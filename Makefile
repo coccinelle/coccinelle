@@ -53,7 +53,7 @@ $(OPTEXEC): $(OPTOBJS) $(OPTLIBS)
 
 
 clean::
-	rm -f $(TARGET) $(TARGET).opt
+	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
 
 clean::

@@ -49,7 +49,7 @@ $(EXEC): $(OBJS) main.cmo $(LIBS)
 # clean rule for LIB.opt
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
-	rm -f $(TARGET)
+	rm -f $(TARGET) rm -f $(TARGET).byte
 
 
 
