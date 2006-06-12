@@ -230,7 +230,7 @@ let check_all_marked err table =
     (function name ->
       function (cell) ->
 	if not (!cell)
-	then failwith (Printf.sprintf "%s %s not used" err name))
+	then warning (Printf.sprintf "%s %s not used" err name))
     table
 
 let check_meta metavars minus plus =

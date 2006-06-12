@@ -90,7 +90,7 @@ let main () =
                 file +> Parse_c.parse_print_error_heuristic 
                      +> (fun (x, stat) -> 
                           push2 stat _stat_list;
-                          Unparse_c.pp_program file (x +> List.map (fun (x, info) -> ((x, Unparse_c.PPnormal), info)));
+                          Unparse_c.pp_program file (x +> List.map (fun (x, info) -> ((x, Unparse_c.PPnormal))));
                           ignore(Unix.system (sprintf "diff -u -p  %s %s" file "/tmp/output.c" )); (*want see diff of space => no -b -B *)
                                                   (* +> Transformation.test_simple_trans1);*)
                        )

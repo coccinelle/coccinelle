@@ -1,128 +1,51 @@
 open Common open Commonop
 
-
+(* ------------------------------------------------------------------------------ *)
 let test1 () = Cocci.test_cocci "../1.c" "../1.cocci"
+let test2 () = 
+  Cocci.one_flow "../1.c"
+    +> Control_flow_c.control_flow_to_ast
+    +> (fun def -> Unparse_c.pp_program "../1.c" [Ast_c.Definition def, Unparse_c.PPnormal])
+    
 
-let test2 () = Cocci.one_flow "tests/1.c" +> Control_flow_c.control_flow_to_ast
+let statement1 = Cocci.cstatement_from_string "f(1,2,3);"
+let expr1 = Cocci.cexpression_from_string "1"
+let rule_elem1 = Cocci.rule_elem_from_string "@@ expression X,Y;@@\n-f(...,X,Y,...);\n+h(X)"
 
-
-
-(* TODO
-(* ------------------------------------------------------------------------------ *)
-
-let rule_elem1 = 
-      B.ExprSt (
-         B.FunCall (  ("f",  j0),
-                      ("(",  j0),
-                      [
-(*                        B.MetaExpr ("X", (B.CONTEXT (ref B.NOTHING))); *)
-                        B.Edots (("..." ,   (j0)));
-                        B.MetaExpr ("X", (j0));
-                        B.MetaExpr ("Y", (j0));
-                        B.Edots (("..." ,   (j0)));
-
-                      ],
-                      (")",  (j0))
-                    ) 
-              ,
-              (";",  (j0))
-             ) 
-let node1 = Control_flow.Statement  (Misc.mini_c_add_token (
-    A.ExprSt (A.FunCall ("f", [(A.Int 1, i0), i0;
-                               (A.Int 2, i0), i0;
-                               (A.Int 3, i0), i0;
-                              ]), i0), i0
-    )), "f(1,2,3"
-
-let pattern_result1 = Pattern.match_re_node 
-                       rule_elem1   node1
-                      (Mini_c.empty_metavars_binding)
+let pattern_result1 = 
+  Pattern.match_re_node 
+    rule_elem1   (Control_flow_c.Statement statement1, "str")
+    (Ast_c.empty_metavars_binding)
 
 
 
-
-
-
-(* ------------------------------------------------------------------------------ *)
-
-
-
-
-let res1 = Full_engine.test_cocci minic1 minicocci1a
-let res2 = Full_engine.test_cocci minic2 minicocci2a
-
+let pred_for_transfo = Cocci.rule_elem_from_string "@@ expression X,Y;@@\n-g(Y);\n+h(X,Y);\n"
 
 
 (* ------------------------------------------------------------------------------ *)
 (* I put only in the list the match that modifies *)
 
-(*
-- g(Y);
-+ h(X,Y);
-*)
-
-let pred_for_transfo = 
-      B.ExprSt (
-         B.FunCall (  ("g",  (B.MINUS (ref []))),
-                      ("(",  (B.MINUS (ref []))),
-                      [
-                        B.MetaExpr ("Y", (B.MINUS (ref [])));
-                      ],
-                      (")",  (B.MINUS (ref [])))
-                    ) 
-              ,
-              (";",  (B.MINUS (ref 
-                       [[
-                         B.Rule_elemTag (
-                                 B.ExprSt (
-                                       B.FunCall (  ("h",  ((B.CONTEXT (ref B.NOTHING)))),
-                                                    ("(",  ((B.CONTEXT (ref B.NOTHING)))),
-                                                    [
-                                                      B.MetaExpr ("X", ((B.CONTEXT (ref B.NOTHING))));
-                                                      B.EComma (",", ((B.CONTEXT (ref B.NOTHING))));
-                                                      B.MetaExpr ("Y", ((B.CONTEXT (ref B.NOTHING))));
-                                                     
-                                                    ],
-                                                    (")",  ((B.CONTEXT (ref B.NOTHING))))
-                                                  ) 
-                                            ,
-                                            (";",  ((B.CONTEXT (ref B.NOTHING))))
-                                          )
-                                      )
-                       ]]
-                                 )))
-                      
-             )
-
-
 
 let sat_result_for_transfo = 
-  [(14, 
+  [(15, 
    ["X",
-    (Mini_c.MetaExpr
-         (Mini_c.Int 1,
-          [(("1", Mini_cocci.CONTEXT {contents = Mini_cocci.NOTHING}), [])]));
+    (Ast_c.MetaExpr (Ast_c.al_expr (Cocci.cexpression_from_string "1")));
     "Y",
-    (Mini_c.MetaExpr
-         (Mini_c.Int 1,
-          [(("1", Mini_cocci.CONTEXT {contents = Mini_cocci.NOTHING}), [])]));
+    (Ast_c.MetaExpr (Ast_c.al_expr (Cocci.cexpression_from_string "1")));
   ],
     pred_for_transfo
    );
-   (15,
-    ["X",
-     (Mini_c.MetaExpr
-         (Mini_c.Int 1,
-          [(("1", Mini_cocci.CONTEXT {contents = Mini_cocci.NOTHING}), [])]));
+   (16,
+    ["X", 
+     (Ast_c.MetaExpr (Ast_c.al_expr (Cocci.cexpression_from_string "1")));
      "Y",
-     (Mini_c.MetaExpr
-         (Mini_c.Int 2,
-          [(("2", Mini_cocci.CONTEXT {contents = Mini_cocci.NOTHING}), [])]));
+     (Ast_c.MetaExpr (Ast_c.al_expr (Cocci.cexpression_from_string "2")));
    ],
     pred_for_transfo
    )
  ]
 
+(*
 
 let _display_graph = false
 
@@ -137,7 +60,15 @@ let test_transfo () =
   Pretty_print.pp_program ast;
   flow
 
-
-(* ******************************************************************** *)
-(* ******************************************************************** *)
 *)
+
+
+(* TODO
+
+let minic1 = Cocci.cstatement_from_string ""
+
+let res1 = Full_engine.test_cocci minic1 minicocci1a
+let res2 = Full_engine.test_cocci minic2 minicocci2a
+
+*)
+

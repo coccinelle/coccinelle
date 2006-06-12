@@ -67,8 +67,10 @@ let main () =
     | "parse_cocci", [file] -> 
         if not (file =~ ".*\\.cocci") then pr2 "warning: seems not a .cocci file";
         (try 
-          let _xs = Parse_cocci.process file false in
-          ()
+          let xs = Cocci.spbis file in
+          xs +> List.iter (fun (meta, rule) -> 
+            Unparse_cocci.unparse rule
+              )
         with x -> pr2 "BAD"               )
 
     | "control_flow", [file] -> 

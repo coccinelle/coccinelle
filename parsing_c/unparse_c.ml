@@ -1,6 +1,6 @@
 open Common open Commonop
 
-type ppmethod = PPviatok | PPnormal
+type ppmethod = PPviatok of Ast_c.info list | PPnormal
 
 (**************************************************************************************)
 (*
@@ -123,6 +123,7 @@ let pp_program file x =
    (* ---------------------- *)
    and pp_expression = function
     | Constant (String s),        is     -> is +> List.iter pr_elem
+    | Ident (c),         [i]     -> pr_elem i
     | Constant (c),         [i]     -> pr_elem i
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
@@ -683,10 +684,9 @@ let pp_program file x =
   (* start point *)
   (* ---------------------- *)
 
-   x +> List.iter (fun ((e, ppmethod), info) -> 
-   let (filename, (pos1, pos2), stre, toks) = info in 
+   x +> List.iter (fun ((e, ppmethod)) -> 
    match ppmethod with
-   | PPviatok -> 
+   | PPviatok toks -> 
        (match e with
        | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumb_annot) (* todo: less: assert that FinalDef is the last one in the list *)
        | e -> toks +> List.iter (fun x -> pr_elem x)

@@ -3,8 +3,54 @@ open Common open Commonop
 
 let c  file = Parse_c.parse_print_error_heuristic file
 
+let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
+  begin
+    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ "\n}");
+    let (program, _stat) = c "/tmp/__cocci.c" in
+    program +> map_filter (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
+          (match c with
+          | [Right st] -> Some st
+          | _ -> None
+          )
+      | _ -> None
+                          )
+      +> List.hd
+    
+  end
+
+let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
+  begin
+    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ ";\n}");
+    let (program, _stat) = c "/tmp/__cocci.c" in
+    program +> map_filter (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
+          (match c with
+          | [Right (Ast_c.ExprStatement (Some e),ii)] -> Some e
+          | _ -> None
+          )
+      | _ -> None
+                          )
+      +> List.hd
+    
+  end
+  
+
 let sp file    = Parse_cocci.process_for_ctl file false
 let spbis file = Parse_cocci.process file false
+
+let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s -> 
+  begin
+    write_file "/tmp/__cocci.cocci" (s);
+    let rule_with_metavars_list = spbis "/tmp/__cocci.cocci" in
+    rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
+      | Ast_cocci.CODE rule_elem_dots -> Ast_cocci.undots rule_elem_dots +> List.hd
+      | _ -> raise Not_found
+    )
+  end
+
 
 let ctls file = 
   sp file
