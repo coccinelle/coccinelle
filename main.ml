@@ -108,7 +108,7 @@ let main () =
 
 
     | "special_request", _ -> 
-        ignore(Test.test1 ())
+        ignore(Test.test_transfo ())
    
     | "test_parse_classic_patch", [] -> Classic_patch.parse_patch (cat "/tmp/patch1") +> ignore
    

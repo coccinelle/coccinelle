@@ -304,7 +304,10 @@ let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_lin
 
 (* al for  Abstract Line information *)
 
-let al_info x = { charpos = -10; str = (fst x).str }, dumb_annot
+let _Magic_info_number = -10
+let is_al_info x = x.charpos = _Magic_info_number
+
+let al_info x = { charpos = _Magic_info_number; str = (fst x).str }, dumb_annot
 
 let rec (al_expr: expression -> expression) = fun (exp, ii) -> 
   let ii' = List.map (fun i -> al_info i) ii in

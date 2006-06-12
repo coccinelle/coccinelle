@@ -1,11 +1,11 @@
 cocci.cmi: parsing_c/parse_c.cmi commons/ograph_extended.cmi \
     engine/ctlcocci_integration.cmi parsing_c/control_flow_c.cmi \
-    commons/common.cmi ctl/ast_ctl.cmo parsing_cocci/ast_cocci.cmi \
+    commons/common.cmi ctl/ast_ctl.cmo parsing_cocci/ast_cocci.cmo \
     parsing_c/ast_c.cmo engine/ast0toctl.cmi parsing_cocci/ast0_cocci.cmi 
 cocci.cmo: parsing_cocci/parse_cocci.cmi parsing_c/parse_c.cmi \
     commons/ograph_extended.cmi engine/ctlcocci_integration.cmi \
     ctl/ctl_engine.cmi parsing_c/control_flow_c.cmi commons/commonop.cmi \
-    commons/common.cmi parsing_cocci/ast_cocci.cmi parsing_c/ast_c.cmo \
+    commons/common.cmi parsing_cocci/ast_cocci.cmo parsing_c/ast_c.cmo \
     engine/ast0toctl.cmi cocci.cmi 
 cocci.cmx: parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx \
     commons/ograph_extended.cmx engine/ctlcocci_integration.cmx \
@@ -20,10 +20,12 @@ main.cmx: parsing_cocci/unparse_cocci.cmx test.cmx \
     parsing_cocci/parse_cocci.cmx parsing_c/parse_c.cmx flag.cmx \
     commons/dumper.cmx parsing_c/control_flow_c.cmx commons/commonop.cmx \
     commons/common.cmx cocci.cmx misc/classic_patch.cmx parsing_c/ast_c.cmx 
-test.cmo: parsing_c/unparse_c.cmi engine/pattern.cmo \
+test.cmo: parsing_c/unparse_c.cmi engine/transformation.cmi \
+    engine/pattern.cmo commons/ograph_extended.cmi \
     parsing_c/control_flow_c.cmi commons/commonop.cmi commons/common.cmi \
     cocci.cmi parsing_c/ast_c.cmo 
-test.cmx: parsing_c/unparse_c.cmx engine/pattern.cmx \
+test.cmx: parsing_c/unparse_c.cmx engine/transformation.cmx \
+    engine/pattern.cmx commons/ograph_extended.cmx \
     parsing_c/control_flow_c.cmx commons/commonop.cmx commons/common.cmx \
     cocci.cmx parsing_c/ast_c.cmx 
 misc/classic_patch.cmi: commons/fullcommon.cmo 

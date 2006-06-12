@@ -92,7 +92,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       let v = binding +> List.assoc (ida: string) in
       (match v with
       | B.MetaExpr expa -> 
-          assert (expa =*= expb);
+          assert (expa =*= Ast_c.al_expr expb);
           distribute_minus_plus_e i1 expb   binding
       | _ -> raise Impossible
       )
@@ -145,10 +145,14 @@ and (transform_arguments: sequence_processing_style -> (Ast_cocci.expression lis
         (Left (transform_e_e  ea eb binding), [])::transform_arguments seqstyle eas ebs   binding
     | _ -> raise Impossible
 
-and (transform_ident: (Ast_cocci.ident, ('a * Ast_c.il)) transformer) = fun ida idb -> 
+and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun ida (idb, ii) -> 
   fun binding -> 
+    match ida, idb with
+    | A.Id (sa,i1), sb when sa =$= sb -> 
+        let ii' = tagge_symbols [sa, i1] ii binding in
+        idb, ii'
+    | _ -> raise Todo
   (* get binding, assert =*=,  tagge *)
-  raise Todo
 
 and (tagge_symbols: (string Ast_cocci.mcode) list -> Ast_c.il -> Ast_c.metavars_binding -> Ast_c.il) = 
   fun xs ys binding ->

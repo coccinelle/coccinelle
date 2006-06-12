@@ -45,22 +45,19 @@ let sat_result_for_transfo =
    )
  ]
 
-(*
 
 let _display_graph = false
 
 let test_transfo () =
-  let ast = minic1 in
-  let flow = Control_flow.mini_c_to_control_flow ast in
-     if _display_graph then Ograph_extended.print_control_flow flow;
-  Pretty_print.pp_program (Control_flow.control_flow_to_mini_c flow);
+  let cfile = "../1.c" in
+  let flow = Cocci.one_flow cfile  in
+  if _display_graph then Ograph_extended.print_ograph_extended flow;
+  (* Pretty_print.pp_program (Control_flow.control_flow_to_mini_c flow); *)
   let flow = Transformation.transform sat_result_for_transfo flow in
-     if _display_graph then Ograph_extended.print_control_flow flow;
-  let ast =(Control_flow.control_flow_to_mini_c flow) in
-  Pretty_print.pp_program ast;
-  flow
+     if _display_graph then Ograph_extended.print_ograph_extended flow;
+  let def = (Control_flow_c.control_flow_to_ast flow) in
+  Unparse_c.pp_program "../1.c" [Ast_c.Definition def, Unparse_c.PPnormal]
 
-*)
 
 
 (* TODO

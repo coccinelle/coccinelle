@@ -87,11 +87,18 @@ let pp_program file x =
    let _lastasked = ref (Common.fake_parse_info, Ast_c.dumb_annot) in
 
    let rec pr_elem ((info,(mcode,env)) as e) = 
-     if not ((fst e).charpos > (fst !_lastasked).charpos)
-     then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
+    if Ast_c.is_al_info info
+    then ()
+      
+    else 
+      begin
+        if not ((fst e).charpos > (fst !_lastasked).charpos)
+        then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
 
-     _lastasked := e;
-     sync e; 
+        _lastasked := e;
+        sync e; 
+      end;
+     
      (* pr info.str *)
      let s = info.str in
 
@@ -627,6 +634,7 @@ let pp_program file x =
   | Ast_cocci.ExpressionTag exp -> pp_cocci_expr env exp
   | Ast_cocci.Rule_elemTag rule -> pp_cocci_rule env rule
   | Ast_cocci.IdentTag ident -> pp_cocci_ident env ident
+  | Ast_cocci.Token s -> pr s
   | _ -> raise Todo
 
   and pp_list_list_any env xxs =
@@ -672,7 +680,9 @@ let pp_program file x =
   | Ast_cocci.Nest _ -> raise Impossible
   | _ -> raise Todo
 
-  and pp_cocci_ident env x = raise Todo
+  and pp_cocci_ident env x = match x with
+  | Ast_cocci.Id (s,_) -> pr s
+  | _ -> raise Todo
 
 
 
