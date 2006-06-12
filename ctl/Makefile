@@ -2,7 +2,7 @@
 
 TARGET = ctl
 
-SRC = ast_ctl.ml ctl_engine.ml test.ml
+SRC = ast_ctl.ml ctl_engine.ml 
 
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma
@@ -34,8 +34,8 @@ OPTOBJS = $(SRC:.ml=.cmx)
 all: $(LIB)
 all.opt: $(OPTLIB)
 
-$(TARGET).top: $(LIB)
-	$(CAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+$(TARGET).top: $(LIB) test_ctl.cmo
+	$(CAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS) test_ctl.cmo
 
 $(LIB):  $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)

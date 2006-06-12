@@ -1,4 +1,5 @@
 val c : Common.filename -> Ast_c.program2 * Parse_c.parsing_stat
+
 val cstatement_from_string : string -> Ast_c.statement
 val cexpression_from_string : string -> Ast_c.expression
 
@@ -19,6 +20,11 @@ val one_flow :
   (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended
 val print_flow : Common.filename -> unit
 
+
+
+val test_unparser : Common.filename -> string list
+val test_pattern : string -> string -> Ast_c.metavars_binding list
+
 val test_cocci :
   Common.filename -> Common.filename ->
   (Ograph_extended.nodei *
@@ -29,3 +35,5 @@ val test_cocci :
     Ast_ctl.generic_substitution, 'a list)
    Ast_ctl.generic_witness list)
   list
+
+

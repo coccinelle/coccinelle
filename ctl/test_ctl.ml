@@ -81,6 +81,19 @@ let ex1model = (ex1graph,ex1lab,ex1states);;
 let ex1phi1 = And(Pred ("f(x)",fake), AF(Exists ("y",Pred( "g(y)",fake))));;
 let ex1phi2 = And(Pred( "f(x)",fake), AX(AX(Exists ("y",Pred( "g(y)",fake)))));;
 
+let ex1phi3 = 
+Ast_ctl.And
+ (Ast_ctl.Exists ("x",
+  (Ast_ctl.Exists ("v3",
+    Ast_ctl.Pred ("f(x)", fake)))),
+  Ast_ctl.AX
+   (Ast_ctl.AF
+    (Ast_ctl.Exists ("y", (* change this to Y and have strange behaviour *)
+      (Ast_ctl.Exists ("v0",
+       Ast_ctl.Pred ("g(y)", fake)
+                      ))))))
+                   
+
 
 let ex1s0 = Pred( "f(x)",fake);;
 let ex1s1 = Pred( "g(y)",fake);;

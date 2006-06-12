@@ -82,6 +82,23 @@ let print_flow file =
 
 
 
+
+let test_unparser cfile = 
+  one_flow cfile
+    +> Control_flow_c.control_flow_to_ast
+    +> (fun def -> Unparse_c.pp_program "../1.c" [Ast_c.Definition def, Unparse_c.PPnormal])
+    +> (fun () -> cat "/tmp/output.c")
+
+
+let test_pattern statement_str rule_elem_str = 
+  let statement = cstatement_from_string statement_str in
+  let rule_elem = rule_elem_from_string rule_elem_str in
+  Pattern.match_re_node 
+    rule_elem   (Control_flow_c.Statement statement, "str")
+    (Ast_c.empty_metavars_binding)
+
+
+
 let test_cocci cfile coccifile = 
 
   let ctl  = one_ctl coccifile in
