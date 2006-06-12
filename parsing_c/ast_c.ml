@@ -300,3 +300,27 @@ let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_lin
                   empty_metavars_binding)
 (*******************************************************************************)
 
+let al_info _x = { charpos = -10; str = "" }, dumb_annot
+
+let rec (al_expr: expression -> expression) = fun (exp, ii) -> 
+  let ii' = List.map (fun i -> al_info i) ii in
+
+  (match exp with
+  | Ident (s) -> Ident (s)
+  | Constant (c) -> Constant (c)
+  | FunCall  (e, es)         -> 
+      let e' = al_expr e in
+      let es' = 
+        List.map (fun (exp_or_decl, ii) -> 
+          let ii' = List.map (fun i -> al_info i) ii in
+          (match exp_or_decl with
+          | Left e -> Left (al_expr e)
+          | Right _ -> raise Todo
+          ), ii'
+                 ) es in
+      FunCall (e', es')
+
+  | _ -> raise Todo
+  ), ii'
+
+

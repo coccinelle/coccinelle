@@ -1,8 +1,15 @@
+TARGET=cocci_parser
+
 SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
 lexer_cocci.mll parser_cocci_menhir.mly parse_cocci.ml 
-TARGET=cocci_parser
+
+LIBS=../commons/commons.cma
+SYSLIBS = str.cma unix.cma
+
+INCLUDE_PATH = -I ../commons
+
 
 # The Caml compilers.
 CAMLC =ocamlc -g
@@ -21,7 +28,6 @@ plus.cmo merge.cmo semantic_cocci.cmo data.cmo lexer_cocci.cmo \
 parser_cocci_menhir.cmo parse_cocci.cmo 
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
-INCLUDE_PATH = -I ../commons
 
 #all: $(LIB)
 all: $(EXEC) $(LIB)
@@ -40,8 +46,6 @@ clean::
 $(OPTLIB): $(GENERATED) $(OPTOBJS) 
 	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
-LIBS=../commons/commons.cma
-SYSLIBS = str.cma unix.cma
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(CAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo

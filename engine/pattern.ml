@@ -127,25 +127,35 @@ let check_add_metavars_binding = fun (k, valu) binding ->
              note that here we have Astc._expression, so it is a match modulo isomorphism
              (there is not metavariable involved here,  just isomorphisms)
           *)
-          | Ast_c.MetaExpr a, Ast_c.MetaExpr b -> a =*= b 
+
+          | Ast_c.MetaExpr a, Ast_c.MetaExpr b -> 
+              raise Todo
+          | _ -> raise Todo
+
+(*
+
           | Ast_c.MetaExprList a, Ast_c.MetaExprList b -> a =*= b 
-          (* todo, aa_type  before comparing !!! 
-             and maybe accept when they match modulo iso ? not just =
-          *)
           | Ast_c.MetaType a, Ast_c.MetaType b -> a =*= b
-         (* todo, aa_stmt  before comparing !!! 
-            and maybe accept when they match modulo iso ? not just =
-         *)
           | Ast_c.MetaStmt a, Ast_c.MetaStmt b -> a =*= b
           | Ast_c.MetaParam a, Ast_c.MetaParam b -> a =*= b
           | Ast_c.MetaParamList a, Ast_c.MetaParamList b -> a =*= b
           | x -> error_cant_have x
+*)
           ) 
           then _GoodMatch binding
           else _MatchFailure
 
       | None -> 
-          _GoodMatch   (binding +> insert_assoc (k, valu))
+          let valu' = 
+          (match valu with
+          | Ast_c.MetaId a -> Ast_c.MetaId a
+          | Ast_c.MetaFunc a -> Ast_c.MetaFunc a
+          | Ast_c.MetaExpr a -> 
+              Ast_c.MetaExpr (Ast_c.al_expr a)
+          | _ -> raise Todo
+          ) 
+          in
+          _GoodMatch   (binding +> insert_assoc (k, valu'))
   )
   
 

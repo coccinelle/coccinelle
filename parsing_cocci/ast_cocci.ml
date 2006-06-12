@@ -268,6 +268,7 @@ and anything =
   | Token               of string
   | Code                of top_level
 
+(* --------------------------------------------------------------------- *)
 
 let get_real_line = function
     MINUS(info,_) -> info.line

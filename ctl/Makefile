@@ -1,8 +1,11 @@
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
+TARGET = ctl
+
 SRC = ast_ctl.ml ctl_engine.ml test.ml
 
-TARGET = ctl
+SYSLIBS=str.cma unix.cma
+LIBS=../commons/commons.cma
 
 ADDONSPATH = -I ../commons
 
@@ -21,8 +24,6 @@ CAMLYACC= ocamlyacc
 CAMLDEP = ocamldep $(ADDONSPATH)
 CAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
-SYSLIBS=str.cma unix.cma
-LIBS=../commons/commons.cma
 
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)

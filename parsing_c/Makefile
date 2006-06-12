@@ -7,8 +7,8 @@ SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml \
 
 SYSLIBS = str.cma unix.cma 
 
-# parsing_c now depends on cocci_parser because we decorate the token in Ast_c with
-# some parse info and we make some place to welcome some mcode.
+# parsing_c now depends on cocci_parser because in addition to decorate the token in Ast_c with
+# some parse info, we now also make some place to welcome some mcodekind of Ast_cocci.
 LIBS=../commons/commons.cma  ../parsing_cocci/cocci_parser.cma
 ADDONSPATH= -I ../commons -I  ../parsing_cocci 
 
@@ -43,14 +43,12 @@ $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 $(TARGET).cma: $(OBJS) $(LIBS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
-clean::
-	rm -f $(TARGET).byte $(TARGET).opt
-
-
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
-clean:: 
-	rm -f $(TARGET).top
+
+clean::
+	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
+
 
 links:
 	ln -s ../flag.ml

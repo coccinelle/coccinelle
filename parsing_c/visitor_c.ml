@@ -71,6 +71,7 @@ let rec visitor_expr_k = fun bigf expr ->
   let f = bigf.kexpr in
   let rec k e = 
     match e with
+    | Ident (s),i -> ()
     | Constant (c),is -> ()
     | FunCall  (e, es), is         -> f (k, bigf) e;  
         (es +> List.map fst) +> List.iter (fun e -> 
@@ -241,6 +242,7 @@ let rec visitor_expr_k_s = fun bigf expr ->
   let f = bigf.kexpr_s in
   let rec k e = 
     match e with
+    | Ident (s), i -> Ident (s), i
     | Constant (c), is -> Constant (c), is
     | FunCall  (e, es), is         -> let e'  = (f (k, bigf)) e  in 
       let es' = (es +> List.map fst)  +> List.map (fun e -> 

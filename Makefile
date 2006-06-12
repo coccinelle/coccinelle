@@ -1,21 +1,14 @@
-TARGET=maxicoccinelle
+TARGET=spatch
 
-SOURCEMAIN = \
+SRC = \
 	flag.ml  \
 	misc/classic_patch.ml  \
 	cocci.ml   test.ml main.ml
-
-EXEC=$(TARGET).byte
-OPTEXEC=$(EXEC).opt
-
-OBJS = $(SOURCEMAIN:.ml=.cmo)
-OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
 
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
-
 #ocamlc -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci  -I ../engine -I ../misc
 
 OCAMLRUNPARAM = 'b'
@@ -29,6 +22,15 @@ OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+
+
+EXEC=$(TARGET)
+OPTEXEC=$(EXEC).opt
+
+OBJS = $(SRC:.ml=.cmo)
+OPTOBJS = $(SRC:.ml=.cmx)
+
+
 
 all: rec $(EXEC) $(TARGET).top
 opt: rec.opt $(OPTEXEC)

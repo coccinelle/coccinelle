@@ -1,13 +1,13 @@
 open Common open Commonop
 
 
-let test1 () = Cocci.test_cocci "tests/1.c" "tests/1.cocci"
+let test1 () = Cocci.test_cocci "../1.c" "../1.cocci"
 
-let test2 = Cocci.one_flow "tests/1.c" +> Control_flow_c.control_flow_to_ast
+let test2 () = Cocci.one_flow "tests/1.c" +> Control_flow_c.control_flow_to_ast
 
 
 
-(*
+(* TODO
 (* ------------------------------------------------------------------------------ *)
 
 let rule_elem1 = 
@@ -140,12 +140,4 @@ let test_transfo () =
 
 (* ******************************************************************** *)
 (* ******************************************************************** *)
-
-
-let main () =
-  ignore (test_transfo ())
-  
-
-let _ = if not !Sys.interactive then main () 
-
 *)
