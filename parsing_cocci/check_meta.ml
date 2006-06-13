@@ -1,7 +1,7 @@
 (* For minus fragment, checks that all of the identifier metavariables that
 are used are not declared as fresh, and check that all declared variables
 are used.  For plus fragment, just check that the variables declared as
-fresh are used. *)
+fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
@@ -238,12 +238,12 @@ let add_to_fresh_table l =
       let name = metavar2name x in Hashtbl.replace fresh_table name ())
     l
 
-let check_all_marked err table =
+let check_all_marked err table after_err =
   Hashtbl.iter
     (function name ->
       function (cell) ->
 	if not (!cell)
-	then warning (Printf.sprintf "%s %s not used" err name))
+	then warning (Printf.sprintf "%s %s not used %s" err name after_err))
     table
 
 let check_meta metavars minus plus =
@@ -258,7 +258,7 @@ let check_meta metavars minus plus =
   let other_table = make_table other in
   add_to_fresh_table fresh;
   rule [other_table;err_table] true minus;
-  check_all_marked "metavariable" other_table;
+  check_all_marked "metavariable" other_table "in the - or context code";
   rule [fresh_table;err_table] false plus;
-  check_all_marked "fresh identifier metavariable" fresh_table;
-  check_all_marked "error metavariable" err_table
+  check_all_marked "fresh identifier metavariable" fresh_table "in the + code";
+  check_all_marked "error metavariable" err_table ""
