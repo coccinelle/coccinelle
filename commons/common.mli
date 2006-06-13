@@ -594,6 +594,8 @@ val uniq2 : 'a list -> 'a list
 val keep_best : ('a * 'a -> 'a option) -> 'a list -> 'a list
 val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 
+val cartesian_product: 'a list -> 'b list -> ('a * 'b) list
+
 val surEnsemble : 'a list -> 'a list list -> 'a list list
 val realCombinaison : 'a list -> 'a list list
 val combinaison : 'a list -> ('a * 'a) list

@@ -1682,6 +1682,12 @@ let rec sorted_keep_best f = function
 
 
 
+let (cartesian_product: 'a list -> 'b list -> ('a * 'b) list) = fun xs ys -> 
+  xs +> List.map (fun x ->  ys +> List.map (fun y -> (x,y)))
+     +> List.flatten
+
+let _ = assert_equal (cartesian_product [1;2] ["3";"4";"5"]) [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
+
 (*----------------------------------*)
 
 (* sur surEnsemble [p1;p2] [[p1;p2;p3] [p1;p2] ....] -> [[p1;p2;p3] ...       *)
