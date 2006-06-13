@@ -67,7 +67,7 @@ let main () =
     | "parse_cocci", [file] -> 
         if not (file =~ ".*\\.cocci") then pr2 "warning: seems not a .cocci file";
         (try 
-          let xs = Cocci.spbis file in
+          let xs = Cocci.spbis_from_file file in
           xs +> List.iter (fun (meta, rule) -> 
             Unparse_cocci.unparse rule
               )
@@ -108,7 +108,11 @@ let main () =
 
 
     | "special_request", _ -> 
-        ignore(Test.test_ctl_sat Test.ctl2)
+        (* 
+           ignore(Test.test_ctl_sat (Test.ctl2 ())) 
+        ignore(Test.test_pattern_bis ())
+         *)
+           ignore(Cocci.test_unparser "evo9.c")
    
     | "test_parse_classic_patch", [] -> Classic_patch.parse_patch (cat "/tmp/patch1") +> ignore
    

@@ -4,7 +4,7 @@ open Common open Commonop
 let test1 () = Cocci.test_cocci "../1.c" "../1.cocci"
 
 let statement1 () = Cocci.cstatement_from_string "f(1,2,3);"
-let expr1 () = Cocci.cexpression_from_string "1"
+let expr1      () = Cocci.cexpression_from_string "1"
 let rule_elem1 () = Cocci.rule_elem_from_string "@@ expression X,Y;@@
 -f(...,X,Y,...);
 +h(X)
@@ -18,6 +18,46 @@ let pattern_result1 () = Cocci.test_pattern
 +h(X)
 "
 
+
+(* ------------------------------------------------------------------------------ *)
+
+let test_pattern_bis () = 
+  let cfile = "evo9.c" in
+  let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file cfile)) in
+
+
+  let coccifile = "rule9p2.cocci" in
+  let rule_with_metavars_list = Cocci.spbis_from_file coccifile in
+
+  let (all_nodes: Control_flow_c.node list) = flow#nodes#tolist +> List.map snd in
+  let (all_rule_elem: Ast_cocci.rule_elem list) = 
+    rule_with_metavars_list +> List.hd +> snd +> List.hd +> (fun x -> 
+      match x with
+      | Ast_cocci.CODE rule_elem_dots -> Ast_cocci.undots rule_elem_dots
+      | Ast_cocci.FUNCTION rule_elem_dots -> Ast_cocci.undots rule_elem_dots
+      | _ -> raise Todo
+      ) 
+  in
+  let cartesian = cartesian_product all_nodes all_rule_elem in
+
+  cartesian +> map_filter (fun (node,rule) -> 
+    let bindings = Pattern.match_re_node  rule node (Ast_c.empty_metavars_binding) in
+    if not (null bindings) 
+    then Some ((node, rule), bindings)
+    else None
+   )
+   +> filter (fun ((node, rule), bindings) -> 
+     match rule with
+     | Ast_cocci.SeqStart _ 
+     | Ast_cocci.SeqEnd _ -> false
+     | _ -> true
+             )
+    +> List.iter (fun ((node, rule), bindings) -> 
+         pr2 (Unparse_cocci.rule_elem_to_string rule)
+       )
+
+    
+  
 
 (* ------------------------------------------------------------------------------ *)
 (* I put only in the list the match that modifies *)
@@ -48,7 +88,7 @@ let _display_graph = false
 
 let test_transfo () =
   let cfile = "../1.c" in
-  let flow = Cocci.one_flow cfile  in
+  let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file cfile))  in
   if _display_graph then Ograph_extended.print_ograph_extended flow;
   (* Pretty_print.pp_program (Control_flow.control_flow_to_mini_c flow); *)
   let flow = Transformation.transform (sat_result_for_transfo ()) flow in
@@ -60,7 +100,7 @@ let test_transfo () =
 
 
 (* ------------------------------------------------------------------------------ *)
-let ctl1 = 
+let ctl1 () = 
 
 Ast_ctl.And
  (Ast_ctl.Exists ("x",
@@ -85,7 +125,7 @@ Ast_ctl.And
                          ))))))
 
 
-let ctl2 = 
+let ctl2 () = 
 
 Ast_ctl.Exists ("x",
  Ast_ctl.And
@@ -132,7 +172,7 @@ Ast_ctl.Exists ("x",
 let test_ctl_sat ctl = 
 
   let ctl  = ctl in
-  let flow = Cocci.one_flow "../1.c" in
+  let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file  "../1.c")) in
 
   let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
   let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
