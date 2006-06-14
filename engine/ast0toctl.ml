@@ -7,7 +7,6 @@ module Ast = Ast_cocci
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
-open Lib_engine
 (* --------------------------------------------------------------------- *)
 
 let texify s =
@@ -25,11 +24,11 @@ let texify s =
   Printf.sprintf "\\mita{%s}" (loop 0)
 
 let pred2c = function
-    TrueBranch -> "\\msf{TrueBranch}"
-  | FalseBranch -> "\\msf{FalseBranch}"
-  | After -> "\\msf{After}"
-  | Paren(s) -> "\\msf{Paren}("^s^")"
-  | Match(re) ->
+    Lib_engine.TrueBranch -> "\\msf{Lib_engine.TrueBranch}"
+  | Lib_engine.FalseBranch -> "\\msf{Lib_engine.FalseBranch}"
+  | Lib_engine.After -> "\\msf{Lib_engine.After}"
+  | Lib_engine.Paren(s) -> "\\msf{Lib_engine.Paren}("^s^")"
+  | Lib_engine.Match(re) ->
       Printf.sprintf "%s" (texify(Unparse_cocci.rule_elem_to_string re))
 
 (* --------------------------------------------------------------------- *)
@@ -155,8 +154,8 @@ let make_seq first = function
 let make_match code =
   let v = fresh_var() in
   if Ast.contains_modif code
-  then Ast_ctl.Pred(Match(code),Ast_ctl.Modif v)
-  else Ast_ctl.Pred(Match(code),Ast_ctl.UnModif v)
+  then Ast_ctl.Pred(Lib_engine.Match(code),Ast_ctl.Modif v)
+  else Ast_ctl.Pred(Lib_engine.Match(code),Ast_ctl.UnModif v)
 
 let rec statement stmt after =
   match Ast0_cocci.unwrap stmt with
@@ -166,11 +165,11 @@ let rec statement stmt after =
       let v = fresh_var() in
       let start_brace =
 	Ast_ctl.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
+		Ast_ctl.Pred(Lib_engine.Paren v,Ast_ctl.Control)) in
       let end_brace =
 	Ast_ctl.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
+	   Ast_ctl.Pred(Lib_engine.Paren v,Ast_ctl.Control)) in
       make_seq start_brace
 	(Some(dots statement body (Some (make_seq end_brace after))))
   | Ast0_cocci.ExprStatement(exp,sem) ->
@@ -185,13 +184,13 @@ let rec statement stmt after =
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),statement branch None) in
+	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.TrueBranch,Ast_ctl.Control),statement branch None) in
       let else_line =
-	Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),Ast_ctl.False) in
+	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.FalseBranch,Ast_ctl.Control),Ast_ctl.False) in
       let after_line =
 	match after with
 	  None -> Ast_ctl.True
-	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(After,Ast_ctl.Control),after) in
+	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.After,Ast_ctl.Control),after) in
       make_seq if_header
 	  (Some(Ast_ctl.And (Ast_ctl.And(then_line,else_line),after_line)))
   | Ast0_cocci.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
@@ -201,15 +200,15 @@ let rec statement stmt after =
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),
+	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.TrueBranch,Ast_ctl.Control),
 		    statement branch1 None) in
       let else_line =
-	Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),
+	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.FalseBranch,Ast_ctl.Control),
 		    statement branch2 None) in
       let after_line =
 	match after with
 	  None -> Ast_ctl.True
-	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(After,Ast_ctl.Control),after) in
+	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.After,Ast_ctl.Control),after) in
       make_seq if_header
 	  (Some(Ast_ctl.And (Ast_ctl.And(then_line,else_line),after_line)))
   | Ast0_cocci.While(wh,lp,exp,rp,body) ->
@@ -219,11 +218,11 @@ let rec statement stmt after =
 	     (Ast0toast.mcode wh,Ast0toast.mcode lp,
 	      Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let body_line =
-	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),statement body None) in
+	Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.TrueBranch,Ast_ctl.Control),statement body None) in
       let after_line =
 	match after with
 	  None -> Ast_ctl.True
-	| Some after -> Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),after) in
+	| Some after -> Ast_ctl.Implies(Ast_ctl.Pred(Lib_engine.FalseBranch,Ast_ctl.Control),after) in
       make_seq while_header (Some (Ast_ctl.And(body_line,after_line)))
   | Ast0_cocci.Return(ret,sem) ->
       make_seq
@@ -274,11 +273,11 @@ let rec statement stmt after =
       let v = fresh_var() in
       let start_brace =
 	Ast_ctl.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
+		Ast_ctl.Pred(Lib_engine.Paren v,Ast_ctl.Control)) in
       let end_brace =
 	Ast_ctl.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
+	   Ast_ctl.Pred(Lib_engine.Paren v,Ast_ctl.Control)) in
       make_seq function_header
 	(Some
 	   (make_seq start_brace
@@ -486,15 +485,15 @@ and fvtop_level = function
 
 let free_table =
   (Hashtbl.create(50) :
-     ((predicate * string Ast_ctl.modif,string) Ast_ctl.generic_ctl,string list) Hashtbl.t)
+     ((Lib_engine.predicate * string Ast_ctl.modif,string) Ast_ctl.generic_ctl,string list) Hashtbl.t)
 
 let rec free_vars x =
   let res =
     match x with
       Ast_ctl.False -> []
     | Ast_ctl.True -> []
-    | Ast_ctl.Pred(Match(p),_) -> fvrule_elem p
-    | Ast_ctl.Pred(Paren(p),_) -> [p]
+    | Ast_ctl.Pred(Lib_engine.Match(p),_) -> fvrule_elem p
+    | Ast_ctl.Pred(Lib_engine.Paren(p),_) -> [p]
     | Ast_ctl.Pred(p,_) -> []
     | Ast_ctl.Not(f) -> free_vars f
     | Ast_ctl.Exists(vars,f) -> free_vars f
@@ -527,7 +526,7 @@ let pred2exists = function
 let rec add_quantifiers quantified = function
     Ast_ctl.False -> Ast_ctl.False
   | Ast_ctl.True -> Ast_ctl.True
-  | Ast_ctl.Pred(Match(p),_) as x ->
+  | Ast_ctl.Pred(Lib_engine.Match(p),_) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
