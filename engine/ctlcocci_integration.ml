@@ -2,40 +2,11 @@ open Common open Commonop
 
 open Ograph_extended
 
-(* -------------------------------------------------------------------- *)
-(* Substitutions and instantiated CTL                                   *)
-(* -------------------------------------------------------------------- *)
 
 
 
-(* Substitutions map metavar's to *)
-type substitution = (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution
-
-type ctl_cocci = (Ast0toctl.predicate, Ast_ctl.mvar) Ast_ctl.generic_ctl
 
 let (-->) x v = Ast_ctl.Subst (x,v);;
-
-(* -------------------------------------------------------------------- *)
-let (ctl_get_all_predicates: ctl_cocci -> Ast0toctl.predicate list) = fun ctl -> 
-  let rec aux x =
-    match x with
-      Ast_ctl.False -> []
-    | Ast_ctl.True -> []
-    | Ast_ctl.Pred(p,_VTODO) -> [p]
-    | Ast_ctl.Not(f) -> aux f
-    | Ast_ctl.Exists(vars,f) -> aux f
-    | Ast_ctl.And(f1,f2) ->     Common.union_set (aux f1) (aux f2)
-    | Ast_ctl.Or(f1,f2) ->      Common.union_set (aux f1) (aux f2)
-    | Ast_ctl.Implies(f1,f2) -> Common.union_set (aux f1) (aux f2)
-    | Ast_ctl.AF(f) -> aux f
-    | Ast_ctl.AX(f) -> aux f
-    | Ast_ctl.AG(f) -> aux f
-    | Ast_ctl.AU(f1,f2) -> Common.union_set (aux f1) (aux f2)
-    | Ast_ctl.EF(f) -> aux f
-    | Ast_ctl.EX(f) -> aux f
-    | Ast_ctl.EG(f) -> aux f
-    | Ast_ctl.EU(f1,f2) -> Common.union_set (aux f1) (aux f2) in
-  aux ctl
 
 
 (*
@@ -45,45 +16,46 @@ it matches (and the set of subsitutions for this match).
 
 let top_wit = []
 
-let (labels_for_ctl: ((nodei * Control_flow_c.node) list) -> (Ast0toctl.predicate list) -> 
-   (Ast0toctl.predicate,  ((nodei * (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution * 'hole list) list)) assoc) 
-  = fun nodes preds ->
+let (labels_for_ctl: 
+  (nodei * Control_flow_c.node) list -> 
+  (Lib_engine.predicate ->
+   (nodei * 
+    (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
+   list))
+  = fun nodes ->
 
-   (* build assoc *)
-   let assoc = preds +> List.map (fun pred -> 
+   (fun pred -> 
        let nodes = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (match pred, node with
-         | Ast0toctl.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
-             [(nodei,         [(s -->   (Ast_ctl.ParenVar (i_to_s bracelevel)))], top_wit)]
-         | Ast0toctl.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
-             [(nodei,         [(s -->   (Ast_ctl.ParenVar (i_to_s bracelevel)))], top_wit)]
-         | Ast0toctl.Paren _, _ -> 
+         | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
+             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))], top_wit)]
+         | Lib_engine.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
+             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))], top_wit)]
+         | Lib_engine.Paren _, _ -> 
              []
 
-         | Ast0toctl.Match (re),    node -> 
+         | Lib_engine.Match (re),    node -> 
              let substs = Pattern.match_re_node re (node, nodestring)  (Ast_c.empty_metavars_binding) in
              if substs <> []
              then
                substs +> List.map (fun subst -> 
                  (nodei, 
                   subst +> List.map (fun (s, meta) -> 
-                    s --> Ast_ctl.NormalMetaVar meta
+                    s --> Lib_engine.NormalMetaVar meta
                                     ),
                   top_wit
                  )
                 )
              else []
 
-         | Ast0toctl.TrueBranch , _ -> raise Todo
-         | Ast0toctl.FalseBranch, _ -> raise Todo
-         | Ast0toctl.After, _ -> raise Todo
+         | Lib_engine.TrueBranch , _ -> raise Todo
+         | Lib_engine.FalseBranch, _ -> raise Todo
+         | Lib_engine.After, _ -> raise Todo
          )
        ) +> List.concat
        in
-       (pred, nodes)
+       nodes
        ) 
-   in
-   assoc
 
 let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> ('a, 'b) ograph_extended) = fun cflow ->
  (* could erase info on nodes, and edge,  because they are not used by rene *)
@@ -106,14 +78,14 @@ let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended ->
 
 
 
-
-
-
-let model_for_ctl  cflow ctl = 
+let model_for_ctl  cflow = 
  let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
- let labels = Common.assoc_to_function (labels_for_ctl (cflow#nodes#tolist) (ctl_get_all_predicates ctl)) in
+ let labels = labels_for_ctl (cflow#nodes#tolist)  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
  
 
 
+
+
+(* let sattrans = convert_... give = *)

@@ -7,12 +7,8 @@ module Ast = Ast_cocci
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
+open Lib_engine
 (* --------------------------------------------------------------------- *)
-
-type predicate =
-    TrueBranch | FalseBranch | After
-  | Paren of string
-  | Match of Ast.rule_elem
 
 let texify s =
   let len = String.length s in
@@ -490,7 +486,7 @@ and fvtop_level = function
 
 let free_table =
   (Hashtbl.create(50) :
-     ((predicate,string) Ast_ctl.generic_ctl,string list) Hashtbl.t)
+     ((predicate * string Ast_ctl.modif,string) Ast_ctl.generic_ctl,string list) Hashtbl.t)
 
 let rec free_vars x =
   let res =

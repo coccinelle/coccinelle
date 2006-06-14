@@ -2,7 +2,7 @@
 
 TARGET = ctl
 
-SRC = ctl_engine.ml 
+SRC = ast_ctl.ml ctl_engine.ml wrapper_ctl.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma

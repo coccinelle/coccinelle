@@ -1,30 +1,19 @@
 open Common
 open Ograph_extended 
 
-type substitution = (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution
-
-type ctl_cocci = (Ast0toctl.predicate, Ast_ctl.mvar) Ast_ctl.generic_ctl
 
 val labels_for_ctl :
-  (nodei * Control_flow_c.node) list ->  Ast0toctl.predicate list ->
-  (Ast0toctl.predicate,
+  (nodei * Control_flow_c.node) list ->
+  (Lib_engine.predicate ->
    (nodei * 
-    (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
+    (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
    list)
-  assoc
 
 val model_for_ctl :
-  (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> ctl_cocci ->
+  (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended *
-   (Ast0toctl.predicate ->
-    (nodei * (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
+   (Lib_engine.predicate ->
+    (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
     list) *
    nodei list
 
-
-
-
-(* ------------------------------------------------------------------------------ *)
-(* normally not needed, but can be useful for debugging purpose *)
-(* ------------------------------------------------------------------------------ *)
-val ctl_get_all_predicates : ctl_cocci -> Ast0toctl.predicate set

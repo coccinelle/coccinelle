@@ -111,6 +111,7 @@ let test_pattern statement_str rule_elem_str =
 
 (* --------------------------------------------------------------------- *)
 
+(*
 let test_cocci cfile coccifile = 
 
   let ctl  = one_ctl (ctls (sp_from_file coccifile)) in
@@ -120,7 +121,8 @@ let test_cocci cfile coccifile =
   let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
   let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
 
-  Ast_ctl.sat model_ctl  ctl
+ Ast_ctl.sat model_ctl  ctl 
+*)
 
       
 

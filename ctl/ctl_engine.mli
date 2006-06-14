@@ -1,3 +1,5 @@
+open Ast_ctl
+
 module type SUBST =
   sig
     type value
@@ -50,35 +52,6 @@ module CTL_ENGINE :
   functor (SUB : SUBST) ->
     functor (G : GRAPH) ->
       sig
-        type ('a, 'b) generic_ctl =
-            False
-          | True
-          | Pred of 'a * 'b modif
-          | Not of ('a, 'b) generic_ctl
-          | Exists of 'b * ('a, 'b) generic_ctl
-          | And of ('a, 'b) generic_ctl * ('a, 'b) generic_ctl
-          | Or of ('a, 'b) generic_ctl * ('a, 'b) generic_ctl
-          | Implies of ('a, 'b) generic_ctl * ('a, 'b) generic_ctl
-          | AF of ('a, 'b) generic_ctl
-          | AX of ('a, 'b) generic_ctl
-          | AG of ('a, 'b) generic_ctl
-          | AU of ('a, 'b) generic_ctl * ('a, 'b) generic_ctl
-          | EF of ('a, 'b) generic_ctl
-          | EX of ('a, 'b) generic_ctl
-          | EG of ('a, 'b) generic_ctl
-          | EU of ('a, 'b) generic_ctl * ('a, 'b) generic_ctl
-        and 'mvar modif = Modif of 'mvar | UnModif of 'mvar | Control
-
-        type ('a, 'b) generic_subst = 
-            Subst of 'a * 'b 
-          | NegSubst of 'a * 'b
-
-        type ('a, 'b) generic_substitution = ('a, 'b) generic_subst list
-
-        type ('a, 'b, 'c) generic_witness =
-            Wit of 'a * 'b * 'c * ('a, 'b, 'c) generic_witness list
-          | NegWit of 'a * 'b * 'c * ('a, 'b, 'c) generic_witness list
-
 
         val sat :
           G.cfg *

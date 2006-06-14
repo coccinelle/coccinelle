@@ -1,7 +1,7 @@
 open Common open Commonop
 
 (* ------------------------------------------------------------------------------ *)
-let test1 () = Cocci.test_cocci "mytests/1.c" "mytests/1.cocci"
+(* let test1 () = Cocci.test_cocci "mytests/1.c" "mytests/1.cocci" *)
 
 let statement1 () = Cocci.cstatement_from_string "f(1,2,3);"
 let expr1      () = Cocci.cexpression_from_string "1"
@@ -100,28 +100,30 @@ let test_transfo () =
 
 
 (* ------------------------------------------------------------------------------ *)
+(*
+
 let ctl1 () = 
 
 Ast_ctl.And
  (Ast_ctl.Exists ("x",
   (Ast_ctl.Exists ("v3",
     Ast_ctl.Pred
-     (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x;@@
+     (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x;@@
  f(x);")
        ,
-     Ast_ctl.UnModif "v3")))),
+     Lib_engine.UnModif "v3")))),
   Ast_ctl.AX
    (Ast_ctl.AF
     (Ast_ctl.Exists ("y",
       (Ast_ctl.Exists ("v0",
        Ast_ctl.Pred
-        (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
+        (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
 - g(y);
 + h(x,y);
 "
 )
           ,
-        Ast_ctl.Modif "v0")
+        Lib_engine.Modif "v0")
                          ))))))
 
 
@@ -131,10 +133,10 @@ Ast_ctl.Exists ("x",
  Ast_ctl.And
   (Ast_ctl.Exists ("v3",
     Ast_ctl.Pred
-     (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x;@@
+     (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x;@@
  f(x);"
                       ),
-      Ast_ctl.UnModif "v3")),
+      Lib_engine.UnModif "v3")),
    Ast_ctl.AX
    (Ast_ctl.Exists ("y",
      Ast_ctl.AF (
@@ -144,13 +146,13 @@ Ast_ctl.Exists ("x",
         (Ast_ctl.Or
           (Ast_ctl.Exists ("v2",
             Ast_ctl.Pred
-             (Ast0toctl.Match  (Cocci.rule_elem_from_string "@@expression X;@@
+             (Lib_engine.Match  (Cocci.rule_elem_from_string "@@expression X;@@
  f(X);"
                       ),
               Ast_ctl.UnModif "v2")),
           Ast_ctl.Exists ("v1",
            Ast_ctl.Pred
-            (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression X;@@
+            (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression X;@@
 - g(Y);
 + h(X,Y);
 "
@@ -159,13 +161,12 @@ Ast_ctl.Exists ("x",
  *)
       Ast_ctl.Exists ("v0",
        Ast_ctl.Pred
-        (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
+        (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
 - g(y);
 + h(x,y);
 "
                             ),
-        Ast_ctl.Modif "v0")))))))
-
+        Lib_engine.Modif "v0")))))))
 
 let ctl3 () = 
 
@@ -173,22 +174,22 @@ Ast_ctl.Exists ("x",
  Ast_ctl.And
   (Ast_ctl.Exists ("v3",
     Ast_ctl.Pred
-     (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x;@@
+     (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x;@@
  f(x);"
                       ),
-      Ast_ctl.UnModif "v3")),
+      Lib_engine.UnModif "v3")),
    Ast_ctl.AX (
      Ast_ctl.AF (
      Ast_ctl.Exists ("y",
       Ast_ctl.Exists ("v0",
        Ast_ctl.Pred
-        (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
+        (Lib_engine.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
 - g(y);
 + h(x,y);
 "
                             ),
-        Ast_ctl.Modif "v0")))))))
-
+        Lib_engine.Modif "v0")))))))
+*)
 
 
 
@@ -198,10 +199,9 @@ let test_ctl_sat ctl =
   let ctl  = ctl in
   let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file  "mytests/1.c")) in
 
-  let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
-  let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
-
-  Ast_ctl.sat model_ctl  ctl
+  let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
+  raise Todo
+  (* Ast_ctl.sat model_ctl  ctl *)
 
 
 
@@ -227,11 +227,11 @@ let top_wit = []
 
 (* For convenience in the examples *)
 (* FIX ME: remove *)
+open Ast_ctl
 open Ctl_engine.SIMPLE_ENV;;
 open Ctl_engine.SIMPLE_CFG;;
 open EXAMPLE_ENGINE;;
 
-let fake = Modif ""
 
 (* ---------------------------------------------------------------------- *)
 (* Helpers                                                                *)
@@ -283,8 +283,8 @@ let ex1states = List.map fst (ex1graph#nodes)#tolist;;
 
 let ex1model = (ex1graph, ex1lab, ex1states);;
 
-let ex1s0 = Exists("v0",Pred ("f(x)",UnModif "v0"));;
-let ex1s1 = Exists("v1",Pred ("g(y)",UnModif "v1"));;
+let ex1s0 = Exists("v0",Pred ("f(x)"));;
+let ex1s1 = Exists("v1",Pred ("g(y)"));;
 let ex1s2 = Exists("y",ex1s1);;
 let ex1s3 = AF(ex1s2);;
 let ex1s4 = And(ex1s0,ex1s3);;
@@ -300,12 +300,12 @@ let ex1phi3 =
  And
  (Exists ("x",
   (Exists ("v3",
-    Pred ("f(x)", fake)))),
+    Pred ("f(x)")))),
   AX
    (AF
     (Exists ("y", (* change this to Y and have strange behaviour *)
       (Exists ("v0",
-       Pred ("g(y)", fake)
+       Pred ("g(y)")
                       ))))))
 
 
@@ -313,12 +313,12 @@ let ex1phi3bis =
  Exists ("x",
  And
   (Exists ("v3",
-    Pred ("f(x)", fake)),
+    Pred ("f(x)")),
   AX
    (Exists ("y",
      AF (
       Exists ("v0",
-       Pred ("g(y)", fake)))))))
+       Pred ("g(y)")))))))
 
 
 let ex1 phi = sat ex1model phi;;

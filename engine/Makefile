@@ -2,7 +2,7 @@
 
 TARGET=cocciengine
 
-SOURCES = ast_ctl.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml ast0toctl.ml ctltotex.ml ctlcocci_integration.ml
+SOURCES = lib_engine.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml ast0toctl.ml ctltotex.ml ctlcocci_integration.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci
 

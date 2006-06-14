@@ -234,43 +234,7 @@ module CTL_ENGINE =
 struct
 
 
-
-(* ---------------------------------------------------------------------- *)
-(* Types                                                                  *)
-(* ---------------------------------------------------------------------- *)
-
-(* CTL parameterised on basic predicates and metavar's*)
-type ('pred,'mvar) generic_ctl = 
-  | False
-  | True
-  | Pred of 'pred * 'mvar modif
-  | Not of ('pred,'mvar) generic_ctl
-  | Exists of 'mvar * ('pred,'mvar) generic_ctl		(* !!! *)
-  | And of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
-  | Or  of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
-  | Implies of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
-  | AF of ('pred,'mvar) generic_ctl
-  | AX of ('pred,'mvar) generic_ctl
-  | AG of ('pred,'mvar) generic_ctl
-  | AU of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
-  | EF of ('pred,'mvar) generic_ctl
-  | EX of ('pred,'mvar) generic_ctl
-  | EG of ('pred,'mvar) generic_ctl
-  | EU of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
-
-and 'mvar modif = Modif of 'mvar | UnModif of 'mvar | Control
-
-(* NOTE: No explicit representation of the bottom subst., i.e., FALSE *)
-type ('mvar,'value) generic_subst = 
-  | Subst of 'mvar * 'value
-  | NegSubst of 'mvar * 'value
-type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list;;
-
-type ('state,'subst,'anno) generic_witness =
-  | Wit of 'state * 'subst * 'anno * ('state,'subst,'anno) generic_witness list
-  | NegWit of 'state * 'subst * 'anno * ('state,'subst,'anno)generic_witness list
-type ('state,'subst,'anno) generic_witnesstree = 
-    ('state,'subst,'anno) generic_witness list;;
+open Ast_ctl
 
 type ('state,'subst,'anno) generic_triple = 
     'state * 'subst * ('state,'subst,'anno) generic_witnesstree;;
@@ -508,7 +472,7 @@ let rec sat ((grp,label,states) as m) phi =
   match phi with
     False              -> []
   | True               -> triples_top states
-  | Pred(p,_TODO)            -> label(p)		(* NOTE: Assume well-formed *)
+  | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
   | Not(phi)           -> triples_complement states (sat m phi)
   | Or(phi1,phi2)      -> triples_union (sat m phi1) (sat m phi2)
   | And(phi1,phi2)     -> triples_conj (sat m phi1) (sat m phi2)
