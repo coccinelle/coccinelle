@@ -4,10 +4,10 @@
 (* ********************************************************************** *)
 
 (* FIX ME: move *)
-module EXAMPLE_ENGINE = CTL_ENGINE (EXAMPLE_ENV) (CFG);;
+module EXAMPLE_ENGINE = Ctl_engine.CTL_ENGINE (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG);;
 
 
-
+let top_wit = []
 
 (* ******************************************************************** *)
 (*                                                                      *)
@@ -17,8 +17,8 @@ module EXAMPLE_ENGINE = CTL_ENGINE (EXAMPLE_ENV) (CFG);;
 
 (* For convenience in the examples *)
 (* FIX ME: remove *)
-open EXAMPLE_ENV;;
-open CFG;;
+open Ctl_engine.SIMPLE_ENV;;
+open Ctl_engine.SIMPLE_CFG;;
 open EXAMPLE_ENGINE;;
 
 (* ---------------------------------------------------------------------- *)
@@ -42,8 +42,8 @@ let mkgraph nodes edges =
   let adde anodes (n1,n2,x) = 
     let g' = (!g)#add_arc ((List.assoc n1 anodes,List.assoc n2 anodes),x) in
     g := g'; () in
-  let add_nodes = map addn nodes in
-  let add_edges = map (adde add_nodes) edges in
+  let add_nodes = List.map addn nodes in
+  let _add_edges = List.map (adde add_nodes) edges in
   !g
 ;;
 
@@ -53,6 +53,7 @@ let mkgraph nodes edges =
 (*   CTL: f(x) /\ AF(Ey.g(y))                                           *)
 (* ******************************************************************** *)
 
+(*
 let conv_label olab (p,mv) =
   let old_label = olab p in
   let penv = mv --> PredVal(p) in
@@ -61,8 +62,9 @@ let conv_label olab (p,mv) =
       | Subst(x,v)    -> Subst(UnModif(x),CodeVal(v))
       | NegSubst(x,v) -> NegSubst(UnModif(x),CodeVal(v))
   in
-    map (fun (s,env,wit) -> (s,penv :: (map conv_sub env),wit)) old_label
+    List.map (fun (s,env,wit) -> (s,penv :: (List.map conv_sub env),wit)) old_label
 ;;
+*)
 
 let ex1lab s =
   match s with
@@ -75,16 +77,16 @@ let ex1graph =
   let nodes = 
     [(0,"f(1)");(1,"f(2)");(2,"< >");(3,"g(1)");(4,"g(2)");(5,"<exit>")] in
   let edges = [(0,2); (1,2); (2,3); (2,4); (3,5); (4,5); (5,5)] in
-  mkgraph nodes (map (fun (x,y) -> (x,y,())) edges)
+  mkgraph nodes (List.map (fun (x,y) -> (x,y,())) edges)
 ;;
 
 let ex1states = List.map fst (ex1graph#nodes)#tolist;;
 
-let ex1model = (ex1graph,conv_label ex1lab,ex1states);;
+let ex1model = (ex1graph,(*conv_label*) ex1lab,ex1states);;
 
-let ex1s0 = Exists(UnModif "v0",Pred ("f(x)",UnModif "v0"));;
-let ex1s1 = Exists(UnModif "v1",Pred ("g(y)",UnModif "v1"));;
-let ex1s2 = Exists(UnModif "y",ex1s1);;
+let ex1s0 = Exists((*UnModif*) "v0",Pred ("f(x)",UnModif "v0"));;
+let ex1s1 = Exists((*UnModif*) "v1",Pred ("g(y)",UnModif "v1"));;
+let ex1s2 = Exists((*UnModif*) "y",ex1s1);;
 let ex1s3 = AF(ex1s2);;
 let ex1s4 = And(ex1s0,ex1s3);;
 
