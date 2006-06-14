@@ -1,7 +1,7 @@
 open Common open Commonop
 
 (* ------------------------------------------------------------------------------ *)
-let test1 () = Cocci.test_cocci "../1.c" "../1.cocci"
+let test1 () = Cocci.test_cocci "mytests/1.c" "mytests/1.cocci"
 
 let statement1 () = Cocci.cstatement_from_string "f(1,2,3);"
 let expr1      () = Cocci.cexpression_from_string "1"
@@ -87,14 +87,14 @@ let sat_result_for_transfo () =
 let _display_graph = false
 
 let test_transfo () =
-  let cfile = "../1.c" in
+  let cfile = "mytests/1.c" in
   let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file cfile))  in
   if _display_graph then Ograph_extended.print_ograph_extended flow;
   (* Pretty_print.pp_program (Control_flow.control_flow_to_mini_c flow); *)
   let flow = Transformation.transform (sat_result_for_transfo ()) flow in
      if _display_graph then Ograph_extended.print_ograph_extended flow;
   let def = (Control_flow_c.control_flow_to_ast flow) in
-  Unparse_c.pp_program "../1.c" [Ast_c.Definition def, Unparse_c.PPnormal]
+  Unparse_c.pp_program "mytests/1.c" [Ast_c.Definition def, Unparse_c.PPnormal]
 
 
 
@@ -196,7 +196,7 @@ Ast_ctl.Exists ("x",
 let test_ctl_sat ctl = 
 
   let ctl  = ctl in
-  let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file  "../1.c")) in
+  let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file  "mytests/1.c")) in
 
   let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
   let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
