@@ -167,6 +167,30 @@ Ast_ctl.Exists ("x",
         Ast_ctl.Modif "v0")))))))
 
 
+let ctl3 () = 
+
+Ast_ctl.Exists ("x",
+ Ast_ctl.And
+  (Ast_ctl.Exists ("v3",
+    Ast_ctl.Pred
+     (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x;@@
+ f(x);"
+                      ),
+      Ast_ctl.UnModif "v3")),
+   Ast_ctl.AX (
+     Ast_ctl.AF (
+     Ast_ctl.Exists ("y",
+      Ast_ctl.Exists ("v0",
+       Ast_ctl.Pred
+        (Ast0toctl.Match (Cocci.rule_elem_from_string "@@expression x,y;@@
+- g(y);
++ h(x,y);
+"
+                            ),
+        Ast_ctl.Modif "v0")))))))
+
+
+
 
 
 let test_ctl_sat ctl = 
