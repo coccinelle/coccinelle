@@ -1,9 +1,9 @@
 (* Question: where do we put the existential quantifier for or.  At the
 moment, let it float inwards. *)
 
-module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module CTL = Ast_ctl
+(* module Ast0 = Ast0_cocci *)
+(* module CTL = Ast_ctl *)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
@@ -51,15 +51,15 @@ let get_list_option fn = function
 (* Dots *)
 
 let dots fn l after =
-  match Ast0.unwrap l with
-    Ast0.DOTS(x) ->
+  match Ast0_cocci.unwrap l with
+    Ast0_cocci.DOTS(x) ->
       let rec loop = function
-	  [] -> (match after with Some x -> x | None -> CTL.True)
+	  [] -> (match after with Some x -> x | None -> Ast_ctl.True)
 	| [x] -> fn x after
 	| x::xs -> fn x (Some(loop xs)) in
       loop x
-  | Ast0.CIRCLES(x) -> failwith "not supported"
-  | Ast0.STARS(x) -> failwith "not supported"
+  | Ast0_cocci.CIRCLES(x) -> failwith "not supported"
+  | Ast0_cocci.STARS(x) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)
 (* Whenify *)
@@ -67,11 +67,11 @@ let dots fn l after =
 We add these to any when code associated with the dots *)
 
 let rec when_dots before after d =
-  Ast0.rewrap d
-    (match Ast0.unwrap d with
-      Ast0.DOTS(l) -> Ast0.DOTS(dots_list before after l)
-    | Ast0.CIRCLES(l) -> Ast0.CIRCLES(dots_list before after l)
-    | Ast0.STARS(l) -> Ast0.STARS(dots_list before after l))
+  Ast0_cocci.rewrap d
+    (match Ast0_cocci.unwrap d with
+      Ast0_cocci.DOTS(l) -> Ast0_cocci.DOTS(dots_list before after l)
+    | Ast0_cocci.CIRCLES(l) -> Ast0_cocci.CIRCLES(dots_list before after l)
+    | Ast0_cocci.STARS(l) -> Ast0_cocci.STARS(dots_list before after l))
 
 and dots_list before after = function
     [] -> []
@@ -81,66 +81,66 @@ and dots_list before after = function
       (dots_list (Some cur) after rest)
 
 and when_statement before after s =
-  Ast0.rewrap s
-    (match Ast0.unwrap s with
-      Ast0.Decl(decl) as x -> x
-    | Ast0.Seq(lbrace,body,rbrace) ->
-	Ast0.Seq(lbrace,when_dots None None body,rbrace)
-    | Ast0.ExprStatement(exp,sem) as x -> x
-    | Ast0.IfThen(iff,lp,exp,rp,branch) ->
-	Ast0.IfThen(iff,lp,exp,rp,when_statement None None branch)
-    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
-	Ast0.IfThenElse(iff,lp,exp,rp,
+  Ast0_cocci.rewrap s
+    (match Ast0_cocci.unwrap s with
+      Ast0_cocci.Decl(decl) as x -> x
+    | Ast0_cocci.Seq(lbrace,body,rbrace) ->
+	Ast0_cocci.Seq(lbrace,when_dots None None body,rbrace)
+    | Ast0_cocci.ExprStatement(exp,sem) as x -> x
+    | Ast0_cocci.IfThen(iff,lp,exp,rp,branch) ->
+	Ast0_cocci.IfThen(iff,lp,exp,rp,when_statement None None branch)
+    | Ast0_cocci.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+	Ast0_cocci.IfThenElse(iff,lp,exp,rp,
 	  when_statement None None branch1,els,
 	  when_statement None None branch2)
-    | Ast0.While(wh,lp,exp,rp,body) ->
-	Ast0.While(wh,lp,exp,rp,when_statement None None body)
-    | Ast0.Return(ret,sem) as x -> x
-    | Ast0.ReturnExpr(ret,exp,sem) as x -> x
-    | Ast0.MetaStmt(name) as x -> x
-    | Ast0.MetaStmtList(name) as x -> x
-    | Ast0.Exp(exp) as x -> x
-    | Ast0.Disj(rule_elem_dots_list) ->
-	Ast0.Disj(List.map (when_dots before after) rule_elem_dots_list)
-    | Ast0.Nest(rule_elem_dots) ->
-	Ast0.Nest(when_dots None None rule_elem_dots)
-    | Ast0.Dots(d,None) as x ->
+    | Ast0_cocci.While(wh,lp,exp,rp,body) ->
+	Ast0_cocci.While(wh,lp,exp,rp,when_statement None None body)
+    | Ast0_cocci.Return(ret,sem) as x -> x
+    | Ast0_cocci.ReturnExpr(ret,exp,sem) as x -> x
+    | Ast0_cocci.MetaStmt(name) as x -> x
+    | Ast0_cocci.MetaStmtList(name) as x -> x
+    | Ast0_cocci.Exp(exp) as x -> x
+    | Ast0_cocci.Disj(rule_elem_dots_list) ->
+	Ast0_cocci.Disj(List.map (when_dots before after) rule_elem_dots_list)
+    | Ast0_cocci.Nest(rule_elem_dots) ->
+	Ast0_cocci.Nest(when_dots None None rule_elem_dots)
+    | Ast0_cocci.Dots(d,None) as x ->
 	(* don't care about line numbers any more, and never cared in when *)
 	(match (before,after) with
 	  (None,None) -> x
-	| (None,Some aft) -> Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([aft]))))
-	| (Some bef,None) -> Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([bef]))))
+	| (None,Some aft) -> Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([aft]))))
+	| (Some bef,None) -> Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([bef]))))
 	| (Some bef,Some aft) ->
 	    let new_when =
-	      Ast0.wrap(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));
-				    Ast0.wrap(Ast0.DOTS([aft]))])) in
-	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when])))))
-    | Ast0.Dots(d,Some statement_dots) as x ->
+	      Ast0_cocci.wrap(Ast0_cocci.Disj([Ast0_cocci.wrap(Ast0_cocci.DOTS([bef]));
+				    Ast0_cocci.wrap(Ast0_cocci.DOTS([aft]))])) in
+	    Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([new_when])))))
+    | Ast0_cocci.Dots(d,Some statement_dots) as x ->
 	(* don't care about line numbers any more, and never cared in when *)
 	(match (before,after) with
 	  (None,None) -> x
 	| (None,Some aft) ->
 	    let new_when =
-	      Ast0.wrap
-		(Ast0.Disj([Ast0.wrap(Ast0.DOTS([aft]));statement_dots])) in
-	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when]))))
+	      Ast0_cocci.wrap
+		(Ast0_cocci.Disj([Ast0_cocci.wrap(Ast0_cocci.DOTS([aft]));statement_dots])) in
+	    Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([new_when]))))
 	| (Some bef,None) ->
 	    let new_when =
-	      Ast0.wrap
-		(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));statement_dots])) in
-	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when]))))
+	      Ast0_cocci.wrap
+		(Ast0_cocci.Disj([Ast0_cocci.wrap(Ast0_cocci.DOTS([bef]));statement_dots])) in
+	    Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([new_when]))))
 	| (Some bef,Some aft) ->
 	    let new_when =
-	      Ast0.wrap(Ast0.Disj([Ast0.wrap(Ast0.DOTS([bef]));
-				    Ast0.wrap(Ast0.DOTS([aft]));
+	      Ast0_cocci.wrap(Ast0_cocci.Disj([Ast0_cocci.wrap(Ast0_cocci.DOTS([bef]));
+				    Ast0_cocci.wrap(Ast0_cocci.DOTS([aft]));
 				    statement_dots])) in
-	    Ast0.Dots(d,Some(Ast0.wrap(Ast0.DOTS([new_when])))))
-    | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
-	Ast0.FunDecl(stg,name,lp,params,rp,lbrace,when_dots None None body,
+	    Ast0_cocci.Dots(d,Some(Ast0_cocci.wrap(Ast0_cocci.DOTS([new_when])))))
+    | Ast0_cocci.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0_cocci.FunDecl(stg,name,lp,params,rp,lbrace,when_dots None None body,
 		     rbrace)
-    | Ast0.OptStm(stm) -> Ast0.OptStm(when_statement None None stm)
-    | Ast0.UniqueStm(stm) -> Ast0.UniqueStm(when_statement None None stm)
-    | Ast0.MultiStm(stm) -> Ast0.MultiStm(when_statement None None stm)
+    | Ast0_cocci.OptStm(stm) -> Ast0_cocci.OptStm(when_statement None None stm)
+    | Ast0_cocci.UniqueStm(stm) -> Ast0_cocci.UniqueStm(when_statement None None stm)
+    | Ast0_cocci.MultiStm(stm) -> Ast0_cocci.MultiStm(when_statement None None stm)
     | _ -> failwith "not supported")
 
 (* --------------------------------------------------------------------- *)
@@ -154,120 +154,120 @@ let fresh_var _ =
 
 let make_seq first = function
     None -> first
-  | Some rest -> CTL.And(first,CTL.AX(rest))
+  | Some rest -> Ast_ctl.And(first,Ast_ctl.AX(rest))
 
 let make_match code =
   let v = fresh_var() in
   if Ast.contains_modif code
-  then CTL.Pred(Match(code),CTL.Modif v)
-  else CTL.Pred(Match(code),CTL.UnModif v)
+  then Ast_ctl.Pred(Match(code),Ast_ctl.Modif v)
+  else Ast_ctl.Pred(Match(code),Ast_ctl.UnModif v)
 
 let rec statement stmt after =
-  match Ast0.unwrap stmt with
-    Ast0.Decl(decl) ->
+  match Ast0_cocci.unwrap stmt with
+    Ast0_cocci.Decl(decl) ->
       make_seq (make_match(Ast.Decl(Ast0toast.declaration decl))) after
-  | Ast0.Seq(lbrace,body,rbrace) ->
+  | Ast0_cocci.Seq(lbrace,body,rbrace) ->
       let v = fresh_var() in
       let start_brace =
-	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		CTL.Pred(Paren v,CTL.Control)) in
+	Ast_ctl.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
+		Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
       let end_brace =
-	CTL.And
+	Ast_ctl.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   CTL.Pred(Paren v,CTL.Control)) in
+	   Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
       make_seq start_brace
 	(Some(dots statement body (Some (make_seq end_brace after))))
-  | Ast0.ExprStatement(exp,sem) ->
+  | Ast0_cocci.ExprStatement(exp,sem) ->
       make_seq
 	(make_match
 	   (Ast.ExprStatement (Ast0toast.expression exp,Ast0toast.mcode sem)))
 	after
-  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+  | Ast0_cocci.IfThen(iff,lp,exp,rp,branch) ->
       let if_header =
 	make_match
 	  (Ast.IfHeader
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),statement branch None) in
+	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),statement branch None) in
       let else_line =
-	CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),CTL.False) in
+	Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),Ast_ctl.False) in
       let after_line =
 	match after with
-	  None -> CTL.True
-	| Some after ->	CTL.Implies(CTL.Pred(After,CTL.Control),after) in
+	  None -> Ast_ctl.True
+	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(After,Ast_ctl.Control),after) in
       make_seq if_header
-	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+	  (Some(Ast_ctl.And (Ast_ctl.And(then_line,else_line),after_line)))
+  | Ast0_cocci.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
       let if_header =
 	make_match
 	  (Ast.IfHeader
 	     (Ast0toast.mcode iff,Ast0toast.mcode lp,
 	       Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let then_line =
-	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),
+	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),
 		    statement branch1 None) in
       let else_line =
-	CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),
+	Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),
 		    statement branch2 None) in
       let after_line =
 	match after with
-	  None -> CTL.True
-	| Some after ->	CTL.Implies(CTL.Pred(After,CTL.Control),after) in
+	  None -> Ast_ctl.True
+	| Some after ->	Ast_ctl.Implies(Ast_ctl.Pred(After,Ast_ctl.Control),after) in
       make_seq if_header
-	  (Some(CTL.And (CTL.And(then_line,else_line),after_line)))
-  | Ast0.While(wh,lp,exp,rp,body) ->
+	  (Some(Ast_ctl.And (Ast_ctl.And(then_line,else_line),after_line)))
+  | Ast0_cocci.While(wh,lp,exp,rp,body) ->
       let while_header =
 	make_match
 	  (Ast.WhileHeader
 	     (Ast0toast.mcode wh,Ast0toast.mcode lp,
 	      Ast0toast.expression exp,Ast0toast.mcode rp)) in
       let body_line =
-	CTL.Implies(CTL.Pred(TrueBranch,CTL.Control),statement body None) in
+	Ast_ctl.Implies(Ast_ctl.Pred(TrueBranch,Ast_ctl.Control),statement body None) in
       let after_line =
 	match after with
-	  None -> CTL.True
-	| Some after -> CTL.Implies(CTL.Pred(FalseBranch,CTL.Control),after) in
-      make_seq while_header (Some (CTL.And(body_line,after_line)))
-  | Ast0.Return(ret,sem) ->
+	  None -> Ast_ctl.True
+	| Some after -> Ast_ctl.Implies(Ast_ctl.Pred(FalseBranch,Ast_ctl.Control),after) in
+      make_seq while_header (Some (Ast_ctl.And(body_line,after_line)))
+  | Ast0_cocci.Return(ret,sem) ->
       make_seq
 	(make_match(Ast.Return(Ast0toast.mcode ret,Ast0toast.mcode sem)))
 	after
-  | Ast0.ReturnExpr(ret,exp,sem) ->
+  | Ast0_cocci.ReturnExpr(ret,exp,sem) ->
       let return = 
 	Ast.ReturnExpr
 	  (Ast0toast.mcode ret,Ast0toast.expression exp,Ast0toast.mcode sem) in
       make_seq (make_match return) after
-  | Ast0.MetaStmt(name) ->
+  | Ast0_cocci.MetaStmt(name) ->
       make_seq (make_match(Ast.MetaStmt(Ast0toast.mcode name))) after
-  | Ast0.MetaStmtList(name) ->
+  | Ast0_cocci.MetaStmtList(name) ->
       make_seq (make_match(Ast.MetaStmtList(Ast0toast.mcode name))) after
-  | Ast0.Exp(exp) ->
+  | Ast0_cocci.Exp(exp) ->
       make_seq (make_match(Ast.Exp(Ast0toast.expression exp))) after
-  | Ast0.Disj(rule_elem_dots_list) ->
+  | Ast0_cocci.Disj(rule_elem_dots_list) ->
       let rec loop = function
-	  [] -> CTL.False
+	  [] -> Ast_ctl.False
 	| [cur] -> dots statement cur None
-	| cur::rest -> CTL.Or(dots statement cur None,loop rest) in
+	| cur::rest -> Ast_ctl.Or(dots statement cur None,loop rest) in
       loop rule_elem_dots_list
-  | Ast0.Nest(rule_elem_dots) ->
+  | Ast0_cocci.Nest(rule_elem_dots) ->
       let dots_pattern = dots statement rule_elem_dots None in
       (match after with
 	None ->
-	  CTL.AG(CTL.Or(dots_pattern,CTL.Not dots_pattern))
+	  Ast_ctl.AG(Ast_ctl.Or(dots_pattern,Ast_ctl.Not dots_pattern))
       |	Some after ->
-	  CTL.AU(CTL.Or(dots_pattern,CTL.Not dots_pattern),after))
-  | Ast0.Dots(_,None)    ->
+	  Ast_ctl.AU(Ast_ctl.Or(dots_pattern,Ast_ctl.Not dots_pattern),after))
+  | Ast0_cocci.Dots(_,None)    ->
       (match after with
-	None -> CTL.True
-      |	Some after -> CTL.AF(after))
-  | Ast0.Dots(_,Some statement_dots)    ->
+	None -> Ast_ctl.True
+      |	Some after -> Ast_ctl.AF(after))
+  | Ast0_cocci.Dots(_,Some statement_dots)    ->
       (match after with
 	None ->
-	  CTL.AG(CTL.Not(dots statement statement_dots None))
+	  Ast_ctl.AG(Ast_ctl.Not(dots statement statement_dots None))
       |	Some after ->
-	  CTL.AU(CTL.Not(dots statement statement_dots None),after))
-  | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+	  Ast_ctl.AU(Ast_ctl.Not(dots statement statement_dots None),after))
+  | Ast0_cocci.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
       let stg = get_option Ast0toast.mcode stg in
       let name = Ast0toast.ident name in
       let lp = Ast0toast.mcode lp in
@@ -277,27 +277,27 @@ let rec statement stmt after =
 	make_match(Ast.FunDecl(stg,name,lp,params,rp)) in
       let v = fresh_var() in
       let start_brace =
-	CTL.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
-		CTL.Pred(Paren v,CTL.Control)) in
+	Ast_ctl.And(make_match(Ast.SeqStart(Ast0toast.mcode lbrace)),
+		Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
       let end_brace =
-	CTL.And
+	Ast_ctl.And
 	  (make_match(Ast.SeqEnd(Ast0toast.mcode rbrace)),
-	   CTL.Pred(Paren v,CTL.Control)) in
+	   Ast_ctl.Pred(Paren v,Ast_ctl.Control)) in
       make_seq function_header
 	(Some
 	   (make_seq start_brace
 	      (Some(dots statement body (Some(make_seq end_brace after))))))
-  | Ast0.OptStm(stm) ->
+  | Ast0_cocci.OptStm(stm) ->
       (* doesn't work for ?f(); f();, ie when the optional thing is the same
 	 as the thing that comes immediately after *)
       let pattern = statement stm after in
       (match after with
-	None -> CTL.Or(pattern,CTL.Not pattern)
+	None -> Ast_ctl.Or(pattern,Ast_ctl.Not pattern)
       |	Some after ->
-	  CTL.Or(pattern,CTL.And(CTL.Not(statement stm None),after)))
-  | Ast0.UniqueStm(stm) ->
+	  Ast_ctl.Or(pattern,Ast_ctl.And(Ast_ctl.Not(statement stm None),after)))
+  | Ast0_cocci.UniqueStm(stm) ->
       warning "arities not yet supported"; statement stm after
-  | Ast0.MultiStm(stm) ->
+  | Ast0_cocci.MultiStm(stm) ->
       warning "arities not yet supported"; statement stm after
   | _ -> failwith "not supported"
 
@@ -490,71 +490,71 @@ and fvtop_level = function
 
 let free_table =
   (Hashtbl.create(50) :
-     ((predicate,string) CTL.generic_ctl,string list) Hashtbl.t)
+     ((predicate,string) Ast_ctl.generic_ctl,string list) Hashtbl.t)
 
 let rec free_vars x =
   let res =
     match x with
-      CTL.False -> []
-    | CTL.True -> []
-    | CTL.Pred(Match(p),_) -> fvrule_elem p
-    | CTL.Pred(Paren(p),_) -> [p]
-    | CTL.Pred(p,_) -> []
-    | CTL.Not(f) -> free_vars f
-    | CTL.Exists(vars,f) -> free_vars f
-    | CTL.And(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
-    | CTL.Or(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
-    | CTL.Implies(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
-    | CTL.AF(f) -> free_vars f
-    | CTL.AX(f) -> free_vars f
-    | CTL.AG(f) -> free_vars f
-    | CTL.AU(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
-    | CTL.EF(f) -> free_vars f
-    | CTL.EX(f) -> free_vars f
-    | CTL.EG(f) -> free_vars f
-    | CTL.EU(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2) in
+      Ast_ctl.False -> []
+    | Ast_ctl.True -> []
+    | Ast_ctl.Pred(Match(p),_) -> fvrule_elem p
+    | Ast_ctl.Pred(Paren(p),_) -> [p]
+    | Ast_ctl.Pred(p,_) -> []
+    | Ast_ctl.Not(f) -> free_vars f
+    | Ast_ctl.Exists(vars,f) -> free_vars f
+    | Ast_ctl.And(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
+    | Ast_ctl.Or(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
+    | Ast_ctl.Implies(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
+    | Ast_ctl.AF(f) -> free_vars f
+    | Ast_ctl.AX(f) -> free_vars f
+    | Ast_ctl.AG(f) -> free_vars f
+    | Ast_ctl.AU(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2)
+    | Ast_ctl.EF(f) -> free_vars f
+    | Ast_ctl.EX(f) -> free_vars f
+    | Ast_ctl.EG(f) -> free_vars f
+    | Ast_ctl.EU(f1,f2) -> Common.union_set (free_vars f1) (free_vars f2) in
   Hashtbl.add free_table x res;
   res
 
 (* --------------------------------------------------------------------- *)
 
 let add_quants formula variables =
-  List.fold_left (function prev -> function v -> CTL.Exists (v,prev))
+  List.fold_left (function prev -> function v -> Ast_ctl.Exists (v,prev))
     formula variables
 
 let pred2exists = function
-  | CTL.Pred(p,CTL.Modif(v)) as x -> CTL.Exists(v,x)
-  | CTL.Pred(p,CTL.UnModif(v)) as x -> CTL.Exists(v,x)
-  | CTL.Pred(p,CTL.Control) as x -> x
+  | Ast_ctl.Pred(p,Ast_ctl.Modif(v)) as x -> Ast_ctl.Exists(v,x)
+  | Ast_ctl.Pred(p,Ast_ctl.UnModif(v)) as x -> Ast_ctl.Exists(v,x)
+  | Ast_ctl.Pred(p,Ast_ctl.Control) as x -> x
   | _ -> failwith "not possible"
 
 let rec add_quantifiers quantified = function
-    CTL.False -> CTL.False
-  | CTL.True -> CTL.True
-  | CTL.Pred(Match(p),_) as x ->
+    Ast_ctl.False -> Ast_ctl.False
+  | Ast_ctl.True -> Ast_ctl.True
+  | Ast_ctl.Pred(Match(p),_) as x ->
       let vars = Hashtbl.find free_table x in
       let fresh =
 	List.filter (function x -> not (List.mem x quantified)) vars in
       add_quants (pred2exists x) fresh
-  | CTL.Pred(p,v) as x -> pred2exists x
-  | CTL.Not(f) -> CTL.Not(add_quantifiers quantified f)
-  | CTL.Exists(vars,f) -> CTL.Exists(vars,add_quantifiers quantified f)
-  | CTL.And(f1,f2) ->
-      binop f1 f2 quantified (function x -> function y -> CTL.And(x,y))
-  | CTL.Or(f1,f2) ->
-      CTL.Or(add_quantifiers quantified f1,add_quantifiers quantified f2)
-  | CTL.Implies(f1,f2) ->
-      binop f1 f2 quantified (function x -> function y -> CTL.Implies(x,y))
-  | CTL.AF(f) -> CTL.AF(add_quantifiers quantified f)
-  | CTL.AX(f) -> CTL.AX(add_quantifiers quantified f)
-  | CTL.AG(f) -> CTL.AG(add_quantifiers quantified f)
-  | CTL.AU(f1,f2) ->
-      binop f1 f2 quantified (function x -> function y -> CTL.AU(x,y))
-  | CTL.EF(f) -> CTL.EF(add_quantifiers quantified f)
-  | CTL.EX(f) -> CTL.EX(add_quantifiers quantified f)
-  | CTL.EG(f) -> CTL.EG(add_quantifiers quantified f)
-  | CTL.EU(f1,f2) ->
-      CTL.EU(add_quantifiers quantified f1,add_quantifiers quantified f2)
+  | Ast_ctl.Pred(p,v) as x -> pred2exists x
+  | Ast_ctl.Not(f) -> Ast_ctl.Not(add_quantifiers quantified f)
+  | Ast_ctl.Exists(vars,f) -> Ast_ctl.Exists(vars,add_quantifiers quantified f)
+  | Ast_ctl.And(f1,f2) ->
+      binop f1 f2 quantified (function x -> function y -> Ast_ctl.And(x,y))
+  | Ast_ctl.Or(f1,f2) ->
+      Ast_ctl.Or(add_quantifiers quantified f1,add_quantifiers quantified f2)
+  | Ast_ctl.Implies(f1,f2) ->
+      binop f1 f2 quantified (function x -> function y -> Ast_ctl.Implies(x,y))
+  | Ast_ctl.AF(f) -> Ast_ctl.AF(add_quantifiers quantified f)
+  | Ast_ctl.AX(f) -> Ast_ctl.AX(add_quantifiers quantified f)
+  | Ast_ctl.AG(f) -> Ast_ctl.AG(add_quantifiers quantified f)
+  | Ast_ctl.AU(f1,f2) ->
+      binop f1 f2 quantified (function x -> function y -> Ast_ctl.AU(x,y))
+  | Ast_ctl.EF(f) -> Ast_ctl.EF(add_quantifiers quantified f)
+  | Ast_ctl.EX(f) -> Ast_ctl.EX(add_quantifiers quantified f)
+  | Ast_ctl.EG(f) -> Ast_ctl.EG(add_quantifiers quantified f)
+  | Ast_ctl.EU(f1,f2) ->
+      Ast_ctl.EU(add_quantifiers quantified f1,add_quantifiers quantified f2)
 
 and binop f1 f2 quantified fn =
   let f1vars = Hashtbl.find free_table f1 in
@@ -572,19 +572,19 @@ and binop f1 f2 quantified fn =
 (* Function declaration *)
 
 let top_level = function
-    Ast0.DECL(decl) -> failwith "not supported"
-  | Ast0.INCLUDE(inc,s) -> failwith "not supported"
-  | Ast0.FILEINFO(old_file,new_file) -> failwith "not supported"
-  | Ast0.FUNCTION(stmt) ->
+    Ast0_cocci.DECL(decl) -> failwith "not supported"
+  | Ast0_cocci.INCLUDE(inc,s) -> failwith "not supported"
+  | Ast0_cocci.FILEINFO(old_file,new_file) -> failwith "not supported"
+  | Ast0_cocci.FUNCTION(stmt) ->
       let start = statement (when_statement None None stmt) None in
       let _ = free_vars start in
       add_quantifiers [] start
-  | Ast0.CODE(rule_elem_dots) ->
+  | Ast0_cocci.CODE(rule_elem_dots) ->
       let start = dots statement (when_dots None None rule_elem_dots) None in
       let _ = free_vars start in
       add_quantifiers [] start
-  | Ast0.ERRORWORDS(exps) -> failwith "not supported"
-  | Ast0.OTHER(_) -> failwith "eliminated by top_level"
+  | Ast0_cocci.ERRORWORDS(exps) -> failwith "not supported"
+  | Ast0_cocci.OTHER(_) -> failwith "eliminated by top_level"
 
 (* --------------------------------------------------------------------- *)
 (* Entry points *)

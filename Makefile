@@ -9,7 +9,7 @@ SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
-#ocamlc -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci  -I ../engine -I ../misc
+#
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM

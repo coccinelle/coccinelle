@@ -30,10 +30,10 @@ val test_pattern : string -> string -> Ast_c.metavars_binding list
 val test_cocci :
   Common.filename -> Common.filename ->
   (Ograph_extended.nodei *
-   (Ctlcocci_integration.mvar, Ctlcocci_integration.metavar_binding_kind2)
+   (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2)
    Ast_ctl.generic_substitution *
    (Ograph_extended.nodei,
-    (Ctlcocci_integration.mvar, Ctlcocci_integration.metavar_binding_kind2)
+    (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2)
     Ast_ctl.generic_substitution, 'a list)
    Ast_ctl.generic_witness list)
   list

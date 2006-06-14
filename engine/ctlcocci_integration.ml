@@ -6,16 +6,12 @@ open Ograph_extended
 (* Substitutions and instantiated CTL                                   *)
 (* -------------------------------------------------------------------- *)
 
-type mvar = string
 
-type metavar_binding_kind2 = 
-  | NormalMetaVar of Ast_c.metavar_binding_kind
-  | ParenVar of string
 
 (* Substitutions map metavar's to *)
-type substitution = (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution
+type substitution = (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution
 
-type ctl_cocci = (Ast0toctl.predicate, mvar) Ast_ctl.generic_ctl
+type ctl_cocci = (Ast0toctl.predicate, Ast_ctl.mvar) Ast_ctl.generic_ctl
 
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
@@ -50,7 +46,7 @@ it matches (and the set of subsitutions for this match).
 let top_wit = []
 
 let (labels_for_ctl: ((nodei * Control_flow_c.node) list) -> (Ast0toctl.predicate list) -> 
-   (Ast0toctl.predicate,  ((nodei * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution * 'hole list) list)) assoc) 
+   (Ast0toctl.predicate,  ((nodei * (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2) Ast_ctl.generic_substitution * 'hole list) list)) assoc) 
   = fun nodes preds ->
 
    (* build assoc *)
@@ -58,9 +54,9 @@ let (labels_for_ctl: ((nodei * Control_flow_c.node) list) -> (Ast0toctl.predicat
        let nodes = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (match pred, node with
          | Ast0toctl.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
-             [(nodei,         [(s -->   (ParenVar (i_to_s bracelevel)))], top_wit)]
+             [(nodei,         [(s -->   (Ast_ctl.ParenVar (i_to_s bracelevel)))], top_wit)]
          | Ast0toctl.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
-             [(nodei,         [(s -->   (ParenVar (i_to_s bracelevel)))], top_wit)]
+             [(nodei,         [(s -->   (Ast_ctl.ParenVar (i_to_s bracelevel)))], top_wit)]
          | Ast0toctl.Paren _, _ -> 
              []
 
@@ -71,7 +67,7 @@ let (labels_for_ctl: ((nodei * Control_flow_c.node) list) -> (Ast0toctl.predicat
                substs +> List.map (fun subst -> 
                  (nodei, 
                   subst +> List.map (fun (s, meta) -> 
-                    s --> NormalMetaVar meta
+                    s --> Ast_ctl.NormalMetaVar meta
                                     ),
                   top_wit
                  )

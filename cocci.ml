@@ -1,6 +1,7 @@
 open Common open Commonop
 
 
+(* --------------------------------------------------------------------- *)
 let cprogram_from_file  file = Parse_c.parse_print_error_heuristic file
 
 let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
@@ -38,6 +39,7 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   end
   
 
+(* --------------------------------------------------------------------- *)
 let sp_from_file file    = Parse_cocci.process_for_ctl file false
 let spbis_from_file file = Parse_cocci.process file false
 
@@ -55,6 +57,7 @@ let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s ->
 
 
 
+(* --------------------------------------------------------------------- *)
 let flows astc = 
   let (program, stat) = astc in
   program +> map_filter (fun (e,_) -> 
@@ -76,6 +79,7 @@ let print_flow flow = Ograph_extended.print_ograph_extended flow
 
 
 
+(* --------------------------------------------------------------------- *)
 let ctls sp = 
   sp +> List.split 
   +> (fun (ast_lists,ast0_lists) -> 
@@ -88,6 +92,7 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 
 
+(* --------------------------------------------------------------------- *)
 
 let test_unparser cfile = 
   one_flow (flows (cprogram_from_file cfile))
@@ -104,6 +109,7 @@ let test_pattern statement_str rule_elem_str =
     (Ast_c.empty_metavars_binding)
 
 
+(* --------------------------------------------------------------------- *)
 
 let test_cocci cfile coccifile = 
 
@@ -114,7 +120,7 @@ let test_cocci cfile coccifile =
   let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
   let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
 
-  Ctl_engine.sat model_ctl  ctl
+  Ast_ctl.sat model_ctl  ctl
 
       
 

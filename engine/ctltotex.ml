@@ -1,4 +1,4 @@
-module CTL = Ast_ctl
+(* module CTL = Ast_ctl *)
 
 let prelude =
   "\\documentclass{article}\n"^
@@ -36,59 +36,59 @@ let texify s =
   Printf.sprintf "\\mita{%s}" (loop 0)
 
 let modif2c pv = function
-    CTL.Modif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
-  | CTL.UnModif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
-  | CTL.Control -> ""
+    Ast_ctl.Modif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
+  | Ast_ctl.UnModif(v) -> Printf.sprintf "_{%s}" (texify(pv v))
+  | Ast_ctl.Control -> ""
 
 let rec ctl2c ct pp pv = function
-    CTL.False -> ("\\msf{false}",5)
-  | CTL.True -> ("\\msf{true}",4)
-  | CTL.Pred(p,v) ->
+    Ast_ctl.False -> ("\\msf{false}",5)
+  | Ast_ctl.True -> ("\\msf{true}",4)
+  | Ast_ctl.Pred(p,v) ->
       let res = pp p in
       let resv = modif2c pv v in
       (res^resv,ct+String.length res+String.length resv)
-  | CTL.Not(f) ->
+  | Ast_ctl.Not(f) ->
       let (res,ct) = wrap (ct+1) pp pv f in
       ("\\neg "^res,ct)
-  | CTL.Exists(v,f) ->
+  | Ast_ctl.Exists(v,f) ->
       let res1 = texify(pv v) in
       let ct = ct + String.length res1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+1) pp pv f in
       ("\\exists "^res1^" . "^res2,ct)
-  | CTL.And(f1,f2) ->
+  | Ast_ctl.And(f1,f2) ->
       let (res1,ct) = andwrap ct pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = andwrap (ct+1) pp pv f2 in
       (res1^" \\wedge "^res2,ct)
-  | CTL.Or(f1,f2) ->
+  | Ast_ctl.Or(f1,f2) ->
       let (res1,ct) = orwrap ct pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = orwrap (ct+1) pp pv f2 in
       (res1^" \\vee "^res2,ct)
-  | CTL.Implies(f1,f2) ->
+  | Ast_ctl.Implies(f1,f2) ->
       let (res1,ct) = wrap ct pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = wrap (ct+1) pp pv f2 in
       (res1^" \\rightarrow "^res2,ct)
-  | CTL.AF(f) ->
+  | Ast_ctl.AF(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AF"^res,ct)
-  | CTL.AX(f) ->
+  | Ast_ctl.AX(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AX"^res,ct)
-  | CTL.AG(f) ->
+  | Ast_ctl.AG(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AG"^res,ct)
-  | CTL.AU(f1,f2) ->
+  | Ast_ctl.AU(f1,f2) ->
       let (res1,ct) = existswrap (ct+2) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
       ("\\A["^res1^" \\U "^res2^"]\n",ct)
-  | CTL.EF(f) ->
+  | Ast_ctl.EF(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EF"^res,ct)
-  | CTL.EX(f) ->
+  | Ast_ctl.EX(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EX"^res,ct)
-  | CTL.EG(f) ->
+  | Ast_ctl.EG(f) ->
       let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EG"^res,ct)
-  | CTL.EU(f1,f2) ->
+  | Ast_ctl.EU(f1,f2) ->
       let (res1,ct) = existswrap (ct+2) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
@@ -96,29 +96,29 @@ let rec ctl2c ct pp pv = function
 
 and wrap ct pp pv x =
   match x with
-    CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    Ast_ctl.False | Ast_ctl.True | Ast_ctl.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and andwrap ct pp pv x =
   match x with
-    CTL.And(_,_) | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    Ast_ctl.And(_,_) | Ast_ctl.False | Ast_ctl.True | Ast_ctl.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and orwrap ct pp pv x =
   match x with
-    CTL.Or(_,_) | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    Ast_ctl.Or(_,_) | Ast_ctl.False | Ast_ctl.True | Ast_ctl.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and pathwrap ct pp pv x =
   match x with
-    CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_)
-  | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) ->
+    Ast_ctl.AX(_) | Ast_ctl.AF(_) | Ast_ctl.AG(_) | Ast_ctl.AU(_,_)
+  | Ast_ctl.EX(_) | Ast_ctl.EF(_) | Ast_ctl.EG(_) | Ast_ctl.EU(_,_) ->
       ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
@@ -126,9 +126,9 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match x with
-    CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_) | CTL.Pred(_)
-  | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) | CTL.Exists(_,_)
-  | CTL.True | CTL.False | CTL.Not(_) ->
+    Ast_ctl.AX(_) | Ast_ctl.AF(_) | Ast_ctl.AG(_) | Ast_ctl.AU(_,_) | Ast_ctl.Pred(_)
+  | Ast_ctl.EX(_) | Ast_ctl.EF(_) | Ast_ctl.EG(_) | Ast_ctl.EU(_,_) | Ast_ctl.Exists(_,_)
+  | Ast_ctl.True | Ast_ctl.False | Ast_ctl.Not(_) ->
       ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
