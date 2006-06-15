@@ -22,12 +22,12 @@ main.cmx: parsing_cocci/unparse_cocci.cmx parsing_cocci/parse_cocci.cmx \
     cocci.cmx misc/classic_patch.cmx parsing_c/ast_c.cmx 
 test.cmo: parsing_cocci/unparse_cocci.cmi parsing_c/unparse_c.cmi \
     engine/transformation.cmi engine/pattern.cmo commons/ograph_extended.cmi \
-    engine/lib_engine.cmo engine/ctlcocci_integration.cmi ctl/ctl_engine.cmi \
+    engine/ctlcocci_integration.cmi ctl/ctl_engine.cmi \
     parsing_c/control_flow_c.cmi commons/commonop.cmi commons/common.cmi \
     cocci.cmi ctl/ast_ctl.cmo parsing_cocci/ast_cocci.cmo parsing_c/ast_c.cmo 
 test.cmx: parsing_cocci/unparse_cocci.cmx parsing_c/unparse_c.cmx \
     engine/transformation.cmx engine/pattern.cmx commons/ograph_extended.cmx \
-    engine/lib_engine.cmx engine/ctlcocci_integration.cmx ctl/ctl_engine.cmx \
+    engine/ctlcocci_integration.cmx ctl/ctl_engine.cmx \
     parsing_c/control_flow_c.cmx commons/commonop.cmx commons/common.cmx \
     cocci.cmx ctl/ast_ctl.cmx parsing_cocci/ast_cocci.cmx parsing_c/ast_c.cmx 
 misc/classic_patch.cmi: commons/fullcommon.cmo 

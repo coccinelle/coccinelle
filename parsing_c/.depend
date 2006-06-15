@@ -2,6 +2,7 @@ control_flow_c.cmi: ../commons/ograph_extended.cmi ../commons/common.cmi \
     ast_c.cmo 
 parse_c.cmi: parser_c.cmi ../commons/common.cmi ast_c.cmo 
 parser_c.cmi: ast_c.cmo 
+type_annoter_c.cmi: ast_c.cmo 
 unparse_c.cmi: ../commons/common.cmi ast_c.cmo 
 ast_c.cmo: ../commons/commonop.cmi ../commons/common.cmi \
     ../parsing_cocci/ast_cocci.cmo 
@@ -37,6 +38,10 @@ parser_c.cmx: semantic_c.cmx lexer_parser.cmx flag.cmx \
     ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx parser_c.cmi 
 semantic_c.cmo: ../commons/common.cmi 
 semantic_c.cmx: ../commons/common.cmx 
+type_annoter_c.cmo: ../commons/commonop.cmi ../commons/common.cmi ast_c.cmo \
+    type_annoter_c.cmi 
+type_annoter_c.cmx: ../commons/commonop.cmx ../commons/common.cmx ast_c.cmx \
+    type_annoter_c.cmi 
 unparse_c.cmo: parser_c.cmi parse_c.cmi ../commons/dumper.cmi \
     ../commons/commonop.cmi ../commons/common.cmi \
     ../parsing_cocci/ast_cocci.cmo ast_c.cmo unparse_c.cmi 

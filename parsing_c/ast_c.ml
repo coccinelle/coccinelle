@@ -338,21 +338,24 @@ and (al_type: fullType -> fullType) = fun (stat, ii) ->
 
 
 
-(*
+
 let ex1 = 
            (FunCall
                  ((Ident "f",
+                   None,
                    [({str = "f"; charpos = 26},
                      (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
                        {contents = Ast_cocci.NOTHING}),
                       []))]),
                  [(Left
                     (Constant (Int "1"),
+                     None,
                      [({str = "1"; charpos = 28},
                        (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
                          {contents = Ast_cocci.NOTHING}),
                         []))]),
                    [])]),
+                None,
                 [({str = "("; charpos = 27},
                   (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1},
                     {contents = Ast_cocci.NOTHING}),
@@ -365,13 +368,16 @@ let ex1 =
 let ex1final = 
            (FunCall
             ((Ident "f",
+              None,
               [({str = "f"; charpos = -10},
                 (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []))]),
             [(Left
                (Constant (Int "1"),
+                None,
                 [({str = "1"; charpos = -10},
                   (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []))]),
               [])]),
+            None,
            [({str = "("; charpos = -10},
              (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; logical_line = -1}, {contents = Ast_cocci.NOTHING}), []));
             ({str = ")"; charpos = -10},
@@ -379,4 +385,4 @@ let ex1final =
     
 
 let _ = assert (al_expr ex1 = ex1final)
-*)
+

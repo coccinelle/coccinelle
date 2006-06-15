@@ -45,10 +45,11 @@ and (iso_t_t: fullType -> fullType -> bool) = fun a b ->
 
   
 
-(*
+
 let ex1 = 
            (Binary
              ((Ident "a",
+               None,
                [({str = "a"; charpos = 19},
                  (Ast_cocci.CONTEXT
                    ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
@@ -56,11 +57,13 @@ let ex1 =
                   []))]),
              Logical AndLog,
              (Ident "b",
+              None,
               [({str = "b"; charpos = 22},
                 (Ast_cocci.CONTEXT
                   ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
                   {contents = Ast_cocci.NOTHING}),
                  []))])),
+            None,
             [({str = "&&"; charpos = 20},
               (Ast_cocci.CONTEXT
                 ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
@@ -70,6 +73,7 @@ let ex1 =
 let ex2 = 
            (Binary
              ((Ident "b",
+              None,
                [({str = "b"; charpos = 28},
                  (Ast_cocci.CONTEXT
                    ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
@@ -77,11 +81,13 @@ let ex2 =
                   []))]),
              Logical AndLog,
              (Ident "a",
+              None,
               [({str = "a"; charpos = 31},
                 (Ast_cocci.CONTEXT
                   ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
                   {contents = Ast_cocci.NOTHING}),
                  []))])),
+            None,
             [({str = "&&"; charpos = 29},
               (Ast_cocci.CONTEXT
                 ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1},
@@ -89,8 +95,5 @@ let ex2 =
                []))])
 
 let _ = assert (iso_e_e ex1 ex2)
-
-
-*)
 
 
