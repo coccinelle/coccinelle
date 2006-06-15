@@ -301,6 +301,19 @@ let ex1phi3 =
        Pred ("g(y)", Modif "v0")
                       ))))))
 
+let test_satbis () = 
+  assert 
+    (satbis ex1model ex1phi3
+       =
+     [(3, [("x","1");("y","1")], "g(y)");
+      (4, [("x","1");("y","2")], "g(y)");
+      (3, [("x","2");("y","1")], "g(y)");
+      (4, [("x","2");("y","2")], "g(y)");
+    ]
+    )
+
+
+
 (*
 let ex1phi3bis = 
  Exists ("x",
@@ -313,16 +326,4 @@ let ex1phi3bis =
       Exists ("v0",
        Pred ("g(y)")))))))
 *)
-
-let test_satbis () = 
-  assert 
-    (satbis ex1model ex1phi3
-       =
-     [(3, [("x","1");("y","1")], "g(y)");
-      (4, [("x","1");("y","2")], "g(y)");
-      (3, [("x","2");("y","1")], "g(y)");
-      (4, [("x","2");("y","2")], "g(y)");
-    ]
-    )
-
 
