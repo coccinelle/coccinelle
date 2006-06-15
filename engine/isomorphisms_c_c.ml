@@ -18,9 +18,9 @@ open Ast_c
 let rec (iso_e_e: expression -> expression -> bool) = fun a b -> 
   let rec (=~=) a b = 
   match (a, b) with
-  | (Ident a, iia), (Ident b, iib) -> a = b
-  | (Constant a, iia), (Constant b, iib) -> a = b
-  | (FunCall  (ea, eas), iia), (FunCall  (eb, ebs), iib)        -> 
+  | (Ident a, typa, iia), (Ident b, typb, iib) -> a = b
+  | (Constant a, typa, iia), (Constant b, typb, iib) -> a = b
+  | (FunCall  (ea, eas), typa, iia), (FunCall  (eb, ebs), typb, iib)        -> 
       ea =~= eb &&
       List.length eas = List.length ebs && 
       List.for_all (fun (a, b) -> 
@@ -29,7 +29,7 @@ let rec (iso_e_e: expression -> expression -> bool) = fun a b ->
         | _ -> raise Todo
         )
         (zip eas ebs)
-  | (Binary (ea1,Logical AndLog,ea2),iia), (Binary (eb1,Logical AndLog, eb2), iib) -> 
+  | (Binary (ea1,Logical AndLog,ea2),typa, iia), (Binary (eb1,Logical AndLog, eb2), typb, iib) -> 
       (ea1 =~= eb1  && ea2 =~= eb2) 
        ||
       (ea1 =~= eb2  && ea2 =~= eb1)
@@ -45,7 +45,7 @@ and (iso_t_t: fullType -> fullType -> bool) = fun a b ->
 
   
 
-
+(*
 let ex1 = 
            (Binary
              ((Ident "a",
@@ -91,6 +91,6 @@ let ex2 =
 let _ = assert (iso_e_e ex1 ex2)
 
 
-
+*)
 
 

@@ -73,6 +73,7 @@ and node1 =
   | Enter 
   | Exit
 
+
   | NestedFunCall of expression   (* cos "fake" node *) (* TODO *)
 
   | Statement     of statement
@@ -90,14 +91,12 @@ and node1 =
   | StartBrace of int * statement (* special_cfg_ast *)
   | EndBrace   of int
 
+  | TrueNode
+  | FalseNode
+  | AfterNode
 
-type edge = 
-  | Direct
-  (* if, while, dowhile, for *)
-  | ChoiceTrue
-  | ChoiceFalse 
-  (* todo: and with switch ? *)
-  | SpecialEdge (* for julia *)
+
+type edge = Direct
 
 
 exception DeadCode of (Common.parse_info option)
@@ -288,8 +287,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
     | ExprStatement (Some e), ii -> 
         let s = 
           (match e with
-          | (FunCall (( (Ident f), _),ii3),ii2) -> f ^ "(...)"
-          | (Assignment (((Ident var), _), SimpleAssign, e), _) -> var ^ " = ... ;"
+          | (FunCall (( (Ident f), typ1, _),ii3),typ2, ii2) -> f ^ "(...)"
+          | (Assignment (((Ident var), typ1, _), SimpleAssign, e), typ2, _) -> var ^ " = ... ;"
           | _ -> "statement"
           )
         in
@@ -306,15 +305,15 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
        *)
         let newi = !g#add_node (Statement (statement), "if") +> adjust_g_i in
         attach_to_previous_node starti newi;
-        let newfakethen = !g#add_node (Fake, "[then]") +> adjust_g_i in
-        let newfakeelse = !g#add_node (Fake, "[else]") +> adjust_g_i in
-        let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
+        let newfakethen = !g#add_node (TrueNode, "[then]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (FalseNode, "[else]") +> adjust_g_i in
+        let lasti = !g#add_node (AfterNode, "[endif]") +> adjust_g_i in
 
 (* TOFIX if add that, have to update cflow_to_ast and do a get_next_node3 *)
 (*        !g#add_arc ((newi, lasti), SpecialEdge) +> adjust_g; (* for julia *) *) 
 
-        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
-        !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
+        !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, auxinfo) st1 in
         let finalelse = aux_statement (Some newfakeelse, auxinfo) st2 in
         (match finalthen, finalelse with 
@@ -337,7 +336,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
         let newfakeelse = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
 
-        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g; (* for julia *)
+(*        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g; (* for julia *) *)
     
         (* the newi is for the labels to know where to attach, the newfakeelse (endi) is for the 'break' *)
         (* let newauxinfo = SwitchInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in *)
@@ -447,15 +446,15 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
         let newi = !g#add_node (Statement (statement), "while") +> adjust_g_i in
         attach_to_previous_node starti newi;
-        let newfakethen = !g#add_node (Fake, "[whiletrue]") +> adjust_g_i in
-        let newfakeelse = !g#add_node (Fake, "[endwhile]") +> adjust_g_i in
+        let newfakethen = !g#add_node (TrueNode, "[whiletrue]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (FalseNode, "[endwhile]") +> adjust_g_i in
 
 (*        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g;  not needed, just follow ChoiceFalse *)
 
         let newauxinfo = LoopInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in
 
-        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
-        !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
+        !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
         (match finalthen with None -> () | Some finalthen -> 
           !g#add_arc ((finalthen, newi), Direct) +> adjust_g);
@@ -475,8 +474,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         *)
         let finali = !g#add_node (Fake, "while (of dowhile)") +> adjust_g_i in
         attach_to_previous_node starti newi;
-        let newfakethen = !g#add_node (Fake, "[dowhiletrue]") +> adjust_g_i in
-        let newfakeelse = !g#add_node (Fake, "[enddowhile]") +> adjust_g_i in
+        let newfakethen = !g#add_node (TrueNode, "[dowhiletrue]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (FalseNode, "[enddowhile]") +> adjust_g_i in
 
 
         (* this time, may return None, for instance if goto in body of dowhile (whereas While cant return None) *)
@@ -485,10 +484,10 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         (* TODO, not used ????? *)
         let _newauxinfo = LoopInfo (finali, newfakeelse, snd auxinfo) in
 
-        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g; 
+        !g#add_arc ((newi, newfakethen), Direct) +> adjust_g; 
 
-        !g#add_arc (((*newi*)finali, newfakethen), ChoiceTrue) +> adjust_g; 
-        !g#add_arc (((*newi*)finali, newfakeelse), ChoiceFalse) +> adjust_g;
+        !g#add_arc (((*newi*)finali, newfakethen), Direct) +> adjust_g; 
+        !g#add_arc (((*newi*)finali, newfakeelse), Direct) +> adjust_g;
 
         let finalthen = aux_statement (Some newfakethen, auxinfo) st in 
 
@@ -508,14 +507,14 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
     | Iteration  (For (e1opt, e2opt, e3opt, st)), ii -> 
         let newi = !g#add_node (Statement (statement), "for") +> adjust_g_i in
         attach_to_previous_node starti newi;
-        let newfakethen = !g#add_node (Fake, "[fortrue]") +> adjust_g_i in
-        let newfakeelse = !g#add_node (Fake, "[endfor]") +> adjust_g_i in
+        let newfakethen = !g#add_node (TrueNode, "[fortrue]") +> adjust_g_i in
+        let newfakeelse = !g#add_node (FalseNode, "[endfor]") +> adjust_g_i in
 
 
         let newauxinfo = LoopInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in
 
-        !g#add_arc ((newi, newfakethen), ChoiceTrue) +> adjust_g;
-        !g#add_arc ((newi, newfakeelse), ChoiceFalse) +> adjust_g;
+        !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
         (match finalthen with None -> () | Some finalthen -> 
           !g#add_arc ((finalthen, newi), Direct) +> adjust_g);
@@ -615,9 +614,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
       | HeadFunc _ -> ()
       (* old: | Enter -> () *)
 
-      | Fake -> pr2 "deadcode sur fake node, pas grave";
-      | x -> pr2 (Dumper.dump x);  
-          (* raise (DeadCode None) *)
+      | Fake -> pr2 "control_flow: deadcode sur fake node, pas grave";
+      | x -> failwith "pb"
       )
     );
 
@@ -630,6 +628,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
  statement, compound, 
  return,
  if, 
+
+
  for, while, dowhile
  break/continue
  goto, labels
@@ -654,12 +654,18 @@ let get_next_node g nodei =
 
 let get_next_2node g nodei = 
     (match (g#successors nodei)#tolist with
-    | [nexti, ChoiceTrue; nexti2, ChoiceFalse] -> (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
-    | [nexti, ChoiceFalse; nexti2, ChoiceTrue] -> (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
+    | [nexti, Direct; nexti2, Direct] -> 
+        (match g#nodes#find nexti,  g#nodes#find nexti2 with
+        | (TrueNode, s1), (FalseNode, s2) -> 
+            (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
+        | (FalseNode, s1), (TrueNode, s2) -> 
+            (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
+        | x -> raise Impossible
+        )
     | x -> error_cant_have x
     ) 
 
-let get_first_node g () = 
+let get_first_node g = 
     let starti = g#nodes#tolist +> List.find (fun (i, (node, nodes)) -> 
     match node with HeadFunc _ -> true | _ -> false
     ) +> fst 
@@ -670,7 +676,7 @@ let get_first_node g () =
 let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
   
   let nodes = g#nodes  in
-  let starti = get_first_node g () in
+  let starti = get_first_node g in
 
 (*  let visited = ref (new oassocb []) in *)
 
@@ -682,11 +688,9 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
   let rec (rebuild_compound: nodei -> (statement * returnkind)) = fun   starti ->
     match nodes#find starti with
     | (StartBrace (level, (Compound __st, ii)), s) -> 
-        (match get_next_node g starti with
-        | (nexti, st) -> 
-            let (compound, return) = rebuild_compound_instr_list  nexti level in
-            (Compound compound, ii),  return
-        )
+        let (nexti, st) = get_next_node g starti in
+        let (compound, return) = rebuild_compound_instr_list  nexti level in
+        (Compound compound, ii),  return
     | x -> error_cant_have x
 
   and (rebuild_compound_instr_list: nodei -> int -> (compound * returnkind)) = fun starti level -> 
@@ -695,7 +699,11 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
         if level = level2 
         then [], LastCurrentNode starti
         else raise Todo
-(*    | (Declaration decl, s) -> *)
+    | (Declaration decl, s) -> 
+        let nexti = get_next_node g starti +> fst in
+        let (compound, return) = rebuild_compound_instr_list nexti level in
+        Left decl::compound, return
+        
     | x -> 
         let (st, return) = rebuild_statement starti in
         (match return with
@@ -738,7 +746,12 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
         | LastCurrentNode return1, LastCurrentNode return2 -> 
             assert (get_next_node g return1 =*= get_next_node g return2);
             (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return1 +> fst)
-        | x -> raise Todo
+        | LastCurrentNode return, NoNextNode -> 
+            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
+        | NoNextNode , LastCurrentNode return  -> 
+            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
+        | NoNextNode , NoNextNode  -> 
+            (Selection (If (e, st1, st2)),ii), NoNextNode
         )
 
 
@@ -787,7 +800,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
 let (check_control_flow: (node, edge) ograph_extended -> unit) = fun g ->
 
   let nodes = g#nodes  in
-  let starti = get_first_node g () in
+  let starti = get_first_node g in
 
 
   let visited = ref (new oassocb []) in

@@ -26,6 +26,7 @@ let (labels_for_ctl:
 
    (fun pred -> 
        let nodes = nodes +> map (fun (nodei, (node, nodestring)) -> 
+         (* todo? put part of this code in pattern ? *)
          (match pred, node with
          | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
              [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))], top_wit)]
@@ -48,9 +49,12 @@ let (labels_for_ctl:
                 )
              else []
 
-         | Lib_engine.TrueBranch , _ -> raise Todo
-         | Lib_engine.FalseBranch, _ -> raise Todo
-         | Lib_engine.After, _ -> raise Todo
+         | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, [], top_wit]
+         | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, [], top_wit]
+         | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, [], top_wit]
+         | Lib_engine.TrueBranch , _ -> []
+         | Lib_engine.FalseBranch, _ -> []
+         | Lib_engine.After, _ -> []
          )
        ) +> List.concat
        in

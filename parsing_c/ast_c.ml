@@ -112,7 +112,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 
 (* ------------------------------------------------------------------------------ *)
 
-and expression = expressionbis * il (* forunparser: *)
+and expression = expressionbis * fullType option (* computed after parsing *) * il (* forunparser: *)
 and expressionbis = 
   | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
   | Constant       of constant                                  
@@ -295,6 +295,8 @@ let default_int = (BaseType (IntType (Si (Signed, CInt))))
 
 let iitodovide = []
 
+let noType = None
+
 let empty_metavars_binding = ([]: metavars_binding)
 
 let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1; }, 
@@ -309,7 +311,7 @@ let is_al_info x = x.charpos = _Magic_info_number
 
 let al_info x = { charpos = _Magic_info_number; str = (fst x).str }, dumb_annot
 
-let rec (al_expr: expression -> expression) = fun (exp, ii) -> 
+let rec (al_expr: expression -> expression) = fun (exp, typ, ii) -> 
   let ii' = List.map (fun i -> al_info i) ii in
 
   (match exp with
@@ -328,7 +330,7 @@ let rec (al_expr: expression -> expression) = fun (exp, ii) ->
       FunCall (e', es')
 
   | _ -> raise Todo
-  ), ii'
+  ), typ, ii'
 and (al_statement: statement -> statement) = fun (stat, ii) -> 
   raise Todo
 and (al_type: fullType -> fullType) = fun (stat, ii) -> 
@@ -336,7 +338,7 @@ and (al_type: fullType -> fullType) = fun (stat, ii) ->
 
 
 
-
+(*
 let ex1 = 
            (FunCall
                  ((Ident "f",
@@ -377,3 +379,4 @@ let ex1final =
     
 
 let _ = assert (al_expr ex1 = ex1final)
+*)

@@ -10,8 +10,11 @@ and node1 =
   | Fake
   | StartBrace of int * Ast_c.statement
   | EndBrace of int
+  | TrueNode
+  | FalseNode
+  | AfterNode
 
-type edge = Direct | ChoiceTrue | ChoiceFalse | SpecialEdge
+type edge = Direct
 
 exception DeadCode of Common.parse_info option
 exception CaseNoSwitch of Common.parse_info

@@ -63,7 +63,6 @@ let flows astc =
   program +> map_filter (fun (e,_) -> 
     match e with
     | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
-        pr2 funcs;
         (try 
           Some (Control_flow_c.ast_to_control_flow def)
         with 
@@ -97,7 +96,7 @@ let one_ctl ctls = List.hd (List.hd ctls)
 let test_unparser cfile = 
   one_flow (flows (cprogram_from_file cfile))
     +> Control_flow_c.control_flow_to_ast
-    +> (fun def -> Unparse_c.pp_program "../1.c" [Ast_c.Definition def, Unparse_c.PPnormal])
+    +> (fun def -> Unparse_c.pp_program cfile [Ast_c.Definition def, Unparse_c.PPnormal])
     +> (fun () -> cat "/tmp/output.c")
 
 

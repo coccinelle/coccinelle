@@ -2,8 +2,8 @@
 
 TARGET=c_parser
 
-SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml \
-	    lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml main.ml
+SOURCES = flag.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml \
+	    lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml
 
 SYSLIBS = str.cma unix.cma 
 
@@ -25,8 +25,8 @@ OCAMLDEP=ocamldep  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 
-OBJS = $(SOURCEMAIN:.ml=.cmo)
-OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
+OBJS = $(SOURCES:.ml=.cmo)
+OPTOBJS = $(SOURCES:.ml=.cmx)
 
 
 
@@ -55,10 +55,6 @@ links:
 
 dellinks:
 	rm -f flag.ml 
-
-clean::
-	rm -f *.cm[iox] *.o
-
 
 
 lexer_c.ml: lexer_c.mll
@@ -94,7 +90,7 @@ beforedepend:: parser_c.ml parser_c.mli
 	$(OCAMLC) -i $<
 
 clean::
-	rm -f *.cm[iox] *.o
+	rm -f *.cm[ioxa] *.o
 
 clean::
 	rm -f *~ .*~ gmon.out #*#

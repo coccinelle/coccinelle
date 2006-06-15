@@ -19,6 +19,11 @@ let pattern_result1 () = Cocci.test_pattern
 "
 
 
+let rule_elem_if () = Cocci.rule_elem_from_string "@@@@
+ if(1) { 2; }
+"
+
+
 (* ------------------------------------------------------------------------------ *)
 
 let test_pattern_bis () = 

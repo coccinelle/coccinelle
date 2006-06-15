@@ -96,23 +96,23 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       | _ -> raise Impossible
       )
       
-  | A.Ident ida,                ((B.Ident idb) , ii) ->
+  | A.Ident ida,                ((B.Ident idb) , typ,ii) ->
       let (idb', ii') = transform_ident ida (idb, ii)   binding in
-      (B.Ident idb', ii')
+      (B.Ident idb', typ,ii')
 
-  | A.Constant ((A.Int ia),i1) ,                ((B.Constant (B.Int ib) , ii)) ->  
+  | A.Constant ((A.Int ia),i1) ,                ((B.Constant (B.Int ib) , typ,ii)) ->  
       assert (ia =$= ib);
       let ii' = tagge_symbols [ ia, i1  ] ii binding in
-      B.Constant (B.Int ib), ii'
+      B.Constant (B.Int ib), typ,ii'
       
 
 
-  | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), ii) -> 
+  | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), typ,ii) -> 
       let ii' = tagge_symbols [i2;i3] ii  binding in
       let eas' = A.undots eas in
       let seqstyle = (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
       
-      B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), ii'
+      B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
   | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
@@ -189,12 +189,12 @@ and distribute_minus_plus_e mcode  expr binding =
 (* op = minusize operator, lop = stuff to do on the left, rop = stuff to do on the right *)
 and distribute_minus_plus_e_apply_op (op, lop, rop) expr = 
   let rec aux (op, lop, rop) expr = match expr with
-  | Ast_c.Constant (Ast_c.Int i),  [i1] -> 
-      Ast_c.Constant (Ast_c.Int i),  [i1 +> op +> lop +> rop]
-  | Ast_c.Ident s,  [i1] -> 
-      Ast_c.Ident s,  [i1 +> op +> lop +> rop] 
+  | Ast_c.Constant (Ast_c.Int i),  typ,[i1] -> 
+      Ast_c.Constant (Ast_c.Int i),  typ,[i1 +> op +> lop +> rop]
+  | Ast_c.Ident s,  typ,[i1] -> 
+      Ast_c.Ident s,  typ,[i1 +> op +> lop +> rop] 
 (* TODO distribute to the expression on the left *)
-  | Ast_c.FunCall (e, xs), [i2;i3] -> 
+  | Ast_c.FunCall (e, xs), typ,[i2;i3] -> 
       let xs' = xs +> List.map (function 
         | (Left e, ii) -> 
             Left (aux (op, nothing_left, nothing_right) e),
@@ -202,7 +202,7 @@ and distribute_minus_plus_e_apply_op (op, lop, rop) expr =
         | (Right e, ii) -> raise Todo
         ) in
        let e' =aux (op, lop, nothing_right) e in
-        Ast_c.FunCall (e', xs'), [i2 +> op; i3 +> op +> rop]
+        Ast_c.FunCall (e', xs'), typ,[i2 +> op; i3 +> op +> rop]
   | x -> error_cant_have x
 
   in aux (op, lop, rop) expr

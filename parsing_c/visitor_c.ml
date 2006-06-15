@@ -71,39 +71,39 @@ let rec visitor_expr_k = fun bigf expr ->
   let f = bigf.kexpr in
   let rec k e = 
     match e with
-    | Ident (s),i -> ()
-    | Constant (c),is -> ()
-    | FunCall  (e, es), is         -> f (k, bigf) e;  
+    | Ident (s),typ, i -> ()
+    | Constant (c),typ,is -> ()
+    | FunCall  (e, es),typ, is         -> f (k, bigf) e;  
         (es +> List.map fst) +> List.iter (fun e -> 
           match e with
           | Left e -> (f (k, bigf)) e
           | Right _ -> raise Todo
                 );
-    | CondExpr (e1, e2, e3), is    -> f (k, bigf) e1; f (k, bigf) e2; f (k, bigf) e3
-    | Sequence (e1, e2), is        -> f (k, bigf) e1; f (k, bigf) e2;
-    | Assignment (e1, op, e2), is  -> f (k, bigf) e1; f (k, bigf) e2;
+    | CondExpr (e1, e2, e3), typ,is    -> f (k, bigf) e1; f (k, bigf) e2; f (k, bigf) e3
+    | Sequence (e1, e2), typ,is        -> f (k, bigf) e1; f (k, bigf) e2;
+    | Assignment (e1, op, e2), typ,is  -> f (k, bigf) e1; f (k, bigf) e2;
         
-    | Postfix  (e, op), is -> f (k, bigf) e
-    | Infix    (e, op), is -> f (k, bigf) e
-    | Unary    (e, op), is -> f (k, bigf) e
-    | Binary   (e1, op, e2), i -> f (k, bigf) e1; f (k, bigf)  e2;
+    | Postfix  (e, op), typ,is -> f (k, bigf) e
+    | Infix    (e, op), typ,is -> f (k, bigf) e
+    | Unary    (e, op), typ,is -> f (k, bigf) e
+    | Binary   (e1, op, e2), typ,i -> f (k, bigf) e1; f (k, bigf)  e2;
         
-    | ArrayAccess    (e1, e2), is -> f (k, bigf) e1; f (k, bigf) e2;
-    | RecordAccess   (e, s), is -> f (k, bigf) e
-    | RecordPtAccess (e, s), is -> f (k, bigf) e
+    | ArrayAccess    (e1, e2), typ,is -> f (k, bigf) e1; f (k, bigf) e2;
+    | RecordAccess   (e, s), typ,is -> f (k, bigf) e
+    | RecordPtAccess (e, s), typ,is -> f (k, bigf) e
 
-    | SizeOfExpr  (e), is -> f (k, bigf) e
-    | SizeOfType  (t), is -> visitor_type_k bigf t
-    | Cast    (t, e), is -> visitor_type_k bigf t; f (k, bigf) e
+    | SizeOfExpr  (e), typ,is -> f (k, bigf) e
+    | SizeOfType  (t), typ,is -> visitor_type_k bigf t
+    | Cast    (t, e), typ,is -> visitor_type_k bigf t; f (k, bigf) e
 
 (*    | StatementExpr (((declxs, statxs), is)), is2 -> List.iter (visitor_decl_k bigf) declxs; List.iter (visitor_statement_k bigf) statxs *)
-    | StatementExpr (((declxs_statxs), is)), is2 -> 
+    | StatementExpr (((declxs_statxs), is)), typ,is2 -> 
         declxs_statxs +> List.iter (function Left decl -> visitor_decl_k bigf decl | Right stat -> visitor_statement_k bigf stat);
 
-    | Constructor,[] -> ()
-    | NoExpr,[] -> ()
+    | Constructor,typ,[] -> ()
+    | NoExpr,typ,[] -> ()
           
-    | ParenExpr (e), is -> f (k, bigf) e
+    | ParenExpr (e), typ,is -> f (k, bigf) e
     | x -> error_cant_have x
   in f (k, bigf) expr
 
@@ -242,39 +242,39 @@ let rec visitor_expr_k_s = fun bigf expr ->
   let f = bigf.kexpr_s in
   let rec k e = 
     match e with
-    | Ident (s), i -> Ident (s), i
-    | Constant (c), is -> Constant (c), is
-    | FunCall  (e, es), is         -> let e'  = (f (k, bigf)) e  in 
+    | Ident (s), typ, i -> Ident (s), typ, i
+    | Constant (c), typ, is -> Constant (c), typ, is
+    | FunCall  (e, es), typ, is         -> let e'  = (f (k, bigf)) e  in 
       let es' = (es +> List.map fst)  +> List.map (fun e -> 
         match e with
         | Left e -> Left ((f (k, bigf)) e)
         | Right e -> raise Todo
       )
-      in  FunCall (e', (zip es' (es +> List.map snd))), is
-    | CondExpr (e1, e2, e3), is    -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in let e3' =  (f (k, bigf)) e3 in  CondExpr (e1', e2', e3'), is
-    | Sequence (e1, e2), is        -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Sequence (e1', e2'), is
-    | Assignment (e1, op, e2), is  -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Assignment (e1', op,  e2'), is
+      in  FunCall (e', (zip es' (es +> List.map snd))), typ, is
+    | CondExpr (e1, e2, e3), typ, is    -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in let e3' =  (f (k, bigf)) e3 in  CondExpr (e1', e2', e3'), typ, is
+    | Sequence (e1, e2), typ, is        -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Sequence (e1', e2'), typ, is
+    | Assignment (e1, op, e2), typ, is  -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Assignment (e1', op,  e2'), typ, is
         
-    | Postfix  (e, op), is -> let e' = (f (k, bigf)) e in Postfix (e', op), is
-    | Infix    (e, op), is -> let e' = (f (k, bigf)) e in Infix   (e', op), is
-    | Unary    (e, op), is -> let e' = (f (k, bigf)) e in Unary   (e', op), is
-    | Binary   (e1, op, e2), is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                                Binary (e1', op,  e2'), is
+    | Postfix  (e, op), typ, is -> let e' = (f (k, bigf)) e in Postfix (e', op), typ, is
+    | Infix    (e, op), typ, is -> let e' = (f (k, bigf)) e in Infix   (e', op), typ, is
+    | Unary    (e, op), typ, is -> let e' = (f (k, bigf)) e in Unary   (e', op), typ, is
+    | Binary   (e1, op, e2), typ, is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                                Binary (e1', op,  e2'), typ, is
         
-    | ArrayAccess    (e1, e2), is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                              ArrayAccess (e1', e2'), is
-    | RecordAccess   (e, s), is -> let e' = (f (k, bigf)) e in RecordAccess     (e', s), is 
-    | RecordPtAccess (e, s), is -> let e' = (f (k, bigf)) e in RecordPtAccess   (e', s), is 
+    | ArrayAccess    (e1, e2), typ, is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                              ArrayAccess (e1', e2'), typ, is
+    | RecordAccess   (e, s), typ, is -> let e' = (f (k, bigf)) e in RecordAccess     (e', s), typ, is 
+    | RecordPtAccess (e, s), typ, is -> let e' = (f (k, bigf)) e in RecordPtAccess   (e', s), typ, is 
 
-    | SizeOfExpr  (e), is -> let e' = (f (k, bigf)) e in  SizeOfExpr   (e'), is
-    | SizeOfType  (t), is -> let t' = visitor_type_k_s bigf t in SizeOfType (t'), is
-    | Cast    (t, e), is -> let t' = visitor_type_k_s bigf t in let e' = (f (k, bigf)) e in Cast   (t', e'), is
+    | SizeOfExpr  (e), typ, is -> let e' = (f (k, bigf)) e in  SizeOfExpr   (e'), typ, is
+    | SizeOfType  (t), typ, is -> let t' = visitor_type_k_s bigf t in SizeOfType (t'), typ, is
+    | Cast    (t, e), typ, is -> let t' = visitor_type_k_s bigf t in let e' = (f (k, bigf)) e in Cast   (t', e'), typ, is
 
 (*    | StatementExpr (((declxs, statxs), is)), is2 -> let declxs' = List.map (visitor_decl_k_s bigf) declxs in let statxs' = List.map (visitor_statement_k_s bigf) statxs in StatementExpr (((declxs', statxs'), is)), is2 *)
-    | StatementExpr (((declxs_statxs), is)), is2 -> 
+    | StatementExpr (((declxs_statxs), is)), typ, is2 -> 
         let declxs_statxs' = declxs_statxs +> List.map (function Left decl -> Left (visitor_decl_k_s bigf decl) | Right stat -> Right (visitor_statement_k_s bigf stat)) 
-        in StatementExpr (((declxs_statxs'), is)), is2 
-    | Constructor,is -> Constructor,is
-    | NoExpr,is -> NoExpr,is
-    | ParenExpr (e), is -> let e' = (f (k, bigf)) e in ParenExpr (e'), is
+        in StatementExpr (((declxs_statxs'), is)), typ, is2 
+    | Constructor,typ, is -> Constructor,typ, is
+    | NoExpr,typ, is -> NoExpr,typ,is
+    | ParenExpr (e), typ, is -> let e' = (f (k, bigf)) e in ParenExpr (e'), typ, is
     | x -> error_cant_have x
   in f (k, bigf) expr
 

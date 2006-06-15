@@ -167,6 +167,11 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
   | _, F.Enter -> return false
   | _, F.Exit -> return false
   | _, F.Fake -> return false
+
+  | _, F.TrueNode -> return false
+  | _, F.FalseNode -> return false
+  | _, F.AfterNode -> return false
+
   | _, F.NestedFunCall _ -> raise Todo
 
   | A.SeqStart _, F.StartBrace _ -> return true
@@ -298,17 +303,17 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
   (* todo: MetaConst *)
 
-  | A.Ident ida,                ((B.Ident idb) , ii) ->
+  | A.Ident ida,                ((B.Ident idb) , typ, ii) ->
       match_ident ida idb
 
  (* todo: handle some isomorphisms in int/float ? can have different format 1l can match a 1 *)
  (* todo: normally string can contain some metavar too, so should recurse on the string *)
-  | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), ii)    when sa =$= sb -> return true
-  | A.Constant (A.Char sa, _),    (B.Constant (B.Char   (sb, _)), ii)    when sa =$= sb -> return true
-  | A.Constant (A.Int sa, _),     (B.Constant (B.Int    (sb)), ii)       when sa =$= sb -> return true
-  | A.Constant (A.Float sa, _),   (B.Constant (B.Float  (sb, ftyp)), ii) when sa =$= sb -> return true
+  | A.Constant (A.String sa, _),  (B.Constant (B.String (sb, _)), typ,ii)    when sa =$= sb -> return true
+  | A.Constant (A.Char sa, _),    (B.Constant (B.Char   (sb, _)), typ,ii)    when sa =$= sb -> return true
+  | A.Constant (A.Int sa, _),     (B.Constant (B.Int    (sb)), typ,ii)       when sa =$= sb -> return true
+  | A.Constant (A.Float sa, _),   (B.Constant (B.Float  (sb, ftyp)), typ,ii) when sa =$= sb -> return true
 
-  | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), ii) -> 
+  | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), typ,ii) -> 
      (* todo: do special case to allow IdMetaFunc, cos doing the recursive call will be too late,
           match_ident will not have the info whether it was a function
         todo: but how detect when do x.field = f;  how know that f is a Func ?
@@ -327,16 +332,16 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         eas' ebs'
      )
 
-  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), ii) -> 
+  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
       return (equal_assignOp opa  opb) >&&>
       (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
 
 
-  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), ii) -> 
+  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
 
       match_e_e ea1 eb1 >&&>
       (match ea2opt, eb2 with
-      | None, (B.NoExpr, ii) -> return true
+      | None, (B.NoExpr, typ,ii) -> return true
       | Some ea2, _ -> match_e_e ea2 eb2
       | _,_ -> return false
       ) >&&>
@@ -344,19 +349,19 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
    
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.Postfix (ea, (opa,_)), (B.Postfix (eb, opb), ii) -> 
+  | A.Postfix (ea, (opa,_)), (B.Postfix (eb, opb), typ,ii) -> 
       return (equal_fixOp opa opb) >&&>
       match_e_e ea eb
 
-  | A.Infix (ea, (opa,_)), (B.Infix (eb, opb), ii) -> 
+  | A.Infix (ea, (opa,_)), (B.Infix (eb, opb), typ,ii) -> 
       return (equal_fixOp opa opb) >&&>
       match_e_e ea eb
 
-  | A.Unary (ea, (opa,_)), (B.Unary (eb, opb), ii) -> 
+  | A.Unary (ea, (opa,_)), (B.Unary (eb, opb), typ,ii) -> 
       return (equal_unaryOp opa opb) >&&>
       match_e_e ea eb
 
-  | A.Binary (ea1, (opa,_), ea2), (B.Binary (eb1, opb, eb2), ii) -> 
+  | A.Binary (ea1, (opa,_), ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
       return (equal_binaryOp opa opb) >&&>
       match_e_e ea1 eb1 >&&> 
       match_e_e ea2 eb2
@@ -364,30 +369,30 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
 
-  | A.ArrayAccess (ea1, _, ea2, _), (B.ArrayAccess (eb1, eb2), ii) -> 
+  | A.ArrayAccess (ea1, _, ea2, _), (B.ArrayAccess (eb1, eb2), typ,ii) -> 
       match_e_e ea1 eb1 >&&>
       match_e_e ea2 eb2
 
 
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), ii) ->
+  | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), typ,ii) ->
       match_e_e ea eb >&&>
       match_ident ida idb
 
-  | A.RecordPtAccess (ea, _, ida), (B.RecordPtAccess (eb, idb), ii) ->
+  | A.RecordPtAccess (ea, _, ida), (B.RecordPtAccess (eb, idb), typ,ii) ->
       match_e_e ea eb >&&>
       match_ident ida idb
 
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.Cast (_, typa, _, ea), (B.Cast (typb, eb), ii) ->
+  | A.Cast (_, typa, _, ea), (B.Cast (typb, eb), typ,ii) ->
       match_ft_ft typa typb >&&>
       match_e_e ea eb
 
   (* todo? iso ? allow all the combinations ? *)
 
-  | A.Paren (_, ea, _), (B.ParenExpr (eb), ii) -> 
+  | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
       match_e_e ea eb
 
 

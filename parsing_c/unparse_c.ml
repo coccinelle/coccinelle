@@ -129,10 +129,10 @@ let pp_program file x =
 
    (* ---------------------- *)
    and pp_expression = function
-    | Constant (String s),        is     -> is +> List.iter pr_elem
-    | Ident (c),         [i]     -> pr_elem i
-    | Constant (c),         [i]     -> pr_elem i
-    | FunCall  (e, es),     [i1;i2] -> 
+    | Constant (String s),        typ, is     -> is +> List.iter pr_elem
+    | Ident (c),         typ,[i]     -> pr_elem i
+    | Constant (c),         typ,[i]     -> pr_elem i
+    | FunCall  (e, es),     typ,[i1;i2] -> 
         pp_expression e; pr_elem i1; 
         es +> List.iter (fun (e, opt) -> 
           (match opt with
@@ -151,35 +151,35 @@ let pp_program file x =
             
         pr_elem i2;
         
-    | CondExpr (e1, e2, e3),    [i1;i2]    -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; pp_expression e3
-    | Sequence (e1, e2),          [i]  -> pp_expression e1; pr_elem i; pp_expression e2
-    | Assignment (e1, op, e2),    [i]  -> pp_expression e1; pr_elem i; pp_expression e2
+    | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; pp_expression e3
+    | Sequence (e1, e2),          typ,[i]  -> pp_expression e1; pr_elem i; pp_expression e2
+    | Assignment (e1, op, e2),    typ,[i]  -> pp_expression e1; pr_elem i; pp_expression e2
         
-    | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
-    | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
-    | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] -> pp_expression e1;   pr_elem i; pp_expression e2
+    | Postfix  (e, op),    typ,[i] -> pp_expression e; pr_elem i;
+    | Infix    (e, op),    typ,[i] -> pr_elem i; pp_expression e;
+    | Unary    (e, op),    typ,[i] -> pr_elem i; pp_expression e
+    | Binary   (e1, op, e2),    typ,[i] -> pp_expression e1;   pr_elem i; pp_expression e2
         
-    | ArrayAccess    (e1, e2),     [i1;i2] -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
-    | RecordAccess   (e, s),       [i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
-    | RecordPtAccess (e, s),       [i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
+    | ArrayAccess    (e1, e2),     typ,[i1;i2] -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
+    | RecordAccess   (e, s),       typ,[i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
+    | RecordPtAccess (e, s),       typ,[i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
 
-    | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
-    | SizeOfType  (t),     [i1;i2;i3] -> pr_elem i1; pr_elem i2; pp_type_with_ident None None t; pr_elem i3
-    | Cast    (t, e),      [i1;i2] -> pr_elem i1; pp_type_with_ident None None t; pr_elem i2; pp_expression e
+    | SizeOfExpr  (e),     typ,[i] -> pr_elem i; pp_expression e
+    | SizeOfType  (t),     typ,[i1;i2;i3] -> pr_elem i1; pr_elem i2; pp_type_with_ident None None t; pr_elem i3
+    | Cast    (t, e),      typ,[i1;i2] -> pr_elem i1; pp_type_with_ident None None t; pr_elem i2; pp_expression e
 
-    | StatementExpr ((declxs_statxs), [ii1;ii2]),  [i1;i2] -> 
+    | StatementExpr ((declxs_statxs), [ii1;ii2]),  typ,[i1;i2] -> 
         pr_elem i1;
         pr_elem ii1;
         declxs_statxs +> List.iter (function Left decl -> pp_decl decl | Right stat -> pp_statement stat);
         pr_elem ii2;
         pr_elem i2;
-    | Constructor, [] -> pr "<<constructur_or_strange_stuff>>"
-    | NoExpr, [] -> ()
+    | Constructor, typ,[] -> pr "<<constructur_or_strange_stuff>>"
+    | NoExpr, typ,[] -> ()
 
-    | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
+    | ParenExpr (e), typ,[i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | MacroCall  (es),     [i1;i2;i3] -> 
+    | MacroCall  (es),     typ,[i1;i2;i3] -> 
 
         let rec pp_action = function 
           | (ActMisc ii) -> ii +> List.iter pr_elem
@@ -212,7 +212,7 @@ let pp_program file x =
             
         pr_elem i3;
 
-    | MacroCall2  (arg),     [i1;i2;i3] -> 
+    | MacroCall2  (arg),     typ,[i1;i2;i3] -> 
         pr_elem i1;
         pr_elem i2;
         (match arg with
