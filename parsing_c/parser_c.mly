@@ -75,7 +75,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage * info list)))  = function
  {storageD = (st,iist); qualifD = (qu,iiq); typeD = (ty,iit)} -> 
   (((qu, iiq),
    (match ty with 
- | (None,None,None)       -> warning "type defaults to 'int'" (default_int, [])
+ | (None,None,None)       -> warning "type defaults to 'int'" (defaultInt, [])
  | (None, None, Some t)   -> (t, iit)
 	 
  | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  -> BaseType(IntType (Si (sign, CInt))), iit

@@ -297,8 +297,13 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
 and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec -> 
   match ep, ec with
   (* cas general: a MetaExpr can match everything *)
-  | A.MetaExpr ((ida,_), opttypa),  expb -> 
-      (* todo: use type *)
+  | A.MetaExpr ((ida,_), opttypa),  ((expr, opttypb, ii) as expb) -> 
+      (match opttypa, opttypb with
+      | None, _ -> return true
+      | Some tas, Some tb -> 
+          tas +> List.fold_left (fun acc ta -> acc >||>  match_ft_ft ta tb) (return false)
+      | Some _, None -> raise Todo (* certainly a pb in annotate_typer.ml *)
+      ) >&&>
       check_add_metavars_binding (ida, Ast_c.MetaExpr (expb))
 
   (* todo: MetaConst *)

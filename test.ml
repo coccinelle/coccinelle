@@ -24,6 +24,8 @@ let rule_elem_if () = Cocci.rule_elem_from_string "@@@@
 "
 
 
+let type_annoted () = Type_annoter_c.annotate_expr [] None (Cocci.cexpression_from_string "1+1")
+
 (* ------------------------------------------------------------------------------ *)
 
 let test_pattern_bis () = 
@@ -46,7 +48,7 @@ let test_pattern_bis () =
   let cartesian = cartesian_product all_nodes all_rule_elem in
 
   cartesian +> map_filter (fun (node,rule) -> 
-    let bindings = Pattern.match_re_node  rule node (Ast_c.empty_metavars_binding) in
+    let bindings = Pattern.match_re_node  rule node (Ast_c.emptyMetavarsBinding) in
     if not (null bindings) 
     then Some ((node, rule), bindings)
     else None
@@ -201,10 +203,9 @@ Ast_ctl.Exists ("x",
 
 let test_ctl_sat ctl = 
 
-  let ctl  = ctl in
   let flow = Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file  "mytests/1.c")) in
 
-  let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
+  let _model_ctl  = Ctlcocci_integration.model_for_ctl flow in
   raise Todo
   (* Ast_ctl.sat model_ctl  ctl *)
 
@@ -219,7 +220,7 @@ let test_ctl_sat ctl =
 (* ********************************************************************** *)
 
 (* FIX ME: move *)
-module EXAMPLE_ENGINE = Ctl_engine.CTL_ENGINE (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG);;
+module EXAMPLE_ENGINE_BIS = Wrapper_ctl.CTL_ENGINE_BIS (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG);;
 
 
 let top_wit = []
@@ -235,7 +236,7 @@ let top_wit = []
 open Ast_ctl
 open Ctl_engine.SIMPLE_ENV;;
 open Ctl_engine.SIMPLE_CFG;;
-open EXAMPLE_ENGINE;;
+open EXAMPLE_ENGINE_BIS;;
 
 
 (* ---------------------------------------------------------------------- *)
@@ -288,32 +289,19 @@ let ex1states = List.map fst (ex1graph#nodes)#tolist;;
 
 let ex1model = (ex1graph, ex1lab, ex1states);;
 
-let ex1s0 = Exists("v0",Pred ("f(x)"));;
-let ex1s1 = Exists("v1",Pred ("g(y)"));;
-let ex1s2 = Exists("y",ex1s1);;
-let ex1s3 = AF(ex1s2);;
-let ex1s4 = And(ex1s0,ex1s3);;
-
-let ex1s3a = AX(ex1s2);;
-let ex1s4a = AX(AX(ex1s2));;
-let ex1s5a = And(ex1s0,ex1s4a);;
-
-let ex1phi1 = ex1s4;;
-let ex1phi2 = ex1s5a;;
-
 let ex1phi3 = 
  And
  (Exists ("x",
   (Exists ("v3",
-    Pred ("f(x)")))),
+    Pred ("f(x)", UnModif "v3")))),
   AX
    (AF
     (Exists ("y", (* change this to Y and have strange behaviour *)
       (Exists ("v0",
-       Pred ("g(y)")
+       Pred ("g(y)", Modif "v0")
                       ))))))
 
-
+(*
 let ex1phi3bis = 
  Exists ("x",
  And
@@ -324,8 +312,17 @@ let ex1phi3bis =
      AF (
       Exists ("v0",
        Pred ("g(y)")))))))
+*)
 
-
-let ex1 phi = sat ex1model phi;;
+let test_satbis () = 
+  assert 
+    (satbis ex1model ex1phi3
+       =
+     [(3, [("x","1");("y","1")], "g(y)");
+      (4, [("x","1");("y","2")], "g(y)");
+      (3, [("x","2");("y","1")], "g(y)");
+      (4, [("x","2");("y","2")], "g(y)");
+    ]
+    )
 
 

@@ -291,17 +291,17 @@ type program2 = programElement2 list
 let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
-let default_int = (BaseType (IntType (Si (Signed, CInt))))
+let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
 
-let iitodovide = []
+let iiTodovide = []
 
 let noType = None
 
-let empty_metavars_binding = ([]: metavars_binding)
+let emptyMetavarsBinding = ([]: metavars_binding)
 
-let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1; }, 
+let dumbAnnot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1; }, 
                                     {contents = Ast_cocci.NOTHING}),
-                  empty_metavars_binding)
+                  emptyMetavarsBinding)
 (*******************************************************************************)
 
 (* al for  Abstract Line information *)
@@ -309,7 +309,7 @@ let dumb_annot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_lin
 let _Magic_info_number = -10
 let is_al_info x = x.charpos = _Magic_info_number
 
-let al_info x = { charpos = _Magic_info_number; str = (fst x).str }, dumb_annot
+let al_info x = { charpos = _Magic_info_number; str = (fst x).str }, dumbAnnot
 
 let rec (al_expr: expression -> expression) = fun (exp, typ, ii) -> 
   let ii' = List.map (fun i -> al_info i) ii in

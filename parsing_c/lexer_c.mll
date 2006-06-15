@@ -17,7 +17,7 @@ let tokinfo lexbuf  =
   { 
     charpos = Lexing.lexeme_start lexbuf; 
     str     = tok lexbuf  
-  }, Ast_c.dumb_annot
+  }, Ast_c.dumbAnnot
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 

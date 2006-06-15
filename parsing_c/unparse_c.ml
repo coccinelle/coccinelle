@@ -84,7 +84,7 @@ let pp_program file x =
 
 
    (* ---------------------- *)
-   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumb_annot) in
+   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
 
    let rec pr_elem ((info,(mcode,env)) as e) = 
     if Ast_c.is_al_info info
@@ -698,7 +698,7 @@ let pp_program file x =
    match ppmethod with
    | PPviatok toks -> 
        (match e with
-       | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumb_annot) (* todo: less: assert that FinalDef is the last one in the list *)
+       | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot) (* todo: less: assert that FinalDef is the last one in the list *)
        | e -> toks +> List.iter (fun x -> pr_elem x)
        )
 
@@ -753,7 +753,7 @@ let pp_program file x =
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
 
-     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumb_annot)
+     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot)
 
      | x -> error_cant_have x
      )

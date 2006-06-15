@@ -105,7 +105,7 @@ let test_pattern statement_str rule_elem_str =
   let rule_elem = rule_elem_from_string rule_elem_str in
   Pattern.match_re_node 
     rule_elem   (Control_flow_c.Statement statement, "str")
-    (Ast_c.empty_metavars_binding)
+    (Ast_c.emptyMetavarsBinding)
 
 
 (* --------------------------------------------------------------------- *)

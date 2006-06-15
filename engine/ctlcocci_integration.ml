@@ -36,7 +36,7 @@ let (labels_for_ctl:
              []
 
          | Lib_engine.Match (re),    node -> 
-             let substs = Pattern.match_re_node re (node, nodestring)  (Ast_c.empty_metavars_binding) in
+             let substs = Pattern.match_re_node re (node, nodestring)  (Ast_c.emptyMetavarsBinding) in
              if substs <> []
              then
                substs +> List.map (fun subst -> 
