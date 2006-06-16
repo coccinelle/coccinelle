@@ -26,6 +26,12 @@ let rule_elem_if () = Cocci.rule_elem_from_string "@@@@
 
 let type_annoted () = Type_annoter_c.annotate_expr [] None (Cocci.cexpression_from_string "1+1")
 
+let test_pattern1 () = 
+  Cocci.test_pattern "if(1) { f(2); } else { f(3); }" "@@ expression X;@@ f(X)";;
+
+
+let test_flow cfile = 
+  Cocci.print_flow (Cocci.one_flow (Cocci.flows (Cocci.cprogram_from_file cfile)));;
 (* ------------------------------------------------------------------------------ *)
 
 let test_pattern_bis () = 
@@ -219,7 +225,6 @@ let test_ctl_sat ctl =
 (* Module: EXAMPLE_ENGINE (instance of CTL_ENGINE)                        *)
 (* ********************************************************************** *)
 
-(* FIX ME: move *)
 module EXAMPLE_ENGINE_BIS = Wrapper_ctl.CTL_ENGINE_BIS (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG);;
 
 
@@ -232,7 +237,6 @@ let top_wit = []
 (* ******************************************************************** *)
 
 (* For convenience in the examples *)
-(* FIX ME: remove *)
 open Ast_ctl
 open Ctl_engine.SIMPLE_ENV;;
 open Ctl_engine.SIMPLE_CFG;;

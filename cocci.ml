@@ -1,5 +1,19 @@
 open Common open Commonop
 
+(*
+ This file is a kind of driver. It gathers all the important functions 
+ from Coccinelle in one place. The different entities of the Coccinelle system:
+  - files
+
+  - astc
+  - astcocci
+
+  - flow (contain nodes)
+  - ctl  (contain rule_elem)
+
+  There are functions to transform one in another.
+
+*)
 
 (* --------------------------------------------------------------------- *)
 let cprogram_from_file  file = Parse_c.parse_print_error_heuristic file

@@ -258,7 +258,20 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
   
 
   (* Nest ? *)
-  (* Exp ? *)
+
+  | A.Exp expr , statement -> 
+      let all_exprs = 
+        let globals = ref [] in
+        begin
+          statement +> Visitor_c.visitor_statement_k { Visitor_c.default_visitor_c_continuation with 
+                  Visitor_c.kexpr = (fun (k, bigf) expr -> 
+                    push2 expr globals; 
+                    k expr
+                                    );
+                                                     };
+          !globals
+        end in
+      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) (return false)
 
 
   (* not me: Dots/Circles/Stars *)
