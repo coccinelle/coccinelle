@@ -93,7 +93,7 @@ depend: $(GENERATED)
 .depend:
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
-include .depend
+-include .depend
 
 lexer_cocci.ml: lexer_cocci.mll
 parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll

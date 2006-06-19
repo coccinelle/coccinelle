@@ -93,4 +93,4 @@ depend: beforedepend
 .depend: 
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
-include .depend
+-include .depend
