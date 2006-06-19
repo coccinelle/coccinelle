@@ -34,6 +34,18 @@ let pp_program file x =
    let toks = ref (toks +> List.map (fun tok -> (tok, Parse_c.info_from_token tok))) in
    
 
+   let _current_tabbing = ref "" in
+   let update_current_tabbing s = 
+     let newtabbing = 
+      list_of_string s 
+       +> List.rev
+       +> take_until (fun c -> c = '\n')
+       +> List.rev
+       +> List.map string_of_char
+       +> String.concat ""
+     in
+     _current_tabbing := newtabbing
+   in
 
    (* ---------------------- *)
    let sync (elem,_ANNOT) = 
@@ -65,7 +77,8 @@ let pp_program file x =
       commentsbefore +> List.iter (fun (tok, tokinfo) -> 
           (match tok with
           | TComment            (i,_) -> pr i.str
-          | TCommentSpace       (i,_) -> pr i.str
+          | TCommentSpace       (i,_) -> pr i.str;
+              update_current_tabbing i.str
           | TCommentCpp         (i,_) -> pr i.str
           | TCommentAttrOrMacro (i,_) -> pr i.str
           | x -> error_cant_have x
@@ -87,10 +100,8 @@ let pp_program file x =
    let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
 
    let rec pr_elem ((info,(mcode,env)) as e) = 
-    if Ast_c.is_al_info info
-    then ()
-      
-    else 
+    if not (Ast_c.is_al_info info)
+    then 
       begin
         if not ((fst e).charpos > (fst !_lastasked).charpos)
         then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
@@ -99,7 +110,7 @@ let pp_program file x =
         sync e; 
       end;
      
-     (* pr info.str *)
+     (*old: pr info.str *)
      let s = info.str in
 
      match mcode with
@@ -638,8 +649,13 @@ let pp_program file x =
   | _ -> raise Todo
 
   and pp_list_list_any env xxs =
-    (* TODO: put some  \n sometimes *)
-    xxs +> List.iter (fun xs -> xs +> List.iter (fun any -> pp_any env any))
+    xxs +> List.iter (fun xs -> 
+      xs +> List.iter (fun any -> 
+        pp_any env any
+      ); 
+      pr "\n"; 
+      pr !_current_tabbing 
+   )
 
 
   and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
