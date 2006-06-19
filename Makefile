@@ -106,4 +106,4 @@ depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
-include .depend
+-include .depend

@@ -79,4 +79,4 @@ depend:
 .depend:
 	$(CAMLDEP) *.mli *.ml > .depend
 
-include .depend
+-include .depend

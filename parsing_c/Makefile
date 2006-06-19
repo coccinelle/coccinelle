@@ -102,6 +102,6 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend
 
-include .depend
+-include .depend
 
 
