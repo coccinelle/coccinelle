@@ -9,11 +9,8 @@ module F = Control_flow_c
 
 
 (******************************************************************************)
-(*
-TODO
- adapt what rene returns,  flatten, simplify env (no parenvar), simplify pred (just take the rule_elem)
-
-
+(* todo:
+ 
  must do some try, for instance when f(...,X,Y,...) have to test the transfo for all
   the combinaitions (and if multiple transfo possible ? pb ? 
  => the type is to return a   expression option ? use some combinators to help ?
@@ -23,7 +20,6 @@ TODO
   Same for Else
  
  if add NestedExp to Mini_cocci ? have to transform when inside.
-
  
  checks?: if touch same nodes two times ? check compatibility of bindings, etc
 
@@ -33,6 +29,7 @@ TODO
 type ('a, 'b) transformer = 'a -> 'b -> Ast_c.metavars_binding -> 'b
 
 
+exception NoMatch 
 
 type sequence_processing_style = Ordered | Unordered
 
@@ -47,7 +44,12 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
   | A.SeqEnd _mcode, F.EndBrace _level -> raise Todo  (* problematic *)
 
   | _, F.StartBrace _ 
-  | _, F.EndBrace _ 
+  | _, F.EndBrace _  -> raise NoMatch
+
+  | _, F.TrueNode
+  | _, F.FalseNode
+  | _, F.AfterNode -> raise Impossible
+
   | _, F.Enter 
   | _, F.Exit 
   | _, F.Fake -> raise Impossible (* rene cant have found that a state containing a fake/exit/... should be transformed *)
@@ -76,8 +78,15 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
   (* Else ???  Dots Nest *)
 
   (* not me?: Disj *)
-  | A.Exp exp, (B.ExprStatement (Some eb), ii) -> 
-      B.ExprStatement (Some (transform_e_e exp eb binding)), ii
+  | A.Exp exp, statement -> 
+      (* todo?: assert have done something  statement' <> statement *)
+      statement +> Visitor_c.visitor_statement_k_s { Visitor_c.default_visitor_c_continuation_s with
+        Visitor_c.kexpr_s = (fun (k,_) e -> 
+          let e' = k e in (* go inside first *)
+          try transform_e_e exp e'   binding 
+          with NoMatch -> e'
+          )
+          }
 
   | _ -> raise Todo (* except if have NestedExp *)
 
@@ -92,8 +101,10 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       let v = binding +> List.assoc (ida: string) in
       (match v with
       | B.MetaExpr expa -> 
-          assert (expa =*= Ast_c.al_expr expb);
-          distribute_minus_plus_e i1 expb   binding
+          if (expa =*= Ast_c.al_expr expb)
+          then
+            distribute_minus_plus_e i1 expb   binding
+          else raise NoMatch
       | _ -> raise Impossible
       )
       
@@ -101,11 +112,13 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       let (idb', ii') = transform_ident ida (idb, ii)   binding in
       (B.Ident idb', typ,ii')
 
+
   | A.Constant ((A.Int ia),i1) ,                ((B.Constant (B.Int ib) , typ,ii)) ->  
-      assert (ia =$= ib);
-      let ii' = tagge_symbols [ ia, i1  ] ii binding in
-      B.Constant (B.Int ib), typ,ii'
-      
+      if (ia =$= ib) 
+      then
+        let ii' = tagge_symbols [ "fake", i1  ] ii binding in
+        B.Constant (B.Int ib), typ,ii'
+      else raise NoMatch
 
 
   | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), typ,ii) -> 
@@ -114,6 +127,25 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       let seqstyle = (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
       
       B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
+
+  | A.Binary (ea1, (opa,i1), ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
+      if (Pattern.equal_binaryOp opa opb)
+      then 
+        let ii' = tagge_symbols ["fake", i1] ii binding in
+        B.Binary (transform_e_e ea1 eb1   binding, opb,  transform_e_e ea2 eb2  binding),  typ, ii'
+      else raise NoMatch
+
+
+  | _,                ((B.Ident idb) , typ,ii) ->
+      raise NoMatch
+  | _ ,                ((B.Constant (B.Int ib) , typ,ii)) ->  
+      raise NoMatch
+
+  | _,  (B.FunCall (eb, ebs), typ,ii) -> 
+      raise NoMatch
+
+  | _, (B.Binary (eb1, opb, eb2), typ,ii) -> 
+      raise NoMatch
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
   | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
@@ -153,6 +185,10 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun 
         idb, ii'
     | _ -> raise Todo
   (* get binding, assert =*=,  tagge *)
+
+
+
+(* --------------------------------------------------------------------- *)
 
 and (tagge_symbols: (string Ast_cocci.mcode) list -> Ast_c.il -> Ast_c.metavars_binding -> Ast_c.il) = 
   fun xs ys binding ->
@@ -215,7 +251,7 @@ and (minusize_token: Ast_c.info -> Ast_c.info) = fun (s, (mcode,env))  ->
     match mcode with
     | Ast_cocci.CONTEXT (i, {contents = Ast_cocci.NOTHING}) -> 
         Ast_cocci.MINUS (i, {contents = []})
-    | _ -> failwith "already done the minusize"
+    | _ -> failwith "have already minused this token"
   in
   (s, (mcode', env))
 
@@ -263,6 +299,8 @@ and nothing_left  x = x
 
 
 
+(* --------------------------------------------------------------------- *)
+(* Entry points *)
 
 let rec (transform: 
        Lib_engine.transformation_info ->
@@ -272,7 +310,7 @@ let rec (transform:
 
       (* find the node, transform, update the node,    and iter for all elements *)
       xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
-        let node  = cflow#nodes#assoc nodei in
+        let node  = acc#nodes#assoc nodei in (* subtil: not cflow#nodes but acc#nodes *)
         let node' = transform_re_node rule_elem node binding in
         acc#replace_node (nodei, node')
         ) cflow

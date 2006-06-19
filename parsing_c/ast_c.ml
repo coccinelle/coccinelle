@@ -271,6 +271,7 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   and metavar_binding_kind = 
   | MetaId        of string
   | MetaFunc      of string
+  | MetaLocalFunc of string
   | MetaExpr      of expression (* a "clean expr" *)
   | MetaExprList  of expression list
   | MetaType      of fullType

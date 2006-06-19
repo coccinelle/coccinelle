@@ -125,7 +125,9 @@ apply fcts in turn while having the time
 (******************************************************************************************)
 (* We use *)
 (******************************************************************************************)
-(* functions  List.rev, List.mem, List.partition, List.fold*, ... max min, =, <=, ... *)
+(* functions  List.rev, List.mem, List.partition, List.fold*, ... max min, =, <=, ... 
+    List.concat
+*)
 
 (* let gsubst = global_replace *)
 

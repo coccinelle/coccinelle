@@ -188,11 +188,10 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
       | A.FunHeader (stoa, ida, _, paramsa, _), (retb, paramsb, isvaargs, _) ->
           ( match ida with
            | (A.Id (ida, mcode)) when ida =$= idb ->   return true
-           | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (ida, (Ast_c.MetaFunc idb))
-            (* todo: a MetaId can not match a func ? yes it can - jll
-               todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? yes again - jll
-               todo: as usual, handle the Opt/Unique/Multi
-            *)
+           | (A.MetaId (ida, mcode))        -> check_add_metavars_binding (ida, (Ast_c.MetaId idb))
+           | (A.MetaFunc (ida, mcode))      -> check_add_metavars_binding (ida, (Ast_c.MetaFunc idb))
+           | (A.MetaLocalFunc (ida, mcode)) -> check_add_metavars_binding (ida, (Ast_c.MetaLocalFunc idb))
+            (* todo: as usual, handle the Opt/Unique/Multi *)
           | _ -> return false) 
             >&&>
            (* todo: stoa vs stob *)
@@ -663,7 +662,10 @@ and match_opt f eaopt ebopt =
 
 (******************************************************************************)
 (* normally Ast_cocci  should reuse some types of Ast_c, 
-   so those functions  should not exists *)
+   so those functions  should not exists 
+   update: but now Ast_c depends on Ast_cocci, so can't make too Ast_cocci
+    depends on Ast_c, so have to stay with those equal_xxx functions.
+*)
 (******************************************************************************)
 
 and equal_unaryOp a b = 
