@@ -22,8 +22,8 @@ let main _ =
   let ast_lists = Parse_cocci.process_for_ctl !in_file false in
   List.iter
     (function ast_list ->
-      let ctls = Ast0toctl.ast0toctl ast_list in
-      Ctltotex.ctltotex ast_list Ast0toctl.pred2c (function x -> x) ctls o)
+      let ctls = Asttoctl.asttoctl ast_list in
+      Ctltotex.ctltotex ast_list Asttoctl.pred2c (function x -> x) ctls o)
     ast_lists;
   Ctltotex.make_postlude o;
   close_out o

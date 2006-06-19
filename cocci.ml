@@ -95,7 +95,7 @@ let one_flow flows = List.hd flows
 let print_flow flow = Ograph_extended.print_ograph_extended flow
 
 (* --------------------------------------------------------------------- *)
-let ctls = List.map Ast0toctl.ast0toctl
+let ctls = List.map Asttoctl.asttoctl
 let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)

@@ -524,6 +524,6 @@ let top_level = function
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let ast0toctl l =
+let asttoctl l =
   ctr := 0;
   List.map top_level l

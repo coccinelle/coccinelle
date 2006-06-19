@@ -3,10 +3,10 @@
 TARGET=cocciengine
 CTLTARGET=engine
 
-SOURCES = lib_engine.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml ast0toctl.ml ctltotex.ml ctlcocci_integration.ml
+SOURCES = lib_engine.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoctl.ml ctltotex.ml ctlcocci_integration.ml
 
-# just to test ast0toctl
-CTLSOURCES = ast0toctl.ml ctltotex.ml main.ml
+# just to test asttoctl
+CTLSOURCES = asttoctl.ml ctltotex.ml main.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci
 
