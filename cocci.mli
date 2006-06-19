@@ -17,10 +17,10 @@ val print_flow : (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ogra
 
 
 val ctls : Ast_cocci.rule list -> 
-  (Lib_engine.full_predicate, string) Ast_ctl.generic_ctl list list
+  (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list
 val one_ctl :
-    (Lib_engine.full_predicate, string) Ast_ctl.generic_ctl list list ->
-      (Lib_engine.full_predicate, string) Ast_ctl.generic_ctl
+    (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list ->
+      (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl
 
 
 val test_unparser : Common.filename -> string list

@@ -11,8 +11,6 @@ type predicate =
   | Match of Ast_cocci.rule_elem
 
 
-type full_predicate = predicate * string Ast_ctl.modif
-
 type transformation_info = (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
 
 

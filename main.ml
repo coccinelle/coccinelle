@@ -108,11 +108,7 @@ let main () =
 
 
     | "special_request", _ -> 
-        (* 
-           ignore(Test.test_ctl_sat (Test.ctl2 ())) 
-        ignore(Test.test_pattern_bis ())
-         *)
-           ignore(Cocci.test_unparser "mytests/evo9.c")
+        ()
    
     | "test_parse_classic_patch", [] -> Classic_patch.parse_patch (cat "/tmp/patch1") +> ignore
    

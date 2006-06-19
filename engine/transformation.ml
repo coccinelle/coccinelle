@@ -76,7 +76,8 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
   (* Else ???  Dots Nest *)
 
   (* not me?: Disj *)
-
+  | A.Exp exp, (B.ExprStatement (Some eb), ii) -> 
+      B.ExprStatement (Some (transform_e_e exp eb binding)), ii
 
   | _ -> raise Todo (* except if have NestedExp *)
 

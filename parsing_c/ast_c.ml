@@ -299,11 +299,13 @@ let noType = None
 
 let emptyMetavarsBinding = ([]: metavars_binding)
 
-let dumbAnnot =
-  (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-			Ast_cocci.offset = -1}, 
-                      {contents = Ast_cocci.NOTHING}),
-   emptyMetavarsBinding)
+let dumbAnnot = (Ast_cocci.CONTEXT ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
+                                     Ast_cocci.offset = -1 }, 
+                                    {contents = Ast_cocci.NOTHING}),
+                  emptyMetavarsBinding)
+
+let noInstr = (ExprStatement (None), [])
+
 (*******************************************************************************)
 
 (* al for  Abstract Line information *)

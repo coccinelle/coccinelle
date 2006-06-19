@@ -652,7 +652,10 @@ let pp_program file x =
       | _ -> raise Impossible
       )
 
-  | Ast_cocci.Constant (Ast_cocci.Int (i),_) -> pr i
+  | Ast_cocci.Constant (Ast_cocci.Int (s),_) -> pr s
+  | Ast_cocci.Constant (Ast_cocci.String (s),_) -> pr ("\"" ^ s ^ "\"")
+  | Ast_cocci.Constant (Ast_cocci.Char (s),_) -> pr s
+  | Ast_cocci.Constant (Ast_cocci.Float (s),_) -> pr s
 
   | Ast_cocci.FunCall (e, (lp,_), es, (rp,_)) -> 
       pp_cocci_expr env e; pr lp; List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr rp

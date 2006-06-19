@@ -210,7 +210,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
         (* special_cfg_braces: *)
         let _ = incr counter in 
-        let newi = !g#add_node (StartBrace (!counter, statement), "{" ^ i_to_s !counter) +> adjust_g_i in
+        let newi = !g#add_node (StartBrace (!counter, (Compound [], ii)), "{" ^ i_to_s !counter) +> adjust_g_i in
         let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
         let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
@@ -304,7 +304,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
                           |->   newfakeelse -> ... -> finalelse -|
           update: there is now also a link directly to lasti.
        *)
-        let newi = !g#add_node (Statement (statement), "if") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Selection (If (e, noInstr, noInstr)), ii), "if") +> adjust_g_i in
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[then]") +> adjust_g_i in
         let lasti = !g#add_node (AfterNode, "[endif]") +> adjust_g_i in
@@ -322,7 +322,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
                           |->   newfakeelse -> ... -> finalelse -|
           update: there is now also a link directly to lasti.
        *)
-        let newi = !g#add_node (Statement (statement), "if") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Selection (If (e, noInstr, noInstr)), ii), "if") +> adjust_g_i in
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[then]") +> adjust_g_i in
         let newfakeelse = !g#add_node (FalseNode, "[else]") +> adjust_g_i in
@@ -350,7 +350,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         
 
     | Selection  (Switch (e, st)), ii -> 
-        let newi = !g#add_node (Statement (statement), "switch") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Selection (Switch (e, noInstr)),ii), "switch") +> adjust_g_i in
         attach_to_previous_node starti newi;
 
         let newfakeelse = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
@@ -378,7 +378,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
          
                  (* special_cfg_braces: *)
                  let _ = incr counter in 
-                 let newi = !g#add_node (StartBrace (!counter, statement), "{" ^ i_to_s !counter) +> adjust_g_i in
+                 let newi = !g#add_node (StartBrace (!counter, (Compound [], ii)), "{" ^ i_to_s !counter) +> adjust_g_i in
                  let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
                  let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
@@ -463,7 +463,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
                           |-> newfakelse 
        *)
 
-        let newi = !g#add_node (Statement (statement), "while") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Iteration (While (e, noInstr)), ii), "while") +> adjust_g_i in
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[whiletrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (FalseNode, "[endwhile]") +> adjust_g_i in
@@ -486,7 +486,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
                       |--------------------------------------------------|  |---> newfakelse 
 
        *)
-        let newi = !g#add_node (Statement (statement), "do") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Iteration (DoWhile (noInstr, e)),ii), "do") +> adjust_g_i in
         (* todo?: make a special node ? cos have to repeat the info, need reput a Statement statement 
             a Fake node for the while (of dowhile) may not be enough. how found the corresponding condition ?
            peut etre a juste inverser les Fake et Statement, les mettre en fait dans newi et finali respectively
@@ -524,7 +524,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         
 
     | Iteration  (For (e1opt, e2opt, e3opt, st)), ii -> 
-        let newi = !g#add_node (Statement (statement), "for") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Iteration (For (e1opt, e2opt, e3opt, noInstr)),ii), "for") +> adjust_g_i in
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[fortrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (FalseNode, "[endfor]") +> adjust_g_i in

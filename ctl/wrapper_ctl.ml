@@ -34,3 +34,4 @@ module CTL_ENGINE_BIS =
 *)
 
              
+type ('pred, 'mvar) wrapped_ctl = ('pred * 'mvar Ast_ctl.modif,  'mvar) Ast_ctl.generic_ctl

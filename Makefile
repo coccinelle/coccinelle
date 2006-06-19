@@ -1,10 +1,5 @@
 TARGET=spatch
 
-TSTSRC = \
-	flag.ml  \
-	misc/classic_patch.ml  \
-	cocci.ml   test.ml main.ml
-
 SRC = \
 	flag.ml  \
 	misc/classic_patch.ml  \
@@ -37,8 +32,10 @@ OPTOBJS = $(SRC:.ml=.cmx)
 
 
 
-all: rec $(EXEC) $(TARGET).top
+all: rec $(EXEC)
 opt: rec.opt $(OPTEXEC)
+
+#
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
@@ -64,6 +61,22 @@ clean::
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
+
+
+MYSRC = flag.ml  \
+	misc/classic_patch.ml  \
+	cocci.ml   mytest.ml mymain.ml
+MYOBJS = $(MYSRC:.ml=.cmo)
+MYEXEC = myspatch
+
+mystuff: rec $(MYEXEC) $(MYEXEC).top
+
+
+$(MYEXEC): $(MYOBJS) $(LIBS)
+	$(OCAMLC) -o $(MYEXEC) $(SYSLIBS) $(LIBS) $(MYOBJS)
+
+$(MYEXEC).top: $(MYOBJS) $(LIBS)
+	$(OCAMLMKTOP) -o $(MYEXEC).top $(SYSLIBS) $(LIBS) $(MYOBJS)
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
