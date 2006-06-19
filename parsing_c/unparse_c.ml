@@ -649,13 +649,19 @@ let pp_program file x =
   | _ -> raise Todo
 
   and pp_list_list_any env xxs =
-    xxs +> List.iter (fun xs -> 
-      xs +> List.iter (fun any -> 
-        pp_any env any
-      ); 
-      pr "\n"; 
-      pr !_current_tabbing 
-   )
+     match xxs with
+     | xs::xxs -> 
+         xs +> List.iter (fun any -> 
+           pp_any env any
+             );
+         xxs +> List.iter (fun xs -> 
+           pr "\n"; 
+           pr !_current_tabbing;
+           xs +> List.iter (fun any -> 
+               pp_any env any
+             ); 
+          )
+     | [] -> ()
 
 
   and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with

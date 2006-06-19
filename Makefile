@@ -36,7 +36,6 @@ OPTOBJS = $(SRC:.ml=.cmx)
 all: rec $(EXEC)
 opt: rec.opt $(OPTEXEC)
 
-#
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
@@ -64,6 +63,7 @@ clean::
 
 
 
+
 MYSRC = flag.ml  \
 	misc/classic_patch.ml  \
 	cocci.ml   mytest.ml mymain.ml
@@ -78,6 +78,9 @@ $(MYEXEC): $(MYOBJS) $(LIBS)
 
 $(MYEXEC).top: $(MYOBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(MYEXEC).top $(SYSLIBS) $(LIBS) $(MYOBJS)
+
+
+
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
