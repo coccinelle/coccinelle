@@ -1,8 +1,12 @@
 # Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
 
 TARGET=cocciengine
+CTLTARGET=engine
 
 SOURCES = lib_engine.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml ast0toctl.ml ctltotex.ml ctlcocci_integration.ml
+
+# just to test ast0toctl
+CTLSOURCES = ast0toctl.ml ctltotex.ml main.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci
 
@@ -21,13 +25,20 @@ EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
+CTLEXEC=$(CTLTARGET)
+
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
+
+CTLOBJS = $(CTLSOURCES:.ml=.cmo)
+CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
 
 
 all: $(EXEC) $(LIB)
 
 all.opt: $(OPTLIB)
+
+ctl: $(CTLEXEC)
 
 
 $(LIB): $(OBJS)
@@ -45,12 +56,15 @@ $(OPTLIB): $(OPTOBJS)
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(CAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
+$(CTLEXEC): $(CTLOBJS) $(LIBS)
+	$(CAMLC) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
+
 
 # clean rule for LIB.opt
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
 	rm -f $(TARGET) rm -f $(TARGET).byte
-
+	rm -f $(CTLTARGET)
 
 
 .SUFFIXES:

@@ -185,12 +185,12 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
   | re, F.HeadFunc funcdef -> 
       let (idb, typb, stob, statb, _) = funcdef in
       (match re, typb with
-      | A.FunDecl (stoa, ida, _, paramsa, _),   (retb, paramsb, isvaargs, _) -> 
+      | A.FunHeader (stoa, ida, _, paramsa, _), (retb, paramsb, isvaargs, _) ->
           ( match ida with
            | (A.Id (ida, mcode)) when ida =$= idb ->   return true
            | (A.MetaFunc (ida, mcode)) -> check_add_metavars_binding (ida, (Ast_c.MetaFunc idb))
-            (* todo: a MetaId can not match a func ? 
-               todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? 
+            (* todo: a MetaId can not match a func ? yes it can - jll
+               todo: MetaFuncLocal ? (in fact it should be MetaFuncLocal here, and question is does MetaFunc match a func decl ? yes again - jll
                todo: as usual, handle the Opt/Unique/Multi
             *)
           | _ -> return false) 
@@ -254,11 +254,6 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
 
   (* not me?: MetaStmList ? *)
 
-  (* not me?: Disj *)
-  
-
-  (* Nest ? *)
-
   | A.Exp expr , statement -> 
       let all_exprs = 
         let globals = ref [] in
@@ -274,8 +269,6 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
       all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) (return false)
 
 
-  (* not me: Dots/Circles/Stars *)
-  (* todo: Opt/Unique/Multi *)
   | _, _ -> return false
 
 

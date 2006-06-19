@@ -1,7 +1,3 @@
-(* the various booleans that are passed around are to control where
-newlines are needed.  For example, a newline is not needed before a },
-because it changes the indentation before doing the newline *)
-
 open Format
 module Ast = Ast_cocci
 
@@ -15,14 +11,10 @@ let print_option fn = function
     None -> ()
   | Some x -> fn x
 
-let rec print_between between nnl fn = function
+let rec print_between between fn = function
     [] -> ()
-  | [x] -> let _ = fn x in ()
-  | x::xp::xs ->
-      let res = fn x in (if res && nnl xp then between());
-      print_between between nnl fn (xp::xs)
-
-let true_fn _ = true
+  | [x] -> fn x
+  | x::xs -> fn x; between(); print_between between fn xs
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -35,15 +27,28 @@ let rec print_anything str plus_stream =
     [] -> ()
   | stream ->
       start_block();
-      print_between force_newline true_fn
+      print_between force_newline
 	(function x ->
-	  print_string str;
-	  print_between (function _ -> print_string " ") true_fn
-	    (function x -> !anything x ; true)
-	    x;
-	  true)
+	  print_string str; open_box 0; print_anything_list x; close_box())
 	stream;
       end_block()
+
+and print_anything_list = function
+    [] -> ()
+  | [x] -> !anything x
+  | bef::((aft::_) as rest) ->
+      !anything bef;
+      let space =
+	(match bef with
+	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
+	| Ast.Token("if") | Ast.Token("while") -> true | _ -> false) or
+	(match aft with
+	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{") -> true
+	| _ -> false) in
+      if space then print_string " ";
+      print_anything_list rest
 
 let print_around printer term plus_streams =
   match !plus_streams with
@@ -55,33 +60,33 @@ let print_around printer term plus_streams =
       print_anything ">>> " (ref aft)
 
 let mcode fn = function
-    x, Ast.MINUS(info,plus_stream) ->
+    (x, Ast.MINUS(info,plus_stream)) ->
       print_string "-"; fn x; print_anything ">>> " plus_stream
-  | x, Ast.CONTEXT(info,plus_streams) ->
+  | (x, Ast.CONTEXT(info,plus_streams)) ->
       print_around fn x plus_streams
-  | x, Ast.PLUS(info) -> fn x
+  | (x, Ast.PLUS(info)) -> fn x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots between fn nnl = function
-    Ast.DOTS(l) -> print_between between nnl fn l
-  | Ast.CIRCLES(l) -> print_between between nnl fn l
-  | Ast.STARS(l) -> print_between between nnl fn l
+let dots between fn = function
+    Ast.DOTS(l) -> print_between between fn l
+  | Ast.CIRCLES(l) -> print_between between fn l
+  | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots fn nnl = function
+let nest_dots fn = function
     Ast.DOTS(l) ->
       print_string "<..."; start_block();
-      print_between force_newline nnl fn l;
+      print_between force_newline fn l;
       end_block(); print_string "...>"
   | Ast.CIRCLES(l) ->
       print_string "<ooo"; start_block();
-      print_between force_newline nnl fn l;
+      print_between force_newline fn l;
       end_block(); print_string "ooo>"
   | Ast.STARS(l) ->
       print_string "<***"; start_block();
-      print_between force_newline nnl fn l;
+      print_between force_newline fn l;
       end_block(); print_string "***>"
 
 (* --------------------------------------------------------------------- *)
@@ -99,14 +104,14 @@ let rec ident = function
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
+let print_string_box s = print_string s; open_box 0
+
 let rec expression = function
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
-      expression fn; mcode print_string lp; open_box 0;
-      let _ =
-	dots (function _ -> ())
-	  (function x -> expression x; true) true_fn args in
+      expression fn; mcode print_string_box lp;
+      let _ = dots (function _ -> ()) expression args in
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right) ->
       expression left; print_string " "; mcode assignOp op;
@@ -122,29 +127,28 @@ let rec expression = function
       expression left; print_string " "; mcode binaryOp op; print_string " ";
       expression right
   | Ast.Paren(lp,exp,rp) ->
-      mcode print_string lp; expression exp; mcode print_string rp
+      mcode print_string_box lp; expression exp; close_box();
+      mcode print_string rp
   | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-      expression exp1; mcode print_string lb; expression exp2;
+      expression exp1; mcode print_string_box lb; expression exp2; close_box();
       mcode print_string rb
   | Ast.RecordAccess(exp,pt,field) ->
       expression exp; mcode print_string pt; ident field
   | Ast.RecordPtAccess(exp,ar,field) ->
       expression exp; mcode print_string ar; ident field
   | Ast.Cast(lp,ty,rp,exp) ->
-      mcode print_string lp; fullType ty; mcode print_string rp;
-      expression exp
+      mcode print_string_box lp; fullType ty; close_box();
+      mcode print_string rp; expression exp
   | Ast.MetaConst(name,None) -> mcode print_string name
   | Ast.MetaConst(name,Some ty) ->
       mcode print_string name; print_string "/* ";
-      print_between (function _ -> print_string ", ") true_fn
-	(function x -> fullType x; true) ty;
+      print_between (function _ -> print_string ", ") fullType ty;
       print_string "*/"
   | Ast.MetaErr(name) -> mcode print_string name
   | Ast.MetaExpr(name,None) -> mcode print_string name
   | Ast.MetaExpr(name,Some ty) ->
       mcode print_string name; print_string "/*";
-      print_between (function _ -> print_string ", ") true_fn
-	(function x -> fullType x; true) ty;
+      print_between (function _ -> print_string ", ") fullType ty;
       print_string "*/"
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -152,11 +156,9 @@ let rec expression = function
       print_string "\n("; force_newline();
       print_between
 	(function _ -> print_string "\n|"; force_newline())
-	true_fn
-	(function x -> expression x; true) exp_list;
+	expression exp_list;
       print_string "\n)"
-  | Ast.NestExpr(expr_dots) ->
-      nest_dots (function x -> expression x; true) true_fn expr_dots
+  | Ast.NestExpr(expr_dots) -> nest_dots expression expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -287,8 +289,7 @@ let rec parameterTypeDef = function
   | Ast.OptParam(param) -> print_string "?"; parameterTypeDef param
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
 
-let parameter_list =
-  dots (function _ -> ()) (function x -> parameterTypeDef x; false) true_fn
+let parameter_list = dots (function _ -> ()) parameterTypeDef
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -298,111 +299,118 @@ let storage Ast.Static = print_string "static "
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let not_brace = function
-    Ast.SeqEnd(brace) -> false
-  | Ast.Disj(x::xs) -> false
-  | _ -> true
-
-let rec rule_elem arity = function
-    Ast.FunDecl(stg,name,lp,params,rp) ->
+let rule_elem arity = function
+    Ast.FunHeader(stg,name,lp,params,rp) ->
       print_string arity;
       print_option (mcode storage) stg;
-      ident name; mcode print_string lp;
-      open_box 0; parameter_list params; close_box(); mcode print_string rp;
-      print_string " "; false
-  | Ast.Decl(decl) -> print_string arity; declaration decl; true
+      ident name; mcode print_string_box lp;
+      parameter_list params; close_box(); mcode print_string rp;
+      print_string " "
+  | Ast.Decl(decl) -> print_string arity; declaration decl
   | Ast.SeqStart(brace) ->
-      print_string arity; mcode print_string brace; start_block(); false
+      print_string arity; mcode print_string brace; start_block()
   | Ast.SeqEnd(brace) ->
-      end_block(); print_string arity; mcode print_string brace; true
+      end_block(); print_string arity; mcode print_string brace
   | Ast.ExprStatement(exp,sem) ->
-      print_string arity; expression exp; mcode print_string sem; true
+      print_string arity; expression exp; mcode print_string sem
   | Ast.IfHeader(iff,lp,exp,rp) ->
       print_string arity;
-      mcode print_string iff; print_string " "; mcode print_string lp;
-      expression exp; mcode print_string rp; print_string " "; false
+      mcode print_string iff; print_string " "; mcode print_string_box lp;
+      expression exp; close_box(); mcode print_string rp; print_string " "
   | Ast.Else(els) ->
-      print_string arity; mcode print_string els; print_string " "; false
+      print_string arity; mcode print_string els; print_string " "
   | Ast.WhileHeader(whl,lp,exp,rp) ->
       print_string arity;
-      mcode print_string whl; print_string " "; mcode print_string lp;
-      expression exp; mcode print_string rp; print_string " "; false
-  | Ast.Do(d) ->
-      print_string arity; mcode print_string d; print_string " "; false
+      mcode print_string whl; print_string " "; mcode print_string_box lp;
+      expression exp; close_box(); mcode print_string rp; print_string " "
+  | Ast.DoHeader(d) ->
+      print_string arity; mcode print_string d; print_string " "
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       print_string arity;
-      mcode print_string whl; print_string " "; mcode print_string lp;
-      expression exp; mcode print_string rp; mcode print_string sem; true
+      mcode print_string whl; print_string " "; mcode print_string_box lp;
+      expression exp; close_box(); mcode print_string rp;
+      mcode print_string sem
   | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
       print_string arity;
-      mcode print_string fr; mcode print_string lp;
+      mcode print_string fr; mcode print_string_box lp;
       print_option expression e1; mcode print_string sem1;
       print_option expression e2; mcode print_string sem2;
-      print_option expression e3; mcode print_string rp; print_string " ";
-      false
+      print_option expression e3; close_box();
+      mcode print_string rp; print_string " "
   | Ast.Return(ret,sem) ->
-      print_string arity; mcode print_string ret; mcode print_string sem; true
+      print_string arity; mcode print_string ret; mcode print_string sem
   | Ast.ReturnExpr(ret,exp,sem) ->
-      print_string arity;
-      mcode print_string ret; expression exp; mcode print_string sem; true
+      print_string arity; mcode print_string ret; print_string " ";
+      expression exp; mcode print_string sem
   | Ast.MetaStmt(name) ->
-      print_string arity; mcode print_string name; true
+      print_string arity; mcode print_string name
   | Ast.MetaStmtList(name) ->
-      print_string arity;  mcode print_string name; true
-  | Ast.Disj([rule_elem_dots]) ->
+      print_string arity;  mcode print_string name
+  | Ast.Exp(exp) -> print_string arity; expression exp
+
+let rec statement arity = function
+    Ast.Seq(lbrace,body,rbrace) ->
+      rule_elem arity lbrace; dots force_newline (statement arity) body;
+      rule_elem arity rbrace
+  | Ast.IfThen(header,branch) ->
+      rule_elem arity header; statement arity branch
+  | Ast.IfThenElse(header,branch1,els,branch2) ->
+      rule_elem arity header; statement arity branch1; print_string " ";
+      rule_elem arity els; statement arity branch2
+  | Ast.While(header,body) ->
+      rule_elem arity header; statement arity body
+  | Ast.Do(header,body,tail) ->
+      rule_elem arity header; statement arity body;
+      rule_elem arity tail
+  | Ast.For(header,body) ->
+      rule_elem arity header; statement arity body
+  | Ast.Atomic(re) -> rule_elem arity re
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      rule_elem arity header; rule_elem arity lbrace;
+      dots force_newline (statement arity) body; rule_elem arity rbrace
+  | Ast.Disj([stmt_dots]) ->
       print_string arity;
-      dots force_newline (rule_elem arity) not_brace rule_elem_dots; true
-  | Ast.Disj(rule_elem_dots_list) ->
+      dots force_newline (statement arity) stmt_dots
+  | Ast.Disj(stmt_dots_list) ->
       print_string arity;
       print_string "\n("; force_newline();
       print_between
 	(function _ -> print_string "\n|"; force_newline())
-	true_fn
-	(function x -> dots force_newline (rule_elem arity) not_brace x; true)
-	rule_elem_dots_list;
-      print_string "\n)"; true
-  | Ast.Nest(rule_elem_dots) ->
+	(dots force_newline (statement arity))
+	stmt_dots_list;
+      print_string "\n)"
+  | Ast.Nest(stmt_dots) ->
       print_string arity;
-      nest_dots (rule_elem arity) not_brace rule_elem_dots; true
-  | Ast.Exp(exp) -> print_string arity; expression exp; true
-  | Ast.Dots(dots,None) | Ast.Circles(dots,None) | Ast.Stars(dots,None) ->
-      print_string arity; mcode print_string dots; true
-  | Ast.Dots(d,Some x) | Ast.Circles(d,Some x) | Ast.Stars(d,Some x)->
+      nest_dots (statement arity) stmt_dots
+  | Ast.Dots(dots,None,_) | Ast.Circles(dots,None,_)
+  | Ast.Stars(dots,None,_) ->
+      print_string arity; mcode print_string dots
+  | Ast.Dots(d,Some x,_) | Ast.Circles(d,Some x,_) | Ast.Stars(d,Some x,_) ->
       print_string arity; mcode print_string d;
       print_string "   WHEN != ";
-      open_box 0; dots force_newline (rule_elem "") not_brace x;
-      close_box(); true
-  | Ast.OptRuleElem(re) ->
-      print_between force_newline not_brace
-	(function x -> rule_elem "?" x) re;
-      true
-  | Ast.UniqueRuleElem(re) ->
-      print_between force_newline not_brace
-	(function x -> rule_elem "!" x) re;
-      true
-  | Ast.MultiRuleElem(re) ->
-      print_between force_newline not_brace
-	(function x -> rule_elem "\\+" x) re;
-      true
+      open_box 0; dots force_newline (statement "") x;
+      close_box()
+  | Ast.OptStm(s) -> statement "?" s
+  | Ast.UniqueStm(s) -> statement "!" s
+  | Ast.MultiStm(s) -> statement "\\+" s
 
 let top_level = function
-    Ast.DECL(decl) -> declaration decl; true
+    Ast.DECL(decl) -> declaration decl
   | Ast.INCLUDE(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s; true
+      mcode print_string inc; print_string " "; mcode print_string s
   | Ast.FILEINFO(old_file,new_file) ->
       print_string "--- "; mcode print_string old_file; force_newline();
-      print_string "+++ "; mcode print_string new_file; true
-  | Ast.FUNCTION(rule_elem_dots) ->
-      dots force_newline (rule_elem "") not_brace rule_elem_dots; true
-  | Ast.CODE(rule_elem_dots) ->
-      dots force_newline (rule_elem "") not_brace rule_elem_dots; true
+      print_string "+++ "; mcode print_string new_file
+  | Ast.FUNCTION(stmt) -> statement "" stmt
+  | Ast.CODE(stmt_dots) ->
+      dots force_newline (statement "") stmt_dots
   | Ast.ERRORWORDS(exps) ->
       print_string "error words = [";
-      print_between (function _ -> print_string ", ") true_fn
-	(function x -> expression x; true) exps;
-      print_string "]"; true
+      print_between (function _ -> print_string ", ") expression exps;
+      print_string "]"
 
-let rule = print_between force_newline true_fn top_level
+let rule =
+  print_between (function _ -> force_newline(); force_newline()) top_level
 
 let _ =
   anything := function
@@ -422,7 +430,8 @@ let _ =
     | Ast.DeclarationTag(x) -> declaration x
     | Ast.ParameterTypeDefTag(x) -> parameterTypeDef x
     | Ast.StorageTag(x) -> storage x
-    | Ast.Rule_elemTag(x) -> let _ = rule_elem "" x in ()
+    | Ast.Rule_elemTag(x) -> rule_elem "" x
+    | Ast.StatementTag(x) -> statement "" x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()

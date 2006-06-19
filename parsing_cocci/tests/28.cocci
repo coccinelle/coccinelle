@@ -1,7 +1,7 @@
 @@
 +struct urb u1;
 struct urb u2;
-expression E, E1, E2;
+expression E, E2;
 @@
 
   <***

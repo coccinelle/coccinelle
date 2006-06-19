@@ -187,6 +187,10 @@ type top_level =
 type rule = top_level list
 
 (* --------------------------------------------------------------------- *)
+
+val undots : 'a dots -> 'a list
+
+(* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
 val wrap : 'a -> 'a * line_info

@@ -1,4 +1,4 @@
-type info = { line : int; logical_line : int }
+type info = { line : int; logical_line : int; offset : int }
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -192,7 +192,7 @@ and storage = Static
 (* Top-level code *)
 
 and rule_elem =
-    FunDecl       of storage mcode option * ident (* name *) *
+    FunHeader     of storage mcode option * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
   | Decl          of declaration
@@ -206,7 +206,7 @@ and rule_elem =
   | Else          of string mcode (* else *)
   | WhileHeader   of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
-  | Do            of string mcode (* do *)
+  | DoHeader      of string mcode (* do *)
   | WhileTail     of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
@@ -221,27 +221,38 @@ and rule_elem =
   | MetaStmt      of string mcode  
   | MetaStmtList  of string mcode  
 
-  | Disj          of rule_elem dots list
-  | Nest          of rule_elem dots
-
   | Exp           of expression
 
-  | Dots          of string mcode (* ... *) * rule_elem dots option
-  | Circles       of string mcode (* ooo *) * rule_elem dots option
-  | Stars         of string mcode (* *** *) * rule_elem dots option
-
-  | OptRuleElem   of rule_elem list
-  | UniqueRuleElem of rule_elem list
-  | MultiRuleElem  of rule_elem list (* only allowed in nests *)
-
+and statement =
+    Seq           of rule_elem (* { *) * statement dots * rule_elem (* } *)
+  | IfThen        of rule_elem (* header *) * statement
+  | IfThenElse    of rule_elem (* header *) * statement *
+	             rule_elem (* else *) * statement
+  | While         of rule_elem (* header *) * statement
+  | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
+  | For           of rule_elem (* header *) * statement
+  | Atomic        of rule_elem
+  | Disj          of statement dots list
+  | Nest          of statement dots
+  | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
+     	             statement dots * rule_elem (* } *)
+  | Dots          of (* statement list is only used internally to ast0toctl *)
+      string mcode (* ... *) * statement dots option * statement list
+  | Circles       of
+      string mcode (* ooo *) * statement dots option * statement list
+  | Stars         of
+      string mcode (* *** *) * statement dots option * statement list
+  | OptStm        of statement
+  | UniqueStm     of statement
+  | MultiStm      of statement (* only allowed in nests *)
 
 and top_level =
-    FUNCTION of rule_elem dots
+    FUNCTION of statement
   | DECL of declaration
   | INCLUDE of string mcode (* #include *) * string mcode (* file *)
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
-  | CODE of rule_elem dots
+  | CODE of statement dots
 
 and rule = top_level list
 
@@ -265,6 +276,7 @@ and anything =
   | ParameterTypeDefTag of parameterTypeDef
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
+  | StatementTag        of statement
   | ConstVolTag         of const_vol
   | Token               of string
   | Code                of top_level
@@ -287,144 +299,4 @@ let undots = function
   | DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e
-
-(* --------------------------------------------------------------------- *)
-
-
-let modif_option f = function
-    None -> false
-  | Some x -> f x
-
-let modif_mcode (_,x) =
-  match x with
-    MINUS(_,l) -> true
-  | CONTEXT(_,x) when !x = NOTHING -> false
-  | CONTEXT(_,_) -> true
-  | _ -> failwith "not possible"
-
-let modif_dots f = function DOTS(l) | CIRCLES(l) | STARS(l) -> List.exists f l
-
-let rec modif_ident = function
-    Id(name) -> modif_mcode name
-  | MetaId(name) -> modif_mcode name
-  | MetaFunc(name) -> modif_mcode name
-  | MetaLocalFunc(name) -> modif_mcode name
-  | OptIdent(id) -> modif_ident id
-  | UniqueIdent(id) -> modif_ident id
-  | MultiIdent(id) -> modif_ident id
-
-and modif_expression = function
-    Ident(id) -> modif_ident id
-  | Constant(const) -> modif_mcode const
-  | FunCall(fn,lp,args,rp) ->
-      modif_expression fn or modif_mcode lp or
-	modif_dots modif_expression args or modif_mcode rp
-  | Assignment(left,op,right) ->
-      modif_expression left or modif_mcode op or modif_expression right
-  | CondExpr(exp1,why,exp2,colon,exp3) ->
-      modif_expression exp1 or modif_mcode why or
-	modif_option modif_expression exp2 or
-	modif_mcode colon or modif_expression exp3
-  | Postfix(exp,op) -> modif_expression exp or modif_mcode op
-  | Infix(exp,op) -> modif_mcode op or modif_expression exp
-  | Unary(exp,op) -> modif_mcode op or modif_expression exp
-  | Binary(left,op,right) ->
-      modif_expression left or modif_mcode op or modif_expression right
-  | Paren(lp,exp,rp) ->
-      modif_mcode lp or modif_expression exp or modif_mcode rp
-  | ArrayAccess(exp1,lb,exp2,rb) ->
-      modif_expression exp1 or modif_mcode lb or modif_expression exp2
-	or modif_mcode rb
-  | RecordAccess(exp,pt,field) ->
-      modif_expression exp or modif_mcode pt or modif_ident field
-  | RecordPtAccess(exp,ar,field) ->
-      modif_expression exp or modif_mcode ar or modif_ident field
-  | Cast(lp,ty,rp,exp) ->
-      modif_mcode lp or modif_fullType ty or modif_mcode rp or modif_expression exp
-  | MetaConst(name,_) -> modif_mcode name
-  | MetaErr(name) -> modif_mcode name
-  | MetaExpr(name,_) -> modif_mcode name
-  | MetaExprList(name) -> modif_mcode name
-  | EComma(cm) -> modif_mcode cm
-  | DisjExpr(exp_list) -> List.exists modif_expression exp_list
-  | NestExpr(expr_dots) -> modif_dots modif_expression expr_dots
-  | Edots(dots,_) | Ecircles(dots,_) | Estars(dots,_) -> modif_mcode dots
-  | OptExp(exp) | UniqueExp(exp) | MultiExp(exp) -> modif_expression exp
-
-and modif_fullType = function
-    Type(cv,ty) -> modif_typeC ty
-  | OptType(ty) -> modif_fullType ty
-  | UniqueType(ty) -> modif_fullType ty
-  | MultiType(ty) -> modif_fullType ty
-
-and modif_typeC = function
-    BaseType(ty,sgn) -> modif_mcode ty or modif_option modif_mcode sgn
-  | Pointer(ty,star) -> modif_fullType ty or modif_mcode star
-  | Array(ty,lb,size,rb) ->
-      modif_fullType ty or modif_mcode lb or
-      modif_option modif_expression size or modif_mcode rb
-  | StructUnionName(name,kind) -> modif_mcode kind or modif_mcode name
-  | TypeName(name) -> modif_mcode name
-  | MetaType(name) -> modif_mcode name
-
-let rec modif_declaration = function
-    Init(ty,id,eq,exp,sem) ->
-      modif_fullType ty or modif_ident id or modif_mcode eq or
-	modif_expression exp or modif_mcode sem
-  | UnInit(ty,id,sem) ->
-      modif_fullType ty or modif_ident id or modif_mcode sem
-  | OptDecl(decl) -> modif_declaration decl
-  | UniqueDecl(decl) -> modif_declaration decl
-  | MultiDecl(decl) -> modif_declaration decl
-
-let rec modif_parameterTypeDef = function
-    VoidParam(ty) -> modif_fullType ty
-  | Param(id,ty) -> modif_fullType ty or modif_ident id
-  | MetaParam(name) -> modif_mcode name
-  | MetaParamList(name) -> modif_mcode name
-  | PComma(cm) -> modif_mcode cm
-  | Pdots(dots) -> modif_mcode dots
-  | Pcircles(dots) -> modif_mcode dots
-  | OptParam(param) -> modif_parameterTypeDef param
-  | UniqueParam(param) -> modif_parameterTypeDef param
-
-let modif_parameter_list = modif_dots modif_parameterTypeDef
-
-let rec contains_modif = function
-    FunDecl(stg,name,lp,params,rp) ->
-      modif_option modif_mcode stg or modif_ident name or
-	modif_mcode lp or modif_parameter_list params or modif_mcode rp
-  | Decl(decl) ->  modif_declaration decl
-  | SeqStart(brace) -> modif_mcode brace
-  | SeqEnd(brace) -> modif_mcode brace
-  | ExprStatement(exp,sem) -> modif_expression exp or modif_mcode sem
-  | IfHeader(iff,lp,exp,rp) ->
-      modif_mcode iff or modif_mcode lp or modif_expression exp or
-	  modif_mcode rp
-  | Else(els) -> modif_mcode els
-  | WhileHeader(whl,lp,exp,rp) ->
-      modif_mcode whl or modif_mcode lp or modif_expression exp or
-	modif_mcode rp
-  | Do(d) -> modif_mcode d
-  | WhileTail(whl,lp,exp,rp,sem) ->
-      modif_mcode whl or modif_mcode lp or modif_expression exp or
-	modif_mcode rp or modif_mcode sem
-  | ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-      modif_mcode fr or modif_mcode lp or
-	modif_option modif_expression e1 or modif_mcode sem1 or
-	modif_option modif_expression e2 or modif_mcode sem2 or
-	modif_option modif_expression e3 or modif_mcode rp
-  | Return(ret,sem) ->
-       modif_mcode ret or modif_mcode sem
-  | ReturnExpr(ret,exp,sem) ->
-      modif_mcode ret or modif_expression exp or modif_mcode sem
-  | MetaStmt(name) -> modif_mcode name
-  | MetaStmtList(name) -> modif_mcode name
-  | Disj(rule_elem_dots_list) ->
-      List.exists (modif_dots contains_modif) rule_elem_dots_list
-  | Nest(rule_elem_dots) -> modif_dots contains_modif rule_elem_dots
-  | Exp(exp) ->  modif_expression exp
-  | Dots(dots,_) | Circles(dots,_) | Stars(dots,_) -> modif_mcode dots
-  | OptRuleElem(re) | UniqueRuleElem(re) | MultiRuleElem(re) ->
-      List.exists contains_modif re
-
+    

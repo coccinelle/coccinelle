@@ -1,9 +1,14 @@
 TARGET=spatch
 
-SRC = \
+TSTSRC = \
 	flag.ml  \
 	misc/classic_patch.ml  \
 	cocci.ml   test.ml main.ml
+
+SRC = \
+	flag.ml  \
+	misc/classic_patch.ml  \
+	cocci.ml main.ml
 
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma

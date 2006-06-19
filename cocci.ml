@@ -61,10 +61,13 @@ let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s ->
   begin
     write_file "/tmp/__cocci.cocci" (s);
     let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" in
-    rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
-      | Ast_cocci.CODE rule_elem_dots -> Ast_cocci.undots rule_elem_dots +> List.hd
-      | _ -> raise Not_found
-    )
+    let stmt =
+      rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
+	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
+	| _ -> raise Not_found) in
+    match stmt with
+      Ast_cocci.Atomic(re) -> re
+    | _ -> failwith "only atomic patterns allowed"
   end
 
 
@@ -86,24 +89,14 @@ let flows astc =
           
     | _ -> None
    )
+
 let one_flow flows = List.hd flows
 
 let print_flow flow = Ograph_extended.print_ograph_extended flow
 
-
-
 (* --------------------------------------------------------------------- *)
-let ctls sp = 
-  sp +> List.split 
-  +> (fun (ast_lists,ast0_lists) -> 
-        ast0_lists +> List.map Ast0toctl.ast0toctl
-     )
+let ctls = List.map Ast0toctl.ast0toctl
 let one_ctl ctls = List.hd (List.hd ctls)
-
-
-
-
-
 
 (* --------------------------------------------------------------------- *)
 
@@ -118,7 +111,7 @@ let test_pattern statement_str rule_elem_str =
   let statement = cstatement_from_string statement_str in
   let rule_elem = rule_elem_from_string rule_elem_str in
   Pattern.match_re_node 
-    rule_elem   (Control_flow_c.Statement statement, "str")
+    rule_elem (Control_flow_c.Statement statement, "str")
     (Ast_c.emptyMetavarsBinding)
 
 

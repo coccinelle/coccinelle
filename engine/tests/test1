@@ -1,12 +1,29 @@
 @@
-expression X,Y,Z;
+expression X,Y;
 @@
 
-- f(X);
-+ f(Z);
-  ...
+  f(X);
+- ... WHEN != h(X)
   g(Y);
-  h(Z);
+
+@@
+expression X,Y;
+@@
+
+  f(X);
+- ...
+  g(Y);
+
+@@
+expression X,Y;
+@@
+
+f(X);
+g(Y);
+h(X);
+f(Y);
+g(X);
+h(Y);
 
 @@
 expression X;
@@ -16,6 +33,73 @@ f(X);
 ...
 g(X);
 h(X);
+
+@@
+expression X;
+@@
+
+  if (X) { ... } else { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  if (X) { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  while (X) { ... }
+  f(X);
+
+@@
+expression X;
+@@
+
+  while (X) { ... }
+
+@@
+expression X,Y;
+@@
+
+  {
+  ... WHEN != g(Y)
+  f(X);
+  ... WHEN != h(Y)
+  }
+
+@@
+expression X,Y;
+@@
+
+  f(X);
+  ...
+- g(Y);
++ h(X,Y);
+
+@@
+expression X,Y,Z;
+@@
+
+- f(X);
++ f(Z);
+- ...
+  g(Y);
+  h(Z);
+
+@@
+expression X,Y,Z;
+@@
+
+- f(X);
++ f(Z);
+  ...
+  g(Y);
+  h(Z);
+
 
 @@
 expression X,Y,Z;

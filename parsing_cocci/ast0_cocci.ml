@@ -194,3 +194,11 @@ type rule = top_level list
 let wrap x = (x,{logical_start = Good (-1); logical_end = Good (-1)})
 let unwrap (x,_) = x
 let rewrap (_,info) x = (x,info)
+
+(* --------------------------------------------------------------------- *)
+
+let undots d =
+  match unwrap d with
+  | DOTS    e -> e
+  | CIRCLES e -> e
+  | STARS   e -> e

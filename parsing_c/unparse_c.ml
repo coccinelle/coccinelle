@@ -675,9 +675,6 @@ let pp_program file x =
   | Ast_cocci.IfHeader ((iff,_), (lp,_), e, (rp,_)) -> pr iff; pr lp; pp_cocci_expr env e; pr rp
   | Ast_cocci.Else     (str,_) -> pr str
 
-  | Ast_cocci.Disj _ -> raise Impossible
-  | Ast_cocci.Dots _ -> raise Impossible
-  | Ast_cocci.Nest _ -> raise Impossible
   | _ -> raise Todo
 
   and pp_cocci_ident env x = match x with

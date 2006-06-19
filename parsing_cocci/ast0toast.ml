@@ -27,59 +27,6 @@ let dots fn d =
   | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
   | Ast0.STARS(x) -> Ast.STARS(List.map fn x)
 
-let only_dots l =
-  not (List.exists
-	(function Ast.Circles(_,_) | Ast.Stars(_,_) -> true | _ -> false) l)
-
-let only_circles l =
-  not (List.exists
-	(function Ast.Dots(_,_) | Ast.Stars(_,_) -> true | _ -> false) l)
-
-let only_stars l =
-  not (List.exists
-	(function Ast.Dots(_,_) | Ast.Circles(_,_) -> true | _ -> false) l)
-
-
-let top_dots l =
-  if List.exists (function Ast.Circles(_) -> true | _ -> false) l
-  then
-    if only_circles l
-    then Ast.CIRCLES(l)
-    else failwith "inconsistent dots usage"
-  else if List.exists (function Ast.Stars(_,_) -> true | _ -> false) l
-  then
-    if only_stars l
-    then Ast.STARS(l)
-    else failwith "inconsistent dots usage"
-  else
-    if only_dots l
-    then Ast.DOTS(l)
-    else failwith "inconsistent dots usage"
-
-let concat_dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) ->
-      let l = List.concat(List.map fn x) in
-      if only_dots l
-      then Ast.DOTS(l)
-      else failwith "inconsistent dots usage"
-  | Ast0.CIRCLES(x) ->
-      let l = List.concat(List.map fn x) in
-      if only_circles l
-      then Ast.CIRCLES(l)
-      else failwith "inconsistent dots usage"
-  | Ast0.STARS(x) ->
-      let l = List.concat(List.map fn x) in
-      if only_stars l
-      then Ast.STARS(l)
-      else failwith "inconsistent dots usage"
-
-let flat_concat_dots fn d =
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> List.concat(List.map fn x)
-  | Ast0.CIRCLES(x) -> List.concat(List.map fn x)
-  | Ast0.STARS(x) -> List.concat(List.map fn x)
-
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -225,26 +172,27 @@ let parameter_list = dots parameterTypeDef
 
 let rec statement s =
   match Ast0.unwrap s with
-    Ast0.Decl(decl) -> [Ast.Decl(declaration decl)]
+    Ast0.Decl(decl) -> Ast.Atomic(Ast.Decl(declaration decl))
   | Ast0.Seq(lbrace,body,rbrace) -> 
       let lbrace = mcode lbrace in
-      let body = flat_concat_dots statement body in
+      let body = dots statement body in
       let rbrace = mcode rbrace in
-      Ast.SeqStart(lbrace)::body@[Ast.SeqEnd(rbrace)]
+      Ast.Seq(Ast.SeqStart(lbrace),body,Ast.SeqEnd(rbrace))
   | Ast0.ExprStatement(exp,sem) ->
-      [Ast.ExprStatement(expression exp,mcode sem)]
+      Ast.Atomic(Ast.ExprStatement(expression exp,mcode sem))
   | Ast0.IfThen(iff,lp,exp,rp,branch) ->
-      Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)
-      :: statement branch
+      Ast.IfThen(Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp),
+		 statement branch)
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
-      Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)
-      :: statement branch1 @ Ast.Else(mcode els) :: statement branch2
+      Ast.IfThenElse(Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp),
+		     statement branch1,Ast.Else(mcode els), statement branch2)
   | Ast0.While(wh,lp,exp,rp,body) ->
-      Ast.WhileHeader(mcode wh,mcode lp,expression exp,mcode rp)
-      :: statement body
+      Ast.While(Ast.WhileHeader(mcode wh,mcode lp,expression exp,mcode rp),
+		statement body)
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
-      Ast.Do(mcode d) :: statement body @
-      [Ast.WhileTail(mcode wh,mcode lp,expression exp,mcode rp,mcode sem)]
+      Ast.Do(Ast.DoHeader(mcode d), statement body,
+	     Ast.WhileTail(mcode wh,mcode lp,expression exp,mcode rp,
+			   mcode sem))
   | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
       let fr = mcode fr in
       let lp = mcode lp in
@@ -255,30 +203,32 @@ let rec statement s =
       let exp3 = get_option expression exp3 in
       let rp = mcode rp in
       let body = statement body in
-      Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp) :: body
-  | Ast0.Return(ret,sem) -> [Ast.Return(mcode ret,mcode sem)]
+      Ast.For(Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp),body)
+  | Ast0.Return(ret,sem) -> Ast.Atomic(Ast.Return(mcode ret,mcode sem))
   | Ast0.ReturnExpr(ret,exp,sem) ->
-      [Ast.ReturnExpr(mcode ret,expression exp,mcode sem)]
-  | Ast0.MetaStmt(name) -> [Ast.MetaStmt(mcode name)]
-  | Ast0.MetaStmtList(name) -> [Ast.MetaStmtList(mcode name)]
-  | Ast0.Exp(exp) -> [Ast.Exp(expression exp)]
+      Ast.Atomic(Ast.ReturnExpr(mcode ret,expression exp,mcode sem))
+  | Ast0.MetaStmt(name) ->
+      Ast.Atomic(Ast.MetaStmt(mcode name))
+  | Ast0.MetaStmtList(name) ->
+      Ast.Atomic(Ast.MetaStmtList(mcode name))
+  | Ast0.Exp(exp) ->
+      Ast.Atomic(Ast.Exp(expression exp))
   | Ast0.Disj(rule_elem_dots_list) ->
-      [Ast.Disj(List.map (function x -> concat_dots statement x)
-		  rule_elem_dots_list)]
+      Ast.Disj(List.map (function x -> dots statement x) rule_elem_dots_list)
   | Ast0.Nest(rule_elem_dots) ->
-      [Ast.Nest(concat_dots statement rule_elem_dots)]
-  | Ast0.Dots(dots,whencode)    ->
-      let dots = mcode dots in
-      let whencode = get_option (concat_dots statement) whencode in
-      [Ast.Dots(dots,whencode)]
-  | Ast0.Circles(dots,whencode) ->
-      let dots = mcode dots in
-      let whencode = get_option (concat_dots statement) whencode in
-      [Ast.Circles(dots,whencode)]
-  | Ast0.Stars(dots,whencode)   ->
-      let dots = mcode dots in
-      let whencode = get_option (concat_dots statement) whencode in
-      [Ast.Stars(dots,whencode)]
+      Ast.Nest(dots statement rule_elem_dots)
+  | Ast0.Dots(d,whencode) ->
+      let d = mcode d in
+      let whencode = get_option (dots statement) whencode in
+      Ast.Dots(d,whencode,[])
+  | Ast0.Circles(d,whencode) ->
+      let d = mcode d in
+      let whencode = get_option (dots statement) whencode in
+      Ast.Circles(d,whencode,[])
+  | Ast0.Stars(d,whencode) ->
+      let d = mcode d in
+      let whencode = get_option (dots statement) whencode in
+      Ast.Stars(d,whencode,[])
   | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
       let stg = get_option mcode stg in
       let name = ident name in
@@ -286,13 +236,15 @@ let rec statement s =
       let params = parameter_list params in
       let rp = mcode rp in
       let lbrace = mcode lbrace in
-      let body = flat_concat_dots statement body in
+      let body = dots statement body in
       let rbrace = mcode rbrace in
-      Ast.FunDecl(stg,name,lp,params,rp) :: Ast.SeqStart(lbrace) :: body @
-      [Ast.SeqEnd(rbrace)]
-  | Ast0.OptStm(stm) -> [Ast.OptRuleElem(statement stm)]
-  | Ast0.UniqueStm(stm) -> [Ast.UniqueRuleElem(statement stm)]
-  | Ast0.MultiStm(stm) -> [Ast.MultiRuleElem(statement stm)]
+      Ast.FunDecl(Ast.FunHeader(stg,name,lp,params,rp),
+		  Ast.SeqStart(lbrace), body, Ast.SeqEnd(rbrace))
+  | Ast0.OptStm(stm) -> Ast.OptStm(statement stm)
+  | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement stm)
+  | Ast0.MultiStm(stm) -> Ast.MultiStm(statement stm)
+
+let statement_dots = dots statement
 	
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -303,12 +255,9 @@ let top_level = function
   | Ast0.INCLUDE(inc,s) -> Ast.INCLUDE(mcode inc,mcode s)
   | Ast0.FILEINFO(old_file,new_file) ->
       Ast.FILEINFO(mcode old_file,mcode new_file)
-  | Ast0.FUNCTION(stmt) ->
-      Ast.FUNCTION(top_dots(statement stmt))
-  | Ast0.CODE(rule_elem_dots) ->
-      Ast.CODE(concat_dots statement rule_elem_dots)
-  | Ast0.ERRORWORDS(exps) ->
-      Ast.ERRORWORDS(List.map expression exps)
+  | Ast0.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)
+  | Ast0.CODE(rule_elem_dots) -> Ast.CODE(dots statement rule_elem_dots)
+  | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
   | Ast0.OTHER(_) -> failwith "eliminated by top_level"
 
 (* --------------------------------------------------------------------- *)

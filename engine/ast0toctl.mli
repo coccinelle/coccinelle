@@ -1,4 +1,6 @@
-val pred2c : Lib_engine.predicate -> string
+val pred2c : Lib_engine.predicate -> string * int
 
 val ast0toctl :
-    Ast0_cocci.top_level list -> (Lib_engine.full_predicate, string) Ast_ctl.generic_ctl list
+    Ast_cocci.top_level list ->
+      (Lib_engine.predicate * string Ast_ctl.modif,string)
+	Ast_ctl.generic_ctl list

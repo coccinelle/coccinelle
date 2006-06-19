@@ -2,13 +2,15 @@
 
 TARGET=c_parser
 
-SOURCES = flag.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml control_flow_c.ml \
-	    lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml
+SOURCES = flag.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml \
+          control_flow_c.ml lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
+          unparse_c.ml
 
 SYSLIBS = str.cma unix.cma 
 
-# parsing_c now depends on cocci_parser because in addition to decorate the token in Ast_c with
-# some parse info, we now also make some place to welcome some mcodekind of Ast_cocci.
+# parsing_c now depends on cocci_parser because in addition to decorate the
+# token in Ast_c with some parse info, we now also make some place to
+# welcome some mcodekind of Ast_cocci.
 LIBS=../commons/commons.cma  ../parsing_cocci/cocci_parser.cma
 ADDONSPATH= -I ../commons -I  ../parsing_cocci 
 

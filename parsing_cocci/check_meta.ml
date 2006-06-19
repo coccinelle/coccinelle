@@ -5,6 +5,7 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
+module V0 = Visitor_ast0
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : (string, unit) Hashtbl.t)
@@ -252,7 +253,7 @@ let check_meta metavars minus plus =
       metavars in
   let (err,other) =
     List.partition (function Ast.MetaErrDecl(_,_) -> true | _ -> false)
-      metavars in
+      other in
   let fresh_table = make_table fresh in
   let err_table = make_table err in
   let other_table = make_table other in

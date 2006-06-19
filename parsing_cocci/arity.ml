@@ -70,21 +70,25 @@ let dots fn d =
     | Ast0.STARS(x) -> Ast0.STARS(List.map fn x))
 
 let only_dots l =
-  not (List.exists
-	(function
-	    (Ast0.Circles(_,_),_) | (Ast0.Stars(_,_),_) -> true | _ -> false)
-	 l)
+  not
+    (List.exists
+       (function
+	   (Ast0.Circles(_,_),_) | (Ast0.Stars(_,_),_) -> true
+	 | _ -> false)
+       l)
 
 let only_circles l =
   not (List.exists
 	(function
-	    (Ast0.Dots(_,_),_) | (Ast0.Stars(_,_),_) -> true | _ -> false)
+	    (Ast0.Dots(_,_),_) | (Ast0.Stars(_,_),_) -> true
+	  | _ -> false)
 	 l)
 
 let only_stars l =
   not (List.exists
 	(function
-	    (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_) -> true | _ -> false)
+	    (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_) -> true
+	  | _ -> false)
 	 l)
 
 let concat_dots fn d =

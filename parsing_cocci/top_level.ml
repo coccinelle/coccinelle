@@ -50,10 +50,20 @@ let rec scan_top_decl = function
       let (front,rest) = scan_top_decl rest in
       (topdecl::front,rest)
 
+(* for debugging *)
+let l2c = function
+    Ast0.FUNCTION(_) -> "function"
+  | Ast0.DECL(_) -> "decl"
+  | Ast0.INCLUDE(_,_) -> "include"
+  | Ast0.FILEINFO(_,_) -> "fileinfo"
+  | Ast0.ERRORWORDS(_) -> "errorwords"
+  | Ast0.CODE(_) -> "code"
+  | Ast0.OTHER(_) -> "other"
+
 let rec top_level l =
   match scan_code l with
     (code,[]) -> code
   | (code,rest) ->
-      (match scan_top_decl l with
+      (match scan_top_decl rest with
 	(top_decls,[]) -> code@top_decls
       |	(top_decls,rest) -> code @ top_decls @ (top_level rest))

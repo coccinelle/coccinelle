@@ -3,7 +3,8 @@ open Common open Commonop
 module A = Ast_cocci
 
 
-let mmvide = A.CONTEXT ({A.line = -1; A.logical_line = -1}, ref A.NOTHING)
+let mmvide =
+  A.CONTEXT ({A.line = -1; A.logical_line = -1; A.offset = -1}, ref A.NOTHING)
 (******************************************************************************)
 
 let rec isomorphisms_re = function

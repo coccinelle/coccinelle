@@ -2,7 +2,8 @@ TARGET=cocci_parser
 
 LEXER_SOURCES = lexer_cocci.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
-SOURCES = ast_cocci.ml ast0_cocci.ml ast0toast.ml top_level.ml check_meta.ml \
+SOURCES = ast_cocci.ml ast0_cocci.ml visitor_ast.ml visitor_ast0.ml \
+ast0toast.ml top_level.ml check_meta.ml \
 unparse_cocci.ml arity.ml compute_lines.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) parse_cocci.ml
@@ -20,6 +21,7 @@ CAMLLEX = ocamllex
 CAMLYACC= menhir --explain
 CAMLDEP = ocamldep
 EXEC=$(TARGET).byte
+EXEC=$(TARGET)
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
@@ -29,8 +31,8 @@ OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
-#all: $(LIB)
-all: $(EXEC) $(LIB)
+all: $(LIB)
+#all: $(EXEC) $(LIB)
 
 all.opt: $(OPTLIB)
 

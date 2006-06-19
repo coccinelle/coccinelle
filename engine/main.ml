@@ -19,14 +19,12 @@ let main _ =
   if !in_file = "" then failwith "in_filename required";
   let o = open_out !out_file in
   Ctltotex.make_prelude o;
-  let (ast_lists,ast0_lists) =
-    List.split(Parse_cocci.process_for_ctl !in_file false) in
-  List.iter2
+  let ast_lists = Parse_cocci.process_for_ctl !in_file false in
+  List.iter
     (function ast_list ->
-      function ast0_list ->
-	let ctls = Ast0toctl.ast0toctl ast0_list in
-	Ctltotex.ctltotex ast_list Ast0toctl.pred2c (function x -> x) ctls o)
-    ast_lists ast0_lists;
+      let ctls = Ast0toctl.ast0toctl ast_list in
+      Ctltotex.ctltotex ast_list Ast0toctl.pred2c (function x -> x) ctls o)
+    ast_lists;
   Ctltotex.make_postlude o;
   close_out o
 
