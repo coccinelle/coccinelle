@@ -5,7 +5,6 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module V0 = Visitor_ast0
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : (string, unit) Hashtbl.t)
@@ -57,7 +56,8 @@ type context = ID | FIELD | FN | GLOBAL
 let is_ifdef name =
   String.length name > 2 && String.uppercase name = name
 
-let ident context table minus = function
+let ident context table minus i =
+  match Ast0.unwrap i with
     Ast0.Id(name,_,mcodekind) ->
       let rl = Ast.get_real_line mcodekind in
       (match context with
@@ -201,7 +201,8 @@ let rec statement table minus s =
 (* --------------------------------------------------------------------- *)
 (* Rules *)
 
-let top_level table minus = function
+let top_level table minus t =
+  match Ast0.unwrap t with
     Ast0.DECL(decl) -> declaration GLOBAL table minus decl
   | Ast0.FUNCTION(stmt) -> statement table minus stmt
   | Ast0.CODE(stmt_dots) -> dots (statement table minus) stmt_dots

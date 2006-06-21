@@ -7,14 +7,15 @@ both at top level and to all code. *)
 
 module Ast0 = Ast0_cocci
 
-let mkres e (_,lstart) (_,lend) =
+let mkres e (_,lstart,_) (_,lend,_) =
   (e,{Ast0.logical_start = lstart.Ast0.logical_start;
-       Ast0.logical_end = lend.Ast0.logical_end})
+       Ast0.logical_end = lend.Ast0.logical_end},
+   ref Ast0.Neither)
 
 let top_dots l =
-  if List.exists (function (Ast0.Circles(_),_) -> true | _ -> false) l
+  if List.exists (function (Ast0.Circles(_),_,_) -> true | _ -> false) l
   then mkres (Ast0.CIRCLES(l)) (List.hd l) (List.hd (List.rev l))
-  else if List.exists (function (Ast0.Stars(_),_) -> true | _ -> false) l
+  else if List.exists (function (Ast0.Stars(_),_,_) -> true | _ -> false) l
   then mkres (Ast0.STARS(l)) (List.hd l) (List.hd (List.rev l))
   else mkres (Ast0.DOTS(l)) (List.hd l) (List.hd (List.rev l))
 
@@ -22,33 +23,37 @@ let scan_code l =
   let statements = ref false in
   let rec loop = function
       [] -> ([],[])
-    | (Ast0.OTHER((Ast0.Decl(_),_) as code))::rest ->
-	let (front,rest) = loop rest in
-	(code::front,rest)
-    | Ast0.OTHER(code)::rest ->
-	statements := true;
-	let (front,rest) = loop rest in
-	(code::front,rest)
-    | (top_decl::_) as rest -> ([],rest) in
+    | (x::xs) as all ->
+	(match Ast0.unwrap x with
+	  (Ast0.OTHER(code)) ->
+	    (match Ast0.unwrap code with
+	      Ast0.Decl(_) ->
+		let (front,rest) = loop xs in
+		(code::front,rest)
+	    | _ ->
+		statements := true;
+		let (front,rest) = loop xs in
+		(code::front,rest))
+	| _ -> ([],all)) in
   match loop l with
     ([],_) as res -> res
   | (code,rest) ->
       if !statements = true
-      then ([Ast0.CODE(top_dots code)],rest)
+      then ([Ast0.wrap(Ast0.CODE(top_dots code))],rest)
       else
 	(List.map
 	   (function
-	       (Ast0.Decl(x),_) -> Ast0.DECL x
+	       (Ast0.Decl(x),_,_) -> Ast0.wrap (Ast0.DECL x)
 	     | _ -> failwith "impossible")
 	   code,
 	 rest)
 
 let rec scan_top_decl = function
     [] -> ([],[])
-  | (Ast0.OTHER(_)::_) as rest -> ([],rest)
-  | (topdecl::rest) ->
-      let (front,rest) = scan_top_decl rest in
-      (topdecl::front,rest)
+  | ((topdecl::rest) as all) ->
+      (match Ast0.unwrap topdecl with
+	Ast0.OTHER(_) -> ([],all)
+      | _ -> let (front,rest) = scan_top_decl rest in (topdecl::front,rest))
 
 (* for debugging *)
 let l2c = function

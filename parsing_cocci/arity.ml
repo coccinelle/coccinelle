@@ -21,16 +21,6 @@ let make_opt_unique optfn uniquefn multifn info tgt arity term =
     | Ast0.MULTI -> Ast0.rewrap info (multifn term)
     | Ast0.NONE -> failwith "tgt must be NONE"
 
-let make_opt_unique_unwrapped optfn uniquefn multifn tgt arity term =
-  if tgt = arity
-  then term
-  else (* tgt must be NONE *)
-    match arity with
-      Ast0.OPT -> optfn term
-    | Ast0.UNIQUE -> uniquefn term
-    | Ast0.MULTI -> multifn term
-    | Ast0.NONE -> failwith "tgt must be NONE"
-
 let all_same multi_allowed opt_allowed tgt line arities =
   let tgt =
     match tgt with
@@ -72,22 +62,25 @@ let dots fn d =
 let only_dots l =
   not
     (List.exists
-       (function
-	   (Ast0.Circles(_,_),_) | (Ast0.Stars(_,_),_) -> true
+       (function x ->
+	  match Ast0.unwrap x with
+	   Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
 	 | _ -> false)
        l)
 
 let only_circles l =
   not (List.exists
-	(function
-	    (Ast0.Dots(_,_),_) | (Ast0.Stars(_,_),_) -> true
+	(function x ->
+	  match Ast0.unwrap x with
+	    Ast0.Dots(_,_) | Ast0.Stars(_,_) -> true
 	  | _ -> false)
 	 l)
 
 let only_stars l =
   not (List.exists
-	(function
-	    (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_) -> true
+	(function x ->
+	  match Ast0.unwrap x with
+	    Ast0.Dots(_,_) | Ast0.Circles(_,_) -> true
 	  | _ -> false)
 	 l)
 
@@ -120,36 +113,37 @@ let flat_concat_dots fn d =
 (* Identifier *)
 
 let make_id =
-  make_opt_unique_unwrapped
+  make_opt_unique
     (function x -> Ast0.OptIdent x)
     (function x -> Ast0.UniqueIdent x)
     (function x -> Ast0.MultiIdent x)
 
-let ident in_nest opt_allowed tgt = function
+let ident in_nest opt_allowed tgt i =
+  match Ast0.unwrap i with
     Ast0.Id(name) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id tgt arity (Ast0.Id(name))
+      make_id i tgt arity (Ast0.Id(name))
   | Ast0.MetaId(name) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id tgt arity (Ast0.MetaId(name))
+      make_id i tgt arity (Ast0.MetaId(name))
   | Ast0.MetaFunc(name) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id tgt arity (Ast0.MetaFunc(name))
+      make_id i tgt arity (Ast0.MetaFunc(name))
   | Ast0.MetaLocalFunc(name) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id tgt arity (Ast0.MetaLocalFunc(name))
+      make_id i tgt arity (Ast0.MetaLocalFunc(name))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
       failwith "unexpected code"
 
@@ -427,14 +421,14 @@ let parameterTypeDef tgt param =
       let id = ident false true tgt id in
       let ty = top_fullType tgt true ty in
       Ast0.rewrap param 
-	(match (id,ty) with
-	  (Ast0.OptIdent(id),(Ast0.OptType(ty),_)) ->
+	(match (Ast0.unwrap id,Ast0.unwrap ty) with
+	  (Ast0.OptIdent(id),Ast0.OptType(ty)) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(id,ty)))
-	| (Ast0.UniqueIdent(id),(Ast0.UniqueType(ty),_)) ->
+	| (Ast0.UniqueIdent(id),Ast0.UniqueType(ty)) ->
 	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(id,ty)))
 	| (Ast0.OptIdent(id),_) ->
 	    failwith "arity mismatch in param declaration"
-	| (_,(Ast0.OptType(ty),_)) ->
+	| (_,Ast0.OptType(ty)) ->
 	    failwith "arity mismatch in param declaration"
 	| _ -> Ast0.Param(id,ty))
   | Ast0.MetaParam(name) ->
@@ -616,23 +610,25 @@ let rec statement in_nest tgt stm =
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
 
-let top_level tgt = function
-    Ast0.DECL(decl) -> Ast0.DECL(declaration false Ast0.NONE decl)
-  | Ast0.INCLUDE(inc,s) ->
-      if mcode2arity inc = Ast0.NONE && mcode2arity s = Ast0.NONE
-      then Ast0.INCLUDE(mcode inc,mcode s)
-      else failwith "unexpected arity for include"
-  | Ast0.FILEINFO(old_file,new_file) -> 
-      if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
-      then Ast0.FILEINFO(mcode old_file,mcode new_file)
-      else failwith "unexpected arity for include"
-  | Ast0.FUNCTION(stmt) ->
-      Ast0.FUNCTION(statement false tgt stmt)
-  | Ast0.CODE(rule_elem_dots) ->
-      Ast0.CODE(concat_dots (statement false tgt) rule_elem_dots)
-  | Ast0.ERRORWORDS(exps) ->
-      Ast0.ERRORWORDS(List.map (top_expression false false Ast0.NONE) exps)
-  | Ast0.OTHER(_) -> failwith "eliminated by top_level"
+let top_level tgt t =
+  Ast0.rewrap t
+    (match Ast0.unwrap t with
+      Ast0.DECL(decl) -> Ast0.DECL(declaration false Ast0.NONE decl)
+    | Ast0.INCLUDE(inc,s) ->
+	if mcode2arity inc = Ast0.NONE && mcode2arity s = Ast0.NONE
+	then Ast0.INCLUDE(mcode inc,mcode s)
+	else failwith "unexpected arity for include"
+    | Ast0.FILEINFO(old_file,new_file) -> 
+	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
+	then Ast0.FILEINFO(mcode old_file,mcode new_file)
+	else failwith "unexpected arity for include"
+    | Ast0.FUNCTION(stmt) ->
+	Ast0.FUNCTION(statement false tgt stmt)
+    | Ast0.CODE(rule_elem_dots) ->
+	Ast0.CODE(concat_dots (statement false tgt) rule_elem_dots)
+    | Ast0.ERRORWORDS(exps) ->
+	Ast0.ERRORWORDS(List.map (top_expression false false Ast0.NONE) exps)
+    | Ast0.OTHER(_) -> failwith "eliminated by top_level")
 
 let rule tgt = List.map (top_level tgt)
 

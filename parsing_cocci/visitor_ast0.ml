@@ -58,7 +58,8 @@ let combiner bind option_default
       | Ast0.STARS(l) -> multibind (List.map statement l) in
     dotsstmtfn all_functions k d
   and ident i =
-    let k = function
+    let k i =
+      match Ast0.unwrap i with
 	Ast0.Id(name) -> string_mcode name
       | Ast0.MetaId(name) -> string_mcode name
       | Ast0.MetaFunc(name) -> string_mcode name
@@ -217,7 +218,8 @@ let combiner bind option_default
       | Ast0.MultiStm(re) -> statement re in
     stmtfn all_functions k s
   and top_level t =
-    let k = function
+    let k t =
+      match Ast0.unwrap t with
 	Ast0.DECL(decl) -> declaration decl
       | Ast0.INCLUDE(inc,name) -> bind (string_mcode inc) (string_mcode name)
       | Ast0.FILEINFO(old_file,new_file) ->
@@ -278,14 +280,16 @@ let rebuilder = fun
       | Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map fn l)
       | Ast0.STARS(l) -> Ast0.STARS(List.map fn l)) in
   let rec ident i =
-    let k = function
-	Ast0.Id(name) -> Ast0.Id(string_mcode name)
-      | Ast0.MetaId(name) -> Ast0.MetaId(string_mcode name)
-      | Ast0.MetaFunc(name) -> Ast0.MetaFunc(string_mcode name)
-      | Ast0.MetaLocalFunc(name) -> Ast0.MetaLocalFunc(string_mcode name)
-      | Ast0.OptIdent(id) -> Ast0.OptIdent(ident id)
-      | Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)
-      | Ast0.MultiIdent(id) -> Ast0.MultiIdent(ident id) in
+    let k i =
+      Ast0.rewrap i
+	(match Ast0.unwrap i with
+	  Ast0.Id(name) -> Ast0.Id(string_mcode name)
+	| Ast0.MetaId(name) -> Ast0.MetaId(string_mcode name)
+	| Ast0.MetaFunc(name) -> Ast0.MetaFunc(string_mcode name)
+	| Ast0.MetaLocalFunc(name) -> Ast0.MetaLocalFunc(string_mcode name)
+	| Ast0.OptIdent(id) -> Ast0.OptIdent(ident id)
+	| Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)
+	| Ast0.MultiIdent(id) -> Ast0.MultiIdent(ident id)) in
     identfn all_functions k i
   and expression e =
     let k e =
@@ -453,17 +457,19 @@ let rebuilder = fun
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
     stmtfn all_functions k s
   and top_level t =
-    let k = function
-	Ast0.DECL(decl) -> Ast0.DECL(declaration decl)
-      | Ast0.INCLUDE(inc,name) ->
-	  Ast0.INCLUDE(string_mcode inc, string_mcode name)
-      | Ast0.FILEINFO(old_file,new_file) ->
-	  Ast0.FILEINFO(string_mcode old_file, string_mcode new_file)
-      | Ast0.FUNCTION(statement_dots) ->
-	  Ast0.FUNCTION(statement statement_dots)
-      | Ast0.CODE(statement_dots) -> Ast0.CODE(dots statement statement_dots)
-      | Ast0.ERRORWORDS(exps) -> Ast0.ERRORWORDS(List.map expression exps)
-      | Ast0.OTHER(_) -> failwith "unexpected code" in
+    let k t =
+      Ast0.rewrap t
+	(match Ast0.unwrap t with
+	  Ast0.DECL(decl) -> Ast0.DECL(declaration decl)
+	| Ast0.INCLUDE(inc,name) ->
+	    Ast0.INCLUDE(string_mcode inc, string_mcode name)
+	| Ast0.FILEINFO(old_file,new_file) ->
+	    Ast0.FILEINFO(string_mcode old_file, string_mcode new_file)
+	| Ast0.FUNCTION(statement_dots) ->
+	    Ast0.FUNCTION(statement statement_dots)
+	| Ast0.CODE(statement_dots) -> Ast0.CODE(dots statement statement_dots)
+	| Ast0.ERRORWORDS(exps) -> Ast0.ERRORWORDS(List.map expression exps)
+	| Ast0.OTHER(_) -> failwith "unexpected code") in
     topfn all_functions k t
   and expression_dots e = dots expression e
   and statement_dots s = dots statement s

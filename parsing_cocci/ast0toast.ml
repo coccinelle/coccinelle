@@ -31,7 +31,8 @@ let dots fn d =
 (* Identifier *)
 
 
-let rec ident = function
+let rec ident i =
+  match Ast0.unwrap i with
     Ast0.Id(name) -> Ast.Id(mcode name)
   | Ast0.MetaId(name) -> Ast.MetaId(mcode name)
   | Ast0.MetaFunc(name) -> Ast.MetaFunc(mcode name)
@@ -250,7 +251,8 @@ let statement_dots = dots statement
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
 
-let top_level = function
+let top_level t =
+  match Ast0.unwrap t with
     Ast0.DECL(decl) -> Ast.DECL(declaration decl)
   | Ast0.INCLUDE(inc,s) -> Ast.INCLUDE(mcode inc,mcode s)
   | Ast0.FILEINFO(old_file,new_file) ->

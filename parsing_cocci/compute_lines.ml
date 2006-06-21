@@ -1,15 +1,18 @@
 (* Computes starting and ending logical lines for statements and
-expressions *)
+expressions - this information might not be needed any more *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
     
 (* --------------------------------------------------------------------- *)
 (* Result *)
-    
-let mkres e (_,lstart) (_,lend) =
+
+(* throughout use Ast0.Neither as the third component, as its value is not
+instantiated until later in the parsing process *)
+let mkres e (_,lstart,_) (_,lend,_) =
   (e,{Ast0.logical_start = lstart.Ast0.logical_start;
-       Ast0.logical_end = lend.Ast0.logical_end})
+       Ast0.logical_end = lend.Ast0.logical_end},
+   ref Ast0.Neither)
     
 (* --------------------------------------------------------------------- *)
     
@@ -27,7 +30,7 @@ let good_mcode(_,_,mcodekind) =
       Ast.MINUS(info,_) -> Ast0.Good info.Ast.logical_line
     | Ast.PLUS(info) -> Ast0.Good info.Ast.logical_line
     | Ast.CONTEXT(info,_) -> Ast0.Good info.Ast.logical_line in
-  ((),{Ast0.logical_start = ln;Ast0.logical_end = ln})
+  ((),{Ast0.logical_start = ln;Ast0.logical_end = ln},ref Ast0.Neither)
     
 let bad_mcode(_,_,mcodekind) =
   let ln =
@@ -35,7 +38,7 @@ let bad_mcode(_,_,mcodekind) =
       Ast.MINUS(info,_) -> Ast0.Bad info.Ast.logical_line
     | Ast.PLUS(info) -> Ast0.Bad info.Ast.logical_line
     | Ast.CONTEXT(info,_) -> Ast0.Bad info.Ast.logical_line in
-  ((),{Ast0.logical_start = ln;Ast0.logical_end = ln})
+  ((),{Ast0.logical_start = ln;Ast0.logical_end = ln},ref Ast0.Neither)
     
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -61,7 +64,8 @@ let dots prev fn d =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 	
-let rec ident = function
+let rec ident i =
+  match Ast0.unwrap i with
     Ast0.Id(name) -> good_mcode name
   | Ast0.MetaId(name) -> good_mcode name
   | Ast0.MetaFunc(name) -> good_mcode name
@@ -146,13 +150,13 @@ let rec expression e =
       let ln = bad_mcode dots in
       mkres e ln ln
   | Ast0.OptExp(exp) ->
-      let (_,info) as exp = expression exp in
+      let exp = expression exp in
       mkres (Ast0.OptExp(exp)) exp exp
   | Ast0.UniqueExp(exp) ->
-      let (_,info) as exp = expression exp in
+      let exp = expression exp in
       mkres (Ast0.UniqueExp(exp)) exp exp
   | Ast0.MultiExp(exp) ->
-      let (_,info) as exp = expression exp in
+      let exp = expression exp in
       mkres (Ast0.MultiExp(exp)) exp exp
 	
 (* --------------------------------------------------------------------- *)
@@ -317,14 +321,17 @@ let rec statement s =
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
 	
-let top_level = function
-    Ast0.DECL(decl) -> Ast0.DECL(declaration decl)
-  | Ast0.INCLUDE(inc,s) as t -> t
-  | Ast0.FILEINFO(old_file,new_file) as t -> t
-  | Ast0.FUNCTION(stmt) -> Ast0.FUNCTION(statement stmt)
-  | Ast0.CODE(rule_elem_dots) -> Ast0.CODE(dots None statement rule_elem_dots)
-  | Ast0.ERRORWORDS(exps) as t -> t
-  | Ast0.OTHER(_) -> failwith "eliminated by top_level"
+let top_level t =
+  Ast0.rewrap t
+    (match Ast0.unwrap t with
+      Ast0.DECL(decl) -> Ast0.DECL(declaration decl)
+    | Ast0.INCLUDE(inc,s) as t -> t
+    | Ast0.FILEINFO(old_file,new_file) as t -> t
+    | Ast0.FUNCTION(stmt) -> Ast0.FUNCTION(statement stmt)
+    | Ast0.CODE(rule_elem_dots) ->
+	Ast0.CODE(dots None statement rule_elem_dots)
+    | Ast0.ERRORWORDS(exps) as t -> t
+    | Ast0.OTHER(_) -> failwith "eliminated by top_level")
 	
 (* --------------------------------------------------------------------- *)
 (* Entry points *)

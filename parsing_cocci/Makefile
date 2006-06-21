@@ -4,7 +4,7 @@ LEXER_SOURCES = lexer_cocci.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = ast_cocci.ml ast0_cocci.ml visitor_ast.ml visitor_ast0.ml \
 ast0toast.ml top_level.ml check_meta.ml \
-unparse_cocci.ml arity.ml compute_lines.ml \
+unparse_cocci.ml arity.ml compute_lines.ml context_neg.ml \
 plus.ml merge.ml semantic_cocci.ml data.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) parse_cocci.ml
 

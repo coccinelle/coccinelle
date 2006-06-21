@@ -82,7 +82,7 @@ let statement recursor k s =
   | _ -> k s
 
 let top_level recursor k t =
-  match t with
+  match Ast0.unwrap t with
     Ast0.FILEINFO(old_file,new_file) ->
       [bad_mcode old_file;bad_mcode new_file]
   | Ast0.ERRORWORDS(exps) ->

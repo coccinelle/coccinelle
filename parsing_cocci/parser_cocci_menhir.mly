@@ -83,10 +83,14 @@ let logic_op ast_op left op opoffset right =
     (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) opoffset op, right))
 
 let top_dots l =
-  if List.exists (function (Ast0.Circles(_),_) -> true | _ -> false) l
+  let circle x =
+    match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
+  let star x =
+    match Ast0.unwrap x with Ast0.Stars(_) -> true | _ -> false in
+  if List.exists circle l
   then Ast0.wrap(Ast0.CIRCLES(l))
   else
-    if List.exists (function (Ast0.Stars(_),_) -> true | _ -> false) l
+    if List.exists star l
     then Ast0.wrap(Ast0.STARS(l))
     else Ast0.wrap(Ast0.DOTS(l))
 
@@ -100,7 +104,10 @@ let pointerify ty m offset =
 			       clt2mcode "*" offset cur)))
     ty m
 
-let startofs _ = 1 (* to be replaced by $startofs when that works *)
+(* to be replaced by $startofs when that works *)
+let offset_counter = ref 0
+let startofs _ =
+  let cur = !offset_counter in offset_counter := cur + 1; cur
 %}
 
 
@@ -327,12 +334,15 @@ body:
 
 filespec:
   TMinusFile TPlusFile
-    { [Ast0.FILEINFO(id2mcode (startofs($1)) $1,id2mcode (startofs($2)) $2)] }
+    { [Ast0.wrap
+	  (Ast0.FILEINFO(id2mcode (startofs($1)) $1,
+			 id2mcode (startofs($2)) $2))] }
 
 includes:
   TInclude
-    { Ast0.INCLUDE(clt2mcode "#include" (startofs($1)) (id2clt $1),
-		   id2mcode (startofs($1)) $1) }
+    { Ast0.wrap
+	(Ast0.INCLUDE(clt2mcode "#include" (startofs($1)) (id2clt $1),
+		      id2mcode (startofs($1)) $1)) }
 
 /*****************************************************************************/
 
@@ -468,7 +478,10 @@ decl_statement:
       { List.map (function x -> Ast0.wrap(Ast0.Decl(x))) $1 }
   | statement { [$1] }
   | TOPar0 pre_post_decl_statement_and_expression_opt_mid TCPar0
-      { if List.for_all (function (Ast0.DOTS([]),_) -> true | _ -> false) $2
+      { if List.for_all
+	  (function x ->
+	    match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
+	  $2
       then []
       else [Ast0.wrap(Ast0.Disj($2))] }
 
@@ -649,16 +662,22 @@ pure_ident_or_meta_ident:
      | x=TMetaExp         { let (name,_,info) = x in (name,info) }
      | x=TMetaErr         { x }
 
-ident: TIdent           { Ast0.Id(id2mcode (startofs($1)) $1) }
-     | TMetaId          { Ast0.MetaId(id2mcode (startofs($1)) $1) }
-     | TMetaFunc        { Ast0.MetaFunc(id2mcode (startofs($1)) $1) }
-     | TMetaLocalFunc   { Ast0.MetaLocalFunc(id2mcode (startofs($1)) $1) }
+ident: TIdent
+         { Ast0.wrap(Ast0.Id(id2mcode (startofs($1)) $1)) }
+     | TMetaId
+         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1)) }
+     | TMetaFunc
+         { Ast0.wrap(Ast0.MetaFunc(id2mcode (startofs($1)) $1)) }
+     | TMetaLocalFunc
+	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode (startofs($1)) $1)) }
 
 /*****************************************************************************/
 
 decl_list:
    decl_list_start
-     { if List.exists (function (Ast0.Pcircles(_),_) -> true | _ -> false) $1
+     {let circle x =
+       match Ast0.unwrap x with Ast0.Pcircles(_) -> true | _ -> false in
+     if List.exists circle $1
      then Ast0.wrap(Ast0.CIRCLES($1))
      else Ast0.wrap(Ast0.DOTS($1)) }
 
@@ -705,18 +724,18 @@ exp_decl_statement_list:
   | pure_decl_statement_list                { $1 }
 
 fun_exp_decl_statement_list:
-    expr                        { [Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))] }
+    expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
   | f=nonempty_list(fun_decl_statement)        { List.concat f }
 
 %inline fun_decl_statement:
-    decl_statement { List.map (function x -> Ast0.OTHER x) $1 }
-  | fundecl        { [Ast0.FUNCTION($1)] }
+    decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) $1 }
+  | fundecl        { [Ast0.wrap(Ast0.FUNCTION($1))] }
 
 /* ---------------------------------------------------------------------- */
 
 error_words:
     TError TWords TEq TOCro cl=comma_list(dexpr) TCCro
-      { [Ast0.ERRORWORDS(cl)] }
+      { [Ast0.wrap(Ast0.ERRORWORDS(cl))] }
 
 /* ---------------------------------------------------------------------- */
 /* sequences of statements and expressions */
@@ -730,7 +749,7 @@ function_decl_statement_or_expression:
 		      fun_exp_decl_statement_list)
     { List.concat
 	($1 (function x -> function y ->
-	      [Ast0.OTHER (mkdots x y)])) }
+	      [Ast0.wrap(Ast0.OTHER (mkdots x y))])) }
 
 /* a mix of declarations, statements and expressions.  an expression may
 appear by itself.  always nonempty and cannot just be dots. */
@@ -771,12 +790,16 @@ pre_post_decl_statement_and_expression_opt_mid:
 
 eexpr_list:
   eexpr_list_start
-     { if List.exists (function (Ast0.Ecircles(_),_) -> true | _ -> false) $1
+     {let circle x =
+       match Ast0.unwrap x with Ast0.Ecircles(_) -> true | _ -> false in
+     let star x =
+       match Ast0.unwrap x with Ast0.Estars(_) -> true | _ -> false in
+     if List.exists circle $1
      then Ast0.wrap(Ast0.CIRCLES($1))
      else
-       if List.exists (function (Ast0.Estars(_),_) -> true | _ -> false) $1
-     then Ast0.wrap(Ast0.STARS($1))
-     else Ast0.wrap(Ast0.DOTS($1)) }
+       if List.exists star $1
+       then Ast0.wrap(Ast0.STARS($1))
+       else Ast0.wrap(Ast0.DOTS($1)) }
 
 eexpr_list_start:
     dexpr

@@ -293,6 +293,11 @@ let get_logical_line = function
   | PLUS(info) -> info.logical_line
   | CONTEXT(info,_) -> info.logical_line
 
+let get_offset = function
+    MINUS(info,_) -> info.offset
+  | PLUS(info) -> info.offset
+  | CONTEXT(info,_) -> info.offset
+
 (* --------------------------------------------------------------------- *)
 
 let undots = function
