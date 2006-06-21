@@ -122,7 +122,7 @@ let rec expression e =
       mkres (Ast0.RecordAccess(exp,pt,field)) exp (ident field)
   | Ast0.RecordPtAccess(exp,ar,field) ->
       let exp = expression exp in
-      mkres (Ast0.RecordAccess(exp,ar,field)) exp (ident field)
+      mkres (Ast0.RecordPtAccess(exp,ar,field)) exp (ident field)
   | Ast0.Cast(lp,ty,rp,exp) ->
       let exp = expression exp in
       mkres (Ast0.Cast(lp,fullType ty,rp,exp)) (good_mcode lp) exp
