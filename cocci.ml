@@ -100,38 +100,3 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
 
-let test_unparser cfile = 
-  one_flow (flows (cprogram_from_file cfile))
-    +> Control_flow_c.control_flow_to_ast
-    +> (fun def -> Unparse_c.pp_program cfile [Ast_c.Definition def, Unparse_c.PPnormal])
-    +> (fun () -> cat "/tmp/output.c")
-
-
-let test_pattern statement_str rule_elem_str = 
-  let statement = cstatement_from_string statement_str in
-  let rule_elem = rule_elem_from_string rule_elem_str in
-  Pattern.match_re_node 
-    rule_elem (Control_flow_c.Statement statement, "str")
-    (Ast_c.emptyMetavarsBinding)
-
-
-(* --------------------------------------------------------------------- *)
-
-(*
-let test_cocci cfile coccifile = 
-
-  let ctl  = one_ctl (ctls (sp_from_file coccifile)) in
-  let flow = one_flow (flows (cprogram_from_file cfile)) in
-  
-
-  let model_ctl  = Ctlcocci_integration.model_for_ctl flow ctl in
-  let _labels = (Ctlcocci_integration.labels_for_ctl (flow#nodes#tolist) (Ctlcocci_integration.ctl_get_all_predicates ctl)) in
-
- Ast_ctl.sat model_ctl  ctl 
-*)
-
-      
-
-  
-
-

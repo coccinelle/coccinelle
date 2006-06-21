@@ -77,7 +77,7 @@ let rec visitor_expr_k = fun bigf expr ->
         (es +> List.map fst) +> List.iter (fun e -> 
           match e with
           | Left e -> (f (k, bigf)) e
-          | Right _ -> raise Todo
+          | Right (t, stoil) -> visitor_type_k bigf t
                 );
     | CondExpr (e1, e2, e3), typ,is    -> f (k, bigf) e1; f (k, bigf) e2; f (k, bigf) e3
     | Sequence (e1, e2), typ,is        -> f (k, bigf) e1; f (k, bigf) e2;

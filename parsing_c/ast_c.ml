@@ -334,6 +334,11 @@ let rec (al_expr: expression -> expression) = fun (exp, typ, ii) ->
                  ) es in
       FunCall (e', es')
 
+
+  | RecordPtAccess (e, field) -> 
+      let e' = al_expr e in
+      RecordPtAccess (e', field)
+
   | _ -> raise Todo
   ), typ, ii'
 and (al_statement: statement -> statement) = fun (stat, ii) -> 

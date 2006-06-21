@@ -79,7 +79,7 @@ and node1 =
   | Statement     of statement
   | Declaration   of declaration
 
-  | Fake
+  | Fake (* todo: est amené a disparaitre *)
 
   (* special_cfg_braces: *)
   (* the int is here to indicate to what { } they correspond. 
@@ -634,6 +634,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
       (* old: | Enter -> () *)
 
       | Fake -> pr2 "control_flow: deadcode sur fake node, pas grave";
+      | EndBrace _ -> () (* todo?: certaines deviennent orphelins *)
       | x -> pr2 "control_flow: orphelin nodes, maybe something wierd happened"
       )
     );

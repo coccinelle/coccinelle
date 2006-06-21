@@ -10,7 +10,8 @@ todo:
  (but not always, only if necessary)
  src: rene
 
-todo: if add instruction,  then try keep same indentation ! so introduce some spacing
+note: if add instruction, then try keep same indentation. So need introduce some spacings.
+  Done via the semi global _current_tabbing variable.
 
 *)
 (**************************************************************************************)
@@ -22,7 +23,8 @@ open Parser_c
 let pp_program file x = 
 
   
-  with_open_outfile "/tmp/output.c" (fun (pr,_) -> 
+  with_open_outfile "/tmp/output.c" (fun (pr,chan) -> 
+    let pr s = pr s; flush chan in
 
    let _table = Common.full_charpos_to_pos file in
 
@@ -35,15 +37,18 @@ let pp_program file x =
 
    let _current_tabbing = ref "" in
    let update_current_tabbing s = 
-     let newtabbing = 
-      list_of_string s 
+     let xs = list_of_string s in
+     if (xs +> List.exists (fun c -> c = '\n'))
+     then
+       let newtabbing = 
+       xs
        +> List.rev
-       +> take_until (fun c -> c = '\n')
+       +> Common.take_until (fun c -> c = '\n')
        +> List.rev
        +> List.map string_of_char
        +> String.concat ""
-     in
-     _current_tabbing := newtabbing
+       in
+       _current_tabbing := newtabbing
    in
 
    (* ---------------------- *)
@@ -138,7 +143,7 @@ let pp_program file x =
 
 
    (* ---------------------- *)
-   and pp_expression = function
+   and pp_expression x = match x with
     | Constant (String s),        typ, is     -> is +> List.iter pr_elem
     | Ident (c),         typ,[i]     -> pr_elem i
     | Constant (c),         typ,[i]     -> pr_elem i
@@ -163,7 +168,10 @@ let pp_program file x =
         
     | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; pp_expression e3
     | Sequence (e1, e2),          typ,[i]  -> pp_expression e1; pr_elem i; pp_expression e2
-    | Assignment (e1, op, e2),    typ,[i]  -> pp_expression e1; pr_elem i; pp_expression e2
+    | Assignment (e1, op, e2),    typ,[i]  -> 
+        pp_expression e1; 
+        pr_elem i; 
+        pp_expression e2
         
     | Postfix  (e, op),    typ,[i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    typ,[i] -> pr_elem i; pp_expression e;
@@ -681,7 +689,7 @@ let pp_program file x =
   | Ast_cocci.FunCall (e, (lp,_), es, (rp,_)) -> 
       pp_cocci_expr env e; pr lp; List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr rp
 
-  | Ast_cocci.EComma (com,_) -> pr com
+  | Ast_cocci.EComma (com,_) -> pr com; pr " " (* pretty printing: add a space after ',' *)
 
   | Ast_cocci.DisjExpr _ -> raise Impossible
   | Ast_cocci.Edots _ -> raise Impossible
@@ -777,9 +785,6 @@ let pp_program file x =
      | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot)
 
      | x -> error_cant_have x
-     )
-   
+     )   
    );
-
-
  );

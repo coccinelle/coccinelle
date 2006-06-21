@@ -23,20 +23,3 @@ val one_ctl :
       (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl
 
 
-val test_unparser : Common.filename -> string list
-val test_pattern : string -> string -> Ast_c.metavars_binding list
-
-(*
-val test_cocci :
-  Common.filename -> Common.filename ->
-    'a
-
-  (Ograph_extended.nodei *
-   (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2)
-   Ast_ctl.generic_substitution *
-   (Ograph_extended.nodei,
-    (Ast_ctl.mvar, Ast_ctl.metavar_binding_kind2)
-    Ast_ctl.generic_substitution, 'a list)
-   Ast_ctl.generic_witness list)
-  list
-*)
