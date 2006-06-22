@@ -20,9 +20,9 @@ let warning s v =
 (* parse auxillary function *)
 type shortLong      = Short  | Long | LongLong
 
-type decl = {storageD: storage                                               * parse_info list
-	    ;typeD: ((sign option) * (shortLong option) * (typeCbis option)) * parse_info list
-	    ;qualifD: typeQualifierbis                                       * parse_info list
+type decl = {storageD: storage                                               * Ast_c.info list
+	    ;typeD: ((sign option) * (shortLong option) * (typeCbis option)) * Ast_c.info list
+	    ;qualifD: typeQualifierbis                                       * Ast_c.info list
             (*todo: full_info: parse_info list;  to remember ordering between storage, qualifier, type *)
 	    } 
 let nullDecl = {storageD = NoSto, [];typeD = (None, None, None), [];qualifD = nullQualif}
@@ -36,7 +36,7 @@ let addStorageD  = function
 let addTypeD     = function 
   | ((Left3 Signed,ii)   ,({typeD = ((Some Signed,  b,c),ii2)} as v)) -> warning "duplicate 'signed'"   v
   | ((Left3 UnSigned,ii) ,({typeD = ((Some UnSigned,b,c),ii2)} as v)) -> warning "duplicate 'unsigned'" v
-  | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as v)) -> 
+  | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as _v)) -> 
       raise (Semantic ("both signed and unsigned specified", fake_parse_info))
   | ((Left3 x,ii),        ({typeD = ((None,b,c),ii2)} as v))   -> {v with typeD = (Some x,b,c),ii ++ ii2}
 
@@ -47,11 +47,11 @@ let addTypeD     = function
   | ((Middle3 Long,ii),   ({typeD = ((a,Some Long ,c),ii2)} as v)) -> { v with typeD = (a, Some LongLong, c),ii++ii2 }
   | ((Middle3 Long,ii),   ({typeD = ((a,Some LongLong ,c),ii2)} as v)) -> warning "triplicate 'long'" v
 
-  | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as v)) -> 
+  | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as _v)) -> 
       raise (Semantic ("both long and short specified", fake_parse_info))
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  -> {v with typeD = (a, Some x,c),ii++ii2}
 
-  | ((Right3 t,ii),       ({typeD = ((a,b,Some _),ii2)} as v)) -> 
+  | ((Right3 t,ii),       ({typeD = ((a,b,Some _),ii2)} as _v)) -> 
       raise (Semantic ("two or more data types", fake_parse_info))
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   -> {v with typeD = (a,b, Some t),ii++ii2}
 
@@ -63,7 +63,8 @@ let addQualif = function
   | ({volatile=true}, v) -> {v with volatile=true}
   | _ -> internal_error "there is no noconst or novolatile keyword"
 
-let addQualifD   = fun ((qu,ii), ({qualifD = (v,ii2)} as x)) -> { x with qualifD = (addQualif (qu, v),ii::ii2) }
+let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
+  { x with qualifD = (addQualif (qu, v),ii::ii2) }
 
 
 (**************************************)
@@ -74,7 +75,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage * info list)))  = function
  {storageD = (st,iist); qualifD = (qu,iiq); typeD = (ty,iit)} -> 
   (((qu, iiq),
    (match ty with 
- | (None,None,None)       -> warning "type defaults to 'int'" (default_int, [])
+ | (None,None,None)       -> warning "type defaults to 'int'" (defaultInt, [])
  | (None, None, Some t)   -> (t, iit)
 	 
  | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  -> BaseType(IntType (Si (sign, CInt))), iit
@@ -127,7 +128,7 @@ let fixDeclSpecForFuncDef x =
 *)
 let (fixOldCDecl: fullType -> fullType) = fun ty ->
   match snd ty with
-  | ((FunctionType (fullt, Classic (params, b, iitodo1)) as v),iitodo) -> 
+  | ((FunctionType (fullt, Classic (params, b, iitodo1)) as _v),iitodo) -> 
        (* stdC: If the prototype declaration declares a parameter for a function that you 
 	  are defining (it is part of a function definition), then you must write a name 
 	  within the declarator. Otherwise, you can omit the name.
@@ -175,44 +176,44 @@ let fix_add_params_ident = function
     
 %}
 
-%token <Common.parse_info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
+%token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
 
 
-%token <(string * Ast_c.isWchar) * Common.parse_info> TString
-%token <(string * Ast_c.isWchar) * Common.parse_info> TChar
-%token <string * Common.parse_info> TIdent TypedefIdent
-%token <string * Common.parse_info>   TInt
-%token <(string * Ast_c.floatType) * Common.parse_info> TFloat
+%token <(string * Ast_c.isWchar) * Ast_c.info> TString
+%token <(string * Ast_c.isWchar) * Ast_c.info> TChar
+%token <string * Ast_c.info> TIdent TypedefIdent
+%token <string * Ast_c.info>   TInt
+%token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 
 
 
-%token <Common.parse_info> TOPar TCPar TOBrace TCBrace TOCro TCCro 
-%token <Common.parse_info> TDot TComma TPtrOp 
-%token <Common.parse_info> TInc TDec
-%token <Ast_c.assignOp * Common.parse_info> TAssign 
-%token <Common.parse_info> TEq
-%token <Common.parse_info> TWhy  TTilde TBang
-%token <Common.parse_info> TEllipsis
-%token <Common.parse_info> TDotDot
+%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro 
+%token <Ast_c.info> TDot TComma TPtrOp 
+%token <Ast_c.info> TInc TDec
+%token <Ast_c.assignOp * Ast_c.info> TAssign 
+%token <Ast_c.info> TEq
+%token <Ast_c.info> TWhy  TTilde TBang
+%token <Ast_c.info> TEllipsis
+%token <Ast_c.info> TDotDot
 
-%token <Common.parse_info> TPtVirg
-%token <Common.parse_info> TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
+%token <Ast_c.info> TPtVirg
+%token <Ast_c.info> TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
        TPlus TMinus TMul TDiv TMod 
 
-%token <Common.parse_info>
+%token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
        Tauto Tregister Textern Tstatic 
        Tconst Tvolatile
        Tstruct Tenum Ttypedef Tunion
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn Tgoto Tdefault
        Tsizeof  
-%token <Common.parse_info> Tasm
-%token <Common.parse_info> Tattribute
+%token <Ast_c.info> Tasm
+%token <Ast_c.info> Tattribute
 
-%token <Common.parse_info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
+%token <Ast_c.info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
 
 
-%token <Common.parse_info> EOF
+%token <Ast_c.info> EOF
 
 
 %left TOrLog
@@ -247,51 +248,51 @@ main:  translation_unit EOF     { $1 }
 /********************************************************************************/
 
 expr: assign_expr             { $1 }
-    | expr TComma assign_expr { Sequence ($1,$3),       [$2] }
+    | expr TComma assign_expr { Sequence ($1,$3), noType,       [$2] }
 
 assign_expr: cond_expr                      { $1 }
            /* bugfix: in C grammar they put unary_expr, but in fact it must be cast_expr, otherwise (int *) xxx = &yy; is not allowed */
-           | cast_expr TAssign assign_expr { Assignment ($1, fst $2, $3),           [snd $2] }
-           | cast_expr TEq     assign_expr { Assignment ($1, SimpleAssign, $3),     [$2] }
+           | cast_expr TAssign assign_expr { Assignment ($1, fst $2, $3),           noType, [snd $2] }
+           | cast_expr TEq     assign_expr { Assignment ($1, SimpleAssign, $3),     noType, [$2] }
 
 cond_expr: arith_expr                             { $1 }
-	 | arith_expr TWhy gcc_opt_expr TDotDot cond_expr { CondExpr ($1, $3, $5),      [$2;$4] } /* gccext: allow optional then part */
+	 | arith_expr TWhy gcc_opt_expr TDotDot cond_expr { CondExpr ($1, $3, $5),      noType, [$2;$4] } /* gccext: allow optional then part */
 
 gcc_opt_expr: expr { $1 }
-            | /* empty */ { NoExpr, []  }
+            | /* empty */ { NoExpr, noType, []  }
 
 arith_expr: cast_expr                     { $1 }
-	  | arith_expr TMul    arith_expr { Binary ($1, Arith Mul,      $3),        [$2] }
-	  | arith_expr TDiv    arith_expr { Binary ($1, Arith Div,      $3),        [$2] }
-	  | arith_expr TMod    arith_expr { Binary ($1, Arith Mod,      $3),        [$2] }
-	  | arith_expr TPlus   arith_expr { Binary ($1, Arith Plus,     $3),        [$2] }
-	  | arith_expr TMinus  arith_expr { Binary ($1, Arith Minus,    $3),        [$2] }
-	  | arith_expr TShl    arith_expr { Binary ($1, Arith DecLeft,  $3),        [$2] }
-	  | arith_expr TShr    arith_expr { Binary ($1, Arith DecRight, $3),        [$2] }
-	  | arith_expr TInf    arith_expr { Binary ($1, Logical Inf,    $3),        [$2] }
-	  | arith_expr TSup    arith_expr { Binary ($1, Logical Sup,    $3),        [$2] }
-	  | arith_expr TInfEq  arith_expr { Binary ($1, Logical InfEq,  $3),        [$2] }
-	  | arith_expr TSupEq  arith_expr { Binary ($1, Logical SupEq,  $3),        [$2] }
-	  | arith_expr TEqEq   arith_expr { Binary ($1, Logical Eq,     $3),        [$2] }
-	  | arith_expr TNotEq  arith_expr { Binary ($1, Logical NotEq,  $3),        [$2] }
-	  | arith_expr TAnd    arith_expr { Binary ($1, Arith And,      $3),        [$2] }
-	  | arith_expr TOr     arith_expr { Binary ($1, Arith Or,       $3),        [$2] }
-	  | arith_expr TXor    arith_expr { Binary ($1, Arith Xor,      $3),        [$2] }
-	  | arith_expr TAndLog arith_expr { Binary ($1, Logical AndLog, $3),        [$2] }
-	  | arith_expr TOrLog  arith_expr { Binary ($1, Logical OrLog,  $3),        [$2] }
+	  | arith_expr TMul    arith_expr { Binary ($1, Arith Mul,      $3),        noType, [$2] }
+	  | arith_expr TDiv    arith_expr { Binary ($1, Arith Div,      $3),        noType, [$2] }
+	  | arith_expr TMod    arith_expr { Binary ($1, Arith Mod,      $3),        noType, [$2] }
+	  | arith_expr TPlus   arith_expr { Binary ($1, Arith Plus,     $3),        noType, [$2] }
+	  | arith_expr TMinus  arith_expr { Binary ($1, Arith Minus,    $3),        noType, [$2] }
+	  | arith_expr TShl    arith_expr { Binary ($1, Arith DecLeft,  $3),        noType, [$2] }
+	  | arith_expr TShr    arith_expr { Binary ($1, Arith DecRight, $3),        noType, [$2] }
+	  | arith_expr TInf    arith_expr { Binary ($1, Logical Inf,    $3),        noType, [$2] }
+	  | arith_expr TSup    arith_expr { Binary ($1, Logical Sup,    $3),        noType, [$2] }
+	  | arith_expr TInfEq  arith_expr { Binary ($1, Logical InfEq,  $3),        noType, [$2] }
+	  | arith_expr TSupEq  arith_expr { Binary ($1, Logical SupEq,  $3),        noType, [$2] }
+	  | arith_expr TEqEq   arith_expr { Binary ($1, Logical Eq,     $3),        noType, [$2] }
+	  | arith_expr TNotEq  arith_expr { Binary ($1, Logical NotEq,  $3),        noType, [$2] }
+	  | arith_expr TAnd    arith_expr { Binary ($1, Arith And,      $3),        noType, [$2] }
+	  | arith_expr TOr     arith_expr { Binary ($1, Arith Or,       $3),        noType, [$2] }
+	  | arith_expr TXor    arith_expr { Binary ($1, Arith Xor,      $3),        noType, [$2] }
+	  | arith_expr TAndLog arith_expr { Binary ($1, Logical AndLog, $3),        noType, [$2] }
+	  | arith_expr TOrLog  arith_expr { Binary ($1, Logical OrLog,  $3),        noType, [$2] }
 
 cast_expr: unary_expr                        { $1 }
-	 | topar2 type_name tcpar2 cast_expr { Cast ($2, $4),       [$1;$3] }
+	 | topar2 type_name tcpar2 cast_expr { Cast ($2, $4),       noType, [$1;$3] }
 
 topar2: TOPar { et "topar2" (); $1  }
 tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) } 
 
 unary_expr: postfix_expr                   { $1 }
-	  | TInc unary_expr                { Infix ($2, Inc),       [$1] }
-	  | TDec unary_expr                { Infix ($2, Dec),       [$1] }
-	  | unary_op cast_expr             { Unary ($2, fst $1),    [snd $1] }
-	  | Tsizeof unary_expr             { SizeOfExpr ($2),       [$1] }
-	  | Tsizeof topar2 type_name tcpar2  { SizeOfType ($3),     [$1;$2;$4] }
+	  | TInc unary_expr                { Infix ($2, Inc),       noType,[$1] }
+	  | TDec unary_expr                { Infix ($2, Dec),       noType,[$1] }
+	  | unary_op cast_expr             { Unary ($2, fst $1),    noType,[snd $1] }
+	  | Tsizeof unary_expr             { SizeOfExpr ($2),       noType,[$1] }
+	  | Tsizeof topar2 type_name tcpar2  { SizeOfType ($3),     noType,[$1;$2;$4] }
 
 unary_op: TAnd   { GetRef,     $1 }
 	| TMul   { DeRef,      $1 }
@@ -303,37 +304,37 @@ unary_op: TAnd   { GetRef,     $1 }
 
 
 postfix_expr: primary_expr                                 { $1 }
-	    | postfix_expr TOCro expr TCCro                { ArrayAccess ($1, $3),      [$2;$4] }
-	    | postfix_expr TOPar argument_expr_list TCPar  { FunCall ($1, $3),          [$2;$4] }
-	    | postfix_expr TOPar  TCPar                    { FunCall ($1, []),          [$2;$3] }
-	    | postfix_expr TDot   ident                    { RecordAccess   ($1,fst $3),   [$2;snd $3] }
-	    | postfix_expr TPtrOp ident                    { RecordPtAccess ($1,fst $3),   [$2;snd $3] }
-	    | postfix_expr TInc                            { Postfix ($1, Inc),      [$2] }
-	    | postfix_expr TDec                            { Postfix ($1, Dec),      [$2] }
+	    | postfix_expr TOCro expr TCCro                { ArrayAccess ($1, $3),      noType,[$2;$4] }
+	    | postfix_expr TOPar argument_expr_list TCPar  { FunCall ($1, $3),          noType,[$2;$4] }
+	    | postfix_expr TOPar  TCPar                    { FunCall ($1, []),          noType,[$2;$3] }
+	    | postfix_expr TDot   ident                    { RecordAccess   ($1,fst $3),   noType,[$2;snd $3] }
+	    | postfix_expr TPtrOp ident                    { RecordPtAccess ($1,fst $3),   noType,[$2;snd $3] }
+	    | postfix_expr TInc                            { Postfix ($1, Inc),      noType,[$2] }
+	    | postfix_expr TDec                            { Postfix ($1, Dec),      noType,[$2] }
 
             /* gccext: */
-            | topar2 type_name tcpar2 TOBrace TCBrace                                    { Constructor, [] }
-            | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace      { Constructor, [] }
+            | topar2 type_name tcpar2 TOBrace TCBrace                                    { Constructor, noType,[] }
+            | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace      { Constructor, noType,[] }
 
             /* cppext: */
-            | THigherOrderMacro TOPar statement_list TCPar { MacroCall2 (Right $3),  [$1;$2;$4] }
-            | THigherOrderMacro TOPar expr TCPar           { MacroCall2 (Left $3),  [$1;$2;$4] }
+            | THigherOrderMacro TOPar statement_list TCPar { MacroCall2 (Right $3),  noType,[$1;$2;$4] }
+            | THigherOrderMacro TOPar expr TCPar           { MacroCall2 (Left $3),  noType,[$1;$2;$4] }
 
             | THigherOrderExprStatement TOPar expr TComma action_higherordermacro TCPar  
                 { 
-                  MacroCall [(Left3 $3, []);(Right3 ($5), [$4])], [$1;$2;$6]
+                  MacroCall [(Left3 $3, []);(Right3 ($5), [$4])], noType, [$1;$2;$6]
                 }
             | THigherOrderExprExprStatement TOPar assign_expr TComma assign_expr TComma action_higherordermacro TCPar 
                 { 
-                  MacroCall [(Left3 $3, []);(Left3 $5, [$4]);(Right3 ($7), [$6])], [$1;$2;$8]
+                  MacroCall [(Left3 $3, []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType, [$1;$2;$8]
                 }
             | THigherOrderExprExprStatement TOPar decl_spec3 TComma assign_expr TComma action_higherordermacro TCPar 
                 { 
                   let (returnType,storage) = fixDeclSpecForDecl $3 in
-                  MacroCall [(Middle3 (returnType, storage), []);(Left3 $5, [$4]);(Right3 ($7), [$6])], [$1;$2;$8]
+                  MacroCall [(Middle3 (returnType, storage), []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType, [$1;$2;$8]
                 }
 
-            | THigherOrderExprExprExprStatement TOPar assign_expr TComma assign_expr TComma assign_expr TComma action_higherordermacro TCPar { Constructor, [] }
+            | THigherOrderExprExprExprStatement TOPar assign_expr TComma assign_expr TComma assign_expr TComma action_higherordermacro TCPar { Constructor, noType, [] }
 
 action_higherordermacro: jump        { ActJump $1 }
                        | Tdo         { ActMisc [$1] }
@@ -352,18 +353,18 @@ argument_expr_list: assign_expr { [Left $1, []] }
 
 decl_spec3: decl_spec { et "decl_spec3" (); $1 }
 
-primary_expr: TIdent  { Constant (Ident  (fst $1)), [snd $1] }
-            | TInt    { Constant (Int    (fst $1)), [snd $1] }
-	    | TFloat  { Constant (Float  (fst $1)), [snd $1] }
-	    | TString { Constant (String (fst $1)), [snd $1] }
-	    | TChar   { Constant (Char   (fst $1)), [snd $1] }
-	    | TOPar expr TCPar { ParenExpr ($2),  [$1;$3] } /* forunparser: */
+primary_expr: TIdent  { (Ident  (fst $1)), noType, [snd $1] }
+            | TInt    { Constant (Int    (fst $1)), noType, [snd $1] }
+	    | TFloat  { Constant (Float  (fst $1)), noType, [snd $1] }
+	    | TString { Constant (String (fst $1)), noType, [snd $1] }
+	    | TChar   { Constant (Char   (fst $1)), noType, [snd $1] }
+	    | TOPar expr TCPar { ParenExpr ($2),  noType, [$1;$3] } /* forunparser: */
 
-            | TString string_list { Constant (String (fst $1)),  snd $1::$2 } /* gccext: */
-/*          | TIdent  string_list { Constant (Ident (fst $1)), [snd $1] } */  /*  cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
+            | TString string_list { Constant (String (fst $1)),  noType, snd $1::$2 } /* gccext: */
+/*          | TIdent  string_list { Constant (Ident (fst $1)), noType, [snd $1] } */  /*  cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
                /* note that can make a bug cos if not good parsing of typedef,  ucharv toto;  is not parsed as a declaration */
             /* gccext: allow statement as expressions via ({ statement }) */
-            | TOPar compound TCPar  { StatementExpr ($2),   [$1;$3] } 
+            | TOPar compound TCPar  { StatementExpr ($2),   noType, [$1;$3] } 
 
 
 

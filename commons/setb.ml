@@ -1,4 +1,6 @@
 (*pad: taken from set.ml from stdlib ocaml, functor sux: module Make(Ord: OrderedType) = *)
+(* with some addons  such as from list *)
+
 
 (***********************************************************************)
 (*                                                                     *)
@@ -13,7 +15,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* set.ml 1.18.4.1 2004/11/03 21:19:49 doligez Exp  *)
 
 (* Sets over ordered types *)
 
@@ -240,7 +242,7 @@
       | _, Empty ->
           false
       | Node (l1, v1, r1, _), (Node (l2, v2, r2, _) as t2) ->
-          let c = compare v1 v2 in
+          let c = Pervasives.compare v1 v2 in
           if c = 0 then
             subset l1 l2 && subset r1 r2
           else if c < 0 then
@@ -291,5 +293,10 @@
       elements_aux [] s
 
     let choose = min_elt
+
+(* pad: *)
+let (from_list: 'a list -> 'a t) = fun  xs ->
+  List.fold_left (fun a e -> add e a) empty xs
+
 
 

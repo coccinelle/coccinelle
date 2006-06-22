@@ -1,7 +1,8 @@
 open Common open Commonop
 
-type ppmethod = PPviatok | PPnormal
+type ppmethod = PPviatok of Ast_c.info list | PPnormal
 
+(**************************************************************************************)
 (*
 todo:
  take care of priority. because of the transformations, for instance
@@ -9,19 +10,23 @@ todo:
  (but not always, only if necessary)
  src: rene
 
-todo: if add instruction,  then try keep same indentation ! so introduce some spacing
+note: if add instruction, then try keep same indentation. So need introduce some spacings.
+  Done via the semi global _current_tabbing variable.
 
 *)
+(**************************************************************************************)
 
 open Ast_c
 open Parser_c
 
+
 let pp_program file x = 
 
   
-  with_open_outfile "/tmp/output.c" (fun (pr,_) -> 
+  with_open_outfile "/tmp/output.c" (fun (pr,chan) -> 
+    let pr s = pr s; flush chan in
 
-   let table = Common.full_charpos_to_pos file in
+   let _table = Common.full_charpos_to_pos file in
 
    (* note: that not exactly same tokens as in parsing, cos in parsing there is some transformation of tokens 
          such as TIdent in Typedef, TIdent in TString, but for what we are interested here, it is not really important
@@ -29,10 +34,35 @@ let pp_program file x =
    let toks = (Parse_c.tokens file) in 
    let toks = ref (toks +> List.map (fun tok -> (tok, Parse_c.info_from_token tok))) in
    
-   let sync elem = 
-     assert (elem <> fake_parse_info);
+   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
+
+   let is_between_two_minus (infoa,(mcoda,enva)) (infob,(mcodb,envb)) =
+     match mcoda, mcodb with
+     | Ast_cocci.MINUS _, Ast_cocci.MINUS _ -> true
+     | _ -> false
+   in
+
+   let _current_tabbing = ref "" in
+   let update_current_tabbing s = 
+     let xs = list_of_string s in
+     if (xs +> List.exists (fun c -> c = '\n'))
+     then
+       let newtabbing = 
+       xs
+       +> List.rev
+       +> Common.take_until (fun c -> c = '\n')
+       +> List.rev
+       +> List.map string_of_char
+       +> String.concat ""
+       in
+       _current_tabbing := newtabbing
+   in
+
+   (* ---------------------- *)
+   let sync (elem,annot) = 
+     assert (elem <> Common.fake_parse_info);
      (* todo: if fake_parse_info ?  print the comments that are here ? *)
-      let (before, after) = !toks +> span (fun (tok, info) -> info.charpos < elem.charpos)   in
+      let (before, after) = !toks +> span (fun (tok, (info,_ANNOT)) -> info.charpos < elem.charpos)   in
       toks := after;
 
       let (commentsbefore, passed) = before +> List.rev +> span (fun (tok, tokinfo) -> 
@@ -48,25 +78,28 @@ let pp_program file x =
 
       passed +> List.iter (fun (tok, tokinfo) -> 
            (match tok with
-            | TComment i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | TCommentCpp i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | TCommentAttrOrMacro i -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-            | _ -> pr2 ("pp_passing_token: " ^ tokinfo.str);
+            | TComment (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | TCommentCpp (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | TCommentAttrOrMacro (i,_) -> pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
+            | _ -> pr2 ("pp_passing_token: " ^ (fst tokinfo).str);
            )
          );
 
       commentsbefore +> List.iter (fun (tok, tokinfo) -> 
           (match tok with
-          | TComment            i -> pr i.str
-          | TCommentSpace       i -> pr i.str
-          | TCommentCpp         i -> pr i.str
-          | TCommentAttrOrMacro i -> pr i.str
+          | TComment            (i,_) -> pr i.str
+          | TCommentSpace       (i,_) -> 
+              update_current_tabbing i.str;
+              if not (is_between_two_minus !_lastasked (elem,annot))
+              then pr i.str;
+          | TCommentCpp         (i,_) -> pr i.str
+          | TCommentAttrOrMacro (i,_) -> pr i.str
           | x -> error_cant_have x
           );
          );
    
       let (tok, tokinfo) = pop2 toks in 
-      assert_equal tokinfo.charpos elem.charpos;
+      assert_equal (fst tokinfo).charpos elem.charpos;
       (* pasforcement: assert_equal tokinfo.str elem.str;
          indeed we may have "reused" a token to keep its related comment  and just change
          its value (e.g. if decide to transform every 0 in 1, we will reuse the info from 0)
@@ -74,21 +107,55 @@ let pp_program file x =
       ()
         
    in
-   let _lastasked = ref fake_parse_info in
-   let pr_elem e = 
-     if not (e.charpos > !_lastasked.charpos)
-     then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
-
-     _lastasked := e;
-     sync e; pr e.str 
-   in
 
 
+   (* ---------------------- *)
 
-   let rec pp_expression = function
-    | Constant (String s),        is     -> is +> List.iter pr_elem
-    | Constant (c),         [i]     -> pr_elem i
-    | FunCall  (e, es),     [i1;i2] -> 
+   let rec pr_elem ((info,(mcode,env)) as e) = 
+    if not (Ast_c.is_al_info info)
+    then 
+      begin
+        if not ((fst e).charpos > (fst !_lastasked).charpos)
+        then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
+
+        sync e; 
+        _lastasked := e;
+      end;
+     
+     (*old: pr info.str *)
+     let s = info.str in
+
+     match mcode with
+     | Ast_cocci.MINUS (i, any_xxs) -> 
+         pp_list_list_any env  !any_xxs 
+     | Ast_cocci.CONTEXT (i, any_befaft) -> 
+         (match !any_befaft with
+         | Ast_cocci.NOTHING -> pr s
+               
+         | Ast_cocci.BEFORE xxs -> 
+             pp_list_list_any env xxs;
+             pr s;
+         | Ast_cocci.AFTER xxs -> 
+             pr s;
+             pp_list_list_any env xxs;
+         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
+             pp_list_list_any env xxs;
+             pr s;
+             pp_list_list_any env yys;
+             
+         )
+     | Ast_cocci.PLUS i -> raise Impossible
+
+
+
+
+
+   (* ---------------------- *)
+   and pp_expression x = match x with
+    | Constant (String s),        typ, is     -> is +> List.iter pr_elem
+    | Ident (c),         typ,[i]     -> pr_elem i
+    | Constant (c),         typ,[i]     -> pr_elem i
+    | FunCall  (e, es),     typ,[i1;i2] -> 
         pp_expression e; pr_elem i1; 
         es +> List.iter (fun (e, opt) -> 
           (match opt with
@@ -107,35 +174,38 @@ let pp_program file x =
             
         pr_elem i2;
         
-    | CondExpr (e1, e2, e3),    [i1;i2]    -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; pp_expression e3
-    | Sequence (e1, e2),          [i]  -> pp_expression e1; pr_elem i; pp_expression e2
-    | Assignment (e1, op, e2),    [i]  -> pp_expression e1; pr_elem i; pp_expression e2
+    | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; pp_expression e3
+    | Sequence (e1, e2),          typ,[i]  -> pp_expression e1; pr_elem i; pp_expression e2
+    | Assignment (e1, op, e2),    typ,[i]  -> 
+        pp_expression e1; 
+        pr_elem i; 
+        pp_expression e2
         
-    | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
-    | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
-    | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] -> pp_expression e1;   pr_elem i; pp_expression e2
+    | Postfix  (e, op),    typ,[i] -> pp_expression e; pr_elem i;
+    | Infix    (e, op),    typ,[i] -> pr_elem i; pp_expression e;
+    | Unary    (e, op),    typ,[i] -> pr_elem i; pp_expression e
+    | Binary   (e1, op, e2),    typ,[i] -> pp_expression e1;   pr_elem i; pp_expression e2
         
-    | ArrayAccess    (e1, e2),     [i1;i2] -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
-    | RecordAccess   (e, s),       [i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
-    | RecordPtAccess (e, s),       [i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
+    | ArrayAccess    (e1, e2),     typ,[i1;i2] -> pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
+    | RecordAccess   (e, s),       typ,[i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
+    | RecordPtAccess (e, s),       typ,[i1;i2] -> pp_expression e; pr_elem i1; pr_elem i2
 
-    | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
-    | SizeOfType  (t),     [i1;i2;i3] -> pr_elem i1; pr_elem i2; pp_type_with_ident None None t; pr_elem i3
-    | Cast    (t, e),      [i1;i2] -> pr_elem i1; pp_type_with_ident None None t; pr_elem i2; pp_expression e
+    | SizeOfExpr  (e),     typ,[i] -> pr_elem i; pp_expression e
+    | SizeOfType  (t),     typ,[i1;i2;i3] -> pr_elem i1; pr_elem i2; pp_type_with_ident None None t; pr_elem i3
+    | Cast    (t, e),      typ,[i1;i2] -> pr_elem i1; pp_type_with_ident None None t; pr_elem i2; pp_expression e
 
-    | StatementExpr ((declxs_statxs), [ii1;ii2]),  [i1;i2] -> 
+    | StatementExpr ((declxs_statxs), [ii1;ii2]),  typ,[i1;i2] -> 
         pr_elem i1;
         pr_elem ii1;
         declxs_statxs +> List.iter (function Left decl -> pp_decl decl | Right stat -> pp_statement stat);
         pr_elem ii2;
         pr_elem i2;
-    | Constructor, [] -> pr "<<constructur_or_strange_stuff>>"
-    | NoExpr, [] -> ()
+    | Constructor, typ,[] -> pr "<<constructur_or_strange_stuff>>"
+    | NoExpr, typ,[] -> ()
 
-    | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
+    | ParenExpr (e), typ,[i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | MacroCall  (es),     [i1;i2;i3] -> 
+    | MacroCall  (es),     typ,[i1;i2;i3] -> 
 
         let rec pp_action = function 
           | (ActMisc ii) -> ii +> List.iter pr_elem
@@ -168,7 +238,7 @@ let pp_program file x =
             
         pr_elem i3;
 
-    | MacroCall2  (arg),     [i1;i2;i3] -> 
+    | MacroCall2  (arg),     typ,[i1;i2;i3] -> 
         pr_elem i1;
         pr_elem i2;
         (match arg with
@@ -242,12 +312,12 @@ let pp_program file x =
      let get_sto sto = match sto with None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis  in
      let print_sto_qu (sto, (qu, iiqu)) = 
        let all_ii = get_sto sto ++ iiqu in
-       all_ii +> List.sort (fun i1 i2 -> compare i1.charpos i2.charpos) +> List.iter pr_elem;
+       all_ii +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos) +> List.iter pr_elem;
        
      in
      let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
        let all_ii = get_sto sto ++ iiqu ++ iity in
-       let all_ii2 = all_ii +> List.sort (fun i1 i2 -> compare i1.charpos i2.charpos) in
+       let all_ii2 = all_ii +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos) in
        if all_ii <> all_ii2 
        then begin pr2 "STRANGEORDER"; all_ii2 +> List.iter pr_elem end
        else all_ii2 +> List.iter pr_elem
@@ -581,17 +651,91 @@ let pp_program file x =
 
 
      | x -> error_cant_have x
-   in
-   (**************************************************************************************)
-   (* start point *)
-   (**************************************************************************************)
 
-   x +> List.iter (fun ((e, ppmethod), info) -> 
-   let (filename, (pos1, pos2), stre, toks) = info in 
+
+  (* ---------------------- *)
+
+  (* assert: normally there is only CONTEXT NOTHING tokens in any *)
+  and pp_any env x = match x with
+  | Ast_cocci.ExpressionTag exp -> pp_cocci_expr env exp
+  | Ast_cocci.Rule_elemTag rule -> pp_cocci_rule env rule
+  | Ast_cocci.IdentTag ident -> pp_cocci_ident env ident
+  | Ast_cocci.Token s -> pr s
+  | _ -> raise Todo
+
+  and pp_list_list_any env xxs =
+     match xxs with
+     | xs::xxs -> 
+         xs +> List.iter (fun any -> 
+           pp_any env any
+             );
+         xxs +> List.iter (fun xs -> 
+           pr "\n"; 
+           pr !_current_tabbing;
+           xs +> List.iter (fun any -> 
+               pp_any env any
+             ); 
+          )
+     | [] -> ()
+
+
+  and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
+  | Ast_cocci.Ident id -> pp_cocci_ident env id
+  | Ast_cocci.MetaExpr ((s,_),_typeTODO) -> 
+      let v = List.assoc s env in
+      (match v with 
+      | Ast_c.MetaExpr exp -> 
+          pp_expression exp
+      | _ -> raise Impossible
+      )
+
+  | Ast_cocci.Constant (Ast_cocci.Int (s),_) -> pr s
+  | Ast_cocci.Constant (Ast_cocci.String (s),_) -> pr ("\"" ^ s ^ "\"")
+  | Ast_cocci.Constant (Ast_cocci.Char (s),_) -> pr s
+  | Ast_cocci.Constant (Ast_cocci.Float (s),_) -> pr s
+
+  | Ast_cocci.FunCall (e, (lp,_), es, (rp,_)) -> 
+      pp_cocci_expr env e; pr lp; List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr rp
+
+  | Ast_cocci.EComma (com,_) -> pr com; pr " " (* pretty printing: add a space after ',' *)
+
+  | Ast_cocci.DisjExpr _ -> raise Impossible
+  | Ast_cocci.Edots _ -> raise Impossible
+  | _ -> raise Todo
+    
+
+  and pp_cocci_rule env x = match x with
+  | Ast_cocci.SeqStart (brace,_) -> pr brace
+  | Ast_cocci.SeqEnd   (brace,_) -> pr brace
+
+  | Ast_cocci.ExprStatement (e,  (sem,_)) -> pp_cocci_expr env e; pr sem
+
+
+
+  | Ast_cocci.IfHeader ((iff,_), (lp,_), e, (rp,_)) -> pr iff; pr lp; pp_cocci_expr env e; pr rp
+  | Ast_cocci.Else     (str,_) -> pr str
+
+  | _ -> raise Todo
+
+  and pp_cocci_ident env x = match x with
+  | Ast_cocci.Id (s,_) -> pr s
+  | _ -> raise Todo
+
+
+
+   in
+
+
+
+  (* ---------------------- *)
+  (* start point *)
+  (* ---------------------- *)
+
+   x +> List.iter (fun ((e, ppmethod)) -> 
    match ppmethod with
-   | PPviatok -> 
+   | PPviatok toks -> 
        (match e with
-       | FinalDef ii -> pr_elem {ii with str = ""} (* todo: less: assert that FinalDef is the last one in the list *)
+       | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot) (* todo: less: assert that FinalDef is the last one in the list *)
        | e -> toks +> List.iter (fun x -> pr_elem x)
        )
 
@@ -646,12 +790,9 @@ let pp_program file x =
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
 
-     | FinalDef ii -> pr_elem {ii with str = ""}
+     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot)
 
      | x -> error_cant_have x
-     )
-   
+     )   
    );
-
-
  );

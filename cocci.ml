@@ -1,98 +1,102 @@
 open Common open Commonop
 
-(* alt: C for c, P for patch *)
-module A = Ast_cocci
-module B = Ast_c
-
 (*
- re for rule_elem (work for regexp too :) )
+ This file is a kind of driver. It gathers all the important functions 
+ from Coccinelle in one place. The different entities of the Coccinelle system:
+  - files
+
+  - astc
+  - astcocci
+
+  - flow (contain nodes)
+  - ctl  (contain rule_elem)
+
+  There are functions to transform one in another.
+
 *)
 
+(* --------------------------------------------------------------------- *)
+let cprogram_from_file  file = Parse_c.parse_print_error_heuristic file
 
-(* 
-less: debugging info => unparse_statement, and unparse_rule_elem
-*)
+let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
+  begin
+    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ "\n}");
+    let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
+    program +> map_filter (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
+          (match c with
+          | [Right st] -> Some st
+          | _ -> None
+          )
+      | _ -> None
+                          )
+      +> List.hd
+    
+  end
 
-let (cocci_grep: Ast_cocci.rule list ->   string list -> Ast_c.program2 ->  unit) = fun semantic_patch error_words cfile ->
+let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
+  begin
+    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ ";\n}");
+    let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
+    program +> map_filter (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
+          (match c with
+          | [Right (Ast_c.ExprStatement (Some e),ii)] -> Some e
+          | _ -> None
+          )
+      | _ -> None
+                          )
+      +> List.hd
+    
+  end
   
 
-  semantic_patch +> List.iter (fun rule -> 
-    cfile +> List.iter (fun (cunit, info) -> 
-      let (filename, (pos1, pos2), stre, toks) = info in 
-      let stre2 = Str.global_replace (Str.regexp "\n") " " stre in (* cos caml regexp dont like \n ... *)
+(* --------------------------------------------------------------------- *)
+let sp_from_file file    = Parse_cocci.process_for_ctl file false
+let spbis_from_file file = Parse_cocci.process file false
 
-      let found = error_words +> List.exists (fun s -> stre2 =~ (".*" ^  s  )) in
-      
-      match cunit with
-      | B.FinalDef _ -> ()
-      | B.EmptyDef _ -> ()
-
-      | B.SpecialDeclMacro _ -> ()
-
-      | B.NotParsedCorrectly _ -> ()
-
-      | B.Declaration _ -> ()
-      | B.Definition ((funcs, functype, sto, compound, ii) as deffunc) -> 
-          pr ("processing:" ^ funcs);
-          if found then 
-            begin 
-              pr2 "found one error word in that function";
-
-              let cflow = 
-                (try 
-                  Control_flow_c.build_control_flow deffunc
-                with 
-                | Control_flow_c.DeadCode None      -> failwith "deadcode detected, but cant trace back the place"
-                | Control_flow_c.DeadCode Some info -> failwith ("deadcode detected: " ^ (Common.error_message filename ("", info.charpos) ))
-                ) in
+let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s -> 
+  begin
+    write_file "/tmp/__cocci.cocci" (s);
+    let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" in
+    let stmt =
+      rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
+	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
+	| _ -> raise Not_found) in
+    match stmt with
+      Ast_cocci.Atomic(re) -> re
+    | _ -> failwith "only atomic patterns allowed"
+  end
 
 
-(*              let _ = Control_flow_c.print_control_flow cflow in  *)
-
-              match rule with
-              | A.FUNCTION [(A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs)] 
-              | A.STATEMENTS (A.DOTS rexs | A.CIRCLES rexs | A.STARS rexs) -> 
-                  pr2 "searching a statement";
-
-                  (* todo: look at order ? *)
-                  rexs +> List.iter (fun re -> 
-                  
-                    let nodes = cflow#nodes  in
-                    nodes#tolist +> List.iter (fun (i, node) -> 
-                      if Pattern.match_re_node re node
-                      then 
-                        begin 
-                          pr2 ("FOUND");
-                          (* pr2 (Dumper.dump (re, node)); *)
-                          print_string ("C  : " ^ snd node ^ "\n");
-                          print_string ("SP : ");
-                          ignore(Unparse_cocci.rule_elem "" re);
-                          Format.force_newline(); Format.print_flush();
-                        end
-
-                      else ()
-                    );
-                  );
-                  pr2 (Dumper.dump (Pattern._sg_metavars_binding));
-
-              | A.FUNCTION xs -> raise Todo
 
 
-            end
+
+(* --------------------------------------------------------------------- *)
+let flows astc = 
+  let (program, stat) = astc in
+  program +> map_filter (fun (e,_) -> 
+    match e with
+    | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
+        (try 
+          Some (Control_flow_c.ast_to_control_flow def)
+        with 
+        | Control_flow_c.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"; None
+        | Control_flow_c.DeadCode Some info -> pr2 ("deadcode detected: " ^ (Common.error_message stat.Parse_c.filename ("", info.charpos) )); None
+        )
           
+    | _ -> None
+   )
 
-      );
+let one_flow flows = List.hd flows
 
-      
-      
-    );
+let print_flow flow = Ograph_extended.print_ograph_extended flow
 
+(* --------------------------------------------------------------------- *)
+let ctls = List.map Asttoctl.asttoctl
+let one_ctl ctls = List.hd (List.hd ctls)
 
-(*
-                  pr2 "##############################################################################";
-                  pr2 ("SLICEEEEEEEEEEEEEEEEEE, on " ^ filename ^ " = "); 
-                  pr2 stre; 
-                  pr2 "##############################################################################";
+(* --------------------------------------------------------------------- *)
 
-
-*)

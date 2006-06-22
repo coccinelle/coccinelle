@@ -68,7 +68,11 @@ class virtual ['a] ocollection =
 
 
     method length: int = 
-      o#tolist +> List.length
+      (* oldsimple: o#tolist +> List.length *)
+      (* opti: *)
+      let count = ref 0 in
+      o#iter (fun e -> incr count);
+      !count
     method exists: ('a -> bool) -> bool = 
       fun f -> o#tolist +> List.exists f
     method filter: ('a -> bool) -> 'o = 

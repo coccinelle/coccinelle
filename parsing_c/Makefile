@@ -1,95 +1,62 @@
-#############################################################################
-# Configuration section
-#############################################################################
+# Don't forget to first do a 'make links' to be able to compile the standalone c parser
 
-BINDIR=/usr/local/bin
-MANDIR=/usr/local/man
+TARGET=c_parser
 
-#############################################################################
+SOURCES = flag.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml \
+          control_flow_c.ml lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
+          unparse_c.ml
 
-#CONFIG
-VERSION = 0.1
-#OPTS = -debug -assert -raise #  -typecheck -contract -profile -readable
-#PP =  -pp "./fix_caml.pl -version=$(VERSION) $(OPTS) aspect.pl" 
-#-pp cpp ##BUG: if add that, then zarb line reporting  by ocaml backtrace, or ocaml replay
+SYSLIBS = str.cma unix.cma 
 
-TARGET=coccinelle
-SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml visitor_c.ml           lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
-#SOURCEMAIN = flag.ml ast_c.ml semantic_c.ml                        lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml   unparse_c.ml transformation.ml main.ml
-
-SYSLIBS = str.cma unix.cma threads.cma
-LIBS=../commons/commons.cma
-COMMONDIR=../commons
-SUBDIRS=../commons
-
-
-ADDONSPATH = -I $(COMMONDIR) 
+# parsing_c now depends on cocci_parser because in addition to decorate the
+# token in Ast_c with some parse info, we now also make some place to
+# welcome some mcodekind of Ast_cocci.
+LIBS=../commons/commons.cma  ../parsing_cocci/cocci_parser.cma
+ADDONSPATH= -I ../commons -I  ../parsing_cocci 
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM
 
-# -w A ?
-OCAMLC=ocamlc -g  $(PP) $(ADDONSPATH) -thread
-OCAMLOPT=ocamlopt  $(PP) $(ADDONSPATH) -thread -p -inline 0
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
+OCAMLC=ocamlc -g   $(ADDONSPATH) 
+OCAMLOPT=ocamlopt   $(ADDONSPATH)
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(PP) $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(PP) -thread $(ADDONSPATH)
-
-LIB=$(TARGET).cma
-OPTLIB=$(LIB:.cma=.cmxa)
+OCAMLDEP=ocamldep  $(ADDONSPATH)
+OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 
-
-OBJS = $(SOURCEMAIN:.ml=.cmo)
-OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
+OBJS = $(SOURCES:.ml=.cmo)
+OPTOBJS = $(SOURCES:.ml=.cmx)
 
 
 
-
-all: $(TARGET)   
+all: $(TARGET).byte $(TARGET).cma
 #$(TARGET).top
 #$(TARGET).opt
 
-$(TARGET): $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(TARGET) $(SYSLIBS) $(LIBS) $(OBJS)
-
+$(TARGET).byte: $(OBJS) $(LIBS)
+	$(OCAMLC) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
 
-clean::
-	rm -f $(TARGET) $(TARGET).opt
-
+$(TARGET).cma: $(OBJS) $(LIBS)
+	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
-clean:: 
-	rm -f $(TARGET).top
+
+clean::
+	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
+
 
 links:
-	ln -s ../ast_c.ml
-	ln -s ../visitor_c.ml
 	ln -s ../flag.ml
-#	ln -s ../commons
 
 dellinks:
-	rm -f ast_c.ml visitor_c.ml flag.ml #commons
-
-../commons/commons.cmxa:
-	cd commons; $(MAKE) commons.cmxa
-
-commons/%: 
-	cd commons; $(MAKE)
-
-
-
-clean::
-	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i clean; done 
-
-clean::
-	rm -f *.cm[iox] *.o
-
+	rm -f flag.ml 
 
 
 lexer_c.ml: lexer_c.mll
@@ -125,7 +92,7 @@ beforedepend:: parser_c.ml parser_c.mli
 	$(OCAMLC) -i $<
 
 clean::
-	rm -f *.cm[iox] *.o
+	rm -f *.cm[ioxa] *.o
 
 clean::
 	rm -f *~ .*~ gmon.out #*#
@@ -135,6 +102,6 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend
 
-include .depend
+-include .depend
 
 

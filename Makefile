@@ -1,125 +1,84 @@
-#############################################################################
-# Configuration section
-#############################################################################
+TARGET=spatch
 
-TARGET=coccinelle
-
-#############################################################################
-
-SOURCEMAIN = aux.ml \
+SRC = \
 	flag.ml  \
-	classic_patch.ml  \
-	\
-	ast_c.ml \
-	ast_cocci.ml \
-	visitor_c.ml control_flow_c.ml \
-	pattern.ml \
-	\
-        parsing_cocci/ast0_cocci.ml parsing_cocci/check_meta.ml parsing_cocci/arity.ml parsing_cocci/plus.ml parsing_cocci/merge.ml  parsing_cocci/data.ml \
-	\
-	parsing_c/semantic_c.ml          parsing_c/lexer_parser.ml     parsing_c/parser_c.ml         parsing_c/lexer_c.ml          parsing_c/parse_c.ml  	   parsing_c/unparse_c.ml \
-	parsing_cocci/semantic_cocci.ml                                parsing_cocci/parser_cocci.ml parsing_cocci/lexer_cocci.ml  parsing_cocci/parse_cocci.ml    parsing_cocci/unparse_cocci.ml  \
-	\
-	cocci.ml   main.ml
-#SOURCEMAIN = flag.ml ast_c.ml visitor_c.ml parsing_c/semantic_c.ml         parsing_c/lexer_parser.ml parsing_c/parser_c.ml parsing_c/lexer_c.ml parsing_c/parse_c.ml   
+	misc/classic_patch.ml  \
+	cocci.ml main.ml
 
 SYSLIBS = str.cma unix.cma
-LIBS=commons/commons.cma 
-COMMONDIR=commons
-SUBDIRS=commons
+LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
+MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
+ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
 
-
-ADDONSPATH = -I $(COMMONDIR) -I parsing_c -I parsing_cocci 
 
 OCAMLRUNPARAM = 'b'
 export OCAMLRUNPARAM
 
-# -w A ?
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLC=ocamlc -g   $(ADDONSPATH)
-OCAMLOPT=ocamlopt   $(ADDONSPATH) -p -inline 0
+OCAMLOPT=ocamlopt   $(ADDONSPATH) 
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
-LIB=$(TARGET).cma
-OPTLIB=$(LIB:.cma=.cmxa)
+
+EXEC=$(TARGET)
+OPTEXEC=$(EXEC).opt
+
+OBJS = $(SRC:.ml=.cmo)
+OPTOBJS = $(SRC:.ml=.cmx)
 
 
+all: mystuff
 
-OBJS = $(SOURCEMAIN:.ml=.cmo)
-OPTOBJS = $(SOURCEMAIN:.ml=.cmx)
+all: rec $(EXEC)
+opt: rec.opt $(OPTEXEC)
 
 
+rec:
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
 
+rec.opt:
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
-all: $(TARGET)   
-#$(TARGET).top
-#$(TARGET).opt
-
-$(TARGET): $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(TARGET) $(SYSLIBS) $(LIBS) $(OBJS)
-
-$(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
+$(EXEC): $(OBJS) $(LIBS)
+	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+
+$(OPTEXEC): $(OPTOBJS) $(OPTLIBS)
+	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+
 
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
 
-
-
-commons/commons.cma:
-	cd commons; $(MAKE) commons.cma
-
-commons/%: 
-	cd commons; $(MAKE)
-
-
-
 clean::
-	set -e; for i in $(SUBDIRS); do $(MAKE) -C $$i clean; done 
-
-clean::
-	rm -f parsing_c/*.cm[iox] parsing_c/*.o
-
-clean::
-	rm -f parsing_cocci/*.cm[iox] parsing_cocci/*.o
-
-
-parsing_c/lexer_c.ml: parsing_c/lexer_c.mll
-	$(OCAMLLEX) $<
-clean::
-	rm -f parsing_c/lexer_c.ml
-beforedepend:: parsing_c/lexer_c.ml
-
-
-parsing_c/parser_c.ml parsing_c/parser_c.mli: parsing_c/parser_c.mly
-	$(OCAMLYACC) $<
-clean::
-	rm -f parsing_c/parser_c.ml parsing_c/parser_c.mli parsing_c/parser_c.output
-beforedepend:: parsing_c/parser_c.ml parsing_c/parser_c.mli
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
 
 
 
+MYSRC = flag.ml  \
+	misc/classic_patch.ml  \
+	cocci.ml   mytest.ml mymain.ml
+MYOBJS = $(MYSRC:.ml=.cmo)
+MYEXEC = myspatch
 
-parsing_cocci/lexer_cocci.ml: parsing_cocci/lexer_cocci.mll
-	$(OCAMLLEX) $<
-clean::
-	rm -f parsing_cocci/lexer_cocci.ml
-beforedepend:: parsing_cocci/lexer_cocci.ml
+mystuff: rec $(MYEXEC) $(MYEXEC).top
 
 
-parsing_cocci/parser_cocci.ml parsing_cocci/parser_cocci.mli: parsing_cocci/parser_cocci.mly
-	$(OCAMLYACC) $<
-clean::
-	rm -f parsing_cocci/parser_cocci.ml parsing_cocci/parser_cocci.mli parsing_cocci/parser_cocci.output
-beforedepend:: parsing_cocci/parser_cocci.ml parsing_cocci/parser_cocci.mli
+$(MYEXEC): $(MYOBJS) $(LIBS)
+	$(OCAMLC) -o $(MYEXEC) $(SYSLIBS) $(LIBS) $(MYOBJS)
+
+$(MYEXEC).top: $(MYOBJS) $(LIBS)
+	$(OCAMLMKTOP) -o $(MYEXEC).top $(SYSLIBS) $(LIBS) $(MYOBJS)
+
 
 
 
@@ -127,26 +86,29 @@ beforedepend:: parsing_cocci/parser_cocci.ml parsing_cocci/parser_cocci.mli
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(ADDONSPATH) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(ADDONSPATH) -c $<
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT) $(ADDONSPATH) -c $<
 
 .ml.mldepend: 
-	$(OCAMLC) -i $<
+	$(OCAMLC) $(ADDONSPATH) -i $<
 
 clean::
 	rm -f *.cm[iox] *.o
 
 clean::
+	rm -f misc/*.cm[iox] *.o
+
+clean::
 	rm -f *~ .*~ gmon.out #*#
 
-beforedepend::
+beforedepend:
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml parsing_c/*.mli parsing_c/*.ml parsing_cocci/*.mli parsing_cocci/*.ml  > .depend
+	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
-include .depend
 
-
+-include .depend

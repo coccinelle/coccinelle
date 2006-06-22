@@ -18,6 +18,9 @@ class virtual ['a] oset =
         (* is_intersect, equal, subset *)
     method is_subset_of: 'o -> bool = fun o2 -> 
       ((o2#minus o)#cardinal >= 0) && ((o#minus o2)#cardinal = 0)
+
+    method is_equal: 'o -> bool = fun o2 -> 
+      ((o2#minus o)#cardinal = 0) && ((o#minus o2)#cardinal = 0)
       
 
     method is_singleton: bool = (* can be short circuited *)
@@ -33,7 +36,8 @@ let ($??$) e xs = xs#mem e
 let ($++$) xs ys = xs#union ys
 let ($**$) xs ys = xs#inter ys
 let ($--$) xs ys = xs#minus ys
-let ($<<$) xs ys = xs#is_subset_of ys
+let ($<<=$) xs ys = xs#is_subset_of ys
+let ($==$) xs ys = xs#is_equal ys
 
 (*  TODO pas bo le seed,  i dont put the type otherwise have to put explicit :> *)
 let (mapo: ('a -> 'b) -> 'b oset -> 'a oset -> 'b oset) = fun f seed xs -> 

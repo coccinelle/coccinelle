@@ -13,6 +13,8 @@ val add_paramlist_meta: (string -> unit) ref
 
 val add_const_meta: (Ast0_cocci.fullType list option -> string -> unit) ref
 
+val add_err_meta: (string -> unit) ref
+
 val add_exp_meta: (Ast0_cocci.fullType list option -> string -> unit) ref
 
 val add_explist_meta: (string -> unit) ref

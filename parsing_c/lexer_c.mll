@@ -17,9 +17,11 @@ let tokinfo lexbuf  =
   { 
     charpos = Lexing.lexeme_start lexbuf; 
     str     = tok lexbuf  
-  }
-}
+  }, Ast_c.dumbAnnot
 
+let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
+
+}
 
 (*******************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
@@ -55,7 +57,7 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
 rule token = parse
   | [' ' '\t' '\n' '\r' '\011' '\012' ]+            { TCommentSpace (tokinfo lexbuf) }
-  | "/*"                                            { let info = tokinfo lexbuf in let s2 = comment lexbuf in TComment ({info with str = info.str ^ s2}) }
+  | "/*"                                            { let info = tokinfo lexbuf in let s2 = comment lexbuf in TComment (info +> tok_add_s s2) }
 
 
 
@@ -90,9 +92,9 @@ y'a des ` (1)  (derriere un #ifndef linux)
 
 *)
 
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)                  { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp ({info with str = info.str ^ s2}) }
+  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)                  { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
 
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp ({info with str = info.str ^ s2}) }
+  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    { TCommentCpp (tokinfo lexbuf) }
 
@@ -106,14 +108,14 @@ y'a des ` (1)  (derriere un #ifndef linux)
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           { TCommentCpp (tokinfo lexbuf) }
 
 
-  | "#" [' ' '\t']* "if" [' ' '\t']* "0"              { let info = tokinfo lexbuf in let s2 = cpp_comment_if_0 lexbuf in TCommentCpp ({info with str = info.str ^ s2}) }
+  | "#" [' ' '\t']* "if" [' ' '\t']* "0"              { let info = tokinfo lexbuf in let s2 = cpp_comment_if_0 lexbuf in TCommentCpp (info +> tok_add_s s2) }
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
   | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "ifndef" [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "endif"  [' ' '\t' '\n']                                   { TCommentCpp (tokinfo lexbuf) }
-  | "#" [' ' '\t']* "if" [' ' '\t']+                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp ({info with str = info.str ^ s2}) }
-  | "#" [' ' '\t']* "if" '('                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp ({info with str = info.str ^ s2}) }
+  | "#" [' ' '\t']* "if" [' ' '\t']+                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']* "if" '('                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
   | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     { TCommentCpp (tokinfo lexbuf) }
 
@@ -412,11 +414,11 @@ y'a des ` (1)  (derriere un #ifndef linux)
 
 (*******************************************************************************)
 
-  | "'"     { let info = tokinfo lexbuf in let s = char lexbuf   in TChar     ((s,   IsChar),  {info with str = info.str ^ s ^ "'"}) }
-  | '"'     { let info = tokinfo lexbuf in let s = string lexbuf in TString   ((s,   IsChar),  {info with str = info.str ^ s ^ "\""}) }
+  | "'"     { let info = tokinfo lexbuf in let s = char lexbuf   in TChar     ((s,   IsChar),  (info +> tok_add_s (s ^ "'"))) }
+  | '"'     { let info = tokinfo lexbuf in let s = string lexbuf in TString   ((s,   IsChar),  (info +> tok_add_s (s ^ "\""))) }
   (* wide character encoding, TODO L'toto' valid ? what is allowed ? *)
-  | 'L' "'" { let info = tokinfo lexbuf in let s = char lexbuf   in TChar     ((s,   IsWchar),  {info with str = info.str ^ s ^ "'"}) } 
-  | 'L' '"' { let info = tokinfo lexbuf in let s = string lexbuf in TString   ((s,   IsWchar),  {info with str = info.str ^ s ^ "\""}) }
+  | 'L' "'" { let info = tokinfo lexbuf in let s = char lexbuf   in TChar     ((s,   IsWchar),  (info +> tok_add_s (s ^ "'"))) } 
+  | 'L' '"' { let info = tokinfo lexbuf in let s = string lexbuf in TString   ((s,   IsWchar),  (info +> tok_add_s (s ^ "\""))) }
 
 
   (* take care of the order  ? no cos lex try the longest match 
@@ -452,7 +454,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
  (* special, !!! to put after other rules such  !! otherwise 0xff will be parsed as an ident  *)
   | ['0'-'9']+ letter (letter | digit) *  { 
        let info = tokinfo lexbuf in
-       pr2 ("ZARB integer_string, certainly a macro:" ^ info.str);
+       pr2 ("ZARB integer_string, certainly a macro:" ^ (fst info).str);
        TIdent (tok lexbuf, info)
      } 
 
@@ -460,7 +462,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
 
 
 (*******************************************************************************)
-  | eof            { let w = tokinfo lexbuf in EOF ({ w with Common.str = "EOF"}) }
+  | eof            { let (w,annot) = tokinfo lexbuf in EOF ( { w with Common.str = "EOF"},annot) }
 
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 

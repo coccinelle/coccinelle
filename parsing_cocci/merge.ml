@@ -7,6 +7,8 @@ plus.ml as well.  This problem is dealt with by the logical line field,
 which is not incremented for blank lines. *)
 
 module Ast = Ast_cocci
+module Ast0 = Ast0_cocci
+module V0 = Visitor_ast0
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -18,13 +20,13 @@ type position =
   | Bad of Ast.info
 
 let mcode = function
-    Ast.MINUS(_,info,plus_stream) -> Minus (info,plus_stream)
-  | Ast.CONTEXT(_,info,plus_stream) -> Context (info,plus_stream)
+    (_,_,Ast.MINUS(info,plus_stream)) -> [Minus (info,plus_stream)]
+  | (_,_,Ast.CONTEXT(info,plus_stream)) -> [Context (info,plus_stream)]
   | _ -> failwith "not possible 1"
 
 let bad_mcode = function
-    Ast.MINUS(_,info,plus_stream) -> Bad(info)
-  | Ast.CONTEXT(_,info,plus_stream) -> Bad(info)
+    (_,_,Ast.MINUS(info,plus_stream)) -> Bad(info)
+  | (_,_,Ast.CONTEXT(info,plus_stream)) -> Bad(info)
   | _ -> failwith "not possible 2"
 
 let make_bad l =
@@ -35,168 +37,68 @@ let make_bad l =
       |	x -> x)
     l
 
-let get_option fn x =
-  match x with
-    None -> []
-  | Some e -> fn e
+(* --------------------------------------------------------------------- *)
+(* combiner info *)
+
+let bind x y = x @ y
+let option_default = []
 
 (* --------------------------------------------------------------------- *)
-(* Dots *)
 
-let dots fn = function
-    Ast.DOTS(l) -> List.concat (List.map fn l)
-  | Ast.CIRCLES(l) -> List.concat (List.map fn l)
-  | Ast.STARS(l) -> List.concat (List.map fn l)
+let get_option f = function
+    Some x -> f x
+  | None -> option_default
 
-(* --------------------------------------------------------------------- *)
-(* Identifier *)
+let ident recursor k i = k i (* nothing special to do *)
 
-let rec ident = function
-    Ast.Id(name) -> [mcode name]
-  | Ast.MetaId(name) -> [mcode name]
-  | Ast.MetaFunc(name) -> [mcode name]
-  | Ast.MetaLocalFunc(name) -> [mcode name]
-  | Ast.OptIdent(id) -> ident id
-  | Ast.UniqueIdent(id) -> ident id
-  | Ast.MultiIdent(id) -> ident id
-
-(* --------------------------------------------------------------------- *)
-(* Expression *)
-
-let rec expression = function
-    Ast.Ident(id) -> ident id
-  | Ast.Constant(const) -> [mcode const]
-  | Ast.FunCall(fn,lp,args,rp) ->
-      (expression fn) @ (mcode lp) :: (dots expression args) @ [mcode rp]
-  | Ast.Assignment(left,op,right) ->
-      (expression left) @ (mcode op) :: (expression right)
-  | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
-      (expression exp1) @ (mcode why) :: (get_option expression exp2) @
-      (mcode colon) :: (expression exp3)
-  | Ast.Postfix(exp,op) -> (expression exp) @ [mcode op]
-  | Ast.Infix(exp,op) -> (mcode op) :: (expression exp)
-  | Ast.Unary(exp,op) -> (mcode op) :: (expression exp)
-  | Ast.Binary(left,op,right) ->
-      (expression left) @ [mcode op] @ (expression right)
-  | Ast.Paren(lp,exp,rp) -> (mcode lp) :: (expression exp) @ [mcode rp]
-  | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-      (expression exp1) @ (mcode lb) :: (expression exp2) @ [mcode rb]
-  | Ast.RecordAccess(exp,pt,field) ->
-      (expression exp) @ (mcode pt) :: (ident field)
-  | Ast.RecordPtAccess(exp,ar,field) ->
-      (expression exp) @ (mcode ar) :: (ident field)
-  | Ast.Cast(lp,ty,rp,exp) ->
-      (mcode lp) :: (typeC ty) @ (mcode rp) :: (expression exp)
-  | Ast.MetaConst(name,ty) -> [mcode name]
-  | Ast.MetaExpr(name,ty) -> [mcode name]
-  | Ast.MetaExprList(name) -> [mcode name]
-  | Ast.EComma(cm) -> [mcode cm]
-  | Ast.DisjExpr(expr_dots_list) ->
-      List.concat (List.map expression expr_dots_list)
-  | Ast.NestExpr(expr_dots) -> dots expression expr_dots
-  | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
-  | Ast.Estars(dots,whencode) ->
+let expression recursor k e =
+  match Ast0.unwrap e with
+    Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
+  | Ast0.Estars(dots,whencode) ->
       (bad_mcode dots) ::
-      (get_option (function x -> make_bad(expression x)) whencode)
-  | Ast.OptExp(exp) -> expression exp
-  | Ast.UniqueExp(exp) -> expression exp
-  | Ast.MultiExp(exp) -> expression exp
+      (get_option (function x -> make_bad(recursor.V0.combiner_expression x))
+	 whencode)
+  | _ -> k e
 
-(* --------------------------------------------------------------------- *)
-(* Types *)
+let fullType recursor k ft = k ft
+let typeC recursor k t = k t
+let declaration recursor k d = k d
 
-and typeC ty =
-  match ty with
-    Ast.BaseType(ty,Some sign) -> [mcode sign;mcode ty]
-  | Ast.BaseType(ty,None) -> [mcode ty]
-  | Ast.Pointer(ty,star) -> (typeC ty) @ [mcode star]
-  | Ast.Array(ty,lb,size,rb) ->
-      (typeC ty) @ (mcode lb) :: (get_option expression size) @ [mcode rb]
-  | Ast.StructUnionName(name,kind) -> [mcode name;mcode kind]
-  | Ast.TypeName(name) -> [mcode name]
-  | Ast.MetaType(name) -> [mcode name]
-  | Ast.OptType(ty) -> typeC ty
-  | Ast.UniqueType(ty) -> typeC ty
-  | Ast.MultiType(ty) -> typeC ty
+let parameterTypeDef recursor k p =
+  match Ast0.unwrap p with
+    Ast0.Pdots(dots) -> [bad_mcode dots]
+  | Ast0.Pcircles(dots) -> [bad_mcode dots]
+  | _ -> k p
 
-(* --------------------------------------------------------------------- *)
-(* Variable declaration *)
-(* Even if the Cocci program specifies a list of declarations, they are
-   split out into multiple declarations of a single variable each. *)
-
-let rec declaration = function
-    Ast.Init(ty,id,eq,exp,sem) ->
-      (typeC ty) @ (ident id) @ (mcode eq) :: (expression exp) @ [mcode sem]
-  | Ast.UnInit(ty,id,sem) ->
-      (typeC ty) @ (ident id) @ [mcode sem]
-  | Ast.OptDecl(decl) -> declaration decl
-  | Ast.UniqueDecl(decl) -> declaration decl
-  | Ast.MultiDecl(decl) -> declaration decl
-
-(* --------------------------------------------------------------------- *)
-(* Parameter *)
-
-let rec parameterTypeDef = function
-    Ast.VoidParam(ty) -> typeC ty
-  | Ast.Param(id,None,ty) -> (typeC ty) @ (ident id)
-  | Ast.Param(id,Some vs,ty) -> (typeC ty) @ (mcode vs) :: (ident id)
-  | Ast.MetaParam(name) -> [mcode name]
-  | Ast.MetaParamList(name) -> [mcode name]
-  | Ast.PComma(cm) -> [mcode cm]
-  | Ast.Pdots(dots) -> [bad_mcode dots]
-  | Ast.Pcircles(dots) -> [bad_mcode dots]
-  | Ast.OptParam(param) -> parameterTypeDef param
-  | Ast.UniqueParam(param) -> parameterTypeDef param
-
-let parameter_list = dots parameterTypeDef
-
-(* --------------------------------------------------------------------- *)
-(* Top-level code *)
-
-let rec rule_elem = function
-    Ast.FunDecl(stg,name,lp,params,rp) ->
-      (get_option (function x -> [mcode x]) stg) @ (ident name) @ (mcode lp) ::
-      (parameter_list params) @ [mcode rp]
-  | Ast.Decl(decl) -> declaration decl
-  | Ast.SeqStart(brace) -> [mcode brace]
-  | Ast.SeqEnd(brace) -> [mcode brace]
-  | Ast.ExprStatement(exp,sem) -> (expression exp) @ [mcode sem]
-  | Ast.IfHeader(iff,lp,exp,rp) ->
-      [mcode iff; mcode lp] @ (expression exp) @ [mcode rp]
-  | Ast.Else(els) -> [mcode els]
-  | Ast.WhileHeader(whl,lp,exp,rp) ->
-      [mcode whl; mcode lp] @ (expression exp) @ [mcode rp]
-  | Ast.Do(d) -> [mcode d]
-  | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-      [mcode whl; mcode lp] @ (expression exp) @ [mcode rp;mcode sem]
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-      [mcode fr; mcode lp] @ (get_option expression e1) @ (mcode sem1) ::
-      (get_option expression e2) @ (mcode sem2) :: (get_option expression e3) @
-      [mcode rp]
-  | Ast.Return(ret,sem) -> [mcode ret; mcode sem]
-  | Ast.ReturnExpr(ret,exp,sem) ->
-      (mcode ret) :: (expression exp) @ [mcode sem]
-  | Ast.MetaStmt(name) -> [mcode name]
-  | Ast.MetaStmtList(name) -> [mcode name]
-  | Ast.Disj(rule_elem_dots_list) ->
-      List.concat (List.map (dots rule_elem) rule_elem_dots_list)
-  | Ast.Nest(rule_elem_dots) -> dots rule_elem rule_elem_dots
-  | Ast.Exp(exp) -> expression exp
-  | Ast.Dots(d,whencode) | Ast.Circles(d,whencode) | Ast.Stars(d,whencode) ->
+let statement recursor k s =
+  match Ast0.unwrap s with
+    Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
+  | Ast0.Stars(d,whencode) ->
       (bad_mcode d) ::
-      (get_option (function x -> make_bad(dots rule_elem x)) whencode)
-  | Ast.OptRuleElem(re) -> List.concat (List.map rule_elem re)
-  | Ast.UniqueRuleElem(re) -> List.concat (List.map rule_elem re)
-  | Ast.MultiRuleElem(re) -> List.concat (List.map rule_elem re)
+      (get_option
+	 (function x ->
+	   make_bad(recursor.V0.combiner_statement_dots x))
+	 whencode)
+  | _ -> k s
 
-let top_level = function
-    Ast.DECL(decl) -> declaration decl
-  | Ast.INCLUDE(inc,name) -> [mcode inc;mcode name]
-  | Ast.FILEINFO(old_file,new_file) -> [bad_mcode old_file; bad_mcode new_file]
-  | Ast.FUNCTION(rule_elem_dots) -> dots rule_elem rule_elem_dots
-  | Ast.CODE(rule_elem_dots) -> dots rule_elem rule_elem_dots
+let top_level recursor k t =
+  match Ast0.unwrap t with
+    Ast0.FILEINFO(old_file,new_file) ->
+      [bad_mcode old_file;bad_mcode new_file]
+  | Ast0.ERRORWORDS(exps) ->
+      make_bad (List.concat (List.map recursor.V0.combiner_expression exps))
+  | _ -> k t
 
-let rule code = List.concat (List.map top_level code)
+let dots recursor k d = k d
+
+let recursor =
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    dots dots dots
+    ident expression fullType typeC parameterTypeDef declaration
+    statement top_level
+
+let rule code = List.concat (List.map recursor.V0.combiner_top_level code)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -231,11 +133,19 @@ let drop_lines l = List.map (List.map (function (x,_,_,_,_) -> x)) l
 let rec merge minus_stream plus_stream =
   match (minus_stream,plus_stream) with
     (_,[]) -> ()
-  | ([],_) -> failwith "minus stream ran out before plus stream"
+  | ([],plus::plus_stream) ->
+      failwith
+	(Printf.sprintf
+	   "minus stream ran out before plus stream\n(plus code begins on line %d)\n"
+	   (get_real_start plus))
   | (Bad(info)::minus_stream,plus::plus_stream) ->
       let pfinish = get_finish plus in
       if info.Ast.logical_line > pfinish
-      then failwith "error in merge"
+      then
+	failwith
+	  (Printf.sprintf
+	     "plus code starting on line %d has no minus or context code to attach to\n"
+	     (get_real_start plus))
       else merge minus_stream (plus::plus_stream)
   | (((Minus(info,cell)::minus_stream) as all_minus),plus::plus_stream) ->
       let mline = info.Ast.logical_line in
