@@ -39,6 +39,8 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
   | _, F.Exit 
   | _, F.Fake -> raise Impossible (* rene cant have found that a state containing a fake/exit/... should be transformed *)
 
+  | _, F.CaseNode _ -> raise Impossible
+
   | _, F.TrueNode
   | _, F.FalseNode
   | _, F.AfterNode -> raise Impossible

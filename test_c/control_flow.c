@@ -10,18 +10,18 @@ static void f() {
   goto insidewhile;
   */
 
-  /*  
 
   switch(3) {
   case 1: switch1();
   case 2: switch2(); break;
   case 3: switch3(); break;
-  case 4: switch4(); 
-  default: switchdefault(); 
-    goto error;
+  case 4: switch4(); break;
+    
+  default: 
+    switchdefault(); 
+    //goto error;
   }
 
-  */
   while(1) {
     foowhile();
     if(1) { break; }

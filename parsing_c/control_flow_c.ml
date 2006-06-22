@@ -1,7 +1,6 @@
 open Commonop open Common
 
 (********************************************************************************)
-
 (*
  note: deadCode detection
   what is dead code ? when there is no starti  to start from ? => make starti an option too ?
@@ -32,19 +31,19 @@ open Commonop open Common
         ver1: just do init,  
         ver2: compute depth of label (easy, intercept compound in the visitor)
 
- 
+ DONE? add info in nodes, to later be able to pretty print back
+
+ DONE 
+  for switch, pass int ref (compteur) too ? (cos need know order of the case if then later want to 
+  go from CFG to (original) AST
 
 
  todo: expression, linearize,  funcall (and launch exn  with StatementExpr )
 
- todo: add info in nodes, to later be able to pretty print back
- todo:
-  for switch, pass int ref (compteur) too ? (cos need know order of the case if then later want to 
-  go from CFG to (original) AST
-
  todo: to generate less exception with the breakInsideLoop, analyse correctly the
    loop deguisé  comme list_for_each (qui sont actuellement retourné comme des Tif par le lexer)
-
+   add a case ForMacro in ast_c (and in lexer/parser), and then do code that imitates the
+   code for the For                                                
 
  checktodo: after a switch, need check that all the st in the compound start with a case: ?
 
@@ -91,12 +90,19 @@ and node1 =
   | StartBrace of int * statement (* special_cfg_ast *)
   | EndBrace   of int
 
+  | CaseNode of int (* to be able later to go back from a flow to an ast *)
+
   | TrueNode
   | FalseNode
   | AfterNode
 
 
 type edge = Direct
+(* 
+  old: | SpecialEdge,  with code later such as
+   !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g;  
+  but not needed anymore, because have moved that info in the AfterNode
+*)
 
 
 exception DeadCode of (Common.parse_info option)
@@ -107,15 +113,14 @@ exception NoEnclosingLoop   of (Common.parse_info)
 
 
 (********************************************************************************)
-type additionnal_info = 
-    additionnal_info2 * 
-    nodei list (* special_cfg_braces: current imbrication depth (contain the must-close '}' ) *)
+type additionnal_info =  additionnal_info2 * nodei list 
+ (* special_cfg_braces: the nodei list is to handle current imbrication depth (contain the must-close '}' ) *)
   and additionnal_info2 =
   | NoInfo 
   | LoopInfo   of nodei * nodei (* start, end *) * nodei list         (* special_cfg_braces: *)
-  | SwitchInfo of nodei * nodei (* start, end *) * nodei * nodei list (* special_cfg_braces: *)
+  | SwitchInfo of nodei * nodei (* start, end *) * nodei list (* special_cfg_braces: *)
 
-(* type depthi = Depth of int*) (* obsolete: *)
+(* obsolete: type depthi = Depth of int *)
 
 (*------------------------------------------------------------------------------*)
 let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun funcdef ->
@@ -126,11 +131,11 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
   (* monad like, >> *)
   let adjust_g (newg)        = begin  g := newg;    end in
 
-  let (funcs, functype, sto, compound, (_,_,ii)) = funcdef in
+  let (funcs, functype, sto, compound, ((_,_,ii) as moreinfo)) = funcdef in
   let topstatement = Compound compound, ii in
 
 
-  let headi = !g#add_node (HeadFunc funcdef, "function " ^ funcs) +> adjust_g_i in
+  let headi = !g#add_node (HeadFunc (funcs, functype, sto, [], moreinfo), "function " ^ funcs) +> adjust_g_i in
 
   let enteri = !g#add_node (Enter, "[enter]") +> adjust_g_i in
   let exiti  = !g#add_node (Exit,  "[exit]")  +> adjust_g_i in
@@ -150,7 +155,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
          kstatement = (fun (k, bigf) statement -> 
            match statement with
            | Labeled (Label (s, st)),ii -> 
-               let newi = !g#add_node (Statement statement, s ^ ":") +> adjust_g_i in
+               let newi = !g#add_node (Statement (Labeled (Label (s, noInstr)),ii), s ^ ":") +> adjust_g_i in
                begin
                  assert (not (!h#haskey s)); (* label already exist ? todo: replace assert with a raise DuplicatedLabel *)
                  h := !h#add (s, newi);
@@ -182,7 +187,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
       
       ) starti
   in
-  let counter = ref 0 in
+  let counter_for_braces = ref 0 in
+  let counter_for_switch = ref 0 in
 
 
 
@@ -209,9 +215,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         (* old: declxs_statxs +> map_filter (function Right stat -> Some stat | _ -> None) +> (fun statxs -> *)
 
         (* special_cfg_braces: *)
-        let _ = incr counter in 
-        let newi = !g#add_node (StartBrace (!counter, (Compound [], ii)), "{" ^ i_to_s !counter) +> adjust_g_i in
-        let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
+        let _ = incr counter_for_braces in 
+        let newi = !g#add_node (StartBrace (!counter_for_braces, (Compound [], ii)), "{" ^ i_to_s !counter_for_braces) +> adjust_g_i in
+        let endi = !g#add_node (EndBrace !counter_for_braces,   "}" ^ i_to_s !counter_for_braces) +> adjust_g_i in
         let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
         attach_to_previous_node starti newi;
@@ -245,7 +251,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
               Some endi 
           )
            )
-        
+
+
+     (* ------------------------- *)        
     | Labeled (Label (s, st)), ii -> 
         (* todo_cfg_to_ast *)
         let ilabel = labels_assoc#find s in
@@ -276,6 +284,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
 
         
+     (* ------------------------- *)        
     | ExprStatement (None), ii -> 
         (* old: starti *)
         (* special_cfg_ast: *)
@@ -298,6 +307,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         Some newi
         
 
+     (* ------------------------- *)        
     | Selection  (If (e, st1, (ExprStatement (None), ii2))), ii -> 
        (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
                           |                                      |
@@ -349,25 +359,24 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         
         
 
+     (* ------------------------- *)        
     | Selection  (Switch (e, st)), ii -> 
-        let newi = !g#add_node (Statement (Selection (Switch (e, noInstr)),ii), "switch") +> adjust_g_i in
-        attach_to_previous_node starti newi;
+        let newswitchi = !g#add_node (Statement (Selection (Switch (e, noInstr)),ii), "switch") +> adjust_g_i in
+        attach_to_previous_node starti newswitchi;
 
-        let newfakeelse = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
+        let newendswitch = !g#add_node (Fake, "[endswitch]") +> adjust_g_i in
 
-(*        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g; (* for julia *) *)
     
-        (* the newi is for the labels to know where to attach, the newfakeelse (endi) is for the 'break' *)
-        (* let newauxinfo = SwitchInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in *)
-        let newi2 = newi in
+        (* the newswitchi is for the labels to know where to attach, the newendswitch (endi) is for the 'break' *)
        
 
         (* let finalthen = aux_statement (None, newauxinfo) st in *)
 
-         (* copy paste oc compund case *)
+        (* Prepare var to be able to copy paste  *)
          let starti = None in
          (* let auxinfo = newauxinfo in *)
          let statement = st in
+         (* COPY PASTE of compound case *)
 
          let finalthen = 
              match statement with
@@ -377,13 +386,24 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
                  (* old: declxs_statxs +> map_filter (function Right stat -> Some stat | _ -> None) +> (fun statxs -> *)
          
                  (* special_cfg_braces: *)
-                 let _ = incr counter in 
-                 let newi = !g#add_node (StartBrace (!counter, (Compound [], ii)), "{" ^ i_to_s !counter) +> adjust_g_i in
-                 let endi = !g#add_node (EndBrace !counter,   "}" ^ i_to_s !counter) +> adjust_g_i in
+                 let _ = incr counter_for_braces in 
+                 let newi = !g#add_node (StartBrace (!counter_for_braces, (Compound [], ii)), "{" ^ i_to_s !counter_for_braces) +> adjust_g_i in
+                 let endi = !g#add_node (EndBrace !counter_for_braces,   "}" ^ i_to_s !counter_for_braces) +> adjust_g_i in
                  let newauxinfo = (fst auxinfo, endi::snd auxinfo) in
 
                  (* new: cos of switch *)
-                 let newauxinfo = SwitchInfo (newi2, newfakeelse, newi, snd auxinfo), snd newauxinfo in
+                 let newauxinfo = SwitchInfo (newi, newendswitch, snd auxinfo), snd newauxinfo in
+                 !g#add_arc ((newswitchi, newi), Direct) +> adjust_g; 
+
+                 (* new: if have not a default case, then must add an edge between start to end *)
+                 if (not (declxs_statxs +> List.exists (function 
+                   | Right (Labeled (Default _), _) -> true
+                   | _ -> false
+                    )))
+                 then
+                   !g#add_arc ((newswitchi, newendswitch), Direct) +> adjust_g;
+
+
          
                  attach_to_previous_node starti newi;
                  let starti = Some newi in
@@ -423,32 +443,44 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
 
         (match finalthen with None -> () | Some finalthen -> 
-          !g#add_arc ((finalthen, newfakeelse), Direct) +> adjust_g);
-        Some newfakeelse
+          !g#add_arc ((finalthen, newendswitch), Direct) +> adjust_g);
+        Some newendswitch
 
 
     | Labeled (Case  (e, st)), ii -> 
-        let newi = !g#add_node (Statement (statement), "case:") +> adjust_g_i in
-        attach_to_previous_node starti newi;
+        let _ = incr counter_for_switch in
+        let switchrank = !counter_for_switch in
+
+        let newi = !g#add_node (Statement (Labeled (Case (e, noInstr)),ii), "case:") +> adjust_g_i in
+
         (match fst auxinfo with
-        | SwitchInfo (switchstarti, switchendi, startbrace, braces) -> 
-              (* !g#add_arc ((switchstarti, newi), Direct) +> adjust_g; *)
-              !g#add_arc ((switchstarti, startbrace), Direct) +> adjust_g; 
-              !g#add_arc ((startbrace, newi), Direct) +> adjust_g;
+        | SwitchInfo (startbrace, switchendi, braces) -> 
+            (* no need to attach to previous for the first case, cos would be redundant *)
+            (match starti with 
+            | Some starti when  starti <> startbrace -> attach_to_previous_node (Some starti) newi; 
+            | _ -> ()
+            );
+
+            let newcasenodei = !g#add_node (CaseNode switchrank, ("[casenode] " ^ i_to_s switchrank)) +> adjust_g_i in
+            !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
+            !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
         | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
         );
         aux_statement (Some newi, auxinfo) st
         
 
     | Labeled (Default st), ii -> 
+        let _ = incr counter_for_switch in
+        let switchrank = !counter_for_switch in
 
-        let newi = !g#add_node (Statement (statement), "case default:") +> adjust_g_i in
+        let newi = !g#add_node (Statement (Labeled (Default noInstr),ii), "case default:") +> adjust_g_i in
         attach_to_previous_node starti newi;
+
         (match fst auxinfo with
-        | SwitchInfo (switchstarti, switchendi, startbrace, braces) -> 
-              (* !g#add_arc ((switchstarti, newi), Direct) +> adjust_g; *)
-              !g#add_arc ((switchstarti, startbrace), Direct) +> adjust_g; 
-              !g#add_arc ((startbrace, newi), Direct) +> adjust_g;
+        | SwitchInfo (startbrace, switchendi, braces) -> 
+             let newcasenodei = !g#add_node (CaseNode switchrank, ("[casenode] " ^ i_to_s switchrank)) +> adjust_g_i in
+             !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
+             !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
         | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
         );
         aux_statement (Some newi, auxinfo) st
@@ -457,6 +489,11 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
     | Labeled (CaseRange  (e, e2, st)) -> 
 *)
 
+
+
+
+
+     (* ------------------------- *)        
     | Iteration  (While (e, st)), ii -> 
        (* starti -> newi ---> newfakethen -> ... -> finalthen -
                       |---|-----------------------------------|
@@ -468,7 +505,6 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newfakethen = !g#add_node (TrueNode, "[whiletrue]") +> adjust_g_i in
         let newfakeelse = !g#add_node (FalseNode, "[endwhile]") +> adjust_g_i in
 
-(*        !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g;  not needed, just follow ChoiceFalse *)
 
         let newauxinfo = LoopInfo (newi, newfakeelse, snd auxinfo), snd auxinfo in
 
@@ -540,6 +576,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         Some newfakeelse
 
 
+     (* ------------------------- *)        
     | Jump ((Continue|Break) as x),ii ->  
         (* todo_cfg_to_ast *)
         let newi = !g#add_node (Statement (statement), ("continue_break;")) +> adjust_g_i in
@@ -560,7 +597,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
             !g#add_arc ((newi, desti), Direct) +> adjust_g;
             None
-        | SwitchInfo (loopstarti, loopendi, startbrace, braces) -> 
+        | SwitchInfo (startbrace, loopendi, braces) -> 
             if x = Break then
               begin
 
@@ -608,6 +645,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         
 
         
+    (* ------------------------- *)        
     | Asm, ii -> raise Todo
 
     | x -> error_cant_have x
@@ -620,12 +658,18 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
   (match lasti with  | None -> ()  | Some lasti ->
      !g#add_arc ((lasti, exiti), Direct) +> adjust_g);
 
+
+  !g
+
+
+
+let deadcode_detection g = 
   (* phase 2, deadcode detection *)
   (* old raise DeadCode: if lasti = None, but maybe not, in fact if have 2 return in the then and else of an if ? *)
   (* alt: but can assert that at least there exist a node to exiti,  just check #pred of exiti *)
 
-  !g#nodes#iter (fun (k, (node, s)) -> 
-    let pred = !g#predecessors k in
+  g#nodes#iter (fun (k, (node, s)) -> 
+    let pred = g#predecessors k in
     if pred#null then 
       (match node with
       | Statement (st,ii::iis) -> raise (DeadCode (Some (fst ii)))
@@ -639,8 +683,6 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
       )
     );
 
-  !g
-
 (********************************************************************************)
 
 (*
@@ -650,10 +692,11 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
  if, 
 
 
+ switch
+
  for, while, dowhile
  break/continue
  goto, labels
- switch
 
  todo: maintain a todo list of labels
  if two todos, then ambiguity (can disambiguate some case by analysing and look if 
@@ -662,7 +705,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
 *)
 
-type returnkind = LastCurrentNode of nodei | NoNextNode
+type returnkind = LastCurrentNode of nodei | NoNextNode of nodei (* the node where we stopped *)
 
 
 (*------------------------------------------------------------------------------*)
@@ -672,20 +715,7 @@ let get_next_node g nodei =
     | x -> error_cant_have x
     ) 
 
-let get_next_2node g nodei = 
-    (match (g#successors nodei)#tolist with
-    | [nexti, Direct; nexti2, Direct] -> 
-        (match g#nodes#find nexti,  g#nodes#find nexti2 with
-        | (TrueNode, s1), (FalseNode, s2) -> 
-            (nexti,   g#nodes#find nexti),  (nexti2, g#nodes#find nexti2)
-        | (FalseNode, s1), (TrueNode, s2) -> 
-            (nexti2,  g#nodes#find nexti2), (nexti,  g#nodes#find nexti)
-        | x -> raise Impossible
-        )
-    | x -> error_cant_have x
-    ) 
-
-let get_next_nodes_sorted g nodei = 
+let get_next_nodes_ifthenelse_sorted g nodei = 
   (g#successors nodei)#tolist +> List.map (fun (nodei, Direct) -> 
     nodei, g#nodes#find nodei +> fst, 
     (match g#nodes#find nodei with
@@ -705,33 +735,47 @@ let get_first_node g =
     in
     starti 
 
+(*
+ todo: return also a special node, when has no default case, there is a direct edge from startswitch
+  to endswitch.
+*)
+let get_next_nodes_switch_sorted g nodei = 
+  (g#successors nodei)#tolist +> List.map (fun (nodei, Direct) -> 
+    get_next_node g nodei +> fst, 
+    (match g#nodes#find nodei with
+    | (CaseNode i, s) -> i
+    | _ -> raise Impossible
+    ))
+   +> List.sort (fun (_, a) (_, b) -> compare a b)
+   +> List.map fst
+
 (*------------------------------------------------------------------------------*)
+(*
+ todo: a chaque fois que y'a un __xxx, faire un assert que ce _xxx est un noInstr ou
+ un compound vide.
+*)
 let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
   
   let nodes = g#nodes  in
   let starti = get_first_node g in
 
-(*  let visited = ref (new oassocb []) in *)
+(*  
+ todo?: 
+  let visited = ref (new oassocb []) in 
+*)
 
 
   let funcdef =  match fst (nodes#find starti) with | HeadFunc funcdef -> funcdef  | _ -> raise Todo in
   let (funcs, functype, sto, __compound, iifunc) = funcdef in
 
 
-  let rec (rebuild_compound: nodei -> (statement * returnkind)) = fun   starti ->
-    match nodes#find starti with
-    | (StartBrace (level, (Compound __st, ii)), s) -> 
-        let (nexti, st) = get_next_node g starti in
-        let (compound, return) = rebuild_compound_instr_list  nexti level in
-        (Compound compound, ii),  return
-    | x -> error_cant_have x
-
-  and (rebuild_compound_instr_list: nodei -> int -> (compound * returnkind)) = fun starti level -> 
+  (* ------------------------- *)        
+  let rec (rebuild_compound_instr_list: nodei -> int -> (compound * returnkind)) = fun starti level -> 
     match nodes#find starti with
     | (EndBrace level2, s) -> 
         if level = level2 
         then [], LastCurrentNode starti
-        else raise Todo
+        else raise Todo (* can raise Impossible instead ? cos all opening { are correctly ended with a } *)
     | (Declaration decl, s) -> 
         let nexti = get_next_node g starti +> fst in
         let (compound, return) = rebuild_compound_instr_list nexti level in
@@ -740,7 +784,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
     | x -> 
         let (st, return) = rebuild_statement starti in
         (match return with
-        | NoNextNode -> [Right st], return
+        | NoNextNode _ -> [Right st], return
         | LastCurrentNode nodei -> 
             let nexti = get_next_node g nodei +> fst in
             let (compound, return) = rebuild_compound_instr_list nexti level in
@@ -749,91 +793,201 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
         
 (*    | x -> error_cant_have x *)
 
+  (* ------------------------- *)        
   and (rebuild_statement: nodei -> (statement * returnkind)) = fun starti -> 
     match nodes#find starti with
+
     | (Statement ((ExprStatement (None), ii) as st), s) -> 
         st, LastCurrentNode starti
     | (Statement ((ExprStatement (Some e), ii) as st), s) -> 
         st, LastCurrentNode starti
 
+    (* ------------------------- *)        
     | (Statement ((Jump (Return), ii) as st), s) -> 
-        st, NoNextNode
+        st, NoNextNode starti
     | (Statement ((Jump (ReturnExpr e), ii) as st), s) -> 
-        st, NoNextNode
+        st, NoNextNode starti
 
           
+    (* ------------------------- *)        
     | (StartBrace (level,st), s) -> 
-        rebuild_compound starti
+        (match st with 
+        | (Compound __st, ii) -> 
+            let (nexti, st) = get_next_node g starti in
+            let (compound, return) = rebuild_compound_instr_list  nexti level in
+            (Compound compound, ii),  return
+        | _ -> raise Impossible
+        )
 
+    (* ------------------------- *)        
     | (Statement (Selection  (If (e, __st1, __st2)), ii), s) -> 
 
-      (match get_next_nodes_sorted g starti with
-      | [(theni, TrueNode);  (elsei, FalseNode); (afteri, AfterNode)] -> 
-            
-        let (theni', fakethen) = get_next_node g theni in
-        let (elsei', fakeelse) = get_next_node g elsei in
+         (match get_next_nodes_ifthenelse_sorted g starti with
+         | [(theni, TrueNode);  (elsei, FalseNode); (afteri, AfterNode)] -> 
+               
+           let (theni', _) = get_next_node g theni in
+           let (elsei', _) = get_next_node g elsei in
+   
+           let (st1, return1) = rebuild_statement theni' in
+           let (st2, return2) = rebuild_statement elsei' in
+   
+           (* assert next of return1 = next of return 2 *)
+           (match return1, return2 with
+           | LastCurrentNode return1, LastCurrentNode return2 -> 
+               assert ((fst (get_next_node g return1)  =|= fst (get_next_node g return2)) && 
+                       (fst (get_next_node g return1) =|= afteri));
+               (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return1 +> fst)
+           | LastCurrentNode return, NoNextNode _ -> 
+               (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
+           | NoNextNode _ , LastCurrentNode return  -> 
+               (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
+           | NoNextNode i1 , NoNextNode i2  -> 
+               (Selection (If (e, st1, st2)),ii), NoNextNode i1 (* could be i2 *)
+           )
+   
+         | [(theni, TrueNode);  (afteri, AfterNode)] -> 
+             let (theni', _) = get_next_node g theni in
+             let (st1, return1) = rebuild_statement theni' in
+             let (st2) = (ExprStatement (None), []) in
+             (match return1 with
+             | LastCurrentNode return -> 
+                 assert (fst (get_next_node g return) =|= afteri);
+                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
+             | NoNextNode _ -> 
+                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
+             )
+   
+         | [(theni, TrueNode);  (elsei, FalseNode)] -> 
+               
+           let (theni', _) = get_next_node g theni in
+           let (elsei', _) = get_next_node g elsei in
+   
+           let (st1, return1) = rebuild_statement theni' in
+           let (st2, return2) = rebuild_statement elsei' in
+   
+           (* assert next of return1 = next of return 2 *)
+           (match return1, return2 with
+           | NoNextNode i1 , NoNextNode i2  -> 
+               (Selection (If (e, st1, st2)),ii), NoNextNode i1 (* could be i2 *)
+           | x -> raise Impossible (* if no after node, that means that the two branches go wild *)
+           )
+         | x -> raise Impossible
+         )
 
-        let (st1, return1) = rebuild_statement theni' in
-        let (st2, return2) = rebuild_statement elsei' in
+    (* ------------------------- *)        
+    | (Statement (Selection  (Switch (e, _st)), ii), s) -> 
+        let (st, return) = 
+          (match get_next_node g starti with
+          | (nexti,  (StartBrace (level, (Compound __st, ii )), s)) -> 
+              let nodes_sorted = get_next_nodes_switch_sorted g nexti in
+              
+              let list_list_statement = 
+                nodes_sorted +> map_filter (fun nodei -> 
+                  (* todo: do only if the 'case:' in question have only 1 predecessor *)
+                  if ((g#predecessors nodei)#tolist +> List.length) >= 2
+                  then None
+                  else 
+                    Some (rebuild_compound_instr_list nodei level)
+                   ) in
+              let compound = list_list_statement +> List.map fst +> List.concat in
 
-        (* assert next of return1 = next of return 2 *)
-        (match return1, return2 with
-        | LastCurrentNode return1, LastCurrentNode return2 -> 
-            assert ((fst (get_next_node g return1)  =|= fst (get_next_node g return2)) && 
-                    (fst (get_next_node g return1) =|= afteri));
-            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return1 +> fst)
-        | LastCurrentNode return, NoNextNode -> 
-            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
-        | NoNextNode , LastCurrentNode return  -> 
-            (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
-        | NoNextNode , NoNextNode  -> 
-            (Selection (If (e, st1, st2)),ii), NoNextNode
-        )
-
-      | [(theni, TrueNode);  (afteri, AfterNode)] -> 
-          let (theni', fakethen) = get_next_node g theni in
-          let (st1, return1) = rebuild_statement theni' in
-          let (st2) = (ExprStatement (None), []) in
-          (match return1 with
-          | LastCurrentNode return -> 
-              assert (fst (get_next_node g return) =|= afteri);
-              (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
-          | NoNextNode -> 
-              (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
+              (* find the endswitch, it must be after the }level node *)
+              let maybereturn = 
+                  list_list_statement +> List.map snd +> map_filter (function
+                    (* can be because a return, or a break, but if a break,
+                       when after there should be a }level and after the endswitch 
+                     *)
+                  | NoNextNode nodei -> 
+                      (match g#nodes#find nodei with
+                      | (Statement (Jump (Break),_),_) -> 
+                          let nexti = get_next_node g nodei +> fst in
+                          (match g#nodes#find nexti with
+                          | EndBrace level2, _ when level2 = level -> 
+                              let nextii = get_next_node g nexti +> fst in
+                              (match g#nodes#find nextii with
+                              | Fake, "[endswitch]" -> Some nextii
+                              | _ -> raise Impossible
+                              )
+                          | _ -> raise Impossible
+                          )
+                      | _ -> None
+                      )
+  
+                     (* there was no break or return, certainly the default case *)
+                  | LastCurrentNode nodei -> 
+                      raise Todo 
+              ) in
+               let return = 
+                  (match maybereturn with 
+                   | x::_ -> LastCurrentNode x
+                   | [] -> NoNextNode (-1)
+                  ) 
+              in
+              (Compound compound, ii), return
+          | _ -> raise Impossible
           )
+        in
+        (Selection (Switch (e, st)), ii), return
 
-      | [(theni, TrueNode);  (elsei, FalseNode)] -> 
-            
-        let (theni', fakethen) = get_next_node g theni in
-        let (elsei', fakeelse) = get_next_node g elsei in
+(*
+     alt: would like to return None, cos it will be handle elsewhere
+       or can handle it, but when handle a case in the iter of the
+       switch, check that have no 2 predecessors, which would mean
+       that this case has certainly be already handled.
+*)      
 
-        let (st1, return1) = rebuild_statement theni' in
-        let (st2, return2) = rebuild_statement elsei' in
+    | (Statement (Labeled (Case  (e, __st)), ii), s) -> 
+        let (nexti, _) =  get_next_node g starti in
+        let (st, return) = rebuild_statement nexti in
+        (Labeled (Case (e, st)),ii),  return
 
-        (* assert next of return1 = next of return 2 *)
-        (match return1, return2 with
-        | NoNextNode , NoNextNode  -> 
-            (Selection (If (e, st1, st2)),ii), NoNextNode
-        | x -> raise Impossible (* if no after node, that means that the two branches go wild *)
+    | (Statement (Labeled (Default  ( __st)), ii), s) -> 
+        let (nexti, _) =  get_next_node g starti in
+        let (st, return) = rebuild_statement nexti in
+        (Labeled (Default (st)),ii),  return
+
+    | (Statement ((Jump (Break),ii) as st), s) ->  
+        st, NoNextNode starti
+        
+
+
+    (* ------------------------- *)        
+    | (Statement (Iteration  (For (e1opt, e2opt, e3opt, __st)), ii), s) -> 
+        (match get_next_nodes_ifthenelse_sorted g starti with
+         | [(theni, TrueNode);  (endfori, FalseNode)] -> 
+               
+           let (theni', _) = get_next_node g theni in
+           let (st, return) = rebuild_statement theni' in
+           (* check? if return is LastCurrentNode, it must be equal to endfori *)
+           (Iteration  (For (e1opt, e2opt, e3opt, st)), ii), LastCurrentNode endfori
+         | _ -> raise Impossible           
         )
-      | x -> raise Impossible
-      )
-    | x -> raise Todo
+
+    | (Statement (Iteration  (While (e, __st)), ii), s) -> 
+        (match get_next_nodes_ifthenelse_sorted g starti with
+         | [(theni, TrueNode);  (endfori, FalseNode)] -> 
+               
+           let (theni', _) = get_next_node g theni in
+           let (st, return) = rebuild_statement theni' in
+           (* check? if return is LastCurrentNode, it must be equal to endfori *)
+           (Iteration  (While (e, st)), ii), LastCurrentNode endfori
+         | _ -> raise Impossible           
+        )
+        
+
+    | x -> 
+        raise Todo
           
 
   in
 
 
 
-
   let (topcompound, returnkind) = 
     (match get_next_node g starti with
     | (nexti,  (Enter, s)) -> 
-        (match get_next_node g nexti with
-        | (nextii, (StartBrace (level,st), _)) -> 
-            rebuild_compound nextii
-        | x -> error_cant_have x
-        );
+        let (nextii, _) = get_next_node g nexti in
+        rebuild_statement nextii
     | x -> error_cant_have x
     ) 
   in
@@ -858,6 +1012,8 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
    so normally all those checks here are useless 
   evo: to better error reporting, to report earlier the message, 
    pass the list of '{' (containing morover a brace_identifier) instead of just the depth
+
+  todo: verifier que y'a que des noInstr d'accrocher au noeuds comme if,while, mais aussi case, headfun, ...
 *)
 
 let (check_control_flow: (node, edge) ograph_extended -> unit) = fun g ->
@@ -935,7 +1091,7 @@ let test statement =
   let g = ast_to_control_flow statement in
   check_control_flow g;
   print_ograph_extended g;
-  assert (statement = statement +> ast_to_control_flow +> control_flow_to_ast);
+  assert (statement =*= statement +> ast_to_control_flow +> control_flow_to_ast);
   pr2 "done";
   
 

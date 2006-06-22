@@ -10,9 +10,12 @@ and node1 =
   | Fake
   | StartBrace of int * Ast_c.statement
   | EndBrace of int
+  | CaseNode of int
   | TrueNode
   | FalseNode
   | AfterNode
+
+
 
 type edge = Direct
 
@@ -26,6 +29,8 @@ val ast_to_control_flow :
 
 val control_flow_to_ast :
   (node, edge) Ograph_extended.ograph_extended -> Ast_c.definition
+
+val deadcode_detection : (node, edge) Ograph_extended.ograph_extended -> unit
 
 val check_control_flow : (node, edge) Ograph_extended.ograph_extended -> unit
 

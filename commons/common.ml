@@ -2415,7 +2415,7 @@ let test_charpos file =
   full_charpos_to_pos "tests/xxx.txt" +> Dumper.dump +> pr2
 
 (*------------------------------------------------------------------------------*)
-(* decalage is here to ... handle stuff such as cpp which include file and who can make decalage ... or something like that   *)
+(* decalage is here to handle stuff such as cpp which include file and who can make decalage *)
 let (error_messagebis: filename -> (string * int (* * int *)) -> int -> string)    = fun filename (lexeme, lexstart(*, lexend*)) decalage ->
   let charpos = lexstart      + decalage in
 (*  let posdiff = lexend   - lexstart in *)
