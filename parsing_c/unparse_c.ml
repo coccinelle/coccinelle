@@ -34,6 +34,13 @@ let pp_program file x =
    let toks = (Parse_c.tokens file) in 
    let toks = ref (toks +> List.map (fun tok -> (tok, Parse_c.info_from_token tok))) in
    
+   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
+
+   let is_between_two_minus (infoa,(mcoda,enva)) (infob,(mcodb,envb)) =
+     match mcoda, mcodb with
+     | Ast_cocci.MINUS _, Ast_cocci.MINUS _ -> true
+     | _ -> false
+   in
 
    let _current_tabbing = ref "" in
    let update_current_tabbing s = 
@@ -52,7 +59,7 @@ let pp_program file x =
    in
 
    (* ---------------------- *)
-   let sync (elem,_ANNOT) = 
+   let sync (elem,annot) = 
      assert (elem <> Common.fake_parse_info);
      (* todo: if fake_parse_info ?  print the comments that are here ? *)
       let (before, after) = !toks +> span (fun (tok, (info,_ANNOT)) -> info.charpos < elem.charpos)   in
@@ -81,8 +88,10 @@ let pp_program file x =
       commentsbefore +> List.iter (fun (tok, tokinfo) -> 
           (match tok with
           | TComment            (i,_) -> pr i.str
-          | TCommentSpace       (i,_) -> pr i.str;
-              update_current_tabbing i.str
+          | TCommentSpace       (i,_) -> 
+              update_current_tabbing i.str;
+              if not (is_between_two_minus !_lastasked (elem,annot))
+              then pr i.str;
           | TCommentCpp         (i,_) -> pr i.str
           | TCommentAttrOrMacro (i,_) -> pr i.str
           | x -> error_cant_have x
@@ -101,7 +110,6 @@ let pp_program file x =
 
 
    (* ---------------------- *)
-   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
 
    let rec pr_elem ((info,(mcode,env)) as e) = 
     if not (Ast_c.is_al_info info)
@@ -110,8 +118,8 @@ let pp_program file x =
         if not ((fst e).charpos > (fst !_lastasked).charpos)
         then begin pr2 (sprintf "pp_c: wrong order, you ask for %s but have already pass %s" (Dumper.dump e) (Dumper.dump !_lastasked)); assert false; end;
 
-        _lastasked := e;
         sync e; 
+        _lastasked := e;
       end;
      
      (*old: pr info.str *)
