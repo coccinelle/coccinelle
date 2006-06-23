@@ -164,15 +164,10 @@ let check_add_metavars_binding = fun (k, valu) binding ->
 
 let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fun re (node, s) -> 
   match re, node with
-  | _, F.Enter -> return false
-  | _, F.Exit -> return false
+  | _, F.Enter | _, F.Exit -> return false
   | _, F.Fake -> return false
-
   | _, F.CaseNode _ -> return false
-
-  | _, F.TrueNode -> return false
-  | _, F.FalseNode -> return false
-  | _, F.AfterNode -> return false
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode -> return false
 
   | _, F.NestedFunCall _ -> raise Todo
 
@@ -446,17 +441,16 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
 
-  (* In fact now can also have the Edots inside normal expression, 
+  (* 
+     old: | A.Edots _, _ -> raise Impossible
+     In fact now can also have the Edots inside normal expression, 
      not just in arg lists.
      in 'x[...];'  
      less: in if(<... x ... y ...>) 
    *)
- (*
   | A.Edots (_, None), _    -> return true
   | A.Edots (_, Some expr), _    -> raise Todo
-*)
 
-  | A.Edots _, _ -> raise Impossible
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
   | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
 

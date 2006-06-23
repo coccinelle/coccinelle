@@ -35,15 +35,10 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
   fun binding -> 
 
   match re, node with
-  | _, F.Enter 
-  | _, F.Exit 
+  | _, F.Enter | _, F.Exit -> raise Impossible
   | _, F.Fake -> raise Impossible (* rene cant have found that a state containing a fake/exit/... should be transformed *)
-
   | _, F.CaseNode _ -> raise Impossible
-
-  | _, F.TrueNode
-  | _, F.FalseNode
-  | _, F.AfterNode -> raise Impossible
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode -> raise Impossible
 
   | _, F.NestedFunCall _ -> raise Todo
 
@@ -53,10 +48,7 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
   (* todo?: it can match a MetaStmt too !! and we have to get all the
      concerned nodes
    *)
-  | _, F.StartBrace _ 
-  | _, F.EndBrace _  -> raise NoMatch
-
-
+  | _, F.StartBrace _ | _, F.EndBrace _  -> raise NoMatch
 
   | re, F.Statement st -> Control_flow_c.Statement (transform_re_st  re st  binding), "ici2"
   | re, F.Declaration decl -> raise Todo
@@ -364,6 +356,11 @@ and distribute_minus_plus_e mcode  expr binding =
         )
   | Ast_cocci.PLUS _ -> raise Impossible
 
+(* Could do the minus more easily by extending visitor_c.ml and adding a function applied
+   to every mcode. But as I also need to do the add_left and add_right, which
+   requires to do a different thing for each case, I have not defined this not-so-useful
+   visitor.
+*)
 (* op = minusize operator, lop = stuff to do on the left, rop = stuff to do on the right *)
 and distribute_minus_plus_e_apply_op (op, lop, rop) expr = 
   let rec aux (op, lop, rop) expr = match expr with
