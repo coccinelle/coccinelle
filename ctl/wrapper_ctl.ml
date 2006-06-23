@@ -85,6 +85,21 @@ struct
 	in
           List.map conv_trip (oldlabelfunc p)
 
+  let rec unwrap_wits wits =
+    let rec unwrap_th acc pred th =
+      match th with
+	| [] -> List.map (fun xv -> (xv,pred)) acc
+	| (Subst(x,ClassicVar(v))::rest) -> unwrap_th ((x,v)::acc) pred rest
+	| (Subst(x,PredVar(Modif(v)))::rest) -> unwrap_th acc (Some v) rest
+	| (_::rest) -> unwrap_th acc pred rest
+    in
+    match wits with
+      | []  -> []
+      | (Wit(s,th,anno,wits')::rest) -> 
+	  (List.map (fun (a,b) -> (s,a,b)) (unwrap_th [] None th)) @ (unwrap_wits rest)
+      | _ -> raise Common.Todo
+
+
 (*  let (satbis :
          G.cfg *
          (predicate -> (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_substitution * 'a list) list) *
@@ -95,7 +110,7 @@ struct
   let satbis =
     fun ((grp,lab,states) as m) -> fun phi -> 
       let res = WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi in
-	res
+	List.map (fun (s,th,wits) -> unwrap_wits wits) res
 end
 
              
