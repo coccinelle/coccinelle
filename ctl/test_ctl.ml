@@ -112,6 +112,19 @@ let ex1phi3 =
        Pred ("g(y)", Modif "v0")
                       ))))));;
 
+let ex1phi4 = 
+Exists ("x",
+ And (
+  (Exists ("v3",
+    Pred ("f(x)", UnModif "v3"))),
+  AX
+   (AF
+    (Exists ("y", (* change this to Y and have strange behaviour *)
+      (Exists ("v0",
+       Pred ("g(y)", Modif "v0")
+                      )))))));;
+
+
 (*
      [(3, [("x","1");("y","1")], "g(y)");
       (4, [("x","1");("y","2")], "g(y)");
@@ -137,4 +150,4 @@ let ex1phi3 =
 
 
 
-(* let ex1 phi = satbis ex1model phi;; *)
+let ex1 phi = satbis ex1model phi;;
