@@ -1,3 +1,5 @@
+(* -*- mode: tuareg; tuareg-interactive-program: "/home/rrh/coccinelle/coccinelle/ctl/ctl.top -I ../commons" -*- *)
+
 (* ********************************************************************** *)
 (* Module: EXAMPLE_ENGINE (instance of CTL_ENGINE)                        *)
 (* ********************************************************************** *)
@@ -113,40 +115,16 @@ let ex1phi3 =
                       ))))));;
 
 let ex1phi4 = 
-Exists ("x",
- And (
-  (Exists ("v3",
-    Pred ("f(x)", UnModif "v3"))),
-  AX
-   (AF
-    (Exists ("y", (* change this to Y and have strange behaviour *)
-      (Exists ("v0",
-       Pred ("g(y)", Modif "v0")
-                      )))))));;
-
-
-(*
-     [(3, [("x","1");("y","1")], "g(y)");
-      (4, [("x","1");("y","2")], "g(y)");
-      (3, [("x","2");("y","1")], "g(y)");
-      (4, [("x","2");("y","2")], "g(y)");
-
-
-[(0, [],
-  [Wit (0, [Subst ("x", Wrapper_ctl.ClassicVar "1")], [],
-    [Wit (0, [Subst ("v3", Wrapper_ctl.PredVar (UnModif "f(x)"))], [], [])]);
-   Wit (3, [Subst ("y", Wrapper_ctl.ClassicVar "1")], [],
-    [Wit (3, [Subst ("v0", Wrapper_ctl.PredVar (Modif "g(y)"))], [], [])]);
-   Wit (4, [Subst ("y", Wrapper_ctl.ClassicVar "2")], [],
-    [Wit (4, [Subst ("v0", Wrapper_ctl.PredVar (Modif "g(y)"))], [], [])])]);
- (1, [],
-  [Wit (1, [Subst ("x", Wrapper_ctl.ClassicVar "2")], [],
-    [Wit (1, [Subst ("v3", Wrapper_ctl.PredVar (UnModif "f(x)"))], [], [])]);
-   Wit (3, [Subst ("y", Wrapper_ctl.ClassicVar "1")], [],
-    [Wit (3, [Subst ("v0", Wrapper_ctl.PredVar (Modif "g(y)"))], [], [])]);
-   Wit (4, [Subst ("y", Wrapper_ctl.ClassicVar "2")], [],
-    [Wit (4, [Subst ("v0", Wrapper_ctl.PredVar (Modif "g(y)"))], [], [])])])]
-*)
+  Exists ("x",
+	  And (
+	    (Exists ("v3",
+		     Pred ("f(x)", UnModif "v3"))),
+	    AX
+	      (AF
+		 (Exists ("y", (* change this to Y and have strange behaviour *)
+			  (Exists ("v0",
+				   Pred ("g(y)", Modif "v0")
+				  )))))));;
 
 
 
