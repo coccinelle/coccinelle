@@ -85,20 +85,23 @@ struct
 	in
           List.map conv_trip (oldlabelfunc p)
 
-  let rec unwrap_wits wits =
-    let rec unwrap_th acc pred th =
-      match th with
-	| [] -> List.map (fun xv -> (xv,pred)) acc
-	| (Subst(x,ClassicVar(v))::rest) -> unwrap_th ((x,v)::acc) pred rest
-	| (Subst(x,PredVar(Modif(v)))::rest) -> unwrap_th acc (Some v) rest
-	| (_::rest) -> unwrap_th acc pred rest
-    in
+  let rec unwrap_wits acc wits =
     match wits with
       | []  -> []
-      | (Wit(s,th,anno,wits')::rest) -> 
-	  (List.map (fun (a,b) -> (s,a,b)) (unwrap_th [] None th)) @ (unwrap_wits rest)
+      | (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
+	  (unwrap_wits ((x,v)::acc) wits') @ (unwrap_wits acc rest)
+      | (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
+	  (s,List.sort compare acc,v) :: (unwrap_wits acc rest)
+      | (Wit(s,[sub],anno,wits')::rest) -> unwrap_wits acc rest
       | _ -> raise Common.Todo
 
+  let satbis_noclean (grp,lab,states) phi =
+    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi
+
+  let satbis m phi = 
+    List.sort compare (
+      List.concat (
+	List.map (fun (_,_,w) -> unwrap_wits [] w) (satbis_noclean m phi)))
 
 (*  let (satbis :
          G.cfg *
@@ -107,10 +110,6 @@ struct
         (predicate * SUB.mvar Ast_ctl.modif, SUB.mvar) Ast_ctl.generic_ctl -> 
         (G.node * (SUB.mvar * SUB.value) list  * predicate) list) = 
 *)
-  let satbis =
-    fun ((grp,lab,states) as m) -> fun phi -> 
-      let res = WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi in
-	List.map (fun (s,th,wits) -> unwrap_wits wits) res
 end
 
              
