@@ -36,7 +36,11 @@ let mcodekind brackets fn x = function
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
   | Ast0.PLUS -> fn x
-  | Ast0.MIXED -> fn x
+  | Ast0.MIXED(plus_streams) ->
+      let (lb,rb) = ("","") in
+      let (plus_streams,_,_) = !plus_streams in
+      U.print_around (function x -> print_string lb; fn x; print_string rb)
+	x plus_streams
 
 let mcode fn (x,_,_,mc) = mcodekind None fn x mc
 

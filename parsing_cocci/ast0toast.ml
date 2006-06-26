@@ -35,7 +35,8 @@ let inline_mcodes =
     	            minus_try(einfo.Ast0.attachable_start,
 			      einfo.Ast0.mcode_start))
 	    then failwith "minus tree should not have bad code on both sides")
-    | Ast0.CONTEXT(befaft) ->
+    | Ast0.CONTEXT(befaft)
+    | Ast0.MIXED(befaft) ->
 	let concat starter startinfo ender endinfo =
 	  let lst =
 	    if startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
@@ -98,7 +99,7 @@ let inline_mcodes =
 	    attach_aft aft afterinfo
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
-    | Ast0.PLUS | Ast0.MIXED -> () in
+    | Ast0.PLUS -> () in
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing
@@ -125,7 +126,7 @@ let convert_mcodekind = function
   | Ast0.PLUS -> Ast.PLUS
   | Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in Ast.CONTEXT(befaft)
-  | Ast0.MIXED -> failwith "not possible for mcode"
+  | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
 let mcode(term,_,info,mcodekind) =
   (term,convert_info info,convert_mcodekind mcodekind)

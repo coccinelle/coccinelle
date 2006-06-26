@@ -94,9 +94,8 @@ let collect_minus_join_points root =
     match !mcodekind with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
-	(* not sure why this should be unfavored.  perhaps because of the
-	   need for matching nested context nodes? *)
-	[(Unfavored,info,mc)]
+	(* This was unfavored at one point, but I don't remember why *)
+	[(Favored,info,mc)]
     | _ -> k e in
 
   let do_top r k (e: Ast0.top_level) = k e in
@@ -496,8 +495,38 @@ let merge minus_list plus_list =
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
+(* Need to check that CONTEXT nodes have nothing attached to their tokens.
+If they do, they become MIXED *)
+
+let reevaluate_contextness =
+   let bind = (@) in
+   let option_default = [] in
+
+   let mcode (_,_,_,mc) =
+     match mc with
+       Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
+     | _ -> [] in
+
+   let donothing r k e =
+     match Ast0.get_mcodekind e with
+       Ast0.CONTEXT(mc) ->
+	 if List.exists (function Ast.NOTHING -> false | _ -> true) (k e)
+	 then Ast0.set_mcodekind e (Ast0.MIXED(mc));
+	 []
+     | _ -> let _ = k e in [] in
+
+  let res =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
+  res.V0.combiner_top_level
+
+(* --------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------- *)
 
 let insert_plus minus plus =
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
-  merge minus_stream plus_stream
+  merge minus_stream plus_stream;
+  List.iter (function x -> let _ =  reevaluate_contextness x in ()) minus

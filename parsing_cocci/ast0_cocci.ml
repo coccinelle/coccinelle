@@ -8,11 +8,13 @@ type arity = OPT | UNIQUE | MULTI | NONE
 type token_info = { tline_start : int; tline_end : int }
 let default_token_info = { tline_start = -1; tline_end = -1 }
 
+(* MIXED is like CONTEXT, since sometimes MIXED things have to revert to
+CONTEXT - see insert_plus.ml *)
 type mcodekind =
     MINUS       of (Ast.anything list list * token_info) ref
   | PLUS
   | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
-  | MIXED
+  | MIXED       of (Ast.anything Ast.befaft * token_info * token_info) ref
 
 type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
@@ -211,7 +213,10 @@ let default_info _ =
     mcode_start = None; mcode_end = None;
     column = -1; offset = -1 }
 
-let wrap x = (x,default_info(),ref (-1),ref MIXED)
+let default_befaft _ =
+  MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
+
+let wrap x = (x,default_info(),ref (-1),ref (default_befaft()))
 let unwrap (x,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
 let rewrap (_,info,index,mcodekind) x = (x,info,index,mcodekind)

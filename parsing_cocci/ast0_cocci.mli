@@ -11,7 +11,8 @@ type mcodekind =
   | PLUS
   | CONTEXT     of (Ast_cocci.anything Ast_cocci.befaft *
 		      token_info * token_info) ref
-  | MIXED
+  | MIXED       of (Ast_cocci.anything Ast_cocci.befaft *
+		      token_info * token_info) ref
 
 type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
