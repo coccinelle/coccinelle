@@ -2412,7 +2412,7 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
     end
     
 let test_charpos file = 
-  full_charpos_to_pos "tests/xxx.txt" +> Dumper.dump +> pr2
+  full_charpos_to_pos file +> Dumper.dump +> pr2
 
 (*------------------------------------------------------------------------------*)
 (* decalage is here to handle stuff such as cpp which include file and who can make decalage *)

@@ -14,24 +14,21 @@ Take list of pred  and for each pred return where in control flow
 it matches (and the set of subsitutions for this match).
 *)
 
-let top_wit = []
-
 let (labels_for_ctl: 
   (nodei * Control_flow_c.node) list -> 
-  (Lib_engine.predicate ->
-   (nodei * 
-    (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution * 'a list)
-   list))
+   (Lib_engine.predicate ->
+     (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution) list
+   ))
   = fun nodes ->
 
    (fun pred -> 
-       let nodes = nodes +> map (fun (nodei, (node, nodestring)) -> 
+       let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
          (match pred, node with
          | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
-             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))], top_wit)]
+             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))])]
          | Lib_engine.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
-             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))], top_wit)]
+             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))])]
          | Lib_engine.Paren _, _ -> 
              []
 
@@ -43,22 +40,21 @@ let (labels_for_ctl:
                  (nodei, 
                   subst +> List.map (fun (s, meta) -> 
                     s --> Lib_engine.NormalMetaVar meta
-                                    ),
-                  top_wit
+                                    )
                  )
                 )
              else []
 
-         | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, [], top_wit]
-         | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, [], top_wit]
-         | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, [], top_wit]
+         | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
+         | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
+         | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, []]
          | Lib_engine.TrueBranch , _ -> []
          | Lib_engine.FalseBranch, _ -> []
          | Lib_engine.After, _ -> []
          )
        ) +> List.concat
        in
-       nodes
+       nodes'
        ) 
 
 let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> ('a, 'b) ograph_extended) = fun cflow ->
@@ -68,6 +64,7 @@ let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_ext
 
 (* Just make the final node of the control flow loop over itself. 
    It seems that one hypothesis of the SAT algorithm is that each node as at least a successor.
+   todo?: erase some fake nodes ? (and adjust the edges accordingly)
 *)
 let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun  flow ->
   let (exitnodei, (node, nodestr)) = flow#nodes#tolist +> List.find (function (nodei, (Control_flow_c.Exit, nodes)) -> true | _ -> false) in
@@ -90,6 +87,27 @@ let model_for_ctl  cflow =
  
 
 
+module PRED = 
+  struct
+    type predicate = Lib_engine.predicate
+  end
+
+module ENV =
+  struct
+    type value = Lib_engine.metavar_binding_kind2
+    type mvar = string
+    let eq_mvar x x' = x = x';;
+    let eq_val v v' = v = v';;
+    let merge_val v v' = v;;	       
+  end
 
 
-(* let sattrans = convert_... give = *)
+module CFG = 
+  struct
+    type node = int;;
+    type cfg = (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended;;
+    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+  end
+
+
+module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)

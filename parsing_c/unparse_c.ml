@@ -126,9 +126,9 @@ let pp_program file x =
      let s = info.str in
 
      match mcode with
-     | Ast_cocci.MINUS (i, any_xxs) -> 
+     | Ast_cocci.MINUS (_i, any_xxs) -> 
          pp_list_list_any env  !any_xxs 
-     | Ast_cocci.CONTEXT (i, any_befaft) -> 
+     | Ast_cocci.CONTEXT (_i, any_befaft) -> 
          (match !any_befaft with
          | Ast_cocci.NOTHING -> pr s
                

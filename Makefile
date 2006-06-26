@@ -31,9 +31,13 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 
-#all: mystuff
+ifeq ($(PAD),pad)
+all: mystuff
+else
+all: all1
+endif
 
-all: rec $(EXEC)
+all1: rec $(EXEC)
 opt: rec.opt $(OPTEXEC)
 
 
