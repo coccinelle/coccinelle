@@ -1,5 +1,3 @@
-(* -*- mode: tuareg; tuareg-interactive-program: "/home/rrh/coccinelle/coccinelle/ctl/ctl.top -I ../commons" -*- *)
-
 (* ********************************************************************** *)
 (* Module: EXAMPLE_ENGINE (instance of CTL_ENGINE)                        *)
 (* ********************************************************************** *)
@@ -9,7 +7,8 @@ module WRAPPER_PRED =
     type predicate = string
   end
 
-module EXAMPLE_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG) (WRAPPER_PRED)
+module EXAMPLE_ENGINE = 
+  Wrapper_ctl.CTL_ENGINE_BIS (Ctl_engine.SIMPLE_ENV) (Ctl_engine.SIMPLE_CFG) (WRAPPER_PRED)
 
 let top_wit = []
 
@@ -61,8 +60,8 @@ let mkgraph nodes edges =
 
 let ex1lab s =
   match s with
-    "f(x)" -> [(0,["x" --> "1"],top_wit); (1,["x" --> "2"],top_wit)]
-  | "g(y)" -> [(3,["y" --> "1"],top_wit); (4,["y" --> "2"],top_wit)]
+    "f(x)" -> [(0,["x" --> "1"]); (1,["x" --> "2"])]
+  | "g(y)" -> [(3,["y" --> "1"]); (4,["y" --> "2"])]
   | _ -> []
 ;;
 
