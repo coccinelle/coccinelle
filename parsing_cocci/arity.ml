@@ -16,9 +16,9 @@ let make_opt_unique optfn uniquefn multifn info tgt arity term =
   then term
   else (* tgt must be NONE *)
     match arity with
-      Ast0.OPT -> Ast0.rewrap info (optfn term)
-    | Ast0.UNIQUE -> Ast0.rewrap info (uniquefn term)
-    | Ast0.MULTI -> Ast0.rewrap info (multifn term)
+      Ast0.OPT -> Ast0.copywrap info (optfn term)
+    | Ast0.UNIQUE -> Ast0.copywrap info (uniquefn term)
+    | Ast0.MULTI -> Ast0.copywrap info (multifn term)
     | Ast0.NONE -> failwith "tgt must be NONE"
 
 let all_same multi_allowed opt_allowed tgt line arities =
@@ -44,8 +44,8 @@ let get_option fn = function
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
 
-let mcode2line (_,_,mcodekind) = Ast.get_real_line mcodekind
-let mcode2arity (_,arity,_) = arity
+let mcode2line (_,_,info,_) = info.Ast0.line_start
+let mcode2arity (_,arity,_,_) = arity
 
 let mcode x = x (* nothing to do ... *)
 
@@ -236,14 +236,14 @@ let rec top_expression in_nest opt_allowed tgt expr =
   | Ast0.Cast(lp,ty,rp,exp) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let lp = mcode lp in
-      let ty = fullType arity ty in
+      let ty = typeC arity ty in
       let rp = mcode rp in
       let exp = expression false arity exp in
       make_exp expr tgt arity (Ast0.Cast(lp,ty,rp,exp))
   | Ast0.MetaConst(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      let ty = get_option (List.map (fullType Ast0.NONE)) ty in
+      let ty = get_option (List.map (typeC Ast0.NONE)) ty in
       make_exp expr tgt arity (Ast0.MetaConst(name,ty))
   | Ast0.MetaErr(name)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
@@ -252,7 +252,7 @@ let rec top_expression in_nest opt_allowed tgt expr =
   | Ast0.MetaExpr(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      let ty = get_option (List.map (fullType Ast0.NONE)) ty in
+      let ty = get_option (List.map (typeC Ast0.NONE)) ty in
       make_exp expr tgt arity (Ast0.MetaExpr(name,ty))
   | Ast0.MetaExprList(name) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
@@ -262,14 +262,16 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let arity = exp_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
       make_exp expr tgt arity (Ast0.EComma(cm))
-  | Ast0.DisjExpr(exps) ->
+  | Ast0.DisjExpr(starter,exps,ender) ->
       let res =
-	Ast0.DisjExpr(List.map (top_expression in_nest opt_allowed tgt)
-			exps) in
+	Ast0.DisjExpr(starter,
+		      List.map (top_expression in_nest opt_allowed tgt) exps,
+		      ender) in
       Ast0.rewrap expr res
-  | Ast0.NestExpr(exp_dots) ->
+  | Ast0.NestExpr(starter,exp_dots,ender) ->
       let res =
-	Ast0.NestExpr(dots (top_expression true true tgt) exp_dots) in
+	Ast0.NestExpr(starter,dots (top_expression true true tgt) exp_dots,
+		      ender) in
       Ast0.rewrap expr res
   | Ast0.Edots(dots,whencode) ->
       let arity = exp_same (mcode2line dots) [mcode2arity dots] in
@@ -295,81 +297,68 @@ and expression in_nest tgt exp =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and make_fullType =
+and make_typeC =
   make_opt_unique
     (function x -> Ast0.OptType x)
     (function x -> Ast0.UniqueType x)
     (function x -> Ast0.MultiType x)
 
-and top_fullType tgt opt_allowed ft =
-  match Ast0.unwrap ft with
-    Ast0.Type(cv,ty) ->
-      let cvar =
-	match cv with Some cv -> [mcode2arity cv] | None -> [] in
-      let cv = get_option mcode cv in
-      top_typeC tgt opt_allowed cv cvar ft ty
-  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
-      failwith "unexpected code"
-
-and top_typeC tgt opt_allowed cv cvar ft typ =
+and top_typeC tgt opt_allowed typ =
   match Ast0.unwrap typ with
-    Ast0.BaseType(ty,Some sign) ->
+    Ast0.ConstVol(cv,ty) ->
+      let arity = all_same false opt_allowed tgt (mcode2line cv)
+	  [mcode2arity cv] in
+      let cv = mcode cv in
+      let ty = typeC arity ty in
+      make_typeC typ tgt arity (Ast0.ConstVol(cv,ty))
+  | Ast0.BaseType(ty,Some sign) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line ty)
-	  (cvar@[mcode2arity ty; mcode2arity sign]) in
+	  [mcode2arity ty; mcode2arity sign] in
       let ty = mcode ty in
       let sign = mcode sign in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.BaseType(ty,Some sign))))
+      make_typeC typ tgt arity (Ast0.BaseType(ty,Some sign))
   | Ast0.BaseType(ty,None) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line ty)
-	  (cvar@[mcode2arity ty]) in
+	all_same false opt_allowed tgt (mcode2line ty) [mcode2arity ty] in
       let ty = mcode ty in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.BaseType(ty,None))))
+      make_typeC typ tgt arity (Ast0.BaseType(ty,None))
   | Ast0.Pointer(ty,star) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line star)
-	  (cvar@[mcode2arity star]) in
-      let ty = fullType arity ty in
+	all_same false opt_allowed tgt (mcode2line star) [mcode2arity star] in
+      let ty = typeC arity ty in
       let star = mcode star in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.Pointer(ty,star))))
+      make_typeC typ tgt arity (Ast0.Pointer(ty,star))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line lb)
-	  (cvar@[mcode2arity lb;mcode2arity rb]) in
-      let ty = fullType arity ty in
+	  [mcode2arity lb;mcode2arity rb] in
+      let ty = typeC arity ty in
       let lb = mcode lb in
       let size = get_option (expression false arity) size in
       let rb = mcode rb in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.Array(ty,lb,size,rb))))
+      make_typeC typ tgt arity (Ast0.Array(ty,lb,size,rb))
   | Ast0.StructUnionName(name,kind) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line name)
-	  (cvar@[mcode2arity name;mcode2arity kind]) in
+	  [mcode2arity name;mcode2arity kind] in
       let name = mcode name in
       let kind = mcode kind in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.StructUnionName(name,kind))))
+      make_typeC typ tgt arity (Ast0.StructUnionName(name,kind))
   | Ast0.TypeName(name) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line name)
-	  (cvar@[mcode2arity name]) in
+	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.TypeName(name))))
+      make_typeC typ tgt arity (Ast0.TypeName(name))
   | Ast0.MetaType(name) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line name)
-	  (cvar@[mcode2arity name]) in
+	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_fullType ft tgt arity
-	(Ast0.Type(cv,Ast0.rewrap typ (Ast0.MetaType(name))))
+      make_typeC typ tgt arity (Ast0.MetaType(name))
+  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
+      failwith "unexpected code"
 
-and fullType tgt ty = top_fullType tgt false ty
+and typeC tgt ty = top_typeC tgt false ty
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -388,7 +377,7 @@ let declaration in_nest tgt decl =
       let arity =
 	all_same in_nest true tgt (mcode2line eq)
 	  [mcode2arity eq;mcode2arity sem] in
-      let ty = fullType arity ty in
+      let ty = typeC arity ty in
       let id = ident false false arity id in
       let eq = mcode eq in
       let exp = expression false arity exp in
@@ -397,7 +386,7 @@ let declaration in_nest tgt decl =
   | Ast0.UnInit(ty,id,sem) ->
       let arity =
 	all_same in_nest true tgt (mcode2line sem) [mcode2arity sem] in
-      let ty = fullType arity ty in
+      let ty = typeC arity ty in
       let id = ident false false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(ty,id,sem))
@@ -416,10 +405,10 @@ let make_param =
 let parameterTypeDef tgt param =
   let param_same = all_same false true tgt in
   match Ast0.unwrap param with
-    Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(fullType tgt ty))
+    Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty))
   | Ast0.Param(id,ty) ->
       let id = ident false true tgt id in
-      let ty = top_fullType tgt true ty in
+      let ty = top_typeC tgt true ty in
       Ast0.rewrap param 
 	(match (Ast0.unwrap id,Ast0.unwrap ty) with
 	  (Ast0.OptIdent(id),Ast0.OptType(ty)) ->
@@ -560,14 +549,17 @@ let rec statement in_nest tgt stm =
       make_rule_elem stm tgt arity (Ast0.MetaStmtList(name))
   | Ast0.Exp(exp) ->
       Ast0.rewrap stm (Ast0.Exp(top_expression in_nest true tgt exp))
-  | Ast0.Disj(rule_elem_dots_list) ->
+  | Ast0.Disj(starter,rule_elem_dots_list,ender) ->
       Ast0.rewrap stm
-	(Ast0.Disj(List.map
+	(Ast0.Disj(starter,
+		   List.map
 		     (function x -> concat_dots (statement in_nest tgt) x)
-		     rule_elem_dots_list))
-  | Ast0.Nest(rule_elem_dots) ->
+		     rule_elem_dots_list,
+		   ender))
+  | Ast0.Nest(starter,rule_elem_dots,ender) ->
       Ast0.rewrap stm
-	(Ast0.Nest(concat_dots (statement true tgt) rule_elem_dots))
+	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,
+		   ender))
   | Ast0.Dots(dots,whencode)    ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

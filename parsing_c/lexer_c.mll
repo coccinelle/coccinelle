@@ -104,7 +104,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
   | "#" [' ' '\t']* "warning" [' ' '\t']+ [^'\n']* '\n'                              { TCommentCpp (tokinfo lexbuf)} 
   | "#" [' ' '\t']* "abort" [' ' '\t']+ [^'\n']* '\n'                                { TCommentCpp (tokinfo lexbuf)} 
 
-  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+ as file) '"'                 { TCommentCpp (tokinfo lexbuf) } 
+  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'                 { TCommentCpp (tokinfo lexbuf) } 
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           { TCommentCpp (tokinfo lexbuf) }
 
 
@@ -473,7 +473,7 @@ and char = parse
   | (_ as x)                                    "'"  { String.make 1 x }
   | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }     (* TODO, as for octal, do exception  beyond radix exception ? *)
   (* this rule must be after the one with octal, lex try first longest and when \7  we want an octal, not an exn *)
-  | (("\\x" ((hex | hex hex) as v)) as x        "'") { x }
+  | (("\\x" ((hex | hex hex))) as x        "'") { x }
   | (("\\" (_ as v)) as x                       "'")
 	{ (match v with (* Machine specific ? *)
             | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()  | 'f' -> () | 'a' -> ()

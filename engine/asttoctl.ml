@@ -107,12 +107,12 @@ dots.  If there are two options for attaching the + code, then both options
 necessarily occur the same number of times in the matched code, so it
 doesn't matter where the quantifier goes. *)
 
-let metaid (x,_) = x
+let metaid (x,_,_) = x
 
 let bind = Common.union_set
 let option_default = []
 
-let mcode astfvs (_,mcodekind) =
+let mcode astfvs (_,_,mcodekind) =
   let process_anything_list_list anythings =
     List.fold_left Common.union_set []
       (List.map
@@ -120,9 +120,9 @@ let mcode astfvs (_,mcodekind) =
 	   List.fold_left Common.union_set [] (List.map astfvs l))
 	 anythings) in
   match mcodekind with
-    Ast.MINUS(_,anythings) -> process_anything_list_list !anythings
-  | Ast.CONTEXT(_,befaft) ->
-      (match !befaft with
+    Ast.MINUS(anythings) -> process_anything_list_list anythings
+  | Ast.CONTEXT(befaft) ->
+      (match befaft with
 	Ast.BEFORE(ll) -> process_anything_list_list ll
       | Ast.AFTER(ll) -> process_anything_list_list ll
       | Ast.BEFOREAFTER(llb,lla) ->
@@ -130,7 +130,7 @@ let mcode astfvs (_,mcodekind) =
 	    (process_anything_list_list lla)
 	    (process_anything_list_list llb)
       | Ast.NOTHING -> [])
-  | Ast.PLUS(_) -> []
+  | Ast.PLUS -> []
 
 let donothing recursor k e = k e (* just combine in the normal way *)
 
@@ -227,11 +227,11 @@ let make_cond branch re = Ast_ctl.Implies(branch,Ast_ctl.AX(re))
 let contains_modif =
   let bind x y = x or y in
   let option_default = false in
-  let mcode (_,kind) =
+  let mcode (_,_,kind) =
     match kind with
-      Ast.MINUS(_,_) -> true
-    | Ast.PLUS(_) -> failwith "not possible"
-    | Ast.CONTEXT(_,info) -> not (!info = Ast.NOTHING) in
+      Ast.MINUS(_) -> true
+    | Ast.PLUS -> failwith "not possible"
+    | Ast.CONTEXT(info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
   let recursor =
     V.combiner bind option_default
@@ -428,14 +428,14 @@ and statement quantified stmt after =
 	  Ast_ctl.AG(Ast_ctl.Or(dots_pattern,Ast_ctl.Not dots_pattern))
       |	Some after ->
 	  Ast_ctl.AU(Ast_ctl.Or(dots_pattern,Ast_ctl.Not dots_pattern),after))
-  | Ast.Dots((_,d),whencode,tmp_whencode) ->
+  | Ast.Dots((_,i,d),whencode,tmp_whencode) ->
       let dot_code =
 	match d with
-	  Ast.MINUS(_,_) ->
+	  Ast.MINUS(_) ->
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
 	    let s = fresh_metavar() in
-	    Some(make_match (Ast.MetaStmt(s,d)))
+	    Some(make_match (Ast.MetaStmt(s,i,d)))
 	| _ -> None in
       let tmp_whencode =
 	List.map (function s -> statement quantified s None) tmp_whencode in

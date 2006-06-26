@@ -51,26 +51,17 @@ let ex1 =
      ((Ident "a",
        None,
        [({str = "a"; charpos = 19},
-         (Ast_cocci.CONTEXT
-            ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	       Ast_cocci.offset = -1},
-             {contents = Ast_cocci.NOTHING}),
+         (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
           []))]),
       Logical AndLog,
       (Ident "b",
        None,
        [({str = "b"; charpos = 22},
-         (Ast_cocci.CONTEXT
-            ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	       Ast_cocci.offset = -1},
-             {contents = Ast_cocci.NOTHING}),
+         (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
           []))])),
    None,
    [({str = "&&"; charpos = 20},
-     (Ast_cocci.CONTEXT
-        ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	   Ast_cocci.offset = -1},
-         {contents = Ast_cocci.NOTHING}),
+     (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
       []))])
 
 let ex2 = 
@@ -78,26 +69,17 @@ let ex2 =
      ((Ident "b",
        None,
        [({str = "b"; charpos = 28},
-         (Ast_cocci.CONTEXT
-            ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	       Ast_cocci.offset = -1},
-             {contents = Ast_cocci.NOTHING}),
+         (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
           []))]),
       Logical AndLog,
       (Ident "a",
        None,
        [({str = "a"; charpos = 31},
-         (Ast_cocci.CONTEXT
-            ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	       Ast_cocci.offset = -1},
-             {contents = Ast_cocci.NOTHING}),
+         (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
           []))])),
    None,
    [({str = "&&"; charpos = 29},
-     (Ast_cocci.CONTEXT
-        ({Ast_cocci.line = -1; Ast_cocci.logical_line = -1;
-	   Ast_cocci.offset = -1},
-         {contents = Ast_cocci.NOTHING}),
+     (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),
       []))])
 
 

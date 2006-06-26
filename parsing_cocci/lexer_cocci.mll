@@ -18,6 +18,8 @@ type line_type = MINUS | OPTMINUS | UNIQUEMINUS | PLUS | CONTEXT | UNIQUE | OPT
 let in_atat = ref false
 
 let current_line_type = ref (D.CONTEXT,!line,!logical_line)
+let get_current_line_type lexbuf =
+  let (c,l,ll) = !current_line_type in (c,l,ll,Lexing.lexeme_start lexbuf)
 let current_line_started = ref false
 
 let reset_line _ =
@@ -75,9 +77,11 @@ let check_arity_context_linetype s =
 (* identifiers, including metavariables *)
 
 let metavariables =
-  (Hashtbl.create(100) : (string, D.line_type * int * int -> token) Hashtbl.t)
+  (Hashtbl.create(100) :
+     (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
-let id_tokens s =
+let id_tokens lexbuf =
+  let s = tok lexbuf in
   match s with
     "identifier" -> check_arity_context_linetype s; TIdentifier
   | "type" ->       check_arity_context_linetype s; TType
@@ -92,33 +96,34 @@ let id_tokens s =
   | "error" ->      check_arity_context_linetype s; TError
   | "words" ->      check_context_linetype s; TWords
 
-  | "char" ->       Tchar   !current_line_type
-  | "short" ->      Tshort  !current_line_type
-  | "int" ->        Tint    !current_line_type
-  | "double" ->     Tdouble !current_line_type
-  | "float" ->      Tfloat  !current_line_type
-  | "long" ->       Tlong   !current_line_type
-  | "void" ->       Tvoid   !current_line_type
-  | "struct" ->     Tstruct !current_line_type
-  | "union" ->      Tunion  !current_line_type
-  | "unsigned" ->   Tunsigned !current_line_type
-  | "signed" ->     Tsigned !current_line_type
+  | "char" ->       Tchar   (get_current_line_type lexbuf)
+  | "short" ->      Tshort  (get_current_line_type lexbuf)
+  | "int" ->        Tint    (get_current_line_type lexbuf)
+  | "double" ->     Tdouble (get_current_line_type lexbuf)
+  | "float" ->      Tfloat  (get_current_line_type lexbuf)
+  | "long" ->       Tlong   (get_current_line_type lexbuf)
+  | "void" ->       Tvoid   (get_current_line_type lexbuf)
+  | "struct" ->     Tstruct (get_current_line_type lexbuf)
+  | "union" ->      Tunion  (get_current_line_type lexbuf)
+  | "unsigned" ->   Tunsigned (get_current_line_type lexbuf)
+  | "signed" ->     Tsigned (get_current_line_type lexbuf)
 	
-  | "static" ->     Tstatic !current_line_type
-  | "const" ->      Tconst !current_line_type
-  | "volatile" ->   Tstatic !current_line_type
+  | "static" ->     Tstatic (get_current_line_type lexbuf)
+  | "const" ->      Tconst (get_current_line_type lexbuf)
+  | "volatile" ->   Tstatic (get_current_line_type lexbuf)
 
-  | "if" ->         TIf     !current_line_type
-  | "else" ->       TElse   !current_line_type
-  | "while" ->      TWhile  !current_line_type
-  | "do" ->         TDo     !current_line_type
-  | "for" ->        TFor    !current_line_type
-  | "return" ->     TReturn !current_line_type
+  | "if" ->         TIf     (get_current_line_type lexbuf)
+  | "else" ->       TElse   (get_current_line_type lexbuf)
+  | "while" ->      TWhile  (get_current_line_type lexbuf)
+  | "do" ->         TDo     (get_current_line_type lexbuf)
+  | "for" ->        TFor    (get_current_line_type lexbuf)
+  | "return" ->     TReturn (get_current_line_type lexbuf)
   | s ->
-      try (Hashtbl.find metavariables s) !current_line_type
-      with Not_found -> TIdent (s,!current_line_type)
+      try (Hashtbl.find metavariables s) (get_current_line_type lexbuf)
+      with Not_found -> TIdent (s,(get_current_line_type lexbuf))
 
-let mkassign op = TAssign (Ast.OpAssign op, !current_line_type)
+let mkassign op lexbuf =
+  TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
 
 let init _ =
   Data.add_id_meta :=
@@ -204,40 +209,40 @@ rule token = parse
 
   | "WHEN"
       { start_line true; check_minus_context_linetype (tok lexbuf);
-	TWhen !current_line_type }
+	TWhen (get_current_line_type lexbuf) }
 
   | "..."
       { start_line true; check_minus_context_linetype (tok lexbuf);
-	TEllipsis !current_line_type }
+	TEllipsis (get_current_line_type lexbuf) }
 
   | "ooo"
       { start_line true; check_minus_context_linetype (tok lexbuf);
-	TCircles !current_line_type }
+	TCircles (get_current_line_type lexbuf) }
 
   | "***"
       { start_line true; check_minus_context_linetype (tok lexbuf);
-	TStars !current_line_type }
+	TStars (get_current_line_type lexbuf) }
 
   | "<..." { start_line true; check_context_linetype (tok lexbuf);
-	     TOEllipsis !current_line_type }
+	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
-	     TCEllipsis !current_line_type }
+	     TCEllipsis (get_current_line_type lexbuf) }
 
   | "<ooo" { start_line true; check_context_linetype (tok lexbuf);
-	     TOCircles !current_line_type }
+	     TOCircles (get_current_line_type lexbuf) }
   | "ooo>" { start_line true; check_context_linetype (tok lexbuf);
-	     TCCircles !current_line_type }
+	     TCCircles (get_current_line_type lexbuf) }
 
   | "<***" { start_line true; check_context_linetype (tok lexbuf);
-	     TOStars !current_line_type }
+	     TOStars (get_current_line_type lexbuf) }
   | "***>" { start_line true; check_context_linetype (tok lexbuf);
-	     TCStars !current_line_type }
+	     TCStars (get_current_line_type lexbuf) }
 
   | "-" { if !current_line_started
-	  then TMinus !current_line_type
+	  then (start_line true; TMinus (get_current_line_type lexbuf))
           else (add_current_line_type D.MINUS; token lexbuf) }
   | "+" { if !current_line_started
-	  then TPlus !current_line_type
+	  then (start_line true; TPlus (get_current_line_type lexbuf))
           else if !in_atat
 	  then TPlus0
           else (add_current_line_type D.PLUS; token lexbuf) }
@@ -247,82 +252,82 @@ rule token = parse
 	  then TPlus0
           else (add_current_line_type D.MULTI; token lexbuf) }
   | "?" { if !current_line_started
-	  then TWhy !current_line_type
+	  then (start_line true; TWhy (get_current_line_type lexbuf))
           else if !in_atat
 	  then TWhy0
           else (add_current_line_type D.OPT; token lexbuf) }
   | "!" { if !current_line_started
-	  then TBang !current_line_type
+	  then (start_line true; TBang (get_current_line_type lexbuf))
           else if !in_atat
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
   | "(" { if !current_line_started
-	  then TOPar !current_line_type
+	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TOPar0 !current_line_type)}
+	     TOPar0 (get_current_line_type lexbuf))}
   | "|" { if !current_line_started
-	  then TOr !current_line_type
+	  then (start_line true; TOr (get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
-		TMid0 !current_line_type)}
+		TMid0 (get_current_line_type lexbuf))}
   | ")" { if !current_line_started
-	  then TCPar !current_line_type
+	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
-	     TCPar0 !current_line_type)}
+	     TCPar0 (get_current_line_type lexbuf))}
 
-  | '[' { start_line true; TOCro !current_line_type }
-  | ']' { start_line true; TCCro !current_line_type }
-  | '{' { start_line true; TOBrace !current_line_type }
-  | '}' { start_line true; TCBrace !current_line_type }
+  | '[' { start_line true; TOCro (get_current_line_type lexbuf) }
+  | ']' { start_line true; TCCro (get_current_line_type lexbuf) }
+  | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
+  | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
 
-  | "->"           { start_line true; TPtrOp !current_line_type }
-  | '.'            { start_line true; TDot !current_line_type }
-  | ','            { start_line true; TComma !current_line_type }
-  | ";"            { start_line true; TPtVirg !current_line_type }
+  | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf) }
+  | '.'            { start_line true; TDot (get_current_line_type lexbuf) }
+  | ','            { start_line true; TComma (get_current_line_type lexbuf) }
+  | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
 
   
-  | '*'            { start_line true;  TMul !current_line_type }     
-  | '/'            { start_line true;  TDiv !current_line_type } 
-  | '%'            { start_line true;  TMod !current_line_type } 
+  | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }     
+  | '/'            { start_line true;  TDiv (get_current_line_type lexbuf) } 
+  | '%'            { start_line true;  TMod (get_current_line_type lexbuf) } 
   
-  | "++"           { start_line true;  TInc !current_line_type }    
-  | "--"           { start_line true;  TDec !current_line_type }
+  | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }    
+  | "--"           { start_line true;  TDec (get_current_line_type lexbuf) }
   
-  | "="            { start_line true; TEq !current_line_type } 
+  | "="            { start_line true; TEq (get_current_line_type lexbuf) } 
   
-  | "-="           { start_line true; mkassign Ast.Minus }
-  | "+="           { start_line true; mkassign Ast.Plus }
+  | "-="           { start_line true; mkassign Ast.Minus lexbuf }
+  | "+="           { start_line true; mkassign Ast.Plus lexbuf }
   
-  | "*="           { start_line true; mkassign Ast.Mul }
-  | "/="           { start_line true; mkassign Ast.Div }
-  | "%="           { start_line true; mkassign Ast.Mod }
+  | "*="           { start_line true; mkassign Ast.Mul lexbuf }
+  | "/="           { start_line true; mkassign Ast.Div lexbuf }
+  | "%="           { start_line true; mkassign Ast.Mod lexbuf }
   
-  | "&="           { start_line true; mkassign Ast.And }
-  | "|="           { start_line true; mkassign Ast.Or }
-  | "^="           { start_line true; mkassign Ast.Xor }
+  | "&="           { start_line true; mkassign Ast.And lexbuf }
+  | "|="           { start_line true; mkassign Ast.Or lexbuf }
+  | "^="           { start_line true; mkassign Ast.Xor lexbuf }
   
-  | "<<="          { start_line true; mkassign Ast.DecLeft }
-  | ">>="          { start_line true; mkassign Ast.DecRight }
+  | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
+  | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
 
-  | ":"            { start_line true; TDotDot !current_line_type }
+  | ":"            { start_line true; TDotDot (get_current_line_type lexbuf) }
   
-  | "=="           { start_line true; TEqEq   !current_line_type }   
-  | "!="           { start_line true; TNotEq  !current_line_type } 
-  | ">="           { start_line true; TInfEq  !current_line_type } 
-  | "<="           { start_line true; TSupEq  !current_line_type } 
-  | "<"            { start_line true; TInf    !current_line_type } 
-  | ">"            { start_line true; TSup    !current_line_type }
+  | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }   
+  | "!="           { start_line true; TNotEq  (get_current_line_type lexbuf) } 
+  | ">="           { start_line true; TInfEq  (get_current_line_type lexbuf) } 
+  | "<="           { start_line true; TSupEq  (get_current_line_type lexbuf) } 
+  | "<"            { start_line true; TInf    (get_current_line_type lexbuf) } 
+  | ">"            { start_line true; TSup    (get_current_line_type lexbuf) }
   
-  | "&&"           { start_line true; TAndLog !current_line_type } 
-  | "||"           { start_line true; TOrLog  !current_line_type }
+  | "&&"           { start_line true; TAndLog (get_current_line_type lexbuf) } 
+  | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
   
-  | ">>"           { start_line true; TShr    !current_line_type }
-  | "<<"           { start_line true; TShl    !current_line_type }
+  | ">>"           { start_line true; TShr    (get_current_line_type lexbuf) }
+  | "<<"           { start_line true; TShl    (get_current_line_type lexbuf) }
   
-  | "&"            { start_line true; TAnd    !current_line_type }
-  | "^"            { start_line true; TXor    !current_line_type }
+  | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
+  | "^"            { start_line true; TXor    (get_current_line_type lexbuf) }
 
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude
@@ -330,14 +335,16 @@ rule token = parse
 	  let start = String.index str '"' in
 	  let finish = String.rindex str '"' in
 	  start_line true;
-	  (String.sub str start (finish - start + 1),!current_line_type)) }
+	  (String.sub str start (finish - start + 1),
+	   (get_current_line_type lexbuf))) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'
       { TInclude
 	  (let str = tok lexbuf in
 	  let start = String.index str '<' in
 	  let finish = String.rindex str '>' in
 	  start_line true;
-	  (String.sub str start (finish - start + 1),!current_line_type))}
+	  (String.sub str start (finish - start + 1),
+	   (get_current_line_type lexbuf)))}
   | "---" [^'\n']*
       { (if !current_line_started
       then failwith "--- must be at the beginning of the line");
@@ -345,7 +352,7 @@ rule token = parse
 	TMinusFile
 	  (let str = tok lexbuf in
 	  (drop_spaces(String.sub str 3 (String.length str - 3)),
-	   !current_line_type)) }
+	   (get_current_line_type lexbuf))) }
   | "+++" [^'\n']*
       { (if !current_line_started
       then failwith "--- must be at the beginning of the line");
@@ -353,15 +360,18 @@ rule token = parse
 	TPlusFile
 	  (let str = tok lexbuf in
 	  (drop_spaces(String.sub str 3 (String.length str - 3)),
-	   !current_line_type)) }
+	   (get_current_line_type lexbuf))) }
 
   | letter (letter | digit)*
-      { start_line true; id_tokens (tok lexbuf) } 
+      { start_line true; id_tokens lexbuf } 
 
-  | "'"       { start_line true; TChar(char lexbuf,!current_line_type) }
-  | '"'       { start_line true; TString(string lexbuf,!current_line_type) }
-  | (real as x)    { start_line true; TFloat(x,!current_line_type) }
-  | (decimal as x) { start_line true; TInt(x,!current_line_type) }
+  | "'" { start_line true;
+	  TChar(char lexbuf,(get_current_line_type lexbuf)) }
+  | '"' { start_line true;
+	  TString(string lexbuf,(get_current_line_type lexbuf)) }
+  | (real as x)    { start_line true;
+		     TFloat(x,(get_current_line_type lexbuf)) }
+  | (decimal as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
 
 
   | eof            { EOF }

@@ -3,8 +3,8 @@ open Common open Commonop
 module A = Ast_cocci
 
 
-let mmvide =
-  A.CONTEXT ({A.line = -1; A.logical_line = -1; A.offset = -1}, ref A.NOTHING)
+let mmvide = A.CONTEXT(A.NOTHING)
+let infovide = {A.line = -1; A.column = -1}
 (******************************************************************************)
 
 let rec isomorphisms_re = function
@@ -14,10 +14,11 @@ let rec isomorphisms_re = function
 
 
 and isomorphisms_e = function
-  | A.Unary (e, (A.Not, m)) -> 
+  | A.Unary (e, (A.Not, i, m)) -> 
       A.DisjExpr [
-      A.Unary (e, (A.Not, m));
-      A.Binary (e, (A.Logical A.Eq, mmvide), A.Ident (A.Id ("NULL", mmvide)))
+      A.Unary (e, (A.Not, i, m));
+      A.Binary (e, (A.Logical A.Eq, infovide, mmvide),
+		A.Ident (A.Id ("NULL", infovide, mmvide)))
     ] 
         
   | x -> x

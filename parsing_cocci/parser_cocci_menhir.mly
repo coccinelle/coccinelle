@@ -18,37 +18,47 @@ module Ast = Ast_cocci
   else v*)
 
 let make_info line logical_line offset =
-  { Ast.line = line; Ast.logical_line = logical_line; Ast.offset = offset }
+  { Ast0.line_start = line; Ast0.line_end = line;
+    Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+    Ast0.attachable_start = true; Ast0.attachable_end = true;
+    Ast0.mcode_start = None; Ast0.mcode_end = None;
+    Ast0.column = -1; Ast0.offset = offset }
 
 let clt2info (_,line,logical_line,offset) = make_info line logical_line offset
 
-let clt2mcode str offset = function
-    (Data.MINUS,line,lline)       ->
-      (str,Ast0.NONE,
-       (Ast.MINUS(make_info line lline offset,ref[])))
-  | (Data.OPTMINUS,line,lline)    ->
-      (str,Ast0.OPT,
-       (Ast.MINUS(make_info line lline offset,ref[])))
-  | (Data.UNIQUEMINUS,line,lline) ->
-      (str,Ast0.UNIQUE,
-       (Ast.MINUS(make_info line lline offset,ref[])))
-  | (Data.MULTIMINUS,line,lline) ->
-      (str,Ast0.MULTI,
-       (Ast.MINUS(make_info line lline offset,ref[])))
-  | (Data.PLUS,line,lline)        ->
-      (str,Ast0.NONE,Ast.PLUS(make_info line lline offset))
-  | (Data.CONTEXT,line,lline)     ->
-      (str,Ast0.NONE,
-       Ast.CONTEXT(make_info line lline offset,ref Ast.NOTHING))
-  | (Data.OPT,line,lline)         ->
-      (str,Ast0.OPT,
-       Ast.CONTEXT(make_info line lline offset,ref Ast.NOTHING))
-  | (Data.UNIQUE,line,lline)      ->
-      (str,Ast0.UNIQUE,
-       Ast.CONTEXT(make_info line lline offset,ref Ast.NOTHING))
-  | (Data.MULTI,line,lline)      ->
-      (str,Ast0.MULTI,
-       Ast.CONTEXT(make_info line lline offset,ref Ast.NOTHING))
+(* the second argument is $startofs, which doesn't work, but which would be
+nice to use *)
+let clt2mcode str _ = function
+    (Data.MINUS,line,lline,offset)       ->
+      (str,Ast0.NONE,make_info line lline offset,
+       Ast0.MINUS(ref([],Ast0.default_token_info)))
+  | (Data.OPTMINUS,line,lline,offset)    ->
+      (str,Ast0.OPT,make_info line lline offset,
+       Ast0.MINUS(ref([],Ast0.default_token_info)))
+  | (Data.UNIQUEMINUS,line,lline,offset) ->
+      (str,Ast0.UNIQUE,make_info line lline offset,
+       Ast0.MINUS(ref([],Ast0.default_token_info)))
+  | (Data.MULTIMINUS,line,lline,offset) ->
+      (str,Ast0.MULTI,make_info line lline offset,
+       Ast0.MINUS(ref([],Ast0.default_token_info)))
+  | (Data.PLUS,line,lline,offset)        ->
+      (str,Ast0.NONE,make_info line lline offset,Ast0.PLUS)
+  | (Data.CONTEXT,line,lline,offset)     ->
+      (str,Ast0.NONE,make_info line lline offset,
+       Ast0.CONTEXT(ref(Ast.NOTHING,
+			Ast0.default_token_info,Ast0.default_token_info)))
+  | (Data.OPT,line,lline,offset)         ->
+      (str,Ast0.OPT,make_info line lline offset,
+       Ast0.CONTEXT(ref(Ast.NOTHING,
+			Ast0.default_token_info,Ast0.default_token_info)))
+  | (Data.UNIQUE,line,lline,offset)      ->
+      (str,Ast0.UNIQUE,make_info line lline offset,
+       Ast0.CONTEXT(ref(Ast.NOTHING,
+			Ast0.default_token_info,Ast0.default_token_info)))
+  | (Data.MULTI,line,lline,offset)      ->
+      (str,Ast0.MULTI,make_info line lline offset,
+       Ast0.CONTEXT(ref(Ast.NOTHING,
+			Ast0.default_token_info,Ast0.default_token_info)))
 
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
@@ -82,6 +92,9 @@ let logic_op ast_op left op opoffset right =
   Ast0.wrap
     (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) opoffset op, right))
 
+let make_cv cv ty =
+  match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
+
 let top_dots l =
   let circle x =
     match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
@@ -100,14 +113,10 @@ let pointerify ty m offset =
   List.fold_left
     (function inner ->
       function cur ->
-	Ast0.wrap(Ast0.Pointer(Ast0.wrap(Ast0.Type(None,inner)),
-			       clt2mcode "*" offset cur)))
+	Ast0.wrap(Ast0.Pointer(inner,clt2mcode "*" offset cur)))
     ty m
 
-(* to be replaced by $startofs when that works *)
-let offset_counter = ref 0
-let startofs _ =
-  let cur = !offset_counter in offset_counter := cur + 1; cur
+let startofs _ = -1
 %}
 
 
@@ -116,55 +125,57 @@ let startofs _ =
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token TWhy0 TPlus0 TBang0 Tlist TFresh TConstant TError TWords
 
-%token<Data.line_type * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong Tvoid
-%token<Data.line_type * int * int> Tstruct Tunion
-%token<Data.line_type * int * int> Tunsigned Tsigned
+%token<Data.line_type * int * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong
+%token<Data.line_type * int * int * int> Tvoid Tstruct Tunion
+%token<Data.line_type * int * int * int> Tunsigned Tsigned
 
-%token<Data.line_type * int * int> Tstatic Tconst Tvolatile
+%token<Data.line_type * int * int * int> Tstatic Tconst Tvolatile
 
-%token <Data.line_type * int * int> TIf TElse TWhile TFor TDo TReturn
-%token <Data.line_type * int * int> TFunDecl
-%token <string * (Data.line_type * int * int)> TIdent
-%token <string * (Data.line_type * int * int)> TMetaId TMetaType TMetaErr
-%token <string * (Data.line_type * int * int)> TMetaParam TMetaParamList
-%token <string * (Data.line_type * int * int)> TMetaStm TMetaStmList TMetaFunc
-%token <string * (Data.line_type * int * int)> TMetaLocalFunc TMetaExpList
-%token <string * Ast0_cocci.fullType list option * (Data.line_type*int*int)>
-TMetaExp TMetaConst
+%token <Data.line_type * int * int * int> TIf TElse TWhile TFor TDo TReturn
+%token <Data.line_type * int * int * int> TFunDecl
+%token <string * (Data.line_type * int * int * int)> TIdent
+%token <string * (Data.line_type * int * int * int)> TMetaId TMetaType TMetaErr
+%token <string * (Data.line_type * int * int * int)> TMetaParam TMetaParamList
+%token <string * (Data.line_type * int * int * int)> TMetaStm TMetaStmList
+%token <string * (Data.line_type * int * int * int)> TMetaFunc TMetaLocalFunc
+%token <string * (Data.line_type * int * int * int)> TMetaExpList
+%token <string * Ast0_cocci.typeC list option *
+        (Data.line_type*int*int*int)> TMetaExp TMetaConst
 %token TArobArob
 
-%token <Data.line_type * int * int> TEllipsis TOEllipsis TCEllipsis
-%token <Data.line_type * int * int> TWhen TLineEnd
-%token <Data.line_type * int * int> TCircles TOCircles TCCircles
-%token <Data.line_type * int * int> TStars TOStars TCStars
+%token <Data.line_type * int * int * int> TEllipsis TOEllipsis TCEllipsis
+%token <Data.line_type * int * int * int> TWhen TLineEnd
+%token <Data.line_type * int * int * int> TCircles TOCircles TCCircles
+%token <Data.line_type * int * int * int> TStars TOStars TCStars
 
-%token <Data.line_type * int * int> TWhy TDotDot TBang TOPar TOPar0 TMid
-%token <Data.line_type * int * int> TMid0 TCPar TCPar0
+%token <Data.line_type * int * int * int> TWhy TDotDot TBang TOPar TOPar0 TMid
+%token <Data.line_type * int * int * int> TMid0 TCPar TCPar0
 
-%token <string * (Data.line_type * int * int)> TInclude TMinusFile TPlusFile
+%token <string * (Data.line_type * int * int * int)> TInclude
+%token <string * (Data.line_type * int * int * int)> TMinusFile TPlusFile
 
-%token <Data.line_type * int * int> TInc TDec
+%token <Data.line_type * int * int * int> TInc TDec
 
-%token <string * (Data.line_type * int * int)> TString TChar TFloat TInt
+%token <string * (Data.line_type * int * int * int)> TString TChar TFloat TInt
 
-%token <Data.line_type * int * int> TOrLog
-%token <Data.line_type * int * int> TAndLog
-%token <Data.line_type * int * int> TOr
-%token <Data.line_type * int * int> TXor
-%token <Data.line_type * int * int> TAnd 
-%token <Data.line_type * int * int> TEqEq TNotEq
-%token <Data.line_type * int * int> TInf TSup TInfEq TSupEq 
-%token <Data.line_type * int * int> TShl TShr
-%token <Data.line_type * int * int> TPlus TMinus
-%token <Data.line_type * int * int> TMul TDiv TMod 
+%token <Data.line_type * int * int * int> TOrLog
+%token <Data.line_type * int * int * int> TAndLog
+%token <Data.line_type * int * int * int> TOr
+%token <Data.line_type * int * int * int> TXor
+%token <Data.line_type * int * int * int> TAnd 
+%token <Data.line_type * int * int * int> TEqEq TNotEq
+%token <Data.line_type * int * int * int> TInf TSup TInfEq TSupEq 
+%token <Data.line_type * int * int * int> TShl TShr
+%token <Data.line_type * int * int * int> TPlus TMinus
+%token <Data.line_type * int * int * int> TMul TDiv TMod 
 
-%token <Data.line_type * int * int> TOBrace TCBrace
-%token <Data.line_type * int * int> TOCro TCCro
+%token <Data.line_type * int * int * int> TOBrace TCBrace
+%token <Data.line_type * int * int * int> TOCro TCCro
 
-%token <Data.line_type * int * int> TPtrOp
+%token <Data.line_type * int * int * int> TPtrOp
 
-%token <Data.line_type * int * int> TEq TDot TComma TPtVirg
-%token <Ast_cocci.assignOp * (Data.line_type * int * int)> TAssign
+%token <Data.line_type * int * int * int> TEq TDot TComma TPtVirg
+%token <Ast_cocci.assignOp * (Data.line_type * int * int * int)> TAssign
 
 %token TInvalid
 
@@ -293,29 +304,29 @@ generic_ctype:
 
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { Ast0.wrap(Ast0.Type(cv,pointerify ty m (startofs(m)))) }
+	 { make_cv cv (pointerify ty m (startofs(m))) }
      | cv=ioption(const_vol) p=pure_ident m=list(TMul)
 	 { let nm = Ast0.wrap(Ast0.TypeName(id2mcode (startofs(p)) p)) in
-           Ast0.wrap(Ast0.Type(cv,pointerify nm m (startofs(m)))) }
+           make_cv cv (pointerify nm m (startofs(m))) }
 
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { Ast0.wrap(Ast0.Type(cv,pointerify ty m (startofs(m)))) }
+	 { make_cv cv (pointerify ty m (startofs(m))) }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
 	 let ty =Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt)) in
-	 Ast0.wrap(Ast0.Type(cv,pointerify ty m (startofs(m)))) }
+	 make_cv cv (pointerify ty m (startofs(m))) }
 
 param_ctype: // the most general - allows metavariables and type names
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { Ast0.wrap(Ast0.Type(cv,pointerify ty m (startofs(m)))) }
+	 { make_cv cv (pointerify ty m (startofs(m))) }
      | cv=ioption(const_vol) p=pure_ident m=list(TMul)
 	 { let nm = Ast0.wrap(Ast0.TypeName(id2mcode (startofs(p)) p)) in
-           Ast0.wrap(Ast0.Type(cv,pointerify nm m (startofs(m)))) }
+           make_cv cv (pointerify nm m (startofs(m))) }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
 	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt)) in
-	 Ast0.wrap(Ast0.Type(cv,pointerify ty m (startofs(m)))) }
+	 make_cv cv (pointerify ty m (startofs(m))) }
 
 ctype_qualif:
        Tunsigned   { clt2mcode Ast.Unsigned (startofs($1)) $1 }
@@ -412,11 +423,17 @@ statement:
     { Ast0.wrap(Ast0.Seq(clt2mcode "{" (startofs($1)) $1,$2,
 			 clt2mcode "}" (startofs($3)) $3)) }
 | TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
-    { Ast0.wrap(Ast0.Nest(Ast0.wrap(Ast0.DOTS(b (mkdots "..."))))) }
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<..." (startofs($1)) $1,
+			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
+			  clt2mcode "...>" (startofs($3)) $3)) }
 | TOCircles b=statement_dots(TCircles) TCCircles
-    { Ast0.wrap(Ast0.Nest(Ast0.wrap(Ast0.CIRCLES(b (mkdots "ooo"))))) }
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<ooo" (startofs($1)) $1,
+			  Ast0.wrap(Ast0.CIRCLES(b (mkdots "ooo"))),
+			  clt2mcode "ooo>" (startofs($3)) $3)) }
 | TOStars b=statement_dots(TStars) TCStars
-    { Ast0.wrap(Ast0.Nest(Ast0.wrap(Ast0.STARS(b (mkdots "***"))))) }
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<***" (startofs($1)) $1,
+			  Ast0.wrap(Ast0.STARS(b (mkdots "***"))),
+			  clt2mcode "***>" (startofs($3)) $3)) }
 
 statement_dots(dotter):
   r=no_dot_start_end(exp_decl_statement_list,
@@ -431,7 +448,9 @@ single_statement:
       /* degenerate case, elements are single statements and thus don't
 	contain dots */
       { Ast0.wrap
-	  (Ast0.Disj(List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) $2)) }
+	  (Ast0.Disj(clt2mcode "(" (startofs($1)) $1,
+		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) $2,
+		     clt2mcode ")" (startofs($3)) $3)) }
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */
@@ -448,14 +467,12 @@ decl_var:
   | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
       { let (id,fn) = d in
       let idtype =
-	Ast0.wrap
-	  (Ast0.Type(cv,Ast0.wrap(Ast0.TypeName(id2mcode (startofs(i)) i)))) in
+	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode (startofs(i)) i))) in
       [Ast0.wrap(Ast0.UnInit(fn idtype,id,clt2mcode ";" (startofs(pv)) pv))] }
   | cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq e=eexpr pv=TPtVirg
       { let (id,fn) = d in
       let idtype =
-	Ast0.wrap
-	  (Ast0.Type(cv,Ast0.wrap(Ast0.TypeName(id2mcode (startofs(i)) i)))) in
+	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode (startofs(i)) i))) in
       [Ast0.wrap(Ast0.Init(fn idtype,id,clt2mcode "=" (startofs(q)) q,e,
 			   clt2mcode ";" (startofs(pv)) pv))] }
 
@@ -464,10 +481,8 @@ d_ident:
       { ($1,function x -> x) }
   | a=ident l=TOCro i=ioption(eexpr) r=TCCro
       { (a,function x ->
-	Ast0.wrap
-	  (Ast0.Type
-	     (None,Ast0.wrap(Ast0.Array(x,clt2mcode "[" (startofs(l)) l,i,
-					clt2mcode "]" (startofs(r)) r))))) }
+	Ast0.wrap(Ast0.Array(x,clt2mcode "[" (startofs(l)) l,i,
+			     clt2mcode "]" (startofs(r)) r))) }
 
 /* a statement that is part of a list */
 decl_statement:
@@ -483,7 +498,9 @@ decl_statement:
 	    match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
 	  $2
       then []
-      else [Ast0.wrap(Ast0.Disj($2))] }
+      else [Ast0.wrap(Ast0.Disj(clt2mcode "(" (startofs($1)) $1,
+				$2,
+				clt2mcode ")" (startofs($3)) $3))] }
 
 /*****************************************************************************/
 
@@ -507,11 +524,17 @@ dot_expressions:
 
 nest_expressions:
   TOEllipsis expr_dots(TEllipsis) TCEllipsis
-    { Ast0.wrap(Ast0.NestExpr(Ast0.wrap(Ast0.DOTS($2 (mkedots "..."))))) }
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<..." (startofs($1)) $1,
+			      Ast0.wrap(Ast0.DOTS($2 (mkedots "..."))),
+			      clt2mcode "...>" (startofs($3)) $3)) }
 | TOCircles expr_dots(TCircles) TCCircles
-    { Ast0.wrap(Ast0.NestExpr(Ast0.wrap(Ast0.CIRCLES($2 (mkedots "ooo"))))) }
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<ooo" (startofs($1)) $1,
+			      Ast0.wrap(Ast0.CIRCLES($2 (mkedots "ooo"))),
+			      clt2mcode "ooo>" (startofs($3)) $3)) }
 | TOStars expr_dots(TStars) TCStars
-    { Ast0.wrap(Ast0.NestExpr(Ast0.wrap(Ast0.STARS($2 (mkedots "***"))))) }
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<***" (startofs($1)) $1,
+			      Ast0.wrap(Ast0.STARS($2 (mkedots "***"))),
+			      clt2mcode "***>" (startofs($3)) $3)) }
 
 basic_expr(recurser,primary_extra):
   assign_expr(recurser,primary_extra)                        { $1 }
@@ -636,7 +659,10 @@ primary_expr(recurser,primary_extra):
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(clt2mcode "(" (startofs($1)) $1,$2,
 			    clt2mcode ")" (startofs($3)) $3)) }
- | TOPar0 midzero_list(recurser) TCPar0 { Ast0.wrap(Ast0.DisjExpr($2)) }
+ | TOPar0 midzero_list(recurser) TCPar0
+     { Ast0.wrap(Ast0.DisjExpr(clt2mcode "(" (startofs($1)) $1,
+			       $2,
+			       clt2mcode ")" (startofs($3)) $3)) }
  | primary_extra { $1 }
 
 expr_dots(dotter):
@@ -728,8 +754,8 @@ fun_exp_decl_statement_list:
   | f=nonempty_list(fun_decl_statement)        { List.concat f }
 
 %inline fun_decl_statement:
-    decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) $1 }
-  | fundecl        { [Ast0.wrap(Ast0.FUNCTION($1))] }
+    d=decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) d }
+  | f=fundecl        { [Ast0.wrap(Ast0.FUNCTION(f))] }
 
 /* ---------------------------------------------------------------------- */
 

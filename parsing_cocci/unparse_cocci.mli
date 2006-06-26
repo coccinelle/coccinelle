@@ -3,3 +3,17 @@ val unparse_to_string : Ast_cocci.rule -> string
 val rule_elem : string -> Ast_cocci.rule_elem -> unit
 val rule_elem_to_string : Ast_cocci.rule_elem -> string
 
+val constant : Ast_cocci.constant -> unit
+val assignOp : Ast_cocci.assignOp -> unit
+val fixOp : Ast_cocci.fixOp -> unit
+val unaryOp : Ast_cocci.unaryOp -> unit
+val binaryOp : Ast_cocci.binaryOp -> unit
+val const_vol : Ast_cocci.const_vol -> unit
+val sign : Ast_cocci.sign -> unit
+val structUnion : Ast_cocci.structUnion -> unit
+val storage : Ast_cocci.storage -> unit
+val baseType : Ast_cocci.baseType -> unit
+
+val print_around :
+    ('a -> unit) -> 'a -> Ast_cocci.anything Ast_cocci.befaft -> unit
+val print_anything : string -> Ast_cocci.anything list list -> unit

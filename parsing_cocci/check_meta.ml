@@ -19,8 +19,8 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus (name,_,mcodekind) =
-  let rl = Ast.get_real_line mcodekind in
+let check_table table minus ((name,_,info,_) : string Ast0.mcode) =
+  let rl = info.Ast0.line_start in
   if minus
   then
     (try (find_loop table name) := true
@@ -58,11 +58,11 @@ let is_ifdef name =
 
 let ident context table minus i =
   match Ast0.unwrap i with
-    Ast0.Id(name,_,mcodekind) ->
-      let rl = Ast.get_real_line mcodekind in
+    Ast0.Id((name,_,info,_) : string Ast0.mcode) ->
+      let rl = info.Ast0.line_start in
       (match context with
 	ID ->
-	  if not (is_ifdef name)
+	  if not (is_ifdef name) && minus
 	  then
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
@@ -104,14 +104,14 @@ let rec expression context table minus e =
   | Ast0.RecordPtAccess(exp,ar,field) ->
       expression ID table minus exp; ident FIELD table minus field
   | Ast0.Cast(lp,ty,rp,exp) ->
-      fullType table minus ty; expression ID table minus exp
+      typeC table minus ty; expression ID table minus exp
   | Ast0.MetaConst(name,ty) -> if minus then check_table table minus name
   | Ast0.MetaExpr(name,ty)  -> if minus then check_table table minus name
   | Ast0.MetaErr(name)      -> check_table table minus name
   | Ast0.MetaExprList(name) -> if minus then check_table table minus name
-  | Ast0.DisjExpr(exps) ->
+  | Ast0.DisjExpr(_,exps,_) ->
       List.iter (expression ID table minus) exps
-  | Ast0.NestExpr(exp_dots) -> dots (expression ID table minus) exp_dots
+  | Ast0.NestExpr(_,exp_dots,_) -> dots (expression ID table minus) exp_dots
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
       expression ID table minus x
   | _ -> () (* no metavariable subterms *)
@@ -119,19 +119,16 @@ let rec expression context table minus e =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and fullType table minus ft =
-  match Ast0.unwrap ft with
-    Ast0.Type(cv,ty) -> typeC table minus ty
-  | Ast0.OptType(ty) -> fullType table minus ty
-  | Ast0.UniqueType(ty) -> fullType table minus ty
-  | Ast0.MultiType(ty) -> fullType table minus ty
-
 and typeC table minus t =
   match Ast0.unwrap t with
-    Ast0.Pointer(ty,star) -> fullType table minus ty
+    Ast0.ConstVol(cv,ty) -> typeC table minus ty
+  | Ast0.Pointer(ty,star) -> typeC table minus ty
   | Ast0.Array(ty,lb,size,rb) ->
-      fullType table minus ty; get_opt (expression ID table minus) size
+      typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name) -> if minus then check_table table minus name
+  | Ast0.OptType(ty) -> typeC table minus ty
+  | Ast0.UniqueType(ty) -> typeC table minus ty
+  | Ast0.MultiType(ty) -> typeC table minus ty
   | _ -> () (* no metavariable subterms *)
 
 (* --------------------------------------------------------------------- *)
@@ -142,10 +139,10 @@ and typeC table minus t =
 let declaration context table minus d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
-      fullType table minus ty;
+      typeC table minus ty;
       ident context table minus id; expression ID table minus exp
   | Ast0.UnInit(ty,id,sem) ->
-      fullType table minus ty; ident context table minus id
+      typeC table minus ty; ident context table minus id
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 
@@ -154,7 +151,7 @@ let declaration context table minus d =
 
 let parameterTypeDef table minus param =
   match Ast0.unwrap param with
-    Ast0.Param(id,ty) -> ident ID table minus id; fullType table minus ty
+    Ast0.Param(id,ty) -> ident ID table minus id; typeC table minus ty
   | Ast0.MetaParam(name) -> if minus then check_table table minus name
   | Ast0.MetaParamList(name) -> if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
@@ -187,9 +184,10 @@ let rec statement table minus s =
   | Ast0.MetaStmt(name) -> if minus then check_table table minus name
   | Ast0.MetaStmtList(name) -> if minus then check_table table minus name
   | Ast0.Exp(exp) -> expression ID table minus exp
-  | Ast0.Disj(rule_elem_dots_list) ->
+  | Ast0.Disj(_,rule_elem_dots_list,_) ->
       List.iter (dots (statement table minus)) rule_elem_dots_list
-  | Ast0.Nest(rule_elem_dots) -> dots (statement table minus) rule_elem_dots
+  | Ast0.Nest(_,rule_elem_dots,_) ->
+      dots (statement table minus) rule_elem_dots
   | Ast0.Dots(_,Some x) | Ast0.Circles(_,Some x) | Ast0.Stars(_,Some x) ->
       dots (statement table minus) x
   | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->

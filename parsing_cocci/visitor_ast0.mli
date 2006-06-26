@@ -4,9 +4,9 @@
 type 'a combiner =
     {combiner_ident : Ast0_cocci.ident -> 'a;
       combiner_expression : Ast0_cocci.expression -> 'a;
-	combiner_fullType : Ast0_cocci.fullType -> 'a;
-	  combiner_typeC : Ast0_cocci.typeC -> 'a;
-	    combiner_declaration : Ast0_cocci.declaration -> 'a;
+	combiner_typeC : Ast0_cocci.typeC -> 'a;
+	  combiner_declaration : Ast0_cocci.declaration -> 'a;
+	    combiner_parameter : Ast0_cocci.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast0_cocci.parameter_list -> 'a;
 		combiner_statement : Ast0_cocci.statement -> 'a;
 		  combiner_top_level : Ast0_cocci.top_level -> 'a;
@@ -36,20 +36,18 @@ val combiner :
 				((Ast0_cocci.statement Ast0_cocci.dots,'a) ccode) ->
 				  ((Ast0_cocci.ident,'a) ccode) ->
 				    ((Ast0_cocci.expression,'a) ccode) ->
-				      ((Ast0_cocci.fullType,'a) ccode) ->
-					((Ast0_cocci.typeC,'a) ccode) ->
-					  ((Ast0_cocci.parameterTypeDef,'a) ccode) ->
-					    ((Ast0_cocci.declaration,'a) ccode) ->
-					      ((Ast0_cocci.statement,'a) ccode) ->
-						((Ast0_cocci.top_level,'a) ccode) ->
-						  'a combiner
+				      ((Ast0_cocci.typeC,'a) ccode) ->
+					((Ast0_cocci.parameterTypeDef,'a) ccode) ->
+					  ((Ast0_cocci.declaration,'a) ccode) ->
+					    ((Ast0_cocci.statement,'a) ccode) ->
+					      ((Ast0_cocci.top_level,'a) ccode) ->
+						'a combiner
 
 type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 
 type rebuilder =
     {rebuilder_ident : Ast0_cocci.ident inout;
       rebuilder_expression : Ast0_cocci.expression inout;
-      rebuilder_fullType : Ast0_cocci.fullType inout;
       rebuilder_typeC : Ast0_cocci.typeC inout;
       rebuilder_declaration : Ast0_cocci.declaration inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
@@ -79,10 +77,9 @@ val rebuilder :
 			(Ast_cocci.storage rmcode) ->
 			  (Ast0_cocci.ident rcode) ->
 			    (Ast0_cocci.expression rcode) ->
-			      (Ast0_cocci.fullType rcode) ->
-				(Ast0_cocci.typeC rcode) ->
-				  (Ast0_cocci.parameterTypeDef rcode) ->
-				    (Ast0_cocci.declaration rcode) ->
-				      (Ast0_cocci.statement rcode) ->
-					(Ast0_cocci.top_level rcode) ->
-					  rebuilder
+			      (Ast0_cocci.typeC rcode) ->
+				(Ast0_cocci.parameterTypeDef rcode) ->
+				  (Ast0_cocci.declaration rcode) ->
+				    (Ast0_cocci.statement rcode) ->
+				      (Ast0_cocci.top_level rcode) ->
+					rebuilder

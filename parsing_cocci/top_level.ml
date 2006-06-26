@@ -5,19 +5,21 @@ is ambiguous.  We use the heuristic that if there are code dots somewhere
 else, then the variable declaration is at top level, otherwise it applies
 both at top level and to all code. *)
 
+(* This is assumed to be done before compute_lines, and thus the info on a
+complex term is assumed to be Ast0.default_info *)
+
 module Ast0 = Ast0_cocci
 
-let mkres e (_,lstart,_) (_,lend,_) =
-  (e,{Ast0.logical_start = lstart.Ast0.logical_start;
-       Ast0.logical_end = lend.Ast0.logical_end},
-   ref Ast0.Neither)
-
 let top_dots l =
-  if List.exists (function (Ast0.Circles(_),_,_) -> true | _ -> false) l
-  then mkres (Ast0.CIRCLES(l)) (List.hd l) (List.hd (List.rev l))
-  else if List.exists (function (Ast0.Stars(_),_,_) -> true | _ -> false) l
-  then mkres (Ast0.STARS(l)) (List.hd l) (List.hd (List.rev l))
-  else mkres (Ast0.DOTS(l)) (List.hd l) (List.hd (List.rev l))
+  let circle x =
+    match Ast0.unwrap x with Ast0.Circles(_) -> true | _ -> false in
+  let star x =
+    match Ast0.unwrap x with Ast0.Stars(_) -> true | _ -> false in
+  if List.exists circle l
+  then Ast0.wrap (Ast0.CIRCLES(l))
+  else if List.exists star l
+  then Ast0.wrap (Ast0.STARS(l))
+  else Ast0.wrap (Ast0.DOTS(l))
 
 let scan_code l =
   let statements = ref false in
@@ -43,7 +45,7 @@ let scan_code l =
       else
 	(List.map
 	   (function
-	       (Ast0.Decl(x),_,_) -> Ast0.wrap (Ast0.DECL x)
+	       (Ast0.Decl(x),_,_,_) -> Ast0.wrap (Ast0.DECL x)
 	     | _ -> failwith "impossible")
 	   code,
 	 rest)

@@ -5,21 +5,23 @@ module Ast = Ast_cocci
 
 type arity = OPT | UNIQUE | MULTI | NONE
 
-type 'a mcode = 'a * arity * Ast.mcodekind
+type token_info = { tline_start : int; tline_end : int }
+let default_token_info = { tline_start = -1; tline_end = -1 }
 
-type logline = Good of int | Bad of int
-type line_info = {logical_start : logline; logical_end : logline}
+type mcodekind =
+    MINUS       of (Ast.anything list list * token_info) ref
+  | PLUS
+  | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
+  | MIXED
 
-(* --------------------------------------------------------------------- *)
+type info = { line_start : int; line_end : int;
+	      logical_start : int; logical_end : int;
+	      attachable_start : bool; attachable_end : bool;
+	      mcode_start : mcodekind option; mcode_end : mcodekind option;
+	      column : int; offset : int }
 
-type token_info =
-    (* a tree of all minus tokens *)
-    AllMinus
-    (* a context node where all subtrees have the same set of context tokens
-       in the minus and plus trees *)
-  | BindContext (* the context children *)
-    (* neither of the above cases *)
-  | Neither
+type 'a mcode = 'a * arity * info * mcodekind
+type 'a wrap = 'a * info * int ref * mcodekind ref (* int ref is an index *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -30,7 +32,7 @@ type 'a base_dots =
   | CIRCLES of 'a list
   | STARS of 'a list
 
-type 'a dots = 'a base_dots * line_info * token_info ref
+type 'a dots = 'a base_dots wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -44,7 +46,7 @@ type base_ident =
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
 
-and ident = base_ident * line_info * token_info ref
+and ident = base_ident wrap
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -67,15 +69,15 @@ type base_expression =
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
-  | Cast           of string mcode (* ( *) * fullType * string mcode (* ) *) *
+  | Cast           of string mcode (* ( *) * typeC * string mcode (* ) *) *
                       expression
-  | MetaConst      of string mcode * fullType list option
+  | MetaConst      of string mcode * typeC list option
   | MetaErr        of string mcode
-  | MetaExpr       of string mcode * fullType list option
+  | MetaExpr       of string mcode * typeC list option
   | MetaExprList   of string mcode (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
-  | DisjExpr       of expression list
-  | NestExpr       of expression dots
+  | DisjExpr       of string mcode * expression list * string mcode
+  | NestExpr       of string mcode * expression dots * string mcode
   | Edots          of string mcode (* ... *) * expression option
   | Ecircles       of string mcode (* ooo *) * expression option
   | Estars         of string mcode (* *** *) * expression option
@@ -83,30 +85,27 @@ type base_expression =
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
 
-and expression = base_expression * line_info * token_info ref
+and expression = base_expression wrap
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and base_fullType =
-    Type            of Ast.const_vol mcode option * typeC
-  | OptType         of fullType
-  | UniqueType      of fullType
-  | MultiType       of fullType
-
 and base_typeC = 
-    BaseType        of Ast.baseType mcode * Ast.sign mcode option
-  | Pointer         of fullType * string mcode (* * *)
-  | Array           of fullType * string mcode (* [ *) *
+    ConstVol        of Ast.const_vol mcode * typeC
+  | BaseType        of Ast.baseType mcode * Ast.sign mcode option
+  | Pointer         of typeC * string mcode (* * *)
+  | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of tagged_string * Ast.structUnion mcode
   | TypeName        of string mcode
   | MetaType        of string mcode
+  | OptType         of typeC
+  | UniqueType      of typeC
+  | MultiType       of typeC
 
 and tagged_string = string mcode
 
-and fullType = base_fullType * line_info * token_info ref
-and typeC = base_typeC * line_info * token_info ref
+and typeC = base_typeC wrap
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -114,21 +113,21 @@ and typeC = base_typeC * line_info * token_info ref
    split out into multiple declarations of a single variable each. *)
 
 type base_declaration =
-    Init of fullType * ident * string mcode (*=*) * expression *
+    Init of typeC * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
-  | UnInit of fullType * ident * string mcode (* ; *)
+  | UnInit of typeC * ident * string mcode (* ; *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
 
-and declaration = base_declaration * line_info * token_info ref
+and declaration = base_declaration wrap
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
 type base_parameterTypeDef =
-    VoidParam     of fullType
-  | Param         of ident * fullType
+    VoidParam     of typeC
+  | Param         of ident * typeC
   | MetaParam     of string mcode
   | MetaParamList of string mcode
   | PComma        of string mcode
@@ -137,7 +136,7 @@ type base_parameterTypeDef =
   | OptParam      of parameterTypeDef
   | UniqueParam   of parameterTypeDef
 
-and parameterTypeDef = base_parameterTypeDef * line_info * token_info ref
+and parameterTypeDef = base_parameterTypeDef wrap
 
 and parameter_list = parameterTypeDef dots
 
@@ -172,8 +171,8 @@ type base_statement =
   | MetaStmt      of string mcode  
   | MetaStmtList  of string mcode  (* only in statement lists *)
   | Exp           of expression  (* only in dotted statement lists *)
-  | Disj          of statement dots list
-  | Nest          of statement dots
+  | Disj          of string mcode * statement dots list * string mcode
+  | Nest          of string mcode * statement dots * string mcode
   | Dots          of string mcode (* ... *) * statement dots option
   | Circles       of string mcode (* ooo *) * statement dots option
   | Stars         of string mcode (* *** *) * statement dots option
@@ -185,7 +184,7 @@ type base_statement =
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
 
-and statement = base_statement * line_info * token_info ref
+and statement = base_statement wrap
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -199,21 +198,43 @@ type base_top_level =
   | CODE of statement dots
   | OTHER of statement (* temporary, disappears after top_level.ml *)
 
-and top_level = base_top_level * line_info * token_info ref
+and top_level = base_top_level wrap
 and rule = top_level list
 
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
-let wrap x =
-  (x,{logical_start = Good (-1); logical_end = Good (-1)},ref Neither)
-let unwrap (x,_,_) = x
-let rewrap (_,info,tinfo) x = (x,info,tinfo)
-let starting_line (_,info,_) = info.logical_start
-let ending_line (_,info,_) = info.logical_end
-let get_info (_,info,_) = info
-let get_tinfo (_,_,tinfo) = !tinfo
-let set_tinfo (_,_,tinfo) ti = tinfo := ti
+let default_info _ =
+  { line_start = -1; line_end = -1;
+    logical_start = -1; logical_end = -1;
+    attachable_start = true; attachable_end = true;
+    mcode_start = None; mcode_end = None;
+    column = -1; offset = -1 }
+
+let wrap x = (x,default_info(),ref (-1),ref MIXED)
+let unwrap (x,_,_,_) = x
+let unwrap_mcode (x,_,_,_) = x
+let rewrap (_,info,index,mcodekind) x = (x,info,index,mcodekind)
+let copywrap (_,info,index,mcodekind) x =
+  (x,
+   { line_start = info.line_start; line_end = info.line_end;
+     logical_start = info.logical_start; logical_end = info.logical_end;
+     attachable_start = info.attachable_start;
+     attachable_end = info.attachable_end;
+     mcode_start = info.mcode_start; mcode_end = info.mcode_end;
+     column = info.column; offset = info.offset },
+   ref !index,ref !mcodekind)
+let get_info (_,info,_,_) = info
+let get_index (_,_,index,_) = !index
+let set_index (_,_,index,_) i = index := i
+let get_mcodekind (_,_,_,mcodekind) = !mcodekind
+let set_mcodekind (_,_,_,mcodekind) mk = mcodekind := mk
+
+(* --------------------------------------------------------------------- *)
+
+(* unique indices, for mcode and tree nodes *)
+let index_counter = ref 0
+let fresh_index _ = let cur = !index_counter in index_counter := cur + 1; cur
 
 (* --------------------------------------------------------------------- *)
 

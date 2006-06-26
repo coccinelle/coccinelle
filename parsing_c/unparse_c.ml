@@ -19,6 +19,7 @@ note: if add instruction, then try keep same indentation. So need introduce some
 open Ast_c
 open Parser_c
 
+let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
 let pp_program file x = 
 
@@ -126,10 +127,10 @@ let pp_program file x =
      let s = info.str in
 
      match mcode with
-     | Ast_cocci.MINUS (_i, any_xxs) -> 
-         pp_list_list_any env  !any_xxs 
-     | Ast_cocci.CONTEXT (_i, any_befaft) -> 
-         (match !any_befaft with
+     | Ast_cocci.MINUS (any_xxs) -> 
+         pp_list_list_any env any_xxs 
+     | Ast_cocci.CONTEXT (any_befaft) -> 
+         (match any_befaft with
          | Ast_cocci.NOTHING -> pr s
                
          | Ast_cocci.BEFORE xxs -> 
@@ -144,7 +145,7 @@ let pp_program file x =
              pp_list_list_any env yys;
              
          )
-     | Ast_cocci.PLUS i -> raise Impossible
+     | Ast_cocci.PLUS -> raise Impossible
 
 
 
@@ -681,23 +682,26 @@ let pp_program file x =
 
   and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
   | Ast_cocci.Ident id -> pp_cocci_ident env id
-  | Ast_cocci.MetaExpr ((s,_),_typeTODO) -> 
-      let v = List.assoc s env in
+  | Ast_cocci.MetaExpr (s,_typeTODO) -> 
+      let v = List.assoc (term s) env in
       (match v with 
       | Ast_c.MetaExpr exp -> 
           pp_expression exp
       | _ -> raise Impossible
       )
 
-  | Ast_cocci.Constant (Ast_cocci.Int (s),_) -> pr s
-  | Ast_cocci.Constant (Ast_cocci.String (s),_) -> pr ("\"" ^ s ^ "\"")
-  | Ast_cocci.Constant (Ast_cocci.Char (s),_) -> pr s
-  | Ast_cocci.Constant (Ast_cocci.Float (s),_) -> pr s
+  | Ast_cocci.Constant c ->
+      (match term c with
+	Ast_cocci.Int (s) -> pr s
+      | Ast_cocci.String (s) -> pr ("\"" ^ s ^ "\"")
+      | Ast_cocci.Char (s) -> pr s
+      | Ast_cocci.Float (s) -> pr s)
 
-  | Ast_cocci.FunCall (e, (lp,_), es, (rp,_)) -> 
-      pp_cocci_expr env e; pr lp; List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr rp
+  | Ast_cocci.FunCall (e, lp, es, rp) -> 
+      pp_cocci_expr env e; pr (term lp);
+      List.iter (pp_cocci_expr env) (Ast_cocci.undots es); pr (term rp)
 
-  | Ast_cocci.EComma (com,_) -> pr com; pr " " (* pretty printing: add a space after ',' *)
+  | Ast_cocci.EComma com -> pr (term com); pr " " (* pretty printing: add a space after ',' *)
 
   | Ast_cocci.DisjExpr _ -> raise Impossible
   | Ast_cocci.Edots _ -> raise Impossible
@@ -705,20 +709,20 @@ let pp_program file x =
     
 
   and pp_cocci_rule env x = match x with
-  | Ast_cocci.SeqStart (brace,_) -> pr brace
-  | Ast_cocci.SeqEnd   (brace,_) -> pr brace
+  | Ast_cocci.SeqStart brace -> pr (term brace)
+  | Ast_cocci.SeqEnd   brace -> pr (term brace)
 
-  | Ast_cocci.ExprStatement (e,  (sem,_)) -> pp_cocci_expr env e; pr sem
+  | Ast_cocci.ExprStatement (e, sem) -> pp_cocci_expr env e; pr (term sem)
 
 
 
-  | Ast_cocci.IfHeader ((iff,_), (lp,_), e, (rp,_)) -> pr iff; pr lp; pp_cocci_expr env e; pr rp
-  | Ast_cocci.Else     (str,_) -> pr str
+  | Ast_cocci.IfHeader (iff, lp, e, rp) -> pr (term iff); pr (term lp); pp_cocci_expr env e; pr (term rp)
+  | Ast_cocci.Else     str -> pr (term str)
 
   | _ -> raise Todo
 
   and pp_cocci_ident env x = match x with
-  | Ast_cocci.Id (s,_) -> pr s
+  | Ast_cocci.Id s -> pr (term s)
   | _ -> raise Todo
 
 

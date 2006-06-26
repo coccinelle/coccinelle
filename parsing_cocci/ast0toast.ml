@@ -5,7 +5,107 @@ rule_elems, and on subterms if the context is ? also. *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
+module V0 = Visitor_ast0
 
+(* --------------------------------------------------------------------- *)
+(* Move plus tokens from the MINUS and CONTEXT structured nodes to the
+corresponding leftmost and rightmost mcodes *)
+
+let inline_mcodes =
+  let bind x y = () in
+  let option_default = () in
+  let mcode _ = () in
+  let do_nothing r k e =
+    k e;
+    let einfo = Ast0.get_info e in
+    match (Ast0.get_mcodekind e) with
+      Ast0.MINUS(replacements) ->
+	(match !replacements with
+	  ([],_) -> ()
+	| replacements ->
+	    let minus_try = function
+		(true,Some (Ast0.MINUS(mreplacements))) ->
+		  (match !mreplacements with
+		    ([],_) -> mreplacements := replacements; true
+		  | _ -> failwith "unexpected plus nodes in a minus tree")
+	      | _ -> false in
+	    if not (minus_try(einfo.Ast0.attachable_end,
+			      einfo.Ast0.mcode_end)
+		      or
+    	            minus_try(einfo.Ast0.attachable_start,
+			      einfo.Ast0.mcode_start))
+	    then failwith "minus tree should not have bad code on both sides")
+    | Ast0.CONTEXT(befaft) ->
+	let concat starter startinfo ender endinfo =
+	  let lst =
+	    if startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
+	    then 
+	      let last = List.hd (List.rev starter) in
+	      let butlast = List.rev(List.tl(List.rev starter)) in
+	      butlast @ (last@(List.hd ender)) :: (List.tl ender)
+	    else starter @ ender in
+	  (lst,{endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
+	let attach_bef bef beforeinfo = function
+	    (true,Some(Ast0.MINUS(mreplacements))) ->
+	      let (mrepl,tokeninfo) = !mreplacements in
+	      mreplacements := concat bef beforeinfo mrepl tokeninfo
+	  | (true,Some(Ast0.CONTEXT(mbefaft))) ->
+	      (match !mbefaft with
+		(Ast.BEFORE(mbef),mbeforeinfo,a) ->
+		  let (newbef,newinfo) =
+		    concat bef beforeinfo mbef mbeforeinfo in
+		  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
+	      | (Ast.AFTER(maft),_,a) ->
+		  mbefaft := (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
+	      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
+		  let (newbef,newinfo) =
+		    concat bef beforeinfo mbef mbeforeinfo in
+		  mbefaft := (Ast.BEFOREAFTER(newbef,maft),newinfo,a)
+	      | (Ast.NOTHING,_,a) ->
+		  mbefaft := (Ast.BEFORE(bef),beforeinfo,a))
+	  | _ ->
+	      failwith "context tree should not have bad code on both sides" in
+	let attach_aft aft afterinfo = function
+	    (true,Some(Ast0.MINUS(mreplacements))) ->
+	      let (mrepl,tokeninfo) = !mreplacements in
+	      mreplacements := concat mrepl tokeninfo aft afterinfo
+	  | (true,Some(Ast0.CONTEXT(mbefaft))) ->
+	      (match !mbefaft with
+		(Ast.BEFORE(mbef),b,_) ->
+		  mbefaft := (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
+	      | (Ast.AFTER(maft),b,mafterinfo) ->
+		  let (newaft,newinfo) =
+		    concat maft mafterinfo aft afterinfo in
+		  mbefaft := (Ast.AFTER(newaft),b,newinfo)
+	      | (Ast.BEFOREAFTER(mbef,maft),b,mafterinfo) ->
+		  let (newaft,newinfo) =
+		    concat maft mafterinfo aft afterinfo in
+		  mbefaft := (Ast.BEFOREAFTER(mbef,newaft),b,newinfo)
+	      | (Ast.NOTHING,b,_) ->
+		  mbefaft := (Ast.AFTER(aft),b,afterinfo))
+	  | _ ->
+	      failwith "context tree should not have bad code on both sides" in
+	(match !befaft with
+	  (Ast.BEFORE(bef),beforeinfo,_) ->
+	    attach_bef bef beforeinfo
+	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start)
+	| (Ast.AFTER(aft),_,afterinfo) ->
+	    attach_aft aft afterinfo
+	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
+	| (Ast.BEFOREAFTER(bef,aft),beforeinfo,afterinfo) ->
+	    attach_bef bef beforeinfo
+	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start);
+	    attach_aft aft afterinfo
+	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
+	| (Ast.NOTHING,_,_) -> ())
+    | Ast0.PLUS | Ast0.MIXED -> () in
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing
+
+(* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 
 let get_option fn = function
@@ -16,7 +116,19 @@ let get_option fn = function
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
 
-let mcode(term,_,mcodekind) = (term,mcodekind)
+let convert_info info =
+  { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column }
+
+let convert_mcodekind = function
+    Ast0.MINUS(replacements) ->
+      let (replacements,_) = !replacements in Ast.MINUS(replacements)
+  | Ast0.PLUS -> Ast.PLUS
+  | Ast0.CONTEXT(befaft) ->
+      let (befaft,_,_) = !befaft in Ast.CONTEXT(befaft)
+  | Ast0.MIXED -> failwith "not possible for mcode"
+
+let mcode(term,_,info,mcodekind) =
+  (term,convert_info info,convert_mcodekind mcodekind)
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -29,7 +141,6 @@ let dots fn d =
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
-
 
 let rec ident i =
   match Ast0.unwrap i with
@@ -81,20 +192,20 @@ let rec expression e =
   | Ast0.RecordPtAccess(exp,ar,field) ->
       Ast.RecordPtAccess(expression exp,mcode ar,ident field)
   | Ast0.Cast(lp,ty,rp,exp) ->
-      Ast.Cast(mcode lp,fullType ty,mcode rp,expression exp)
+      Ast.Cast(mcode lp,typeC ty,mcode rp,expression exp)
   | Ast0.MetaConst(name,ty)  ->
       let name = mcode name in
-      let ty = get_option (List.map fullType) ty in
+      let ty = get_option (List.map typeC) ty in
       Ast.MetaConst(name,ty)
   | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name)
   | Ast0.MetaExpr(name,ty)  ->
       let name = mcode name in
-      let ty = get_option (List.map fullType) ty in
+      let ty = get_option (List.map typeC) ty in
       Ast.MetaExpr(name,ty)
   | Ast0.MetaExprList(name) -> Ast.MetaExprList(mcode name)
   | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
-  | Ast0.DisjExpr(exps)     -> Ast.DisjExpr(List.map expression exps)
-  | Ast0.NestExpr(exp_dots) -> Ast.NestExpr(dots expression exp_dots)
+  | Ast0.DisjExpr(_,exps,_)     -> Ast.DisjExpr(List.map expression exps)
+  | Ast0.NestExpr(_,exp_dots,_) -> Ast.NestExpr(dots expression exp_dots)
   | Ast0.Edots(dots,whencode) ->
       let dots = mcode dots in
       let whencode = get_option expression whencode in
@@ -111,27 +222,43 @@ let rec expression e =
   | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)
   | Ast0.MultiExp(exp) -> Ast.MultiExp(expression exp)
 
+and expression_dots ed = dots expression ed
+  
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and fullType ft =
-  match Ast0.unwrap ft with
-    Ast0.Type(cv,ty) -> Ast.Type(get_option mcode cv,typeC ty)
-  | Ast0.OptType(ty) -> Ast.OptType(fullType ty)
-  | Ast0.UniqueType(ty) -> Ast.UniqueType(fullType ty)
-  | Ast0.MultiType(ty) -> Ast.MultiType(fullType ty)
-
 and typeC t =
   match Ast0.unwrap t with
-    Ast0.BaseType(ty,sign) -> Ast.BaseType(mcode ty,get_option mcode sign)
-  | Ast0.Pointer(ty,star) -> Ast.Pointer(fullType ty,mcode star)
+    Ast0.ConstVol(cv,ty) -> Ast.Type(Some (mcode cv),base_typeC ty)
+  | Ast0.BaseType(ty,sign) ->
+      Ast.Type(None,Ast.BaseType(mcode ty,get_option mcode sign))
+  | Ast0.Pointer(ty,star) ->
+      Ast.Type(None,Ast.Pointer(typeC ty,mcode star))
   | Ast0.Array(ty,lb,size,rb) ->
-      Ast.Array(fullType ty,mcode lb,get_option expression size,mcode rb)
+      Ast.Type(None,
+	       Ast.Array(typeC ty,mcode lb,get_option expression size,
+			 mcode rb))
+  | Ast0.StructUnionName(name,kind) ->
+      Ast.Type(None,Ast.StructUnionName(mcode name,mcode kind))
+  | Ast0.TypeName(name) -> Ast.Type(None,Ast.TypeName(mcode name))
+  | Ast0.MetaType(name) -> Ast.Type(None,Ast.MetaType(mcode name))
+  | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
+  | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
+  | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty)
+    
+and base_typeC t =
+  match Ast0.unwrap t with
+    Ast0.BaseType(ty,sign) ->
+      Ast.BaseType(mcode ty,get_option mcode sign)
+  | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
+  | Ast0.Array(ty,lb,size,rb) ->
+      Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
   | Ast0.StructUnionName(name,kind) ->
       Ast.StructUnionName(mcode name,mcode kind)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
   | Ast0.MetaType(name) -> Ast.MetaType(mcode name)
-
+  | _ -> failwith "unexpected type"
+    
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
@@ -140,13 +267,13 @@ and typeC t =
 let rec declaration d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
-      let ty = fullType ty in
+      let ty = typeC ty in
       let id = ident id in
       let eq = mcode eq in
       let exp = expression exp in
       let sem = mcode sem in
       Ast.Init(ty,id,eq,exp,sem)
-  | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(fullType ty,ident id,mcode sem)
+  | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
   | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
   | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
   | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)
@@ -156,8 +283,8 @@ let rec declaration d =
 
 let rec parameterTypeDef p =
   match Ast0.unwrap p with
-    Ast0.VoidParam(ty) -> Ast.VoidParam(fullType ty)
-  | Ast0.Param(id,ty) -> Ast.Param(ident id,fullType ty)
+    Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
+  | Ast0.Param(id,ty) -> Ast.Param(ident id,typeC ty)
   | Ast0.MetaParam(name) -> Ast.MetaParam(mcode name)
   | Ast0.MetaParamList(name) -> Ast.MetaParamList(mcode name)
   | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -214,9 +341,9 @@ let rec statement s =
       Ast.Atomic(Ast.MetaStmtList(mcode name))
   | Ast0.Exp(exp) ->
       Ast.Atomic(Ast.Exp(expression exp))
-  | Ast0.Disj(rule_elem_dots_list) ->
+  | Ast0.Disj(_,rule_elem_dots_list,_) ->
       Ast.Disj(List.map (function x -> dots statement x) rule_elem_dots_list)
-  | Ast0.Nest(rule_elem_dots) ->
+  | Ast0.Nest(_,rule_elem_dots,_) ->
       Ast.Nest(dots statement rule_elem_dots)
   | Ast0.Dots(d,whencode) ->
       let d = mcode d in
@@ -244,13 +371,13 @@ let rec statement s =
   | Ast0.OptStm(stm) -> Ast.OptStm(statement stm)
   | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement stm)
   | Ast0.MultiStm(stm) -> Ast.MultiStm(statement stm)
-
+    
 let statement_dots = dots statement
-	
+    
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
-
+    
 let top_level t =
   match Ast0.unwrap t with
     Ast0.DECL(decl) -> Ast.DECL(declaration decl)
@@ -263,6 +390,8 @@ let top_level t =
   | Ast0.OTHER(_) -> failwith "eliminated by top_level"
 
 (* --------------------------------------------------------------------- *)
-(* Entry points *)
+(* Entry point for minus code *)
 
-let ast0toast = List.map top_level
+let ast0toast x =
+  List.iter inline_mcodes.V0.combiner_top_level x;
+  List.map top_level x

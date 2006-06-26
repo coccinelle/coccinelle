@@ -10,7 +10,7 @@ let pr2 s = Printf.printf "%s\n" s
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type2c (d,_,_) =
+let line_type2c (d,_,_,_) =
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS | D.MULTIMINUS -> ":-"
   | D.PLUS -> ":+"
@@ -174,10 +174,11 @@ let tokens_all table file get_ats lexbuf :
 (* Split tokens into minus and plus fragments *)
 
 let split t = function
-    (D.MINUS,_,_) | (D.OPTMINUS,_,_) | (D.UNIQUEMINUS,_,_)
-  | (D.MULTIMINUS,_,_) -> ([t],[])
-  | (D.PLUS,_,_) -> ([],[t])
-  | (D.CONTEXT,_,_) | (D.UNIQUE,_,_) | (D.OPT,_,_) | (D.MULTI,_,_) -> ([t],[t])
+    (D.MINUS,_,_,_) | (D.OPTMINUS,_,_,_) | (D.UNIQUEMINUS,_,_,_)
+  | (D.MULTIMINUS,_,_,_) -> ([t],[])
+  | (D.PLUS,_,_,_) -> ([],[t])
+  | (D.CONTEXT,_,_,_) | (D.UNIQUE,_,_,_)
+  | (D.OPT,_,_,_) | (D.MULTI,_,_,_) -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -323,7 +324,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
-      let (_,line,_) = clt in Some line
+      let (_,line,_,_) = clt in Some line
 
   | _ -> None
 
@@ -497,10 +498,10 @@ let process file verbose =
       (function (minus, metavars) ->
 	function (plus, metavars) ->
 	  let minus = Compute_lines.compute_lines minus in
+	  let plus = Compute_lines.compute_lines plus in
 	  let minus = Arity.minus_arity minus in
-	  let plus = Ast0toast.ast0toast plus in
-	  let replus = Plus.plus plus in
-	  Merge.do_merge minus replus;
+	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
+	  Insert_plus.insert_plus m p;
 	  let minus_ast = Ast0toast.ast0toast minus in
 	  if verbose then Unparse_cocci.unparse minus_ast;
 	  (metavars, minus_ast))

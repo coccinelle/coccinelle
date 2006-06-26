@@ -1,7 +1,7 @@
-type info = { line : int; logical_line : int; offset : int }
-
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
+
+type info = { line : int; column : int }
 
 type 'a befaft =
     BEFORE      of 'a list list
@@ -9,11 +9,11 @@ type 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-type 'a mcode = 'a * mcodekind
+type 'a mcode = 'a * info * mcodekind
  and mcodekind =
-    MINUS       of info * anything list list ref
-  | PLUS        of info
-  | CONTEXT     of info * anything befaft ref
+    MINUS       of anything list list
+  | CONTEXT     of anything befaft
+  | PLUS
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -280,28 +280,15 @@ and anything =
   | ConstVolTag         of const_vol
   | Token               of string
   | Code                of top_level
-
-(* --------------------------------------------------------------------- *)
-
-let get_real_line = function
-    MINUS(info,_) -> info.line
-  | PLUS(info) -> info.line
-  | CONTEXT(info,_) -> info.line
-
-let get_logical_line = function
-    MINUS(info,_) -> info.logical_line
-  | PLUS(info) -> info.logical_line
-  | CONTEXT(info,_) -> info.logical_line
-
-let get_offset = function
-    MINUS(info,_) -> info.offset
-  | PLUS(info) -> info.offset
-  | CONTEXT(info,_) -> info.offset
+  | ExprDotsTag         of expression dots
+  | ParamDotsTag        of parameterTypeDef dots
+  | StmtDotsTag         of statement dots
+  | TypeCTag            of typeC
+  | ParamTag            of parameterTypeDef
 
 (* --------------------------------------------------------------------- *)
 
 let undots = function
-  | DOTS    e -> e
+    DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e
-    

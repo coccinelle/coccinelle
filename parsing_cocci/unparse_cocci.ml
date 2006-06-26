@@ -22,8 +22,7 @@ let rec print_between between fn = function
 (* avoid polyvariance problems *)
 let anything : (Ast.anything -> unit) ref = ref (function _ -> ())
 
-let rec print_anything str plus_stream =
-  match !plus_stream with
+let rec print_anything str = function
     [] -> ()
   | stream ->
       start_block();
@@ -50,21 +49,18 @@ and print_anything_list = function
       if space then print_string " ";
       print_anything_list rest
 
-let print_around printer term plus_streams =
-  match !plus_streams with
+let print_around printer term = function
     Ast.NOTHING -> printer term
-  | Ast.BEFORE(bef) -> print_anything "<<< " (ref bef); printer term
-  | Ast.AFTER(aft) -> printer term; print_anything ">>> " (ref aft)
+  | Ast.BEFORE(bef) -> print_anything "<<< " bef; printer term
+  | Ast.AFTER(aft) -> printer term; print_anything ">>> " aft
   | Ast.BEFOREAFTER(bef,aft) ->
-      print_anything "<<< " (ref bef); printer term;
-      print_anything ">>> " (ref aft)
+      print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let mcode fn = function
-    (x, Ast.MINUS(info,plus_stream)) ->
+    ((x, _, Ast.MINUS(plus_stream)) : 'a Ast.mcode) ->
       print_string "-"; fn x; print_anything ">>> " plus_stream
-  | (x, Ast.CONTEXT(info,plus_streams)) ->
-      print_around fn x plus_streams
-  | (x, Ast.PLUS(info)) -> fn x
+  | (x, _, Ast.CONTEXT(plus_streams)) -> print_around fn x plus_streams
+  | (x, _, Ast.PLUS) -> fn x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -111,7 +107,7 @@ let rec expression = function
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;
-      let _ = dots (function _ -> ()) expression args in
+      dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right) ->
       expression left; print_string " "; mcode assignOp op;
@@ -435,13 +431,19 @@ let _ =
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
+    | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
+    | Ast.ParamDotsTag(x) -> parameter_list x
+    | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
+    | Ast.TypeCTag(x) -> typeC x
+    | Ast.ParamTag(x) -> parameterTypeDef x
 
 let unparse x =
   print_string "\n@@\n@@";
   force_newline();
   force_newline();
   rule x;
-  force_newline()
+  force_newline();
+  print_flush()
 
 let rule_elem_to_string x =
   let o = open_out "/tmp/out" in

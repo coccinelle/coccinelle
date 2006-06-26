@@ -39,20 +39,20 @@ let combiner bind option_default
     | None -> option_default in
   let rec expression_dots d =
     let k = function
-      Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	multibind (List.map expression l) in
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map expression l) in
     expdotsfn all_functions k d
 
   and parameter_dots d =
     let k = function
-      Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	multibind (List.map parameterTypeDef l) in
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map parameterTypeDef l) in
     paramdotsfn all_functions k d
 
   and statement_dots d =
     let k = function
-      Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	multibind (List.map statement l) in
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map statement l) in
     stmtdotsfn all_functions k d
 
   and ident i =
@@ -255,7 +255,12 @@ let combiner bind option_default
       | Ast.StatementTag(rule) -> statement rule
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok) -> option_default
-      | Ast.Code(cd) -> top_level cd in
+      | Ast.Code(cd) -> top_level cd
+      | Ast.ExprDotsTag(ed) -> expression_dots ed
+      | Ast.ParamDotsTag(pd) -> parameter_dots pd
+      | Ast.StmtDotsTag(sd) -> statement_dots sd
+      | Ast.TypeCTag(ty) -> typeC ty
+      | Ast.ParamTag(param) -> parameterTypeDef param in
     anyfn all_functions k a
 
   and all_functions =

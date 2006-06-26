@@ -3,9 +3,9 @@ TARGET=cocci_parser
 LEXER_SOURCES = lexer_cocci.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = ast_cocci.ml ast0_cocci.ml visitor_ast.ml visitor_ast0.ml \
-ast0toast.ml top_level.ml check_meta.ml \
-unparse_cocci.ml arity.ml compute_lines.ml context_neg.ml \
-plus.ml merge.ml semantic_cocci.ml data.ml \
+ast0toast.ml check_meta.ml unparse_cocci.ml unparse_ast0.ml top_level.ml \
+arity.ml compute_lines.ml index.ml context_neg.ml insert_plus.ml \
+semantic_cocci.ml data.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) parse_cocci.ml
 
 LIBS=../commons/commons.cma
@@ -32,7 +32,7 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 
 
 all: $(LIB)
-#all: $(EXEC) $(LIB)
+local: $(EXEC)
 
 all.opt: $(OPTLIB)
 

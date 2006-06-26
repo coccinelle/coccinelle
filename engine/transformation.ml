@@ -70,7 +70,7 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
 
   (* cas general: a Meta can match everything *)
   (* todo: if stb is a compound ? *)
-  | A.MetaStmt ((ida,i1)),  stb -> raise Todo
+  | A.MetaStmt ((ida,_,i1)),  stb -> raise Todo
 
   | A.MetaStmtList _, _ -> raise Todo
 
@@ -143,9 +143,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   
   match ep, ec with
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr ((ida,i1),_typeopt),  expb -> 
+  | A.MetaExpr ((ida,_,i1),_typeopt),  expb -> 
      (* get binding, assert =*=,  distribute info in i1 *)
-      let v = binding +> List.assoc (ida: string) in
+      let v = binding +> List.assoc (ida : string) in
       (match v with
       | B.MetaExpr expa -> 
           if (expa =*= Ast_c.al_expr expb)
@@ -163,17 +163,17 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       (B.Ident idb', typ,ii')
 
 
-  | A.Constant ((A.Int ia),i1) ,                ((B.Constant (B.Int ib) , typ,ii)) when ia =$= ib ->  
-        let ii' = tagge_symbols [ "fake", i1  ] ii binding in
+  | A.Constant ((A.Int ia),i1,mc1) ,                ((B.Constant (B.Int ib) , typ,ii)) when ia =$= ib ->  
+        let ii' = tagge_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Int ib), typ,ii'
-  | A.Constant ((A.Char ia),i1) ,                ((B.Constant (B.Char (ib,chartype)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tagge_symbols [ "fake", i1  ] ii binding in
+  | A.Constant ((A.Char ia),i1,mc1) ,                ((B.Constant (B.Char (ib,chartype)) , typ,ii)) when ia =$= ib ->  
+        let ii' = tagge_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Char (ib, chartype)), typ,ii'
-  | A.Constant ((A.String ia),i1) ,                ((B.Constant (B.String (ib,stringtype)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tagge_symbols [ "fake", i1  ] ii binding in
+  | A.Constant ((A.String ia),i1,mc1) ,                ((B.Constant (B.String (ib,stringtype)) , typ,ii)) when ia =$= ib ->  
+        let ii' = tagge_symbols [ "fake", i1, mc1 ] ii binding in
         B.Constant (B.String (ib, stringtype)), typ,ii'
-  | A.Constant ((A.Float ia),i1) ,                ((B.Constant (B.Float (ib,ftyp)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tagge_symbols [ "fake", i1  ] ii binding in
+  | A.Constant ((A.Float ia),i1,mc1) ,                ((B.Constant (B.Float (ib,ftyp)) , typ,ii)) when ia =$= ib ->  
+        let ii' = tagge_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Float (ib,ftyp)), typ,ii'
 
 
@@ -185,23 +185,23 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
 
 
-  | A.Assignment (ea1, (opa, _), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
+  | A.Assignment (ea1, (opa,_,_), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
       raise Todo
   | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
       raise Todo
 
-  | A.Postfix (ea, (opa,_)), (B.Postfix (eb, opb), typ,ii) -> 
+  | A.Postfix (ea, (opa,_,_)), (B.Postfix (eb, opb), typ,ii) -> 
       raise Todo
-  | A.Infix (ea, (opa,_)), (B.Infix (eb, opb), typ,ii) -> 
+  | A.Infix (ea, (opa,_,_)), (B.Infix (eb, opb), typ,ii) -> 
       raise Todo
-  | A.Unary (ea, (opa,_)), (B.Unary (eb, opb), typ,ii) -> 
+  | A.Unary (ea, (opa,_,_)), (B.Unary (eb, opb), typ,ii) -> 
       raise Todo
 
 
-  | A.Binary (ea1, (opa,i1), ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
+  | A.Binary (ea1, (opa,i1,mc1), ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
       if (Pattern.equal_binaryOp opa opb)
       then 
-        let ii' = tagge_symbols ["fake", i1] ii binding in
+        let ii' = tagge_symbols ["fake", i1, mc1] ii binding in
         B.Binary (transform_e_e ea1 eb1   binding, opb,  transform_e_e ea2 eb2  binding),  typ, ii'
       else raise NoMatch
 
@@ -313,8 +313,8 @@ and (transform_arguments: sequence_processing_style -> (Ast_cocci.expression lis
 and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun ida (idb, ii) -> 
   fun binding -> 
     match ida, idb with
-    | A.Id (sa,i1), sb when sa =$= sb -> 
-        let ii' = tagge_symbols [sa, i1] ii binding in
+    | A.Id (sa,i1,mc1), sb when sa =$= sb -> 
+        let ii' = tagge_symbols [sa, i1, mc1] ii binding in
         idb, ii'
     | _ -> raise Todo
   (* get binding, assert =*=,  tagge *)
@@ -326,19 +326,19 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun 
 and (tagge_symbols: (string Ast_cocci.mcode) list -> Ast_c.il -> Ast_c.metavars_binding -> Ast_c.il) = 
   fun xs ys binding ->
   assert (List.length xs = List.length ys);
-  zip xs ys +> List.map (fun ((s1,x),   (s2, (oldmcode, oldenv))) -> 
+  zip xs ys +> List.map (fun ((s1,_,x),   (s2, (oldmcode, oldenv))) -> 
     (* assert s1 = s2 ? *)
     (s2, (x, binding)))
 
 
 and distribute_minus_plus_e mcode  expr binding = 
   match mcode with
-  | Ast_cocci.MINUS (i,any_xxs) -> 
+  | Ast_cocci.MINUS (any_xxs) -> 
       distribute_minus_plus_e_apply_op 
-        (minusize_token, add_left (!any_xxs, binding), nothing_right)
+        (minusize_token, add_left (any_xxs, binding), nothing_right)
         expr
-  | Ast_cocci.CONTEXT (i, any_befaft) -> 
-        (match !any_befaft with
+  | Ast_cocci.CONTEXT (any_befaft) -> 
+        (match any_befaft with
         | Ast_cocci.NOTHING -> expr
 
         | Ast_cocci.BEFORE xxs -> 
@@ -354,7 +354,7 @@ and distribute_minus_plus_e mcode  expr binding =
               (no_minusize, add_left (xxs, binding) , add_right (xxs, binding))
               expr
         )
-  | Ast_cocci.PLUS _ -> raise Impossible
+  | Ast_cocci.PLUS -> raise Impossible
 
 (* Could do the minus more easily by extending visitor_c.ml and adding a function applied
    to every mcode. But as I also need to do the add_left and add_right, which
@@ -391,8 +391,7 @@ and distribute_minus_plus_e_apply_op (op, lop, rop) expr =
 and (minusize_token: Ast_c.info -> Ast_c.info) = fun (s, (mcode,env))  -> 
   let mcode' =
     match mcode with
-    | Ast_cocci.CONTEXT (i, {contents = Ast_cocci.NOTHING}) -> 
-        Ast_cocci.MINUS (i, {contents = []})
+    | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> Ast_cocci.MINUS ([])
     | _ -> failwith "have already minused this token"
   in
   (s, (mcode', env))
@@ -402,14 +401,13 @@ and (minusize_token: Ast_c.info -> Ast_c.info) = fun (s, (mcode,env))  ->
 and add_left (xxs, binding) = fun (s, (mcode,env))  -> 
   let mcode' = 
     match mcode with
-    | Ast_cocci.MINUS (i, { contents = [] }) -> 
-        Ast_cocci.MINUS (i, { contents = xxs})
-    | Ast_cocci.MINUS (i, { contents = _ }) -> failwith "have already added stuff on this token"
+    | Ast_cocci.MINUS ([]) -> Ast_cocci.MINUS (xxs)
+    | Ast_cocci.MINUS (_) -> failwith "have already added stuff on this token"
 
-    | Ast_cocci.CONTEXT (i, {contents = Ast_cocci.NOTHING}) -> 
-        Ast_cocci.CONTEXT (i, {contents = (Ast_cocci.BEFORE xxs)})
-    | Ast_cocci.CONTEXT (i, {contents = Ast_cocci.AFTER yys}) -> 
-        Ast_cocci.CONTEXT (i, {contents = (Ast_cocci.BEFOREAFTER (xxs, yys))})
+    | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> 
+        Ast_cocci.CONTEXT (Ast_cocci.BEFORE xxs)
+    | Ast_cocci.CONTEXT (Ast_cocci.AFTER yys) -> 
+        Ast_cocci.CONTEXT (Ast_cocci.BEFOREAFTER (xxs, yys))
     | _ -> raise Impossible
 
   in
@@ -419,15 +417,15 @@ and add_left (xxs, binding) = fun (s, (mcode,env))  ->
 and add_right (yys, binding) = fun (s,(mcode,env))  -> 
   let mcode' = 
     match mcode with
-    | Ast_cocci.MINUS (i, { contents = [] }) -> 
-        Ast_cocci.MINUS (i, { contents = yys})
-    | Ast_cocci.MINUS (i,{ contents = _ }) -> failwith "have already added stuff on this token"
+    | Ast_cocci.MINUS ([]) -> 
+        Ast_cocci.MINUS (yys)
+    | Ast_cocci.MINUS (_) -> failwith "have already added stuff on this token"
 
 
-    | Ast_cocci.CONTEXT (i,{contents = Ast_cocci.NOTHING}) -> 
-        Ast_cocci.CONTEXT (i,{contents = (Ast_cocci.AFTER yys)})
-    | Ast_cocci.CONTEXT (i,{contents = Ast_cocci.BEFORE xxs}) -> 
-        Ast_cocci.CONTEXT (i,{contents = (Ast_cocci.BEFOREAFTER (xxs, yys))})
+    | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> 
+        Ast_cocci.CONTEXT (Ast_cocci.AFTER yys)
+    | Ast_cocci.CONTEXT (Ast_cocci.BEFORE xxs) -> 
+        Ast_cocci.CONTEXT (Ast_cocci.BEFOREAFTER (xxs, yys))
     | _ -> raise Impossible
   in
   s, (mcode', binding)

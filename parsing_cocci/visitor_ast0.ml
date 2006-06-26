@@ -5,16 +5,16 @@ module Ast0 = Ast0_cocci
 (* Generic traversal: combiner *)
 (* parameters:
    combining function
-   treatment of: mcode, identifiers, expressions, fullTypes, types,
+   treatment of: mcode, identifiers, expressions, typeCs, types,
    declarations, statements, toplevels
    default value for options *)
 
 type 'a combiner =
     {combiner_ident : Ast0.ident -> 'a;
       combiner_expression : Ast0.expression -> 'a;
-	combiner_fullType : Ast0.fullType -> 'a;
-	  combiner_typeC : Ast0.typeC -> 'a;
-	    combiner_declaration : Ast0.declaration -> 'a;
+	combiner_typeC : Ast0.typeC -> 'a;
+	  combiner_declaration : Ast0.declaration -> 'a;
+	    combiner_parameter : Ast0.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast0.parameter_list -> 'a;
 		combiner_statement : Ast0.statement -> 'a;
 		  combiner_top_level : Ast0.top_level -> 'a;
@@ -31,7 +31,7 @@ let combiner bind option_default
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsparamfn dotsstmtfn
-    identfn exprfn ftfn tyfn paramfn declfn stmtfn topfn =
+    identfn exprfn tyfn paramfn declfn stmtfn topfn =
   let multibind l = List.fold_right bind l option_default in
   let get_option f = function
       Some x -> f x
@@ -100,14 +100,19 @@ let combiner bind option_default
 	  multibind [expression exp; string_mcode ar; ident field]
       | Ast0.Cast(lp,ty,rp,exp) ->
 	  multibind
-	    [string_mcode lp; fullType ty; string_mcode rp; expression exp]
+	    [string_mcode lp; typeC ty; string_mcode rp; expression exp]
       | Ast0.MetaConst(name,ty) -> string_mcode name
       | Ast0.MetaErr(name) -> string_mcode name
       | Ast0.MetaExpr(name,ty) -> string_mcode name
       | Ast0.MetaExprList(name) -> string_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
-      | Ast0.DisjExpr(expr_list) -> multibind (List.map expression expr_list)
-      | Ast0.NestExpr(expr_dots) -> expression_dots expr_dots
+      | Ast0.DisjExpr(starter,expr_list,ender) ->
+	  bind (string_mcode starter)
+	    (bind (multibind (List.map expression expr_list))
+	        (string_mcode ender))
+      | Ast0.NestExpr(starter,expr_dots,ender) ->
+	  bind (string_mcode starter)
+	    (bind (expression_dots expr_dots) (string_mcode ender))
       | Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
       | Ast0.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
@@ -115,37 +120,33 @@ let combiner bind option_default
       | Ast0.UniqueExp(exp) -> expression exp
       | Ast0.MultiExp(exp) -> expression exp in
     exprfn all_functions k e
-  and fullType ft =
-    let k ft =
-      match Ast0.unwrap ft with
-	Ast0.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
-      | Ast0.OptType(ty) -> fullType ty
-      | Ast0.UniqueType(ty) -> fullType ty
-      | Ast0.MultiType(ty) -> fullType ty in
-    ftfn all_functions k ft
   and typeC t =
     let k t =
       match Ast0.unwrap t with
-	Ast0.BaseType(ty,sign) ->
+	Ast0.ConstVol(cv,ty) -> bind (cv_mcode cv) (typeC ty)
+      |	Ast0.BaseType(ty,sign) ->
 	  bind (get_option sign_mcode sign) (base_mcode ty)
-      | Ast0.Pointer(ty,star) -> bind (fullType ty) (string_mcode star)
+      | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.Array(ty,lb,size,rb) ->
 	  multibind
-	    [fullType ty; string_mcode lb; get_option expression size;
+	    [typeC ty; string_mcode lb; get_option expression size;
 	      string_mcode rb]
       | Ast0.StructUnionName(name,kind) ->
 	  bind (struct_mcode kind) (string_mcode name)
       | Ast0.TypeName(name) -> string_mcode name
-      | Ast0.MetaType(name) -> string_mcode name in
+      | Ast0.MetaType(name) -> string_mcode name
+      | Ast0.OptType(ty) -> typeC ty
+      | Ast0.UniqueType(ty) -> typeC ty
+      | Ast0.MultiType(ty) -> typeC ty in
     tyfn all_functions k t
   and declaration d =
     let k d =
       match Ast0.unwrap d with
 	Ast0.Init(ty,id,eq,exp,sem) ->
-	  multibind [fullType ty; ident id; string_mcode eq; expression exp;
+	  multibind [typeC ty; ident id; string_mcode eq; expression exp;
 		      string_mcode sem]
       | Ast0.UnInit(ty,id,sem) ->
-	  multibind [fullType ty; ident id; string_mcode sem]
+	  multibind [typeC ty; ident id; string_mcode sem]
       | Ast0.OptDecl(decl) -> declaration decl
       | Ast0.UniqueDecl(decl) -> declaration decl
       | Ast0.MultiDecl(decl) -> declaration decl in
@@ -153,8 +154,8 @@ let combiner bind option_default
   and parameterTypeDef p =
     let k p =
       match Ast0.unwrap p with
-	Ast0.VoidParam(ty) -> fullType ty
-      | Ast0.Param(id,ty) -> bind (fullType ty) (ident id)
+	Ast0.VoidParam(ty) -> typeC ty
+      | Ast0.Param(id,ty) -> bind (typeC ty) (ident id)
       | Ast0.MetaParam(name) -> string_mcode name
       | Ast0.MetaParamList(name) -> string_mcode name
       | Ast0.PComma(cm) -> string_mcode cm
@@ -170,7 +171,7 @@ let combiner bind option_default
 	  multibind
 	    [get_option storage_mcode stg; ident name; string_mcode lp;
 	      parameter_dots params; string_mcode rp; string_mcode lbrace;
-	      statement_dots body; string_mcode lbrace]
+	      statement_dots body; string_mcode rbrace]
       | Ast0.Decl(decl) -> declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  multibind
@@ -206,9 +207,13 @@ let combiner bind option_default
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
       | Ast0.MetaStmt(name) -> string_mcode name
       | Ast0.MetaStmtList(name) -> string_mcode name
-      | Ast0.Disj(statement_dots_list) ->
-	  multibind (List.map statement_dots statement_dots_list)
-      | Ast0.Nest(stmt_dots) -> statement_dots stmt_dots
+      | Ast0.Disj(starter,statement_dots_list,ender) ->
+	  bind (string_mcode starter)
+	    (bind (multibind (List.map statement_dots statement_dots_list))
+	       (string_mcode ender))
+      | Ast0.Nest(starter,stmt_dots,ender) ->
+	  bind (string_mcode starter)
+	    (bind (statement_dots stmt_dots) (string_mcode ender))
       | Ast0.Exp(exp) -> expression exp
       | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
       | Ast0.Stars(d,whencode) ->
@@ -232,9 +237,9 @@ let combiner bind option_default
   and all_functions =
     {combiner_ident = ident;
       combiner_expression = expression;
-      combiner_fullType = fullType;
       combiner_typeC = typeC;
       combiner_declaration = declaration;
+      combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_statement = statement;
       combiner_top_level = top_level;
@@ -250,7 +255,6 @@ type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 type rebuilder =
     {rebuilder_ident : Ast0_cocci.ident inout;
       rebuilder_expression : Ast0_cocci.expression inout;
-      rebuilder_fullType : Ast0_cocci.fullType inout;
       rebuilder_typeC : Ast0_cocci.typeC inout;
       rebuilder_declaration : Ast0_cocci.declaration inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
@@ -269,7 +273,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder = fun
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
-    identfn exprfn ftfn tyfn paramfn declfn stmtfn topfn ->
+    identfn exprfn tyfn paramfn declfn stmtfn topfn ->
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -321,21 +325,23 @@ let rebuilder = fun
 	| Ast0.RecordPtAccess(exp,ar,field) ->
 	    Ast0.RecordPtAccess(expression exp, string_mcode ar, ident field)
 	| Ast0.Cast(lp,ty,rp,exp) ->
-	    Ast0.Cast(string_mcode lp, fullType ty, string_mcode rp,
+	    Ast0.Cast(string_mcode lp, typeC ty, string_mcode rp,
 		      expression exp)
 	| Ast0.MetaConst(name,ty) ->
 	    Ast0.MetaConst(string_mcode name,
-			   get_option (List.map fullType) ty)
+			   get_option (List.map typeC) ty)
 	| Ast0.MetaErr(name) -> Ast0.MetaErr(string_mcode name)
 	| Ast0.MetaExpr(name,ty) ->
 	    Ast0.MetaExpr(string_mcode name,
-			  get_option (List.map fullType) ty)
+			  get_option (List.map typeC) ty)
 	| Ast0.MetaExprList(name) -> Ast0.MetaExprList(string_mcode name)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)
-	| Ast0.DisjExpr(expr_list) ->
-	    Ast0.DisjExpr(List.map expression expr_list)
-	| Ast0.NestExpr(expr_dots) ->
-	    Ast0.NestExpr(dots expression expr_dots)
+	| Ast0.DisjExpr(starter,expr_list,ender) ->
+	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
+			  string_mcode ender)
+	| Ast0.NestExpr(starter,expr_dots,ender) ->
+	    Ast0.NestExpr(string_mcode starter,dots expression expr_dots,
+			  string_mcode ender)
 	| Ast0.Edots(dots,whencode) ->
 	    Ast0.Edots(string_mcode dots, get_option expression whencode)
 	| Ast0.Ecircles(dots,whencode) ->
@@ -346,40 +352,35 @@ let rebuilder = fun
 	| Ast0.UniqueExp(exp) -> Ast0.UniqueExp(expression exp)
 	| Ast0.MultiExp(exp) -> Ast0.MultiExp(expression exp)) in
     exprfn all_functions k e
-  and fullType ft =
-    let k ft =
-      Ast0.rewrap ft
-	(match Ast0.unwrap ft with
-	  Ast0.Type(cv,ty) -> Ast0.Type(get_option cv_mcode cv, typeC ty)
-	| Ast0.OptType(ty) -> Ast0.OptType(fullType ty)
-	| Ast0.UniqueType(ty) -> Ast0.UniqueType(fullType ty)
-	| Ast0.MultiType(ty) -> Ast0.MultiType(fullType ty)) in
-    ftfn all_functions k ft
   and typeC t =
     let k t =
       Ast0.rewrap t
 	(match Ast0.unwrap t with
-	  Ast0.BaseType(ty,sign) ->
+	  Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv_mcode cv,typeC ty)
+	| Ast0.BaseType(ty,sign) ->
 	    Ast0.BaseType(base_mcode ty, get_option sign_mcode sign)
 	| Ast0.Pointer(ty,star) ->
-	    Ast0.Pointer(fullType ty, string_mcode star)
+	    Ast0.Pointer(typeC ty, string_mcode star)
 	| Ast0.Array(ty,lb,size,rb) ->
-	    Ast0.Array(fullType ty, string_mcode lb,
+	    Ast0.Array(typeC ty, string_mcode lb,
 		       get_option expression size, string_mcode rb)
 	| Ast0.StructUnionName(name,kind) ->
 	    Ast0.StructUnionName(string_mcode name, struct_mcode kind)
 	| Ast0.TypeName(name) -> Ast0.TypeName(string_mcode name)
-	| Ast0.MetaType(name) -> Ast0.MetaType(string_mcode name)) in
+	| Ast0.MetaType(name) -> Ast0.MetaType(string_mcode name)
+	| Ast0.OptType(ty) -> Ast0.OptType(typeC ty)
+	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)
+	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)) in
     tyfn all_functions k t
   and declaration d =
     let k d =
       Ast0.rewrap d
 	(match Ast0.unwrap d with
 	  Ast0.Init(ty,id,eq,exp,sem) ->
-	    Ast0.Init(fullType ty, ident id, string_mcode eq, expression exp,
+	    Ast0.Init(typeC ty, ident id, string_mcode eq, expression exp,
 		      string_mcode sem)
 	| Ast0.UnInit(ty,id,sem) ->
-	    Ast0.UnInit(fullType ty, ident id, string_mcode sem)
+	    Ast0.UnInit(typeC ty, ident id, string_mcode sem)
 	| Ast0.OptDecl(decl) -> Ast0.OptDecl(declaration decl)
 	| Ast0.UniqueDecl(decl) -> Ast0.UniqueDecl(declaration decl)
 	| Ast0.MultiDecl(decl) -> Ast0.MultiDecl(declaration decl)) in
@@ -388,8 +389,8 @@ let rebuilder = fun
     let k p =
       Ast0.rewrap p
 	(match Ast0.unwrap p with
-	  Ast0.VoidParam(ty) -> Ast0.VoidParam(fullType ty)
-	| Ast0.Param(id,ty) -> Ast0.Param(ident id, fullType ty)
+	  Ast0.VoidParam(ty) -> Ast0.VoidParam(typeC ty)
+	| Ast0.Param(id,ty) -> Ast0.Param(ident id, typeC ty)
 	| Ast0.MetaParam(name) -> Ast0.MetaParam(string_mcode name)
 	| Ast0.MetaParamList(name) -> Ast0.MetaParamList(string_mcode name)
 	| Ast0.PComma(cm) -> Ast0.PComma(string_mcode cm)
@@ -441,10 +442,13 @@ let rebuilder = fun
 	    Ast0.ReturnExpr(string_mcode ret,expression exp,string_mcode sem)
 	| Ast0.MetaStmt(name) -> Ast0.MetaStmt(string_mcode name)
 	| Ast0.MetaStmtList(name) -> Ast0.MetaStmtList(string_mcode name)
-	| Ast0.Disj(statement_dots_list) ->
-	    Ast0.Disj(List.map (dots statement) statement_dots_list)
-	| Ast0.Nest(statement_dots) ->
-	    Ast0.Nest(dots statement statement_dots)
+	| Ast0.Disj(starter,statement_dots_list,ender) ->
+	    Ast0.Disj(string_mcode starter,
+		      List.map (dots statement) statement_dots_list,
+		      string_mcode ender)
+	| Ast0.Nest(starter,statement_dots,ender) ->
+	    Ast0.Nest(string_mcode starter,dots statement statement_dots,
+		      string_mcode ender)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.Dots(d,whencode) ->
 	    Ast0.Dots(string_mcode d, get_option (dots statement) whencode)
@@ -476,7 +480,6 @@ let rebuilder = fun
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;
-      rebuilder_fullType = fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
       rebuilder_parameter_list = parameter_list;
