@@ -96,7 +96,7 @@ let collect_minus_join_points root =
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
 	(* not sure why this should be unfavored.  perhaps because of the
 	   need for matching nested context nodes? *)
-	[(Favored,info,mc)]
+	[(Unfavored,info,mc)]
     | _ -> k e in
 
   let do_top r k (e: Ast0.top_level) = k e in
