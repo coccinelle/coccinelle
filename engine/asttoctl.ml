@@ -220,7 +220,9 @@ let get_unquantified quantified vars =
 
 let make_seq first = function
     None -> first
-  | Some rest -> Ast_ctl.And(first,Ast_ctl.AX(rest))
+  | Some rest ->
+      let after_line = Ast_ctl.Pred(Lib_engine.After,Ast_ctl.Control) in
+      Ast_ctl.And(first,Ast_ctl.AX(Ast_ctl.Or(rest,after_line)))
 
 let make_cond branch re = Ast_ctl.Implies(branch,Ast_ctl.AX(re))
 
@@ -464,11 +466,13 @@ and statement quantified stmt after =
 	| (None,Some whencode) -> Some whencode
 	| (Some dotcode,Some whencode) ->
 	    Some(Ast_ctl.And(dotcode,whencode)) in
+      let after_line = Ast_ctl.Pred(Lib_engine.After,Ast_ctl.Control) in
       (match (after,phi3) with (* add in the after code to make the result *)
 	  (None,None) -> Ast_ctl.True
-	| (Some after,None) -> Ast_ctl.AF(after)
+	| (Some after,None) -> Ast_ctl.AF(Ast_ctl.Or(after,after_line))
 	| (None,Some whencode) -> Ast_ctl.AG(whencode)
-	| (Some after,Some whencode) -> Ast_ctl.AU(whencode,after))
+	| (Some after,Some whencode) ->
+	    Ast_ctl.AU(whencode,Ast_ctl.Or(after,after_line)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
