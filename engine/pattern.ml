@@ -179,6 +179,10 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
   (* todo?: it can match a MetaStmt too !! and we have to get all the
      concerned nodes
    *)
+
+  | A.SeqStart _, _ -> return false
+  | A.SeqEnd _, _ -> return false
+
   | _, F.StartBrace _ -> return false
   | _, F.EndBrace _ -> return false
 

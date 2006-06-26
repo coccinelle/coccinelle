@@ -28,3 +28,8 @@ val mysat :
            -> (Ograph_extended.nodei * 
                  (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
                  Lib_engine.predicate) list
+
+
+val satbis_to_trans_info :  
+  (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  Lib_engine.predicate) list
+     -> (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list

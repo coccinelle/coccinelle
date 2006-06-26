@@ -255,7 +255,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         (* special_cfg_braces: *)
         +> (fun (starti, auxinfo) -> 
           (match starti with 
-          | None -> None 
+          | None -> !g#del_node endi +> adjust_g; None 
           | Some starti -> 
               (* subtil: not always return a Some *)
               !g#add_arc ((starti, endi), Direct) +> adjust_g;
@@ -740,7 +740,8 @@ let get_next_nodes_ifthenelse_sorted g nodei =
     (match g#nodes#find nodei with
     | (TrueNode, s) -> 0
     | (FalseNode, s) -> 1
-    | (AfterNode, s) -> 2
+    | (FallThroughNode, s) -> 2
+    | (AfterNode, s) -> 3
     | _ -> raise Todo
     )
     )                                     
@@ -854,7 +855,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
            (match return1, return2 with
            | LastCurrentNode return1, LastCurrentNode return2 -> 
                assert ((fst (get_next_node g return1)  =|= fst (get_next_node g return2)) && 
-                       (fst (get_next_node g return1) =|= afteri));
+                       (fst (get_next_node g return1) =|= fst (get_next_node g afteri)));
                (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return1 +> fst)
            | LastCurrentNode return, NoNextNode _ -> 
                (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g return +> fst)
@@ -864,16 +865,16 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
                (Selection (If (e, st1, st2)),ii), NoNextNode i1 (* could be i2 *)
            )
    
-         | [(theni, TrueNode);  (afteri, AfterNode)] -> 
+         | [(theni, TrueNode); (falli, FallThroughNode); (afteri, AfterNode)] -> 
              let (theni', _) = get_next_node g theni in
              let (st1, return1) = rebuild_statement theni' in
              let (st2) = (ExprStatement (None), []) in
              (match return1 with
              | LastCurrentNode return -> 
-                 assert (fst (get_next_node g return) =|= afteri);
-                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
+                 assert (fst (get_next_node g return) =|= fst (get_next_node g afteri));
+                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g afteri +> fst)
              | NoNextNode _ -> 
-                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (afteri)
+                 (Selection (If (e, st1, st2)),ii), LastCurrentNode (get_next_node g afteri +> fst)
              )
    
          | [(theni, TrueNode);  (elsei, FalseNode)] -> 

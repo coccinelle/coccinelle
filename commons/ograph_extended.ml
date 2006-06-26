@@ -63,7 +63,7 @@ class ['a,'b] ograph_extended =
        >}, i)
 
 
-    method del_node (i, (e: 'a)) = 
+    method del_node (i) = 
       {<
         nods = nods#delkey i; (* check: e is effectively the index associated with e, and check that already in *)
         pred = pred#delkey i;

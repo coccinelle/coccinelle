@@ -7,7 +7,7 @@ class ['a, 'b] ograph_extended :
     method add_nodei : nodei -> 'a -> 'c * nodei
     method allsuccessors : (nodei, (nodei * 'b) Osetb.osetb) Oassocb.oassocb
     method del_arc : (nodei * nodei) * 'b -> 'c
-    method del_node : nodei * 'a -> 'c
+    method del_node : nodei -> 'c
     method nodes : (nodei, 'a) Oassocb.oassocb
     method predecessors : nodei -> (nodei * 'b) Osetb.osetb
     method replace_node : nodei * 'a -> 'c

@@ -150,8 +150,8 @@ let pp_program file x =
 
 
 
+   (**************************************************************************************)
 
-   (* ---------------------- *)
    and pp_expression x = match x with
     | Constant (String s),        typ, is     -> is +> List.iter pr_elem
     | Ident (c),         typ,[i]     -> pr_elem i
@@ -654,14 +654,16 @@ let pp_program file x =
      | x -> error_cant_have x
 
 
-  (* ---------------------- *)
+  (**************************************************************************************)
 
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
   and pp_any env x = match x with
+  | Ast_cocci.StatementTag stat -> pp_cocci_statement env stat
   | Ast_cocci.ExpressionTag exp -> pp_cocci_expr env exp
   | Ast_cocci.Rule_elemTag rule -> pp_cocci_rule env rule
   | Ast_cocci.IdentTag ident -> pp_cocci_ident env ident
   | Ast_cocci.Token s -> pr s
+  | Ast_cocci.Code code -> pp_cocci_top_level env code
   | _ -> raise Todo
 
   and pp_list_list_any env xxs =
@@ -679,6 +681,20 @@ let pp_program file x =
           )
      | [] -> ()
 
+  and (pp_cocci_top_level: Ast_c.metavars_binding -> Ast_cocci.top_level -> unit) = fun env x -> match x with
+  | Ast_cocci.CODE stmt_dots -> List.iter (pp_cocci_statement env) (Ast_cocci.undots stmt_dots)
+  | _ -> raise Todo
+
+  and (pp_cocci_statement: Ast_c.metavars_binding -> Ast_cocci.statement -> unit) = fun env x -> match x with
+  | Ast_cocci.Atomic rule_elem -> pp_cocci_rule_elem env rule_elem
+  | _ -> raise Todo
+
+  and (pp_cocci_rule_elem: Ast_c.metavars_binding -> Ast_cocci.rule_elem -> unit) = fun env x -> match x with
+  | Ast_cocci.ExprStatement (e, ptvirg) -> 
+      pp_cocci_expr env e;
+      pr (term ptvirg);
+  | Ast_cocci.Exp e -> pp_cocci_expr env e;
+  | _ -> raise Todo
 
   and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
   | Ast_cocci.Ident id -> pp_cocci_ident env id
@@ -729,8 +745,7 @@ let pp_program file x =
 
    in
 
-
-
+  (**************************************************************************************)
   (* ---------------------- *)
   (* start point *)
   (* ---------------------- *)

@@ -64,12 +64,14 @@ let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_ext
 let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun  flow ->
   let (exitnodei, (node, nodestr)) = flow#nodes#tolist +> List.find (function (nodei, (Control_flow_c.Exit, nodes)) -> true | _ -> false) in
   let flow = flow#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) in
+(* TODO
   assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
     List.length ((flow#successors nodei)#tolist) >= 1 
     (* no:  && List.length ((flow#predecessors nodei)#tolist) >= 1  
        because    the enter node at least have no predecessors 
      *)
       ));
+*)
   flow
 
 
@@ -115,9 +117,30 @@ let (mysat:
             list) *
          nodei list)
          -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
-           -> (Ograph_extended.nodei * 
-                 (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+           -> (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
                  Lib_engine.predicate) list
 
     ) = fun (flow, label, states) ctl -> 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
+
+
+let (satbis_to_trans_info: 
+  (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  Lib_engine.predicate) list
+     -> (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list) = fun xs -> 
+       xs +> List.map (fun (nodei, binding, pred) -> 
+         let binding' = binding +> List.map (fun (s, kind2) -> 
+           let kind' = 
+             (match kind2 with
+             | Lib_engine.NormalMetaVar kind -> kind
+             | Lib_engine.ParenVar _ -> raise Impossible (* really? *)
+             ) in
+           s, kind'
+           ) in
+         let pred' = 
+           (match pred with
+           | Lib_engine.Match rule_elem -> rule_elem
+           | _ -> raise Impossible
+           ) in
+         
+         nodei, binding', pred'
+         )

@@ -483,6 +483,7 @@ let rec sat ((grp,label,states) as m) phi =
   | EG(phi)            -> sat m (Not(AF(Not phi)))
   | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
   | Exists (v,phi)     -> triples_witness v (sat m phi)
+  | AU(_phi,phi)            -> satAF m (sat m phi) (* TOFIX *)
   | _ -> raise TODO_CTL
 ;;
 
