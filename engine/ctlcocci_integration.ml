@@ -17,6 +17,7 @@ let (labels_for_ctl:
   = fun nodes ->
 
    (fun pred -> 
+     pr2 "start label";
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
          (match pred, node with
@@ -49,6 +50,7 @@ let (labels_for_ctl:
          )
        ) +> List.concat
        in
+       pr2 "end label";
        nodes'
        ) 
 
@@ -64,14 +66,12 @@ let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_ext
 let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun  flow ->
   let (exitnodei, (node, nodestr)) = flow#nodes#tolist +> List.find (function (nodei, (Control_flow_c.Exit, nodes)) -> true | _ -> false) in
   let flow = flow#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) in
-(* TODO
   assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
     List.length ((flow#successors nodei)#tolist) >= 1 
     (* no:  && List.length ((flow#predecessors nodei)#tolist) >= 1  
        because    the enter node at least have no predecessors 
      *)
       ));
-*)
   flow
 
 

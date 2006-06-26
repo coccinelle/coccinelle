@@ -148,10 +148,13 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
 
   let headi = !g#add_node (HeadFunc (funcs, functype, sto, [], moreinfo), "function " ^ funcs) +> adjust_g_i in
 
+(*
   let enteri = !g#add_node (Enter, "[enter]") +> adjust_g_i in
+  let _ = !g#add_arc ((headi, enteri), Direct) +> adjust_g in
+*)
+  let enteri = headi in
   let exiti  = !g#add_node (Exit,  "[exit]")  +> adjust_g_i in
   
-  let _ = !g#add_arc ((headi, enteri), Direct) +> adjust_g in
 
 
   (* alt: do via a todo list, so can do all in one pass (but more complex) *)
