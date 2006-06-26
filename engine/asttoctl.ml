@@ -530,4 +530,5 @@ let top_level = function
 
 let asttoctl l =
   ctr := 0;
+  let l = List.filter (function Ast.ERRORWORDS(exps) -> false | _ -> true) l in
   List.map top_level l
