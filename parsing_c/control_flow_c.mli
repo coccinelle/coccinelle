@@ -14,6 +14,7 @@ and node1 =
   | TrueNode
   | FalseNode
   | AfterNode
+  | FallThroughNode
 
 
 

@@ -169,7 +169,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
   | _, F.Enter | _, F.Exit -> return false
   | _, F.Fake -> return false
   | _, F.CaseNode _ -> return false
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode -> return false
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> return false
 
   | _, F.NestedFunCall _ -> raise Todo
 

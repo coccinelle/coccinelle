@@ -92,9 +92,20 @@ and node1 =
 
   | CaseNode of int (* to be able later to go back from a flow to an ast *)
 
+  (* 
+     The After is here to abstract away if there is a return in a branch.
+     We don't want to force 
+
+     When a SP contains just a ifthen, we don't want that it matches a ifthenelse,
+     so we can't put a FalseNode for a ifthen. We could put nothing, and 
+     reuse the AfterNode, but because the CTL now handles the After, by putting some Or(After, ...)
+     we must put an other edge between the start and the end of the ifthen, hence this
+     FallThroughNode.
+   *)
   | TrueNode
   | FalseNode
   | AfterNode
+  | FallThroughNode
 
 
 type edge = Direct
@@ -317,10 +328,17 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         let newi = !g#add_node (Statement (Selection (If (e, noInstr, noInstr)), ii), "if") +> adjust_g_i in
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[then]") +> adjust_g_i in
-        let lasti = !g#add_node (AfterNode, "[endif]") +> adjust_g_i in
-        !g#add_arc ((newi, lasti), Direct) +> adjust_g;
+        let newfakeelse = !g#add_node (FallThroughNode, "[fallthrough]") +> adjust_g_i in
+        let afteri = !g#add_node (AfterNode, "[after]") +> adjust_g_i in
+
+        let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newi, afteri), Direct) +> adjust_g;
+        !g#add_arc ((afteri, lasti), Direct) +> adjust_g;
+        !g#add_arc ((newfakeelse, lasti), Direct) +> adjust_g;
+
         let finalthen = aux_statement (Some newfakethen, auxinfo) st1 in
         attach_to_previous_node finalthen lasti;
         Some lasti
@@ -336,7 +354,6 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         attach_to_previous_node starti newi;
         let newfakethen = !g#add_node (TrueNode, "[then]") +> adjust_g_i in
         let newfakeelse = !g#add_node (FalseNode, "[else]") +> adjust_g_i in
-        let lasti = !g#add_node (AfterNode, "[endif]") +> adjust_g_i in
 
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
@@ -346,12 +363,14 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
         (match finalthen, finalelse with 
           | (None, None) -> None
           | _ -> 
+              let lasti = !g#add_node (Fake, "[endif]") +> adjust_g_i in
+              let afteri = !g#add_node (AfterNode, "[after]") +> adjust_g_i in
+              !g#add_arc ((newi, afteri), Direct) +> adjust_g;
+              !g#add_arc ((afteri, lasti), Direct) +> adjust_g;
               begin
                 (match finalthen with None -> () | Some finalthen -> 
-                  !g#add_arc ((newi, lasti), Direct) +> adjust_g;
                   !g#add_arc ((finalthen, lasti), Direct) +> adjust_g);
                 (match finalelse with None -> () | Some finalelse -> 
-                  !g#add_arc ((newi, lasti), Direct) +> adjust_g;
                   !g#add_arc ((finalelse, lasti), Direct) +> adjust_g);
                 Some lasti
              end

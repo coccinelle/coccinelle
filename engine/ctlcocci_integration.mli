@@ -17,3 +17,14 @@ val model_for_ctl :
     list) *
    nodei list
 
+
+val mysat :
+       ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
+        (Lib_engine.predicate ->
+           (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
+            list) *
+         nodei list)
+         -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
+           -> (Ograph_extended.nodei * 
+                 (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+                 Lib_engine.predicate) list

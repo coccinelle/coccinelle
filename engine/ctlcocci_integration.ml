@@ -2,12 +2,7 @@ open Common open Commonop
 
 open Ograph_extended
 
-
-
-
-
 let (-->) x v = Ast_ctl.Subst (x,v);;
-
 
 (*
 Take list of pred  and for each pred return where in control flow
@@ -111,3 +106,18 @@ module CFG =
 
 
 module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
+
+
+let (mysat:
+       ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
+        (Lib_engine.predicate ->
+           (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
+            list) *
+         nodei list)
+         -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
+           -> (Ograph_extended.nodei * 
+                 (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+                 Lib_engine.predicate) list
+
+    ) = fun (flow, label, states) ctl -> 
+      WRAPPED_ENGINE.satbis (flow, label, states) ctl
