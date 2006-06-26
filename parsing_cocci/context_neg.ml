@@ -99,10 +99,15 @@ separately *)
 type node =
     Token (* tokens *) of kind * int (* unique index *) * Ast0.mcodekind *
 	int list (* context tokens *)
-  | Recursor (* children *) of kind * int list
+  | Recursor (* children *) of kind *
+	int list (* indices of all tokens at the level below *) *
+	Ast0.mcodekind list (* tokens at the level below *) *
+	int list
   | Bind (* neighbors *) of kind *
 	int list (* indices of all tokens at current level *) *
-	Ast0.mcodekind list (* tokens at current level *)
+	Ast0.mcodekind list (* tokens at current level *) *
+	int list (* indices of all tokens at the level below *) *
+	Ast0.mcodekind list (* tokens at the level below *)
 	* int list list
 
 (* goal: detect negative in both tokens and recursors, or context only in
@@ -115,29 +120,38 @@ let bind c1 c2 =
     | _ -> NotAllMarked in
   match (c1,c2) with
     (* token/token *)
+    (* there are tokens at this level, so ignore the level below *)
     (Token(k1,i1,t1,l1),Token(k2,i2,t2,l2)) ->
-      Bind(lub(k1,k2),[i1;i2],[t1;t2],[l1;l2])
+      Bind(lub(k1,k2),[i1;i2],[t1;t2],[],[],[l1;l2])
 
     (* token/recursor *)
-  | (Token(k1,i1,t1,l1),Recursor(k2,l2)) -> Bind(lub(k1,k2),[i1],[t1],[l1;l2])
-  | (Recursor(k1,l1),Token(k2,i2,t2,l2)) -> Bind(lub(k1,k2),[i2],[t2],[l1;l2])
+    (* there are tokens at this level, so ignore the level below *)
+  | (Token(k1,i1,t1,l1),Recursor(k2,_,_,l2)) ->
+      Bind(lub(k1,k2),[i1],[t1],[],[],[l1;l2])
+  | (Recursor(k1,_,_,l1),Token(k2,i2,t2,l2)) ->
+      Bind(lub(k1,k2),[i2],[t2],[],[],[l1;l2])
 
     (* token/bind *)
-  | (Token(k1,i1,t1,l1),Bind(k2,i2,t2,l2)) ->
-      Bind(lub(k1,k2),i1::i2,t1::t2,l1::l2)
-  | (Bind(k1,i1,t1,l1),Token(k2,i2,t2,l2)) ->
-      Bind(lub(k1,k2),i1@[i2],t1@[t2],l1@[l2])
+    (* there are tokens at this level, so ignore the level below *)
+  | (Token(k1,i1,t1,l1),Bind(k2,i2,t2,_,_,l2)) ->
+      Bind(lub(k1,k2),i1::i2,t1::t2,[],[],l1::l2)
+  | (Bind(k1,i1,t1,_,_,l1),Token(k2,i2,t2,l2)) ->
+      Bind(lub(k1,k2),i1@[i2],t1@[t2],[],[],l1@[l2])
 
     (* recursor/bind *)
-  | (Recursor(k1,l1),Bind(k2,i2,t2,l2)) -> Bind(lub(k1,k2),i2,t2,l1::l2)
-  | (Bind(k1,i1,t1,l1),Recursor(k2,l2)) -> Bind(lub(k1,k2),i1,t1,l1@[l2])
+  | (Recursor(k1,bi1,bt1,l1),Bind(k2,i2,t2,bi2,bt2,l2)) ->
+      Bind(lub(k1,k2),i2,t2,bi1@bi2,bt1@bt2,l1::l2)
+  | (Bind(k1,i1,t1,bi1,bt1,l1),Recursor(k2,bi2,bt2,l2)) ->
+      Bind(lub(k1,k2),i1,t1,bi1@bi2,bt1@bt2,l1@[l2])
 
     (* recursor/recursor and bind/bind - not likely to ever occur *)
-  | (Recursor(k1,l1),Recursor(k2,l2)) -> Bind(lub(k1,k2),[],[],[l1;l2])
-  | (Bind(k1,i1,t1,l1),Bind(k2,i2,t2,l2)) -> Bind(lub(k1,k2),i1@i2,t1@t2,l1@l2)
+  | (Recursor(k1,bi1,bt1,l1),Recursor(k2,bi2,bt2,l2)) ->
+      Bind(lub(k1,k2),[],[],bi1@bi2,bt1@bt2,[l1;l2])
+  | (Bind(k1,i1,t1,bi1,bt1,l1),Bind(k2,i2,t2,bi2,bt2,l2)) ->
+      Bind(lub(k1,k2),i1@i2,t1@t2,bi1@bi2,bt1@bt2,l1@l2)
 
 
-let option_default = Bind(Neutral,[],[],[])
+let option_default = Bind(Neutral,[],[],[],[],[])
 
 let mcode (_,_,info,mcodekind) =
   let offset = info.Ast0.offset in
@@ -152,31 +166,36 @@ let is_context = function Ast0.CONTEXT(_) -> true | _ -> false
 let union_all l = List.fold_left Common.union_set [] l
 
 let classify all_marked table code =
-  let mkres builder k il tl l e =
-    if k = AllMarked
+  let mkres builder k il tl bil btl l e =
+    (if k = AllMarked
     then Ast0.set_mcodekind e (all_marked()) (* definitive *)
     else
-      if List.for_all is_context tl
-      then
-	(let e1 = builder e in
-	let index = (get_index e1)@il in
-	try
-	  let _ = Hashtbl.find table index in
-	  failwith (Printf.sprintf "%d: index %s already used on this line\n"
-		      (Ast0.get_info e).Ast0.line_start
-		      (String.concat " " (List.map string_of_int index)))
-	with Not_found -> Hashtbl.add table index (e1,union_all l));
-    Recursor(k, List.fold_left (@) [] l) in
+      let check_index il tl =
+	if List.for_all is_context tl
+	then
+	  (let e1 = builder e in
+	  let index = (get_index e1)@il in
+	  try
+	    let _ = Hashtbl.find table index in
+	    failwith
+	      (Printf.sprintf "%d: index %s already used\n"
+		 (Ast0.get_info e).Ast0.line_start
+		 (String.concat " " (List.map string_of_int index)))
+	  with Not_found -> Hashtbl.add table index (e1,l)) in
+      if il = [] then check_index bil btl else check_index il tl);
+    if il = []
+    then Recursor(k, bil, btl, union_all l)
+    else Recursor(k, il, tl, union_all l) in
 
   let compute_result builder e = function
-      Bind(k,il,tl,l) -> mkres builder k il tl l e
-    | Token(k,il,tl,l) -> mkres builder k [il] [tl] [l] e
-    | Recursor(k,l) -> mkres builder k [] [] [l] e in
+      Bind(k,il,tl,bil,btl,l) -> mkres builder k il tl bil btl l e
+    | Token(k,il,tl,l) -> mkres builder k [il] [tl] [] [] [l] e
+    | Recursor(k,bil,btl,l) -> mkres builder k [] [] bil btl [l] e in
 
   let make_not_marked = function
-      Bind(k,il,tl,l) -> Bind(NotAllMarked,il,tl,l)
+      Bind(k,il,tl,bil,btl,l) -> Bind(NotAllMarked,il,tl,bil,btl,l)
     | Token(k,il,tl,l) -> Token(NotAllMarked,il,tl,l)
-    | Recursor(k,l) -> Recursor(NotAllMarked,l) in
+    | Recursor(k,bil,btl,l) -> Recursor(NotAllMarked,bil,btl,l) in
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 
@@ -428,7 +447,9 @@ let traverse minus_table plus_table =
       function (e,l) ->
 	try
 	  let (plus_e,plus_l) = Hashtbl.find plus_table key in
-	  if root_equal e plus_e && Common.equal_set l plus_l
+	  if root_equal e plus_e &&
+	    List.for_all (function x -> x)
+	      (List.map2 Common.equal_set l plus_l)
 	  then
 	    let i = Ast0.fresh_index() in
 	    (set_index e i; set_index plus_e i;
@@ -442,9 +463,9 @@ let traverse minus_table plus_table =
 (* the first int list is the tokens in the node, the second is the tokens
 in the descendents *)
 let minus_table =
-  (Hashtbl.create(50) : (int list, anything * int list) Hashtbl.t)
+  (Hashtbl.create(50) : (int list, anything * int list list) Hashtbl.t)
 let plus_table =
-  (Hashtbl.create(50) : (int list, anything * int list) Hashtbl.t)
+  (Hashtbl.create(50) : (int list, anything * int list list) Hashtbl.t)
 
 let iscode t =
   match Ast0.unwrap t with

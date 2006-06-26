@@ -94,7 +94,9 @@ let collect_minus_join_points root =
     match !mcodekind with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
-	[(Unfavored,info,mc)]
+	(* not sure why this should be unfavored.  perhaps because of the
+	   need for matching nested context nodes? *)
+	[(Favored,info,mc)]
     | _ -> k e in
 
   let do_top r k (e: Ast0.top_level) = k e in

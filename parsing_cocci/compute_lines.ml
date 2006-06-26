@@ -228,7 +228,7 @@ and typeC t =
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
   | Ast0.StructUnionName(name,kind) as ut ->
-      mkres t ut (promote_mcode name) (promote_mcode kind)
+      mkres t ut (promote_mcode kind) (promote_mcode name)
   | Ast0.TypeName(name) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.MetaType(name) as ut ->
@@ -280,7 +280,7 @@ let rec parameterTypeDef p =
       let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
   | Ast0.Param(id,ty) ->
       let id = ident id in
-      let ty = typeC ty in mkres p (Ast0.Param(id,ty)) id ty
+      let ty = typeC ty in mkres p (Ast0.Param(id,ty)) ty id
   | Ast0.MetaParam(name) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.MetaParamList(name) as up ->
