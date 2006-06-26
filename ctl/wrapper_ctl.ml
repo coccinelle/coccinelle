@@ -14,25 +14,30 @@ type ('value, 'pred) wrapped_binding =
   | ClassicVar of 'value
   | PredVar of 'pred Ast_ctl.modif
 
-type ('pred,'state,'mvar,'value,'wit) labelfunc =
-    'pred -> ('state * ('mvar, 'value) Ast_ctl.generic_substitution * 'wit) list
+type ('pred,'state,'mvar,'value) labelfunc =
+    'pred -> ('state * ('mvar, 'value) Ast_ctl.generic_substitution) list
 
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
-    ('pred * 'mvar Ast_ctl.modif,
-     'state,
-     'mvar,
-     ('value,'pred) wrapped_binding,
-     'wit) labelfunc
+    ('pred * 'mvar Ast_ctl.modif) -> 
+      ('state * 
+	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution * 
+	 'wit) list
 
 
 (* ********************************************************************** *)
-(* Module type: PREDICATE                                                 *)
+(* Module: PREDICATE (predicates for CTL formulae)                        *)
 (* ********************************************************************** *)
+
 module type PREDICATE =
 sig
   type predicate
 end
 
+
+
+(* ********************************************************************** *)
+(* Module type: CTL_ENGINE_BIS (wrapper for CTL_ENGINE)                   *)
+(* ********************************************************************** *)
 
 (* This module must convert the labelling function passed as parameter, by
    using convert_label. Then create a SUBST2 module handling the wrapped_binding.
@@ -58,33 +63,39 @@ struct
     let eq_val wv1 wv2 = 
       match (wv1,wv2) with
 	| (ClassicVar(v1),ClassicVar(v2)) -> SUB.eq_val v1 v2
-	| (PredVar(v1),PredVar(v2))       -> v1 = v2   (* ok? *)
+	| (PredVar(v1),PredVar(v2))       -> v1 = v2   (* FIX ME: ok? *)
 	| _                               -> false
     let merge_val wv1 wv2 = 
       match (wv1,wv2) with
 	| (ClassicVar(v1),ClassicVar(v2)) -> ClassicVar(SUB.merge_val v1 v2)
-	| _                               -> wv1       (* ok? *)
+	| _                               -> wv1       (* FIX ME: ok? *)
   end
-    
+
+  (* Instantiate a wrapped version of CTL_ENGINE *)
   module WRAPPER_ENGINE = Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G)
 
   (* Wrap a label function *)
-  let (wrap_label: ('pred,'state,'mvar,'value,'wit) labelfunc -> 
+  let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 
 	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc)
       = fun oldlabelfunc ->  fun (p, predvar) ->
+	let top_wit = [] in
 	let penv = 
 	  match predvar with
-	    | Ast_ctl.Modif(x)   -> [Ast_ctl.Subst(x,PredVar(Ast_ctl.Modif(p)))]
-	    | Ast_ctl.UnModif(x) -> [Ast_ctl.Subst(x,PredVar(Ast_ctl.UnModif(p)))]
-	    | Ast_ctl.Control    -> [] in
+	    | Modif(x)   -> [Subst(x,PredVar(Modif(p)))]
+	    | UnModif(x) -> [Subst(x,PredVar(UnModif(p)))]
+	    | Control    -> [] in
 	let conv_sub sub =
 	  match sub with
-	    | Ast_ctl.Subst(x,v)    -> Ast_ctl.Subst(x,ClassicVar(v))
-	    | Ast_ctl.NegSubst(x,v) -> Ast_ctl.NegSubst(x,ClassicVar(v)) in
-	let conv_trip (s,env,wit) = (s,penv @ (List.map conv_sub env),wit) 
+	    | Subst(x,v)    -> Subst(x,ClassicVar(v))
+	    | NegSubst(x,v) -> NegSubst(x,ClassicVar(v)) in
+	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),top_wit) 
 	in
           List.map conv_trip (oldlabelfunc p)
 
+  (* Collect, unwraps, and filters witness trees *)
+  (* NOTE: only makes sense specifically for coccinelle generated CTL *)
+  (* FIX ME: what about negative witnesses and negative substitutions *)
+  (* FIX ME: remove List.sort *)
   let rec unwrap_wits acc wits =
     match wits with
       | []  -> []
@@ -95,21 +106,22 @@ struct
       | (Wit(s,[sub],anno,wits')::rest) -> unwrap_wits acc rest
       | _ -> raise Common.Todo
 
+  (* The wrapper for sat from the CTL_ENGINE *)
   let satbis_noclean (grp,lab,states) phi =
     WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi
 
-  let satbis m phi = 
-    List.sort compare (
-      List.concat (
-	List.map (fun (_,_,w) -> unwrap_wits [] w) (satbis_noclean m phi)))
-
-(*  let (satbis :
+  (* Returns the "cleaned up" result from satbis_noclean *)
+  (* FIX ME: remove List.sort *)
+  let (satbis :
          G.cfg *
-         (predicate -> (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_substitution * 'a list) list) *
+	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-        (predicate * SUB.mvar Ast_ctl.modif, SUB.mvar) Ast_ctl.generic_ctl -> 
-        (G.node * (SUB.mvar * SUB.value) list  * predicate) list) = 
-*)
-end
+	(predicate,SUB.mvar) wrapped_ctl ->
+        (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
+    fun m phi ->
+      List.sort compare (
+	List.concat (
+	  List.map (fun (_,_,w) -> unwrap_wits [] w) (satbis_noclean m phi)))
 
-             
+(* END OF MODULE: CTL_ENGINE_BIS *)
+end
