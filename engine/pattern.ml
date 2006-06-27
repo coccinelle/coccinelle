@@ -227,10 +227,14 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
   match re, st with
 
   (* this is done in match_re_node, or match_re_decl *)
-  | A.FunHeader _, _ -> raise Impossible 
-  | A.Decl _, _ -> raise Impossible 
-  | A.SeqStart _, _ -> raise Impossible 
-  | A.SeqEnd _, _ -> raise Impossible 
+  (* subtil: I had some raise Impossible, but in fact it can happen, because
+     if rene ask me to compare a A.Decl vs a A.statement, match_re_node will
+     call match_re_st .
+   *)
+  | A.FunHeader _, _ -> return false
+  | A.Decl _, _ -> return false
+  | A.SeqStart _, _ -> return false
+  | A.SeqEnd _, _ -> return false
 
 
   (* cas general: a Meta can match everything *)
