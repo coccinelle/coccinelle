@@ -116,9 +116,11 @@ and expression = expressionbis * fullType option (* computed after parsing *) * 
 and expressionbis = 
   | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
   | Constant       of constant                                  
-  | FunCall        of expression * (((expression, (fullType * (storage * il))) either) * il) list 
+
   (* cppext: normmally just   expression * expression list *)
   (* the il correspond to the ',' and it is associated to the argument that follows *)
+  | FunCall        of expression * (((expression, (fullType * (storage * il))) either) * il) list 
+
   | CondExpr       of expression * expression * expression       (*   x ? : y --> x ? x : y;  if the then part is NoExpr, then we must return the same value as in the condition, cf gccext manual *)
 
   (* should be considered as statements, bad C langage *)
@@ -194,8 +196,8 @@ and statementbis =
               | CaseRange of expression * expression * statement (* gccext: *)
 	      |	Default of statement
 
-  and compound = (*  old: (declaration list * statement list) *)
-                  ((declaration, statement) either) list (* cppext: (or because of cpp) *)
+  (* old: compound = (declaration list * statement list) *)
+  and compound = ((declaration, statement) either) list (* cppext: (or because of cpp) *)
 
   and exprStatement = (expression option)
 
@@ -223,7 +225,7 @@ and statementbis =
     so that struc t {...} v will generate 2 declaration ? So I try to generalise and not have
     not Typedef too, this require more work in parsing. Better to separate concern.
    
-   Before unparser, I didn't have a DeclList but just a Decl.
+   Before the need for unparser, I didn't have a DeclList but just a Decl.
 *)
 and declaration = DeclList of ((((string * ((initialiser * info) option) * (info)) option) * fullType * storage) * il) list * (il * info) (* ilsto, infoptvirg *)
      and storage       = NoSto | StoTypedef | Sto of storageClass
@@ -236,9 +238,12 @@ and declaration = DeclList of ((((string * ((initialiser * info) option) * (info
                           | InitGccRange of expression * expression * initialiser
 
 
-and definition = (string * functionDefType * storage * compound                               * (info * il * il))
-         and functionDefType = fullType * ((parameterTypeDef * il) list) * bool (* has... *)   * (il * il)
-             and parameterTypeDef = (bool (* hasregister *) * string * fullType                * (il * info))
+and definition = (string * functionDefType * storage * compound * 
+                    (info * il * il)) (* info for string, then for storage, and then for compound *)
+         and functionDefType = fullType * ((parameterTypeDef * il) list) * bool (* has... *) * 
+                    (il * il) (* info for dots, and then info for '(' and ')' for parameters *)
+             and parameterTypeDef = (bool (* hasregister *) * string * fullType * 
+                    (il * info))
 
 
 and program = programElement list
@@ -338,8 +343,10 @@ let rec (al_expr: expression -> expression) = fun (exp, typ, ii) ->
 
   | _ -> raise Todo
   ), typ, ii'
+
 and (al_statement: statement -> statement) = fun (stat, ii) -> 
   raise Todo
+
 and (al_type: fullType -> fullType) = fun (stat, ii) -> 
   raise Todo
 

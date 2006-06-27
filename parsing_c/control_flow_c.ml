@@ -1008,10 +1008,12 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
 
   let (topcompound, returnkind) = 
     (match get_next_node g starti with
-    | (nexti,  (Enter, s)) -> 
-        let (nextii, _) = get_next_node g nexti in
+    | (nexti,  _) (* (Enter, s) *) -> 
+        (* let (nextii, _) = get_next_node g nexti in *)
+        let nextii = nexti in
         rebuild_statement nextii
-    | x -> error_cant_have x
+  
+    (* | x -> error_cant_have x *)
     ) 
   in
   (* todo?: assert stuff on returnkind ? normally lead to an exit node, or nothing *)

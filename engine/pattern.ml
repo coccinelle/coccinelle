@@ -592,7 +592,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
       A.MetaType ida,  typb -> 
 	check_add_metavars_binding (term ida, B.MetaType typb)
 
-    | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, _)) -> 
+    | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
 	let match_sign signa signb = 
           (match signa, signb with
          (* iso on sign, if not mentioned then free.  tochange? *)

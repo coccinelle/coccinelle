@@ -254,6 +254,7 @@ let pp_program file x =
 
 
 
+   (* ---------------------- *)
    and pp_statement = function
      | Labeled (Label (s, st)), [i1;i2] -> pr_elem i1; pr_elem i2; pp_statement st
      | Labeled (Case  (e, st)), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2; pp_statement st
@@ -304,6 +305,7 @@ let pp_program file x =
 
 
 
+   (* ---------------------- *)
    and (pp_type_with_ident: (string * info) option -> (storage * il) option -> fullType -> unit) = fun ident sto ((qu, iiqu), (ty, iity)) -> 
      pp_base_type ((qu, iiqu), (ty, iity))  sto;
      pp_type_with_ident_rest ident ((qu, iiqu), (ty, iity))
@@ -579,6 +581,7 @@ let pp_program file x =
      | (TypeName (s), iis) -> ()
      | x -> error_cant_have x
 
+   (* ---------------------- *)
    and pp_decl = function
     | DeclList (((var, returnType, storage),[])::xs,                       (iisto, iivirg)) -> 
 
@@ -615,6 +618,7 @@ let pp_program file x =
     | x -> error_cant_have x
   
 
+   (* ---------------------- *)
    and pp_init = fun (init, iinit) -> 
      match init, iinit with
      | InitExpr e, [] -> pp_expression e;
@@ -658,13 +662,32 @@ let pp_program file x =
 
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
   and pp_any env x = match x with
-  | Ast_cocci.StatementTag stat -> pp_cocci_statement env stat
-  | Ast_cocci.ExpressionTag exp -> pp_cocci_expr env exp
-  | Ast_cocci.Rule_elemTag rule -> pp_cocci_rule env rule
-  | Ast_cocci.IdentTag ident -> pp_cocci_ident env ident
-  | Ast_cocci.Token s -> pr s
-  | Ast_cocci.Code code -> pp_cocci_top_level env code
-  | _ -> raise Todo
+  | Ast_cocci.FullTypeTag         e -> raise Todo
+  | Ast_cocci.BaseTypeTag         e -> raise Todo
+  | Ast_cocci.StructUnionTag      e -> raise Todo
+  | Ast_cocci.SignTag             e -> raise Todo
+  | Ast_cocci.IdentTag            e -> pp_cocci_ident env e
+  | Ast_cocci.ExpressionTag       e -> pp_cocci_expr env e
+  | Ast_cocci.ConstantTag         e -> raise Todo
+  | Ast_cocci.UnaryOpTag          e -> raise Todo
+  | Ast_cocci.AssignOpTag         e -> raise Todo
+  | Ast_cocci.FixOpTag            e -> raise Todo
+  | Ast_cocci.BinaryOpTag         e -> raise Todo
+  | Ast_cocci.ArithOpTag          e -> raise Todo
+  | Ast_cocci.LogicalOpTag        e -> raise Todo
+  | Ast_cocci.DeclarationTag      e -> raise Todo
+  | Ast_cocci.ParameterTypeDefTag e -> raise Todo
+  | Ast_cocci.StorageTag          e -> raise Todo
+  | Ast_cocci.Rule_elemTag        e -> pp_cocci_rule env e
+  | Ast_cocci.StatementTag        e -> pp_cocci_statement env e
+  | Ast_cocci.ConstVolTag         e -> raise Todo
+  | Ast_cocci.Token               e -> pr e
+  | Ast_cocci.Code                e -> pp_cocci_top_level env e
+  | Ast_cocci.ExprDotsTag         e -> raise Todo
+  | Ast_cocci.ParamDotsTag        e -> raise Todo
+  | Ast_cocci.StmtDotsTag         e -> raise Todo
+  | Ast_cocci.TypeCTag            e -> raise Todo
+  | Ast_cocci.ParamTag            e -> pp_cocci_param env e 
 
   and pp_list_list_any env xxs =
      match xxs with
@@ -681,13 +704,16 @@ let pp_program file x =
           )
      | [] -> ()
 
+   (* ---------------------- *)
   and (pp_cocci_top_level: Ast_c.metavars_binding -> Ast_cocci.top_level -> unit) = fun env x -> match x with
   | Ast_cocci.CODE stmt_dots -> List.iter (pp_cocci_statement env) (Ast_cocci.undots stmt_dots)
   | _ -> raise Todo
 
+   (* ---------------------- *)
   and (pp_cocci_statement: Ast_c.metavars_binding -> Ast_cocci.statement -> unit) = fun env x -> match x with
   | Ast_cocci.Atomic rule_elem -> pp_cocci_rule_elem env rule_elem
   | _ -> raise Todo
+
 
   and (pp_cocci_rule_elem: Ast_c.metavars_binding -> Ast_cocci.rule_elem -> unit) = fun env x -> match x with
   | Ast_cocci.ExprStatement (e, ptvirg) -> 
@@ -696,6 +722,9 @@ let pp_program file x =
   | Ast_cocci.Exp e -> pp_cocci_expr env e;
   | _ -> raise Todo
 
+
+
+   (* ---------------------- *)
   and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
   | Ast_cocci.Ident id -> pp_cocci_ident env id
   | Ast_cocci.MetaExpr (s,_typeTODO) -> 
@@ -724,6 +753,7 @@ let pp_program file x =
   | _ -> raise Todo
     
 
+   (* ---------------------- *)
   and pp_cocci_rule env x = match x with
   | Ast_cocci.SeqStart brace -> pr (term brace)
   | Ast_cocci.SeqEnd   brace -> pr (term brace)
@@ -736,10 +766,54 @@ let pp_program file x =
   | Ast_cocci.Else     str -> pr (term str)
 
   | _ -> raise Todo
+   (* ---------------------- *)
+  and pp_cocci_param env x = match x with
+  | Ast_cocci.Param (id, fullt) -> pp_cocci_fullType env fullt; pp_cocci_ident env id
+  | x -> raise Todo
 
+  (* ---------------------- *)
+  and pp_cocci_fullType env x = match x with
+  | Ast_cocci.Type(cv,ty) ->
+      (match cv with
+      | None -> ()
+      | Some x -> raise Todo
+      );
+      pp_cocci_type env ty
+        
+  | Ast_cocci.OptType(ty)  | Ast_cocci.UniqueType(ty)  | Ast_cocci.MultiType(ty) -> 
+      raise Impossible (* really ? *)
+
+
+
+  and pp_cocci_type env x = match x with
+  | Ast_cocci.BaseType(ty,sgn) -> raise Todo
+  | Ast_cocci.Pointer(ty,star) -> pp_cocci_fullType env ty; pr (term star)
+  | Ast_cocci.Array(ty,lb,size,rb) -> raise Todo
+  | Ast_cocci.StructUnionName(name,kind) -> 
+       (match term kind with
+         Ast_cocci.Struct -> pr "struct "
+       | Ast_cocci.Union -> pr "union "
+       );
+      pr (term name)
+
+  | Ast_cocci.TypeName(name)-> pr (term name)
+  | Ast_cocci.MetaType(name)-> raise Todo
+
+
+   (* ---------------------- *)
   and pp_cocci_ident env x = match x with
   | Ast_cocci.Id s -> pr (term s)
-  | _ -> raise Todo
+  | Ast_cocci.MetaId s -> 
+      (try 
+       let v = List.assoc (term s) env in
+        (match v with 
+       | Ast_c.MetaId id -> 
+          pr id
+       | _ -> raise Impossible
+       )
+      with Not_found -> failwith ("unparse: I have not found a value in the environment for: " ^ term s)
+      )
+  | x -> raise Todo
 
 
 

@@ -17,7 +17,8 @@ let (labels_for_ctl:
   = fun nodes ->
 
    (fun pred -> 
-     pr2 "start label";
+       pr2 "start label";
+       pr2 (Dumper.dump pred);
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
          (match pred, node with
@@ -51,6 +52,7 @@ let (labels_for_ctl:
        ) +> List.concat
        in
        pr2 "end label";
+       pr2 (Dumper.dump nodes');
        nodes'
        ) 
 
@@ -122,6 +124,9 @@ let (mysat:
 
     ) = fun (flow, label, states) ctl -> 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
+
+let mysat_noclean = fun (flow, label, states) ctl -> 
+      WRAPPED_ENGINE.satbis_noclean (flow, label, states) ctl
 
 
 let (satbis_to_trans_info: 
