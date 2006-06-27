@@ -58,8 +58,7 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
 
   | re, F.Statement st -> Control_flow_c.Statement (transform_re_st  re st  binding), nodestr
   | re, F.Declaration decl -> 
-      pr2 "transformation: dont handle yet decl well. I pass them";
-      F.Declaration decl, nodestr
+      F.Declaration (transform_de_decl re decl  binding), nodestr
 
   | re, F.HeadFunc funcdef -> 
       let (idb, typb, stob, compoundb, (infoidb, iistob, iicpb)) = funcdef in
@@ -173,6 +172,27 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
   | _, (B.Jump (B.Break), ii)         -> raise Impossible
   | _, (B.Jump (B.Continue), ii)      -> raise Impossible
 
+(* ------------------------------------------------------------------------------ *)
+
+and (transform_de_decl: (Ast_cocci.rule_elem, Ast_c.declaration) transformer) = fun re decl -> 
+  fun binding -> 
+  match re, decl with
+  | A.Decl (A.UnInit (typa, ida, ptvirga)), 
+    (B.DeclList ([var], (iisto, iiptvirgb ))) -> 
+
+      let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+      (match var with
+      | (Some (idb, None, iidb), typb, stob), iivirg -> 
+          let typb' = transform_ft_ft typa typb  binding in
+          let (idb', iidb') = transform_ident ida (idb, [iidb])  binding in
+          
+          let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg in
+          B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
+          
+      | _ -> raise Todo
+      )
+  | _ -> raise Todo
+  
 (* ------------------------------------------------------------------------------ *)
 
 and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun ep ec -> 
@@ -446,8 +466,13 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa ty
         
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
-    | A.StructUnionName(sa, sua), (qu, (B.StructUnionName ((sb,_), sub), _)) -> 
-        raise Todo
+    | A.StructUnionName((sa,i1,mc1), (sua,i2,mc2)), (qu, (B.StructUnionName ((sb,level), sub), ii)) -> 
+        if Pattern.equal_structUnion  sua sub && sa =$= sb
+        then
+          let ii' = tag_symbols ["fake",i2,mc2; sa,i1,mc1] ii  binding in
+          (qu, (B.StructUnionName ((sb,level), sub), ii'))
+        else raise NoMatch
+        
 
     | A.TypeName (sa,i1,mc1),  (qu, (B.TypeName sb, ii)) ->
         if sa =$= sb

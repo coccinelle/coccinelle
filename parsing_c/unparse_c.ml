@@ -768,7 +768,8 @@ let pp_program file x =
   | _ -> raise Todo
    (* ---------------------- *)
   and pp_cocci_param env x = match x with
-  | Ast_cocci.Param (id, fullt) -> pp_cocci_fullType env fullt; pp_cocci_ident env id
+  | Ast_cocci.Param (id, fullt) -> pp_cocci_fullType env fullt; pr " "; pp_cocci_ident env id
+  | Ast_cocci.PComma (comma) -> pr (term comma); pr " "
   | x -> raise Todo
 
   (* ---------------------- *)

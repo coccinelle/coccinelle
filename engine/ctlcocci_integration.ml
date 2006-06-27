@@ -133,13 +133,13 @@ let (satbis_to_trans_info:
   (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  Lib_engine.predicate) list
      -> (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list) = fun xs -> 
        xs +> List.map (fun (nodei, binding, pred) -> 
-         let binding' = binding +> List.map (fun (s, kind2) -> 
-           let kind' = 
+         let binding' = binding +> map_filter (fun (s, kind2) -> 
              (match kind2 with
-             | Lib_engine.NormalMetaVar kind -> kind
-             | Lib_engine.ParenVar _ -> raise Impossible (* really? *)
-             ) in
-           s, kind'
+             | Lib_engine.NormalMetaVar kind -> Some (s, kind)
+             | Lib_engine.ParenVar _ -> 
+                 (* I thought it was Impossible, but it does not seems so *)
+                 None
+             )
            ) in
          let pred' = 
            (match pred with
