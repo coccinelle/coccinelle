@@ -22,6 +22,7 @@ module type SUBST =
 ;;
 
 (* Simple env.: meta.vars and values are strings *)
+(* FIX ME: move to test_ctl.ml *)
 module SIMPLE_ENV =
   struct
     type value = string;;
@@ -33,6 +34,7 @@ module SIMPLE_ENV =
 ;;
 
 (* Example env.: more elaborate mvars and values *)
+(* FIX ME: remove *)
 module EXAMPLE_ENV =
   struct
     type value =       
@@ -50,8 +52,6 @@ module EXAMPLE_ENV =
 ;;
 
 
-
-
 (* ********************************************************************** *)
 (* Module: GRAPH (control flow graphs / model)                            *)
 (* ********************************************************************** *)
@@ -64,6 +64,15 @@ module type GRAPH =
   end
 ;;
 
+module OGRAPHEXT_GRAPH = 
+  struct
+    type node = int;;
+    type cfg = (string,unit) Ograph_extended.ograph_extended;;
+    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+  end
+;;
+
+(* FIX ME: remove *)
 module SIMPLE_CFG = 
   struct
     type node = int;;
@@ -477,14 +486,67 @@ let rec sat ((grp,label,states) as m) phi =
   | Or(phi1,phi2)      -> triples_union (sat m phi1) (sat m phi2)
   | And(phi1,phi2)     -> triples_conj (sat m phi1) (sat m phi2)
   | EX(phi)            -> satEX m (sat m phi)
-  | AX(phi)          -> sat m (Not (EX(Not phi)))
+  | AX(phi)            -> sat m (Not (EX(Not phi)))
 (*  | AX(phi)            -> pre_forall m (sat m phi)*)
   | AF(phi)            -> satAF m (sat m phi)
   | EG(phi)            -> sat m (Not(AF(Not phi)))
   | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
   | Exists (v,phi)     -> triples_witness v (sat m phi)
-  | AU(_phi,phi)            -> satAF m (sat m phi) (* TOFIX *)
+  | AU(phi1,phi2)      -> satAF m (sat m phi2) (* FIX ME: implement *)
   | _ -> raise TODO_CTL
+;;
+
+
+(* SAT with tracking *)
+let rec sat_verbose annotate maxlvl lvl ((grp,label,states) as m) phi =
+  let anno res children = (annotate lvl phi res children,res) in
+  let satv phi0 = sat_verbose annotate maxlvl (lvl+1) m phi0 in
+    if (lvl > maxlvl) && (maxlvl > -1) then
+      anno (sat m phi) []
+    else
+      match phi with
+	  False              -> anno [] []
+	| True               -> anno (triples_top states) []
+	| Pred(p)            -> anno (label(p)) []
+	| Not(phi1)          -> 
+	    let (child,res) = satv phi1 in
+	      anno (triples_complement states res) [child]
+	| Or(phi1,phi2)      -> 
+	    let (child1,res1) = satv phi1 in
+	    let (child2,res2) = satv phi2 in
+	      anno (triples_union res1 res2) [child1; child2]
+	| And(phi1,phi2)     -> 
+	    let (child1,res1) = satv phi1 in
+	    let (child2,res2) = satv phi2 in
+	      anno (triples_conj res1 res2) [child1; child2]
+	| EX(phi1)           -> 
+	    let (child,res) = satv phi1 in
+	      anno (satEX m res) [child]
+	| AX(phi1)           -> 
+	    let (child,res) = satv phi1 in
+	      anno (pre_forall m res) [child]
+	| AF(phi1)           -> 
+	    let (child,res) = satv phi1 in
+	      anno (satAF m res) [child]
+	| EG(phi1)           -> 
+	    let (child,_) = satv phi1 in
+	      anno (sat m (Not(AF(Not phi1)))) [child]
+	| Implies(phi1,phi2) -> 
+	    let (child1,_) = satv phi1 in
+	    let (child2,_) = satv phi2 in
+	      anno (sat m (Or(Not phi1,phi2))) [child1; child2]
+	| Exists (v,phi1)    -> 
+	    let (child,res) = satv phi1 in
+	      anno (triples_witness v res) [child]
+	| _ -> raise TODO_CTL
+;;
+
+(* Type for annotations collected in a tree *)
+type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
+
+let sat_annotree annotate m phi =
+  let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
+    sat_verbose tree_anno (-1) 0 m phi
 ;;
 
 
