@@ -103,8 +103,10 @@ struct
 	  (unwrap_wits ((x,v)::acc) wits') @ (unwrap_wits acc rest)
       | (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
 	  (s,List.sort compare acc,v) :: (unwrap_wits acc rest)
-      | (Wit(s,[sub],anno,wits')::rest) -> unwrap_wits acc rest
-      | (Wit(s,[],anno,wits')::rest) -> unwrap_wits acc rest
+      | (Wit(s,[sub],anno,wits')::rest) ->
+	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
+      | (Wit(s,[],anno,wits')::rest) -> 
+	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
       | _ -> raise Common.Todo
 
   (* The wrapper for sat from the CTL_ENGINE *)
