@@ -479,6 +479,8 @@ let iscode t =
 
 (* returns a list of corresponding minus and plus trees *)
 let context_neg minus plus =
+  Hashtbl.clear minus_table;
+  Hashtbl.clear plus_table;
   let rec loop = function
       ([],_) | (_,[]) -> []
     | (((m::minus) as mall),((p::plus) as pall)) ->
