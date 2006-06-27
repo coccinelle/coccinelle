@@ -120,9 +120,10 @@ struct
 	(predicate,SUB.mvar) wrapped_ctl ->
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
+      let noclean = (satbis_noclean m phi) in
       List.sort compare (
 	List.concat (
-	  List.map (fun (_,_,w) -> unwrap_wits [] w) (satbis_noclean m phi)))
+	  List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end
