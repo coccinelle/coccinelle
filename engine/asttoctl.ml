@@ -312,6 +312,7 @@ and statement quantified stmt after =
        (* free variables *) 
        let (efvs,bfvs,_) =
 	 seq_fvs quantified (Rule_elem ifheader) (Statement branch) in
+       let new_quantified = Common.union_set bfvs quantified in
        (* if header *)
        let if_header = quantify efvs (make_match ifheader) in
        (* then branch and after *)
@@ -320,7 +321,7 @@ and statement quantified stmt after =
        let after_branch =
 	 Ast_ctl.Pred(Lib_engine.After,Ast_ctl.Control) in
        let then_line =
-	 make_cond true_branch (statement quantified branch None) in
+	 make_cond true_branch (statement new_quantified branch None) in
        let or_cases = Ast_ctl.Or(true_branch,after_branch) in
        (* the code *)
        (match after with
@@ -365,6 +366,7 @@ and statement quantified stmt after =
 	 seq_fvs quantified (Rule_elem ifheader) (Statement branch2) in
        let bothfvs = Common.union_set b1fvs b2fvs in
        let exponlyfvs = Common.inter_set e1fvs e2fvs in
+       let new_quantified = Common.union_set bothfvs quantified in
        (* if header *)
        let if_header = quantify exponlyfvs (make_match ifheader) in
        (* then and else branches *)
@@ -373,9 +375,9 @@ and statement quantified stmt after =
        let false_branch =
 	 Ast_ctl.Pred(Lib_engine.FalseBranch,Ast_ctl.Control) in
        let then_line =
-	 make_cond true_branch (statement quantified branch1 None) in
+	 make_cond true_branch (statement new_quantified branch1 None) in
        let else_line =
-	 make_cond false_branch (statement quantified branch2 None) in
+	 make_cond false_branch (statement new_quantified branch2 None) in
        (* the code *)
        (match after with
 	None ->
@@ -401,11 +403,12 @@ and statement quantified stmt after =
    (* the translation in this case is similar to that of an if with no else *)
       let (efvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (Statement body) in
+      let new_quantified = Common.union_set bfvs quantified in
       let while_header = quantify efvs (make_match header) in
       let true_branch =
 	Ast_ctl.Pred(Lib_engine.TrueBranch,Ast_ctl.Control) in
       let body_line =
-	make_cond true_branch (statement quantified body None) in
+	make_cond true_branch (statement new_quantified body None) in
       (match after with
 	None -> quantify bfvs (make_seq while_header (Some body_line))
       | Some after ->
@@ -477,6 +480,7 @@ and statement quantified stmt after =
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
       let function_header = quantify hfvs (make_match header) in
+      let new_quantified = Common.union_set bfvs quantified in
       let v = fresh_var() in
       let paren_pred = Ast_ctl.Pred(Lib_engine.Paren v,Ast_ctl.Control) in
       let start_brace = Ast_ctl.And(make_match lbrace,paren_pred) in
@@ -486,7 +490,7 @@ and statement quantified stmt after =
 	   (Some
 	      (Ast_ctl.Exists
 		 (v,(make_seq start_brace
-		       (Some(dots_stmt quantified body
+		       (Some(dots_stmt new_quantified body
 			       (Some(make_seq end_brace after)))))))))
   | Ast.OptStm(stm) ->
       (* doesn't work for ?f(); f();, ie when the optional thing is the same
