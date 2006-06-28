@@ -92,21 +92,26 @@ struct
 	in
           List.map conv_trip (oldlabelfunc p)
 
-  (* Collect, unwraps, and filters witness trees *)
+  (* Collects, unwraps, and filters witness trees *)
   (* NOTE: only makes sense specifically for coccinelle generated CTL *)
   (* FIX ME: what about negative witnesses and negative substitutions *)
-  (* FIX ME: remove List.sort *)
   let rec unwrap_wits acc wits =
     match wits with
       | []  -> []
       | (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
 	  (unwrap_wits ((x,v)::acc) wits') @ (unwrap_wits acc rest)
       | (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
-	  (s,List.sort compare acc,v) :: (unwrap_wits acc rest)
+	  (s,acc,v) :: (unwrap_wits acc rest)
       | (Wit(s,[sub],anno,wits')::rest) ->
 	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
       | (Wit(s,[],anno,wits')::rest) -> 
 	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
+      | (Wit(s,th,anno,wits')::rest) ->
+	  let newth =
+	    List.concat (
+	      List.map (function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
+	  in
+	    (unwrap_wits (newth @ acc) wits') @ (unwrap_wits acc rest)
       | _ -> raise Common.Todo
 
   (* The wrapper for sat from the CTL_ENGINE *)
@@ -114,7 +119,6 @@ struct
     WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi
 
   (* Returns the "cleaned up" result from satbis_noclean *)
-  (* FIX ME: remove List.sort *)
   let (satbis :
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
@@ -123,9 +127,7 @@ struct
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
-      List.sort compare (
-	List.concat (
-	  List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
+	List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean)
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end
