@@ -3,7 +3,7 @@
 TARGET=cocciengine
 CTLTARGET=engine
 
-SOURCES = lib_engine.ml isomorphisms.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoctl.ml ctltotex.ml ctlcocci_integration.ml
+SOURCES = lib_engine.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoctl.ml ctltotex.ml ctlcocci_integration.ml
 
 # just to test asttoctl
 CTLSOURCES = asttoctl.ml ctltotex.ml main.ml

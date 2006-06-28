@@ -54,13 +54,13 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   
 
 (* --------------------------------------------------------------------- *)
-let sp_from_file file    = Parse_cocci.process_for_ctl file None false
-let spbis_from_file file = Parse_cocci.process file None false
+let sp_from_file file iso    = Parse_cocci.process_for_ctl file iso false
+let spbis_from_file file iso = Parse_cocci.process file iso false
 
-let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s -> 
+let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) = fun s iso -> 
   begin
     write_file "/tmp/__cocci.cocci" (s);
-    let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" in
+    let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" iso in
     let stmt =
       rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
 	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
@@ -100,3 +100,79 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
 
+
+let full_engine cfile coccifile isofile = 
+  pr2 ("processing C file: " ^ cfile);
+  let astc     = cprogram_from_file cfile in
+  pr2 ("processing semantic patch file: " ^ coccifile);
+  let astcocci = spbis_from_file coccifile isofile in
+  
+  let rule_with_metavars_list = astcocci in
+
+  (* extract_all_error_words *)
+  let (all_error_words: string list) = 
+    rule_with_metavars_list +> List.hd +> snd +> (fun xs -> 
+      let res = ref [] in
+      xs +> List.iter (function
+          Ast_cocci.ERRORWORDS es -> 
+            es +> List.iter (fun e -> 
+              (match e with
+              | Ast_cocci.Ident (Ast_cocci.Id (s,_,_)) -> push2 s res;
+              | _ -> pr2 "warning: does not support complex error words"
+              )
+                            );
+        | _ -> ()
+                      );
+      List.rev !res
+      ) 
+  in
+
+  let sp = sp_from_file coccifile isofile in
+  let ctls = (ctls sp) in
+  if List.length ctls <> 1 
+  then failwith "I handle cocci patch with only one region for the moment";
+  let ctl = one_ctl ctls  in
+
+  let (program, _stat) = astc in
+  begin
+   program 
+    +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
+
+          (* call the engine algorithms only if have found a flag word *)
+          let str = Str.global_replace (Str.regexp "\n") " " s in (* cos caml regexp dont like \n ... *)
+          if  true || 
+            all_error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
+          then
+              let _ = pr2 "found error word: " in
+              let flow = Control_flow_c.ast_to_control_flow def in
+              let _ =
+                try Control_flow_c.deadcode_detection flow
+                with Control_flow_c.DeadCode Some info -> 
+                  pr2 "PBBBBBBBBBBBBBBBBBB";
+                  pr2 (Common.error_message filename ("", info.charpos));
+                  pr2 "at least 1 deadcode detected (there may be more), but I continue"
+              in
+          
+              print_flow  flow;
+              let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
+              pr2 "calling sat_noclean";
+              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in
+              pr2 "calling sat";
+              let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
+              pr2 "ending sat";
+              pr2 (Dumper.dump trans_info);
+
+              let trans_info' = Ctlcocci_integration.satbis_to_trans_info trans_info in
+              let flow' = Transformation.transform trans_info' flow  in
+              let def' = flow' +> Control_flow_c.control_flow_to_ast in
+              (Ast_c.Definition def', Unparse_c.PPnormal)
+          else 
+           (Ast_c.Definition def, Unparse_c.PPviatok il)
+      | x -> 
+          (x, Unparse_c.PPviatok il)
+     )
+    +> Unparse_c.pp_program cfile;
+    Common.command2 ("diff -u " ^ cfile ^ " /tmp/output.c")
+  end

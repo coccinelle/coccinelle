@@ -114,10 +114,8 @@ let _GoodMatch binding = [binding]
 *)
 
 let check_add_metavars_binding = fun (k, valu) binding -> 
-  (match optionise (fun () -> (binding +> List.find (function (k', _) -> k' =$= k))) with
-      | Some (k', valu') ->
-          assert (k =$= k');
-
+  (match optionise (fun () -> binding +> List.assoc k) with
+      | Some (valu') ->
          if
           (match valu, valu' with
           | Ast_c.MetaId a, Ast_c.MetaId b -> a =$= b

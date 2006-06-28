@@ -469,7 +469,7 @@ let rec sat ((grp,label,states) as m) phi =
   | EG(phi)            -> sat m (Not(AF(Not phi)))
   | AG(phi)            -> sat m (Not(EF(Not(phi))))
   | EU(phi1,phi2)      -> satEU m (sat m phi1) (sat m phi2)
-  | AU(phi1,phi2)      -> satAU m (sat m phi1) (sat m phi2)
+  | AU(phi1,phi2)      -> satAU m (sat m phi1) (sat m phi2) 
   | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
   | Exists (v,phi)     -> triples_witness v (sat m phi)
 ;;
