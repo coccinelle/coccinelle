@@ -322,10 +322,12 @@ let rec fold_subst theta =
 
 let clean_substBy eq cmp theta = List.sort cmp (nubBy eq theta);;
 
-(* NOTE: we use compare for sorting; we could also require a definition
- *       of compare for substitutions but that seems like overkill
+(* NOTE: we sort by using the generic "compare" on (meta-)variable
+ *   names; we could also require a definition of compare for meta-variables 
+ *   or substitutions but that seems like overkill for sorting
  *)
-let clean_subst theta = clean_substBy eq_sub compare theta;;
+let clean_subst theta = 
+  clean_substBy eq_sub (fun s s' -> compare (dom_sub s) (dom_sub s')) theta;;
 
 let top_subst = [];;			(* Always TRUE subst. *)
 
