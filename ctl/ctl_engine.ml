@@ -506,8 +506,8 @@ let rec sat ((grp,label,states) as m) phi =
   | AX(phi)            -> sat m (Not (EX(Not phi)))
   | EF(phi)            -> sat m (EU(True,phi))
   | AF(phi)            -> satAF m (sat m phi)
-  | AG(phi)            -> sat m (Not(EF(Not(phi))))
   | EG(phi)            -> sat m (Not(AF(Not phi)))
+  | AG(phi)            -> sat m (Not(EF(Not(phi))))
   | EU(phi1,phi2)      -> satEU m (sat m phi1) (sat m phi2)
   | AU(phi1,phi2)      -> satAU m (sat m phi1) (sat m phi2)
   | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
@@ -544,12 +544,26 @@ let rec sat_verbose annotate maxlvl lvl ((grp,label,states) as m) phi =
 	| AX(phi1)           -> 
 	    let (child,res) = satv phi1 in
 	      anno (pre_forall m res) [child]
+	| EF(phi1)           -> 
+	    let (child,_) = satv phi1 in
+	      anno (sat m (EU(True,phi1))) [child]
 	| AF(phi1)           -> 
 	    let (child,res) = satv phi1 in
 	      anno (satAF m res) [child]
 	| EG(phi1)           -> 
 	    let (child,_) = satv phi1 in
 	      anno (sat m (Not(AF(Not phi1)))) [child]
+	| AG(phi1)            -> 
+	    let (child,_) = satv phi1 in
+	      anno (sat m (Not(EF(Not(phi1))))) [child]
+	| EU(phi1,phi2)      -> 
+	    let (child1,res1) = satv phi1 in
+	    let (child2,res2) = satv phi2 in
+	      anno (satEU m res1 res2) [child1; child2]
+	| AU(phi1,phi2)      -> 
+	    let (child1,res1) = satv phi1 in
+	    let (child2,res2) = satv phi2 in
+	      anno (satAU m res1 res2) [child1; child2]
 	| Implies(phi1,phi2) -> 
 	    let (child1,_) = satv phi1 in
 	    let (child2,_) = satv phi2 in
@@ -557,7 +571,6 @@ let rec sat_verbose annotate maxlvl lvl ((grp,label,states) as m) phi =
 	| Exists (v,phi1)    -> 
 	    let (child,res) = satv phi1 in
 	      anno (triples_witness v res) [child]
-	| _ -> raise TODO_CTL
 ;;
 
 (* Type for annotations collected in a tree *)
