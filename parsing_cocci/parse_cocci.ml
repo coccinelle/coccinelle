@@ -500,35 +500,39 @@ let parse file =
   | (false,[(PC.TArobArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n"
 
+let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
+
 let parse_iso = function
     None -> []
   | Some file ->
       Lexer_cocci.init ();
       let table = Common.full_charpos_to_pos file in
       let lexbuf = Lexing.from_channel (open_in file) in
-      let delim = [PC.TIsoStatement;PC.TIsoExpression] in
-      (match tokens_all table file false lexbuf delim with
-	(true,[start]) ->
+      (match tokens_all table file false lexbuf [PC.TArobArob] with
+	(true,start) ->
 	  let rec loop start =
-	    (* get metavariable declarations *)
-	    let (more,tokens) = (* skip to first @@ *)
-	      tokens_all table file true lexbuf [PC.TArobArob] in
-	    if not(List.length tokens = 1) then failwith "bad iso meta decl";
+	    (* get metavariable declarations - have to be read before the
+	       rest *)
 	    let (more,tokens) =
 	      tokens_all table file true lexbuf [PC.TArobArob] in
 	    let _ = parse_one PC.meta_main file tokens in
-	    (* get transformation rules *)
-	    let (more,tokens) = tokens_all table file false lexbuf delim in
+	    (* get the rule *)
+	    let (more,tokens) =
+	      tokens_all table file false lexbuf
+		[PC.TIsoStatement;PC.TIsoExpression] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
-	    let tokens =
-	      List.rev((PC.EOF,dummy_info)::(List.tl(List.rev tokens))) in
-	    let tokens = prepare_tokens (start::tokens) in
+	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
+	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
 	    let entry = parse_one PC.iso_main file tokens in
-	    if more then entry::(loop next_start) else [entry] in
+	    if more
+	    then
+	      match tokens_all table file true lexbuf [PC.TArobArob] with
+		(true,start) -> entry :: (loop (next_start::start))
+	      |	_ -> failwith "isomorphism ends early"
+	    else [entry] in
 	  loop start
-      | (false,_) -> []
-      | _ -> failwith "parser: not possible")
+      | (false,_) -> [])
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =

@@ -428,7 +428,7 @@ let rebuilder = fun
 	    Ast0.FunDecl(get_option storage_mcode stg, ident name,
 			 string_mcode lp, parameter_list params,
 			 string_mcode rp, string_mcode lbrace,
-			 statement_dots body, string_mcode lbrace)
+			 statement_dots body, string_mcode rbrace)
 	| Ast0.Decl(decl) -> Ast0.Decl(declaration decl)
 	| Ast0.Seq(lbrace,body,rbrace) ->
 	    Ast0.Seq(string_mcode lbrace, statement_dots body,

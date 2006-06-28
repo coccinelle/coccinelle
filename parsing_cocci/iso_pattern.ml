@@ -126,6 +126,14 @@ let rec match_ident context_required pattern id =
       else return false
 
 let rec match_expr context_required pattern expr =
+  Printf.printf "matching on an expression %b %b\n"
+    (not(context_required)) (is_context expr);
+  Unparse_ast0.expression pattern;
+  Format.print_flush();
+  Printf.printf "\n";
+  Unparse_ast0.expression expr;
+  Format.print_flush();
+  Printf.printf "\n";
   match Ast0.unwrap pattern with
     Ast0.MetaExpr(name,_) -> add_binding name (Ast0.ExprTag expr)
   | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
@@ -196,7 +204,9 @@ let rec match_expr context_required pattern expr =
 	    failwith "not allowed in the pattern of an isomorphism"
 	| (Ast0.Edots(_,None),Ast0.Edots(_,_))
 	| (Ast0.Ecircles(_,None),Ast0.Ecircles(_,_))
-	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) -> return true
+	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) ->
+	    Printf.printf "dots that match\n";
+	    return true
 	| (Ast0.Edots(_,_),_) | (Ast0.Ecircles(_,_),_)
 	| (Ast0.Estars(_,_),_) -> failwith "whencode not allowed in a pattern"
 	| (Ast0.OptExp(expa),Ast0.OptExp(expb))
@@ -246,6 +256,14 @@ and match_typeC context_required pattern t =
       else return false
 
 and match_decl context_required pattern d =
+  Printf.printf "matching on a declaration %b %b\n"
+    (not(context_required)) (is_context d);
+  Unparse_ast0.declaration pattern;
+  Format.print_flush();
+  Printf.printf "\n";
+  Unparse_ast0.declaration d;
+  Format.print_flush();
+  Printf.printf "\n";
   if not(context_required) or is_context d
   then
     match (Ast0.unwrap pattern,Ast0.unwrap d) with

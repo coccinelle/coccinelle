@@ -99,8 +99,10 @@ let rec expression e =
       | Ast0.Infix(exp,op) -> mcode U.fixOp op; expression exp
       | Ast0.Unary(exp,op) -> mcode U.unaryOp op; expression exp
       | Ast0.Binary(left,op,right) ->
+	  print_string "(";
 	  expression left; print_string " "; mcode U.binaryOp op;
-	  print_string " "; expression right
+	  print_string " "; expression right;
+	  print_string ")"
       | Ast0.Paren(lp,exp,rp) ->
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp
@@ -184,7 +186,8 @@ let rec declaration d =
     (function _ ->
       match Ast0.unwrap d with
 	Ast0.Init(ty,id,eq,exp,sem) ->
-	  typeC ty; ident id; mcode print_string eq; expression exp;
+	  typeC ty; ident id; print_string " ";
+	  mcode print_string eq; print_string " ";expression exp;
 	  mcode print_string sem
       | Ast0.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl

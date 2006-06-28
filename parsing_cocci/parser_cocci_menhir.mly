@@ -988,10 +988,10 @@ iso_main:
   TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
   { List.map (function x -> Ast0.ExprTag x) (e1::el) }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
-  { List.map (function x -> Ast0.StmtTag x) (s1::sl) }
+    { List.map (function x -> Ast0.StmtTag x) (s1::sl) }
 | TIsoStatement Tlist ss1=pre_post_decl_statement_and_expression_opt
-  ssl=list(iso(pre_post_decl_statement_and_expression_opt)) EOF
-  { List.map (function x -> Ast0.DotsStmtTag x) (ss1::ssl) }
+    ssl=list(iso(pre_post_decl_statement_and_expression_opt)) EOF
+    { List.map (function x -> Ast0.DotsStmtTag x) (ss1::ssl) }
 
 %inline iso(term):
     TIso t=term { t }
