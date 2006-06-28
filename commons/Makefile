@@ -17,8 +17,10 @@ SYSLIBS=str.cma unix.cma
 # The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
+OPTFLAGS=
+
 CAMLC =ocamlc -g $(PP)
-CAMLOPT=ocamlopt  $(PP)
+CAMLOPT=ocamlopt  $(PP) $(OPTFLAGS)
 CAMLLEX = ocamllex
 CAMLYACC= ocamlyacc
 CAMLDEP = ocamldep $(PP)

@@ -2,7 +2,7 @@
 
 TARGET=c_parser
 
-SOURCES = flag.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml \
+SOURCES = flag_parsing_c.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml \
           control_flow_c.ml lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
           unparse_c.ml
 
@@ -20,7 +20,7 @@ export OCAMLRUNPARAM
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLC=ocamlc -g   $(ADDONSPATH) 
-OCAMLOPT=ocamlopt   $(ADDONSPATH)
+OCAMLOPT=ocamlopt   $(ADDONSPATH) $(OPTFLAGS)
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
@@ -36,6 +36,8 @@ all: $(TARGET).byte $(TARGET).cma
 #$(TARGET).top
 #$(TARGET).opt
 
+all.opt: $(TARGET).cmxa
+
 $(TARGET).byte: $(OBJS) $(LIBS)
 	$(OCAMLC) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
 
@@ -45,18 +47,15 @@ $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 $(TARGET).cma: $(OBJS) $(LIBS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
+$(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
+	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
 
-
-links:
-	ln -s ../flag.ml
-
-dellinks:
-	rm -f flag.ml 
 
 
 lexer_c.ml: lexer_c.mll

@@ -50,9 +50,9 @@ let print_parsing_stat_list = fun statxs ->
 
 (******************************************************************************)
 let pr2 s = 
-  if !Flag.verbose_parsing 
+  if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
-  else begin output_string Flag._chan_logfile (s ^ "\n");flush Flag._chan_logfile end
+  else ()
     
 
 (******************************************************************************)
@@ -586,7 +586,7 @@ let parse_print_error_heuristic file =
             in
          passed_tok := v::!passed_tok;
          passed_tok2 := v::!passed_tok2;
-         if !Flag.debug_lexer then pr2 (Dumper.dump v);  
+         if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
          v)
   in
 

@@ -242,8 +242,12 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
 
 
-  | A.Assignment (ea1, (opa,_,_), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
-      raise Todo
+  | A.Assignment (ea1, (opa,i1,mc1), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
+      if Pattern.equal_assignOp opa opb 
+      then
+        let ii' = tag_symbols ["fake",i1,mc1] ii  binding  in
+        B.Assignment (transform_e_e ea1 eb1 binding, opb, transform_e_e ea2 eb2 binding), typ, ii'
+      else raise NoMatch
   | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
       raise Todo
 
@@ -647,7 +651,7 @@ let rec (transform:
         pr2 "transform one node";
         let node' = transform_re_node rule_elem node binding in
         (* assert that have done something *)
-        (* assert (not (node =*= node')); *)
+        assert (not (node =*= node'));
         acc#replace_node (nodei, node')
         ) cflow
      in

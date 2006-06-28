@@ -16,7 +16,7 @@ LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_
 
 # The Caml compilers.
 CAMLC =ocamlc -g
-CAMLOPT = ocamlopt
+CAMLOPT = ocamlopt $(OPTFLAGS)
 CAMLLEX = ocamllex
 CAMLYACC= ocamlyacc -v
 CAMLDEP = ocamldep

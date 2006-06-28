@@ -12,7 +12,7 @@ open Semantic_c
 *)
 
 let warning s v = 
-  if !Flag.verbose_parsing 
+  if !Flag_parsing_c.verbose_parsing 
   then Common.warning s v
   else v
 
@@ -160,11 +160,11 @@ let fixFunc = function
 (* parse_typedef_fix2 *)
 
 let dt s () = 
-  if !Flag.debug_etdt then pr2 ("<" ^ s); 
+  if !Flag_parsing_c.debug_etdt then pr2 ("<" ^ s); 
   disable_typedef ()
 
 let et s () = 
-  if !Flag.debug_etdt then pr2 (">" ^ s);  
+  if !Flag_parsing_c.debug_etdt then pr2 (">" ^ s);  
   enable_typedef ()
 
 

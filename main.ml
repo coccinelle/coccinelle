@@ -11,12 +11,12 @@ let main () =
     let args = ref [] in
     let options = Arg.align
       [ 
-        "-no_verbose_parsing", Arg.Clear      Flag.verbose_parsing , "  ";
+        "-no_verbose_parsing", Arg.Clear      Flag_parsing_c.verbose_parsing , "  ";
         (* still?: dont forget to add -action tokens, and to get rid of no_verbose_parsing *)
-        "-debug_lexer",        Arg.Set        Flag.debug_lexer , " ";
-        "-debug_etdt",         Arg.Set        Flag.debug_etdt , "  ";
+        "-debug_lexer",        Arg.Set        Flag_parsing_c.debug_lexer , " ";
+        "-debug_etdt",         Arg.Set        Flag_parsing_c.debug_etdt , "  ";
 
-        "-debug_cfg",          Arg.Set        Flag.debug_cfg , "  ";
+        "-debug_cfg",          Arg.Set        Flag_parsing_c.debug_cfg , "  ";
 
         "-action",             Arg.Set_string Flag.action , ("   (default_value = " ^ !Flag.action ^")"
        ^ "\n\t possibles actions are:
@@ -44,7 +44,7 @@ let main () =
     (match (!Flag.action, !args) with
 
     | "tokens_c", [file] -> 
-        Flag.debug_lexer := true; Flag.verbose_parsing := true;
+        Flag_parsing_c.debug_lexer := true; Flag_parsing_c.verbose_parsing := true;
         Parse_c.tokens file +> List.iter (fun x -> pr2 (Dumper.dump x))
 
     | "parse_c", x::xs -> 

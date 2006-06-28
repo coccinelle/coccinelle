@@ -787,7 +787,25 @@ let pp_program file x =
 
 
   and pp_cocci_type env x = match x with
-  | Ast_cocci.BaseType(ty,sgn) -> raise Todo
+  | Ast_cocci.BaseType(ty,sgn) -> 
+      (match sgn with
+      | Some x -> 
+          (match term x with
+          | Ast_cocci.Signed -> pr "signed "
+          | Ast_cocci.Unsigned -> pr "unsigned "
+          )
+      | None -> ()
+      );
+      (match term ty with
+      | Ast_cocci.VoidType -> pr "void"
+      | Ast_cocci.CharType -> pr "char"
+      | Ast_cocci.ShortType -> pr "short"
+      | Ast_cocci.IntType -> pr "int"
+      | Ast_cocci.DoubleType -> pr "double"
+      | Ast_cocci.FloatType -> pr "float"
+      | Ast_cocci.LongType -> pr "long"
+      )
+      
   | Ast_cocci.Pointer(ty,star) -> pp_cocci_fullType env ty; pr (term star)
   | Ast_cocci.Array(ty,lb,size,rb) -> raise Todo
   | Ast_cocci.StructUnionName(name,kind) -> 

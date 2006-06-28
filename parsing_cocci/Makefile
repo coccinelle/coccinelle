@@ -16,7 +16,7 @@ INCLUDE_PATH = -I ../commons
 
 # The Caml compilers.
 CAMLC =ocamlc -g
-CAMLOPT = ocamlopt
+CAMLOPT = ocamlopt $(OPTFLAGS)
 CAMLLEX = ocamllex
 CAMLYACC= menhir --explain
 CAMLDEP = ocamldep

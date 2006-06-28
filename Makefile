@@ -16,8 +16,10 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
+OPTFLAGS=
+
 OCAMLC=ocamlc -g   $(ADDONSPATH)
-OCAMLOPT=ocamlopt   $(ADDONSPATH) 
+OCAMLOPT=ocamlopt   $(ADDONSPATH) $(OPTFLAGS)
 OCAMLLEX=ocamllex -ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep  $(ADDONSPATH)
@@ -72,10 +74,10 @@ MYSRC = flag.ml  \
 	misc/classic_patch.ml  \
 	cocci.ml   mytest.ml mymain.ml
 MYOBJS = $(MYSRC:.ml=.cmo)
+MYOPTOBJS = $(MYSRC:.ml=.cmx)
 MYEXEC = myspatch
 
 mystuff: rec $(MYEXEC) $(MYEXEC).top
-
 
 $(MYEXEC): $(MYOBJS) $(LIBS)
 	$(OCAMLC) -o $(MYEXEC) $(SYSLIBS) $(LIBS) $(MYOBJS)
@@ -83,21 +85,29 @@ $(MYEXEC): $(MYOBJS) $(LIBS)
 $(MYEXEC).top: $(MYOBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(MYEXEC).top $(SYSLIBS) $(LIBS) $(MYOBJS)
 
+$(MYEXEC).opt: $(MYOPTOBJS) $(LIBS:.cma=.cmxa)
+	$(OCAMLOPT) -o $(MYEXEC).opt  $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa) $(MYOPTOBJS)
+
+clean::
+	rm -f $(MYEXEC) $(MYEXEC).top $(MYEXEC).opt
 
 
+forprofiling:
+	$(MAKE) OPTFLAGS="-p" opt
+	$(MAKE) OPTFLAGS="-p" myspatch.opt
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) $(ADDONSPATH) -c $<
+	$(OCAMLC)  -c $<
 .mli.cmi:
-	$(OCAMLC) $(ADDONSPATH) -c $<
+	$(OCAMLC)  -c $<
 .ml.cmx:
-	$(OCAMLOPT) $(ADDONSPATH) -c $<
+	$(OCAMLOPT)  -c $<
 
 .ml.mldepend: 
-	$(OCAMLC) $(ADDONSPATH) -i $<
+	$(OCAMLC) -i $<
 
 clean::
 	rm -f *.cm[iox] *.o
