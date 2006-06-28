@@ -3,6 +3,8 @@ type line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT | MULTI
 
+val clear_meta: (unit -> unit) ref
+
 val add_id_meta: (string -> unit) ref
 
 val add_type_meta: (string -> unit) ref

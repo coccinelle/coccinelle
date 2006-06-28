@@ -12,80 +12,43 @@ module U = Unparse_ast0
 (* --------------------------------------------------------------------- *)
 (* Generic access to code *)
 
-type anything =
-    DotsExpr of Ast0.expression Ast0.dots
-  | DotsParam of Ast0.parameterTypeDef Ast0.dots
-  | DotsStmt of Ast0.statement Ast0.dots
-  | Ident of Ast0.ident
-  | Expr of Ast0.expression
-  | TypeC of Ast0.typeC
-  | Param of Ast0.parameterTypeDef
-  | Decl of Ast0.declaration
-  | Stmt of Ast0.statement
-  | Top of Ast0.top_level
-
-let mkDotsExpr e = DotsExpr e
-let mkDotsParam e = DotsParam e
-let mkDotsStmt e = DotsStmt e
-let mkIdent e = Ident e
-let mkExpr e = Expr e
-let mkTypeC e = TypeC e
-let mkParam e = Param e
-let mkDecl e = Decl e
-let mkStmt e = Stmt e
-let mkTop e = Top e
-
 let set_mcodekind x mcodekind =
   match x with
-    DotsExpr(d) -> Ast0.set_mcodekind d mcodekind
-  | DotsParam(d) -> Ast0.set_mcodekind d mcodekind
-  | DotsStmt(d) -> Ast0.set_mcodekind d mcodekind
-  | Ident(d) -> Ast0.set_mcodekind d mcodekind
-  | Expr(d) -> Ast0.set_mcodekind d mcodekind
-  | TypeC(d) -> Ast0.set_mcodekind d mcodekind
-  | Param(d) -> Ast0.set_mcodekind d mcodekind
-  | Decl(d) -> Ast0.set_mcodekind d mcodekind
-  | Stmt(d) -> Ast0.set_mcodekind d mcodekind
-  | Top(d) -> Ast0.set_mcodekind d mcodekind
+    Ast0.DotsExprTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
 
 let set_index x index =
   match x with
-    DotsExpr(d) -> Ast0.set_index d index
-  | DotsParam(d) -> Ast0.set_index d index
-  | DotsStmt(d) -> Ast0.set_index d index
-  | Ident(d) -> Ast0.set_index d index
-  | Expr(d) -> Ast0.set_index d index
-  | TypeC(d) -> Ast0.set_index d index
-  | Param(d) -> Ast0.set_index d index
-  | Decl(d) -> Ast0.set_index d index
-  | Stmt(d) -> Ast0.set_index d index
-  | Top(d) -> Ast0.set_index d index
-
-let unparse_anything x =
-  (match x with
-    DotsExpr(d) -> U.expression_dots d
-  | DotsParam(d) -> U.parameter_list d
-  | DotsStmt(d) -> U.statement_dots d
-  | Ident(d) -> U.ident d
-  | Expr(d) -> U.expression d
-  | TypeC(d) -> U.typeC d
-  | Param(d) -> U.parameterTypeDef d
-  | Decl(d) -> U.declaration d
-  | Stmt(d) -> U.statement "" d
-  | Top(d) -> U.top_level d);
-  Format.print_flush()
+    Ast0.DotsExprTag(d) -> Ast0.set_index d index
+  | Ast0.DotsParamTag(d) -> Ast0.set_index d index
+  | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
+  | Ast0.IdentTag(d) -> Ast0.set_index d index
+  | Ast0.ExprTag(d) -> Ast0.set_index d index
+  | Ast0.TypeCTag(d) -> Ast0.set_index d index
+  | Ast0.ParamTag(d) -> Ast0.set_index d index
+  | Ast0.DeclTag(d) -> Ast0.set_index d index
+  | Ast0.StmtTag(d) -> Ast0.set_index d index
+  | Ast0.TopTag(d) -> Ast0.set_index d index
 
 let get_index = function
-    DotsExpr(d) -> Index.expression_dots d
-  | DotsParam(d) -> Index.parameter_dots d
-  | DotsStmt(d) -> Index.statement_dots d
-  | Ident(d) -> Index.ident d
-  | Expr(d) -> Index.expression d
-  | TypeC(d) -> Index.typeC d
-  | Param(d) -> Index.parameterTypeDef d
-  | Decl(d) -> Index.declaration d
-  | Stmt(d) -> Index.statement d
-  | Top(d) -> Index.top_level d
+    Ast0.DotsExprTag(d) -> Index.expression_dots d
+  | Ast0.DotsParamTag(d) -> Index.parameter_dots d
+  | Ast0.DotsStmtTag(d) -> Index.statement_dots d
+  | Ast0.IdentTag(d) -> Index.ident d
+  | Ast0.ExprTag(d) -> Index.expression d
+  | Ast0.TypeCTag(d) -> Index.typeC d
+  | Ast0.ParamTag(d) -> Index.parameterTypeDef d
+  | Ast0.DeclTag(d) -> Index.declaration d
+  | Ast0.StmtTag(d) -> Index.statement d
+  | Ast0.TopTag(d) -> Index.top_level d
 
 (* --------------------------------------------------------------------- *)
 
@@ -201,7 +164,7 @@ let classify all_marked table code =
 
   (* no whencode in plus tree so have to drop it *)
   let expression r k e =
-    compute_result mkExpr e
+    compute_result Ast0.expr e
       (match Ast0.unwrap e with
 	Ast0.Edots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Edots(dots,None)))
@@ -219,7 +182,7 @@ let classify all_marked table code =
       |	_ -> k e) in
 
   let statement r k s =
-    compute_result mkStmt s
+    compute_result Ast0.stmt s
       (match Ast0.unwrap s with
 	Ast0.Dots(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Dots(dots,None)))
@@ -240,10 +203,11 @@ let classify all_marked table code =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      (do_nothing mkDotsExpr) (do_nothing mkDotsParam) (do_nothing mkDotsStmt)
-      (do_nothing mkIdent) expression
-      (do_nothing mkTypeC) (do_nothing mkParam) (do_nothing mkDecl) statement
-      (do_nothing mkTop) in
+      (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsParam)
+      (do_nothing Ast0.dotsStmt)
+      (do_nothing Ast0.ident) expression
+      (do_nothing Ast0.typeC) (do_nothing Ast0.param) (do_nothing Ast0.decl)
+      statement (do_nothing Ast0.top) in
   combiner.V0.combiner_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -425,16 +389,17 @@ let rec equal_top_level t1 t2 =
 
 let root_equal e1 e2 =
   match (e1,e2) with
-    (DotsExpr(d1),DotsExpr(d2)) -> dots equal_expression d1 d2
-  | (DotsParam(d1),DotsParam(d2)) -> dots equal_parameterTypeDef d1 d2
-  | (DotsStmt(d1),DotsStmt(d2)) -> dots equal_statement d1 d2
-  | (Ident(i1),Ident(i2)) -> equal_ident i1 i2
-  | (Expr(e1),Expr(e2)) -> equal_expression e1 e2
-  | (TypeC(t1),TypeC(t2)) -> equal_typeC t1 t2
-  | (Param(p1),Param(p2)) -> equal_parameterTypeDef p1 p2
-  | (Decl(d1),Decl(d2)) -> equal_declaration d1 d2
-  | (Stmt(s1),Stmt(s2)) -> equal_statement s1 s2
-  | (Top(t1),Top(t2)) -> equal_top_level t1 t2
+    (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) -> dots equal_expression d1 d2
+  | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
+      dots equal_parameterTypeDef d1 d2
+  | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
+  | (Ast0.IdentTag(i1),Ast0.IdentTag(i2)) -> equal_ident i1 i2
+  | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
+  | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
+  | (Ast0.ParamTag(p1),Ast0.ParamTag(p2)) -> equal_parameterTypeDef p1 p2
+  | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
+  | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
+  | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
   | _ -> false
 
 let default_context _ =
@@ -463,9 +428,9 @@ let traverse minus_table plus_table =
 (* the first int list is the tokens in the node, the second is the tokens
 in the descendents *)
 let minus_table =
-  (Hashtbl.create(50) : (int list, anything * int list list) Hashtbl.t)
+  (Hashtbl.create(50) : (int list, Ast0.anything * int list list) Hashtbl.t)
 let plus_table =
-  (Hashtbl.create(50) : (int list, anything * int list list) Hashtbl.t)
+  (Hashtbl.create(50) : (int list, Ast0.anything * int list list) Hashtbl.t)
 
 let iscode t =
   match Ast0.unwrap t with

@@ -117,6 +117,7 @@ let pointerify ty m offset =
     ty m
 
 let startofs _ = -1
+
 %}
 
 
@@ -177,6 +178,8 @@ let startofs _ = -1
 %token <Data.line_type * int * int * int> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * (Data.line_type * int * int * int)> TAssign
 
+%token TIso TIsoExpression TIsoStatement
+
 %token TInvalid
 
 /* operator precedence */
@@ -199,6 +202,9 @@ let startofs _ = -1
 
 %start meta_main
 %type <Ast_cocci.metavar list> meta_main
+
+%start iso_main
+%type <Ast0_cocci.anything list> iso_main
 
 %%
 
@@ -972,3 +978,20 @@ no_dot_start_stars(grammar,when_grammar,ender):
   g=grammar dg=list(pair(dotter,grammar))
   { function dot_builder ->
       g :: (List.concat(List.map (function (d,g) -> [dot_builder d;g]) dg)) }
+
+/*****************************************************************************
+*
+*
+*****************************************************************************/
+
+iso_main:
+  TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
+  { List.map (function x -> Ast0.ExprTag x) (e1::el) }
+| TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
+  { List.map (function x -> Ast0.StmtTag x) (s1::sl) }
+| TIsoStatement Tlist ss1=pre_post_decl_statement_and_expression_opt
+  ssl=list(iso(pre_post_decl_statement_and_expression_opt)) EOF
+  { List.map (function x -> Ast0.DotsStmtTag x) (ss1::ssl) }
+
+%inline iso(term):
+    TIso t=term { t }

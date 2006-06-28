@@ -2,9 +2,10 @@
 (* Entry point *)
 
 let file = ref ""
+let isofile = ref None
 let verbose = ref true
 
-let anonymous s = file := s
+let anonymous s = if !file = "" then file := s else isofile := Some s
 
 let speclist = [("-v", Arg.Set verbose, "print parse result")]
 
@@ -17,7 +18,7 @@ let main _ =
   Arg.parse speclist anonymous usage;
   (* Parse_cocci.parse_and_merge !file; *)
   if !file = "" then failwith "filename required";
-  Parse_cocci.process !file !verbose
+  Parse_cocci.process !file !isofile !verbose
   (* if !verbose then Unparse_cocci.unparse minus; *)
   end
 

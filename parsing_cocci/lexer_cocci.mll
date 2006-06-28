@@ -118,6 +118,10 @@ let id_tokens lexbuf =
   | "do" ->         TDo     (get_current_line_type lexbuf)
   | "for" ->        TFor    (get_current_line_type lexbuf)
   | "return" ->     TReturn (get_current_line_type lexbuf)
+
+  | "Expression"     -> TIsoExpression
+  | "Statement"      -> TIsoStatement
+
   | s ->
       try (Hashtbl.find metavariables s) (get_current_line_type lexbuf)
       with Not_found -> TIdent (s,(get_current_line_type lexbuf))
@@ -126,6 +130,7 @@ let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
 
 let init _ =
+  Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
   Data.add_id_meta :=
     (let fn name clt = TMetaId(name,clt) in
     (function name -> Hashtbl.replace metavariables name (fn name)));
@@ -373,6 +378,7 @@ rule token = parse
 		     TFloat(x,(get_current_line_type lexbuf)) }
   | (decimal as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
 
+  | "<=>"       { TIso }
 
   | eof            { EOF }
 

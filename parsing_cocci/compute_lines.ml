@@ -94,7 +94,7 @@ let dots is_dots prev fn d =
   | (_,Ast0.STARS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.STARS l) lstart lend
-	
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 	
@@ -153,7 +153,8 @@ let rec expression e =
       let right = expression right in
       mkres e (Ast0.Binary(left,op,right)) left right
   | Ast0.Paren(lp,exp,rp) ->
-      mkres e (Ast0.Paren(lp,expression exp,rp)) (promote_mcode lp) (promote_mcode rp)
+      mkres e (Ast0.Paren(lp,expression exp,rp))
+	(promote_mcode lp) (promote_mcode rp)
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
       let exp1 = expression exp1 in
       let exp2 = expression exp2 in
@@ -207,6 +208,8 @@ let rec expression e =
   | Ast0.MultiExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.MultiExp(exp)) exp exp
+
+and expression_dots x = dots is_exp_dots None expression x
 	
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -302,6 +305,9 @@ let rec parameterTypeDef p =
       mkres p (Ast0.UniqueParam(res)) res res
 	
 let parameter_list prev = dots is_param_dots prev parameterTypeDef
+
+(* for export *)
+let parameter_dots x = dots is_param_dots None parameterTypeDef x
     
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -406,24 +412,26 @@ let rec statement s =
       let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
   | Ast0.MultiStm(stm) ->
       let stm = statement stm in mkres s (Ast0.MultiStm(stm)) stm stm
+
+let statement_dots x = dots is_stm_dots None statement x
 	
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
 	
 let top_level t =
-    (match Ast0.unwrap t with
-      Ast0.DECL(decl) ->
-	let decl = declaration decl in mkres t (Ast0.DECL(decl)) decl decl
-    | Ast0.INCLUDE(inc,s) -> t
-    | Ast0.FILEINFO(old_file,new_file) -> t
-    | Ast0.FUNCTION(stmt) ->
-	let stmt = statement stmt in mkres t (Ast0.FUNCTION(stmt)) stmt stmt
-    | Ast0.CODE(rule_elem_dots) ->
-	let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
-	mkres t (Ast0.CODE(rule_elem_dots)) rule_elem_dots rule_elem_dots
-    | Ast0.ERRORWORDS(exps) -> t
-    | Ast0.OTHER(_) -> failwith "eliminated by top_level")
+  match Ast0.unwrap t with
+    Ast0.DECL(decl) ->
+      let decl = declaration decl in mkres t (Ast0.DECL(decl)) decl decl
+  | Ast0.INCLUDE(inc,s) -> t
+  | Ast0.FILEINFO(old_file,new_file) -> t
+  | Ast0.FUNCTION(stmt) ->
+      let stmt = statement stmt in mkres t (Ast0.FUNCTION(stmt)) stmt stmt
+  | Ast0.CODE(rule_elem_dots) ->
+      let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
+      mkres t (Ast0.CODE(rule_elem_dots)) rule_elem_dots rule_elem_dots
+  | Ast0.ERRORWORDS(exps) -> t
+  | Ast0.OTHER(_) -> failwith "eliminated by top_level"
 	
 (* --------------------------------------------------------------------- *)
 (* Entry points *)

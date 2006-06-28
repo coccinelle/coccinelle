@@ -50,6 +50,7 @@ type rebuilder =
       rebuilder_expression : Ast0_cocci.expression inout;
       rebuilder_typeC : Ast0_cocci.typeC inout;
       rebuilder_declaration : Ast0_cocci.declaration inout;
+      rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;
       rebuilder_top_level : Ast0_cocci.top_level inout;
@@ -75,11 +76,14 @@ val rebuilder :
 		    (Ast_cocci.sign rmcode) ->
 		      (Ast_cocci.structUnion rmcode) ->
 			(Ast_cocci.storage rmcode) ->
-			  (Ast0_cocci.ident rcode) ->
-			    (Ast0_cocci.expression rcode) ->
-			      (Ast0_cocci.typeC rcode) ->
-				(Ast0_cocci.parameterTypeDef rcode) ->
-				  (Ast0_cocci.declaration rcode) ->
-				    (Ast0_cocci.statement rcode) ->
-				      (Ast0_cocci.top_level rcode) ->
-					rebuilder
+			  (Ast0_cocci.expression Ast0_cocci.dots rcode) ->
+			    (Ast0_cocci.parameterTypeDef Ast0_cocci.dots rcode) ->
+			      (Ast0_cocci.statement Ast0_cocci.dots rcode) ->
+				(Ast0_cocci.ident rcode) ->
+				  (Ast0_cocci.expression rcode) ->
+				    (Ast0_cocci.typeC rcode) ->
+				      (Ast0_cocci.parameterTypeDef rcode) ->
+					(Ast0_cocci.declaration rcode) ->
+					  (Ast0_cocci.statement rcode) ->
+					    (Ast0_cocci.top_level rcode) ->
+					      rebuilder

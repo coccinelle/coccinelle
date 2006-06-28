@@ -54,8 +54,8 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   
 
 (* --------------------------------------------------------------------- *)
-let sp_from_file file    = Parse_cocci.process_for_ctl file false
-let spbis_from_file file = Parse_cocci.process file false
+let sp_from_file file    = Parse_cocci.process_for_ctl file None false
+let spbis_from_file file = Parse_cocci.process file None false
 
 let (rule_elem_from_string: string -> Ast_cocci.rule_elem) = fun s -> 
   begin

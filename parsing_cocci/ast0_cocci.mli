@@ -203,13 +203,41 @@ and rule = top_level list
 
 (* --------------------------------------------------------------------- *)
 
+type anything =
+    DotsExprTag of expression dots
+  | DotsParamTag of parameterTypeDef dots
+  | DotsStmtTag of statement dots
+  | IdentTag of ident
+  | ExprTag of expression
+  | TypeCTag of typeC
+  | ParamTag of parameterTypeDef
+  | DeclTag of declaration
+  | StmtTag of statement
+  | TopTag of top_level
+
+val dotsExpr : expression dots -> anything
+val dotsParam : parameterTypeDef dots -> anything
+val dotsStmt : statement dots -> anything
+val ident : ident -> anything
+val expr : expression -> anything
+val typeC : typeC -> anything
+val param : parameterTypeDef -> anything
+val decl : declaration -> anything
+val stmt : statement -> anything
+val top : top_level -> anything
+
+(* --------------------------------------------------------------------- *)
+
 val undots : 'a dots -> 'a list
 
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
 val default_info : unit -> info
+val default_befaft : unit -> mcodekind
+val context_befaft : unit -> mcodekind
 val wrap : 'a -> 'a wrap
+val context_wrap : 'a -> 'a wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'a -> 'a wrap

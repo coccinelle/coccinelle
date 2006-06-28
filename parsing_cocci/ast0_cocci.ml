@@ -204,9 +204,34 @@ and top_level = base_top_level wrap
 and rule = top_level list
 
 (* --------------------------------------------------------------------- *)
+
+type anything =
+    DotsExprTag of expression dots
+  | DotsParamTag of parameterTypeDef dots
+  | DotsStmtTag of statement dots
+  | IdentTag of ident
+  | ExprTag of expression
+  | TypeCTag of typeC
+  | ParamTag of parameterTypeDef
+  | DeclTag of declaration
+  | StmtTag of statement
+  | TopTag of top_level
+
+let dotsExpr x = DotsExprTag x
+let dotsParam x = DotsParamTag x
+let dotsStmt x = DotsStmtTag x
+let ident x = IdentTag x
+let expr x = ExprTag x
+let typeC x = TypeCTag x
+let param x = ParamTag x
+let decl x = DeclTag x
+let stmt x = StmtTag x
+let top x = TopTag x
+
+(* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
-let default_info _ =
+let default_info _ = (* why is this a function? *)
   { line_start = -1; line_end = -1;
     logical_start = -1; logical_end = -1;
     attachable_start = true; attachable_end = true;
@@ -215,8 +240,11 @@ let default_info _ =
 
 let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
+let context_befaft _ =
+  CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
 let wrap x = (x,default_info(),ref (-1),ref (default_befaft()))
+let context_wrap x = (x,default_info(),ref (-1),ref (context_befaft()))
 let unwrap (x,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
 let rewrap (_,info,index,mcodekind) x = (x,info,index,mcodekind)

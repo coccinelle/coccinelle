@@ -325,6 +325,20 @@ let top_level t =
 let rule =
   print_between (function _ -> force_newline(); force_newline()) top_level
 
+let unparse_anything x =
+  (match x with
+    Ast0.DotsExprTag(d) -> expression_dots d
+  | Ast0.DotsParamTag(d) -> parameter_list d
+  | Ast0.DotsStmtTag(d) -> statement_dots d
+  | Ast0.IdentTag(d) -> ident d
+  | Ast0.ExprTag(d) -> expression d
+  | Ast0.TypeCTag(d) -> typeC d
+  | Ast0.ParamTag(d) -> parameterTypeDef d
+  | Ast0.DeclTag(d) -> declaration d
+  | Ast0.StmtTag(d) -> statement "" d
+  | Ast0.TopTag(d) -> top_level d);
+  print_flush()
+
 let unparse x =
   print_string "\n@@\n@@";
   force_newline();

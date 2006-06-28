@@ -22,24 +22,17 @@ let collect_context e =
       Ast0.CONTEXT(_) -> (builder e) :: (k e)
     | _ -> k e in
 
-  let dotsExpr x = CN.DotsExpr x in
-  let dotsParam x = CN.DotsParam x in
-  let dotsStmt x = CN.DotsStmt x in
-  let ident x = CN.Ident x in
-  let expr x = CN.Expr x in
-  let typeC x = CN.TypeC x in
-  let param x = CN.Param x in
-  let decl x = CN.Decl x in
-  let stmt x = CN.Stmt x in
 
-  let topfn r k e = CN.Top(e) :: (k e) in
+  let topfn r k e = Ast0.TopTag(e) :: (k e) in
 
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      (donothing dotsExpr) (donothing dotsParam) (donothing dotsStmt)
-      (donothing ident) (donothing expr) (donothing typeC)
-      (donothing param) (donothing decl) (donothing stmt) topfn in
+      (donothing Ast0.dotsExpr) (donothing Ast0.dotsParam)
+      (donothing Ast0.dotsStmt)
+      (donothing Ast0.ident) (donothing Ast0.expr) (donothing Ast0.typeC)
+      (donothing Ast0.param) (donothing Ast0.decl) (donothing Ast0.stmt)
+      topfn in
   res.V0.combiner_top_level e
 
 (* --------------------------------------------------------------------- *)
@@ -61,16 +54,16 @@ let create_root_token_table minus =
       function (node,_) ->
 	let key =
 	  match node with
-	    CN.DotsExpr(d) -> Ast0.get_index d
-	  | CN.DotsParam(d) -> Ast0.get_index d
-	  | CN.DotsStmt(d) -> Ast0.get_index d
-	  | CN.Ident(d) -> Ast0.get_index d
-	  | CN.Expr(d) -> Ast0.get_index d
-	  | CN.TypeC(d) -> Ast0.get_index d
-	  | CN.Param(d) -> Ast0.get_index d
-	  | CN.Decl(d) -> Ast0.get_index d
-	  | CN.Stmt(d) -> Ast0.get_index d
-	  | CN.Top(d) -> Ast0.get_index d in
+	    Ast0.DotsExprTag(d) -> Ast0.get_index d
+	  | Ast0.DotsParamTag(d) -> Ast0.get_index d
+	  | Ast0.DotsStmtTag(d) -> Ast0.get_index d
+	  | Ast0.IdentTag(d) -> Ast0.get_index d
+	  | Ast0.ExprTag(d) -> Ast0.get_index d
+	  | Ast0.TypeCTag(d) -> Ast0.get_index d
+	  | Ast0.ParamTag(d) -> Ast0.get_index d
+	  | Ast0.DeclTag(d) -> Ast0.get_index d
+	  | Ast0.StmtTag(d) -> Ast0.get_index d
+	  | Ast0.TopTag(d) -> Ast0.get_index d in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
   List.iter
@@ -111,34 +104,34 @@ let call_collect_minus context_nodes :
     (int * (minus_join_point * Ast0.info * Ast0.mcodekind) list) list =
   List.map
     (function
-	CN.DotsExpr(e) ->
+	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_expression_dots e)
-      | CN.DotsParam(e) ->
+      | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_parameter_list e)
-      | CN.DotsStmt(e) ->
+      | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_statement_dots e)
-      | CN.Ident(e) ->
+      | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_ident e)
-      | CN.Expr(e) ->
+      | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_expression e)
-      | CN.TypeC(e) ->
+      | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_typeC e)
-      | CN.Param(e) ->
+      | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_parameter e)
-      | CN.Decl(e) ->
+      | Ast0.DeclTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_declaration e)
-      | CN.Stmt(e) ->
+      | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_statement e)
-      | CN.Top(e) ->
+      | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e))
     context_nodes
@@ -235,34 +228,34 @@ let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.anything) list) list =
   List.map
     (function
-	CN.DotsExpr(e) ->
+	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_expression_dots e)
-      | CN.DotsParam(e) ->
+      | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_parameter_list e)
-      | CN.DotsStmt(e) ->
+      | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_statement_dots e)
-      | CN.Ident(e) ->
+      | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_ident e)
-      | CN.Expr(e) ->
+      | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_expression e)
-      | CN.TypeC(e) ->
+      | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_typeC e)
-      | CN.Param(e) ->
+      | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_parameter e)
-      | CN.Decl(e) ->
+      | Ast0.DeclTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_declaration e)
-      | CN.Stmt(e) ->
+      | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_statement e)
-      | CN.Top(e) ->
+      | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e))
     context_nodes

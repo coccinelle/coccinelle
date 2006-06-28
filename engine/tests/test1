@@ -1,4 +1,14 @@
 @@
+identifier buffer;
+identifier hostptr;
+@@
+  p(
++      int hostptr,
+       char buffer) {
+-   int hostptr;
+  }
+
+@@
 expression X,Y;
 @@
 

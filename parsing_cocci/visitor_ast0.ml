@@ -257,6 +257,7 @@ type rebuilder =
       rebuilder_expression : Ast0_cocci.expression inout;
       rebuilder_typeC : Ast0_cocci.typeC inout;
       rebuilder_declaration : Ast0_cocci.declaration inout;
+      rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;
       rebuilder_top_level : Ast0_cocci.top_level inout;
@@ -273,17 +274,36 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder = fun
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    dotsexprfn dotsparamfn dotsstmtfn
     identfn exprfn tyfn paramfn declfn stmtfn topfn ->
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
-  let dots fn d =
-    Ast0.rewrap d
-      (match Ast0.unwrap d with
-	Ast0.DOTS(l) -> Ast0.DOTS(List.map fn l)
-      | Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map fn l)
-      | Ast0.STARS(l) -> Ast0.STARS(List.map fn l)) in
-  let rec ident i =
+  let rec expression_dots d =
+    let k d =
+      Ast0.rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) -> Ast0.DOTS(List.map expression l)
+	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map expression l)
+	| Ast0.STARS(l) -> Ast0.STARS(List.map expression l)) in
+    dotsexprfn all_functions k d
+  and parameter_list d =
+    let k d =
+      Ast0.rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) -> Ast0.DOTS(List.map parameterTypeDef l)
+	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map parameterTypeDef l)
+	| Ast0.STARS(l) -> Ast0.STARS(List.map parameterTypeDef l)) in
+    dotsparamfn all_functions k d
+  and statement_dots d =
+    let k d =
+      Ast0.rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) -> Ast0.DOTS(List.map statement l)
+	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map statement l)
+	| Ast0.STARS(l) -> Ast0.STARS(List.map statement l)) in
+    dotsstmtfn all_functions k d
+  and ident i =
     let k i =
       Ast0.rewrap i
 	(match Ast0.unwrap i with
@@ -302,7 +322,7 @@ let rebuilder = fun
 	  Ast0.Ident(id) -> Ast0.Ident(ident id)
 	| Ast0.Constant(const) -> Ast0.Constant(const_mcode const)
 	| Ast0.FunCall(fn,lp,args,rp) ->
-	    Ast0.FunCall(expression fn,string_mcode lp,dots expression args,
+	    Ast0.FunCall(expression fn,string_mcode lp,expression_dots args,
 			 string_mcode rp)
 	| Ast0.Assignment(left,op,right) ->
 	    Ast0.Assignment(expression left,assign_mcode op,expression right)
@@ -340,7 +360,7 @@ let rebuilder = fun
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
 			  string_mcode ender)
 	| Ast0.NestExpr(starter,expr_dots,ender) ->
-	    Ast0.NestExpr(string_mcode starter,dots expression expr_dots,
+	    Ast0.NestExpr(string_mcode starter,expression_dots expr_dots,
 			  string_mcode ender)
 	| Ast0.Edots(dots,whencode) ->
 	    Ast0.Edots(string_mcode dots, get_option expression whencode)
@@ -400,7 +420,6 @@ let rebuilder = fun
 	| Ast0.UniqueParam(param) ->
 	    Ast0.UniqueParam(parameterTypeDef param)) in
     paramfn all_functions k p
-  and parameter_list l = dots parameterTypeDef l
   and statement s =
     let k s =
       Ast0.rewrap s
@@ -409,10 +428,10 @@ let rebuilder = fun
 	    Ast0.FunDecl(get_option storage_mcode stg, ident name,
 			 string_mcode lp, parameter_list params,
 			 string_mcode rp, string_mcode lbrace,
-			 dots statement body, string_mcode lbrace)
+			 statement_dots body, string_mcode lbrace)
 	| Ast0.Decl(decl) -> Ast0.Decl(declaration decl)
 	| Ast0.Seq(lbrace,body,rbrace) ->
-	    Ast0.Seq(string_mcode lbrace, dots statement body,
+	    Ast0.Seq(string_mcode lbrace, statement_dots body,
 		     string_mcode rbrace)
 	| Ast0.ExprStatement(exp,sem) ->
 	    Ast0.ExprStatement(expression exp, string_mcode sem)
@@ -444,18 +463,18 @@ let rebuilder = fun
 	| Ast0.MetaStmtList(name) -> Ast0.MetaStmtList(string_mcode name)
 	| Ast0.Disj(starter,statement_dots_list,ender) ->
 	    Ast0.Disj(string_mcode starter,
-		      List.map (dots statement) statement_dots_list,
+		      List.map statement_dots statement_dots_list,
 		      string_mcode ender)
-	| Ast0.Nest(starter,statement_dots,ender) ->
-	    Ast0.Nest(string_mcode starter,dots statement statement_dots,
+	| Ast0.Nest(starter,stmt_dots,ender) ->
+	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
 		      string_mcode ender)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.Dots(d,whencode) ->
-	    Ast0.Dots(string_mcode d, get_option (dots statement) whencode)
+	    Ast0.Dots(string_mcode d, get_option statement_dots whencode)
 	| Ast0.Circles(d,whencode) ->
-	    Ast0.Circles(string_mcode d, get_option (dots statement) whencode)
+	    Ast0.Circles(string_mcode d, get_option statement_dots whencode)
 	| Ast0.Stars(d,whencode) ->
-	    Ast0.Stars(string_mcode d, get_option (dots statement) whencode)
+	    Ast0.Stars(string_mcode d, get_option statement_dots whencode)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
@@ -471,17 +490,16 @@ let rebuilder = fun
 	    Ast0.FILEINFO(string_mcode old_file, string_mcode new_file)
 	| Ast0.FUNCTION(statement_dots) ->
 	    Ast0.FUNCTION(statement statement_dots)
-	| Ast0.CODE(statement_dots) -> Ast0.CODE(dots statement statement_dots)
+	| Ast0.CODE(stmt_dots) -> Ast0.CODE(statement_dots stmt_dots)
 	| Ast0.ERRORWORDS(exps) -> Ast0.ERRORWORDS(List.map expression exps)
 	| Ast0.OTHER(_) -> failwith "unexpected code") in
     topfn all_functions k t
-  and expression_dots e = dots expression e
-  and statement_dots s = dots statement s
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
+      rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_list;
       rebuilder_statement = statement;
       rebuilder_top_level = top_level;

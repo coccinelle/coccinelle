@@ -142,13 +142,17 @@ let token2c (tok,_) =
   | PC.TInvalid -> "invalid"
   | PC.TFunDecl(clt) -> "fundecl"
 
+  | PC.TIso -> "<=>"
+  | PC.TIsoExpression -> "Expression"
+  | PC.TIsoStatement -> "Statement"
+
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
 
 let wrap_lexbuf_info lexbuf =
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 
-let tokens_all table file get_ats lexbuf :
+let tokens_all table file get_ats lexbuf end_markers :
     (bool * ((PC.token * (string * (int * int) * (int * int))) list)) =
   try 
     let rec aux () = 
@@ -161,7 +165,7 @@ let tokens_all table file get_ats lexbuf :
 	if get_ats
 	then failwith "unexpected end of file in a metavariable declaration"
 	else (false,[(result,info)])
-      else if result = PC.TArobArob
+      else if List.mem result end_markers
       then (true,[(result,info)])
       else
 	let (more,rest) = aux() in
@@ -238,6 +242,9 @@ let split_token ((tok,_) as t) =
   | PC.TPtVirg(clt) -> split t clt
 
   | PC.EOF | PC.TInvalid -> ([t],[t])
+
+  | PC.TIso | PC.TIsoExpression | PC.TIsoStatement ->
+      failwith "unexpected tokens"
 
 let split_token_stream tokens =
   let rec loop = function
@@ -443,20 +450,23 @@ let parse_one parsefn file toks =
 
   | e -> raise e
 
+let prepare_tokens tokens = insert_line_end (find_function_names tokens)
+
 let parse file =
   Lexer_cocci.init ();
   let table = Common.full_charpos_to_pos file in
   let lexbuf = Lexing.from_channel (open_in file) in
-  match tokens_all table file false lexbuf with
+  match tokens_all table file false lexbuf [PC.TArobArob] with 
     (true,[(PC.TArobArob,_)]) -> (* read over initial @@ *)
       let rec loop _ =
 	(* get metavariable declarations *)
-	let (more,tokens) = tokens_all table file true lexbuf in
+	let (more,tokens) =
+	  tokens_all table file true lexbuf [PC.TArobArob] in
 	let metavars = parse_one PC.meta_main file tokens in
 	(* get transformation rules *)
-	let (more,tokens) = tokens_all table file false lexbuf in
-	let tokens = find_function_names tokens in
-	let tokens = insert_line_end tokens in
+	let (more,tokens) =
+	  tokens_all table file false lexbuf [PC.TArobArob] in
+	let tokens = prepare_tokens tokens in
 	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	(*
 	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
@@ -490,10 +500,43 @@ let parse file =
   | (false,[(PC.TArobArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n"
 
+let parse_iso = function
+    None -> []
+  | Some file ->
+      Lexer_cocci.init ();
+      let table = Common.full_charpos_to_pos file in
+      let lexbuf = Lexing.from_channel (open_in file) in
+      let delim = [PC.TIsoStatement;PC.TIsoExpression] in
+      (match tokens_all table file false lexbuf delim with
+	(true,[start]) ->
+	  let rec loop start =
+	    (* get metavariable declarations *)
+	    let (more,tokens) = (* skip to first @@ *)
+	      tokens_all table file true lexbuf [PC.TArobArob] in
+	    if not(List.length tokens = 1) then failwith "bad iso meta decl";
+	    let (more,tokens) =
+	      tokens_all table file true lexbuf [PC.TArobArob] in
+	    let _ = parse_one PC.meta_main file tokens in
+	    (* get transformation rules *)
+	    let (more,tokens) = tokens_all table file false lexbuf delim in
+	    let next_start = List.hd(List.rev tokens) in
+	    let dummy_info = ("",(-1,-1),(-1,-1)) in
+	    let tokens =
+	      List.rev((PC.EOF,dummy_info)::(List.tl(List.rev tokens))) in
+	    let tokens = prepare_tokens (start::tokens) in
+	    let entry = parse_one PC.iso_main file tokens in
+	    if more then entry::(loop next_start) else [entry] in
+	  loop start
+      | (false,_) -> []
+      | _ -> failwith "parser: not possible")
+
 (* parse to ast0 and then convert to ast *)
-let process file verbose =
+let process file isofile verbose =
   try
     let (minus,plus) = parse file in
+    (!Data.clear_meta)();
+    let isos = parse_iso isofile in
+    (!Data.clear_meta)();
     List.map2
       (function (minus, metavars) ->
 	function (plus, metavars) ->
@@ -502,12 +545,13 @@ let process file verbose =
 	  let minus = Arity.minus_arity minus in
 	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	  Insert_plus.insert_plus m p;
+	  let minus = Iso_pattern.apply_isos isos minus in
 	  let minus_ast = Ast0toast.ast0toast minus in
 	  if verbose then Unparse_cocci.unparse minus_ast;
 	  (metavars, minus_ast))
       minus plus
   with Failure s -> Printf.printf "%s" s; []
 
-let process_for_ctl file verbose =
-  let (_,ast_list) = List.split(process file verbose) in
+let process_for_ctl file isofile verbose =
+  let (_,ast_list) = List.split(process file isofile verbose) in
   ast_list
