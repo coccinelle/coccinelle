@@ -21,37 +21,6 @@ module type SUBST =
   end
 ;;
 
-(* Simple env.: meta.vars and values are strings *)
-(* FIX ME: move to test_ctl.ml *)
-module SIMPLE_ENV =
-  struct
-    type value = string;;
-    type mvar = string;;
-    let eq_mvar x x' = x = x';;
-    let eq_val v v' = v = v';;
-    let merge_val v v' = v;;
-  end
-;;
-
-(* Example env.: more elaborate mvars and values *)
-(* FIX ME: remove *)
-module EXAMPLE_ENV =
-  struct
-    type value =       
-      | PredVal of string
-      | CodeVal of string
-      | OtherVal of string;;
-    type mvar =
-      | Modif of string
-      | UnModif of string
-      | Control;;
-    let eq_mvar x x' = x = x';;
-    let eq_val v v' = v = v';;
-    let merge_val v v' = v;;		(* ok, since we are using '=' for eq. *)
-  end
-;;
-
-
 (* ********************************************************************** *)
 (* Module: GRAPH (control flow graphs / model)                            *)
 (* ********************************************************************** *)
@@ -65,15 +34,6 @@ module type GRAPH =
 ;;
 
 module OGRAPHEXT_GRAPH = 
-  struct
-    type node = int;;
-    type cfg = (string,unit) Ograph_extended.ograph_extended;;
-    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
-  end
-;;
-
-(* FIX ME: remove *)
-module SIMPLE_CFG = 
   struct
     type node = int;;
     type cfg = (string,unit) Ograph_extended.ograph_extended;;
