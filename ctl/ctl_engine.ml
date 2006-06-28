@@ -479,6 +479,21 @@ let satAF m s =
 
 let satEX m s = pre_exist m s;;
 
+(* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
+let satAU m s1 s2 = 
+  let f y = triples_union s2 (triples_conj s1 (pre_forall m y)) in 
+    setfix f []
+;;
+
+(* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
+let satEU m s1 s2 = 
+  let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
+    setfix f []
+;;
+
+
+
+
 let rec sat ((grp,label,states) as m) phi =
   match phi with
     False              -> []
@@ -489,14 +504,16 @@ let rec sat ((grp,label,states) as m) phi =
   | And(phi1,phi2)     -> triples_conj (sat m phi1) (sat m phi2)
   | EX(phi)            -> satEX m (sat m phi)
   | AX(phi)            -> sat m (Not (EX(Not phi)))
-(*  | AX(phi)            -> pre_forall m (sat m phi)*)
+  | EF(phi)            -> sat m (EU(True,phi))
   | AF(phi)            -> satAF m (sat m phi)
+  | AG(phi)            -> sat m (Not(EF(Not(phi))))
   | EG(phi)            -> sat m (Not(AF(Not phi)))
+  | EU(phi1,phi2)      -> satEU m (sat m phi1) (sat m phi2)
+  | AU(phi1,phi2)      -> satAU m (sat m phi1) (sat m phi2)
   | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
   | Exists (v,phi)     -> triples_witness v (sat m phi)
-  | AU(phi1,phi2)      -> satAF m (sat m phi2) (* FIX ME: implement *)
-  | _ -> raise TODO_CTL
 ;;
+
 
 
 (* SAT with tracking *)
