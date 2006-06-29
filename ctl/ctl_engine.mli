@@ -10,11 +10,7 @@ module type SUBST =
   end
 
 module type GRAPH =
-  sig 
-    type node 
-    type cfg 
-    val predecessors : cfg -> node -> node list 
-end
+  sig type node type cfg val predecessors : cfg -> node -> node list end
 
 module OGRAPHEXT_GRAPH :
   sig
@@ -27,7 +23,6 @@ module OGRAPHEXT_GRAPH :
 
 exception TODO_CTL
 exception NEVER_CTL
-
 
 module CTL_ENGINE :
   functor (SUB : SUBST) ->
@@ -43,7 +38,7 @@ module CTL_ENGINE :
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar) Ast_ctl.generic_ctl ->
+          ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl * 'c ->
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
             'b list)
@@ -52,54 +47,52 @@ module CTL_ENGINE :
 
         val sat_verbose :
           (int ->
-           ('a, SUB.mvar) Ast_ctl.generic_ctl ->
+           ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
            (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
             (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'b list)
+             'c list)
             Ast_ctl.generic_witness list)
-           list -> 'c list -> 'c) ->
+           list -> 'd list -> 'd) ->
           int ->
           int ->
           G.cfg *
           ('a ->
            (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
             (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'b list)
+             'c list)
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar) Ast_ctl.generic_ctl ->
-          'c *
+          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl * 'b ->
+          'd *
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-            'b list)
+            'c list)
            Ast_ctl.generic_witness list)
           list
 
         type 'a witAnnoTree = WitAnno of ('a * 'a witAnnoTree list)
-
         val sat_annotree :
           (int ->
-           ('a, SUB.mvar) Ast_ctl.generic_ctl ->
+           ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
            (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
             (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'b list)
+             'c list)
             Ast_ctl.generic_witness list)
-           list -> 'c) ->
+           list -> 'd) ->
           G.cfg *
           ('a ->
            (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
             (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'b list)
+             'c list)
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar) Ast_ctl.generic_ctl ->
-          'c witAnnoTree *
+          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl * 'b ->
+          'd witAnnoTree *
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-            'b list)
+            'c list)
            Ast_ctl.generic_witness list)
           list
-
       end
