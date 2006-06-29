@@ -7,6 +7,8 @@ module CTL = Ast_ctl
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
+let aftret = "_aftret" (* assumed to be a fresh variable *)
+
 (* --------------------------------------------------------------------- *)
 
 let texify s =
@@ -200,16 +202,16 @@ let fresh_var _ =
   ctr := !ctr + 1;
   Printf.sprintf "v%d" c
 
-let ctr = ref 0
+let lctr = ref 0
 let fresh_let_var _ =
-  let c = !ctr in
-  ctr := !ctr + 1;
+  let c = !lctr in
+  lctr := !lctr + 1;
   Printf.sprintf "l%d" c
 
 let sctr = ref 0
 let fresh_metavar _ =
   let c = !sctr in
-  ctr := !sctr + 1;
+  sctr := !sctr + 1;
   Printf.sprintf "_S%d" c
 
 let get_unquantified quantified vars =
@@ -382,8 +384,7 @@ and statement quantified stmt after =
 		 CTL.And(CTL.AX(CTL.And(then_line,else_line)),
 			     CTL.EX(false_branch))))
       |	Some after ->
-	  let after_branch =
-	    CTL.Pred(Lib_engine.After,CTL.Control) in
+	  let after_branch = CTL.Pred(Lib_engine.After,CTL.Control) in
 	  let after_line = make_cond after_branch after in
 	  quantify bothfvs
 	    (CTL.And
@@ -464,13 +465,22 @@ and statement quantified stmt after =
 	| (None,Some whencode) -> Some whencode
 	| (Some dotcode,Some whencode) ->
 	    Some(CTL.And(dotcode,whencode)) in
-      let after_line = CTL.Pred(Lib_engine.After,CTL.Control) in
       (match (after,phi3) with (* add in the after code to make the result *)
 	  (None,None) -> CTL.True
-	| (Some after,None) -> CTL.AF(CTL.Or(after,after_line))
-	| (None,Some whencode) -> CTL.AG(whencode)
+	| (Some after,None) ->
+	    let v = fresh_let_var() in
+	    CTL.Let(v,after,
+		    CTL.And(CTL.AF(CTL.Or(CTL.Ref v,CTL.Ref aftret)),
+			    CTL.EF(CTL.Ref v)))
+	| (None,Some whencode) -> CTL.AU(whencode,CTL.Ref aftret)
 	| (Some after,Some whencode) ->
-	    CTL.AU(whencode,CTL.Or(after,after_line)))
+	    let v = fresh_let_var() in
+	    let w = fresh_let_var() in
+	    CTL.Let(v,after,
+		    (CTL.Let(w,whencode,
+			     CTL.And(CTL.AU(CTL.Ref w,
+					    CTL.Or(CTL.Ref v,CTL.Ref aftret)),
+				     CTL.EU(CTL.Ref w,CTL.Ref v))))))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
@@ -525,9 +535,39 @@ let top_level = function
   | Ast.ERRORWORDS(exps) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)
+(* Contains dots *)
+
+let contains_dots =
+  let bind x y = x or y in
+  let option_default = false in
+  let mcode x = false in
+  let statement r k = function Ast.Dots(_,_,_) -> true | e -> k e in
+  let continue r k e = k e in
+  let stop r k e = false in
+  let res =
+    V.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing
+      stop stop stop stop stop stop stop statement continue continue in
+  res.V.combiner_top_level
+
+
+
+(* --------------------------------------------------------------------- *)
 (* Entry points *)
 
 let asttoctl l =
   ctr := 0;
+  lctr := 0;
+  sctr := 0;
   let l = List.filter (function Ast.ERRORWORDS(exps) -> false | _ -> true) l in
-  List.map top_level l
+  List.map
+    (function x ->
+      if contains_dots x
+      then
+	CTL.Let(aftret,
+		CTL.Or(CTL.Pred(Lib_engine.After,CTL.Control),
+		       CTL.Pred(Lib_engine.Return,CTL.Control)),
+		top_level x)
+      else top_level x)
+    l

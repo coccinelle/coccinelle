@@ -5,7 +5,7 @@ let prelude =
   "\\usepackage{fullpage}\n\n"^
   "\\newcommand{\\U}{\\,\\mbox{\\sf{U}}\\,}\n"^
   "\\newcommand{\\A}{\\mbox{\\sf{A}}}\n"^
-  "\\newcommand{\\E}{\\mbox{\\sf{A}}}\n"^
+  "\\newcommand{\\E}{\\mbox{\\sf{E}}}\n"^
   "\\newcommand{\\AX}{\\mbox{\\sf{AX}}}\n"^
   "\\newcommand{\\EX}{\\mbox{\\sf{EX}}}\n"^
   "\\newcommand{\\AF}{\\mbox{\\sf{AF}}}\n"^
@@ -96,39 +96,44 @@ let rec ctl2c ct pp pv = function
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
       ("\\E["^res1^" \\U "^res2^"]\n",ct)
-  | CTL.Ref(v) -> texify(pv v)
+  | CTL.Ref(v) ->
+      let (v,len) = texify(pv v) in (v,len+ct)
   | CTL.Let(v,f1,f2) ->
-      let (v,ct) = texify (pv v) in
-      let (res1,ct) = letwrap (ct+5) pp pv f1 in
+      let (v,len) = texify (pv v) in
+      let (res1,ct) = letwrap (ct+len+5) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = letwrap (ct+3) pp pv f2 in
-      (Printf.sprintf "\\mita{\\sf{let}} \\, %s = %s \\mita{\\sf{in}} %s\n"
+      let (res2,ct) = check_ct ct res2 in
+      (Printf.sprintf
+	 "\\mita{\\sf{let}} \\, %s = %s \\, \\mita{\\sf{in}} \\, %s\n"
 	 v res1 res2, ct)
 
 and wrap ct pp pv x =
   match x with
-    CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    CTL.Ref _ | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and andwrap ct pp pv x =
   match x with
-    CTL.And(_,_) | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    CTL.Ref _ | CTL.And(_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
+      ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and orwrap ct pp pv x =
   match x with
-    CTL.Or(_,_) | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
+    CTL.Ref _ | CTL.Or(_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
+      ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and pathwrap ct pp pv x =
   match x with
-    CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_)
+    CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_)
   | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -137,7 +142,7 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match x with
-    CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_) | CTL.Pred(_)
+    CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_) | CTL.Pred(_)
   | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
       ctl2c ct pp pv x
