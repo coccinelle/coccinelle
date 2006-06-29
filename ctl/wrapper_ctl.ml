@@ -112,6 +112,7 @@ struct
 	      List.map (function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
 	  in
 	    (unwrap_wits (newth @ acc) wits') @ (unwrap_wits acc rest)
+      | (NegWit(s,th,anno,wits')::rest) -> unwrap_wits acc rest (* FIX ME *)
       | _ -> raise Common.Todo
 
   (* The wrapper for sat from the CTL_ENGINE *)
