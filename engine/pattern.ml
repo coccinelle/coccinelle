@@ -320,10 +320,14 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
         acc >||>
         (match var with
         | (Some (sb, iniopt,_), typb, sto), _ ->
-         (* isomorphisms handled here, good?  cos allow an initializer (iniopt) where a SP does not mention one *)
-         (* todo, use sto? lack of sto in Ast_cocci *)
-            match_ft_ft typa typb >&&>
-            match_ident sa sb
+            (match iniopt with
+            | None -> 
+            (* isomorphisms handled here, good?  cos allow an initializer (iniopt) where a SP does not mention one *)
+            (* todo, use sto? lack of sto in Ast_cocci *)
+                match_ft_ft typa typb >&&>
+                match_ident sa sb
+            | Some _ -> return false
+            )
         | (None, typ, sto), _ -> return false
         )
        ) (return false)

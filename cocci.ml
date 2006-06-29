@@ -103,6 +103,7 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 let full_engine cfile coccifile_and_iso_or_ctl = 
   pr2 ("processing C file: " ^ cfile);
+  command2 ("cat " ^ cfile);
   let astc     = cprogram_from_file cfile in
 
   let (ctl, error_words) = 
@@ -110,6 +111,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     | Left (coccifile, isofile) -> 
         pr2 ("processing semantic patch file: " ^ coccifile);
         let astcocci = spbis_from_file coccifile isofile in
+        command2 ("cat " ^ coccifile);
   
         let rule_with_metavars_list = astcocci in
 
@@ -178,7 +180,16 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               pr2 "calling sat";
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               pr2 "ending sat";
-              pr2 (Dumper.dump trans_info);
+              (* pr2 (Dumper.dump trans_info); *)
+(*
+              trans_info +> List.iter (fun (i, subst, pred) -> 
+                pr2 ("transform state:" ^ (i_to_s i));
+                Format.print_string "[";
+                Common.print_between (fun () -> Format.print_string ";" ) Pretty_print_c.pp_binding subst;
+                Format.print_string "]";
+                                      );
+*)
+
 
               let trans_info' = Ctlcocci_integration.satbis_to_trans_info trans_info in
               let flow' = Transformation.transform trans_info' flow  in
