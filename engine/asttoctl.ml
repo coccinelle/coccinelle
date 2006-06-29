@@ -13,6 +13,23 @@ let aftret = "_aftret" (* assumed to be a fresh variable *)
 
 let wrap ctl = (ctl,())
 
+let wrapImplies(x,y) = wrap(CTL.Implies(x,y))
+let wrapExists(x,y) = wrap(CTL.Exists(x,y))
+let wrapAnd(x,y) = wrap(CTL.And(x,y))
+let wrapOr(x,y) = wrap(CTL.Or(x,y))
+let wrapAU(x,y) = wrap(CTL.AU(x,y))
+let wrapEU(x,y) = wrap(CTL.EU(x,y))
+let wrapAX(x) = wrap(CTL.AX(x))
+let wrapEX(x) = wrap(CTL.EX(x))
+let wrapAG(x) = wrap(CTL.AG(x))
+let wrapEG(x) = wrap(CTL.EG(x))
+let wrapAF(x) = wrap(CTL.AF(x))
+let wrapEF(x) = wrap(CTL.EF(x))
+let wrapNot(x) = wrap(CTL.Not(x))
+let wrapPred(x) = wrap(CTL.Pred(x))
+let wrapLet(x,y,z) = wrap(CTL.Let(x,y,z))
+let wrapRef(x) = wrap(CTL.Ref(x))
+
 (* --------------------------------------------------------------------- *)
 
 let get_option fn = function
@@ -207,9 +224,9 @@ let get_unquantified quantified vars =
 
 let make_seq first = function
     None -> first
-  | Some rest -> wrap(CTL.And(first,wrap(CTL.AX(rest))))
+  | Some rest -> wrapAnd(first,wrapAX rest)
 
-let make_cond branch re = wrap(CTL.Implies(branch,wrap(CTL.AX(re))))
+let make_cond branch re = wrapImplies(branch,wrapAX re)
 
 let contains_modif =
   let bind x y = x or y in
@@ -231,8 +248,8 @@ let contains_modif =
 let make_match code =
   let v = fresh_var() in
   if contains_modif code
-  then wrap(CTL.Exists(v,wrap(CTL.Pred(Lib_engine.Match(code),CTL.Modif v))))
-  else wrap(CTL.Exists(v,wrap(CTL.Pred(Lib_engine.Match(code),CTL.UnModif v))))
+  then wrapExists(v,wrapPred(Lib_engine.Match(code),CTL.Modif v))
+  else wrapExists(v,wrapPred(Lib_engine.Match(code),CTL.UnModif v))
 
 let seq_fvs quantified term1 term2 =
   let t1fvs = get_unquantified quantified (Hashtbl.find free_table term1) in
@@ -243,7 +260,7 @@ let seq_fvs quantified term1 term2 =
   (t1onlyfvs,bothfvs,t2onlyfvs)
 
 let quantify =
-  List.fold_right (function cur -> function code -> wrap(CTL.Exists(cur,code)))
+  List.fold_right (function cur -> function code -> wrapExists(cur,code))
 
 let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
@@ -277,13 +294,12 @@ and statement quantified stmt after =
       make_seq (quantify fvs (make_match ast)) after
   | Ast.Seq(lbrace,body,rbrace) ->
       let v = fresh_var() in
-      let paren_pred = wrap(CTL.Pred(Lib_engine.Paren v,CTL.Control)) in
-      let start_brace = wrap(CTL.And(make_match lbrace,paren_pred)) in
-      let end_brace = wrap(CTL.And(make_match rbrace,paren_pred)) in
-      wrap(CTL.Exists
-	     (v,make_seq start_brace
-		(Some(dots_stmt quantified body
-			(Some (make_seq end_brace after))))))
+      let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
+      let start_brace = wrapAnd(make_match lbrace,paren_pred) in
+      let end_brace = wrapAnd(make_match rbrace,paren_pred) in
+      wrapExists
+	(v,make_seq start_brace
+	   (Some(dots_stmt quantified body (Some (make_seq end_brace after)))))
   | Ast.IfThen(ifheader,branch) ->
 
 (* "if (test) thn" becomes:
@@ -302,27 +318,26 @@ and statement quantified stmt after =
        (* if header *)
        let if_header = quantify efvs (make_match ifheader) in
        (* then branch and after *)
-       let true_branch =  wrap(CTL.Pred(Lib_engine.TrueBranch,CTL.Control)) in
-       let after_branch = wrap(CTL.Pred(Lib_engine.After,CTL.Control)) in
+       let true_branch =  wrapPred(Lib_engine.TrueBranch,CTL.Control) in
+       let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
        let then_line =
 	 make_cond true_branch (statement new_quantified branch None) in
-       let or_cases = wrap(CTL.Or(true_branch,after_branch)) in
+       let or_cases = wrapOr(true_branch,after_branch) in
        (* the code *)
        (match after with
 	 None ->
 	   quantify bfvs
-	     (make_seq if_header (Some(wrap(CTL.And(or_cases,then_line)))))
+	     (make_seq if_header (Some(wrapAnd(or_cases,then_line))))
        | Some after ->
 	   let after_line = make_cond after_branch after in
 	   quantify bfvs
-	     (wrap(CTL.And
+	     (wrapAnd
 		(if_header,
-		  (wrap(CTL.And
-		     (wrap(CTL.AX
-			(wrap(CTL.And(or_cases,
-				     wrap(CTL.And(then_line,after_line)))))),
-		      wrap(CTL.EX(after_branch)))))))))
-
+		  (wrapAnd
+		     (wrapAX
+			(wrapAnd(or_cases, wrapAnd(then_line,after_line))),
+		      wrapEX(after_branch))))))
+	 
   | Ast.IfThenElse(ifheader,branch1,_,branch2) ->
 
 (*  "if (test) thn else els" becomes:
@@ -355,9 +370,9 @@ and statement quantified stmt after =
        let if_header = quantify exponlyfvs (make_match ifheader) in
        (* then and else branches *)
        let true_branch =
-	 wrap(CTL.Pred(Lib_engine.TrueBranch,CTL.Control)) in
+	 wrapPred(Lib_engine.TrueBranch,CTL.Control) in
        let false_branch =
-	 wrap(CTL.Pred(Lib_engine.FalseBranch,CTL.Control)) in
+	 wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let then_line =
 	 make_cond true_branch (statement new_quantified branch1 None) in
        let else_line =
@@ -366,21 +381,19 @@ and statement quantified stmt after =
        (match after with
 	None ->
 	  quantify bothfvs
-	    (wrap(CTL.And
+	    (wrapAnd
 	       (if_header,
-		 wrap(CTL.And(wrap(CTL.AX(wrap(CTL.And(then_line,else_line)))),
-			     wrap(CTL.EX(false_branch)))))))
+		 wrapAnd(wrapAX(wrapAnd(then_line,else_line)),
+			 wrapEX(false_branch))))
       |	Some after ->
-	  let after_branch = wrap(CTL.Pred(Lib_engine.After,CTL.Control)) in
+	  let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
 	  let after_line = make_cond after_branch after in
 	  quantify bothfvs
-	    (wrap(CTL.And
+	    (wrapAnd
 	       (if_header,
-		 wrap(CTL.And(wrap(CTL.AX(wrap(CTL.And
-					  (wrap(CTL.And(then_line,else_line)),
-					   after_line)))),
-			     wrap(CTL.And(wrap(CTL.EX(false_branch)),
-					 wrap(CTL.EX(after_branch))))))))))
+		 wrapAnd(wrapAX(wrapAnd
+				  (wrapAnd(then_line,else_line),after_line)),
+			 wrapAnd(wrapEX(false_branch),wrapEX(after_branch))))))
 
   | Ast.While(header,body) ->
    (* the translation in this case is similar to that of an if with no else *)
@@ -388,36 +401,32 @@ and statement quantified stmt after =
 	seq_fvs quantified (Rule_elem header) (Statement body) in
       let new_quantified = Common.union_set bfvs quantified in
       let while_header = quantify efvs (make_match header) in
-      let true_branch =
-	wrap(CTL.Pred(Lib_engine.TrueBranch,CTL.Control)) in
+      let true_branch = wrapPred(Lib_engine.TrueBranch,CTL.Control) in
       let body_line =
 	make_cond true_branch (statement new_quantified body None) in
       (match after with
 	None -> quantify bfvs (make_seq while_header (Some body_line))
       | Some after ->
-	  let after_branch = wrap(CTL.Pred(Lib_engine.After,CTL.Control)) in
+	  let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
 	  let after_line = make_cond after_branch after in
 	  quantify bfvs
-	    (wrap(CTL.And
+	    (wrapAnd
 	       (while_header,
-		(wrap(CTL.And
-		   (wrap(CTL.AX(wrap(CTL.And(body_line,after_line)))),
-		    wrap(CTL.EX(after_branch)))))))))
+		(wrapAnd
+		   (wrapAX(wrapAnd(body_line,after_line)),
+		    wrapEX(after_branch))))))
   | Ast.Disj(stmt_dots_list) ->
       let rec loop = function
 	  [] -> wrap(CTL.False)
 	| [cur] -> dots_stmt quantified cur None
 	| cur::rest ->
-	    wrap(CTL.Or(dots_stmt quantified cur None, loop rest)) in
+	    wrapOr(dots_stmt quantified cur None, loop rest) in
       loop stmt_dots_list
   | Ast.Nest(stmt_dots) ->
       let dots_pattern = dots_stmt quantified stmt_dots None in
       (match after with
-	None ->
-	  wrap(CTL.AG(wrap(CTL.Or(dots_pattern,wrap(CTL.Not dots_pattern)))))
-      |	Some after ->
-	  wrap(CTL.AU(wrap(CTL.Or(dots_pattern,wrap(CTL.Not dots_pattern))),
-		      after)))
+	None -> wrapAG(wrapOr(dots_pattern,wrapNot dots_pattern))
+      |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot dots_pattern),after))
   | Ast.Dots((_,i,d),whencode,tmp_whencode) ->
       let dot_code =
 	match d with
@@ -435,18 +444,18 @@ and statement quantified stmt after =
 	| x::xs ->
 	    Some
 	      (List.fold_left
-		 (function rest -> function cur -> wrap(CTL.Or(cur,rest)))
+		 (function rest -> function cur -> wrapOr(cur,rest))
 		 x xs) in
       let phi2 =
 	match (whencode,phi1) with (* add whencode *)
 	  (None,None) -> None
 	| (Some whencode,None) ->
-	    Some (wrap(CTL.Not(dots_stmt quantified whencode None)))
-	| (None,Some phi) -> Some (wrap(CTL.Not(phi)))
+	    Some (wrapNot(dots_stmt quantified whencode None))
+	| (None,Some phi) -> Some (wrapNot(phi))
 	| (Some whencode,Some phi) ->
-	    Some (wrap(CTL.And
-			 (wrap(CTL.Not(dots_stmt quantified whencode None)),
-			  wrap(CTL.Not(phi))))) in
+	    Some (wrapAnd
+		    (wrapNot(dots_stmt quantified whencode None),
+		     wrapNot(phi))) in
       let phi3 =
 	match (dot_code,phi2) with (* add - on dots, if any *)
 	  (None,None) -> None
@@ -458,21 +467,19 @@ and statement quantified stmt after =
 	  (None,None) -> wrap(CTL.True)
 	| (Some after,None) ->
 	    let v = fresh_let_var() in
-	    wrap
-	      (CTL.Let
-		 (v,after,
-		  wrap(CTL.And(wrap(CTL.AF(wrap(CTL.Or(wrap(CTL.Ref v),
-						       wrap(CTL.Ref aftret))))),
-			    wrap(CTL.EF(wrap(CTL.Ref v)))))))
-	| (None,Some whencode) -> wrap(CTL.AU(whencode,wrap(CTL.Ref aftret)))
+	    wrapLet
+	      (v,after,
+	       wrapAnd(wrapAF(wrapOr(wrapRef v,wrapRef aftret)),
+		       wrapEF(wrapRef v)))
+	| (None,Some whencode) -> wrapAU(whencode,wrapRef aftret)
 	| (Some after,Some whencode) ->
 	    let v = fresh_let_var() in
 	    let w = fresh_let_var() in
-	    wrap(CTL.Let(v,after,
-		    (wrap(CTL.Let(w,whencode,
-			     wrap(CTL.And(wrap(CTL.AU(wrap(CTL.Ref w),
-					    wrap(CTL.Or(wrap(CTL.Ref v),wrap(CTL.Ref aftret))))),
-				     wrap(CTL.EU(wrap(CTL.Ref w),wrap(CTL.Ref v)))))))))))
+	    wrapLet(v,after,
+		    (wrapLet(w,whencode,
+			     wrapAnd(wrapAU(wrapRef w,
+					    wrapOr(wrapRef v,wrapRef aftret)),
+				     wrapEU(wrapRef w,wrapRef v))))))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
@@ -485,20 +492,19 @@ and statement quantified stmt after =
       quantify bfvs
 	(make_seq function_header
 	   (Some
-	      (wrap(CTL.Exists
+	      (wrapExists
 		 (v,(make_seq start_brace
 		       (Some(dots_stmt new_quantified body
-			       (Some(make_seq end_brace after))))))))))
+			       (Some(make_seq end_brace after)))))))))
   | Ast.OptStm(stm) ->
       (* doesn't work for ?f(); f();, ie when the optional thing is the same
 	 as the thing that comes immediately after *)
       let pattern = statement quantified stm after in
       (match after with
-	None -> wrap(CTL.Or(pattern,wrap(CTL.Not pattern)))
+	None -> wrapOr(pattern,wrapNot pattern)
       |	Some after ->
-	  wrap(CTL.Or(pattern,
-		     wrap(CTL.And(wrap(CTL.Not (statement quantified stm None)),
-				 after)))))
+	  wrapOr(pattern,
+		 wrapAnd(wrapNot (statement quantified stm None),after)))
   | Ast.UniqueStm(stm) ->
       warning "arities not yet supported";
       statement quantified stm after
@@ -557,9 +563,9 @@ let asttoctl l =
     (function x ->
       if contains_dots x
       then
-	wrap(CTL.Let(aftret,
-		wrap(CTL.Or(wrap(CTL.Pred(Lib_engine.After,CTL.Control)),
-		       wrap(CTL.Pred(Lib_engine.Return,CTL.Control)))),
-		top_level x))
+	wrapLet(aftret,
+		wrapOr(wrapPred(Lib_engine.After,CTL.Control),
+		       wrapPred(Lib_engine.Return,CTL.Control)),
+		top_level x)
       else top_level x)
     l
