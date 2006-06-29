@@ -187,7 +187,7 @@ let rec fix eq f x =
 ;;
 
 (* Fix point calculation on set-valued functions *)
-let rec setfix f x = fix setequal f x;;
+let setfix f x = setify (fix setequal f x);;
 
 let rec allpairs f l1 l2 = foldr (fun x -> append (map (f x) l2)) l1 [];;
 
@@ -393,7 +393,7 @@ let negate_sub sub =
 ;;
 
 (* Turn a (big) theta into a list of (small) thetas *)
-let negate_subst theta = map (fun sub -> [negate_sub sub]) theta;;
+let negate_subst theta = (map (fun sub -> [negate_sub sub]) theta);;
 
 
 (* ************************* *)
@@ -412,7 +412,7 @@ let negate_wit wit =
     | NegWit(s,th,anno,ws) -> Wit(s,th,anno,ws)
 ;;
 
-let negate_wits wits = map (fun wit -> [negate_wit wit]) wits;;
+let negate_wits wits = setify (map (fun wit -> [negate_wit wit]) wits);;
 
 
 (* ************************* *)
@@ -432,19 +432,20 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
 let triples_conj trips trips' =
-  List.fold_left
-    (function rest ->
-      function (s1,th1,wit1) ->
-	List.fold_left
-	  (function rest ->
-	    function (s2,th2,wit2) ->
-	      if (s1 = s2) then
-		match (conj_subst th1 th2) with
-		| Some th -> (s1,th,union_wit wit1 wit2)::rest
-		| _       -> rest
-	      else rest)
-	  rest trips')
-    [] trips
+  setify (
+    List.fold_left
+      (function rest ->
+	 function (s1,th1,wit1) ->
+	   List.fold_left
+	     (function rest ->
+		function (s2,th2,wit2) ->
+		  if (s1 = s2) then
+		    match (conj_subst th1 th2) with
+		      | Some th -> (s1,th,union_wit wit1 wit2)::rest
+		      | _       -> rest
+		  else rest)
+	     rest trips')
+      [] trips)
 ;;
 
 let triple_negate states (s,th,wits) = 
@@ -462,7 +463,7 @@ let rec triples_complement states trips =
     | (t::[]) -> triple_negate states t
     | (t::ts) -> 
 	triples_conj (triple_negate states t) (loop states ts) in
-  loop states trips
+  setify (loop states trips)
 ;;
 
 
@@ -470,7 +471,7 @@ let triples_witness x trips =
   let mkwit (s,th,wit) =
     let (th_x,newth) = split_subst th x in
       (s,newth,[Wit(s,th_x,[],wit)]) in	(* [] = annotation *)
-    map mkwit trips
+    setify (map mkwit trips)
 ;;
 
 
@@ -491,7 +492,7 @@ let pre_concatmap f l =
 
 let rec pre_exist (grp,_,_) y =
   let exp (s,th,wit) = map (fun s' -> (s',th,wit)) (G.predecessors grp s) in
-  (pre_concatmap exp y)
+  setify (pre_concatmap exp y)
 ;;
 
 let pre_forall ((_,_,states) as m) y = 
