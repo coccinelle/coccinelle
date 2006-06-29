@@ -196,17 +196,6 @@ let lmerge f m l1 l2 =
   in concat (allpairs mrg l1 l2)
 ;;
 
-let rec mixer mrg xs ys = 
-  let rec mix x ys =
-    match ys with
-      | [] -> []
-      | (y::ys') -> 
-	  let rest = mix x ys' in 
-	    maybe (fun xy -> xy :: rest) rest (mrg x y) in
-    match xs with
-      | [] -> []
-      | (x::xs') -> (mix x ys) @ (mixer mrg xs' ys)
-;;
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -445,13 +434,14 @@ let triples_union trips trips' = unionBy eq_trip trips trips';;
 let triples_conj trips trips' =
   let mrg (s1,th1,wit1) (s2,th2,wit2) =
     if (s1 = s2) then
-      maybe (fun th -> Some (s1,th,union_wit wit1 wit2)) None (conj_subst th1 th2)
+      match (conj_subst th1 th2) with
+	| Some th -> [(s1,th,union_wit wit1 wit2)]
+	| _       -> []
     else
-      None
-  in mixer mrg trips trips'
+      []
+  in concat (allpairs mrg trips trips')
 ;;
 
-(*
 let triple_negate states (s,th,wits) = 
   let negstates = map (fun st -> (st,top_subst,top_wit)) (setdiff states [s]) in
   let negths = map (fun th -> (s,th,top_wit)) (negate_subst th) in
@@ -466,51 +456,6 @@ let rec triples_complement states trips =
     | (t::[]) -> triple_negate states t
     | (t::ts) -> 
 	triples_conj (triple_negate states t) (triples_complement states ts)
-;;
-*)
-
-(* Constructive negation at the state level *)
-type ('a) state =
-    PosState of 'a
-  | NegState of 'a list
-;;
-
-(* Conjunction on triples with "special states" *)
-let triples_state_conj trips trips' =
-  let mrg (s1,th1,wit1) (s2,th2,wit2) =
-    match (s1,s2) with
-      | (PosState s1, PosState s2) -> 
-	  if s1 = s2 then Some (PosState s1,th1,wit1) else None
-      | (PosState s1, NegState s2) -> 
-	  if List.mem s1 s2 then None else Some (PosState s1,th1,wit1)
-      | (NegState s1, PosState s2) -> 
-	  if List.mem s2 s1 then None else Some (PosState s2,th2,wit2)
-      | (NegState s1, NegState s2) -> Some (NegState (s1 @ s2),th1,wit1)
-  in mixer mrg trips trips'
-;;
-
-let triple_negate (s,th,wits) = 
-  let negstates = [(NegState [s],top_subst,top_wit)] in
-  let negths = map (fun th -> (PosState s,th,top_wit)) (negate_subst th) in
-  let negwits = map (fun nwit -> (PosState s,th,nwit)) (negate_wits wits) in
-    triples_union negstates (triples_union negths negwits)
-;;
-
-(* FIX ME: it is not necessary to do full conjunction *)
-let triples_complement states trips =
-  let cleanup (s,th,wit) =
-    match s with
-      | PosState s' -> [(s',th,wit)]
-      | NegState ss -> map (fun st -> (st,top_subst,top_wit)) (setdiff states ss)
-  in
-  let rec compl trips =
-    match trips with
-      | [] -> []
-      | (t::[]) -> triple_negate t
-      | (t::ts) -> 
-	  triples_state_conj (triple_negate t) (compl ts)
-  in
-    concatmap cleanup (compl trips)
 ;;
 
 
@@ -568,13 +513,7 @@ let rec satloop ((grp,label,states) as m) phi env =
   match unwrap phi with
     False              -> []
   | True               -> triples_top states
-  | Pred(p)            -> 
-      let x = label(p) in		(* NOTE: Assume well-formed *)
-      print_generic_algo x;
-      Format.print_string "\n";
-      Format.print_flush ();
-      x
-      
+  | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
   | Not(phi)           -> triples_complement states (satloop m phi env)
   | Or(phi1,phi2)      -> triples_union
 	                    (satloop m phi1 env) (satloop m phi2 env)
@@ -675,7 +614,7 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env =
 	| Let(v,phi1,phi2)   ->
 	    let (child1,res1) = satv phi1 env in
 	    let (child2,res2) = satv phi2 ((v,res1) :: env) in
-	      anno res2 [child1;child2]
+	    anno res2 [child1;child2]
 	| Ref(v)             -> anno (List.assoc v env) []
 ;;
 
