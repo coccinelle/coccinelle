@@ -4,32 +4,38 @@
 (* ---------------------------------------------------------------------- *)
 
 (* CTL parameterised on basic predicates and metavar's*)
-type ('pred,'mvar,'anno) generic_ctl = 
+type ('pred,'mvar,'anno) generic_ctl =
+    ('pred,'mvar,'anno) generic_ctl_bis * 'anno
+ and ('pred,'mvar,'anno) generic_ctl_bis = 
   | False
   | True
   | Pred of 'pred
-  | Not of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | And of (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | Or  of (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | Implies of (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | AF of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | AX of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | AG of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | AU of (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | EF of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | EX of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | EG of (('pred,'mvar,'anno) generic_ctl * 'anno)
-  | EU of (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
+  | Not of (('pred,'mvar,'anno) generic_ctl)
+  | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl)
+  | And of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
+  | Or  of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
+  | Implies of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
+  | AF of (('pred,'mvar,'anno) generic_ctl)
+  | AX of (('pred,'mvar,'anno) generic_ctl)
+  | AG of (('pred,'mvar,'anno) generic_ctl)
+  | AU of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
+  | EF of (('pred,'mvar,'anno) generic_ctl)
+  | EX of (('pred,'mvar,'anno) generic_ctl)
+  | EG of (('pred,'mvar,'anno) generic_ctl)
+  | EU of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Let of string * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno) * 
-      (('pred,'mvar,'anno) generic_ctl * 'anno)
+      (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Ref of string
+
+let unwrap (ctl,_) = ctl
+let rewrap (_,model) ctl = (ctl,model)
+
 
 (* NOTE: No explicit representation of the bottom subst., i.e., FALSE *)
 type ('mvar,'value) generic_subst = 

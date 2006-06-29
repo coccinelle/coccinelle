@@ -43,7 +43,8 @@ let modif2c pv = function
   | CTL.UnModif(v) -> let (s,n) = texify(pv v) in (Printf.sprintf "_{%s}" s,n)
   | CTL.Control -> ("",0)
 
-let rec ctl2c ct pp pv = function
+let rec ctl2c ct pp pv x =
+  match CTL.unwrap x with
     CTL.False -> ("\\msf{false}",5)
   | CTL.True -> ("\\msf{true}",4)
   | CTL.Pred(p,v) ->
@@ -109,14 +110,14 @@ let rec ctl2c ct pp pv = function
 	 v res1 res2, ct)
 
 and wrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Ref _ | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and andwrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Ref _ | CTL.And(_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -124,7 +125,7 @@ and andwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and orwrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Ref _ | CTL.Or(_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -132,7 +133,7 @@ and orwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and pathwrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_)
   | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) ->
       ctl2c ct pp pv x
@@ -141,7 +142,7 @@ and pathwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and existswrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_) | CTL.Pred(_)
   | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
@@ -151,7 +152,7 @@ and existswrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and letwrap ct pp pv x =
-  match x with
+  match CTL.unwrap x with
     CTL.Let(_,_,_) ->
       let (res,ct) = ctl2c (ct+1) pp pv x in (Printf.sprintf "(%s)" res,ct+1)
   | _ -> ctl2c ct pp pv x

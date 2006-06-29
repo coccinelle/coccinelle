@@ -8,7 +8,7 @@
  * **********************************************************************)
 
 type ('pred, 'mvar,'anno) wrapped_ctl = 
-    ('pred * 'mvar Ast_ctl.modif,  'mvar, 'anno) Ast_ctl.generic_ctl * 'anno
+    ('pred * 'mvar Ast_ctl.modif,  'mvar, 'anno) Ast_ctl.generic_ctl
 
 type ('value, 'pred) wrapped_binding = 
   | ClassicVar of 'value
@@ -113,7 +113,6 @@ struct
 	  in
 	    (unwrap_wits (newth @ acc) wits') @ (unwrap_wits acc rest)
       | (NegWit(s,th,anno,wits')::rest) -> unwrap_wits acc rest (* FIX ME *)
-      | _ -> raise Common.Todo
 
   (* The wrapper for sat from the CTL_ENGINE *)
   let satbis_noclean (grp,lab,states) phi =

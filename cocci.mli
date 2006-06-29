@@ -17,14 +17,14 @@ val print_flow : (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ogra
 
 
 val ctls : Ast_cocci.rule list -> 
-  (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list
+  (Lib_engine.predicate, string,unit) Wrapper_ctl.wrapped_ctl list list
 val one_ctl :
-    (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list ->
-      (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl
+    (Lib_engine.predicate, string,unit) Wrapper_ctl.wrapped_ctl list list ->
+      (Lib_engine.predicate, string,unit) Wrapper_ctl.wrapped_ctl
 
 
 val full_engine: Common.filename -> 
   (Common.filename * Common.filename option,
-   (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
+   (Lib_engine.predicate, Lib_engine.mvar, unit) Wrapper_ctl.wrapped_ctl
    ) Common.either 
   -> unit

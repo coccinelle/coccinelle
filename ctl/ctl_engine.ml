@@ -495,8 +495,8 @@ let satEU m s1 s2 =
 
 
 
-let rec satloop ((grp,label,states) as m) (phi,anno) env =
-  match phi with
+let rec satloop ((grp,label,states) as m) phi env =
+  match unwrap phi with
     False              -> []
   | True               -> triples_top states
   | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
@@ -506,14 +506,21 @@ let rec satloop ((grp,label,states) as m) (phi,anno) env =
   | And(phi1,phi2)     -> triples_conj
 	                    (satloop m phi1 env) (satloop m phi2 env)
   | EX(phi)            -> satEX m (satloop m phi env)
-  | AX(phi)            -> satloop m (Not(EX(Not phi,anno),anno),anno) env
-  | EF(phi)            -> satloop m (EU((True,anno),phi),anno) env
+  | AX(phi1)            ->
+      satloop m
+	(rewrap phi (Not (rewrap phi (EX (rewrap phi (Not phi1)))))) env
+  | EF(phi)            -> satloop m (rewrap phi (EU(rewrap phi True,phi))) env
   | AF(phi)            -> satAF m (satloop m phi env)
-  | EG(phi)            -> satloop m (Not(AF(Not(phi),anno),anno),anno) env
-  | AG(phi)            -> satloop m (Not(EF(Not(phi),anno),anno),anno) env
+  | EG(phi1)            ->
+      satloop m
+	(rewrap phi (Not(rewrap phi (AF (rewrap phi (Not phi1)))))) env
+  | AG(phi1)            ->
+      satloop m
+	(rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1)))))) env
   | EU(phi1,phi2)      -> satEU m (satloop m phi1 env) (satloop m phi2 env)
   | AU(phi1,phi2)      -> satAU m (satloop m phi1 env) (satloop m phi2 env) 
-  | Implies(phi1,phi2) -> satloop m (Or((Not phi1,anno),phi2),anno) env
+  | Implies(phi1,phi2) ->
+      satloop m (rewrap phi (Or(rewrap phi (Not phi1),phi2))) env
   | Exists (v,phi)     -> triples_witness v (satloop m phi env)
   | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(satloop m phi1 env)) :: env)
   | Ref(v)             -> List.assoc v env
@@ -523,13 +530,13 @@ let sat m phi = satloop m phi []
 ;;
 
 (* SAT with tracking *)
-let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) (phi,ann) env =
+let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env =
   let anno res children = (annot lvl phi res children,res) in
   let satv phi0 env = sat_verbose_loop annot maxlvl (lvl+1) m phi0 env in
     if (lvl > maxlvl) && (maxlvl > -1) then
-      anno (satloop m (phi,ann) env) []
+      anno (satloop m phi env) []
     else
-      match phi with
+      match unwrap phi with
 	  False              -> anno [] []
 	| True               -> anno (triples_top states) []
 	| Pred(p)            -> anno (label(p)) []
@@ -552,16 +559,25 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) (phi,ann) env 
 	      anno (pre_forall m res) [child]
 	| EF(phi1)           -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (EU((True,ann),phi1),ann) env) [child]
+	      anno (satloop m (rewrap phi (EU(rewrap phi True,phi1))) env)
+	      [child]
 	| AF(phi1)           -> 
 	    let (child,res) = satv phi1 env in
 	      anno (satAF m res) [child]
 	| EG(phi1)           -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (Not(AF(Not(phi1),ann),ann),ann) env) [child]
+	    anno
+	      (satloop m
+		 (rewrap phi (Not(rewrap phi (AF(rewrap phi (Not phi1))))))
+		 env)
+	      [child]
 	| AG(phi1)            -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (Not(EF(Not(phi1),ann),ann),ann) env) [child]
+	    anno
+	      (satloop m
+		 (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
+		 env)
+	      [child]
 	| EU(phi1,phi2)      -> 
 	    let (child1,res1) = satv phi1 env in
 	    let (child2,res2) = satv phi2 env in
@@ -573,7 +589,9 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) (phi,ann) env 
 	| Implies(phi1,phi2) -> 
 	    let (child1,_) = satv phi1 env in
 	    let (child2,_) = satv phi2 env in
-	      anno (satloop m (Or((Not(phi1),ann),phi2),ann) env) [child1; child2]
+	    anno
+	      (satloop m (rewrap phi (Or(rewrap phi (Not phi1),phi2))) env)
+	      [child1; child2]
 	| Exists (v,phi1)    -> 
 	    let (child,res) = satv phi1 env in
 	      anno (triples_witness v res) [child]

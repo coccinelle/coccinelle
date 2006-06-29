@@ -38,7 +38,7 @@ module CTL_ENGINE :
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl * 'c ->
+          ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
             'b list)
@@ -63,7 +63,7 @@ module CTL_ENGINE :
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl * 'b ->
+          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
           'd *
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
@@ -88,7 +88,7 @@ module CTL_ENGINE :
             Ast_ctl.generic_witness list)
            list) *
           G.node list ->
-          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl * 'b ->
+          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
           'd witAnnoTree *
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
