@@ -48,7 +48,15 @@ let (labels_for_ctl:
          | Lib_engine.TrueBranch , _ -> []
          | Lib_engine.FalseBranch, _ -> []
          | Lib_engine.After, _ -> []
-         | Lib_engine.Return, _ -> failwith "TODO: Return not supported"
+         | Lib_engine.Return, node -> 
+             (match node with
+             (* todo? should match the Exit code ? *)
+             | Control_flow_c.Statement (Ast_c.Jump (Ast_c.Return), _) -> 
+                 [nodei, []]
+             | Control_flow_c.Statement (Ast_c.Jump (Ast_c.ReturnExpr _), _) -> 
+                 [nodei, []]
+             | _ -> []
+             )
          )
        ) +> List.concat
        in

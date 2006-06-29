@@ -33,7 +33,7 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          Cocci.full_engine cfile !cocci_file (if !iso_file = "" then None else Some !iso_file) 
+          Cocci.full_engine cfile (Left (!cocci_file, (if !iso_file = "" then None else Some !iso_file) ))
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
