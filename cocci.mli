@@ -23,4 +23,8 @@ val one_ctl :
       (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl
 
 
-val full_engine: Common.filename -> Common.filename -> Common.filename option -> unit
+val full_engine: Common.filename -> 
+  (Common.filename * Common.filename option,
+   (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
+   ) Common.either 
+  -> unit
