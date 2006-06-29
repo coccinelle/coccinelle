@@ -297,21 +297,6 @@ let top_subst = [];;			(* Always TRUE subst. *)
 let split_subst theta x = 
   partition (fun sub -> SUB.eq_mvar (dom_sub sub) x) theta;;
 
-(* Returns an option because it is possible that no non-conflicting
- * (sub-)theta could be constructed 
- * NOTE: remove
- *)
-let merge_subst theta theta' =
-  match(theta,theta') with
-    | ([],th') -> Some (map (fun x -> [x]) th')
-    | (th,[])  -> Some (map (fun x -> [x]) th)
-    | _        -> 
-	let tmp = some_tolist (allpairs merge_sub theta theta') in
-	  if tmp = [] 
-	  then None 
-	  else Some tmp
-;;
-
 (* We only want to know if there is a conflict so we don't care
  * about merging of values
  *)
@@ -376,6 +361,7 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
+(* FIX ME: concat (allpairs ...) is BAD *)
 let triples_conj trips trips' =
   let mrg (s1,th1,wit1) (s2,th2,wit2) =
     if (s1 = s2) then
@@ -454,7 +440,7 @@ let satEU m s1 s2 =
 
 
 
-let rec satloop ((grp,label,states) as m) phi env =
+let rec satloop ((grp,label,states) as m) (phi,anno) env =
   match phi with
     False              -> []
   | True               -> triples_top states
@@ -465,14 +451,14 @@ let rec satloop ((grp,label,states) as m) phi env =
   | And(phi1,phi2)     -> triples_conj
 	                    (satloop m phi1 env) (satloop m phi2 env)
   | EX(phi)            -> satEX m (satloop m phi env)
-  | AX(phi)            -> satloop m (Not (EX(Not phi))) env
-  | EF(phi)            -> satloop m (EU(True,phi)) env
+  | AX(phi)            -> satloop m (Not(EX(Not phi,anno),anno),anno) env
+  | EF(phi)            -> satloop m (EU((True,anno),phi),anno) env
   | AF(phi)            -> satAF m (satloop m phi env)
-  | EG(phi)            -> satloop m (Not(AF(Not phi))) env
-  | AG(phi)            -> satloop m (Not(EF(Not(phi)))) env
+  | EG(phi)            -> satloop m (Not(AF(Not(phi),anno),anno),anno) env
+  | AG(phi)            -> satloop m (Not(EF(Not(phi),anno),anno),anno) env
   | EU(phi1,phi2)      -> satEU m (satloop m phi1 env) (satloop m phi2 env)
   | AU(phi1,phi2)      -> satAU m (satloop m phi1 env) (satloop m phi2 env) 
-  | Implies(phi1,phi2) -> satloop m (Or(Not phi1,phi2)) env
+  | Implies(phi1,phi2) -> satloop m (Or((Not phi1,anno),phi2),anno) env
   | Exists (v,phi)     -> triples_witness v (satloop m phi env)
   | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(satloop m phi1 env)) :: env)
   | Ref(v)             -> List.assoc v env
@@ -482,11 +468,11 @@ let sat m phi = satloop m phi []
 ;;
 
 (* SAT with tracking *)
-let rec sat_verbose_loop annotate maxlvl lvl ((grp,label,states) as m) phi env =
-  let anno res children = (annotate lvl phi res children,res) in
-  let satv phi0 env = sat_verbose_loop annotate maxlvl (lvl+1) m phi0 env in
+let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) (phi,ann) env =
+  let anno res children = (annot lvl phi res children,res) in
+  let satv phi0 env = sat_verbose_loop annot maxlvl (lvl+1) m phi0 env in
     if (lvl > maxlvl) && (maxlvl > -1) then
-      anno (satloop m phi env) []
+      anno (satloop m (phi,ann) env) []
     else
       match phi with
 	  False              -> anno [] []
@@ -511,16 +497,16 @@ let rec sat_verbose_loop annotate maxlvl lvl ((grp,label,states) as m) phi env =
 	      anno (pre_forall m res) [child]
 	| EF(phi1)           -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (EU(True,phi1)) env) [child]
+	      anno (satloop m (EU((True,ann),phi1),ann) env) [child]
 	| AF(phi1)           -> 
 	    let (child,res) = satv phi1 env in
 	      anno (satAF m res) [child]
 	| EG(phi1)           -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (Not(AF(Not phi1))) env) [child]
+	      anno (satloop m (Not(AF(Not(phi1),ann),ann),ann) env) [child]
 	| AG(phi1)            -> 
 	    let (child,_) = satv phi1 env in
-	      anno (satloop m (Not(EF(Not(phi1)))) env) [child]
+	      anno (satloop m (Not(EF(Not(phi1),ann),ann),ann) env) [child]
 	| EU(phi1,phi2)      -> 
 	    let (child1,res1) = satv phi1 env in
 	    let (child2,res2) = satv phi2 env in
@@ -532,14 +518,14 @@ let rec sat_verbose_loop annotate maxlvl lvl ((grp,label,states) as m) phi env =
 	| Implies(phi1,phi2) -> 
 	    let (child1,_) = satv phi1 env in
 	    let (child2,_) = satv phi2 env in
-	      anno (satloop m (Or(Not phi1,phi2)) env) [child1; child2]
+	      anno (satloop m (Or((Not(phi1),ann),phi2),ann) env) [child1; child2]
 	| Exists (v,phi1)    -> 
 	    let (child,res) = satv phi1 env in
 	      anno (triples_witness v res) [child]
 	| Let(v,phi1,phi2)   ->
 	    let (child1,res1) = satv phi1 env in
 	    let (child2,res2) = satv phi2 ((v,res1) :: env) in
-	    anno res2 [child1;child2]
+	      anno res2 [child1;child2]
 	| Ref(v)             -> anno (List.assoc v env) []
 ;;
 

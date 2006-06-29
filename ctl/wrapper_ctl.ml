@@ -7,8 +7,8 @@
  *
  * **********************************************************************)
 
-type ('pred, 'mvar) wrapped_ctl = 
-    ('pred * 'mvar Ast_ctl.modif,  'mvar) Ast_ctl.generic_ctl
+type ('pred, 'mvar,'anno) wrapped_ctl = 
+    ('pred * 'mvar Ast_ctl.modif,  'mvar, 'anno) Ast_ctl.generic_ctl * 'anno
 
 type ('value, 'pred) wrapped_binding = 
   | ClassicVar of 'value
@@ -124,7 +124,7 @@ struct
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-	(predicate,SUB.mvar) wrapped_ctl ->
+	(predicate,SUB.mvar,'anno) wrapped_ctl ->
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
