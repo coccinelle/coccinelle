@@ -321,6 +321,7 @@ let conflict_sub sub sub' =
 let conflict_subst theta theta' = conflictBy conflict_sub theta theta';;
 
 (* Returns an option since conjunction may fail (incompatible subs.) *)
+(* FIX ME: do proper cleanup *)
 let conj_subst theta theta' =
   if (conflict_subst theta theta') 
   then None 
@@ -381,6 +382,7 @@ let triples_conj trips trips' =
   in mixer mrg trips trips'
 ;;
 
+(*
 let triple_negate states (s,th,wits) = 
   let negstates = map (fun st -> (st,top_subst,top_wit)) (setdiff states [s]) in
   let negths = map (fun th -> (s,th,top_wit)) (negate_subst th) in
@@ -395,6 +397,51 @@ let rec triples_complement states trips =
     | (t::[]) -> triple_negate states t
     | (t::ts) -> 
 	triples_conj (triple_negate states t) (triples_complement states ts)
+;;
+*)
+
+(* Constructive negation at the state level *)
+type ('a) state =
+    PosState of 'a
+  | NegState of 'a list
+;;
+
+(* Conjunction on triples with "special states" *)
+let triples_state_conj trips trips' =
+  let mrg (s1,th1,wit1) (s2,th2,wit2) =
+    match (s1,s2) with
+      | (PosState s1, PosState s2) -> 
+	  if s1 = s2 then Some (PosState s1,th1,wit1) else None
+      | (PosState s1, NegState s2) -> 
+	  if List.mem s1 s2 then None else Some (PosState s1,th1,wit1)
+      | (NegState s1, PosState s2) -> 
+	  if List.mem s2 s1 then None else Some (PosState s2,th2,wit2)
+      | (NegState s1, NegState s2) -> Some (NegState (s1 @ s2),th1,wit1)
+  in mixer mrg trips trips'
+;;
+
+let triple_negate (s,th,wits) = 
+  let negstates = [(NegState [s],top_subst,top_wit)] in
+  let negths = map (fun th -> (PosState s,th,top_wit)) (negate_subst th) in
+  let negwits = map (fun nwit -> (PosState s,th,nwit)) (negate_wits wits) in
+    triples_union negstates (triples_union negths negwits)
+;;
+
+(* FIX ME: it is not necessary to do full conjunction *)
+let triples_complement states trips =
+  let cleanup (s,th,wit) =
+    match s with
+      | PosState s' -> [(s',th,wit)]
+      | NegState ss -> map (fun st -> (st,top_subst,top_wit)) (setdiff states ss)
+  in
+  let rec compl trips =
+    match trips with
+      | [] -> []
+      | (t::[]) -> triple_negate t
+      | (t::ts) -> 
+	  triples_state_conj (triple_negate t) (compl ts)
+  in
+    concatmap cleanup (compl trips)
 ;;
 
 
