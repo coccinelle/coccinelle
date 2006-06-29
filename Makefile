@@ -34,7 +34,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 
 
 ifeq ($(PAD),pad)
-all: mystuff
+all: mystuff all1
 else
 all: all1
 endif

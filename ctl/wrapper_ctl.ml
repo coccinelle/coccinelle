@@ -69,6 +69,13 @@ struct
       match (wv1,wv2) with
 	| (ClassicVar(v1),ClassicVar(v2)) -> ClassicVar(SUB.merge_val v1 v2)
 	| _                               -> wv1       (* FIX ME: ok? *)
+
+
+    let print_mvar x = SUB.print_mvar x
+    let print_value x = 
+      match x with
+      | ClassicVar v -> SUB.print_value v
+      | PredVar v -> Format.print_string "<predvar>"
   end
 
   (* Instantiate a wrapped version of CTL_ENGINE *)

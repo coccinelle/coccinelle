@@ -7,10 +7,17 @@ module type SUBST =
     val eq_mvar : mvar -> mvar -> bool
     val eq_val : value -> value -> bool
     val merge_val : value -> value -> value
+    val print_mvar : mvar -> unit
+    val print_value : value -> unit
   end
 
 module type GRAPH =
-  sig type node type cfg val predecessors : cfg -> node -> node list end
+  sig 
+    type node 
+    type cfg 
+    val predecessors : cfg -> node -> node list 
+    val print_node: node -> unit
+  end
 
 module OGRAPHEXT_GRAPH :
   sig
@@ -19,6 +26,7 @@ module OGRAPHEXT_GRAPH :
     val predecessors :
       < predecessors : 'a -> < tolist : ('b * 'c) list; .. >; .. > ->
       'a -> 'b list
+    val print_node : node -> unit
   end
 
 exception TODO_CTL

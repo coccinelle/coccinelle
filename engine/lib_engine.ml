@@ -16,3 +16,8 @@ type predicate =
 type transformation_info = (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
 
 
+
+let print_binding = function
+  | ParenVar s -> Format.print_string ("parenvar(" ^ s ^ ")")
+  | NormalMetaVar x -> Pretty_print_c.pp_binding x
+  

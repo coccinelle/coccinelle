@@ -18,6 +18,8 @@ module type SUBST =
     val eq_mvar: mvar -> mvar -> bool
     val eq_val: value -> value -> bool
     val merge_val: value -> value -> value
+    val print_mvar : mvar -> unit
+    val print_value : value -> unit
   end
 ;;
 
@@ -30,6 +32,7 @@ module type GRAPH =
     type node
     type cfg
     val predecessors: cfg -> node -> node list
+    val print_node : node -> unit
   end
 ;;
 
@@ -38,6 +41,7 @@ module OGRAPHEXT_GRAPH =
     type node = int;;
     type cfg = (string,unit) Ograph_extended.ograph_extended;;
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+    let print_node i = Format.print_string (Common.i_to_s i)
   end
 ;;
 
@@ -221,6 +225,71 @@ type ('state,'subst,'anno) generic_triple =
 
 type ('state,'subst,'anno) generic_algo = 
     ('state,'subst,'anno) generic_triple list;;
+
+
+let (print_generic_subst: (SUB.mvar, SUB.value) Ast_ctl.generic_subst -> unit) = fun subst ->
+  match subst with
+  | Subst (mvar, value) -> 
+      Format.print_string ("+");
+      SUB.print_mvar mvar; 
+      Format.print_string " --> ";
+      SUB.print_value value
+  | NegSubst (mvar, value) -> 
+      Format.print_string ("-");
+      SUB.print_mvar mvar; 
+      Format.print_string " --> ";
+      SUB.print_value value
+
+let (print_generic_substitution:  (SUB.mvar, SUB.value) Ast_ctl.generic_substitution -> unit) = fun substxs ->
+  begin
+    Format.print_string "[";
+    Common.print_between (fun () -> Format.print_string ";" ) print_generic_subst substxs;
+    Format.print_string "]";
+  end
+
+let rec (print_generic_witness: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
+           Ast_ctl.generic_witness -> unit) = function
+  | Wit (state, subst, anno, childrens) -> 
+      Format.print_string "wit ";
+      G.print_node state;
+      print_generic_substitution subst;
+      (* go in children ? *)
+  | NegWit  (state, subst, anno, childrens) -> 
+      Format.print_string "wit ";
+      G.print_node state;
+      print_generic_substitution subst;
+      (* go in children ? *)
+
+and (print_generic_witnesstree: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
+       Ast_ctl.generic_witnesstree -> unit) = fun witnesstree ->
+  begin
+    Format.print_string "{";
+    Common.print_between (fun () -> Format.print_string ";" ) print_generic_witness witnesstree;
+    Format.print_string "}";
+  end
+
+
+and (print_generic_triple: (G.node * 
+                            (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
+                            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) Ast_ctl.generic_witnesstree)
+                         -> unit) = fun (node, subst, tree) -> 
+  begin
+    G.print_node node;
+    print_generic_substitution subst;
+    print_generic_witnesstree tree;
+  end
+
+and (print_generic_algo: (G.node * 
+                         (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
+                         (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) Ast_ctl.generic_witnesstree)
+                         list -> unit) = fun xs -> 
+  begin
+    Format.print_string "<";
+    Common.print_between (fun () -> Format.print_string ";" ) print_generic_triple xs;
+    Format.print_string ">";
+  end
+
+
 
 
 (* ---------------------------------------------------------------------- *)
@@ -499,7 +568,13 @@ let rec satloop ((grp,label,states) as m) phi env =
   match unwrap phi with
     False              -> []
   | True               -> triples_top states
-  | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
+  | Pred(p)            -> 
+      let x = label(p) in		(* NOTE: Assume well-formed *)
+      print_generic_algo x;
+      Format.print_string "\n";
+      Format.print_flush ();
+      x
+      
   | Not(phi)           -> triples_complement states (satloop m phi env)
   | Or(phi1,phi2)      -> triples_union
 	                    (satloop m phi1 env) (satloop m phi2 env)
@@ -518,7 +593,9 @@ let rec satloop ((grp,label,states) as m) phi env =
       satloop m
 	(rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1)))))) env
   | EU(phi1,phi2)      -> satEU m (satloop m phi1 env) (satloop m phi2 env)
-  | AU(phi1,phi2)      -> satAU m (satloop m phi1 env) (satloop m phi2 env) 
+  | AU(phi1,phi2)      -> 
+      satAU m (satloop m phi1 env) (satloop m phi2 env)
+      (* old: satAF m (satloop m phi2 env) *)
   | Implies(phi1,phi2) ->
       satloop m (rewrap phi (Or(rewrap phi (Not phi1),phi2))) env
   | Exists (v,phi)     -> triples_witness v (satloop m phi env)

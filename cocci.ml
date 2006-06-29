@@ -137,8 +137,11 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         then failwith "I handle cocci patch with only one region for the moment";
         let ctl = one_ctl ctls in
 
-        Ctltotex.totex "/tmp/__cocci_ctl.tex" sp ctls;
-        command2 "cd /tmp; latex __cocci_ctl.tex; dvips __cocci_ctl.dvi -o __cocci_ctl.ps; gv __cocci_ctl.ps";
+        if !Flag.show_ctl then
+          begin
+            Ctltotex.totex "/tmp/__cocci_ctl.tex" sp ctls;
+            command2 "cd /tmp; latex __cocci_ctl.tex; dvips __cocci_ctl.dvi -o __cocci_ctl.ps; gv __cocci_ctl.ps";
+          end;
 
         ctl, all_error_words
     | Right ctl -> 
@@ -155,7 +158,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
           (* call the engine algorithms only if have found a flag word *)
           let str = Str.global_replace (Str.regexp "\n") " " s in (* cos caml regexp dont like \n ... *)
-          if true || 
+          if not (!Flag.process_only_when_error_words) || 
             error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
           then
               let _ = pr2 "found error word: " in
@@ -168,7 +171,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                   pr2 "at least 1 deadcode detected (there may be more), but I continue"
               in
           
-              print_flow  flow;
+              if !Flag.show_flow then print_flow  flow;
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
               pr2 "calling sat_noclean";
               let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in

@@ -17,8 +17,10 @@ let (labels_for_ctl:
   = fun nodes ->
 
    (fun pred -> 
+(*
        pr2 "start label";
        pr2 (Dumper.dump pred);
+*)
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
          (match pred, node with
@@ -51,6 +53,9 @@ let (labels_for_ctl:
          | Lib_engine.Return, node -> 
              (match node with
              (* todo? should match the Exit code ? *)
+             (* todo: one day try also to match the special function
+                such as panic(); 
+              *)
              | Control_flow_c.Statement (Ast_c.Jump (Ast_c.Return), _) -> 
                  [nodei, []]
              | Control_flow_c.Statement (Ast_c.Jump (Ast_c.ReturnExpr _), _) -> 
@@ -60,8 +65,10 @@ let (labels_for_ctl:
          )
        ) +> List.concat
        in
+(*
        pr2 "end label";
        pr2 (Dumper.dump nodes');
+*)
        nodes'
        ) 
 
@@ -77,12 +84,14 @@ let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_ext
 let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun  flow ->
   let (exitnodei, (node, nodestr)) = flow#nodes#tolist +> List.find (function (nodei, (Control_flow_c.Exit, nodes)) -> true | _ -> false) in
   let flow = flow#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) in
+
   assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
     List.length ((flow#successors nodei)#tolist) >= 1 
     (* no:  && List.length ((flow#predecessors nodei)#tolist) >= 1  
        because    the enter node at least have no predecessors 
      *)
       ));
+
   flow
 
 
@@ -107,6 +116,9 @@ module ENV =
     let eq_mvar x x' = x = x';;
     let eq_val v v' = v = v';;
     let merge_val v v' = v;;	       
+
+    let print_mvar s = Format.print_string s
+    let print_value x = Lib_engine.print_binding x
   end
 
 
@@ -115,6 +127,7 @@ module CFG =
     type node = int;;
     type cfg = (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended;;
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+    let print_node i = Format.print_string (i_to_s i)
   end
 
 

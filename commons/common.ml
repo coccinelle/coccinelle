@@ -498,6 +498,13 @@ let (string_of_list: char list -> string) =
   List.fold_left (fun acc x -> acc^(Char.escaped x)) ""
 *)
 
+
+let rec print_between between fn = function
+    [] -> ()
+  | [x] -> fn x
+  | x::xs -> fn x; between(); print_between between fn xs
+
+
 (******************************************************************************************)
 (* Macro *)
 (******************************************************************************************)

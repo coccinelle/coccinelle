@@ -132,6 +132,7 @@ val string_of_option : ('a -> string) -> 'a option -> string
 val print_bool : bool -> unit
 val print_option : ('a -> 'b) -> 'a option -> unit
 val print_list : ('a -> 'b) -> 'a list -> unit
+val print_between : (unit -> unit) -> ('a -> unit) -> 'a list -> unit
 
 (******************************************************************************************)
 (* Macro *)
