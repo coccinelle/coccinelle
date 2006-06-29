@@ -192,6 +192,17 @@ let lmerge f m l1 l2 =
   in concat (allpairs mrg l1 l2)
 ;;
 
+let rec mixer mrg xs ys = 
+  let rec mix x ys =
+    match ys with
+      | [] -> []
+      | (y::ys') -> 
+	  let rest = mix x ys' in 
+	    maybe (fun xy -> xy :: rest) rest (mrg x y) in
+    match xs with
+      | [] -> []
+      | (x::xs') -> (mix x ys) @ (mixer mrg xs' ys)
+;;
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -361,16 +372,13 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
-(* FIX ME: concat (allpairs ...) is BAD *)
 let triples_conj trips trips' =
   let mrg (s1,th1,wit1) (s2,th2,wit2) =
     if (s1 = s2) then
-      match (conj_subst th1 th2) with
-	| Some th -> [(s1,th,union_wit wit1 wit2)]
-	| _       -> []
+      maybe (fun th -> Some (s1,th,union_wit wit1 wit2)) None (conj_subst th1 th2)
     else
-      []
-  in concat (allpairs mrg trips trips')
+      None
+  in mixer mrg trips trips'
 ;;
 
 let triple_negate states (s,th,wits) = 
