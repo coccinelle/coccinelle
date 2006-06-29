@@ -432,14 +432,19 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
 let triples_conj trips trips' =
-  let mrg (s1,th1,wit1) (s2,th2,wit2) =
-    if (s1 = s2) then
-      match (conj_subst th1 th2) with
-	| Some th -> [(s1,th,union_wit wit1 wit2)]
-	| _       -> []
-    else
-      []
-  in concat (allpairs mrg trips trips')
+  List.fold_left
+    (function rest ->
+      function (s1,th1,wit1) ->
+	List.fold_left
+	  (function rest ->
+	    function (s2,th2,wit2) ->
+	      if (s1 = s2) then
+		match (conj_subst th1 th2) with
+		| Some th -> (s1,th,union_wit wit1 wit2)::rest
+		| _       -> rest
+	      else rest)
+	  rest trips')
+    [] trips
 ;;
 
 let triple_negate states (s,th,wits) = 
@@ -451,11 +456,13 @@ let triple_negate states (s,th,wits) =
 
 (* FIX ME: optimise; it is not necessary to do full conjunction *)
 let rec triples_complement states trips =
+  let rec loop states trips =
   match trips with
     | [] -> []
     | (t::[]) -> triple_negate states t
     | (t::ts) -> 
-	triples_conj (triple_negate states t) (triples_complement states ts)
+	triples_conj (triple_negate states t) (loop states ts) in
+  loop states trips
 ;;
 
 
@@ -479,9 +486,12 @@ let triples_witness x trips =
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
 
+let pre_concatmap f l =
+  List.fold_left (function rest -> function cur -> union (f cur) rest) [] l
+
 let rec pre_exist (grp,_,_) y =
   let exp (s,th,wit) = map (fun s' -> (s',th,wit)) (G.predecessors grp s) in
-  (concatmap exp y)
+  (pre_concatmap exp y)
 ;;
 
 let pre_forall ((_,_,states) as m) y = 
