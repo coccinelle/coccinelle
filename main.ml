@@ -39,6 +39,8 @@ let main () =
         if (!cocci_file = "") then failwith "I need a cocci file,  use -cocci_file <filename>";
         if not (!cocci_file =~ ".*\\.cocci") then pr2 "warning: seems not a .cocci file";
         if !iso_file <> "" && not (!iso_file =~ ".*\\.iso") then pr2 "warning: seems not a .iso file";
+        let cocci_file = !cocci_file in
+        let iso_file = (if !iso_file = "" then None else Some !iso_file) in
 
         let fullxs = 
           if !dir 
@@ -47,7 +49,7 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          Cocci.full_engine cfile (Left (!cocci_file, (if !iso_file = "" then None else Some !iso_file) ))
+          Cocci.full_engine cfile (Left (cocci_file, iso_file))
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
