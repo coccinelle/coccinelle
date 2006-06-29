@@ -21,6 +21,8 @@ type ('pred,'mvar) generic_ctl =
   | EX of ('pred,'mvar) generic_ctl
   | EG of ('pred,'mvar) generic_ctl
   | EU of ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
+  | Let of string * ('pred,'mvar) generic_ctl * ('pred,'mvar) generic_ctl
+  | Ref of string
 
 (* NOTE: No explicit representation of the bottom subst., i.e., FALSE *)
 type ('mvar,'value) generic_subst = 

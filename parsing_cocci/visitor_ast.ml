@@ -140,6 +140,7 @@ let combiner bind option_default
 		      string_mcode sem]
       | Ast.UnInit(ty,id,sem) ->
 	  multibind [fullType ty; ident id; string_mcode sem]
+      | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl
       | Ast.MultiDecl(decl) -> declaration decl in

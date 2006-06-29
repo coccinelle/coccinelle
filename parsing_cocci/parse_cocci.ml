@@ -145,6 +145,7 @@ let token2c (tok,_) =
   | PC.TIso -> "<=>"
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoStatement -> "Statement"
+  | PC.TIsoDeclaration -> "Declaration"
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
@@ -243,7 +244,7 @@ let split_token ((tok,_) as t) =
 
   | PC.EOF | PC.TInvalid -> ([t],[t])
 
-  | PC.TIso | PC.TIsoExpression | PC.TIsoStatement ->
+  | PC.TIso | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration ->
       failwith "unexpected tokens"
 
 let split_token_stream tokens =
@@ -519,14 +520,16 @@ let parse_iso = function
 	    (* get the rule *)
 	    let (more,tokens) =
 	      tokens_all table file false lexbuf
-		[PC.TIsoStatement;PC.TIsoExpression] in
+		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
 	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
 	    let entry = parse_one PC.iso_main file tokens in
 	    if more
-	    then
+	    then (* The code below allows a header like Statement list,
+		    which is more than one word.  We don't have that any more,
+		    but the code is left here in case it is put back. *)
 	      match tokens_all table file true lexbuf [PC.TArobArob] with
 		(true,start) -> entry :: (loop (next_start::start))
 	      |	_ -> failwith "isomorphism ends early"

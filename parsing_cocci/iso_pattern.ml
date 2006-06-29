@@ -126,14 +126,6 @@ let rec match_ident context_required pattern id =
       else return false
 
 let rec match_expr context_required pattern expr =
-  Printf.printf "matching on an expression %b %b\n"
-    (not(context_required)) (is_context expr);
-  Unparse_ast0.expression pattern;
-  Format.print_flush();
-  Printf.printf "\n";
-  Unparse_ast0.expression expr;
-  Format.print_flush();
-  Printf.printf "\n";
   match Ast0.unwrap pattern with
     Ast0.MetaExpr(name,_) -> add_binding name (Ast0.ExprTag expr)
   | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
@@ -256,14 +248,6 @@ and match_typeC context_required pattern t =
       else return false
 
 and match_decl context_required pattern d =
-  Printf.printf "matching on a declaration %b %b\n"
-    (not(context_required)) (is_context d);
-  Unparse_ast0.declaration pattern;
-  Format.print_flush();
-  Printf.printf "\n";
-  Unparse_ast0.declaration d;
-  Format.print_flush();
-  Printf.printf "\n";
   if not(context_required) or is_context d
   then
     match (Ast0.unwrap pattern,Ast0.unwrap d) with
@@ -277,6 +261,8 @@ and match_decl context_required pattern d =
 	conjunct_bindings
 	  (match_typeC context_required tya tyb)
 	  (match_ident context_required ida idb)
+    | (Ast0.DisjDecl(_,declsa,_),Ast0.DisjDecl(_,declsb,_)) ->
+	failwith "not allowed in the pattern of an isomorphism"
     | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
     | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
     | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) ->
@@ -598,29 +584,13 @@ let disj_starter =
 let disj_ender =
   ("(",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
 
-let make_disj_stmt_dots sdl =
-  Ast0.context_wrap
-    (Ast0.DOTS[Ast0.context_wrap(Ast0.Disj(disj_starter,sdl,disj_ender))])
 let make_disj_expr el =
   Ast0.context_wrap (Ast0.DisjExpr(disj_starter,el,disj_ender))
+let make_disj_decl dl =
+  Ast0.context_wrap (Ast0.DisjDecl(disj_starter,dl,disj_ender))
 let make_disj_stmt sl =
   let dotify x = Ast0.context_wrap (Ast0.DOTS[x]) in
   Ast0.context_wrap (Ast0.Disj(disj_starter,List.map dotify sl,disj_ender))
-
-let transform_statement_dots alts e =
-  match alts with
-    (Ast0.DotsStmtTag(_)::_) ->
-      let alts =
-	List.map
-	  (function Ast0.DotsStmtTag(p) -> p | _ -> failwith "invalid alt")
-	  alts in
-      mkdisj (match_dots match_statement) alts
-	(function b -> (instantiate b).V0.rebuilder_statement_dots)
-	e make_disj_stmt_dots
-	make_minus.V0.rebuilder_statement_dots
-	rebuild_mcode.V0.rebuilder_statement_dots Compute_lines.statement_dots
-	Unparse_ast0.statement_dots
-  | _ -> e
 
 let transform_expr alts e =
   match alts with
@@ -634,6 +604,20 @@ let transform_expr alts e =
 	make_disj_expr make_minus.V0.rebuilder_expression
 	rebuild_mcode.V0.rebuilder_expression Compute_lines.expression
 	Unparse_ast0.expression
+  | _ -> e
+
+let transform_decl alts e =
+  match alts with
+    (Ast0.DeclTag(_)::_) ->
+      let alts =
+	List.map
+	  (function Ast0.DeclTag(p) -> p | _ -> failwith "invalid alt")
+	  alts in
+      mkdisj match_decl alts
+	(function b -> (instantiate b).V0.rebuilder_declaration) e
+	make_disj_decl make_minus.V0.rebuilder_declaration
+	rebuild_mcode.V0.rebuilder_declaration Compute_lines.declaration
+	Unparse_ast0.declaration
   | _ -> e
 
 let transform_stmt alts e =
@@ -656,12 +640,12 @@ let transform (alts : Ast0.anything list) =
   let mcode x = x in
   let exprdotsfn r k e = k e in
   let paramdotsfn r k e = k e in
-  let stmtdotsfn r k e = transform_statement_dots alts (k e) in
+  let stmtdotsfn r k e = k e in
   let identfn r k e = k e in
   let exprfn r k e = transform_expr alts (k e) in
   let tyfn r k e = k e in
   let paramfn r k e = k e in
-  let declfn r k e = k e in
+  let declfn r k e = transform_decl alts (k e) in
   let stmtfn r k e = transform_stmt alts (k e) in
   let topfn r k e = k e in
   

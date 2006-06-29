@@ -190,6 +190,12 @@ let rec declaration d =
 	  mcode print_string eq; print_string " ";expression exp;
 	  mcode print_string sem
       | Ast0.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
+      | Ast0.DisjDecl(_,decls,_) ->
+	  print_string "\n("; force_newline();
+	  print_between
+	    (function _ -> print_string "\n|"; force_newline())
+	    declaration decls;
+	  print_string "\n)"
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
       | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
       | Ast0.MultiDecl(decl) -> print_string "\\+"; declaration decl)

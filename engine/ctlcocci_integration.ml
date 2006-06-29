@@ -48,6 +48,7 @@ let (labels_for_ctl:
          | Lib_engine.TrueBranch , _ -> []
          | Lib_engine.FalseBranch, _ -> []
          | Lib_engine.After, _ -> []
+         | Lib_engine.Return, _ -> failwith "TODO: Return not supported"
          )
        ) +> List.concat
        in

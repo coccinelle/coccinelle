@@ -136,13 +136,15 @@ and typeC table minus t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let declaration context table minus d =
+let rec declaration context table minus d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
       typeC table minus ty;
       ident context table minus id; expression ID table minus exp
   | Ast0.UnInit(ty,id,sem) ->
       typeC table minus ty; ident context table minus id
+  | Ast0.DisjDecl(_,decls,_) ->
+      List.iter (declaration ID table minus) decls
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 

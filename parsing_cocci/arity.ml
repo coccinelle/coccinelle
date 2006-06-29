@@ -371,7 +371,7 @@ let make_decl =
     (function x -> Ast0.UniqueDecl x)
     (function x -> Ast0.MultiDecl x)
 
-let declaration in_nest tgt decl =
+let rec declaration in_nest tgt decl =
   match Ast0.unwrap decl with
     Ast0.Init(ty,id,eq,exp,sem) ->
       let arity =
@@ -390,6 +390,12 @@ let declaration in_nest tgt decl =
       let id = ident false false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(ty,id,sem))
+  | Ast0.DisjDecl(starter,decls,ender) ->
+      let res =
+	Ast0.DisjDecl(starter,
+		      List.map (declaration in_nest tgt) decls,
+		      ender) in
+      Ast0.rewrap decl res
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 

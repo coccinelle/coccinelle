@@ -275,6 +275,7 @@ let rec declaration d =
       let sem = mcode sem in
       Ast.Init(ty,id,eq,exp,sem)
   | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
+  | Ast0.DisjDecl(_,decls,_)     -> Ast.DisjDecl(List.map declaration decls)
   | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
   | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
   | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)

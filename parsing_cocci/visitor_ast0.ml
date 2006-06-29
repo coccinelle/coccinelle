@@ -147,6 +147,10 @@ let combiner bind option_default
 		      string_mcode sem]
       | Ast0.UnInit(ty,id,sem) ->
 	  multibind [typeC ty; ident id; string_mcode sem]
+      |	Ast0.DisjDecl(starter,decls,ender) ->
+	  bind (string_mcode starter)
+	    (bind (multibind (List.map declaration decls))
+	       (string_mcode ender))
       | Ast0.OptDecl(decl) -> declaration decl
       | Ast0.UniqueDecl(decl) -> declaration decl
       | Ast0.MultiDecl(decl) -> declaration decl in
@@ -401,6 +405,9 @@ let rebuilder = fun
 		      string_mcode sem)
 	| Ast0.UnInit(ty,id,sem) ->
 	    Ast0.UnInit(typeC ty, ident id, string_mcode sem)
+	| Ast0.DisjDecl(starter,decls,ender) ->
+	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,
+			  string_mcode ender)
 	| Ast0.OptDecl(decl) -> Ast0.OptDecl(declaration decl)
 	| Ast0.UniqueDecl(decl) -> Ast0.UniqueDecl(declaration decl)
 	| Ast0.MultiDecl(decl) -> Ast0.MultiDecl(declaration decl)) in

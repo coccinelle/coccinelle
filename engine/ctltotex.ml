@@ -32,6 +32,9 @@ let texify s =
     else
       match String.get s n with
 	'_' -> Printf.sprintf "\\_%s" (loop (n+1))
+      | '{' -> Printf.sprintf "{\\ttlb}%s" (loop (n+1))
+      | '}' -> Printf.sprintf "{\\ttrb}%s" (loop (n+1))
+      | '>' -> Printf.sprintf "\\mth{>}%s" (loop (n+1))
       | c -> Printf.sprintf "%c%s" c (loop (n+1)) in
   (Printf.sprintf "\\mita{%s}" (loop 0),len)
 
@@ -93,6 +96,14 @@ let rec ctl2c ct pp pv = function
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
       ("\\E["^res1^" \\U "^res2^"]\n",ct)
+  | CTL.Ref(v) -> texify(pv v)
+  | CTL.Let(v,f1,f2) ->
+      let (v,ct) = texify (pv v) in
+      let (res1,ct) = letwrap (ct+5) pp pv f1 in
+      let (res1,ct) = check_ct ct res1 in
+      let (res2,ct) = letwrap (ct+3) pp pv f2 in
+      (Printf.sprintf "\\mita{\\sf{let}} \\, %s = %s \\mita{\\sf{in}} %s\n"
+	 v res1 res2, ct)
 
 and wrap ct pp pv x =
   match x with
@@ -134,6 +145,12 @@ and existswrap ct pp pv x =
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
+and letwrap ct pp pv x =
+  match x with
+    CTL.Let(_,_,_) ->
+      let (res,ct) = ctl2c (ct+1) pp pv x in (Printf.sprintf "(%s)" res,ct+1)
+  | _ -> ctl2c ct pp pv x
+
 let ctltotex rule pp pv ctls o =
   Printf.fprintf o "\\begin{quote}\\begin{verbatim}\n";
   Printf.fprintf o "%s\n" (Unparse_cocci.unparse_to_string rule);
@@ -148,3 +165,28 @@ let ctltotex rule pp pv ctls o =
   
 let make_prelude o = Printf.fprintf o "%s\n" prelude
 let make_postlude o = Printf.fprintf o "%s\n" postlude
+
+(* ----------------------------------------------------------------------- *)
+
+let pred2c = function
+    Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
+  | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
+  | Lib_engine.After -> ("\\msf{After}",5)
+  | Lib_engine.Return -> ("\\msf{Return}",5)
+  | Lib_engine.Paren(s) -> ("\\msf{Paren}("^s^")",7+(String.length s))
+  | Lib_engine.Match(re) ->
+      let s = Unparse_cocci.rule_elem_to_string re in
+      let (s,len) = texify s in
+      (Printf.sprintf "%s" s,len)
+
+let totex out_file rules ctls =
+  let o = open_out out_file in
+  make_prelude o;
+  List.iter2
+    (function ast_list ->
+      function ctls ->
+	ctltotex ast_list pred2c (function x -> x) ctls o)
+    rules ctls;
+  make_postlude o;
+  close_out o
+

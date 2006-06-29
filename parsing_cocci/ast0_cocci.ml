@@ -118,6 +118,7 @@ type base_declaration =
     Init of typeC * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of typeC * ident * string mcode (* ; *)
+  | DisjDecl   of string mcode * declaration list * string mcode
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)

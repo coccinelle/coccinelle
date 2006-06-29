@@ -158,6 +158,7 @@ and declaration =
     Init of fullType * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
+  | DisjDecl   of declaration list
 
   | OptDecl    of declaration
   | UniqueDecl of declaration

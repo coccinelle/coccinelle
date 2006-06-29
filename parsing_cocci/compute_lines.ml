@@ -176,7 +176,6 @@ let rec expression e =
   | Ast0.EComma(cm) as ue ->
       let ln = promote_mcode cm in mkres e ue ln ln
   | Ast0.DisjExpr(starter,exps,ender) ->
-      let exps = List.map expression exps in
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
       mkres e (Ast0.DisjExpr(starter,List.map expression exps,ender))
@@ -259,6 +258,11 @@ let rec declaration d =
       let ty = typeC ty in
       let id = ident id in
       mkres d (Ast0.UnInit(ty,id,sem)) ty (promote_mcode sem)
+  | Ast0.DisjDecl(starter,decls,ender) ->
+      let starter = bad_mcode starter in
+      let ender = bad_mcode ender in
+      mkres d (Ast0.DisjDecl(starter,List.map declaration decls,ender))
+	(promote_mcode starter) (promote_mcode ender)
   | Ast0.OptDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.OptDecl(declaration decl)) decl decl

@@ -181,6 +181,18 @@ let classify all_marked table code =
 	       (mcode ender))
       |	_ -> k e) in
 
+  let declaration r k e =
+    compute_result Ast0.decl e
+      (match Ast0.unwrap e with
+	Ast0.DisjDecl(starter,decls,ender) ->
+	  bind (mcode starter)
+	    (bind (List.fold_right bind
+		     (List.map make_not_marked
+			(List.map r.V0.combiner_declaration decls))
+		     option_default)
+	       (mcode ender))
+      |	_ -> k e) in
+
   let statement r k s =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
@@ -206,7 +218,7 @@ let classify all_marked table code =
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsParam)
       (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.ident) expression
-      (do_nothing Ast0.typeC) (do_nothing Ast0.param) (do_nothing Ast0.decl)
+      (do_nothing Ast0.typeC) (do_nothing Ast0.param) declaration
       statement (do_nothing Ast0.top) in
   combiner.V0.combiner_top_level code
 

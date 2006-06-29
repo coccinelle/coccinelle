@@ -264,9 +264,15 @@ and const_vol = function
 
 let rec declaration = function
     Ast.Init(ty,id,eq,exp,sem) ->
-      fullType ty; ident id; mcode print_string eq; expression exp;
-      mcode print_string sem
+      fullType ty; ident id; print_string " "; mcode print_string eq;
+      print_string " "; expression exp; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
+  | Ast.DisjDecl(decls) ->
+      print_string "\n("; force_newline();
+      print_between
+	(function _ -> print_string "\n|"; force_newline())
+	declaration decls;
+      print_string "\n)"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl

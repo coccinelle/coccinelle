@@ -51,3 +51,16 @@ if (X) { S }
 <=>
 
 if (X) S
+
+Declaration
+
+@@
+type T;
+identifier Z;
+@@
+
+T Z = ...;
+
+<=>
+
+T Z;

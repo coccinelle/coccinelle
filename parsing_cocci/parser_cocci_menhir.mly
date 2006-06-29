@@ -178,7 +178,7 @@ let startofs _ = -1
 %token <Data.line_type * int * int * int> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * (Data.line_type * int * int * int)> TAssign
 
-%token TIso TIsoExpression TIsoStatement
+%token TIso TIsoExpression TIsoStatement TIsoDeclaration
 
 %token TInvalid
 
@@ -460,6 +460,8 @@ single_statement:
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */
+/* The AST DisjDecl cannot be generated because it would be ambiguous with
+a disjunction on a statement with a declaration in each branch */
 decl_var:
     ctype comma_list(d_ident) TPtVirg
       { List.map
@@ -989,9 +991,13 @@ iso_main:
   { List.map (function x -> Ast0.ExprTag x) (e1::el) }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { List.map (function x -> Ast0.StmtTag x) (s1::sl) }
-| TIsoStatement Tlist ss1=pre_post_decl_statement_and_expression_opt
-    ssl=list(iso(pre_post_decl_statement_and_expression_opt)) EOF
-    { List.map (function x -> Ast0.DotsStmtTag x) (ss1::ssl) }
+| TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
+    { let check_one = function
+	[x] -> x
+      | _ ->
+	  failwith "only one variable per delaration in an isomorphism rule" in
+    let res = List.map check_one (d1::dl) in
+    List.map (function x -> Ast0.DeclTag x) res }
 
 %inline iso(term):
     TIso t=term { t }

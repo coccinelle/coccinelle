@@ -454,91 +454,104 @@ let satEU m s1 s2 =
 
 
 
-let rec sat ((grp,label,states) as m) phi =
+let rec satloop ((grp,label,states) as m) phi env =
   match phi with
     False              -> []
   | True               -> triples_top states
   | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
-  | Not(phi)           -> triples_complement states (sat m phi)
-  | Or(phi1,phi2)      -> triples_union (sat m phi1) (sat m phi2)
-  | And(phi1,phi2)     -> triples_conj (sat m phi1) (sat m phi2)
-  | EX(phi)            -> satEX m (sat m phi)
-  | AX(phi)            -> sat m (Not (EX(Not phi)))
-  | EF(phi)            -> sat m (EU(True,phi))
-  | AF(phi)            -> satAF m (sat m phi)
-  | EG(phi)            -> sat m (Not(AF(Not phi)))
-  | AG(phi)            -> sat m (Not(EF(Not(phi))))
-  | EU(phi1,phi2)      -> satEU m (sat m phi1) (sat m phi2)
-  | AU(phi1,phi2)      -> satAU m (sat m phi1) (sat m phi2) 
-  | Implies(phi1,phi2) -> sat m (Or(Not phi1,phi2))
-  | Exists (v,phi)     -> triples_witness v (sat m phi)
+  | Not(phi)           -> triples_complement states (satloop m phi env)
+  | Or(phi1,phi2)      -> triples_union
+	                    (satloop m phi1 env) (satloop m phi2 env)
+  | And(phi1,phi2)     -> triples_conj
+	                    (satloop m phi1 env) (satloop m phi2 env)
+  | EX(phi)            -> satEX m (satloop m phi env)
+  | AX(phi)            -> satloop m (Not (EX(Not phi))) env
+  | EF(phi)            -> satloop m (EU(True,phi)) env
+  | AF(phi)            -> satAF m (satloop m phi env)
+  | EG(phi)            -> satloop m (Not(AF(Not phi))) env
+  | AG(phi)            -> satloop m (Not(EF(Not(phi)))) env
+  | EU(phi1,phi2)      -> satEU m (satloop m phi1 env) (satloop m phi2 env)
+  | AU(phi1,phi2)      -> satAU m (satloop m phi1 env) (satloop m phi2 env) 
+  | Implies(phi1,phi2) -> satloop m (Or(Not phi1,phi2)) env
+  | Exists (v,phi)     -> triples_witness v (satloop m phi env)
+  | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(satloop m phi1 env)) :: env)
+  | Ref(v)             -> List.assoc v env
 ;;
 
-
+let sat m phi = satloop m phi []
+;;
 
 (* SAT with tracking *)
-let rec sat_verbose annotate maxlvl lvl ((grp,label,states) as m) phi =
+let rec sat_verbose_loop annotate maxlvl lvl ((grp,label,states) as m) phi env =
   let anno res children = (annotate lvl phi res children,res) in
-  let satv phi0 = sat_verbose annotate maxlvl (lvl+1) m phi0 in
+  let satv phi0 env = sat_verbose_loop annotate maxlvl (lvl+1) m phi0 env in
     if (lvl > maxlvl) && (maxlvl > -1) then
-      anno (sat m phi) []
+      anno (satloop m phi env) []
     else
       match phi with
 	  False              -> anno [] []
 	| True               -> anno (triples_top states) []
 	| Pred(p)            -> anno (label(p)) []
 	| Not(phi1)          -> 
-	    let (child,res) = satv phi1 in
+	    let (child,res) = satv phi1 env in
 	      anno (triples_complement states res) [child]
 	| Or(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 in
-	    let (child2,res2) = satv phi2 in
+	    let (child1,res1) = satv phi1 env in
+	    let (child2,res2) = satv phi2 env in
 	      anno (triples_union res1 res2) [child1; child2]
 	| And(phi1,phi2)     -> 
-	    let (child1,res1) = satv phi1 in
-	    let (child2,res2) = satv phi2 in
+	    let (child1,res1) = satv phi1 env in
+	    let (child2,res2) = satv phi2 env in
 	      anno (triples_conj res1 res2) [child1; child2]
 	| EX(phi1)           -> 
-	    let (child,res) = satv phi1 in
+	    let (child,res) = satv phi1 env in
 	      anno (satEX m res) [child]
 	| AX(phi1)           -> 
-	    let (child,res) = satv phi1 in
+	    let (child,res) = satv phi1 env in
 	      anno (pre_forall m res) [child]
 	| EF(phi1)           -> 
-	    let (child,_) = satv phi1 in
-	      anno (sat m (EU(True,phi1))) [child]
+	    let (child,_) = satv phi1 env in
+	      anno (satloop m (EU(True,phi1)) env) [child]
 	| AF(phi1)           -> 
-	    let (child,res) = satv phi1 in
+	    let (child,res) = satv phi1 env in
 	      anno (satAF m res) [child]
 	| EG(phi1)           -> 
-	    let (child,_) = satv phi1 in
-	      anno (sat m (Not(AF(Not phi1)))) [child]
+	    let (child,_) = satv phi1 env in
+	      anno (satloop m (Not(AF(Not phi1))) env) [child]
 	| AG(phi1)            -> 
-	    let (child,_) = satv phi1 in
-	      anno (sat m (Not(EF(Not(phi1))))) [child]
+	    let (child,_) = satv phi1 env in
+	      anno (satloop m (Not(EF(Not(phi1)))) env) [child]
 	| EU(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 in
-	    let (child2,res2) = satv phi2 in
+	    let (child1,res1) = satv phi1 env in
+	    let (child2,res2) = satv phi2 env in
 	      anno (satEU m res1 res2) [child1; child2]
 	| AU(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 in
-	    let (child2,res2) = satv phi2 in
+	    let (child1,res1) = satv phi1 env in
+	    let (child2,res2) = satv phi2 env in
 	      anno (satAU m res1 res2) [child1; child2]
 	| Implies(phi1,phi2) -> 
-	    let (child1,_) = satv phi1 in
-	    let (child2,_) = satv phi2 in
-	      anno (sat m (Or(Not phi1,phi2))) [child1; child2]
+	    let (child1,_) = satv phi1 env in
+	    let (child2,_) = satv phi2 env in
+	      anno (satloop m (Or(Not phi1,phi2)) env) [child1; child2]
 	| Exists (v,phi1)    -> 
-	    let (child,res) = satv phi1 in
+	    let (child,res) = satv phi1 env in
 	      anno (triples_witness v res) [child]
+	| Let(v,phi1,phi2)   ->
+	    let (child1,res1) = satv phi1 env in
+	    let (child2,res2) = satv phi2 ((v,res1) :: env) in
+	    anno res2 [child1;child2]
+	| Ref(v)             -> anno (List.assoc v env) []
 ;;
+
+let sat_verbose annotate maxlvl lvl m phi =
+  sat_verbose_loop annotate maxlvl lvl m phi []
 
 (* Type for annotations collected in a tree *)
 type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
 
 let sat_annotree annotate m phi =
   let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
-    sat_verbose tree_anno (-1) 0 m phi
+    sat_verbose_loop tree_anno (-1) 0 m phi []
 ;;
 
 
