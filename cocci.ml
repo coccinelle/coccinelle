@@ -163,7 +163,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
           if not (!Flag.process_only_when_error_words) || 
             error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
           then
-              let _ = pr2 "found error word: " in
+              let _ = if !Flag.process_only_when_error_words then pr2 "found error word: " in
               let flow = Control_flow_c.ast_to_control_flow def in
               let _ =
                 try Control_flow_c.deadcode_detection flow
