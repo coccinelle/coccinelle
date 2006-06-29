@@ -118,7 +118,7 @@ struct
   (* The wrapper for sat from the CTL_ENGINE *)
   let satbis_noclean (grp,lab,states) phi =
     WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi
-
+      
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
          G.cfg *
@@ -129,6 +129,10 @@ struct
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
 	List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean)
+	  
+  (* Partial matches *)
+  let check_conjunction phipsi res_phi res_psi res_phipsi = ()
+
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end
