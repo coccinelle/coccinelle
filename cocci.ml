@@ -181,17 +181,26 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               pr2 "ending sat";
               (* pr2 (Dumper.dump trans_info); *)
-(*
-              trans_info +> List.iter (fun (i, subst, pred) -> 
-                pr2 ("transform state:" ^ (i_to_s i));
-                Format.print_string "[";
-                Common.print_between (fun () -> Format.print_string ";" ) Pretty_print_c.pp_binding subst;
-                Format.print_string "]";
-                                      );
-*)
 
 
               let trans_info' = Ctlcocci_integration.satbis_to_trans_info trans_info in
+
+              pr2 "transformation' info returned:";
+              trans_info' +> List.iter (fun (i, subst, pred) -> 
+                Format.print_string ("transform state:" ^ (i_to_s i));
+                Format.print_string " with binding [";
+                Common.print_between (fun () -> Format.print_string ";" ) 
+                  (fun (s, kind) -> 
+                    Format.print_string s;
+                    Format.print_string " --> ";
+                    Pretty_print_c.pp_binding kind)
+                  subst;
+                Format.print_string "]";
+                Format.force_newline();
+                                      );
+              Format.print_string "\n"; Format.print_flush();
+
+
               let flow' = Transformation.transform trans_info' flow  in
               let def' = flow' +> Control_flow_c.control_flow_to_ast in
               (Ast_c.Definition def', Unparse_c.PPnormal)
