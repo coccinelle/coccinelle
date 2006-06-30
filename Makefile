@@ -69,7 +69,7 @@ clean::
 
 
 test.ml: 
-	echo "let foo_ctl = raise Common.Todo"  > test.ml
+	echo "let foo_ctl () = raise Common.Todo"  > test.ml
 
 beforedepend:: test.ml
 
