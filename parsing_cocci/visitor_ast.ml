@@ -38,25 +38,29 @@ let combiner bind option_default
       Some x -> f x
     | None -> option_default in
   let rec expression_dots d =
-    let k = function
+    let k d =
+      match Ast.unwrap d with
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
 	  multibind (List.map expression l) in
     expdotsfn all_functions k d
 
   and parameter_dots d =
-    let k = function
+    let k d =
+      match Ast.unwrap d with
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
 	  multibind (List.map parameterTypeDef l) in
     paramdotsfn all_functions k d
 
   and statement_dots d =
-    let k = function
+    let k d =
+      match Ast.unwrap d with
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
 	  multibind (List.map statement l) in
     stmtdotsfn all_functions k d
 
   and ident i =
-    let k = function
+    let k i =
+      match Ast.unwrap i with
 	Ast.Id(name) -> string_mcode name
       | Ast.MetaId(name) -> string_mcode name
       | Ast.MetaFunc(name) -> string_mcode name
@@ -67,7 +71,8 @@ let combiner bind option_default
     identfn all_functions k i
     
   and expression e =
-    let k = function
+    let k e =
+      match Ast.unwrap e with
 	Ast.Ident(id) -> ident id
       | Ast.Constant(const) -> const_mcode const
       | Ast.FunCall(fn,lp,args,rp) ->
@@ -112,7 +117,8 @@ let combiner bind option_default
     exprfn all_functions k e
 	  
   and fullType ft =
-    let k = function
+    let k ft =
+      match Ast.unwrap ft with
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty
@@ -120,7 +126,8 @@ let combiner bind option_default
     ftfn all_functions k ft
 	  
   and typeC ty =
-    let k = function
+    let k ty =
+      match Ast.unwrap ty with
 	Ast.BaseType(ty,sgn) ->
 	  bind (get_option sign_mcode sgn) (base_mcode ty)
       | Ast.Pointer(ty,star) -> bind (fullType ty) (string_mcode star)
@@ -134,7 +141,8 @@ let combiner bind option_default
     tyfn all_functions k ty
 	  
   and declaration d =
-    let k = function
+    let k d =
+      match Ast.unwrap d with
 	Ast.Init(ty,id,eq,exp,sem) ->
 	  multibind [fullType ty; ident id; string_mcode eq; expression exp;
 		      string_mcode sem]
@@ -147,7 +155,8 @@ let combiner bind option_default
     declfn all_functions k d
 	  
   and parameterTypeDef p =
-    let k = function
+    let k p =
+      match Ast.unwrap p with
 	Ast.VoidParam(ty) -> fullType ty
       | Ast.Param(id,ty) -> bind (fullType ty) (ident id)
       | Ast.MetaParam(name) -> string_mcode name
@@ -160,7 +169,8 @@ let combiner bind option_default
     paramfn all_functions k p
 
   and rule_elem re =
-    let k = function
+    let k re =
+      match Ast.unwrap re with
 	Ast.FunHeader(stg,name,lp,params,rp) ->
 	  multibind [get_option storage_mcode stg; ident name;
 		      string_mcode lp; parameter_dots params;
@@ -196,7 +206,8 @@ let combiner bind option_default
     rulefn all_functions k re
 
   and statement s =
-    let k = function
+    let k s =
+      match Ast.unwrap s with
 	Ast.Seq(lbrace,body,rbrace) ->
 	  multibind [rule_elem lbrace; statement_dots body; rule_elem rbrace]
       | Ast.IfThen(header,branch) ->
@@ -223,7 +234,8 @@ let combiner bind option_default
     stmtfn all_functions k s
     
   and top_level t =
-    let k = function
+    let k t =
+      match Ast.unwrap t with
 	Ast.DECL(decl) -> declaration decl
       | Ast.INCLUDE(inc,name) -> bind (string_mcode inc) (string_mcode name)
       | Ast.FILEINFO(old_file,new_file) ->

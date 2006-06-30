@@ -66,12 +66,14 @@ let mcode fn = function
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let dots between fn = function
+let dots between fn d =
+  match Ast.unwrap d with
     Ast.DOTS(l) -> print_between between fn l
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots fn = function
+let nest_dots fn d =
+  match Ast.unwrap d with
     Ast.DOTS(l) ->
       print_string "<..."; start_block();
       print_between force_newline fn l;
@@ -88,7 +90,8 @@ let nest_dots fn = function
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-let rec ident = function
+let rec ident i =
+  match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
   | Ast.MetaId(name) -> mcode print_string name
   | Ast.MetaFunc(name) -> mcode print_string name
@@ -102,7 +105,8 @@ let rec ident = function
 
 let print_string_box s = print_string s; open_box 0
 
-let rec expression = function
+let rec expression e =
+  match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
@@ -217,7 +221,8 @@ and constant = function
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and fullType = function
+and fullType ft =
+  match Ast.unwrap ft with
     Ast.Type(cv,ty) ->
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
@@ -225,7 +230,8 @@ and fullType = function
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
   | Ast.MultiType(ty) -> print_string "\\+"; fullType ty
 
-and typeC = function
+and typeC ty =
+  match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.Array(ty,lb,size,rb) ->
@@ -262,7 +268,8 @@ and const_vol = function
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration = function
+let rec declaration d =
+  match Ast.unwrap d with
     Ast.Init(ty,id,eq,exp,sem) ->
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; expression exp; mcode print_string sem
@@ -280,7 +287,8 @@ let rec declaration = function
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec parameterTypeDef = function
+let rec parameterTypeDef p =
+  match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(id,ty) -> fullType ty; ident id
   | Ast.MetaParam(name) -> mcode print_string name
@@ -301,7 +309,8 @@ let storage Ast.Static = print_string "static "
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rule_elem arity = function
+let rule_elem arity re =
+  match Ast.unwrap re with
     Ast.FunHeader(stg,name,lp,params,rp) ->
       print_string arity;
       print_option (mcode storage) stg;
@@ -350,7 +359,8 @@ let rule_elem arity = function
       print_string arity;  mcode print_string name
   | Ast.Exp(exp) -> print_string arity; expression exp
 
-let rec statement arity = function
+let rec statement arity s =
+  match Ast.unwrap s with
     Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace; dots force_newline (statement arity) body;
       rule_elem arity rbrace
@@ -396,7 +406,8 @@ let rec statement arity = function
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
 
-let top_level = function
+let top_level t =
+  match Ast.unwrap t with
     Ast.DECL(decl) -> declaration decl
   | Ast.INCLUDE(inc,s) ->
       mcode print_string inc; print_string " "; mcode print_string s
