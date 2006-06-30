@@ -287,6 +287,13 @@ and (print_generic_algo: (G.node *
     Format.print_string ">";
   end
 
+let print_state str l =
+  Printf.printf "%s\n" str;
+  List.iter (function x ->
+    print_generic_triple x; Format.print_flush(); Printf.printf "\n";
+    flush stdout)
+    l;
+  Printf.printf "\n"
 
 
 
