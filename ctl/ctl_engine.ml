@@ -219,14 +219,15 @@ type ('state,'subst,'anno) generic_algo =
 let (print_generic_subst: (SUB.mvar, SUB.value) Ast_ctl.generic_subst -> unit) = fun subst ->
   match subst with
   | Subst (mvar, value) -> 
-      Format.print_string ("+");
+(*      Format.print_string ("+");*)
       SUB.print_mvar mvar; 
       Format.print_string " --> ";
       SUB.print_value value
   | NegSubst (mvar, value) -> 
-      Format.print_string ("-");
+(*      Format.print_string ("-");*)
       SUB.print_mvar mvar; 
-      Format.print_string " --> ";
+      Format.print_string " -/-> ";
+(*      Format.print_string " --> ";*)
       SUB.print_value value
 
 let (print_generic_substitution:  (SUB.mvar, SUB.value) Ast_ctl.generic_substitution -> unit) = fun substxs ->
@@ -242,18 +243,26 @@ let rec (print_generic_witness: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_s
       Format.print_string "wit ";
       G.print_node state;
       print_generic_substitution subst;
-      (* go in children ? *)
+      Format.print_string "{";
+      Common.print_between (fun () -> Format.print_string "," ) 
+	print_generic_witness childrens;
+      Format.print_string "}"
   | NegWit  (state, subst, anno, childrens) -> 
-      Format.print_string "wit ";
+      Format.print_string "-wit ";
       G.print_node state;
       print_generic_substitution subst;
-      (* go in children ? *)
+      Format.print_string "{";
+      Common.print_between (fun () -> Format.print_string "," )
+	print_generic_witness childrens;
+      Format.print_string "}"
+
 
 and (print_generic_witnesstree: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
        Ast_ctl.generic_witnesstree -> unit) = fun witnesstree ->
   begin
     Format.print_string "{";
-    Common.print_between (fun () -> Format.print_string ";" ) print_generic_witness witnesstree;
+    Common.print_between (fun () -> Format.print_string ";" ) 
+      print_generic_witness witnesstree;
     Format.print_string "}";
   end
 
@@ -274,7 +283,7 @@ and (print_generic_algo: (G.node *
                          list -> unit) = fun xs -> 
   begin
     Format.print_string "<";
-    Common.print_between (fun () -> Format.print_string ";" ) print_generic_triple xs;
+    Common.print_between (fun () -> Format.print_string ";\n" ) print_generic_triple xs;
     Format.print_string ">";
   end
 
@@ -328,26 +337,16 @@ let merge_subBy eqx (===) (>+<) sub sub' =
 	if (not (v === v'))
 	then Some [Subst(x,v)]
 	else None
+    | (NegSubst(x,v),NegSubst(x',v'),true) ->
+	if (v === v')
+	then Some [NegSubst(x,v)]
+	else Some [NegSubst(x,v);NegSubst(x',v')]
     | _ -> Some [sub;sub']
 ;;
 
 (* NOTE: functor *)
 let merge_sub sub sub' = 
   merge_subBy SUB.eq_mvar SUB.eq_val SUB.merge_val sub sub'
-
-(*
-let rec fold_subst theta =
-  let rec foo acc_th sub =
-    match acc_th with
-      | [] -> []
-      | (s::ss) -> 
-	  match (merge_sub s sub) with
-	    | None -> raise NEVER_CTL
-	    | Some subs -> subs @ (foo ss sub)
-  in
-    foldl foo [] theta
-;;
-*)
 
 let clean_substBy eq cmp theta = List.sort cmp (nubBy eq theta);;
 
@@ -380,11 +379,37 @@ let conflict_subst theta theta' = conflictBy conflict_sub theta theta';;
 
 (* Returns an option since conjunction may fail (incompatible subs.) *)
 (* FIX ME: do proper cleanup *)
+(*
 let conj_subst theta theta' =
   if (conflict_subst theta theta') 
-  then None 
+  then None
   else Some (clean_subst (unionBy eq_sub theta theta'))
 ;;
+*)
+
+exception SUBST_MISMATCH
+let conj_subst theta theta' =
+  match (theta,theta') with
+    | ([],_) -> Some theta'
+    | (_,[]) -> Some theta
+    | _ ->
+	try
+	  Some (clean_subst (
+		  List.fold_left
+		    (function rest ->
+		       function sub ->
+			 List.fold_left
+			   (function rest ->
+			      function sub' ->
+				match (merge_sub sub sub') with
+				  | Some subs -> 
+				      subs @ rest
+				  | _       -> raise SUBST_MISMATCH)
+			   rest theta')
+		    [] theta))
+	with SUBST_MISMATCH -> None
+;;
+
 
 let negate_sub sub =
   match sub with
@@ -508,16 +533,14 @@ let satEX m s = pre_exist m s;;
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU m s1 s2 = 
   let f y = triples_union s2 (triples_conj s1 (pre_forall m y)) in 
-    setfix f []
+    setfix f []				(* NOTE: is [] right? *)
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU m s1 s2 = 
   let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
-    setfix f []
+    setfix f []				(* NOTE: is [] right? *)
 ;;
-
-
 
 
 let rec satloop ((grp,label,states) as m) phi env =
@@ -551,10 +574,8 @@ let rec satloop ((grp,label,states) as m) phi env =
   | Exists (v,phi)     -> triples_witness v (satloop m phi env)
   | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(satloop m phi1 env)) :: env)
   | Ref(v)             -> List.assoc v env
-;;
+;;    
 
-let sat m phi = satloop m phi []
-;;
 
 (* SAT with tracking *)
 let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env =
@@ -640,6 +661,45 @@ let sat_annotree annotate m phi =
     sat_verbose_loop tree_anno (-1) 0 m phi []
 ;;
 
+(*
+let sat m phi = satloop m phi []
+;;
+*)
+
+let simpleanno l phi res =
+  let pp s = 
+    Format.print_string (s^": \n------------------------------\n"); 
+    print_generic_algo res;
+    Format.print_string "\n------------------------------\n\n"
+  in
+  match unwrap phi with
+    | False              -> pp "False"
+    | True               -> pp "True"
+    | Pred(p)            -> pp ("Pred" ^ (Dumper.dump(p)))
+    | Not(phi)           -> pp "Not"
+    | Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
+    | And(phi1,phi2)     -> pp "And"
+    | Or(phi1,phi2)      -> pp "Or"
+    | Implies(phi1,phi2) -> pp "Implies"
+    | AF(phi1)           -> pp "AF"
+    | AX(phi1)           -> pp "AX"
+    | AG(phi1)           -> pp "AG"
+    | AU(phi1,phi2)      -> pp "AU"
+    | EF(phi1)           -> pp "EF"
+    | EX(phi1)	         -> pp "EX"
+    | EG(phi1)		 -> pp "EG"
+    | EU(phi1,phi2)	 -> pp "EU"
+    | Let (x,phi1,phi2)  -> pp ("Let"^" "^x)
+    | Ref(s)             -> pp ("Ref("^s^")")
+;;
+
+(* Main entry point for engine *)
+let sat m phi = 
+  if(!Flag_ctl.verbose_ctl_engine) then
+    snd (sat_annotree simpleanno m phi)
+ else
+   satloop m phi []
+;;   
 
 (* ********************************************************************** *)
 (* End of Module: CTL_ENGINE                                              *)
