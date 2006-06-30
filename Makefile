@@ -3,7 +3,7 @@ TARGET=spatch
 SRC = \
 	flag.ml  \
 	misc/classic_patch.ml  \
-	cocci.ml main.ml
+	cocci.ml test.ml main.ml
 
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
@@ -68,6 +68,10 @@ clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
 
+test.ml: 
+	echo "let foo_ctl = raise Common.Todo"  > test.ml
+
+beforedepend:: test.ml
 
 
 MYSRC = flag.ml  \
@@ -118,7 +122,7 @@ clean::
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
-beforedepend:
+beforedepend::
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend

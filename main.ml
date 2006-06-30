@@ -6,6 +6,7 @@ let cocci_file = ref ""
 let iso_file = ref ""
 
 let test_mode = ref false
+let test_ctl_foo = ref false
 
 (******************************************************************************)
 let main () = 
@@ -23,11 +24,18 @@ let main () =
 
         "-verbose_ctl_engine",   Arg.Set       Flag_ctl.verbose_ctl_engine, " ";
 
+        "-test_ctl_foo",         Arg.Set       test_ctl_foo, "  test the engine with the foo ctl in test.ml";
+
       ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ " [options] <path-to-c-dir>\nOptions are:") in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
 
     (match (!args) with
+
+    | [x] when !test_ctl_foo -> 
+        let cfile = x in 
+        Cocci.full_engine cfile (Right Test.foo_ctl)
+        
 
     | [x] when !test_mode -> 
         let base = 
