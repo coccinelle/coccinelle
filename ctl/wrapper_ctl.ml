@@ -106,32 +106,33 @@ struct
   (* FIX ME: what about negative witnesses and negative substitutions *)
   exception NEGATIVE_WITNESS
   let unwrap_wits acc wits =
-    let rec negative_witnesses wits = false in
-    let rec loop acc wits =
+    let mkth th =
+      List.concat (
+	List.map (function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th) in
+    let rec loop neg acc wits =
       match wits with
 	| []  -> []
+(*
 	| (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
-	    (loop ((x,v)::acc) wits') @ (loop acc rest)
+	    (loop neg ((x,v)::acc) wits') @ (loop neg acc rest)
+*)
 	| (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
-	    (s,acc,v) :: (loop acc rest)
+	    (s,acc,v) :: (loop neg acc rest)
+(*
 	| (Wit(s,[sub],anno,wits')::rest) ->
-	    (loop acc wits') @ (loop acc rest)
+	    (loop neg acc wits') @ (loop neg acc rest)
 	| (Wit(s,[],anno,wits')::rest) -> 
-	    (loop acc wits') @ (loop acc rest)
+	    (loop neg acc wits') @ (loop neg acc rest)
+*)
 	| (Wit(s,th,anno,wits')::rest) ->
-	    let newth =
-	      List.concat (
-		List.map (
-		  function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
-	    in
-	      (loop (newth @ acc) wits') @ (loop acc rest)
+	      (loop neg ((mkth th) @ acc) wits') @ (loop neg acc rest)
 	| (NegWit(s,th,anno,wits')::rest) -> 
-	    if (negative_witnesses wits') then
-	      (loop acc wits') @ (loop acc rest)
+	    if neg then
+	      (loop (not neg) ((mkth th) @ acc) wits') @ (loop neg acc rest)
 	    else
 	      raise NEGATIVE_WITNESS
     in
-      try (loop acc wits) with NEGATIVE_WITNESS -> []
+      try (loop false acc wits) with NEGATIVE_WITNESS -> []
   ;;
 
   (* The wrapper for sat from the CTL_ENGINE *)
