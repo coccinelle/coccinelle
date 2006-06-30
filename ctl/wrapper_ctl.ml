@@ -104,25 +104,34 @@ struct
   (* Collects, unwraps, and filters witness trees *)
   (* NOTE: only makes sense specifically for coccinelle generated CTL *)
   (* FIX ME: what about negative witnesses and negative substitutions *)
-  let rec unwrap_wits acc wits =
-    match wits with
-      | []  -> []
-      | (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
-	  (unwrap_wits ((x,v)::acc) wits') @ (unwrap_wits acc rest)
-      | (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
-	  (s,acc,v) :: (unwrap_wits acc rest)
-      | (Wit(s,[sub],anno,wits')::rest) ->
-	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
-      | (Wit(s,[],anno,wits')::rest) -> 
-	  (unwrap_wits acc wits') @ (unwrap_wits acc rest)
-      | (Wit(s,th,anno,wits')::rest) ->
-	  let newth =
-	    List.concat (
-	      List.map (
-		function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
-	  in
-	    (unwrap_wits (newth @ acc) wits') @ (unwrap_wits acc rest)
-      | (NegWit(s,th,anno,wits')::rest) -> unwrap_wits acc rest (* FIX ME *)
+  exception NEGATIVE_WITNESS
+  let unwrap_wits acc wits =
+    let rec negative_witnesses wits = false in
+    let rec loop acc wits =
+      match wits with
+	| []  -> []
+	| (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
+	    (loop ((x,v)::acc) wits') @ (loop acc rest)
+	| (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
+	    (s,acc,v) :: (loop acc rest)
+	| (Wit(s,[sub],anno,wits')::rest) ->
+	    (loop acc wits') @ (loop acc rest)
+	| (Wit(s,[],anno,wits')::rest) -> 
+	    (loop acc wits') @ (loop acc rest)
+	| (Wit(s,th,anno,wits')::rest) ->
+	    let newth =
+	      List.concat (
+		List.map (
+		  function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
+	    in
+	      (loop (newth @ acc) wits') @ (loop acc rest)
+	| (NegWit(s,th,anno,wits')::rest) -> 
+	    if (negative_witnesses wits') then
+	      (loop acc wits') @ (loop acc rest)
+	    else
+	      raise NEGATIVE_WITNESS
+    in
+      try (loop acc wits) with NEGATIVE_WITNESS -> []
   ;;
 
   (* The wrapper for sat from the CTL_ENGINE *)
