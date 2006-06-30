@@ -56,9 +56,6 @@ exception NEVER_CTL			(* Some things should never happen *)
 (* Misc. useful generic functions                                         *)
 (* ---------------------------------------------------------------------- *)
 
-(* Sanity-preserving definitions *)
-let itos i = string_of_int i;;
-
 let head = List.hd
 
 let tail l = 
@@ -72,29 +69,6 @@ let foldl = List.fold_left;;
 let foldl1 f xs = foldl f (head xs) (tail xs)
 
 let foldr = List.fold_right;;
-
-let rec scanl f q xs = 
-  q :: (match xs with
-	  | []      -> []
-	  | (x::xs) -> scanl f (f q x) xs)
-;;
-
-let scanl1 f xs =
-  match xs with
-    | []      -> []
-    | (x::xs) -> scanl f x xs
-;;
-
-let rec mapAccumL f s xs =
-  match xs with
-    | []      -> (s,[])
-    | (x::xs) -> 
-	let (s',y) = f s x in
-	let (s'',ys) = mapAccumL f s' xs in
-	  (s'',y::ys)
-;;
-
-let append = List.append;;
 
 let concat = List.concat;;
 
@@ -139,7 +113,6 @@ let rec memBy eq x l =
   | (y::ys) -> if (eq x y) then true else (memBy eq x ys)
 ;;
 
-(* FIX ME: rename *)
 let rec nubBy eq ls =
   match ls with
     [] -> []
@@ -147,7 +120,6 @@ let rec nubBy eq ls =
   | (x::xs) -> x::(nubBy eq xs)
 ;;
 
-(* FIX ME: rename *)
 let rec nub ls = nubBy (=) ls
 
 let setifyBy eq xs = List.sort compare (nubBy eq xs);;
@@ -188,13 +160,6 @@ let rec fix eq f x =
 
 (* Fix point calculation on set-valued functions *)
 let setfix f x = setify (fix setequal f x);;
-
-let rec allpairs f l1 l2 = foldr (fun x -> append (map (f x) l2)) l1 [];;
-
-let lmerge f m l1 l2 =
-  let mrg x1 x2 = if (f x1 x2) then [m x1 x2] else []
-  in concat (allpairs mrg l1 l2)
-;;
 
 
 (* ********************************************************************** *)
@@ -301,12 +266,6 @@ let print_state str l =
 (*                                                                        *)
 (* ---------------------------------------------------------------------- *)
 
-(* FIX ME: optimise under assumption that xs and ys are sorted *)
-let conflictBy conf xs ys =
-  List.exists (fun x -> List.exists (fun y -> conf x y) ys) xs;;
-
-let remove_conflictsBy conf xss = filter (fun xs -> not (conf xs)) xss;;
-
 
 (* ************************* *)
 (* Substitutions             *)
@@ -366,33 +325,10 @@ let clean_subst theta =
 
 let top_subst = [];;			(* Always TRUE subst. *)
 
-
 (* Split a theta in two parts: one with (only) "x" and one without *)
 (* NOTE: functor *)
 let split_subst theta x = 
   partition (fun sub -> SUB.eq_mvar (dom_sub sub) x) theta;;
-
-(* We only want to know if there is a conflict so we don't care
- * about merging of values
- *)
-let conflict_subBy eqx (===) sub sub' = 
-  (merge_subBy eqx (===) (fun x _ -> x) sub sub') = None;;
-
-(* NOTE: functor *)
-let conflict_sub sub sub' = 
-  conflict_subBy SUB.eq_mvar SUB.eq_val sub sub';;
-
-let conflict_subst theta theta' = conflictBy conflict_sub theta theta';;
-
-(* Returns an option since conjunction may fail (incompatible subs.) *)
-(* FIX ME: do proper cleanup *)
-(*
-let conj_subst theta theta' =
-  if (conflict_subst theta theta') 
-  then None
-  else Some (clean_subst (unionBy eq_sub theta theta'))
-;;
-*)
 
 exception SUBST_MISMATCH
 let conj_subst theta theta' =
@@ -402,10 +338,10 @@ let conj_subst theta theta' =
     | _ ->
 	try
 	  Some (clean_subst (
-		  List.fold_left
+		  foldl
 		    (function rest ->
 		       function sub ->
-			 List.fold_left
+			 foldl
 			   (function rest ->
 			      function sub' ->
 				match (merge_sub sub sub') with
@@ -455,10 +391,6 @@ let negate_wits wits = setify (map (fun wit -> [negate_wit wit]) wits);;
 let eq_trip (s,th,wit) (s',th',wit') =
   (s = s') && (eq_subst th th') && (eq_wit wit wit');;
 
-let triples_cleanBy eq cmp trips = List.sort cmp (nubBy eq trips);;
-
-let triples_clean trips = triples_cleanBy eq_trip compare trips;;
-
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
 let triples_union trips trips' = unionBy eq_trip trips trips';;
@@ -480,6 +412,12 @@ let triples_conj trips trips' =
       [] trips)
 ;;
 
+
+(* *************************** *)
+(* NEGATION (classic style)    *)
+(* *************************** *)
+
+(*
 let triple_negate states (s,th,wits) = 
   let negstates = map (fun st -> (st,top_subst,top_wit)) (setdiff states [s]) in
   let negths = map (fun th -> (s,th,top_wit)) (negate_subst th) in
@@ -497,6 +435,77 @@ let rec triples_complement states trips =
 	triples_conj (triple_negate states t) (loop states ts) in
   setify (loop states trips)
 ;;
+*)
+
+(* ********************************** *)
+(* END OF NEGATION (classic style)    *)
+(* ********************************** *)
+
+
+(* *************************** *)
+(* NEGATION (NegState style)   *)
+(* *************************** *)
+
+(* FIX ME: convert to "double foldl" style *)
+let rec mixer mrg xs ys = 
+  let rec mix x ys =
+    match ys with
+      | [] -> []
+      | (y::ys') -> 
+	  let rest = mix x ys' in 
+	    maybe (fun xy -> xy :: rest) rest (mrg x y) in
+    match xs with
+      | [] -> []
+      | (x::xs') -> (mix x ys) @ (mixer mrg xs' ys)
+
+
+(* Constructive negation at the state level *)
+type ('a) state =
+    PosState of 'a
+  | NegState of 'a list
+;;
+
+(* Conjunction on triples with "special states" *)
+let triples_state_conj trips trips' =
+  let mrg (s1,th1,wit1) (s2,th2,wit2) =
+    match (s1,s2) with
+      | (PosState s1, PosState s2) -> 
+	  if s1 = s2 then Some (PosState s1,th1,wit1) else None
+      | (PosState s1, NegState s2) -> 
+	  if List.mem s1 s2 then None else Some (PosState s1,th1,wit1)
+      | (NegState s1, PosState s2) -> 
+	  if List.mem s2 s1 then None else Some (PosState s2,th2,wit2)
+      | (NegState s1, NegState s2) -> Some (NegState (s1 @ s2),th1,wit1)
+  in mixer mrg trips trips'
+;;
+
+let triple_negate (s,th,wits) = 
+  let negstates = [(NegState [s],top_subst,top_wit)] in
+  let negths = map (fun th -> (PosState s,th,top_wit)) (negate_subst th) in
+  let negwits = map (fun nwit -> (PosState s,th,nwit)) (negate_wits wits) in
+    triples_union negstates (triples_union negths negwits)
+;;
+
+(* FIX ME: it is not necessary to do full conjunction *)
+let triples_complement states trips =
+  let cleanup (s,th,wit) =
+    match s with
+      | PosState s' -> [(s',th,wit)]
+      | NegState ss -> map (fun st -> (st,top_subst,top_wit)) (setdiff states ss)
+  in
+  let rec compl trips =
+    match trips with
+      | [] -> []
+      | (t::[]) -> triple_negate t
+      | (t::ts) -> 
+	  triples_state_conj (triple_negate t) (compl ts)
+  in
+    concatmap cleanup (compl trips)
+;;
+
+(* ********************************** *)
+(* END OF NEGATION (NegState style)   *)
+(* ********************************** *)
 
 
 let triples_witness x trips = 
@@ -668,14 +677,9 @@ let sat_annotree annotate m phi =
     sat_verbose_loop tree_anno (-1) 0 m phi []
 ;;
 
-(*
-let sat m phi = satloop m phi []
-;;
-*)
-
 let simpleanno l phi res =
   let pp s = 
-    Format.print_string (s^": \n------------------------------\n"); 
+    Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
     print_generic_algo res;
     Format.print_string "\n------------------------------\n\n"
   in
@@ -706,7 +710,7 @@ let sat m phi =
     snd (sat_annotree simpleanno m phi)
  else
    satloop m phi []
-;;   
+;;
 
 (* ********************************************************************** *)
 (* End of Module: CTL_ENGINE                                              *)
