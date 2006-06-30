@@ -116,10 +116,12 @@ struct
       | (Wit(s,th,anno,wits')::rest) ->
 	  let newth =
 	    List.concat (
-	      List.map (function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
+	      List.map (
+		function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th)
 	  in
 	    (unwrap_wits (newth @ acc) wits') @ (unwrap_wits acc rest)
       | (NegWit(s,th,anno,wits')::rest) -> unwrap_wits acc rest (* FIX ME *)
+  ;;
 
   (* The wrapper for sat from the CTL_ENGINE *)
   let satbis_noclean (grp,lab,states) phi =
@@ -134,7 +136,8 @@ struct
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
-	List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean)
+	Common.uniq (
+	  List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
 	  
   (* Partial matches *)
   let check_conjunction phipsi res_phi res_psi res_phipsi = ()
