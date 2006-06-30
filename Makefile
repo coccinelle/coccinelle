@@ -69,7 +69,7 @@ clean::
 
 
 test.ml: 
-	echo "let foo_ctl () = raise Common.Todo"  > test.ml
+	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\""  > test.ml
 
 beforedepend:: test.ml
 

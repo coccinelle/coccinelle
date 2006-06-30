@@ -26,6 +26,7 @@ let main () =
 
         "-test_ctl_foo",         Arg.Set       test_ctl_foo, "  test the engine with the foo ctl in test.ml";
 
+
       ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ " [options] <path-to-c-dir>\nOptions are:") in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
@@ -34,7 +35,7 @@ let main () =
 
     | [x] when !test_ctl_foo -> 
         let cfile = x in 
-        Cocci.full_engine cfile (Right Test.foo_ctl)
+        Cocci.full_engine cfile (Right (Test.foo_ctl ()))
         
 
     | [x] when !test_mode -> 
