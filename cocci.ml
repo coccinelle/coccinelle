@@ -62,10 +62,11 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) = 
     write_file "/tmp/__cocci.cocci" (s);
     let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" iso in
     let stmt =
-      rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function
+      rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function x ->
+	match Ast_cocci.unwrap x with
 	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
 	| _ -> raise Not_found) in
-    match stmt with
+    match Ast_cocci.unwrap stmt with
       Ast_cocci.Atomic(re) -> re
     | _ -> failwith "only atomic patterns allowed"
   end
@@ -119,11 +120,15 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         let (all_error_words: string list) = 
           rule_with_metavars_list +> List.hd +> snd +> (fun xs -> 
             let res = ref [] in
-            xs +> List.iter (function
+            xs +> List.iter (function x ->
+	      match Ast_cocci.unwrap x with
                 Ast_cocci.ERRORWORDS es -> 
                   es +> List.iter (fun e -> 
-                    (match e with
-                    | Ast_cocci.Ident (Ast_cocci.Id (s,_,_)) -> push2 s res;
+                    (match Ast_cocci.unwrap e with
+                    | Ast_cocci.Ident id ->
+			(match Ast_cocci.unwrap id with 
+			  Ast_cocci.Id (s,_,_) -> push2 s res
+			| _ -> pr2 "warning: does not support complex error words")
                     | _ -> pr2 "warning: does not support complex error words"
                     )
                                   );

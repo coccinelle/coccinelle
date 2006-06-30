@@ -241,7 +241,7 @@ val wrap : 'a -> 'a wrap
 val context_wrap : 'a -> 'a wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
-val rewrap : 'a wrap -> 'a -> 'a wrap
+val rewrap : 'a wrap -> 'b -> 'b wrap
 val copywrap : 'a wrap -> 'a -> 'a wrap
 val get_info : 'a wrap -> info
 val get_index : 'a wrap -> int

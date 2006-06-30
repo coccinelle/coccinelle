@@ -8,7 +8,7 @@ SOURCES = lib_engine.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoct
 # just to test asttoctl
 CTLSOURCES = asttoctl.ml ctltotex.ml main.ml
 
-INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci
+INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci -I ../ctl
 
 SYSLIBS = str.cma unix.cma
 LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma 

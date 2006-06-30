@@ -705,17 +705,17 @@ let pp_program file x =
      | [] -> ()
 
    (* ---------------------- *)
-  and (pp_cocci_top_level: Ast_c.metavars_binding -> Ast_cocci.top_level -> unit) = fun env x -> match x with
+  and (pp_cocci_top_level: Ast_c.metavars_binding -> Ast_cocci.top_level -> unit) = fun env x -> match Ast_cocci.unwrap x with
   | Ast_cocci.CODE stmt_dots -> List.iter (pp_cocci_statement env) (Ast_cocci.undots stmt_dots)
   | _ -> raise Todo
 
    (* ---------------------- *)
-  and (pp_cocci_statement: Ast_c.metavars_binding -> Ast_cocci.statement -> unit) = fun env x -> match x with
+  and (pp_cocci_statement: Ast_c.metavars_binding -> Ast_cocci.statement -> unit) = fun env x -> match Ast_cocci.unwrap x with
   | Ast_cocci.Atomic rule_elem -> pp_cocci_rule_elem env rule_elem
   | _ -> raise Todo
 
 
-  and (pp_cocci_rule_elem: Ast_c.metavars_binding -> Ast_cocci.rule_elem -> unit) = fun env x -> match x with
+  and (pp_cocci_rule_elem: Ast_c.metavars_binding -> Ast_cocci.rule_elem -> unit) = fun env x -> match Ast_cocci.unwrap x with
   | Ast_cocci.ExprStatement (e, ptvirg) -> 
       pp_cocci_expr env e;
       pr (term ptvirg);
@@ -725,7 +725,7 @@ let pp_program file x =
 
 
    (* ---------------------- *)
-  and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match x with
+  and (pp_cocci_expr: Ast_c.metavars_binding -> Ast_cocci.expression -> unit) = fun env x -> match Ast_cocci.unwrap x with
   | Ast_cocci.Ident id -> pp_cocci_ident env id
   | Ast_cocci.MetaExpr (s,_typeTODO) -> 
       let v = List.assoc (term s) env in
@@ -754,7 +754,7 @@ let pp_program file x =
     
 
    (* ---------------------- *)
-  and pp_cocci_rule env x = match x with
+  and pp_cocci_rule env x = match Ast_cocci.unwrap x with
   | Ast_cocci.SeqStart brace -> pr (term brace)
   | Ast_cocci.SeqEnd   brace -> pr (term brace)
 
@@ -767,13 +767,13 @@ let pp_program file x =
 
   | _ -> raise Todo
    (* ---------------------- *)
-  and pp_cocci_param env x = match x with
+  and pp_cocci_param env x = match Ast_cocci.unwrap x with
   | Ast_cocci.Param (id, fullt) -> pp_cocci_fullType env fullt; pr " "; pp_cocci_ident env id
   | Ast_cocci.PComma (comma) -> pr (term comma); pr " "
   | x -> raise Todo
 
   (* ---------------------- *)
-  and pp_cocci_fullType env x = match x with
+  and pp_cocci_fullType env x = match Ast_cocci.unwrap x with
   | Ast_cocci.Type(cv,ty) ->
       (match cv with
       | None -> ()
@@ -786,7 +786,7 @@ let pp_program file x =
 
 
 
-  and pp_cocci_type env x = match x with
+  and pp_cocci_type env x = match Ast_cocci.unwrap x with
   | Ast_cocci.BaseType(ty,sgn) -> 
       (match sgn with
       | Some x -> 
@@ -820,7 +820,7 @@ let pp_program file x =
 
 
    (* ---------------------- *)
-  and pp_cocci_ident env x = match x with
+  and pp_cocci_ident env x = match Ast_cocci.unwrap x with
   | Ast_cocci.Id s -> pr (term s)
   | Ast_cocci.MetaId s -> 
       (try 

@@ -11,24 +11,24 @@ let aftret = "_aftret" (* assumed to be a fresh variable *)
 
 (* --------------------------------------------------------------------- *)
 
-let wrap ctl = (ctl,())
+let wrap n ctl = (ctl,n)
 
-let wrapImplies(x,y) = wrap(CTL.Implies(x,y))
-let wrapExists(x,y) = wrap(CTL.Exists(x,y))
-let wrapAnd(x,y) = wrap(CTL.And(x,y))
-let wrapOr(x,y) = wrap(CTL.Or(x,y))
-let wrapAU(x,y) = wrap(CTL.AU(x,y))
-let wrapEU(x,y) = wrap(CTL.EU(x,y))
-let wrapAX(x) = wrap(CTL.AX(x))
-let wrapEX(x) = wrap(CTL.EX(x))
-let wrapAG(x) = wrap(CTL.AG(x))
-let wrapEG(x) = wrap(CTL.EG(x))
-let wrapAF(x) = wrap(CTL.AF(x))
-let wrapEF(x) = wrap(CTL.EF(x))
-let wrapNot(x) = wrap(CTL.Not(x))
-let wrapPred(x) = wrap(CTL.Pred(x))
-let wrapLet(x,y,z) = wrap(CTL.Let(x,y,z))
-let wrapRef(x) = wrap(CTL.Ref(x))
+let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
+let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
+let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
+let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
+let wrapAU n (x,y) = wrap n (CTL.AU(x,y))
+let wrapEU n (x,y) = wrap n (CTL.EU(x,y))
+let wrapAX n (x) = wrap n (CTL.AX(x))
+let wrapEX n (x) = wrap n (CTL.EX(x))
+let wrapAG n (x) = wrap n (CTL.AG(x))
+let wrapEG n (x) = wrap n (CTL.EG(x))
+let wrapAF n (x) = wrap n (CTL.AF(x))
+let wrapEF n (x) = wrap n (CTL.EF(x))
+let wrapNot n (x) = wrap n (CTL.Not(x))
+let wrapPred n (x) = wrap n (CTL.Pred(x))
+let wrapLet n (x,y,z) = wrap n (CTL.Let(x,y,z))
+let wrapRef n (x) = wrap n (CTL.Ref(x))
 
 (* --------------------------------------------------------------------- *)
 
@@ -46,10 +46,12 @@ let get_list_option fn = function
 (* For A ... B, neither A nor B should occur in the code matched by the ...
 We add these to any when code associated with the dots *)
 
-let rec when_dots before after = function
-    Ast.DOTS(l) -> Ast.DOTS(dots_list before after l)
-  | Ast.CIRCLES(l) -> Ast.CIRCLES(dots_list before after l)
-  | Ast.STARS(l) -> Ast.STARS(dots_list before after l)
+let rec when_dots before after d =
+  Ast.rewrap d
+    (match Ast.unwrap d with
+      Ast.DOTS(l) -> Ast.DOTS(dots_list before after l)
+    | Ast.CIRCLES(l) -> Ast.CIRCLES(dots_list before after l)
+    | Ast.STARS(l) -> Ast.STARS(dots_list before after l))
 
 and dots_list before after = function
     [] -> []
@@ -58,32 +60,34 @@ and dots_list before after = function
       (when_statement before (Some aft) cur)::
       (dots_list (Some cur) after rest)
 
-and when_statement before after = function
-    Ast.Atomic(_) as x -> x
-  | Ast.Seq(lbrace,body,rbrace) ->
-      Ast.Seq(lbrace,when_dots None None body,rbrace)
-  | Ast.IfThen(header,branch) ->
-      Ast.IfThen(header,when_statement None None branch)
-  | Ast.IfThenElse(header,branch1,els,branch2) ->
-      Ast.IfThenElse(header,
-		     when_statement None None branch1,els,
-		     when_statement None None branch2)
-  | Ast.While(header,body) -> Ast.While(header,when_statement None None body)
-  | Ast.Disj(stmt_dots_list) ->
-      Ast.Disj(List.map (when_dots before after) stmt_dots_list)
-  | Ast.Nest(stmt_dots) -> Ast.Nest(when_dots None None stmt_dots)
-  | Ast.Dots(d,whencode,_) as x ->
-      (match (before,after) with
-	(None,None) -> x
-      | (None,Some aft) -> Ast.Dots(d,whencode,[aft])
-      | (Some bef,None) -> Ast.Dots(d,whencode,[bef])
-      | (Some bef,Some aft) -> Ast.Dots(d,whencode,[bef;aft]))
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
-      Ast.FunDecl(header,lbrace,when_dots None None body,rbrace)
-  | Ast.OptStm(stm) -> Ast.OptStm(when_statement None None stm)
-  | Ast.UniqueStm(stm) -> Ast.UniqueStm(when_statement None None stm)
-  | Ast.MultiStm(stm) -> Ast.MultiStm(when_statement None None stm)
-  | _ -> failwith "not supported"
+and when_statement before after s =
+  Ast.rewrap s
+    (match Ast.unwrap s with
+      Ast.Atomic(_) as x -> x
+    | Ast.Seq(lbrace,body,rbrace) ->
+	Ast.Seq(lbrace,when_dots None None body,rbrace)
+    | Ast.IfThen(header,branch) ->
+	Ast.IfThen(header,when_statement None None branch)
+    | Ast.IfThenElse(header,branch1,els,branch2) ->
+	Ast.IfThenElse(header,
+		       when_statement None None branch1,els,
+		       when_statement None None branch2)
+    | Ast.While(header,body) -> Ast.While(header,when_statement None None body)
+    | Ast.Disj(stmt_dots_list) ->
+	Ast.Disj(List.map (when_dots before after) stmt_dots_list)
+    | Ast.Nest(stmt_dots) -> Ast.Nest(when_dots None None stmt_dots)
+    | Ast.Dots(d,whencode,_) as x ->
+	(match (before,after) with
+	  (None,None) -> x
+	| (None,Some aft) -> Ast.Dots(d,whencode,[aft])
+	| (Some bef,None) -> Ast.Dots(d,whencode,[bef])
+	| (Some bef,Some aft) -> Ast.Dots(d,whencode,[bef;aft]))
+    | Ast.FunDecl(header,lbrace,body,rbrace) ->
+	Ast.FunDecl(header,lbrace,when_dots None None body,rbrace)
+    | Ast.OptStm(stm) -> Ast.OptStm(when_statement None None stm)
+    | Ast.UniqueStm(stm) -> Ast.UniqueStm(when_statement None None stm)
+    | Ast.MultiStm(stm) -> Ast.MultiStm(when_statement None None stm)
+    | _ -> failwith "not supported")
 
 (* --------------------------------------------------------------------- *)
 (* Computing free variables *)
@@ -132,29 +136,33 @@ let mcode astfvs (_,_,mcodekind) =
 
 let donothing recursor k e = k e (* just combine in the normal way *)
 
-let rec astfvident recursor k = function
+let rec astfvident recursor k i =
+  match Ast.unwrap i with
     Ast.MetaId(name) | Ast.MetaFunc(name) | Ast.MetaLocalFunc(name) ->
       Common.union_set [metaid name] (mcode astfvs name)
-  | i -> k i
+  | _ -> k i
 
-and astfvexpr recursor k = function
+and astfvexpr recursor k e =
+  match Ast.unwrap e with
     Ast.MetaConst(name,_) | Ast.MetaErr(name) | Ast.MetaExpr(name,_)
   | Ast.MetaExprList(name) ->
       Common.union_set [metaid name] (mcode astfvs name)
-  | e -> k e
+  | _ -> k e
 
-and astfvtypeC recursor k = function
+and astfvtypeC recursor k ty =
+  match Ast.unwrap ty with
     Ast.MetaType(name) -> Common.union_set [metaid name] (mcode astfvs name)
-  | t -> k t
+  | _ -> k ty
 
-and astfvparam recursor k = function
+and astfvparam recursor k p =
+  match Ast.unwrap p with
     Ast.MetaParam(name) | Ast.MetaParamList(name) ->
       Common.union_set [metaid name] (mcode astfvs name)
-  | p -> k p
+  | _ -> k p
 
 and astfvrule_elem recursor k re =
   let res =
-    match re with
+    match Ast.unwrap re with
       Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
 	Common.union_set [metaid name] (mcode astfvs name)
     | _ -> k re in
@@ -163,7 +171,7 @@ and astfvrule_elem recursor k re =
 
 and astfvstatement recursor k s =
   let res =
-    match s with
+    match Ast.unwrap s with
       Ast.Dots(_,whencode,tmpcode)
     | Ast.Circles(_,whencode,tmpcode)
     | Ast.Stars(_,whencode,tmpcode) ->
@@ -222,11 +230,11 @@ let fresh_metavar _ =
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
 
-let make_seq first = function
+let make_seq n first = function
     None -> first
-  | Some rest -> wrapAnd(first,wrapAX rest)
+  | Some rest -> wrapAnd n (first,wrapAX n rest)
 
-let make_cond branch re = wrapImplies(branch,wrapAX re)
+let make_cond n branch re = wrapImplies n (branch,wrapAX n re)
 
 let contains_modif =
   let bind x y = x or y in
@@ -245,11 +253,11 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let make_match code =
+let make_match n code =
   let v = fresh_var() in
   if contains_modif code
-  then wrapExists(v,wrapPred(Lib_engine.Match(code),CTL.Modif v))
-  else wrapExists(v,wrapPred(Lib_engine.Match(code),CTL.UnModif v))
+  then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
+  else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
 let seq_fvs quantified term1 term2 =
   let t1fvs = get_unquantified quantified (Hashtbl.find free_table term1) in
@@ -259,19 +267,21 @@ let seq_fvs quantified term1 term2 =
   let t2onlyfvs = Common.minus_set t2fvs bothfvs in
   (t1onlyfvs,bothfvs,t2onlyfvs)
 
-let quantify =
-  List.fold_right (function cur -> function code -> wrapExists(cur,code))
+let quantify n =
+  List.fold_right (function cur -> function code -> wrapExists n (cur,code))
 
 let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
 
 let rec dots_stmt quantified l after =
-  match l with
+  let n = Ast.get_line l in
+  let quantify = quantify n in
+  match Ast.unwrap l with
     Ast.DOTS(x) ->
       let fvs =
 	List.map (function x -> Hashtbl.find free_table (Statement x)) x in
       let rec loop quantified = function
-	  ([],[]) -> (match after with Some x -> x | None -> wrap(CTL.True))
+	  ([],[]) -> (match after with Some x -> x | None -> wrap n (CTL.True))
 	| ([x],[fv]) ->
 	    quantify (get_unquantified quantified fv)
 	      (statement (Common.union_set fv quantified) x after)
@@ -287,7 +297,28 @@ let rec dots_stmt quantified l after =
   | Ast.STARS(x) -> failwith "not supported"
 
 and statement quantified stmt after =
-  match stmt with
+
+  let n = Ast.get_line stmt in
+  let wrapExists = wrapExists n in
+  let wrapAnd = wrapAnd n in
+  let wrapOr = wrapOr n in
+  let wrapAU = wrapAU n in
+  let wrapEU = wrapEU n in
+  let wrapAX = wrapAX n in
+  let wrapEX = wrapEX n in
+  let wrapAG = wrapAG n in
+  let wrapAF = wrapAF n in
+  let wrapEF = wrapEF n in
+  let wrapNot = wrapNot n in
+  let wrapPred = wrapPred n in
+  let wrapLet = wrapLet n in
+  let wrapRef = wrapRef n in
+  let make_seq = make_seq n in
+  let make_cond = make_cond n in
+  let quantify = quantify n in
+  let make_match = make_match n in
+
+  match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       let stmt_fvs = Hashtbl.find free_table (Statement stmt) in
       let fvs = get_unquantified quantified stmt_fvs in
@@ -417,7 +448,7 @@ and statement quantified stmt after =
 		    wrapEX(after_branch))))))
   | Ast.Disj(stmt_dots_list) ->
       let rec loop = function
-	  [] -> wrap(CTL.False)
+	  [] -> wrap n CTL.False
 	| [cur] -> dots_stmt quantified cur None
 	| cur::rest ->
 	    wrapOr(dots_stmt quantified cur None, loop rest) in
@@ -434,7 +465,7 @@ and statement quantified stmt after =
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
 	    let s = fresh_metavar() in
-	    Some(make_match (Ast.MetaStmt(s,i,d)))
+	    Some(make_match (Ast.rewrap stmt (Ast.MetaStmt(s,i,d))))
 	| _ -> None in
       let tmp_whencode =
 	List.map (function s -> statement quantified s None) tmp_whencode in
@@ -462,9 +493,9 @@ and statement quantified stmt after =
 	| (Some dotcode,None) -> Some dotcode
 	| (None,Some whencode) -> Some whencode
 	| (Some dotcode,Some whencode) ->
-	    Some(wrap(CTL.And(dotcode,whencode))) in
+	    Some(wrapAnd (dotcode,whencode)) in
       (match (after,phi3) with (* add in the after code to make the result *)
-	  (None,None) -> wrap(CTL.True)
+	  (None,None) -> wrap n (CTL.True)
 	| (Some after,None) ->
 	    let v = fresh_let_var() in
 	    wrapLet
@@ -486,9 +517,9 @@ and statement quantified stmt after =
       let function_header = quantify hfvs (make_match header) in
       let new_quantified = Common.union_set bfvs quantified in
       let v = fresh_var() in
-      let paren_pred = wrap(CTL.Pred(Lib_engine.Paren v,CTL.Control)) in
-      let start_brace = wrap(CTL.And(make_match lbrace,paren_pred)) in
-      let end_brace = wrap(CTL.And(make_match rbrace,paren_pred)) in
+      let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
+      let start_brace = wrapAnd(make_match lbrace,paren_pred) in
+      let end_brace = wrapAnd(make_match rbrace,paren_pred) in
       quantify bfvs
 	(make_seq function_header
 	   (Some
@@ -516,7 +547,8 @@ and statement quantified stmt after =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level = function
+let top_level t =
+  match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported"
   | Ast.INCLUDE(inc,s) -> failwith "not supported"
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported"
@@ -539,7 +571,8 @@ let contains_dots =
   let bind x y = x or y in
   let option_default = false in
   let mcode x = false in
-  let statement r k = function Ast.Dots(_,_,_) -> true | e -> k e in
+  let statement r k s =
+    match Ast.unwrap s with Ast.Dots(_,_,_) -> true | _ -> k s in
   let continue r k e = k e in
   let stop r k e = false in
   let res =
@@ -558,14 +591,19 @@ let asttoctl l =
   ctr := 0;
   lctr := 0;
   sctr := 0;
-  let l = List.filter (function Ast.ERRORWORDS(exps) -> false | _ -> true) l in
+  let l =
+    List.filter
+      (function t ->
+	match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
+      l in
   List.map
     (function x ->
       if contains_dots x
       then
-	wrapLet(aftret,
-		wrapOr(wrapPred(Lib_engine.After,CTL.Control),
-		       wrapPred(Lib_engine.Return,CTL.Control)),
-		top_level x)
+	let n = Ast.get_line x in
+	wrapLet n (aftret,
+		   wrapOr n (wrapPred n (Lib_engine.After,CTL.Control),
+			     wrapPred n (Lib_engine.Return,CTL.Control)),
+		   top_level x)
       else top_level x)
     l

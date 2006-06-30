@@ -2,6 +2,8 @@
 (* Modified code *)
 
 type info = { line : int; column : int }
+type line = int
+type 'a wrap = ('a * line)
 
 type 'a befaft =
     BEFORE      of 'a list list
@@ -39,15 +41,17 @@ and metavar =
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-and 'a dots =
+and 'a base_dots =
     DOTS of 'a list
   | CIRCLES of 'a list
   | STARS of 'a list
 
+and 'a dots = 'a base_dots wrap
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-and ident =
+and base_ident =
     Id of string mcode
 
   | MetaId of string mcode
@@ -58,10 +62,12 @@ and ident =
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
 
+and ident = base_ident wrap
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and expression = 
+and base_expression = 
     Ident          of ident
   | Constant       of constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -104,6 +110,8 @@ and expression =
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
 
+and expression = base_expression wrap
+
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
 and  fixOp = Dec | Inc
@@ -122,13 +130,13 @@ and constant =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and fullType =
+and base_fullType =
     Type            of const_vol mcode option * typeC
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType
 
-and typeC = 
+and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
@@ -137,6 +145,9 @@ and typeC =
   | TypeName        of string mcode
 
   | MetaType        of string mcode
+
+and fullType = base_fullType wrap
+and typeC = base_typeC wrap
 
 and tagged_string = string mcode
      
@@ -154,7 +165,7 @@ and const_vol = Const | Volatile
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and declaration =
+and base_declaration =
     Init of fullType * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
@@ -164,10 +175,12 @@ and declaration =
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
 
+and declaration = base_declaration wrap
+
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-and parameterTypeDef =
+and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of ident * fullType
 
@@ -182,6 +195,8 @@ and parameterTypeDef =
   | OptParam      of parameterTypeDef
   | UniqueParam   of parameterTypeDef
 
+and parameterTypeDef = base_parameterTypeDef wrap
+
 and parameter_list = parameterTypeDef dots
 
 (* --------------------------------------------------------------------- *)
@@ -192,7 +207,7 @@ and storage = Static
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-and rule_elem =
+and base_rule_elem =
     FunHeader     of storage mcode option * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
@@ -224,7 +239,9 @@ and rule_elem =
 
   | Exp           of expression
 
-and statement =
+and rule_elem = base_rule_elem wrap
+
+and base_statement =
     Seq           of rule_elem (* { *) * statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement
   | IfThenElse    of rule_elem (* header *) * statement *
@@ -247,13 +264,17 @@ and statement =
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)
 
-and top_level =
+and statement = base_statement wrap
+
+and base_top_level =
     FUNCTION of statement
   | DECL of declaration
   | INCLUDE of string mcode (* #include *) * string mcode (* file *)
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
   | CODE of statement dots
+
+and top_level = base_top_level wrap
 
 and rule = top_level list
 
@@ -289,7 +310,14 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let undots = function
+let rewrap (_,l) x = (x,l)
+let unwrap (x,_) = x
+let get_line (_,l) = l
+
+(* --------------------------------------------------------------------- *)
+
+let undots x =
+  match unwrap x with
     DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e

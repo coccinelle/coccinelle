@@ -212,6 +212,8 @@ let classify all_marked table code =
 	       (mcode ender))
       |	_ -> k s) in
 
+  let do_top builder r k e = compute_result builder e (k e) in
+
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -219,7 +221,7 @@ let classify all_marked table code =
       (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.ident) expression
       (do_nothing Ast0.typeC) (do_nothing Ast0.param) declaration
-      statement (do_nothing Ast0.top) in
+      statement (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -459,7 +461,16 @@ let context_neg minus plus =
   Hashtbl.clear minus_table;
   Hashtbl.clear plus_table;
   let rec loop = function
-      ([],_) | (_,[]) -> []
+      ([],_) -> []
+    | (_,[]) ->
+	let _ =
+	  List.map
+	    (function m ->
+	      classify
+		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		minus_table m)
+	    minus in
+	[]
     | (((m::minus) as mall),((p::plus) as pall)) ->
 	let minfo = Ast0.get_info m in
 	let pinfo = Ast0.get_info p in
@@ -488,5 +499,15 @@ let context_neg minus plus =
 	    traverse minus_table plus_table;
 	    (m,p)::loop(minus,plus)
 	  end
-	else if mstart < pstart then loop(minus,pall) else loop(mall,plus) in
+	else
+	  if mstart < pstart
+	  then
+	    begin
+	      let _ =
+		classify
+		  (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		  minus_table m in
+	      loop(minus,pall)
+	    end
+	  else loop(mall,plus) in
   loop(minus,plus)

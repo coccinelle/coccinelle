@@ -34,7 +34,7 @@ type sequence_processing_style = Ordered | Unordered
 let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer) = fun re (node, nodestr) -> 
   fun binding -> 
 
-  match re, node with
+  match A.unwrap re, node with
   (* rene cant have found that a state containing a fake/exit/... should be transformed *)
   | _, F.Enter | _, F.Exit -> raise Impossible
   | _, F.Fake -> raise Impossible 
@@ -57,8 +57,8 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
    *)
   | _, F.StartBrace _ | _, F.EndBrace _  -> raise NoMatch
 
-  | re, F.Statement st -> Control_flow_c.Statement (transform_re_st  re st  binding), nodestr
-  | re, F.Declaration decl -> 
+  | _, F.Statement st -> Control_flow_c.Statement (transform_re_st re st binding), nodestr
+  | _, F.Declaration decl -> 
       F.Declaration (transform_de_decl re decl  binding), nodestr
 
   | re, F.HeadFunc funcdef -> 
@@ -77,7 +77,7 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
           let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
 
 
-          let seqstyle = (match paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo) in
+          let seqstyle = (match A.unwrap paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo) in
           let paramsb' = transform_params seqstyle (A.undots paramsa) paramsb    binding in
 
 
@@ -98,7 +98,7 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
 and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun re st -> 
   fun binding -> 
 
-  match re, st with
+  match A.unwrap re, st with
   (* this is done in transform_re_node, or transform_re_decl *)
   | A.FunHeader _, _ -> raise Impossible 
   | A.Decl _, _ -> raise Impossible 
@@ -177,21 +177,23 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
 
 and (transform_de_decl: (Ast_cocci.rule_elem, Ast_c.declaration) transformer) = fun re decl -> 
   fun binding -> 
-  match re, decl with
-  | A.Decl (A.UnInit (typa, ida, ptvirga)), 
+  match A.unwrap re, decl with
+  | A.Decl decl, 
     (B.DeclList ([var], (iisto, iiptvirgb ))) -> 
 
-      let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
-      (match var with
-      | (Some (idb, None, iidb), typb, stob), iivirg -> 
-          let typb' = transform_ft_ft typa typb  binding in
-          let (idb', iidb') = transform_ident ida (idb, [iidb])  binding in
+      (match A.unwrap decl with
+	A.UnInit (typa, ida, ptvirga) ->
+	  let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+	  (match var with
+	  | (Some (idb, None, iidb), typb, stob), iivirg -> 
+              let typb' = transform_ft_ft typa typb  binding in
+              let (idb', iidb') = transform_ident ida (idb, [iidb])  binding in
+              
+              let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg in
+              B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
           
-          let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg in
-          B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
-          
-      | _ -> raise Todo
-      )
+	  | _ -> raise Todo)
+      |	_ -> raise Todo)  (* Init, etc go here *)
   | _ -> raise Todo
   
 (* ------------------------------------------------------------------------------ *)
@@ -199,7 +201,7 @@ and (transform_de_decl: (Ast_cocci.rule_elem, Ast_c.declaration) transformer) = 
 and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun ep ec -> 
   fun binding -> 
   
-  match ep, ec with
+  match A.unwrap ep, ec with
   (* general case: a MetaExpr can match everything *)
   | A.MetaExpr ((ida,_,i1),_typeopt),  expb -> 
      (* get binding, assert =*=,  distribute info in i1 *)
@@ -238,7 +240,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), typ,ii) -> 
       let ii' = tag_symbols [i2;i3] ii  binding in
       let eas' = A.undots eas in
-      let seqstyle = (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
+      let seqstyle = (match A.unwrap eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
       
       B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
 
@@ -360,13 +362,16 @@ and (transform_arguments: sequence_processing_style -> (Ast_cocci.expression lis
         assert (null ii);
         [Left (transform_e_e ea eb binding),  []]
 
-    | A.EComma i1::ea::eas,  (Left eb, ii)::ebs -> 
-        let ii' = tag_symbols [i1] ii   binding in
-        (Left (transform_e_e  ea eb binding), ii')::transform_arguments seqstyle eas ebs   binding
-       
     | ea::eas,  (Left eb, ii)::ebs -> 
-        assert (null ii);
-        (Left (transform_e_e  ea eb binding), [])::transform_arguments seqstyle eas ebs   binding
+	(match (A.unwrap ea,eas) with
+	  ((A.EComma i1),ea::eas) ->
+            let ii' = tag_symbols [i1] ii   binding in
+            (Left (transform_e_e  ea eb binding), ii')::
+	    transform_arguments seqstyle eas ebs   binding
+	| _ ->
+            assert (null ii);
+            (Left (transform_e_e  ea eb binding), [])::
+	    transform_arguments seqstyle eas ebs   binding)
     | _ -> raise Impossible
 
 
@@ -377,19 +382,21 @@ and (transform_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef 
     | [pa], [pb, ii] -> 
         assert (null ii);
         [transform_param pa pb binding, ii]
-    | A.PComma i1::pa::pas, (pb, ii)::pbs -> 
-        let ii' = tag_symbols [i1] ii binding in
-        (transform_param pa pb binding, ii')::transform_params seqstyle pas pbs  binding
-
     | pa::pas, (pb, ii)::pbs -> 
-        assert (null ii);
-        ((transform_param pa pb binding),[])::transform_params seqstyle pas pbs binding
+	(match (A.unwrap pa,pas) with
+	  ((A.PComma i1), pa::pas) ->
+            let ii' = tag_symbols [i1] ii binding in
+            (transform_param pa pb binding, ii')::
+	    transform_params seqstyle pas pbs  binding
+	| _ ->
+            assert (null ii);
+            ((transform_param pa pb binding),[])::transform_params seqstyle pas pbs binding)
 
     | _ -> raise Impossible
 
 and (transform_param: (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) transformer) = fun pa pb  -> 
   fun binding -> 
-    match pa, pb with
+    match A.unwrap pa, pb with
     | A.Param (ida, typa), ((hasreg, idb, typb, (iihasreg, iidb))) -> 
 
         let (idb', iidb') = transform_ident ida (idb, [iidb])   binding in
@@ -403,7 +410,7 @@ and (transform_param: (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) tra
 (* ------------------------------------------------------------------------------ *)
 and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = fun typa typb -> 
   fun binding -> 
-    match (typa,typb) with
+    match (A.unwrap typa,typb) with
     | (A.Type(cv,ty1),((qu,il),ty2)) ->
         (* TODO handle qualifier *)
         let typb' = transform_t_t ty1 typb  binding in
@@ -413,7 +420,7 @@ and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = fun ty
 
 and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa typb -> 
   fun binding -> 
-    match typa, typb with
+    match A.unwrap typa, typb with
       (* cas general *)
     | A.MetaType ida,  typb -> raise Todo
     | A.BaseType ((basea,i1,mc1), signaopt),   (qu, (B.BaseType baseb, ii)) -> 
@@ -497,7 +504,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa ty
 
 and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun ida (idb, ii) -> 
   fun binding -> 
-    match ida, idb with
+    match A.unwrap ida, idb with
     | A.Id (sa,i1,mc1), sb when sa =$= sb -> 
         let ii' = tag_symbols [sa, i1, mc1] ii binding in
         idb, ii'

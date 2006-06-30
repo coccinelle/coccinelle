@@ -550,6 +550,7 @@ let process file isofile verbose =
 	  let minus = Compute_lines.compute_lines minus in
 	  let plus = Compute_lines.compute_lines plus in
 	  let minus = Arity.minus_arity minus in
+	  Printf.printf "calling context neg\n";
 	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	  Insert_plus.insert_plus m p;
 	  let minus = Iso_pattern.apply_isos isos minus in

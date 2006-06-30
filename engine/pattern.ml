@@ -163,7 +163,7 @@ let check_add_metavars_binding = fun (k, valu) binding ->
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
 let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fun re (node, s) -> 
-  match re, node with
+  match A.unwrap re, node with
   | _, F.Enter | _, F.Exit -> return false
   | _, F.Fake -> return false
   | _, F.CaseNode _ -> return false
@@ -185,14 +185,14 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
   | _, F.EndBrace _ -> return false
 
 
-  | re, F.Statement st ->     match_re_st   re st
-  | re, F.Declaration decl -> match_re_decl re decl
+  | _, F.Statement st ->     match_re_st   re st
+  | _, F.Declaration decl -> match_re_decl re decl
 
-  | re, F.HeadFunc funcdef -> 
+  | _, F.HeadFunc funcdef -> 
       let (idb, typb, stob, statb, _) = funcdef in
-      (match re, typb with
+      (match A.unwrap re, typb with
       | A.FunHeader (stoa, ida, _, paramsa, _), (retb, paramsb, isvaargs, _) ->
-          ( match ida with
+          ( match A.unwrap ida with
            | (A.Id ida) when term ida =$= idb ->   return true
            | (A.MetaId ida)        ->
 	       check_add_metavars_binding (term ida, (Ast_c.MetaId idb))
@@ -208,8 +208,12 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
 
           (
           (* for the pattern phase, no need the EComma *)
-           let paramsa' = A.undots paramsa +> List.filter (function A.PComma _ -> false | _ -> true) in
-           match_params (match paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
+           let paramsa' =
+	     A.undots paramsa +>
+	     List.filter
+	       (function x -> match A.unwrap x with A.PComma _ -> false | _ -> true) in
+           match_params
+	     (match A.unwrap paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
              paramsa' paramsb
           )
           
@@ -222,7 +226,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
 (* ------------------------------------------------------------------------------ *)
 
 and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -> 
-  match re, st with
+  match A.unwrap re, st with
 
   (* this is done in match_re_node, or match_re_decl *)
   (* subtil: I had some raise Impossible, but in fact it can happen, because
@@ -314,8 +318,10 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
 (* ------------------------------------------------------------------------------ *)
 
 and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re decl -> 
-  match re, decl with
-  | A.Decl (A.UnInit (typa, sa, _)), (B.DeclList (xs, _)) -> 
+  match A.unwrap re, decl with
+  | A.Decl decl, (B.DeclList (xs, _)) -> 
+      (match A.unwrap decl with
+	A.UnInit (typa, sa, _) ->
       xs +> List.fold_left (fun acc var -> 
         acc >||>
         (match var with
@@ -331,9 +337,7 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
         | (None, typ, sto), _ -> return false
         )
        ) (return false)
-(* todo:
-  | Decl (Init (typa, sa, _, expa, _)),  
-*)
+      |	_ -> return false) (* todo: Init case *)
 
   (* todo: Opt/Unique/Multi *)
   | _, _ -> return false
@@ -343,7 +347,7 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
 (* ------------------------------------------------------------------------------ *)
 
 and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec -> 
-  match ep, ec with
+  match A.unwrap ep, ec with
   (* cas general: a MetaExpr can match everything *)
   | A.MetaExpr (ida, opttypa),  ((expr, opttypb, ii) as expb) -> 
       (match opttypa, opttypb with
@@ -378,12 +382,14 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       match_e_e ea1 eb1  >&&> (
 
       (* for the pattern phase, no need the EComma *)
-      let eas' = A.undots eas +> List.filter (function A.EComma _ -> false | _ -> true) in
+      let eas' =
+	A.undots eas +>
+	List.filter (function x -> match A.unwrap x with A.EComma _ -> false | _ -> true) in
       let ebs' = ebs +> List.map fst +> List.map (function
         | Left e -> e
         | Right typ -> raise Todo
         ) in
-      match_arguments (match eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
+      match_arguments (match A.unwrap eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)
         eas' ebs'
      )
 
@@ -525,7 +531,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
       | [], [] -> return true
       | [], y::ys -> return false
       | x::xs, ys -> 
-          (match x, ys with
+          (match A.unwrap x, ys with
           | A.Edots (_, optexpr), ys -> 
               (* todo: if optexpr, then a WHEN and so may have to filter yys *)
               let yys = Common.tails ys in (* '...' can take more or less the beginnings of the arguments *)
@@ -549,7 +555,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
           (* todo: Opt/Unique/Multi *)
               
 
-          | x, y::ys -> 
+          | _, y::ys -> 
               match_e_e x y >&&> 
               match_arguments seqstyle xs ys
           | x, [] -> return false
@@ -561,7 +567,7 @@ and (match_arguments: sequence_processing_style -> (Ast_cocci.expression list, A
 
 and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
   fun typa typb ->
-    match (typa,typb) with
+    match (A.unwrap typa,typb) with
       (A.Type(cv,ty1),((qu,il),ty2)) ->
 	(* drop out the const/volatile part that has been matched *)
 	let new_il todrop =
@@ -592,7 +598,7 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 
 and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
   fun typa typb -> 
-    match typa, typb with
+    match A.unwrap typa, typb with
 
       (* cas general *)
       A.MetaType ida,  typb -> 
@@ -674,7 +680,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
       | [], [] -> return true
       | [], y::ys -> return false
       | x::xs, ys -> 
-          (match x, ys with
+          (match A.unwrap x, ys with
           | A.Pdots (_), ys -> 
 
               let yys = Common.tails ys in (* '...' can take more or less the beginnings of the arguments *)
@@ -732,7 +738,7 @@ and (match_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list
 (* ------------------------------------------------------------------------------ *)
 
 and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb -> 
-  match ida with
+  match A.unwrap ida with
   | (A.Id ida) when (term ida) =$= idb -> return true
   | (A.MetaId ida) -> check_add_metavars_binding (term ida, Ast_c.MetaId (idb))
 

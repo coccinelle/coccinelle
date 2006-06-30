@@ -7,8 +7,10 @@
  *
  * **********************************************************************)
 
-type ('pred, 'mvar,'anno) wrapped_ctl = 
-    ('pred * 'mvar Ast_ctl.modif,  'mvar, 'anno) Ast_ctl.generic_ctl
+type info = int
+
+type ('pred, 'mvar) wrapped_ctl = 
+    ('pred * 'mvar Ast_ctl.modif,  'mvar, info) Ast_ctl.generic_ctl
 
 type ('value, 'pred) wrapped_binding = 
   | ClassicVar of 'value
@@ -20,8 +22,8 @@ type ('pred,'state,'mvar,'value) labelfunc =
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
     ('pred * 'mvar Ast_ctl.modif) -> 
       ('state * 
-	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution * 
-	 'wit) list
+	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution
+	 * 'wit) list
 
 
 (* ********************************************************************** *)
@@ -132,16 +134,48 @@ struct
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-	(predicate,SUB.mvar,'anno) wrapped_ctl ->
+	(predicate,SUB.mvar) wrapped_ctl ->
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
 	Common.uniq (
 	  List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
 	  
-  (* Partial matches *)
-  let check_conjunction phipsi res_phi res_psi res_phipsi = ()
+  (* ------------------ Partial matches ------------------ *)
+  let collect_predvar_bindings res =
+    let wits = List.map (fun (_,_,w) -> w) res in
+    let rec loop wits =
+      List.fold_left Common.union_set []
+	(List.map
+	   (function
+	       Wit(s,th,_,wits) | NegWit(s,th,_,wits) ->
+		 Common.union_set
+		   (List.fold_left
+		      (function rest ->
+			function
+			    Subst(x,PredVar(_)) -> x :: rest
+			  | NegSubst(x,PredVar(_)) ->
+			      failwith "unexpected negsubst on predvar"
+			  | _ -> rest)
+		      [] th)
+		   (loop wits))
+	   wits) in
+    loop wits
 
+  let check_conjunction phipsi res_phi res_psi res_phipsi =
+    let phi_code = collect_predvar_bindings res_phi in
+    let psi_code = collect_predvar_bindings res_psi in
+    let all_code = collect_predvar_bindings res_phipsi in
+    let check str = function
+	[] -> ()
+      |	l ->
+	  Printf.printf "Warning: conjunction derived from SP line %d drops code on the\nfollowing lines, which was matched by the %s side of the conjunction:\n"
+	    (Ast_ctl.get_line phipsi) str;
+	  List.iter
+	    (function x -> SUB.print_value x; Format.print_flush())
+	    l in
+    check "left" (Common.minus_set all_code phi_code);
+    check "right" (Common.minus_set all_code psi_code)
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end

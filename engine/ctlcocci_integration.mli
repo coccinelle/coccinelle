@@ -24,7 +24,7 @@ val mysat :
            (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
             list) *
          nodei list)
-         -> (Lib_engine.predicate, Lib_engine.mvar,unit)Wrapper_ctl.wrapped_ctl
+         -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
            -> (Ograph_extended.nodei * 
                  (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
                  Lib_engine.predicate) list
@@ -42,7 +42,7 @@ val mysat_noclean :
            (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
             list) *
          nodei list)
-         -> (Lib_engine.predicate, Lib_engine.mvar,unit)Wrapper_ctl.wrapped_ctl
+         -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
           -> (nodei *
                 (Lib_engine.mvar, (Lib_engine.metavar_binding_kind2, Lib_engine.predicate) Wrapper_ctl.wrapped_binding
                 ) Ast_ctl.generic_subst list *

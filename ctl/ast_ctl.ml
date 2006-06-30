@@ -35,6 +35,7 @@ type ('pred,'mvar,'anno) generic_ctl =
 
 let unwrap (ctl,_) = ctl
 let rewrap (_,model) ctl = (ctl,model)
+let get_line (_,l) = l
 
 
 (* NOTE: No explicit representation of the bottom subst., i.e., FALSE *)
