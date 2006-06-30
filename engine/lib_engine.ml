@@ -17,7 +17,7 @@ type transformation_info = (Ograph_extended.nodei * Ast_c.metavars_binding * Ast
 
 
 
-let print_binding = function
+let print_binding_kind2 = function
   | ParenVar s -> Format.print_string ("parenvar(" ^ s ^ ")")
-  | NormalMetaVar x -> Pretty_print_c.pp_binding x
+  | NormalMetaVar x -> Pretty_print_c.pp_binding_kind x
   

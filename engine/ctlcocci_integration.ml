@@ -118,7 +118,7 @@ module ENV =
     let merge_val v v' = v;;	       
 
     let print_mvar s = Format.print_string s
-    let print_value x = Lib_engine.print_binding x
+    let print_value x = Lib_engine.print_binding_kind2 x
   end
 
 

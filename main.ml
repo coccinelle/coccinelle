@@ -21,6 +21,8 @@ let main () =
         "-show_ctl",            Arg.Set        Flag.show_ctl, " ";
         "-show_flow",           Arg.Set        Flag.show_flow, " ";
 
+        "-verbose_ctl_engine",   Arg.Set       Flag_ctl.verbose_ctl_engine, " ";
+
       ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ " [options] <path-to-c-dir>\nOptions are:") in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
@@ -28,8 +30,14 @@ let main () =
     (match (!args) with
 
     | [x] when !test_mode -> 
-        let cfile = "tests/" ^ x ^ ".c" in 
-        let cocci_file =  "tests/" ^ x ^ ".cocci" in
+        let base = 
+          if x =~ "\\(.*\\)_ver[0-9]+"
+          then matched1 x
+          else x
+        in
+        let x' = if x =~ "\\(.*\\)_ver0" then matched1 x else x in
+        let cfile = "tests/" ^ x' ^ ".c" in 
+        let cocci_file =  "tests/" ^ base ^ ".cocci" in
         let iso = (Some "standard.iso") in
         Cocci.full_engine cfile (Left (cocci_file, iso))
         

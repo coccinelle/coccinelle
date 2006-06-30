@@ -193,14 +193,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               pr2 "transformation' info returned:";
               trans_info' +> List.iter (fun (i, subst, pred) -> 
                 Format.print_string ("transform state:" ^ (i_to_s i));
-                Format.print_string " with binding [";
-                Common.print_between (fun () -> Format.print_string ";" ) 
-                  (fun (s, kind) -> 
-                    Format.print_string s;
-                    Format.print_string " --> ";
-                    Pretty_print_c.pp_binding kind)
-                  subst;
-                Format.print_string "]";
+                Format.print_string " with binding ";
+                Pretty_print_c.pp_binding subst;
                 Format.force_newline();
                                       );
               Format.print_string "\n"; Format.print_flush();
