@@ -9,5 +9,5 @@ expression X,Y;
    ...
 -  h(Y);
 +  h(X,Y); 
-   ... // dont forget this one :)
+   ...
  }

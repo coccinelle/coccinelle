@@ -462,7 +462,7 @@ let context_neg minus plus =
   Hashtbl.clear plus_table;
   let rec loop = function
       ([],_) -> []
-    | (_,[]) ->
+    | (minus,[]) ->
 	let _ =
 	  List.map
 	    (function m ->
@@ -500,14 +500,17 @@ let context_neg minus plus =
 	    (m,p)::loop(minus,plus)
 	  end
 	else
-	  if mstart < pstart
-	  then
-	    begin
-	      let _ =
-		classify
-		  (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
-		  minus_table m in
-	      loop(minus,pall)
-	    end
-	  else loop(mall,plus) in
+	  if not(iscode m or iscode p)
+	  then loop(minus,plus)
+	  else
+	    if mstart < pstart
+	    then
+	      begin
+		let _ =
+		  classify
+		    (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		    minus_table m in
+		loop(minus,pall)
+	      end
+	    else loop(mall,plus) in
   loop(minus,plus)

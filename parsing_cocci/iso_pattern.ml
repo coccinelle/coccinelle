@@ -552,11 +552,13 @@ let copy_plus printer minusify model e =
       (* add the replacement information at the root *)
       (match Ast0.get_mcodekind  e with
 	Ast0.MINUS(emc) -> emc := !mc (* ! mc contains no references *)
-      |	_ -> failwith "not possible 6")
+      |	_ -> failwith "not possible 6");
+      e
   | Ast0.CONTEXT(mc) ->
       (match Ast0.get_mcodekind e with
 	Ast0.CONTEXT(emc) -> emc := !mc
-      |	_ -> failwith "not possible 7")
+      |	_ -> failwith "not possible 7");
+      e
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
 
@@ -571,9 +573,9 @@ let mkdisj matcher alts instantiater e disj_maker minusify
 	    let new_alts =
 	      List.map
 		(function a ->
-		  compute_lines (rebuild_mcodes (instantiater bindings a)))
+		  copy_plus printer minusify e
+		    (compute_lines (rebuild_mcodes (instantiater bindings a))))
 		alts in
-	    List.iter (copy_plus printer minusify e) new_alts;
 	    disj_maker new_alts) in
   loop alts
 
