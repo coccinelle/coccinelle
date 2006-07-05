@@ -731,15 +731,12 @@ let satEU m s1 s2 =
   setfix f []                		(* NOTE: is [] right? *)
 ;;
 
-
 let rec satloop ((grp,label,states) as m) phi env =
   match unwrap phi with
     False              -> []
   | True               -> triples_top states
   | Pred(p)            -> (* NOTE: Assume well-formed *)
-      let res = List.map (function (node,subst,_) -> (node,subst,AndWits[])) (label p) in
-      print_state "pred res" res;
-      res
+      List.map (function (node,subst,_) -> (node,subst,AndWits[])) (label p)
   | Not(phi)           ->
       propagate_neg (triples_complement states (satloop m phi env))
   | Or(phi1,phi2)      ->
