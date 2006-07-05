@@ -8,6 +8,7 @@ SRC = \
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
+TESTSUBDIRS=tests
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
 
 
@@ -130,3 +131,6 @@ depend:: beforedepend
 
 
 -include .depend
+
+tests:  spatch
+	set -e; for i in $(TESTSUBDIRS); do $(MAKE) -C $$i all; done 

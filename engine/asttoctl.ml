@@ -1,3 +1,8 @@
+(* false = simpler formulas, only for debugging *)
+let useEU = ref true
+(* true = don't see all matched nodes, only modified ones *)
+let onlyModif = ref true
+
 (* Question: where do we put the existential quantifier for or.  At the
 moment, let it float inwards. *)
 
@@ -163,7 +168,7 @@ and astfvparam recursor k p =
 and astfvrule_elem recursor k re =
   let res =
     match Ast.unwrap re with
-      Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
+      Ast.MetaRuleElem(name) | Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
 	Common.union_set [metaid name] (mcode astfvs name)
     | _ -> k re in
   Hashtbl.add free_table (Rule_elem re) res;
@@ -257,7 +262,10 @@ let make_match n code =
   let v = fresh_var() in
   if contains_modif code
   then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
-  else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
+  else
+    if !onlyModif
+    then wrapPred n (Lib_engine.Match(code),CTL.Control)
+    else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
 let seq_fvs quantified term1 term2 =
   let t1fvs = get_unquantified quantified (Hashtbl.find free_table term1) in
@@ -465,7 +473,7 @@ and statement quantified stmt after =
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
 	    let s = fresh_metavar() in
-	    Some(make_match (Ast.rewrap stmt (Ast.MetaStmt(s,i,d))))
+	    Some(make_match (Ast.rewrap stmt (Ast.MetaRuleElem(s,i,d))))
 	| _ -> None in
       let tmp_whencode =
 	List.map (function s -> statement quantified s None) tmp_whencode in
@@ -506,11 +514,15 @@ and statement quantified stmt after =
 	| (Some after,Some whencode) ->
 	    let v = fresh_let_var() in
 	    let w = fresh_let_var() in
-	    wrapLet(v,after,
-		    (wrapLet(w,whencode,
-			     wrapAnd(wrapAU(wrapRef w,
-					    wrapOr(wrapRef v,wrapRef aftret)),
-				     wrapEU(wrapRef w,wrapRef v))))))
+	    if !useEU
+	    then
+	      wrapLet(v,after,
+		      (wrapLet(w,whencode,
+			       wrapAnd(wrapAU
+					 (wrapRef w,
+					  wrapOr(wrapRef v,wrapRef aftret)),
+				       wrapEU(wrapRef w,wrapRef v)))))
+	    else wrapAU(whencode,wrapOr(after,wrapRef aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in

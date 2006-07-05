@@ -37,6 +37,14 @@ module CTL_ENGINE :
     functor (G : GRAPH) ->
       sig
 
+	type ('state,'subst,'anno) local_witnesstree =
+	    AndWits of ('state,'subst,'anno) local_witnesstree list
+	  | OrWits of ('state,'subst,'anno) local_witnesstree list
+	  | Wits of
+	      'state * 'subst * 'anno * ('state,'subst,'anno) local_witnesstree
+	  | NegWits of ('state,'subst,'anno) local_witnesstree
+
+
         val sat :
           G.cfg *
           ('a ->
@@ -50,57 +58,6 @@ module CTL_ENGINE :
           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
             'b list)
-           Ast_ctl.generic_witness list)
-          list
-
-        val sat_verbose :
-          (int ->
-           ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
-           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'c list)
-            Ast_ctl.generic_witness list)
-           list -> 'd list -> 'd) ->
-          int ->
-          int ->
-          G.cfg *
-          ('a ->
-           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'c list)
-            Ast_ctl.generic_witness list)
-           list) *
-          G.node list ->
-          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
-          'd *
-          (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-           (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-            'c list)
-           Ast_ctl.generic_witness list)
-          list
-
-        type 'a witAnnoTree = WitAnno of ('a * 'a witAnnoTree list)
-        val sat_annotree :
-          (int ->
-           ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
-           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'c list)
-            Ast_ctl.generic_witness list)
-           list -> 'd) ->
-          G.cfg *
-          ('a ->
-           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'c list)
-            Ast_ctl.generic_witness list)
-           list) *
-          G.node list ->
-          ('a, SUB.mvar, 'b) Ast_ctl.generic_ctl ->
-          'd witAnnoTree *
-          (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-           (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-            'c list)
            Ast_ctl.generic_witness list)
           list
       end

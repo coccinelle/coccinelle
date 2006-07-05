@@ -353,6 +353,8 @@ let rule_elem arity re =
   | Ast.ReturnExpr(ret,exp,sem) ->
       print_string arity; mcode print_string ret; print_string " ";
       expression exp; mcode print_string sem
+  | Ast.MetaRuleElem(name) ->
+      print_string arity; mcode print_string name
   | Ast.MetaStmt(name) ->
       print_string arity; mcode print_string name
   | Ast.MetaStmtList(name) ->

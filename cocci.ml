@@ -180,8 +180,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
           
               if !Flag.show_flow then print_flow  flow;
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
-              pr2 "calling sat_noclean";
-              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in
+(*              pr2 "calling sat_noclean";
+              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in*)
               pr2 "calling sat";
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               pr2 "ending sat";

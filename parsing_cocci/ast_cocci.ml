@@ -234,6 +234,7 @@ and base_rule_elem =
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
 
+  | MetaRuleElem  of string mcode  
   | MetaStmt      of string mcode  
   | MetaStmtList  of string mcode  
 

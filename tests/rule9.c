@@ -11,8 +11,8 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 
 
 	/* if someone is sending us data, just throw it away */
-//	if (inout)
-//		return length;
+	if (inout)
+		return length;
 
 	/* find our data from the given hostno */
 	hostptr = scsi_host_hn_get(hostno);
@@ -22,7 +22,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 //	}
 	us = (struct us_data*)hostptr->hostdata[0];
 
-        scsi_host_put(hostptr);
+//        scsi_host_put(hostptr);
 
 	/* if we couldn't find it, we return an error */
 	if (!us) {

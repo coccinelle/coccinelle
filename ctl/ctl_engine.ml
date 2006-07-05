@@ -172,6 +172,46 @@ module CTL_ENGINE =
 struct
 
 
+type ('state,'subst,'anno) local_witnesstree =
+    AndWits of ('state,'subst,'anno) local_witnesstree list
+  | OrWits of ('state,'subst,'anno) local_witnesstree list
+  | Wits of 'state * 'subst * 'anno * ('state,'subst,'anno) local_witnesstree
+  | NegWits of ('state,'subst,'anno) local_witnesstree
+
+let rec clean_triple (st,th,wits) =
+  let isnone = function None -> true | _ -> false in
+  let drop_some = function None -> failwith "impossible" | Some x -> x in
+  let rec no_negwits = function
+      AndWits(children) | OrWits(children) -> List.for_all no_negwits children
+    | Wits(st,th,anno,children) -> no_negwits children
+    | NegWits(children) -> false  in
+  let rec loop2 = function
+      AndWits(children) ->
+	let res = List.map loop2 children in
+	if List.exists isnone res
+	then None
+	else
+	  let children = List.map drop_some res in
+	  Some (AndWits(children))
+    | OrWits(children) ->
+	let res = List.map loop2 children in
+	if List.for_all isnone res
+	then None
+	else 
+	  let children =
+	    List.map drop_some
+	      (List.filter (function x -> not(isnone x)) res) in
+	  Some (OrWits(children))
+    | Wits(st,th,anno,children) ->
+	(match loop2 children with
+	  None -> None
+	| Some children -> Some (Wits(st,th,anno,children)))
+    | NegWits(children) ->
+	if no_negwits children then None else Some (NegWits(children)) in
+  match loop2 wits with
+    Some x -> [(st,th,x)]
+  | None -> []
+
 open Ast_ctl
 
 type ('state,'subst,'anno) generic_triple = 
@@ -183,16 +223,13 @@ type ('state,'subst,'anno) generic_algo =
 
 let (print_generic_subst: (SUB.mvar, SUB.value) Ast_ctl.generic_subst -> unit) = fun subst ->
   match subst with
-  | Subst (mvar, value) -> 
-(*      Format.print_string ("+");*)
+  | Subst (mvar, value) ->
       SUB.print_mvar mvar; 
       Format.print_string " --> ";
       SUB.print_value value
   | NegSubst (mvar, value) -> 
-(*      Format.print_string ("-");*)
       SUB.print_mvar mvar; 
       Format.print_string " -/-> ";
-(*      Format.print_string " --> ";*)
       SUB.print_value value
 
 let (print_generic_substitution:  (SUB.mvar, SUB.value) Ast_ctl.generic_substitution -> unit) = fun substxs ->
@@ -202,36 +239,103 @@ let (print_generic_substitution:  (SUB.mvar, SUB.value) Ast_ctl.generic_substitu
     Format.print_string "]";
   end
 
-let rec (print_generic_witness: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
+let rec (print_generic_witness :
+	   (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
            Ast_ctl.generic_witness -> unit) = function
   | Wit (state, subst, anno, childrens) -> 
       Format.print_string "wit ";
       G.print_node state;
       print_generic_substitution subst;
-      Format.print_string "{";
-      Common.print_between (fun () -> Format.print_string "," ) 
-	print_generic_witness childrens;
-      Format.print_string "}"
+      (match childrens with
+	[] -> Format.print_string "{}"
+      |	_ -> 
+	  Format.force_newline(); Format.print_string "   "; Format.open_box 0;
+	  print_generic_witnesstree childrens; Format.close_box())
   | NegWit  (state, subst, anno, childrens) -> 
       Format.print_string "-wit ";
       G.print_node state;
       print_generic_substitution subst;
-      Format.print_string "{";
-      Common.print_between (fun () -> Format.print_string "," )
-	print_generic_witness childrens;
-      Format.print_string "}"
+      (match childrens with
+	[] -> Format.print_string "{}"
+      |	_ -> 
+	  Format.force_newline(); Format.print_string "   "; Format.open_box 0;
+	  print_generic_witnesstree childrens; Format.close_box())
 
 
-and (print_generic_witnesstree: (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
+and (print_generic_witnesstree :
+       (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
        Ast_ctl.generic_witnesstree -> unit) = fun witnesstree ->
   begin
+    Format.open_box 1;
     Format.print_string "{";
-    Common.print_between (fun () -> Format.print_string ";" ) 
+    Common.print_between
+      (fun () -> Format.print_string ";"; Format.force_newline() ) 
       print_generic_witness witnesstree;
     Format.print_string "}";
+    Format.close_box()
   end
 
 
+let rec (print_local_witnesstree :
+       (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'anno) 
+       local_witnesstree -> unit) =
+  fun witnesstree ->
+    let rec loop = function
+	AndWits(wits) ->
+	  Common.print_between
+	    (fun () -> Format.print_string " &"; Format.force_newline() ) 
+	    paren_loop wits
+      | OrWits(wits) ->
+	  Common.print_between
+	    (fun () -> Format.print_string " v"; Format.force_newline() ) 
+	    paren_loop wits
+      | Wits (state, subst, anno, childrens) -> 
+	  Format.print_string "wit ";
+	  G.print_node state;
+	  print_generic_substitution subst;
+	  (match childrens with
+	    AndWits [] | OrWits [] -> Format.print_string "{}"
+	  | _ -> 
+	      Format.force_newline(); Format.print_string "   ";
+	      Format.open_box 1;
+	      Format.print_string "{";
+	      loop childrens;
+	      Format.print_string "}"; Format.close_box())
+      | NegWits childrens -> 
+	  Format.print_string "!";
+	  (match childrens with
+	    AndWits [] | OrWits [] -> Format.print_string "{}"
+	  | _ -> paren_loop childrens)
+	    
+    and paren_loop = function
+	AndWits(_::_::_) | OrWits(_::_::_) as wit ->
+	  Format.open_box 1;
+	  Format.print_string "(";
+	  loop wit;
+	  Format.print_string ")";
+	  Format.close_box()
+      | wit -> loop wit in
+    Format.open_box 1;
+    Format.print_string "{";
+    loop witnesstree;
+    Format.print_string "}";
+    Format.close_box()
+      
+      
+and (print_local_triple :
+       (G.node * 
+          (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
+          (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list)
+	  local_witnesstree)
+     -> unit) =
+  fun triple ->
+    List.iter
+      (function (node,subst,tree) ->
+	G.print_node node;
+	print_generic_substitution subst;
+	print_local_witnesstree tree)
+      (clean_triple triple)
+	  
 and (print_generic_triple: (G.node * 
                             (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
                             (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) Ast_ctl.generic_witnesstree)
@@ -242,41 +346,53 @@ and (print_generic_triple: (G.node *
     print_generic_witnesstree tree;
   end
 
-and (print_generic_algo: (G.node * 
-                         (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
-                         (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) Ast_ctl.generic_witnesstree)
-                         list -> unit) = fun xs -> 
-  begin
-    Format.print_string "<";
-    Common.print_between (fun () -> Format.print_string ";\n" ) print_generic_triple xs;
-    Format.print_string ">";
-  end
-
+and (print_local_algo :
+       (G.node * 
+	  (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
+	  (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) local_witnesstree)
+       list -> unit) = fun xs -> 
+	 begin
+	   Format.print_string "<";
+	   Common.print_between (fun () -> Format.print_string ";\n" ) print_local_triple xs;
+	   Format.print_string ">";
+	 end
+	   
+and (print_generic_algo :
+       (G.node * 
+	  (SUB.mvar, SUB.value) Ast_ctl.generic_substitution *
+	  (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_substitution, 'b list) generic_witnesstree)
+       list -> unit) = fun xs -> 
+	 begin
+	   Format.print_string "<";
+	   Common.print_between (fun () -> Format.print_string ";\n" ) print_generic_triple xs;
+	   Format.print_string ">";
+	 end
+	   
 let print_state str l =
   Printf.printf "%s\n" str;
   List.iter (function x ->
-    print_generic_triple x; Format.print_flush(); Printf.printf "\n";
+    print_local_triple x; Format.print_flush(); Printf.printf "\n";
     flush stdout)
     l;
   Printf.printf "\n"
-
-
-
+    
+    
+    
 (* ---------------------------------------------------------------------- *)
 (*                                                                        *)
 (* ---------------------------------------------------------------------- *)
-
-
+    
+    
 (* ************************* *)
 (* Substitutions             *)
 (* ************************* *)
-
+    
 let dom_sub sub =
   match sub with
-    | Subst(x,_)    -> x
-    | NegSubst(x,_) -> x
-;;
-
+  | Subst(x,_)    -> x
+  | NegSubst(x,_) -> x
+	;;
+	
 let eq_subBy eqx eqv sub sub' =
   match (sub,sub') with 
     | (Subst(x,v),Subst(x',v'))       -> (eqx x x') && (eqv v v')
@@ -368,19 +484,40 @@ let negate_subst theta = (map (fun sub -> [negate_sub sub]) theta);;
 (* Witnesses                 *)
 (* ************************* *)
 
-let top_wit = [];;			(* Always TRUE witness *)
+let top_wit = AndWits [];;			(* Always TRUE witness *)
 
 let eq_wit wit wit' = wit = wit';;
 
-let union_wit wit wit' = union wit wit';;
+let union_wit wit wit' =
+  let andify = function AndWits wits -> wits | x -> [x] in
+  let wit = andify wit in
+  let wit' = andify wit' in
+  match union wit wit' with
+    [x] -> x
+  | x -> AndWits x
 
+(*
 let negate_wit wit =
   match wit with
     | Wit(s,th,anno,ws)    -> NegWit(s,th,anno,ws)
     | NegWit(s,th,anno,ws) -> Wit(s,th,anno,ws)
 ;;
 
-let negate_wits wits = setify (map (fun wit -> [negate_wit wit]) wits);;
+let negate_wits wits =
+  setify
+    (List.fold_left
+       (function rest ->
+	 function wit ->
+	   [negate_wit wit] :: rest)
+       [] wits);;
+*)
+
+
+let negate_wits = function
+    AndWits [] | OrWits [] -> []
+  | NegWits(ws) -> [ws]
+  | Wits(_,_,_,_) as w -> [NegWits(w)]
+  | wits -> [NegWits(wits)]
 
 
 (* ************************* *)
@@ -446,61 +583,86 @@ let rec triples_complement states trips =
 (* NEGATION (NegState style)   *)
 (* *************************** *)
 
-(* FIX ME: convert to "double foldl" style *)
-let rec mixer mrg xs ys = 
-  let rec mix x ys =
-    match ys with
-      | [] -> []
-      | (y::ys') -> 
-	  let rest = mix x ys' in 
-	    maybe (fun xy -> xy :: rest) rest (mrg x y) in
-    match xs with
-      | [] -> []
-      | (x::xs') -> (mix x ys) @ (mixer mrg xs' ys)
-
-
 (* Constructive negation at the state level *)
 type ('a) state =
     PosState of 'a
   | NegState of 'a list
 ;;
 
+let compatible_states = function
+    (PosState s1, PosState s2) -> 
+      if s1 = s2 then Some (PosState s1) else None
+  | (PosState s1, NegState s2) -> 
+      if List.mem s1 s2 then None else Some (PosState s1)
+  | (NegState s1, PosState s2) -> 
+      if List.mem s2 s1 then None else Some (PosState s2)
+  | (NegState s1, NegState s2) -> Some (NegState (s1 @ s2))
+;;
+
 (* Conjunction on triples with "special states" *)
 let triples_state_conj trips trips' =
-  let mrg (s1,th1,wit1) (s2,th2,wit2) =
-    match (s1,s2) with
-      | (PosState s1, PosState s2) -> 
-	  if s1 = s2 then Some (PosState s1,th1,wit1) else None
-      | (PosState s1, NegState s2) -> 
-	  if List.mem s1 s2 then None else Some (PosState s1,th1,wit1)
-      | (NegState s1, PosState s2) -> 
-	  if List.mem s2 s1 then None else Some (PosState s2,th2,wit2)
-      | (NegState s1, NegState s2) -> Some (NegState (s1 @ s2),th1,wit1)
-  in mixer mrg trips trips'
+    setify (
+    List.fold_left
+      (function rest ->
+	 function (s1,th1,wit1) ->
+	   List.fold_left
+	     (function rest ->
+		function (s2,th2,wit2) ->
+		  match compatible_states(s1,s2) with
+		    Some s ->
+		      (match (conj_subst th1 th2) with
+			Some th -> (s,th,union_wit wit1 wit2)::rest
+		      | _       -> rest)
+		  | _ -> rest)
+	     rest trips')
+      [] trips)
 ;;
 
 let triple_negate (s,th,wits) = 
   let negstates = [(NegState [s],top_subst,top_wit)] in
   let negths = map (fun th -> (PosState s,th,top_wit)) (negate_subst th) in
-  let negwits = map (fun nwit -> (PosState s,th,nwit)) (negate_wits wits) in
+  let negwits =
+    map
+      (fun nwit -> (PosState s,th,nwit))
+      (negate_wits wits) in
     triples_union negstates (triples_union negths negwits)
 ;;
+
+(* goal: get rid of the negations that pile up at the top of a tree when
+   double negation is done
+   invariant: there are no such undesired double negations in the child of
+   a witness *)
+let propagate_neg trips =
+  let rec loop neg = function
+      AndWits(children) ->
+	let wits = List.map (loop neg) children in
+	if neg then OrWits wits else AndWits wits
+    | OrWits(children) ->
+	let wits = List.map (loop neg) children in
+	if neg then AndWits wits else OrWits wits
+    | Wits(st,th,anno,children) -> (* children are taken care of *)
+	let wits = Wits(st,th,anno,children) in
+	if neg then NegWits(wits) else wits
+    | NegWits(children) -> loop (not neg) children in
+  List.map (function (st,th,wit) -> (st,th,loop false wit)) trips
 
 (* FIX ME: it is not necessary to do full conjunction *)
 let triples_complement states trips =
   let cleanup (s,th,wit) =
     match s with
       | PosState s' -> [(s',th,wit)]
-      | NegState ss -> map (fun st -> (st,top_subst,top_wit)) (setdiff states ss)
-  in
+      | NegState ss ->
+	  assert (th=top_subst);
+	  assert (wit=top_wit);
+	  map (fun st -> (st,top_subst,top_wit)) (setdiff states ss) in
   let rec compl trips =
     match trips with
       | [] -> []
       | (t::[]) -> triple_negate t
       | (t::ts) -> 
-	  triples_state_conj (triple_negate t) (compl ts)
-  in
+	  triples_state_conj (triple_negate t) (compl ts) in
     concatmap cleanup (compl trips)
+
 ;;
 
 (* ********************************** *)
@@ -511,7 +673,7 @@ let triples_complement states trips =
 let triples_witness x trips = 
   let mkwit (s,th,wit) =
     let (th_x,newth) = split_subst th x in
-      (s,newth,[Wit(s,th_x,[],wit)]) in	(* [] = annotation *)
+      (s,newth,Wits(s,th_x,[],wit)) in	(* [] = annotation *)
     setify (map mkwit trips)
 ;;
 
@@ -533,29 +695,40 @@ let pre_concatmap f l =
 
 let rec pre_exist (grp,_,_) y =
   let exp (s,th,wit) = map (fun s' -> (s',th,wit)) (G.predecessors grp s) in
-  setify (pre_concatmap exp y)
+  let res = setify (pre_concatmap exp y) in
+  res
 ;;
 
 let pre_forall ((_,_,states) as m) y = 
-  triples_complement states (pre_exist m (triples_complement states y));;
+  propagate_neg
+    (triples_complement states (pre_exist m (triples_complement states y)))
+;;
 
 let satAF m s =
   let f y = union y (pre_forall m y) in
   setfix f s
 ;;
 
+let satEG ((_,_,states) as m) s =
+  propagate_neg
+    (triples_complement states (satAF m (triples_complement states s)))
+
 let satEX m s = pre_exist m s;;
+
+let satAX m s = pre_forall m s
+;;
+  
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU m s1 s2 = 
-  let f y = triples_union s2 (triples_conj s1 (pre_forall m y)) in 
-    setfix f []				(* NOTE: is [] right? *)
+  let f y = triples_union s2 (triples_conj s1 (pre_forall m y)) in
+  setfix f [] 				(* NOTE: is [] right? *)
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU m s1 s2 = 
   let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
-    setfix f []				(* NOTE: is [] right? *)
+  setfix f []                		(* NOTE: is [] right? *)
 ;;
 
 
@@ -563,25 +736,29 @@ let rec satloop ((grp,label,states) as m) phi env =
   match unwrap phi with
     False              -> []
   | True               -> triples_top states
-  | Pred(p)            -> label(p)		(* NOTE: Assume well-formed *)
-  | Not(phi)           -> triples_complement states (satloop m phi env)
-  | Or(phi1,phi2)      -> triples_union
-	                    (satloop m phi1 env) (satloop m phi2 env)
-  | And(phi1,phi2)     -> triples_conj
-	                    (satloop m phi1 env) (satloop m phi2 env)
+  | Pred(p)            -> (* NOTE: Assume well-formed *)
+      let res = List.map (function (node,subst,_) -> (node,subst,AndWits[])) (label p) in
+      print_state "pred res" res;
+      res
+  | Not(phi)           ->
+      propagate_neg (triples_complement states (satloop m phi env))
+  | Or(phi1,phi2)      ->
+      triples_union (satloop m phi1 env) (satloop m phi2 env)
+  | And(phi1,phi2)     ->
+      let phi1res = satloop m phi1 env in
+      let phi2res = satloop m phi2 env in
+      let res = triples_conj phi1res phi2res in
+      res
   | EX(phi)            -> satEX m (satloop m phi env)
-  | AX(phi1)            ->
-      satloop m
-	(rewrap phi (Not (rewrap phi (EX (rewrap phi (Not phi1)))))) env
+  | AX(phi)            -> satAX m (satloop m phi env)
   | EF(phi)            -> satloop m (rewrap phi (EU(rewrap phi True,phi))) env
   | AF(phi)            -> satAF m (satloop m phi env)
-  | EG(phi1)            ->
-      satloop m
-	(rewrap phi (Not(rewrap phi (AF (rewrap phi (Not phi1)))))) env
-  | AG(phi1)            ->
+  | EG(phi)            -> satEG m (satloop m phi env)
+  | AG(phi1)           -> (* should rewrite to only do propagate_neg once *)
       satloop m
 	(rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1)))))) env
-  | EU(phi1,phi2)      -> satEU m (satloop m phi1 env) (satloop m phi2 env)
+  | EU(phi1,phi2)      ->
+      satEU m (satloop m phi1 env) (satloop m phi2 env)
   | AU(phi1,phi2)      -> 
       satAU m (satloop m phi1 env) (satloop m phi2 env)
       (* old: satAF m (satloop m phi2 env) *)
@@ -596,74 +773,83 @@ let rec satloop ((grp,label,states) as m) phi env =
 (* SAT with tracking *)
 let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env =
   let anno res children = (annot lvl phi res children,res) in
-  let satv phi0 env = sat_verbose_loop annot maxlvl (lvl+1) m phi0 env in
-    if (lvl > maxlvl) && (maxlvl > -1) then
-      anno (satloop m phi env) []
-    else
-      match unwrap phi with
-	  False              -> anno [] []
-	| True               -> anno (triples_top states) []
-	| Pred(p)            -> anno (label(p)) []
-	| Not(phi1)          -> 
-	    let (child,res) = satv phi1 env in
-	      anno (triples_complement states res) [child]
-	| Or(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 env in
-	    let (child2,res2) = satv phi2 env in
-	      anno (triples_union res1 res2) [child1; child2]
-	| And(phi1,phi2)     -> 
-	    let (child1,res1) = satv phi1 env in
-	    let (child2,res2) = satv phi2 env in
-	      anno (triples_conj res1 res2) [child1; child2]
-	| EX(phi1)           -> 
-	    let (child,res) = satv phi1 env in
-	      anno (satEX m res) [child]
-	| AX(phi1)           -> 
-	    let (child,res) = satv phi1 env in
-	      anno (pre_forall m res) [child]
-	| EF(phi1)           -> 
-	    let (child,_) = satv phi1 env in
-	      anno (satloop m (rewrap phi (EU(rewrap phi True,phi1))) env)
-	      [child]
-	| AF(phi1)           -> 
-	    let (child,res) = satv phi1 env in
-	      anno (satAF m res) [child]
-	| EG(phi1)           -> 
-	    let (child,_) = satv phi1 env in
-	    anno
-	      (satloop m
-		 (rewrap phi (Not(rewrap phi (AF(rewrap phi (Not phi1))))))
-		 env)
-	      [child]
-	| AG(phi1)            -> 
-	    let (child,_) = satv phi1 env in
-	    anno
-	      (satloop m
-		 (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
-		 env)
-	      [child]
-	| EU(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 env in
-	    let (child2,res2) = satv phi2 env in
-	      anno (satEU m res1 res2) [child1; child2]
-	| AU(phi1,phi2)      -> 
-	    let (child1,res1) = satv phi1 env in
-	    let (child2,res2) = satv phi2 env in
-	      anno (satAU m res1 res2) [child1; child2]
-	| Implies(phi1,phi2) -> 
-	    let (child1,_) = satv phi1 env in
-	    let (child2,_) = satv phi2 env in
-	    anno
-	      (satloop m (rewrap phi (Or(rewrap phi (Not phi1),phi2))) env)
-	      [child1; child2]
-	| Exists (v,phi1)    -> 
-	    let (child,res) = satv phi1 env in
-	      anno (triples_witness v res) [child]
-	| Let(v,phi1,phi2)   ->
-	    let (child1,res1) = satv phi1 env in
-	    let (child2,res2) = satv phi2 ((v,res1) :: env) in
-	    anno res2 [child1;child2]
-	| Ref(v)             -> anno (List.assoc v env) []
+  let satv phi0 env =
+    sat_verbose_loop annot maxlvl (lvl+1) m phi0 env in
+  if (lvl > maxlvl) && (maxlvl > -1) then
+    anno (satloop m phi env) []
+  else
+    match unwrap phi with
+      False              -> anno [] []
+    | True               -> anno (triples_top states) []
+    | Pred(p)            ->
+	let res =
+	  List.map (function (node,subst,_) -> (node,subst,AndWits[]))
+	    (label p) in
+	anno res []
+    | Not(phi1)          -> 
+	let (child,res) = satv phi1 env in
+	anno (propagate_neg (triples_complement states res)) [child]
+    | Or(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (triples_union res1 res2) [child1; child2]
+    | And(phi1,phi2)     -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (triples_conj res1 res2) [child1; child2]
+    | EX(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (satEX m res) [child]
+    | AX(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (pre_forall m res) [child]
+    | EF(phi1)           -> 
+	let (child,_) = satv phi1 env in
+	anno (satloop m
+		(rewrap phi (EU(rewrap phi True,phi1)))
+		env)
+	  [child]
+    | AF(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (satAF m res) [child]
+    | EG(phi1)           -> 
+	let (child,_) = satv phi1 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Not(rewrap phi (AF(rewrap phi (Not phi1))))))
+	     env)
+	  [child]
+    | AG(phi1)            -> 
+	let (child,_) = satv phi1 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
+	     env)
+	  [child]
+    | EU(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (satEU m res1 res2) [child1; child2]
+    | AU(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (satAU m res1 res2) [child1; child2]
+    | Implies(phi1,phi2) -> 
+	let (child1,_) = satv phi1 env in
+	let (child2,_) = satv phi2 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Or(rewrap phi (Not phi1),phi2)))
+	     env)
+	  [child1; child2]
+    | Exists (v,phi1)    -> 
+	let (child,res) = satv phi1 env in
+	anno (triples_witness v res) [child]
+    | Let(v,phi1,phi2)   ->
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 ((v,res1) :: env) in
+	anno res2 [child1;child2]
+    | Ref(v)             -> anno (List.assoc v env) []
 ;;
 
 let sat_verbose annotate maxlvl lvl m phi =
@@ -680,7 +866,7 @@ let sat_annotree annotate m phi =
 let simpleanno l phi res =
   let pp s = 
     Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
-    print_generic_algo res;
+    print_local_algo res;
     Format.print_string "\n------------------------------\n\n"
   in
   match unwrap phi with
@@ -704,12 +890,55 @@ let simpleanno l phi res =
     | Ref(s)             -> pp ("Ref("^s^")")
 ;;
 
+
+let rec dnf = function
+    AndWits(children) ->
+      let ors = List.concat (List.map dnf children) in
+      (match ors with
+	[] -> []
+      |	x::xs ->
+	  setify
+	    (List.fold_left
+	       (function rest ->
+		 function cur ->
+		   List.map
+		     (function
+			 AndWits r -> AndWits (cur::r)
+		       | r -> AndWits [cur;r])
+		     rest)
+	       [x] xs))
+  | OrWits(children) -> setify (List.concat(List.map dnf children))
+  | Wits(st,th,anno,AndWits[]) -> [Wits(st,th,anno,AndWits[])]
+  | Wits(st,th,anno,children) ->
+      let children = dnf children in
+      List.map (function children -> Wits(st,th,anno,children)) children
+  | NegWits(children) -> (* already pushed in as far as possible *)
+      let children = dnf children in
+      List.map (function children -> NegWits(children)) children
+
+let rec witstowit (st,th,wits) =
+  let wits = dnf wits in
+  let rec loop = function
+    AndWits(children) -> List.concat(List.map loop children)
+  | OrWits(children) -> failwith "removed by dnf"
+  | Wits(st,th,anno,children) -> [Ast_ctl.Wit(st,th,anno,loop children)]
+  | NegWits(Wits(st,th,anno,children)) ->
+      [Ast_ctl.NegWit(st,th,anno,loop children)]
+  | NegWits(children) -> failwith "complex negwits should not occur" in
+  let wits = List.concat(List.map loop wits) in
+  (st,th,wits)
+
+
 (* Main entry point for engine *)
 let sat m phi = 
-  if(!Flag_ctl.verbose_ctl_engine) then
-    snd (sat_annotree simpleanno m phi)
- else
-   satloop m phi []
+  let res =
+    if(!Flag_ctl.verbose_ctl_engine)
+    then snd (sat_annotree simpleanno m phi)
+    else satloop m phi [] in
+  let res = List.concat(List.map clean_triple res) in
+  let res = List.map witstowit res in
+  print_generic_algo res;
+  res
 ;;
 
 (* ********************************************************************** *)
