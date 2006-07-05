@@ -742,10 +742,7 @@ let rec satloop ((grp,label,states) as m) phi env =
   | Or(phi1,phi2)      ->
       triples_union (satloop m phi1 env) (satloop m phi2 env)
   | And(phi1,phi2)     ->
-      let phi1res = satloop m phi1 env in
-      let phi2res = satloop m phi2 env in
-      let res = triples_conj phi1res phi2res in
-      res
+      triples_conj (satloop m phi1 env) (satloop m phi2 env)
   | EX(phi)            -> satEX m (satloop m phi env)
   | AX(phi)            -> satAX m (satloop m phi env)
   | EF(phi)            -> satloop m (rewrap phi (EU(rewrap phi True,phi))) env
