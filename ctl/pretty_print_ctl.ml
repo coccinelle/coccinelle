@@ -6,6 +6,16 @@ open Ast_ctl
 let pp = Format.print_string
 let box f = open_box 1; f(); close_box ()
 
+let char_and = "&"
+let char_or  = "v" 
+let char_not = "!" 
+
+(*
+let char_and = "/\\"
+let char_or = "\\/"
+let char_not = "-|"
+*)
+
 let rec (pp_ctl: ('pred -> unit) * ('mvar -> unit) -> ('pred, 'mvar, 'info) generic_ctl -> unit) = 
 fun (pp_pred, pp_mvar) ctl -> 
  let rec pp_aux = fun ctl ->
@@ -13,7 +23,7 @@ fun (pp_pred, pp_mvar) ctl ->
   | False              -> pp "False"
   | True               -> pp "True"
   | Pred(p)            -> pp_pred p
-  | Not(phi)           -> pp "-|("; box (fun () -> pp_aux phi); pp ")"
+  | Not(phi)           -> pp char_not; pp "("; box (fun () -> pp_aux phi); pp ")"
   | Exists(v,phi)      ->  
       pp "(";
       pp ("Ex");
@@ -22,8 +32,8 @@ fun (pp_pred, pp_mvar) ctl ->
       print_cut();
       box (fun () -> pp_aux phi); 
       pp ")"
-  | And(phi1,phi2)     ->  pp_2args "/\\" phi1 phi2; 
-  | Or(phi1,phi2)      ->  pp_2args "\\/" phi1 phi2; 
+  | And(phi1,phi2)     ->  pp_2args char_and phi1 phi2; 
+  | Or(phi1,phi2)      ->  pp_2args char_or phi1 phi2; 
   | Implies(phi1,phi2) ->   pp_2args "=>" phi1 phi2;
   | AF(phi1)             -> pp "AF("; pp_arg phi1; pp ")"
   | AX(phi1)             -> pp "AX("; pp_arg phi1; pp ")"
@@ -52,20 +62,18 @@ fun (pp_pred, pp_mvar) ctl ->
    begin
      pp "(";
      box (fun () -> pp_aux phi1); 
-     print_cut();
+     print_space();
      pp sym;
-     print_cut ();
+     print_space ();
      box (fun () -> pp_aux phi2);
      pp ")";
    end
  and pp_2args_bis sym phi1 phi2 = 
    begin
      box (fun () -> pp_aux phi1); 
-     print_cut();
      print_space();
      pp sym;
      print_space();
-     print_cut ();
      box (fun () -> pp_aux phi2);
   end
      
