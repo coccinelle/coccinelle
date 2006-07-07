@@ -2,8 +2,6 @@ open Common open Commonop
 
 open Ograph_extended
 
-let debug_flag = ref true
-
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 (*
@@ -20,7 +18,7 @@ let (labels_for_ctl:
 
    (fun pred -> 
 
-     if !debug_flag
+     if !Flag_engine.debug_engine
      then (pr2 "start label";  pr2 (Dumper.dump pred););
 
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
@@ -67,7 +65,7 @@ let (labels_for_ctl:
          )
        ) +> List.concat
        in
-       if !debug_flag
+       if !Flag_engine.debug_engine
        then (pr2 "end label";  pr2 (Dumper.dump nodes'););
        nodes'
        ) 
