@@ -101,18 +101,25 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
 
+let print_xxxxxxxxxxxxxxxxx () = 
+  pr2 "-----------------------------------------------------------------------"
 
 let full_engine cfile coccifile_and_iso_or_ctl = 
+  print_xxxxxxxxxxxxxxxxx ();
   pr2 ("processing C file: " ^ cfile);
+  print_xxxxxxxxxxxxxxxxx ();
   command2 ("cat " ^ cfile);
   let astc     = cprogram_from_file cfile in
 
   let (ctl, error_words) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
+        print_xxxxxxxxxxxxxxxxx ();
         pr2 ("processing semantic patch file: " ^ coccifile);
         let astcocci = spbis_from_file coccifile isofile in
+        print_xxxxxxxxxxxxxxxxx ();
         command2 ("cat " ^ coccifile);
+        pr2 "";
   
         let rule_with_metavars_list = astcocci in
 
@@ -156,6 +163,14 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     )
   in
 
+  print_xxxxxxxxxxxxxxxxx();
+  pr2 "ctl";
+  print_xxxxxxxxxxxxxxxxx();
+  Ctlcocci_integration.pp_ctlcocci_no_mcodekind ctl;
+  Format.print_newline();
+
+
+  print_xxxxxxxxxxxxxxxxx();
   let (program, _stat) = astc in
   begin
    program 
@@ -180,8 +195,10 @@ let full_engine cfile coccifile_and_iso_or_ctl =
           
               if !Flag.show_flow then print_flow  flow;
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
-(*              pr2 "calling sat_noclean";
-              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in*)
+              (*
+              pr2 "calling sat_noclean";
+              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in
+               *)
               pr2 "calling sat";
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               pr2 "ending sat";

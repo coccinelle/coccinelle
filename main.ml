@@ -48,7 +48,21 @@ let main () =
         let cfile = "tests/" ^ x' ^ ".c" in 
         let cocci_file =  "tests/" ^ base ^ ".cocci" in
         let iso = (Some "standard.iso") in
-        Cocci.full_engine cfile (Left (cocci_file, iso))
+        Cocci.full_engine cfile (Left (cocci_file, iso));
+        let expected_res = "tests/" ^ x ^ ".res" in
+        if Common.lfile_exists expected_res 
+        then 
+          let xs = process_output_to_list ("diff -b -B " ^ "/tmp/output.c" ^ " "  ^ expected_res) in
+          if null xs 
+          then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
+          else 
+            begin
+              pr2 "seems incorrect";
+              pr2 "diff (result(<) vs expected_result(>)) = ";
+              xs +> List.iter pr2;
+            end
+            
+          
         
 
     | x::xs -> 

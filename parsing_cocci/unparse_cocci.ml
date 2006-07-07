@@ -1,6 +1,9 @@
 open Format
 module Ast = Ast_cocci
 
+let print_plus_flag = ref true
+let print_minus_flag = ref true
+
 let start_block str =
   force_newline(); print_string "  "; open_box 0
 
@@ -58,8 +61,15 @@ let print_around printer term = function
 
 let mcode fn = function
     ((x, _, Ast.MINUS(plus_stream)) : 'a Ast.mcode) ->
-      print_string "-"; fn x; print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(plus_streams)) -> print_around fn x plus_streams
+      if !print_minus_flag
+      then print_string "-"; 
+      fn x; 
+      if !print_plus_flag 
+      then print_anything ">>> " plus_stream
+  | (x, _, Ast.CONTEXT(plus_streams)) -> 
+      if !print_plus_flag
+      then print_around fn x plus_streams
+      else fn x
   | (x, _, Ast.PLUS) -> fn x
 
 (* --------------------------------------------------------------------- *)

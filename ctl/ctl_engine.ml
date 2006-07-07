@@ -912,6 +912,17 @@ let sat_annotree annotate m phi check_conj =
     sat_verbose_loop tree_anno (-1) 0 m phi [] check_conj
 ;;
 
+(*
+let sat m phi = satloop m phi []
+;;
+*)
+
+(* pad: Rene, you can now use the module pretty_print_ctl.ml to
+   print a ctl formula more accurately if you want.
+   Use the print_xxx provided in the different module to call 
+   Pretty_print_ctl.pp_ctl.
+ *)
+
 let simpleanno l phi res =
   let pp s = 
     Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 

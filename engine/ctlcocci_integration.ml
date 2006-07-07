@@ -2,6 +2,8 @@ open Common open Commonop
 
 open Ograph_extended
 
+let debug_flag = ref true
+
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 (*
@@ -17,10 +19,10 @@ let (labels_for_ctl:
   = fun nodes ->
 
    (fun pred -> 
-(*
-       pr2 "start label";
-       pr2 (Dumper.dump pred);
-*)
+
+     if !debug_flag
+     then (pr2 "start label";  pr2 (Dumper.dump pred););
+
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
          (match pred, node with
@@ -65,10 +67,8 @@ let (labels_for_ctl:
          )
        ) +> List.concat
        in
-(*
-       pr2 "end label";
-       pr2 (Dumper.dump nodes');
-*)
+       if !debug_flag
+       then (pr2 "end label";  pr2 (Dumper.dump nodes'););
        nodes'
        ) 
 
@@ -103,10 +103,14 @@ let model_for_ctl  cflow =
  newflow, labels, states
  
 
+(* (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl -> unit) = fun ctl -> *)
+
 
 module PRED = 
   struct
     type predicate = Lib_engine.predicate
+    let print_predicate x = 
+      Lib_engine.pp_predicate x
   end
 
 module ENV =
@@ -118,7 +122,7 @@ module ENV =
     let merge_val v v' = v;;	       
 
     let print_mvar s = Format.print_string s
-    let print_value x = Lib_engine.print_binding_kind2 x
+    let print_value x = Lib_engine.pp_binding_kind2 x
   end
 
 
@@ -171,3 +175,31 @@ let (satbis_to_trans_info:
          
          nodei, binding', pred'
          )
+
+
+
+
+let pp_pred = fun (pred, smodif) -> 
+  (*pp "Pred(";  *) 
+ Lib_engine.pp_predicate pred
+  (*  pp ",";
+      (match smodif with
+      | Modif s -> pp "Modif("; pp s; pp")"
+      | UnModif s -> pp "Unmodif("; pp s; pp")" 
+      | Control -> pp "Control"
+      );
+   *)
+    (* pp ")"; *)
+
+let pp_ctlcocci_no_mcodekind ctl = 
+  begin
+    Unparse_cocci.print_plus_flag := false;
+    Unparse_cocci.print_minus_flag := false;
+    Format.open_box 0;
+    Pretty_print_ctl.pp_ctl 
+      (pp_pred,
+       (fun s -> Format.print_string s)
+      )
+      ctl;
+    Format.close_box ();
+  end

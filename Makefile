@@ -82,7 +82,8 @@ MYOBJS = $(MYSRC:.ml=.cmo)
 MYOPTOBJS = $(MYSRC:.ml=.cmx)
 MYEXEC = myspatch
 
-mystuff: rec $(MYEXEC) $(MYEXEC).top
+mystuff: rec $(MYEXEC) 
+#$(MYEXEC).top
 
 $(MYEXEC): $(MYOBJS) $(LIBS)
 	$(OCAMLC) -o $(MYEXEC) $(SYSLIBS) $(LIBS) $(MYOBJS)

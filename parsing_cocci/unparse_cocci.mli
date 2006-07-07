@@ -17,3 +17,6 @@ val baseType : Ast_cocci.baseType -> unit
 val print_around :
     ('a -> unit) -> 'a -> Ast_cocci.anything Ast_cocci.befaft -> unit
 val print_anything : string -> Ast_cocci.anything list list -> unit
+
+val print_plus_flag : bool ref
+val print_minus_flag : bool ref

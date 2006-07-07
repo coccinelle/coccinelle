@@ -186,7 +186,9 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = fu
 
 
   | _, F.Statement st ->     match_re_st   re st
-  | _, F.Declaration decl -> match_re_decl re decl
+  | A.Decl decla, F.Declaration declb -> match_re_decl decla declb
+  | A.Decl _, _ -> return false
+  | _, F.Declaration _ -> return false
 
   | _, F.HeadFunc funcdef -> 
       let (idb, typb, stob, statb, _) = funcdef in
@@ -317,11 +319,11 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = fun re st -
 
 (* ------------------------------------------------------------------------------ *)
 
-and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re decl -> 
-  match A.unwrap re, decl with
-  | A.Decl decl, (B.DeclList (xs, _)) -> 
-      (match A.unwrap decl with
-	A.UnInit (typa, sa, _) ->
+and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = fun decla declb -> 
+  match declb with
+  | (B.DeclList (xs, _)) -> 
+      (match A.unwrap decla with
+      | A.UnInit (typa, sa, _) ->
       xs +> List.fold_left (fun acc var -> 
         acc >||>
         (match var with
@@ -337,10 +339,15 @@ and (match_re_decl: (Ast_cocci.rule_elem, Ast_c.declaration) matcher) = fun re d
         | (None, typ, sto), _ -> return false
         )
        ) (return false)
-      |	_ -> return false) (* todo: Init case *)
+       | A.DisjDecl xs -> 
+          xs +> List.fold_left (fun acc decla -> 
+            acc >||> match_re_decl  decla declb
+              ) (return false)
+       | A.Init _ -> pr2 "warning: not handling yet initializer patterns"; return false
+       | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> raise Todo
+      )
 
-  (* todo: Opt/Unique/Multi *)
-  | _, _ -> return false
+
 
 
 

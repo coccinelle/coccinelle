@@ -33,6 +33,7 @@ type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
 module type PREDICATE =
 sig
   type predicate
+  val print_predicate : predicate -> unit
 end
 
 
