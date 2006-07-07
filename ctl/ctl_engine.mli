@@ -37,27 +37,22 @@ module CTL_ENGINE :
     functor (G : GRAPH) ->
       sig
 
-	type ('state,'subst,'anno) local_witnesstree =
-	    AndWits of ('state,'subst,'anno) local_witnesstree list
-	  | OrWits of ('state,'subst,'anno) local_witnesstree list
-	  | Wits of
-	      'state * 'subst * 'anno * ('state,'subst,'anno) local_witnesstree
-	  | NegWits of ('state,'subst,'anno) local_witnesstree
+	type substitution = (SUB.mvar, SUB.value) Ast_ctl.generic_subst list
 
+	type ('pred,'anno) witnesses =
+	    (G.node, substitution,
+	     ('pred, SUB.mvar, 'anno) Ast_ctl.generic_ctl list)
+	      Ast_ctl.generic_witness list
+
+	type ('pred,'anno) triples =
+	    (G.node * substitution * ('pred,'anno) witnesses) list
 
         val sat :
-          G.cfg *
-          ('a ->
-           (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-            (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-             'b list)
-            Ast_ctl.generic_witness list)
-           list) *
-          G.node list ->
-          ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-          (G.node * (SUB.mvar, SUB.value) Ast_ctl.generic_subst list *
-           (G.node, (SUB.mvar, SUB.value) Ast_ctl.generic_subst list,
-            'b list)
-           Ast_ctl.generic_witness list)
-          list
+          G.cfg * ('a -> ('pred,'anno) triples) * G.node list ->
+            ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
+	    (('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
+	      ('pred,'anno) triples ->
+	      ('pred,'anno) triples ->
+	      ('pred,'anno) triples -> unit) -> (* check_conjunction *)
+	    ('pred,'anno) triples
       end

@@ -135,9 +135,49 @@ struct
       try (loop false acc wits) with NEGATIVE_WITNESS -> []
   ;;
 
+	  
+  (* ------------------ Partial matches ------------------ *)
+  let collect_predvar_bindings res =
+    let wits = List.concat(List.map (fun (_,_,w) -> (w : 'a list)) res) in
+    let rec loop wits =
+      List.fold_left Common.union_set []
+	(List.map
+	   (function
+	       Wit(s,th,_,wits) | NegWit(s,th,_,wits) ->
+		 Common.union_set
+		   (List.fold_left
+		      (function rest ->
+			function
+			    Subst(_,(PredVar(_) as x)) -> x :: rest
+			  | NegSubst(_,PredVar(_)) ->
+			      failwith "unexpected negsubst on predvar"
+			  | _ -> rest)
+		      [] th)
+		   (loop wits))
+	   wits) in
+    loop wits
+
+  let check_conjunction phipsi (res_phi : ('pred,'anno) WRAPPER_ENGINE.triples) res_psi res_phipsi =
+    let phi_code = collect_predvar_bindings res_phi in
+    let psi_code = collect_predvar_bindings res_psi in
+    let all_code = collect_predvar_bindings res_phipsi in
+    let check str = function
+	[] -> ()
+      |	l ->
+	  Printf.printf "Warning: conjunction derived from SP line %d drops code on the\nfollowing lines, which was matched by the %s side of the conjunction:\n"
+	    (Ast_ctl.get_line phipsi) str;
+	  List.iter
+	    (function x -> WRAPPER_ENV.print_value x; Format.print_flush())
+	    l in
+    check "left" (Common.minus_set all_code phi_code);
+    check "right" (Common.minus_set all_code psi_code)
+
+  (* ----------------------------------------------------- *)
+
   (* The wrapper for sat from the CTL_ENGINE *)
-  let satbis_noclean (grp,lab,states) phi =
-    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi
+  let satbis_noclean (grp,lab,states) phi :
+      ('pred,'anno) WRAPPER_ENGINE.triples =
+    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi check_conjunction
       
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
@@ -150,42 +190,6 @@ struct
       let noclean = (satbis_noclean m phi) in
 	Common.uniq (
 	  List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
-	  
-  (* ------------------ Partial matches ------------------ *)
-  let collect_predvar_bindings res =
-    let wits = List.map (fun (_,_,w) -> w) res in
-    let rec loop wits =
-      List.fold_left Common.union_set []
-	(List.map
-	   (function
-	       Wit(s,th,_,wits) | NegWit(s,th,_,wits) ->
-		 Common.union_set
-		   (List.fold_left
-		      (function rest ->
-			function
-			    Subst(x,PredVar(_)) -> x :: rest
-			  | NegSubst(x,PredVar(_)) ->
-			      failwith "unexpected negsubst on predvar"
-			  | _ -> rest)
-		      [] th)
-		   (loop wits))
-	   wits) in
-    loop wits
-
-  let check_conjunction phipsi res_phi res_psi res_phipsi =
-    let phi_code = collect_predvar_bindings res_phi in
-    let psi_code = collect_predvar_bindings res_psi in
-    let all_code = collect_predvar_bindings res_phipsi in
-    let check str = function
-	[] -> ()
-      |	l ->
-	  Printf.printf "Warning: conjunction derived from SP line %d drops code on the\nfollowing lines, which was matched by the %s side of the conjunction:\n"
-	    (Ast_ctl.get_line phipsi) str;
-	  List.iter
-	    (function x -> SUB.print_value x; Format.print_flush())
-	    l in
-    check "left" (Common.minus_set all_code phi_code);
-    check "right" (Common.minus_set all_code psi_code)
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end

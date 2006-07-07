@@ -36,7 +36,7 @@ val satbis_to_trans_info :
 
 
 
-val mysat_noclean :
+(*val mysat_noclean :
        ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
         (Lib_engine.predicate ->
            (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
@@ -50,3 +50,4 @@ val mysat_noclean :
                   )  Ast_ctl.generic_subst list, 'a list)
                 Ast_ctl.generic_witness list)
               list
+*)

@@ -202,6 +202,7 @@ let combiner bind option_default
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
       | Ast.MetaStmt(name) -> string_mcode name
       | Ast.MetaStmtList(name) -> string_mcode name
+      | Ast.MetaRuleElem(name) -> string_mcode name
       | Ast.Exp(exp) -> expression exp in
     rulefn all_functions k re
 

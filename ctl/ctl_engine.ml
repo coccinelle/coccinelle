@@ -171,6 +171,16 @@ module CTL_ENGINE =
     functor (G : GRAPH) ->
 struct
 
+type substitution = (SUB.mvar, SUB.value) Ast_ctl.generic_substitution
+
+type ('pred,'anno) witnesses =
+    (G.node, substitution,
+     ('pred, SUB.mvar, 'anno) Ast_ctl.generic_ctl list)
+      Ast_ctl.generic_witness list
+
+type ('pred,'anno) triples =
+    (G.node * substitution * ('pred,'anno) witnesses) list
+
 
 type ('state,'subst,'anno) local_witnesstree =
     AndWits of ('state,'subst,'anno) local_witnesstree list
@@ -731,159 +741,6 @@ let satEU m s1 s2 =
   setfix f []                		(* NOTE: is [] right? *)
 ;;
 
-let rec satloop ((grp,label,states) as m) phi env =
-  match unwrap phi with
-    False              -> []
-  | True               -> triples_top states
-  | Pred(p)            -> (* NOTE: Assume well-formed *)
-      List.map (function (node,subst,_) -> (node,subst,AndWits[])) (label p)
-  | Not(phi)           ->
-      propagate_neg (triples_complement states (satloop m phi env))
-  | Or(phi1,phi2)      ->
-      triples_union (satloop m phi1 env) (satloop m phi2 env)
-  | And(phi1,phi2)     ->
-      triples_conj (satloop m phi1 env) (satloop m phi2 env)
-  | EX(phi)            -> satEX m (satloop m phi env)
-  | AX(phi)            -> satAX m (satloop m phi env)
-  | EF(phi)            -> satloop m (rewrap phi (EU(rewrap phi True,phi))) env
-  | AF(phi)            -> satAF m (satloop m phi env)
-  | EG(phi)            -> satEG m (satloop m phi env)
-  | AG(phi1)           -> (* should rewrite to only do propagate_neg once *)
-      satloop m
-	(rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1)))))) env
-  | EU(phi1,phi2)      ->
-      satEU m (satloop m phi1 env) (satloop m phi2 env)
-  | AU(phi1,phi2)      -> 
-      satAU m (satloop m phi1 env) (satloop m phi2 env)
-      (* old: satAF m (satloop m phi2 env) *)
-  | Implies(phi1,phi2) ->
-      satloop m (rewrap phi (Or(rewrap phi (Not phi1),phi2))) env
-  | Exists (v,phi)     -> triples_witness v (satloop m phi env)
-  | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(satloop m phi1 env)) :: env)
-  | Ref(v)             -> List.assoc v env
-;;    
-
-
-(* SAT with tracking *)
-let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env =
-  let anno res children = (annot lvl phi res children,res) in
-  let satv phi0 env =
-    sat_verbose_loop annot maxlvl (lvl+1) m phi0 env in
-  if (lvl > maxlvl) && (maxlvl > -1) then
-    anno (satloop m phi env) []
-  else
-    match unwrap phi with
-      False              -> anno [] []
-    | True               -> anno (triples_top states) []
-    | Pred(p)            ->
-	let res =
-	  List.map (function (node,subst,_) -> (node,subst,AndWits[]))
-	    (label p) in
-	anno res []
-    | Not(phi1)          -> 
-	let (child,res) = satv phi1 env in
-	anno (propagate_neg (triples_complement states res)) [child]
-    | Or(phi1,phi2)      -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	anno (triples_union res1 res2) [child1; child2]
-    | And(phi1,phi2)     -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	anno (triples_conj res1 res2) [child1; child2]
-    | EX(phi1)           -> 
-	let (child,res) = satv phi1 env in
-	anno (satEX m res) [child]
-    | AX(phi1)           -> 
-	let (child,res) = satv phi1 env in
-	anno (pre_forall m res) [child]
-    | EF(phi1)           -> 
-	let (child,_) = satv phi1 env in
-	anno (satloop m
-		(rewrap phi (EU(rewrap phi True,phi1)))
-		env)
-	  [child]
-    | AF(phi1)           -> 
-	let (child,res) = satv phi1 env in
-	anno (satAF m res) [child]
-    | EG(phi1)           -> 
-	let (child,_) = satv phi1 env in
-	anno
-	  (satloop m
-	     (rewrap phi (Not(rewrap phi (AF(rewrap phi (Not phi1))))))
-	     env)
-	  [child]
-    | AG(phi1)            -> 
-	let (child,_) = satv phi1 env in
-	anno
-	  (satloop m
-	     (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
-	     env)
-	  [child]
-    | EU(phi1,phi2)      -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	anno (satEU m res1 res2) [child1; child2]
-    | AU(phi1,phi2)      -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	anno (satAU m res1 res2) [child1; child2]
-    | Implies(phi1,phi2) -> 
-	let (child1,_) = satv phi1 env in
-	let (child2,_) = satv phi2 env in
-	anno
-	  (satloop m
-	     (rewrap phi (Or(rewrap phi (Not phi1),phi2)))
-	     env)
-	  [child1; child2]
-    | Exists (v,phi1)    -> 
-	let (child,res) = satv phi1 env in
-	anno (triples_witness v res) [child]
-    | Let(v,phi1,phi2)   ->
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 ((v,res1) :: env) in
-	anno res2 [child1;child2]
-    | Ref(v)             -> anno (List.assoc v env) []
-;;
-
-let sat_verbose annotate maxlvl lvl m phi =
-  sat_verbose_loop annotate maxlvl lvl m phi []
-
-(* Type for annotations collected in a tree *)
-type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
-
-let sat_annotree annotate m phi =
-  let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
-    sat_verbose_loop tree_anno (-1) 0 m phi []
-;;
-
-let simpleanno l phi res =
-  let pp s = 
-    Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
-    print_local_algo res;
-    Format.print_string "\n------------------------------\n\n"
-  in
-  match unwrap phi with
-    | False              -> pp "False"
-    | True               -> pp "True"
-    | Pred(p)            -> pp ("Pred" ^ (Dumper.dump(p)))
-    | Not(phi)           -> pp "Not"
-    | Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
-    | And(phi1,phi2)     -> pp "And"
-    | Or(phi1,phi2)      -> pp "Or"
-    | Implies(phi1,phi2) -> pp "Implies"
-    | AF(phi1)           -> pp "AF"
-    | AX(phi1)           -> pp "AX"
-    | AG(phi1)           -> pp "AG"
-    | AU(phi1,phi2)      -> pp "AU"
-    | EF(phi1)           -> pp "EF"
-    | EX(phi1)	         -> pp "EX"
-    | EG(phi1)		 -> pp "EG"
-    | EU(phi1,phi2)	 -> pp "EU"
-    | Let (x,phi1,phi2)  -> pp ("Let"^" "^x)
-    | Ref(s)             -> pp ("Ref("^s^")")
-;;
-
 
 let rec dnf = function
     AndWits(children) ->
@@ -922,13 +779,173 @@ let rec witstowit (st,th,wits) =
   let wits = List.concat(List.map loop wits) in
   (st,th,wits)
 
+let rec satloop ((grp,label,states) as m) phi env check_conj =
+  let rec loop phi =
+    match unwrap phi with
+      False              -> []
+    | True               -> triples_top states
+    | Pred(p)            -> (* NOTE: Assume well-formed *)
+	List.map (function (node,subst,_) -> (node,subst,AndWits[])) (label p)
+    | Not(phi)           ->
+	propagate_neg (triples_complement states (loop phi))
+    | Or(phi1,phi2)      ->
+	triples_union (loop phi1) (loop phi2)
+    | And(phi1,phi2)     ->
+	let phi1res = loop phi1 in
+	let phi2res = loop phi2 in
+	let res = triples_conj phi1res phi2res in
+	check_conj phi
+	  (List.map witstowit phi1res)
+	  (List.map witstowit phi2res)
+	  (List.map witstowit res);
+	res
+    | EX(phi)            -> satEX m (loop phi)
+    | AX(phi)            -> satAX m (loop phi)
+    | EF(phi)            -> loop (rewrap phi (EU(rewrap phi True,phi)))
+    | AF(phi)            -> satAF m (loop phi)
+    | EG(phi)            -> satEG m (loop phi)
+    | AG(phi1)           -> (* should rewrite to only do propagate_neg once *)
+	loop (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
+    | EU(phi1,phi2)      -> satEU m (loop phi1) (loop phi2)
+    | AU(phi1,phi2)      -> satAU m (loop phi1) (loop phi2)
+      (* old: satAF m (satloop m phi2 env) *)
+    | Implies(phi1,phi2) ->
+	loop (rewrap phi (Or(rewrap phi (Not phi1),phi2)))
+    | Exists (v,phi)     -> triples_witness v (loop phi)
+    | Let(v,phi1,phi2)   -> satloop m phi2 ((v,(loop phi1)) :: env)check_conj
+    | Ref(v)             -> List.assoc v env in
+  loop phi
+;;    
+
+
+(* SAT with tracking *)
+let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
+    check_conj =
+  let anno res children = (annot lvl phi res children,res) in
+  let satv phi0 env =
+    sat_verbose_loop annot maxlvl (lvl+1) m phi0 env check_conj in
+  if (lvl > maxlvl) && (maxlvl > -1) then
+    anno (satloop m phi env check_conj) []
+  else
+    match unwrap phi with
+      False              -> anno [] []
+    | True               -> anno (triples_top states) []
+    | Pred(p)            ->
+	let res =
+	  List.map (function (node,subst,_) -> (node,subst,AndWits[]))
+	    (label p) in
+	anno res []
+    | Not(phi1)          -> 
+	let (child,res) = satv phi1 env in
+	anno (propagate_neg (triples_complement states res)) [child]
+    | Or(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (triples_union res1 res2) [child1; child2]
+    | And(phi1,phi2)     -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (triples_conj res1 res2) [child1; child2]
+    | EX(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (satEX m res) [child]
+    | AX(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (pre_forall m res) [child]
+    | EF(phi1)           -> 
+	let (child,_) = satv phi1 env in
+	anno (satloop m
+		(rewrap phi (EU(rewrap phi True,phi1)))
+		env check_conj)
+	  [child]
+    | AF(phi1)           -> 
+	let (child,res) = satv phi1 env in
+	anno (satAF m res) [child]
+    | EG(phi1)           -> 
+	let (child,_) = satv phi1 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Not(rewrap phi (AF(rewrap phi (Not phi1))))))
+	     env check_conj)
+	  [child]
+    | AG(phi1)            -> 
+	let (child,_) = satv phi1 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Not(rewrap phi (EF(rewrap phi (Not phi1))))))
+	     env check_conj)
+	  [child]
+    | EU(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (satEU m res1 res2) [child1; child2]
+    | AU(phi1,phi2)      -> 
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 env in
+	anno (satAU m res1 res2) [child1; child2]
+    | Implies(phi1,phi2) -> 
+	let (child1,_) = satv phi1 env in
+	let (child2,_) = satv phi2 env in
+	anno
+	  (satloop m
+	     (rewrap phi (Or(rewrap phi (Not phi1),phi2)))
+	     env check_conj)
+	  [child1; child2]
+    | Exists (v,phi1)    -> 
+	let (child,res) = satv phi1 env in
+	anno (triples_witness v res) [child]
+    | Let(v,phi1,phi2)   ->
+	let (child1,res1) = satv phi1 env in
+	let (child2,res2) = satv phi2 ((v,res1) :: env) in
+	anno res2 [child1;child2]
+    | Ref(v)             -> anno (List.assoc v env) []
+;;
+
+let sat_verbose annotate maxlvl lvl m phi check_conj =
+  sat_verbose_loop annotate maxlvl lvl m phi [] check_conj
+
+(* Type for annotations collected in a tree *)
+type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
+
+let sat_annotree annotate m phi check_conj =
+  let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
+    sat_verbose_loop tree_anno (-1) 0 m phi [] check_conj
+;;
+
+let simpleanno l phi res =
+  let pp s = 
+    Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
+    print_local_algo res;
+    Format.print_string "\n------------------------------\n\n"
+  in
+  match unwrap phi with
+    | False              -> pp "False"
+    | True               -> pp "True"
+    | Pred(p)            -> pp ("Pred" ^ (Dumper.dump(p)))
+    | Not(phi)           -> pp "Not"
+    | Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
+    | And(phi1,phi2)     -> pp "And"
+    | Or(phi1,phi2)      -> pp "Or"
+    | Implies(phi1,phi2) -> pp "Implies"
+    | AF(phi1)           -> pp "AF"
+    | AX(phi1)           -> pp "AX"
+    | AG(phi1)           -> pp "AG"
+    | AU(phi1,phi2)      -> pp "AU"
+    | EF(phi1)           -> pp "EF"
+    | EX(phi1)	         -> pp "EX"
+    | EG(phi1)		 -> pp "EG"
+    | EU(phi1,phi2)	 -> pp "EU"
+    | Let (x,phi1,phi2)  -> pp ("Let"^" "^x)
+    | Ref(s)             -> pp ("Ref("^s^")")
+;;
+
 
 (* Main entry point for engine *)
-let sat m phi = 
+let sat m phi check_conj = 
   let res =
     if(!Flag_ctl.verbose_ctl_engine)
-    then snd (sat_annotree simpleanno m phi)
-    else satloop m phi [] in
+    then snd (sat_annotree simpleanno m phi check_conj)
+    else satloop m phi [] check_conj in
   let res = List.concat(List.map clean_triple res) in
   let res = List.map witstowit res in
   print_generic_algo res;

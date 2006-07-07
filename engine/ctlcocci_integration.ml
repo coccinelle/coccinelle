@@ -147,8 +147,8 @@ let (mysat:
     ) = fun (flow, label, states) ctl -> 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
 
-let mysat_noclean = fun (flow, label, states) ctl -> 
-      WRAPPED_ENGINE.satbis_noclean (flow, label, states) ctl
+(*let mysat_noclean = fun (flow, label, states) ctl -> 
+      WRAPPED_ENGINE.satbis_noclean (flow, label, states) ctl*)
 
 
 let (satbis_to_trans_info: 

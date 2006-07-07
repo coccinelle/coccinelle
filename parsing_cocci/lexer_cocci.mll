@@ -131,6 +131,9 @@ let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
 
 let init _ =
+  line := 1;
+  logical_line := 0;
+  in_atat := false;
   Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
   Data.add_id_meta :=
     (let fn name clt = TMetaId(name,clt) in
