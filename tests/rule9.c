@@ -17,12 +17,10 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 	/* find our data from the given hostno */
 	hostptr = scsi_host_hn_get(hostno);
 
-//	if (!hostptr) {	 /* if we couldn't find it, we return an error */
-//		return -ESRCH;
-//	}
+	if (!hostptr) {	 /* if we couldn't find it, we return an error */
+		return -ESRCH;
+	}
 	us = (struct us_data*)hostptr->hostdata[0];
-
-//        scsi_host_put(hostptr);
 
 	/* if we couldn't find it, we return an error */
 	if (!us) {
@@ -32,7 +30,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 
         //XX3
 	/* release the reference count on this host */
-	scsi_host_put(hostptr);
+	//scsi_host_put(hostptr);
 
         //XX4  
 }
