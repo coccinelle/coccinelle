@@ -30,7 +30,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 
         //XX3
 	/* release the reference count on this host */
-	//scsi_host_put(hostptr);
+	scsi_host_put(hostptr);
 
         //XX4  
 }
