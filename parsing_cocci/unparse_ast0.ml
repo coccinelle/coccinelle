@@ -346,28 +346,13 @@ let unparse_anything x =
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
   | Ast0.TopTag(d) -> top_level d);
-  print_flush()
+  print_newline()
 
 let unparse x =
   print_string "\n@@\n@@";
   force_newline();
   force_newline();
   rule x;
-  force_newline();
-  print_flush()
+  print_newline()
 
-let unparse_to_string x =
-  let o = open_out "/tmp/out" in
-  set_formatter_out_channel o;
-  let _ = unparse x in
-  print_flush();
-  set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in "/tmp/out" in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  String.concat "\n" (List.rev !lines)
+let unparse_to_string x = Common.format_to_string (function _ -> unparse x)

@@ -955,3 +955,7 @@ class ['a] olist :
   end
 val typing_sux_test : unit -> unit
 
+(*------------------------*)
+(* convert something printed using format to print into a string *)
+
+val format_to_string : (unit -> unit) (* printer *) -> string

@@ -46,13 +46,13 @@ module CTL_ENGINE :
 
 	type substitution = (SUB.mvar, SUB.value) Ast_ctl.generic_subst list
 
-	type ('pred,'anno) witnesses =
+	type ('pred,'anno) witness =
 	    (G.node, substitution,
 	     ('pred, SUB.mvar, 'anno) Ast_ctl.generic_ctl list)
-	      Ast_ctl.generic_witness list
+	      Ast_ctl.generic_witnesstree
 
 	type ('pred,'anno) triples =
-	    (G.node * substitution * ('pred,'anno) witnesses) list
+	    (G.node * substitution * ('pred,'anno) witness) list
 
         val sat :
           G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->

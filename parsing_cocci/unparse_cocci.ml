@@ -406,13 +406,15 @@ let rec statement arity s =
   | Ast.Nest(stmt_dots) ->
       print_string arity;
       nest_dots (statement arity) stmt_dots
-  | Ast.Dots(dots,None,_) | Ast.Circles(dots,None,_)
-  | Ast.Stars(dots,None,_) ->
-      print_string arity; mcode print_string dots
-  | Ast.Dots(d,Some x,_) | Ast.Circles(d,Some x,_) | Ast.Stars(d,Some x,_) ->
+  | Ast.Dots(d,[],_) | Ast.Circles(d,[],_) | Ast.Stars(d,[],_) ->
+      print_string arity; mcode print_string d
+  | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
+  | Ast.Stars(d,whencode,_) ->
       print_string arity; mcode print_string d;
       print_string "   WHEN != ";
-      open_box 0; dots force_newline (statement "") x;
+      open_box 0;
+      print_between (function _ -> print_string " &"; force_newline())
+      (dots force_newline (statement "")) whencode;
       close_box()
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
@@ -471,37 +473,10 @@ let unparse x =
   force_newline();
   force_newline();
   rule x;
-  force_newline();
-  print_flush()
+  print_newline()
 
 let rule_elem_to_string x =
-  let o = open_out "/tmp/out" in
-  Format.set_formatter_out_channel o;
-  let _ = rule_elem "" x in
-  Format.print_flush();
-  Format.set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in "/tmp/out" in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  String.concat "\n" (List.rev !lines)
+  Common.format_to_string (function _ -> rule_elem "" x)
 
 let unparse_to_string x =
-  let o = open_out "/tmp/out" in
-  Format.set_formatter_out_channel o;
-  let _ = unparse x in
-  Format.print_flush();
-  Format.set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in "/tmp/out" in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  String.concat "\n" (List.rev !lines)
+  Common.format_to_string (function _ -> unparse x)

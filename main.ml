@@ -47,8 +47,11 @@ let main () =
         let x' = if x =~ "\\(.*\\)_ver0" then matched1 x else x in
         let cfile = "tests/" ^ x' ^ ".c" in 
         let cocci_file =  "tests/" ^ base ^ ".cocci" in
-        let iso = (Some "standard.iso") in
-        Cocci.full_engine cfile (Left (cocci_file, iso));
+        if !iso_file <> "" && not (!iso_file =~ ".*\\.iso")
+	then pr2 "warning: seems not a .iso file";
+        let iso_file =
+	  if !iso_file = "" then Some "standard.iso" else Some !iso_file in
+        Cocci.full_engine cfile (Left (cocci_file, iso_file));
         let expected_res = "tests/" ^ x ^ ".res" in
         if Common.lfile_exists expected_res 
         then 

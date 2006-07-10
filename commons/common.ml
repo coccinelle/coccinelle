@@ -2516,3 +2516,21 @@ let typing_sux_test () =
    let f2 xs = List.iter print_string xs in
    (f1 x; f2 x)
 
+(*------------------------*)
+(* convert something printed using format to print into a string *)
+
+let format_to_string f =
+  let o = open_out "/tmp/out" in
+  Format.set_formatter_out_channel o;
+  let _ = f() in
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in "/tmp/out" in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  String.concat "\n" (List.rev !lines)

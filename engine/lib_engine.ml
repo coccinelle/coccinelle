@@ -1,4 +1,3 @@
-
 type mvar = string
 
 type metavar_binding_kind2 = 
@@ -16,7 +15,7 @@ type predicate =
 type transformation_info = 
     (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
 
-(* --------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------ *)
 
 let pp = Format.print_string 
 
@@ -31,3 +30,6 @@ let pp_predicate = function
   | Return -> pp "Return"
   | Paren s -> pp "Paren("; pp s; pp ")"
   | Match re -> Unparse_cocci.rule_elem "" re
+
+let predicate_to_string pred =
+  Common.format_to_string (function _ -> pp_predicate pred)

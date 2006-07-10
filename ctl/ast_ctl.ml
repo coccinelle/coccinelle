@@ -44,13 +44,19 @@ type ('mvar,'value) generic_subst =
   | NegSubst of 'mvar * 'value
 type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list;;
 
-type ('state,'subst,'anno) generic_witness =
-  | Wit of 'state * 'subst * 'anno * ('state,'subst,'anno) generic_witness list
-  | NegWit of 'state * 'subst * 'anno * ('state,'subst,'anno)generic_witness list
-type ('state,'subst,'anno) generic_witnesstree = 
-    ('state,'subst,'anno) generic_witness list;;
+type ('state,'subst,'anno) generic_witnesstree =
+    AndWits of
+      ('state,'subst,'anno) generic_witnesstree *
+	('state,'subst,'anno) generic_witnesstree
+  | OrWits of
+      ('state,'subst,'anno) generic_witnesstree *
+	('state,'subst,'anno) generic_witnesstree
+  | Wit of 'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree
+  | NegWit of ('state,'subst,'anno) generic_witnesstree
+  | TopWit
 
 (* ---------------------------------------------------------------------- *)
 
 type 'a modif = Modif of 'a | UnModif of 'a | Control
 
+(* ---------------------------------------------------------------------- *)

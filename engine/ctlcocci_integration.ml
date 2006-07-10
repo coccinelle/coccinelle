@@ -104,6 +104,7 @@ let model_for_ctl  cflow =
 (* (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl -> unit) = fun ctl -> *)
 
 
+
 module PRED = 
   struct
     type t = Lib_engine.predicate
@@ -177,29 +178,12 @@ let (satbis_to_trans_info:
          )
 
 
-
-
 let pp_pred = fun (pred, smodif) -> 
-  (*pp "Pred(";  *) 
  Lib_engine.pp_predicate pred
-  (*  pp ",";
-      (match smodif with
-      | Modif s -> pp "Modif("; pp s; pp")"
-      | UnModif s -> pp "Unmodif("; pp s; pp")" 
-      | Control -> pp "Control"
-      );
-   *)
-    (* pp ")"; *)
 
 let pp_ctlcocci_no_mcodekind ctl = 
-  begin
-    Unparse_cocci.print_plus_flag := false;
-    Unparse_cocci.print_minus_flag := false;
-    Format.open_box 0;
-    Pretty_print_ctl.pp_ctl 
-      (pp_pred,
-       (fun s -> Format.print_string s)
-      )
-      ctl;
-    Format.close_box ();
-  end
+  Unparse_cocci.print_plus_flag := false;
+  Unparse_cocci.print_minus_flag := false;
+  Format.open_box 0;
+  Pretty_print_ctl.pp_ctl (pp_pred,(fun s -> Format.print_string s)) ctl;
+  Format.close_box ()

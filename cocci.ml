@@ -121,6 +121,9 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     | Left (coccifile, isofile) -> 
         print_xxxxxxxxxxxxxxxxx ();
         pr2 ("processing semantic patch file: " ^ coccifile);
+	(match isofile with
+	  Some isofile -> pr2 ("with isos from: " ^ isofile)
+	| None -> ());
         let astcocci = spbis_from_file coccifile isofile in
         print_xxxxxxxxxxxxxxxxx ();
         command2 ("cat " ^ coccifile);

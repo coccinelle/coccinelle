@@ -14,6 +14,8 @@ let warning s = Printf.fprintf stderr "warning: %s\n" s
 
 let aftret = "_aftret" (* assumed to be a fresh variable *)
 
+type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
+
 (* --------------------------------------------------------------------- *)
 
 let wrap n ctl = (ctl,n)
@@ -47,6 +49,48 @@ let get_list_option fn = function
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
+(* Eliminate OptStm *)
+
+let elim_opt =
+  let mcode x = x in
+  let donothing r k e = k e in
+
+  let rec dots_list unwrapped wrapped =
+    match (unwrapped,wrapped) with
+      ([],_) -> []
+
+    | (Ast.OptStm(stm)::(Ast.Dots(d,whencode,t) as u)::urest,_::d1::rest) ->
+	let rw = Ast.rewrap stm in
+	let rwd = Ast.rewrap stm in
+	let not_dots = Ast.Dots(d,whencode,stm::t) in
+	[rw(Ast.Disj[rwd(Ast.DOTS(stm::(dots_list (u::urest) (d1::rest))));
+		      rwd(Ast.DOTS(dots_list (not_dots::urest)
+				     ((rw not_dots)::rest)))])]
+
+    | (Ast.OptStm(stm)::urest,_::rest) ->
+	let rw = Ast.rewrap stm in
+	let rwd = Ast.rewrap stm in
+	let new_rest = dots_list urest rest in
+	[rw(Ast.Disj[rwd(Ast.DOTS(stm::new_rest));rwd(Ast.DOTS(new_rest))])]
+
+    | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
+    | _ -> failwith "not possible" in
+
+  let stmtdotsfn r k d =
+    let d = k d in
+    Ast.rewrap d
+      (match Ast.unwrap d with
+	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
+      | Ast.CIRCLES(l) -> failwith "elimopt: not supported"
+      | Ast.STARS(l) -> failwith "elimopt: not supported") in
+  
+  V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing stmtdotsfn
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing
+
+(* --------------------------------------------------------------------- *)
 (* Whenify *)
 (* For A ... B, neither A nor B should occur in the code matched by the ...
 We add these to any when code associated with the dots *)
@@ -58,12 +102,35 @@ let rec when_dots before after d =
     | Ast.CIRCLES(l) -> Ast.CIRCLES(dots_list before after l)
     | Ast.STARS(l) -> Ast.STARS(dots_list before after l))
 
+and get_end f s =
+  match Ast.unwrap s with
+    Ast.Disj(stmt_dots_list) ->
+      List.concat
+	(List.map
+	   (function x ->
+	     match Ast.unwrap x with
+	       Ast.DOTS(l) ->
+		 (match l with [] -> [] | xs -> get_first (f xs))
+	     | _ -> failwith "circles and stars not supported")
+	   stmt_dots_list)
+  | Ast.Dots(_,_,_) -> []
+  | Ast.OptStm(stm) -> [stm]
+  | Ast.UniqueStm(stm) -> [stm]
+  | Ast.MultiStm(stm) -> [stm]
+  | _ -> [s]
+
+and get_first s =
+  get_end (function xs -> List.hd xs) s
+
+and get_last s =
+  get_end (function xs -> List.hd (List.rev xs)) s
+
 and dots_list before after = function
     [] -> []
   | [x] -> [when_statement before after x]
   | (cur::((aft::_) as rest)) ->
-      (when_statement before (Some aft) cur)::
-      (dots_list (Some cur) after rest)
+      (when_statement before (Some (get_first aft)) cur)::
+      (dots_list (Some (get_last cur)) after rest)
 
 and when_statement before after s =
   Ast.rewrap s
@@ -81,17 +148,17 @@ and when_statement before after s =
     | Ast.Disj(stmt_dots_list) ->
 	Ast.Disj(List.map (when_dots before after) stmt_dots_list)
     | Ast.Nest(stmt_dots) -> Ast.Nest(when_dots None None stmt_dots)
-    | Ast.Dots(d,whencode,_) as x ->
+    | Ast.Dots(d,whencode,t) as x ->
 	(match (before,after) with
 	  (None,None) -> x
-	| (None,Some aft) -> Ast.Dots(d,whencode,[aft])
-	| (Some bef,None) -> Ast.Dots(d,whencode,[bef])
-	| (Some bef,Some aft) -> Ast.Dots(d,whencode,[bef;aft]))
+	| (None,Some aft) -> Ast.Dots(d,whencode,aft@t)
+	| (Some bef,None) -> Ast.Dots(d,whencode,bef@t)
+	| (Some bef,Some aft) -> Ast.Dots(d,whencode,bef@aft@t))
     | Ast.FunDecl(header,lbrace,body,rbrace) ->
 	Ast.FunDecl(header,lbrace,when_dots None None body,rbrace)
-    | Ast.OptStm(stm) -> Ast.OptStm(when_statement None None stm)
-    | Ast.UniqueStm(stm) -> Ast.UniqueStm(when_statement None None stm)
-    | Ast.MultiStm(stm) -> Ast.MultiStm(when_statement None None stm)
+    | Ast.OptStm(stm) -> Ast.OptStm(when_statement before after stm)
+    | Ast.UniqueStm(stm) -> Ast.UniqueStm(when_statement before after stm)
+    | Ast.MultiStm(stm) -> Ast.MultiStm(when_statement before after stm)
     | _ -> failwith "not supported")
 
 (* --------------------------------------------------------------------- *)
@@ -455,18 +522,40 @@ and statement quantified stmt after =
 		   (wrapAX(wrapAnd(body_line,after_line)),
 		    wrapEX(after_branch))))))
   | Ast.Disj(stmt_dots_list) ->
-      let rec loop = function
-	  [] -> wrap n CTL.False
-	| [cur] -> dots_stmt quantified cur None
-	| cur::rest ->
-	    wrapOr(dots_stmt quantified cur None, loop rest) in
-      loop stmt_dots_list
+      let add_nots l e =
+	List.fold_left
+	  (function rest ->
+	    function cur ->
+	      wrapAnd(wrapNot(wrapRef cur),rest))
+	  e l in
+      let rec loop after = function
+	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
+	| [(_,nots,cur)] -> add_nots nots (dots_stmt quantified cur after)
+	| (Some v,nots,cur)::rest ->
+	    if after = None
+	    then
+	      wrapLet(v,dots_stmt quantified cur None,
+		      wrapOr(add_nots nots (wrapRef v),loop after rest))
+	    else
+	      (* potential for code dplication here *)
+	      wrapLet(v,dots_stmt quantified cur None,
+		      wrapOr(add_nots nots (dots_stmt quantified cur after),
+			     loop after rest))
+	| (None,nots,cur)::rest ->
+	    wrapOr(add_nots nots (dots_stmt quantified cur after),
+		   loop after rest) in
+      (match name_if_needed after with
+	None ->
+	  loop after (preprocess_disj stmt_dots_list)
+      |	Some (nm,vl) ->
+	  wrapLet(nm,vl,
+		  loop (Some(wrapRef nm)) (preprocess_disj stmt_dots_list)))
   | Ast.Nest(stmt_dots) ->
       let dots_pattern = dots_stmt quantified stmt_dots None in
       (match after with
 	None -> wrapAG(wrapOr(dots_pattern,wrapNot dots_pattern))
       |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot dots_pattern),after))
-  | Ast.Dots((_,i,d),whencode,tmp_whencode) ->
+  | Ast.Dots((_,i,d),whencodes,tmp_whencode) ->
       let dot_code =
 	match d with
 	  Ast.MINUS(_) ->
@@ -486,15 +575,21 @@ and statement quantified stmt after =
 		 (function rest -> function cur -> wrapOr(cur,rest))
 		 x xs) in
       let phi2 =
-	match (whencode,phi1) with (* add whencode *)
+	let whencodes =
+	  match whencodes with
+	    [] -> None
+	  | _ ->
+	      let processed =
+		List.map (function w -> wrapNot(dots_stmt quantified w None))
+		  whencodes in
+	      Some (List.fold_left (function x -> function y -> wrapAnd(x,y))
+		      (List.hd processed) (List.tl processed)) in
+	match (whencodes,phi1) with (* add whencode *)
 	  (None,None) -> None
-	| (Some whencode,None) ->
-	    Some (wrapNot(dots_stmt quantified whencode None))
+	| (Some whencodes,None) -> Some whencodes
 	| (None,Some phi) -> Some (wrapNot(phi))
-	| (Some whencode,Some phi) ->
-	    Some (wrapAnd
-		    (wrapNot(dots_stmt quantified whencode None),
-		     wrapNot(phi))) in
+	| (Some whencodes,Some phi) ->
+	    Some (wrapAnd(whencodes,wrapNot(phi))) in
       let phi3 =
 	match (dot_code,phi2) with (* add - on dots, if any *)
 	  (None,None) -> None
@@ -542,12 +637,17 @@ and statement quantified stmt after =
   | Ast.OptStm(stm) ->
       (* doesn't work for ?f(); f();, ie when the optional thing is the same
 	 as the thing that comes immediately after *)
-      let pattern = statement quantified stm after in
-      (match after with
-	None -> wrapOr(pattern,wrapNot pattern)
+      failwith "OptStm should have been compiled away\n";
+      (*match after with
+	None ->
+	  let v = fresh_let_var() in
+	  wrapLet(v,statement quantified stm None,
+		  wrapOr(wrapRef v,wrapNot(wrapRef v)))
       |	Some after ->
-	  wrapOr(pattern,
-		 wrapAnd(wrapNot (statement quantified stm None),after)))
+	  let v = fresh_let_var() in
+	  wrapLet(v,after,
+		  wrapOr(statement quantified stm (Some (wrapRef v)),
+			 wrapRef v))*)
   | Ast.UniqueStm(stm) ->
       warning "arities not yet supported";
       statement quantified stm after
@@ -555,6 +655,36 @@ and statement quantified stmt after =
       warning "arities not yet supported";
       statement quantified stm after
   | _ -> failwith "not supported"
+
+(* Returns a triple for each disj element.  The first element of the triple is
+Some v if the triple element needs a name, and None otherwise.  The second
+element is a list of names whose negations should be conjuncted with the
+term.  The third element is the original term *)
+and preprocess_disj = function
+    [] -> []
+  | [s] -> [(None,[],s)]
+  | cur::rest ->
+      let template =
+	List.map (function r -> Unify_ast.unify_statement_dots cur r) rest in
+      let processed = preprocess_disj rest in
+      if List.exists (function Unify_ast.MAYBE -> true | _ -> false) template
+      then
+	let v = fresh_let_var() in
+	(Some v, [], cur) ::
+	(List.map2
+	   (function ((used,nots,r) as x) ->
+	     function
+		 Unify_ast.MAYBE -> (used,v::nots,r)
+	       | Unify_ast.NO -> x)
+	   processed template)
+      else (None, [], cur) :: processed
+
+and name_if_needed = function
+    None -> None
+  | Some x ->
+      (match CTL.unwrap x with
+	CTL.Ref _ -> None
+      |	_ -> let v = fresh_let_var() in Some (v,x))
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -565,11 +695,15 @@ let top_level t =
   | Ast.INCLUDE(inc,s) -> failwith "not supported"
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported"
   | Ast.FUNCTION(stmt) ->
-      let when_added = when_statement None None stmt in
+      let unopt = elim_opt.V.rebuilder_statement stmt in
+      Unparse_cocci.unparse [(Ast.FUNCTION unopt,0)];
+      let when_added = when_statement None None unopt in
       let _ = aststmfvs when_added in
       statement [] when_added None
   | Ast.CODE(stmt_dots) ->
-      let when_added = when_dots None None stmt_dots in
+      let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
+      Unparse_cocci.unparse [(Ast.CODE unopt,0)];
+      let when_added = when_dots None None unopt in
       List.iter
 	(function x -> let _ = aststmfvs x in ())
 	(Ast.undots when_added);
@@ -619,3 +753,9 @@ let asttoctl l =
 		   top_level x)
       else top_level x)
     l
+
+let pp_cocci_predicate (pred,modif) =
+  Lib_engine.pp_predicate pred
+
+let cocci_predicate_to_string (pred,modif) =
+  Lib_engine.predicate_to_string pred

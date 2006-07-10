@@ -5,8 +5,6 @@
 @@
 
     foo();
-+   foobar();
     ...
 ?-  bar();
-    ...  // needed because of endif node
     after();

@@ -6,7 +6,7 @@ CTLTARGET=engine
 SOURCES = flag_engine.ml lib_engine.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoctl.ml ctltotex.ml ctlcocci_integration.ml
 
 # just to test asttoctl
-CTLSOURCES = asttoctl.ml ctltotex.ml main.ml
+CTLSOURCES = lib_engine.ml asttoctl.ml ctltotex.ml main.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci -I ../ctl
 

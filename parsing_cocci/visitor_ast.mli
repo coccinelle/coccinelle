@@ -44,3 +44,49 @@ val combiner :
 						  ((Ast_cocci.top_level,'a) ccode) ->
 						    ((Ast_cocci.anything,'a) ccode) ->
 						      'a combiner
+
+type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
+
+type rebuilder =
+    {rebuilder_ident : Ast_cocci.ident inout;
+      rebuilder_expression : Ast_cocci.expression inout;
+      rebuilder_typeC : Ast_cocci.typeC inout;
+      rebuilder_declaration : Ast_cocci.declaration inout;
+      rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
+      rebuilder_parameter_list : Ast_cocci.parameter_list inout;
+      rebuilder_statement : Ast_cocci.statement inout;
+      rebuilder_rule_elem : Ast_cocci.rule_elem inout;
+      rebuilder_top_level : Ast_cocci.top_level inout;
+      rebuilder_expression_dots : Ast_cocci.expression Ast_cocci.dots inout;
+      rebuilder_statement_dots : Ast_cocci.statement Ast_cocci.dots inout;
+      rebuilder_anything : Ast_cocci.anything inout}
+
+type 'mc rmcode = 'mc Ast_cocci.mcode inout
+type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
+
+val rebuilder :
+    (string rmcode) ->
+      (Ast_cocci.constant rmcode) ->
+	(Ast_cocci.assignOp rmcode) ->
+	  (Ast_cocci.fixOp rmcode) ->
+	    (Ast_cocci.unaryOp rmcode) ->
+	      (Ast_cocci.binaryOp rmcode) ->
+		(Ast_cocci.const_vol rmcode) ->
+		  (Ast_cocci.baseType rmcode) ->
+		    (Ast_cocci.sign rmcode) ->
+		      (Ast_cocci.structUnion rmcode) ->
+			(Ast_cocci.storage rmcode) ->
+			  (Ast_cocci.expression Ast_cocci.dots rcode) ->
+			    (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
+			      (Ast_cocci.statement Ast_cocci.dots rcode) ->
+				(Ast_cocci.ident rcode) ->
+				  (Ast_cocci.expression rcode) ->
+				    (Ast_cocci.fullType rcode) ->
+				    (Ast_cocci.typeC rcode) ->
+				      (Ast_cocci.parameterTypeDef rcode) ->
+					(Ast_cocci.declaration rcode) ->
+					  (Ast_cocci.rule_elem rcode) ->
+					  (Ast_cocci.statement rcode) ->
+					    (Ast_cocci.top_level rcode) ->
+					    (Ast_cocci.anything rcode) ->
+					      rebuilder

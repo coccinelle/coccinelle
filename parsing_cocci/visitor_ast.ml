@@ -229,7 +229,7 @@ let combiner bind option_default
 		      rule_elem rbrace]
       | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
       | Ast.Stars(d,whencode,_) ->
-	  multibind [string_mcode d; get_option statement_dots whencode]
+	  multibind ((string_mcode d) :: (List.map statement_dots whencode))
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
 	  statement stmt in
     stmtfn all_functions k s
@@ -290,4 +290,313 @@ let combiner bind option_default
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots} in
+  all_functions
+
+(* ---------------------------------------------------------------------- *)
+
+type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
+
+type rebuilder =
+    {rebuilder_ident : Ast.ident inout;
+      rebuilder_expression : Ast.expression inout;
+      rebuilder_typeC : Ast.typeC inout;
+      rebuilder_declaration : Ast.declaration inout;
+      rebuilder_parameter : Ast.parameterTypeDef inout;
+      rebuilder_parameter_list : Ast.parameter_list inout;
+      rebuilder_statement : Ast.statement inout;
+      rebuilder_rule_elem : Ast.rule_elem inout;
+      rebuilder_top_level : Ast.top_level inout;
+      rebuilder_expression_dots : Ast.expression Ast.dots inout;
+      rebuilder_statement_dots : Ast.statement Ast.dots inout;
+      rebuilder_anything : Ast.anything inout}
+
+type 'mc rmcode = 'mc Ast.mcode inout
+type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
+
+
+let rebuilder
+    string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
+    cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    expdotsfn paramdotsfn stmtdotsfn
+    identfn exprfn ftfn tyfn paramfn declfn rulefn stmtfn topfn anyfn =
+  let get_option f = function
+      Some x -> Some (f x)
+    | None -> None in
+  let rec expression_dots d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DOTS(l) -> Ast.DOTS(List.map expression l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map expression l)
+	| Ast.STARS(l) -> Ast.STARS(List.map expression l)) in
+    expdotsfn all_functions k d
+
+  and parameter_dots d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DOTS(l) -> Ast.DOTS(List.map parameterTypeDef l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map parameterTypeDef l)
+	| Ast.STARS(l) -> Ast.STARS(List.map parameterTypeDef l)) in
+    paramdotsfn all_functions k d
+
+  and statement_dots d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DOTS(l) -> Ast.DOTS(List.map statement l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map statement l)
+	| Ast.STARS(l) -> Ast.STARS(List.map statement l)) in
+    stmtdotsfn all_functions k d
+
+  and ident i =
+    let k i =
+      Ast.rewrap i
+	(match Ast.unwrap i with
+	  Ast.Id(name) -> Ast.Id(string_mcode name)
+	| Ast.MetaId(name) -> Ast.MetaId(string_mcode name)
+	| Ast.MetaFunc(name) -> Ast.MetaFunc(string_mcode name)
+	| Ast.MetaLocalFunc(name) -> Ast.MetaLocalFunc(string_mcode name)
+	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
+	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
+	| Ast.MultiIdent(id) -> Ast.MultiIdent(ident id)) in
+    identfn all_functions k i
+      
+  and expression e =
+    let k e =
+      Ast.rewrap e
+	(match Ast.unwrap e with
+	  Ast.Ident(id) -> Ast.Ident(ident id)
+	| Ast.Constant(const) -> Ast.Constant(const_mcode const)
+	| Ast.FunCall(fn,lp,args,rp) ->
+	    Ast.FunCall(expression fn, string_mcode lp, expression_dots args,
+			string_mcode rp)
+	| Ast.Assignment(left,op,right) ->
+	    Ast.Assignment(expression left, assign_mcode op, expression right)
+	| Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
+	    Ast.CondExpr(expression exp1, string_mcode why,
+			 get_option expression exp2, string_mcode colon,
+			 expression exp3)
+	| Ast.Postfix(exp,op) -> Ast.Postfix(expression exp,fix_mcode op)
+	| Ast.Infix(exp,op) -> Ast.Infix(expression exp,fix_mcode op)
+	| Ast.Unary(exp,op) -> Ast.Unary(expression exp,unary_mcode op)
+	| Ast.Binary(left,op,right) ->
+	    Ast.Binary(expression left, binary_mcode op, expression right)
+	| Ast.Paren(lp,exp,rp) ->
+	    Ast.Paren(string_mcode lp, expression exp, string_mcode rp)
+	| Ast.ArrayAccess(exp1,lb,exp2,rb) ->
+	    Ast.ArrayAccess(expression exp1, string_mcode lb, expression exp2,
+			    string_mcode rb)
+	| Ast.RecordAccess(exp,pt,field) ->
+	    Ast.RecordAccess(expression exp, string_mcode pt, ident field)
+	| Ast.RecordPtAccess(exp,ar,field) ->
+	    Ast.RecordPtAccess(expression exp, string_mcode ar, ident field)
+	| Ast.Cast(lp,ty,rp,exp) ->
+	    Ast.Cast(string_mcode lp, fullType ty, string_mcode rp,
+		     expression exp)
+	| Ast.MetaConst(name,ty) -> Ast.MetaConst(string_mcode name,ty)
+	| Ast.MetaErr(name) -> Ast.MetaErr(string_mcode name)
+	| Ast.MetaExpr(name,ty) -> Ast.MetaExpr(string_mcode name,ty)
+	| Ast.MetaExprList(name) -> Ast.MetaExprList(string_mcode name)
+	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
+	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
+	| Ast.NestExpr(expr_dots) -> Ast.NestExpr(expression_dots expr_dots)
+	| Ast.Edots(dots,whencode) ->
+	    Ast.Edots(string_mcode dots,get_option expression whencode)
+	| Ast.Ecircles(dots,whencode) ->
+	    Ast.Ecircles(string_mcode dots,get_option expression whencode)
+	| Ast.Estars(dots,whencode) ->
+	    Ast.Estars(string_mcode dots,get_option expression whencode)
+	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
+	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)
+	| Ast.MultiExp(exp) -> Ast.MultiExp(expression exp)) in
+    exprfn all_functions k e
+	  
+  and fullType ft =
+    let k ft =
+      Ast.rewrap ft
+	(match Ast.unwrap ft with
+	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
+	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
+	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)
+	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)) in
+    ftfn all_functions k ft
+	  
+  and typeC ty =
+    let k ty =
+      Ast.rewrap ty
+	(match Ast.unwrap ty with
+	  Ast.BaseType(ty,sgn) ->
+	    Ast.BaseType (base_mcode ty,get_option sign_mcode sgn)
+	| Ast.Pointer(ty,star) -> Ast.Pointer (fullType ty, string_mcode star)
+	| Ast.Array(ty,lb,size,rb) ->
+	    Ast.Array(fullType ty, string_mcode lb,
+		      get_option expression size, string_mcode rb)
+	| Ast.StructUnionName(name,kind) ->
+	    Ast.StructUnionName (string_mcode name, struct_mcode kind)
+	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
+	| Ast.MetaType(name) -> Ast.MetaType(string_mcode name)) in
+    tyfn all_functions k ty
+	  
+  and declaration d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.Init(ty,id,eq,exp,sem) ->
+	    Ast.Init(fullType ty, ident id, string_mcode eq, expression exp,
+		     string_mcode sem)
+	| Ast.UnInit(ty,id,sem) ->
+	    Ast.UnInit(fullType ty, ident id, string_mcode sem)
+	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
+	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
+	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
+	| Ast.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)) in
+    declfn all_functions k d
+	  
+  and parameterTypeDef p =
+    let k p =
+      Ast.rewrap p
+	(match Ast.unwrap p with
+	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
+	| Ast.Param(id,ty) -> Ast.Param(ident id, fullType ty)
+	| Ast.MetaParam(name) -> Ast.MetaParam(string_mcode name)
+	| Ast.MetaParamList(name) -> Ast.MetaParamList(string_mcode name)
+	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
+	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
+	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)
+	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
+	| Ast.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param)) in
+    paramfn all_functions k p
+
+  and rule_elem re =
+    let k re =
+      Ast.rewrap re
+	(match Ast.unwrap re with
+	  Ast.FunHeader(stg,name,lp,params,rp) ->
+	    Ast.FunHeader(get_option storage_mcode stg, ident name,
+			  string_mcode lp, parameter_dots params,
+			  string_mcode rp)
+	| Ast.Decl(decl) -> Ast.Decl(declaration decl)
+	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
+	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
+	| Ast.ExprStatement(exp,sem) ->
+	    Ast.ExprStatement (expression exp, string_mcode sem)
+	| Ast.IfHeader(iff,lp,exp,rp) ->
+	    Ast.IfHeader(string_mcode iff, string_mcode lp, expression exp,
+	      string_mcode rp)
+	| Ast.Else(els) -> Ast.Else(string_mcode els)
+	| Ast.WhileHeader(whl,lp,exp,rp) ->
+	    Ast.WhileHeader(string_mcode whl, string_mcode lp, expression exp, 
+			    string_mcode rp)
+	| Ast.DoHeader(d) -> Ast.DoHeader(string_mcode d)
+	| Ast.WhileTail(whl,lp,exp,rp,sem) ->
+	    Ast.WhileTail(string_mcode whl, string_mcode lp, expression exp, 
+			  string_mcode rp, string_mcode sem)
+	| Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+	    Ast.ForHeader(string_mcode fr, string_mcode lp, 
+			  get_option expression e1, string_mcode sem1, 
+			  get_option expression e2, string_mcode sem2, 
+			  get_option expression e3, string_mcode rp)
+	| Ast.Return(ret,sem) ->
+	    Ast.Return(string_mcode ret, string_mcode sem)
+	| Ast.ReturnExpr(ret,exp,sem) ->
+	    Ast.ReturnExpr(string_mcode ret, expression exp, string_mcode sem)
+	| Ast.MetaStmt(name) -> Ast.MetaStmt(string_mcode name)
+	| Ast.MetaStmtList(name) -> Ast.MetaStmtList(string_mcode name)
+	| Ast.MetaRuleElem(name) -> Ast.MetaRuleElem(string_mcode name)
+	| Ast.Exp(exp) -> Ast.Exp(expression exp)) in
+    rulefn all_functions k re
+
+  and statement s =
+    let k s =
+      Ast.rewrap s
+	(match Ast.unwrap s with
+	  Ast.Seq(lbrace,body,rbrace) ->
+	    Ast.Seq(rule_elem lbrace, statement_dots body, rule_elem rbrace)
+	| Ast.IfThen(header,branch) ->
+	    Ast.IfThen(rule_elem header, statement branch)
+	| Ast.IfThenElse(header,branch1,els,branch2) ->
+	    Ast.IfThenElse(rule_elem header, statement branch1, rule_elem els,
+			   statement branch2)
+	| Ast.While(header,body) -> Ast.While(rule_elem header, statement body)
+	| Ast.Do(header,body,tail) ->
+	    Ast.Do(rule_elem header, statement body, rule_elem tail)
+	| Ast.For(header,body) -> Ast.For(rule_elem header, statement body)
+	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
+	| Ast.Disj(stmt_dots_list) ->
+	    Ast.Disj (List.map statement_dots stmt_dots_list)
+	| Ast.Nest(stmt_dots) -> Ast.Nest(statement_dots stmt_dots)
+	| Ast.FunDecl(header,lbrace,body,rbrace) ->
+	    Ast.FunDecl (rule_elem header,rule_elem lbrace,statement_dots body,
+			 rule_elem rbrace)
+	| Ast.Dots(d,whencode,t) ->
+	    Ast.Dots(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.Circles(d,whencode,t) ->
+	    Ast.Circles(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.Stars(d,whencode,t) ->
+	    Ast.Stars(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
+	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
+	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in
+    stmtfn all_functions k s
+    
+  and top_level t =
+    let k t =
+      Ast.rewrap t
+	(match Ast.unwrap t with
+	  Ast.DECL(decl) -> Ast.DECL(declaration decl)
+	| Ast.INCLUDE(inc,name) ->
+	    Ast.INCLUDE(string_mcode inc, string_mcode name)
+	| Ast.FILEINFO(old_file,new_file) ->
+	    Ast.FILEINFO (string_mcode old_file, string_mcode new_file)
+	| Ast.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)
+	| Ast.CODE(stmt_dots) -> Ast.CODE(statement_dots stmt_dots)
+	| Ast.ERRORWORDS(exps) -> Ast.ERRORWORDS (List.map expression exps)) in
+    topfn all_functions k t
+
+  and anything a =
+    let k = function
+	(*in many cases below, the thing is not even mcode, so we do nothing*)
+	Ast.FullTypeTag(ft) -> Ast.FullTypeTag(fullType ft)
+      | Ast.BaseTypeTag(bt) as x -> x
+      | Ast.StructUnionTag(su) as x -> x
+      | Ast.SignTag(sgn) as x -> x
+      | Ast.IdentTag(id) -> Ast.IdentTag(ident id)
+      | Ast.ExpressionTag(exp) -> Ast.ExpressionTag(expression exp)
+      | Ast.ConstantTag(cst) as x -> x
+      | Ast.UnaryOpTag(unop) as x -> x
+      | Ast.AssignOpTag(asgnop) as x -> x
+      | Ast.FixOpTag(fixop) as x -> x
+      | Ast.BinaryOpTag(binop) as x -> x
+      | Ast.ArithOpTag(arithop) as x -> x
+      | Ast.LogicalOpTag(logop) as x -> x
+      | Ast.DeclarationTag(decl) -> Ast.DeclarationTag(declaration decl)
+      | Ast.ParameterTypeDefTag(ptd) ->
+	  Ast.ParameterTypeDefTag(parameterTypeDef ptd)
+      | Ast.StorageTag(stg) as x -> x
+      | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
+      | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
+      | Ast.ConstVolTag(cv) as x -> x
+      | Ast.Token(tok) as x -> x
+      | Ast.Code(cd) -> Ast.Code(top_level cd)
+      | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
+      | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
+      | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
+      | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
+      | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param) in
+    anyfn all_functions k a
+
+  and all_functions =
+    {rebuilder_ident = ident;
+      rebuilder_expression = expression;
+      rebuilder_typeC = typeC;
+      rebuilder_declaration = declaration;
+      rebuilder_parameter = parameterTypeDef;
+      rebuilder_parameter_list = parameter_dots;
+      rebuilder_rule_elem = rule_elem;
+      rebuilder_statement = statement;
+      rebuilder_top_level = top_level;
+      rebuilder_expression_dots = expression_dots;
+      rebuilder_statement_dots = statement_dots;
+      rebuilder_anything = anything} in
   all_functions

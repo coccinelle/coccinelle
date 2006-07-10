@@ -694,4 +694,3 @@ let apply_isos isos rule =
 	(function t -> function iso -> transform iso t)
 	t isos)
     rule
-

@@ -1,4 +1,47 @@
 @@
+@@
+   f();
+   ...
+?  g();
+   ...
+   h();
+
+@@
+expression E,X,Y,Z;
+local function foo;
+@@
+
+  foo(...) {
+(
+-   f(3,E);
++   f(3,3,E);
+|
+-   f(E,4);
++   f(E,4,4);
+|
+-   E;
++   g(E);
+)
+(
+-   f(3,X);
++   f(3,3,X);
+|
+-   f(Y,4);
++   f(Y,4,4);
+|
+-   Z;
++   g(Z);
+)
+(
+-   f(3);
++   f(3,3);
+|
+-   f(4);
++   f(4,4);
+)
+  }
+
+@@
 identifier buffer;
 identifier hostptr;
 @@
