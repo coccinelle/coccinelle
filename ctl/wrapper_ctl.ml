@@ -22,8 +22,9 @@ type ('pred,'state,'mvar,'value) labelfunc =
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
     ('pred * 'mvar Ast_ctl.modif) -> 
       ('state * 
-	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution
-	 * 'wit) list
+	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
+	 'wit)
+	list
 
 
 
@@ -44,7 +45,10 @@ module CTL_ENGINE_BIS =
       functor(P : Ctl_engine.PREDICATE) ->
 struct
 
-  open Ast_ctl
+  exception TODO_CTL of string  (* implementation still not quite done so... *)
+  exception NEVER_CTL of string		  (* Some things should never happen *)
+
+  module A = Ast_ctl
 
   type predicate = P.t
 
@@ -67,8 +71,10 @@ struct
     let print_mvar x = SUB.print_mvar x
     let print_value x = 
       match x with
-      | ClassicVar v -> SUB.print_value v
-      | PredVar v -> Format.print_string "<predvar>"
+	ClassicVar v -> SUB.print_value v
+      | PredVar(A.Modif v) -> P.print_predicate v
+      | PredVar(A.UnModif v) -> P.print_predicate v
+      |	PredVar(A.Control) -> Format.print_string "no value"
   end
 
   module WRAPPER_PRED = 
@@ -77,7 +83,9 @@ struct
       let print_predicate (pred, modif) = 
         begin
           P.print_predicate pred;
-          Format.print_string " with <modifTODO>"
+	  (match modif with
+	    Ast_ctl.Modif x -> Format.print_string " with <modifTODO>"
+	  | _ -> ())
         end
     end
 
@@ -88,90 +96,110 @@ struct
   let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 
 	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc)
       = fun oldlabelfunc ->  fun (p, predvar) ->
-	let top_wit = [] in
 	let penv = 
 	  match predvar with
-	    | Modif(x)   -> [Subst(x,PredVar(Modif(p)))]
-	    | UnModif(x) -> [Subst(x,PredVar(UnModif(p)))]
-	    | Control    -> [] in
+	    | A.Modif(x)   -> [A.Subst(x,PredVar(A.Modif(p)))]
+	    | A.UnModif(x) -> [A.Subst(x,PredVar(A.UnModif(p)))]
+	    | A.Control    -> [] in
 	let conv_sub sub =
 	  match sub with
-	    | Subst(x,v)    -> Subst(x,ClassicVar(v))
-	    | NegSubst(x,v) -> NegSubst(x,ClassicVar(v)) in
-	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),top_wit) 
-	in
-          List.map conv_trip (oldlabelfunc p)
+	    | A.Subst(x,v)    -> A.Subst(x,ClassicVar(v))
+	    | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVar(v)) in
+	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),A.TopWit) in
+        List.map conv_trip (oldlabelfunc p)
 
   (* Collects, unwraps, and filters witness trees *)
   (* NOTE: only makes sense specifically for coccinelle generated CTL *)
   (* FIX ME: what about negative witnesses and negative substitutions *)
+
+  let rec dnf = function
+    A.AndWits(c1,c2) ->
+      let c1res = dnf c1 in
+      let c2res = dnf c2 in
+      List.fold_left
+	(function rest ->
+	  (function cur1 ->
+	    List.fold_left
+	      (function rest ->
+		(function cur2 ->
+		  let x = A.AndWits(cur1,cur2) in
+		  if List.mem x rest then rest else x::rest))
+	      rest c2res))
+	[] c1res
+  | A.OrWits(c1,c2) -> Common.union_set (dnf c1) (dnf c2)
+  | A.Wit(st,th,anno,wit) ->
+      List.map (function wit -> A.Wit(st,th,anno,wit)) (dnf wit)
+  | A.NegWit(wit) -> (* already pushed in as far as possible *)
+      List.map (function wit -> A.NegWit wit) (dnf wit)
+  | A.TopWit -> [A.TopWit]
+
   exception NEGATIVE_WITNESS
-  let unwrap_wits acc wits =
+  let unwrap_wits wit =
     let mkth th =
-      List.concat (
-	List.map (function Subst(x,ClassicVar(v)) -> [(x,v)] | _ -> []) th) in
-    let rec loop neg acc wits =
-      match wits with
-	| []  -> []
-(*
-	| (Wit(s,[Subst(x,ClassicVar(v))],anno,wits')::rest) -> 
-	    (loop neg ((x,v)::acc) wits') @ (loop neg acc rest)
-*)
-	| (Wit(s,[Subst(x,PredVar(Modif(v)))],anno,wits')::rest) -> 
-	    (s,acc,v) :: (loop neg acc rest)
-(*
-	| (Wit(s,[sub],anno,wits')::rest) ->
-	    (loop neg acc wits') @ (loop neg acc rest)
-	| (Wit(s,[],anno,wits')::rest) -> 
-	    (loop neg acc wits') @ (loop neg acc rest)
-*)
-	| (Wit(s,th,anno,wits')::rest) ->
-	      (loop neg ((mkth th) @ acc) wits') @ (loop neg acc rest)
-	| (NegWit(s,th,anno,wits')::rest) -> 
-	    if neg then
-	      (loop (not neg) ((mkth th) @ acc) wits') @ (loop neg acc rest)
-	    else
-	      raise NEGATIVE_WITNESS
-    in
-      try (loop false acc wits) with NEGATIVE_WITNESS -> []
+      Common.map_filter
+	(function A.Subst(x,ClassicVar(v)) -> Some (x,v) | _ -> None)
+	th in
+    let wits = dnf wit in
+    let rec no_negwits = function
+	A.AndWits(c1,c2) | A.OrWits(c1,c2) -> no_negwits c1 && no_negwits c2
+      | A.Wit(st,th,anno,wit) -> no_negwits wit
+      | A.NegWit(_) -> false
+      | A.TopWit -> true in
+    let rec loop neg acc = function
+	A.AndWits(c1,c2) -> (loop neg acc c1) @ (loop neg acc c2)
+      | A.OrWits(_,_) -> raise (NEVER_CTL "or is not possible")
+      | A.Wit(st,[A.Subst(x,PredVar(A.Modif(v)))],anno,wit) ->
+	  (match wit with
+	    A.TopWit -> [(st,acc,v)]
+	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
+      | A.Wit(st,th,anno,wit) -> loop neg ((mkth th) @ acc) wit
+      | A.NegWit(wit) ->
+	  if no_negwits wit
+	  then raise NEGATIVE_WITNESS
+	  else raise (TODO_CTL "nested negative witnesses")
+      | A.TopWit -> [] in
+    List.concat
+      (List.map
+	 (function wit -> try loop false [] wit with NEGATIVE_WITNESS -> [])
+	 wits)
   ;;
 
 	  
   (* ------------------ Partial matches ------------------ *)
+  (* Limitation: this only gives information about terms with PredVars, which
+     can be optimized to only those with modifs *)
   let collect_predvar_bindings res =
-    let wits = List.concat(List.map (fun (_,_,w) -> (w : 'a list)) res) in
-    let rec loop wits =
-      List.fold_left Common.union_set []
-	(List.map
-	   (function
-	       Wit(s,th,_,wits) | NegWit(s,th,_,wits) ->
-		 Common.union_set
-		   (List.fold_left
-		      (function rest ->
-			function
-			    Subst(_,(PredVar(_) as x)) -> x :: rest
-			  | NegSubst(_,PredVar(_)) ->
-			      failwith "unexpected negsubst on predvar"
-			  | _ -> rest)
-		      [] th)
-		   (loop wits))
-	   wits) in
-    loop wits
+    let wits = List.map (fun (_,_,w) -> w) res in
+    let rec loop = function
+	A.AndWits(c1,c2) | A.OrWits(c1,c2) -> (loop c1) @ (loop c2)
+      | A.Wit(st,th,anno,wit) ->
+	  (Common.map_filter
+	    (function A.Subst(_,(PredVar(_) as x)) -> Some (st,x) | _ -> None)
+	    th) @
+	  (loop wit)
+      | A.NegWit(wit) -> loop wit
+      | A.TopWit -> [] in
+    List.fold_left Common.union_set [] (List.map loop wits)
 
-  let check_conjunction phipsi (res_phi : ('pred,'anno) WRAPPER_ENGINE.triples) res_psi res_phipsi =
+  let check_conjunction phipsi res_phi res_psi res_phipsi =
     let phi_code = collect_predvar_bindings res_phi in
     let psi_code = collect_predvar_bindings res_psi in
     let all_code = collect_predvar_bindings res_phipsi in
     let check str = function
 	[] -> ()
       |	l ->
-	  Printf.printf "Warning: conjunction derived from SP line %d drops code on the\nfollowing lines, which was matched by the %s side of the conjunction:\n"
-	    (Ast_ctl.get_line phipsi) str;
+	  Printf.printf "Warning: The conjunction derived from SP line %d:\n"
+	    (Ast_ctl.get_line phipsi);
+	  Printf.printf
+	    "drops code matched on the %s side at the following nodes\naccording to the corresponding predicates\n" str;
 	  List.iter
-	    (function x -> WRAPPER_ENV.print_value x; Format.print_flush())
+	    (function (n,x) ->
+	      G.print_node n; Format.print_flush(); Printf.printf ": ";
+	      WRAPPER_ENV.print_value x; Format.print_flush();
+	      Printf.printf "\n")
 	    l in
-    check "left" (Common.minus_set all_code phi_code);
-    check "right" (Common.minus_set all_code psi_code)
+    check "left" (Common.minus_set phi_code all_code);
+    check "right" (Common.minus_set psi_code all_code)
 
   (* ----------------------------------------------------- *)
 
@@ -189,8 +217,9 @@ struct
         (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
     fun m phi ->
       let noclean = (satbis_noclean m phi) in
+      flush stdout;
 	Common.uniq (
-	  List.concat (List.map (fun (_,_,w) -> unwrap_wits [] w) noclean))
+	  List.concat (List.map (fun (_,_,w) -> unwrap_wits w) noclean))
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end
