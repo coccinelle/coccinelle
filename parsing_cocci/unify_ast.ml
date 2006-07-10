@@ -1,0 +1,310 @@
+(* --------------------------------------------------------------------- *)
+(* Detect whether two SmPL terms can be unified.  For simplicity, this doesn't
+maintain an environment; it just assume metavariables match.  Thus the result
+is either NO or MAYBE. *)
+
+module Ast = Ast_cocci
+module V = Visitor_ast
+
+(* --------------------------------------------------------------------- *)
+
+type res = NO | MAYBE
+
+let return b = if b then MAYBE else NO
+
+let unify_mcode (x,_,_) (y,_,_) = x = y
+
+let unify_option f t1 t2 =
+  match (t1,t2) with
+    (Some t1, Some t2) -> f t1 t2
+  | (None, None) -> return true
+  | _ -> return false
+
+let bool_unify_option f t1 t2 =
+  match (t1,t2) with
+    (Some t1, Some t2) -> f t1 t2
+  | (None, None) -> true
+  | _ -> false
+
+let conjunct_bindings b1 b2 =
+  match b1 with NO -> NO | MAYBE -> b2
+
+(* --------------------------------------------------------------------- *)
+
+let unify_lists fn la lb =
+  if List.length la = List.length lb
+  then
+    List.fold_left2
+      (function rest -> function cura -> function curb ->
+	conjunct_bindings (fn cura curb) rest)
+      (return true) la lb
+  else return false
+
+let unify_dots fn d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.DOTS(l1),Ast.DOTS(l2))
+  | (Ast.CIRCLES(l1),Ast.CIRCLES(l2))
+  | (Ast.STARS(l1),Ast.STARS(l2)) -> unify_lists fn l1 l2
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Identifier *)
+
+and unify_ident i1 i2 =
+  match (Ast.unwrap i1,Ast.unwrap i2) with
+    (Ast.Id(i1),Ast.Id(i2)) -> return (unify_mcode i1 i2)
+
+  | (Ast.MetaId(_),_)
+  | (Ast.MetaFunc(_),_)
+  | (Ast.MetaLocalFunc(_),_)
+  | (_,Ast.MetaId(_))
+  | (_,Ast.MetaFunc(_))
+  | (_,Ast.MetaLocalFunc(_)) -> return true
+
+  | (Ast.OptIdent(_),_)
+  | (Ast.UniqueIdent(_),_)
+  | (Ast.MultiIdent(_),_)
+  | (_,Ast.OptIdent(_))
+  | (_,Ast.UniqueIdent(_))
+  | (_,Ast.MultiIdent(_)) -> failwith "unsupported ident"
+
+(* --------------------------------------------------------------------- *)
+(* Expression *)
+
+let rec unify_expression e1 e2 =
+  match (Ast.unwrap e1,Ast.unwrap e2) with
+    (Ast.Ident(i1),Ast.Ident(i2)) -> unify_ident i1 i2
+  | (Ast.Constant(c1),Ast.Constant(c2))-> return (unify_mcode c1 c2)
+  | (Ast.FunCall(f1,lp1,args1,rp1),Ast.FunCall(f2,lp2,args2,rp2)) ->
+      conjunct_bindings
+	(unify_expression f1 f2) (unify_dots unify_expression args1 args2)
+  | (Ast.Assignment(l1,op1,r1),Ast.Assignment(l2,op2,r2)) ->
+      if unify_mcode op1 op2
+      then conjunct_bindings (unify_expression e1 e2) (unify_expression e1 e2)
+      else return false
+  | (Ast.CondExpr(tst1,q1,thn1,c1,els1),Ast.CondExpr(tst2,q2,thn2,c2,els2)) ->
+      conjunct_bindings (unify_expression tst1 tst2)
+	(conjunct_bindings (unify_option unify_expression thn1 thn2)
+	   (unify_expression els1 els2))
+  | (Ast.Postfix(e1,op1),Ast.Postfix(e2,op2)) ->
+      if unify_mcode op1 op2 then unify_expression e1 e2 else return false
+  | (Ast.Infix(e1,op1),Ast.Infix(e2,op2)) ->
+      if unify_mcode op1 op2 then unify_expression e1 e2 else return false
+  | (Ast.Unary(e1,op1),Ast.Unary(e2,op2)) ->
+      if unify_mcode op1 op2 then unify_expression e1 e2 else return false
+  | (Ast.Binary(l1,op1,r1),Ast.Binary(l2,op2,r2)) ->
+      if unify_mcode op1 op2
+      then conjunct_bindings (unify_expression e1 e2) (unify_expression e1 e2)
+      else return false
+  | (Ast.ArrayAccess(ar1,lb1,e1,rb1),Ast.ArrayAccess(ar2,lb2,e2,rb2)) ->
+      conjunct_bindings (unify_expression ar1 ar2) (unify_expression e1 e2)
+  | (Ast.RecordAccess(e1,d1,fld1),Ast.RecordAccess(e2,d2,fld2)) ->
+      conjunct_bindings (unify_expression e1 e2) (unify_ident fld1 fld2)
+  | (Ast.RecordPtAccess(e1,pt1,fld1),Ast.RecordPtAccess(e2,pt2,fld2)) ->
+      conjunct_bindings (unify_expression e1 e2) (unify_ident fld1 fld2)
+  | (Ast.Cast(lp1,ty1,rp1,e1),Ast.Cast(lp2,ty2,rp2,e2)) ->
+      conjunct_bindings (unify_fullType ty1 ty2) (unify_expression e1 e2)
+  | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
+      unify_expression e1 e2
+
+  | (Ast.MetaConst(_,_),_)
+  | (Ast.MetaErr(_),_)
+  | (Ast.MetaExpr(_,_),_)
+  | (Ast.MetaExprList(_),_)
+  | (_,Ast.MetaConst(_,_))
+  | (_,Ast.MetaErr(_))
+  | (_,Ast.MetaExpr(_,_))
+  | (_,Ast.MetaExprList(_)) -> return true
+
+  | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
+
+  | (Ast.DisjExpr(e1),Ast.DisjExpr(e2)) -> unify_lists unify_expression e1 e2
+  | (Ast.NestExpr(e1),Ast.NestExpr(e2)) -> unify_dots unify_expression e1 e2
+
+  | (Ast.Edots(d1,w1),Ast.Edots(d2,w2))
+  | (Ast.Ecircles(d1,w1),Ast.Ecircles(d2,w2))
+  | (Ast.Estars(d1,w1),Ast.Estars(d2,w2)) ->
+      unify_option unify_expression w1 w2
+
+  | (Ast.OptExp(_),_)
+  | (Ast.UniqueExp(_),_)
+  | (Ast.MultiExp(_),_)
+  | (_,Ast.OptExp(_))
+  | (_,Ast.UniqueExp(_))
+  | (_,Ast.MultiExp(_)) -> failwith "unsupported expression"
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Types *)
+
+and unify_fullType ft1 ft2 =
+  match (Ast.unwrap ft1,Ast.unwrap ft2) with
+    (Ast.Type(cv1,ty1),Ast.Type(cv2,ty2)) ->
+      if bool_unify_option unify_mcode cv1 cv2
+      then unify_typeC ty1 ty2
+      else return false
+
+  | (Ast.OptType(_),_)
+  | (Ast.UniqueType(_),_)
+  | (Ast.MultiType(_),_)
+  | (_,Ast.OptType(_))
+  | (_,Ast.UniqueType(_))
+  | (_,Ast.MultiType(_)) -> failwith "unsupported type"
+
+and unify_typeC t1 t2 =
+  match (Ast.unwrap t1,Ast.unwrap t2) with
+    (Ast.BaseType(ty1,sgn1),Ast.BaseType(ty2,sgn2)) ->
+      return (unify_mcode ty1 ty2 && bool_unify_option unify_mcode sgn1 sgn2)
+  | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
+  | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
+      conjunct_bindings
+	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
+  | (Ast.StructUnionName(ts1,s1),Ast.StructUnionName(ts2,s2)) ->
+      return (unify_mcode ts1 ts2 && unify_mcode s1 s2)
+  | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
+
+  | (Ast.MetaType(_),_)
+  | (_,Ast.MetaType(_)) -> return true
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Variable declaration *)
+(* Even if the Cocci program specifies a list of declarations, they are
+   split out into multiple declarations of a single variable each. *)
+
+let rec unify_declaration d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.Init(ft1,id1,eq1,e1,s1),Ast.Init(ft2,id2,eq2,e2,s2)) ->
+      conjunct_bindings (unify_fullType ft1 ft2)
+	(conjunct_bindings (unify_ident id1 id2) (unify_expression e1 e2))
+  | (Ast.UnInit(ft1,id1,s1),Ast.UnInit(ft2,id2,s2)) ->
+      conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
+  | (Ast.DisjDecl(d1),Ast.DisjDecl(d2)) ->
+      unify_lists unify_declaration d1 d2
+
+  | (Ast.OptDecl(_),_)
+  | (Ast.UniqueDecl(_),_)
+  | (Ast.MultiDecl(_),_)
+  | (_,Ast.OptDecl(_))
+  | (_,Ast.UniqueDecl(_))
+  | (_,Ast.MultiDecl(_)) -> failwith "unsupported ident"
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Parameter *)
+
+let rec unify_parameterTypeDef p1 p2 =
+  match (Ast.unwrap p1,Ast.unwrap p2) with
+    (Ast.VoidParam(ft1),Ast.VoidParam(ft2)) -> unify_fullType ft1 ft2
+  | (Ast.Param(i1,ft1),Ast.Param(i2,ft2)) ->
+      conjunct_bindings (unify_ident i1 i2) (unify_fullType ft1 ft2)
+
+  | (Ast.MetaParam(_),_)
+  | (Ast.MetaParamList(_),_)
+  | (_,Ast.MetaParam(_))
+  | (_,Ast.MetaParamList(_)) -> return true
+
+  | (Ast.PComma(_),Ast.PComma(_)) -> return true
+
+  | (Ast.Pdots(d1),Ast.Pdots(d2))
+  | (Ast.Pcircles(d1),Ast.Pcircles(d2)) -> return true
+
+  | (Ast.OptParam(_),_)
+  | (Ast.UniqueParam(_),_)
+  | (_,Ast.OptParam(_))
+  | (_,Ast.UniqueParam(_)) -> failwith "unsupported parameter"
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Top-level code *)
+
+let rec unify_rule_elem re1 re2 =
+  match (Ast.unwrap re1,Ast.unwrap re2) with
+    (Ast.FunHeader(stg1,nm1,lp1,params1,rp1),
+     Ast.FunHeader(stg2,nm2,lp2,params2,rp2)) ->
+       conjunct_bindings (unify_ident nm1 nm2)
+	 (unify_dots unify_parameterTypeDef params1 params2)
+  | (Ast.Decl(d1),Ast.Decl(d2)) -> unify_declaration d1 d2
+
+  | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
+  | (Ast.SeqEnd(rb1),Ast.SeqEnd(rb2)) -> return true
+
+  | (Ast.ExprStatement(e1,s1),Ast.ExprStatement(e2,s2)) ->
+      unify_expression e1 e2
+  | (Ast.IfHeader(if1,lp1,e1,rp1),Ast.IfHeader(if2,lp2,e2,rp2)) ->
+      unify_expression e1 e2
+  | (Ast.Else(e1),Ast.Else(e2)) -> return true
+  | (Ast.WhileHeader(wh1,lp1,e1,rp1),Ast.WhileHeader(wh2,lp2,e2,rp2)) ->
+      unify_expression e1 e2
+  | (Ast.DoHeader(d1),Ast.DoHeader(d2)) -> return true
+  | (Ast.WhileTail(wh1,lp1,e1,rp1,s1),Ast.WhileTail(wh2,lp2,e2,rp2,s2)) ->
+      unify_expression e1 e2
+  | (Ast.ForHeader(fr1,lp1,e11,s11,e21,s21,e31,rp1),
+     Ast.ForHeader(fr2,lp2,e12,s12,e22,s22,e32,rp2)) ->
+       conjunct_bindings
+	 (unify_option unify_expression e11 e12)
+	 (conjunct_bindings
+	    (unify_option unify_expression e21 e22)
+	    (unify_option unify_expression e31 e32))
+  | (Ast.Return(r1,s1),Ast.Return(r2,s2)) -> return true
+  | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
+      unify_expression e1 e2
+
+  | (Ast.MetaRuleElem(_),_)
+  | (Ast.MetaStmt(_),_)
+  | (Ast.MetaStmtList(_),_)
+  | (_,Ast.MetaRuleElem(_))
+  | (_,Ast.MetaStmt(_))
+  | (_,Ast.MetaStmtList(_)) -> return true
+
+  | (Ast.Exp(e1),Ast.Exp(e2)) -> unify_expression e1 e2
+  | _ -> return false
+
+let rec unify_statement s1 s2 =
+  match (Ast.unwrap s1,Ast.unwrap s2) with
+    (Ast.Seq(lb1,s1,rb1),Ast.Seq(lb2,s2,rb2)) ->
+      conjunct_bindings (unify_rule_elem lb1 lb2)
+	(conjunct_bindings
+	   (unify_dots unify_statement s1 s2)
+	   (unify_rule_elem rb1 rb2))
+  | (Ast.IfThen(h1,thn1),Ast.IfThen(h2,thn2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2) (unify_statement thn1 thn2)
+  | (Ast.IfThenElse(h1,thn1,e1,els1),Ast.IfThenElse(h2,thn2,e2,els2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2)
+	(conjunct_bindings (unify_statement thn1 thn2)
+	   (conjunct_bindings (unify_rule_elem e1 e2)
+	      (unify_statement els1 els2)))
+  | (Ast.While(h1,s1),Ast.While(h2,s2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
+  | (Ast.Do(h1,s1,t1),Ast.Do(h2,s2,t2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2)
+	(conjunct_bindings (unify_statement s1 s2) (unify_rule_elem t1 t2))
+  | (Ast.For(h1,s1),Ast.For(h2,s2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
+  | (Ast.Atomic(re1),Ast.Atomic(re2)) -> unify_rule_elem re1 re2
+  | (Ast.Disj(s1),Ast.Disj(s2)) ->
+      unify_lists (unify_dots unify_statement) s1 s2
+  | (Ast.Nest(s1),Ast.Nest(s2)) -> unify_dots unify_statement s1 s2
+  | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2)
+	(conjunct_bindings (unify_rule_elem lb1 lb2)
+	   (conjunct_bindings (unify_dots unify_statement s1 s2)
+	      (unify_rule_elem rb1 rb2)))
+  | (Ast.Dots(d1,s1,[]),Ast.Dots(d2,s2,[]))
+  | (Ast.Circles(d1,s1,[]),Ast.Circles(d2,s2,[]))
+  | (Ast.Stars(d1,s1,[]),Ast.Stars(d2,s2,[])) ->
+      unify_lists (unify_dots unify_statement) s1 s2
+  | (Ast.Dots(d1,s1,_),Ast.Dots(d2,s2,_))
+  | (Ast.Circles(d1,s1,_),Ast.Circles(d2,s2,_))
+  | (Ast.Stars(d1,s1,_),Ast.Stars(d2,s2,_)) ->
+      failwith
+	"unify called in processing ors which is before asttoctl intros tmp field\n"
+  | (Ast.OptStm(_),_)
+  | (Ast.UniqueStm(_),_)
+  | (Ast.MultiStm(_),_)
+  | (_,Ast.OptStm(_))
+  | (_,Ast.UniqueStm(_))
+  | (_,Ast.MultiStm(_)) -> failwith "unsupported statement"
+  | _ -> return false
+
+let unify_statement_dots = unify_dots unify_statement
