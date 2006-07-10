@@ -84,8 +84,9 @@ struct
         begin
           P.print_predicate pred;
 	  (match modif with
-	    Ast_ctl.Modif x -> Format.print_string " with <modifTODO>"
-	  | _ -> ())
+	    Ast_ctl.Modif x | Ast_ctl.UnModif x ->
+	      Format.print_string " with <modifTODO>"
+	  | Ast_ctl.Control -> ())
         end
     end
 
