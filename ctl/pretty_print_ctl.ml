@@ -23,12 +23,12 @@ fun (pp_pred, pp_mvar) ctl ->
   | False              -> pp "False"
   | True               -> pp "True"
   | Pred(p)            -> pp_pred p
-  | Not(phi)           -> pp char_not; pp "("; box (fun () -> pp_aux phi); pp ")"
+  | Not(phi)           -> pp char_not; box (fun () -> pp_aux phi)
   | Exists(v,phi)      ->  
       pp "(";
-      pp ("Ex");
+      pp ("Ex ");
       pp_mvar v;
-      pp "."; 
+      pp " . "; 
       print_cut();
       box (fun () -> pp_aux phi); 
       pp ")"
