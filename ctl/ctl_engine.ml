@@ -47,6 +47,17 @@ module OGRAPHEXT_GRAPH =
 
 
 (* ********************************************************************** *)
+(* Module: PREDICATE (predicates for CTL formulae)                        *)
+(* ********************************************************************** *)
+
+module type PREDICATE =
+sig
+  type t
+  val print_predicate : t -> unit
+end
+
+
+(* ********************************************************************** *)
 
 
 exception TODO_CTL            (* implementation still not quite done so... *)
@@ -169,6 +180,7 @@ let setfix f x = setify (fix setequal f x);;
 module CTL_ENGINE =
   functor (SUB : SUBST) -> 
     functor (G : GRAPH) ->
+      functor (P : PREDICATE) ->
 struct
 
 type substitution = (SUB.mvar, SUB.value) Ast_ctl.generic_substitution
@@ -917,12 +929,6 @@ let sat m phi = satloop m phi []
 ;;
 *)
 
-(* pad: Rene, you can now use the module pretty_print_ctl.ml to
-   print a ctl formula more accurately if you want.
-   Use the print_xxx provided in the different module to call 
-   Pretty_print_ctl.pp_ctl.
- *)
-
 let simpleanno l phi res =
   let pp s = 
     Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
@@ -932,7 +938,7 @@ let simpleanno l phi res =
   match unwrap phi with
     | False              -> pp "False"
     | True               -> pp "True"
-    | Pred(p)            -> pp ("Pred" ^ (Dumper.dump(p)))
+    | Pred(p)            -> pp ("Pred" ^ (Dumper.dump(p))); 
     | Not(phi)           -> pp "Not"
     | Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
     | And(phi1,phi2)     -> pp "And"
@@ -950,12 +956,31 @@ let simpleanno l phi res =
     | Ref(s)             -> pp ("Ref("^s^")")
 ;;
 
+(* pad: Rene, you can now use the module pretty_print_ctl.ml to
+   print a ctl formula more accurately if you want.
+   Use the print_xxx provided in the different module to call 
+   Pretty_print_ctl.pp_ctl.
+ *)
+let simpleanno2 l phi res = 
+  begin
+    Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar) phi;
+    Format.print_newline ();
+    Format.print_string "-----------------------------------------------------";
+    Format.print_newline ();
+    print_local_algo res;
+    Format.print_newline ();
+    Format.print_string "-----------------------------------------------------";
+    Format.print_newline ();
+    Format.print_newline ();
+  end
+  
+
 
 (* Main entry point for engine *)
 let sat m phi check_conj = 
   let res =
     if(!Flag_ctl.verbose_ctl_engine)
-    then snd (sat_annotree simpleanno m phi check_conj)
+    then snd (sat_annotree simpleanno2 m phi check_conj)
     else satloop m phi [] check_conj in
   let res = List.concat(List.map clean_triple res) in
   let res = List.map witstowit res in

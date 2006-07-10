@@ -29,12 +29,19 @@ module OGRAPHEXT_GRAPH :
     val print_node : node -> unit
   end
 
+module type PREDICATE =
+sig
+  type t
+  val print_predicate : t -> unit
+end
+
 exception TODO_CTL
 exception NEVER_CTL
 
 module CTL_ENGINE :
   functor (SUB : SUBST) ->
     functor (G : GRAPH) ->
+      functor (P : PREDICATE) ->
       sig
 
 	type substitution = (SUB.mvar, SUB.value) Ast_ctl.generic_subst list
@@ -48,11 +55,11 @@ module CTL_ENGINE :
 	    (G.node * substitution * ('pred,'anno) witnesses) list
 
         val sat :
-          G.cfg * ('a -> ('pred,'anno) triples) * G.node list ->
-            ('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	    (('a, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	      ('pred,'anno) triples ->
-	      ('pred,'anno) triples ->
-	      ('pred,'anno) triples -> unit) -> (* check_conjunction *)
-	    ('pred,'anno) triples
+          G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
+            (P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
+	    ((P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
+	      (P.t,'anno) triples ->
+	      (P.t,'anno) triples ->
+	      (P.t,'anno) triples -> unit) -> (* check_conjunction *)
+	    (P.t,'anno) triples
       end

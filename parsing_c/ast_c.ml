@@ -35,10 +35,11 @@ open Common open Commonop
 type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding)   (* forunparser: *)
 and il = info list
 
+and 'a wrap = 'a * il
 
 (*******************************************************************************)
 and fullType = typeQualifier * typeC
-and  typeC = typeCbis * il (* forunparser: *)
+and  typeC = typeCbis wrap (* forunparser: *)
 
 and typeCbis =
   | BaseType        of baseType
@@ -103,7 +104,7 @@ and typeCbis =
           (* => (bool * fullType) list * bool *)
 
 
-and typeQualifier = typeQualifierbis * il (* forunparser: *)
+and typeQualifier = typeQualifierbis wrap (* forunparser: *)
 and typeQualifierbis = {const: bool; volatile: bool}
 
 
@@ -114,7 +115,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 
 and expression = expressionbis * fullType option (* computed after parsing *) * il (* forunparser: *)
 and expressionbis = 
-  | Ident  of (string)             (* can be a enumeration constant, or a simple variable (or name of a func) *)
+  | Ident          of string    (* can be a enumeration constant, or a simple variable (or name of a func) *)
   | Constant       of constant                                  
 
   (* cppext: normmally just   expression * expression list *)
@@ -180,7 +181,7 @@ and expressionbis =
 
 (* note: that assignement is not a statement but an expression; wonderful C langage *)
 (* note: I use  'and' for type definition cos gccext allow statement as expression, so need mutual recursive type definition *)
-and statement = statementbis * il (* forunparser: *)
+and statement = statementbis wrap (* forunparser: *)
 and statementbis = 
   | Labeled       of labeled
   | Compound      of compound   (* new scope *)
@@ -231,7 +232,7 @@ and declaration = DeclList of ((((string * ((initialiser * info) option) * (info
      and storage       = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
 
-     and initialiser = initialiserbis * il
+     and initialiser = initialiserbis wrap
        and initialiserbis = InitExpr of expression | InitList of (initialiser * il) list 
                           | InitGcc of string * initialiser  (* gccext: *)
                           | InitGccIndex of expression * initialiser

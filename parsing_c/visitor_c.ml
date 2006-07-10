@@ -4,9 +4,13 @@ open Ast_c
 
 
 (******************************************************************************)
-(* visitor based on continuation, cleaner (src: based on a (vague) idea from remy douence) *)  
+(* visitor based on continuation, cleaner (src: based on a (vague) idea from 
+   remy douence) 
+*) 
+ 
 (*
-let (iter_expr: ( (expression -> unit) -> expression -> unit)  -> expression -> unit) = fun f expr ->
+let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> unit)
+ = fun f expr ->
   let rec k e = 
     match e with
     | Constant c -> ()
@@ -32,7 +36,8 @@ let (iter_expr: ( (expression -> unit) -> expression -> unit)  -> expression -> 
 *)
 
 (*
-let ex1 = Sequence (Sequence (Constant (Ident "1"), Constant (Ident "2")), Constant (Ident "4"))
+let ex1 = Sequence (Sequence (Constant (Ident "1"), Constant (Ident "2")), 
+                             Constant (Ident "4"))
 let test = 
   iter_expr (fun k e ->  match e with
   | Constant (Ident x) -> Common.pr2 x
@@ -47,15 +52,15 @@ let test =
 
 (* full visitors for all langage concept,  not just for expression *)
 type visitor_c_continuation = 
-    { 
-      kexpr:      (((expression  -> unit) * visitor_c_continuation) -> expression  -> unit);
-      kstatement: (((statement   -> unit) * visitor_c_continuation) -> statement   -> unit);
-      ktype:      (((fullType    -> unit) * visitor_c_continuation) -> fullType    -> unit);
+ { 
+   kexpr:      (((expression  -> unit) * visitor_c_continuation) -> expression  -> unit);
+   kstatement: (((statement   -> unit) * visitor_c_continuation) -> statement   -> unit);
+   ktype:      (((fullType    -> unit) * visitor_c_continuation) -> fullType    -> unit);
 
-      kdecl:      (((declaration -> unit) * visitor_c_continuation) -> declaration -> unit);
-      kdef:       (((definition  -> unit) * visitor_c_continuation) -> definition  -> unit); 
-      kini:      (((initialiser  -> unit) * visitor_c_continuation) -> initialiser  -> unit); 
-    } 
+   kdecl:      (((declaration -> unit) * visitor_c_continuation) -> declaration -> unit);
+   kdef:       (((definition  -> unit) * visitor_c_continuation) -> definition  -> unit); 
+   kini:      (((initialiser  -> unit) * visitor_c_continuation) -> initialiser  -> unit); 
+ } 
 
 let default_visitor_c_continuation = 
   { kexpr =      (fun (k,_) e  -> k e);
@@ -213,17 +218,19 @@ and visitor_def_k = fun bigf d ->
 
 
 (*******************************************************************************)
+type 'a inout = 'a -> 'a 
 
-type visitor_c_continuation_s = 
-    { 
-      kexpr_s:      (((expression  -> expression) * visitor_c_continuation_s) -> expression  -> expression);
-      kstatement_s: (((statement   -> statement)  * visitor_c_continuation_s) -> statement   -> statement);
-      ktype_s:      (((fullType    -> fullType)   * visitor_c_continuation_s) -> fullType    -> fullType);
+type visitor_c_continuation_s = { 
+  kexpr_s:      (expression inout * visitor_c_continuation_s) -> expression inout;
+  kstatement_s: (statement  inout * visitor_c_continuation_s) -> statement  inout;
+  ktype_s:      (fullType   inout * visitor_c_continuation_s) -> fullType   inout;
 
-      kdecl_s:      (((declaration -> declaration)  * visitor_c_continuation_s) -> declaration -> declaration);
-      kdef_s:       (((definition  -> definition)   * visitor_c_continuation_s) -> definition  -> definition); 
-      kini_s:       (((initialiser  -> initialiser) * visitor_c_continuation_s) -> initialiser -> initialiser); 
-    } 
+  kdecl_s: (declaration  inout * visitor_c_continuation_s) -> declaration inout;
+  kdef_s:  (definition   inout * visitor_c_continuation_s) -> definition inout; 
+  kini_s:  (initialiser  inout * visitor_c_continuation_s) -> initialiser inout; 
+
+  kinfo_s: (info inout * visitor_c_continuation_s) -> info inout;
+ } 
 
 let default_visitor_c_continuation_s = 
   { kexpr_s =      (fun (k,_) e  -> k e);
@@ -232,6 +239,7 @@ let default_visitor_c_continuation_s =
     kdecl_s      = (fun (k,_) d  -> k d);
     kdef_s       = (fun (k,_) d  -> k d);
     kini_s       = (fun (k,_) d  -> k d);
+    kinfo_s      = (fun (k,_) i  -> k i);
   } 
 
 (* as the functions may do side effect (such as maintaining an environment), 
@@ -239,34 +247,34 @@ let default_visitor_c_continuation_s =
    evaluation
 *)
 let rec visitor_expr_k_s = fun bigf expr ->
-  let f = bigf.kexpr_s in
-  let rec k e = 
+  let rec exprf e = bigf.kexpr_s  (k, bigf) e 
+  and k e = 
     match e with
     | Ident (s), typ, i -> Ident (s), typ, i
     | Constant (c), typ, is -> Constant (c), typ, is
-    | FunCall  (e, es), typ, is         -> let e'  = (f (k, bigf)) e  in 
+    | FunCall  (e, es), typ, is         -> let e'  = exprf e  in 
       let es' = (es +> List.map fst)  +> List.map (fun e -> 
         match e with
-        | Left e -> Left ((f (k, bigf)) e)
+        | Left e -> Left (exprf e)
         | Right e -> raise Todo
       )
       in  FunCall (e', (zip es' (es +> List.map snd))), typ, is
-    | CondExpr (e1, e2, e3), typ, is    -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in let e3' =  (f (k, bigf)) e3 in  CondExpr (e1', e2', e3'), typ, is
-    | Sequence (e1, e2), typ, is        -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Sequence (e1', e2'), typ, is
-    | Assignment (e1, op, e2), typ, is  -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                             Assignment (e1', op,  e2'), typ, is
+    | CondExpr (e1, e2, e3), typ, is    -> let e1' = exprf e1 in let e2' = exprf e2 in let e3' =  exprf e3 in  CondExpr (e1', e2', e3'), typ, is
+    | Sequence (e1, e2), typ, is        -> let e1' = exprf e1 in let e2' = exprf e2 in                             Sequence (e1', e2'), typ, is
+    | Assignment (e1, op, e2), typ, is  -> let e1' = exprf e1 in let e2' = exprf e2 in                             Assignment (e1', op,  e2'), typ, is
         
-    | Postfix  (e, op), typ, is -> let e' = (f (k, bigf)) e in Postfix (e', op), typ, is
-    | Infix    (e, op), typ, is -> let e' = (f (k, bigf)) e in Infix   (e', op), typ, is
-    | Unary    (e, op), typ, is -> let e' = (f (k, bigf)) e in Unary   (e', op), typ, is
-    | Binary   (e1, op, e2), typ, is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                                Binary (e1', op,  e2'), typ, is
+    | Postfix  (e, op), typ, is -> let e' = exprf e in Postfix (e', op), typ, is
+    | Infix    (e, op), typ, is -> let e' = exprf e in Infix   (e', op), typ, is
+    | Unary    (e, op), typ, is -> let e' = exprf e in Unary   (e', op), typ, is
+    | Binary   (e1, op, e2), typ, is -> let e1' = exprf e1 in let e2' = exprf e2 in                                Binary (e1', op,  e2'), typ, is
         
-    | ArrayAccess    (e1, e2), typ, is -> let e1' = (f (k, bigf)) e1 in let e2' = (f (k, bigf)) e2 in                              ArrayAccess (e1', e2'), typ, is
-    | RecordAccess   (e, s), typ, is -> let e' = (f (k, bigf)) e in RecordAccess     (e', s), typ, is 
-    | RecordPtAccess (e, s), typ, is -> let e' = (f (k, bigf)) e in RecordPtAccess   (e', s), typ, is 
+    | ArrayAccess    (e1, e2), typ, is -> let e1' = exprf e1 in let e2' = exprf e2 in                              ArrayAccess (e1', e2'), typ, is
+    | RecordAccess   (e, s), typ, is -> let e' = exprf e in RecordAccess     (e', s), typ, is 
+    | RecordPtAccess (e, s), typ, is -> let e' = exprf e in RecordPtAccess   (e', s), typ, is 
 
-    | SizeOfExpr  (e), typ, is -> let e' = (f (k, bigf)) e in  SizeOfExpr   (e'), typ, is
+    | SizeOfExpr  (e), typ, is -> let e' = exprf e in  SizeOfExpr   (e'), typ, is
     | SizeOfType  (t), typ, is -> let t' = visitor_type_k_s bigf t in SizeOfType (t'), typ, is
-    | Cast    (t, e), typ, is -> let t' = visitor_type_k_s bigf t in let e' = (f (k, bigf)) e in Cast   (t', e'), typ, is
+    | Cast    (t, e), typ, is -> let t' = visitor_type_k_s bigf t in let e' = exprf e in Cast   (t', e'), typ, is
 
 (*    | StatementExpr (((declxs, statxs), is)), is2 -> let declxs' = List.map (visitor_decl_k_s bigf) declxs in let statxs' = List.map (visitor_statement_k_s bigf) statxs in StatementExpr (((declxs', statxs'), is)), is2 *)
     | StatementExpr (((declxs_statxs), is)), typ, is2 -> 
@@ -274,32 +282,32 @@ let rec visitor_expr_k_s = fun bigf expr ->
         in StatementExpr (((declxs_statxs'), is)), typ, is2 
     | Constructor,typ, is -> Constructor,typ, is
     | NoExpr,typ, is -> NoExpr,typ,is
-    | ParenExpr (e), typ, is -> let e' = (f (k, bigf)) e in ParenExpr (e'), typ, is
+    | ParenExpr (e), typ, is -> let e' = exprf e in ParenExpr (e'), typ, is
     | x -> error_cant_have x
-  in f (k, bigf) expr
+  in exprf expr
 
 and visitor_statement_k_s = fun bigf st -> 
-  let f = bigf.kstatement_s in
-  let rec k st = 
+  let rec statf st = bigf.kstatement_s (k, bigf) st 
+  and k st = 
     match st with
-    | Labeled (Label (s, st)), ii -> let st' = (f (k, bigf)) st in                         Labeled (Label (s, st')), ii
-    | Labeled (Case  (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = (f (k, bigf)) st in Labeled (Case  (e', st')), ii
-    | Labeled (CaseRange  (e, e2, st)),ii -> let e' = (visitor_expr_k_s bigf) e in let e2' = (visitor_expr_k_s bigf) e2 in let st' = (f (k, bigf)) st in Labeled (CaseRange  (e', e2', st')), ii
-    | Labeled (Default st), ii -> let st' = (f (k, bigf)) st in                            Labeled (Default st'), ii
+    | Labeled (Label (s, st)), ii -> let st' = statf st in                         Labeled (Label (s, st')), ii
+    | Labeled (Case  (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = statf st in Labeled (Case  (e', st')), ii
+    | Labeled (CaseRange  (e, e2, st)),ii -> let e' = (visitor_expr_k_s bigf) e in let e2' = (visitor_expr_k_s bigf) e2 in let st' = statf st in Labeled (CaseRange  (e', e2', st')), ii
+    | Labeled (Default st), ii -> let st' = statf st in                            Labeled (Default st'), ii
     | Compound ((declxs_statxs)), is -> 
         let declxs_statxs' = declxs_statxs +> List.map (function Left decl -> Left (visitor_decl_k_s bigf decl) | Right stat -> Right (visitor_statement_k_s bigf stat)) 
         in Compound (declxs_statxs'), is
     | ExprStatement (None), ii ->                           ExprStatement (None), ii
     | ExprStatement (Some e), ii -> let e' = (visitor_expr_k_s bigf) e in ExprStatement (Some e'), ii
-    | Selection  (If (e, st1, st2)), ii -> let e' = (visitor_expr_k_s bigf) e in let st1' = (f (k, bigf)) st1 in let st2' = (f (k, bigf)) st2 in Selection  (If (e', st1', st2')), ii
-    | Selection  (Switch (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = (f (k, bigf)) st in Selection  (Switch (e', st')), ii
-    | Iteration  (While (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = (f (k, bigf)) st in Iteration  (While (e', st')), ii
-    | Iteration  (DoWhile (st, e)), ii -> let st' = (f (k, bigf)) st in let e' = (visitor_expr_k_s bigf) e in Iteration  (DoWhile (st', e')), ii
+    | Selection  (If (e, st1, st2)), ii -> let e' = (visitor_expr_k_s bigf) e in let st1' = statf st1 in let st2' = statf st2 in Selection  (If (e', st1', st2')), ii
+    | Selection  (Switch (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = statf st in Selection  (Switch (e', st')), ii
+    | Iteration  (While (e, st)), ii -> let e' = (visitor_expr_k_s bigf) e in let st' = statf st in Iteration  (While (e', st')), ii
+    | Iteration  (DoWhile (st, e)), ii -> let st' = statf st in let e' = (visitor_expr_k_s bigf) e in Iteration  (DoWhile (st', e')), ii
     | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), ii -> 
-          let e1opt' = (f (k, bigf)) (ExprStatement (e1opt),i1) in
-          let e2opt' = (f (k, bigf)) (ExprStatement (e2opt),i2) in
-          let e3opt' = (f (k, bigf)) (ExprStatement (e3opt),i3) in
-          let st' = (f (k, bigf)) st in
+          let e1opt' = statf (ExprStatement (e1opt),i1) in
+          let e2opt' = statf (ExprStatement (e2opt),i2) in
+          let e3opt' = statf (ExprStatement (e3opt),i3) in
+          let st' = statf st in
           (match (e1opt', e2opt', e3opt') with
           | ((ExprStatement x1,i1), (ExprStatement x2,i2), ((ExprStatement x3,i3))) -> 
               Iteration (For ((x1,i1), (x2,i2), (x3,i3), st')), ii
@@ -312,22 +320,22 @@ and visitor_statement_k_s = fun bigf st ->
     | Jump (ReturnExpr e), ii -> let e' = (visitor_expr_k_s bigf) e in Jump (ReturnExpr e'), ii
     | Asm,ii -> Asm,ii
 
-  in f (k, bigf) st
+  in statf st
 
 and visitor_type_k_s = fun bigf t -> 
-  let f = bigf.ktype_s in
-  let rec k t = 
+  let rec typef t = bigf.ktype_s (k,bigf) t
+  and k t = 
     match t with
     | (q, (BaseType _,ii)) -> t
-    | (q, (Pointer t,ii)) -> let t' = f (k, bigf) t in  (q, (Pointer t',ii))
-    | (q, (Array (eopt, t),ii)) -> let t' = f (k, bigf) t in (q, (Array (eopt, t'),ii))              (* TODO? eopt  *)
+    | (q, (Pointer t,ii)) -> let t' = typef t in  (q, (Pointer t',ii))
+    | (q, (Array (eopt, t),ii)) -> let t' = typef t in (q, (Array (eopt, t'),ii))              (* TODO? eopt  *)
     | (q, (FunctionType (returnt, paramst),ii)) -> 
-        let returnt' = f (k, bigf) returnt in
+        let returnt' = typef returnt in
         let paramst' = 
         (match paramst with
         | Classic (ts, b, ii1) -> 
            Classic
-            (ts +> List.map (fun ((b, sopt, t,i2),i3) -> let t' = f (k, bigf) t in ((b, sopt, t',i2),i3)),
+            (ts +> List.map (fun ((b, sopt, t,i2),i3) -> let t' = typef t in ((b, sopt, t',i2),i3)),
              b, ii1)
         )
        in
@@ -342,15 +350,15 @@ and visitor_type_k_s = fun bigf t ->
         onefield_multivars +> List.map (fun (field, iicomma) ->
 
          (match field with
-         | Simple (s, t, ii) -> let t' = f (k, bigf) t in Simple (s, t', ii)
-         | BitField (sopt, t, expr, ii) -> let t' = f (k, bigf) t in BitField (sopt, t', expr, ii)    (* TODO expr *)
+         | Simple (s, t, ii) -> let t' = typef t in Simple (s, t', ii)
+         | BitField (sopt, t, expr, ii) -> let t' = typef t in BitField (sopt, t', expr, ii)    (* TODO expr *)
          (*
-         | DefEnum (s, t) -> let t' =   f (k, bigf) (nQ, (Enum (Some s, t), iitodovide)) in 
+         | DefEnum (s, t) -> let t' =   typef (nQ, (Enum (Some s, t), iitodovide)) in 
                 (match t' with 
                 | (_, (Enum (Some s, t'),iitodo)) -> DefEnum (s, t') 
                 | x -> Common.error_cant_have x
                 )
-         | DefStruct (s, t) -> let t' = f (k, bigf) (nQ, (StructUnion (Some s, t), iitodovide)) in
+         | DefStruct (s, t) -> let t' = typef (nQ, (StructUnion (Some s, t), iitodovide)) in
                 (match t' with
                 | (_, (StructUnion (Some s, t'), iitodo)) -> DefStruct (s, t')
                 | x -> Common.error_cant_have x
@@ -367,10 +375,10 @@ and visitor_type_k_s = fun bigf t ->
 
     | (q, (TypeName (s),ii)) -> t
 
-    | (q, (ParenType t,ii)) -> let t' = f (k, bigf) t in  (q, (ParenType t',ii))
+    | (q, (ParenType t,ii)) -> let t' = typef t in  (q, (ParenType t',ii))
 
 
-  in f (k, bigf) t
+  in typef t
 
 and visitor_decl_k_s = fun bigf d -> 
   let f = bigf.kdecl_s in 
@@ -412,3 +420,10 @@ and visitor_def_k_s = fun bigf d ->
         (s, (returnt', paramst', b, ii1), sto, (declxs_statxs'), ii2)
   in f (k, bigf) d 
 
+and visitor_info_k_s = fun bigf info -> 
+  let rec infof ii = bigf.kinfo_s (k, bigf) ii
+  and k i = i
+  in
+  infof info
+
+  

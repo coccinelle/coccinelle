@@ -140,5 +140,5 @@ let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) =
     );
     pr "}\n" ;
     );
-  let _status = Unix.system "dot /tmp/test.dot -Tps  -o /tmp/test.ps; gv /tmp/test.ps" in
+  let _status = Unix.system "dot /tmp/test.dot -Tps  -o /tmp/test.ps; gv /tmp/test.ps &" in
   ()

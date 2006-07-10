@@ -106,8 +106,10 @@ let model_for_ctl  cflow =
 
 module PRED = 
   struct
-    type predicate = Lib_engine.predicate
+    type t = Lib_engine.predicate
     let print_predicate x = 
+      Unparse_cocci.print_plus_flag := false;
+      Unparse_cocci.print_minus_flag := false;
       Lib_engine.pp_predicate x
   end
 

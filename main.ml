@@ -35,7 +35,7 @@ let main () =
 
     | [x] when !test_ctl_foo -> 
         let cfile = x in 
-        Cocci.full_engine cfile (Right (Test.foo_ctl ()))
+        Cocci.full_engine cfile (Right (Test.foo_ctl ()));
         
 
     | [x] when !test_mode -> 

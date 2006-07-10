@@ -57,7 +57,8 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
 let sp_from_file file iso    = Parse_cocci.process_for_ctl file iso false
 let spbis_from_file file iso = Parse_cocci.process file iso false
 
-let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) = fun s iso -> 
+let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) = 
+ fun s iso -> 
   begin
     write_file "/tmp/__cocci.cocci" (s);
     let rule_with_metavars_list = spbis_from_file "/tmp/__cocci.cocci" iso in
@@ -81,12 +82,16 @@ let flows astc =
   program +> map_filter (fun (e,_) -> 
     match e with
     | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
-        (try 
-          Some (Control_flow_c.ast_to_control_flow def)
-        with 
-        | Control_flow_c.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"; None
-        | Control_flow_c.DeadCode Some info -> pr2 ("deadcode detected: " ^ (Common.error_message stat.Parse_c.filename ("", info.charpos) )); None
-        )
+        let flow = Control_flow_c.ast_to_control_flow def in
+        (try begin Control_flow_c.deadcode_detection flow; Some flow end
+        with
+           | Control_flow_c.DeadCode None      -> 
+               pr2 "deadcode detected, but cant trace back the place"; 
+               None
+           | Control_flow_c.DeadCode Some info -> 
+               pr2 ("deadcode detected: " ^ (Common.error_message stat.Parse_c.filename ("", info.charpos) )); 
+               None
+          )
           
     | _ -> None
    )
@@ -154,7 +159,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         if !Flag.show_ctl then
           begin
             Ctltotex.totex "/tmp/__cocci_ctl.tex" sp ctls;
-            command2 "cd /tmp; latex __cocci_ctl.tex; dvips __cocci_ctl.dvi -o __cocci_ctl.ps; gv __cocci_ctl.ps";
+            command2 "cd /tmp; latex __cocci_ctl.tex; dvips __cocci_ctl.dvi -o __cocci_ctl.ps; gv __cocci_ctl.ps &";
           end;
 
         ctl, all_error_words

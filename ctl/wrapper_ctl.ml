@@ -26,16 +26,6 @@ type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
 	 * 'wit) list
 
 
-(* ********************************************************************** *)
-(* Module: PREDICATE (predicates for CTL formulae)                        *)
-(* ********************************************************************** *)
-
-module type PREDICATE =
-sig
-  type predicate
-  val print_predicate : predicate -> unit
-end
-
 
 
 (* ********************************************************************** *)
@@ -51,12 +41,12 @@ end
 module CTL_ENGINE_BIS =
   functor (SUB : Ctl_engine.SUBST) ->
     functor (G : Ctl_engine.GRAPH) ->
-      functor(P : PREDICATE) ->
+      functor(P : Ctl_engine.PREDICATE) ->
 struct
 
   open Ast_ctl
 
-  type predicate = P.predicate
+  type predicate = P.t
 
   module WRAPPER_ENV =
   struct
@@ -81,8 +71,18 @@ struct
       | PredVar v -> Format.print_string "<predvar>"
   end
 
+  module WRAPPER_PRED = 
+    struct 
+      type t = P.t * SUB.mvar Ast_ctl.modif
+      let print_predicate (pred, modif) = 
+        begin
+          P.print_predicate pred;
+          Format.print_string " with <modifTODO>"
+        end
+    end
+
   (* Instantiate a wrapped version of CTL_ENGINE *)
-  module WRAPPER_ENGINE = Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G)
+  module WRAPPER_ENGINE = Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G) (WRAPPER_PRED)
 
   (* Wrap a label function *)
   let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 

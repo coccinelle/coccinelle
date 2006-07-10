@@ -83,7 +83,11 @@ fun (pp_pred, pp_mvar) ctl ->
    end
 
  in
- pp_aux ctl
+ begin
+   open_box 0; (* Format.mli says that behaviour is undefined when there is no open_box *)
+   pp_aux ctl;
+   close_box ();
+ end
 
 
 
