@@ -85,6 +85,12 @@ let dots is_dots prev fn d =
   match (prev,Ast0.unwrap d) with
     (Some prev,Ast0.DOTS([])) ->
       mkres d (Ast0.DOTS []) prev prev
+  | (None,Ast0.DOTS([])) ->
+      let (_,_,index,mcodekind) = d in
+      (Ast0.DOTS [],
+       {(Ast0.get_info d)
+       with Ast0.attachable_start = false; Ast0.attachable_end = false},
+       index,mcodekind)
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend
