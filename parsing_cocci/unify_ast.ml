@@ -80,7 +80,7 @@ let rec unify_expression e1 e2 =
 	(unify_expression f1 f2) (unify_dots unify_expression args1 args2)
   | (Ast.Assignment(l1,op1,r1),Ast.Assignment(l2,op2,r2)) ->
       if unify_mcode op1 op2
-      then conjunct_bindings (unify_expression e1 e2) (unify_expression e1 e2)
+      then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.CondExpr(tst1,q1,thn1,c1,els1),Ast.CondExpr(tst2,q2,thn2,c2,els2)) ->
       conjunct_bindings (unify_expression tst1 tst2)
@@ -94,7 +94,7 @@ let rec unify_expression e1 e2 =
       if unify_mcode op1 op2 then unify_expression e1 e2 else return false
   | (Ast.Binary(l1,op1,r1),Ast.Binary(l2,op2,r2)) ->
       if unify_mcode op1 op2
-      then conjunct_bindings (unify_expression e1 e2) (unify_expression e1 e2)
+      then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
   | (Ast.ArrayAccess(ar1,lb1,e1,rb1),Ast.ArrayAccess(ar2,lb2,e2,rb2)) ->
       conjunct_bindings (unify_expression ar1 ar2) (unify_expression e1 e2)
