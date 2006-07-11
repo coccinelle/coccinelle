@@ -746,6 +746,7 @@ let simpleanno l phi res =
    Pretty_print_ctl.pp_ctl.
  *)
 
+(* drops negwits, not always appropriate, but more concise *)
 let not_negwits triples =
   let rec no_negwits = function
       A.AndWits(c1,c2) | A.OrWits(c1,c2) -> no_negwits c1 && no_negwits c2
@@ -798,7 +799,7 @@ let sat m phi check_conj =
     if(!Flag_ctl.verbose_ctl_engine)
     then snd (sat_annotree simpleanno2 m phi check_conj)
     else satloop m phi [] check_conj in
-  print_state "final result" res;
+(* print_state "final result" res;*)
   res
 ;;
 

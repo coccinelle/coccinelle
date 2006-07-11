@@ -12,13 +12,17 @@ module CTL = Ast_ctl
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
-let aftret = "_aftret" (* assumed to be a fresh variable *)
-
 type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
+
+let aftpred = (Lib_engine.After,CTL.Control)
+let retpred = (Lib_engine.Return,CTL.Control)
 
 (* --------------------------------------------------------------------- *)
 
 let wrap n ctl = (ctl,n)
+
+let aftret =
+  wrap 0 (CTL.Or(wrap 0 (CTL.Pred aftpred),wrap 0 (CTL.Pred retpred)))
 
 let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
@@ -62,10 +66,11 @@ let elim_opt =
     | (Ast.OptStm(stm)::(Ast.Dots(d,whencode,t) as u)::urest,_::d1::rest) ->
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
+	let rwu = Ast.rewrap d1 in
 	let not_dots = Ast.Dots(d,whencode,stm::t) in
 	[rw(Ast.Disj[rwd(Ast.DOTS(stm::(dots_list (u::urest) (d1::rest))));
 		      rwd(Ast.DOTS(dots_list (not_dots::urest)
-				     ((rw not_dots)::rest)))])]
+				     ((rwu not_dots)::rest)))])]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	let rw = Ast.rewrap stm in
@@ -151,9 +156,9 @@ and when_statement before after s =
     | Ast.Dots(d,whencode,t) as x ->
 	(match (before,after) with
 	  (None,None) -> x
-	| (None,Some aft) -> Ast.Dots(d,whencode,aft@t)
-	| (Some bef,None) -> Ast.Dots(d,whencode,bef@t)
-	| (Some bef,Some aft) -> Ast.Dots(d,whencode,bef@aft@t))
+	| (None,Some aft) -> Ast.Dots(d,whencode,t@aft)
+	| (Some bef,None) -> Ast.Dots(d,whencode,t@bef)
+	| (Some bef,Some aft) -> Ast.Dots(d,whencode,t@bef@aft))
     | Ast.FunDecl(header,lbrace,body,rbrace) ->
 	Ast.FunDecl(header,lbrace,when_dots None None body,rbrace)
     | Ast.OptStm(stm) -> Ast.OptStm(when_statement before after stm)
@@ -284,7 +289,7 @@ let aststmfvs s =
 let ctr = ref 0
 let fresh_var _ =
   let c = !ctr in
-  ctr := !ctr + 1;
+  (*ctr := !ctr + 1;*)
   Printf.sprintf "v%d" c
 
 let lctr = ref 0
@@ -386,8 +391,6 @@ and statement quantified stmt after =
   let wrapEF = wrapEF n in
   let wrapNot = wrapNot n in
   let wrapPred = wrapPred n in
-  let wrapLet = wrapLet n in
-  let wrapRef = wrapRef n in
   let make_seq = make_seq n in
   let make_cond = make_cond n in
   let quantify = quantify n in
@@ -526,30 +529,15 @@ and statement quantified stmt after =
 	List.fold_left
 	  (function rest ->
 	    function cur ->
-	      wrapAnd(wrapNot(wrapRef cur),rest))
+	      wrapAnd(wrapNot (dots_stmt quantified cur None),rest))
 	  e l in
       let rec loop after = function
 	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
-	| [(_,nots,cur)] -> add_nots nots (dots_stmt quantified cur after)
-	| (Some v,nots,cur)::rest ->
-	    if after = None
-	    then
-	      wrapLet(v,dots_stmt quantified cur None,
-		      wrapOr(add_nots nots (wrapRef v),loop after rest))
-	    else
-	      (* potential for code dplication here *)
-	      wrapLet(v,dots_stmt quantified cur None,
-		      wrapOr(add_nots nots (dots_stmt quantified cur after),
-			     loop after rest))
-	| (None,nots,cur)::rest ->
+	| [(nots,cur)] -> add_nots nots (dots_stmt quantified cur after)
+	| (nots,cur)::rest ->
 	    wrapOr(add_nots nots (dots_stmt quantified cur after),
 		   loop after rest) in
-      (match name_if_needed after with
-	None ->
-	  loop after (preprocess_disj stmt_dots_list)
-      |	Some (nm,vl) ->
-	  wrapLet(nm,vl,
-		  loop (Some(wrapRef nm)) (preprocess_disj stmt_dots_list)))
+      loop after (preprocess_disj stmt_dots_list)
   | Ast.Nest(stmt_dots) ->
       let dots_pattern = dots_stmt quantified stmt_dots None in
       (match after with
@@ -600,24 +588,14 @@ and statement quantified stmt after =
       (match (after,phi3) with (* add in the after code to make the result *)
 	  (None,None) -> wrap n (CTL.True)
 	| (Some after,None) ->
-	    let v = fresh_let_var() in
-	    wrapLet
-	      (v,after,
-	       wrapAnd(wrapAF(wrapOr(wrapRef v,wrapRef aftret)),
-		       wrapEF(wrapRef v)))
-	| (None,Some whencode) -> wrapAU(whencode,wrapRef aftret)
+	    wrapAnd(wrapAF(wrapOr(after,aftret)),wrapEF(after))
+	| (None,Some whencode) -> wrapAU(whencode,aftret)
 	| (Some after,Some whencode) ->
-	    let v = fresh_let_var() in
-	    let w = fresh_let_var() in
 	    if !useEU
 	    then
-	      wrapLet(v,after,
-		      (wrapLet(w,whencode,
-			       wrapAnd(wrapAU
-					 (wrapRef w,
-					  wrapOr(wrapRef v,wrapRef aftret)),
-				       wrapEU(wrapRef w,wrapRef v)))))
-	    else wrapAU(whencode,wrapOr(after,wrapRef aftret)))
+	      wrapAnd(wrapAU(whencode,wrapOr(after,aftret)),
+		      wrapEU(whencode,after))
+	    else wrapAU(whencode,wrapOr(after,aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
@@ -635,19 +613,7 @@ and statement quantified stmt after =
 		       (Some(dots_stmt new_quantified body
 			       (Some(make_seq end_brace after)))))))))
   | Ast.OptStm(stm) ->
-      (* doesn't work for ?f(); f();, ie when the optional thing is the same
-	 as the thing that comes immediately after *)
       failwith "OptStm should have been compiled away\n";
-      (*match after with
-	None ->
-	  let v = fresh_let_var() in
-	  wrapLet(v,statement quantified stm None,
-		  wrapOr(wrapRef v,wrapNot(wrapRef v)))
-      |	Some after ->
-	  let v = fresh_let_var() in
-	  wrapLet(v,after,
-		  wrapOr(statement quantified stm (Some (wrapRef v)),
-			 wrapRef v))*)
   | Ast.UniqueStm(stm) ->
       warning "arities not yet supported";
       statement quantified stm after
@@ -660,31 +626,361 @@ and statement quantified stmt after =
 Some v if the triple element needs a name, and None otherwise.  The second
 element is a list of names whose negations should be conjuncted with the
 term.  The third element is the original term *)
-and preprocess_disj = function
+and (preprocess_disj :
+       Ast.statement Ast.dots list ->
+	 (Ast.statement Ast.dots list * Ast.statement Ast.dots) list) =
+  function
     [] -> []
-  | [s] -> [(None,[],s)]
+  | [s] -> [([],s)]
   | cur::rest ->
       let template =
 	List.map (function r -> Unify_ast.unify_statement_dots cur r) rest in
       let processed = preprocess_disj rest in
       if List.exists (function Unify_ast.MAYBE -> true | _ -> false) template
       then
-	let v = fresh_let_var() in
-	(Some v, [], cur) ::
+	([], cur) ::
 	(List.map2
-	   (function ((used,nots,r) as x) ->
+	   (function ((nots,r) as x) ->
 	     function
-		 Unify_ast.MAYBE -> (used,v::nots,r)
+		 Unify_ast.MAYBE -> (cur::nots,r)
 	       | Unify_ast.NO -> x)
 	   processed template)
-      else (None, [], cur) :: processed
+      else ([], cur) :: processed
 
-and name_if_needed = function
-    None -> None
-  | Some x ->
-      (match CTL.unwrap x with
-	CTL.Ref _ -> None
-      |	_ -> let v = fresh_let_var() in Some (v,x))
+(* --------------------------------------------------------------------- *)
+(* Letify:
+Phase 1: Use a hash table to identify formulas that appear more than once.
+Phase 2: Replace terms by variables.
+Phase 3: Drop lets to the point as close as possible to the uses of their
+variables *)
+
+let formula_table =
+  (Hashtbl.create(50) :
+     ((cocci_predicate,string,Wrapper_ctl.info) CTL.generic_ctl,
+      int ref (* count *) * string ref (* name *) * bool ref (* processed *))
+     Hashtbl.t)
+
+let add_hash phi =
+  let (cell,_,_) =
+    try Hashtbl.find formula_table phi
+    with Not_found ->
+      let c = (ref 0,ref "",ref false) in
+      Hashtbl.add formula_table phi c;
+      c in
+  cell := !cell + 1
+
+let rec collect_duplicates f =
+  add_hash f;
+  match CTL.unwrap f with
+    CTL.False -> ()
+  | CTL.True -> ()
+  | CTL.Pred(p) -> ()
+  | CTL.Not(phi) -> collect_duplicates phi
+  | CTL.Exists(v,phi) -> collect_duplicates phi
+  | CTL.And(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.Or(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.Implies(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.AF(phi) -> collect_duplicates phi
+  | CTL.AX(phi) -> collect_duplicates phi
+  | CTL.AG(phi) -> collect_duplicates phi
+  | CTL.AU(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.EF(phi) -> collect_duplicates phi
+  | CTL.EX(phi) -> collect_duplicates phi
+  | CTL.EG(phi) -> collect_duplicates phi
+  | CTL.EU(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | _ -> failwith "not possible"
+
+let assign_variables _ =
+  Hashtbl.iter
+    (function formula ->
+      function (cell,str,_) -> if !cell > 1 then str := fresh_let_var())
+    formula_table
+
+let rec replace_formulas dec f =
+  let (ct,name,treated) = Hashtbl.find formula_table f in
+  let real_ct = !ct - dec in
+  if real_ct > 1
+  then
+    if not !treated
+    then
+      begin
+	treated := true;
+	let (acc,new_f) = replace_subformulas (dec + (real_ct - 1)) f in
+	((!name,new_f) :: acc, CTL.rewrap f (CTL.Ref !name))
+      end
+    else ([],CTL.rewrap f (CTL.Ref !name))
+  else replace_subformulas dec f
+
+and replace_subformulas dec f =
+  match CTL.unwrap f with
+    CTL.False -> ([],f)
+  | CTL.True -> ([],f)
+  | CTL.Pred(p) -> ([],f)
+  | CTL.Not(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.Not(new_phi)))
+  | CTL.Exists(v,phi) -> 
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.Exists(v,new_phi)))
+  | CTL.And(phi1,phi2) ->
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.And(new_phi1,new_phi2)))
+  | CTL.Or(phi1,phi2) ->
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.Or(new_phi1,new_phi2)))
+  | CTL.Implies(phi1,phi2) -> 
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.Implies(new_phi1,new_phi2)))
+  | CTL.AF(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.AF(new_phi)))
+  | CTL.AX(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.AX(new_phi)))
+  | CTL.AG(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.AG(new_phi)))
+  | CTL.AU(phi1,phi2) ->
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.AU(new_phi1,new_phi2)))
+  | CTL.EF(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.EF(new_phi)))
+  | CTL.EX(phi) ->
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.EX(new_phi)))
+  | CTL.EG(phi) -> 
+      let (acc,new_phi) = replace_formulas dec phi in
+      (acc,CTL.rewrap f (CTL.EG(new_phi)))
+  | CTL.EU(phi1,phi2) ->
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.EU(new_phi1,new_phi2)))
+  | _ -> failwith "not possible"
+
+let ctlfv_table =
+  (Hashtbl.create(50) :
+     ((cocci_predicate,string,Wrapper_ctl.info) CTL.generic_ctl,
+      string list (* fvs *) *
+	string list (* intersection of fvs of subterms *))
+     Hashtbl.t)
+
+let intersect l1 l2 = List.filter (function x -> List.mem x l2) l1
+let subset l1 l2 = List.for_all (function x -> List.mem x l2) l1
+
+let rec ctl_fvs f =
+  try let (fvs,_) = Hashtbl.find ctlfv_table f in fvs
+  with Not_found ->
+    let ((fvs,_) as res) =
+      match CTL.unwrap f with
+	CTL.False | CTL.True | CTL.Pred(_) -> ([],[])
+      | CTL.Not(phi) | CTL.Exists(_,phi)
+      | CTL.AF(phi) | CTL.AX(phi) | CTL.AG(phi)
+      | CTL.EF(phi) | CTL.EX(phi) | CTL.EG(phi) -> (ctl_fvs phi,[])
+      | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
+      | CTL.AU(phi1,phi2) | CTL.EU(phi1,phi2) ->
+	  let phi1fvs = ctl_fvs phi1 in
+	  let phi2fvs = ctl_fvs phi2 in
+	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
+      | CTL.Ref(v) -> ([v],[v])
+      | CTL.Let(v,term,body) ->
+	  let phi1fvs = ctl_fvs term in
+	  let phi2fvs = Common.minus_set (ctl_fvs body) [v] in
+	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs) in
+    Hashtbl.add ctlfv_table f res;
+    fvs
+
+let rev_order_bindings b =
+  let b =
+    List.map
+      (function (nm,term) ->
+	let (fvs,_) = Hashtbl.find ctlfv_table term in (nm,fvs,term))
+      b in
+  let rec loop bound = function
+      [] -> []
+    | unbound ->
+	let (now_bound,still_unbound) =
+	  List.partition (function (_,fvs,_) -> subset fvs bound)
+	    unbound in
+	let get_names = List.map (function (x,_,_) -> x) in
+	now_bound @ (loop ((get_names now_bound) @ bound) still_unbound) in
+  List.rev(loop [] b)
+
+let drop_bindings b f = (* innermost bindings first in b *)
+  let process_binary f ffvs inter nm term fail =
+    if List.mem nm inter
+    then CTL.rewrap f (CTL.Let(nm,term,f))
+    else CTL.rewrap f (fail()) in
+  let find_fvs f =
+    let _ = ctl_fvs f in Hashtbl.find ctlfv_table f in
+  let rec drop_one nm term f =
+    match CTL.unwrap f with
+      CTL.False ->  f
+    | CTL.True -> f
+    | CTL.Pred(p) -> f
+    | CTL.Not(phi) -> CTL.rewrap f (CTL.Not(drop_one nm term phi))
+    | CTL.Exists(v,phi) -> CTL.rewrap f (CTL.Exists(v,drop_one nm term phi))
+    | CTL.And(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ -> CTL.And(drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.Or(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ -> CTL.Or(drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.Implies(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ ->
+	    CTL.Implies(drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.AF(phi) -> CTL.rewrap f (CTL.AF(drop_one nm term phi))
+    | CTL.AX(phi) -> CTL.rewrap f (CTL.AX(drop_one nm term phi))
+    | CTL.AG(phi) -> CTL.rewrap f (CTL.AG(drop_one nm term phi))
+    | CTL.AU(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ -> CTL.AU(drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.EF(phi) -> CTL.rewrap f (CTL.EF(drop_one nm term phi))
+    | CTL.EX(phi) -> CTL.rewrap f (CTL.EX(drop_one nm term phi))
+    | CTL.EG(phi) -> CTL.rewrap f (CTL.EG(drop_one nm term phi))
+    | CTL.EU(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ -> CTL.EU(drop_one nm term phi1,drop_one nm term phi2))
+    | (CTL.Ref(v) as x) -> process_binary f [v] [v] nm term (function _ -> x)
+    | CTL.Let(v,term1,body) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ ->
+	    CTL.Let(v,drop_one nm term term1,drop_one nm term body)) in
+  List.fold_left
+    (function processed -> function (nm,_,term) -> drop_one nm term processed)
+    f b
+
+let pp = Format.print_string
+let box f = Format.open_box 1; f(); Format.close_box ()
+
+let char_and = "&"
+let char_or  = "v" 
+let char_not = "!" 
+
+let rec pp_ctl (pp_pred, pp_mvar) ctl =
+  let rec pp_aux = fun (ctl,index) ->
+    pp (string_of_int index);
+    match ctl with
+    | CTL.False              -> pp "False"
+    | CTL.True               -> pp "True"
+    | CTL.Pred(p)            -> pp_pred p
+    | CTL.Not(phi)           -> pp char_not; box (fun () -> pp_aux phi)
+    | CTL.Exists(v,phi)      ->  
+	pp "(";
+	pp ("Ex ");
+	pp_mvar v;
+	pp " . "; 
+	Format.print_cut();
+	box (fun () -> pp_aux phi); 
+	pp ")"
+    | CTL.And(phi1,phi2)     ->  pp_2args char_and phi1 phi2; 
+    | CTL.Or(phi1,phi2)      ->  pp_2args char_or phi1 phi2; 
+    | CTL.Implies(phi1,phi2) ->   pp_2args "=>" phi1 phi2;
+    | CTL.AF(phi1)             -> pp "AF("; pp_arg phi1; pp ")"
+    | CTL.AX(phi1)             -> pp "AX("; pp_arg phi1; pp ")"
+    | CTL.AG(phi1)             -> pp "AG("; pp_arg phi1; pp ")"
+    | CTL.EF(phi1)             -> pp "EF("; pp_arg phi1; pp ")"
+    | CTL.EX(phi1)	         -> pp "EX("; pp_arg phi1; pp ")"
+    | CTL.EG(phi1)		 -> pp "EG("; pp_arg phi1; pp ")"
+    | CTL.AU(phi1,phi2)        -> pp "A[";pp_2args_bis "U" phi1 phi2; pp "]" 
+    | CTL.EU(phi1,phi2)	 -> pp "E[";pp_2args_bis "U" phi1 phi2; pp "]" 
+    | CTL.Let (x,phi1,phi2)  -> 
+	pp ("Let"^" "^x); 
+	Format.print_space ();
+	pp "="; 
+	Format.print_space ();
+	box (fun () -> pp_aux phi1);
+	Format.print_space ();
+	pp "in"; 
+	Format.print_space ();
+	box (fun () -> pp_aux phi2);
+    | CTL.Ref(s)             -> 
+       (* pp "Ref(";  *)
+	pp s; 
+       (* pp ")" *)
+	
+  and pp_2args sym phi1 phi2 = 
+    pp "(";
+    box (fun () -> pp_aux phi1); 
+    Format.print_space();
+    pp sym;
+    Format.print_space ();
+    box (fun () -> pp_aux phi2);
+    pp ")";
+  and pp_2args_bis sym phi1 phi2 = 
+    box (fun () -> pp_aux phi1); 
+    Format.print_space();
+    pp sym;
+    Format.print_space();
+    box (fun () -> pp_aux phi2)
+      
+  and pp_arg phi = box (fun () -> pp_aux phi) in
+  
+  Format.open_box 0;
+  pp_aux ctl;
+  Format.close_box ()
+    
+
+let letify f =
+  Hashtbl.clear formula_table;
+  Hashtbl.clear ctlfv_table;
+  (* create a count of the number of occurrences of each subformula *)
+  collect_duplicates f;
+  (* give names to things that appear more than once *)
+  assign_variables();
+  (* replace duplicated formulas by their variables *)
+  let (bindings,new_f) = replace_formulas 0 f in
+(*
+  Printf.printf "original formula\n";
+  pp_ctl
+    ((function (x,_) -> Lib_engine.pp_predicate x),
+     (fun s -> Format.print_string s))
+    f;
+  Format.print_newline();
+  Printf.printf "updated formula\n";
+  pp_ctl
+    ((function (x,_) -> Lib_engine.pp_predicate x),
+     (fun s -> Format.print_string s))
+    new_f;
+  Format.print_newline();
+  Printf.printf "bindings used in the updated formula\n";
+  List.iter
+    (function (nm,b) ->
+      Printf.printf "%s: " nm;
+      pp_ctl
+	((function (x,_) -> Lib_engine.pp_predicate x),
+	 (fun s -> Format.print_string s))
+	b;
+      Format.print_newline())
+    bindings;
+*)
+  (* collect fvs of terms in bindings and new_f *)
+  List.iter (function f -> let _ = ctl_fvs f in ())
+    (new_f::(List.map (function (_,term) -> term) bindings));
+  (* sort bindings with uses before defs *)
+  let bindings = rev_order_bindings bindings in
+  (* insert bindings as lets into the formula *)
+  let res = drop_bindings bindings new_f in
+(*
+  Printf.printf "result\n";
+  pp_ctl
+    ((function (x,_) -> Lib_engine.pp_predicate x),
+     (fun s -> Format.print_string s))
+    res;
+  Format.print_newline();
+*)
+  res
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -696,18 +992,16 @@ let top_level t =
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
-      Unparse_cocci.unparse [(Ast.FUNCTION unopt,0)];
       let when_added = when_statement None None unopt in
       let _ = aststmfvs when_added in
-      statement [] when_added None
+      letify(statement [] when_added None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
-      Unparse_cocci.unparse [(Ast.CODE unopt,0)];
       let when_added = when_dots None None unopt in
       List.iter
 	(function x -> let _ = aststmfvs x in ())
 	(Ast.undots when_added);
-      dots_stmt [] when_added None
+      letify(dots_stmt [] when_added None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)
@@ -728,8 +1022,6 @@ let contains_dots =
       stop stop stop stop stop stop stop statement continue continue in
   res.V.combiner_top_level
 
-
-
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
@@ -742,17 +1034,7 @@ let asttoctl l =
       (function t ->
 	match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
       l in
-  List.map
-    (function x ->
-      if contains_dots x
-      then
-	let n = Ast.get_line x in
-	wrapLet n (aftret,
-		   wrapOr n (wrapPred n (Lib_engine.After,CTL.Control),
-			     wrapPred n (Lib_engine.Return,CTL.Control)),
-		   top_level x)
-      else top_level x)
-    l
+  List.map top_level l
 
 let pp_cocci_predicate (pred,modif) =
   Lib_engine.pp_predicate pred
