@@ -350,15 +350,15 @@ and program = programElement list
  *)
 and metavars_binding = (string, metavar_binding_kind) assoc
   and metavar_binding_kind = 
-  | MetaId        of string
-  | MetaFunc      of string
-  | MetaLocalFunc of string
-  | MetaExpr      of expression (* a "clean expr" *)
-  | MetaExprList  of expression list
-  | MetaType      of fullType
-  | MetaStmt      of statement
-  | MetaParam     of (parameterTypeDef * il)
-  | MetaParamList of (parameterTypeDef * il) list
+  | MetaIdVal        of string
+  | MetaFuncVal      of string
+  | MetaLocalFuncVal of string
+  | MetaExprVal      of expression (* a "clean expr" *)
+  | MetaExprListVal  of expression list
+  | MetaTypeVal      of fullType
+  | MetaStmtVal      of statement
+  | MetaParamVal     of (parameterTypeDef * il)
+  | MetaParamListVal of (parameterTypeDef * il) list
 
 (******************************************************************************)
 

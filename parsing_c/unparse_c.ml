@@ -730,7 +730,7 @@ let pp_program file x =
   | Ast_cocci.MetaExpr (s,_typeTODO) -> 
       let v = List.assoc (term s) env in
       (match v with 
-      | Ast_c.MetaExpr exp -> 
+      | Ast_c.MetaExprVal exp -> 
           pp_expression exp
       | _ -> raise Impossible
       )
@@ -826,7 +826,7 @@ let pp_program file x =
       (try 
        let v = List.assoc (term s) env in
         (match v with 
-       | Ast_c.MetaId id -> 
+       | Ast_c.MetaIdVal id -> 
           pr id
        | _ -> raise Impossible
        )

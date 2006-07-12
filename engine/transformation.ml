@@ -216,7 +216,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
      (* get binding, assert =*=,  distribute info in i1 *)
       let v = binding +> List.assoc (ida : string) in
       (match v with
-      | B.MetaExpr expa -> 
+      | B.MetaExprVal expa -> 
           if (expa =*= Abstract_line_c.al_expr expb)
           then
             distribute_minus_plus_e i1 expb   binding
@@ -522,7 +522,7 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun 
       (* get binding, assert =*=,  distribute info in i1 *)
         let v = binding +> List.assoc (ida : string) in
       (match v with
-      | B.MetaId sa -> 
+      | B.MetaIdVal sa -> 
           if(sa =$= sb) 
           then
             let ii' = tag_symbols [sa, i1, mc1] ii binding in

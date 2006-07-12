@@ -13,8 +13,8 @@ type ('pred, 'mvar) wrapped_ctl =
     ('pred * 'mvar Ast_ctl.modif,  'mvar, info) Ast_ctl.generic_ctl
 
 type ('value, 'pred) wrapped_binding = 
-  | ClassicVar of 'value
-  | PredVar of 'pred Ast_ctl.modif
+  | ClassicVal of 'value
+  | PredVal of 'pred Ast_ctl.modif
 
 type ('pred,'state,'mvar,'value) labelfunc =
     'pred -> ('state * ('mvar, 'value) Ast_ctl.generic_substitution) list
@@ -59,22 +59,22 @@ struct
     let eq_mvar = SUB.eq_mvar
     let eq_val wv1 wv2 = 
       match (wv1,wv2) with
-	| (ClassicVar(v1),ClassicVar(v2)) -> SUB.eq_val v1 v2
-	| (PredVar(v1),PredVar(v2))       -> v1 = v2   (* FIX ME: ok? *)
+	| (ClassicVal(v1),ClassicVal(v2)) -> SUB.eq_val v1 v2
+	| (PredVal(v1),PredVal(v2))       -> v1 = v2   (* FIX ME: ok? *)
 	| _                               -> false
     let merge_val wv1 wv2 = 
       match (wv1,wv2) with
-	| (ClassicVar(v1),ClassicVar(v2)) -> ClassicVar(SUB.merge_val v1 v2)
+	| (ClassicVal(v1),ClassicVal(v2)) -> ClassicVal(SUB.merge_val v1 v2)
 	| _                               -> wv1       (* FIX ME: ok? *)
 
 
     let print_mvar x = SUB.print_mvar x
     let print_value x = 
       match x with
-	ClassicVar v -> SUB.print_value v
-      | PredVar(A.Modif v) -> P.print_predicate v
-      | PredVar(A.UnModif v) -> P.print_predicate v
-      |	PredVar(A.Control) -> Format.print_string "no value"
+	ClassicVal v -> SUB.print_value v
+      | PredVal(A.Modif v) -> P.print_predicate v
+      | PredVal(A.UnModif v) -> P.print_predicate v
+      |	PredVal(A.Control) -> Format.print_string "no value"
   end
 
   module WRAPPER_PRED = 
@@ -99,13 +99,13 @@ struct
       = fun oldlabelfunc ->  fun (p, predvar) ->
 	let penv = 
 	  match predvar with
-	    | A.Modif(x)   -> [A.Subst(x,PredVar(A.Modif(p)))]
-	    | A.UnModif(x) -> [A.Subst(x,PredVar(A.UnModif(p)))]
+	    | A.Modif(x)   -> [A.Subst(x,PredVal(A.Modif(p)))]
+	    | A.UnModif(x) -> [A.Subst(x,PredVal(A.UnModif(p)))]
 	    | A.Control    -> [] in
 	let conv_sub sub =
 	  match sub with
-	    | A.Subst(x,v)    -> A.Subst(x,ClassicVar(v))
-	    | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVar(v)) in
+	    | A.Subst(x,v)    -> A.Subst(x,ClassicVal(v))
+	    | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
 	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),A.TopWit) in
         List.map conv_trip (oldlabelfunc p)
 
@@ -138,7 +138,7 @@ struct
   let unwrap_wits wit =
     let mkth th =
       Common.map_filter
-	(function A.Subst(x,ClassicVar(v)) -> Some (x,v) | _ -> None)
+	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
 	th in
     let wits = dnf wit in
     let rec no_negwits = function
@@ -149,7 +149,7 @@ struct
     let rec loop neg acc = function
 	A.AndWits(c1,c2) -> (loop neg acc c1) @ (loop neg acc c2)
       | A.OrWits(_,_) -> raise (NEVER_CTL "or is not possible")
-      | A.Wit(st,[A.Subst(x,PredVar(A.Modif(v)))],anno,wit) ->
+      | A.Wit(st,[A.Subst(x,PredVal(A.Modif(v)))],anno,wit) ->
 	  (match wit with
 	    A.TopWit -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
@@ -167,7 +167,7 @@ struct
 
 	  
   (* ------------------ Partial matches ------------------ *)
-  (* Limitation: this only gives information about terms with PredVars, which
+  (* Limitation: this only gives information about terms with PredVals, which
      can be optimized to only those with modifs *)
   let collect_predvar_bindings res =
     let wits = List.map (fun (_,_,w) -> w) res in
@@ -175,7 +175,7 @@ struct
 	A.AndWits(c1,c2) | A.OrWits(c1,c2) -> (loop c1) @ (loop c2)
       | A.Wit(st,th,anno,wit) ->
 	  (Common.map_filter
-	    (function A.Subst(_,(PredVar(_) as x)) -> Some (st,x) | _ -> None)
+	    (function A.Subst(_,(PredVal(_) as x)) -> Some (st,x) | _ -> None)
 	    th) @
 	  (loop wit)
       | A.NegWit(wit) -> loop wit

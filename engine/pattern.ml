@@ -116,15 +116,15 @@ let check_add_metavars_binding = fun (k, valu) binding ->
   | Some (valu') ->
       if
         (match valu, valu' with
-        | Ast_c.MetaId a, Ast_c.MetaId b -> a =$= b
-        | Ast_c.MetaFunc a, Ast_c.MetaFunc b -> a =$= b
+        | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+        | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
           (* al_expr  before comparing !!! and accept when they match.
              Note that here we have Astc._expression, so it is a match modulo 
              isomorphism (there is no metavariable involved here, just 
              isomorphisms).
              => TODO call isomorphism_c_c instead of =*=
           *)
-        | Ast_c.MetaExpr a, Ast_c.MetaExpr b -> 
+        | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
             Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
         | _ -> raise Todo
 
@@ -143,10 +143,10 @@ let check_add_metavars_binding = fun (k, valu) binding ->
   | None -> 
       let valu' = 
         (match valu with
-        | Ast_c.MetaId a -> Ast_c.MetaId a
-        | Ast_c.MetaFunc a -> Ast_c.MetaFunc a
-        | Ast_c.MetaExpr a -> 
-            Ast_c.MetaExpr (Abstract_line_c.al_expr a)
+        | Ast_c.MetaIdVal a -> Ast_c.MetaIdVal a
+        | Ast_c.MetaFuncVal a -> Ast_c.MetaFuncVal a
+        | Ast_c.MetaExprVal a -> 
+            Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
         | _ -> raise Todo
         ) 
       in
@@ -188,11 +188,11 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       (match A.unwrap ida with
       | (A.Id ida) when term ida =$= idb ->   return true
       | (A.MetaId ida)        ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaId idb))
+	  check_add_metavars_binding (term ida, (Ast_c.MetaIdVal idb))
       | (A.MetaFunc ida)      ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaFunc idb))
+	  check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
       | (A.MetaLocalFunc ida) ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFunc idb))
+	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
             (* todo: as usual, handle the Opt/Unique/Multi *)
       | _ -> return false) 
         >&&>
@@ -233,7 +233,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   (* cas general: a Meta can match everything *)
   (* todo: if stb is a compound ? *)
   | A.MetaStmt (ida),  stb -> 
-      check_add_metavars_binding (term ida, Ast_c.MetaStmt (stb))
+      check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
 
   (* not me?: MetaStmList ? *)
   | A.MetaStmtList _, _ -> raise Todo
@@ -366,7 +366,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
           failwith ("I have not the type information. Certainly a pb in " ^
                     "annotate_typer.ml")
       ) >&&>
-      check_add_metavars_binding (term ida, Ast_c.MetaExpr (expb))
+      check_add_metavars_binding (term ida, Ast_c.MetaExprVal (expb))
 
 
   | A.MetaConst _, _ -> raise Todo
@@ -577,7 +577,7 @@ and (match_arguments:
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
                 check_add_metavars_binding 
-                  (term ida, Ast_c.MetaExprList (startxs)) >&&>
+                  (term ida, Ast_c.MetaExprListVal (startxs)) >&&>
                 match_arguments seqstyle xs endxs
              )) (return false)
 
@@ -631,7 +631,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 
       (* cas general *)
       A.MetaType ida,  typb -> 
-	check_add_metavars_binding (term ida, B.MetaType typb)
+	check_add_metavars_binding (term ida, B.MetaTypeVal typb)
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
 	let match_sign signa signb = 
@@ -730,7 +730,7 @@ and (match_params:
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
                 check_add_metavars_binding
-		  (term ida, Ast_c.MetaParamList (startxs)) >&&>
+		  (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
                 match_params seqstyle xs endxs
              )) (return false)
 
@@ -744,7 +744,7 @@ and (match_params:
 
           | A.MetaParam (ida), y::ys -> 
               (* todo: use quaopt, hasreg ? *)
-              check_add_metavars_binding (term ida, Ast_c.MetaParam (y)) >&&> 
+              check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&> 
               match_params seqstyle xs ys
 
           | A.Param (ida, typa), ((hasreg, idb, typb, _), ii)::ys -> 
@@ -777,7 +777,7 @@ and (match_params:
 and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb -> 
   match A.unwrap ida with
   | (A.Id ida) when (term ida) =$= idb -> return true
-  | (A.MetaId ida) -> check_add_metavars_binding (term ida, Ast_c.MetaId (idb))
+  | (A.MetaId ida) -> check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
 
   (* todo: and other cases ? too late? or need more info on idb !! its type ? *)
 

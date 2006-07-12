@@ -51,15 +51,15 @@ and pp_statement x =
 
 
 let rec pp_binding_kind = function
-  | MetaId        s -> Format.print_string ("id " ^ s)
-  | MetaFunc      s -> Format.print_string ("func " ^ s)
-  | MetaLocalFunc s -> Format.print_string ("localfunc " ^ s)
-  | MetaExpr      expr -> pp_expression expr
-  | MetaExprList  expr_list -> raise Todo
-  | MetaType      typ -> raise Todo
-  | MetaStmt      statement -> raise Todo
-  | MetaParam     params -> raise Todo
-  | MetaParamList params -> raise Todo
+  | MetaIdVal        s -> Format.print_string ("id " ^ s)
+  | MetaFuncVal      s -> Format.print_string ("func " ^ s)
+  | MetaLocalFuncVal s -> Format.print_string ("localfunc " ^ s)
+  | MetaExprVal      expr -> pp_expression expr
+  | MetaExprListVal  expr_list -> raise Todo
+  | MetaTypeVal      typ -> raise Todo
+  | MetaStmtVal      statement -> raise Todo
+  | MetaParamVal     params -> raise Todo
+  | MetaParamListVal params -> raise Todo
 
 and pp_binding subst = 
   begin
