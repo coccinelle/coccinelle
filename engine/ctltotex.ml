@@ -180,6 +180,9 @@ let pred2c = function
   | Lib_engine.After -> ("\\msf{After}",5)
   | Lib_engine.Return -> ("\\msf{Return}",5)
   | Lib_engine.Paren(s) -> ("\\msf{Paren}("^s^")",7+(String.length s))
+  | Lib_engine.Label(s) -> ("\\msf{Label}("^s^")",7+(String.length s))
+  | Lib_engine.PrefixLabel(s) ->
+      ("\\msf{PrefixLabel}("^s^")",13+(String.length s))
   | Lib_engine.Match(re) ->
       let s = Unparse_cocci.rule_elem_to_string re in
       let (s,len) = texify s in

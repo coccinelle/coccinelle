@@ -307,7 +307,7 @@ let fresh_let_var _ =
 let sctr = ref 0
 let fresh_metavar _ =
   let c = !sctr in
-  sctr := !sctr + 1;
+(*sctr := !sctr + 1;*)
   Printf.sprintf "_S%d" c
 
 let get_unquantified quantified vars =
