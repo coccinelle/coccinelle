@@ -1,9 +1,9 @@
 type mvar = string
 
 type metavar_binding_kind2 = 
-  | NormalMetaVar of Ast_c.metavar_binding_kind
-  | ParenVar of string
-  | LabelValue of int list
+  | NormalMetaVal of Ast_c.metavar_binding_kind
+  | ParenVal of string
+  | LabelVal of int list
 
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 

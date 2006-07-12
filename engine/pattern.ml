@@ -141,16 +141,16 @@ let check_add_metavars_binding = fun (k, valu) binding ->
       else _MatchFailure
 
   | None -> 
-      let valu' = 
-        (match valu with
-        | Ast_c.MetaIdVal a -> Ast_c.MetaIdVal a
-        | Ast_c.MetaFuncVal a -> Ast_c.MetaFuncVal a
-        | Ast_c.MetaExprVal a -> 
-            Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
-        | _ -> raise Todo
-        ) 
-      in
-      _GoodMatch   (binding +> insert_assoc (k, valu'))
+     let valu' = 
+      (match valu with
+      | Ast_c.MetaIdVal a -> Ast_c.MetaIdVal a
+      | Ast_c.MetaFuncVal a -> Ast_c.MetaFuncVal a
+      | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
+      | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
+      | _ -> raise Todo
+      ) 
+     in
+     _GoodMatch   (binding +> insert_assoc (k, valu'))
   )
   
 
@@ -160,8 +160,10 @@ let check_add_metavars_binding = fun (k, valu) binding ->
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
 let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
- fun re (node, s) -> 
-  match A.unwrap re, node with
+ fun re node -> 
+  match A.unwrap re, F.unwrap node with
+  | A.MetaRuleElem _, _ -> return true
+
   | _, F.Enter | _, F.Exit 
   | _, F.Fake
   | _, F.CaseNode _ 
@@ -170,10 +172,9 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | _, F.NestedFunCall _ -> raise Todo
 
-  (* TODO metaRuleElem *)
-
-  (* todo?: it can match a MetaStmt too !! and we have to get all the  
+  (* obsolete?: it can match a MetaStmt too !! and we have to get all the  
      concerned nodes *)
+
   | A.SeqStart _, F.StartBrace _ -> return true
   | A.SeqEnd _,   F.EndBrace   _ -> return true
   | A.SeqStart _, _ | _, F.StartBrace _ -> return false
@@ -228,10 +229,11 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   (* this is done in match_re_node, or match_re_decl *)
   | A.FunHeader _, _  | A.Decl _, _ | A.SeqStart _, _  | A.SeqEnd _, _ -> 
       raise Impossible 
+  | A.MetaRuleElem _, _ -> raise Impossible
 
 
   (* cas general: a Meta can match everything *)
-  (* todo: if stb is a compound ? *)
+  (* obsolete? if stb is a compound ? *)
   | A.MetaStmt (ida),  stb -> 
       check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
 
@@ -284,20 +286,6 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | A.Return _, (B.Jump (B.Return), ii) -> raise Todo
   | A.ReturnExpr _, (B.Jump (B.ReturnExpr e), ii) -> raise Todo
 
-
-
-  | _, (B.ExprStatement (Some _) , _)                                     
-  | _, (B.Selection  (B.If _), _)                      
-  | _, (B.Iteration  (B.While _), _)                            
-  | _, (B.Iteration  (B.For _), _) 
-  | _, (B.Iteration  (B.DoWhile _), _)                             
-  | _, (B.Jump (B.Return), _)                                              
-  | _, (B.Jump (B.ReturnExpr _), _) -> 
-      return false
-
-
-
-
   | _, (B.Compound _, ii) -> raise Todo (* or Impossible ? *)
 
   | _, (B.ExprStatement None, ii) -> raise Todo
@@ -310,6 +298,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | _, (B.Jump (B.Break), ii)         -> return false
   | _, (B.Jump (B.Continue), ii)      -> return false
 
+  | _, _ -> return false
 
 
 (*--------------------------------------------------------------------------- *)
@@ -508,24 +497,6 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.OptExp _,_ -> raise Todo
 
 
-  | _, (B.Ident idb , typ, ii) -> return false
-  | _, (B.Constant (B.String (sb, _)), typ,ii)     -> return false
-  | _, (B.Constant (B.Char   (sb, _)), typ,ii)   -> return false
-  | _, (B.Constant (B.Int    (sb)), typ,ii)     -> return false
-  | _, (B.Constant (B.Float  (sb, ftyp)), typ,ii) -> return false
-  | _, (B.FunCall (eb1, ebs), typ,ii) ->  return false
-  | _, (B.Assignment (eb1, opb, eb2), typ,ii) ->  return false
-  | _, (B.CondExpr (eb1, eb2, eb3), typ,ii) -> return false
-  | _, (B.Postfix (eb, opb), typ,ii) -> return false
-  | _, (B.Infix (eb, opb), typ,ii) -> return false
-  | _, (B.Unary (eb, opb), typ,ii) -> return false
-  | _, (B.Binary (eb1, opb, eb2), typ,ii) -> return false 
-  | _, (B.ArrayAccess (eb1, eb2), typ,ii) -> return false
-  | _, (B.RecordAccess (eb, idb), typ,ii) -> return false
-  | _, (B.RecordPtAccess (eb, idb), typ,ii) -> return false
-  | _, (B.Cast (typb, eb), typ,ii) -> return false
-  | _, (B.ParenExpr (eb), typ,ii) -> return false
-
   (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Sequence _,_,_) -> return false
   | _, (B.SizeOfExpr _,_,_) -> return false
@@ -536,6 +507,8 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | _, (B.NoExpr,_,_) -> return false
   | _, (B.MacroCall _,_,_) -> return false
   | _, (B.MacroCall2 _,_,_) -> return false
+
+  | _, _ -> return false
 
   
 (* ------------------------------------------------------------------------------ *)

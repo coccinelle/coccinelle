@@ -31,34 +31,41 @@ type sequence_processing_style = Ordered | Unordered
 
 (******************************************************************************)
 
-let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer) = fun re (node, nodestr) -> 
+let rec (transform_re_node: 
+           (Ast_cocci.rule_elem, Control_flow_c.node) transformer) = 
+ fun re node -> 
   fun binding -> 
 
-  match A.unwrap re, node with
-  (* rene cant have found that a state containing a fake/exit/... should be transformed *)
+  match A.unwrap re, F.unwrap node with
+  (* rene cant have found that a state containing a fake/exit/... should be 
+     transformed *)
   | _, F.Enter | _, F.Exit -> raise Impossible
-  | _, F.Fake -> raise Impossible 
-  | _, F.CaseNode _ -> raise Impossible
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> raise Impossible
+  | _, F.Fake              -> raise Impossible 
+  | _, F.CaseNode _        -> raise Impossible
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> 
+      raise Impossible
 
   | _, F.NestedFunCall _ -> raise Todo
+
+  | A.MetaRuleElem mcode, _ -> 
+      failwith "todo: handle MetaRuleElem in transformation"
 
   (* todo?: it can match a MetaStmt too !! and we have to get all the concerned nodes *)
   | A.SeqStart _mcode, F.StartBrace (level, statement) -> 
       pr2 "transformation: dont handle yet braces well. I pass them";
-      F.StartBrace (level, statement), nodestr
+      (F.StartBrace (level, statement)) +> F.rewrap node 
 
   | A.SeqEnd _mcode, F.EndBrace level -> 
      (* problematic *)
       pr2 "transformation: dont handle yet braces well. I pass them";
-      F.EndBrace (level), nodestr
+      F.EndBrace (level) +> F.rewrap node
 
   | A.SeqStart _, _ | _, F.StartBrace _ -> raise NoMatch
   | A.SeqEnd _, _   | _, F.EndBrace _ -> raise NoMatch
 
 
   | A.Decl decla, F.Declaration declb -> 
-      F.Declaration (transform_de_decl decla declb  binding), nodestr
+      F.Declaration (transform_de_decl decla declb  binding) +> F.rewrap node
   | A.Decl _, _ | _, F.Declaration _ -> raise NoMatch
 
   | A.FunHeader (stoa, ida, oparen, paramsa, cparen),
@@ -73,19 +80,29 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
       let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
 
 
-      let seqstyle = (match A.unwrap paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo) in
-      let paramsb' = transform_params seqstyle (A.undots paramsa) paramsb    binding in
-
+      let seqstyle = 
+        (match A.unwrap paramsa with 
+        | A.DOTS _ -> Ordered 
+        | A.CIRCLES _ -> Unordered 
+        | A.STARS _ -> raise Todo) 
+      in
+      let paramsb' = 
+        transform_params seqstyle (A.undots paramsa) paramsb    binding 
+      in
 
       if isvaargs then raise Todo;
       let iidotsb' = iidotsb in (* todo *)
 
       let typb' = (retb, paramsb', isvaargs, (iidotsb', iiparensb')) in
-      Control_flow_c.HeadFunc (idb', typb' , stob', compoundb, (List.hd infoidb', iistob', iicpb)), nodestr
+      Control_flow_c.HeadFunc 
+        (idb', typb' , stob', compoundb, (List.hd infoidb', iistob', iicpb))
+        +> F.rewrap node
+      
 
   | A.FunHeader _,_ | _,F.HeadFunc _ -> raise NoMatch
 
-  | _, F.Statement st -> Control_flow_c.Statement (transform_re_st re st binding), nodestr
+  | _, F.Statement st -> 
+      Control_flow_c.Statement (transform_re_st re st binding) +> F.rewrap node
 
 
 
@@ -93,19 +110,19 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
 
 (* ------------------------------------------------------------------------------ *)
 
-and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun re st -> 
+and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = 
+ fun re st -> 
   fun binding -> 
 
   match A.unwrap re, st with
   (* this is done in transform_re_node, or transform_re_decl *)
-  | A.FunHeader _, _ -> raise Impossible 
-  | A.Decl _, _ -> raise Impossible 
-  | A.SeqStart _, _ -> raise Impossible 
-  | A.SeqEnd _, _ -> raise Impossible 
+  | A.FunHeader _, _  | A.Decl _, _ | A.SeqStart _, _ | A.SeqEnd _, _ -> 
+      raise Impossible 
 
   (* cas general: a Meta can match everything *)
-  (* todo: if stb is a compound ? *)
-  | A.MetaStmt ((ida,_,i1)),  stb -> raise Todo
+  (* obsolete: if stb is a compound ? *)
+  | A.MetaStmt ((ida,_,i1)),  stb -> 
+      failwith "I cant have been called. I can only transform MetaRuleElem."
 
   | A.MetaStmtList _, _ -> raise Todo
 
@@ -136,28 +153,20 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
 
 
 
-  (* It is important to put this case before the one that follows, cos
-     want to transform a switch, even if cocci does not have a switch statement,
-     because we may have put an Exp, and so have to transform the expressions
-     inside the switch.
-   *)
+  (* It is important to put this case before the one that follows, cos want to
+     transform a switch, even if cocci does not have a switch statement, because
+     we may have put an Exp, and so have to transform the expressions inside the
+     switch. *)
   | A.Exp exp, statement -> 
       (* todo?: assert have done something  statement' <> statement *)
-      statement +> Visitor_c.visitor_statement_k_s { Visitor_c.default_visitor_c_s with
+      statement +> Visitor_c.visitor_statement_k_s { 
+        Visitor_c.default_visitor_c_s with
         Visitor_c.kexpr_s = (fun (k,_) e -> 
           let e' = k e in (* go inside first *)
           try transform_e_e exp e'   binding 
           with NoMatch -> e'
           )
           }
-
-  | _, (B.ExprStatement (Some ec) , ii)                                     -> raise NoMatch
-  | _, (B.Selection  (B.If (eb, st1b, st2b)), ii)                           -> raise NoMatch
-  | _, (B.Iteration  (B.While (eb, stb)), ii)                               -> raise NoMatch
-  | _, (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> raise NoMatch
-  | _, (B.Iteration  (B.DoWhile (eb, stb)), ii)                             -> raise NoMatch
-  | _, (B.Jump (B.Return), ii)                                              -> raise NoMatch
-  | _, (B.Jump (B.ReturnExpr e), ii)                                        -> raise NoMatch
 
   | _, (B.Compound _, ii) -> raise Todo (* or Impossible ? *)
 
@@ -170,6 +179,9 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
   | _, (B.Jump (B.Goto _), ii)        -> raise Impossible
   | _, (B.Jump (B.Break), ii)         -> raise Impossible
   | _, (B.Jump (B.Continue), ii)      -> raise Impossible
+
+  | _, _ -> raise NoMatch
+
 
 (* ------------------------------------------------------------------------------ *)
 
@@ -211,6 +223,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   fun binding -> 
   
   match A.unwrap ep, ec with
+
   (* general case: a MetaExpr can match everything *)
   | A.MetaExpr ((ida,_,i1),_typeopt),  expb -> 
      (* get binding, assert =*=,  distribute info in i1 *)
@@ -218,8 +231,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       (match v with
       | B.MetaExprVal expa -> 
           if (expa =*= Abstract_line_c.al_expr expb)
-          then
-            distribute_minus_plus_e i1 expb   binding
+          then distribute_minus_plus_e i1 expb   binding
           else raise NoMatch
       | _ -> raise Impossible
       )
@@ -232,16 +244,20 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       (B.Ident idb', typ,ii')
 
 
-  | A.Constant ((A.Int ia),i1,mc1) ,                ((B.Constant (B.Int ib) , typ,ii)) when ia =$= ib ->  
+  | A.Constant ((A.Int ia),i1,mc1) , 
+    ((B.Constant (B.Int ib) , typ,ii)) when ia =$= ib ->  
         let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Int ib), typ,ii'
-  | A.Constant ((A.Char ia),i1,mc1) ,                ((B.Constant (B.Char (ib,chartype)) , typ,ii)) when ia =$= ib ->  
+  | A.Constant ((A.Char ia),i1,mc1) , 
+   ((B.Constant (B.Char (ib,chartype)) , typ,ii)) when ia =$= ib ->  
         let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Char (ib, chartype)), typ,ii'
-  | A.Constant ((A.String ia),i1,mc1) ,                ((B.Constant (B.String (ib,stringtype)) , typ,ii)) when ia =$= ib ->  
+  | A.Constant ((A.String ia),i1,mc1) ,               
+   ((B.Constant (B.String (ib,stringtype)) , typ,ii)) when ia =$= ib ->  
         let ii' = tag_symbols [ "fake", i1, mc1 ] ii binding in
         B.Constant (B.String (ib, stringtype)), typ,ii'
-  | A.Constant ((A.Float ia),i1,mc1) ,                ((B.Constant (B.Float (ib,ftyp)) , typ,ii)) when ia =$= ib ->  
+  | A.Constant ((A.Float ia),i1,mc1) ,                
+   ((B.Constant (B.Float (ib,ftyp)) , typ,ii)) when ia =$= ib ->  
         let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
         B.Constant (B.Float (ib,ftyp)), typ,ii'
 
@@ -249,18 +265,30 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   | A.FunCall (ea, i2, eas, i3),  (B.FunCall (eb, ebs), typ,ii) -> 
       let ii' = tag_symbols [i2;i3] ii  binding in
       let eas' = A.undots eas in
-      let seqstyle = (match A.unwrap eas with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo)  in
+      let seqstyle = 
+        (match A.unwrap eas with 
+        | A.DOTS _ -> Ordered 
+        | A.CIRCLES _ -> Unordered 
+        | A.STARS _ -> raise Todo)  
+      in
       
-      B.FunCall (transform_e_e ea eb binding,  transform_arguments seqstyle eas' ebs   binding), typ,ii'
+      B.FunCall (transform_e_e ea eb binding,  
+                 transform_arguments seqstyle eas' ebs   binding), 
+      typ,ii'
 
 
-  | A.Assignment (ea1, (opa,i1,mc1), ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
+  | A.Assignment (ea1, (opa,i1,mc1), ea2),   
+    (B.Assignment (eb1, opb, eb2), typ,ii) -> 
       if Pattern.equal_assignOp opa opb 
       then
         let ii' = tag_symbols ["fake",i1,mc1] ii  binding  in
-        B.Assignment (transform_e_e ea1 eb1 binding, opb, transform_e_e ea2 eb2 binding), typ, ii'
+        B.Assignment (transform_e_e ea1 eb1 binding, 
+                      opb, 
+                      transform_e_e ea2 eb2 binding), 
+        typ, ii'
       else raise NoMatch
-  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
+  | A.CondExpr (ea1, _, ea2opt, _, ea3), 
+    (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
       raise Todo
 
   | A.Postfix (ea, (opa,_,_)), (B.Postfix (eb, opb), typ,ii) -> 
@@ -275,18 +303,21 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       if (Pattern.equal_binaryOp opa opb)
       then 
         let ii' = tag_symbols ["fake", i1, mc1] ii binding in
-        B.Binary (transform_e_e ea1 eb1   binding, opb,  transform_e_e ea2 eb2  binding),  typ, ii'
+        B.Binary (transform_e_e ea1 eb1   binding, 
+                  opb,  
+                  transform_e_e ea2 eb2  binding),  
+        typ, ii'
       else raise NoMatch
 
 
   | A.ArrayAccess (ea1, _, ea2, _), (B.ArrayAccess (eb1, eb2), typ,ii) -> 
       raise Todo
   | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), typ,ii) ->
-  raise Todo
+      raise Todo
 
 
 
-  | A.RecordPtAccess (ea, fleche, ida), (B.RecordPtAccess (eb, idb), typ, ii) -> 
+  | A.RecordPtAccess (ea, fleche, ida), (B.RecordPtAccess (eb, idb), typ, ii) ->
       (match ii with
       | [i1;i2] -> 
           let (idb', i2') = transform_ident ida (idb, [i2])   binding in
@@ -309,7 +340,8 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
 
-  (* todo: in fact can also have the Edots family inside nest, as in if(<... x ... y ...>) *)
+  (* todo: in fact can also have the Edots family inside nest, as in 
+     if(<... x ... y ...>) *)
   | A.Edots _, _    -> raise Impossible (* can have EComma only in arg lists *)
 
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
@@ -324,27 +356,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   | A.OptExp _,_ -> raise Todo
 
 
-  (* because of Exp, cant put a raise Impossible,  have to put a raise NoMatch *)
-  | _, (B.Ident idb , typ, ii) -> raise NoMatch
-  | _, (B.Constant (B.String (sb, _)), typ,ii)     -> raise NoMatch
-  | _, (B.Constant (B.Char   (sb, _)), typ,ii)   -> raise NoMatch
-  | _, (B.Constant (B.Int    (sb)), typ,ii)     -> raise NoMatch
-  | _, (B.Constant (B.Float  (sb, ftyp)), typ,ii) -> raise NoMatch
-  | _, (B.FunCall (eb1, ebs), typ,ii) ->  raise NoMatch
-  | _, (B.Assignment (eb1, opb, eb2), typ,ii) ->  raise NoMatch
-  | _, (B.CondExpr (eb1, eb2, eb3), typ,ii) -> raise NoMatch
-  | _, (B.Postfix (eb, opb), typ,ii) -> raise NoMatch
-  | _, (B.Infix (eb, opb), typ,ii) -> raise NoMatch
-  | _, (B.Unary (eb, opb), typ,ii) -> raise NoMatch
-  | _, (B.Binary (eb1, opb, eb2), typ,ii) -> raise NoMatch 
-  | _, (B.ArrayAccess (eb1, eb2), typ,ii) -> raise NoMatch
-  | _, (B.RecordAccess (eb, idb), typ,ii) -> raise NoMatch
-  | _, (B.RecordPtAccess (eb, idb), typ,ii) -> raise NoMatch
-  | _, (B.Cast (typb, eb), typ,ii) -> raise NoMatch
-  | _, (B.ParenExpr (eb), typ,ii) -> raise NoMatch
+ (* Because of Exp, cant put a raise Impossible; have to put a raise NoMatch; *)
 
-
-  (* have not a counter part in coccinelle, for the moment *)
+ (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Sequence _,_,_) -> raise NoMatch
   | _, (B.SizeOfExpr _,_,_) -> raise NoMatch
   | _, (B.SizeOfType _,_,_) -> raise NoMatch
@@ -355,13 +369,25 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
   | _, (B.MacroCall _,_,_) -> raise NoMatch
   | _, (B.MacroCall2 _,_,_) -> raise NoMatch
 
+  | _, _ -> raise NoMatch
+
+
 
 
 
 
 (* ------------------------------------------------------------------------------ *)
 
-and (transform_arguments: sequence_processing_style -> (Ast_cocci.expression list, ((Ast_c.expression, Ast_c.fullType * (Ast_c.storage * Ast_c.il)) Common.either * Ast_c.il) list) transformer)  = fun seqstyle eas ebs ->
+and (transform_arguments: 
+   sequence_processing_style -> 
+   (Ast_cocci.expression list, 
+    ((Ast_c.expression, 
+      Ast_c.fullType * (Ast_c.storage * Ast_c.il)) 
+     Common.either * 
+     Ast_c.il) 
+    list) 
+   transformer) = 
+ fun seqstyle eas ebs ->
   fun binding -> 
     (* TODO and when have dots ? *)
     match eas, ebs with
@@ -384,7 +410,12 @@ and (transform_arguments: sequence_processing_style -> (Ast_cocci.expression lis
     | _ -> raise Impossible
 
 
-and (transform_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef list, ((Ast_c.parameterTypeDef * Ast_c.il) list)) transformer) = fun seqstyle pas pbs ->
+and (transform_params: 
+   sequence_processing_style -> 
+   (Ast_cocci.parameterTypeDef list, 
+    ((Ast_c.parameterTypeDef * Ast_c.il) list)) 
+   transformer) = 
+ fun seqstyle pas pbs ->
   fun binding -> 
     match pas, pbs with
     | [], [] -> []
@@ -393,17 +424,21 @@ and (transform_params: sequence_processing_style -> (Ast_cocci.parameterTypeDef 
         [transform_param pa pb binding, ii]
     | pa::pas, (pb, ii)::pbs -> 
 	(match (A.unwrap pa,pas) with
-	  ((A.PComma i1), pa::pas) ->
+        | ((A.PComma i1), pa::pas) ->
             let ii' = tag_symbols [i1] ii binding in
             (transform_param pa pb binding, ii')::
 	    transform_params seqstyle pas pbs  binding
 	| _ ->
             assert (null ii);
-            ((transform_param pa pb binding),[])::transform_params seqstyle pas pbs binding)
+            ((transform_param pa pb binding),[])::
+              transform_params seqstyle pas pbs binding
+        )
 
     | _ -> raise Impossible
 
-and (transform_param: (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) transformer) = fun pa pb  -> 
+and (transform_param: 
+     (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) transformer) = 
+ fun pa pb  -> 
   fun binding -> 
     match A.unwrap pa, pb with
     | A.Param (ida, typa), ((hasreg, idb, typb, (iihasreg, iidb))) -> 
@@ -417,7 +452,8 @@ and (transform_param: (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) tra
     | _ -> raise Todo
 
 (* ------------------------------------------------------------------------------ *)
-and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = fun typa typb -> 
+and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = 
+ fun typa typb -> 
   fun binding -> 
     match (A.unwrap typa,typb) with
     | (A.Type(cv,ty1),((qu,il),ty2)) ->
@@ -427,7 +463,8 @@ and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = fun ty
     | _ -> raise Todo   
 
 
-and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa typb -> 
+and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = 
+ fun typa typb -> 
   fun binding -> 
     match A.unwrap typa, typb with
       (* cas general *)
@@ -487,7 +524,8 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa ty
         
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
-    | A.StructUnionName((sa,i1,mc1), (sua,i2,mc2)), (qu, (B.StructUnionName ((sb,level), sub), ii)) -> 
+    | A.StructUnionName((sa,i1,mc1), (sua,i2,mc2)), 
+      (qu, (B.StructUnionName ((sb,level), sub), ii)) -> 
         if Pattern.equal_structUnion  sua sub && sa =$= sb
         then
           let ii' = tag_symbols ["fake",i2,mc2; sa,i1,mc1] ii  binding in
@@ -511,7 +549,8 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) = fun typa ty
 
 (* ------------------------------------------------------------------------------ *)
 
-and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun ida (idb, ii) -> 
+and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
+ fun ida (idb, ii) -> 
   fun binding -> 
     match A.unwrap ida, idb with
     | A.Id (sa,i1,mc1), sb when sa =$= sb -> 
@@ -537,8 +576,12 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = fun 
 
 (******************************************************************************)
 
-and (tag_symbols: (string Ast_cocci.mcode) list -> Ast_c.il -> Ast_c.metavars_binding -> Ast_c.il) = 
-  fun xs ys binding ->
+and (tag_symbols: 
+      (string Ast_cocci.mcode) list -> 
+      Ast_c.il -> 
+      Ast_c.metavars_binding -> 
+      Ast_c.il) = 
+ fun xs ys binding ->
   assert (List.length xs = List.length ys);
   zip xs ys +> List.map (fun ((s1,_,x),   (s2, (oldmcode, oldenv))) -> 
     (* assert s1 = s2 ? no more cos now have some "fake" string *)
@@ -570,12 +613,14 @@ and distribute_minus_plus_e mcode  expr binding =
         )
   | Ast_cocci.PLUS -> raise Impossible
 
-(* Could do the minus more easily by extending visitor_c.ml and adding a function applied
-   to every mcode. But as I also need to do the add_left and add_right, which
-   requires to do a different thing for each case, I have not defined this not-so-useful
-   visitor.
-*)
-(* op = minusize operator, lop = stuff to do on the left, rop = stuff to do on the right *)
+
+(* Could do the minus more easily by extending visitor_c.ml and adding a 
+   function applied to every mcode. But as I also need to do the add_left and 
+   add_right, which requires to do a different thing for each case, I have not
+   defined this not-so-useful visitor. *)
+(* op = minusize operator, lop = stuff to do on the left, rop = stuff to 
+   do on the right *)
+
 and distribute_minus_plus_e_apply_op (op, lop, rop) expr = 
   let rec aux (op, lop, rop) expr = match expr with
   | Ast_c.Constant (Ast_c.Int i),  typ,[i1] -> 
@@ -657,18 +702,21 @@ and nothing_left  x = x
 
 let rec (transform: 
     Lib_engine.transformation_info ->
-     (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-       (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun xs cflow -> 
-  let cflow' = 
-    (* find the node, transform, update the node,    and iter for all elements *)
-    xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
-      let node  = acc#nodes#assoc nodei in (* subtil: not cflow#nodes but acc#nodes *)
+    (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+    (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
+ fun xs cflow -> 
+  (* find the node, transform, update the node,  and iter for all elements *)
+
+   xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
+      (* subtil: not cflow#nodes but acc#nodes *)
+      let node  = acc#nodes#assoc nodei in 
+
       pr2 "transform one node";
       let node' = transform_re_node rule_elem node binding in
+
       (* assert that have done something *)
       assert (not (node =*= node'));
+
       acc#replace_node (nodei, node')
      ) cflow
-  in
-  cflow'
 

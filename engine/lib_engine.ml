@@ -1,9 +1,9 @@
 type mvar = string
 
 type metavar_binding_kind2 = 
-  | NormalMetaVar of Ast_c.metavar_binding_kind
-  | ParenVar of string
-  | LabelValue of int list
+  | NormalMetaVal of Ast_c.metavar_binding_kind
+  | ParenVal of string
+  | LabelVal of int list
 
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 
@@ -24,8 +24,16 @@ type transformation_info =
 let pp = Format.print_string 
 
 let pp_binding_kind2 = function
-  | ParenVar s -> pp ("parenvar(" ^ s ^ ")")
-  | NormalMetaVar x -> Pretty_print_c.pp_binding_kind x
+  | ParenVal s -> pp ("parenvar(" ^ s ^ ")")
+  | NormalMetaVal x -> Pretty_print_c.pp_binding_kind x
+  | LabelVal xs -> 
+      begin
+        pp "labelval";
+        pp "(";
+        Common.print_between (fun () -> pp ",") Format.print_int xs;
+        pp ")";
+      end
+
   
 let pp_predicate = function 
   | TrueBranch -> pp "TrueBranch"

@@ -57,7 +57,7 @@ let rec pp_binding_kind = function
   | MetaExprVal      expr -> pp_expression expr
   | MetaExprListVal  expr_list -> raise Todo
   | MetaTypeVal      typ -> raise Todo
-  | MetaStmtVal      statement -> raise Todo
+  | MetaStmtVal      statement -> pp_statement statement
   | MetaParamVal     params -> raise Todo
   | MetaParamListVal params -> raise Todo
 

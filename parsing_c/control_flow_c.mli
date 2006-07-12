@@ -1,6 +1,7 @@
 
-type node = node1 * string
-and node1 =
+type node = node1 * string (* to debug *)
+and node1 = node2 * int list (* the labels. Trick used by ctl engine *)
+and node2 =
     HeadFunc of Ast_c.definition
   | Enter
   | Exit
@@ -24,6 +25,10 @@ exception DeadCode          of Common.parse_info option
 exception CaseNoSwitch      of Common.parse_info
 exception OnlyBreakInSwitch of Common.parse_info
 exception NoEnclosingLoop   of Common.parse_info
+
+val unwrap : node -> node2
+val rewrap : node -> node2 -> node
+val extract_labels : node -> int list
 
 val ast_to_control_flow :
   Ast_c.definition -> (node, edge) Ograph_extended.ograph_extended

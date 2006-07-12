@@ -4,17 +4,17 @@ open Ograph_extended
 
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
-(*
-Take list of pred  and for each pred return where in control flow
-it matches (and the set of subsitutions for this match).
-*)
+(* Take list of pred  and for each pred return where in control flow
+it matches (and the set of subsitutions for this match). *)
 
 let (labels_for_ctl: 
-       (nodei * Control_flow_c.node) list -> 
-         (Lib_engine.predicate ->
-           (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution) list
-         ))
-  = fun nodes ->
+  (nodei * Control_flow_c.node) list -> 
+  (Lib_engine.predicate ->
+    (nodei * 
+     (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) 
+     Ast_ctl.generic_substitution)
+    list)) = 
+  fun nodes ->
 
    (fun pred -> 
 
@@ -25,74 +25,87 @@ let (labels_for_ctl:
          Format.print_space ();
          Lib_engine.pp_predicate pred;
          );
-       
      end;
 
-       let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
-         (* todo? put part of this code in pattern ? *)
-         (match pred, node with
-         | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
-             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))])]
-         | Lib_engine.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
-             [(nodei,         [(s -->   (Lib_engine.ParenVar (i_to_s bracelevel)))])]
-         | Lib_engine.Paren _, _ -> 
-             []
+     let nodes' = nodes +> map (fun (nodei, node) -> 
+      (* todo? put part of this code in pattern ? *)
+      (match pred, Control_flow_c.unwrap node with
+      | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
+         [(nodei,     [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
+      | Lib_engine.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
+          [(nodei,    [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
+      | Lib_engine.Paren _, _ -> []
 
-         | Lib_engine.Match (re),    node -> 
-             let substs = Pattern.match_re_node re (node, nodestring)  (Ast_c.emptyMetavarsBinding) in
-             if substs <> []
-             then
-               substs +> List.map (fun subst -> 
-                 (nodei, 
-                  subst +> List.map (fun (s, meta) -> 
-                    s --> Lib_engine.NormalMetaVar meta
-                                    )
+      | Lib_engine.Label s, _ -> 
+          let labels = Control_flow_c.extract_labels node in
+          [(nodei, [(s --> (Lib_engine.LabelVal labels))])]
+      | Lib_engine.PrefixLabel s, _ -> 
+          let labels = Control_flow_c.extract_labels node in
+          let prefixes = Common.inits labels in
+          prefixes +> List.map (fun prefixlabels -> 
+            (nodei, [(s --> (Lib_engine.LabelVal prefixlabels))])
+          )
+          
+
+      | Lib_engine.Match (re), _node -> 
+          let substs = Pattern.match_re_node re node Ast_c.emptyMetavarsBinding
+          in
+          if substs <> []
+          then
+            substs +> List.map (fun subst -> 
+              (nodei, 
+               subst +> List.map (fun (s, meta) -> 
+                 s --> Lib_engine.NormalMetaVal meta
                  )
-                )
-             else []
-
-         | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
-         | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
-         | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, []]
-         | Lib_engine.TrueBranch , _ -> []
-         | Lib_engine.FalseBranch, _ -> []
-         | Lib_engine.After, _ -> []
-         | Lib_engine.Return, node -> 
-             (match node with
-             (* todo? should match the Exit code ? *)
-             (* todo: one day try also to match the special function
-                such as panic(); 
-              *)
-             | Control_flow_c.Statement (Ast_c.Jump (Ast_c.Return), _) -> 
-                 [nodei, []]
-             | Control_flow_c.Statement (Ast_c.Jump (Ast_c.ReturnExpr _), _) -> 
-                 [nodei, []]
-             | _ -> []
+              )
              )
-         )
-       ) +> List.concat
-       in
-       if !Flag_engine.debug_engine
-       then begin 
-         pp_init (fun () -> 
-           Format.print_string "labeling: result =";
-           Format.print_space ();
-         
-           pp_do_in_box (fun () -> 
-             Format.print_string "{";
-             Common.print_between (fun () -> Format.print_string ";"; Format.print_cut())
-               (fun (nodei, subst) -> 
-                 Format.print_int nodei;
-                 pp_do_in_box (fun () -> Lib_engine.pp_binding2_ctlsubst subst)
-               ) nodes';
-            Format.print_string "}";
-             );
-           )
-       end;
-       nodes'
-       ) 
+          else []
 
-let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> ('a, 'b) ograph_extended) = fun cflow ->
+      | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
+      | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
+      | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, []]
+      | Lib_engine.TrueBranch , _ -> []
+      | Lib_engine.FalseBranch, _ -> []
+      | Lib_engine.After, _ -> []
+      | Lib_engine.Return, node -> 
+          (match node with
+            (* todo? should match the Exit code ? *)
+            (* todo: one day try also to match the special function
+               such as panic(); *)
+          | Control_flow_c.Statement (Ast_c.Jump (Ast_c.Return), _) -> 
+              [nodei, []]
+          | Control_flow_c.Statement (Ast_c.Jump (Ast_c.ReturnExpr _), _) -> 
+              [nodei, []]
+          | _ -> []
+          )
+      )
+                               ) +> List.concat
+     in
+     if !Flag_engine.debug_engine
+     then begin 
+       pp_init (fun () -> 
+         Format.print_string "labeling: result =";
+         Format.print_space ();
+         
+         pp_do_in_box (fun () -> 
+           Format.print_string "{";
+           Common.print_between 
+             (fun () -> Format.print_string ";"; Format.print_cut())
+             (fun (nodei, subst) -> 
+               Format.print_int nodei;
+               pp_do_in_box (fun () -> Lib_engine.pp_binding2_ctlsubst subst)
+             ) nodes';
+           Format.print_string "}";
+                      );
+               )
+     end;
+     nodes'
+   ) 
+
+let (control_flow_for_ctl: 
+       (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+         ('a, 'b) ograph_extended) = 
+ fun cflow ->
  (* could erase info on nodes, and edge,  because they are not used by rene *)
   cflow
 
@@ -101,8 +114,16 @@ let (control_flow_for_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_ext
    It seems that one hypothesis of the SAT algorithm is that each node as at least a successor.
    todo?: erase some fake nodes ? (and adjust the edges accordingly)
 *)
-let (fix_flow_ctl: (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun  flow ->
-  let (exitnodei, (node, nodestr)) = flow#nodes#tolist +> List.find (function (nodei, (Control_flow_c.Exit, nodes)) -> true | _ -> false) in
+let (fix_flow_ctl: 
+   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+   (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
+ fun  flow ->
+  let (exitnodei, node) = flow#nodes#tolist +> List.find (fun (nodei, node) -> 
+    match Control_flow_c.unwrap node with
+    | Control_flow_c.Exit -> true 
+    | _ -> false
+    )
+  in
   let flow = flow#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) in
 
   assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
@@ -178,15 +199,19 @@ let (mysat:
 
 
 let (satbis_to_trans_info: 
-  (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  Lib_engine.predicate) list
-     -> (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list) = fun xs -> 
-       xs +> List.map (fun (nodei, binding, pred) -> 
+  (nodei * 
+   (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  
+   Lib_engine.predicate) 
+  list -> 
+  (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list) = 
+  fun xs -> 
+    xs +> List.map (fun (nodei, binding, pred) -> 
          let binding' = binding +> map_filter (fun (s, kind2) -> 
              (match kind2 with
-             | Lib_engine.NormalMetaVar kind -> Some (s, kind)
-             | Lib_engine.ParenVar _ -> 
-                 (* I thought it was Impossible, but it does not seems so *)
-                 None
+             | Lib_engine.NormalMetaVal kind -> Some (s, kind)
+             (* I thought it was Impossible, but it does not seems so *)
+             | Lib_engine.ParenVal _ -> None
+             | Lib_engine.LabelVal _ -> None
              )
            ) in
          let pred' = 
@@ -203,8 +228,10 @@ let pp_pred = fun (pred, smodif) ->
  Lib_engine.pp_predicate pred
 
 let pp_ctlcocci_no_mcodekind ctl = 
-  Unparse_cocci.print_plus_flag := false;
-  Unparse_cocci.print_minus_flag := false;
-  Format.open_box 0;
-  Pretty_print_ctl.pp_ctl (pp_pred,(fun s -> Format.print_string s)) ctl;
-  Format.close_box ()
+  begin
+    Unparse_cocci.print_plus_flag := false;
+    Unparse_cocci.print_minus_flag := false;
+    Common.pp_init (fun () -> 
+      Pretty_print_ctl.pp_ctl (pp_pred,(fun s -> Format.print_string s)) ctl;
+      );
+  end
