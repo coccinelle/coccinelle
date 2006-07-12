@@ -22,6 +22,7 @@ type transformation_info =
     (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
 
 val pp_binding_kind2 : metavar_binding_kind2 -> unit
-val pp_binding2_ctlsubst : (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution -> unit
+val pp_binding2_ctlsubst : 
+    (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution -> unit
 val pp_predicate : predicate -> unit
 val predicate_to_string : predicate -> string
