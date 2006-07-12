@@ -292,6 +292,12 @@ let fresh_var _ =
   (*ctr := !ctr + 1;*)
   Printf.sprintf "v%d" c
 
+let labctr = ref 0
+let fresh_label_var s =
+  let c = !labctr in
+  labctr := !labctr + 1;
+  Printf.sprintf "%s%d" s c
+
 let lctr = ref 0
 let fresh_let_var _ =
   let c = !lctr in
@@ -338,6 +344,8 @@ let make_match n code =
     if !onlyModif
     then wrapPred n (Lib_engine.Match(code),CTL.Control)
     else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
+
+let make_raw_match n code = wrapPred n (Lib_engine.Match(code),CTL.Control)
 
 let seq_fvs quantified term1 term2 =
   let t1fvs = get_unquantified quantified (Hashtbl.find free_table term1) in
@@ -395,14 +403,36 @@ and statement quantified stmt after =
   let make_cond = make_cond n in
   let quantify = quantify n in
   let make_match = make_match n in
+  let make_raw_match = make_raw_match n in
 
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
-      let stmt_fvs = Hashtbl.find free_table (Statement stmt) in
-      let fvs = get_unquantified quantified stmt_fvs in
-      make_seq (quantify fvs (make_match ast)) after
+      (match Ast.unwrap ast with
+	Ast.MetaStmt((s,i,d)) ->
+	  let label_var = fresh_label_var "lab" in
+	  let metamatch =
+	    make_match
+	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
+	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
+	  let prelabel_pred =
+	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
+	  let first_node =
+	    let fvs = get_unquantified quantified [s] in
+	    wrapAnd(quantify fvs (make_raw_match ast),
+		    wrapAnd(metamatch,label_pred)) in
+	  let rest_nodes = wrapAnd(metamatch,prelabel_pred) in
+	  let last_node =
+	    match after with
+	      Some after -> wrapAnd(wrapNot(prelabel_pred),after)
+	    | None -> wrapNot(prelabel_pred) in
+	  quantify [label_var]
+	    (make_seq first_node (Some (wrapAU(rest_nodes,last_node))))
+      |	_ ->
+	  let stmt_fvs = Hashtbl.find free_table (Statement stmt) in
+	  let fvs = get_unquantified quantified stmt_fvs in
+	  make_seq (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,body,rbrace) ->
-      let v = fresh_var() in
+      let v = fresh_label_var "p" in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
@@ -601,7 +631,7 @@ and statement quantified stmt after =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
       let function_header = quantify hfvs (make_match header) in
       let new_quantified = Common.union_set bfvs quantified in
-      let v = fresh_var() in
+      let v = fresh_label_var "p" in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in

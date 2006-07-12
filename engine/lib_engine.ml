@@ -34,6 +34,8 @@ let pp_predicate = function
   | Return -> pp "Return"
   | Paren s -> pp "Paren("; pp s; pp ")"
   | Match re -> Unparse_cocci.rule_elem "" re
+  | Label s -> pp "Label("; pp s; pp ")"
+  | PrefixLabel s -> pp "PrefixLabel("; pp s; pp ")"
 
 and pp_binding2 subst = 
   begin
