@@ -20,10 +20,10 @@ and node1 =
 
 type edge = Direct
 
-exception DeadCode of Common.parse_info option
-exception CaseNoSwitch of Common.parse_info
+exception DeadCode          of Common.parse_info option
+exception CaseNoSwitch      of Common.parse_info
 exception OnlyBreakInSwitch of Common.parse_info
-exception NoEnclosingLoop of Common.parse_info
+exception NoEnclosingLoop   of Common.parse_info
 
 val ast_to_control_flow :
   Ast_c.definition -> (node, edge) Ograph_extended.ograph_extended

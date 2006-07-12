@@ -1,24 +1,25 @@
 open Common
 open Commonop
 
-(* tricks used to handle the ambiguity in the grammar with the typedef which
-   impose a cooperation between the lexer and the parser
+(* Tricks used to handle the ambiguity in the grammar with the typedef which
+   impose a cooperation between the lexer and the parser.
 
-   an example by hughes casse:
+   An example by hughes casse:
       NOTE: in the symbol table, local definition must replace type definition
-		in order to correctly parse local variable in functions body.
-		This is the only way to correctly handle this kind of exception,
-		that is,
+	    in order to correctly parse local variable in functions body.
+	    This is the only way to correctly handle this kind of exception,
+	    that is,
 
-		typedef ... ID;
-		int f(int *p) {int ID; return (ID) * *p;}
-		If ID isn't overload, last expression is parsed as a type cast,
-		if it isn't, this a multiplication.
+	    typedef ... ID;
+	    int f(int *p) {int ID; return (ID) * *p;}
+	    If ID isn't overload, last expression is parsed as a type cast,
+	    if it isn't, this a multiplication.
 
 
-  why parse_typedef_fix2 ? 
-   cos when introduce new variable (for instance when declare parameters for a function such as int var_t), 
-   then the var_t must not be lexed as a typedef,  so we must disable temporaly the typedef mechanism to allow
+  Why parse_typedef_fix2 ? 
+   Cos when introduce new variable (for instance when declare parameters 
+   for a function such as int var_t), then the var_t must not be lexed as a 
+   typedef,  so we must disable temporaly the typedef mechanism to allow
    variable with same name as a typedef.
 *)
 
@@ -58,8 +59,10 @@ type typedef = TypeDefI of string | IdentI of string
      let new_scope() = typedef := []::!typedef
      let del_scope() = typedef := List.tl !typedef
      
-     let add_typedef  s = typedef := (TypeDefI s::(List.hd !typedef))::(List.tl !typedef)
-     let add_ident s    = typedef := (IdentI   s::(List.hd !typedef))::(List.tl !typedef)
+     let add_typedef  s = 
+       typedef := (TypeDefI s::(List.hd !typedef))::(List.tl !typedef)
+     let add_ident s    = 
+       typedef := (IdentI   s::(List.hd !typedef))::(List.tl !typedef)
 *)
 
 
@@ -87,12 +90,14 @@ let del_scope() =
 
 let add_typedef  s = 
   begin 
-    scoped_typedef := (TypeDefI s::(List.hd !scoped_typedef))::(List.tl !scoped_typedef);
+    scoped_typedef := 
+      (TypeDefI s::(List.hd !scoped_typedef))::(List.tl !scoped_typedef);
     Hashtbl.add !typedef s (TypeDefI s);
   end
 let add_ident s    = 
   begin
-    scoped_typedef := (IdentI   s::(List.hd !scoped_typedef))::(List.tl !scoped_typedef);
+    scoped_typedef := 
+      (IdentI   s::(List.hd !scoped_typedef))::(List.tl !scoped_typedef);
     Hashtbl.add !typedef s (IdentI s);
   end
 

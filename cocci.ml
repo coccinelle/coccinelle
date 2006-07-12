@@ -1,6 +1,8 @@
 open Common open Commonop
 
+(* --------------------------------------------------------------------- *)
 (*
+
  This file is a kind of driver. It gathers all the important functions 
  from Coccinelle in one place. The different entities of the Coccinelle system:
   - files
@@ -24,13 +26,13 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
     program +> map_filter (fun (e,_) -> 
       match e with
-      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
-          (match c with
+      | Ast_c.Definition ((funcs, _, _, compound,_)) -> 
+          (match compound with
           | [Right st] -> Some st
           | _ -> None
           )
       | _ -> None
-                          )
+      )
       +> List.hd
     
   end
@@ -41,13 +43,13 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
     program +> map_filter (fun (e,_) -> 
       match e with
-      | Ast_c.Definition ((funcs, _, _, c,_)) -> 
-          (match c with
+      | Ast_c.Definition ((funcs, _, _, compound,_)) -> 
+          (match compound with
           | [Right (Ast_c.ExprStatement (Some e),ii)] -> Some e
           | _ -> None
           )
       | _ -> None
-                          )
+      )
       +> List.hd
     
   end
@@ -66,9 +68,10 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
       rule_with_metavars_list +> List.hd +> snd +> List.hd +> (function x ->
 	match Ast_cocci.unwrap x with
 	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
-	| _ -> raise Not_found) in
+	| _ -> raise Not_found)
+    in
     match Ast_cocci.unwrap stmt with
-      Ast_cocci.Atomic(re) -> re
+    | Ast_cocci.Atomic(re) -> re
     | _ -> failwith "only atomic patterns allowed"
   end
 
@@ -89,7 +92,9 @@ let flows astc =
                pr2 "deadcode detected, but cant trace back the place"; 
                None
            | Control_flow_c.DeadCode Some info -> 
-               pr2 ("deadcode detected: " ^ (Common.error_message stat.Parse_c.filename ("", info.charpos) )); 
+               pr2 ("deadcode detected: " ^ 
+                    (Common.error_message 
+                       stat.Parse_c.filename ("", info.charpos) )); 
                None
           )
           
@@ -109,26 +114,30 @@ let one_ctl ctls = List.hd (List.hd ctls)
 let print_xxxxxxxxxxxxxxxxx () = 
   pr2 "-----------------------------------------------------------------------"
 
+
+
 let full_engine cfile coccifile_and_iso_or_ctl = 
   print_xxxxxxxxxxxxxxxxx ();
   pr2 ("processing C file: " ^ cfile);
   print_xxxxxxxxxxxxxxxxx ();
   command2 ("cat " ^ cfile);
+  
   let astc     = cprogram_from_file cfile in
-
+  
   let (ctl, error_words) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
+
         print_xxxxxxxxxxxxxxxxx ();
         pr2 ("processing semantic patch file: " ^ coccifile);
 	(match isofile with
-	  Some isofile -> pr2 ("with isos from: " ^ isofile)
+	| Some isofile -> pr2 ("with isos from: " ^ isofile)
 	| None -> ());
-        let astcocci = spbis_from_file coccifile isofile in
         print_xxxxxxxxxxxxxxxxx ();
         command2 ("cat " ^ coccifile);
         pr2 "";
   
+        let astcocci = spbis_from_file coccifile isofile in
         let rule_with_metavars_list = astcocci in
 
         (* extract_all_error_words *)
@@ -143,7 +152,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                     | Ast_cocci.Ident id ->
 			(match Ast_cocci.unwrap id with 
 			  Ast_cocci.Id (s,_,_) -> push2 s res
-			| _ -> pr2 "warning: does not support complex error words")
+			| _ ->
+                            pr2 "warning: does not support complex error words")
                     | _ -> pr2 "warning: does not support complex error words"
                     )
                                   );
@@ -155,19 +165,22 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
         let sp = sp_from_file coccifile isofile in
         let ctls = (ctls sp) in
+
         if List.length ctls <> 1 
-        then failwith "I handle cocci patch with only one region for the moment";
+        then failwith "I handle cocci patch with only one region";
+
         let ctl = one_ctl ctls in
 
         if !Flag.show_ctl then
           begin
             Ctltotex.totex "/tmp/__cocci_ctl.tex" sp ctls;
-            command2 "cd /tmp; latex __cocci_ctl.tex; dvips __cocci_ctl.dvi -o __cocci_ctl.ps; gv __cocci_ctl.ps &";
+            command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
+                      "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
+                      "gv __cocci_ctl.ps &");
           end;
 
         ctl, all_error_words
-    | Right ctl -> 
-        ctl, []
+    | Right ctl -> ctl, []
     )
   in
 
@@ -176,44 +189,44 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   print_xxxxxxxxxxxxxxxxx();
   Ctlcocci_integration.pp_ctlcocci_no_mcodekind ctl;
   Format.print_newline();
-
-
   print_xxxxxxxxxxxxxxxxx();
+
   let (program, _stat) = astc in
   begin
-   program 
-    +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
+    program +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
 
-          (* call the engine algorithms only if have found a flag word *)
-          let str = Str.global_replace (Str.regexp "\n") " " s in (* cos caml regexp dont like \n ... *)
+          (* Cos caml regexp dont like \n ... *)
+          let str = Str.global_replace (Str.regexp "\n") " " s in 
+          (* Call the engine algorithms only if have found a flag word. *)
           if not (!Flag.process_only_when_error_words) || 
-            error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
+              error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
           then
-              let _ = if !Flag.process_only_when_error_words then pr2 "found error word: " in
+            begin
+              if !Flag.process_only_when_error_words 
+              then pr2 "found error word: ";
+              
               let flow = Control_flow_c.ast_to_control_flow def in
-              let _ =
-                try Control_flow_c.deadcode_detection flow
-                with Control_flow_c.DeadCode Some info -> 
-                  pr2 "PBBBBBBBBBBBBBBBBBB";
-                  pr2 (Common.error_message filename ("", info.charpos));
-                  pr2 "at least 1 deadcode detected (there may be more), but I continue"
-              in
-          
-              if !Flag.show_flow then print_flow  flow;
+              
+              (try Control_flow_c.deadcode_detection flow
+              with Control_flow_c.DeadCode Some info -> 
+                pr2 "PBBBBBBBBBBBBBBBBBB";
+                pr2 (Common.error_message filename ("", info.charpos));
+                pr2 ("at least 1 deadcode detected (there may be more)," ^
+                     "but I continue")
+              );
+
+              if !Flag.show_flow 
+              then print_flow flow;
+                
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
-              (*
-              pr2 "calling sat_noclean";
-              let _trans_info_noclean = Ctlcocci_integration.mysat_noclean model_ctl ctl in
-               *)
               pr2 "calling sat";
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               pr2 "ending sat";
-              (* pr2 (Dumper.dump trans_info); *)
 
-
-              let trans_info' = Ctlcocci_integration.satbis_to_trans_info trans_info in
+              let trans_info' = 
+                Ctlcocci_integration.satbis_to_trans_info trans_info in
 
               pr2 "transformation' info returned:";
               trans_info' +> List.iter (fun (i, subst, pred) -> 
@@ -221,18 +234,21 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                 Format.print_string " with binding ";
                 Pretty_print_c.pp_binding subst;
                 Format.force_newline();
-                                      );
-              Format.print_string "\n"; Format.print_flush();
+                );
+              Format.print_string "\n"; 
+              Format.print_flush();
 
 
               let flow' = Transformation.transform trans_info' flow  in
-              let def' = flow' +> Control_flow_c.control_flow_to_ast in
+              let def' = Control_flow_c.control_flow_to_ast flow' in
               (Ast_c.Definition def', Unparse_c.PPnormal)
+            end
           else 
            (Ast_c.Definition def, Unparse_c.PPviatok il)
       | x -> 
           (x, Unparse_c.PPviatok il)
      )
     +> Unparse_c.pp_program cfile;
-    Common.command2 ("diff -u " ^ cfile ^ " /tmp/output.c")
+
+    Common.command2 ("diff -u " ^ cfile ^ " /tmp/output.c");
   end

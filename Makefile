@@ -1,12 +1,10 @@
 TARGET=spatch
 
-SRC = \
-	flag.ml  \
-	misc/classic_patch.ml  \
-	cocci.ml test.ml main.ml
+SRC = flag.ml cocci.ml test.ml main.ml
 
 SYSLIBS = str.cma unix.cma
-LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma engine/cocciengine.cma
+LIBS=commons/commons.cma ctl/ctl.cma parsing_cocci/cocci_parser.cma \
+	parsing_c/c_parser.cma engine/cocciengine.cma
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 TESTSUBDIRS=tests
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine -I misc
@@ -57,7 +55,8 @@ $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(OPTEXEC): $(OPTOBJS) $(OPTLIBS)
-	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) \
+	  $(LIBS:.cma=.cmxa) $(OPTOBJS)
 
 
 
@@ -70,7 +69,8 @@ clean::
 
 
 test.ml: 
-	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\""  > test.ml
+	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
+	  > test.ml
 
 beforedepend:: test.ml
 
@@ -92,7 +92,8 @@ $(MYEXEC).top: $(MYOBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(MYEXEC).top $(SYSLIBS) $(LIBS) $(MYOBJS)
 
 $(MYEXEC).opt: $(MYOPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -o $(MYEXEC).opt  $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa) $(MYOPTOBJS)
+	$(OCAMLOPT) -o $(MYEXEC).opt  $(SYSLIBS:.cma=.cmxa) \
+	   $(LIBS:.cma=.cmxa) $(MYOPTOBJS)
 
 clean::
 	rm -f $(MYEXEC) $(MYEXEC).top $(MYEXEC).opt

@@ -20,5 +20,6 @@ val parse_print_error:            filename -> Ast_c.program
 val parse_print_error_heuristic:  filename -> (Ast_c.program2 * parsing_stat)
 
 
-val parse_gen: ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) -> string -> 'a
+val parse_gen: 
+    ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) -> string -> 'a
 

@@ -7,14 +7,13 @@ open Lexer_parser
 open Ast_c (* to factorise tokens, OpAssign, ... *)
 
 (* TODO  
-stdC: multibyte character ??  
+   stdC: multibyte character ??  
 *)
 
 exception Lexical of string
 
 let tok     lexbuf  = Lexing.lexeme lexbuf
-let tokinfo lexbuf  = 
-  { 
+let tokinfo lexbuf  = { 
     charpos = Lexing.lexeme_start lexbuf; 
     str     = tok lexbuf  
   }, Ast_c.dumbAnnot
@@ -23,16 +22,17 @@ let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 
 }
 
-(*******************************************************************************)
+(******************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
 let digit  = ['0'-'9']
 
 (* not used for the moment *)
 let punctuation = ['!' '"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':' 
 		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']
-let additionnal = [ ' ' '\b' '\t' '\011' '\n' '\r' '\007' ] (* 7 = \a = bell in C *)
+(* 7 = \a = bell in C *)
+let additionnal = [ ' ' '\b' '\t' '\011' '\n' '\r' '\007' ] 
+(* this is not the only char allowed !! ex @ and $ ` are valid too*)
 let cchar = (letter | digit | punctuation | additionnal) 
- (* this is not the only char allowed !! ex @ and $ ` are valid too*)
 
 
 let dec = ['0'-'9']
@@ -53,71 +53,104 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 (*let space = [' ' '\t' '\n' '\r' '\011' '\012' ]*)
 
 
-(*******************************************************************************)
+(******************************************************************************)
 
 rule token = parse
-  | [' ' '\t' '\n' '\r' '\011' '\012' ]+            { TCommentSpace (tokinfo lexbuf) }
-  | "/*"                                            { let info = tokinfo lexbuf in let s2 = comment lexbuf in TComment (info +> tok_add_s s2) }
+  | [' ' '\t' '\n' '\r' '\011' '\012' ]+  { TCommentSpace (tokinfo lexbuf) }
+  | "/*"     { 
+    let info = tokinfo lexbuf in 
+    let s2 = comment lexbuf in 
+    TComment (info +> tok_add_s s2) 
+    }
 
 
 
-(*******************************************************************************)
+(******************************************************************************)
 
 (* old:
-    | '#'				{ endline lexbuf} (* should be line, and not endline *) 
+    | '#'		{ endline lexbuf} // should be line, and not endline 
     and endline = parse  | '\n' 	{ token lexbuf}  
                          |	_	{ endline lexbuf} 
 *)
 
-  | "//" [^'\r''\n' '\011']*                        { TComment (tokinfo lexbuf) }   (* C++ comment, allowed in gccext,  but normally they are deleted by cpp, so need this here only when dont call cpp before  *)
+  (* C++ comment, allowed in gccext,  but normally they are deleted by cpp, 
+     so need this here only when dont call cpp before  *)
+  | "//" [^'\r''\n' '\011']*    { TComment (tokinfo lexbuf) } 
 
 
-  | "#pragma pack" [^'\n']* '\n'                                                     { TCommentCpp (tokinfo lexbuf)}
-  | "#pragma GCC set_debug_pwd " [^'\n']* '\n'                                       { TCommentCpp (tokinfo lexbuf)}
-  | "#pragma alloc_text" [^'\n']* '\n'                                               { TCommentCpp (tokinfo lexbuf)}
+  | "#pragma pack" [^'\n']* '\n'                { TCommentCpp (tokinfo lexbuf)}
+  | "#pragma GCC set_debug_pwd " [^'\n']* '\n'  { TCommentCpp (tokinfo lexbuf)}
+  | "#pragma alloc_text" [^'\n']* '\n'          { TCommentCpp (tokinfo lexbuf)}
 
 
 (* todo?:
-have found a # #else  in "newfile-2.6.c",  legal ?   and also a  #/* ... 
+ have found a # #else  in "newfile-2.6.c",  legal ?   and also a  #/* ... 
    => just "#" -> token {lexbuf} (that is ignore)
-y'a des (en fait 1) #elif  sans rien  apres
-y'a des (en fait 1) #error sans rien  apres
-y'a des (2) mov dede, #xxx    qui genere du coup exn
+ y'a des (en fait 1) #elif  sans rien  apres
+ y'a des (en fait 1) #error sans rien  apres
+ y'a des (2) mov dede, #xxx    qui genere du coup exn
  car entouré par des #if 0
  => make as for comment, call a comment_cpp that when #endif finish the comment
     and if other cpp stuff raise exn
-y'a des (=~10) #if(xxx)  ou le ( est collé direct
-y'a des include"" et include<
-y'a des ` (1)  (derriere un #ifndef linux)
+ y'a des (=~10) #if(xxx)  ou le ( est collé direct
+ y'a des include"" et include<
+ y'a des ` (1)  (derriere un #ifndef linux)
 
 *)
 
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)                  { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)           
+      { let info = tokinfo lexbuf in 
+        let s2 =  cpp_eat_until_nl lexbuf in 
+        TCommentCpp (info +> tok_add_s s2) }
 
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' 
+      { let info = tokinfo lexbuf in 
+        let s2 =  cpp_eat_until_nl lexbuf in 
+        TCommentCpp (info +> tok_add_s s2) }
 
-  | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
+      { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* "error" [' ' '\t'] [^'\n']* '\n'                                { TCommentCpp (tokinfo lexbuf)} 
-  | "#" [' ' '\t']* "error"                                                         { TCommentCpp (tokinfo lexbuf)} (* in drivers/char/tpqic02.c *)
+  | "#" [' ' '\t']* "error" [' ' '\t'] [^'\n']* '\n' 
+      { TCommentCpp (tokinfo lexbuf)} 
+  | "#" [' ' '\t']* "error"                                             
+      { TCommentCpp (tokinfo lexbuf)} (* in drivers/char/tpqic02.c *)
 
-  | "#" [' ' '\t']* "warning" [' ' '\t']+ [^'\n']* '\n'                              { TCommentCpp (tokinfo lexbuf)} 
-  | "#" [' ' '\t']* "abort" [' ' '\t']+ [^'\n']* '\n'                                { TCommentCpp (tokinfo lexbuf)} 
+  | "#" [' ' '\t']* "warning" [' ' '\t']+ [^'\n']* '\n'                        
+      { TCommentCpp (tokinfo lexbuf)} 
+  | "#" [' ' '\t']* "abort" [' ' '\t']+ [^'\n']* '\n'                         
+      { TCommentCpp (tokinfo lexbuf)} 
 
-  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'                 { TCommentCpp (tokinfo lexbuf) } 
-  | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
+      { TCommentCpp (tokinfo lexbuf) } 
+  | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           
+      { TCommentCpp (tokinfo lexbuf) }
 
 
-  | "#" [' ' '\t']* "if" [' ' '\t']* "0"              { let info = tokinfo lexbuf in let s2 = cpp_comment_if_0 lexbuf in TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
+      { let info = tokinfo lexbuf in 
+        let s2 = cpp_comment_if_0 lexbuf in 
+        TCommentCpp (info +> tok_add_s s2) }
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
-  | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* { TCommentCpp (tokinfo lexbuf) }
-  | "#" [' ' '\t']* "ifndef" [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* { TCommentCpp (tokinfo lexbuf) }
-  | "#" [' ' '\t']* "endif"  [' ' '\t' '\n']                                   { TCommentCpp (tokinfo lexbuf) }
-  | "#" [' ' '\t']* "if" [' ' '\t']+                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
-  | "#" [' ' '\t']* "if" '('                                           { let info = tokinfo lexbuf in let s2 =  cpp_eat_until_nl lexbuf in TCommentCpp (info +> tok_add_s s2) }
-  | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          { TCommentCpp (tokinfo lexbuf) }
-  | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
+     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "ifndef" [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
+     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "endif"  [' ' '\t' '\n']                                   
+      { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "if" [' ' '\t']+                                           
+      { let info = tokinfo lexbuf in 
+        let s2 =  cpp_eat_until_nl lexbuf in 
+        TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']* "if" '('                
+      { let info = tokinfo lexbuf in 
+        let s2 =  cpp_eat_until_nl lexbuf in 
+        TCommentCpp (info +> tok_add_s s2) }
+  | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          
+      { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     
+      { TCommentCpp (tokinfo lexbuf) }
 
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n']                                     { TCommentCpp (tokinfo lexbuf) }
@@ -203,7 +236,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
   | "DECLARE_COMPLETION" [' ' '\t']* "(" [^'\n']+ '\n'        { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 
-(*******************************************************************************)
+(******************************************************************************)
    (* stdC:
     ...   &&   -=   >=   ~   +   ;   ]    
     <<=   &=   ->   >>   %   ,   <   ^    
@@ -219,28 +252,46 @@ y'a des ` (1)  (derriere un #ifndef linux)
   | '[' { TOCro(tokinfo lexbuf) }   | ']' { TCCro(tokinfo lexbuf) }
   | '(' { TOPar(tokinfo lexbuf)   } | ')' { TCPar(tokinfo lexbuf)   }
   | '{' { TOBrace(tokinfo lexbuf) } | '}' { TCBrace(tokinfo lexbuf) }
-  | '+' { TPlus(tokinfo lexbuf) }   | '*' { TMul(tokinfo lexbuf) }     | '-' { TMinus(tokinfo lexbuf) } | '/' { TDiv(tokinfo lexbuf) } | '%' { TMod(tokinfo lexbuf) } 
+
+  | '+' { TPlus(tokinfo lexbuf) }   | '*' { TMul(tokinfo lexbuf) }     
+  | '-' { TMinus(tokinfo lexbuf) }  | '/' { TDiv(tokinfo lexbuf) } 
+  | '%' { TMod(tokinfo lexbuf) } 
+
   | "++"{ TInc(tokinfo lexbuf) }    | "--"{ TDec(tokinfo lexbuf) }
+
   | "="  { TEq(tokinfo lexbuf) } 
-  | "-=" { TAssign (OpAssign Minus, (tokinfo lexbuf))} | "+=" { TAssign (OpAssign Plus, (tokinfo lexbuf))} 
-  | "*=" { TAssign (OpAssign Mul, (tokinfo lexbuf))}   | "/=" { TAssign (OpAssign Div, (tokinfo lexbuf))} | "%=" {TAssign(OpAssign Mod, (tokinfo lexbuf))} 
-  | "&=" { TAssign (OpAssign And, (tokinfo lexbuf))}   | "|=" { TAssign (OpAssign Or, (tokinfo lexbuf)) } | "^=" {TAssign(OpAssign Xor, (tokinfo lexbuf))} 
-  | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) } | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
-  | "==" { TEqEq(tokinfo lexbuf) }   | "!=" { TNotEq(tokinfo lexbuf) } | ">=" { TInfEq(tokinfo lexbuf) } | "<=" { TSupEq(tokinfo lexbuf) } | "<" { TInf(tokinfo lexbuf) } | ">" {TSup(tokinfo lexbuf) }
+
+  | "-=" { TAssign (OpAssign Minus, (tokinfo lexbuf))} 
+  | "+=" { TAssign (OpAssign Plus, (tokinfo lexbuf))} 
+  | "*=" { TAssign (OpAssign Mul, (tokinfo lexbuf))}   
+  | "/=" { TAssign (OpAssign Div, (tokinfo lexbuf))} 
+  | "%=" { TAssign (OpAssign Mod, (tokinfo lexbuf))} 
+  | "&=" { TAssign (OpAssign And, (tokinfo lexbuf))}  
+  | "|=" { TAssign (OpAssign Or, (tokinfo lexbuf)) } 
+  | "^=" {TAssign(OpAssign Xor, (tokinfo lexbuf))} 
+  | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) } 
+  | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
+
+  | "==" { TEqEq(tokinfo lexbuf) }   | "!=" { TNotEq(tokinfo lexbuf) } 
+  | ">=" { TInfEq(tokinfo lexbuf) } | "<=" { TSupEq(tokinfo lexbuf) } 
+  | "<" { TInf(tokinfo lexbuf) } | ">" {TSup(tokinfo lexbuf) }
+
   | "&&" { TAndLog(tokinfo lexbuf) } | "||" { TOrLog(tokinfo lexbuf) }
   | ">>" { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }
-  | "&"  { TAnd(tokinfo lexbuf) }    | "|" { TOr(tokinfo lexbuf) } | "^" { TXor(tokinfo lexbuf) }
+  | "&"  { TAnd(tokinfo lexbuf) }    | "|" { TOr(tokinfo lexbuf) } 
+  | "^" { TXor(tokinfo lexbuf) }
   | "..." { TEllipsis(tokinfo lexbuf) }
-  | "->"           { TPtrOp(tokinfo lexbuf) }  | '.'            { TDot(tokinfo lexbuf) }  
-  | ','            { TComma(tokinfo lexbuf) }  
-  | ";"            { TPtVirg(tokinfo lexbuf) }
-  | "?"            { TWhy(tokinfo lexbuf) }    | ":"            { TDotDot(tokinfo lexbuf) } 
-  | "!"            { TBang(tokinfo lexbuf) }   | "~"            { TTilde(tokinfo lexbuf) }
+  | "->"   { TPtrOp(tokinfo lexbuf) }  | '.'  { TDot(tokinfo lexbuf) }  
+  | ','    { TComma(tokinfo lexbuf) }  
+  | ";"    { TPtVirg(tokinfo lexbuf) }
+  | "?"    { TWhy(tokinfo lexbuf) }    | ":"   { TDotDot(tokinfo lexbuf) } 
+  | "!"    { TBang(tokinfo lexbuf) }   | "~"   { TTilde(tokinfo lexbuf) }
 
-  | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) } | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
+  | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) } 
+  | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
  
 
-(*******************************************************************************)
+(******************************************************************************)
 
   | letter (letter | digit) * 
    (* StdC: must handle at least name of length > 509, but can truncate to 31 
@@ -256,15 +307,21 @@ y'a des ` (1)  (derriere un #ifndef linux)
 
 	 | "unsigned" -> Tunsigned info  | "signed" -> Tsigned info
 	       
-	 | "auto"  -> Tauto info    | "register" -> Tregister info  | "extern" -> Textern info | "static" -> Tstatic info
+	 | "auto"  -> Tauto info    | "register" -> Tregister info  
+         | "extern" -> Textern info | "static" -> Tstatic info
 	 | "const" -> Tconst info   | "volatile" -> Tvolatile info 
 
-	 | "struct" -> Tstruct info  | "enum" -> Tenum info  | "typedef" -> Ttypedef info  | "union" -> Tunion info 
+	 | "struct" -> Tstruct info  | "union" -> Tunion info 
+         | "enum" -> Tenum info  
+         | "typedef" -> Ttypedef info  
  
-	 | "break"    -> Tbreak info     |"else" -> Telse info | "switch" -> Tswitch info  |"case" -> Tcase info  
-	 | "continue" -> Tcontinue info  |"for"  -> Tfor info  | "do"     -> Tdo info      |"if"   -> Tif info 
+         | "if"   -> Tif info       | "else" -> Telse info 
+	 | "break"    -> Tbreak info  | "continue" -> Tcontinue info
+         | "switch" -> Tswitch info  | "case" -> Tcase info  
+         | "default" -> Tdefault info 
+	 | "for"  -> Tfor info  | "do"     -> Tdo info      
 	 | "while"    -> Twhile info  
-	 | "return"   -> Treturn info    |"goto" -> Tgoto info | "default" -> Tdefault info 
+	 | "return"   -> Treturn info    |"goto" -> Tgoto info 
 	 | "sizeof"   -> Tsizeof info   
 
 
@@ -441,7 +498,7 @@ y'a des ` (1)  (derriere un #ifndef linux)
   | (real as x)           { TFloat ((x, CDouble),     tokinfo lexbuf) }
 
   | ['0'] ['0'-'9']+  
-      { raise (Lexical "numeric octal constant contains digits beyond the radix") }
+    { raise (Lexical "numeric octal constant contains digits beyond the radix") }
   | ("0x" |"0X") ['0'-'9' 'a'-'z' 'A'-'Z']+ 
       { 
         (* special_for_no_exn: *)

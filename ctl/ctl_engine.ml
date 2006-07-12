@@ -194,6 +194,9 @@ type ('pred,'anno) triples =
     (G.node * substitution * ('pred,'anno) witness) list
 
 
+(* ---------------------------------------------------------------------- *)
+(* Pretty printing functions *)
+(* ---------------------------------------------------------------------- *)
 
 let (print_generic_substitution : substitution -> unit) = fun substxs ->
   let print_generic_subst = function
@@ -740,11 +743,6 @@ let simpleanno l phi res =
     | A.Ref(s)             -> pp ("Ref("^s^")")
 ;;
 
-(* pad: Rene, you can now use the module pretty_print_ctl.ml to
-   print a ctl formula more accurately if you want.
-   Use the print_xxx provided in the different module to call 
-   Pretty_print_ctl.pp_ctl.
- *)
 
 (* drops negwits, not always appropriate, but more concise *)
 let not_negwits triples =
@@ -777,6 +775,12 @@ let not_negwits triples =
 	 match loop wit with None -> [] | Some wit -> [(st,th,wit)])
        triples)
 
+(* pad: Rene, you can now use the module pretty_print_ctl.ml to
+   print a ctl formula more accurately if you want.
+   Use the print_xxx provided in the different module to call 
+   Pretty_print_ctl.pp_ctl.
+ *)
+
 let simpleanno2 l phi res = 
   begin
     Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar) phi;
@@ -791,6 +795,7 @@ let simpleanno2 l phi res =
     Format.print_newline ();
   end
   
+
 
 
 (* Main entry point for engine *)

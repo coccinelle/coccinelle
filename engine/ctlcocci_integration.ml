@@ -10,16 +10,23 @@ it matches (and the set of subsitutions for this match).
 *)
 
 let (labels_for_ctl: 
-  (nodei * Control_flow_c.node) list -> 
-   (Lib_engine.predicate ->
-     (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution) list
-   ))
+       (nodei * Control_flow_c.node) list -> 
+         (Lib_engine.predicate ->
+           (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution) list
+         ))
   = fun nodes ->
 
    (fun pred -> 
 
      if !Flag_engine.debug_engine
-     then (pr2 "start label";  pr2 (Dumper.dump pred););
+     then begin 
+       pp_init (fun () -> 
+         Format.print_string "labeling: pred =";
+         Format.print_space ();
+         Lib_engine.pp_predicate pred;
+         );
+       
+     end;
 
        let nodes' = nodes +> map (fun (nodei, (node, nodestring)) -> 
          (* todo? put part of this code in pattern ? *)
@@ -66,7 +73,22 @@ let (labels_for_ctl:
        ) +> List.concat
        in
        if !Flag_engine.debug_engine
-       then (pr2 "end label";  pr2 (Dumper.dump nodes'););
+       then begin 
+         pp_init (fun () -> 
+           Format.print_string "labeling: result =";
+           Format.print_space ();
+         
+           pp_do_in_box (fun () -> 
+             Format.print_string "{";
+             Common.print_between (fun () -> Format.print_string ";"; Format.print_cut())
+               (fun (nodei, subst) -> 
+                 Format.print_int nodei;
+                 pp_do_in_box (fun () -> Lib_engine.pp_binding2_ctlsubst subst)
+               ) nodes';
+            Format.print_string "}";
+             );
+           )
+       end;
        nodes'
        ) 
 
@@ -102,7 +124,6 @@ let model_for_ctl  cflow =
  
 
 (* (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl -> unit) = fun ctl -> *)
-
 
 
 module PRED = 

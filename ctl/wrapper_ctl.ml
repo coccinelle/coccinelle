@@ -22,8 +22,8 @@ type ('pred,'state,'mvar,'value) labelfunc =
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
     ('pred * 'mvar Ast_ctl.modif) -> 
       ('state * 
-	 ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
-	 'wit)
+       ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
+       'wit)
 	list
 
 

@@ -14,19 +14,23 @@ open Osetb
   arc: (index * index) * edgevalue
  how ? matrix ? but no growing array, so :(
  when need index ? 
-  must have an index, when cant just use nodevalue as a key,  cos sometimes may have 2 times the same key, but
-  it must be 2 different nodes (for instance in program   f(); f();   we want 2 nodes, one per  f(); 
+  must have an index, when cant just use nodevalue as a key,  cos sometimes 
+  may have 2 times the same key, but it must be 2 different nodes 
+  (for instance in program   f(); f();   we want 2 nodes, one per  f(); 
   hence the index). If each node is different, then no problem, can omit index.
 
  todo?: prend en parametre le type de finitemap et set a prendre
- todo?: add_arc doit ramer, car del la key, puis add => better to have a ref to a set 
+ todo?: add_arc doit ramer, car del la key, puis add => better to 
+   have a ref to a set 
  opti: graph with pointers
     and a tag visited => need keep global value visited_counter
     check(that node is in, ...), display
- opti: when the graph structure is stable, have a method compact,  that transform
-   that in a matrix (assert that all number between 0 and free_index are used,  or do some defrag-like-move/renaming
+ opti: when the graph structure is stable, have a method compact,  that 
+   transform that in a matrix (assert that all number between 0 and 
+   free_index are used,  or do some defrag-like-move/renaming
 
- invariant: key in pred is also in succ (completness) and value in either assoc is a key also
+ invariant: key in pred is also in succ (completness) and value in 
+   either assoc is a key also
  
 *)
 
@@ -65,7 +69,9 @@ class ['a,'b] ograph_extended =
 
     method del_node (i) = 
       {<
-        nods = nods#delkey i; (* check: e is effectively the index associated with e, and check that already in *)
+        (* check: e is effectively the index associated with e, 
+           and check that already in *)
+        nods = nods#delkey i; 
         pred = pred#delkey i;
         succ = succ#delkey i;
         >}
@@ -124,12 +130,14 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) = fun g ->
+let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) =
+ fun g ->
   with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in
     nodes#iter (fun (k,(node, s)) -> 
-      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k); (* so can see if nodes without arcs were created *) (*  (Dumper.dump node)); *)
+     (* so can see if nodes without arcs were created *) 
+      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k); 
     );
 
     nodes#iter (fun (k,node) -> 
@@ -140,5 +148,10 @@ let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) =
     );
     pr "}\n" ;
     );
-  let _status = Sys.command "dot /tmp/test.dot -Tps  -o /tmp/test.ps; gv /tmp/test.ps &" in
+  let _status = Unix.system ("dot /tmp/test.dot -Tps  -o /tmp/test.ps; " ^ 
+                             "gv /tmp/test.ps &")
+  in
+  (* zarb: I need this when I launch the program via eshell, otherwise gv
+     do not get the chance to be launched *)
+  Unix.sleep 1; 
   ()

@@ -1,10 +1,10 @@
 open Common open Commonop
 
-(* It is not the same thing than Unparse_c. Unparse_c correctly insert spaces, comments,
-   and so on, but that means that Unparse_c cannot pretty print an expression independently, 
-   and that Unparse_c need the original file to be able to unparse. So
-   for debugging purpose Unparse_c is not practical, hence this module.
-*)
+(* It is not the same thing than Unparse_c. Unparse_c correctly insert spaces, 
+   comments, and so on, but that means that Unparse_c cannot pretty print an 
+   expression independently, and that Unparse_c need the original file to be 
+   able to unparse. So for debugging purpose Unparse_c is not practical, 
+   hence this module. *)
 
 open Ast_c
 
@@ -32,7 +32,8 @@ let rec pp_expression x =
           );
             );
         pr_elem i2;
-  | Binary   (e1, op, e2),    typ,[i] -> pp_expression e1;   pr_elem i; pp_expression e2
+  | Binary   (e1, op, e2),    typ,[i] -> 
+      pp_expression e1;   pr_elem i; pp_expression e2
   | _ -> raise Todo
 
 and pp_statement x = 
@@ -40,10 +41,16 @@ and pp_statement x =
   | ExprStatement (None), [i] -> pr_elem i;
   | ExprStatement (None), [] -> ()
   | ExprStatement (Some e), [i] -> pp_expression e; pr_elem i
-  | ExprStatement (Some e), [] -> pp_expression e; (* the last ExprStatement of a for does not have a trailing ';' hence the [] for ii  *)
+  | ExprStatement (Some e), [] -> 
+     (* the last ExprStatement of a for does not have a trailing ';' 
+        hence the [] for ii  *)
+      pp_expression e; 
   | _ -> raise Todo
 
-and pp_binding_kind = function
+
+
+
+let rec pp_binding_kind = function
   | MetaId        s -> Format.print_string ("id " ^ s)
   | MetaFunc      s -> Format.print_string ("func " ^ s)
   | MetaLocalFunc s -> Format.print_string ("localfunc " ^ s)

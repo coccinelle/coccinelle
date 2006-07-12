@@ -7,7 +7,8 @@ open Common open Commonop
   - extract the information from the .h files
 
  todo: expression contain types, and statements,   which in turn can contain
-  expression, so need recurse. Need define an annote_statement and annotate_type.
+ expression, so need recurse. Need define an annote_statement and 
+ annotate_type.
 *)
 
 
@@ -20,7 +21,8 @@ type context = fullType option
 let boolType = Ast_c.nullQualif, Ast_c.defaultInt
 let mktyp x = Ast_c.nullQualif, x
 
-let rec (annotate_expr: environment -> context -> expression -> expression) = fun env ctx -> fun expr -> 
+let rec (annotate_expr: environment -> context -> expression -> expression) = 
+ fun env ctx -> fun expr -> 
   let rec aux expr = 
   match expr with
     | Ident (s), typ, i -> 
@@ -117,7 +119,6 @@ let rec (annotate_expr: environment -> context -> expression -> expression) = fu
   in aux expr
 
 let rec (annotate_program: environment -> program -> program) = fun env ctx -> 
-
   (* use visitor_synth *)
   (* catch all the decl to grow the environment *)
   raise Todo

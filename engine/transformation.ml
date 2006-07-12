@@ -12,13 +12,13 @@ module F = Control_flow_c
 (******************************************************************************)
 (* todo:
  
- must do some try, for instance when f(...,X,Y,...) have to test the transfo for all
-  the combinaitions (and if multiple transfo possible ? pb ? 
+ Must do some try, for instance when f(...,X,Y,...) have to test the transfo 
+ for all the combinaitions (and if multiple transfo possible ? pb ? 
  => the type is to return a   expression option ? use some combinators to help ?
 
- for some nodes I dont have all the info, for instance for } 
-  I need to modify the node of the start, it is where the info is.
-  Same for Else
+ For some nodes I dont have all the info, for instance for } I need to modify 
+ the node of the start, it is where the info is.
+ Same for Else.
  
 *)
 (******************************************************************************)
@@ -43,6 +43,7 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
 
   | _, F.NestedFunCall _ -> raise Todo
 
+  (* todo?: it can match a MetaStmt too !! and we have to get all the concerned nodes *)
   | A.SeqStart _mcode, F.StartBrace (level, statement) -> 
       pr2 "transformation: dont handle yet braces well. I pass them";
       F.StartBrace (level, statement), nodestr
@@ -52,43 +53,40 @@ let rec (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transform
       pr2 "transformation: dont handle yet braces well. I pass them";
       F.EndBrace (level), nodestr
 
-  (* todo?: it can match a MetaStmt too !! and we have to get all the
-     concerned nodes
-   *)
-  | _, F.StartBrace _ | _, F.EndBrace _  -> raise NoMatch
+  | A.SeqStart _, _ | _, F.StartBrace _ -> raise NoMatch
+  | A.SeqEnd _, _   | _, F.EndBrace _ -> raise NoMatch
+
+
+  | A.Decl decla, F.Declaration declb -> 
+      F.Declaration (transform_de_decl decla declb  binding), nodestr
+  | A.Decl _, _ | _, F.Declaration _ -> raise NoMatch
+
+  | A.FunHeader (stoa, ida, oparen, paramsa, cparen),
+    F.HeadFunc (idb, (retb, paramsb, isvaargs, (iidotsb, iiparensb)), 
+                stob, compoundb, (infoidb, iistob, iicpb))
+    -> 
+      let stob' = (match stoa with None -> stob | Some x -> raise Todo) in
+      let iistob' = iistob in (* todo *)
+
+      let (idb', infoidb') = transform_ident ida (idb, [infoidb])   binding in
+      
+      let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
+
+
+      let seqstyle = (match A.unwrap paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo) in
+      let paramsb' = transform_params seqstyle (A.undots paramsa) paramsb    binding in
+
+
+      if isvaargs then raise Todo;
+      let iidotsb' = iidotsb in (* todo *)
+
+      let typb' = (retb, paramsb', isvaargs, (iidotsb', iiparensb')) in
+      Control_flow_c.HeadFunc (idb', typb' , stob', compoundb, (List.hd infoidb', iistob', iicpb)), nodestr
+
+  | A.FunHeader _,_ | _,F.HeadFunc _ -> raise NoMatch
 
   | _, F.Statement st -> Control_flow_c.Statement (transform_re_st re st binding), nodestr
-  | _, F.Declaration decl -> 
-      F.Declaration (transform_de_decl re decl  binding), nodestr
 
-  | re, F.HeadFunc funcdef -> 
-      let (idb, typb, stob, compoundb, (infoidb, iistob, iicpb)) = funcdef in
-      let (retb, paramsb, isvaargs, (iidotsb, iiparensb)) = typb in
-
-      (match re with
-      | A.FunHeader (stoa, ida, oparen, paramsa, cparen)  ->
-
-          
-          let stob' = (match stoa with None -> stob | Some x -> raise Todo) in
-          let iistob' = iistob in (* todo *)
-
-          let (idb', infoidb') = transform_ident ida (idb, [infoidb])   binding in
-
-          let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
-
-
-          let seqstyle = (match A.unwrap paramsa with A.DOTS _ -> Ordered | A.CIRCLES _ -> Unordered | A.STARS _ -> raise Todo) in
-          let paramsb' = transform_params seqstyle (A.undots paramsa) paramsb    binding in
-
-
-          if isvaargs then raise Todo;
-          let iidotsb' = iidotsb in (* todo *)
-
-          let typb' = (retb, paramsb', isvaargs, (iidotsb', iiparensb')) in
-          Control_flow_c.HeadFunc (idb', typb' , stob', compoundb, (List.hd infoidb', iistob', iicpb)), nodestr
-
-      | _ -> raise NoMatch
-      )
 
 
 
@@ -145,7 +143,7 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
    *)
   | A.Exp exp, statement -> 
       (* todo?: assert have done something  statement' <> statement *)
-      statement +> Visitor_c.visitor_statement_k_s { Visitor_c.default_visitor_c_continuation_s with
+      statement +> Visitor_c.visitor_statement_k_s { Visitor_c.default_visitor_c_s with
         Visitor_c.kexpr_s = (fun (k,_) e -> 
           let e' = k e in (* go inside first *)
           try transform_e_e exp e'   binding 
@@ -175,14 +173,12 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = fun
 
 (* ------------------------------------------------------------------------------ *)
 
-and (transform_de_decl: (Ast_cocci.rule_elem, Ast_c.declaration) transformer) = fun re decl -> 
+and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) = fun decla declb -> 
   fun binding -> 
-  match A.unwrap re, decl with
-  | A.Decl decl, 
+  match declb with
     (B.DeclList ([var], (iisto, iiptvirgb ))) -> 
-
-      (match A.unwrap decl with
-	A.UnInit (typa, ida, ptvirga) ->
+      (match A.unwrap decla with
+      | A.UnInit (typa, ida, ptvirga) ->
 	  let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
 	  (match var with
 	  | (Some (idb, None, iidb), typb, stob), iivirg -> 
@@ -192,9 +188,22 @@ and (transform_de_decl: (Ast_cocci.rule_elem, Ast_c.declaration) transformer) = 
               let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg in
               B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
           
-	  | _ -> raise Todo)
-      |	_ -> raise Todo)  (* Init, etc go here *)
-  | _ -> raise Todo
+	  | _ -> raise Todo
+          )
+      |	A.DisjDecl xs -> 
+          xs +> List.fold_left (fun acc decla -> 
+            try transform_de_decl decla declb  binding
+            with NoMatch -> acc
+            ) declb
+            
+      | A.Init _ -> pr2 "warning: not handling yet initializer patterns"; raise NoMatch
+      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> raise Todo
+
+      )
+  | (B.DeclList (xs, (iisto, iiptvirgb ))) -> 
+      raise Todo (* TODO need split xs *)
+  
+                
   
 (* ------------------------------------------------------------------------------ *)
 
@@ -208,7 +217,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
       let v = binding +> List.assoc (ida : string) in
       (match v with
       | B.MetaExpr expa -> 
-          if (expa =*= Ast_c.al_expr expb)
+          if (expa =*= Abstract_line_c.al_expr expb)
           then
             distribute_minus_plus_e i1 expb   binding
           else raise NoMatch
@@ -647,21 +656,19 @@ and nothing_left  x = x
 (* Entry points *)
 
 let rec (transform: 
-       Lib_engine.transformation_info ->
-       (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-       (Control_flow_c.node, Control_flow_c.edge) ograph_extended
-    ) = fun xs cflow -> 
-
-     let cflow' = 
-      (* find the node, transform, update the node,    and iter for all elements *)
-      xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
-        let node  = acc#nodes#assoc nodei in (* subtil: not cflow#nodes but acc#nodes *)
-        pr2 "transform one node";
-        let node' = transform_re_node rule_elem node binding in
-        (* assert that have done something *)
-        assert (not (node =*= node'));
-        acc#replace_node (nodei, node')
-        ) cflow
-     in
-     cflow'
+    Lib_engine.transformation_info ->
+     (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+       (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = fun xs cflow -> 
+  let cflow' = 
+    (* find the node, transform, update the node,    and iter for all elements *)
+    xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
+      let node  = acc#nodes#assoc nodei in (* subtil: not cflow#nodes but acc#nodes *)
+      pr2 "transform one node";
+      let node' = transform_re_node rule_elem node binding in
+      (* assert that have done something *)
+      assert (not (node =*= node'));
+      acc#replace_node (nodei, node')
+     ) cflow
+  in
+  cflow'
 

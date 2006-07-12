@@ -3,9 +3,6 @@ open Format
 
 open Ast_ctl
 
-let pp = Format.print_string
-let box f = open_box 1; f(); close_box ()
-
 let char_and = "&"
 let char_or  = "v" 
 let char_not = "!" 
@@ -16,21 +13,23 @@ let char_or = "\\/"
 let char_not = "-|"
 *)
 
-let rec (pp_ctl: ('pred -> unit) * ('mvar -> unit) -> ('pred, 'mvar, 'info) generic_ctl -> unit) = 
-fun (pp_pred, pp_mvar) ctl -> 
- let rec pp_aux = fun ctl ->
+let rec (pp_ctl: 
+           ('pred -> unit) * ('mvar -> unit) -> 
+             ('pred, 'mvar, 'info) generic_ctl -> unit) = 
+ fun (pp_pred, pp_mvar) ctl -> 
+  let rec pp_aux = fun ctl ->
   match Ast_ctl.unwrap ctl with
   | False              -> pp "False"
   | True               -> pp "True"
   | Pred(p)            -> pp_pred p
-  | Not(phi)           -> pp char_not; box (fun () -> pp_aux phi)
+  | Not(phi)           -> pp char_not; pp_do_in_box (fun () -> pp_aux phi)
   | Exists(v,phi)      ->  
       pp "(";
       pp ("Ex ");
       pp_mvar v;
       pp " . "; 
       print_cut();
-      box (fun () -> pp_aux phi); 
+      pp_do_in_box (fun () -> pp_aux phi); 
       pp ")"
   | And(phi1,phi2)     ->  pp_2args char_and phi1 phi2; 
   | Or(phi1,phi2)      ->  pp_2args char_or phi1 phi2; 
@@ -48,11 +47,11 @@ fun (pp_pred, pp_mvar) ctl ->
       print_space ();
       pp "="; 
       print_space ();
-      box (fun () -> pp_aux phi1);
+      pp_do_in_box (fun () -> pp_aux phi1);
       print_space ();
       pp "in"; 
       print_space ();
-      box (fun () -> pp_aux phi2);
+      pp_do_in_box (fun () -> pp_aux phi2);
   | Ref(s)             -> 
        (* pp "Ref(";  *)
        pp s; 
@@ -61,32 +60,30 @@ fun (pp_pred, pp_mvar) ctl ->
  and pp_2args sym phi1 phi2 = 
    begin
      pp "(";
-     box (fun () -> pp_aux phi1); 
+     pp_do_in_box (fun () -> pp_aux phi1); 
      print_space();
      pp sym;
      print_space ();
-     box (fun () -> pp_aux phi2);
+     pp_do_in_box (fun () -> pp_aux phi2);
      pp ")";
    end
  and pp_2args_bis sym phi1 phi2 = 
    begin
-     box (fun () -> pp_aux phi1); 
+     pp_do_in_box (fun () -> pp_aux phi1); 
      print_space();
      pp sym;
      print_space();
-     box (fun () -> pp_aux phi2);
+     pp_do_in_box (fun () -> pp_aux phi2);
   end
      
  and pp_arg phi = 
    begin
-     box (fun () -> pp_aux phi);
+     pp_do_in_box (fun () -> pp_aux phi);
    end
 
  in
  begin
-   open_box 0; (* Format.mli says that behaviour is undefined when there is no open_box *)
-   pp_aux ctl;
-   close_box ();
+   pp_init (fun () ->  pp_aux ctl;)
  end
 
 

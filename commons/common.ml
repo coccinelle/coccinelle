@@ -1,8 +1,8 @@
 open Commonop
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Todo *)
-(*******************************************************************************)
+(******************************************************************************)
 
 (* 
 
@@ -504,6 +504,20 @@ let rec print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between(); print_between between fn xs
 
+let pp_do_in_box f = Format.open_box 1; f(); Format.close_box ()
+
+(* Format.mli says that behaviour is undefined when there is no open_box *)
+let pp_init f = 
+  begin 
+    Format.open_box 0; 
+    f(); 
+    Format.close_box();
+    Format.print_newline();
+  end
+
+
+let pp s = Format.print_string s
+
 
 (******************************************************************************************)
 (* Macro *)
@@ -531,9 +545,9 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 
   
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Composition/Control *)
-(*******************************************************************************)
+(******************************************************************************)
 
 (* i like the list@func notation, object reminescence *)
 (* let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a*)
@@ -667,9 +681,9 @@ let (<=>) a b = if a = b then 0 else if a < b then -1 else 1
 let xor a b = not (a = b)
 
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Char *)
-(*******************************************************************************)
+(******************************************************************************)
 
 let string_of_char c = String.make 1 c
 
@@ -820,9 +834,9 @@ let testd dict n =
 
 
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Tuples *)
-(*******************************************************************************)
+(******************************************************************************)
 
 let fst3 (x,_,_) = x
 let snd3 (_,y,_) = y
@@ -1130,6 +1144,21 @@ let echo s = printf "%s" s; flush stdout; s
 let usleep s = for i = 1 to s do () done
 
 let command2 s = ignore(Sys.command s)
+
+let do_in_fork f = 
+  let pid = Unix.fork () in
+  if pid = 0
+  then 
+    begin 
+      (* Unix.setsid(); *)
+      Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
+        pr2 "being killed";
+        Unix.kill 0 Sys.sigkill;
+                                                     ));
+      f(); 
+      exit 0;
+    end
+  else pid
 
 
 let process_output_to_list = fun command -> 

@@ -165,7 +165,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = fun func
     let (h: (string, int) oassoc ref) = ref (new oassocb []) in
 
     begin
-      statement +> visitor_statement_k { default_visitor_c_continuation with 
+      statement +> visitor_statement_k { default_visitor_c with 
          kstatement = (fun (k, bigf) statement -> 
            match statement with
            | Labeled (Label (s, st)),ii -> 

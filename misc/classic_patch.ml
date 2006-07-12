@@ -1,8 +1,9 @@
 open Fullcommon open Commonop
 
-(* todo:
-    in fact fragile, cf txt/diff_format.txt,  
-    "^--- " is not enough for a regexp,  there must be just before a diff command
+(* 
+ todo:
+  in fact fragile, cf txt/diff_format.txt,  
+   "^--- " is not enough for a regexp,  there must be just before a diff command
    todo?: does it handle when a file was just created/deleted ? 
     --- a/drivers/acorn/char/defkeymap-acorn.c_shipped	Sat Jun 14 12:18:56 2003
     +++ /dev/null	Wed Dec 31 16:00:00 1969
@@ -12,13 +13,17 @@ open Fullcommon open Commonop
 *)
 
 type patchinfo = (filename, fileinfo) oassoc
-     and fileinfo = ((int * int) * string) list
-     (* inv: the regions are sorted, because we process patch from start to end of file *)
+   and fileinfo = ((int * int) * string) list
+      (* inv: the regions are sorted, because we process patch from start to 
+         end of file *)
 
 let (parse_patch: (string list) -> patchinfo) = fun lines ->
-  let lines =  lines        +> List.filter (fun s -> not (s =~ "^\\+\\+\\+" || s =~ "^diff"))    in
+  let lines = lines +> List.filter (fun s -> 
+    not (s =~ "^\\+\\+\\+" || s =~ "^diff"))    
+  in
 
-  (* note: split_list_regexp can generate __noheading__ category (cf common.ml code) *)
+  (* note: split_list_regexp can generate __noheading__ category 
+     (cf common.ml code) *)
   let double_splitted = 
     lines 
       +> split_list_regexp "^\\-\\-\\- "  
@@ -29,16 +34,16 @@ let (parse_patch: (string list) -> patchinfo) = fun lines ->
 
   double_splitted +>         
      List.map (fun (s, group) -> 
-       let _ = (s =~ "^\\-\\-\\- [^/]+/\\([^/]+\\)/\\(.*\\)/\\([^ \t]+\\)[ \t]") 
-            +> (fun b -> if not b then (pr2 s; pr2 (Dumper.dump group); assert b)) in
+       (s =~ "^\\-\\-\\- [^/]+/\\([^/]+\\)/\\(.*\\)/\\([^ \t]+\\)[ \t]")
+         +> (fun b -> if not b then (pr2 s; pr2 (Dumper.dump group); assert b));
        let (driver_or_sound, subdirs, filename) = matched3 s in
         (* assert drivers|sound     *)
           (driver_or_sound ^ "/" ^ subdirs ^ "/" ^ filename, 
 
            group +>
              List.map (fun (s, group) -> 
-               let _ = (s =~ "^@@ \\-\\([0-9]+\\),\\([0-9]+\\) \\+\\([0-9]+\\),\\([0-9]+\\) @@") 
-                   +> (fun b -> if not b then pr2 s; assert b) in
+               (s =~ "^@@ \\-\\([0-9]+\\),\\([0-9]+\\) \\+\\([0-9]+\\),\\([0-9]+\\) @@") 
+                 +> (fun b -> if not b then pr2 s; assert b);
                let (start1, plus1, _start2, _plus2) = matched4 s in
                let (start1, plus1) = pair s_to_i (start1, plus1) in
                ((start1, start1 + plus1), 
@@ -53,12 +58,15 @@ let (parse_patch: (string list) -> patchinfo) = fun lines ->
   
   
   
-let (relevant_part: (filename * (int * int)) -> patchinfo -> string) = fun (filename, (startl, endl)) patchinfo ->
+let (relevant_part: (filename * (int * int)) -> patchinfo -> string) = 
+ fun (filename, (startl, endl)) patchinfo ->
   try 
     let xs = patchinfo#find filename in
     let is_in i (min, max) = i >= min && i <= max in
     xs +> map_filter (fun ((i,j), s) -> 
-      if ((is_in i (startl, endl)) || (is_in j (startl, endl)) || (i < startl && j > endl))
+      if ((is_in i (startl, endl)) || 
+          (is_in j (startl, endl)) || 
+          (i < startl && j > endl))
       then Some s 
       else None
       ) 

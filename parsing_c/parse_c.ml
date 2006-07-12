@@ -8,42 +8,55 @@ type parsing_stat = {
     mutable passing_through_lines: int;
     mutable have_timeout: bool;
 
-    mutable correct: int;  mutable bad: int;
+    mutable correct: int;  
+    mutable bad: int;
   } 
 
 
-(* todo: stat per dir ?  give in terms of func_or_decl numbers:   
+(* 
+  todo: stat per dir ?  give in terms of func_or_decl numbers:   
     nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
-   note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les valeurs 
-    alors on parsera correctemet tout le fichier et pourtant y'aura aucune def  et donc 
-    aucune couverture en fait.   
-   ==> TODO evaluer les parties non parsé ? 
+  note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les 
+  valeurs alors on parsera correctemet tout le fichier et pourtant y'aura 
+  aucune def  et donc aucune couverture en fait.   
+  ==> TODO evaluer les parties non parsé ? 
 *)
 let print_parsing_stat_list = fun statxs -> 
-        let total = (List.length statxs) in
-        let perfect = (statxs +> List.filter (function {have_timeout = false; bad = 0} -> true | _ -> false) +> List.length) in
-        pr2 "\n\n\n---------------------------------------------------------------";
-        pr2 "pbs with files:";
-        statxs 
-          +> List.filter (function {have_timeout = true} -> true | {bad = n} when n > 0 -> true | _ -> false)
-          +> List.iter (function {filename = file; have_timeout = timeout; bad = n} -> 
-                 pr2 (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
-            );
-        pr2 "\n\n\n---------------------------------------------------------------";
-        pr2 (
-          (sprintf "NB total files = %d; " total) ^
-          (sprintf "perfect = %d; " perfect) ^
-          (sprintf "pbs = %d; "     (statxs +> List.filter (function {have_timeout = b; bad = n} when n > 0 -> true | _ -> false) +> List.length)) ^
-          (sprintf "timeout = %d; " (statxs +> List.filter (function {have_timeout = true; bad = n} -> true | _ -> false) +> List.length)) ^
-          (sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
+  let total = (List.length statxs) in
+  let perfect = 
+    statxs +> List.filter (function 
+      {have_timeout = false; bad = 0} -> true | _ -> false)
+      +> List.length in
+  pr2 "\n\n\n---------------------------------------------------------------";
+  pr2 "pbs with files:";
+  statxs 
+    +> List.filter (function 
+      | {have_timeout = true} -> true 
+      | {bad = n} when n > 0 -> true 
+      | _ -> false)
+    +> List.iter (function 
+        {filename = file; have_timeout = timeout; bad = n} -> 
+          pr2 (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
+        );
+  pr2 "\n\n\n---------------------------------------------------------------";
+  pr2 (
+  (sprintf "NB total files = %d; " total) ^
+  (sprintf "perfect = %d; " perfect) ^
+  (sprintf "pbs = %d; "     (statxs +> List.filter (function 
+      {have_timeout = b; bad = n} when n > 0 -> true | _ -> false) 
+                               +> List.length)) ^
+  (sprintf "timeout = %d; " (statxs +> List.filter (function 
+      {have_timeout = true; bad = n} -> true | _ -> false) 
+                               +> List.length)) ^
+  (sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
                                                           
-         );
-        let good = (statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0) in
-        let bad  = (statxs +> List.fold_left (fun acc {bad = x} -> acc+x) 0)  in
-        pr2 (
-          (sprintf "nb good = %d,  nb bad = %d    " good bad) ^
-          (sprintf "=========> %d"  (100 * good / (good+bad))) ^ "%"
-         )
+ );
+  let good = (statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0) in
+  let bad  = (statxs +> List.fold_left (fun acc {bad = x} -> acc+x) 0)  in
+  pr2 (
+  (sprintf "nb good = %d,  nb bad = %d    " good bad) ^
+  (sprintf "=========> %d"  (100 * good / (good+bad))) ^ "%"
+   )
 
 
 
@@ -56,7 +69,8 @@ let pr2 s =
     
 
 (******************************************************************************)
-let wrap_lexbuf_info lexbuf     = (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
+let wrap_lexbuf_info lexbuf     = 
+  (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 let wrap_parse_info  parse_info = (parse_info.str,       parse_info.charpos)    
 
 (******************************************************************************)
@@ -75,7 +89,9 @@ let tokens file =
     in
     aux ()
   with
-    | Lexer_c.Lexical s -> failwith ("lexical error " ^ s ^ "\n =" ^  (error_message file (wrap_lexbuf_info lexbuf)  ))
+    | Lexer_c.Lexical s -> 
+        failwith ("lexical error " ^ s ^ "\n =" ^  
+                  (error_message file (wrap_lexbuf_info lexbuf)  ))
     | e -> raise e
  )
 
@@ -96,9 +112,10 @@ let tokens_string string =
     | Lexer_c.Lexical s -> failwith ("lexical error " ^ s ^ "\n =" )
     | e -> raise e
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 
-(* because ocamllex force us to do it that way :( cant return a pair to ocamlyacc :( *)
+(* because ocamllex force us to do it that way :( cant return a pair to 
+   ocamlyacc :( *)
 let info_from_token = function
   | Parser_c.TComment  (i) -> i
   | Parser_c.TCommentSpace  (i) -> i
@@ -206,7 +223,13 @@ let parse_gen parsefunc s =
 let parse_gen parsefunc s = 
 
   let toks = tokens_string s in 
-  let toks = toks +> List.filter (function ( (Parser_c.TComment _ | Parser_c.TCommentSpace _ | Parser_c.TCommentCpp _ | Parser_c.TCommentAttrOrMacro _)) -> false | _ -> true) in
+  let toks = toks +> List.filter (function 
+      ( (Parser_c.TComment _ 
+         | Parser_c.TCommentSpace _ 
+         | Parser_c.TCommentCpp _ 
+         | Parser_c.TCommentAttrOrMacro _)) -> false 
+    | _ -> true) 
+  in
 
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
@@ -231,7 +254,7 @@ let parse_gen parsefunc s =
 (* let _ = parse_gen Parser_c.statement "(struct us_data*)psh->hostdata = NULL;" *)
 
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 let parse_print_error file = 
   let chan = (open_in file) in
   let lexbuf = Lexing.from_channel chan in
@@ -244,45 +267,61 @@ let parse_print_error file =
            (* +> (fun x -> pr2 (Dumper.dump x);x ) *)
      (*   +> Semantic.check *)
   with 
-  | Lexer_c.Lexical s ->          failwith ("lexical error " ^ s ^ "\n =" ^  (error_message file (wrap_lexbuf_info lexbuf) ))
-  | Parsing.Parse_error ->        failwith ("parse error \n = " ^            (error_message file (wrap_lexbuf_info lexbuf) ))
-  | Semantic_c.Semantic (s, i) -> failwith ("semantic error " ^ s ^ "\n =" ^ (error_message file (wrap_lexbuf_info lexbuf) ))
+  | Lexer_c.Lexical s ->          
+      failwith ("lexical error " ^ s ^ "\n =" ^  
+                (error_message file (wrap_lexbuf_info lexbuf) ))
+  | Parsing.Parse_error ->        
+      failwith ("parse error \n = " ^            
+                (error_message file (wrap_lexbuf_info lexbuf) ))
+  | Semantic_c.Semantic (s, i) -> 
+      failwith ("semantic error " ^ s ^ "\n =" ^ 
+                (error_message file (wrap_lexbuf_info lexbuf) ))
   | e -> raise e
 
 
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 open Parser_c
 
 
-(* note: as now go in 2 pass,  there is first all the error message of the lexer, and then the error of the parser *)
-(*  it is no more interwinded *)
+(* note: as now go in 2 pass,  there is first all the error message of 
+   the lexer, and then the error of the parser. It is no more interwinded *)
 let parse_print_error_heuristic file = 
 
   let table = Common.full_charpos_to_pos file in
   let filelines = (""::Common.cat file) +> Array.of_list in
 
 
-  (* bugfix: the lexer too do some conversion (ok, he does need anymore, but still ...)
-     so have to reste lexer here too !!! 
-  *)
+  (* bugfix: the lexer too do some conversion (ok, he does need anymore, 
+     but still ...)so have to reste lexer here too !!!  *)
   Lexer_parser.lexer_reset_typedef(); 
   let toks = tokens file in 
-  let toks = toks +> List.filter (function ( (TComment _ | TCommentSpace _ | TCommentCpp _ | TCommentAttrOrMacro _)) -> false | _ -> true) in
+  let toks = toks +> List.filter (function 
+      ( (TComment _ 
+        | TCommentSpace _ 
+        | TCommentCpp _ 
+        | TCommentAttrOrMacro _)) -> false 
+    | _ -> true) 
+  in
 
 
-  (*  normally we have  *)
-  (*    toks =  (reverse passed_tok) ++ cur_tok ++ all_tokens   after the call to pop2 *)
-  (*    toks =  (reverse passed_tok) ++ all_tokens              at the and of the lexer_function call *)
-  (*   at the very beginning, cur_tok and all_tokens overlap, but not after *)
-  (*   at the end of lexer_function call,  cur_tok  overlap  with passed_tok *)
-  (*  It is complicated because we cant modify ocamllex and ocamlyacc. As we want *)
-  (*   some extended lexing tricks, we have to use such globals. *)
+  (* normally we have:
+      toks = (reverse passed_tok) ++ cur_tok ++ all_tokens   
+        after the call to pop2.
+      toks = (reverse passed_tok) ++ all_tokens   
+        at the and of the lexer_function call.
+     At the very beginning, cur_tok and all_tokens overlap, but not after.
+     At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
+     It is complicated because we cant modify ocamllex and ocamlyacc. 
+     As we want some extended lexing tricks, we have to use such globals. 
+   *)
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
   let passed_tok = ref [] in
 
-  let passed_tok2 = ref [] in (* normally equal to passed_tok, but this one is used only to put good stuff in NotParsedCorrectly *)
+  (* normally equal to passed_tok, but this one is used only to put good stuff 
+     in NotParsedCorrectly *)
+  let passed_tok2 = ref [] in 
 
   let lexer_function = 
           (fun xxxxx -> 
@@ -293,9 +332,9 @@ let parse_print_error_heuristic file =
             let v = pop2 all_tokens in
             cur_tok := v;
 
-            (*------------------------------------------------------------------*)
+            (*---------------------------------------------------------------*)
             (* typedef_fix1 *)
-            (*------------------------------------------------------------------*)
+            (*---------------------------------------------------------------*)
             let v = match v with
             | TIdent (s, ii) -> 
                 if Lexer_parser.is_typedef s 
@@ -335,9 +374,9 @@ let parse_print_error_heuristic file =
               try (
               match (v::(take_safe 10 !all_tokens),  !passed_tok ) with
 
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
               (* stringification of ident *)
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
               | (TIdent (s,i1)::_,   TOPar _::TIdent ("printk", _)::_) -> 
                   TString ((s, Ast_c.IsChar), i1)
 
@@ -349,9 +388,9 @@ let parse_print_error_heuristic file =
 
 
                    
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
               (* typedef inference *)
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
                 (*  xx xx *)
               | (TIdent (s,i1)::TIdent (s2,i2)::_  , _)
                 when (((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true)) && 
@@ -566,9 +605,9 @@ let parse_print_error_heuristic file =
                   Tsizeof
 *)
 
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
               (* higher order macro, iterator macro, debug macro *)
-              (*------------------------------------------------------------------*)
+              (*--------------------------------------------------------------*)
                (* todo: if ident contain a  for_each,  then certainly a macro 
                     at least do a pr2 ?
                *)
