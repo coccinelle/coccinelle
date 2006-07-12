@@ -483,11 +483,11 @@ let parse file =
 	Printf.printf "\n\n";
 	Printf.printf "before minus parse\n";
 	*)
-	let minus_res = parse_one PC.main file minus_tokens in
+	let minus_res = parse_one PC.minus_main file minus_tokens in
 	(*
 	Printf.printf "before plus parse\n";
 	*)
-	let plus_res = parse_one PC.main file plus_tokens in
+	let plus_res = parse_one PC.plus_main file plus_tokens in
 	(*
 	Printf.printf "after plus parse\n";
 	*)

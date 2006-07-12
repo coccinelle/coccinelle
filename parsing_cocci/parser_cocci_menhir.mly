@@ -197,8 +197,11 @@ let startofs _ = -1
 %left TPlus TMinus
 %left TMul TDiv TMod 
 
-%start main 
-%type <Ast0_cocci.rule> main
+%start minus_main 
+%type <Ast0_cocci.rule> minus_main
+
+%start plus_main 
+%type <Ast0_cocci.rule> plus_main
 
 %start meta_main
 %type <Ast_cocci.metavar list> meta_main
@@ -208,7 +211,8 @@ let startofs _ = -1
 
 %%
 
-main: body EOF { $1 } | body TArobArob { $1 }
+minus_main: minus_body EOF { $1 } | minus_body TArobArob { $1 }
+plus_main: plus_body EOF { $1 } | plus_body TArobArob { $1 }
 meta_main: metadec* TArobArob { List.concat($1) }
 
 /*****************************************************************************
@@ -343,9 +347,15 @@ ctype_qualif:
 /* have to inline everything to avoid conflicts? switch to proper
 declarations, statements, and expressions for the subterms */
 
-body: 
+minus_body: 
     f=loption(filespec) i=list(includes)
-    b=loption(function_decl_statement_or_expression)
+    b=loption(minus_function_decl_statement_or_expression)
+    ew=loption(error_words)
+    { Top_level.top_level (f@i@b@ew) }
+
+plus_body: 
+    f=loption(filespec) i=list(includes)
+    b=loption(plus_function_decl_statement_or_expression)
     ew=loption(error_words)
     { Top_level.top_level (f@i@b@ew) }
 
@@ -777,13 +787,26 @@ error_words:
 /* a mix of declarations, statements and expressions.  an expression may
 appear by itself.  always nonempty and cannot just be dots.  allows fns too. */
 
-function_decl_statement_or_expression:
+minus_function_decl_statement_or_expression: /* doesn't allow just ... */
     opt_dot_start_end(fun_exp_decl_statement_list,
 		      pre_post_decl_statement_or_expression,
 		      fun_exp_decl_statement_list)
     { List.concat
 	($1 (function x -> function y ->
 	      [Ast0.wrap(Ast0.OTHER (mkdots x y))])) }
+
+plus_function_decl_statement_or_expression: /* does allow just ... */
+    first=fun_exp_decl_statement_list { first }
+  | first=loption(fun_exp_decl_statement_list)
+      second=required_dot_start_with_ender(fun_exp_decl_statement_list,
+				    pre_post_decl_statement_or_expression,
+				    fun_exp_decl_statement_list)
+      { List.concat
+	   (first ::
+	    (second
+	       (function x -> function y ->
+		 [Ast0.wrap(Ast0.OTHER (mkdots x y))]))) }
+
 
 /* a mix of declarations, statements and expressions.  an expression may
 appear by itself.  always nonempty and cannot just be dots. */
