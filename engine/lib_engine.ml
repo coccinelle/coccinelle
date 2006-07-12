@@ -16,8 +16,6 @@ type predicate =
   | Label of string
   | PrefixLabel of string
 
-
-
 type transformation_info = 
     (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
 
