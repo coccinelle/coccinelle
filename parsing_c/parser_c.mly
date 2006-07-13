@@ -258,8 +258,8 @@ assign_expr: cond_expr                      { $1 }
 cond_expr: arith_expr                             { $1 }
 	 | arith_expr TWhy gcc_opt_expr TDotDot cond_expr { CondExpr ($1, $3, $5),      noType, [$2;$4] } /* gccext: allow optional then part */
 
-gcc_opt_expr: expr { $1 }
-            | /* empty */ { NoExpr, noType, []  }
+gcc_opt_expr: expr { Some $1 }
+            | /* empty */ { None  }
 
 arith_expr: cast_expr                     { $1 }
 	  | arith_expr TMul    arith_expr { Binary ($1, Arith Mul,      $3),        noType, [$2] }

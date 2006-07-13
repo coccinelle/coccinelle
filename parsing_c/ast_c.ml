@@ -142,9 +142,9 @@ and expressionbis =
       (((expression, (fullType * (storage * il))) either) * 
          il) list 
 
-  (* x ? : y --> x ? x : y;  if the then part is NoExpr, then we must return
+  (* x ? : y --> x ? x : y;  if the then part is None, then we must return
      the same value as in the condition, cf gccext manual *)
-  | CondExpr       of expression * expression * expression
+  | CondExpr       of expression * expression option * expression
 
   (* should be considered as statements, bad C langage *)
   | Sequence       of expression * expression                   
@@ -169,8 +169,6 @@ and expressionbis =
   (* gccext: TODO, we will certainly have to then do a special visitor for 
      initializer *)
   | Constructor 
-  (* gccext: allowed in CondExpr, but in fact it has a special meaning *)
-  | NoExpr      
 
 
   | ParenExpr of expression (* forunparser: *)

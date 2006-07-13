@@ -84,7 +84,8 @@ let rec visitor_expr_k = fun bigf expr ->
           | Left e -> (f (k, bigf)) e
           | Right (t, stoil) -> visitor_type_k bigf t
                 );
-    | CondExpr (e1, e2, e3), typ,is    -> f (k, bigf) e1; f (k, bigf) e2; f (k, bigf) e3
+    | CondExpr (e1, e2, e3), typ,is    -> 
+        f (k, bigf) e1; do_option (f (k, bigf)) e2; f (k, bigf) e3
     | Sequence (e1, e2), typ,is        -> f (k, bigf) e1; f (k, bigf) e2;
     | Assignment (e1, op, e2), typ,is  -> f (k, bigf) e1; f (k, bigf) e2;
         
@@ -106,7 +107,6 @@ let rec visitor_expr_k = fun bigf expr ->
         declxs_statxs +> List.iter (function Left decl -> visitor_decl_k bigf decl | Right stat -> visitor_statement_k bigf stat);
 
     | Constructor,typ,[] -> ()
-    | NoExpr,typ,[] -> ()
           
     | ParenExpr (e), typ,is -> f (k, bigf) e
     | x -> error_cant_have x
@@ -272,7 +272,7 @@ let rec visitor_expr_k_s = fun bigf expr ->
                    ), List.map (visitor_info_k_s bigf) ii
                                 )
                 )
-    | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, exprf e2, exprf e3)
+    | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
     | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
     | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
         
@@ -297,7 +297,6 @@ let rec visitor_expr_k_s = fun bigf expr ->
                                     ), 
            List.map (visitor_info_k_s bigf) is)
     | Constructor -> Constructor
-    | NoExpr -> NoExpr
     | ParenExpr (e) -> ParenExpr (exprf e)
     | MacroCall _ -> failwith "macrocall"
     | MacroCall2 _ -> failwith "macrocall2"

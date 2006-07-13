@@ -44,7 +44,7 @@ let rec (annotate_expr: environment -> context -> expression -> expression) =
     | CondExpr (e1, e2, e3), typ, is    -> 
         let typ' = raise Todo in
 
-        let e1' = aux e1 in let e2' = aux e2 in let e3' =  aux e3 in  
+        let e1' = aux e1 in let e2' = fmap aux e2 in let e3' =  aux e3 in  
         CondExpr (e1', e2', e3'), typ', is
     | Sequence (e1, e2), typ, is        -> 
         let typ' = raise Todo in
@@ -108,9 +108,6 @@ let rec (annotate_expr: environment -> context -> expression -> expression) =
     | Constructor,typ, is -> 
         let typ' = raise Todo in
         Constructor,typ', is
-    | NoExpr,typ, is -> 
-        let typ' = raise Todo in
-        NoExpr,typ',is
     | ParenExpr (e), typ, is -> 
         let typ' = raise Todo in
         let e' = aux e in 

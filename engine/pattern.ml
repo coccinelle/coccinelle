@@ -422,14 +422,9 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
 
 
-  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2, eb3), typ,ii) ->
-
+  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2opt, eb3), typ,ii) ->
       match_e_e ea1 eb1 >&&>
-      (match ea2opt, eb2 with
-      | None, (B.NoExpr, typ,ii) -> return true
-      | Some ea2, _ -> match_e_e ea2 eb2
-      | _,_ -> return false
-      ) >&&>
+      match_opt match_e_e ea2opt eb2opt >&&>
       match_e_e ea3 eb3
    
   (* todo?: handle some isomorphisms here ? *)
@@ -517,7 +512,6 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
   | _, (B.StatementExpr _,_,_) -> return false (* todo ? *)
   | _, (B.Constructor,_,_) -> return false
-  | _, (B.NoExpr,_,_) -> return false
   | _, (B.MacroCall _,_,_) -> return false
   | _, (B.MacroCall2 _,_,_) -> return false
 
@@ -655,11 +649,8 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	  
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
 	match_ft_ft typa typb >&&>
-	(match eaopt, ebopt with
+        match_opt match_e_e  eaopt ebopt
        (* todo: handle the iso on optionnal size specifification ? *)
-	| None, None -> return true
-	| Some ea, Some eb -> match_e_e ea eb
-	| _, _ -> return false)
 	  
     | A.StructUnionName(sa, sua),
 	(qu, (B.StructUnionName ((sb,_), sub), _)) -> 

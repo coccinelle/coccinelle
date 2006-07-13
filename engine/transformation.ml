@@ -26,6 +26,11 @@ exception NoMatch
 
 type sequence_processing_style = Ordered | Unordered
 
+let term ((s,_,_) : 'a Ast_cocci.mcode) = s
+
+let wrap_mcode (_,i,mc) = "fake", i, mc
+
+
 (******************************************************************************)
 
 let rec (transform_re_node: 
@@ -149,12 +154,8 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
     -> 
       let transform (ea, ia) (eb, ib) = 
         let ii' = tag_symbols ia ib   binding in
-        (match ea, eb with
-        | None, None -> None
-        | Some ea, Some eb -> 
-            Some (transform_e_e ea eb binding)
-        | _ -> raise NoMatch
-        ), ii'
+        transform_option (fun ea eb -> transform_e_e ea eb binding) ea eb, 
+        ii'
       in
 
       let ii' = tag_symbols [i1;i2;i5] ii  binding in
@@ -234,11 +235,11 @@ and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) 
               in
               B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
           
-	  | _ -> raise Todo
+	  | _ -> failwith "no variable in this declaration, wierd"
           )
       |	A.DisjDecl xs -> 
           xs +> List.fold_left (fun acc decla -> 
-            try transform_de_decl decla declb  binding
+            try transform_de_decl decla acc  binding
             with NoMatch -> acc
             ) declb
             
@@ -282,21 +283,24 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       (B.Ident idb', typ,ii')
 
 
-  | A.Constant ((A.Int ia),i1,mc1) , 
+  | A.Constant ((A.Int ia,_,_) as i1) , 
     ((B.Constant (B.Int ib) , typ,ii)) when ia =$= ib ->  
-        let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
+        let ii' = tag_symbols [wrap_mcode i1] ii binding in
         B.Constant (B.Int ib), typ,ii'
-  | A.Constant ((A.Char ia),i1,mc1) , 
+
+  | A.Constant ((A.Char ia,_,_) as i1) , 
    ((B.Constant (B.Char (ib,chartype)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
+        let ii' = tag_symbols [wrap_mcode i1] ii binding in
         B.Constant (B.Char (ib, chartype)), typ,ii'
-  | A.Constant ((A.String ia),i1,mc1) ,               
+
+  | A.Constant ((A.String ia,_,_) as i1),               
    ((B.Constant (B.String (ib,stringtype)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tag_symbols [ "fake", i1, mc1 ] ii binding in
+        let ii' = tag_symbols [wrap_mcode i1] ii binding in
         B.Constant (B.String (ib, stringtype)), typ,ii'
-  | A.Constant ((A.Float ia),i1,mc1) ,                
+
+  | A.Constant ((A.Float ia,_,_) as i1) ,                
    ((B.Constant (B.Float (ib,ftyp)) , typ,ii)) when ia =$= ib ->  
-        let ii' = tag_symbols [ "fake", i1, mc1  ] ii binding in
+        let ii' = tag_symbols [wrap_mcode i1] ii binding in
         B.Constant (B.Float (ib,ftyp)), typ,ii'
 
 
@@ -316,19 +320,24 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       typ,ii'
 
 
-  | A.Assignment (ea1, (opa,i1,mc1), ea2),   
+  | A.Assignment (ea1, opa, ea2),   
     (B.Assignment (eb1, opb, eb2), typ,ii) -> 
-      if Pattern.equal_assignOp opa opb 
+      if Pattern.equal_assignOp (term opa) opb 
       then
-        let ii' = tag_symbols ["fake",i1,mc1] ii  binding  in
+        let ii' = tag_symbols [wrap_mcode opa] ii  binding  in
         B.Assignment (transform_e_e ea1 eb1 binding, 
                       opb, 
                       transform_e_e ea2 eb2 binding), 
         typ, ii'
       else raise NoMatch
-  | A.CondExpr (ea1, _, ea2opt, _, ea3), 
-    (B.CondExpr (eb1, eb2, eb3), typ,ii) -> 
-      raise Todo
+  | A.CondExpr (ea1, i1, ea2opt, i2, ea3), 
+    (B.CondExpr (eb1, eb2opt, eb3), typ,ii) -> 
+      let ii' = tag_symbols [i1;i2] ii   binding in
+      B.CondExpr (transform_e_e ea1 eb1  binding,
+                  transform_option (fun a b -> transform_e_e a b binding) 
+                    ea2opt eb2opt,
+                  transform_e_e ea3 eb3 binding),
+      typ, ii'
 
   | A.Postfix (ea, (opa,_,_)), (B.Postfix (eb, opb), typ,ii) -> 
       raise Todo
@@ -338,10 +347,10 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       raise Todo
 
 
-  | A.Binary (ea1, (opa,i1,mc1), ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
-      if (Pattern.equal_binaryOp opa opb)
+  | A.Binary (ea1, opa, ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
+      if (Pattern.equal_binaryOp (term opa) opb)
       then 
-        let ii' = tag_symbols ["fake", i1, mc1] ii binding in
+        let ii' = tag_symbols [wrap_mcode opa] ii binding in
         B.Binary (transform_e_e ea1 eb1   binding, 
                   opb,  
                   transform_e_e ea2 eb2  binding),  
@@ -388,7 +397,10 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
   | A.DisjExpr eas, eb -> 
-      failwith "todo1"
+      eas +> List.fold_left (fun acc ea -> 
+        try transform_e_e ea acc  binding
+        with NoMatch -> acc
+        ) eb
 
   | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
       failwith "not handling Opt/Unique/Multi on expr"
@@ -404,7 +416,6 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
   | _, (B.StatementExpr _,_,_) -> raise NoMatch  (* todo ? *)
   | _, (B.Constructor,_,_) -> raise NoMatch
-  | _, (B.NoExpr,_,_) -> raise NoMatch
   | _, (B.MacroCall _,_,_) -> raise NoMatch
   | _, (B.MacroCall2 _,_,_) -> raise NoMatch
 
@@ -508,7 +519,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
     match A.unwrap typa, typb with
       (* cas general *)
     | A.MetaType ida,  typb -> raise Todo
-    | A.BaseType ((basea,i1,mc1), signaopt),   (qu, (B.BaseType baseb, ii)) -> 
+    | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, ii)) -> 
        (* In ii there is a list, sometimes of length 1 or 2 or 3.
           And even if in baseb we have a Signed Int, that does not mean
           that ii is of length 2, cos Signed is the default, so
@@ -521,27 +532,27 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
           (match signa, signb with
           (* iso on sign, if not mentioned then free.  tochange? *)
           | None, _ -> []
-          | Some (a,i1,mc1),  b -> 
-              if Pattern.equal_sign a b
+          | Some a,  b -> 
+              if Pattern.equal_sign (term a) b
               then raise Todo
               else raise NoMatch
           ) in
         
         let qu' = qu in (* todo ? or done in transform_ft_ft ? *)
         qu', 
-	(match basea, baseb with
+	(match term basea, baseb with
         |  A.VoidType,  B.Void -> assert (signaopt = None); 
-            let ii' = tag_symbols ["fake",i1,mc1] ii binding in
+            let ii' = tag_symbols [wrap_mcode basea] ii binding in
             (B.BaseType B.Void, ii')
 	| A.CharType,  B.IntType B.CChar -> 
-            let ii' = tag_symbols ["fake",i1,mc1] ii binding in
+            let ii' = tag_symbols [wrap_mcode basea] ii binding in
             (B.BaseType (B.IntType B.CChar), ii')
 	| A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
             raise Todo
 	| A.IntType,   B.IntType (B.Si (signb, B.CInt))   ->
             if List.length ii = 1 
             then 
-              let ii' = tag_symbols ["fake",i1,mc1] ii binding in
+              let ii' = tag_symbols [wrap_mcode basea] ii binding in
               (B.BaseType (B.IntType (B.Si (signb, B.CInt))), ii')
                   
             else raise Todo
@@ -563,19 +574,19 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
         
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
-    | A.StructUnionName((sa,i1,mc1), (sua,i2,mc2)), 
+    | A.StructUnionName(sa, sua), 
       (qu, (B.StructUnionName ((sb,level), sub), ii)) -> 
-        if Pattern.equal_structUnion  sua sub && sa =$= sb
+        if Pattern.equal_structUnion  (term sua) sub && (term sa) =$= sb
         then
-          let ii' = tag_symbols ["fake",i2,mc2; sa,i1,mc1] ii  binding in
+          let ii' = tag_symbols [wrap_mcode sua; sa] ii  binding in
           (qu, (B.StructUnionName ((sb,level), sub), ii'))
         else raise NoMatch
         
 
-    | A.TypeName (sa,i1,mc1),  (qu, (B.TypeName sb, ii)) ->
-        if sa =$= sb
+    | A.TypeName sa,  (qu, (B.TypeName sb, ii)) ->
+        if (term sa) =$= sb
         then
-          let ii' = tag_symbols [sa,i1,mc1] ii binding in
+          let ii' = tag_symbols [wrap_mcode sa] ii binding in
           qu, (B.TypeName sb, ii')
         else raise NoMatch
         
@@ -592,18 +603,18 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) =
  fun ida (idb, ii) -> 
   fun binding -> 
     match A.unwrap ida, idb with
-    | A.Id (sa,i1,mc1), sb when sa =$= sb -> 
-        let ii' = tag_symbols [sa, i1, mc1] ii binding in
+    | A.Id sa, sb when (term sa) =$= sb -> 
+        let ii' = tag_symbols [wrap_mcode sa] ii binding in
         idb, ii'
 
-    | A.MetaId (ida,i1,mc1), sb -> 
+    | A.MetaId ida, sb -> 
       (* get binding, assert =*=,  distribute info in i1 *)
-        let v = binding +> List.assoc (ida : string) in
+        let v = binding +> List.assoc ((term ida) : string) in
       (match v with
       | B.MetaIdVal sa -> 
           if(sa =$= sb) 
           then
-            let ii' = tag_symbols [sa, i1, mc1] ii binding in
+            let ii' = tag_symbols [wrap_mcode ida] ii binding in
             idb, ii'
           else raise NoMatch
       | _ -> raise Impossible
@@ -611,6 +622,13 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) =
         
     | _ -> raise Todo
 
+
+(* -------------------------------------------------------------------------- *)
+and transform_option f t1 t2 =
+  match (t1,t2) with
+    (Some t1, Some t2) -> Some (f t1 t2)
+  | (None, None) -> None
+  | _ -> raise NoMatch
 
 
 (******************************************************************************)

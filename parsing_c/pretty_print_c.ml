@@ -43,7 +43,7 @@ let rec pp_expression_gen pr_elem =
       pr_elem i2;
       
   | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> 
-      pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2; 
+      pp_expression e1; pr_elem i1; do_option pp_expression e2; pr_elem i2; 
       pp_expression e3
   | Sequence (e1, e2),          typ,[i]  -> 
       pp_expression e1; pr_elem i; pp_expression e2
@@ -82,7 +82,6 @@ let rec pp_expression_gen pr_elem =
       pr_elem ii2;
       pr_elem i2;
   | Constructor, typ,[] -> pr "<<constructur_or_strange_stuff>>"
-  | NoExpr, typ,[] -> ()
 
   | ParenExpr (e), typ,[i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
