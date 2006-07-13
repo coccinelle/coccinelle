@@ -317,6 +317,10 @@ let make_seq n first = function
     None -> first
   | Some rest -> wrapAnd n (first,wrapAX n rest)
 
+let and_opt n first = function
+    None -> first
+  | Some rest -> wrapAnd n (first,rest)
+
 let make_cond n branch re = wrapImplies n (branch,wrapAX n re)
 
 let contains_modif =
@@ -400,6 +404,7 @@ and statement quantified stmt after =
   let wrapNot = wrapNot n in
   let wrapPred = wrapPred n in
   let make_seq = make_seq n in
+  let and_opt = and_opt n in
   let make_cond = make_cond n in
   let quantify = quantify n in
   let make_match = make_match n in
@@ -408,23 +413,72 @@ and statement quantified stmt after =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,i,d)) ->
+	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)))
+      |	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d))) ->
 	  let label_var = fresh_label_var "lab" in
-	  let metamatch =
-	    make_match
-	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
+	  let matcher d =
+	    make_match
+	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
+	  let full_metamatch = matcher d in
+	  let first_metamatch =
+	    matcher
+	      (match d with
+		Ast.CONTEXT(Ast.BEFOREAFTER(bef,_)) ->
+		  Ast.CONTEXT(Ast.BEFORE(bef))
+	      |	Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
+	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+	  let middle_metamatch =
+	    matcher
+	      (match d with
+		Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
+	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+	  let last_metamatch =
+	    matcher
+	      (match d with
+		Ast.CONTEXT(Ast.BEFOREAFTER(_,aft)) ->
+		  Ast.CONTEXT(Ast.AFTER(aft))
+	      |	Ast.CONTEXT(_) -> d
+	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+
+	  let first_node =
+	    let fvs = get_unquantified quantified [s] in
+	    wrapAnd(quantify fvs (make_raw_match ast),label_pred) in
+	  let left_or =
+	    make_seq full_metamatch
+	      (Some(and_opt (wrapNot(prelabel_pred)) after)) in
+	  let right_or =
+	    make_seq first_metamatch
+	      (Some(wrapAU(wrapAnd(middle_metamatch,prelabel_pred),
+			   make_seq (wrapAnd(last_metamatch,prelabel_pred))
+			     (Some(and_opt (wrapNot(prelabel_pred))
+				     after))))) in
+	  quantify [label_var]
+	    (wrapAnd(first_node,wrapOr(left_or,right_or)))
+
+      |	Ast.MetaStmt((s,i,d)) ->
+	  let label_var = fresh_label_var "lab" in
+	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
+	  let prelabel_pred =
+	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
+	  let matcher d =
+	    make_match
+	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
+	  let first_metamatch = matcher d in
+	  let rest_metamatch =
+	    matcher
+	      (match d with
+		Ast.MINUS(_) -> Ast.MINUS([])
+	      | Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
+	      | Ast.PLUS -> failwith "not possible") in
 	  let first_node =
 	    let fvs = get_unquantified quantified [s] in
 	    wrapAnd(quantify fvs (make_raw_match ast),
-		    wrapAnd(metamatch,label_pred)) in
-	  let rest_nodes = wrapAnd(metamatch,prelabel_pred) in
-	  let last_node =
-	    match after with
-	      Some after -> wrapAnd(wrapNot(prelabel_pred),after)
-	    | None -> wrapNot(prelabel_pred) in
+		    wrapAnd(first_metamatch,label_pred)) in
+	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
+	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
 	  quantify [label_var]
 	    (make_seq first_node (Some (wrapAU(rest_nodes,last_node))))
       |	_ ->
