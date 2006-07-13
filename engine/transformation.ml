@@ -10,17 +10,14 @@ module F = Control_flow_c
 
 
 (******************************************************************************)
-(* todo:
- 
- Must do some try, for instance when f(...,X,Y,...) have to test the transfo 
- for all the combinaitions (and if multiple transfo possible ? pb ? 
- => the type is to return a   expression option ? use some combinators to help ?
+(* todo: Must do some try, for instance when f(...,X,Y,...) have to test the 
+   transfo for all the combinaitions (and if multiple transfo possible ? pb ? 
+   => the type is to return a   expression option ? use some combinators to 
+    help ?
 
- For some nodes I dont have all the info, for instance for } I need to modify 
- the node of the start, it is where the info is.
- Same for Else.
- 
-*)
+   For some nodes I dont have all the info, for instance for } I need to modify 
+   the node of the start, it is where the info is.
+   Same for Else. *)
 (******************************************************************************)
 
 type ('a, 'b) transformer = 'a -> 'b -> Ast_c.metavars_binding -> 'b
@@ -32,11 +29,14 @@ type sequence_processing_style = Ordered | Unordered
 (******************************************************************************)
 
 let rec (transform_re_node: 
-           (Ast_cocci.rule_elem, Control_flow_c.node) transformer) = 
+    (Ast_cocci.rule_elem, Control_flow_c.node) transformer) = 
  fun re node -> 
   fun binding -> 
 
   match A.unwrap re, F.unwrap node with
+  | A.MetaRuleElem mcode, _ -> 
+      failwith "todo: handle MetaRuleElem in transformation"
+
   (* rene cant have found that a state containing a fake/exit/... should be 
      transformed *)
   | _, F.Enter | _, F.Exit -> raise Impossible
@@ -45,10 +45,9 @@ let rec (transform_re_node:
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> 
       raise Impossible
 
-  | A.MetaRuleElem mcode, _ -> 
-      failwith "todo: handle MetaRuleElem in transformation"
 
-  (* todo?: it can match a MetaStmt too !! and we have to get all the concerned nodes *)
+  (* todo?: it can match a MetaStmt too !! and we have to get all the 
+     concerned nodes *)
   | A.SeqStart _mcode, F.StartBrace (level, statement) -> 
       pr2 "transformation: dont handle yet braces well. I pass them";
       (F.StartBrace (level, statement)) +> F.rewrap node 
@@ -70,7 +69,11 @@ let rec (transform_re_node:
     F.HeadFunc (idb, (retb, paramsb, isvaargs, (iidotsb, iiparensb)), 
                 stob, compoundb, (infoidb, iistob, iicpb))
     -> 
-      let stob' = (match stoa with None -> stob | Some x -> raise Todo) in
+      let stob' = 
+        (match stoa with 
+        | None -> stob 
+        | Some x -> failwith "not handling storage"
+        ) in
       let iistob' = iistob in (* todo *)
 
       let (idb', infoidb') = transform_ident ida (idb, [infoidb])   binding in
@@ -82,13 +85,14 @@ let rec (transform_re_node:
         (match A.unwrap paramsa with 
         | A.DOTS _ -> Ordered 
         | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> raise Todo) 
+        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
+        ) 
       in
       let paramsb' = 
         transform_params seqstyle (A.undots paramsa) paramsb    binding 
       in
 
-      if isvaargs then raise Todo;
+      if isvaargs then failwith "not handling variable length arguments func";
       let iidotsb' = iidotsb in (* todo *)
 
       let typb' = (retb, paramsb', isvaargs, (iidotsb', iiparensb')) in
@@ -106,7 +110,7 @@ let rec (transform_re_node:
 
 
 
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
 and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  = 
  fun re st -> 
@@ -122,7 +126,8 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
   | A.MetaStmt ((ida,_,i1)),  stb -> 
       failwith "I cant have been called. I can only transform MetaRuleElem."
 
-  | A.MetaStmtList _, _ -> raise Todo
+  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
+      
 
   | A.ExprStatement (ea, i1), (B.ExprStatement (Some eb), ii) -> 
       let ii' = tag_symbols [i1] ii  binding in
@@ -137,7 +142,8 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
   | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
       raise Todo
 
-  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> 
+  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), 
+    (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> 
       raise Todo
 
 
@@ -181,9 +187,10 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
   | _, _ -> raise NoMatch
 
 
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
-and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) = fun decla declb -> 
+and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
+ fun decla declb -> 
   fun binding -> 
   match declb with
     (B.DeclList ([var], (iisto, iiptvirgb ))) -> 
@@ -195,7 +202,8 @@ and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) 
               let typb' = transform_ft_ft typa typb  binding in
               let (idb', iidb') = transform_ident ida (idb, [iidb])  binding in
               
-              let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg in
+              let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg
+              in
               B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
           
 	  | _ -> raise Todo
@@ -206,7 +214,9 @@ and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) 
             with NoMatch -> acc
             ) declb
             
-      | A.Init _ -> pr2 "warning: not handling yet initializer patterns"; raise NoMatch
+      | A.Init _ -> 
+          pr2 "warning: not handling yet initializer patterns"; 
+          raise NoMatch
       | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> raise Todo
 
       )
@@ -215,9 +225,10 @@ and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) 
   
                 
   
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
-and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun ep ec -> 
+and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = 
+ fun ep ec -> 
   fun binding -> 
   
   match A.unwrap ep, ec with
@@ -374,7 +385,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = fun 
 
 
 
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
 and (transform_arguments: 
    sequence_processing_style -> 
@@ -449,7 +460,7 @@ and (transform_param:
     | A.PComma _, _ -> raise Impossible
     | _ -> raise Todo
 
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = 
  fun typa typb -> 
   fun binding -> 
@@ -545,7 +556,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
         
 
 
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
 and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
  fun ida (idb, ii) -> 

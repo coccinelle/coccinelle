@@ -1,10 +1,11 @@
-# Don't forget to first do a 'make links' to be able to compile the standalone c parser
 
 TARGET=c_parser
 
-SOURCES = flag_parsing_c.ml ast_c.ml type_annoter_c.ml semantic_c.ml visitor_c.ml \
-          control_flow_c.ml lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
-          unparse_c.ml pretty_print_c.ml abstract_line_c.ml
+SOURCES = \
+ flag_parsing_c.ml ast_c.ml pretty_print_c.ml type_annoter_c.ml semantic_c.ml \
+ visitor_c.ml control_flow_c.ml \
+ lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
+ unparse_c.ml  abstract_line_c.ml
 
 SYSLIBS = str.cma unix.cma 
 
