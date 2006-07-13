@@ -1,28 +1,12 @@
 @@
 local function ioctlfn;
 identifier dev, cmd, arg;
-fresh identifier i, f;
 identifier v;
 type T;
 statement S1, S2;
 identifier fld;
+expression E1,E2;
 @@
-  ioctlfn(
--       struct video_device *dev,
-+       struct inode *i, struct file *f,
-        unsigned int cmd, void *arg) {
-    <...
-    {
+-     if (copy_from_user(&v,arg,sizeof(v)) != 0) return E1;
       ...
-      T v;
-      ...
--     if (copy_from_user(&v,arg,sizeof(v)) != 0) S1
-      <...
--     v.fld
-+     v->fld
-      ...>
-?-    if (copy_to_user(&v,arg,sizeof(v))) S2
-      ...
-    }
-    ...>
-  }
+?-    if (copy_to_user(&v,arg,sizeof(v))) return E2;
