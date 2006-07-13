@@ -429,7 +429,8 @@ let parse_one parsefn file toks =
       v in
 
   let lexbuf_fake =
-    Lexing.from_function (function buf -> function n -> raise Common.Todo) in
+    Lexing.from_function (function buf -> function n -> raise Common.Impossible)
+  in
 
   try parsefn lexer_function lexbuf_fake 
   with 

@@ -6,61 +6,68 @@ open Commonop
 
 (* 
 
- try extract all the quite generic function from lfs
-  le execute_and_show_progress, timeout_func, ...
- make a generic timeout function in caml (or call timeout(1))
+ Try extract all the quite generic function from lfs
+ le execute_and_show_progress, timeout_func, ...
+ Make a generic timeout function in caml (or call timeout(1))
 
- a tracer/logger/profiler, (sux to put let _ = pr Here in, ou les Timing) 
-   en + kan ca boucle ocamldebug c bof 
- aimerait voir la valeur des arguments aux fonc kan le truc a crashé, comme en perl quoi
+ A tracer/logger/profiler, (sux to put let _ = pr Here in, ou les Timing) 
+ en + kan ca boucle ocamldebug c bof.
+ Aimerait voir la valeur des arguments aux fonc kan le truc a crashé, comme en
+ perl quoi.
  
- cil (from necula) seems to have good trace, profiling  utilities function (in ocamlutil dir)
- unison has also good function (in ubase)
+ CIL (from necula) seems to have good trace, profiling  utilities function
+ (in ocamlutil dir).
+ unison has also good function (in ubase).
 
  debug, tywith, fix_caml tracing, 
  try and printexn and camlp4 => better trace of exception
  fix_caml  (use camlp4 ?)
 
- an assert/raise/... that print the backtrace
- or learn replay, i have pb with it to find fastly where was the error
+ An assert/raise/... that print the backtrace.
+ Or learn replay, I have pb with it to find fastly where was the error.
  
 
- lourd les
-                when (((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true)) && 
-                     ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true))) 
+ Lourd les
+ when (((match take_safe 1 !passed_tok with [Tstruct _] -> false| _ -> true)) &&
+       ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true))) 
   des que ajoute des infos au token.
- De meme quand veut extraire les infos, obliger de faire une fonction qui traite chacun des cas (If _,info -> info | While _,_,_,info > info ...)
+ De meme quand veut extraire les infos, obliger de faire une fonction qui 
+ traite chacun des cas (If _,info -> info | While _,_,_,info > info ...)
 
- how avoid to put all those ugly printf in my code
+ How avoid to put all those ugly printf in my code
  let action = Assisted_trajectory.assisted state t_state trajectory oracle in
      let _ = Printf.printf "\n XXX action = %s\n" (string_of_action action) in 
    can do a trace (but will not have the "action =") => with a fix_caml tricks
    how infer good func to call (we have not a generic show)
 
- take common.ml2
+ Take common.ml2
  Y, memo, ... cf dir hack and fun
 
- less: y'a des binary methods now in ocaml (cf manual caml) so perhaps can do inter/union/... of seti/set/.. cleanly
+ less: y'a des binary methods now in ocaml (cf manual caml) so perhaps can 
+ do inter/union/... of seti/set/.. cleanly
 
 
- advanced invariant weaving
-  cf fixed_int => call the invariant func
-  type filename = string (*  TODO could check that exist :) type sux  *)
+ Advanced invariant weaving.
+ cf fixed_int => call the invariant func
+ type filename = string (*  TODO could check that exist :) type sux  *)
 
  better pre/post/... sugar
   (ca sux c explicit inv_fixed, et c let sinx_aux, ...
 
- fix comment diezedieze cos fout en l'air l'indentation, color => need emacs mode fix
+ Fix comment diezedieze cos fout en l'air l'indentation, color => need 
+ emacs mode fix.
 
  return/when/unless/ a la Perl ... sux those ifthenelse
         if depth <= 0 then (print_string "fail but run"; [])
-        else if t_state > (times.((Array.length times) - 2)) then (print_string "no more spline"; [])
+        else if t_state > (times.((Array.length times) - 2)) 
+             then (print_string "no more spline"; [])
         else 
-  ca sux ca, why ? cos dont visually see what is algorithm from error/special case handling
-   for me if then else mean an algorithm whereas raise when ... mean handle the fucking
-   special case (that could be filtered after by pof)
+  Ca sux ca, why ? cos dont visually see what is algorithm from error/special
+  case handling.
+  For me if then else mean an algorithm whereas raise when ... mean handle 
+  the fucking special case (that could be filtered after by pof).
 
- special form via macro (as the || die that just do a try around the call)
+ Special form via macro (as the || die that just do a try around the call).
  pof:
   what is algo, error handling (cf below, need a raise ... when ...)
   what is debugging (either printf, or Graphics, ...)
@@ -68,14 +75,14 @@ open Commonop
 
 
 visual:
- as in perl, map, fold, ...
-  look at all the open, then assign a color per module, then
-   parse the file to extract the func, then print good color when func
-  OR simply put each time explicit name
- ref in a special color
- type in lib.ml, put them in color (or special symbol) => easier to understand i think
- use inference info to colorify more (=> give feedback, as for indentation)
- related: automatically infer code (use inference feedback)
+ As in perl, map, fold, ...
+ look at all the open, then assign a color per module, then
+ parse the file to extract the func, then print good color when func
+ OR simply put each time explicit name
+ Ref in a special color
+ Type in lib.ml, put them in color (or special symbol) => easier to understand i think
+ Use inference info to colorify more (=> give feedback, as for indentation)
+ related: automatically infer code (use inference feedback).
 
 
 
@@ -87,20 +94,20 @@ let  (run_to_states_run: state -> run -> states_run) =
         next::(run_to_states_run next xs)
                 in
   aux
-peut faire mieux, combinator general
+Peut faire mieux, combinator general.
 
-read_bool
+read_bool.
 
 let _ = if _Update then try Trajectory.doit map_name with _ -> () in
- do via sandbox (either special form of secure(fun() -> ...)
-sandbox time fcts check_better
+Do via sandbox (either special form of secure(fun() -> ...).
+Sandbox time fcts check_better.
 
-on lisp: graham   
+On lisp: graham   
 complement 
 !
 fif?
 
-apply fcts in turn while having the time
+Apply fcts in turn while having the time
 
 
 *)
@@ -112,20 +119,22 @@ apply fcts in turn while having the time
   let v = ((fix_to_i fixed) / (power 2 16)) in
   let _ = Printf.printf "coord xy = %d\n" v in
   v
- the need for printf make me force to name stuff => :(( how avoid ? use 'it' special keyword ?)
- update: in fact dont have to name it, use +> (fun v -> ...)  so when want erase debug just
-  have to erase one line
+ The need for printf make me force to name stuff => :(( how avoid ? use 'it' 
+ special keyword ?).
+ update: in fact dont have to name it, use +> (fun v -> ...)  so when want
+  erase debug just have to erase one line.
 
- un fichier option.ml qui contient toutes les constantes/... qui peuvent etre modifier
-  a runtime et un main.ml avec un getopt qui les modifie
+ Un fichier option.ml qui contient toutes les constantes/... qui peuvent etre
+  modifier a runtime et un main.ml avec un getopt qui les modifie.
  update: just need call the Arg. module ?
 
 *)
 
-(******************************************************************************************)
+(******************************************************************************)
 (* We use *)
-(******************************************************************************************)
-(* functions  List.rev, List.mem, List.partition, List.fold*, ... max min, =, <=, ... 
+(******************************************************************************)
+(* functions  
+    List.rev, List.mem, List.partition, List.fold*, ... max min, =, <=, ... 
     List.concat
 *)
 
@@ -133,8 +142,8 @@ apply fcts in turn while having the time
 
 
 (* Format lib can be useful, allow to hide passing an indent_level variable.
-    You use as usual the print_string function except that there is this
-    automatic indent_level variable handled for you (and certainly more services)
+   You use as usual the print_string function except that there is this
+   automatic indent_level variable handled for you (and certainly more services)
    src: julia in coccinelle unparse_cocci
 
    ExprAt technique (src: norman ramsey), 
@@ -143,11 +152,12 @@ apply fcts in turn while having the time
    forbid polymorphic  =  by redefining it
 *)
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Prelude *)
-(*******************************************************************************)
+(******************************************************************************)
 
-(* only relevant in bytecode, in native the stacklimit is the os stacklimit (adjustable by ulimit -s) *)
+(* only relevant in bytecode, in native the stacklimit is the os stacklimit
+   (adjustable by ulimit -s) *)
 let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
 
 (*
@@ -182,9 +192,9 @@ let (list_of_string: string -> char list) = fun s ->
 let push2 v l =
   l := v :: !l
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Debugging/logging *)
-(*******************************************************************************)
+(******************************************************************************)
 
 let pr s = (print_string s; print_string "\n"; flush stdout)
 let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr)
@@ -193,7 +203,11 @@ include Printf
 
 let _chan = ref stderr
 let verbose_level = ref 1
-let start_log_file () = _chan := open_out ("/tmp/debugml" ^ (string_of_int (Unix.getuid ())) ^ ":" ^ (string_of_int (Unix.getpid())))
+let start_log_file () = 
+  _chan := open_out ("/tmp/debugml" ^ 
+                     (string_of_int (Unix.getuid ())) ^ 
+                     ":" ^ (string_of_int (Unix.getpid())))
+
 let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
 let log s =  if !verbose_level >= 1 then dolog s
 let log2 s = if !verbose_level >= 2 then dolog s
@@ -207,8 +221,10 @@ let add_var() = incr _trace_var
 let dec_var() = decr _trace_var
 let get_var() = !_trace_var
 
-let (print_n: int -> string -> unit) = fun i s -> do_n i (fun () -> print_string s)
-let (printerr_n: int -> string -> unit) = fun i s -> do_n i (fun () -> prerr_string s)
+let (print_n: int -> string -> unit) = fun i s -> 
+  do_n i (fun () -> print_string s)
+let (printerr_n: int -> string -> unit) = fun i s -> 
+  do_n i (fun () -> prerr_string s)
 
 let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
 
@@ -217,12 +233,14 @@ let debugon  () = _debug := true
 let debugoff () = _debug := false
 let debug f = if !_debug then f () else ()
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Profiling *)
-(*******************************************************************************)
+(******************************************************************************)
 
 let get_mem() =
-  ignore(Sys.command("grep VmData /proc/" ^ string_of_int (Unix.getpid()) ^ "/status"))
+  ignore(Sys.command("grep VmData /proc/" ^ 
+                     string_of_int (Unix.getpid()) ^ 
+                     "/status"))
 
 let memory_stat () =
   let stat = Gc.stat() in
@@ -236,7 +254,8 @@ let timenow () =
   "sys:" ^ (string_of_float (Sys.time ())) ^ " seconds" ^
   ":real:" ^ 
     (let tm = Unix.time () +> Unix.gmtime in
-     tm.Unix.tm_min +> string_of_int ^ " min:" ^ tm.Unix.tm_sec +> string_of_int ^ ".00 seconds")
+     tm.Unix.tm_min +> string_of_int ^ " min:" ^ 
+       tm.Unix.tm_sec  +> string_of_int ^ ".00 seconds")
 
 let _count1 = ref 0  
 let _count2 = ref 0  
@@ -260,9 +279,9 @@ let time_func f =
 (*   let _ = Timing () in *)
   x
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Test *)
-(*******************************************************************************)
+(******************************************************************************)
 let example b = assert b
 
 (* let _ = Example (enum 1 4 = [1;2;3;4]) *)
@@ -297,9 +316,9 @@ let (test: string -> unit) = fun s ->
 
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Quickcheck like (sfl) *)
-(******************************************************************************************)
+(******************************************************************************)
 (* better than quickcheck, cos cant do a test_all_prop in haskell cos
     prop were function, whereas here we have not prop_Unix x = ... but laws "unit" ...
    how do without overloading ? objet ? can pass a generator as a parameter, mais
@@ -462,9 +481,9 @@ let counter3 () = (_counter3 := !_counter3 +1; !_counter3)
 
 type timestamp = int
 
-(******************************************************************************************)
+(******************************************************************************)
 (* String_of *)
-(******************************************************************************************)
+(******************************************************************************)
 (* to work with the macro system autogenerated string_of and print_ function (kind of deriving) *)
 
 (* int, bool, char, float, ref ?, string *) 
@@ -519,9 +538,9 @@ let pp_init f =
 let pp s = Format.print_string s
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Macro *)
-(******************************************************************************************)
+(******************************************************************************)
 
 (* put your macro in macro.ml4, and you can test it interactivly as in lisp *)
 let macro_expand s = 
@@ -613,14 +632,14 @@ let (run_hooks_action: 'a -> ('a -> unit) list ref -> unit) = fun obj hooks ->
 
 
 type 'a mylazy = (unit -> 'a)
-(******************************************************************************************)
+(******************************************************************************)
 (* Error managment *)
-(******************************************************************************************)
+(******************************************************************************)
 
 exception Todo
 exception Impossible
 exception Here
-exception Return
+exception ReturnExn
 
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
@@ -642,9 +661,9 @@ let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
 
 exception Timeout
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Equality *)
-(******************************************************************************************)
+(******************************************************************************)
 
 (* Using the generic (=) is tempting, but it backfires, so better avoid it *)
 (* To infer all the code that use an equal, and that should be transformed, is not
@@ -671,9 +690,9 @@ let (=*=) = (=)
 let (=) = (=|=)
 *)
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Bool *)
-(******************************************************************************************)
+(******************************************************************************)
 let (==>) b1 b2 = if b1 then b2 else true (* could use too => *)
 
 let (<=>) a b = if a = b then 0 else if a < b then -1 else 1
@@ -696,9 +715,9 @@ let is_lower = cbetween 'a' 'z'
 let is_alpha c = is_upper c || is_lower c
 let is_digit = cbetween '0' '9'
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Num *)
-(******************************************************************************************)
+(******************************************************************************)
 
 (*  normally in 3.08 div by zero raise Div_by_rezo, and not anymore a hardware trap :) *)
 let (/!) x y = if y = 0 then (log "common.ml: div by 0"; 0) else x / y
@@ -806,9 +825,9 @@ let int_of_all s =
 let (+=) ref v = ref := !ref + v
 let (-=) ref v = ref := !ref - v
 
-(*******************************************************************************)
+(******************************************************************************)
 (* Numeric/overloading *)
-(*******************************************************************************)
+(******************************************************************************)
 
 type 'a numdict = 
     NumDict of (('a-> 'a -> 'a) * 
@@ -855,9 +874,9 @@ let double a = a,a
 let swap (x,y) = (y,x)
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Maybe *)
-(******************************************************************************************)
+(******************************************************************************)
 
 (* type 'a      maybe  = Just of 'a | None *)
 
@@ -875,6 +894,11 @@ let some = just
 let fmap f = function
   | None -> None
   | Some x -> Some (f x)
+
+let do_option f = function
+  | None -> ()
+  | Some x -> f x
+
 
 let optionise f = 
   try Some (f ()) with _ -> None
@@ -913,9 +937,9 @@ let rec find_some p = function
       |	None -> find_some p l
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Strings *)
-(******************************************************************************************)
+(******************************************************************************)
 
 let slength = String.length
 let concat = String.concat
@@ -955,9 +979,9 @@ let rec split_on_char c s =
 
 let lowercase = String.lowercase
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Regexp *)
-(******************************************************************************************)
+(******************************************************************************)
 
 (* different from perl a little, must match the entire way  "testBee" =~ "Bee" is wrong
     but "testBee" ".*Bee" is right
@@ -1008,9 +1032,9 @@ let (split_list_regexp: string -> string list -> (string * string list) list) = 
     +> (fun xs -> if (List.hd xs) = ("__noheading__", []) then List.tl xs else xs)
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Filenames *)
-(******************************************************************************************)
+(******************************************************************************)
 
 let dirname = Filename.dirname
 let basename = Filename.basename
@@ -1034,9 +1058,9 @@ let () = example "without"
 *)
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Dates *)
-(******************************************************************************************)
+(******************************************************************************)
 
 let int_to_month i = 
   assert (i <= 12 && i >= 1);
@@ -1056,9 +1080,9 @@ let int_to_month i =
   | _ -> raise Impossible
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Lines/words/strings *)
-(******************************************************************************************)
+(******************************************************************************)
 
 let (list_of_string: string -> char list) = fun s -> 
   (enum 0 ((String.length s) - 1) +> List.map (String.get s))
@@ -1105,9 +1129,9 @@ let (unlines: string list -> string) = fun s ->
 let (words: string -> string list)   = fun s -> Str.split (Str.regexp "[ \t()\";]+") s
 let (unwords: string list -> string) = fun s -> String.concat "" s
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Process/Files *)
-(******************************************************************************************)
+(******************************************************************************)
 let cat_orig file = 
   (*let _ = Timing () in*)
   let chan = open_in file in
@@ -1119,7 +1143,6 @@ let cat_orig file =
     with End_of_file -> [] in
   aux()
 
-let cat2 file = raise Todo
 (* tail recursive efficient version *)
 let cat file = 
   (*let _ = Timing () in*)
@@ -1800,9 +1823,9 @@ let array_find_index f a =
   in
   try array_find_index_ 0 with _ -> raise Not_found
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Fast array *)
-(******************************************************************************************)
+(******************************************************************************)
 (*
 module B_Array = Bigarray.Array2
 *)
@@ -1990,9 +2013,9 @@ let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs ->
 
 let _ = example (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Assoc int -> xxx with binary tree *)
-(******************************************************************************************)
+(******************************************************************************)
 (* type robot_list = robot_info IntMap.t *)
 module IntMap = Map.Make
     (struct
@@ -2076,14 +2099,14 @@ let pop2 l =
   v
 
 
-(******************************************************************************************)
+(******************************************************************************)
 (* Binary tree *)
-(******************************************************************************************)
+(******************************************************************************)
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 
-(************************************************************************************)
+(******************************************************************************)
 (* Graph *)
-(************************************************************************************)
+(******************************************************************************)
 (* todo: generalise to put in common (need 'edge (and 'c ?) , 
   and take in param a display func, cos caml suck
    no overloading of show :( 

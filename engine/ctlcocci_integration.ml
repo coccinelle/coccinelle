@@ -4,16 +4,13 @@ open Ograph_extended
 
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
+
+(******************************************************************************)
+
 (* Take list of pred  and for each pred return where in control flow
 it matches (and the set of subsitutions for this match). *)
-
 let (labels_for_ctl: 
-  (nodei * Control_flow_c.node) list -> 
-  (Lib_engine.predicate ->
-    (nodei * 
-     (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) 
-     Ast_ctl.generic_substitution)
-    list)) = 
+ (nodei * Control_flow_c.node) list -> Lib_engine.label_ctlcocci) =
   fun nodes ->
 
    (fun pred -> 
@@ -21,7 +18,7 @@ let (labels_for_ctl:
      if !Flag_engine.debug_engine
      then begin 
        pp_init (fun () -> 
-         Format.print_string "labeling: pred =";
+         pp "labeling: pred =";
          Format.print_space ();
          Lib_engine.pp_predicate pred;
          );
@@ -84,18 +81,18 @@ let (labels_for_ctl:
      if !Flag_engine.debug_engine
      then begin 
        pp_init (fun () -> 
-         Format.print_string "labeling: result =";
+         pp "labeling: result =";
          Format.print_space ();
          
          pp_do_in_box (fun () -> 
-           Format.print_string "{";
+           pp "{";
            Common.print_between 
-             (fun () -> Format.print_string ";"; Format.print_cut())
+             (fun () -> pp ";"; Format.print_cut())
              (fun (nodei, subst) -> 
                Format.print_int nodei;
                pp_do_in_box (fun () -> Lib_engine.pp_binding2_ctlsubst subst)
              ) nodes';
-           Format.print_string "}";
+           pp "}";
                       );
                )
      end;
@@ -112,8 +109,7 @@ let (control_flow_for_ctl:
 
 (* Just make the final node of the control flow loop over itself. 
    It seems that one hypothesis of the SAT algorithm is that each node as at least a successor.
-   todo?: erase some fake nodes ? (and adjust the edges accordingly)
-*)
+   todo?: erase some fake nodes ? (and adjust the edges accordingly) *)
 let (fix_flow_ctl: 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
@@ -129,8 +125,7 @@ let (fix_flow_ctl:
   assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
     List.length ((flow#successors nodei)#tolist) >= 1 
     (* no:  && List.length ((flow#predecessors nodei)#tolist) >= 1  
-       because    the enter node at least have no predecessors 
-     *)
+       because    the enter node at least have no predecessors *)
       ));
 
   flow
@@ -144,9 +139,7 @@ let model_for_ctl  cflow =
  newflow, labels, states
  
 
-(* (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl -> unit) = fun ctl -> *)
-
-
+(******************************************************************************)
 module PRED = 
   struct
     type t = Lib_engine.predicate
@@ -181,21 +174,18 @@ module CFG =
 module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
 
 
+(******************************************************************************)
 let (mysat:
        ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
-        (Lib_engine.predicate ->
-           (nodei * (Lib_engine.mvar, Lib_engine.metavar_binding_kind2) Ast_ctl.generic_substitution)
-            list) *
-         nodei list)
-         -> (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
-           -> (nodei * (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
-                 Lib_engine.predicate) list
-
-    ) = fun (flow, label, states) ctl -> 
+        Lib_engine.label_ctlcocci *
+        nodei list) -> 
+       Lib_engine.ctlcocci -> 
+       (nodei * 
+        (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+         Lib_engine.predicate) 
+       list) = 
+ fun (flow, label, states) ctl -> 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
-
-(*let mysat_noclean = fun (flow, label, states) ctl -> 
-      WRAPPED_ENGINE.satbis_noclean (flow, label, states) ctl*)
 
 
 let (satbis_to_trans_info: 
@@ -224,14 +214,3 @@ let (satbis_to_trans_info:
          )
 
 
-let pp_pred = fun (pred, smodif) -> 
- Lib_engine.pp_predicate pred
-
-let pp_ctlcocci_no_mcodekind ctl = 
-  begin
-    Unparse_cocci.print_plus_flag := false;
-    Unparse_cocci.print_minus_flag := false;
-    Common.pp_init (fun () -> 
-      Pretty_print_ctl.pp_ctl (pp_pred,(fun s -> Format.print_string s)) ctl;
-      );
-  end

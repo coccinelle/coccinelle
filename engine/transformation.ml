@@ -120,6 +120,7 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
   (* this is done in transform_re_node, or transform_re_decl *)
   | A.FunHeader _, _  | A.Decl _, _ | A.SeqStart _, _ | A.SeqEnd _, _ -> 
       raise Impossible 
+  | A.MetaRuleElem _, _ -> raise Impossible
 
   (* cas general: a Meta can match everything *)
   (* obsolete: if stb is a compound ? *)
@@ -137,22 +138,49 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
       let ii' = tag_symbols [i1;i2;i3] ii binding in
       B.Selection (B.If (transform_e_e ea eb  binding, st1b, st2b)), ii'
 
-  | A.Else _, _ -> raise Todo
+  | A.Else _, _ -> failwith "not handling Else"
 
-  | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
-      raise Todo
+  | A.WhileHeader (i1, i2, ea, i3), (B.Iteration  (B.While (eb, stb)), ii) -> 
+      let ii' = tag_symbols [i1;i2;i3] ii  binding in
+      B.Iteration (B.While (transform_e_e ea eb  binding, stb)), ii'
 
-  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), 
-    (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> 
-      raise Todo
+  | A.ForHeader (i1, i2, ea1opt, i3, ea2opt, i4, ea3opt, i5), 
+    (B.Iteration  (B.For ((eb1opt,ib1), (eb2opt,ib2), (eb3opt,ib3), stb)), ii)
+    -> 
+      let transform (ea, ia) (eb, ib) = 
+        let ii' = tag_symbols ia ib   binding in
+        (match ea, eb with
+        | None, None -> None
+        | Some ea, Some eb -> 
+            Some (transform_e_e ea eb binding)
+        | _ -> raise NoMatch
+        ), ii'
+      in
+
+      let ii' = tag_symbols [i1;i2;i5] ii  binding in
+      B.Iteration 
+        (B.For (
+            transform (ea1opt, [i3]) (eb1opt, ib1),
+            transform (ea2opt, [i4]) (eb2opt, ib2),
+            transform (ea3opt, []) (eb2opt, ib3),
+            stb)), 
+      ii'
+        
+         
 
 
-  | A.DoHeader _, (B.Iteration  (B.DoWhile (eb, stb)), ii) -> raise Todo
-  | A.WhileTail _, _ -> raise Todo
+  | A.DoHeader _, (B.Iteration  (B.DoWhile (eb, stb)), ii) -> 
+      failwith "not handling dowhile, the info is not in the good place in cfg"
+  | A.WhileTail _, _ -> 
+      failwith "not handling dowhile, the info is not in the good place in cfg"
 
 
-  | A.Return _, (B.Jump (B.Return), ii) -> raise Todo
-  | A.ReturnExpr _, (B.Jump (B.ReturnExpr e), ii) -> raise Todo
+  | A.Return (i1, i2), (B.Jump (B.Return), ii) -> 
+      let ii' = tag_symbols [i1;i2] ii   binding in
+      B.Jump (B.Return), ii'
+  | A.ReturnExpr (i1, ea, i2), (B.Jump (B.ReturnExpr eb), ii) -> 
+      let ii' = tag_symbols [i1;i2] ii   binding in
+      B.Jump (B.ReturnExpr (transform_e_e ea eb binding)), ii'
 
 
 
@@ -172,9 +200,9 @@ and (transform_re_st: (Ast_cocci.rule_elem, Ast_c.statement) transformer)  =
           )
           }
 
-  | _, (B.Compound _, ii) -> raise Todo (* or Impossible ? *)
+  | _, (B.Compound _, ii) -> raise Impossible (* can only have SeqStart ? *)
 
-  | _, (B.ExprStatement None, ii) -> raise Todo
+  | _, (B.ExprStatement None, ii) -> raise NoMatch (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Labeled _, ii)              -> raise Impossible
@@ -217,11 +245,12 @@ and (transform_de_decl: (Ast_cocci.declaration, Ast_c.declaration) transformer) 
       | A.Init _ -> 
           pr2 "warning: not handling yet initializer patterns"; 
           raise NoMatch
-      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> raise Todo
+      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> 
+          failwith "not handling Opt/Unique/Multi Decl"
 
       )
   | (B.DeclList (xs, (iisto, iiptvirgb ))) -> 
-      raise Todo (* TODO need split xs *)
+      failwith "More that one variable in one decl. Have to split to transform."
   
                 
   
@@ -245,8 +274,8 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       | _ -> raise Impossible
       )
 
-  | A.MetaConst _, _ -> raise Todo
-  | A.MetaErr _, _ -> raise Todo
+  | A.MetaConst _, _ -> failwith "not handling MetaConst"
+  | A.MetaErr _, _ -> failwith "not handling MetaErr"
       
   | A.Ident ida,                ((B.Ident idb) , typ,ii) ->
       let (idb', ii') = transform_ident ida (idb, ii)   binding in
@@ -278,7 +307,8 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
         (match A.unwrap eas with 
         | A.DOTS _ -> Ordered 
         | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> raise Todo)  
+        | A.STARS _ -> failwith "not handling stars"
+        )  
       in
       
       B.FunCall (transform_e_e ea eb binding,  
@@ -342,7 +372,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
     raise Todo
 
-  | A.NestExpr _, _ -> raise Todo
+  | A.NestExpr _, _ -> failwith "not handling NestExpr"
 
 
   | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
@@ -358,11 +388,11 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
   | A.DisjExpr eas, eb -> 
-      raise Todo
+      failwith "todo1"
 
-  | A.MultiExp _, _ 
-  | A.UniqueExp _,_
-  | A.OptExp _,_ -> raise Todo
+  | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
+      failwith "not handling Opt/Unique/Multi on expr"
+
 
 
  (* Because of Exp, cant put a raise Impossible; have to put a raise NoMatch; *)

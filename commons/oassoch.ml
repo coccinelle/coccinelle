@@ -16,7 +16,7 @@ class ['a,'b] oassoch xs =
 
     method del (k,v) = (Hashtbl.remove data k; o)
     method mem e = raise Todo
-    method null = (try (Hashtbl.iter (fun k v -> raise Return) data; false) with Return -> true)
+    method null = (try (Hashtbl.iter (fun k v -> raise ReturnExn) data; false) with ReturnExn -> true)
 
     method assoc k = 
       try 

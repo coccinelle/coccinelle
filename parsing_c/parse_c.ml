@@ -243,7 +243,7 @@ let parse_gen parsefunc s =
               cur_tok := v;
               !cur_tok
           )in
-  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Todo) in
+  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
 
   let result = parsefunc lexer_function lexbuf_fake in
 
@@ -629,7 +629,7 @@ let parse_print_error_heuristic file =
          v)
   in
 
-  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Todo) in
+  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
 
 
 

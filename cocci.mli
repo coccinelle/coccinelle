@@ -14,28 +14,23 @@ val rule_elem_from_string :
 
 
 val flows : 
-    Ast_c.program2 * Parse_c.parsing_stat ->
-      (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended
-        list
+  Ast_c.program2 * Parse_c.parsing_stat ->
+  (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended
+  list
 val one_flow :
   (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended 
-    list -> 
-      (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended
+  list -> 
+  (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended
 val print_flow : 
    (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended ->
-     unit
+   unit
 
 
-val ctls : 
-    Ast_cocci.rule list -> 
-      (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list
-val one_ctl :
-    (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl list list ->
-      (Lib_engine.predicate, string) Wrapper_ctl.wrapped_ctl
+val ctls : Ast_cocci.rule list -> Lib_engine.ctlcocci list list
+val one_ctl : Lib_engine.ctlcocci list list -> Lib_engine.ctlcocci
 
 
 val full_engine : 
-    Common.filename -> 
-      (Common.filename * Common.filename option,
-       (Lib_engine.predicate, Lib_engine.mvar) Wrapper_ctl.wrapped_ctl
-      ) Common.either  -> unit
+  Common.filename -> 
+  (Common.filename * Common.filename option, Lib_engine.ctlcocci) Common.either
+  -> unit

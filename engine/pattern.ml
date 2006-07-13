@@ -148,14 +148,14 @@ let check_add_metavars_binding = fun (k, valu) binding ->
   | None -> 
      let valu' = 
       (match valu with
-      | Ast_c.MetaIdVal a -> Ast_c.MetaIdVal a
-      | Ast_c.MetaFuncVal a -> Ast_c.MetaFuncVal a
+      | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
+      | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
       | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
       | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
       | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
       | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
-      | Ast_c.MetaExprListVal a -> failwith "not handling MetaExprListVal"
-      | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
+      | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
+      | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
       | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
 
       ) 
@@ -276,7 +276,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | A.IfHeader (_,_, ea, _), (B.Selection  (B.If (eb, st1b, st2b)), ii) -> 
       match_e_e ea eb
 
-  | A.Else _, _ -> failwith "not handling Else in pattern"
+  | A.Else _, _ -> failwith "not handling Else"
 
   | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
       match_e_e ea eb

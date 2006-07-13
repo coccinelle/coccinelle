@@ -771,7 +771,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
         
     (* ------------------------- *)        
-    | Asm, ii -> raise Todo
+    | Asm, ii -> failwith "asm code"
 
     | x -> error_cant_have x
 
@@ -843,7 +843,7 @@ let get_next_nodes_ifthenelse_sorted g nodei =
     | FalseNode -> 1
     | FallThroughNode -> 2
     | AfterNode -> 3
-    | _ -> raise Todo
+    | _ -> failwith "wierd node at this place"
     )
     )                                     
     +> List.sort (fun (_, _, a) (_, _, b) -> compare a b)
@@ -882,7 +882,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
   let funcdef =  
     match unwrap (nodes#find starti) with 
     | HeadFunc funcdef -> funcdef  
-    | _ -> raise Todo 
+    | _ -> raise Impossible
   in
   let (funcs, functype, sto, __compound, iifunc) = funcdef in
 
@@ -894,9 +894,9 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
     | EndBrace level2 -> 
         if level = level2 
         then [], LastCurrentNode starti
-        (* can raise Impossible instead ? cos all opening { are correctly ended
+        (* can raise Todo instead ? cos all opening { are correctly ended
            with a } *)
-        else raise Todo 
+        else raise Impossible
     | Declaration decl -> 
         let nexti = get_next_node g starti +> fst in
         let (compound, return) = rebuild_compound_instr_list nexti level in
@@ -1050,7 +1050,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
                      (* there was no break or return, certainly the default 
                         case *)
                   | LastCurrentNode nodei -> 
-                      raise Todo 
+                      failwith "certainly default case"
               ) in
                let return = 
                   (match maybereturn with 

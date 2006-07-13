@@ -190,7 +190,7 @@ type 'a mylazy = (unit -> 'a)
 exception Todo
 exception Impossible
 exception Here
-exception Return
+exception ReturnExn
 exception Timeout
 
 val internal_error : string -> 'a
@@ -338,6 +338,7 @@ val just : 'a option -> 'a
 val some : 'a option -> 'a
 
 val fmap : ('a -> 'b) -> 'a option -> 'b option
+val do_option : ('a -> unit) -> 'a option -> unit
 
 val optionise : (unit -> 'a) -> 'a option
 
@@ -438,7 +439,6 @@ val unwords : string list -> string
 val cat_orig : string -> string list
 
 val cat : string -> string list
-val cat2 : string -> string list
 
 val interpolate : string -> string list
 

@@ -18,7 +18,7 @@ class ['a] oseth xs   =
 
     method del k = (Hashtbl.remove data k; o)
     method mem k = (try (ignore(Hashtbl.find data k); true) with Not_found -> false)
-    method null = (try (Hashtbl.iter (fun k v -> raise Return) data; false) with Return -> true)
+    method null = (try (Hashtbl.iter (fun k v -> raise ReturnExn) data; false) with ReturnExn -> true)
 (* TODO    method length *)
 
     method union s = 
@@ -40,7 +40,7 @@ class ['a] oseth xs   =
     (* override default  *)
     method getone = 
       let x = ref None in
-      try (Hashtbl.iter (fun k _ -> x := Some k; raise Return) data; raise Not_found) with Return -> 
+      try (Hashtbl.iter (fun k _ -> x := Some k; raise ReturnExn) data; raise Not_found) with ReturnExn -> 
         some !x
         
       

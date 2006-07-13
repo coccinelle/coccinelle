@@ -187,7 +187,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   print_xxxxxxxxxxxxxxxxx();
   pr2 "ctl";
   print_xxxxxxxxxxxxxxxxx();
-  Ctlcocci_integration.pp_ctlcocci_no_mcodekind ctl;
+  Lib_engine.pp_ctlcocci_no_mcodekind ctl;
   Format.print_newline();
   print_xxxxxxxxxxxxxxxxx();
 
@@ -230,12 +230,12 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
               pr2 "transformation' info returned:";
               trans_info' +> List.iter (fun (i, subst, pred) -> 
-                Format.print_string ("transform state:" ^ (i_to_s i));
-                Format.print_string " with binding ";
+                pp ("transform state:" ^ (i_to_s i));
+                pp " with binding ";
                 Pretty_print_c.pp_binding subst;
                 Format.force_newline();
                 );
-              Format.print_string "\n"; 
+              pp "\n"; 
               Format.print_flush();
 
 

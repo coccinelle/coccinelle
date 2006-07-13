@@ -30,7 +30,7 @@ let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> uni
 
     | SizeOfExpr  e -> f k e
     | SizeOfType  t -> ()
-    | _ -> failwith "Todo"
+    | _ -> failwith "to complete"
 
   in f k expr
 *)
@@ -144,7 +144,9 @@ and visitor_type_k = fun bigf t ->
     match t with
     | (_, (BaseType _,_)) -> ()
     | (_, (Pointer t,_)) -> f (k, bigf) t
-    | (_, (Array (eopt, t),_)) -> pr2 "TODOeopt"; f (k, bigf) t 
+    | (_, (Array (eopt, t),_)) -> 
+        do_option (visitor_expr_k bigf) eopt;
+        f (k, bigf) t 
     | (_, (FunctionType (returnt, paramst),_)) -> 
         f (k, bigf) returnt;
         (match paramst with
@@ -152,7 +154,9 @@ and visitor_type_k = fun bigf t ->
             ts +> List.iter (fun ((b, sopt, t, _),_) -> f (k, bigf) t)
         )
 
-    | (_, (Enum  (sopt, enumt),_)) -> pr2 "TODO enumt contain some expression"; ()
+    | (_, (Enum  (sopt, enumt),_)) -> 
+        pr2 "TODO enumt may contain some expression (in visitor_c)"; 
+        ()
     | (_, (StructUnion (sopt, (_, fields)),_)) -> 
 
        fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
@@ -264,7 +268,7 @@ let rec visitor_expr_k_s = fun bigf expr ->
                  es +> List.map (fun (e,ii) -> 
                    (match e with
                    | Left e -> Left (exprf e)
-                   | Right e -> raise Todo
+                   | Right e -> failwith "type as param in funcall"
                    ), List.map (visitor_info_k_s bigf) ii
                                 )
                 )
@@ -295,8 +299,8 @@ let rec visitor_expr_k_s = fun bigf expr ->
     | Constructor -> Constructor
     | NoExpr -> NoExpr
     | ParenExpr (e) -> ParenExpr (exprf e)
-    | MacroCall _ -> raise Todo
-    | MacroCall2 _ -> raise Todo 
+    | MacroCall _ -> failwith "macrocall"
+    | MacroCall2 _ -> failwith "macrocall2"
     in
     e', typ, (List.map (visitor_info_k_s bigf) ii)
   in exprf expr

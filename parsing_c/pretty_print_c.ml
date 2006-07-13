@@ -100,7 +100,7 @@ let rec pp_expression_gen pr_elem =
         | (ActExpr e) -> pp_expression e
         | (ActExpr2 (e, iptvirg, action)) -> 
             pp_expression e; pr_elem iptvirg; pp_action action
-        | (ActTodo) -> pr "<<actiontodo>"
+        | (ActTodo) -> pr "<<actiontodo>>"
       in
 
       pr_elem i1;
@@ -183,6 +183,7 @@ and pp_statement_gen pr_elem =
       pr_elem i2;
       pp_statement (ExprStatement e1opt, il1);
       pp_statement (ExprStatement e2opt, il2);
+      assert (null il3);
       pp_statement (ExprStatement e3opt, il3);
       pr_elem i3;
       pp_statement st
@@ -461,7 +462,7 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
   | (Array (eopt, t), [i1;i2]) -> pp_type_left t
   | (FunctionType (returnt, paramst), [i1;i2]) -> pp_type_left returnt
 
-  | (ParenType t, _) ->  raise Todo
+  | (ParenType t, _) ->  failwith "parenType"
 
 
   | (BaseType _, iis)    -> ()    
@@ -489,7 +490,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
       pr_elem i2;
       pp_type_right t
 
-  | (ParenType t, _) ->  raise Todo
+  | (ParenType t, _) ->  failwith "parenType"
   | (FunctionType (returnt, paramst), [i1;i2]) -> 
       pr_elem i1;
       (match paramst with
@@ -613,7 +614,7 @@ and pp_init_gen = fun pr_elem ->
 
 let pr_elem ((info,(mcode,env))) = 
   let s = info.str in
-  Format.print_string s
+  pp s
 
 
 let pp_expression_simple = pp_expression_gen pr_elem
@@ -621,24 +622,21 @@ let pp_statement_simple  = pp_statement_gen pr_elem
 
 
 let rec pp_binding_kind = function
-  | MetaIdVal        s -> Format.print_string ("id " ^ s)
-  | MetaFuncVal      s -> Format.print_string ("func " ^ s)
-  | MetaLocalFuncVal s -> Format.print_string ("localfunc " ^ s)
+  | MetaIdVal        s -> pp ("id " ^ s)
+  | MetaFuncVal      s -> pp ("func " ^ s)
+  | MetaLocalFuncVal s -> pp ("localfunc " ^ s)
   | MetaExprVal      expr -> pp_expression_simple expr
-  | MetaExprListVal  expr_list -> raise Todo
-  | MetaTypeVal      typ -> raise Todo
+  | MetaExprListVal  expr_list -> pp "<<exprlist>>"
+  | MetaTypeVal      typ -> pp "<<type>>"
   | MetaStmtVal      statement -> pp_statement_simple statement
-  | MetaParamVal     params -> raise Todo
-  | MetaParamListVal params -> raise Todo
+  | MetaParamVal     params -> pp "<<param>>"
+  | MetaParamListVal params -> pp "<<paramlist>>"
 
 and pp_binding subst = 
   begin
-    Format.print_string "[";
-    Common.print_between (fun () -> Format.print_string ";" ) 
-      (fun (s, kind) -> 
-        Format.print_string s;
-        Format.print_string " --> ";
-        pp_binding_kind kind)
+    pp "[";
+    Common.print_between (fun () -> pp ";" ) 
+      (fun (s, kind) -> pp s; pp " --> "; pp_binding_kind kind)
       subst;
-    Format.print_string "]";
+    pp "]";
   end

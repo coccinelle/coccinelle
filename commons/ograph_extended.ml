@@ -48,7 +48,6 @@ class ['a,'b] ograph_extended =
     val pred = build_assoc()
     val nods = build_assoc()
 
-(*    method empty = raise Todo  *)
     method add_node (e: 'a) = 
       let i = free_index in
       ({< 
