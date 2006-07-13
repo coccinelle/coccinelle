@@ -41,7 +41,7 @@ let (labels_for_ctl:
           [(nodei, [(s --> (Lib_engine.LabelVal labels))])]
       | Lib_engine.PrefixLabel s, _ -> 
           let labels = Control_flow_c.extract_labels node in
-          let prefixes = Common.inits labels in
+          let prefixes = Common.inits labels +> Common.tail in
           prefixes +> List.map (fun prefixlabels -> 
             (nodei, [(s --> (Lib_engine.LabelVal prefixlabels))])
           )

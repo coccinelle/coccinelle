@@ -155,7 +155,8 @@ let pp_program file x =
    and pp_expression x = match x with
     | Constant (String s),        typ, is     -> is +> List.iter pr_elem
     | Ident (c),         typ,[i]     -> pr_elem i
-    | Constant (c),         typ,[i]     -> pr_elem i (* only a String can have multiple ii *)
+   (* only a String can have multiple ii *)
+    | Constant (c),         typ,[i]     -> pr_elem i 
     | FunCall  (e, es),     typ,[i1;i2] -> 
         pp_expression e; pr_elem i1; 
         es +> List.iter (fun (e, opt) -> 

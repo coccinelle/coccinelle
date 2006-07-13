@@ -86,7 +86,7 @@ and node2 =
   | Exit
 
 
-  | NestedFunCall of expression   (* cos "fake" node *) (* TODO *)
+(*  | NestedFunCall of expression   (* cos "fake" node *) (* TODO *) *)
 
   | Statement     of statement
   | Declaration   of declaration
@@ -355,11 +355,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
     | ExprStatement (Some e), ii -> 
         let s = 
-          (match e with
-          | (FunCall (( (Ident f), typ1, _),ii3),typ2, ii2) -> 
+          let (unwrap_e, typ, ii) = e in
+          (match unwrap_e with
+          | FunCall (( (Ident f), typ1, _),ii3) -> 
               f ^ "(...)"
-          | (Assignment (((Ident var), typ1, _), SimpleAssign, e), typ2, _) -> 
+          | Assignment (((Ident var), typ1, _), SimpleAssign, e) -> 
               var ^ " = ... ;"
+          | Assignment (
+              (RecordAccess ((Ident var, typ1, _), field), typ2, _),
+               SimpleAssign, e) -> 
+              var ^ "." ^ field ^ " = ... ;"
           | _ -> "statement"
           )
         in

@@ -45,8 +45,6 @@ let rec (transform_re_node:
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> 
       raise Impossible
 
-  | _, F.NestedFunCall _ -> raise Todo
-
   | A.MetaRuleElem mcode, _ -> 
       failwith "todo: handle MetaRuleElem in transformation"
 

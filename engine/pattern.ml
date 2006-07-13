@@ -118,24 +118,29 @@ let check_add_metavars_binding = fun (k, valu) binding ->
         (match valu, valu' with
         | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
         | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+        | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
+            (* do something more ? *)
+            a =$= b
+
           (* al_expr  before comparing !!! and accept when they match.
              Note that here we have Astc._expression, so it is a match modulo 
              isomorphism (there is no metavariable involved here, just 
              isomorphisms).
-             => TODO call isomorphism_c_c instead of =*=
-          *)
+             => TODO call isomorphism_c_c instead of =*= *)
         | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
             Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
-        | _ -> raise Todo
+        | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
+            Abstract_line_c.al_statement a =*= Abstract_line_c.al_statement b
+        | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
+            Abstract_line_c.al_type a =*= Abstract_line_c.al_type b
 
-(*
-          | Ast_c.MetaType a, Ast_c.MetaType b -> a =*= b
-          | Ast_c.MetaStmt a, Ast_c.MetaStmt b -> a =*= b
-
-          | Ast_c.MetaExprList a, Ast_c.MetaExprList b -> a =*= b 
-          | Ast_c.MetaParam a, Ast_c.MetaParam b -> a =*= b
-          | Ast_c.MetaParamList a, Ast_c.MetaParamList b -> a =*= b
-*)
+        | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
+            failwith "not handling MetaExprListVal"
+        | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
+            failwith "not handling MetaParamVal"
+        | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
+            failwith "not handling MetaParamListVal"
+        | _ -> raise Impossible
         ) 
       then _GoodMatch binding
       else _MatchFailure
@@ -145,9 +150,14 @@ let check_add_metavars_binding = fun (k, valu) binding ->
       (match valu with
       | Ast_c.MetaIdVal a -> Ast_c.MetaIdVal a
       | Ast_c.MetaFuncVal a -> Ast_c.MetaFuncVal a
+      | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
       | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
       | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
-      | _ -> raise Todo
+      | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
+      | Ast_c.MetaExprListVal a -> failwith "not handling MetaExprListVal"
+      | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
+      | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
+
       ) 
      in
      _GoodMatch   (binding +> insert_assoc (k, valu'))
@@ -170,8 +180,6 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
     -> return false
 
-  | _, F.NestedFunCall _ -> raise Todo
-
   (* obsolete?: it can match a MetaStmt too !! and we have to get all the  
      concerned nodes *)
 
@@ -187,15 +195,16 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.FunHeader (stoa, ida, _, paramsa, _), 
     F.HeadFunc (idb, (retb, paramsb, isvaargs, _), stob, statb, _) -> 
       (match A.unwrap ida with
-      | (A.Id ida) when term ida =$= idb ->   return true
+      | (A.Id ida) -> return (term ida =$= idb)
       | (A.MetaId ida)        ->
 	  check_add_metavars_binding (term ida, (Ast_c.MetaIdVal idb))
       | (A.MetaFunc ida)      ->
 	  check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
       | (A.MetaLocalFunc ida) ->
 	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
-            (* todo: as usual, handle the Opt/Unique/Multi *)
-      | _ -> return false) 
+      | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
+          failwith "not handling Opt/Unique/Multi for ident"
+      ) 
         >&&>
            (* todo: stoa vs stob *)
            (* todo: isvaargs ? retb ? *)
@@ -220,7 +229,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       
 
 
-(* ------------------------------------------------------------------------------ *)
+(*--------------------------------------------------------------------------- *)
 
 and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = 
  fun re st -> 
@@ -238,7 +247,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
       check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
 
   (* not me?: MetaStmList ? *)
-  | A.MetaStmtList _, _ -> raise Todo
+  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
 
   | A.Exp expr , statement -> 
       let all_exprs = 
@@ -267,7 +276,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | A.IfHeader (_,_, ea, _), (B.Selection  (B.If (eb, st1b, st2b)), ii) -> 
       match_e_e ea eb
 
-  | A.Else _, _ -> raise Todo
+  | A.Else _, _ -> failwith "not handling Else in pattern"
 
   | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
       match_e_e ea eb
@@ -279,16 +288,18 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
       match_opt match_e_e ea3opt eb3opt >&&>
       return true
       
-  | A.DoHeader _, (B.Iteration  (B.DoWhile (eb, stb)), ii) -> raise Todo
-  | A.WhileTail _, _ -> raise Todo
+  | A.DoHeader _, (B.Iteration  (B.DoWhile (eb, stb)), ii) -> 
+      failwith "not handling dowhile, the info is not in the good place in cfg"
+  | A.WhileTail _, _ -> 
+      failwith "not handling dowhile, the info is not in the good place in cfg"
 
 
-  | A.Return _, (B.Jump (B.Return), ii) -> raise Todo
-  | A.ReturnExpr _, (B.Jump (B.ReturnExpr e), ii) -> raise Todo
+  | A.Return _, (B.Jump (B.Return), ii) -> return true
+  | A.ReturnExpr (_, ea, _), (B.Jump (B.ReturnExpr eb), ii) -> match_e_e ea eb
 
-  | _, (B.Compound _, ii) -> raise Todo (* or Impossible ? *)
+  | _, (B.Compound _, ii) -> raise Impossible (* can only have SeqStart *)
 
-  | _, (B.ExprStatement None, ii) -> raise Todo
+  | _, (B.ExprStatement None, ii) -> return false (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Labeled _, ii)              -> return false
@@ -332,14 +343,14 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
       | A.Init _ -> 
           pr2 "warning: not handling yet initializer patterns"; 
           return false
-      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> raise Todo
+      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> 
+          failwith "not handling Opt/Unique/Multi Decl"
       )
 
 
 
 
-
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
 and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   match A.unwrap ep, ec with
@@ -358,14 +369,16 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       check_add_metavars_binding (term ida, Ast_c.MetaExprVal (expb))
 
 
-  | A.MetaConst _, _ -> raise Todo
-  | A.MetaErr _, _ -> raise Todo
+  | A.MetaConst _, _ -> failwith "not handling MetaConst"
+  | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
   | A.Ident ida,                ((B.Ident idb) , typ, ii) ->
       match_ident ida idb
 
- (* todo: handle some isomorphisms in int/float ? can have different format 1l can match a 1 *)
- (* todo: normally string can contain some metavar too, so should recurse on the string *)
+ (* todo: handle some isomorphisms in int/float ? can have different format 1l 
+    can match a 1.
+    todo: normally string can contain some metavar too, so should recurse on the
+    string *)
   | A.Constant (A.String sa,_,_),  (B.Constant (B.String (sb, _)), typ,ii)    
     when sa =$= sb -> return true
   | A.Constant (A.Char sa,_,_),    (B.Constant (B.Char   (sb, _)), typ,ii)    
@@ -393,13 +406,14 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       in
       let ebs' = ebs +> List.map fst +> List.map (function
         | Left e -> e
-        | Right typ -> raise Todo
+        | Right typ -> failwith "not handling type in funcall"
         ) in
       match_arguments 
         (match A.unwrap eas with 
         | A.DOTS _ -> Ordered 
         | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> raise Todo)
+        | A.STARS _ -> failwith "not handling stars"
+        )
         eas' ebs'
      )
 
@@ -465,7 +479,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
       match_e_e ea eb
 
-  | A.NestExpr _, _ -> raise Todo
+  | A.NestExpr _, _ -> failwith "not handling NestExpr"
 
 
 
@@ -481,7 +495,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
      less: in if(<... x ... y ...>) 
    *)
   | A.Edots (_, None), _    -> return true
-  | A.Edots (_, Some expr), _    -> raise Todo
+  | A.Edots (_, Some expr), _    -> failwith "not handling when on dots"
 
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
   | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
@@ -492,9 +506,8 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         (return false)
 
 
-  | A.MultiExp _, _ 
-  | A.UniqueExp _,_
-  | A.OptExp _,_ -> raise Todo
+  | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
+      failwith "not handling Opt/Unique/Multi on expr"
 
 
   (* have not a counter part in coccinelle, for the moment *)
@@ -511,17 +524,18 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | _, _ -> return false
 
   
-(* ------------------------------------------------------------------------------ *)
+(* -------------------------------------------------------------------------- *)
 
 and (match_arguments: 
        sequence_processing_style -> 
          (Ast_cocci.expression list, Ast_c.expression list) matcher) = 
  fun seqstyle eas ebs ->
  (* old:
-      if List.length eas = List.length ebs
-      then
-        (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> acc >&&> match_e_e ea eb) (return true))
-      else return false
+    if List.length eas = List.length ebs
+    then
+      (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> 
+           acc >&&> match_e_e ea eb) (return true))
+    else return false
  *)
   match seqstyle with
   | Ordered -> 
@@ -563,7 +577,7 @@ and (match_arguments:
           | x, [] -> return false
           )
       )
-  | Unordered -> raise Todo
+  | Unordered -> failwith "not handling ooo"
 
 (* -------------------------------------------------------------------------- *)
 
@@ -589,13 +603,13 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 		(({qu with B.volatile = false},new_il "volatile" il),ty2)
 	    else return false)
     | (A.OptType(ty),typb) ->
-	Printf.fprintf stderr "warning: ignoring ? arity on type";
+	pr2 "warning: ignoring ? arity on type";
 	match_ft_ft ty typb
     | (A.UniqueType(ty),typb) ->
-	Printf.fprintf stderr "warning: ignoring ! arity on type";
+	pr2 "warning: ignoring ! arity on type";
 	match_ft_ft ty typb
     | (A.MultiType(ty),typb) ->
-	Printf.fprintf stderr "warning: ignoring + arity on type";
+	pr2 "warning: ignoring + arity on type";
 	match_ft_ft ty typb
 
 and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
@@ -666,7 +680,8 @@ and (match_params:
  fun seqstyle pas pbs ->
  (* todo: if contain metavar ? => recurse on two list and consomme *)
  (* old:
-  let pas' = pas +> List.filter (function A.Param (x,y,z) -> true | _ -> false) in
+  let pas' = pas +> List.filter (function A.Param (x,y,z) -> true | _ -> false)
+   in
   if (List.length pas' = List.length pbs) 
   then
   (zip pas' pbs +> List.fold_left (fun acc param -> 
@@ -713,11 +728,9 @@ and (match_params:
           (* filtered by the caller, in the case for FunDecl *)
           | A.PComma (_), ys -> raise Impossible 
 
-          (* todo: Opt/Unique/Multi *)
-
           | A.MetaParam (ida), y::ys -> 
               (* todo: use quaopt, hasreg ? *)
-              check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&> 
+              check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
               match_params seqstyle xs ys
 
           | A.Param (ida, typa), ((hasreg, idb, typb, _), ii)::ys -> 
@@ -729,37 +742,33 @@ and (match_params:
 
           | x, [] -> return false
 
-          | (A.VoidParam _ | A.UniqueParam _ | A.OptParam _), _ -> raise Todo
+          | A.VoidParam _, _ -> failwith "handling VoidParam"
+          | (A.OptParam _ | A.UniqueParam _), _ -> 
+              failwith "handling Opt/Unique/Multi for Param"
                                 
           )
       )
 
-  | Unordered -> raise Todo
-
-(*
-    VoidParam     of fullType
-
-  | MetaParam     of string mcode
-  | MetaParamList of string mcode
-
-*)
+  | Unordered -> failwith "handling ooo"
 
 
 (* -------------------------------------------------------------------------- *)
 
 and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb -> 
-  match A.unwrap ida with
-  | (A.Id ida) when (term ida) =$= idb -> return true
-  | (A.MetaId ida) -> check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
+ match A.unwrap ida with
+ | (A.Id ida) -> return ((term ida) =$= idb)
+ | (A.MetaId ida) -> 
+        check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
 
-  (* todo: and other cases ? too late? or need more info on idb !! its type ? *)
+ (* todo: and other cases ? too late? or need more info on idb !! its type ? 
+    Maybe need do that in caller where may have more information on it. *)
+ | A.MetaFunc ida | A.MetaLocalFunc ida -> 
+     failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
 
-  (* todo: Opt/Unique/Multi *)
-  | _ -> return false
+ | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
+     failwith "not handling Opt/Unique/Multi for ident"
 
-
-
-
+(* -------------------------------------------------------------------------- *)
 and match_opt f eaopt ebopt =
       (match eaopt, ebopt with
       | None, None -> return true
@@ -842,6 +851,6 @@ and equal_structUnion a b =
 
 and equal_sign a b = 
   match a, b with
-  | A.Signed, B.Signed -> true
+  | A.Signed,    B.Signed   -> true
   | A.Unsigned,  B.UnSigned -> true
   | _, _ -> false

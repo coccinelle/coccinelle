@@ -5,7 +5,6 @@ and node2 =
     HeadFunc of Ast_c.definition
   | Enter
   | Exit
-  | NestedFunCall of Ast_c.expression
   | Statement of Ast_c.statement
   | Declaration of Ast_c.declaration
   | Fake
