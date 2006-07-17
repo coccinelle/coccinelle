@@ -174,11 +174,13 @@ let make_postlude o = Printf.fprintf o "%s\n" postlude
 
 (* ----------------------------------------------------------------------- *)
 
+
 let pred2c = function
     Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
   | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
   | Lib_engine.After -> ("\\msf{After}",5)
-  | Lib_engine.Return -> ("\\msf{Return}",5)
+  | Lib_engine.Return -> ("\\msf{Return}",6)
+  | Lib_engine.Exit -> ("\\msf{Exit}",4)
   | Lib_engine.Paren(s) -> ("\\msf{Paren}("^s^")",7+(String.length s))
   | Lib_engine.Label(s) -> ("\\msf{Label}("^s^")",7+(String.length s))
   | Lib_engine.PrefixLabel(s) ->
