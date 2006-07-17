@@ -188,8 +188,11 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.SeqStart _, _ | _, F.StartBrace _ -> return false
   | A.SeqEnd _, _   | _, F.EndBrace _ -> return false
 
-
+  
   | A.Decl decla, F.Declaration declb -> match_re_decl decla declb
+  | A.Exp expa, F.Declaration declb -> 
+      pr2 "Exp in decl. Maybe there is an expression inside. TODO";
+      return false
   | A.Decl _, _ | _, F.Declaration _ -> return false
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 
@@ -260,6 +263,62 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
                     push2 expr globals; 
                     k expr
               );
+            (* Now keep fullstatement inside the control flow node, 
+               so that can then get in a MetaStmtVar the fullstatement to later
+               pp back when the S is in a +. But that means that 
+               Exp will match an Ifnode even if there is no such exp
+               inside the condition of the Ifnode (because the exp may
+               be deeper, in the then branch). So have to not visit
+               all inside a statement anymore.
+               
+               choice: aurait pu aussi choisir d'accrocher au noeud du CFG à la
+               fois le fullstatement et le partialstatement et appeler le 
+               visiteur que sur le partialstatement.
+             *)
+
+            Visitor_c.kstatement =
+              (fun (k, bigf) stat -> 
+                
+                match stat with
+                | B.Labeled (B.Label (s, st)), _ -> ()
+                | B.Labeled (B.Case  (e, st)), _ -> 
+                    Visitor_c.visitor_expr_k bigf e;
+                | B.Labeled (B.CaseRange  (e, e2, st)), _ -> 
+                    Visitor_c.visitor_expr_k bigf e; 
+                    Visitor_c.visitor_expr_k bigf e2;
+                | B.Labeled (B.Default st), _ -> ()
+
+                | B.Compound ((declxs_statxs)), is ->
+                    (* done in caller, with the pattern on SeqStart&SeqEnd. *)
+                    raise Impossible 
+                    
+                | B.ExprStatement (None), _ -> ()
+                | B.ExprStatement (Some e), _ -> Visitor_c.visitor_expr_k bigf e;
+
+                | B.Selection  (B.If (e, st1, st2)), _ -> 
+                    Visitor_c.visitor_expr_k bigf e; 
+                | B.Selection  (B.Switch (e, st)), _ -> 
+                    Visitor_c.visitor_expr_k bigf e; 
+                | B.Iteration  (B.While (e, st)), _ -> 
+                    Visitor_c.visitor_expr_k bigf e
+                | B.Iteration  (B.DoWhile (st, e)), _ -> 
+                    failwith 
+                      ("not handling dowhile, the info is not in the good place in cfg")
+                | B.Iteration  (B.For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
+                    Visitor_c.visitor_statement_k bigf
+                      (B.ExprStatement (e1opt),i1); 
+                    Visitor_c.visitor_statement_k bigf
+                      (B.ExprStatement (e2opt),i2); 
+                    Visitor_c.visitor_statement_k bigf
+                      (B.ExprStatement (e3opt),i2); 
+
+
+                | B.Jump (B.Goto s), _ -> ()
+                | B.Jump ((B.Continue|B.Break|B.Return)), _ -> ()
+                | B.Jump (B.ReturnExpr e), _ -> Visitor_c.visitor_expr_k bigf e;
+                | B.Asm, _ -> ()
+
+              )
             };
           !globals
         end in
