@@ -20,7 +20,7 @@ let (labels_for_ctl:
        pp_init (fun () -> 
          pp "labeling: pred =";
          Format.print_space ();
-         Lib_engine.pp_predicate pred;
+         Pretty_print_engine.pp_predicate pred;
          );
      end;
 
@@ -90,7 +90,7 @@ let (labels_for_ctl:
              (fun () -> pp ";"; Format.print_cut())
              (fun (nodei, subst) -> 
                Format.print_int nodei;
-               pp_do_in_box (fun () -> Lib_engine.pp_binding2_ctlsubst subst)
+               pp_do_in_box (fun () -> Pretty_print_engine.pp_binding2_ctlsubst subst)
              ) nodes';
            pp "}";
                       );
@@ -144,9 +144,9 @@ module PRED =
   struct
     type t = Lib_engine.predicate
     let print_predicate x = 
-      Unparse_cocci.print_plus_flag := false;
-      Unparse_cocci.print_minus_flag := false;
-      Lib_engine.pp_predicate x
+      Pretty_print_cocci.print_plus_flag := false;
+      Pretty_print_cocci.print_minus_flag := false;
+      Pretty_print_engine.pp_predicate x
   end
 
 module ENV =
@@ -158,7 +158,7 @@ module ENV =
     let merge_val v v' = v;;	       
 
     let print_mvar s = Format.print_string s
-    let print_value x = Lib_engine.pp_binding_kind2 x
+    let print_value x = Pretty_print_engine.pp_binding_kind2 x
   end
 
 

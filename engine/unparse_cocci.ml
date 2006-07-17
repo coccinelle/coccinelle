@@ -4,39 +4,54 @@ module Ast = Ast_cocci
 
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
-exception CantBeInPlus
 (* or perhaps can have in plus, for instance a Disj, but
    those Disj must be handled by interactive tool (by proposing alternatives) *)
+exception CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
 
 
 let rec pp_list_list_any (env, current_tabbing, pr, pr_elem) xxs =
 
+(* Just to be able to copy paste the code from unparse_cocci.ml. *)
 let print_string = pr 
 in
 let close_box() = () 
 in
 let print_space() = pr " " 
 in
-let print_string_box s = print_string s
-in
-let print_option = Common.do_option
-in
-let print_between = Common.print_between
-in
 let force_newline () = ()
 in
+
 let start_block () = ()
 in
 let end_block () = ()
 in
+let print_string_box s = print_string s
+in
 
+let print_option = Common.do_option
+in
+let print_between = Common.print_between
+in
 
+(* --------------------------------------------------------------------- *)
+
+let handle_metavar name fn = 
+  match (Common.optionise (fun () -> List.assoc (term name) env)) with
+  | None -> failwith ("Not found a value in env for: " ^ term name)
+  | Some e  -> fn e
+in
+
+(* --------------------------------------------------------------------- *)
+
+(* Here we don't care about the annotation on s. *)
 let mcode fn = function ((s,_,_)) -> fn s 
 in
   
 
+
+(* --------------------------------------------------------------------- *)
 let dots between fn d =
   match Ast.unwrap d with
     Ast.DOTS(l) -> print_between between fn l
@@ -44,11 +59,7 @@ let dots between fn d =
   | Ast.STARS(l) -> print_between between fn l
 in
 
-let handle_metavar name fn = 
-  match (Common.optionise (fun () -> List.assoc (term name) env)) with
-  | None -> failwith ("Not found a value in env for: " ^ term name)
-  | Some e  -> fn e
-in
+
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -61,16 +72,16 @@ let rec ident i =
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
         ) 
-
-
-      (* new *)
   | Ast.MetaFunc(name) -> 
-      raise Todo
-      (* new *)
+      handle_metavar name (function
+        | (Ast_c.MetaFuncVal id) -> pr id
+        | _ -> raise Impossible
+        ) 
   | Ast.MetaLocalFunc(name) -> 
-      raise Todo
-      (* new *)
-
+      handle_metavar name (function
+        | (Ast_c.MetaLocalFuncVal id) -> pr id
+        | _ -> raise Impossible
+        ) 
   | Ast.OptIdent(id) | Ast.UniqueIdent(id) | Ast.MultiIdent(id) -> 
       raise CantBeInPlus
 
@@ -339,6 +350,7 @@ let rec pp_any = function
   | Ast.ParamTag(x) -> parameterTypeDef x
 in
 
+  (* todo? imitate what is in unparse_cocci ? *)
   match xxs with
   | xs::xxs -> 
       xs +> List.iter (fun any -> 

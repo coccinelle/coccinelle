@@ -555,7 +555,7 @@ let process file isofile verbose =
 	  Insert_plus.insert_plus m p;
 	  let minus = Iso_pattern.apply_isos isos minus in
 	  let minus_ast = Ast0toast.ast0toast minus in
-	  if verbose then Unparse_cocci.unparse minus_ast;
+	  if verbose then Pretty_print_cocci.unparse minus_ast;
 	  (metavars, minus_ast))
       minus plus
   with Failure s -> Printf.printf "%s" s; []

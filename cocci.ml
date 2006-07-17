@@ -185,7 +185,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   print_xxxxxxxxxxxxxxxxx();
   pr2 "ctl";
   print_xxxxxxxxxxxxxxxxx();
-  Lib_engine.pp_ctlcocci_no_mcodekind ctl;
+  Pretty_print_engine.pp_ctlcocci_no_mcodekind ctl;
   Format.print_newline();
   print_xxxxxxxxxxxxxxxxx();
 

@@ -1121,7 +1121,7 @@ let asttoctl l =
   List.map top_level l
 
 let pp_cocci_predicate (pred,modif) =
-  Lib_engine.pp_predicate pred
+  Pretty_print_engine.pp_predicate pred
 
 let cocci_predicate_to_string (pred,modif) =
-  Lib_engine.predicate_to_string pred
+  Pretty_print_engine.predicate_to_string pred

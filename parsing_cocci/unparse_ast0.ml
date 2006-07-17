@@ -1,7 +1,7 @@
 open Format
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module U = Unparse_cocci
+module U = Pretty_print_cocci
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0

@@ -159,7 +159,7 @@ and letwrap ct pp pv x =
 
 let ctltotex rule pp pv ctls o =
   Printf.fprintf o "\\begin{quote}\\begin{verbatim}\n";
-  Printf.fprintf o "%s\n" (Unparse_cocci.unparse_to_string rule);
+  Printf.fprintf o "%s\n" (Pretty_print_cocci.unparse_to_string rule);
   Printf.fprintf o "\\end{verbatim}\\end{quote}\n\n";
   List.iter
     (function ctl ->
@@ -184,7 +184,7 @@ let pred2c = function
   | Lib_engine.PrefixLabel(s) ->
       ("\\msf{PrefixLabel}("^s^")",13+(String.length s))
   | Lib_engine.Match(re) ->
-      let s = Unparse_cocci.rule_elem_to_string re in
+      let s = Pretty_print_cocci.rule_elem_to_string re in
       let (s,len) = texify s in
       (Printf.sprintf "%s" s,len)
 
