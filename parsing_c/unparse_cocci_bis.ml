@@ -329,6 +329,8 @@ let rec pp_any = function
   | Ast.Token(x) -> print_string x
   | Ast.Code(x) -> let _ = top_level x in ()
 
+  (* this not '...', but a list of expr/statement/params, and 
+     normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
   | Ast.ParamDotsTag(x) -> parameter_list x
   | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
