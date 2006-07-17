@@ -2,6 +2,8 @@
 let useEU = ref true
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
+(* set to true for line numbers in the output of ctl_engine *)
+let line_numbers = ref false
 
 (* Question: where do we put the existential quantifier for or.  At the
 moment, let it float inwards. *)
@@ -77,6 +79,11 @@ let elim_opt =
 	let rwd = Ast.rewrap stm in
 	let new_rest = dots_list urest rest in
 	[rw(Ast.Disj[rwd(Ast.DOTS(stm::new_rest));rwd(Ast.DOTS(new_rest))])]
+
+    | ([Ast.Dots(d,whencode,t);Ast.OptStm(stm)],[d1;_]) ->
+	let rw = Ast.rewrap stm in
+	let rwd = Ast.rewrap stm in
+	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));rwd(Ast.DOTS([d1]))])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -374,9 +381,7 @@ let rec dots_stmt quantified l after =
 	List.map (function x -> Hashtbl.find free_table (Statement x)) x in
       let rec loop quantified = function
 	  ([],[]) -> (match after with Some x -> x | None -> wrap n (CTL.True))
-	| ([x],[fv]) ->
-	    quantify (get_unquantified quantified fv)
-	      (statement (Common.union_set fv quantified) x after)
+	| ([x],[_]) -> statement quantified x after
 	| (x::xs,fv::fvs) ->
 	    let shared = intersectll fv fvs in
 	    let unqshared = get_unquantified quantified shared in
@@ -390,7 +395,7 @@ let rec dots_stmt quantified l after =
 
 and statement quantified stmt after =
 
-  let n = Ast.get_line stmt in
+  let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
   let wrapAnd = wrapAnd n in
   let wrapOr = wrapOr n in
@@ -415,7 +420,7 @@ and statement quantified stmt after =
       (match Ast.unwrap ast with
 	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)))
       |	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d))) ->
-	  let label_var = fresh_label_var "lab" in
+	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
@@ -445,7 +450,7 @@ and statement quantified stmt after =
 
 	  let first_node =
 	    let fvs = get_unquantified quantified [s] in
-	    wrapAnd(quantify fvs (make_raw_match ast),label_pred) in
+	    quantify fvs (make_raw_match ast) in
 	  let left_or =
 	    make_seq full_metamatch
 	      (Some(and_opt (wrapNot(prelabel_pred)) after)) in
@@ -456,10 +461,11 @@ and statement quantified stmt after =
 			     (Some(and_opt (wrapNot(prelabel_pred))
 				     after))))) in
 	  quantify [label_var]
-	    (wrapAnd(first_node,wrapOr(left_or,right_or)))
+	    (wrapAnd(first_node,
+		     wrapAnd(label_pred,wrapOr(left_or,right_or))))
 
       |	Ast.MetaStmt((s,i,d)) ->
-	  let label_var = fresh_label_var "lab" in
+	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
@@ -473,14 +479,18 @@ and statement quantified stmt after =
 		Ast.MINUS(_) -> Ast.MINUS([])
 	      | Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
 	      | Ast.PLUS -> failwith "not possible") in
-	  let first_node =
+	  (* first_nodea and first_nodeb are separated here and above to
+	     improve let sharing - only first_nodea is unique to this site *)
+	  let first_nodea =
 	    let fvs = get_unquantified quantified [s] in
-	    wrapAnd(quantify fvs (make_raw_match ast),
-		    wrapAnd(first_metamatch,label_pred)) in
+	    quantify fvs (make_raw_match ast) in
+	  let first_nodeb = wrapAnd(first_metamatch,label_pred) in
 	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
 	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
 	  quantify [label_var]
-	    (make_seq first_node (Some (wrapAU(rest_nodes,last_node))))
+	    (wrapAnd(first_nodea,
+		     (make_seq first_nodeb
+			(Some (wrapAU(rest_nodes,last_node))))))
       |	_ ->
 	  let stmt_fvs = Hashtbl.find free_table (Statement stmt) in
 	  let fvs = get_unquantified quantified stmt_fvs in
@@ -699,11 +709,9 @@ and statement quantified stmt after =
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n";
   | Ast.UniqueStm(stm) ->
-      warning "arities not yet supported";
-      statement quantified stm after
+      failwith "arities not yet supported"
   | Ast.MultiStm(stm) ->
-      warning "arities not yet supported";
-      statement quantified stm after
+      failwith "arities not yet supported"
   | _ -> failwith "not supported"
 
 (* Returns a triple for each disj element.  The first element of the triple is
