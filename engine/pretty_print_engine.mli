@@ -9,3 +9,5 @@ val predicate_to_string : Lib_engine.predicate -> string
 
 
 val pp_ctlcocci_no_mcodekind : Lib_engine.ctlcocci -> unit
+
+val pp_transformation_info : Lib_engine.transformation_info -> unit

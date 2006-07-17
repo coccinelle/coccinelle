@@ -1,4 +1,7 @@
+open Common open Commonop
+
 open Lib_engine
+
 
 let pp = Common.pp 
 
@@ -18,6 +21,7 @@ let pp_predicate = function
   | TrueBranch -> pp "TrueBranch"
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
+  | FallThrough -> pp "FallThrough"
   | Return -> pp "Return"
   | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp s; pp ")"
@@ -70,3 +74,13 @@ let pp_ctlcocci_no_mcodekind ctl =
       Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp s)) ctl;
       );
   end
+
+
+let pp_transformation_info trans_info = 
+  trans_info +> List.iter (fun (i, subst, pred) -> 
+    pp ("transform state:" ^ (i_to_s i));
+    pp " with binding ";
+    Pretty_print_c.pp_binding subst;
+    Format.force_newline();
+    );
+  

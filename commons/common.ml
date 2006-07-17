@@ -146,10 +146,13 @@ Apply fcts in turn while having the time
    automatic indent_level variable handled for you (and certainly more services)
    src: julia in coccinelle unparse_cocci
 
-   ExprAt technique (src: norman ramsey), 
+   ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
    continuation visitor (src: douence),
    aspect-like fonction via add-hook with continuation (src: pad)
-   forbid polymorphic  =  by redefining it
+   forbid polymorphic  =  by redefining it.
+   functor like function by using nested function.
+   use better Set/Map (binary tree or hashtbl).
+   hashsons, memoize (cache), lazyize.
 *)
 
 (******************************************************************************)
@@ -437,7 +440,7 @@ let (laws2: string -> ('a -> (bool * 'b)) -> ('a gen) -> ('a option * ((int * 'b
    depending of 'a and gen 'b, that is modify gen 'b, what is important is
    that each time given the same 'a, we must get the same 'b !!!
 let (fg: ('a gen) -> ('b gen) -> ('a -> 'b) gen) = fun gen1 gen2 () ->
-let b = laws "funs" (fun (f,g,h) -> x <= y ==> (max x y  = y)                       )(pg ig ig)
+let b = laws "funs" (fun (f,g,h) -> x <= y ==> (max x y  = y)       )(pg ig ig)
  *)
 (*
 let one_of xs = List.nth xs (Random.int (List.length xs)) 

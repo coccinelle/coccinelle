@@ -185,7 +185,6 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   print_xxxxxxxxxxxxxxxxx();
   Pretty_print_engine.pp_ctlcocci_no_mcodekind ctl;
   Format.print_newline();
-  print_xxxxxxxxxxxxxxxxx();
 
   let (program, _stat) = astc in
   begin
@@ -217,22 +216,17 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               then print_flow flow;
                 
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
-              pr2 "calling sat";
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
-              pr2 "ending sat";
-
               let trans_info' = 
-                Ctlcocci_integration.satbis_to_trans_info trans_info in
+                Ctlcocci_integration.satbis_to_trans_info trans_info 
+              in
 
+              print_xxxxxxxxxxxxxxxxx();
               pr2 "transformation' info returned:";
-              trans_info' +> List.iter (fun (i, subst, pred) -> 
-                pp ("transform state:" ^ (i_to_s i));
-                pp " with binding ";
-                Pretty_print_c.pp_binding subst;
-                Format.force_newline();
-                );
-              pp "\n"; 
-              Format.print_flush();
+              print_xxxxxxxxxxxxxxxxx();
+              Pretty_print_engine.pp_transformation_info trans_info';
+              Format.print_newline();
+
 
 
               let flow' = Transformation.transform trans_info' flow  in

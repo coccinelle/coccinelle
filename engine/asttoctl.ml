@@ -1,5 +1,5 @@
 (* false = simpler formulas, only for debugging *)
-let useEU = ref true
+let useEU = ref false(*true*)
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
@@ -506,10 +506,10 @@ and statement quantified stmt after =
   | Ast.IfThen(ifheader,branch) ->
 
 (* "if (test) thn" becomes:
-    if(test) & AX((TrueBranch v After) & TrueBranch => AX thn)
+    if(test) & AX((TrueBranch v FallThrough v After) & TrueBranch => AX thn)
 
     "if (test) thn; after" becomes:
-    if(test) & AX((TrueBranch v After)
+    if(test) & AX((TrueBranch v FallThrough v After)
                   & TrueBranch => AX thn
                   & After => AX after)
              & EX After *)
@@ -522,10 +522,11 @@ and statement quantified stmt after =
        let if_header = quantify efvs (make_match ifheader) in
        (* then branch and after *)
        let true_branch =  wrapPred(Lib_engine.TrueBranch,CTL.Control) in
+       let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
        let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
        let then_line =
 	 make_cond true_branch (statement new_quantified branch None) in
-       let or_cases = wrapOr(true_branch,after_branch) in
+       let or_cases = wrapOr(true_branch,wrapOr(fall_branch,after_branch)) in
        (* the code *)
        (match after with
 	 None ->
