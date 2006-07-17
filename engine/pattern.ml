@@ -188,11 +188,26 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.SeqStart _, _ | _, F.StartBrace _ -> return false
   | A.SeqEnd _, _   | _, F.EndBrace _ -> return false
 
+
   
   | A.Decl decla, F.Declaration declb -> match_re_decl decla declb
-  | A.Exp expa, F.Declaration declb -> 
-      pr2 "Exp in decl. Maybe there is an expression inside. TODO";
-      return false
+  | A.Exp expr, F.Declaration declb -> 
+      let all_exprs = 
+        let globals = ref [] in
+        begin
+          declb +> Visitor_c.visitor_decl_k { 
+            Visitor_c.default_visitor_c with 
+            Visitor_c.kexpr = 
+              (fun (k, bigf) expr -> 
+                    push2 expr globals; 
+                    k expr
+              );
+            };
+          !globals
+        end in
+      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+        (return false)
+
   | A.Decl _, _ | _, F.Declaration _ -> return false
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 

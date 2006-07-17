@@ -93,6 +93,20 @@ let rec (transform_re_node:
 
   | A.Decl decla, F.Declaration declb -> 
       F.Declaration (transform_de_de decla declb  binding) +> F.rewrap node
+
+  | A.Exp exp, F.Declaration declb -> 
+      (* todo?: assert have done something  statement' <> statement *)
+     F.Declaration 
+        (declb +> Visitor_c.visitor_decl_k_s { 
+        Visitor_c.default_visitor_c_s with
+        Visitor_c.kexpr_s = (fun (k,_) e -> 
+          let e' = k e in (* go inside first *)
+          try transform_e_e exp e'   binding 
+          with NoMatch -> e'
+          )
+          }
+        ) +> F.rewrap node
+
   | A.Decl _, _ | _, F.Declaration _ -> raise NoMatch
 
   | A.FunHeader (stoa, ida, oparen, paramsa, cparen),
