@@ -338,6 +338,7 @@ val just : 'a option -> 'a
 val some : 'a option -> 'a
 
 val fmap : ('a -> 'b) -> 'a option -> 'b option
+val map_option : ('a -> 'b) -> 'a option -> 'b option
 val do_option : ('a -> unit) -> 'a option -> unit
 
 val optionise : (unit -> 'a) -> 'a option
@@ -506,6 +507,9 @@ val index_list : 'a list -> ('a * int) list
 
 val snoc : 'a -> 'a list -> 'a list
 val cons : 'a -> 'a list -> 'a list
+
+val head_middle_tail : 'a list -> 'a * 'a list * 'a
+
 
 val ( ++ ) : 'a list -> 'a list -> 'a list
 

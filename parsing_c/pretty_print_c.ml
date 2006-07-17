@@ -19,8 +19,8 @@ let rec pp_expression_gen pr_elem =
      otherwise get infinite funcall and huge memory consumption *)
   let pp_statement e = pp_statement_gen pr_elem e in
   let rec pp_expression = function
-  | Constant (String s),        typ, is     -> is +> List.iter pr_elem
   | Ident (c),         typ,[i]     -> pr_elem i
+  | Constant (String s),        typ, is     -> is +> List.iter pr_elem
   (* only a String can have multiple ii *)
   | Constant (c),         typ,[i]     -> pr_elem i 
   | FunCall  (e, es),     typ,[i1;i2] -> 
@@ -73,7 +73,7 @@ let rec pp_expression_gen pr_elem =
       pr_elem i1; pp_type_with_ident_gen pr_elem None None t; pr_elem i2; 
       pp_expression e
 
-  | StatementExpr ((declxs_statxs), [ii1;ii2]),  typ,[i1;i2] -> 
+  | StatementExpr (declxs_statxs, [ii1;ii2]),  typ,[i1;i2] -> 
       pr_elem i1;
       pr_elem ii1;
       declxs_statxs +> List.iter (function 
@@ -165,7 +165,7 @@ and pp_statement_gen pr_elem =
   | Selection  (If (e, st1, st2)), i1::i2::i3::is -> 
       pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st1; 
       (match (st2, is) with
-      | ((ExprStatement None, []), _)  -> ()
+      | ((ExprStatement None, []), [])  -> ()
       | st2, [i4] -> pr_elem i4; pp_statement st2
       | x -> raise Impossible
       )
@@ -322,10 +322,8 @@ and (pp_base_type_gen:
                           );
 
       (match sopt,iis with
-      | Some s , [i1;i2;i3;i4] -> 
-          pr_elem i4
-      | None, [i1;i2;i3] -> 
-          pr_elem i3; 
+      | Some s , [i1;i2;i3;i4] -> pr_elem i4
+      | None, [i1;i2;i3] ->       pr_elem i3; 
       | x -> raise Impossible
       );
 
@@ -350,16 +348,12 @@ and (pp_base_type_gen:
                          );
 
       (match sopt, iis with
-      | (Some s, [i1;i2;i3;i4]) -> 
-          pr_elem i4
-      | (Some s, [i1;i2;i3;i4;i5]) -> 
-          (* trailing comma *)
-          pr_elem i5; pr_elem i4
-      | (None, [i1;i2;i3]) -> 
-          pr_elem i3
-      | (None, [i1;i2;i3;i4]) -> 
-          (* trailing comma *)
-          pr_elem i4; pr_elem i3
+      | (Some s, [i1;i2;i3;i4]) ->    pr_elem i4
+      | (Some s, [i1;i2;i3;i4;i5]) -> pr_elem i5; pr_elem i4 (* trailing comma *)
+      | (None, [i1;i2;i3]) ->         pr_elem i3
+      | (None, [i1;i2;i3;i4]) ->      pr_elem i4; pr_elem i3 (* trailing comma *)
+
+
       | x -> raise Impossible
       );
 
@@ -432,7 +426,6 @@ and (pp_type_with_ident_rest_gen:
       
 
   | (Array (eopt, t), [i1;i2]) -> 
-
       pp_type_left_gen pr_elem fullt;
 
       iiqu +> List.iter pr_elem;
@@ -611,7 +604,8 @@ and pp_init_gen = fun pr_elem ->
 
 (******************************************************************************)
 
-let pr_elem ((info,(mcode,env))) = 
+(* Do not use (mcode, env). It is a simple C pretty printer. *)
+let pr_elem (info,(mcode,env)) = 
   let s = info.str in
   pp s
 

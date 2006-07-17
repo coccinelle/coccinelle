@@ -8,8 +8,8 @@ and node2 =
   | Statement of Ast_c.statement
   | Declaration of Ast_c.declaration
   | Fake
-  | StartBrace of int * Ast_c.statement
-  | EndBrace of int
+  | StartBrace of int * Ast_c.statement * Ast_c.info
+  | EndBrace of int * Ast_c.info
   | CaseNode of int
   | TrueNode
   | FalseNode

@@ -10,14 +10,11 @@ let start_block str =
 let end_block str =
   close_box(); force_newline ()
 
-let print_option fn = function
-    None -> ()
-  | Some x -> fn x
+let print_string_box s = print_string s; open_box 0
 
-let rec print_between between fn = function
-    [] -> ()
-  | [x] -> fn x
-  | x::xs -> fn x; between(); print_between between fn xs
+
+let print_option = Common.do_option
+let print_between = Common.print_between
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -113,8 +110,6 @@ let rec ident i =
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let print_string_box s = print_string s; open_box 0
-
 let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
@@ -184,7 +179,7 @@ and  unaryOp = function
     Ast.GetRef -> print_string "&"
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
-  | Ast. UnMinus -> print_string "-"
+  | Ast.UnMinus -> print_string "-"
   | Ast.Tilde -> print_string "~"
   | Ast.Not -> print_string "!"
 

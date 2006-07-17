@@ -50,11 +50,11 @@ and typeCbis =
   | BaseType        of baseType
 
   | Pointer         of fullType
-  | Array           of (constExpression option) * fullType
+  | Array           of constExpression option * fullType
   | FunctionType    of functionDeclType
 
-  | Enum            of (string option) * enumType    
-  | StructUnion     of (string option) * structType (* new scope *)
+  | Enum            of string option * enumType    
+  | StructUnion     of string option * structType (* new scope *)
 
   | StructUnionName of tagged_string * structUnion
   | EnumName        of tagged_string
@@ -94,16 +94,16 @@ and typeCbis =
              but seems thatgcc allow char i:4, C rule must say that you can cast
              into int => enum too *)
            and fieldkind = 
-                | Simple   of (string option) * fullType * il
-                | BitField of (string option) * 
+                | Simple   of string option * fullType * il
+                | BitField of string option * 
                               (typeQualifier * bitfieldType) * (* fullType *) 
                                constExpression  * il
 
 	     and bitfieldType = typeC (* => BitFieldInt | BitFieldUnsigned *)
 
 
-     and enumType =  (((string * info) *  ((constExpression * info) option)) * 
-                        il)  list
+     and enumType =  (((string * info) *  (constExpression * info) option) * il)
+                     list
         (* => string * int list (assign value now) *)
 
 
@@ -112,9 +112,8 @@ and typeCbis =
          and functionDeclType2 = 
              Classic of ((parameterTypeDecl * il) list * 
                           bool (* has "..." *) * il)
-           and parameterTypeDecl = (bool * (* hasregister *) 
-                                   (string option) * fullType * 
-                                   (il * il))
+           and parameterTypeDecl = 
+             (bool * (* hasregister *) string option * fullType * (il * il))
               (* => (bool * fullType) list * bool *)
 
 
@@ -138,9 +137,7 @@ and expressionbis =
   (* the il correspond to the ',' and it is associated to the argument that 
      follows *)
   | FunCall of 
-      expression * 
-      (((expression, (fullType * (storage * il))) either) * 
-         il) list 
+      expression * ((expression, fullType * (storage * il)) either * il) list 
 
   (* x ? : y --> x ? x : y;  if the then part is None, then we must return
      the same value as in the condition, cf gccext manual *)
@@ -176,10 +173,8 @@ and expressionbis =
 
   (* cppext: *)
   | MacroCall of
-      (((expression, (fullType * (storage * il)), action_macro) either3) * 
-         il) 
-        list 
-  | MacroCall2 of (expression, (statement list)) either
+      ((expression, fullType * (storage * il), action_macro) either3 * il) list 
+  | MacroCall2 of (expression, statement list) either
  
   and action_macro = 
     | ActJump of (jump * il) 
@@ -247,7 +242,7 @@ and statementbis =
   (* cppext: (or because of cpp) *)
   and compound = ((declaration, statement) either) list 
 
-  and exprStatement = (expression option)
+  and exprStatement = expression option
 
   and selection     = 
    | If     of expression * statement * statement        
@@ -296,7 +291,7 @@ and statementbis =
 
 and declaration = 
   DeclList of 
-    ((((string * ((initialiser * info) option) * (info)) option) * 
+    ((((string * (initialiser * info) option * info) option) * 
         fullType * storage) * 
        il)
       list * (il * info) (* ilsto, infoptvirg *)
@@ -317,9 +312,8 @@ and definition =
     (* info for string, then for storage, and then for compound *)
     (info * il * il)) 
   and functionDefType = 
-       fullType * ((parameterTypeDef * il) list) * bool (* has... *) * 
-        (* info for dots, and then info for '(' and ')' for parameters *)
-       (il * il) 
+       (* info for dots, and then info for '(' and ')' for parameters *)
+       fullType * (parameterTypeDef * il) list * bool (* has... *) * (il * il) 
     and parameterTypeDef = (bool (* hasregister *) * string * fullType * 
                               (il * info))
 
@@ -330,9 +324,10 @@ and program = programElement list
           | Definition of definition
           | EmptyDef of il  (* gccext: allow redundant ; *)
           (* cppext: *)
-          | SpecialDeclMacro of string * 
-                (((expression, (fullType * (storage * il))) either) * il) list *
-                il 
+          | SpecialDeclMacro of 
+             string * 
+             ((expression, fullType * (storage * il)) either * il) list *
+             il 
                 
           | NotParsedCorrectly of il
           | FinalDef of info

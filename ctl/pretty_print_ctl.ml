@@ -14,8 +14,8 @@ let char_not = "-|"
 *)
 
 let rec (pp_ctl: 
-   ('pred -> unit) * ('mvar -> unit) -> ('pred, 'mvar, 'info) generic_ctl 
-   -> unit) =  
+   ('pred -> unit) * ('mvar -> unit) -> ('pred, 'mvar, 'info) generic_ctl -> 
+   unit) =  
  fun (pp_pred, pp_mvar) ctl -> 
   let rec pp_aux = fun ctl ->
   match Ast_ctl.unwrap ctl with

@@ -3,15 +3,19 @@
 TARGET=cocciengine
 CTLTARGET=engine
 
-SOURCES = flag_engine.ml lib_engine.ml isomorphisms_c_c.ml pattern.ml transformation.ml asttoctl.ml ctltotex.ml ctlcocci_integration.ml
+SOURCES = flag_engine.ml lib_engine.ml isomorphisms_c_c.ml pattern.ml \
+	  distribute_mcodekind.ml transformation.ml asttoctl.ml ctltotex.ml \
+	  ctlcocci_integration.ml
 
 # just to test asttoctl
 CTLSOURCES = lib_engine.ml asttoctl.ml ctltotex.ml main.ml
 
-INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c -I ../parsing_cocci -I ../ctl
+INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c \
+	       -I ../parsing_cocci -I ../ctl
 
 SYSLIBS = str.cma unix.cma
-LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma 
+LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma \
+     ../parsing_cocci/cocci_parser.cma 
 
 
 # The Caml compilers.

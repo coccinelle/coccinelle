@@ -509,7 +509,7 @@ let triples_complement states trips =
 	  map (fun st -> (st,top_subst,top_wit)) (setdiff states ss) in
   let rec compl trips =
     match trips with
-      | [] -> []
+      | [] -> List.map (function s -> (PosState s, top_subst, top_wit)) states
       | (t::[]) -> triple_negate t
       | (t::ts) -> triples_state_conj (triple_negate t) (compl ts) in
     concatmap cleanup (compl trips)

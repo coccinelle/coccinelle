@@ -49,7 +49,7 @@ open Commonop
 
  Advanced invariant weaving.
  cf fixed_int => call the invariant func
- type filename = string (*  TODO could check that exist :) type sux  *)
+ type filename = string   TODO could check that exist :) type sux  
 
  better pre/post/... sugar
   (ca sux c explicit inv_fixed, et c let sinx_aux, ...
@@ -271,7 +271,8 @@ let count5 () = incr _count5
 
 let profiling_diagnostic () = 
   Printf.sprintf 
-    "count1 = %d\ncount2 = %d\ncount3 = %d\ncount4 = %d\ncount5 = %d\n" !_count1 !_count2 !_count3 !_count4 !_count5
+    "count1 = %d\ncount2 = %d\ncount3 = %d\ncount4 = %d\ncount5 = %d\n" 
+    !_count1 !_count2 !_count3 !_count4 !_count5
 
 let time_func f = 
 (*   let _ = Timing () in *)
@@ -333,9 +334,9 @@ let (test: string -> unit) = fun s ->
     understand
 *)
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 (* generator *)
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 type 'a gen = unit -> 'a
 
 let (ig: int gen) = fun () -> Random.int 10
@@ -386,9 +387,9 @@ let rec (bintreeg: ('a gen) -> ('a bintree) gen) = fun gen () ->
 *)
 
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 (* property *)
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 
 (* todo, a test_all_laws, better syntax (done already a little with ig in place of intg *)
 (* en cas d'erreur, print the arg that not respect *)
@@ -894,6 +895,7 @@ let some = just
 let fmap f = function
   | None -> None
   | Some x -> Some (f x)
+let map_option = fmap
 
 let do_option f = function
   | None -> ()
@@ -1322,9 +1324,9 @@ let timeout_function timeoutval = fun f ->
       end
 
 
-(************************************************************************************)
+(******************************************************************************)
 (* List *)
-(************************************************************************************)
+(******************************************************************************)
 
 (* pix *)
 let uncons l = (List.hd l, List.tl l)
@@ -1421,6 +1423,18 @@ let and_list = List.fold_left (&&) true
 
 let snoc x xs = xs @ [x]
 let cons x xs = x::xs
+
+let head_middle_tail xs = 
+  match xs with
+  | x::y::xs -> 
+      let head = x in
+      let reversed = List.rev (y::xs) in
+      let tail = List.hd reversed in
+      let middle = List.rev (List.tl reversed) in
+      head, middle, tail
+  | _ -> failwith "head_middle_tail, too small list"
+
+let _ = assert_equal (head_middle_tail [1;2;3]) (1, [2], 3)
 
 let (++) = (@)
 
@@ -1747,7 +1761,9 @@ let (cartesian_product: 'a list -> 'b list -> ('a * 'b) list) = fun xs ys ->
   xs +> List.map (fun x ->  ys +> List.map (fun y -> (x,y)))
      +> List.flatten
 
-let _ = assert_equal (cartesian_product [1;2] ["3";"4";"5"]) [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
+let _ = assert_equal 
+    (cartesian_product [1;2] ["3";"4";"5"]) 
+    [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
 
 (*----------------------------------*)
 
@@ -1813,9 +1829,9 @@ let rec fusionneListeContenant (et1, et2) = function
 	insereListeContenant a et1 l
       else a::(fusionneListeContenant (et1, et2) l)
 
-(************************************************************************************)
+(******************************************************************************)
 (* Arrays *)
-(************************************************************************************)
+(******************************************************************************)
 
 let array_find_index f a =
   let rec array_find_index_ i =
@@ -1839,9 +1855,9 @@ let b_array_string_of_t f a = "<>"
 let bigarray_string_of_int16_unsigned_elt a = "<>"
 let bigarray_string_of_c_layout a = "<>"
 
-(************************************************************************************)
+(******************************************************************************)
 (* Set *)
-(************************************************************************************)
+(******************************************************************************)
 type 'a set = 'a list
 
 let (empty_set: 'a set) = []
@@ -1954,9 +1970,9 @@ let rec intersect x y =
 (* intersect [1;3;7] [2;3;4;7;8];;   *)
 *)
 
-(************************************************************************************)
+(******************************************************************************)
 (* Assoc *)
-(************************************************************************************)
+(******************************************************************************)
 type ('a,'b) assoc  = ('a * 'b) list
 
 
@@ -2035,9 +2051,9 @@ let intintmap_to_list m = IntIntMap.fold (fun id v acc -> (id, v) :: acc) m []
 let intintmap_string_of_t f a = "<Not Yet>"
 
 
-(************************************************************************************)
+(******************************************************************************)
 (* Hash *)
-(************************************************************************************)
+(******************************************************************************)
 
 let hcreate () = Hashtbl.create 401 (* il parait que better  when choose a prime *)
 let hadd (k,v) h = Hashtbl.add h k v
@@ -2058,9 +2074,9 @@ let hash_to_list h = Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] +> List.sort 
 
 
 
-(************************************************************************************)
+(******************************************************************************)
 (* Hash sets *)
-(************************************************************************************)
+(******************************************************************************)
 
 type 'a hashset = ('a, bool) Hashtbl.t 
 
@@ -2077,9 +2093,9 @@ let hash_hashset_add k e h =
 let hashset_to_set baseset h = h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs) 
 
 
-(************************************************************************************)
+(******************************************************************************)
 (* Stack *)
-(************************************************************************************)
+(******************************************************************************)
 type 'a stack = 'a list
 
 let (empty_stack: 'a stack) = []
@@ -2238,9 +2254,9 @@ let (display_dot2: 'a graph -> 'a graph -> ('a -> string) -> unit) =
 
 
 *)
-(************************************************************************************)
+(******************************************************************************)
 (* Generic op *)
-(************************************************************************************)
+(******************************************************************************)
 (* overloading *)
 
 let map = List.map (* note: really really slow, use rev_map if possible *)
@@ -2313,9 +2329,9 @@ let test1 () = write_ppm 100 100
     ((generate (50*100) (1,45,100)) ++ (generate (50*100) (1,1,100)))
     "img.ppm"
 
-(************************************************************************************)
+(******************************************************************************)
 (* Diff (lfs) *)
-(************************************************************************************)
+(******************************************************************************)
 type diff = Match | BnotinA | AnotinB
 
 let (diff: (int -> int -> diff -> unit) -> (string list * string list) -> unit) = fun f (xs,ys) -> 
@@ -2400,9 +2416,9 @@ let getDoubleParser parserer lexer =
 
 
 
-(************************************************************************************)
+(******************************************************************************)
 (* parser related (cocci) *)
-(************************************************************************************)
+(******************************************************************************)
 type pos_file = ((int * int) * int) (* (line * column), charpos) *)
 
 type parse_info = {
@@ -2436,7 +2452,7 @@ let (charpos_to_pos: int -> filename -> (filename * int * int * string)) = fun c
         end
     in aux ()
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
 
     let arr = Array.create (filesize filename + 2) (0,0) in
@@ -2473,7 +2489,7 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
 let test_charpos file = 
   full_charpos_to_pos file +> Dumper.dump +> pr2
 
-(*------------------------------------------------------------------------------*)
+(*----------------------------------------------------------------------------*)
 (* decalage is here to handle stuff such as cpp which include file and who can make decalage *)
 let (error_messagebis: filename -> (string * int (* * int *)) -> int -> string)    = fun filename (lexeme, lexstart(*, lexend*)) decalage ->
   let charpos = lexstart      + decalage in
@@ -2488,9 +2504,9 @@ let (error_messagebis: filename -> (string * int (* * int *)) -> int -> string) 
 
 let error_message = fun filename (lexeme, lexstart) -> error_messagebis filename (lexeme, lexstart) 0    
 
-(************************************************************************************)
+(******************************************************************************)
 (* Misc/test *)
-(************************************************************************************)
+(******************************************************************************)
 
 let size_mo_ko i = 
   let ko = (i / 1024) mod 1024 in

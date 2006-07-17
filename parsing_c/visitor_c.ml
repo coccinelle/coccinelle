@@ -102,9 +102,15 @@ let rec visitor_expr_k = fun bigf expr ->
     | SizeOfType  (t), typ,is -> visitor_type_k bigf t
     | Cast    (t, e), typ,is -> visitor_type_k bigf t; f (k, bigf) e
 
-(*    | StatementExpr (((declxs, statxs), is)), is2 -> List.iter (visitor_decl_k bigf) declxs; List.iter (visitor_statement_k bigf) statxs *)
+(*   | StatementExpr (((declxs, statxs), is)), is2 -> 
+         List.iter (visitor_decl_k bigf) declxs; 
+         List.iter (visitor_statement_k bigf) statxs 
+*)
     | StatementExpr (((declxs_statxs), is)), typ,is2 -> 
-        declxs_statxs +> List.iter (function Left decl -> visitor_decl_k bigf decl | Right stat -> visitor_statement_k bigf stat);
+        declxs_statxs +> List.iter (function 
+          | Left decl -> visitor_decl_k bigf decl 
+          | Right stat -> visitor_statement_k bigf stat
+                                   );
 
     | Constructor,typ,[] -> ()
           
@@ -118,18 +124,29 @@ and visitor_statement_k = fun bigf st ->
     match st with
     | Labeled (Label (s, st)), _ -> f (k, bigf)  st;
     | Labeled (Case  (e, st)), _ -> visitor_expr_k bigf e; f (k, bigf) st;
-    | Labeled (CaseRange  (e, e2, st)), _ -> visitor_expr_k bigf e; visitor_expr_k bigf e2; f (k, bigf) st;
+    | Labeled (CaseRange  (e, e2, st)), _ -> 
+        visitor_expr_k bigf e; visitor_expr_k bigf e2; f (k, bigf) st;
     | Labeled (Default st), _ -> f (k, bigf) st;
     | Compound ((declxs_statxs)), is ->
-        declxs_statxs +> List.iter (function Left decl -> visitor_decl_k bigf decl | Right stat -> visitor_statement_k bigf stat);
+        declxs_statxs +> List.iter (function 
+          | Left decl -> visitor_decl_k bigf decl 
+          | Right stat -> visitor_statement_k bigf stat
+                                   );
         
     | ExprStatement (None), _ -> ()
     | ExprStatement (Some e), _ -> visitor_expr_k bigf e;
-    | Selection  (If (e, st1, st2)), _ -> visitor_expr_k bigf e; f (k, bigf) st1; f (k, bigf) st2;
-    | Selection  (Switch (e, st)), _ -> visitor_expr_k bigf e; f (k, bigf) st;
-    | Iteration  (While (e, st)), _ -> visitor_expr_k bigf e; f (k, bigf) st;
+    | Selection  (If (e, st1, st2)), _ -> 
+        visitor_expr_k bigf e; f (k, bigf) st1; f (k, bigf) st2;
+    | Selection  (Switch (e, st)), _ -> 
+        visitor_expr_k bigf e; f (k, bigf) st;
+    | Iteration  (While (e, st)), _ -> 
+        visitor_expr_k bigf e; f (k, bigf) st;
     | Iteration  (DoWhile (st, e)), _ -> f (k, bigf) st; visitor_expr_k bigf e; 
-    | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> f (k, bigf) (ExprStatement (e1opt),i1); f (k, bigf) (ExprStatement (e2opt),i2); f (k, bigf) (ExprStatement (e3opt),i3); f (k, bigf) st;
+    | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
+        f (k, bigf) (ExprStatement (e1opt),i1); 
+        f (k, bigf) (ExprStatement (e2opt),i2); 
+        f (k, bigf) (ExprStatement (e3opt),i3); 
+        f (k, bigf) st;
           
     | Jump (Goto s), _ -> ()
     | Jump ((Continue|Break|Return)), _ -> ()
@@ -165,8 +182,10 @@ and visitor_type_k = fun bigf t ->
          | Simple (s, t, ii) -> f (k, bigf) t
          | BitField (sopt, t, expr, _) -> f (k, bigf) t (* TODO expr *)
          (*
-         | DefEnum (s, t) -> f (k, bigf) (nQ, (Enum (Some s, t), iitodovide))
-         | DefStruct (s, t) -> f (k, bigf) (nQ, (StructUnion (Some s, t), iitodovide))
+         | DefEnum (s, t) -> 
+            f (k, bigf) (nQ, (Enum (Some s, t), iitodovide))
+         | DefStruct (s, t) -> 
+            f (k, bigf) (nQ, (StructUnion (Some s, t), iitodovide))
          *)
          ))
 
@@ -212,7 +231,10 @@ and visitor_ini_k = fun bigf ini ->
     | InitList initxs -> List.iter (f (k, bigf)) (initxs +> List.map fst)
     | InitGcc (s, e) -> f (k, bigf) e
     | InitGccIndex (e1, e) -> visitor_expr_k bigf e1; f (k, bigf) e
-    | InitGccRange (e1, e2, e) -> visitor_expr_k bigf e1; visitor_expr_k bigf e2; f (k, bigf) e
+    | InitGccRange (e1, e2, e) -> 
+        visitor_expr_k bigf e1; 
+        visitor_expr_k bigf e2; 
+        f (k, bigf) e
   in f (k, bigf) ini
 
 and visitor_def_k = fun bigf d -> 
@@ -223,13 +245,16 @@ and visitor_def_k = fun bigf d ->
         visitor_type_k bigf returnt;
         List.iter (fun ((b, s, t, _),_) -> visitor_type_k bigf t) paramst;
         
-        declxs_statxs +> List.iter (function Left decl -> visitor_decl_k bigf decl | Right stat -> visitor_statement_k bigf stat);
+        declxs_statxs +> List.iter (function 
+          | Left decl -> visitor_decl_k bigf decl 
+          | Right stat -> visitor_statement_k bigf stat
+                                   );
   in f (k, bigf) d 
 
     
 
 
-(*******************************************************************************)
+(******************************************************************************)
 type 'a inout = 'a -> 'a 
 
 (* _s for synthetisized attributes *)
@@ -310,8 +335,10 @@ and visitor_statement_k_s = fun bigf st ->
     let (unwrap_st, ii) = st in
     let st' = 
     match unwrap_st with
-    | Labeled (Label (s, st)) -> Labeled (Label (s, statf st))
-    | Labeled (Case  (e, st)) -> Labeled (Case  ((visitor_expr_k_s bigf) e , statf st))
+    | Labeled (Label (s, st)) -> 
+        Labeled (Label (s, statf st))
+    | Labeled (Case  (e, st)) -> 
+        Labeled (Case  ((visitor_expr_k_s bigf) e , statf st))
     | Labeled (CaseRange  (e, e2, st)) -> 
         Labeled (CaseRange  ((visitor_expr_k_s bigf) e, 
                              (visitor_expr_k_s bigf) e2, 
@@ -365,17 +392,20 @@ and visitor_type_k_s = fun bigf t ->
     | Pointer t  -> Pointer (typef t)
     | Array (eopt, t) -> Array (fmap (visitor_expr_k_s bigf) eopt, typef t) 
     | FunctionType (returnt, paramst) -> 
-        FunctionType (typef returnt, 
-                      (match paramst with
-                      | Classic (ts, b, iihas3dots) -> 
-                          Classic
-                            (ts +> List.map (fun ((b, sopt, t, (iib, iis)),iicomma) -> 
-                              ((b, sopt, typef t, (infolistf iib, infolistf iis)), 
-                               infolistf iicomma)),
-                             b, infolistf iihas3dots)
-                     ))
+        FunctionType 
+          (typef returnt, 
+           (match paramst with
+           | Classic (ts, b, iihas3dots) -> 
+               Classic
+                 (ts +> List.map (fun ((b, sopt, t, (iib, iis)),iicomma) -> 
+                   ((b, sopt, typef t, (infolistf iib, infolistf iis)), 
+                    infolistf iicomma)),
+                  b, infolistf iihas3dots)
+           ))
 
-    | Enum  (sopt, enumt) -> pr2 "TODO enumt contain some expression"; Enum  (sopt, enumt) 
+    | Enum  (sopt, enumt) -> 
+        pr2 "TODO enumt contain some expression"; 
+        Enum  (sopt, enumt) 
     | StructUnion (sopt, (su, fields)) -> 
        StructUnion (sopt, (su, 
         fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
@@ -384,7 +414,8 @@ and visitor_type_k_s = fun bigf t ->
             (match field with
             | Simple (s, t, iis) -> Simple (s, typef t, infolistf iis)
             | BitField (sopt, t, expr, iis) -> 
-                BitField (sopt, typef t, visitor_expr_k_s bigf expr, infolistf iis)
+                BitField (sopt, typef t, visitor_expr_k_s bigf expr, 
+                          infolistf iis)
             ), infolistf iicomma
                                          )
          ), infolistf iiptvirg
@@ -434,8 +465,10 @@ and visitor_ini_k_s = fun bigf ini ->
            inif ini, List.map (visitor_info_k_s bigf) ii) 
                      )
     | InitGcc (s, e) -> InitGcc (s, inif e)
-    | InitGccIndex (e1, e) -> InitGccIndex (visitor_expr_k_s bigf e1 , inif e)
-    | InitGccRange (e1, e2, e) -> InitGccRange (visitor_expr_k_s bigf e1, visitor_expr_k_s bigf e2, inif e)
+    | InitGccIndex (e1, e) -> 
+        InitGccIndex (visitor_expr_k_s bigf e1 , inif e)
+    | InitGccRange (e1, e2, e) -> 
+        InitGccRange (visitor_expr_k_s bigf e1, visitor_expr_k_s bigf e2, inif e)
     in ini', List.map (visitor_info_k_s bigf) ii
   in inif ini
 
@@ -446,8 +479,12 @@ and visitor_def_k_s = fun bigf d ->
     match d with
     | (s, (returnt, paramst, b, ii1), sto, (declxs_statxs), ii2) -> 
         let returnt' = visitor_type_k_s bigf returnt in
-        let paramst' = List.map (fun ((b, s, t, ii3),ii4) -> ((b, s, visitor_type_k_s bigf t, ii3), ii4)) paramst in
-        let declxs_statxs' = declxs_statxs +> List.map (function Left decl -> Left (visitor_decl_k_s bigf decl) | Right stat -> Right (visitor_statement_k_s bigf stat)) 
+        let paramst' = List.map (fun ((b, s, t, ii3),ii4) -> 
+          ((b, s, visitor_type_k_s bigf t, ii3), ii4)) paramst 
+        in
+        let declxs_statxs' = declxs_statxs +> List.map (function 
+          | Left decl -> Left (visitor_decl_k_s bigf decl) 
+          | Right stat -> Right (visitor_statement_k_s bigf stat)) 
         in
         (s, (returnt', paramst', b, ii1), sto, (declxs_statxs'), ii2)
   in f (k, bigf) d 

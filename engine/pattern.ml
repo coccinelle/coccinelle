@@ -369,6 +369,17 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       check_add_metavars_binding (term ida, Ast_c.MetaExprVal (expb))
 
 
+  (* 
+     old: | A.Edots _, _ -> raise Impossible
+     In fact now can also have the Edots inside normal expression, 
+     not just in arg lists.
+     in 'x[...];'  
+     less: in if(<... x ... y ...>) 
+   *)
+  | A.Edots (_, None), _    -> return true
+  | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
+
+
   | A.MetaConst _, _ -> failwith "not handling MetaConst"
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
@@ -481,16 +492,6 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
 
   | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
-
-  (* 
-     old: | A.Edots _, _ -> raise Impossible
-     In fact now can also have the Edots inside normal expression, 
-     not just in arg lists.
-     in 'x[...];'  
-     less: in if(<... x ... y ...>) 
-   *)
-  | A.Edots (_, None), _    -> return true
-  | A.Edots (_, Some expr), _    -> failwith "not handling when on dots"
 
   | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
   | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)

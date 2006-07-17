@@ -40,9 +40,8 @@ $(TARGET).top: $(LIB) test_ctl.cmo
 $(LIB):  $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)
 
-# clean rule for LIB
 clean::
-	rm -f $(LIB)
+	rm -f $(LIB) $(TARGET).top
 
 
 $(OPTLIB): $(OPTOBJS)

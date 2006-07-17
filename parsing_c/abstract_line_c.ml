@@ -1,5 +1,8 @@
 open Common open Commonop
 
+(* todo?: al_expr doit enlever les infos de type ? et doit remettre en 
+   dumb_annot ? *)
+
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i)

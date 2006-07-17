@@ -27,9 +27,9 @@ let (labels_for_ctl:
      let nodes' = nodes +> map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
       (match pred, Control_flow_c.unwrap node with
-      | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _)) -> 
+      | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _, _)) -> 
          [(nodei,     [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
-      | Lib_engine.Paren s,  (Control_flow_c.EndBrace bracelevel) -> 
+      | Lib_engine.Paren s,  (Control_flow_c.EndBrace (bracelevel, _)) -> 
           [(nodei,    [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
       | Lib_engine.Paren _, _ -> []
 

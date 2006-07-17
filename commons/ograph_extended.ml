@@ -12,25 +12,25 @@ open Osetb
  graph: 
   node: index -> nodevalue
   arc: (index * index) * edgevalue
- how ? matrix ? but no growing array, so :(
- when need index ? 
-  must have an index, when cant just use nodevalue as a key,  cos sometimes 
-  may have 2 times the same key, but it must be 2 different nodes 
-  (for instance in program   f(); f();   we want 2 nodes, one per  f(); 
-  hence the index). If each node is different, then no problem, can omit index.
+ How ? matrix ? but no growing array, so :(
+ When need index ? 
+  Must have an index when can't just use nodevalue as a key,  cos sometimes 
+  may have 2 times the same key, but it must be 2 different nodes
+  (for instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
+  the index). 
+  If each node is different, then no problem, can omit index.
 
  todo?: prend en parametre le type de finitemap et set a prendre
  todo?: add_arc doit ramer, car del la key, puis add => better to 
-   have a ref to a set 
- opti: graph with pointers
-    and a tag visited => need keep global value visited_counter
-    check(that node is in, ...), display
+   have a ref to a set.
+ opti: graph with pointers and a tag visited => need keep global value 
+    visited_counter.  check(that node is in, ...), display.
  opti: when the graph structure is stable, have a method compact,  that 
-   transform that in a matrix (assert that all number between 0 and 
-   free_index are used,  or do some defrag-like-move/renaming
+   transforms that in a matrix (assert that all number between 0 and 
+   free_index are used,  or do some defrag-like-move/renaming).
 
  invariant: key in pred is also in succ (completness) and value in 
-   either assoc is a key also
+   either assoc is a key also.
  
 *)
 

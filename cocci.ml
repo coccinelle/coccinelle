@@ -137,12 +137,11 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         command2 ("cat " ^ coccifile);
         pr2 "";
   
-        let astcocci = spbis_from_file coccifile isofile in
-        let rule_with_metavars_list = astcocci in
+        let astcocci = sp_from_file coccifile isofile in
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
-          rule_with_metavars_list +> List.hd +> snd +> (fun xs -> 
+          astcocci +> List.hd +> (fun xs -> 
             let res = ref [] in
             xs +> List.iter (function x ->
 	      match Ast_cocci.unwrap x with
@@ -163,8 +162,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                                                        ) 
         in
 
-        let sp = sp_from_file coccifile isofile in
-        let ctls = (ctls sp) in
+        let ctls = (ctls astcocci) in
 
         if List.length ctls <> 1 
         then failwith "I handle cocci patch with only one region";
@@ -173,7 +171,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
         if !Flag.show_ctl then
           begin
-            Ctltotex.totex "/tmp/__cocci_ctl.tex" sp ctls;
+            Ctltotex.totex "/tmp/__cocci_ctl.tex" astcocci ctls;
             command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
                       "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
                       "gv __cocci_ctl.ps &");

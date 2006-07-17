@@ -26,7 +26,7 @@ OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 
 EXEC=$(TARGET)
-OPTEXEC=$(EXEC).opt
+OPTEXEC=$(TARGET).opt
 
 OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)

@@ -767,9 +767,8 @@ function_definition: start_fun compound      { del_scope(); ($1, $2) }
 /*                    | start_fun2 start_fun compound { del_scope(); ($2, $3) } */
 
 start_fun: start_fun2                        { new_scope(); fix_add_params_ident $1; Lexer_parser._lexer_hint := None;  $1 }
-start_fun2: 
-         |  decl_spec declaratorfd            { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
-                                             (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
+start_fun2: decl_spec declaratorfd           { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
+                                               (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
 
 
 
