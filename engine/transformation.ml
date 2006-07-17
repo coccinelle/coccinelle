@@ -491,8 +491,6 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
  (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Sequence _,_,_) -> raise NoMatch
-  | _, (B.SizeOfExpr _,_,_) -> raise NoMatch
-  | _, (B.SizeOfType _,_,_) -> raise NoMatch
 
   | _, (B.StatementExpr _,_,_) -> raise NoMatch  (* todo ? *)
   | _, (B.Constructor,_,_) -> raise NoMatch
