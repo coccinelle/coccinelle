@@ -4,8 +4,8 @@ static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
   
   if (cmd == VIDIOCGTUNER) {
     struct video_tuner v;
-    if (copy_from_user(&v, arg, sizeof(v)) != 0)
-      return -EFAULT;
+    if (copy_from_user(v, arg, size_of(v)) != 0)
+      return -EFAULT; else {}
     if (v.tuner)	/* Only 1 tuner */
       return -EINVAL;
     v.rangelow = 875 * 1600;
@@ -14,24 +14,24 @@ static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
     v.mode = VIDEO_MODE_AUTO;
     v.signal = 0xFFFF;	/* We can't get the signal strength */
     strcpy(v.name, "FM");
-    if (copy_to_user(arg, &v, sizeof(v)))
-      return -EFAULT;
+    if (copy_to_user(arg, v, size_of(v)))
+      return -EFAULT; else {}
     return 0;
-  }
+  }/*
   else if (cmd == VIDIOCSTUNER) {
     struct video_tuner v;
-    if (copy_from_user(&v, arg, sizeof(v)))
-      return -EFAULT;
+    if (copy_from_user(v, arg, size_of(v)))
+      return -EFAULT; else {}
     if (v.tuner != 0)
       return -EINVAL;
     /* Only 1 tuner so no setting needed ! */
     return 0;
   }
   else if(cmd == VIDIOCSFREQ) {
-    if (copy_from_user(&typhoon->curfreq, arg, sizeof(typhoon->curfreq)))
-      return -EFAULT;
+    if (copy_from_user(typhoon->curfreq, arg, size_of(typhoon->curfreq)))
+      return -EFAULT; else {}
     typhoon_setfreq(typhoon, typhoon->curfreq);
     return 0;
-  }
+  }*/
   return -ENOIOCTLCMD;
 }

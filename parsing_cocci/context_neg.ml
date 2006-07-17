@@ -73,6 +73,16 @@ type node =
 	Ast0.mcodekind list (* tokens at the level below *)
 	* int list list
 
+let kind2c = function
+    Neutral -> "neutral"
+  | AllMarked -> "allmarked"
+  | NotAllMarked -> "notallmarked"
+
+let node2c = function
+    Token(k,_,_,_) -> Printf.sprintf "token %s\n" (kind2c k)
+  | Recursor(k,_,_,_) -> Printf.sprintf "recursor %s\n" (kind2c k)
+  | Bind(k,_,_,_,_,_) -> Printf.sprintf "bind %s\n" (kind2c k)
+
 (* goal: detect negative in both tokens and recursors, or context only in
 tokens *)
 let bind c1 c2 =

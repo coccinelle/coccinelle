@@ -19,6 +19,7 @@ let pp_predicate = function
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
   | Return -> pp "Return"
+  | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp s; pp ")"
   | Match re -> Pretty_print_cocci.rule_elem "" re
   | Label s -> pp "Label("; pp s; pp ")"

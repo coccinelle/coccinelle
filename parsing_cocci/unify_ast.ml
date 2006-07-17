@@ -27,18 +27,24 @@ let bool_unify_option f t1 t2 =
   | _ -> false
 
 let conjunct_bindings b1 b2 =
-  match b1 with NO -> NO | MAYBE -> b2
+  match b1 with NO -> b1 | MAYBE -> b2
+
+let disjunct_bindings b1 b2 =
+  match b1 with MAYBE -> b1 | NO -> b2
+
+let disjunct_all_bindings = List.fold_left disjunct_bindings NO 
 
 (* --------------------------------------------------------------------- *)
 
+(* returns true if one list is a prefix of the other, even if they don't have
+the same length.  Eg if one disj branch is a() and the other is empty,
+we need to put !a() on the second one.  Similarly for a(); b(); and a();? *)
 let unify_lists fn la lb =
-  if List.length la = List.length lb
-  then
-    List.fold_left2
-      (function rest -> function cura -> function curb ->
-	conjunct_bindings (fn cura curb) rest)
-      (return true) la lb
-  else return false
+  let rec loop = function
+      ([],_) | (_,[]) -> return true
+    | (cura::resta,curb::restb) ->
+	conjunct_bindings (fn cura curb) (loop (resta,restb)) in
+  loop (la,lb)
 
 let unify_dots fn d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
@@ -77,7 +83,8 @@ let rec unify_expression e1 e2 =
   | (Ast.Constant(c1),Ast.Constant(c2))-> return (unify_mcode c1 c2)
   | (Ast.FunCall(f1,lp1,args1,rp1),Ast.FunCall(f2,lp2,args2,rp2)) ->
       conjunct_bindings
-	(unify_expression f1 f2) (unify_dots unify_expression args1 args2)
+	(unify_expression f1 f2)
+	(unify_dots unify_expression args1 args2)
   | (Ast.Assignment(l1,op1,r1),Ast.Assignment(l2,op2,r2)) ->
       if unify_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
@@ -118,13 +125,16 @@ let rec unify_expression e1 e2 =
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
-  | (Ast.DisjExpr(e1),Ast.DisjExpr(e2)) -> unify_lists unify_expression e1 e2
+  | (Ast.DisjExpr(e1),_) ->
+      disjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
+  | (_,Ast.DisjExpr(e2)) ->
+      disjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
   | (Ast.NestExpr(e1),Ast.NestExpr(e2)) -> unify_dots unify_expression e1 e2
 
-  | (Ast.Edots(d1,w1),Ast.Edots(d2,w2))
-  | (Ast.Ecircles(d1,w1),Ast.Ecircles(d2,w2))
-  | (Ast.Estars(d1,w1),Ast.Estars(d2,w2)) ->
-      unify_option unify_expression w1 w2
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Edots(_,_),_) | (_,Ast.Edots(_,_))
+  | (Ast.Ecircles(_,_),_) | (_,Ast.Ecircles(_,_))
+  | (Ast.Estars(_,_),_) | (_,Ast.Estars(_,_)) -> return true
 
   | (Ast.OptExp(_),_)
   | (Ast.UniqueExp(_),_)
@@ -179,8 +189,12 @@ let rec unify_declaration d1 d2 =
 	(conjunct_bindings (unify_ident id1 id2) (unify_expression e1 e2))
   | (Ast.UnInit(ft1,id1,s1),Ast.UnInit(ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
-  | (Ast.DisjDecl(d1),Ast.DisjDecl(d2)) ->
-      unify_lists unify_declaration d1 d2
+  | (Ast.DisjDecl(d1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_declaration x d2) d1)
+  | (_,Ast.DisjDecl(d2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_declaration d1 x) d2)
 
   | (Ast.OptDecl(_),_)
   | (Ast.UniqueDecl(_),_)
@@ -206,8 +220,9 @@ let rec unify_parameterTypeDef p1 p2 =
 
   | (Ast.PComma(_),Ast.PComma(_)) -> return true
 
-  | (Ast.Pdots(d1),Ast.Pdots(d2))
-  | (Ast.Pcircles(d1),Ast.Pcircles(d2)) -> return true
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Pdots(_),_) | (_,Ast.Pdots(_))
+  | (Ast.Pcircles(_),_) | (_,Ast.Pcircles(_)) -> return true
 
   | (Ast.OptParam(_),_)
   | (Ast.UniqueParam(_),_)
@@ -282,23 +297,28 @@ let rec unify_statement s1 s2 =
   | (Ast.For(h1,s1),Ast.For(h2,s2)) ->
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
   | (Ast.Atomic(re1),Ast.Atomic(re2)) -> unify_rule_elem re1 re2
-  | (Ast.Disj(s1),Ast.Disj(s2)) ->
-      unify_lists (unify_dots unify_statement) s1 s2
+  | (Ast.Disj(s1),_) ->
+      let s2 = Ast.rewrap s2 (Ast.DOTS[s2]) in
+      disjunct_all_bindings
+	(List.map
+	   (function x -> unify_dots unify_statement x s2)
+	   s1)
+  | (_,Ast.Disj(s2)) ->
+      let s1 = Ast.rewrap s1 (Ast.DOTS[s1]) in
+      disjunct_all_bindings
+	(List.map
+	   (function x -> unify_dots unify_statement s1 x)
+	   s2)
   | (Ast.Nest(s1),Ast.Nest(s2)) -> unify_dots unify_statement s1 s2
   | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)
 	   (conjunct_bindings (unify_dots unify_statement s1 s2)
 	      (unify_rule_elem rb1 rb2)))
-  | (Ast.Dots(d1,s1,[]),Ast.Dots(d2,s2,[]))
-  | (Ast.Circles(d1,s1,[]),Ast.Circles(d2,s2,[]))
-  | (Ast.Stars(d1,s1,[]),Ast.Stars(d2,s2,[])) ->
-      unify_lists (unify_dots unify_statement) s1 s2
-  | (Ast.Dots(d1,s1,_),Ast.Dots(d2,s2,_))
-  | (Ast.Circles(d1,s1,_),Ast.Circles(d2,s2,_))
-  | (Ast.Stars(d1,s1,_),Ast.Stars(d2,s2,_)) ->
-      failwith
-	"unify called in processing ors which is before asttoctl intros tmp field\n"
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Dots(_,_,_),_) | (_,Ast.Dots(_,_,_))
+  | (Ast.Circles(_,_,_),_) | (_,Ast.Circles(_,_,_))
+  | (Ast.Stars(_,_,_),_) | (_,Ast.Stars(_,_,_)) -> return true
   | (Ast.OptStm(_),_)
   | (Ast.UniqueStm(_),_)
   | (Ast.MultiStm(_),_)

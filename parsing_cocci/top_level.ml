@@ -58,7 +58,8 @@ let rec scan_top_decl = function
       | _ -> let (front,rest) = scan_top_decl rest in (topdecl::front,rest))
 
 (* for debugging *)
-let l2c = function
+let l2c l =
+  match Ast0.unwrap l with
     Ast0.FUNCTION(_) -> "function"
   | Ast0.DECL(_) -> "decl"
   | Ast0.INCLUDE(_,_) -> "include"

@@ -61,9 +61,11 @@ let (labels_for_ctl:
       | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
       | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
       | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, []]
+      | Lib_engine.Exit,        Control_flow_c.Exit ->      [nodei, []]
       | Lib_engine.TrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
       | Lib_engine.After, _ -> []
+      | Lib_engine.Exit, _  -> []
       | Lib_engine.Return, node -> 
           (match node with
             (* todo? should match the Exit code ? *)

@@ -44,7 +44,8 @@ let mcodekind brackets fn x = function
 
 let mcode fn (x,_,_,mc) = mcodekind None fn x mc
 
-let print_context (_,info,i,mc) fn = mcodekind (Some !i) fn () !mc
+let print_context (_,info,i,mc) fn =
+  mcodekind (Some info.Ast0.line_start) fn () !mc
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -329,7 +330,8 @@ let top_level t =
 	  print_string "error words = [";
 	  print_between (function _ -> print_string ", ") expression exps;
 	  print_string "]"
-      | Ast0.OTHER(_) -> failwith "unexpected code")
+      | Ast0.OTHER(s) ->
+	  print_string "OTHER("; statement "" s; print_string ")")
 
 let rule =
   print_between (function _ -> force_newline(); force_newline()) top_level

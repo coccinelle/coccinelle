@@ -19,7 +19,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 
 	/* if we couldn't find it, we return an error */
 	if (!us) {
-		scsi_host_put(hostptr);
+//		scsi_host_put(hostptr);
 		return -ESRCH;
 	}
 

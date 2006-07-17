@@ -4,6 +4,7 @@ type predicate =
   | TrueBranch | FalseBranch
   | After (* pointer to the code after an if or while *)
   | Return (* any exit from the current function *)
+  | Exit (* the "exit" node of the current function *)
   | Paren of string
   | Match of Ast_cocci.rule_elem
   | Label of string
@@ -29,5 +30,3 @@ type label_ctlcocci =
 
 type transformation_info = 
     (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
-
-

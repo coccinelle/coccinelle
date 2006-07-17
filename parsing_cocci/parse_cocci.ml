@@ -480,16 +480,18 @@ let parse file =
 	  drop_double_dots
 	    (drop_when (drop_empty_nest (drop_empty_or plus_tokens))) in
 	(*
+	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
 	Printf.printf "\n\n";
 	Printf.printf "before minus parse\n";
 	*)
 	let minus_res = parse_one PC.minus_main file minus_tokens in
-	(*
+        (*
+	Unparse_ast0.unparse minus_res;
 	Printf.printf "before plus parse\n";
 	*)
 	let plus_res = parse_one PC.plus_main file plus_tokens in
-	(*
+        (*
 	Printf.printf "after plus parse\n";
 	*)
 	Check_meta.check_meta metavars minus_res plus_res;

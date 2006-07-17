@@ -524,8 +524,10 @@ let triples_complement states trips =
 let triples_witness x trips = 
   let mkwit (s,th,wit) =
     let (th_x,newth) = split_subst th x in
-      (s,newth,A.Wit(s,th_x,[],wit)) in	(* [] = annotation *)
-    setify (map mkwit trips)
+    if th_x = []
+    then print_state "empty witness from" [(s,th,wit)];
+    (s,newth,A.Wit(s,th_x,[],wit)) in	(* [] = annotation *)
+  setify (map mkwit trips)
 ;;
 
 
@@ -556,7 +558,9 @@ let pre_forall ((_,_,states) as m) y =
 ;;
 
 let satAF m s =
-  let f y = union y (pre_forall m y) in
+  let f y =
+    let pre = pre_forall m y in
+    union y pre in
   setfix f s
 ;;
 
@@ -572,8 +576,12 @@ let satAX m s = pre_forall m s
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU m s1 s2 = 
-  let f y = triples_union s2 (triples_conj s1 (pre_forall m y)) in
-  setfix f [] 				(* NOTE: is [] right? *)
+  let f y = 
+    let first = pre_forall m y in
+    let second = triples_conj s1 first in
+    triples_union s2 second in
+  let res = setfix f [] in		(* NOTE: is [] right? *)
+  res
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
@@ -634,32 +642,41 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
     | A.Pred(p)            -> anno (label p) []
     | A.Not(phi1)          -> 
 	let (child,res) = satv phi1 env in
+	Printf.printf "not\n"; flush stdout;
 	anno (propagate_neg (triples_complement states res)) [child]
     | A.Or(phi1,phi2)      -> 
 	let (child1,res1) = satv phi1 env in
 	let (child2,res2) = satv phi2 env in
+	Printf.printf "or\n"; flush stdout;
 	anno (triples_union res1 res2) [child1; child2]
     | A.And(phi1,phi2)     -> 
+	Printf.printf "in conjunction\n";
 	let (child1,res1) = satv phi1 env in
 	let (child2,res2) = satv phi2 env in
+	Printf.printf "and\n"; flush stdout;
 	anno (triples_conj res1 res2) [child1; child2]
     | A.EX(phi1)           -> 
 	let (child,res) = satv phi1 env in
+	Printf.printf "EX\n"; flush stdout;
 	anno (satEX m res) [child]
     | A.AX(phi1)           -> 
 	let (child,res) = satv phi1 env in
+	Printf.printf "AX\n"; flush stdout;
 	anno (pre_forall m res) [child]
     | A.EF(phi1)           -> 
 	let (child,_) = satv phi1 env in
+	Printf.printf "EF\n"; flush stdout;
 	anno (satloop m
 		(A.rewrap phi (A.EU(A.rewrap phi A.True,phi1)))
 		env check_conj)
 	  [child]
     | A.AF(phi1)           -> 
 	let (child,res) = satv phi1 env in
+	Printf.printf "AF\n"; flush stdout;
 	anno (satAF m res) [child]
     | A.EG(phi1)           -> 
 	let (child,_) = satv phi1 env in
+	Printf.printf "EG\n"; flush stdout;
 	anno
 	  (satloop m
 	     (A.rewrap phi
@@ -668,6 +685,7 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
 	  [child]
     | A.AG(phi1)            -> 
 	let (child,_) = satv phi1 env in
+	Printf.printf "AG\n"; flush stdout;
 	anno
 	  (satloop m
 	     (A.rewrap phi
@@ -677,10 +695,12 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
     | A.EU(phi1,phi2)      -> 
 	let (child1,res1) = satv phi1 env in
 	let (child2,res2) = satv phi2 env in
+	Printf.printf "EU\n"; flush stdout;
 	anno (satEU m res1 res2) [child1; child2]
     | A.AU(phi1,phi2)      -> 
 	let (child1,res1) = satv phi1 env in
 	let (child2,res2) = satv phi2 env in
+	Printf.printf "AU\n"; flush stdout;
 	anno (satAU m res1 res2) [child1; child2]
     | A.Implies(phi1,phi2) -> 
 	let (child1,_) = satv phi1 env in

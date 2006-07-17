@@ -196,9 +196,7 @@ let rec match_expr context_required pattern expr =
 	    failwith "not allowed in the pattern of an isomorphism"
 	| (Ast0.Edots(_,None),Ast0.Edots(_,_))
 	| (Ast0.Ecircles(_,None),Ast0.Ecircles(_,_))
-	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) ->
-	    Printf.printf "dots that match\n";
-	    return true
+	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) -> return true
 	| (Ast0.Edots(_,_),_) | (Ast0.Ecircles(_,_),_)
 	| (Ast0.Estars(_,_),_) -> failwith "whencode not allowed in a pattern"
 	| (Ast0.OptExp(expa),Ast0.OptExp(expb))
@@ -400,6 +398,89 @@ let match_top_level context_required pattern t =
     | _ -> return false
   else return false
 
+
+(* --------------------------------------------------------------------- *)
+(* make an entire tree MINUS *)
+
+let make_minus =
+  let mcode (term,arity,info,mcodekind) =
+    (term,arity,info,
+     match mcodekind with
+       Ast0.CONTEXT(mc) ->
+	 (match !mc with
+	   (Ast.NOTHING,_,_) -> Ast0.MINUS(ref([],Ast0.default_token_info))
+	 | _ -> failwith "make_minus: unexpected befaft")
+     | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
+     | _ -> failwith "make_minus mcode: unexpected mcodekind") in
+
+  let donothing r k ((term,info,index,mcodekind) as e) =
+    let e = k e in
+    (match !mcodekind with
+      Ast0.CONTEXT(mc) ->
+	(match !mc with
+	  (Ast.NOTHING,_,_) ->
+	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
+	| _ -> failwith "make_minus: unexpected befaft")
+    | Ast0.MINUS(mc) -> () (* in the part copied from the src term *)
+    | _ -> failwith "make_minus donothing: unexpected mcodekind");
+    e in
+
+  let dots r k ((term,info,index,mcodekind) as e) =
+    match term with
+      Ast0.DOTS([]) ->
+	(* if context is - this should be - as well.  There are no tokens
+	   here though, so the bottom-up minusifier in context_neg leaves it
+	   as mixed.  It would be better to fix context_neg, but that would
+	   require a special case for each term with a dots subterm. *)
+	(match !mcodekind with
+	  Ast0.MIXED(mc) ->
+	    (match !mc with
+	      (Ast.NOTHING,_,_) ->
+		mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info));
+		e
+	    | _ -> failwith "make_minus: unexpected befaft")
+	| _ -> failwith "make_minus donothingxxx: unexpected mcodekind")
+    | _ -> donothing r k e in
+
+  V0.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    dots dots dots
+    donothing donothing donothing donothing donothing donothing donothing
+
+(* --------------------------------------------------------------------- *)
+(* rebuild mcode cells in an instantiated alt *)
+
+(* mcodes will be side effected later with plus code, so we have to copy
+then on instantiating an insomorphism.  One could wonder whether it would
+be better not to use side-effects, but they are convenient for insert_plus
+where is it useful to manipulate a list of the mcodes but side-effect a tree *)
+let rebuild_mcode start_line =
+  let copy_mcodekind = function
+      Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
+    | Ast0.MINUS(mc) -> Ast0.MINUS(ref (!mc))
+    | Ast0.MIXED(mc) -> Ast0.MIXED(ref (!mc))
+    | Ast0.PLUS -> failwith "rebuild_mcode: unexpected plus mcodekind" in
+
+  let mcode (term,arity,info,mcodekind) =
+    let info =
+      match start_line with
+	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
+      |	None -> info in
+    (term,arity,info,copy_mcodekind mcodekind) in
+
+  let donothing r k e =
+    let (term,info,index,mcodekind) = k e in
+    let info =
+      match start_line with
+	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
+      |	None -> info in
+    (term,info,ref !index,ref (copy_mcodekind !mcodekind)) in
+
+  V0.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+
 (* --------------------------------------------------------------------- *)
 
 let instantiate bindings =
@@ -414,7 +495,7 @@ let instantiate bindings =
       Ast0.MetaId(name) ->
 	(try
 	  (match List.assoc (term name) bindings with
-	    Ast0.IdentTag(id) -> id
+	    Ast0.IdentTag(id) -> (rebuild_mcode None).V0.rebuilder_ident id
 	  | _ -> failwith "not possible 1")
 	with
 	  Not_found ->
@@ -428,7 +509,8 @@ let instantiate bindings =
       Ast0.MetaExpr(name,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
-	    Ast0.ExprTag(exp) -> exp
+	    Ast0.ExprTag(exp) ->
+	      (rebuild_mcode None).V0.rebuilder_expression exp
 	  | _ -> failwith "not possible 2")
 	with
 	  Not_found ->
@@ -443,7 +525,7 @@ let instantiate bindings =
       Ast0.MetaType(name) ->
 	(try
 	  (match List.assoc (term name) bindings with
-	    Ast0.TypeCTag(ty) -> ty
+	    Ast0.TypeCTag(ty) -> (rebuild_mcode None).V0.rebuilder_typeC ty
 	  | _ -> failwith "not possible 3")
 	with
 	  Not_found ->
@@ -455,7 +537,8 @@ let instantiate bindings =
       Ast0.MetaParam(name) ->
 	(try
 	  (match List.assoc (term name) bindings with
-	    Ast0.ParamTag(param) -> param
+	    Ast0.ParamTag(param) ->
+	      (rebuild_mcode None).V0.rebuilder_parameter param
 	  | _ -> failwith "not possible 4")
 	with
 	  Not_found ->
@@ -468,7 +551,8 @@ let instantiate bindings =
     Ast0.MetaStmt(name) ->
 	(try
 	  (match List.assoc (term name) bindings with
-	    Ast0.StmtTag(stmt) -> stmt
+	    Ast0.StmtTag(stmt) ->
+	      (rebuild_mcode None).V0.rebuilder_statement stmt
 	  | _ -> failwith "not possible 5")
 	with
 	  Not_found ->
@@ -480,56 +564,6 @@ let instantiate bindings =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
     identfn exprfn tyfn paramfn donothing stmtfn donothing
-
-(* --------------------------------------------------------------------- *)
-(* make an entire tree MINUS *)
-
-let make_minus =
-  let mcode (term,arity,info,mcodekind) =
-    (term,arity,info,
-     match mcodekind with
-       Ast0.CONTEXT(mc) ->
-	 (match !mc with
-	   (Ast.NOTHING,_,_) -> Ast0.MINUS(ref([],Ast0.default_token_info))
-	 | _ -> failwith "make_minus: unexpected befaft")
-     | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
-     | _ -> failwith "make_minus: unexpected mcodekind") in
-
-  let donothing r k ((term,info,index,mcodekind) as e) =
-    let e = k e in
-    (match !mcodekind with
-      Ast0.CONTEXT(mc) ->
-	(match !mc with
-	  (Ast.NOTHING,_,_) ->
-	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
-	| _ -> failwith "make_minus: unexpected befaft")
-    | Ast0.MINUS(mc) -> () (* in the part copied from the src term *)
-    | _ -> failwith "make_minus: unexpected mcodekind");
-    e in
-
-  V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-
-(* --------------------------------------------------------------------- *)
-(* rebuild mcode cells in an instantiated alt *)
-
-let rebuild_mcode =
-  let mcode (term,arity,info,mcodekind) =
-    (term,arity,info,
-     match mcodekind with
-       Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
-     | Ast0.MINUS(mc) -> Ast0.MINUS(ref (!mc))
-     | Ast0.MIXED(_) -> failwith "rebuild_mcodes: unexpected mixed mcodekind"
-     | Ast0.PLUS -> failwith "rebuild_mcodes: unexpected plus mcodekind") in
-
-  let donothing r k e = k e in
-
-  V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -574,7 +608,7 @@ let mkdisj matcher alts instantiater e disj_maker minusify
 	      List.map
 		(function a ->
 		  copy_plus printer minusify e
-		    (compute_lines (rebuild_mcodes (instantiater bindings a))))
+		    (compute_lines (instantiater bindings (rebuild_mcodes a))))
 		alts in
 	    disj_maker new_alts) in
   loop alts
@@ -597,6 +631,8 @@ let make_disj_stmt sl =
 let transform_expr alts e =
   match alts with
     (Ast0.ExprTag(_)::_) ->
+      (* start line is given to any leaves in the iso code *)
+      let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
       let alts =
 	List.map
 	  (function Ast0.ExprTag(p) -> p | _ -> failwith "invalid alt")
@@ -604,13 +640,16 @@ let transform_expr alts e =
       mkdisj match_expr alts
 	(function b -> (instantiate b).V0.rebuilder_expression) e
 	make_disj_expr make_minus.V0.rebuilder_expression
-	rebuild_mcode.V0.rebuilder_expression Compute_lines.expression
+	(rebuild_mcode start_line).V0.rebuilder_expression
+	Compute_lines.expression
 	Unparse_ast0.expression
   | _ -> e
 
 let transform_decl alts e =
   match alts with
     (Ast0.DeclTag(_)::_) ->
+      (* start line is given to any leaves in the iso code *)
+      let start_line = Some (Ast0.get_info e).Ast0.line_start in
       let alts =
 	List.map
 	  (function Ast0.DeclTag(p) -> p | _ -> failwith "invalid alt")
@@ -618,13 +657,16 @@ let transform_decl alts e =
       mkdisj match_decl alts
 	(function b -> (instantiate b).V0.rebuilder_declaration) e
 	make_disj_decl make_minus.V0.rebuilder_declaration
-	rebuild_mcode.V0.rebuilder_declaration Compute_lines.declaration
+	(rebuild_mcode start_line).V0.rebuilder_declaration
+	Compute_lines.declaration
 	Unparse_ast0.declaration
   | _ -> e
 
 let transform_stmt alts e =
   match alts with
     (Ast0.StmtTag(_)::_) ->
+      (* start line is given to any leaves in the iso code *)
+      let start_line = Some (Ast0.get_info e).Ast0.line_start in
       let alts =
 	List.map
 	  (function Ast0.StmtTag(p) -> p | _ -> failwith "invalid alt")
@@ -632,7 +674,8 @@ let transform_stmt alts e =
       mkdisj match_statement alts
 	(function b -> (instantiate b).V0.rebuilder_statement) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
-	rebuild_mcode.V0.rebuilder_statement Compute_lines.statement
+	(rebuild_mcode start_line).V0.rebuilder_statement
+	Compute_lines.statement
 	(Unparse_ast0.statement "")
   | _ -> e
 
