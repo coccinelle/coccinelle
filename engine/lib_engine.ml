@@ -3,6 +3,7 @@ type mvar = string
 type predicate =
   | TrueBranch | FalseBranch
   | After (* pointer to the code after an if or while *)
+  | FallThrough
   | Return (* any exit from the current function *)
   | Exit (* the "exit" node of the current function *)
   | Paren of string
