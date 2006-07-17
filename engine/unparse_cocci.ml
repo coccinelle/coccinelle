@@ -128,6 +128,12 @@ let rec expression e =
   | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp; expression exp
+  | Ast.SizeOfExpr(sizeof,exp) ->
+      mcode print_string sizeof; expression exp
+  | Ast.SizeOfType(sizeof,lp,ty,rp) ->
+      mcode print_string sizeof;
+      mcode print_string_box lp; fullType ty; close_box();
+      mcode print_string rp; 
 
   | Ast.MetaConst(name,None) -> 
       failwith "metaConst not handled"

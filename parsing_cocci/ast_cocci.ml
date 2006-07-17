@@ -85,6 +85,9 @@ and base_expression =
   | RecordPtAccess of expression * string mcode (* -> *) * ident
   | Cast           of string mcode (* ( *) * fullType * string mcode (* ) *) *
                       expression
+  | SizeOfExpr     of string mcode (* sizeof *) * expression
+  | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
+                      fullType * string mcode (* ) *)
 
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)

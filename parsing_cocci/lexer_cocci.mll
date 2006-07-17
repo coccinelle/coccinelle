@@ -119,6 +119,8 @@ let id_tokens lexbuf =
   | "for" ->        TFor    (get_current_line_type lexbuf)
   | "return" ->     TReturn (get_current_line_type lexbuf)
 
+  | "sizeof" ->     TSizeof (get_current_line_type lexbuf)
+
   | "Expression"     -> TIsoExpression
   | "Statement"      -> TIsoStatement
   | "Declaration"    -> TIsoDeclaration

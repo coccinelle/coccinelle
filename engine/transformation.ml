@@ -450,6 +450,14 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
               transform_e_e ea eb binding),
       typ, tag_symbols [i1;i2]  ii binding
 
+  | A.SizeOfExpr (i1, ea), (B.SizeOfExpr (eb), typ,ii) -> 
+      B.SizeOfExpr (transform_e_e ea eb binding),
+      typ, tag_symbols [i1]  ii binding
+
+  | A.SizeOfType (i1, i2, typa, i3), (B.SizeOfType (typb), typ,ii) -> 
+      B.SizeOfType (transform_ft_ft typa typb  binding),
+      typ, tag_symbols [i1;i2;i3]  ii binding
+
 
   | A.Paren (i1, ea, i2), (B.ParenExpr (eb), typ,ii) -> 
       B.ParenExpr (transform_e_e ea eb  binding),

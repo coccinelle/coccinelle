@@ -189,6 +189,10 @@ let rec match_expr context_required pattern expr =
 	| (Ast0.Cast(_,tya,_,expa),Ast0.Cast(lp,tyb,rp,expb)) ->
 	    conjunct_bindings (match_typeC context_required tya tyb)
 	      (match_expr context_required expa expb)
+	| (Ast0.SizeOfExpr(_,expa),Ast0.SizeOfExpr(szf,expb)) ->
+	      match_expr context_required expa expb
+	| (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
+	    match_typeC context_required tya tyb
 	| (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
 	| (Ast0.DisjExpr(_,expsa,_),Ast0.DisjExpr(_,expsb,_)) ->
 	    failwith "not allowed in the pattern of an isomorphism"

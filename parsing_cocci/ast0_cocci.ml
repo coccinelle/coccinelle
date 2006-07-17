@@ -73,6 +73,9 @@ type base_expression =
   | RecordPtAccess of expression * string mcode (* -> *) * ident
   | Cast           of string mcode (* ( *) * typeC * string mcode (* ) *) *
                       expression
+  | SizeOfExpr     of string mcode (* sizeof *) * expression
+  | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
+                      typeC * string mcode (* ) *)
   | MetaConst      of string mcode * typeC list option
   | MetaErr        of string mcode
   | MetaExpr       of string mcode * typeC list option

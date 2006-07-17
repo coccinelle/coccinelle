@@ -200,6 +200,10 @@ let rec expression e =
 	Ast.RecordPtAccess(expression exp,mcode ar,ident field)
     | Ast0.Cast(lp,ty,rp,exp) ->
 	Ast.Cast(mcode lp,typeC ty,mcode rp,expression exp)
+    | Ast0.SizeOfExpr(szf,exp) ->
+	Ast.SizeOfExpr(mcode szf,expression exp)
+    | Ast0.SizeOfType(szf,lp,ty,rp) ->
+	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.MetaConst(name,ty)  ->
 	let name = mcode name in
 	let ty = get_option (List.map typeC) ty in

@@ -56,6 +56,8 @@ let expression e =
   | Ast0.RecordAccess(exp,pt,field) -> [28]
   | Ast0.RecordPtAccess(exp,ar,field) -> [29]
   | Ast0.Cast(lp,ty,rp,exp) -> [30]
+  | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
+  | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
   | Ast0.MetaConst(name,ty) -> [31]
   | Ast0.MetaErr(name) -> [32]
   | Ast0.MetaExpr(name,ty) -> [33]
@@ -87,7 +89,7 @@ let declaration d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(ty,id,sem) -> [55]
-  | Ast0.DisjDecl(_,decls,_) -> [97]
+  | Ast0.DisjDecl(_,decls,_) -> [97] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.MultiDecl(decl) -> [58]
@@ -139,4 +141,5 @@ let top_level t =
   | Ast0.CODE(stmt_dots) -> [94]
   | Ast0.ERRORWORDS(exps) -> [95]
   | Ast0.OTHER(_) -> [96]
-(* 97 already used *)
+
+(* 99 already used *)

@@ -133,6 +133,7 @@ let startofs _ = -1
 %token<Data.line_type * int * int * int> Tstatic Tconst Tvolatile
 
 %token <Data.line_type * int * int * int> TIf TElse TWhile TFor TDo TReturn
+%token <Data.line_type * int * int * int> TSizeof
 %token <Data.line_type * int * int * int> TFunDecl
 %token <string * (Data.line_type * int * int * int)> TIdent
 %token <string * (Data.line_type * int * int * int)> TMetaId TMetaType TMetaErr
@@ -626,6 +627,14 @@ unary_expr(r,pe):
       { Ast0.wrap(Ast0.Infix ($2, clt2mcode Ast.Dec (startofs($1)) $1)) }
   | unary_op unary_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
+  | TSizeof unary_expr(r,pe)
+      { Ast0.wrap(Ast0.SizeOfExpr (clt2mcode "sizeof" (startofs($1)) $1, $2)) }
+  | TSizeof TOPar ctype TCPar 
+      { Ast0.wrap(Ast0.SizeOfType (clt2mcode "sizeof" (startofs($1)) $1,
+                                   clt2mcode "(" (startofs($2)) $2,
+                                   $3,
+                                   clt2mcode ")" (startofs($4)) $4)) }
+                                   
 
 unary_op: TAnd   { clt2mcode Ast.GetRef (startofs($1)) $1 }
 	| TMul   { clt2mcode Ast.DeRef (startofs($1)) $1 }

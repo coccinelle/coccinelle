@@ -555,6 +555,12 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       match_ft_ft typa typb >&&>
       match_e_e ea eb
 
+  | A.SizeOfExpr (_, ea), (B.SizeOfExpr (eb), typ,ii) ->
+      match_e_e ea eb
+
+  | A.SizeOfType (_, _, typa, _), (B.SizeOfType (typb), typ,ii) ->
+      match_ft_ft typa typb
+
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
       match_e_e ea eb
@@ -582,8 +588,6 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
   (* have not a counter part in coccinelle, for the moment *)
   | _, (B.Sequence _,_,_) -> return false
-  | _, (B.SizeOfExpr _,_,_) -> return false
-  | _, (B.SizeOfType _,_,_) -> return false
 
   | _, (B.StatementExpr _,_,_) -> return false (* todo ? *)
   | _, (B.Constructor,_,_) -> return false

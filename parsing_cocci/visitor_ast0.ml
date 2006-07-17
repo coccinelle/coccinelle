@@ -101,6 +101,11 @@ let combiner bind option_default
       | Ast0.Cast(lp,ty,rp,exp) ->
 	  multibind
 	    [string_mcode lp; typeC ty; string_mcode rp; expression exp]
+      | Ast0.SizeOfExpr(szf,exp) ->
+	  multibind [string_mcode szf; expression exp]
+      | Ast0.SizeOfType(szf,lp,ty,rp) ->
+	  multibind
+	    [string_mcode szf; string_mcode lp; typeC ty; string_mcode rp]
       | Ast0.MetaConst(name,ty) -> string_mcode name
       | Ast0.MetaErr(name) -> string_mcode name
       | Ast0.MetaExpr(name,ty) -> string_mcode name
@@ -351,6 +356,11 @@ let rebuilder = fun
 	| Ast0.Cast(lp,ty,rp,exp) ->
 	    Ast0.Cast(string_mcode lp, typeC ty, string_mcode rp,
 		      expression exp)
+	| Ast0.SizeOfExpr(szf,exp) ->
+	    Ast0.SizeOfExpr(string_mcode szf, expression exp)
+	| Ast0.SizeOfType(szf,lp,ty,rp) ->
+	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
+                           string_mcode rp)
 	| Ast0.MetaConst(name,ty) ->
 	    Ast0.MetaConst(string_mcode name,
 			   get_option (List.map typeC) ty)

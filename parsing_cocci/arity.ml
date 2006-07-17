@@ -240,6 +240,18 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let rp = mcode rp in
       let exp = expression false arity exp in
       make_exp expr tgt arity (Ast0.Cast(lp,ty,rp,exp))
+  | Ast0.SizeOfExpr(szf,exp) ->
+      let arity = exp_same (mcode2line szf) [mcode2arity szf] in
+      let szf = mcode szf in
+      let exp = expression false arity exp in
+      make_exp expr tgt arity (Ast0.SizeOfExpr(szf,exp))
+  | Ast0.SizeOfType(szf,lp,ty,rp) ->
+      let arity = exp_same (mcode2line szf) (List.map mcode2arity [szf;lp;rp]) in
+      let szf = mcode szf in
+      let lp = mcode lp in
+      let ty = typeC arity ty in
+      let rp = mcode rp in
+      make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
   | Ast0.MetaConst(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in

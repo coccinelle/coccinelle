@@ -103,6 +103,10 @@ let rec expression context table minus e =
       expression ID table minus exp; ident FIELD table minus field
   | Ast0.Cast(lp,ty,rp,exp) ->
       typeC table minus ty; expression ID table minus exp
+  | Ast0.SizeOfExpr(szf,exp) ->
+      expression ID table minus exp
+  | Ast0.SizeOfType(szf,lp,ty,rp) ->
+      typeC table minus ty
   | Ast0.MetaConst(name,ty) -> if minus then check_table table minus name
   | Ast0.MetaExpr(name,ty)  -> if minus then check_table table minus name
   | Ast0.MetaErr(name)      -> check_table table minus name

@@ -176,6 +176,12 @@ let rec expression e =
   | Ast0.Cast(lp,ty,rp,exp) ->
       let exp = expression exp in
       mkres e (Ast0.Cast(lp,typeC ty,rp,exp)) (promote_mcode lp) exp
+  | Ast0.SizeOfExpr(szf,exp) ->
+      let exp = expression exp in
+      mkres e (Ast0.SizeOfExpr(szf,exp)) (promote_mcode szf) exp
+  | Ast0.SizeOfType(szf,lp,ty,rp) ->
+      mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp)) 
+        (promote_mcode szf)  (promote_mcode rp)
   | Ast0.MetaConst(name,_) | Ast0.MetaErr(name) | Ast0.MetaExpr(name,_)
   | Ast0.MetaExprList(name) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln

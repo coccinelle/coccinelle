@@ -102,6 +102,11 @@ let combiner bind option_default
       | Ast.Cast(lp,ty,rp,exp) ->
 	  multibind
 	    [string_mcode lp; fullType ty; string_mcode rp; expression exp]
+      | Ast.SizeOfExpr(szf,exp) ->
+	  multibind [string_mcode szf; expression exp]
+      | Ast.SizeOfType(szf,lp,ty,rp) ->
+	  multibind
+	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
       | Ast.MetaConst(name,_) -> string_mcode name
       | Ast.MetaErr(name) -> string_mcode name
       | Ast.MetaExpr(name,_) -> string_mcode name
@@ -394,6 +399,11 @@ let rebuilder
 	| Ast.Cast(lp,ty,rp,exp) ->
 	    Ast.Cast(string_mcode lp, fullType ty, string_mcode rp,
 		     expression exp)
+	| Ast.SizeOfExpr(szf,exp) ->
+	    Ast.SizeOfExpr(string_mcode szf, expression exp)
+	| Ast.SizeOfType(szf,lp,ty,rp) ->
+	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty, 
+                           string_mcode rp)
 	| Ast.MetaConst(name,ty) -> Ast.MetaConst(string_mcode name,ty)
 	| Ast.MetaErr(name) -> Ast.MetaErr(string_mcode name)
 	| Ast.MetaExpr(name,ty) -> Ast.MetaExpr(string_mcode name,ty)
