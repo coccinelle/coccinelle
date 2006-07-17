@@ -36,7 +36,7 @@ let rec pp_expression_gen pr_elem =
         | Right (returnType, (sto, iisto)) -> 
             assert (List.length iisto <= 1);
             iisto +> List.iter pr_elem;
-            pp_type_with_ident_gen pr_elem   None None returnType
+            pp_type_gen pr_elem  returnType
         );
                       );
       
@@ -67,10 +67,10 @@ let rec pp_expression_gen pr_elem =
 
   | SizeOfExpr  (e),     typ,[i] -> pr_elem i; pp_expression e
   | SizeOfType  (t),     typ,[i1;i2;i3] -> 
-      pr_elem i1; pr_elem i2; pp_type_with_ident_gen pr_elem  None None t; 
+      pr_elem i1; pr_elem i2; pp_type_gen pr_elem t; 
       pr_elem i3
   | Cast    (t, e),      typ,[i1;i2] -> 
-      pr_elem i1; pp_type_with_ident_gen pr_elem None None t; pr_elem i2; 
+      pr_elem i1; pp_type_gen pr_elem t; pr_elem i2; 
       pp_expression e
 
   | StatementExpr (declxs_statxs, [ii1;ii2]),  typ,[i1;i2] -> 
@@ -112,7 +112,7 @@ let rec pp_expression_gen pr_elem =
         | Middle3 (returnType, (sto, iisto)) -> 
             assert (List.length iisto <= 1);
             iisto +> List.iter pr_elem;
-            pp_type_with_ident_gen pr_elem None None returnType
+            pp_type_gen pr_elem returnType
         | Right3  action -> pp_action action
         );
                       );
@@ -279,7 +279,7 @@ and (pp_base_type_gen:
                 assert (List.length iivirg = 0); 
                 (match sopt, ii with
                 | (None , [idot]) -> 
-                    pp_type_with_ident_gen  pr_elem None None typ;
+                    pp_type_gen  pr_elem typ;
                     pr_elem idot;
                     pp_expression expr
                 | (Some s, [is;idot]) -> 
@@ -384,10 +384,7 @@ and (pp_type_with_ident_rest_gen:
        pr_elem_func -> (string * info) option -> fullType -> unit) = 
  fun pr_elem -> 
   fun ident (((qu, iiqu), (ty, iity)) as fullt) -> 
-  let print_ident ident = 
-    match ident with 
-    | None -> () 
-    | Some (s, iis) -> pr_elem iis 
+  let print_ident ident = do_option (fun (s, iis) -> pr_elem iis) ident
   in
 
   match ty, iity with
@@ -475,10 +472,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
   | (Pointer t, [i]) ->  pp_type_right t
   | (Array (eopt, t), [i1;i2]) -> 
       pr_elem i1;
-      (match eopt with
-      | None -> ()
-      | Some e -> pp_expression_gen pr_elem e
-      );
+      eopt +> do_option (fun e -> pp_expression_gen pr_elem e);
       pr_elem i2;
       pp_type_right t
 
@@ -493,7 +487,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
 
             (match sopt with
             | None -> assert (List.length ii4 = 0);
-                pp_type_with_ident_gen pr_elem None None t
+                pp_type_gen pr_elem t
             | Some s -> 
                 assert (List.length ii4 = 1); 
                 pp_type_with_ident_gen pr_elem (Some (s, List.hd ii4)) None t;
@@ -518,6 +512,8 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
   in 
   pp_type_right
 
+and pp_type_gen pr_elem t = pp_type_with_ident_gen pr_elem None None t
+
 (* ---------------------- *)
 and pp_decl_gen pr_elem = function
   | DeclList (((var, returnType, storage),[])::xs,      (iisto, iivirg)) -> 
@@ -530,11 +526,9 @@ and pp_decl_gen pr_elem = function
       | Some (s, ini,  iis) -> 
           pp_type_with_ident_gen pr_elem (Some (s, iis)) (Some (storage, iisto))
                                  returnType;
-          (match ini with
-          | Some (init, iinit) -> pr_elem iinit; pp_init_gen pr_elem init
-          | None -> ()
-          );
-      | None -> pp_type_with_ident_gen pr_elem None None returnType
+          ini +> do_option (fun (init, iinit) -> 
+            pr_elem iinit; pp_init_gen pr_elem init);
+      | None -> pp_type_gen pr_elem returnType
       );
 
       (* for other vars, we just call pp_type_with_ident_rest. *)
@@ -543,10 +537,8 @@ and pp_decl_gen pr_elem = function
             assert (storage2 = storage);
             iivirg +> List.iter pr_elem;
             pp_type_with_ident_rest_gen pr_elem (Some (s, iis)) returnType;
-            (match ini with
-            | Some (init, iinit) -> pr_elem iinit; pp_init_gen pr_elem init
-            | None -> ()
-            );
+            ini +> do_option (fun (init, iinit) -> 
+              pr_elem iinit; pp_init_gen pr_elem init);
 
 
         | x -> raise Impossible

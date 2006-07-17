@@ -178,7 +178,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
     
 
   let attach_to_previous_node (starti: int option) (nodei: int) = 
-    (match starti with None -> () | Some starti -> 
+    starti +> do_option (fun starti -> 
       !g#add_arc ((starti, nodei), Direct) +> adjust_g);
   in
 

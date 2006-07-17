@@ -9,14 +9,8 @@ let start_block str =
 let end_block str =
   close_box(); force_newline ()
 
-let print_option fn = function
-    None -> ()
-  | Some x -> fn x
-
-let rec print_between between fn = function
-    [] -> ()
-  | [x] -> fn x
-  | x::xs -> fn x; between(); print_between between fn xs
+let print_option fn = Common.do_option fn
+let print_between between fn = Common.print_between between fn
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)

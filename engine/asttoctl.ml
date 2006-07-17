@@ -1071,9 +1071,9 @@ let letify f =
 
 let top_level t =
   match Ast.unwrap t with
-    Ast.DECL(decl) -> failwith "not supported"
-  | Ast.INCLUDE(inc,s) -> failwith "not supported"
-  | Ast.FILEINFO(old_file,new_file) -> failwith "not supported"
+    Ast.DECL(decl) -> failwith "not supported decl"
+  | Ast.INCLUDE(inc,s) -> failwith "not supported include"
+  | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let when_added = when_statement None None unopt in
@@ -1086,7 +1086,7 @@ let top_level t =
 	(function x -> let _ = aststmfvs x in ())
 	(Ast.undots when_added);
       letify(dots_stmt [] when_added None)
-  | Ast.ERRORWORDS(exps) -> failwith "not supported"
+  | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)
 (* Contains dots *)

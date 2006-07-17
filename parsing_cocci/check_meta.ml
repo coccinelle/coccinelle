@@ -34,9 +34,7 @@ let check_table table minus ((name,_,info,_) : string Ast0.mcode) =
 	with Not_found -> ()))
   else (try (find_loop table name) := true with Not_found -> ())
 
-let get_opt fn = function
-    None -> ()
-  | Some x -> fn x
+let get_opt fn = Common.do_option fn
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)

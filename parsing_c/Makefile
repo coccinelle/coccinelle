@@ -92,7 +92,7 @@ beforedepend:: parser_c.ml parser_c.mli
 	$(OCAMLC) -i $<
 
 clean::
-	rm -f *.cm[ioxa] *.o
+	rm -f *.cm[ioxa] *.o *.a *.cmxa
 
 clean::
 	rm -f *~ .*~ gmon.out #*#

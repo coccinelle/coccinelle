@@ -130,9 +130,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
         print_xxxxxxxxxxxxxxxxx ();
         pr2 ("processing semantic patch file: " ^ coccifile);
-	(match isofile with
-	| Some isofile -> pr2 ("with isos from: " ^ isofile)
-	| None -> ());
+        isofile +> do_option (fun s -> pr2 ("with isos from: " ^ s));
         print_xxxxxxxxxxxxxxxxx ();
         command2 ("cat " ^ coccifile);
         pr2 "";

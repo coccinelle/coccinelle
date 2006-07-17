@@ -1,6 +1,6 @@
 
 type node = node1 * string (* to debug *)
-and node1 = node2 * int list (* the labels. Trick used by ctl engine *)
+and node1 = node2 * int list (* The labels. Trick used by ctl engine. *)
 and node2 =
     HeadFunc of Ast_c.definition
   | Enter
