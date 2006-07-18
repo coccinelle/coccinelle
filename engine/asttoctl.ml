@@ -17,14 +17,14 @@ let warning s = Printf.fprintf stderr "warning: %s\n" s
 type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
 
 let aftpred = (Lib_engine.After,CTL.Control)
-let retpred = (Lib_engine.Return,CTL.Control)
+let exitpred = (Lib_engine.Exit,CTL.Control)
 
 (* --------------------------------------------------------------------- *)
 
 let wrap n ctl = (ctl,n)
 
 let aftret =
-  wrap 0 (CTL.Or(wrap 0 (CTL.Pred aftpred),wrap 0 (CTL.Pred retpred)))
+  wrap 0 (CTL.Or(wrap 0 (CTL.Pred aftpred),wrap 0 (CTL.Pred exitpred)))
 
 let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
