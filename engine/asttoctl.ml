@@ -1,9 +1,11 @@
 (* false = simpler formulas, only for debugging *)
-let useEU = ref true(*true*)
+let useEU = ref true
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
 let line_numbers = ref false
+(* if true, only eg if header is included in not for ...s *)
+let simple_get_end = ref true
 
 (* Question: where do we put the existential quantifier for or.  At the
 moment, let it float inwards. *)
@@ -101,31 +103,6 @@ let elim_opt =
     donothing donothing stmtdotsfn
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing
-
-(* --------------------------------------------------------------------- *)
-(* Whenify *)
-(* For A ... B, neither A nor B should occur in the code matched by the ...
-We add these to any when code associated with the dots *)
-
-let rec get_end f s =
-  match Ast.unwrap s with
-    Ast.Disj(stmt_dots_list) ->
-      List.concat
-	(List.map
-	   (function x ->
-	     match Ast.unwrap x with
-	       Ast.DOTS(l) ->
-		 (match l with [] -> [] | xs -> get_end f (f xs))
-	     | _ -> failwith "circles and stars not supported")
-	   stmt_dots_list)
-  | Ast.Dots(_,_,_) -> []
-  | Ast.OptStm(stm) -> [stm]
-  | Ast.UniqueStm(stm) -> [stm]
-  | Ast.MultiStm(stm) -> [stm]
-  | _ -> [s]
-
-and get_first s = get_end (function xs -> List.hd xs) s
-and get_last s = get_end (function xs -> List.hd (List.rev xs)) s
   
 (* --------------------------------------------------------------------- *)
 (* Computing free variables *)
@@ -245,6 +222,41 @@ let aststmfvs s =
   recursor.V.combiner_statement s
 
 (* --------------------------------------------------------------------- *)
+(* Whenify *)
+(* For A ... B, neither A nor B should occur in the code matched by the ...
+We add these to any when code associated with the dots *)
+
+let rec get_end f s =
+  match Ast.unwrap s with
+    Ast.Disj(stmt_dots_list) ->
+      List.concat
+	(List.map
+	   (function x ->
+	     match Ast.unwrap x with
+	       Ast.DOTS(l) ->
+		 (match l with [] -> [] | xs -> get_end f (f xs))
+	     | _ -> failwith "circles and stars not supported")
+	   stmt_dots_list)
+  | Ast.IfThen(header,_) (* take header only, for both first and last *)
+  | Ast.IfThenElse(header,_,_,_)
+  | Ast.While(header,_) -> 
+      if !simple_get_end
+      then
+	let res = Ast.rewrap s (Ast.Atomic header) in
+	let _ = aststmfvs res in
+	[res]
+      else [s]
+  | Ast.Dots(_,_,_) -> []
+  | Ast.OptStm(stm) -> [stm]
+  | Ast.UniqueStm(stm) -> [stm]
+  | Ast.MultiStm(stm) -> [stm]
+  | _ -> [s]
+
+and get_first s = get_end (function xs -> List.hd xs) s
+and get_last s = get_end (function xs -> List.hd (List.rev xs)) s
+
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let ctr = ref 0
@@ -336,7 +348,9 @@ let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
 
 (* notbefore and notafter are the neighbors that should not be found in a ...*)
-let rec dots_stmt quantified l notbefore notafter after (* : ae *) =
+(* unchecked of true indicates that the neighbors are not taken into account *)
+let rec dots_stmt nest quantified l unchecked notbefore notafter after
+ (* : ae *) =
   let n = Ast.get_line l in
   let quantify = quantify n in
   match Ast.unwrap l with
@@ -345,17 +359,22 @@ let rec dots_stmt quantified l notbefore notafter after (* : ae *) =
 	List.map (function x -> Hashtbl.find free_table (Statement x)) x in
       let rec loop quantified notbefore notafter = function
 	  ([],[]) -> (match after with Some x -> x | None -> wrap n (CTL.True))
-	| ([x],[_]) -> statement quantified x notbefore notafter after
+	| ([x],[_]) ->
+	    statement nest quantified x unchecked notbefore notafter after
 	| (x::((aft::_) as xs),fv::fvs) ->
 	    let shared = intersectll fv fvs in
 	    let unqshared = get_unquantified quantified shared in
 	    let new_quantified = Common.union_set unqshared quantified in
 	    let make_matches l =
-	      List.map
-		(function s -> statement new_quantified s [] [] None)
-		l in
+	      if unchecked (* don't bother collecting info that won't be used*)
+	      then []
+	      else
+		List.map
+		  (function s ->
+		    statement nest new_quantified s true [] [] None)
+		  l in
 	    quantify unqshared
-	      (statement new_quantified x notbefore
+	      (statement nest new_quantified x unchecked notbefore
 		 (make_matches (get_first aft))
 		 (Some(loop new_quantified (make_matches (get_last x))
 			 notafter (xs,fvs))))
@@ -364,7 +383,8 @@ let rec dots_stmt quantified l notbefore notafter after (* : ae *) =
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement quantified stmt notbefore notafter after (* : ae *) =
+and statement nest quantified stmt unchecked notbefore notafter after
+ (* : ae *) =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
@@ -467,13 +487,14 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  make_seq (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,body,rbrace) ->
-      let v = fresh_label_var "p" in
+      let v = (*fresh_label_var*) "p" in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
       wrapExists
 	(v,make_seq start_brace
-	   (Some(dots_stmt quantified body [start_brace] [end_brace]
+	   (Some(dots_stmt (nest+1) quantified body unchecked
+		   [start_brace] [end_brace]
 		   (Some (make_seq end_brace after)))))
   | Ast.IfThen(ifheader,branch) ->
 
@@ -498,7 +519,7 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
        let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
        let then_line =
 	 make_cond true_branch
-	   (statement new_quantified branch [] [] None) in
+	   (statement nest new_quantified branch unchecked [] [] None) in
        let or_cases = wrapOr(true_branch,wrapOr(fall_branch,after_branch)) in
        (* the code *)
        (match after with
@@ -552,10 +573,10 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	 wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let then_line =
 	 make_cond true_branch
-	   (statement new_quantified branch1 [] [] None) in
+	   (statement nest new_quantified branch1 unchecked [] [] None) in
        let else_line =
 	 make_cond false_branch
-	   (statement new_quantified branch2 [] [] None) in
+	   (statement nest new_quantified branch2 unchecked [] [] None) in
        (* the code *)
        (match after with
 	None ->
@@ -582,7 +603,8 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
       let while_header = quantify efvs (make_match header) in
       let true_branch = wrapPred(Lib_engine.TrueBranch,CTL.Control) in
       let body_line =
-	make_cond true_branch (statement new_quantified body [] [] None) in
+	make_cond true_branch
+	  (statement nest new_quantified body unchecked [] [] None) in
       (match after with
 	None -> quantify bfvs (make_seq while_header (Some body_line))
       | Some after ->
@@ -600,20 +622,24 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	  (function rest ->
 	    function cur ->
 	      wrapAnd
-		(wrapNot (dots_stmt quantified cur [] [] None),
+		(wrapNot (dots_stmt nest quantified cur unchecked [] [] None),
 		 rest))
 	  e l in
       let rec loop after = function
 	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
 	| [(nots,cur)] ->
-	    add_nots nots (dots_stmt quantified cur notbefore notafter after)
+	    add_nots nots
+	      (dots_stmt nest quantified cur unchecked notbefore notafter
+		 after)
 	| (nots,cur)::rest ->
 	    wrapOr(add_nots nots
-		     (dots_stmt quantified cur notbefore notafter after),
+		     (dots_stmt nest quantified cur unchecked notbefore notafter
+			after),
 		   loop after rest) in
       loop after (preprocess_disj stmt_dots_list)
   | Ast.Nest(stmt_dots) ->
-      let dots_pattern = dots_stmt quantified stmt_dots [] [] None in
+      let dots_pattern =
+	dots_stmt nest quantified stmt_dots unchecked [] [] None in
       (match after with
 	None -> wrapAG(wrapOr(dots_pattern,wrapNot dots_pattern))
       |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot dots_pattern),after))
@@ -627,8 +653,13 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	    Some(make_match (Ast.rewrap stmt (Ast.MetaRuleElem(s,i,d))))
 	| _ -> None in
       let tmp_whencode =
-	(List.map (function s -> statement quantified s [] [] None)
-	  tmp_whencode) @ notbefore @ notafter in
+	if unchecked
+	(* not sure that this is safe, should be more general than pattern *)
+	then []
+	else
+	  (List.map
+	     (function s -> statement nest quantified s unchecked [] [] None)
+	     tmp_whencode) @ notbefore @ notafter in
       let phi1 =
 	match tmp_whencode with (* start with tmp_whencode *)
 	  [] -> None
@@ -645,7 +676,7 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	      let processed =
 		List.map
 		  (function w ->
-		    wrapNot(dots_stmt quantified w [] [] None))
+		    wrapNot(dots_stmt nest quantified w unchecked [] [] None))
 		  whencodes in
 	      Some (List.fold_left (function x -> function y -> wrapAnd(x,y))
 		      (List.hd processed) (List.tl processed)) in
@@ -687,8 +718,8 @@ and statement quantified stmt notbefore notafter after (* : ae *) =
 	   (Some
 	      (wrapExists
 		 (v,(make_seq start_brace
-		       (Some(dots_stmt new_quantified body
-			       [start_brace] [end_brace]
+		       (Some(dots_stmt (nest + 1) new_quantified body
+			       unchecked [start_brace] [end_brace]
 			       (Some(make_seq end_brace after)))))))))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n";
@@ -1069,13 +1100,13 @@ let top_level t =
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let _ = aststmfvs unopt in
-      letify(statement [] unopt [] [] None)
+      letify(statement 0 [] unopt false [] [] None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
       List.iter
 	(function x -> let _ = aststmfvs x in ())
 	(Ast.undots unopt);
-      letify(dots_stmt [] unopt [] [] None)
+      letify(dots_stmt 0 [] unopt false [] [] None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)
