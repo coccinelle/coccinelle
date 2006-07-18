@@ -77,9 +77,13 @@ let pp_ctlcocci_no_mcodekind ctl =
 
 
 let pp_transformation_info trans_info = 
-  trans_info +> List.iter (fun (i, subst, pred) -> 
+  trans_info +> List.iter (fun (i, subst, re) -> 
     pp ("transform state:" ^ (i_to_s i));
-    pp " with binding ";
+    Format.force_newline();
+    pp "  with rule_elem:";
+    Pretty_print_cocci.rule_elem "" re;
+    Format.force_newline();
+    pp "  with binding:";
     Pretty_print_c.pp_binding subst;
     Format.force_newline();
     );

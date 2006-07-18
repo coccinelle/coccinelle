@@ -2,7 +2,6 @@
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
 identifier proc_info_func;
-//statement S;
 @@
   proc_info_func (
 +      struct Scsi_Host *hostptr,
