@@ -1,5 +1,3 @@
-(* false = simpler formulas, only for debugging *)
-let useEU = ref true
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
@@ -699,7 +697,7 @@ and statement nest quantified stmt unchecked notbefore notafter after
 	    wrapAnd(wrapAF(wrapOr(after,aftret)),wrapEF(after))
 	| (None,Some whencode) -> wrapAU(whencode,aftret)
 	| (Some after,Some whencode) ->
-	    if !useEU
+	    if !Flag_engine.useEU
 	    then
 	      wrapAnd(wrapAU(whencode,wrapOr(after,aftret)),
 		      wrapEU(whencode,after))

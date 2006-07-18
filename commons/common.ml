@@ -1196,7 +1196,7 @@ let process_output_to_list = fun command ->
       let e = input_line chan in
       e::aux()
     with End_of_file -> begin ignore(Unix.close_process_in chan); [] end
-  in aux () +> List.rev
+  in aux ()
 
 let read_file file = cat file +> unlines
 

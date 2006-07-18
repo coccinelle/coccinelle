@@ -66,12 +66,13 @@ let pp_pred_smodif = fun (pred, smodif) ->
   end
 
 
-let pp_ctlcocci_no_mcodekind ctl = 
+let pp_ctlcocci_no_mcodekind inline_let_def ctl = 
   begin
     Pretty_print_cocci.print_plus_flag := false;
     Pretty_print_cocci.print_minus_flag := false;
     Common.pp_init (fun () -> 
-      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp s)) ctl;
+      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp s)) 
+        inline_let_def ctl;
       );
   end
 

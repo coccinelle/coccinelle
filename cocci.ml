@@ -183,7 +183,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   print_xxxxxxxxxxxxxxxxx();
   pr2 "ctl";
   print_xxxxxxxxxxxxxxxxx();
-  Pretty_print_engine.pp_ctlcocci_no_mcodekind ctl;
+  Pretty_print_engine.pp_ctlcocci_no_mcodekind !Flag.inline_let_ctl ctl;
   Format.print_newline();
 
   let (program, _stat) = astc in

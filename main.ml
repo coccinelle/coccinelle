@@ -7,6 +7,8 @@ let iso_file = ref ""
 
 let test_mode = ref false
 let test_ctl_foo = ref false
+let testall_mode = ref false
+
 
 (******************************************************************************)
 let main () = 
@@ -20,6 +22,9 @@ let main () =
       "-test", Arg.Set test_mode, " automatically find the corresponding c and cocci file";
       "-show_ctl",  Arg.Set Flag.show_ctl, " ";
       "-show_flow", Arg.Set Flag.show_flow, " ";
+      "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
+
+      "-testall", Arg.Set testall_mode, " ";
       
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine, " ";
@@ -34,6 +39,71 @@ let main () =
     Arg.parse options (fun file -> args := file::!args) usage_msg;
 
     (match (!args) with
+
+    | [] when !testall_mode -> 
+        let expected_result_files = 
+          readdir_to_file_list "tests/" +> filter (fun s -> 
+            s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0) 
+        in
+
+
+        let diagnose = ref [] in
+        let add_diagnose s = push2 s diagnose in
+
+        expected_result_files +> List.iter (fun expected_res -> 
+          let fullbase = 
+            if expected_res =~ "\\(.*\\).res" 
+            then matched1 expected_res
+            else raise Impossible
+          in
+          let base   = 
+            if fullbase =~ "\\(.*\\)_ver[0-9]+" 
+            then matched1 fullbase 
+            else fullbase
+          in
+
+          let cfile      = "tests/" ^ fullbase ^ ".c" in
+          let cocci_file = "tests/" ^ base ^ ".cocci" in
+          if !iso_file <> "" && not (!iso_file =~ ".*\\.iso")
+	  then pr2 "warning: seems not a .iso file";
+          let iso_file =
+	    if !iso_file = "" then Some "standard.iso" else Some !iso_file in
+
+
+          add_diagnose (sprintf "%s: " fullbase);
+
+          let timeout_value = 1 in
+
+          try (
+            Common.timeout_function timeout_value (fun () -> 
+              
+              Cocci.full_engine cfile (Left (cocci_file, iso_file));
+
+              let xs = 
+                process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^
+                                        " "  ^ "tests/" ^ expected_res) 
+              in
+              
+              if null xs 
+              then add_diagnose "correct\n"
+              else 
+                begin
+                  add_diagnose "seems incorrect\n";
+                  add_diagnose "    diff (result(<) vs expected_result(>)) = \n";
+                  xs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
+                end;
+                                      )
+           )
+          with exn -> 
+            add_diagnose "seems pb\n";
+            add_diagnose ("   exn = " ^ Printexc.to_string exn ^ "\n")
+        );
+
+        pr2 "----------------------";
+        pr2 "statistics";
+        pr2 "----------------------";
+        !diagnose +> List.rev +> List.iter (fun s -> prerr_string s; );
+        
 
     | [x] when !test_ctl_foo -> 
         let cfile = x in 

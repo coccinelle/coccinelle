@@ -803,7 +803,7 @@ let not_negwits triples =
 
 let simpleanno2 l phi res = 
   begin
-    Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar) phi;
+    Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar) false phi;
     Format.print_newline ();
     Format.print_string "-----------------------------------------------------";
     Format.print_newline ();
