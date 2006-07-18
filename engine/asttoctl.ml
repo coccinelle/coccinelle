@@ -1,5 +1,5 @@
 (* false = simpler formulas, only for debugging *)
-let useEU = ref false(*true*)
+let useEU = ref true(*true*)
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
