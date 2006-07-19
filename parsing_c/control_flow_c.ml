@@ -104,14 +104,7 @@ and node2 =
 
   | CaseNode of int (* to be able later to go back from a flow to an ast *)
 
-  (* The After is here to abstract away if there is a return in a branch.
-     We don't want to force.
-
-     When a SP contains just a ifthen, we don't want that it matches a 
-     ifthenelse, so we can't put a FalseNode for a ifthen. 
-     We could put nothing, and reuse the AfterNode, but because the CTL now 
-     handles the After, by putting some Or(After, ...) we must put an other edge
-     between the start and the end of the ifthen, hence this FallThroughNode. *)
+  (* used by CTL *)
   | TrueNode
   | FalseNode
   | AfterNode

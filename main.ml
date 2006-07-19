@@ -70,7 +70,7 @@ let main () =
 	    if !iso_file = "" then Some "standard.iso" else Some !iso_file in
 
 
-          add_diagnose (sprintf "%s: " fullbase);
+          add_diagnose (sprintf "%s:\t" fullbase);
 
           let timeout_value = 1 in
 
@@ -85,17 +85,17 @@ let main () =
               in
               
               if null xs 
-              then add_diagnose "correct\n"
+              then add_diagnose "CORRECT\n"
               else 
                 begin
-                  add_diagnose "seems incorrect\n";
+                  add_diagnose "INCORRECT\n";
                   add_diagnose "    diff (result(<) vs expected_result(>)) = \n";
                   xs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
                 end;
                                       )
            )
           with exn -> 
-            add_diagnose "seems pb\n";
+            add_diagnose "PROBLEM\n";
             add_diagnose ("   exn = " ^ Printexc.to_string exn ^ "\n")
         );
 

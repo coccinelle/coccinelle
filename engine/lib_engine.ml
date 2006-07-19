@@ -7,6 +7,7 @@ type predicate =
   | FallThrough
   | Return (* any exit from the current function *)
   | Exit (* the "exit" node of the current function *)
+  | ErrorExit
   | Paren of string
   | Match of Ast_cocci.rule_elem
   | Label of string
