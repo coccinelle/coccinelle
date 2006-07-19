@@ -110,6 +110,8 @@ and node2 =
   | AfterNode
   | FallThroughNode
 
+  | ErrorExit
+
 let unwrap ((node, labels), nodestr) = node
 let rewrap ((_node, labels), nodestr) node = (node, labels), nodestr
 let extract_labels ((node, labels), nodestr) = labels

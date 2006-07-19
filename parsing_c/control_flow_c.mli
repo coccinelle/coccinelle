@@ -15,6 +15,7 @@ and node2 =
   | FalseNode
   | AfterNode
   | FallThroughNode
+  | ErrorExit
 
 
 
