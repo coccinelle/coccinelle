@@ -8,9 +8,9 @@ val pp_init_gen : pr_elem_func -> Ast_c.initialiser -> unit
 
 val pp_type_gen : pr_elem_func -> Ast_c.fullType -> unit
 val pp_type_with_ident_gen :
-   pr_elem_func -> 
-    (string * Ast_c.info) option ->
-      (Ast_c.storage * Ast_c.il) option -> Ast_c.fullType -> unit
+  pr_elem_func -> 
+  (string * Ast_c.info) option ->
+  (Ast_c.storage * Ast_c.il) option -> Ast_c.fullType -> unit
 
 
 val pp_expression_simple : Ast_c.expression -> unit
