@@ -1,7 +1,7 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
-let line_numbers = ref false
+let line_numbers = ref true(*false*)
 (* if true, only eg if header is included in not for ...s *)
 let simple_get_end = ref true
 
@@ -17,7 +17,8 @@ let warning s = Printf.fprintf stderr "warning: %s\n" s
 type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
 
 let aftpred = (Lib_engine.After,CTL.Control)
-let exitpred = (Lib_engine.Exit,CTL.Control)
+let retpred = (Lib_engine.Return,CTL.Control)
+let exitpred = (Lib_engine.ErrorExit,CTL.Control)
 
 (* --------------------------------------------------------------------- *)
 
@@ -269,24 +270,15 @@ let fresh_metavar _ =
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
 
-type formula = (cocci_predicate,string) Wrapper_ctl.wrapped_ctl
-type ae =
-    AE of formula * formula (* A and E versions *) | A of formula (* A only *)
-
 let make_seq n first = function
     None -> first
-  | Some rest -> wrapAnd n (first,wrapAX n rest)(*
-  | Some (A rest) -> wrapAnd n (first,wrapAX n rest)
-  | Some (AE(rest,erest)) ->
-      wrapAnd n (first,wrapAnd n (wrapAX n rest,wrapEX n rest))*)
+  | Some rest -> wrapAnd n (first,wrapAX n rest)
 
 let and_opt n first = function
     None -> first
   | Some rest -> wrapAnd n (first,rest)
 
-let make_cond n branch re = wrapImplies n (branch,wrapAX n re) (*function
-    A(re) -> wrapImplies n (branch,wrapAX n re)
-  | AE(re,ere) -> wrapImplies n (branch,wrapAnd n (wrapAX n re,wrapEX n ere))*)
+let make_cond n branch re = wrapImplies n (branch,wrapAX n re)
 
 let contains_modif =
   let bind x y = x or y in
@@ -332,8 +324,7 @@ let intersectll lst nested_list =
 
 (* notbefore and notafter are the neighbors that should not be found in a ...*)
 (* unchecked of true indicates that the neighbors are not taken into account *)
-let rec dots_stmt nest quantified l unchecked notbefore notafter after
- (* : ae *) =
+let rec dots_stmt nest quantified l unchecked notbefore notafter after =
   let n = Ast.get_line l in
   let quantify = quantify n in
   match Ast.unwrap l with
@@ -367,14 +358,13 @@ let rec dots_stmt nest quantified l unchecked notbefore notafter after
   | Ast.STARS(x) -> failwith "not supported"
 
 and statement nest (* not used *) quantified stmt unchecked
-    notbefore notafter after (* : ae *) =
+    notbefore notafter after =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
   let wrapAnd = wrapAnd n in
   let wrapOr = wrapOr n in
   let wrapAU = wrapAU n in
-  let wrapEU = wrapEU n in
   let wrapAX = wrapAX n in
   let wrapEX = wrapEX n in
   let wrapAG = wrapAG n in
@@ -681,12 +671,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	| (Some after,None) ->
 	    wrapAnd(wrapAF(wrapOr(after,aftret)),wrapEF(after))
 	| (None,Some whencode) -> wrapAU(whencode,aftret)
-	| (Some after,Some whencode) ->
-	    if !Flag_engine.useEU
-	    then
-	      wrapAnd(wrapAU(whencode,wrapOr(after,aftret)),
-		      wrapEU(whencode,after))
-	    else wrapAU(whencode,wrapOr(after,aftret)))
+	| (Some after,Some whencode) -> wrapAU(whencode,wrapOr(after,aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
