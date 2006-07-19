@@ -1,6 +1,5 @@
 type mvar = string
 
-
 type predicate =
   | TrueBranch | FalseBranch
   | After (* pointer to the code after an if or while *)

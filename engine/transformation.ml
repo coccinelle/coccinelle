@@ -49,6 +49,7 @@ let rec (transform_re_node:
      | F.Fake              -> node
      | F.CaseNode _        -> node
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode -> node
+     | F.ErrorExit -> node
      | F.StartBrace (level, statement, i1) -> 
          (F.StartBrace 
             (level, statement, tag_one_symbol (wrap_mcode mcode) i1 binding))
@@ -72,8 +73,10 @@ let rec (transform_re_node:
   | _, F.Enter | _, F.Exit -> raise Impossible
   | _, F.Fake              -> raise Impossible 
   | _, F.CaseNode _        -> raise Impossible
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode -> 
+  | _, F.TrueNode | _, F.FalseNode 
+  | _, F.AfterNode | _, F.FallThroughNode | _, F.ErrorExit -> 
       raise Impossible
+ 
 
 
   (* todo?: it can match a MetaStmt too !! and we have to get all the 
@@ -765,7 +768,8 @@ let rec (transform:
       | F.Enter | F.Exit    -> ()
       | F.Fake              -> ()
       | F.CaseNode _        -> ()
-      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode -> ()
+      | F.TrueNode | F.FalseNode 
+      | F.AfterNode | F.FallThroughNode | F.ErrorExit -> ()
       | _ -> assert (not (node =*= node'));
       );
 

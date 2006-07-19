@@ -178,6 +178,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.Fake
   | _, F.CaseNode _ 
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
+  | _, F.ErrorExit
     -> return false
 
   (* obsolete?: it can match a MetaStmt too !! and we have to get all the  
