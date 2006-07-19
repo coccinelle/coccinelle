@@ -1,71 +1,85 @@
 open Commonop open Common
 
 (******************************************************************************)
-(*
- note: deadCode detection
-  What is dead code ? when there is no starti  to start from ? => make starti 
-  an option too ?
-  Si on arrive sur un label: au moment d'un deadCode, on peut verifier les 
-  predecesseurs de ce label, auquel cas si y'en a, ca veut dire qu'en fait c'est
-  pas du deadCode et que donc on peut se permettre de partir d'un starti à None.
-  Mais si on a   xx; goto far:; near: yy; zz; far: goto near:. Bon ca doit etre 
-  un cas tres tres rare, mais a cause de notre parcours, on va rejeter ce 
-  programme car au moment d'arriver sur near:  on n'a pas encore de 
-  predecesseurs pour ce label.
-  De meme, meme le cas simple ou la derniere instruction c'est un return, alors 
-  ca va generer un DeadCode :(
-  => Make a first pass where dont launch exn at all, create nodes, if starti is 
-     None then dont add    arc. 
-     A second pass, just check that all nodes (except enter) have predecessors. 
-      (todo: if the pb is at a fake node, then try first successos that is 
-      non fake)
-  => Make starti  an option too.
-     So type is now  int option -> statement -> int option.
 
- old: I think that DeadCode is too aggressive, what if  have both return in 
-  else/then ? 
-
-
- note: special_cfg_ast tag
-  Because need go back from cfg to ast, have to introduce additionnal nodes 
-  that normally are not needed by a normal compiler.
-
- note: special_cfg_braces tag
-  Because julia wants the { and } in the control flow graph to make it easier 
-  for the matcher, have to add some nodes in the graph.
-  As for special_cfg_ast, normally not needed by a normal compiler.
-  done: return,  break/continue (for while/for/dowhile/if),  
-        break/continue  (for switch), 
-
- todo?: goto,  compute target level (but rare that different I think)
-        ver1: just do init,  
-        ver2: compute depth of label (easy, intercept compound in the visitor)
-
- DONE? add info in nodes, to later be able to pretty print back
-
- DONE 
-  For switch, pass int ref (compteur) too ? (cos need know order of the case 
-  if then later want to  go from CFG to (original) AST).
-
-
- todo: expression, linearize,  funcall (and launch exn  with StatementExpr)
-
- todo: To generate less exception with the breakInsideLoop, analyse correctly 
-   the loop deguisé  comme list_for_each (qui sont actuellement retourné comme 
-   des Tif par le lexer).
-   Add a case ForMacro in ast_c (and in lexer/parser), and then do code that 
-   imitates the code for the For.
-
- checktodo: after a switch, need check that all the st in the compound start 
- with a case: ?
-
- todo: can have code (and so nodes) in many places, in the size of an array, in 
-  the init of initializer, but also in StatementExpr, ...
-
- todo?: steal code from CIL ? (but seems complicated ... again)
-
-
-*)
+(* There is more information in the CFG we build that in the CFG usually build
+ * in a compiler. This is because:
+ *
+ *  - We need later to go back from flow to original ast, because we are 
+ *    doing a refactoring tool, so different context. So we have to add
+ *    some nodes for '{' or '}' that normally disapear in a CFG.
+ *    We must keep those entities, in the same way that we must keep the parens 
+ *    (ParenExpr, ParenType) in the Ast_c during parsing.
+ *
+ *    Morover, the coccier can mention in his semantic patch those entities,
+ *    so we must keep those entities in the CFG.
+ *    
+ *    We also have to add some extra nodes to make the process that goes from 
+ *    flow to ast deterministic with for instance the CaseNode, or easier 
+ *    with for instance the Fake node.
+ *
+ *  - The coccinelle engine later transforms some nodes, and we need to rebuild
+ *    the ast from a statement now defined and altered in different nodes. 
+ *    So we can't just put all the parsing info (Ast_c.il) in the top node of
+ *    a statement. We have to split those Ast_c.il in different nodes, to 
+ *    later reconstruct a full Ast_c.il from different nodes. This is why
+ *    we need the Else node, ...
+ * 
+ *    Note that at the same time, we also need to store the fullstatement 
+ *    in the top node, because the CTL engine need to get that information
+ *    when dealing with MetaStatement (statement S; in a Semantic Patch).
+ *    
+ *    
+ *  - The CTL engine needs more information than just the CFG, and we use
+ *    tricks to encode those informations in the nodes:
+ *
+ *       - We have some TrueNode, FalseNode to know in what branch we are.
+ *         Normally we could achieve this by putting this information in the
+ *         edges, but CTL engine know nothing about edges, it must do
+ *         everything with only nodes information.
+ *
+ *       - We need to mark each braces with an identifier so that the CTL
+ *         can know if one specific '}' correspond to a specific '{'.
+ *
+ *       - We add some labels to each node to handle the MetaRuleElem, 
+ *         MetaStatement. It allows to groups nodes that belong to the same
+ *         statement. Normally CFG are there to abstract from this, but in
+ *         Coccinelle we need sometimes the CFG view, and sometimes the Ast view
+ *         and the labels allow that.
+ *
+ *       - We even add nodes. We add '}', not only to be able to go back to AST,
+ *         but also because of the CTL engine. So one '}' may in fact be 
+ *         represented by multiple nodes, one in each CFG path.
+ * 
+ *       - need After, 
+ *       - need FallThrough.
+ *       - Need know if ErrorExit, 
+ *
+ * 
+ * ----------------------------------------------------------------------
+ *
+ * todo?: goto,  compute target level (but rare that different I think)
+ *    ver1: just do init,  
+ *    ver2: compute depth of label (easy, intercept compound in the visitor)
+ *
+ * todo: expression, linearize,  funcall (and launch exn  with StatementExpr)
+ *
+ * todo: To generate less exception with the breakInsideLoop, analyse correctly 
+ * the loop deguisé  comme list_for_each (qui sont actuellement retourné comme
+ * des Tif par le lexer).
+ * Add a case ForMacro in ast_c (and in lexer/parser), and then do code that 
+ * imitates the code for the For.
+ *
+ * checktodo: after a switch, need check that all the st in the compound start 
+ * with a case: ?
+ *
+ * todo: can have code (and so nodes) in many places, in the size of an array, 
+ * in the init of initializer, but also in StatementExpr, ...
+ *
+ * todo?: steal code from CIL ? (but seems complicated ... again)
+ *
+ * ----------------------------------------------------------------------
+ *)
 
 open Ograph_extended
 open Oassoc
@@ -75,52 +89,65 @@ open Ast_c
 open Visitor_c
 
 
+
 (*----------------------------------------------------------------------------*)
 
-type node = node1 * string (* to debug *)
-and node1 = node2 * int list (* The labels. Trick used by ctl engine *)
-and node2 = 
+(* The string is for debugging. Used by Ograph_extended.print_graph. 
+ * The int list are Labels. Trick used for CTL engine. 
+ *)
+type node = node1 * string  
+ and node1 = node2 * int list 
+ and node2 = 
   | HeadFunc of definition
 
   | Enter 
   | Exit
 
-
-(*  | NestedFunCall of expression   (* cos "fake" node *) (* TODO *) *)
-
   | Statement     of statement
   | Declaration   of declaration
 
-  | Fake (* todo: est amené a disparaitre *)
+  (* Redundant nodes, often to mark the end of an if/switch.
+   * That makes it easier to do later the flow_to_ast. 
+   *)
+  | Fake 
 
-  (* special_cfg_braces: *)
-  (* The int is here to indicate to what { } they correspond. 
-     Two pairwise { } share the same number. kind of "brace_identifier". 
-     Used mostly for debugging or for checks.
-     update: more importantly, used with CTL engine.
-  *)
-  | StartBrace of int * statement * Ast_c.info (* special_cfg_ast *)
-  | EndBrace   of int * Ast_c.info
+  (* flow_to_ast: cocci: Need the { and } in the control flow graph also because
+   * the coccier can express patterns containing such { }.
+   *
+   * ctl: to make possible the forall (AX, A[...]), have to add more than
+   * one node sometimes for the same '}' (one in each CFG path) in the graph.
+   *
+   * ctl: Morover, the int in the type is here to indicate to what { } 
+   * they correspond. Two pairwise { } share the same number. kind of 
+   * "brace_identifier". Used for debugging or for checks and more importantly, 
+   * needed by CTL engine.
+   *)
+   | StartBrace of int * statement * Ast_c.info (* flow_to_ast: *)
+   | EndBrace   of int * Ast_c.info
 
-  | CaseNode of int (* to be able later to go back from a flow to an ast *)
+  (* flow_to_ast: In this case, I need to know the  order between the children
+   * of the switch in the graph. 
+   *)
+  | CaseNode of int 
 
-  (* used by CTL *)
+  (* ctl:  *)
   | TrueNode
   | FalseNode
+
   | AfterNode
   | FallThroughNode
 
   | ErrorExit
+
+(*  | NestedFunCall of expression   (* cos "fake" node *) (* TODO *) *)
+
+
 
 let unwrap ((node, labels), nodestr) = node
 let rewrap ((_node, labels), nodestr) node = (node, labels), nodestr
 let extract_labels ((node, labels), nodestr) = labels
 
 type edge = Direct
-(* old: | SpecialEdge,  with code later such as
-     !g#add_arc ((newi, newfakeelse), SpecialEdge) +> adjust_g;  
-   But not needed anymore, because have moved that info in the AfterNode.
-*)
 
 
 exception DeadCode of Common.parse_info option
@@ -131,21 +158,49 @@ exception NoEnclosingLoop   of Common.parse_info
 
 
 (******************************************************************************)
-(* special_cfg_braces: the nodei list is to handle current imbrication depth 
-  (contain the must-close '}' ) *)
-type additionnal_info =  additionnal_info2 * node list * int list
-  and additionnal_info2 =
+
+(* Information used internally in ast_to_flow and passed recursively. *) 
+type additionnal_info =  { 
+
+  context_info: context_info;
+
+  (* ctl_braces: the nodei list is to handle current imbrication depth.
+   * It contains the must-close '}'. 
+   * update: now it is instead a node list. 
+   *)
+  braces: node list;
+
+  (* ctl: *)
+  labels: int list; 
+  }
+
+ (* Sometimes have a continue/break and we must know where we must jump.
+  *    
+  * ctl_brace: The node list in context_info record the number of '}' at the 
+  * context point, for instance at the switch point. So that when deeper,
+  * we can compute the difference between the number of '}' from root to
+  * the context point to close the good number of '}' (for instance 
+  * where there is a 'continue', we must close only until the switch.
+  *)
+  and context_info =
       | NoInfo 
-      | LoopInfo   of nodei * nodei (* start, end *) *
-                      node list    (* special_cfg_braces: *)
-      | SwitchInfo of nodei * nodei (* start, end *) * 
-                      node list    (* special_cfg_braces: *)
+      | LoopInfo   of nodei * nodei (* start, end *) * node list    
+      | SwitchInfo of nodei * nodei (* start, end *) * node list
 
 (* obsolete: type depthi = Depth of int *)
 
-let get_labels (info, braces, labels) = labels
-let get_braces (info, braces, labels) = braces
-let add_label  (info, braces, labels) label = (info, braces, labels @ [label])
+
+
+let build_node node labels nodestr =
+  let nodestr = 
+    if !Flag_parsing_c.show_flow_labels
+    then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
+    else nodestr
+  in
+  ((node, labels), nodestr)
+
+let label_list_empty = [] 
+
 
 (*----------------------------------------------------------------------------*)
 let (ast_to_control_flow: definition -> (node, edge) ograph_extended) = 
@@ -158,26 +213,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
   (* monad like, >> *)
   let adjust_g (newg)        = begin  g := newg;    end in
 
-  let build_node node labels nodestr =
-    let nodestr = 
-      if !Flag_parsing_c.show_flow_labels
-      then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
-      else nodestr
-    in
-    ((node, labels), nodestr)
-  in
 
   let add_node_g node labels nodestr = 
     !g#add_node (build_node node labels nodestr)  +> adjust_g_i
   in
     
-
   let attach_to_previous_node (starti: int option) (nodei: int) = 
     starti +> do_option (fun starti -> 
       !g#add_arc ((starti, nodei), Direct) +> adjust_g);
   in
 
-  let label_list_empty = [] in
 
 
 
@@ -185,24 +230,26 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
   let topstatement = Compound compound, ii in
 
 
+
   let headi = add_node_g (HeadFunc (funcs, functype, sto, [], moreinfo))
                          label_list_empty ("function " ^ funcs) in
-
 (*
-  let enteri = !g#add_node (Enter, "[enter]") +> adjust_g_i in
-  let _ = !g#add_arc ((headi, enteri), Direct) +> adjust_g in
+  let enteri = add_node_g Enter label_list_empty "[enter]" in
+  let exiti  = add_node_g Exit  label_list_empty "[exit]" in
+  !g#add_arc ((headi, enteri), Direct) +> adjust_g;
 *)
   let enteri = headi in
-  let exiti  = add_node_g Exit label_list_empty "[exit]" in
+  let exiti  = add_node_g Exit  label_list_empty "[exit]" in
   
 
 
-  (* alt: do via a todo list, so can do all in one pass (but more complex) *)
-  (* todo: can also count the depth level and associate it to the node, for the 
-     special_cfg_braces: *)
+  (* alt: do via a todo list, so can do all in one pass (but more complex) 
+   * todo: can also count the depth level and associate it to the node, for the 
+   * ctl_braces: 
+   *)
   let compute_labels statement = 
 
-    (* map label to index number in graph *)
+    (* map Clabel to index number in graph *)
     let (h: (string, int) oassoc ref) = ref (new oassocb []) in
 
     begin
@@ -211,12 +258,12 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
            match statement with
            | Labeled (Label (s, st)),ii -> 
               (* at this point I put a label_list_empty, but later
-                 I will put the good labels. *)
+               *  I will put the good labels. *)
               let newi = add_node_g (Statement (Labeled (Label (s, st)),ii)) 
                                      label_list_empty  (s ^ ":") in
                begin
-                 (* label already exist ? todo: replace assert with a raise 
-                    DuplicatedLabel *)
+                 (* Clabel already exist ? todo: replace assert with a raise 
+                  *  DuplicatedLabel *)
                  assert (not (!h#haskey s)); 
                  h := !h#add (s, newi);
                  k st;
@@ -231,69 +278,82 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
   let labels_assoc = compute_labels topstatement in
 
 
-
+  (* ctl_braces: *)
   let special_cfg_insert_all_braces xs starti = 
     xs  +> List.fold_left (fun acc e -> 
       (* Have to build a new node (clone), cos cant share it. This is now done
-         by the caller. The clones are in xs *)
-      (* old: !g#add_arc ((acc, e), Direct) +> adjust_g;  e  *)
-      (* old: let node = !g#nodes#tolist +> List.find (fun (i, _) -> i = e) +> snd in *)
+       * by the caller. The clones are in xs.
+       *)
       let node = e in
       let newi = !g#add_node node +> adjust_g_i in
-
       !g#add_arc ((acc, newi), Direct) +> adjust_g;
       newi
-      
-      ) starti
+     ) starti
   in
+
   let counter_for_braces = ref 0 in
+  (* For switch, use compteur (or pass int ref) too cos need know order of the
+   *  case if then later want to  go from CFG to (original) AST. *)
   let counter_for_switch = ref 0 in
   let counter_for_labels = ref 0 in
 
-  (* take start, return end 
-      old: old code was returning an int, but goto has no end => aux_statement 
-      should return   int option.
-      old: old code was taking an int, but should also take int option.
-     addon: to complete (break, continue (and enclosing loop),   
-      switch (and associated case, casedefault)) we need to pass additionnal 
-       info. The start/exit when enter in a loop,  to know the current 'for'.
-     addon: to handle the special_cfg_braces, need again pass additionnal info.
-  *)
-  let rec (aux_statement: 
-             (nodei option * additionnal_info) -> statement -> nodei option) = 
+
+  (**********************************)
+  (* Take start, return end.
+   * old: old code was returning an int, but goto has no end, so aux_statement 
+   * should return   int option.
+   * old: old code was taking an int, but should also take int option.
+   *
+   * Because of special needs of coccinelle, need pass more info, cf
+   * type additionnal_info defined above.
+   *  - to complete (break, continue (and enclosing loop),   
+   *    switch (and associated case, casedefault)) we need to pass additionnal 
+   *    info. The start/exit when enter in a loop,  to know the current 'for'.
+   *
+   *  - to handle the braces, need again pass additionnal info.
+   *  - need pass the labels.
+   *)
+  (**********************************)
+  let rec (aux_statement: (nodei option * additionnal_info) -> statement -> nodei option) = 
    fun (starti, auxinfo) statement ->
 
     incr counter_for_labels;
-    let label_list = get_labels auxinfo @ [!counter_for_labels] in
-    let auxinfo_label = add_label auxinfo !counter_for_labels in
+    let label_list = auxinfo.labels @ [!counter_for_labels] in
+
+    (* Normally the new auxinfo to pass recursively to the next aux_statement.
+     * But some cases do additionnal stuff. *)
+    let auxinfo_label = 
+      { auxinfo with labels = auxinfo.labels @ [ !counter_for_labels ]; } 
+    in
 
     match statement with
-
+  
     | Compound (declxs_statxs), ii -> 
-        (* todo_cfg_to_ast *)
+        (* flow_to_ast: *)
         let (i1, i2) = 
           match ii with 
           | [i1; i2] -> (i1, i2) 
           | _ -> raise Impossible
         in
 
-        (* special_cfg_braces: *)
+        (* ctl_braces: *)
         incr counter_for_braces;
+        let brace = !counter_for_braces in
+
+        let open_info  = "{" ^ i_to_s brace in
+        let close_info = "}" ^ i_to_s brace in
+   
         let newi = 
-          add_node_g 
-            (StartBrace (!counter_for_braces, (Compound declxs_statxs, ii),i1))
-            label_list ("{" ^ i_to_s !counter_for_braces) 
-        in
-        let endnode = build_node (EndBrace (!counter_for_braces, i2))
-                               label_list  ("}" ^ i_to_s !counter_for_braces) 
-        in
-        let (oldinfo, braces, labels) = auxinfo_label in
-        let newauxinfo = (oldinfo, endnode::braces, labels)
+          add_node_g (StartBrace (brace, statement ,i1)) label_list open_info in
+        let endnode = 
+          build_node (EndBrace (brace, i2)) label_list close_info in
+
+        let newauxinfo = 
+          { auxinfo_label with braces = endnode:: auxinfo_label.braces }
         in
 
         attach_to_previous_node starti newi;
         let starti = Some newi in
-
 
         declxs_statxs +> List.fold_left (fun (starti, auxinfo) st ->
           match st with
@@ -311,26 +371,29 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         ) (starti, newauxinfo)
 
 
-        (* special_cfg_braces: *)
+        (* braces: *)
         +> (fun (starti, auxinfo) -> 
-          (match starti with 
-          | None -> None 
-          | Some starti -> 
-              (* subtil: not always return a Some *)
-              let endi = !g#add_node endnode   +> adjust_g_i in
+             starti +> fmap (fun starti -> 
+              (* subtil: not always return a Some.
+               * Note that if starti is None, alors forcement ca veut dire
+               * qu'il y'a eu un return (ou goto), et donc forcement les 
+               * braces auront au moins ete crée une fois, et donc flow_to_ast
+               * marchera.
+               *)
+              let endi = !g#add_node endnode +> adjust_g_i in
               !g#add_arc ((starti, endi), Direct) +> adjust_g;
-              Some endi 
+              endi 
+                  ) 
           )
-           )
+           
 
 
      (* ------------------------- *)        
     | Labeled (Label (s, st)), ii -> 
-        (* todo_cfg_to_ast *)
         let ilabel = labels_assoc#find s in
         let node   = unwrap (!g#nodes#find ilabel) in
-        let labelnode = build_node node label_list (s ^ ":") in
-        !g#replace_node (ilabel, labelnode) +> adjust_g;
+        let node_good_labels = build_node node label_list (s ^ ":") in
+        !g#replace_node (ilabel, node_good_labels) +> adjust_g;
         attach_to_previous_node starti ilabel;
         aux_statement (Some ilabel, auxinfo_label) st
 
@@ -338,19 +401,20 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
     | Jump (Goto s), ii -> 
        (* special_cfg_ast: *)
        let newi = 
-         add_node_g (Statement (statement)) label_list ("goto " ^ s ^ ":") 
+         add_node_g (Statement statement) label_list ("goto " ^ s ^ ":") 
        in
        attach_to_previous_node starti newi;
 
        let ilabel = labels_assoc#find s in
-       (* attach_to_previous_node starti ilabel *)
-       (* todo: special_case: suppose that always goto to toplevel of function, 
-          hence the Common.init *)
-       (* todo?: can perhaps report when a goto is not a classic error_goto ? 
-          that is when it does not jump to the toplevel of the function *)
+       (* attach_to_previous_node starti ilabel; 
+        * todo: special_case: suppose that always goto to toplevel of function, 
+        * hence the Common.init 
+        * todo?: can perhaps report when a goto is not a classic error_goto ? 
+        * that is when it does not jump to the toplevel of the function.
+        *)
        let newi = 
-         special_cfg_insert_all_braces (Common.list_init (get_braces auxinfo)) 
-                                       newi 
+         special_cfg_insert_all_braces 
+           (Common.list_init auxinfo.braces) newi 
        in
        !g#add_arc ((newi, ilabel), Direct) +> adjust_g;
        None
@@ -360,10 +424,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         
      (* ------------------------- *)        
     | ExprStatement (None), ii -> 
-        (* old: starti *)
-        (* special_cfg_ast: *)
+        (* flow_to_ast:   old: starti *)
         let newi = 
-          add_node_g (Statement (statement)) label_list ("emptyinstr;") 
+          add_node_g (Statement statement) label_list ("emptyinstr;") 
         in
         attach_to_previous_node starti newi;
         Some newi
@@ -373,9 +436,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         let s = 
           let (unwrap_e, typ, ii) = e in
           (match unwrap_e with
-          | FunCall (( (Ident f), typ1, _),ii3) -> 
+          | FunCall ((Ident f, typ1, _),ii3) -> 
               f ^ "(...)"
-          | Assignment (((Ident var), typ1, _), SimpleAssign, e) -> 
+          | Assignment ((Ident var, typ1, _), SimpleAssign, e) -> 
               var ^ " = ... ;"
           | Assignment (
               (RecordAccess ((Ident var, typ1, _), field), typ2, _),
@@ -385,7 +448,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
           )
         in
         (* todo: may contain funcall, so have to "linearize" that expression *)
-        let newi = add_node_g (Statement (statement)) label_list s in
+        let newi = add_node_g (Statement statement) label_list s in
         attach_to_previous_node starti newi;
         Some newi
         
@@ -396,18 +459,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                           |                                      |
                           |->   newfakeelse -> ... -> finalelse -|
           update: there is now also a link directly to lasti.
+          
+          because of CTL, now do different things if we are in a ifthen or
+          ifthenelse.
        *)
-        let newi = 
-          add_node_g 
-            (Statement (Selection (If (e, st1, (ExprStatement None,ii2))), ii))
-               label_list ("if")
-        in
+        let newi = add_node_g (Statement statement) label_list ("if") in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode label_list "[then]" in
         let newfakeelse = add_node_g FallThroughNode label_list "[fallthrough]" 
         in
         let afteri = add_node_g AfterNode label_list "[after]" in
-
         let lasti = add_node_g Fake label_list "[endif]" in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
@@ -427,10 +488,7 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                           |->   newfakeelse -> ... -> finalelse -|
           update: there is now also a link directly to lasti.
        *)
-        let newi = 
-          add_node_g (Statement (Selection (If (e, st1, st2)), ii))
-                     label_list "if" 
-        in
+        let newi = add_node_g (Statement statement) label_list "if" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode label_list "[then]" in
         let newfakeelse = add_node_g FalseNode label_list "[else]" in
@@ -458,17 +516,14 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
      (* ------------------------- *)        
     | Selection  (Switch (e, st)), ii -> 
-        let newswitchi = 
-          add_node_g (Statement (Selection (Switch (e, st)),ii))
-                     label_list "switch"
-        in
+        let newswitchi = add_node_g (Statement statement) label_list "switch" in
         attach_to_previous_node starti newswitchi;
 
         let newendswitch = add_node_g Fake label_list "[endswitch]" in
 
     
         (* the newswitchi is for the labels to know where to attach, the 
-           newendswitch (endi) is for the 'break' *)
+           newendswitch (endi) is for the 'break'. *)
 
         (* let finalthen = aux_statement (None, newauxinfo) st in *)
 
@@ -482,37 +537,36 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
              match statement with
          
              | Compound (declxs_statxs), ii -> 
-                 (* todo_cfg_to_ast *)
                  let (i1, i2) = 
                    match ii with 
                    | [i1; i2] -> (i1, i2) 
                    | _ -> raise Impossible
                  in
 
-                 (* old: declxs_statxs +> map_filter 
-                    (function Right stat -> Some stat | _ -> None) 
-                    +> (fun statxs -> *)
          
-                 (* special_cfg_braces: *)
                  incr counter_for_braces;
+
+                 let brace = !counter_for_braces in
+
+                 let open_info  = "{" ^ i_to_s brace in
+                 let close_info = "}" ^ i_to_s brace in
                  let newi = 
-                   add_node_g 
-                     (StartBrace 
-                        (!counter_for_braces, (Compound declxs_statxs, ii), i1))
-                     label_list ("{" ^ i_to_s !counter_for_braces)
+                   add_node_g (StartBrace (brace, statement, i1))
+                     label_list open_info
                  in
                  let endnode = 
-                   build_node (EndBrace (!counter_for_braces, i2))
-                               label_list ("}" ^ i_to_s !counter_for_braces)
+                   build_node (EndBrace (brace, i2))  label_list close_info
                  in
-                 let (oldinfo, braces, labels) = auxinfo_label in
-                 let newauxinfo = (oldinfo, endnode::braces, labels) in
+                 let newauxinfo = { auxinfo_label with
+                                    braces = endnode:: auxinfo_label.braces }
+                 in
 
                  (* new: cos of switch *)
-                 let (oldinfo, braces, labels) = newauxinfo in
                  let newauxinfo = 
-                   SwitchInfo (newi, newendswitch, get_braces auxinfo),
-                   braces, labels
+                   { newauxinfo with 
+                     context_info = 
+                       SwitchInfo (newi, newendswitch, auxinfo.braces);
+                   }
                  in
                  !g#add_arc ((newswitchi, newi), Direct) +> adjust_g; 
 
@@ -550,21 +604,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                  ) (starti, newauxinfo)
          
          
-                 (* special_cfg_braces: *)
+                 (* braces: *)
                  +> (fun (starti, auxinfo) -> 
-                   (match starti with 
-                   | None -> None 
-                   | Some starti -> 
-                       (* subtil: not always return a Some *)
+                      starti +> fmap (fun starti -> 
                        let endi = !g#add_node endnode   +> adjust_g_i in
                        !g#add_arc ((starti, endi), Direct) +> adjust_g;
-                       Some endi 
+                       endi 
+                         )
                    )
-                    )
              | x -> error_cant_have x
          in
-
-
 
          attach_to_previous_node finalthen newendswitch;
          Some newendswitch
@@ -574,23 +623,21 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         incr counter_for_switch;
         let switchrank = !counter_for_switch in
 
-        let newi = add_node_g (Statement (Labeled (Case (e, st)),ii))
-                              label_list "case:"
-        in
+        let newi = add_node_g (Statement statement) label_list "case:" in
 
-        (match fst3 auxinfo with
+        (match auxinfo.context_info with
         | SwitchInfo (startbrace, switchendi, _braces) -> 
             (* no need to attach to previous for the first case, cos would be
-               redundant *)
-            (match starti with 
-            | Some starti when  starti <> startbrace -> 
-                attach_to_previous_node (Some starti) newi; 
-            | _ -> ()
-            );
+             * redundant. *)
+            starti +> do_option (fun starti -> 
+              if starti <> startbrace
+              then attach_to_previous_node (Some starti) newi; 
+              );
 
             let newcasenodei = 
-              add_node_g (CaseNode switchrank)
-                         label_list ("[casenode] " ^ i_to_s switchrank) 
+              add_node_g 
+                (CaseNode switchrank) label_list 
+                ("[casenode] " ^ i_to_s switchrank) 
             in
             !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
             !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
@@ -603,15 +650,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         incr counter_for_switch;
         let switchrank = !counter_for_switch in
 
-        let newi = add_node_g (Statement (Labeled (Default st),ii))
-                              label_list "case default:" in
+        let newi = add_node_g (Statement statement) label_list "case default:" 
+        in
         attach_to_previous_node starti newi;
 
-        (match fst3 auxinfo with
+        (match auxinfo.context_info with
         | SwitchInfo (startbrace, switchendi, _braces) -> 
              let newcasenodei = 
-               add_node_g (CaseNode switchrank)
-                          label_list ("[casenode] " ^ i_to_s switchrank) 
+               add_node_g 
+                 (CaseNode switchrank) label_list 
+                 ("[casenode] " ^ i_to_s switchrank) 
              in
              !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
              !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
@@ -633,17 +681,16 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                           |-> newfakelse 
        *)
 
-        let newi = add_node_g (Statement (Iteration (While (e, st)), ii))
-                              label_list "while"
-        in
+        let newi = add_node_g (Statement statement) label_list "while" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode label_list "[whiletrue]" in
         let newfakeelse = add_node_g FalseNode label_list "[endwhile]" in
 
 
-        let (oldinfo, braces, labels) = auxinfo_label in
-        let newauxinfo = LoopInfo (newi, newfakeelse, braces), 
-                         braces, labels
+        let newauxinfo = 
+          { auxinfo_label with
+            context_info = LoopInfo (newi, newfakeelse,  auxinfo_label.braces); 
+          }
         in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
@@ -659,14 +706,12 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                       |--------------------------------------------------|  |---> newfakelse 
 
        *)
-        let newi = add_node_g (Statement (Iteration (DoWhile (st, e)),ii))
-                              label_list "do" 
-        in
+        let newi = add_node_g (Statement statement)  label_list "do" in
         (* todo?: make a special node ? cos have to repeat the info, need reput 
-           a Statement statement, a Fake node for the while (of dowhile) may not
-           be enough. how found the corresponding condition ? peut etre a juste
-           inverser les Fake et Statement, les mettre en fait dans newi et 
-           finali respectively *)
+         *  a Statement statement, a Fake node for the while (of dowhile) may not
+         *  be enough. how found the corresponding condition ? peut etre a juste
+         *  inverser les Fake et Statement, les mettre en fait dans newi et 
+         *  finali respectively *)
         let finali = add_node_g Fake label_list "while (of dowhile)" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode label_list "[dowhiletrue]" in
@@ -674,9 +719,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
 
         (* This time, may return None, for instance if goto in body of dowhile
-           (whereas While cant return None).
-           The code of while case (different from dowhile) is put in comment, 
-           to illustrate the difference *)
+         *  (whereas While cant return None).
+         *  The code of while case (different from dowhile) is put in comment, 
+         *  to illustrate the difference *)
 
         (* TODO, not used ????? *)
         (* let _newauxinfo = LoopInfo (finali, newfakeelse, snd auxinfo) in *)
@@ -689,30 +734,25 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         let finalthen = aux_statement (Some newfakethen, auxinfo_label) st in 
 
         (* code of while case (different from dowhile) 
-           attach_to_previous_node finalthen newi;
-           Some newfakeelse   *)
-        (match finalthen with 
-        | None -> None
-        | Some finalthen -> 
-            !g#add_arc ((finalthen, (*newi*)finali), Direct) +> adjust_g;
-            Some newfakeelse
+         *  attach_to_previous_node finalthen newi;
+         *  Some newfakeelse   *)
+        finalthen +> map_option (fun finalthen -> 
+          !g#add_arc ((finalthen, (*newi*)finali), Direct) +> adjust_g;
+          newfakeelse
          )
         
 
     | Iteration  (For (e1opt, e2opt, e3opt, st)), ii -> 
-        let newi = 
-          add_node_g 
-            (Statement (Iteration (For (e1opt, e2opt, e3opt, st)),ii))
-            label_list "for"
-        in
+        let newi = add_node_g (Statement statement) label_list "for" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode label_list "[fortrue]" in
         let newfakeelse = add_node_g FalseNode label_list "[endfor]" in
 
 
-        let (oldinfo, braces, labels) = auxinfo_label in
-        let newauxinfo = LoopInfo (newi, newfakeelse, braces), 
-                         braces, labels 
+        let newauxinfo = 
+          { auxinfo_label with
+            context_info = LoopInfo (newi, newfakeelse, auxinfo_label.braces); 
+          }
         in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
@@ -724,15 +764,14 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
      (* ------------------------- *)        
     | Jump ((Continue|Break) as x),ii ->  
-        (* todo_cfg_to_ast *)
-        let newi = add_node_g (Statement (statement)) 
-                              label_list "continue_break;"
+        (* flow_to_ast: *)
+        let newi = add_node_g (Statement statement) label_list "continue_break;"
         in
         attach_to_previous_node starti newi;
 
         (* let newi = some starti in *)
 
-        (match fst3 auxinfo with
+        (match auxinfo.context_info with
         | LoopInfo (loopstarti, loopendi, braces) -> 
             let desti = 
               (match x with 
@@ -740,28 +779,21 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
               | Continue -> loopstarti 
               | x -> error_cant_have x
               ) in
-
-            let difference = 
-              List.length (get_braces auxinfo) - List.length braces 
-            in
+            let difference = List.length auxinfo.braces - List.length braces in
             assert (difference >= 0);
-            let toend = take difference (get_braces auxinfo) in
-            
+            let toend = take difference auxinfo.braces in
             let newi = special_cfg_insert_all_braces toend newi in
-
             !g#add_arc ((newi, desti), Direct) +> adjust_g;
             None
+
         | SwitchInfo (startbrace, loopendi, braces) -> 
             if x = Break then
               begin
-                let difference = 
-                  List.length (get_braces auxinfo) -  List.length braces 
+                let difference = List.length auxinfo.braces - List.length braces
                 in
                 assert (difference >= 0);
-                let toend = take difference (get_braces auxinfo) in
-            
+                let toend = take difference auxinfo.braces in
                 let newi = special_cfg_insert_all_braces toend newi in
-
                 !g#add_arc ((newi, loopendi), Direct) +> adjust_g;
                 None
               end
@@ -774,22 +806,18 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
 
     | Jump (Return), ii -> 
-        (* special_cfg_ast: *)
-        let newi = add_node_g (Statement (statement)) label_list "return" in
+        (* flow_to_ast: *)
+        let newi = add_node_g (Statement statement) label_list "return" in
         attach_to_previous_node starti newi;
-        
-        let newi = special_cfg_insert_all_braces (get_braces auxinfo) newi in
-        
+        let newi = special_cfg_insert_all_braces auxinfo.braces newi in
         !g#add_arc ((newi, exiti), Direct) +> adjust_g;
         None
 
     | Jump (ReturnExpr e), ii -> 
-        let newi = add_node_g (Statement (statement)) label_list  "return ..."
+        let newi = add_node_g (Statement statement) label_list  "return ..."
         in
         attach_to_previous_node starti newi;
-
-        let newi = special_cfg_insert_all_braces (get_braces auxinfo) newi in
-        
+        let newi = special_cfg_insert_all_braces auxinfo.braces newi in
         !g#add_arc ((newi, exiti), Direct) +> adjust_g;
         None
         (* old: attach_to_previous_node starti exiti *)
@@ -802,11 +830,38 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
   in
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
 
-  let lasti = aux_statement (Some enteri, (NoInfo, [], [])) topstatement in
+  let info = { context_info = NoInfo; labels = []; braces = [] } in
+  let lasti = aux_statement (Some enteri, info) topstatement in
   attach_to_previous_node lasti exiti;
   !g
 
 
+
+(******************************************************************************)
+(*
+ note: deadCode detection
+  What is dead code ? when there is no starti  to start from ? => make starti 
+  an option too ?
+  Si on arrive sur un label: au moment d'un deadCode, on peut verifier les 
+  predecesseurs de ce label, auquel cas si y'en a, ca veut dire qu'en fait c'est
+  pas du deadCode et que donc on peut se permettre de partir d'un starti à None.
+  Mais si on a   xx; goto far:; near: yy; zz; far: goto near:. Bon ca doit etre 
+  un cas tres tres rare, mais a cause de notre parcours, on va rejeter ce 
+  programme car au moment d'arriver sur near:  on n'a pas encore de 
+  predecesseurs pour ce label.
+  De meme, meme le cas simple ou la derniere instruction c'est un return, alors 
+  ca va generer un DeadCode :(
+  => Make a first pass where dont launch exn at all, create nodes, if starti is 
+     None then dont add    arc. 
+     A second pass, just check that all nodes (except enter) have predecessors. 
+      (todo: if the pb is at a fake node, then try first successos that is 
+      non fake)
+  => Make starti  an option too.
+     So type is now  int option -> statement -> int option.
+
+ old: I think that DeadCode is too aggressive, what if  have both return in 
+  else/then ? 
+*)
 
 let deadcode_detection g = 
   (* phase 2, deadcode detection 
