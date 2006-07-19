@@ -181,6 +181,7 @@ let pred2c = function
   | Lib_engine.FallThrough -> ("\\msf{FallThrough}",11)
   | Lib_engine.Return -> ("\\msf{Return}",6)
   | Lib_engine.Exit -> ("\\msf{Exit}",4)
+  | Lib_engine.ErrorExit -> ("\\msf{ErrorExit}",9)
   | Lib_engine.Paren(s) -> ("\\msf{Paren}("^s^")",7+(String.length s))
   | Lib_engine.Label(s) -> ("\\msf{Label}("^s^")",7+(String.length s))
   | Lib_engine.PrefixLabel(s) ->

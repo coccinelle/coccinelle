@@ -24,20 +24,34 @@ type 'a combiner =
 			    combiner_statement_dots :
 			      Ast.statement Ast.dots -> 'a}
 
-type ('mc,'a) cmcode = 'mc Ast_cocci.mcode -> 'a
+type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 
 let combiner bind option_default 
-    string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
-    cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn unary_mcodefn
+    binary_mcodefn
+    cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     expdotsfn paramdotsfn stmtdotsfn
     identfn exprfn ftfn tyfn paramfn declfn rulefn stmtfn topfn anyfn =
   let multibind l = List.fold_right bind l option_default in
   let get_option f = function
       Some x -> f x
     | None -> option_default in
-  let rec expression_dots d =
+
+  let rec string_mcode x = string_mcodefn all_functions x
+  and const_mcode x = const_mcodefn all_functions x
+  and assign_mcode x = assign_mcodefn all_functions x
+  and fix_mcode x = fix_mcodefn all_functions x
+  and unary_mcode x = unary_mcodefn all_functions x
+  and binary_mcode x = binary_mcodefn all_functions x
+  and cv_mcode x = cv_mcodefn all_functions x
+  and base_mcode x = base_mcodefn all_functions x
+  and sign_mcode x = sign_mcodefn all_functions x
+  and struct_mcode x = struct_mcodefn all_functions x
+  and storage_mcode x = storage_mcodefn all_functions x
+
+  and expression_dots d =
     let k d =
       match Ast.unwrap d with
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->

@@ -14,7 +14,7 @@ type 'a combiner =
 			    combiner_statement_dots :
 			      Ast_cocci.statement Ast_cocci.dots -> 'a}
 
-type ('mc,'a) cmcode = 'mc Ast_cocci.mcode -> 'a
+type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 val combiner :

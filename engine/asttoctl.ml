@@ -122,102 +122,87 @@ dots.  If there are two options for attaching the + code, then both options
 necessarily occur the same number of times in the matched code, so it
 doesn't matter where the quantifier goes. *)
 
-let metaid (x,_,_) = x
+let aststmfvs =
+  let metaid (x,_,_) = x in
 
-let bind = Common.union_set
-let option_default = []
+  let bind = Common.union_set in
+  let option_default = [] in
 
-let mcode astfvs (_,_,mcodekind) =
-  let process_anything_list_list anythings =
-    List.fold_left Common.union_set []
-      (List.map
-	 (function l ->
-	   List.fold_left Common.union_set [] (List.map astfvs l))
-	 anythings) in
-  match mcodekind with
-    Ast.MINUS(anythings) -> process_anything_list_list anythings
-  | Ast.CONTEXT(befaft) ->
-      (match befaft with
-	Ast.BEFORE(ll) -> process_anything_list_list ll
-      | Ast.AFTER(ll) -> process_anything_list_list ll
-      | Ast.BEFOREAFTER(llb,lla) ->
-	  Common.union_set
-	    (process_anything_list_list lla)
-	    (process_anything_list_list llb)
-      | Ast.NOTHING -> [])
-  | Ast.PLUS -> []
+  let mcode r (_,_,mcodekind) =
+    let process_anything_list_list anythings =
+      let astfvs = r.V.combiner_anything in
+      List.fold_left Common.union_set []
+	(List.map
+	   (function l ->
+	     List.fold_left Common.union_set [] (List.map astfvs l))
+	   anythings) in
+    match mcodekind with
+      Ast.MINUS(anythings) -> process_anything_list_list anythings
+    | Ast.CONTEXT(befaft) ->
+	(match befaft with
+	  Ast.BEFORE(ll) -> process_anything_list_list ll
+	| Ast.AFTER(ll) -> process_anything_list_list ll
+	| Ast.BEFOREAFTER(llb,lla) ->
+	    Common.union_set
+	      (process_anything_list_list lla)
+	      (process_anything_list_list llb)
+	| Ast.NOTHING -> [])
+    | Ast.PLUS -> [] in
 
-let donothing recursor k e = k e (* just combine in the normal way *)
+  let donothing recursor k e = k e in (* just combine in the normal way *)
 
-let rec astfvident recursor k i =
-  match Ast.unwrap i with
-    Ast.MetaId(name) | Ast.MetaFunc(name) | Ast.MetaLocalFunc(name) ->
-      Common.union_set [metaid name] (mcode astfvs name)
-  | _ -> k i
+  let astfvident recursor k i =
+    match Ast.unwrap i with
+      Ast.MetaId(name) | Ast.MetaFunc(name) | Ast.MetaLocalFunc(name) ->
+	bind [metaid name] (mcode recursor name)
+    | _ -> k i in
 
-and astfvexpr recursor k e =
-  match Ast.unwrap e with
-    Ast.MetaConst(name,_) | Ast.MetaErr(name) | Ast.MetaExpr(name,_)
-  | Ast.MetaExprList(name) ->
-      Common.union_set [metaid name] (mcode astfvs name)
-  | _ -> k e
+  let astfvexpr recursor k e =
+    match Ast.unwrap e with
+      Ast.MetaConst(name,_) | Ast.MetaErr(name) | Ast.MetaExpr(name,_)
+    | Ast.MetaExprList(name) -> bind [metaid name] (mcode recursor name)
+    | _ -> k e in
 
-and astfvtypeC recursor k ty =
-  match Ast.unwrap ty with
-    Ast.MetaType(name) -> Common.union_set [metaid name] (mcode astfvs name)
-  | _ -> k ty
+  let astfvtypeC recursor k ty =
+    match Ast.unwrap ty with
+      Ast.MetaType(name) -> bind [metaid name] (mcode recursor name)
+    | _ -> k ty in
 
-and astfvparam recursor k p =
-  match Ast.unwrap p with
-    Ast.MetaParam(name) | Ast.MetaParamList(name) ->
-      Common.union_set [metaid name] (mcode astfvs name)
-  | _ -> k p
+  let astfvparam recursor k p =
+    match Ast.unwrap p with
+      Ast.MetaParam(name) | Ast.MetaParamList(name) ->
+	bind [metaid name] (mcode recursor name)
+    | _ -> k p in
 
-and astfvrule_elem recursor k re =
-  let res =
-    match Ast.unwrap re with
-      Ast.MetaRuleElem(name) | Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
-	Common.union_set [metaid name] (mcode astfvs name)
-    | _ -> k re in
-  Hashtbl.add free_table (Rule_elem re) res;
-  res
+  let astfvrule_elem recursor k re =
+    let res =
+      match Ast.unwrap re with
+	Ast.MetaRuleElem(name) | Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
+	  bind [metaid name] (mcode recursor name)
+      | _ -> k re in
+    Hashtbl.add free_table (Rule_elem re) res;
+    res in
 
-and astfvstatement recursor k s =
-  let res =
-    match Ast.unwrap s with
-      Ast.Dots(_,whencode,tmpcode)
-    | Ast.Circles(_,whencode,tmpcode)
-    | Ast.Stars(_,whencode,tmpcode) ->
-	let _ = List.map recursor.V.combiner_statement tmpcode in k s
-    | _ -> k s in
-  Hashtbl.add free_table (Statement s) res;
-  res
+  let astfvstatement recursor k s =
+    let res =
+      match Ast.unwrap s with
+	Ast.Dots(_,whencode,tmpcode)
+      | Ast.Circles(_,whencode,tmpcode)
+      | Ast.Stars(_,whencode,tmpcode) ->
+	  let _ = List.map recursor.V.combiner_statement tmpcode in k s
+      | _ -> k s in
+    Hashtbl.add free_table (Statement s) res;
+    res in
 
-and astfvstatement_dots recursor k s = 
-  let res = k s in Hashtbl.add free_table (StatementDots s) res; res
+  let astfvstatement_dots recursor k s = 
+    let res = k s in Hashtbl.add free_table (StatementDots s) res; res in
 
-(* both of the following create the same recursor, but the restrictions on
-   letrec don't seem to make it easy to export simple names for the various
-   fields, so it is duplicated *)
-and astfvs a =
   let recursor = V.combiner bind option_default
-    (mcode astfvs) (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    (mcode astfvs) (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    donothing donothing astfvstatement_dots
-    astfvident astfvexpr donothing astfvtypeC astfvparam donothing
-    astfvrule_elem astfvstatement donothing donothing in
-  recursor.V.combiner_anything a
-
-let aststmfvs s =
-  let recursor = V.combiner bind option_default
-    (mcode astfvs) (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    (mcode astfvs) (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    (mcode astfvs) (mcode astfvs) (mcode astfvs)
-    donothing donothing astfvstatement_dots
-    astfvident astfvexpr donothing astfvtypeC astfvparam donothing
-    astfvrule_elem astfvstatement donothing donothing in
-  recursor.V.combiner_statement s
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing astfvstatement_dots
+      astfvident astfvexpr donothing astfvtypeC astfvparam donothing
+      astfvrule_elem astfvstatement donothing donothing in
+  recursor.V.combiner_statement
 
 (* --------------------------------------------------------------------- *)
 (* Whenify *)
@@ -306,7 +291,7 @@ let make_cond n branch re = wrapImplies n (branch,wrapAX n re) (*function
 let contains_modif =
   let bind x y = x or y in
   let option_default = false in
-  let mcode (_,_,kind) =
+  let mcode r (_,_,kind) =
     match kind with
       Ast.MINUS(_) -> true
     | Ast.PLUS -> failwith "not possible"
@@ -381,8 +366,8 @@ let rec dots_stmt nest quantified l unchecked notbefore notafter after
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement nest quantified stmt unchecked notbefore notafter after
- (* : ae *) =
+and statement nest (* not used *) quantified stmt unchecked
+    notbefore notafter after (* : ae *) =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
@@ -485,7 +470,7 @@ and statement nest quantified stmt unchecked notbefore notafter after
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  make_seq (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,body,rbrace) ->
-      let v = (*fresh_label_var*) "p" in
+      let v = fresh_label_var "p" in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
@@ -1113,7 +1098,7 @@ let top_level t =
 let contains_dots =
   let bind x y = x or y in
   let option_default = false in
-  let mcode x = false in
+  let mcode r x = false in
   let statement r k s =
     match Ast.unwrap s with Ast.Dots(_,_,_) -> true | _ -> k s in
   let continue r k e = k e in
@@ -1121,7 +1106,7 @@ let contains_dots =
   let res =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      continue continue continue
       stop stop stop stop stop stop stop statement continue continue in
   res.V.combiner_top_level
 

@@ -23,6 +23,7 @@ let pp_predicate = function
   | After -> pp "After"
   | FallThrough -> pp "FallThrough"
   | Return -> pp "Return"
+  | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp s; pp ")"
   | Match re -> Pretty_print_cocci.rule_elem "" re
