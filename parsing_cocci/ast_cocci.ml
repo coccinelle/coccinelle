@@ -320,6 +320,11 @@ let get_line (_,l) = l
 
 (* --------------------------------------------------------------------- *)
 
+let make_meta_rule_elem s d =
+  (MetaRuleElem(s,{ line = 0; column = 0 },d), 0)
+
+(* --------------------------------------------------------------------- *)
+
 let undots x =
   match unwrap x with
     DOTS    e -> e

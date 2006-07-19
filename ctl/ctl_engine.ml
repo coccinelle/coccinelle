@@ -525,7 +525,9 @@ let triples_witness x trips =
   let mkwit (s,th,wit) =
     let (th_x,newth) = split_subst th x in
     if th_x = []
-    then print_state "empty witness from" [(s,th,wit)];
+    then
+      (SUB.print_mvar x; Format.print_flush();
+      print_state ": empty witness from" [(s,th,wit)]);
     (s,newth,A.Wit(s,th_x,[],wit)) in	(* [] = annotation *)
   setify (map mkwit trips)
 ;;

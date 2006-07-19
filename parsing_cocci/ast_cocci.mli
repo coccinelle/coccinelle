@@ -318,3 +318,6 @@ val undots : 'a dots -> 'a list
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a
 val get_line : 'a wrap -> line
+
+val make_meta_rule_elem : string -> mcodekind -> rule_elem
+

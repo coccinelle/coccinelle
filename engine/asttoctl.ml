@@ -1,7 +1,7 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
-let line_numbers = ref true(*false*)
+let line_numbers = ref false
 (* if true, only eg if header is included in not for ...s *)
 let simple_get_end = ref true
 
@@ -206,6 +206,36 @@ let aststmfvs =
   recursor.V.combiner_statement
 
 (* --------------------------------------------------------------------- *)
+(* Count depth of braces.  The translation of a closed brace appears deeply
+nested within the translation of the sequence term, so the name of the
+paren var has to take into account the names of the nested braces.  On the
+other hand the close brace does not escape, so we don't have to take into
+account other paren variable names. *)
+
+let brace_table =
+  (Hashtbl.create(50) :
+     (Ast.statement (* always a seq/fundecl *),string (*paren var*)) Hashtbl.t)
+
+let count_nested_braces =
+  let bind x y = max x y in
+  let option_default = 0 in
+  let stmt_count r k s =
+    match Ast.unwrap s with
+      Ast.Seq(_,_,_) | Ast.FunDecl(_,_,_,_) ->
+	let nested = k s in
+	Hashtbl.add brace_table s ("p"^(string_of_int nested));
+	nested + 1
+    | _ -> k s in
+  let donothing r k e = k e in
+  let mcode r x = 0 in
+  let recursor = V.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing stmt_count donothing donothing in
+  recursor.V.combiner_statement
+
+(* --------------------------------------------------------------------- *)
 (* Whenify *)
 (* For A ... B, neither A nor B should occur in the code matched by the ...
 We add these to any when code associated with the dots *)
@@ -389,8 +419,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
 	  let matcher d =
-	    make_match
-	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
+	    make_match (Ast.make_meta_rule_elem (fresh_metavar()) d) in
 	  let full_metamatch = matcher d in
 	  let first_metamatch =
 	    matcher
@@ -434,8 +463,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
 	  let matcher d =
-	    make_match
-	      (Ast.rewrap ast (Ast.MetaRuleElem(fresh_metavar(),i,d))) in
+	    make_match (Ast.make_meta_rule_elem (fresh_metavar()) d) in
 	  let first_metamatch = matcher d in
 	  let rest_metamatch =
 	    matcher
@@ -460,7 +488,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  make_seq (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,body,rbrace) ->
-      let v = fresh_label_var "p" in
+      let v = Hashtbl.find brace_table stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
@@ -623,7 +651,7 @@ and statement nest (* not used *) quantified stmt unchecked
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
 	    let s = fresh_metavar() in
-	    Some(make_match (Ast.rewrap stmt (Ast.MetaRuleElem(s,i,d))))
+	    Some(make_match (Ast.make_meta_rule_elem s d))
 	| _ -> None in
       let tmp_whencode =
 	if unchecked
@@ -677,7 +705,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	seq_fvs quantified (Rule_elem header) (StatementDots body) in
       let function_header = quantify hfvs (make_match header) in
       let new_quantified = Common.union_set bfvs quantified in
-      let v = fresh_label_var "p" in
+      let v = Hashtbl.find brace_table stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
@@ -1068,11 +1096,13 @@ let top_level t =
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let _ = aststmfvs unopt in
+      let _ = count_nested_braces unopt in
       letify(statement 0 [] unopt false [] [] None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
       List.iter
-	(function x -> let _ = aststmfvs x in ())
+	(function x ->
+	  let _ = aststmfvs x in let _ = count_nested_braces x in ())
 	(Ast.undots unopt);
       letify(dots_stmt 0 [] unopt false [] [] None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
