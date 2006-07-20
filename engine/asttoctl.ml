@@ -3,7 +3,7 @@ let onlyModif = ref true
 (* set to true for line numbers in the output of ctl_engine *)
 let line_numbers = ref false
 (* if true, only eg if header is included in not for ...s *)
-let simple_get_end = ref true
+let simple_get_end = ref false(*true*)
 
 (* Question: where do we put the existential quantifier for or.  At the
 moment, let it float inwards. *)
@@ -327,14 +327,17 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let make_match n code =
-  let v = fresh_var() in
-  if contains_modif code
-  then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
+let make_match n unchecked code =
+  if unchecked
+  then wrapPred n (Lib_engine.Match(code),CTL.Control)
   else
-    if !onlyModif
-    then wrapPred n (Lib_engine.Match(code),CTL.Control)
-    else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
+    let v = fresh_var() in
+    if contains_modif code
+    then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
+    else
+      if !onlyModif
+      then wrapPred n (Lib_engine.Match(code),CTL.Control)
+      else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
 let make_raw_match n code = wrapPred n (Lib_engine.Match(code),CTL.Control)
 
@@ -406,7 +409,7 @@ and statement nest (* not used *) quantified stmt unchecked
   let and_opt = and_opt n in
   let make_cond = make_cond n in
   let quantify = quantify n in
-  let make_match = make_match n in
+  let make_match = make_match n unchecked in
   let make_raw_match = make_raw_match n in
 
   match Ast.unwrap stmt with
@@ -623,7 +626,8 @@ and statement nest (* not used *) quantified stmt unchecked
 	  (function rest ->
 	    function cur ->
 	      wrapAnd
-		(wrapNot (dots_stmt nest quantified cur unchecked [] [] None),
+		(wrapNot
+		   (dots_stmt nest quantified cur unchecked(*?*) [] [] None),
 		 rest))
 	  e l in
       let rec loop after = function
