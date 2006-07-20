@@ -212,9 +212,12 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                      "but I continue")
               );
 
+              (* remove some fake nodes *)
+              let fixed_flow = Ctlcocci_integration.fix_flow_ctl flow in
+
               if !Flag.show_flow 
-              then print_flow flow;
-                
+              then print_flow fixed_flow;
+
               let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
               let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
               let trans_info' = 

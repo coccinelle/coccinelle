@@ -15,21 +15,31 @@ let main () =
   begin
     let args = ref [] in
     let options = Arg.align [ 
-      "-dir", Arg.Set dir, " process all files in directory recursively";
-      "-cocci_file", Arg.Set_string cocci_file, " the semantic patch file";
-      "-iso_file",   Arg.Set_string iso_file, " the iso file";
+      "-dir", Arg.Set dir, 
+      " <dirname> process all files in directory recursively";
 
-      "-test", Arg.Set test_mode, " automatically find the corresponding c and cocci file";
-      "-show_ctl",  Arg.Set Flag.show_ctl, " ";
-      "-show_flow", Arg.Set Flag.show_flow, " ";
+      "-cocci_file", Arg.Set_string cocci_file, 
+      " <filename> the semantic patch file";
+
+      "-iso_file",   Arg.Set_string iso_file, 
+      " <filename> the iso file";
+
+      "-error_words_only", Arg.Set Flag.process_only_when_error_words, 
+      " ";
+
+
+      "-test", Arg.Set test_mode, 
+      " automatically find the corresponding c and cocci file";
+      "-show_ctl",  Arg.Set Flag.show_ctl,    " ";
+      "-show_flow", Arg.Set Flag.show_flow,  " ";
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
-
       "-testall", Arg.Set testall_mode, " ";
       
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
-      "-verbose_engine",       Arg.Set Flag_engine.debug_engine, " ";
+      "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
 
-      "-test_ctl_foo", Arg.Set test_ctl_foo, " test the engine with the foo ctl in test.ml";
+      "-test_ctl_foo", Arg.Set test_ctl_foo, 
+      " test the engine with the foo ctl in test.ml";
 
 
     ] in 

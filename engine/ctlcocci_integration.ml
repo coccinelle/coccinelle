@@ -8,7 +8,8 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
 (******************************************************************************)
 
 (* Take list of pred  and for each pred return where in control flow
-it matches (and the set of subsitutions for this match). *)
+ * it matches (and the set of subsitutions for this match). 
+ *)
 let (labels_for_ctl: 
  (nodei * Control_flow_c.node) list -> Lib_engine.label_ctlcocci) =
   fun nodes ->
@@ -64,12 +65,14 @@ let (labels_for_ctl:
       | Lib_engine.FallThrough, Control_flow_c.FallThroughNode -> [nodei, []]
       | Lib_engine.Exit,        Control_flow_c.Exit ->      [nodei, []]
       | Lib_engine.ErrorExit,   Control_flow_c.ErrorExit -> [nodei, []]
+
       | Lib_engine.TrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
       | Lib_engine.After, _ -> []
       | Lib_engine.FallThrough, _ -> []
       | Lib_engine.Exit, _  -> []
       | Lib_engine.ErrorExit, _  -> []
+
       | Lib_engine.Return, node -> 
           (match node with
             (* todo? should match the Exit code ? *)
@@ -105,36 +108,106 @@ let (labels_for_ctl:
      nodes'
    ) 
 
+
+
+
 let (control_flow_for_ctl: 
-       (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-         ('a, 'b) ograph_extended) = 
+      (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+      ('a, 'b) ograph_extended) = 
  fun cflow ->
  (* could erase info on nodes, and edge,  because they are not used by rene *)
   cflow
 
 
+
 (* Just make the final node of the control flow loop over itself. 
-   It seems that one hypothesis of the SAT algorithm is that each node as at least a successor.
-   todo?: erase some fake nodes ? (and adjust the edges accordingly) *)
+ * It seems that one hypothesis of the SAT algorithm is that each node as at
+ * least a successor.
+ * update: do same for errorexit node.
+ * 
+ * Addon: also erase the fake nodes (and adjust the edges accordingly), so that
+ * AX in CTL can now work.
+ * Indeed, à la fin de la branche then (et else), on devrait aller directement
+ * au suivant du endif, sinon si ecrit if(1) { foo(); }; bar();
+ * sans '...' entre le if et bar(), alors ca matchera pas car le CTL
+ * generera un AX bar()  qui il tombera d'abord sur le [endif] :( 
+ * Mais chiant de changer l'algo de generation, marche pas tres bien avec 
+ * ma facon de faire recursive et compositionnel.
+ * => faire une fonction qui applique des fixes autour de ce control flow,
+ * comme ca passe un bon flow a rene, mais garde un flow a moi pour pouvoir 
+ * facilement generate back the ast.
+ *
+ * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
+ * une fonction qui passe a travers les Fake, mais bof.
+ *)
 let (fix_flow_ctl: 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
  fun  flow ->
-  let (exitnodei, node) = flow#nodes#tolist +> List.find (fun (nodei, node) -> 
+  let g = ref flow in
+
+  let adjust_g (newg)        = begin  g := newg;    end in
+
+
+  let (exitnodei, node) = !g#nodes#tolist +> List.find (fun (nodei, node) -> 
     match Control_flow_c.unwrap node with
     | Control_flow_c.Exit -> true 
     | _ -> false
     )
   in
-  let flow = flow#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) in
+  !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
 
-  assert (flow#nodes#tolist +> List.for_all (fun (nodei, node) -> 
-    List.length ((flow#successors nodei)#tolist) >= 1 
-    (* no:  && List.length ((flow#predecessors nodei)#tolist) >= 1  
+  let (errornodei, node) = !g#nodes#tolist +> List.find (fun (nodei, node) -> 
+    match Control_flow_c.unwrap node with
+    | Control_flow_c.ErrorExit -> true 
+    | _ -> false
+    )
+  in
+  !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
+
+
+  let remove_one_node nodei = 
+    let preds = (!g#predecessors nodei)#tolist in
+    let succs = (!g#successors nodei)#tolist in
+
+    assert (not (null preds));
+
+    preds +> List.iter (fun (predi, Control_flow_c.Direct) -> 
+      !g#del_arc ((predi, nodei), Control_flow_c.Direct) +> adjust_g;
+      );
+
+    succs +> List.iter (fun (succi, Control_flow_c.Direct) -> 
+      !g#del_arc ((nodei, succi), Control_flow_c.Direct) +> adjust_g;
+      );
+    
+    !g#del_node nodei +> adjust_g;
+
+    preds +> List.iter (fun (pred, Control_flow_c.Direct) -> 
+      succs +> List.iter (fun (succ, Control_flow_c.Direct) -> 
+        !g#add_arc ((pred, succ), Control_flow_c.Direct) +> adjust_g;
+        );
+      );
+    
+  in
+  let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) -> 
+    match Control_flow_c.unwrap node with
+    | Control_flow_c.CaseNode _ 
+    | Control_flow_c.Enter
+    | Control_flow_c.Fake (* [endif], [endswitch], ... *)
+      -> true
+    | _ -> false 
+    ) in
+  
+  fake_nodes +> List.iter (fun (nodei, node) -> remove_one_node nodei);
+
+
+  !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
+    assert (List.length ((!g#successors nodei)#tolist) >= 1); 
+    (* no:  && List.length ((!g#predecessors nodei)#tolist) >= 1  
        because    the enter node at least have no predecessors *)
-      ));
+    );
 
-  flow
+  !g
 
 
 
@@ -159,9 +232,9 @@ module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
     type mvar = string
-    let eq_mvar x x' = x = x';;
-    let eq_val v v' = v = v';;
-    let merge_val v v' = v;;	       
+    let eq_mvar x x' = x = x'
+    let eq_val v v' = v = v'
+    let merge_val v v' = v	       
 
     let print_mvar s = Format.print_string s
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
@@ -170,9 +243,11 @@ module ENV =
 
 module CFG = 
   struct
-    type node = int;;
-    type cfg = (Control_flow_c.node, Control_flow_c.edge) Ograph_extended.ograph_extended;;
-    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
+    type node = int
+    type cfg = 
+        (Control_flow_c.node, Control_flow_c.edge) 
+        Ograph_extended.ograph_extended
+    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let print_node i = Format.print_string (i_to_s i)
   end
 

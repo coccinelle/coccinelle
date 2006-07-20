@@ -90,6 +90,9 @@ let rec (transform_re_node:
       F.EndBrace (level, tag_one_symbol (wrap_mcode mcode) i2 binding)
       +> F.rewrap node
 
+  | A.MetaStmt ((ida,_,i1)),  stb -> 
+      failwith "I cant have been called. I can only transform MetaRuleElem."
+
   | A.SeqStart _, _ | _, F.StartBrace _ -> raise NoMatch
   | A.SeqEnd _, _   | _, F.EndBrace _ -> raise NoMatch
 

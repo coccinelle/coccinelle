@@ -6,6 +6,10 @@ val labels_for_ctl :
   (nodei * Control_flow_c.node) list -> Lib_engine.label_ctlcocci
 
 
+val fix_flow_ctl : 
+   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+   (Control_flow_c.node, Control_flow_c.edge) ograph_extended
+
 val model_for_ctl :
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended *

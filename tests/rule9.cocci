@@ -19,5 +19,5 @@ identifier proc_info_func;
     ...
   }
 
-error words = [Scsi_Host]
+error words = [scsi_host_hn_get,scsi_host_put]
 

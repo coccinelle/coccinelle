@@ -164,6 +164,8 @@ type additionnal_info =  {
 
   context_info: context_info;
 
+  context_info_bis: bool; (* are we under a ifthen[noelse]. Used for ErrorExit *)
+
   (* ctl_braces: the nodei list is to handle current imbrication depth.
    * It contains the must-close '}'. 
    * update: now it is instead a node list. 
@@ -233,13 +235,11 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
   let headi = add_node_g (HeadFunc (funcs, functype, sto, [], moreinfo))
                          label_list_empty ("function " ^ funcs) in
-(*
   let enteri = add_node_g Enter label_list_empty "[enter]" in
   let exiti  = add_node_g Exit  label_list_empty "[exit]" in
   !g#add_arc ((headi, enteri), Direct) +> adjust_g;
-*)
-  let enteri = headi in
-  let exiti  = add_node_g Exit  label_list_empty "[exit]" in
+
+  let errorexiti = add_node_g ErrorExit label_list_empty "[errorexit]" in
   
 
 
@@ -471,13 +471,20 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
         let afteri = add_node_g AfterNode label_list "[after]" in
         let lasti = add_node_g Fake label_list "[endif]" in
 
+        let newauxinfo = 
+          { auxinfo_label with 
+            context_info_bis = true;
+          }
+        in
+
+
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
         !g#add_arc ((newi, afteri), Direct) +> adjust_g;
         !g#add_arc ((afteri, lasti), Direct) +> adjust_g;
         !g#add_arc ((newfakeelse, lasti), Direct) +> adjust_g;
 
-        let finalthen = aux_statement (Some newfakethen, auxinfo_label) st1 in
+        let finalthen = aux_statement (Some newfakethen, newauxinfo) st1 in
         attach_to_previous_node finalthen lasti;
         Some lasti
 
@@ -805,22 +812,26 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
 
 
-    | Jump (Return), ii -> 
+    | Jump ((Return | ReturnExpr _) as kind), ii -> 
         (* flow_to_ast: *)
-        let newi = add_node_g (Statement statement) label_list "return" in
-        attach_to_previous_node starti newi;
-        let newi = special_cfg_insert_all_braces auxinfo.braces newi in
-        !g#add_arc ((newi, exiti), Direct) +> adjust_g;
-        None
-
-    | Jump (ReturnExpr e), ii -> 
-        let newi = add_node_g (Statement statement) label_list  "return ..."
+        let info = 
+          match kind with
+          | Return -> "return"
+          | ReturnExpr _ -> "return ..."
+          | _ -> raise Impossible
         in
+
+        let newi = add_node_g (Statement statement) label_list info in
         attach_to_previous_node starti newi;
         let newi = special_cfg_insert_all_braces auxinfo.braces newi in
-        !g#add_arc ((newi, exiti), Direct) +> adjust_g;
+
+        if auxinfo.context_info_bis
+        then 
+          !g#add_arc ((newi, errorexiti), Direct) +> adjust_g
+        else 
+          !g#add_arc ((newi, exiti), Direct) +> adjust_g
+        ;
         None
-        (* old: attach_to_previous_node starti exiti *)
 
         
     (* ------------------------- *)        
@@ -830,7 +841,12 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
   in
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
 
-  let info = { context_info = NoInfo; labels = []; braces = [] } in
+  let info = { 
+    context_info = NoInfo; 
+    context_info_bis = false;
+    labels = []; braces = [] 
+  } 
+  in
   let lasti = aux_statement (Some enteri, info) topstatement in
   attach_to_previous_node lasti exiti;
   !g
@@ -1219,13 +1235,13 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
 
   let (topcompound, returnkind) = 
     (match get_next_node g starti with
-    | (nexti,  _) (* (Enter, s) *) -> 
-        (* let (nextii, _) = get_next_node g nexti in *)
-        let nextii = nexti in
+    | (nexti,  Enter)  -> 
+        let (nextii, _) = get_next_node g nexti in
         rebuild_statement nextii
   
-    (* | x -> error_cant_have x *)
-    ) 
+    | x -> raise Impossible (* there must be an Enter node after the HeadFun *)
+    )
+    
   in
   (* todo?: assert stuff on returnkind ? normally lead to an exit node, 
      or nothing *)

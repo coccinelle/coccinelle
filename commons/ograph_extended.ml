@@ -70,6 +70,10 @@ class ['a,'b] ograph_extended =
       {<
         (* check: e is effectively the index associated with e, 
            and check that already in *)
+
+        (* TODO assert that have no pred and succ, otherwise
+         * will have some dangling pointers 
+         *)
         nods = nods#delkey i; 
         pred = pred#delkey i;
         succ = succ#delkey i;

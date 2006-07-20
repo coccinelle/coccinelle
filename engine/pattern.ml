@@ -186,6 +186,10 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.SeqStart _, F.StartBrace _ -> return true
   | A.SeqEnd _,   F.EndBrace   _ -> return true
+
+  | A.MetaStmt (ida),  F.StartBrace (_, stb, _) -> 
+      check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
+
   | A.SeqStart _, _ | _, F.StartBrace _ -> return false
   | A.SeqEnd _, _   | _, F.EndBrace _ -> return false
 
