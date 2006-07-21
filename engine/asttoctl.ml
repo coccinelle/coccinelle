@@ -402,7 +402,6 @@ and statement nest (* not used *) quantified stmt unchecked
   let wrapEX = wrapEX n in
   let wrapAG = wrapAG n in
   let wrapAF = wrapAF n in
-  let wrapEF = wrapEF n in
   let wrapNot = wrapNot n in
   let wrapPred = wrapPred n in
   let make_seq = make_seq n in
@@ -503,13 +502,12 @@ and statement nest (* not used *) quantified stmt unchecked
   | Ast.IfThen(ifheader,branch) ->
 
 (* "if (test) thn" becomes:
-    if(test) & AX((TrueBranch v FallThrough v After) & TrueBranch => AX thn)
+    if(test) & AX((TrueBranch & AX thn) v FallThrough v After)
 
     "if (test) thn; after" becomes:
-    if(test) & AX((TrueBranch v FallThrough v After)
-                  & TrueBranch => AX thn
-                  & After => AX after)
-             & EX After *)
+    if(test) & AX((TrueBranch & AX thn) v FallThrough v (After & AX after))
+             & EX After
+*)
 
        (* free variables *) 
        let (efvs,bfvs,_) =
@@ -518,39 +516,33 @@ and statement nest (* not used *) quantified stmt unchecked
        (* if header *)
        let if_header = quantify efvs (make_match ifheader) in
        (* then branch and after *)
-       let true_branch =  wrapPred(Lib_engine.TrueBranch,CTL.Control) in
+       let true_branch =
+	 make_seq
+	   (wrapPred(Lib_engine.TrueBranch,CTL.Control))
+	   (Some(statement nest new_quantified branch unchecked [] [] None)) in
        let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
-       let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
-       let then_line =
-	 make_cond true_branch
-	   (statement nest new_quantified branch unchecked [] [] None) in
-       let or_cases = wrapOr(true_branch,wrapOr(fall_branch,after_branch)) in
+       let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
+       let after_branch = make_seq after_pred after in
+       let or_cases =
+	 Some (wrapOr(true_branch,wrapOr(fall_branch,after_branch))) in
        (* the code *)
        (match after with
-	 None ->
+	 Some _ ->
 	   quantify bfvs
-	     (make_seq if_header (Some(wrapAnd(or_cases,then_line))))
-       | Some after ->
-	   let after_line = make_cond after_branch after in
-	   quantify bfvs
-	     (wrapAnd
-		(if_header,
-		  (wrapAnd
-		     (wrapAX
-			(wrapAnd(or_cases, wrapAnd(then_line,after_line))),
-		      wrapEX(after_branch))))))
+	     (wrapAnd (make_seq if_header or_cases, wrapEX after_pred))
+       | None -> quantify bfvs (make_seq if_header or_cases))
 	 
-  | Ast.IfThenElse(ifheader,branch1,_,branch2) ->
+  | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
 
 (*  "if (test) thn else els" becomes:
-    if(test) & AX(TrueBranch => AX thn
-                  & FalseBranch => AX els)
+    if(test) & AX((TrueBranch & AX thn) v
+                  (FalseBranch & AX (else & AX els)) v After)
              & EX FalseBranch
 
     "if (test) thn else els; after" becomes:
-    if(test) & AX(TrueBranch => AX thn
-                  & FalseBranch => AX els
-                  & After => AX after)
+    if(test) & AX((TrueBranch & AX thn) v
+                  (FalseBranch & AX (else & AX els)) v
+                  (After & AX after))
              & EX FalseBranch
              & EX After
 
@@ -572,32 +564,33 @@ and statement nest (* not used *) quantified stmt unchecked
        let if_header = quantify exponlyfvs (make_match ifheader) in
        (* then and else branches *)
        let true_branch =
-	 wrapPred(Lib_engine.TrueBranch,CTL.Control) in
+	 make_seq
+	   (wrapPred(Lib_engine.TrueBranch,CTL.Control))
+	   (Some
+	      (statement nest new_quantified branch1 unchecked [] [] None)) in
+       let false_pred = wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let false_branch =
-	 wrapPred(Lib_engine.FalseBranch,CTL.Control) in
-       let then_line =
-	 make_cond true_branch
-	   (statement nest new_quantified branch1 unchecked [] [] None) in
-       let else_line =
-	 make_cond false_branch
-	   (statement nest new_quantified branch2 unchecked [] [] None) in
+	 make_seq false_pred
+	   (Some (statement nest new_quantified branch2 unchecked [] [] None))
+	   (*Some to uncomment when there are else nodes in the CFG
+	      (make_seq
+		 (make_match els)
+		 (Some (statement nest new_quantified branch2 unchecked [] []
+			  None)))*) in
+       let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
+       let after_branch = make_seq after_pred after in
+       let or_cases =
+	 Some (wrapOr(true_branch,wrapOr(false_branch,after_branch))) in
        (* the code *)
        (match after with
 	None ->
 	  quantify bothfvs
-	    (wrapAnd
-	       (if_header,
-		 wrapAnd(wrapAX(wrapAnd(then_line,else_line)),
-			 wrapEX(false_branch))))
+	    (wrapAnd (make_seq if_header or_cases, wrapEX(false_pred)))
       |	Some after ->
-	  let after_branch = wrapPred(Lib_engine.After,CTL.Control) in
-	  let after_line = make_cond after_branch after in
 	  quantify bothfvs
 	    (wrapAnd
-	       (if_header,
-		 wrapAnd(wrapAX(wrapAnd
-				  (wrapAnd(then_line,else_line),after_line)),
-			 wrapAnd(wrapEX(false_branch),wrapEX(after_branch))))))
+	       (make_seq if_header or_cases,
+		 wrapAnd(wrapEX(false_pred),wrapEX(after_pred)))))
 
   | Ast.While(header,body) ->
    (* the translation in this case is similar to that of an if with no else *)
@@ -645,9 +638,11 @@ and statement nest (* not used *) quantified stmt unchecked
   | Ast.Nest(stmt_dots) ->
       let dots_pattern =
 	dots_stmt nest quantified stmt_dots unchecked [] [] None in
+      let udots_pattern =
+	dots_stmt nest quantified stmt_dots true [] [] None in
       (match after with
-	None -> wrapAG(wrapOr(dots_pattern,wrapNot dots_pattern))
-      |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot dots_pattern),after))
+	None -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern))
+      |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot udots_pattern),after))
   | Ast.Dots((_,i,d),whencodes,tmp_whencode) ->
       let dot_code =
 	match d with
@@ -700,8 +695,7 @@ and statement nest (* not used *) quantified stmt unchecked
 	    Some(wrapAnd (dotcode,whencode)) in
       (match (after,phi3) with (* add in the after code to make the result *)
 	  (None,None) -> wrap n (CTL.True)
-	| (Some after,None) ->
-	    wrapAnd(wrapAF(wrapOr(after,aftret)),wrapEF(after))
+	| (Some after,None) -> wrapAF(wrapOr(after,aftret))
 	| (None,Some whencode) -> wrapAU(whencode,aftret)
 	| (Some after,Some whencode) -> wrapAU(whencode,wrapOr(after,aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->

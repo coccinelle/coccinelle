@@ -5,7 +5,7 @@ open Ograph_extended
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 
-(******************************************************************************)
+(*****************************************************************************)
 
 (* Take list of pred  and for each pred return where in control flow
  * it matches (and the set of subsitutions for this match). 
@@ -193,7 +193,7 @@ let (fix_flow_ctl:
     match Control_flow_c.unwrap node with
     | Control_flow_c.CaseNode _ 
     | Control_flow_c.Enter
-    | Control_flow_c.Fake (* [endif], [endswitch], ... *)
+    (*| Control_flow_c.Fake*) (* [endif], [endswitch], ... *)
       -> true
     | _ -> false 
     ) in

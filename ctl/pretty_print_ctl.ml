@@ -58,17 +58,16 @@ let rec (pp_ctl:
       if not inline_let_def
       then
         begin
-          pp ("Let"^" "^x); 
-          print_space ();
-          pp "="; 
-          print_space ();
+          pp ("Let"^" "^x);
+	  pp " = ";
           pp_do_in_box (fun () -> pp_aux env phi1);
           print_space ();
           pp "in"; 
           print_space ();
         end;
       
-      pp_do_in_box (fun () -> pp_aux env' phi2);
+      let pp_do_in_zero_box f = Format.open_box 0; f(); Format.close_box () in
+      pp_do_in_zero_box (fun () -> pp_aux env' phi2);
   | Ref(s)             -> 
       if inline_let_def
       then

@@ -329,7 +329,24 @@ let clean_substBy eq cmp theta = List.sort cmp (nubBy eq theta);;
  *   or substitutions but that seems like overkill for sorting
  *)
 let clean_subst theta = 
-  clean_substBy eq_sub (fun s s' -> compare (dom_sub s) (dom_sub s')) theta;;
+  let res = 
+    clean_substBy eq_sub
+      (fun s s' ->
+	let res = compare (dom_sub s) (dom_sub s') in
+	if res = 0
+	then
+	  match (s,s') with
+	    (A.Subst(_,_),A.NegSubst(_,_)) -> -1
+	  | (A.NegSubst(_,_),A.Subst(_,_)) -> 1
+	  | _ -> 0
+	else res)
+      theta in
+  let rec loop = function
+      [] -> []
+    | (A.Subst(x,v)::A.NegSubst(y,v')::rest) when x = y -> (*generic enough?*)
+	loop (A.Subst(x,v)::rest)
+    | x::xs -> x::(loop xs) in
+  loop res
 
 let top_subst = [];;			(* Always TRUE subst. *)
 
@@ -344,21 +361,36 @@ let conj_subst theta theta' =
     | ([],_) -> Some theta'
     | (_,[]) -> Some theta
     | _ ->
-	try
-	  Some (clean_subst (
-		  foldl
-		    (function rest ->
-		       function sub ->
-			 foldl
-			   (function rest ->
-			      function sub' ->
-				match (merge_sub sub sub') with
-				  | Some subs -> 
-				      subs @ rest
-				  | _       -> raise SUBST_MISMATCH)
-			   rest theta')
-		    [] theta))
-	with SUBST_MISMATCH -> None
+	let sorter s s' =
+	  match compare (dom_sub s) (dom_sub s') with
+	    0 ->
+	      (match (s,s') with
+		(A.Subst(_,_),A.NegSubst(_,_)) -> -1
+	      |	(A.NegSubst(_,_),A.Subst(_,_)) -> 1
+	      |	_ -> 0)
+	  | res -> res in
+	let theta = List.sort sorter theta in
+	let theta' = List.sort sorter theta' in
+	let rec loop = function
+	    ([],theta') -> theta'
+	  | (theta,[]) -> theta
+	  | (sub::theta,sub'::theta') ->
+	      (match compare (dom_sub sub) (dom_sub sub') with
+		-1 -> sub::(loop (theta,sub'::theta'))
+	      |	1 -> sub'::(loop (sub::theta,theta'))
+	      |	0 ->
+		  (match (sub,sub',merge_sub sub sub') with
+		    (_,_,None) -> raise SUBST_MISMATCH
+		  | (A.Subst(_,_),A.Subst(_,_),Some s) ->
+		      loop (s@theta,theta')
+		  | (A.NegSubst(_,_),A.Subst(_,_),_) ->
+		      loop (theta,sub'::theta')
+		  | (A.Subst(_,_),A.NegSubst(_,_),_) ->
+		      loop (sub::theta,theta')
+		  | (A.NegSubst(_,_),A.NegSubst(_,_),Some s) ->
+		      s@(loop (theta,theta')))
+	      |	_ -> failwith "not possible") in
+	try Some(loop(theta,theta')) with SUBST_MISMATCH -> None
 ;;
 
 
@@ -415,20 +447,38 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
 let triples_conj trips trips' =
-  setify (
+  let sort_state = compare in
+  let sorter (s1,_,_) (s2,_,_) = sort_state s1 s2 in
+  let rec classify = function
+      [] -> []
+    | ((s1,_,_) as x)::rest ->
+	(match classify rest with
+	  [] -> [(s1,[x])]
+	| (s2,l)::rest when sort_state s1 s2 = 0 -> (s2,x::l)::rest
+	| rest -> (s1,[x])::rest) in
+  let trips = classify(List.sort sorter trips) in
+  let trips' = classify(List.sort sorter trips') in
+  let process_one_state trips trips' acc =
     List.fold_left
       (function rest ->
 	 function (s1,th1,wit1) ->
 	   List.fold_left
 	     (function rest ->
-		function (s2,th2,wit2) ->
-		  if (s1 = s2) then
-		    match (conj_subst th1 th2) with
-		      | Some th -> (s1,th,union_wit wit1 wit2)::rest
-		      | _       -> rest
-		  else rest)
+		function (_,th2,wit2) ->
+		  match (conj_subst th1 th2) with
+		  | Some th -> (s1,th,union_wit wit1 wit2)::rest
+		  | _       -> rest)
 	     rest trips')
-      [] trips)
+      acc trips in
+  let rec loop = function
+      ([],_) | (_,[]) -> []
+    | ((s1,l1)::trips,(s2,l2)::trips') ->
+	(match sort_state s1 s2 with
+	  -1 -> loop (trips,(s2,l2)::trips')
+	| 1 -> loop ((s1,l1)::trips,trips')
+	| 0 -> process_one_state l1 l2 (loop (trips,trips'))
+	| _ -> failwith "not possible") in
+  loop (trips,trips')
 ;;
 
 (* *************************** *)
