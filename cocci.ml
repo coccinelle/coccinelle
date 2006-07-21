@@ -191,7 +191,6 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     program +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
-	  Printf.printf "starting a new function\n";
           (* Cos caml regexp dont like \n ... *)
           let str = Str.global_replace (Str.regexp "\n") " " s in 
           (* Call the engine algorithms only if have found a flag word. *)
