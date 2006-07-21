@@ -1,10 +1,20 @@
 @@
-identifier v;
-expression E1;
+expression E, E1, E2;
 @@
 
-- if (copy_from_user(&v,arg,sizeof(v)) != 0)
--   {
--     ret(E1);
--   }
-
+main(int x) {
+  <...
+   {
+   ...
+-  x();
+   ...
+-  if (f()) return E1;
+   <...
+-   g(E)
++   h(E)
+    ...>
+?- if (i()) return E2;
+   ...
+   }
+  ...>
+}

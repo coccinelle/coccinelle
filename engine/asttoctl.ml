@@ -58,6 +58,8 @@ let get_list_option fn = function
 (* --------------------------------------------------------------------- *)
 (* Eliminate OptStm *)
 
+(* for optional thing with nothing after, should check that the optional thing
+never occurs.  otherwise the matchig stops before it occurs *)
 let elim_opt =
   let mcode x = x in
   let donothing r k e = k e in
@@ -642,7 +644,24 @@ and statement nest (* not used *) quantified stmt unchecked
 	dots_stmt nest quantified stmt_dots true [] [] None in
       (match after with
 	None -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern))
-      |	Some after -> wrapAU(wrapOr(dots_pattern,wrapNot udots_pattern),after))
+      |	Some after ->
+	  if unchecked
+	  then
+	    wrapAU(wrapOr(dots_pattern,wrapNot udots_pattern),
+		   wrapOr(after,aftret))
+	  else
+	    let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
+	    let left =
+	      match notbefore@notafter with
+		[] -> left
+	      |	x::xs ->
+		  wrapAnd
+		    (wrapNot
+		       (List.fold_left
+			  (function rest -> function cur -> wrapOr(cur,rest))
+			  x xs),
+		     left) in
+	    wrapAU(left,wrapOr(after,aftret)))
   | Ast.Dots((_,i,d),whencodes,tmp_whencode) ->
       let dot_code =
 	match d with

@@ -503,7 +503,14 @@ let compatible_states = function
 
 (* Conjunction on triples with "special states" *)
 let triples_state_conj trips trips' =
-    setify (
+  let posneg = function (PosState s,_,_) -> true | (NegState s,_,_) -> false in
+  let (pos,neg) = List.partition posneg trips in
+  let (pos',neg') = List.partition posneg trips' in
+  let pos_clean =
+    function (PosState s,th,w) -> (s,th,w) | _ -> failwith "impossible" in
+  let posclean = List.map pos_clean pos in
+  let posclean' = List.map pos_clean pos' in
+  let posnegconj acc trips trips' =
     List.fold_left
       (function rest ->
 	 function (s1,th1,wit1) ->
@@ -517,7 +524,14 @@ let triples_state_conj trips trips' =
 		      | _       -> rest)
 		  | _ -> rest)
 	     rest trips')
-      [] trips)
+      acc trips in
+  let posposres = (* should be more efficient, because uses sorting *)
+    List.map (function (s,th,w) -> (PosState s,th,w))
+      (triples_conj posclean posclean') in
+  let posnegres = posnegconj posposres pos neg' in
+  let negposres = posnegconj posnegres neg pos' in
+  let negnegres = posnegconj negposres neg neg' in
+  setify negnegres
 ;;
 
 let triple_negate (s,th,wits) = 

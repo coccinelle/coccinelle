@@ -20,14 +20,14 @@ static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
   else if (cmd == VIDIOCSTUNER) {
     struct video_tuner v;
     if (copy_from_user(v, arg, size_of(v)))
-      return -EFAULT; else {}
+      return -EFAULT;
     if (v.tuner != 0)
       return -EINVAL;
     /* Only 1 tuner so no setting needed ! */
   } else return -ENOIOCTLCMD; /*
   else if(cmd == VIDIOCSFREQ) {
     if (copy_from_user(typhoon->curfreq, arg, size_of(typhoon->curfreq)))
-      return -EFAULT; else {}
+      return -EFAULT;
     typhoon_setfreq(typhoon, typhoon->curfreq);
     return 0;
   }*/

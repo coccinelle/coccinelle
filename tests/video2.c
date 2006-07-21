@@ -1,22 +1,29 @@
-static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
-{
-  struct typhoon_device *typhoon = dev->priv;
-  
-  if (cmd == VIDIOCGTUNER) {
-    struct video_tuner v;
-    if (copy_from_user(&v, arg, sizeof(v)) != 0)
-      {ret(-EFAULT);}
-    if (v.tuner)	/* Only 1 tuner */
-      return -EINVAL;
-    v.rangelow = 875 * 1600;
-    v.rangehigh = 1080 * 1600;
-    v.flags = VIDEO_TUNER_LOW;
-    v.mode = VIDEO_MODE_AUTO;
-    v.signal = 0xFFFF;	/* We can't get the signal strength */
-    strcpy(v.name, "FM");
-    if (copy_to_user(arg, &v, sizeof(v)))
-      {ret(-EFAULT);}
-    return 0;
+int main(int x) {
+  if (x == 1) {
+    x();
+    if (f()) return 12;
+    if (g(1)) return 15;
+    g(1);
+    g(2);
+    y();
+    if (i()) return 120;
+    g(2);
   }
-  return -ENOIOCTLCMD;
+  else if (x == 2) {
+    x();
+    if (f()) return 16;
+    x();
+    y();
+    if (i()) return 160;
+    g(2);
+  }
+  else if (x == 3) {
+    x();
+    if (f()) return 20;
+    x();
+    g(1);
+    y();
+    g(2);
+  }
+  else return 0;
 }

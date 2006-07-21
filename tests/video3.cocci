@@ -1,10 +1,29 @@
 @@
+local function ioctlfn;
+identifier dev, cmd, arg;
 identifier v;
-expression E1;
+type T;
+identifier fld;
+expression E, E1, E2;
+statement S;
 @@
 
-- if (copy_from_user(arg) != 0)
--   {
--     ret(E1);
--   }
-
+  ioctlfn(
+        struct video_device *dev,
+        unsigned int cmd, void *arg) {
+    <...
+     {
+      ...
+-     T v;
++     T *v;
+      ...
+-     if (copy_from_user(v,arg,size_of(v)) != 0) return E1;
+      <...
+-     v.fld
++     v->fld
+      ...>
+?-    if (copy_to_user(arg,v,size_of(v))) return E2;
+      ...
+     }
+    ...>
+  }
