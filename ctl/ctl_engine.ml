@@ -642,19 +642,27 @@ let satAX m s = pre_forall m s
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU m s1 s2 = 
-  let f y = 
-    let first = pre_forall m y in
-    let second = triples_conj s1 first in
-    triples_union s2 second in
-  let res = setfix f s2 in		(* NOTE: is [] right? *)
-  res
+  if s1 = []
+  then s2
+  else
+    let f y = 
+      let first = pre_forall m y in
+      let second = triples_conj s1 first in
+      triples_union s2 second in
+    let res = setfix f s2 in		(* NOTE: is [] right? *)
+    res
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU m s1 s2 = 
-  let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
-  setfix f s2                		(* NOTE: is [] right? *)
+  if s1 = []
+  then s2
+  else
+    let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
+    setfix f s2                		(* NOTE: is [] right? *)
 ;;
+
+type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 
 let rec satloop ((grp,label,states) as m) phi env check_conj =
   let rec loop phi =
@@ -667,11 +675,18 @@ let rec satloop ((grp,label,states) as m) phi env check_conj =
     | A.Or(phi1,phi2)      ->
 	triples_union (loop phi1) (loop phi2)
     | A.And(phi1,phi2)     ->
-	let phi1res = loop phi1 in
-	let phi2res = loop phi2 in
-	let res = triples_conj phi1res phi2res in
-	check_conj phi phi1res phi2res res;
-	res
+	(* phi1 is considered to be more likely to be [], because of the
+	   definition of asttoctl.  Could use heuristics such as the size of
+	   the term *)
+	(match loop phi1 with
+	  [] -> []
+	| phi1res ->
+	    (match loop phi2 with
+	      [] -> []
+	    | phi2res ->
+		let res = triples_conj phi1res phi2res in
+		check_conj phi phi1res phi2res res;
+		res))
     | A.EX(phi)            -> satEX m (loop phi)
     | A.AX(phi)            -> satAX m (loop phi)
     | A.EF(phi)            ->
@@ -681,14 +696,25 @@ let rec satloop ((grp,label,states) as m) phi env check_conj =
     | A.AG(phi1)           ->(* should rewrite to only do propagate_neg once *)
 	loop (A.rewrap phi
 		(A.Not(A.rewrap phi (A.EF(A.rewrap phi (A.Not phi1))))))
-    | A.EU(phi1,phi2)      -> satEU m (loop phi1) (loop phi2)
-    | A.AU(phi1,phi2)      -> satAU m (loop phi1) (loop phi2)
-      (* old: satAF m (satloop m phi2 env) *)
+    | A.EU(phi1,phi2)      ->
+	(match loop phi2 with
+	  [] -> []
+	| s2 -> satEU m (loop phi1) s2)
+    | A.AU(phi1,phi2)      ->
+	(match loop phi2 with
+	  [] -> []
+	| s2 -> satAU m (loop phi1) s2)
     | A.Implies(phi1,phi2) ->
 	loop (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
     | A.Exists (v,phi)     -> triples_witness v (loop phi)
-    | A.Let(v,phi1,phi2)   -> satloop m phi2 ((v,(loop phi1)) :: env)check_conj
-    | A.Ref(v)             -> List.assoc v env in
+    | A.Let(v,phi1,phi2)   ->
+	satloop m phi2 ((v,ref (Frozen phi1)) :: env) check_conj
+    | A.Ref(v)             ->
+	let cell = List.assoc v env in
+	(match !cell with
+	  Thawed v -> v
+	| Frozen phi -> let res = loop phi in cell := Thawed res; res) in
+  
   loop phi
 ;;    
 
@@ -716,11 +742,14 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
 	Printf.printf "or\n"; flush stdout;
 	anno (triples_union res1 res2) [child1; child2]
     | A.And(phi1,phi2)     -> 
-	Printf.printf "in conjunction\n";
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	Printf.printf "and\n"; flush stdout;
-	anno (triples_conj res1 res2) [child1; child2]
+	(match satv phi1 env with
+	  (child1,[]) -> anno [] [child1]
+	| (child1,res1) ->
+	    (match satv phi2 env with
+	      (child2,[]) -> anno [] [child1;child2]
+	    | (child2,res2) ->
+		Printf.printf "and\n"; flush stdout;
+		anno (triples_conj res1 res2) [child1; child2]))
     | A.EX(phi1)           -> 
 	let (child,res) = satv phi1 env in
 	Printf.printf "EX\n"; flush stdout;
@@ -759,15 +788,19 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
 	     env check_conj)
 	  [child]
     | A.EU(phi1,phi2)      -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	Printf.printf "EU\n"; flush stdout;
-	anno (satEU m res1 res2) [child1; child2]
+	(match satv phi2 env with
+	  (child2,[]) -> anno [] [child2]
+	| (child2,res2) ->
+	    let (child1,res1) = satv phi1 env in
+	    Printf.printf "EU\n"; flush stdout;
+	    anno (satEU m res1 res2) [child1; child2])
     | A.AU(phi1,phi2)      -> 
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 env in
-	Printf.printf "AU\n"; flush stdout;
-	anno (satAU m res1 res2) [child1; child2]
+	(match satv phi2 env with
+	  (child2,[]) -> anno [] [child2]
+	| (child2,res2) ->
+	    let (child1,res1) = satv phi1 env in
+	    Printf.printf "AU\n"; flush stdout;
+	    anno (satAU m res1 res2) [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	let (child1,_) = satv phi1 env in
 	let (child2,_) = satv phi2 env in
@@ -780,10 +813,17 @@ let rec sat_verbose_loop annot maxlvl lvl ((_,label,states) as m) phi env
 	let (child,res) = satv phi1 env in
 	anno (triples_witness v res) [child]
     | A.Let(v,phi1,phi2)   ->
-	let (child1,res1) = satv phi1 env in
-	let (child2,res2) = satv phi2 ((v,res1) :: env) in
-	anno res2 [child1;child2]
-    | A.Ref(v)             -> anno (List.assoc v env) []
+	let (child2,res2) = satv phi2 ((v,ref (Frozen phi1)) :: env) in
+	anno res2 [child2]
+    | A.Ref(v)             ->
+	let cell = List.assoc v env in
+	(match !cell with
+	  Thawed v -> anno v []
+	| Frozen phi ->
+	    let (child,res) = satv phi env in
+	    cell := Thawed res;
+	    anno res [child])
+	
 ;;
 
 let sat_verbose annotate maxlvl lvl m phi check_conj =
