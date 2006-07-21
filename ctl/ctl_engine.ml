@@ -646,14 +646,14 @@ let satAU m s1 s2 =
     let first = pre_forall m y in
     let second = triples_conj s1 first in
     triples_union s2 second in
-  let res = setfix f [] in		(* NOTE: is [] right? *)
+  let res = setfix f s2 in		(* NOTE: is [] right? *)
   res
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU m s1 s2 = 
   let f y = triples_union s2 (triples_conj s1 (pre_exist m y)) in 
-  setfix f []                		(* NOTE: is [] right? *)
+  setfix f s2                		(* NOTE: is [] right? *)
 ;;
 
 let rec satloop ((grp,label,states) as m) phi env check_conj =
