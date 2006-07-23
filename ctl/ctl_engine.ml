@@ -670,10 +670,8 @@ let satEF ((_,_,states) as m) s = satEU m (triples_top states) s
 
 let satAG ((_,_,states) as m) s = satAU m s (triples_top states)
 
-(* dropping negative witnesses doesn't seem to help at all, probably because
-there are now very few of them. *)
-let drop_wits keep_negwits s = s
-(*  let contains_poswits =
+let drop_wits keep_negwits s =
+  let contains_poswits =
     List.exists
       (function
 	  A.Wit(_,_,_,_) -> print_state "dropping a witness" s; true
@@ -688,7 +686,7 @@ let drop_wits keep_negwits s = s
       if keep_negwits
       then not(contains_poswits wits)
       else not(contains_negwits wits))
-    s *)
+    s
 
 type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 
