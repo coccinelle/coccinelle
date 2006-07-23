@@ -361,36 +361,21 @@ let conj_subst theta theta' =
     | ([],_) -> Some theta'
     | (_,[]) -> Some theta
     | _ ->
-	let sorter s s' =
-	  match compare (dom_sub s) (dom_sub s') with
-	    0 ->
-	      (match (s,s') with
-		(A.Subst(_,_),A.NegSubst(_,_)) -> -1
-	      |	(A.NegSubst(_,_),A.Subst(_,_)) -> 1
-	      |	_ -> 0)
-	  | res -> res in
-	let theta = List.sort sorter theta in
-	let theta' = List.sort sorter theta' in
-	let rec loop = function
-	    ([],theta') -> theta'
-	  | (theta,[]) -> theta
-	  | (sub::theta,sub'::theta') ->
-	      (match compare (dom_sub sub) (dom_sub sub') with
-		-1 -> sub::(loop (theta,sub'::theta'))
-	      |	1 -> sub'::(loop (sub::theta,theta'))
-	      |	0 ->
-		  (match (sub,sub',merge_sub sub sub') with
-		    (_,_,None) -> raise SUBST_MISMATCH
-		  | (A.Subst(_,_),A.Subst(_,_),Some s) ->
-		      loop (s@theta,theta')
-		  | (A.NegSubst(_,_),A.Subst(_,_),_) ->
-		      loop (theta,sub'::theta')
-		  | (A.Subst(_,_),A.NegSubst(_,_),_) ->
-		      loop (sub::theta,theta')
-		  | (A.NegSubst(_,_),A.NegSubst(_,_),Some s) ->
-		      s@(loop (theta,theta')))
-	      |	_ -> failwith "not possible") in
-	try Some(loop(theta,theta')) with SUBST_MISMATCH -> None
+	try
+	  Some (clean_subst (
+		  foldl
+		    (function rest ->
+		       function sub ->
+			 foldl
+			   (function rest ->
+			      function sub' ->
+				match (merge_sub sub sub') with
+				  | Some subs -> 
+				      subs @ rest
+				  | _       -> raise SUBST_MISMATCH)
+			   rest theta')
+		    [] theta))
+	with SUBST_MISMATCH -> None
 ;;
 
 
@@ -447,38 +432,20 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 let triples_union trips trips' = unionBy eq_trip trips trips';;
 
 let triples_conj trips trips' =
-  let sort_state = compare in
-  let sorter (s1,_,_) (s2,_,_) = sort_state s1 s2 in
-  let rec classify = function
-      [] -> []
-    | ((s1,_,_) as x)::rest ->
-	(match classify rest with
-	  [] -> [(s1,[x])]
-	| (s2,l)::rest when sort_state s1 s2 = 0 -> (s2,x::l)::rest
-	| rest -> (s1,[x])::rest) in
-  let trips = classify(List.sort sorter trips) in
-  let trips' = classify(List.sort sorter trips') in
-  let process_one_state trips trips' acc =
+  setify (
     List.fold_left
       (function rest ->
 	 function (s1,th1,wit1) ->
 	   List.fold_left
 	     (function rest ->
-		function (_,th2,wit2) ->
-		  match (conj_subst th1 th2) with
-		  | Some th -> (s1,th,union_wit wit1 wit2)::rest
-		  | _       -> rest)
+		function (s2,th2,wit2) ->
+		  if (s1 = s2) then
+		    match (conj_subst th1 th2) with
+		      | Some th -> (s1,th,union_wit wit1 wit2)::rest
+		      | _       -> rest
+		  else rest)
 	     rest trips')
-      acc trips in
-  let rec loop = function
-      ([],_) | (_,[]) -> []
-    | ((s1,l1)::trips,(s2,l2)::trips') ->
-	(match sort_state s1 s2 with
-	  -1 -> loop (trips,(s2,l2)::trips')
-	| 1 -> loop ((s1,l1)::trips,trips')
-	| 0 -> process_one_state l1 l2 (loop (trips,trips'))
-	| _ -> failwith "not possible") in
-  loop (trips,trips')
+      [] trips)
 ;;
 
 (* *************************** *)
@@ -503,14 +470,7 @@ let compatible_states = function
 
 (* Conjunction on triples with "special states" *)
 let triples_state_conj trips trips' =
-  let posneg = function (PosState s,_,_) -> true | (NegState s,_,_) -> false in
-  let (pos,neg) = List.partition posneg trips in
-  let (pos',neg') = List.partition posneg trips' in
-  let pos_clean =
-    function (PosState s,th,w) -> (s,th,w) | _ -> failwith "impossible" in
-  let posclean = List.map pos_clean pos in
-  let posclean' = List.map pos_clean pos' in
-  let posnegconj acc trips trips' =
+    setify (
     List.fold_left
       (function rest ->
 	 function (s1,th1,wit1) ->
@@ -524,14 +484,7 @@ let triples_state_conj trips trips' =
 		      | _       -> rest)
 		  | _ -> rest)
 	     rest trips')
-      acc trips in
-  let posposres = (* should be more efficient, because uses sorting *)
-    List.map (function (s,th,w) -> (PosState s,th,w))
-      (triples_conj posclean posclean') in
-  let posnegres = posnegconj posposres pos neg' in
-  let negposres = posnegconj posnegres neg pos' in
-  let negnegres = posnegconj negposres neg neg' in
-  setify negnegres
+      [] trips)
 ;;
 
 let triple_negate (s,th,wits) = 
@@ -870,37 +823,6 @@ let simpleanno l phi res =
 ;;
 
 
-(* drops negwits, not always appropriate, but more concise *)
-let not_negwits triples =
-  let rec no_negwits = function
-      A.AndWits(c1,c2) | A.OrWits(c1,c2) -> no_negwits c1 && no_negwits c2
-    | A.Wit(st,th,anno,wit) -> no_negwits wit
-    | A.NegWit(_) -> false
-    | A.TopWit -> true in
-  let rec loop = function
-      A.AndWits(c1,c2) ->
-	(match (loop c1,loop c2) with
-	  (Some c1,Some c2) -> Some (A.AndWits(c1,c2))
-	| _ -> None)
-    | A.OrWits(c1,c2) ->
-	(match (loop c1,loop c2) with
-	  (Some c1,Some c2) -> Some (A.OrWits(c1,c2))
-	| (None,Some c2) -> Some c2
-	| (Some c1,None) -> Some c1
-	| _ -> None)
-    | A.Wit(st,th,anno,wit) ->
-	(match loop wit with
-	  None -> None
-	| Some wit -> Some(A.Wit(st,th,anno,wit)))
-    | A.NegWit(wit) ->
-	if no_negwits wit then None else failwith "nested negwits"
-    | A.TopWit -> Some A.TopWit in
-  List.concat
-    (List.map
-       (function (st,th,wit) ->
-	 match loop wit with None -> [] | Some wit -> [(st,th,wit)])
-       triples)
-
 (* pad: Rene, you can now use the module pretty_print_ctl.ml to
    print a ctl formula more accurately if you want.
    Use the print_xxx provided in the different module to call 
@@ -911,12 +833,11 @@ let simpleanno2 l phi res =
   begin
     Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar) false phi;
     Format.print_newline ();
-    Format.print_string "-----------------------------------------------------";
+    Format.print_string "----------------------------------------------------";
     Format.print_newline ();
-    print_generic_algo
-      (if !Flag_ctl.poswits_only then not_negwits res else res);
+    print_generic_algo res;
     Format.print_newline ();
-    Format.print_string "-----------------------------------------------------";
+    Format.print_string "----------------------------------------------------";
     Format.print_newline ();
     Format.print_newline ();
   end
