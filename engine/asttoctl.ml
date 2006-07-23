@@ -496,10 +496,12 @@ and statement nest (* not used *) quantified stmt unchecked
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
+      let not_start_brace = wrapAnd(make_raw_match lbrace,paren_pred) in
+      let not_end_brace = wrapAnd(make_raw_match rbrace,paren_pred) in
       wrapExists
 	(v,make_seq start_brace
 	   (Some(dots_stmt (nest+1) quantified body unchecked
-		   [start_brace] [end_brace]
+		   [not_start_brace] [not_end_brace]
 		   (Some (make_seq end_brace after)))))
   | Ast.IfThen(ifheader,branch) ->
 
@@ -726,13 +728,15 @@ and statement nest (* not used *) quantified stmt unchecked
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace = wrapAnd(make_match lbrace,paren_pred) in
       let end_brace = wrapAnd(make_match rbrace,paren_pred) in
+      let not_start_brace = wrapAnd(make_raw_match lbrace,paren_pred) in
+      let not_end_brace = wrapAnd(make_raw_match rbrace,paren_pred) in
       quantify bfvs
 	(make_seq function_header
 	   (Some
 	      (wrapExists
 		 (v,(make_seq start_brace
 		       (Some(dots_stmt (nest + 1) new_quantified body
-			       unchecked [start_brace] [end_brace]
+			       unchecked [not_start_brace] [not_end_brace]
 			       (Some(make_seq end_brace after)))))))))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n";

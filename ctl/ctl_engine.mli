@@ -52,7 +52,7 @@ module CTL_ENGINE :
 	      Ast_ctl.generic_witnesstree
 
 	type ('pred,'anno) triples =
-	    (G.node * substitution * ('pred,'anno) witness) list
+	    (G.node * substitution * ('pred,'anno) witness list) list
 
         val sat :
           G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->

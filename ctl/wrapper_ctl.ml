@@ -106,59 +106,30 @@ struct
 	  match sub with
 	    | A.Subst(x,v)    -> A.Subst(x,ClassicVal(v))
 	    | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
-	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),A.TopWit) in
+	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),[]) in
         List.map conv_trip (oldlabelfunc p)
 
-  (* Collects, unwraps, and filters witness trees *)
-  (* NOTE: only makes sense specifically for coccinelle generated CTL *)
   (* FIX ME: what about negative witnesses and negative substitutions *)
-
-  let rec dnf = function
-    A.AndWits(c1,c2) ->
-      let c1res = dnf c1 in
-      let c2res = dnf c2 in
-      List.fold_left
-	(function rest ->
-	  (function cur1 ->
-	    List.fold_left
-	      (function rest ->
-		(function cur2 ->
-		  let x = A.AndWits(cur1,cur2) in
-		  if List.mem x rest then rest else x::rest))
-	      rest c2res))
-	[] c1res
-  | A.OrWits(c1,c2) -> Common.union_set (dnf c1) (dnf c2)
-  | A.Wit(st,th,anno,wit) ->
-      List.map (function wit -> A.Wit(st,th,anno,wit)) (dnf wit)
-  | A.NegWit(wit) -> (* already pushed in as far as possible *)
-      List.map (function wit -> A.NegWit wit) (dnf wit)
-  | A.TopWit -> [A.TopWit]
-
   exception NEGATIVE_WITNESS
-  let unwrap_wits wit =
+  let unwrap_wits wits =
     let mkth th =
       Common.map_filter
 	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
 	th in
-    let wits = dnf wit in
     let rec no_negwits = function
-	A.AndWits(c1,c2) | A.OrWits(c1,c2) -> no_negwits c1 && no_negwits c2
-      | A.Wit(st,th,anno,wit) -> no_negwits wit
-      | A.NegWit(_) -> false
-      | A.TopWit -> true in
+	A.Wit(st,th,anno,wit) -> List.for_all no_negwits wit
+      | A.NegWit(_) -> false in
     let rec loop neg acc = function
-	A.AndWits(c1,c2) -> (loop neg acc c1) @ (loop neg acc c2)
-      | A.OrWits(_,_) -> raise (NEVER_CTL "or is not possible")
-      | A.Wit(st,[A.Subst(x,PredVal(A.Modif(v)))],anno,wit) ->
+	A.Wit(st,[A.Subst(x,PredVal(A.Modif(v)))],anno,wit) ->
 	  (match wit with
-	    A.TopWit -> [(st,acc,v)]
+	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
-      | A.Wit(st,th,anno,wit) -> loop neg ((mkth th) @ acc) wit
-      | A.NegWit(wit) ->
-	  if no_negwits wit
+      | A.Wit(st,th,anno,wit) ->
+	  List.concat (List.map (loop neg ((mkth th) @ acc)) wit)
+      | A.NegWit(st,th,anno,wit) ->
+	  if List.for_all no_negwits wit
 	  then raise NEGATIVE_WITNESS
-	  else raise (TODO_CTL "nested negative witnesses")
-      | A.TopWit -> [] in
+	  else raise (TODO_CTL "nested negative witnesses") in
     List.concat
       (List.map
 	 (function wit -> try loop false [] wit with NEGATIVE_WITNESS -> [])
@@ -170,16 +141,14 @@ struct
   (* Limitation: this only gives information about terms with PredVals, which
      can be optimized to only those with modifs *)
   let collect_predvar_bindings res =
-    let wits = List.map (fun (_,_,w) -> w) res in
+    let wits = List.concat (List.map (fun (_,_,w) -> w) res) in
     let rec loop = function
-	A.AndWits(c1,c2) | A.OrWits(c1,c2) -> (loop c1) @ (loop c2)
-      | A.Wit(st,th,anno,wit) ->
+	A.Wit(st,th,anno,wit) ->
 	  (Common.map_filter
 	    (function A.Subst(_,(PredVal(_) as x)) -> Some (st,x) | _ -> None)
 	    th) @
-	  (loop wit)
-      | A.NegWit(wit) -> loop wit
-      | A.TopWit -> [] in
+	  (List.concat (List.map loop wit))
+      | A.NegWit(st,th,anno,wit) -> loop (A.Wit(st,th,anno,wit)) in
     List.fold_left Common.union_set [] (List.map loop wits)
 
   let check_conjunction phipsi res_phi res_psi res_phipsi =

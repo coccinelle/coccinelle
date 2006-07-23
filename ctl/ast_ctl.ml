@@ -45,15 +45,10 @@ type ('mvar,'value) generic_subst =
 type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list;;
 
 type ('state,'subst,'anno) generic_witnesstree =
-    AndWits of
-      ('state,'subst,'anno) generic_witnesstree *
-	('state,'subst,'anno) generic_witnesstree
-  | OrWits of
-      ('state,'subst,'anno) generic_witnesstree *
-	('state,'subst,'anno) generic_witnesstree
-  | Wit of 'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree
-  | NegWit of ('state,'subst,'anno) generic_witnesstree
-  | TopWit
+    Wit of
+      'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree list
+  | NegWit of
+      'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree list
 
 (* ---------------------------------------------------------------------- *)
 

@@ -1,9 +1,9 @@
 void main(int foo) {
 
   f(1);
-  //f(1); // if uncoment then problems
+  x();
   g(2);
-  g(2);// if uncomment then problems
+  x();
   if(1) {
     h(3);
   } else {

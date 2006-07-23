@@ -4,7 +4,7 @@ identifier dev, cmd, arg;
 identifier v;
 type T;
 identifier fld;
-expression E, E1, E2;
+expression E;
 statement S;
 @@
 
@@ -17,12 +17,12 @@ statement S;
 -     T v;
 +     T *v;
       ...
--     if (copy_from_user(v,arg,size_of(v)) != 0) return E1;
+-     if (copy_from_user(v,arg,size_of(v)) != 0) return ...;
       <...
 -     v.fld
 +     v->fld
       ...>
-?-    if (copy_to_user(arg,v,size_of(v))) return E2;
+?-    if (copy_to_user(arg,v,size_of(v))) return ...;
       ...
      }
     ...>
