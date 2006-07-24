@@ -641,7 +641,10 @@ let satAU m s1 s2 =
   if s1 = []
   then s2
   else
+    let ctr = ref 0 in
     let f y = 
+      ctr := !ctr + 1;
+(*      print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
       let first = pre_forall m y in
       let second = triples_conj s1 first in
       triples_union s2 second in
@@ -670,23 +673,18 @@ let satEF ((_,_,states) as m) s = satEU m (triples_top states) s
 
 let satAG ((_,_,states) as m) s = satAU m s (triples_top states)
 
+(* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
+info other than the witness *)
 let drop_wits keep_negwits s =
-  let contains_poswits =
-    List.exists
-      (function
-	  A.Wit(_,_,_,_) -> print_state "dropping a witness" s; true
-	| _ -> false) in
   let contains_negwits =
     List.exists
       (function
-	  A.NegWit(_,_,_,_) -> print_state "dropping a witness" s; true
+	  A.NegWit(_,_,_,_) -> (* print_state "dropping a witness" s; *) true
 	| _ -> false) in
-  List.filter
-    (function (s,th,wits) ->
-      if keep_negwits
-      then not(contains_poswits wits)
-      else not(contains_negwits wits))
-    s
+  if keep_negwits
+  then (* under a negation *) s
+  else (* not under a negation *)
+    List.filter (function (s,th,wits) -> not(contains_negwits wits)) s
 
 type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 

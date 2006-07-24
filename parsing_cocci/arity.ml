@@ -367,7 +367,7 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.MetaType(name))
-  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
+  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) | Ast0.Unknown ->
       failwith "unexpected code"
 
 and typeC tgt ty = top_typeC tgt false ty

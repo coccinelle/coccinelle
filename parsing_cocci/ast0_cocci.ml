@@ -90,7 +90,7 @@ type base_expression =
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
 
-and expression = base_expression wrap
+and expression = base_expression wrap * typeC
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -107,6 +107,7 @@ and base_typeC =
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
+  | Unknown         (* for metavariables *)
 
 and tagged_string = string mcode
 
