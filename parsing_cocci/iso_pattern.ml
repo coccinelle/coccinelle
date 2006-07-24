@@ -246,6 +246,8 @@ and match_typeC context_required pattern t =
 	| (_,Ast0.UniqueType(tyb))
 	| (_,Ast0.MultiType(tyb)) ->
 	    match_typeC context_required pattern tyb
+	| (Ast0.Unknown,_)
+	| (_,Ast0.Unknown) -> failwith "only in metavariable"
 	| _ -> return false
       else return false
 

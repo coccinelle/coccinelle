@@ -253,6 +253,7 @@ and typeC t =
       let ty = typeC ty in mkres t (Ast0.UniqueType(ty)) ty ty
   | Ast0.MultiType(ty) ->
       let ty = typeC ty in mkres t (Ast0.MultiType(ty)) ty ty
+  | Ast0.Unknown -> failwith "only for metavariables"
 	
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)

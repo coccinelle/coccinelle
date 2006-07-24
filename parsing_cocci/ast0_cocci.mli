@@ -105,6 +105,7 @@ and base_typeC =
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
+  | Unknown         (* for metavariables *)
 
 and tagged_string = string mcode
 

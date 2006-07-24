@@ -241,6 +241,7 @@ and fullType ft =
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
   | Ast.MultiType(ty) -> print_string "\\+"; fullType ty
+  | Ast.Unknown -> print_string "unknown"
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -251,8 +252,8 @@ and typeC ty =
       mcode print_string rb
   | Ast.StructUnionName(name,kind) ->
       mcode structUnion kind; mcode print_string name; print_string " "
-  | Ast.TypeName(name)-> mcode print_string name; print_string " "
-  | Ast.MetaType(name)-> mcode print_string name; print_string " "
+  | Ast.TypeName(name) -> mcode print_string name; print_string " "
+  | Ast.MetaType(name) -> mcode print_string name; print_string " "
 
 and baseType = function
     Ast.VoidType -> print_string "void "

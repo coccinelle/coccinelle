@@ -175,7 +175,8 @@ and typeC t =
       | Ast0.MetaType(name)-> mcode print_string name; print_string " "
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
-      | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)
+      | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty
+      |	Ast0.Unknown -> print_string "unknown")
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)

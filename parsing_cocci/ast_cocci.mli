@@ -139,6 +139,7 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType
+  | Unknown         (* for metavariables *)
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
@@ -320,4 +321,3 @@ val unwrap : 'a wrap -> 'a
 val get_line : 'a wrap -> line
 
 val make_meta_rule_elem : string -> mcodekind -> rule_elem
-

@@ -142,7 +142,8 @@ let combiner bind option_default
       | Ast0.MetaType(name) -> string_mcode name
       | Ast0.OptType(ty) -> typeC ty
       | Ast0.UniqueType(ty) -> typeC ty
-      | Ast0.MultiType(ty) -> typeC ty in
+      | Ast0.MultiType(ty) -> typeC ty
+      |	Ast0.Unknown -> option_default in
     tyfn all_functions k t
   and declaration d =
     let k d =
@@ -404,7 +405,8 @@ let rebuilder = fun
 	| Ast0.MetaType(name) -> Ast0.MetaType(string_mcode name)
 	| Ast0.OptType(ty) -> Ast0.OptType(typeC ty)
 	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)
-	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)) in
+	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)
+	| Ast0.Unknown -> Ast0.Unknown) in
     tyfn all_functions k t
   and declaration d =
     let k d =

@@ -245,7 +245,8 @@ and typeC t =
     | Ast0.BaseType(ty,sign) ->
 	Ast.Type(None,rewrap t(Ast.BaseType(mcode ty,get_option mcode sign)))
     | Ast0.Pointer(ty,star) ->
-	Ast.Type(None,rewrap t(Ast.Pointer(typeC ty,mcode star)))
+	Ast.Type
+	  (None,rewrap t(Ast.Pointer(typeC ty,mcode star)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
 		 rewrap t
@@ -257,7 +258,8 @@ and typeC t =
     | Ast0.MetaType(name) -> Ast.Type(None,rewrap t (Ast.MetaType(mcode name)))
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
-    | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty))
+    | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty)
+    | Ast0.Unknown -> Ast.Unknown)
     
 and base_typeC t =
   rewrap t

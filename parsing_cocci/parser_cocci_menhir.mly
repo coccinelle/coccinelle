@@ -250,6 +250,11 @@ metadec:
 | TExpression Tlist
     { (function arity -> function name ->
         !Data.add_explist_meta name; Ast.MetaExpListDecl(arity,name)) }
+| TExpression m=nonempty_list(TMul)
+    { (function arity -> function name ->
+        !Data.add_exp_meta
+	(Some [pointerify (Ast0.wrap Ast0.Unknown) m (startofs(m))]) name;
+        Ast.MetaExpDecl(arity,name)) }
 | TStatement
     { (function arity -> function name ->
         !Data.add_stm_meta name; Ast.MetaStmDecl(arity,name)) }

@@ -141,7 +141,8 @@ let combiner bind option_default
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty
-      | Ast.MultiType(ty) -> fullType ty in
+      | Ast.MultiType(ty) -> fullType ty
+      |	Ast.Unknown -> option_default in
     ftfn all_functions k ft
 	  
   and typeC ty =
@@ -149,7 +150,8 @@ let combiner bind option_default
       match Ast.unwrap ty with
 	Ast.BaseType(ty,sgn) ->
 	  bind (get_option sign_mcode sgn) (base_mcode ty)
-      | Ast.Pointer(ty,star) -> bind (fullType ty) (string_mcode star)
+      | Ast.Pointer(ty,star) ->
+	  bind (fullType ty) (string_mcode star)
       | Ast.Array(ty,lb,size,rb) ->
 	  multibind [fullType ty; string_mcode lb;
 		      get_option expression size; string_mcode rb]
@@ -443,7 +445,8 @@ let rebuilder
 	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)
-	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)) in
+	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)
+	| Ast.Unknown -> Ast.Unknown) in
     ftfn all_functions k ft
 	  
   and typeC ty =
@@ -452,7 +455,8 @@ let rebuilder
 	(match Ast.unwrap ty with
 	  Ast.BaseType(ty,sgn) ->
 	    Ast.BaseType (base_mcode ty,get_option sign_mcode sgn)
-	| Ast.Pointer(ty,star) -> Ast.Pointer (fullType ty, string_mcode star)
+	| Ast.Pointer(ty,star) ->
+	    Ast.Pointer (fullType ty, string_mcode star)
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)

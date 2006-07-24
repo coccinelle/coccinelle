@@ -90,7 +90,7 @@ type base_expression =
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
 
-and expression = base_expression wrap * typeC
+and expression = base_expression wrap
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

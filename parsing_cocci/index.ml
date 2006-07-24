@@ -84,6 +84,7 @@ let typeC t =
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
   | Ast0.MultiType(ty) -> [47]
+  | Ast0.Unknown -> failwith "only in metavariable"
 	
 let declaration d =
   match Ast0.unwrap d with

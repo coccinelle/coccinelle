@@ -138,6 +138,7 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType
+  | Unknown         (* for metavariables *)
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
