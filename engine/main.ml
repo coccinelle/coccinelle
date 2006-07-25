@@ -17,11 +17,12 @@ let usage =
 let main _ =
   Arg.parse speclist anonymous usage;
   if !in_file = "" then failwith "in_filename required";
-  let (ast_lists,tables,_,fns) = Parse_cocci.process !in_file None false in
+  let (ast_lists,tables,ua,fns) = Parse_cocci.process !in_file None false in
   Ctltotex.totex !out_file
     ast_lists
     (List.map2
-       (function ast -> function (ft,ex) -> Asttoctl.asttoctl ast ft ex)
-       ast_lists (List.combine tables fns))
+       (function (ast,ft) -> function (ex,ua) ->
+	 Asttoctl.asttoctl ast ft ex ua)
+       (List.combine ast_lists tables) (List.combine fns ua))
 
 let _ = main ()

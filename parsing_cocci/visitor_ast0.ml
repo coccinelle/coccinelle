@@ -142,8 +142,7 @@ let combiner bind option_default
       | Ast0.MetaType(name) -> string_mcode name
       | Ast0.OptType(ty) -> typeC ty
       | Ast0.UniqueType(ty) -> typeC ty
-      | Ast0.MultiType(ty) -> typeC ty
-      |	Ast0.Unknown -> option_default in
+      | Ast0.MultiType(ty) -> typeC ty in
     tyfn all_functions k t
   and declaration d =
     let k d =
@@ -363,12 +362,9 @@ let rebuilder = fun
 	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
                            string_mcode rp)
 	| Ast0.MetaConst(name,ty) ->
-	    Ast0.MetaConst(string_mcode name,
-			   get_option (List.map typeC) ty)
+	    Ast0.MetaConst(string_mcode name,ty)
 	| Ast0.MetaErr(name) -> Ast0.MetaErr(string_mcode name)
-	| Ast0.MetaExpr(name,ty) ->
-	    Ast0.MetaExpr(string_mcode name,
-			  get_option (List.map typeC) ty)
+	| Ast0.MetaExpr(name,ty) -> Ast0.MetaExpr(string_mcode name,ty)
 	| Ast0.MetaExprList(name) -> Ast0.MetaExprList(string_mcode name)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)
 	| Ast0.DisjExpr(starter,expr_list,ender) ->
@@ -405,8 +401,7 @@ let rebuilder = fun
 	| Ast0.MetaType(name) -> Ast0.MetaType(string_mcode name)
 	| Ast0.OptType(ty) -> Ast0.OptType(typeC ty)
 	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)
-	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)
-	| Ast0.Unknown -> Ast0.Unknown) in
+	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)) in
     tyfn all_functions k t
   and declaration d =
     let k d =

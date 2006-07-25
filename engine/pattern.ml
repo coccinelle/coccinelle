@@ -438,9 +438,12 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.MetaExpr (ida, opttypa),  ((expr, opttypb, ii) as expb) -> 
       (match opttypa, opttypb with
       | None, _ -> return true
-      | Some tas, Some tb -> 
+      | Some (tas : Type_cocci.typeC list), Some tb -> 
+	  failwith "type matching not supported"
+	  (*
           tas +> List.fold_left (fun acc ta -> acc >||>  match_ft_ft ta tb) 
             (return false)
+	     *)
       | Some _, None -> 
           failwith ("I have not the type information. Certainly a pb in " ^
                     "annotate_typer.ml")

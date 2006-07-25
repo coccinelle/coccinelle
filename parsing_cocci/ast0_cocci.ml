@@ -24,7 +24,7 @@ type info = { line_start : int; line_end : int;
 
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref (* int ref is an index *)
-      * base_typeC option (* only for expressions *)
+      * Type_cocci.typeC option ref (* only for expressions *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -77,9 +77,9 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
-  | MetaConst      of string mcode * typeC list option
+  | MetaConst      of string mcode * Type_cocci.typeC list option
   | MetaErr        of string mcode
-  | MetaExpr       of string mcode * typeC list option
+  | MetaExpr       of string mcode * Type_cocci.typeC list option
   | MetaExprList   of string mcode (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list * string mcode
@@ -108,7 +108,6 @@ and base_typeC =
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
-  | Unknown         (* for metavariables *)
 
 and tagged_string = string mcode
 
@@ -249,8 +248,9 @@ let default_befaft _ =
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
-let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),None)
-let context_wrap x = (x,default_info(),ref (-1),ref (context_befaft()),None)
+let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),ref None)
+let context_wrap x =
+  (x,default_info(),ref (-1),ref (context_befaft()),ref None)
 let unwrap (x,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
 let rewrap (_,info,index,mcodekind,ty) x = (x,info,index,mcodekind,ty)
@@ -262,7 +262,7 @@ let copywrap (_,info,index,mcodekind,ty) x =
      attachable_end = info.attachable_end;
      mcode_start = info.mcode_start; mcode_end = info.mcode_end;
      column = info.column; offset = info.offset },
-   ref !index,ref !mcodekind,ty)
+   ref !index,ref !mcodekind,ref !ty)
 let get_info (_,info,_,_,_) = info
 let get_index (_,_,index,_,_) = !index
 let set_index (_,_,index,_,_) i = index := i
@@ -282,3 +282,46 @@ let undots d =
   | DOTS    e -> e
   | CIRCLES e -> e
   | STARS   e -> e
+
+(* --------------------------------------------------------------------- *)
+
+let rec ast0_type_to_type ty =
+  match unwrap ty with
+    ConstVol(cv,ty) -> Type_cocci.ConstVol(const_vol cv,ast0_type_to_type ty)
+  | BaseType(bty,None) ->
+      Type_cocci.BaseType(baseType bty,None)
+  | BaseType(bty,Some sgn) ->
+      Type_cocci.BaseType(baseType bty,Some (sign sgn))
+  | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
+  | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
+  | StructUnionName(tag,su) ->
+      Type_cocci.StructUnionName(unwrap_mcode tag,structUnion su)
+  | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
+  | MetaType(name) -> Type_cocci.MetaType(unwrap_mcode name)
+  | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
+      ast0_type_to_type ty
+
+and baseType t =
+  match unwrap_mcode t with
+    Ast.VoidType -> Type_cocci.VoidType
+  | Ast.CharType -> Type_cocci.CharType
+  | Ast.ShortType -> Type_cocci.ShortType
+  | Ast.IntType -> Type_cocci.IntType
+  | Ast.DoubleType -> Type_cocci.DoubleType
+  | Ast.FloatType -> Type_cocci.FloatType
+  | Ast.LongType -> Type_cocci.LongType
+
+and structUnion t =
+  match unwrap_mcode t with
+    Ast.Struct -> Type_cocci.Struct
+  | Ast.Union -> Type_cocci.Union
+
+and sign t =
+  match unwrap_mcode t with
+    Ast.Signed -> Type_cocci.Signed
+  | Ast.Unsigned -> Type_cocci.Unsigned
+
+and const_vol t =
+  match unwrap_mcode t with
+    Ast.Const -> Type_cocci.Const
+  | Ast.Volatile -> Type_cocci.Volatile

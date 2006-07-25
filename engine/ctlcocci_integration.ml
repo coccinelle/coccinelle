@@ -261,12 +261,13 @@ let (mysat:
         Lib_engine.label_ctlcocci *
         nodei list) -> 
        Lib_engine.ctlcocci -> 
-       (nodei * 
-        (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
-         Lib_engine.predicate) 
-       list) = 
- fun (flow, label, states) ctl -> 
-      WRAPPED_ENGINE.satbis (flow, label, states) ctl
+       Lib_engine.mvar list ->
+	 (nodei * 
+            (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+            Lib_engine.predicate) list *
+	 (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list) = 
+  fun (flow, label, states) ctl used_after -> 
+    WRAPPED_ENGINE.satbis (flow, label, states) ctl used_after
 
 
 let (satbis_to_trans_info: 

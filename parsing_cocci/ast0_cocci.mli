@@ -22,7 +22,7 @@ type info = { line_start : int; line_end : int;
 
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
-      * base_typeC option (* only for expressions *)
+      * Type_cocci.typeC option ref (* only for expressions *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -75,9 +75,9 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
-  | MetaConst      of string mcode * typeC list option
+  | MetaConst      of string mcode * Type_cocci.typeC list option
   | MetaErr        of string mcode
-  | MetaExpr       of string mcode * typeC list option
+  | MetaExpr       of string mcode * Type_cocci.typeC list option
   | MetaExprList   of string mcode (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list * string mcode
@@ -106,7 +106,6 @@ and base_typeC =
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
-  | Unknown         (* for metavariables *)
 
 and tagged_string = string mcode
 
@@ -254,3 +253,5 @@ val set_index : 'a wrap -> int -> unit
 val get_mcodekind : 'a wrap -> mcodekind
 val set_mcodekind : 'a wrap -> mcodekind -> unit
 val fresh_index : unit -> int
+
+val ast0_type_to_type : typeC -> Type_cocci.typeC

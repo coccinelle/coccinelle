@@ -21,6 +21,9 @@ let aftpred = (Lib_engine.After,CTL.Control)
 let retpred = (Lib_engine.Return,CTL.Control)
 let exitpred = (Lib_engine.ErrorExit,CTL.Control)
 
+let intersect l1 l2 = List.filter (function x -> List.mem x l2) l1
+let subset l1 l2 = List.for_all (function x -> List.mem x l2) l1
+
 (* --------------------------------------------------------------------- *)
 
 let wrap n ctl = (ctl,n)
@@ -141,7 +144,7 @@ let count_nested_braces =
 (* For A ... B, neither A nor B should occur in the code matched by the ...
 We add these to any when code associated with the dots *)
 
-let rec get_end ((_,extender) as fvinfo) f s =
+let rec get_end ((_,extender,_) as fvinfo) f s =
   match Ast.unwrap s with
     Ast.Disj(stmt_dots_list) ->
       List.concat
@@ -231,7 +234,7 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let make_match n unchecked code =
+let make_match n unchecked free_table used_after code =
   if unchecked
   then wrapPred n (Lib_engine.Match(code),CTL.Control)
   else
@@ -239,7 +242,10 @@ let make_match n unchecked code =
     if contains_modif code
     then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
     else
-      if !onlyModif
+      let any_used_after =
+	let fvs = Hashtbl.find free_table (FV.Rule_elem code) in
+	List.exists (function x -> List.mem x used_after) fvs in
+      if !onlyModif && not any_used_after
       then wrapPred n (Lib_engine.Match(code),CTL.Control)
       else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
@@ -261,7 +267,7 @@ let intersectll lst nested_list =
 
 (* notbefore and notafter are the neighbors that should not be found in a ...*)
 (* unchecked of true indicates that the neighbors are not taken into account *)
-let rec dots_stmt ((free_table,_) as fvinfo) quantified l unchecked
+let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
     notbefore notafter after =
   let n = Ast.get_line l in
   let quantify = quantify n in
@@ -296,7 +302,7 @@ let rec dots_stmt ((free_table,_) as fvinfo) quantified l unchecked
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement ((free_table,_) as fvinfo) quantified stmt unchecked
+and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
     notbefore notafter after =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
@@ -314,7 +320,7 @@ and statement ((free_table,_) as fvinfo) quantified stmt unchecked
   let and_opt = and_opt n in
   let make_cond = make_cond n in
   let quantify = quantify n in
-  let make_match = make_match n unchecked in
+  let make_match = make_match n unchecked free_table used_after in
   let make_raw_match = make_raw_match n in
 
   match Ast.unwrap stmt with
@@ -808,9 +814,6 @@ let ctlfv_table =
 	string list (* intersection of fvs of subterms *))
      Hashtbl.t)
 
-let intersect l1 l2 = List.filter (function x -> List.mem x l2) l1
-let subset l1 l2 = List.for_all (function x -> List.mem x l2) l1
-
 let rec ctl_fvs f =
   try let (fvs,_) = Hashtbl.find ctlfv_table f in fvs
   with Not_found ->
@@ -1024,7 +1027,7 @@ let letify f =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level free_table extender t =
+let top_level free_table extender used_after t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
   | Ast.INCLUDE(inc,s) -> failwith "not supported include"
@@ -1033,7 +1036,8 @@ let top_level free_table extender t =
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let _ = extender unopt in
       let _ = count_nested_braces unopt in
-      letify(statement (free_table,extender) [] unopt false [] [] None)
+      letify
+	(statement (free_table,extender,used_after) [] unopt false [] [] None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
       List.iter
@@ -1041,7 +1045,8 @@ let top_level free_table extender t =
 	  let _ = extender x in
 	  let _ = count_nested_braces x in ())
 	(Ast.undots unopt);
-      letify(dots_stmt (free_table,extender) [] unopt false [] [] None)
+      letify
+	(dots_stmt (free_table,extender,used_after) [] unopt false [] [] None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)
@@ -1065,7 +1070,7 @@ let contains_dots =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctl l free_table extender =
+let asttoctl l free_table extender used_after =
   ctr := 0;
   lctr := 0;
   sctr := 0;
@@ -1074,7 +1079,7 @@ let asttoctl l free_table extender =
       (function t ->
 	match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
       l in
-  List.map (top_level free_table extender) l
+  List.map (top_level free_table extender used_after) l
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

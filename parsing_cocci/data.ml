@@ -22,13 +22,13 @@ let add_param_meta: (string -> unit) ref =
 let add_paramlist_meta: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_const_meta: (Ast0.typeC list option -> string -> unit) ref =
+let add_const_meta: (Type_cocci.typeC list option -> string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_err_meta: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_exp_meta: (Ast0.typeC list option -> string -> unit) ref =
+let add_exp_meta: (Type_cocci.typeC list option -> string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_explist_meta: (string -> unit) ref = 

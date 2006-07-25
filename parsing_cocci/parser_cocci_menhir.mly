@@ -116,6 +116,11 @@ let pointerify ty m offset =
 	Ast0.wrap(Ast0.Pointer(inner,clt2mcode "*" offset cur)))
     ty m
 
+let ty_pointerify ty m =
+  List.fold_left
+    (function inner -> function cur -> Type_cocci.Pointer(inner))
+    ty m
+
 let startofs _ = -1
 
 %}
@@ -141,7 +146,7 @@ let startofs _ = -1
 %token <string * (Data.line_type * int * int * int)> TMetaStm TMetaStmList
 %token <string * (Data.line_type * int * int * int)> TMetaFunc TMetaLocalFunc
 %token <string * (Data.line_type * int * int * int)> TMetaExpList
-%token <string * Ast0_cocci.typeC list option *
+%token <string * Type_cocci.typeC list option *
         (Data.line_type*int*int*int)> TMetaExp TMetaConst
 %token TArobArob
 
@@ -252,8 +257,7 @@ metadec:
         !Data.add_explist_meta name; Ast.MetaExpListDecl(arity,name)) }
 | TExpression m=nonempty_list(TMul)
     { (function arity -> function name ->
-        !Data.add_exp_meta
-	(Some [pointerify (Ast0.wrap Ast0.Unknown) m (startofs(m))]) name;
+        !Data.add_exp_meta (Some [ty_pointerify Type_cocci.Unknown m]) name;
         Ast.MetaExpDecl(arity,name)) }
 | TStatement
     { (function arity -> function name ->
@@ -275,12 +279,16 @@ metadec:
         !Data.add_const_meta ty name; Ast.MetaConstDecl(arity,name)) }
 
 meta_exp_type:
-  param_ctype                             { [$1] }
-| TOBrace comma_list(param_ctype) TCBrace { $2 }
+  param_ctype
+    { [Ast0_cocci.ast0_type_to_type $1] }
+| TOBrace comma_list(param_ctype) TCBrace
+    { List.map Ast0_cocci.ast0_type_to_type $2 }
 
 const_meta_exp_type:
-  mtype                                   { [$1] }
-| TOBrace comma_list(param_ctype) TCBrace { $2 }
+  mtype
+    { [Ast0_cocci.ast0_type_to_type $1] }
+| TOBrace comma_list(param_ctype) TCBrace
+    { List.map Ast0_cocci.ast0_type_to_type $2 }
 
 arity: TBang0 { Ast.UNIQUE }
      | TWhy0  { Ast.OPT }

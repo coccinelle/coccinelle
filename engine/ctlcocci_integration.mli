@@ -22,10 +22,11 @@ val mysat :
    Lib_engine.label_ctlcocci *
    nodei list) -> 
   Lib_engine.ctlcocci -> 
+  Lib_engine.mvar list -> 
   (nodei * 
-   (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
-    Lib_engine.predicate) 
-  list
+     (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
+     Lib_engine.predicate) list *
+  (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list
 
 
 

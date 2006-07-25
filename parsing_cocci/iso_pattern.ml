@@ -12,7 +12,7 @@ let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
     let (term,info,index,mc,ty) = k e in
-    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,None) in
+    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
@@ -246,8 +246,6 @@ and match_typeC context_required pattern t =
 	| (_,Ast0.UniqueType(tyb))
 	| (_,Ast0.MultiType(tyb)) ->
 	    match_typeC context_required pattern tyb
-	| (Ast0.Unknown,_)
-	| (_,Ast0.Unknown) -> failwith "only in metavariable"
 	| _ -> return false
       else return false
 

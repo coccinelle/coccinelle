@@ -85,9 +85,10 @@ let one_flow flows = List.hd flows
 let print_flow flow = Ograph_extended.print_ograph_extended flow
 
 (* --------------------------------------------------------------------- *)
-let ctls ast ft ex =
-  List.map2 (function ast -> function (ft,ex) -> Asttoctl.asttoctl ast ft ex)
-    ast (List.combine ft ex)
+let ctls ast ft ex ua =
+  List.map2
+    (function (ast,ft) -> function (ex,ua) -> Asttoctl.asttoctl ast ft ex ua)
+    (List.combine ast ft) (List.combine ex ua)
 let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
@@ -105,7 +106,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   
   let astc     = cprogram_from_file cfile in
   
-  let (ctl, error_words) = 
+  let (ctl, error_words, used_after_list) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
 
@@ -142,12 +143,13 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                                                        ) 
         in
 
-        let ctls = (ctls astcocci free_tables extenders) in
+        let ctls = (ctls astcocci free_tables extenders used_after_lists) in
 
         if List.length ctls <> 1 
         then failwith "I handle cocci patch with only one region";
 
         let ctl = one_ctl ctls in
+	let used_after_list = List.hd used_after_lists in (* drop this! *)
 
         if !Flag.show_ctl then
           begin
@@ -157,8 +159,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                       "gv __cocci_ctl.ps &");
           end;
 
-        ctl, all_error_words
-    | Right ctl -> ctl, []
+        (ctl, all_error_words, used_after_list)
+    | Right ctl -> (ctl, [], [])
     )
   in
 
@@ -199,8 +201,10 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               if !Flag.show_flow 
               then print_flow fixed_flow;
 
-              let model_ctl  = Ctlcocci_integration.model_for_ctl flow in
-              let trans_info = Ctlcocci_integration.mysat model_ctl ctl in
+              let model_ctl  =
+		Ctlcocci_integration.model_for_ctl flow in
+              let (trans_info,_used_after_env) =
+		Ctlcocci_integration.mysat model_ctl ctl used_after_list in
               let trans_info' = 
                 Ctlcocci_integration.satbis_to_trans_info trans_info 
               in

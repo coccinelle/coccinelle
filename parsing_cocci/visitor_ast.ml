@@ -141,8 +141,7 @@ let combiner bind option_default
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty
-      | Ast.MultiType(ty) -> fullType ty
-      |	Ast.Unknown -> option_default in
+      | Ast.MultiType(ty) -> fullType ty in
     ftfn all_functions k ft
 	  
   and typeC ty =
@@ -445,8 +444,7 @@ let rebuilder
 	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)
-	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)
-	| Ast.Unknown -> Ast.Unknown) in
+	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)) in
     ftfn all_functions k ft
 	  
   and typeC ty =

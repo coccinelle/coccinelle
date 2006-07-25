@@ -309,11 +309,13 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       (match opttypa, opttypb with
       | None, _ -> ()
       | Some tas, Some tb -> 
+	  failwith "transformation on types not supported"
+	  (*
           if (not 
                 (tas +> 
                  List.exists (fun ta -> 
                    List.length (Pattern.match_ft_ft ta tb binding) >= 1)))
-          then raise NoMatch
+          then raise NoMatch *)
       | Some _, None -> 
           failwith ("I have not the type information. Certainly a pb in " ^
                     "annotate_typer.ml")

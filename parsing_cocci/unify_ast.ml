@@ -158,9 +158,6 @@ and unify_fullType ft1 ft2 =
       then unify_typeC ty1 ty2
       else return false
 
-  | (Ast.Unknown,_)
-  | (_,Ast.Unknown) -> failwith "only in metavariable"
-
   | (Ast.OptType(_),_)
   | (Ast.UniqueType(_),_)
   | (Ast.MultiType(_),_)

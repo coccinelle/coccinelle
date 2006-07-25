@@ -93,9 +93,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of string mcode * fullType list option
+  | MetaConst      of string mcode * Type_cocci.typeC list option
   | MetaErr        of string mcode
-  | MetaExpr       of string mcode * fullType list option
+  | MetaExpr       of string mcode * Type_cocci.typeC list option
   | MetaExprList   of string mcode (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -139,7 +139,6 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType
-  | Unknown         (* for metavariables *)
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option

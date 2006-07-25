@@ -204,15 +204,9 @@ let rec expression e =
 	Ast.SizeOfExpr(mcode szf,expression exp)
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
-    | Ast0.MetaConst(name,ty)  ->
-	let name = mcode name in
-	let ty = get_option (List.map typeC) ty in
-	Ast.MetaConst(name,ty)
+    | Ast0.MetaConst(name,ty)  -> Ast.MetaConst(mcode name,ty)
     | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name)
-    | Ast0.MetaExpr(name,ty)  ->
-	let name = mcode name in
-	let ty = get_option (List.map typeC) ty in
-	Ast.MetaExpr(name,ty)
+    | Ast0.MetaExpr(name,ty)  -> Ast.MetaExpr(mcode name,ty)
     | Ast0.MetaExprList(name) -> Ast.MetaExprList(mcode name)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_)     -> Ast.DisjExpr(List.map expression exps)
@@ -258,8 +252,7 @@ and typeC t =
     | Ast0.MetaType(name) -> Ast.Type(None,rewrap t (Ast.MetaType(mcode name)))
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
-    | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty)
-    | Ast0.Unknown -> Ast.Unknown)
+    | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty))
     
 and base_typeC t =
   rewrap t

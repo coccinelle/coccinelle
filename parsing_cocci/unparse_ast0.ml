@@ -120,13 +120,13 @@ let rec expression e =
       | Ast0.MetaConst(name,None) -> mcode print_string name
       | Ast0.MetaConst(name,Some ty) ->
 	  mcode print_string name; print_string "/* ";
-	  print_between (function _ -> print_string ", ") typeC ty;
+	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  print_string "*/"
       | Ast0.MetaErr(name) -> mcode print_string name
       | Ast0.MetaExpr(name,None) -> mcode print_string name
       | Ast0.MetaExpr(name,Some ty) ->
 	  mcode print_string name; print_string "/*";
-	  print_between (function _ -> print_string ", ") typeC ty;
+	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  print_string "*/"
       | Ast0.MetaExprList(name) -> mcode print_string name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
@@ -175,8 +175,7 @@ and typeC t =
       | Ast0.MetaType(name)-> mcode print_string name; print_string " "
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
-      | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty
-      |	Ast0.Unknown -> print_string "unknown")
+      | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)

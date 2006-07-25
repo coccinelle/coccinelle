@@ -51,7 +51,6 @@ struct
   module A = Ast_ctl
 
   type predicate = P.t
-
   module WRAPPER_ENV =
   struct
     type mvar = SUB.mvar
@@ -136,6 +135,27 @@ struct
 	 wits)
   ;;
 
+  let collect_used_after used_after envs =
+    let print_var var = SUB.print_mvar var; Format.print_flush() in
+    List.map
+      (function used_after_var ->
+	let vl =
+	  List.fold_left
+	    (function rest ->
+	      function env ->
+		try
+		  let vl = List.assoc used_after_var env in
+		  match rest with
+		    None -> Some vl
+		  | Some old_vl when SUB.eq_val vl old_vl -> rest
+		  | _ -> print_var used_after_var;
+		      failwith ": incompatible values"
+		with Not_found -> rest)
+	    None envs in
+	match vl with
+	  None -> print_var used_after_var; failwith ": incompatible values"
+	| Some vl -> (used_after_var, vl))
+      used_after
 	  
   (* ------------------ Partial matches ------------------ *)
   (* Limitation: this only gives information about terms with PredVals, which
@@ -183,13 +203,19 @@ struct
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-	(predicate,SUB.mvar) wrapped_ctl ->
-        (G.node * (SUB.mvar * SUB.value) list * predicate) list) = 
-    fun m phi ->
+	   (predicate,SUB.mvar) wrapped_ctl ->
+	     WRAPPER_ENV.mvar list ->
+               (G.node * (SUB.mvar * SUB.value) list * predicate) list *
+		 (WRAPPER_ENV.mvar * SUB.value) list) = 
+    fun m phi used_after ->
       let noclean = (satbis_noclean m phi) in
       flush stdout;
-	Common.uniq (
-	  List.concat (List.map (fun (_,_,w) -> unwrap_wits w) noclean))
+      let res =
+	Common.uniq
+	  (List.concat (List.map (fun (_,_,w) -> unwrap_wits w) noclean)) in
+      (res,
+       collect_used_after used_after
+	 (List.map (function (_,env,_) -> env) res))
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end

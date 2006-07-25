@@ -255,7 +255,6 @@ let rec top_expression in_nest opt_allowed tgt expr =
   | Ast0.MetaConst(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      let ty = get_option (List.map (typeC Ast0.NONE)) ty in
       make_exp expr tgt arity (Ast0.MetaConst(name,ty))
   | Ast0.MetaErr(name)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
@@ -264,7 +263,6 @@ let rec top_expression in_nest opt_allowed tgt expr =
   | Ast0.MetaExpr(name,ty)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      let ty = get_option (List.map (typeC Ast0.NONE)) ty in
       make_exp expr tgt arity (Ast0.MetaExpr(name,ty))
   | Ast0.MetaExprList(name) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
@@ -367,7 +365,7 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.MetaType(name))
-  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) | Ast0.Unknown ->
+  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
       failwith "unexpected code"
 
 and typeC tgt ty = top_typeC tgt false ty

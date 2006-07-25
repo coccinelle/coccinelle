@@ -154,13 +154,13 @@ let rec expression e =
   | Ast.MetaConst(name,None) -> mcode print_string name
   | Ast.MetaConst(name,Some ty) ->
       mcode print_string name; print_string "/* ";
-      print_between (function _ -> print_string ", ") fullType ty;
+      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string "*/"
   | Ast.MetaErr(name) -> mcode print_string name
   | Ast.MetaExpr(name,None) -> mcode print_string name
   | Ast.MetaExpr(name,Some ty) ->
       mcode print_string name; print_string "/*";
-      print_between (function _ -> print_string ", ") fullType ty;
+      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string "*/"
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -241,11 +241,10 @@ and fullType ft =
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
   | Ast.MultiType(ty) -> print_string "\\+"; fullType ty
-  | Ast.Unknown -> print_string "unknown"
 
 and typeC ty =
   match Ast.unwrap ty with
-    Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
+    Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
