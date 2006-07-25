@@ -9,7 +9,8 @@ SOURCES = flag_engine.ml unparse_cocci.ml unparse_c.ml  \
 	  ctlcocci_integration.ml
 
 # just to test asttoctl
-CTLSOURCES = lib_engine.ml asttoctl.ml ctltotex.ml main.ml
+CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
+	main.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c \
 	       -I ../parsing_cocci -I ../ctl

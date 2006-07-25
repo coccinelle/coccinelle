@@ -24,22 +24,23 @@ type info = { line_start : int; line_end : int;
 
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref (* int ref is an index *)
+      * base_typeC option (* only for expressions *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-type 'a base_dots =
+and 'a base_dots =
     DOTS of 'a list
   | CIRCLES of 'a list
   | STARS of 'a list
 
-type 'a dots = 'a base_dots wrap
+and 'a dots = 'a base_dots wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-type base_ident =
+and base_ident =
     Id of string mcode
   | MetaId of string mcode
   | MetaFunc of string mcode
@@ -53,7 +54,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-type base_expression = 
+and base_expression = 
     Ident          of ident
   | Constant       of Ast.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -248,12 +249,12 @@ let default_befaft _ =
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
-let wrap x = (x,default_info(),ref (-1),ref (default_befaft()))
-let context_wrap x = (x,default_info(),ref (-1),ref (context_befaft()))
-let unwrap (x,_,_,_) = x
+let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),None)
+let context_wrap x = (x,default_info(),ref (-1),ref (context_befaft()),None)
+let unwrap (x,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
-let rewrap (_,info,index,mcodekind) x = (x,info,index,mcodekind)
-let copywrap (_,info,index,mcodekind) x =
+let rewrap (_,info,index,mcodekind,ty) x = (x,info,index,mcodekind,ty)
+let copywrap (_,info,index,mcodekind,ty) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;
      logical_start = info.logical_start; logical_end = info.logical_end;
@@ -261,12 +262,12 @@ let copywrap (_,info,index,mcodekind) x =
      attachable_end = info.attachable_end;
      mcode_start = info.mcode_start; mcode_end = info.mcode_end;
      column = info.column; offset = info.offset },
-   ref !index,ref !mcodekind)
-let get_info (_,info,_,_) = info
-let get_index (_,_,index,_) = !index
-let set_index (_,_,index,_) i = index := i
-let get_mcodekind (_,_,_,mcodekind) = !mcodekind
-let set_mcodekind (_,_,_,mcodekind) mk = mcodekind := mk
+   ref !index,ref !mcodekind,ty)
+let get_info (_,info,_,_,_) = info
+let get_index (_,_,index,_,_) = !index
+let set_index (_,_,index,_,_) i = index := i
+let get_mcodekind (_,_,_,mcodekind,_) = !mcodekind
+let set_mcodekind (_,_,_,mcodekind,_) mk = mcodekind := mk
 
 (* --------------------------------------------------------------------- *)
 

@@ -7,7 +7,7 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
-let mkres (_,_,index,mcodekind) e (_,lstart,_,_) (_,lend,_,_) =
+let mkres (_,_,index,mcodekind,ty) e (_,lstart,_,_,_) (_,lend,_,_,_) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
@@ -19,7 +19,7 @@ let mkres (_,_,index,mcodekind) e (_,lstart,_,_) (_,lend,_,_) =
       Ast0.mcode_end = lend.Ast0.mcode_end;
       Ast0.column = lstart.Ast0.column;
       Ast0.offset = lstart.Ast0.offset } in
-  (e,info,index,mcodekind)
+  (e,info,index,mcodekind,ty)
     
 (* --------------------------------------------------------------------- *)
     
@@ -35,7 +35,7 @@ let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
       Ast0.mcode_start = Some mcodekind; Ast0.mcode_end = Some mcodekind} in
-  ((),new_info,ref (-1),ref mcodekind)
+  ((),new_info,ref (-1),ref mcodekind,None)
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =
@@ -65,9 +65,9 @@ let dot_list is_dots fn = function
       let (last_attachable,last_mcode) =
 	get_node backward
 	  (function x -> (x.Ast0.attachable_end,x.Ast0.mcode_end)) in
-      let (first_code,first_info,first_index,first_mcodekind) =
+      let (first_code,first_info,first_index,first_mcodekind,first_ty) =
 	List.hd forward in
-      let (last_code,last_info,last_index,last_mcodekind) =
+      let (last_code,last_info,last_index,last_mcodekind,last_ty) =
 	List.hd backward in
       let first_info =
 	{ first_info with
@@ -77,8 +77,9 @@ let dot_list is_dots fn = function
 	{ last_info with
 	  Ast0.attachable_end = last_attachable;
 	  Ast0.mcode_end = last_mcode } in
-      let first = (first_code,first_info,first_index,first_mcodekind) in
-      let last = (last_code,last_info,last_index,last_mcodekind) in
+      let first =
+	(first_code,first_info,first_index,first_mcodekind,first_ty) in
+      let last = (last_code,last_info,last_index,last_mcodekind,last_ty) in
       (forward,first,last)
       
 let dots is_dots prev fn d =
@@ -86,11 +87,11 @@ let dots is_dots prev fn d =
     (Some prev,Ast0.DOTS([])) ->
       mkres d (Ast0.DOTS []) prev prev
   | (None,Ast0.DOTS([])) ->
-      let (_,_,index,mcodekind) = d in
+      let (_,_,index,mcodekind,ty) = d in
       (Ast0.DOTS [],
        {(Ast0.get_info d)
        with Ast0.attachable_start = false; Ast0.attachable_end = false},
-       index,mcodekind)
+       index,mcodekind,ty)
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend

@@ -22,22 +22,23 @@ type info = { line_start : int; line_end : int;
 
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
+      * base_typeC option (* only for expressions *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-type 'a base_dots =
+and 'a base_dots =
     DOTS of 'a list
   | CIRCLES of 'a list
   | STARS of 'a list
 
-type 'a dots = 'a base_dots wrap
+and 'a dots = 'a base_dots wrap
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-type base_ident =
+and base_ident =
     Id of string mcode
   | MetaId of string mcode
   | MetaFunc of string mcode
@@ -51,7 +52,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-type base_expression = 
+and base_expression = 
     Ident          of ident
   | Constant       of Ast_cocci.constant mcode
   | FunCall        of expression * string mcode (* ( *) *

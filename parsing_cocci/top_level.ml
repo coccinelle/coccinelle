@@ -45,7 +45,7 @@ let scan_code l =
       else
 	(List.map
 	   (function
-	       (Ast0.Decl(x),_,_,_) -> Ast0.wrap (Ast0.DECL x)
+	       (Ast0.Decl(x),_,_,_,_) -> Ast0.wrap (Ast0.DECL x)
 	     | _ -> failwith "impossible")
 	   code,
 	 rest)

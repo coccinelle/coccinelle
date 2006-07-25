@@ -222,7 +222,7 @@ and fullType ft =
     Ast.Type(cv,ty) ->
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
-  | Ast.OptType(ty) | Ast.UniqueType(ty) | Ast.MultiType(ty) -> 
+  | Ast.OptType(_) | Ast.UniqueType(_) | Ast.MultiType(_) | Ast.Unknown ->
       raise CantBeInPlus
 
 and typeC ty =

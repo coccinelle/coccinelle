@@ -11,8 +11,8 @@ module V0 = Visitor_ast0
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
-    let (term,info,index,mc) = k e in
-    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS) in
+    let (term,info,index,mc,ty) = k e in
+    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,None) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
@@ -82,7 +82,7 @@ let bool_match_option f t1 t2 =
   | (None, None) -> true
   | _ -> false
 
-let is_context (_,_,_,mc) =
+let is_context (_,_,_,mc,_) =
   match !mc with Ast0.CONTEXT(cell) -> true | _ -> false
 
 let match_list fn la lb =
@@ -419,7 +419,7 @@ let make_minus =
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind") in
 
-  let donothing r k ((term,info,index,mcodekind) as e) =
+  let donothing r k ((term,info,index,mcodekind,ty) as e) =
     let e = k e in
     (match !mcodekind with
       Ast0.CONTEXT(mc) ->
@@ -431,7 +431,7 @@ let make_minus =
     | _ -> failwith "make_minus donothing: unexpected mcodekind");
     e in
 
-  let dots r k ((term,info,index,mcodekind) as e) =
+  let dots r k ((term,info,index,mcodekind,ty) as e) =
     match term with
       Ast0.DOTS([]) ->
 	(* if context is - this should be - as well.  There are no tokens
@@ -475,12 +475,12 @@ let rebuild_mcode start_line =
     (term,arity,info,copy_mcodekind mcodekind) in
 
   let donothing r k e =
-    let (term,info,index,mcodekind) = k e in
+    let (term,info,index,mcodekind,ty) = k e in
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
-    (term,info,ref !index,ref (copy_mcodekind !mcodekind)) in
+    (term,info,ref !index,ref (copy_mcodekind !mcodekind),ty) in
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -573,7 +573,7 @@ let instantiate bindings =
 
 (* --------------------------------------------------------------------- *)
 
-let is_minus (_,_,_,mc) =
+let is_minus (_,_,_,mc,_) =
   match !mc with Ast0.MINUS(cell) -> true | _ -> false
 
 let context_required e = not(is_minus e)

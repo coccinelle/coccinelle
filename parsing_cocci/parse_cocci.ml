@@ -551,21 +551,22 @@ let process file isofile verbose =
     (!Data.clear_meta)();
     let isos = parse_iso isofile in
     (!Data.clear_meta)();
-    List.map2
-      (function (minus, metavars) ->
-	function (plus, metavars) ->
-	  let minus = Compute_lines.compute_lines minus in
-	  let plus = Compute_lines.compute_lines plus in
-	  let minus = Arity.minus_arity minus in
-	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
-	  Insert_plus.insert_plus m p;
-	  let minus = Iso_pattern.apply_isos isos minus in
-	  let minus_ast = Ast0toast.ast0toast minus in
-	  if verbose then Pretty_print_cocci.unparse minus_ast;
-	  (metavars, minus_ast))
-      minus plus
-  with Failure s -> Printf.printf "%s" s; []
-
-let process_for_ctl file isofile verbose =
-  let (_,ast_list) = List.split(process file isofile verbose) in
-  ast_list
+    let parsed =
+      List.map2
+	(function (minus, metavars) ->
+	  function (plus, metavars) ->
+	    let minus = Compute_lines.compute_lines minus in
+	    let plus = Compute_lines.compute_lines plus in
+	    let minus = Arity.minus_arity minus in
+	    let (m,p) = List.split(Context_neg.context_neg minus plus) in
+	    Insert_plus.insert_plus m p;
+	    let minus = Iso_pattern.apply_isos isos minus in
+	    let minus_ast = Ast0toast.ast0toast minus in
+	    if verbose then Pretty_print_cocci.unparse minus_ast;
+	    (metavars, minus_ast))
+	minus plus in
+    let (free_tables,used_after_lists,extenders) =
+      Free_vars.free_vars parsed in
+    let (_,ast_list) = List.split parsed in
+    (ast_list,free_tables,used_after_lists,extenders)
+  with Failure s -> Printf.printf "%s" s; ([],[],[],[])
