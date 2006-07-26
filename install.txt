@@ -6,14 +6,6 @@ Then simply type
  make depend
  make
 
-In case of problems you may need to do before a
- cd parsing_c
- make links 
- cd ..
- make depend
- make
-
-
 There is a special toplevel called spatch.top that is built during
 the make process. It helps in testing new functions.
 

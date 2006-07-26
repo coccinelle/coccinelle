@@ -31,7 +31,6 @@ OPTEXEC=$(TARGET).opt
 OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
-
 ifeq ($(PAD),pad)
 all: mystuff all1
 else
@@ -99,9 +98,10 @@ clean::
 	rm -f $(MYEXEC) $(MYEXEC).top $(MYEXEC).opt
 
 
+
+
 forprofiling:
 	$(MAKE) OPTFLAGS="-p" opt
-	$(MAKE) OPTFLAGS="-p" myspatch.opt
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -123,7 +123,7 @@ clean::
 	rm -f misc/*.cm[iox] *.o
 
 clean::
-	rm -f *~ .*~ gmon.out #*#
+	rm -f *~ .*~ gmon.out *.exe #*#
 
 beforedepend::
 

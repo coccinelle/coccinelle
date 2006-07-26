@@ -573,7 +573,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
       match_e_e ea eb
 
-  | A.NestExpr _, _ -> failwith "not handling NestExpr"
+  | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
 
 
 

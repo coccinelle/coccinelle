@@ -3,7 +3,8 @@ open Ograph_extended
 
 
 val labels_for_ctl :
-  (nodei * Control_flow_c.node) list -> Lib_engine.label_ctlcocci
+  (nodei * Control_flow_c.node) list -> Ast_c.metavars_binding -> 
+  Lib_engine.label_ctlcocci
 
 
 val fix_flow_ctl : 
@@ -12,6 +13,7 @@ val fix_flow_ctl :
 
 val model_for_ctl :
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
+  Ast_c.metavars_binding ->
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended *
    Lib_engine.label_ctlcocci *
    nodei list
@@ -37,3 +39,5 @@ val satbis_to_trans_info :
   list -> 
   (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list 
 
+val metavars_binding2_to_metavars_binding : 
+    Lib_engine.metavars_binding2 -> Ast_c.metavars_binding

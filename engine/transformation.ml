@@ -472,7 +472,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       typ, tag_symbols [i1;i2] ii  binding
 
 
-  | A.NestExpr _, _ -> failwith "not handling NestExpr"
+  | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
 
 
   | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)

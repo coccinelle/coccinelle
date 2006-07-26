@@ -11,8 +11,9 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
  * it matches (and the set of subsitutions for this match). 
  *)
 let (labels_for_ctl: 
- (nodei * Control_flow_c.node) list -> Lib_engine.label_ctlcocci) =
-  fun nodes ->
+ (nodei * Control_flow_c.node) list -> Ast_c.metavars_binding -> 
+ Lib_engine.label_ctlcocci) =
+  fun nodes binding ->
 
    (fun pred -> 
 
@@ -46,7 +47,8 @@ let (labels_for_ctl:
           
 
       | Lib_engine.Match (re), _node -> 
-          let substs = Pattern.match_re_node re node Ast_c.emptyMetavarsBinding
+          let substs = Pattern.match_re_node re node binding
+              (* old: Ast_c.emptyMetavarsBinding *)
           in
           if substs <> []
           then
@@ -211,9 +213,9 @@ let (fix_flow_ctl:
 
 
 
-let model_for_ctl  cflow = 
+let model_for_ctl  cflow binding = 
  let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
- let labels = labels_for_ctl (cflow#nodes#tolist)  in
+ let labels = labels_for_ctl (cflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
  
@@ -296,3 +298,10 @@ let (satbis_to_trans_info:
          )
 
 
+let metavars_binding2_to_metavars_binding binding2 = 
+  binding2 +> map_filter (fun (s, kind2) -> 
+    match kind2 with
+    | Lib_engine.NormalMetaVal kind -> Some (s, kind)
+    | Lib_engine.ParenVal _ -> None
+    | Lib_engine.LabelVal _ -> None
+                         )
