@@ -646,7 +646,7 @@ let satAU m s1 s2 =
     let ctr = ref 0 in
     let f y = 
       ctr := !ctr + 1;
-(*      print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+(*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
       let first = pre_forall m y in
       let second = triples_conj s1 first in
       triples_union s2 second in
@@ -669,11 +669,7 @@ let satAF ((_,_,states) as m) s =
     union y pre in
   setfix f s
 
-let satEG ((_,_,states) as m) s = satEU m s (triples_top states)
-
 let satEF ((_,_,states) as m) s = satEU m (triples_top states) s
-
-let satAG ((_,_,states) as m) s = satAU m s (triples_top states)
 
 (* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
 info other than the witness *)
@@ -718,8 +714,14 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
     | A.AX(phi)            -> satAX m (loop keep_negwits phi)
     | A.EF(phi)            -> satEF m (loop keep_negwits phi)
     | A.AF(phi)            -> satAF m (loop keep_negwits phi)
-    | A.EG(phi)            -> satEG m (loop keep_negwits phi)
-    | A.AG(phi)           ->  satAG m (loop keep_negwits phi)
+    | A.EG(phi)            ->
+	loop keep_negwits
+	  (A.rewrap phi
+	     (A.Not (A.rewrap phi (A.AF (A.rewrap phi (A.Not phi))))))
+    | A.AG(phi)            ->
+	loop keep_negwits
+	  (A.rewrap phi
+	     (A.Not (A.rewrap phi (A.EF (A.rewrap phi (A.Not phi))))))
     | A.EU(phi1,phi2)      ->
 	(match loop keep_negwits phi2 with
 	  [] -> []
@@ -800,13 +802,21 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	Printf.printf "AF\n"; flush stdout;
 	anno (satAF m res) [child]
     | A.EG(phi1)           -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) =
+	  satv keep_negwits
+	    (A.rewrap phi
+	     (A.Not (A.rewrap phi (A.AF (A.rewrap phi (A.Not phi1))))))
+	    env in
 	Printf.printf "EG\n"; flush stdout;
-	anno (satEG m res) [child]
+	anno res [child]
     | A.AG(phi1)            -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) =
+	  satv keep_negwits
+	    (A.rewrap phi
+	       (A.Not (A.rewrap phi (A.EF (A.rewrap phi (A.Not phi1))))))
+	    env in
 	Printf.printf "AG\n"; flush stdout;
-	anno (satAG m res) [child]
+	anno res [child]
 	  
     | A.EU(phi1,phi2)      -> 
 	(match satv keep_negwits phi2 env with

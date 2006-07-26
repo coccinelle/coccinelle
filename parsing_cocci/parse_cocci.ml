@@ -369,15 +369,28 @@ let rec drop_when = function
       loop xs
   | x::xs -> x::drop_when xs
 
-let rec drop_double_dots = function
-    [] -> []
-  | (PC.TEllipsis(clt),info)::(PC.TEllipsis(_),_)::rest ->
-      drop_double_dots ((PC.TEllipsis(clt),info)::rest)
-  | (PC.TCircles(clt),info)::(PC.TCircles(_),_)::rest ->
-      drop_double_dots ((PC.TCircles(clt),info)::rest)
-  | (PC.TStars(clt),info)::(PC.TStars(_),_)::rest ->
-      drop_double_dots ((PC.TStars(clt),info)::rest)
-  | x::xs -> x::(drop_double_dots xs)
+let rec drop_double_dots l =
+  let start = function
+      (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_) -> true
+    | _ -> false in
+  let middle = function
+      (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_) -> true
+    | _ -> false in
+  let final = function
+      (PC.TCEllipsis(_),_) | (PC.TCCircles(_),_) | (PC.TCStars(_),_) -> true
+    | _ -> false in
+  let rec loop = function
+      [] -> []
+    | x::y::rest when middle x && middle y -> loop (x::rest)
+    | x::y::rest when start x && middle y -> loop (x::rest)
+    | x::y::rest when start x && final y -> loop rest
+    | x::y::rest when middle x && final y -> y::(loop rest)
+    | x::rest -> x :: (loop rest) in
+  loop l
+
+let rec fix f l =
+  let cur = f l in
+  if l = cur then l else fix f cur
 
 (* ( | ... | ) also causes parsing problems *)
 
@@ -388,7 +401,7 @@ let rec drop_empty_thing starter middle ender = function
   | hd::rest when starter hd ->
       let rec loop = function
 	  x::rest when middle x -> loop rest
-	| x::rest when ender x-> rest
+	| x::rest when ender x -> rest
 	| _ -> raise Not_empty in
       (match try Some(loop rest) with Not_empty -> None with
 	Some x -> drop_empty_thing starter middle ender x
@@ -403,15 +416,6 @@ let drop_empty_or =
 
 let drop_empty_nest =
   drop_empty_thing
-    (function
-	(PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_) -> true
-      | _ -> false)
-    (function
-	(PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_) -> true
-      | _ -> false)
-    (function
-	(PC.TCEllipsis(_),_) | (PC.TCCircles(_),_) | (PC.TCStars(_),_) -> true
-      | _ -> false)
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
@@ -481,8 +485,8 @@ let parse file =
 	Printf.printf "\n\n";
 	*)
 	let plus_tokens =
-	  drop_double_dots
-	    (drop_when (drop_empty_nest (drop_empty_or plus_tokens))) in
+	  fix (function x -> drop_double_dots (drop_empty_or x))
+	    (drop_when plus_tokens) in
 	(*
 	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
@@ -490,12 +494,12 @@ let parse file =
 	Printf.printf "before minus parse\n";
 	*)
 	let minus_res = parse_one PC.minus_main file minus_tokens in
-        (*
 	Unparse_ast0.unparse minus_res;
+	(*
 	Printf.printf "before plus parse\n";
 	*)
 	let plus_res = parse_one PC.plus_main file plus_tokens in
-        (*
+	(*
 	Printf.printf "after plus parse\n";
 	*)
 	Check_meta.check_meta metavars minus_res plus_res;

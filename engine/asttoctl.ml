@@ -293,9 +293,9 @@ let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
 	    let unqshared = get_unquantified quantified shared in
 	    let new_quantified = Common.union_set unqshared quantified in
 	    let make_matches l =
-	      if unchecked (* don't bother collecting info that won't be used*)
+(*	      if unchecked (* don't bother collecting info that won't be used*)
 	      then []
-	      else
+	      else*)
 		List.map
 		  (function s ->
 		    statement fvinfo new_quantified s true [] [] None)
@@ -572,11 +572,11 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
       (match after with
 	None -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern))
       |	Some after ->
-	  if unchecked
+(*	  if unchecked
 	  then
 	    wrapAU(wrapOr(dots_pattern,wrapNot udots_pattern),
 		   wrapOr(after,aftret))
-	  else
+	  else*)
 	    let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
 	    let left =
 	      match notbefore@notafter with
@@ -599,10 +599,10 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	    Some(make_match (Ast.make_meta_rule_elem s d))
 	| _ -> None in
       let tmp_whencode =
-	if unchecked
+(*	if unchecked
 	(* not sure that this is safe, should be more general than pattern *)
 	then []
-	else
+	else*)
 	  (List.map
 	     (function s ->
 	       statement fvinfo quantified s unchecked [] [] None)
