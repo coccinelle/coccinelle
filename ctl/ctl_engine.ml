@@ -549,7 +549,9 @@ let triples_wit_complement states trips =
 eg (15,p = paren(1),[]) v (15,p != paren(1),[]) double negated is
 (15,p = paren(1),[]) v (15,p != paren(1),[]), not (15,[],[]) *)
 let witify trips =
-  List.map (function (s,th,wit) -> (s,th,Wit wit)) trips
+  List.map
+    (function (s,th,[]) -> (s,th,True) | (s,th,wit) -> (s,th,Wit wit))
+    trips
 
 let rec wit2c = function
     Wit(_) -> "wit"
@@ -717,7 +719,7 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
     | A.EF(phi)            -> satEF m (loop keep_negwits phi)
     | A.AF(phi)            -> satAF m (loop keep_negwits phi)
     | A.EG(phi)            -> satEG m (loop keep_negwits phi)
-    | A.AG(phi1)           -> satAG m (loop keep_negwits phi)
+    | A.AG(phi)           ->  satAG m (loop keep_negwits phi)
     | A.EU(phi1,phi2)      ->
 	(match loop keep_negwits phi2 with
 	  [] -> []

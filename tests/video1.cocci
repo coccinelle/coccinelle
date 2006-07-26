@@ -13,6 +13,8 @@ statement S;
         struct video_device *dev,
         unsigned int cmd, void *arg) {
     <...
+     {
+      ...
       T v;
 //+   T *v;
       ...
@@ -26,5 +28,7 @@ statement S;
 +     v->fld
       ...>
 ?-    if (copy_to_user(arg,v,size_of(v))) return ...;
+      ...
+     }
     ...>
   }
