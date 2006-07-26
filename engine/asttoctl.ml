@@ -92,6 +92,15 @@ let elim_opt =
 	let rwd = Ast.rewrap stm in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));rwd(Ast.DOTS([d1]))])]
 
+    | ([Ast.Nest(sd);Ast.OptStm(stm)],[d1;_]) ->
+	let rw = Ast.rewrap stm in
+	let rwd = Ast.rewrap stm in
+	let dots =
+	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
+		    Ast.CONTEXT(Ast.NOTHING)),
+		   [],[]) in
+	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));rwd(Ast.DOTS([rw dots]))])]
+
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
 
@@ -540,9 +549,7 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	  (function rest ->
 	    function cur ->
 	      wrapAnd
-		(wrapNot
-		   (dots_stmt fvinfo quantified cur unchecked(*?*)
-		      [] [] None),
+		(wrapNot(dots_stmt fvinfo quantified cur true [] [] None),
 		 rest))
 	  e l in
       let rec loop after = function
@@ -634,10 +641,11 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	| (None,Some whencode) -> Some whencode
 	| (Some dotcode,Some whencode) ->
 	    Some(wrapAnd (dotcode,whencode)) in
+      let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
       (match (after,phi3) with (* add in the after code to make the result *)
-	  (None,None) -> wrap n (CTL.True)
+	  (None,None) -> exit
 	| (Some after,None) -> wrapAF(wrapOr(after,aftret))
-	| (None,Some whencode) -> wrapAU(whencode,aftret)
+	| (None,Some whencode) -> wrapAU(whencode,wrapOr(aftret,exit))
 	| (Some after,Some whencode) -> wrapAU(whencode,wrapOr(after,aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (hfvs,bfvs,_) =
