@@ -227,6 +227,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 let fixed_flow = Ctlcocci_integration.fix_flow_ctl flow in
 
                 if !Flag.show_flow 
+                then print_flow flow;
+                if !Flag.show_fixed_flow 
                 then print_flow fixed_flow;
 
                 let model_ctl  =

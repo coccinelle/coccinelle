@@ -140,6 +140,7 @@ let main () =
       " ";
 
       "-show_flow", Arg.Set Flag.show_flow,  " ";
+      "-show_fixed_flow", Arg.Set Flag.show_fixed_flow,  " the one after some fixes.";
       "-show_ctl",  Arg.Set Flag.show_ctl,    " ";
 
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";

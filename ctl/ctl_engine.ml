@@ -32,6 +32,7 @@ module type GRAPH =
     type node
     type cfg
     val predecessors: cfg -> node -> node list
+    val successors:    cfg -> node -> node list
     val print_node : node -> unit
   end
 ;;

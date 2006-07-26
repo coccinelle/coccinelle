@@ -101,7 +101,9 @@ let (labels_for_ctl:
              (fun () -> pp ";"; Format.print_cut())
              (fun (nodei, subst) -> 
                Format.print_int nodei;
-               pp_do_in_box (fun () -> Pretty_print_engine.pp_binding2_ctlsubst subst)
+               pp_do_in_box (fun () -> 
+                 Pretty_print_engine.pp_binding2_ctlsubst subst
+                 )
              ) nodes';
            pp "}";
                       );
@@ -146,25 +148,30 @@ let (fix_flow_ctl:
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
    (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
  fun  flow ->
+
   let g = ref flow in
 
   let adjust_g (newg)        = begin  g := newg;    end in
+  let adjust_g_i (newg,newi) = begin  g := newg;   newi end in
 
-
-  let (exitnodei, node) = !g#nodes#tolist +> List.find (fun (nodei, node) -> 
-    match Control_flow_c.unwrap node with
-    | Control_flow_c.Exit -> true 
-    | _ -> false
-    )
+  let find_node f = 
+    !g#nodes#tolist 
+     +> List.find (fun (nodei, node) -> f (Control_flow_c.unwrap node)) 
+     +> fst
   in
+
+
+  let topi = !g#add_node ((Control_flow_c.Fake, []), "julia_node") +> adjust_g_i
+  in
+  let enteri = 
+    find_node (function Control_flow_c.HeadFunc _ -> true | _ -> false)
+  in
+  let exitnodei  = find_node (fun x -> x = Control_flow_c.Exit) in
+  let errornodei = find_node (fun x -> x = Control_flow_c.ErrorExit) in
+
+  !g#add_arc ((topi, topi), Control_flow_c.Direct) +> adjust_g;
+  !g#add_arc ((topi, enteri), Control_flow_c.Direct) +> adjust_g;
   !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
-
-  let (errornodei, node) = !g#nodes#tolist +> List.find (fun (nodei, node) -> 
-    match Control_flow_c.unwrap node with
-    | Control_flow_c.ErrorExit -> true 
-    | _ -> false
-    )
-  in
   !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
 
@@ -250,6 +257,7 @@ module CFG =
         (Control_flow_c.node, Control_flow_c.edge) 
         Ograph_extended.ograph_extended
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
+    let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
     let print_node i = Format.print_string (i_to_s i)
   end
 
