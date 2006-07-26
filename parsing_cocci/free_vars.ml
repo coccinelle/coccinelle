@@ -25,21 +25,26 @@ dots.  If there are two options for attaching the + code, then both options
 necessarily occur the same number of times in the matched code, so it
 doesn't matter where the quantifier goes. *)
 
+(* unbound is free and not in the argument bound.  free is as though the
+argument bound were [].  only unbound is hashed, since that is what asttoctl
+needs. *)
+
 let astfvs bound =
   let free_table = (Hashtbl.create(50) : free_table) in
 
   let metaid (x,_,_) = x in
 
-  let bind = Common.union_set in
-  let option_default = [] in
+  let bind (unbound1,free1) (unbound2,free2) =
+    (Common.union_set unbound1 unbound2, Common.union_set free1 free2) in
+  let option_default = ([],[]) in
 
   let mcode r (_,_,mcodekind) =
     let process_anything_list_list anythings =
       let astfvs = r.V.combiner_anything in
-      List.fold_left Common.union_set []
+      List.fold_left bind ([],[])
 	(List.map
 	   (function l ->
-	     List.fold_left Common.union_set [] (List.map astfvs l))
+	     List.fold_left bind ([],[]) (List.map astfvs l))
 	   anythings) in
     match mcodekind with
       Ast.MINUS(anythings) -> process_anything_list_list anythings
@@ -48,11 +53,11 @@ let astfvs bound =
 	  Ast.BEFORE(ll) -> process_anything_list_list ll
 	| Ast.AFTER(ll) -> process_anything_list_list ll
 	| Ast.BEFOREAFTER(llb,lla) ->
-	    Common.union_set
+	    bind
 	      (process_anything_list_list lla)
 	      (process_anything_list_list llb)
-	| Ast.NOTHING -> [])
-    | Ast.PLUS -> [] in
+	| Ast.NOTHING -> option_default)
+    | Ast.PLUS -> option_default in
 
   let donothing recursor k e = k e in (* just combine in the normal way *)
 
@@ -61,8 +66,8 @@ let astfvs bound =
       Ast.MetaId(name) | Ast.MetaFunc(name) | Ast.MetaLocalFunc(name) ->
 	let id = metaid name in
 	if List.mem id bound
-	then option_default
-	else bind [id] (mcode recursor name)
+	then bind ([],[id]) (mcode recursor name)
+	else bind ([id],[id]) (mcode recursor name)
     | _ -> k i in
 
   let astfvexpr recursor k e =
@@ -71,8 +76,8 @@ let astfvs bound =
     | Ast.MetaExprList(name) ->
 	let id = metaid name in
 	if List.mem id bound
-	then option_default
-	else bind [id] (mcode recursor name)
+	then bind ([],[id]) (mcode recursor name)
+	else bind ([id],[id]) (mcode recursor name)
     | _ -> k e in
 
   let astfvtypeC recursor k ty =
@@ -80,8 +85,8 @@ let astfvs bound =
       Ast.MetaType(name) ->
 	let id = metaid name in
 	if List.mem id bound
-	then option_default
-	else bind [id] (mcode recursor name)
+	then bind ([],[id]) (mcode recursor name)
+	else bind ([id],[id]) (mcode recursor name)
     | _ -> k ty in
 
   let astfvparam recursor k p =
@@ -89,35 +94,36 @@ let astfvs bound =
       Ast.MetaParam(name) | Ast.MetaParamList(name) ->
 	let id = metaid name in
 	if List.mem id bound
-	then option_default
-	else bind [id] (mcode recursor name)
+	then bind ([],[id]) (mcode recursor name)
+	else bind ([id],[id]) (mcode recursor name)
     | _ -> k p in
 
   let astfvrule_elem recursor k re =
-    let res =
+    let (unbound,_) as res =
       match Ast.unwrap re with
 	Ast.MetaRuleElem(name) | Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
 	  let id = metaid name in
 	  if List.mem id bound
-	  then option_default
-	  else bind [id] (mcode recursor name)
+	  then bind ([],[id]) (mcode recursor name)
+	  else bind ([id],[id]) (mcode recursor name)
       | _ -> k re in
-    Hashtbl.add free_table (Rule_elem re) res;
+    Hashtbl.add free_table (Rule_elem re) unbound;
     res in
 
   let astfvstatement recursor k s =
-    let res =
+    let (unbound,_) as res =
       match Ast.unwrap s with
 	Ast.Dots(_,whencode,tmpcode)
       | Ast.Circles(_,whencode,tmpcode)
       | Ast.Stars(_,whencode,tmpcode) ->
 	  let _ = List.map recursor.V.combiner_statement tmpcode in k s
       | _ -> k s in
-    Hashtbl.add free_table (Statement s) res;
+    Hashtbl.add free_table (Statement s) unbound;
     res in
 
   let astfvstatement_dots recursor k s = 
-    let res = k s in Hashtbl.add free_table (StatementDots s) res; res in
+    let (unbound,_) as res = k s in
+    Hashtbl.add free_table (StatementDots s) unbound; res in
 
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -129,10 +135,12 @@ let astfvs bound =
     List.fold_left
       (function rest ->
 	function tl ->
-	  Common.union_set (recursor.V.combiner_top_level tl) rest)
-      [] in
+	  bind (recursor.V.combiner_top_level tl) rest)
+      option_default in
 
-  ((function l -> (rule l,free_table)),recursor.V.combiner_statement)
+  ((function l -> (rule l,free_table)),
+   (function s ->
+     let (unbound,_) = recursor.V.combiner_statement s in unbound))
 
 let get_names = function
     Ast.MetaIdDecl(ar,nm) -> nm
@@ -158,7 +166,7 @@ let rec loop defined = function
       let locally_defined = List.map get_names metavar_list in
       let not_rebound = set_minus defined locally_defined in
       let (rulefunction,stmfunction) = astfvs not_rebound in
-      let (locally_free,table) = rulefunction rule in
+      let ((_,locally_free),table) = rulefunction rule in
       let (later_free,later_tables,later_nonlocally_used,later_fns) =
 	loop (Common.union_set defined locally_defined) rest in
       (Common.union_set locally_free (set_minus later_free locally_defined),
