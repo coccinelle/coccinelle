@@ -145,6 +145,7 @@ let token2c (tok,_) =
   | PC.TFunDecl(clt) -> "fundecl"
 
   | PC.TIso -> "<=>"
+  | PC.TRightIso -> "=>"
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
@@ -247,7 +248,8 @@ let split_token ((tok,_) as t) =
 
   | PC.EOF | PC.TInvalid -> ([t],[t])
 
-  | PC.TIso | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration ->
+  | PC.TIso | PC.TRightIso
+  | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration ->
       failwith "unexpected tokens"
 
 let split_token_stream tokens =
