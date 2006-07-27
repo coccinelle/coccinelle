@@ -43,6 +43,10 @@ let modif2c pv = function
   | CTL.UnModif(v) -> let (s,n) = texify(pv v) in (Printf.sprintf "_{%s}" s,n)
   | CTL.Control -> ("",0)
 
+let print_diamond ct = function
+    CTL.FORWARD -> ("",ct)
+  | CTL.BACKWARD -> ("\\Delta",ct+1)
+
 let rec ctl2c ct pp pv x =
   match CTL.unwrap x with
     CTL.False -> ("\\msf{false}",5)
@@ -75,28 +79,42 @@ let rec ctl2c ct pp pv x =
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = wrap (ct+1) pp pv f2 in
       (res1^" \\rightarrow "^res2,ct)
-  | CTL.AF(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AF"^res,ct)
-  | CTL.AX(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AX"^res,ct)
-  | CTL.AG(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\AG"^res,ct)
-  | CTL.AU(f1,f2) ->
-      let (res1,ct) = existswrap (ct+2) pp pv f1 in
+  | CTL.AF(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\AF"^diamond^res,ct)
+  | CTL.AX(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\AX"^diamond^res,ct)
+  | CTL.AG(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\AG"^diamond^res,ct)
+  | CTL.AU(dir,f1,f2) ->
+      let (diamond,ct) = print_diamond (ct+1) dir in
+      let (res1,ct) = existswrap (ct+1) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
-      ("\\A["^res1^" \\U "^res2^"]\n",ct)
-  | CTL.EF(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EF"^res,ct)
-  | CTL.EX(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EX"^res,ct)
-  | CTL.EG(f) ->
-      let (res,ct) = pathwrap (ct+2) pp pv f in ("\\EG"^res,ct)
-  | CTL.EU(f1,f2) ->
-      let (res1,ct) = existswrap (ct+2) pp pv f1 in
+      ("\\"^diamond^"A["^res1^" \\U "^res2^"]\n",ct)
+  | CTL.EF(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\EF"^diamond^res,ct)
+  | CTL.EX(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\EX"^diamond^res,ct)
+  | CTL.EG(dir,f) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res,ct) = pathwrap ct pp pv f
+      in ("\\EG"^diamond^res,ct)
+  | CTL.EU(dir,f1,f2) ->
+      let (diamond,ct) = print_diamond (ct+1) dir in
+      let (res1,ct) = existswrap (ct+1) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
-      ("\\E["^res1^" \\U "^res2^"]\n",ct)
+      ("\\E"^diamond^"["^res1^" \\U "^res2^"]\n",ct)
   | CTL.Ref(v) ->
       let (v,len) = texify(pv v) in (v,len+ct)
   | CTL.Let(v,f1,f2) ->
@@ -134,8 +152,8 @@ and orwrap ct pp pv x =
 
 and pathwrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_)
-  | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) ->
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
       ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
@@ -143,8 +161,9 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_) | CTL.AF(_) | CTL.AG(_) | CTL.AU(_,_) | CTL.Pred(_)
-  | CTL.EX(_) | CTL.EF(_) | CTL.EG(_) | CTL.EU(_,_) | CTL.Exists(_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+  | CTL.Pred(_)
+  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
       ctl2c ct pp pv x
   | _ ->

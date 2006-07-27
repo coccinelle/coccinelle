@@ -1,7 +1,7 @@
 (* --------------------------------------------------------------------- *)
-(* Detect whether two SmPL terms can be unified.  For simplicity, this doesn't
-maintain an environment; it just assume metavariables match.  Thus the result
-is either NO or MAYBE. *)
+(* Given two patterns, A and B, determine whether B can match any matched
+subterms of A.  For simplicity, this doesn't maintain an environment; it
+just assume metavariables match.  Thus the result is either NO or MAYBE. *)
 
 module Ast = Ast_cocci
 module V = Visitor_ast

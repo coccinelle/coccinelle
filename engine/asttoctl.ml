@@ -35,14 +35,14 @@ let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
 let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
-let wrapAU n (x,y) = wrap n (CTL.AU(x,y))
-let wrapEU n (x,y) = wrap n (CTL.EU(x,y))
-let wrapAX n (x) = wrap n (CTL.AX(x))
-let wrapEX n (x) = wrap n (CTL.EX(x))
-let wrapAG n (x) = wrap n (CTL.AG(x))
-let wrapEG n (x) = wrap n (CTL.EG(x))
-let wrapAF n (x) = wrap n (CTL.AF(x))
-let wrapEF n (x) = wrap n (CTL.EF(x))
+let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y))
+let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
+let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
+let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,x))
+let wrapAG n (x) = wrap n (CTL.AG(CTL.FORWARD,x))
+let wrapEG n (x) = wrap n (CTL.EG(CTL.FORWARD,x))
+let wrapAF n (x) = wrap n (CTL.AF(CTL.FORWARD,x))
+let wrapEF n (x) = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot n (x) = wrap n (CTL.Not(x))
 let wrapPred n (x) = wrap n (CTL.Pred(x))
 let wrapLet n (x,y,z) = wrap n (CTL.Let(x,y,z))
@@ -733,14 +733,14 @@ let rec collect_duplicates f =
   | CTL.And(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Or(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Implies(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
-  | CTL.AF(phi) -> collect_duplicates phi
-  | CTL.AX(phi) -> collect_duplicates phi
-  | CTL.AG(phi) -> collect_duplicates phi
-  | CTL.AU(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
-  | CTL.EF(phi) -> collect_duplicates phi
-  | CTL.EX(phi) -> collect_duplicates phi
-  | CTL.EG(phi) -> collect_duplicates phi
-  | CTL.EU(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.AF(_,phi) -> collect_duplicates phi
+  | CTL.AX(_,phi) -> collect_duplicates phi
+  | CTL.AG(_,phi) -> collect_duplicates phi
+  | CTL.AU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.EF(_,phi) -> collect_duplicates phi
+  | CTL.EX(_,phi) -> collect_duplicates phi
+  | CTL.EG(_,phi) -> collect_duplicates phi
+  | CTL.EU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | _ -> failwith "not possible"
 
 let assign_variables _ =
@@ -787,32 +787,32 @@ and replace_subformulas dec f =
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       (acc1@acc2,CTL.rewrap f (CTL.Implies(new_phi1,new_phi2)))
-  | CTL.AF(phi) ->
+  | CTL.AF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.AF(new_phi)))
-  | CTL.AX(phi) ->
+      (acc,CTL.rewrap f (CTL.AF(dir,new_phi)))
+  | CTL.AX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.AX(new_phi)))
-  | CTL.AG(phi) ->
+      (acc,CTL.rewrap f (CTL.AX(dir,new_phi)))
+  | CTL.AG(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.AG(new_phi)))
-  | CTL.AU(phi1,phi2) ->
+      (acc,CTL.rewrap f (CTL.AG(dir,new_phi)))
+  | CTL.AU(dir,phi1,phi2) ->
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
-      (acc1@acc2,CTL.rewrap f (CTL.AU(new_phi1,new_phi2)))
-  | CTL.EF(phi) ->
+      (acc1@acc2,CTL.rewrap f (CTL.AU(dir,new_phi1,new_phi2)))
+  | CTL.EF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.EF(new_phi)))
-  | CTL.EX(phi) ->
+      (acc,CTL.rewrap f (CTL.EF(dir,new_phi)))
+  | CTL.EX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.EX(new_phi)))
-  | CTL.EG(phi) -> 
+      (acc,CTL.rewrap f (CTL.EX(dir,new_phi)))
+  | CTL.EG(dir,phi) -> 
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.EG(new_phi)))
-  | CTL.EU(phi1,phi2) ->
+      (acc,CTL.rewrap f (CTL.EG(dir,new_phi)))
+  | CTL.EU(dir,phi1,phi2) ->
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
-      (acc1@acc2,CTL.rewrap f (CTL.EU(new_phi1,new_phi2)))
+      (acc1@acc2,CTL.rewrap f (CTL.EU(dir,new_phi1,new_phi2)))
   | _ -> failwith "not possible"
 
 let ctlfv_table =
@@ -829,10 +829,10 @@ let rec ctl_fvs f =
       match CTL.unwrap f with
 	CTL.False | CTL.True | CTL.Pred(_) -> ([],[])
       | CTL.Not(phi) | CTL.Exists(_,phi)
-      | CTL.AF(phi) | CTL.AX(phi) | CTL.AG(phi)
-      | CTL.EF(phi) | CTL.EX(phi) | CTL.EG(phi) -> (ctl_fvs phi,[])
+      | CTL.AF(_,phi) | CTL.AX(_,phi) | CTL.AG(_,phi)
+      | CTL.EF(_,phi) | CTL.EX(_,phi) | CTL.EG(_,phi) -> (ctl_fvs phi,[])
       | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
-      | CTL.AU(phi1,phi2) | CTL.EU(phi1,phi2) ->
+      | CTL.AU(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
 	  let phi1fvs = ctl_fvs phi1 in
 	  let phi2fvs = ctl_fvs phi2 in
 	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
@@ -887,20 +887,22 @@ let drop_bindings b f = (* innermost bindings first in b *)
 	process_binary f ffvs inter nm term
 	  (function _ ->
 	    CTL.Implies(drop_one nm term phi1,drop_one nm term phi2))
-    | CTL.AF(phi) -> CTL.rewrap f (CTL.AF(drop_one nm term phi))
-    | CTL.AX(phi) -> CTL.rewrap f (CTL.AX(drop_one nm term phi))
-    | CTL.AG(phi) -> CTL.rewrap f (CTL.AG(drop_one nm term phi))
-    | CTL.AU(phi1,phi2) ->
+    | CTL.AF(dir,phi) -> CTL.rewrap f (CTL.AF(dir,drop_one nm term phi))
+    | CTL.AX(dir,phi) -> CTL.rewrap f (CTL.AX(dir,drop_one nm term phi))
+    | CTL.AG(dir,phi) -> CTL.rewrap f (CTL.AG(dir,drop_one nm term phi))
+    | CTL.AU(dir,phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term
-	  (function _ -> CTL.AU(drop_one nm term phi1,drop_one nm term phi2))
-    | CTL.EF(phi) -> CTL.rewrap f (CTL.EF(drop_one nm term phi))
-    | CTL.EX(phi) -> CTL.rewrap f (CTL.EX(drop_one nm term phi))
-    | CTL.EG(phi) -> CTL.rewrap f (CTL.EG(drop_one nm term phi))
-    | CTL.EU(phi1,phi2) ->
+	  (function _ ->
+	    CTL.AU(dir,drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.EF(dir,phi) -> CTL.rewrap f (CTL.EF(dir,drop_one nm term phi))
+    | CTL.EX(dir,phi) -> CTL.rewrap f (CTL.EX(dir,drop_one nm term phi))
+    | CTL.EG(dir,phi) -> CTL.rewrap f (CTL.EG(dir,drop_one nm term phi))
+    | CTL.EU(dir,phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term
-	  (function _ -> CTL.EU(drop_one nm term phi1,drop_one nm term phi2))
+	  (function _ ->
+	    CTL.EU(dir,drop_one nm term phi1,drop_one nm term phi2))
     | (CTL.Ref(v) as x) -> process_binary f [v] [v] nm term (function _ -> x)
     | CTL.Let(v,term1,body) ->
 	let (ffvs,inter) = find_fvs f in
@@ -918,69 +920,6 @@ let char_and = "&"
 let char_or  = "v" 
 let char_not = "!" 
 
-let rec pp_ctl (pp_pred, pp_mvar) ctl =
-  let rec pp_aux = fun (ctl,index) ->
-    pp (string_of_int index);
-    match ctl with
-    | CTL.False              -> pp "False"
-    | CTL.True               -> pp "True"
-    | CTL.Pred(p)            -> pp_pred p
-    | CTL.Not(phi)           -> pp char_not; box (fun () -> pp_aux phi)
-    | CTL.Exists(v,phi)      ->  
-	pp "(";
-	pp ("Ex ");
-	pp_mvar v;
-	pp " . "; 
-	Format.print_cut();
-	box (fun () -> pp_aux phi); 
-	pp ")"
-    | CTL.And(phi1,phi2)     ->  pp_2args char_and phi1 phi2; 
-    | CTL.Or(phi1,phi2)      ->  pp_2args char_or phi1 phi2; 
-    | CTL.Implies(phi1,phi2) ->   pp_2args "=>" phi1 phi2;
-    | CTL.AF(phi1)             -> pp "AF("; pp_arg phi1; pp ")"
-    | CTL.AX(phi1)             -> pp "AX("; pp_arg phi1; pp ")"
-    | CTL.AG(phi1)             -> pp "AG("; pp_arg phi1; pp ")"
-    | CTL.EF(phi1)             -> pp "EF("; pp_arg phi1; pp ")"
-    | CTL.EX(phi1)	         -> pp "EX("; pp_arg phi1; pp ")"
-    | CTL.EG(phi1)		 -> pp "EG("; pp_arg phi1; pp ")"
-    | CTL.AU(phi1,phi2)        -> pp "A[";pp_2args_bis "U" phi1 phi2; pp "]" 
-    | CTL.EU(phi1,phi2)	 -> pp "E[";pp_2args_bis "U" phi1 phi2; pp "]" 
-    | CTL.Let (x,phi1,phi2)  -> 
-	pp ("Let"^" "^x); 
-	Format.print_space ();
-	pp "="; 
-	Format.print_space ();
-	box (fun () -> pp_aux phi1);
-	Format.print_space ();
-	pp "in"; 
-	Format.print_space ();
-	box (fun () -> pp_aux phi2);
-    | CTL.Ref(s)             -> 
-       (* pp "Ref(";  *)
-	pp s; 
-       (* pp ")" *)
-	
-  and pp_2args sym phi1 phi2 = 
-    pp "(";
-    box (fun () -> pp_aux phi1); 
-    Format.print_space();
-    pp sym;
-    Format.print_space ();
-    box (fun () -> pp_aux phi2);
-    pp ")";
-  and pp_2args_bis sym phi1 phi2 = 
-    box (fun () -> pp_aux phi1); 
-    Format.print_space();
-    pp sym;
-    Format.print_space();
-    box (fun () -> pp_aux phi2)
-      
-  and pp_arg phi = box (fun () -> pp_aux phi) in
-  
-  Format.open_box 0;
-  pp_aux ctl;
-  Format.close_box ()
-    
 
 let letify f =
   Hashtbl.clear formula_table;
@@ -991,30 +930,6 @@ let letify f =
   assign_variables();
   (* replace duplicated formulas by their variables *)
   let (bindings,new_f) = replace_formulas 0 f in
-(*
-  Printf.printf "original formula\n";
-  pp_ctl
-    ((function (x,_) -> Lib_engine.pp_predicate x),
-     (fun s -> Format.print_string s))
-    f;
-  Format.print_newline();
-  Printf.printf "updated formula\n";
-  pp_ctl
-    ((function (x,_) -> Lib_engine.pp_predicate x),
-     (fun s -> Format.print_string s))
-    new_f;
-  Format.print_newline();
-  Printf.printf "bindings used in the updated formula\n";
-  List.iter
-    (function (nm,b) ->
-      Printf.printf "%s: " nm;
-      pp_ctl
-	((function (x,_) -> Lib_engine.pp_predicate x),
-	 (fun s -> Format.print_string s))
-	b;
-      Format.print_newline())
-    bindings;
-*)
   (* collect fvs of terms in bindings and new_f *)
   List.iter (function f -> let _ = ctl_fvs f in ())
     (new_f::(List.map (function (_,term) -> term) bindings));
@@ -1022,14 +937,6 @@ let letify f =
   let bindings = rev_order_bindings bindings in
   (* insert bindings as lets into the formula *)
   let res = drop_bindings bindings new_f in
-(*
-  Printf.printf "result\n";
-  pp_ctl
-    ((function (x,_) -> Lib_engine.pp_predicate x),
-     (fun s -> Format.print_string s))
-    res;
-  Format.print_newline();
-*)
   res
 
 (* --------------------------------------------------------------------- *)
