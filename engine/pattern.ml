@@ -41,7 +41,7 @@ opti: return a lazy list of possible matchs ?
 *)
 
 type ('a, 'b) matcher = 
-    'a -> 'b -> Ast_c.metavars_binding -> Ast_c.metavars_binding list
+    'a -> 'b -> Lib_engine.metavars_binding -> Lib_engine.metavars_binding list
 
 (* monad like stuff
    src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP ?)

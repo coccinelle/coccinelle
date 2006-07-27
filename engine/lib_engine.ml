@@ -15,6 +15,8 @@ type predicate =
 type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
 
 
+type metavars_binding = Ast_c.metavars_binding
+
 (* used in ctlcocci_integration *)
 type metavar_binding_kind2 = 
   | NormalMetaVal of Ast_c.metavar_binding_kind
@@ -22,6 +24,7 @@ type metavar_binding_kind2 =
   | LabelVal of int list
 
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
+
 
 type label_ctlcocci = 
  predicate -> 
@@ -31,4 +34,5 @@ type label_ctlcocci =
 
 
 type transformation_info = 
-    (Ograph_extended.nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list
+ (Ograph_extended.nodei * metavars_binding * Ast_cocci.rule_elem) 
+ list

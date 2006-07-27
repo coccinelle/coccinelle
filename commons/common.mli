@@ -138,6 +138,8 @@ val pp_do_in_box : (unit -> unit) -> unit
 val pp_init : (unit -> unit) -> unit
 val pp : string -> unit
 
+val print_xxxxxxxxxxxxxxxxx : unit -> unit
+
 
 (******************************************************************************)
 (* Macro *)

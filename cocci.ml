@@ -110,17 +110,13 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
 
-let print_xxxxxxxxxxxxxxxxx () = 
-  pr2 "-----------------------------------------------------------------------"
-
-
-
 let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl = 
+
   if print_input_file then begin
-    print_xxxxxxxxxxxxxxxxx ();
+    Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
-    print_xxxxxxxxxxxxxxxxx ();
-    command2 ("cat " ^ cfile);
+    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.command2 ("cat " ^ cfile);
   end;
 
   
@@ -180,9 +176,10 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
 
   let _current_binding = ref Ast_c.emptyMetavarsBinding in
-
   command2("cp " ^ cfile ^ " /tmp/input.c");
 
+
+  
   ctls +> List.iter (fun  (ctl_toplevel_list, used_after_list) -> 
 
     if List.length ctl_toplevel_list <> 1 
@@ -231,17 +228,25 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 if !Flag.show_fixed_flow 
                 then print_flow fixed_flow;
 
+                let current_binding = !_current_binding in
+                let current_binding2 = 
+                  Ctlcocci_integration.metavars_binding_to_metavars_binding2
+                    !_current_binding
+                in
+
                 let model_ctl  =
-		  Ctlcocci_integration.model_for_ctl flow !_current_binding in
+		  Ctlcocci_integration.model_for_ctl flow current_binding in
                 let (trans_info2,used_after_env) =
-		  Ctlcocci_integration.mysat model_ctl ctl used_after_list in
+		  Ctlcocci_integration.mysat model_ctl ctl 
+                    (used_after_list, current_binding2)
+                in
 
                 let trans_info = 
                   Ctlcocci_integration.satbis_to_trans_info trans_info2
                 in
                 (* must update the binding in trans_info *)
                 let trans_info = trans_info +> List.map (fun (nodei, env, re) ->
-                  (nodei, !_current_binding @ env, re) ) 
+                  (nodei, current_binding @ env, re) ) 
                 in
 
 

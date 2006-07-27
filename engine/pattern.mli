@@ -1,7 +1,7 @@
 type sequence_processing_style = Ordered | Unordered
 
 type ('a, 'b) matcher =
-    'a -> 'b -> Ast_c.metavars_binding -> Ast_c.metavars_binding list
+    'a -> 'b -> Lib_engine.metavars_binding -> Lib_engine.metavars_binding list
 
 
 val match_re_node : (Ast_cocci.rule_elem, Control_flow_c.node) matcher
@@ -22,8 +22,8 @@ val match_opt :
     (Ast_cocci.expression, Ast_c.expression) matcher ->
      Ast_cocci.expression option ->
      Ast_c.exprStatement -> 
-     Ast_c.metavars_binding -> 
-     Ast_c.metavars_binding list
+     Lib_engine.metavars_binding -> 
+     Lib_engine.metavars_binding list
 
 
 val equal_unaryOp     : Ast_cocci.unaryOp     -> Ast_c.unaryOp -> bool

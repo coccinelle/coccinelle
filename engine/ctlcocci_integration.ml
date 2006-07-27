@@ -11,7 +11,7 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
  * it matches (and the set of subsitutions for this match). 
  *)
 let (labels_for_ctl: 
- (nodei * Control_flow_c.node) list -> Ast_c.metavars_binding -> 
+ (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
  Lib_engine.label_ctlcocci) =
   fun nodes binding ->
 
@@ -271,13 +271,11 @@ let (mysat:
         Lib_engine.label_ctlcocci *
         nodei list) -> 
        Lib_engine.ctlcocci -> 
-       Lib_engine.mvar list ->
-	 (nodei * 
-            (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
-            Lib_engine.predicate) list *
-	 (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list) = 
-  fun (flow, label, states) ctl used_after -> 
-    WRAPPED_ENGINE.satbis (flow, label, states) ctl used_after
+       (Lib_engine.mvar list * Lib_engine.metavars_binding2) ->
+	 (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
+	 Lib_engine.metavars_binding2) = 
+  fun (flow, label, states) ctl (used_after, binding2) -> 
+    WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
 
 
 let (satbis_to_trans_info: 
@@ -285,7 +283,7 @@ let (satbis_to_trans_info:
    (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  
    Lib_engine.predicate) 
   list -> 
-  (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list) = 
+  (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
   fun xs -> 
     xs +> List.map (fun (nodei, binding, pred) -> 
          let binding' = binding +> map_filter (fun (s, kind2) -> 
@@ -306,10 +304,14 @@ let (satbis_to_trans_info:
          )
 
 
-let metavars_binding2_to_metavars_binding binding2 = 
+let metavars_binding2_to_metavars_binding   binding2 = 
   binding2 +> map_filter (fun (s, kind2) -> 
     match kind2 with
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
     | Lib_engine.ParenVal _ -> None
     | Lib_engine.LabelVal _ -> None
    )
+
+let metavars_binding_to_metavars_binding2 binding = 
+  binding +> List.map (fun (s, kind) -> s, Lib_engine.NormalMetaVal kind)
+

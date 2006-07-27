@@ -3,7 +3,7 @@ open Ograph_extended
 
 
 val labels_for_ctl :
-  (nodei * Control_flow_c.node) list -> Ast_c.metavars_binding -> 
+  (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
   Lib_engine.label_ctlcocci
 
 
@@ -13,7 +13,7 @@ val fix_flow_ctl :
 
 val model_for_ctl :
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-  Ast_c.metavars_binding ->
+  Lib_engine.metavars_binding ->
   (Control_flow_c.node, Control_flow_c.edge) ograph_extended *
    Lib_engine.label_ctlcocci *
    nodei list
@@ -24,20 +24,18 @@ val mysat :
    Lib_engine.label_ctlcocci *
    nodei list) -> 
   Lib_engine.ctlcocci -> 
-  Lib_engine.mvar list -> 
-  (nodei * 
-     (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *
-     Lib_engine.predicate) list *
-  (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list
+  (Lib_engine.mvar list * Lib_engine.metavars_binding2) -> 
+  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
+  Lib_engine.metavars_binding2
 
 
 
 val satbis_to_trans_info :  
-  (nodei * 
-   (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  
-   Lib_engine.predicate) 
-  list -> 
-  (nodei * Ast_c.metavars_binding * Ast_cocci.rule_elem) list 
+  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
+  (nodei * Lib_engine.metavars_binding  * Ast_cocci.rule_elem)  list 
 
 val metavars_binding2_to_metavars_binding : 
-    Lib_engine.metavars_binding2 -> Ast_c.metavars_binding
+    Lib_engine.metavars_binding2 -> Lib_engine.metavars_binding
+
+val metavars_binding_to_metavars_binding2 : 
+    Lib_engine.metavars_binding -> Lib_engine.metavars_binding2

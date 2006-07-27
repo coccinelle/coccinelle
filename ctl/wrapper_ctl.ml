@@ -204,10 +204,10 @@ struct
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
 	   (predicate,SUB.mvar) wrapped_ctl ->
-	     WRAPPER_ENV.mvar list ->
+	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                (G.node * (SUB.mvar * SUB.value) list * predicate) list *
 		 (WRAPPER_ENV.mvar * SUB.value) list) = 
-    fun m phi used_after ->
+    fun m phi (used_after, binding) ->
       let noclean = (satbis_noclean m phi) in
       flush stdout;
       let res =

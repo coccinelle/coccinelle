@@ -22,7 +22,7 @@ module D = Distribute_mcodekind
 *)
 (******************************************************************************)
 
-type ('a, 'b) transformer = 'a -> 'b -> Ast_c.metavars_binding -> 'b
+type ('a, 'b) transformer = 'a -> 'b -> Lib_engine.metavars_binding -> 'b
 
 exception NoMatch 
 
