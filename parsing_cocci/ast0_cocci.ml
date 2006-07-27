@@ -268,6 +268,7 @@ let get_index (_,_,index,_,_) = !index
 let set_index (_,_,index,_,_) i = index := i
 let get_mcodekind (_,_,_,mcodekind,_) = !mcodekind
 let set_mcodekind (_,_,_,mcodekind,_) mk = mcodekind := mk
+let set_type (_,_,_,_,ty) t = ty := t
 
 (* --------------------------------------------------------------------- *)
 

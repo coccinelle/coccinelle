@@ -252,6 +252,7 @@ val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_mcodekind : 'a wrap -> mcodekind
 val set_mcodekind : 'a wrap -> mcodekind -> unit
+val set_type : 'a wrap -> Type_cocci.typeC option -> unit
 val fresh_index : unit -> int
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
