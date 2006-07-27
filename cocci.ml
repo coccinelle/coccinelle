@@ -237,9 +237,14 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
                 let model_ctl  =
 		  Ctlcocci_integration.model_for_ctl flow current_binding in
-                let (trans_info2,used_after_env) =
+		let satres =
 		  Ctlcocci_integration.mysat model_ctl ctl 
-                    (used_after_list, current_binding2)
+                    (used_after_list, current_binding2) in
+		let (trans_info2,used_after_env) =
+		  match satres with
+		    Some (trans_info2,used_after_env) ->
+		      (trans_info2,used_after_env)
+		  | None -> failwith "find something better to do here"
                 in
 
                 let trans_info = 

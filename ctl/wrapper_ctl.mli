@@ -52,6 +52,6 @@ module CTL_ENGINE_BIS :
          G.node list -> 
 	   (predicate,SUB.mvar) wrapped_ctl ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
-               (G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		 (WRAPPER_ENV.mvar * SUB.value) list
+               ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
+		 (WRAPPER_ENV.mvar * SUB.value) list) option
 end

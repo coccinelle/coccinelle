@@ -137,6 +137,7 @@ struct
 	 wits)
   ;;
 
+  exception INCOMPLETE_BINDINGS
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
     List.concat
@@ -161,8 +162,7 @@ struct
 		   with Not_found -> rest)
 	       None envs in
 	   match vl with
-	     None ->(* didn't find a binding; hope for the best for the rest *)
-	       []
+	     None -> raise INCOMPLETE_BINDINGS
 	   | Some vl -> [(used_after_var, vl)])
 	 used_after)
       
@@ -214,17 +214,19 @@ struct
          G.node list -> 
 	   (predicate,SUB.mvar) wrapped_ctl ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
-               (G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		 (WRAPPER_ENV.mvar * SUB.value) list) = 
+               ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
+		 (WRAPPER_ENV.mvar * SUB.value) list) option) = 
     fun m phi (used_after, binding) ->
       let noclean = (satbis_noclean m phi) in
       let res =
 	Common.uniq
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
-      (res,
-       collect_used_after used_after
-	 (List.map (function (_,env,_) -> env) res))
+      try
+	Some (res,
+	      collect_used_after used_after
+		(List.map (function (_,env,_) -> env) res))
+      with INCOMPLETE_BINDINGS -> None
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end
