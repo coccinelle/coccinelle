@@ -8,6 +8,8 @@ module V0 = Visitor_ast0
 
 (* --------------------------------------------------------------------- *)
 
+type isomorphism = Ast0_cocci.anything list list
+
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
@@ -602,20 +604,28 @@ let copy_plus printer minusify model e =
 
 let mkdisj matcher alts instantiater e disj_maker minusify
     rebuild_mcodes compute_lines printer =
-  let rec loop = function
-      [] -> e
+  let call_instantiate bindings alts =
+    List.map
+      (function a ->
+	copy_plus printer minusify e
+	  (compute_lines (instantiater bindings (rebuild_mcodes a))))
+      alts in
+  let rec inner_loop all_alts = function
+      [] -> None
     | (pattern::rest) ->
 	(match matcher (context_required e) pattern e init_env with
-	  None -> loop rest
+	  None -> inner_loop all_alts rest
 	| Some bindings ->
-	    let new_alts =
-	      List.map
-		(function a ->
-		  copy_plus printer minusify e
-		    (compute_lines (instantiater bindings (rebuild_mcodes a))))
-		alts in
-	    disj_maker new_alts) in
-  loop alts
+	    (match List.concat all_alts with
+	      [x] -> None
+	    | all_alts -> Some (call_instantiate bindings all_alts))) in
+  let rec outer_loop = function
+      [] -> e (* nothing matched *)
+    | (alts::rest) as all_alts ->
+	match inner_loop all_alts alts with
+	  None -> outer_loop rest
+	| Some res -> disj_maker res in
+  outer_loop alts
 
 (* no one should ever look at the information stored in these mcodes *)
 let disj_starter =
@@ -634,12 +644,13 @@ let make_disj_stmt sl =
 
 let transform_expr alts e =
   match alts with
-    (Ast0.ExprTag(_)::_) ->
+    (Ast0.ExprTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
       let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
       let alts =
 	List.map
-	  (function Ast0.ExprTag(p) -> p | _ -> failwith "invalid alt")
+	  (List.map
+	     (function Ast0.ExprTag(p) -> p | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_expr alts
 	(function b -> (instantiate b).V0.rebuilder_expression) e
@@ -651,12 +662,13 @@ let transform_expr alts e =
 
 let transform_decl alts e =
   match alts with
-    (Ast0.DeclTag(_)::_) ->
+    (Ast0.DeclTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
       let start_line = Some (Ast0.get_info e).Ast0.line_start in
       let alts =
 	List.map
-	  (function Ast0.DeclTag(p) -> p | _ -> failwith "invalid alt")
+	  (List.map
+	     (function Ast0.DeclTag(p) -> p | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl alts
 	(function b -> (instantiate b).V0.rebuilder_declaration) e
@@ -668,12 +680,13 @@ let transform_decl alts e =
 
 let transform_stmt alts e =
   match alts with
-    (Ast0.StmtTag(_)::_) ->
+    (Ast0.StmtTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
       let start_line = Some (Ast0.get_info e).Ast0.line_start in
       let alts =
 	List.map
-	  (function Ast0.StmtTag(p) -> p | _ -> failwith "invalid alt")
+	  (List.map
+	     (function Ast0.StmtTag(p) -> p | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement alts
 	(function b -> (instantiate b).V0.rebuilder_statement) e
@@ -685,7 +698,7 @@ let transform_stmt alts e =
 
 (* --------------------------------------------------------------------- *)
 
-let transform (alts : Ast0.anything list) =
+let transform (alts : isomorphism) =
   let mcode x = x in
   let exprdotsfn r k e = k e in
   let paramdotsfn r k e = k e in
@@ -734,7 +747,7 @@ let rewrap_anything = function
 (* --------------------------------------------------------------------- *)
 
 let apply_isos isos rule =
-  let isos = List.map (List.map rewrap_anything) isos in
+  let isos = List.map (List.map (List.map rewrap_anything)) isos in
   List.map
     (function t ->
       List.fold_left

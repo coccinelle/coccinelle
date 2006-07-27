@@ -384,7 +384,8 @@ rule token = parse
 		     TFloat(x,(get_current_line_type lexbuf)) }
   | (decimal as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
 
-  | "<=>"       { TIso }
+  | "<=>"          { TIso }
+  | "=>"           { TRightIso }
 
   | eof            { EOF }
 

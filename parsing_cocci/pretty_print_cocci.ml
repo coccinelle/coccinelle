@@ -165,6 +165,7 @@ let rec expression e =
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) ->
+      Printf.printf "in a disjunction with length %d\n" (List.length exp_list);
       print_string "\n("; force_newline();
       print_between
 	(function _ -> print_string "\n|"; force_newline())

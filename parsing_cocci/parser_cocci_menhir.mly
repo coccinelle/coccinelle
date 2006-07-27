@@ -123,6 +123,21 @@ let ty_pointerify ty m =
 
 let startofs _ = -1
 
+(* Left is <=>, Right is =>.  Collect <=>s. *)
+let iso_adjust fn first rest =
+  let rec loop = function
+      [] -> [[]]
+    | (Common.Left x)::rest ->
+	(match loop rest with
+	  front::after -> (fn x::front)::after
+	| _ -> failwith "not possible")
+    | (Common.Right x)::rest ->
+	(match loop rest with
+	  front::after -> []::(fn x::front)::after
+	| _ -> failwith "not possible") in
+  match loop rest with
+    front::after -> (fn first::front)::after
+  | _ -> failwith "not possible"
 %}
 
 
@@ -184,7 +199,7 @@ let startofs _ = -1
 %token <Data.line_type * int * int * int> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * (Data.line_type * int * int * int)> TAssign
 
-%token TIso TIsoExpression TIsoStatement TIsoDeclaration
+%token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration
 
 %token TInvalid
 
@@ -213,7 +228,7 @@ let startofs _ = -1
 %type <Ast_cocci.metavar list> meta_main
 
 %start iso_main
-%type <Ast0_cocci.anything list> iso_main
+%type <Ast0_cocci.anything list list> iso_main
 
 %%
 
@@ -1033,16 +1048,24 @@ no_dot_start_stars(grammar,when_grammar,ender):
 
 iso_main:
   TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
-  { List.map (function x -> Ast0.ExprTag x) (e1::el) }
+  { iso_adjust (function x -> Ast0.ExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
-    { List.map (function x -> Ast0.StmtTag x) (s1::sl) }
+    { iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
 	[x] -> x
       | _ ->
-	  failwith "only one variable per delaration in an isomorphism rule" in
-    let res = List.map check_one (d1::dl) in
-    List.map (function x -> Ast0.DeclTag x) res }
+	  failwith
+	    "only one variable per declaration in an isomorphism rule" in
+    let d1 = check_one d1 in
+    let dl =
+      List.map
+	(function
+	    Common.Left x -> Common.Left(check_one x)
+	  | Common.Right x -> Common.Right(check_one x))
+	dl in
+    iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
 
 %inline iso(term):
-    TIso t=term { t }
+    TIso t=term { Common.Left t }
+  | TRightIso t=term { Common.Right t }
