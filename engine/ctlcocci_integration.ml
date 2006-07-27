@@ -161,7 +161,7 @@ let (fix_flow_ctl:
   in
 
 
-  let topi = !g#add_node ((Control_flow_c.Fake, []), "julia_node") +> adjust_g_i
+  let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
   in
   let enteri = 
     find_node (function Control_flow_c.HeadFunc _ -> true | _ -> false)
@@ -312,4 +312,4 @@ let metavars_binding2_to_metavars_binding binding2 =
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
     | Lib_engine.ParenVal _ -> None
     | Lib_engine.LabelVal _ -> None
-                         )
+   )

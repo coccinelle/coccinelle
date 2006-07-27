@@ -233,26 +233,34 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
                 let model_ctl  =
 		  Ctlcocci_integration.model_for_ctl flow !_current_binding in
-                let (trans_info,used_after_env) =
+                let (trans_info2,used_after_env) =
 		  Ctlcocci_integration.mysat model_ctl ctl used_after_list in
 
-                _current_binding := 
-                  Ctlcocci_integration.metavars_binding2_to_metavars_binding
-                    used_after_env;
-                let trans_info' = 
-                  Ctlcocci_integration.satbis_to_trans_info trans_info 
+                let trans_info = 
+                  Ctlcocci_integration.satbis_to_trans_info trans_info2
+                in
+                (* must update the binding in trans_info *)
+                let trans_info = trans_info +> List.map (fun (nodei, env, re) ->
+                  (nodei, !_current_binding @ env, re) ) 
                 in
 
+
+
                 print_xxxxxxxxxxxxxxxxx();
-                pr2 "transformation' info returned:";
+                pr2 "transformation info returned:";
                 print_xxxxxxxxxxxxxxxxx();
-                Pretty_print_engine.pp_transformation_info trans_info';
+                Pretty_print_engine.pp_transformation_info trans_info;
                 Format.print_newline();
 
 
 
-                let flow' = Transformation.transform trans_info' flow  in
+                let flow' = Transformation.transform trans_info flow  in
                 let def' = Control_flow_c.control_flow_to_ast flow' in
+
+                _current_binding := 
+                  Ctlcocci_integration.metavars_binding2_to_metavars_binding
+                    used_after_env;
+
                 (Ast_c.Definition def', Unparse_c.PPnormal)
               end
             else 
@@ -260,7 +268,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
         | x -> 
             (x, Unparse_c.PPviatok il)
         )
-        +> Unparse_c.pp_program cfile;
+        +> Unparse_c.pp_program "/tmp/input.c";
 
       command2("cp /tmp/output.c /tmp/input.c");    
     end
