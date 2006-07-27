@@ -169,9 +169,9 @@ let rec loop defined = function
       let ((_,locally_free),table) = rulefunction rule in
       let (later_free,later_tables,later_nonlocally_used,later_fns) =
 	loop (Common.union_set defined locally_defined) rest in
-      (Common.union_set locally_free (set_minus later_free locally_defined),
+      (set_minus (Common.union_set locally_free later_free) locally_defined,
        table::later_tables,
-       (set_intersect locally_defined later_free)::later_nonlocally_used,
+       later_free::later_nonlocally_used,
        stmfunction::later_fns)
 
 let free_vars rules =

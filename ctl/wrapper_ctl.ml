@@ -110,7 +110,7 @@ struct
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
   exception NEGATIVE_WITNESS
-  let unwrap_wits wits =
+  let unwrap_wits prev_env wits =
     let mkth th =
       Common.map_filter
 	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
@@ -131,32 +131,41 @@ struct
 	  else raise (TODO_CTL "nested negative witnesses") in
     List.concat
       (List.map
-	 (function wit -> try loop false [] wit with NEGATIVE_WITNESS -> [])
+	 (function wit ->
+	   try loop false prev_env wit
+	   with NEGATIVE_WITNESS -> [])
 	 wits)
   ;;
 
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
-    List.map
-      (function used_after_var ->
-	let vl =
-	  List.fold_left
-	    (function rest ->
-	      function env ->
-		try
-		  let vl = List.assoc used_after_var env in
-		  match rest with
-		    None -> Some vl
-		  | Some old_vl when SUB.eq_val vl old_vl -> rest
-		  | _ -> print_var used_after_var;
-		      failwith ": incompatible values"
-		with Not_found -> rest)
-	    None envs in
-	match vl with
-	  None -> print_var used_after_var; failwith ": incompatible values"
-	| Some vl -> (used_after_var, vl))
-      used_after
-	  
+    List.concat
+      (List.map
+	 (function used_after_var ->
+	   let vl =
+	     List.fold_left
+	       (function rest ->
+		 function env ->
+		   try
+		     let vl = List.assoc used_after_var env in
+		     match rest with
+		       None -> Some vl
+		     | Some old_vl when SUB.eq_val vl old_vl -> rest
+		     | Some old_vl -> print_var used_after_var;
+			 Format.print_newline();
+			 SUB.print_value old_vl;
+			 Format.print_newline();
+			 SUB.print_value vl;
+			 Format.print_newline();
+			 failwith "incompatible values"
+		   with Not_found -> rest)
+	       None envs in
+	   match vl with
+	     None ->(* didn't find a binding; hope for the best for the rest *)
+	       []
+	   | Some vl -> [(used_after_var, vl)])
+	 used_after)
+      
   (* ------------------ Partial matches ------------------ *)
   (* Limitation: this only gives information about terms with PredVals, which
      can be optimized to only those with modifs *)
@@ -209,10 +218,10 @@ struct
 		 (WRAPPER_ENV.mvar * SUB.value) list) = 
     fun m phi (used_after, binding) ->
       let noclean = (satbis_noclean m phi) in
-      flush stdout;
       let res =
 	Common.uniq
-	  (List.concat (List.map (fun (_,_,w) -> unwrap_wits w) noclean)) in
+	  (List.concat
+	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
       (res,
        collect_used_after used_after
 	 (List.map (function (_,env,_) -> env) res))

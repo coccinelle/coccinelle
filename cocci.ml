@@ -202,6 +202,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
       program +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
         match e with
         | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
+	    Printf.printf "starting function %s\n" funcs;
 
             (* Cos caml regexp dont like \n ... *)
             let str = Str.global_replace (Str.regexp "\n") " " s in 
