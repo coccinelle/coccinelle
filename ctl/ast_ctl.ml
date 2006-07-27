@@ -18,20 +18,22 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | AF of (('pred,'mvar,'anno) generic_ctl)
-  | AX of (('pred,'mvar,'anno) generic_ctl)
-  | AG of (('pred,'mvar,'anno) generic_ctl)
-  | AU of (('pred,'mvar,'anno) generic_ctl) * 
+  | AF of direction * (('pred,'mvar,'anno) generic_ctl)
+  | AX of direction * (('pred,'mvar,'anno) generic_ctl)
+  | AG of direction * (('pred,'mvar,'anno) generic_ctl)
+  | AU of direction * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | EF of (('pred,'mvar,'anno) generic_ctl)
-  | EX of (('pred,'mvar,'anno) generic_ctl)
-  | EG of (('pred,'mvar,'anno) generic_ctl)
-  | EU of (('pred,'mvar,'anno) generic_ctl) * 
+  | EF of direction * (('pred,'mvar,'anno) generic_ctl)
+  | EX of direction * (('pred,'mvar,'anno) generic_ctl)
+  | EG of direction * (('pred,'mvar,'anno) generic_ctl)
+  | EU of direction * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Let of string * 
       (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Ref of string
+
+and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)
 
 let unwrap (ctl,_) = ctl
 let rewrap (_,model) ctl = (ctl,model)

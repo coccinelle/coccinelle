@@ -621,26 +621,30 @@ let triples_witness x trips =
 (* ************************************* *)
 
 (* doesn't call setify, because pre_forall works better without it *)
-let rec pre_exist (grp,_,_) y =
-  let exp (s,th,wit) = map (fun s' -> (s',th,wit)) (G.predecessors grp s) in
+let rec pre_exist dir (grp,_,_) y =
+  let exp (s,th,wit) =
+    map (fun s' -> (s',th,wit))
+      (match dir with
+	A.FORWARD -> G.predecessors grp s
+      |	A.BACKWARD -> G.successors grp s) in
   let res = concatmap exp y in
   res
 ;;
 
-let pre_forall ((_,_,states) as m) y = 
+let pre_forall dir ((_,_,states) as m) y = 
   let arg = triples_wit_complement states (witify y) in
-  let res = unwitify (triples_wit_complement states (pre_exist m arg)) in
+  let res = unwitify (triples_wit_complement states (pre_exist dir m arg)) in
   res
 ;;
 
-let satEX m s = setify (pre_exist m s);;
+let satEX dir m s = setify (pre_exist dir m s);;
 
-let satAX m s = pre_forall m s
+let satAX dir m s = pre_forall dir m s
 ;;
   
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
-let satAU m s1 s2 = 
+let satAU dir m s1 s2 = 
   if s1 = []
   then s2
   else
@@ -648,7 +652,7 @@ let satAU m s1 s2 =
     let f y = 
       ctr := !ctr + 1;
 (*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-      let first = pre_forall m y in
+      let first = pre_forall dir m y in
       let second = triples_conj s1 first in
       triples_union s2 second in
     let res = setfix f s2 in
@@ -656,21 +660,22 @@ let satAU m s1 s2 =
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
-let satEU m s1 s2 = 
+let satEU dir m s1 s2 = 
   if s1 = []
   then s2
   else
-    let f y = triples_union s2 (triples_conj s1 (setify (pre_exist m y))) in 
+    let f y =
+      triples_union s2 (triples_conj s1 (setify (pre_exist dir m y))) in 
     setfix f s2
 ;;
 
-let satAF ((_,_,states) as m) s =
+let satAF dir ((_,_,states) as m) s =
   let f y =
-    let pre = pre_forall m y in
+    let pre = pre_forall dir m y in
     union y pre in
   setfix f s
 
-let satEF ((_,_,states) as m) s = satEU m (triples_top states) s
+let satEF dir ((_,_,states) as m) s = satEU dir m (triples_top states) s
 
 (* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
 info other than the witness *)
@@ -711,26 +716,26 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
 		let res = triples_conj phi1res phi2res in
 		check_conj phi phi1res phi2res res;
 		res))
-    | A.EX(phi)            -> satEX m (loop keep_negwits phi)
-    | A.AX(phi)            -> satAX m (loop keep_negwits phi)
-    | A.EF(phi)            -> satEF m (loop keep_negwits phi)
-    | A.AF(phi)            -> satAF m (loop keep_negwits phi)
-    | A.EG(phi)            ->
+    | A.EX(dir,phi)            -> satEX dir m (loop keep_negwits phi)
+    | A.AX(dir,phi)            -> satAX dir m (loop keep_negwits phi)
+    | A.EF(dir,phi)            -> satEF dir m (loop keep_negwits phi)
+    | A.AF(dir,phi)            -> satAF dir m (loop keep_negwits phi)
+    | A.EG(dir,phi)            ->
 	loop keep_negwits
 	  (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.AF (A.rewrap phi (A.Not phi))))))
-    | A.AG(phi)            ->
+	     (A.Not (A.rewrap phi (A.AF (dir,A.rewrap phi (A.Not phi))))))
+    | A.AG(dir,phi)            ->
 	loop keep_negwits
 	  (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.EF (A.rewrap phi (A.Not phi))))))
-    | A.EU(phi1,phi2)      ->
+	     (A.Not (A.rewrap phi (A.EF (dir,A.rewrap phi (A.Not phi))))))
+    | A.EU(dir,phi1,phi2)      ->
 	(match loop keep_negwits phi2 with
 	  [] -> []
-	| s2 -> satEU m (loop keep_negwits phi1) s2)
-    | A.AU(phi1,phi2)      ->
+	| s2 -> satEU dir m (loop keep_negwits phi1) s2)
+    | A.AU(dir,phi1,phi2)      ->
 	(match loop keep_negwits phi2 with
 	  [] -> []
-	| s2 -> satAU m (loop keep_negwits phi1) s2)
+	| s2 -> satAU dir m (loop keep_negwits phi1) s2)
     | A.Implies(phi1,phi2) ->
 	loop keep_negwits (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
     | A.Exists (v,phi)     -> triples_witness v (loop keep_negwits phi)
@@ -786,53 +791,53 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
 		anno (triples_conj res1 res2) [child1; child2]))
-    | A.EX(phi1)           -> 
+    | A.EX(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "EX\n"; flush stdout;
-	anno (satEX m res) [child]
-    | A.AX(phi1)           -> 
+	anno (satEX dir m res) [child]
+    | A.AX(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "AX\n"; flush stdout;
-	anno (pre_forall m res) [child]
-    | A.EF(phi1)           -> 
+	anno (pre_forall dir m res) [child]
+    | A.EF(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "EF\n"; flush stdout;
-	anno (satEF m res) [child]
-    | A.AF(phi1)           -> 
+	anno (satEF dir m res) [child]
+    | A.AF(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "AF\n"; flush stdout;
-	anno (satAF m res) [child]
-    | A.EG(phi1)           -> 
+	anno (satAF dir m res) [child]
+    | A.EG(dir,phi1)       -> 
 	let (child,res) =
 	  satv keep_negwits
 	    (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.AF (A.rewrap phi (A.Not phi1))))))
+	     (A.Not (A.rewrap phi (A.AF (dir,A.rewrap phi (A.Not phi1))))))
 	    env in
 	Printf.printf "EG\n"; flush stdout;
 	anno res [child]
-    | A.AG(phi1)            -> 
+    | A.AG(dir,phi1)       -> 
 	let (child,res) =
 	  satv keep_negwits
 	    (A.rewrap phi
-	       (A.Not (A.rewrap phi (A.EF (A.rewrap phi (A.Not phi1))))))
+	       (A.Not (A.rewrap phi (A.EF (dir,A.rewrap phi (A.Not phi1))))))
 	    env in
 	Printf.printf "AG\n"; flush stdout;
 	anno res [child]
 	  
-    | A.EU(phi1,phi2)      -> 
+    | A.EU(dir,phi1,phi2)  -> 
 	(match satv keep_negwits phi2 env with
 	  (child2,[]) -> anno [] [child2]
 	| (child2,res2) ->
 	    let (child1,res1) = satv keep_negwits phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
-	    anno (satEU m res1 res2) [child1; child2])
-    | A.AU(phi1,phi2)      -> 
+	    anno (satEU dir m res1 res2) [child1; child2])
+    | A.AU(dir,phi1,phi2)      -> 
 	(match satv keep_negwits phi2 env with
 	  (child2,[]) -> anno [] [child2]
 	| (child2,res2) ->
 	    let (child1,res1) = satv keep_negwits phi1 env in
-	    Printf.printf "AU\n"; flush stdout;
-	    anno (satAU m res1 res2) [child1; child2])
+	    Printf.printf "AU %b\n" keep_negwits; flush stdout;
+	    anno (satAU dir m res1 res2) [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	let (child1,res1) = satv (not keep_negwits) phi1 env in
 	let (child2,res2) = satv keep_negwits phi2 env in
@@ -881,8 +886,10 @@ let simpleanno l phi res =
   let pp s = 
     Format.print_string ("\n" ^ s ^ "\n------------------------------\n"); 
     print_generic_algo res;
-    Format.print_string "\n------------------------------\n\n"
-  in
+    Format.print_string "\n------------------------------\n\n" in
+  let pp_dir = function
+      A.FORWARD -> ()
+    | A.BACKWARD -> pp "^" in
   match A.unwrap phi with
     | A.False              -> pp "False"
     | A.True               -> pp "True"
@@ -892,14 +899,14 @@ let simpleanno l phi res =
     | A.And(phi1,phi2)     -> pp "And"
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.Implies(phi1,phi2) -> pp "Implies"
-    | A.AF(phi1)           -> pp "AF"
-    | A.AX(phi1)           -> pp "AX"
-    | A.AG(phi1)           -> pp "AG"
-    | A.AU(phi1,phi2)      -> pp "AU"
-    | A.EF(phi1)           -> pp "EF"
-    | A.EX(phi1)	   -> pp "EX"
-    | A.EG(phi1)	   -> pp "EG"
-    | A.EU(phi1,phi2)	   -> pp "EU"
+    | A.AF(dir,phi1)       -> pp "AF"; pp_dir dir
+    | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir
+    | A.AG(dir,phi1)       -> pp "AG"; pp_dir dir
+    | A.AU(dir,phi1,phi2)  -> pp "AU"; pp_dir dir
+    | A.EF(dir,phi1)       -> pp "EF"; pp_dir dir
+    | A.EX(dir,phi1)	   -> pp "EX"; pp_dir dir
+    | A.EG(dir,phi1)	   -> pp "EG"; pp_dir dir
+    | A.EU(dir,phi1,phi2)  -> pp "EU"; pp_dir dir
     | A.Let (x,phi1,phi2)  -> pp ("Let"^" "^x)
     | A.Ref(s)             -> pp ("Ref("^s^")")
 ;;
