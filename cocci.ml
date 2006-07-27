@@ -244,12 +244,6 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 let trans_info = 
                   Ctlcocci_integration.satbis_to_trans_info trans_info2
                 in
-                (* must update the binding in trans_info *)
-                (* TODO? still needed ? not done by Julia ? *)
-                let trans_info = trans_info +> List.map (fun (nodei, env, re) ->
-                  (nodei, current_binding @ env, re) ) 
-                in
-
 
 
                 print_xxxxxxxxxxxxxxxxx();

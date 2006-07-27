@@ -130,6 +130,8 @@ and expression = expressionbis * fullType option (* computed after parsing *) *
                  il (* forunparser: *)
 and expressionbis = 
   (* can be a enumeration constant, or a simple variable (or name of a func) *)
+  (* todo? put more semantic information on this ident, such as is it a local
+     func *)
   | Ident          of string   
   | Constant       of constant                                  
 

@@ -28,6 +28,11 @@ exception NoMatch
 
 type sequence_processing_style = Ordered | Unordered
 
+type semantic_info_ident = 
+  | Function 
+  | LocalFunction
+  | DontKnow
+
 (* -------------------------------------------------------------------------- *)
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 let wrap_mcode (_,i,mc) = "fake", i, mc

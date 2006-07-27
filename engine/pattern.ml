@@ -217,6 +217,8 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 
     F.HeadFunc (idb, (retb, paramsb, isvaargs, _), stob, statb, _) -> 
+      (* todo: When damien ident_annotater will be ready, can comment this code
+         and reuse match_ident. *)
       (match A.unwrap ida with
       | (A.Id ida) -> return (term ida =$= idb)
       | (A.MetaId ida)        ->
@@ -381,6 +383,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | _, (B.ExprStatement None, ii) -> return false (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
+  (* todo?: print a warning at least ? *)
   | _, (B.Labeled _, ii)              -> return false
   | _, (B.Asm , ii)                   -> return false
   | _, (B.Selection (B.Switch _), ii) -> return false
