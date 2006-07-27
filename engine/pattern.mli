@@ -1,5 +1,10 @@
 type sequence_processing_style = Ordered | Unordered
 
+type semantic_info_ident = 
+  | Function 
+  | LocalFunction
+  | DontKnow
+
 type ('a, 'b) matcher =
     'a -> 'b -> Lib_engine.metavars_binding -> Lib_engine.metavars_binding list
 
@@ -17,7 +22,7 @@ val match_params :
     matcher
 val match_ft_ft : (Ast_cocci.fullType, Ast_c.fullType) matcher
 val match_t_t :   (Ast_cocci.typeC,    Ast_c.fullType) matcher
-val match_ident : (Ast_cocci.ident, string) matcher
+val match_ident : semantic_info_ident -> (Ast_cocci.ident, string) matcher
 val match_opt :
     (Ast_cocci.expression, Ast_c.expression) matcher ->
      Ast_cocci.expression option ->

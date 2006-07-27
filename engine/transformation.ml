@@ -28,11 +28,6 @@ exception NoMatch
 
 type sequence_processing_style = Ordered | Unordered
 
-type semantic_info_ident = 
-  | Function 
-  | LocalFunction
-  | DontKnow
-
 (* -------------------------------------------------------------------------- *)
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 let wrap_mcode (_,i,mc) = "fake", i, mc
@@ -131,7 +126,9 @@ let rec (transform_re_node:
         ) in
       let iistob' = iistob in (* todo *)
 
-      let (idb', infoidb') = transform_ident ida (idb, [infoidb])   binding in
+      let (idb', infoidb') = 
+        transform_ident Pattern.LocalFunction ida (idb, [infoidb])   binding 
+      in
       
       let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
 
@@ -275,7 +272,8 @@ and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
 	  (match var with
 	  | (Some (idb, None, iidb), typb, stob), iivirg -> 
               let typb' = transform_ft_ft typa typb  binding in
-              let (idb', iidb') = transform_ident ida (idb, [iidb])  binding in
+              let (idb', iidb') = 
+                transform_ident Pattern.DontKnow ida (idb, [iidb])  binding in
               
               let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg
               in
@@ -349,7 +347,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
       
   | A.Ident ida,                ((B.Ident idb) , typ,ii) ->
-      let (idb', ii') = transform_ident ida (idb, ii)   binding in
+      let (idb', ii') = 
+        transform_ident Pattern.DontKnow ida (idb, ii)   binding 
+      in
       B.Ident idb', typ,ii'
 
 
@@ -442,7 +442,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | A.RecordAccess (ea, dot, ida), (B.RecordAccess (eb, idb), typ,ii) ->
       (match ii with
       | [i1;i2] -> 
-          let (idb', i2') = transform_ident ida (idb, [i2])   binding in
+          let (idb', i2') = 
+            transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
+          in
           let i1' = tag_symbols [dot] [i1] binding in
           B.RecordAccess (transform_e_e ea eb binding, idb'), typ, i1' ++ i2'
       | _ -> raise Impossible
@@ -452,7 +454,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | A.RecordPtAccess (ea, fleche, ida), (B.RecordPtAccess (eb, idb), typ, ii) ->
       (match ii with
       | [i1;i2] -> 
-          let (idb', i2') = transform_ident ida (idb, [i2])   binding in
+          let (idb', i2') = 
+            transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
+          in
           let i1' = tag_symbols [fleche] [i1] binding in
           B.RecordPtAccess (transform_e_e ea eb binding, idb'), typ, i1' ++ i2'
       | _ -> raise Impossible
@@ -582,7 +586,9 @@ and (transform_param:
     match A.unwrap pa, pb with
     | A.Param (ida, typa), ((hasreg, idb, typb, (iihasreg, iidb))) -> 
 
-        let (idb', iidb') = transform_ident ida (idb, [iidb])   binding in
+        let (idb', iidb') = 
+          transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
+        in
         let typb' = transform_ft_ft typa typb binding in
         ((hasreg, idb', typb', (iihasreg, List.hd iidb'))) 
         
@@ -699,8 +705,10 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
 
 (* -------------------------------------------------------------------------- *)
 
-and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
- fun ida (idb, ii) -> 
+and (transform_ident: 
+      Pattern.semantic_info_ident -> 
+      (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
+ fun seminfo_idb ida (idb, ii) -> 
   fun binding -> 
     match A.unwrap ida with
     | A.Id sa -> 
@@ -710,7 +718,7 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) =
 
     | A.MetaId ida -> 
       (* get binding, assert =*=,  distribute info in i1 *)
-        let v = binding +> List.assoc ((term ida) : string) in
+      let v = binding +> List.assoc ((term ida) : string) in
       (match v with
       | B.MetaIdVal sa -> 
           if(sa =$= idb) 
@@ -718,8 +726,38 @@ and (transform_ident: (Ast_cocci.ident, (string * Ast_c.il)) transformer) =
           else raise NoMatch
       | _ -> raise Impossible
       )
- | A.MetaFunc ida | A.MetaLocalFunc ida -> 
-     failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+ | A.MetaFunc ida -> 
+     (match seminfo_idb with 
+     | Pattern.LocalFunction | Pattern.Function -> 
+         let v = binding +> List.assoc ((term ida) : string) in
+         (match v with
+         | B.MetaFuncVal sa -> 
+             if(sa =$= idb) 
+             then idb, tag_symbols [wrap_mcode ida] ii binding
+             else raise NoMatch
+         | _ -> raise Impossible
+         )
+     | Pattern.DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
+      
+ | A.MetaLocalFunc ida -> 
+     (match seminfo_idb with
+     | Pattern.LocalFunction -> 
+         let v = binding +> List.assoc ((term ida) : string) in
+         (match v with
+         | B.MetaLocalFuncVal sa -> 
+             if(sa =$= idb) 
+             then idb, tag_symbols [wrap_mcode ida] ii binding
+             else raise NoMatch
+         | _ -> raise Impossible
+         )
+
+
+     | Pattern.Function -> raise NoMatch
+     | Pattern.DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
 
  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
      failwith "not handling Opt/Unique/Multi for ident"
@@ -771,9 +809,8 @@ let rec (transform:
       pr2 "transform one node";
       let node' = transform_re_node rule_elem node binding in
 
-      (* assert that have done something. 
-         But with metaruleElem sometimes dont modify fake nodes.
-       *)
+      (* assert that have done something. But with metaruleElem sometimes 
+         dont modify fake nodes. So special case before on Fake nodes. *)
       (match F.unwrap node with
       | F.Enter | F.Exit    -> ()
       | F.Fake              -> ()

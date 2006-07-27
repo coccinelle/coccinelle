@@ -8,6 +8,13 @@ module F = Control_flow_c
 
 type sequence_processing_style = Ordered | Unordered
 
+(* put in semantic_c.ml ? *)
+type semantic_info_ident = 
+  | Function 
+  | LocalFunction (* entails Function *)
+  | DontKnow
+
+
 (******************************************************************************)
 
 (*
@@ -217,20 +224,9 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 
     F.HeadFunc (idb, (retb, paramsb, isvaargs, _), stob, statb, _) -> 
-      (* todo: When damien ident_annotater will be ready, can comment this code
-         and reuse match_ident. *)
-      (match A.unwrap ida with
-      | (A.Id ida) -> return (term ida =$= idb)
-      | (A.MetaId ida)        ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaIdVal idb))
-      | (A.MetaFunc ida)      ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
-      | (A.MetaLocalFunc ida) ->
-	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
-      | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
-          failwith "not handling Opt/Unique/Multi for ident"
-      ) 
-        >&&>
+
+      match_ident LocalFunction ida idb
+      >&&>
            (* todo: stoa vs stob *)
            (* todo: isvaargs ? retb ? *)
       (
@@ -412,7 +408,7 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
                      (iniopt) where a SP does not mention one *)
                   (* todo, use sto? lack of sto in Ast_cocci *)
                   match_ft_ft typa typb >&&>
-                  match_ident sa sb
+                  match_ident DontKnow sa sb
               | Some _ -> return false
               )
           | (None, typ, sto), _ -> return false
@@ -469,7 +465,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
   | A.Ident ida,                ((B.Ident idb) , typ, ii) ->
-      match_ident ida idb
+      match_ident DontKnow ida idb
 
  (* todo: handle some isomorphisms in int/float ? can have different format 1l 
     can match a 1.
@@ -554,11 +550,11 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
   | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), typ,ii) ->
       match_e_e ea eb >&&>
-      match_ident ida idb
+      match_ident DontKnow ida idb
 
   | A.RecordPtAccess (ea, _, ida), (B.RecordPtAccess (eb, idb), typ,ii) ->
       match_e_e ea eb >&&>
-      match_ident ida idb
+      match_ident DontKnow ida idb
 
   (* todo?: handle some isomorphisms here ? *)
 
@@ -817,7 +813,7 @@ and (match_params:
           | A.Param (ida, typa), ((hasreg, idb, typb, _), ii)::ys -> 
               (* todo: use quaopt, hasreg ? *)
               (match_ft_ft typa typb >&&>
-              match_ident ida idb
+              match_ident DontKnow ida idb
               ) >&&> 
               match_params seqstyle xs ys
 
@@ -835,16 +831,29 @@ and (match_params:
 
 (* -------------------------------------------------------------------------- *)
 
-and (match_ident: (Ast_cocci.ident, string) matcher) = fun ida idb -> 
+and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
+fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | (A.Id ida) -> return ((term ida) =$= idb)
  | (A.MetaId ida) -> 
         check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
 
- (* todo: and other cases ? too late? or need more info on idb !! its type ? 
-    Maybe need do that in caller where may have more information on it. *)
- | A.MetaFunc ida | A.MetaLocalFunc ida -> 
-     failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+ | A.MetaFunc ida -> 
+     (match seminfo_idb with
+     | LocalFunction | Function -> 
+	 check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
+     | DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
+
+ | A.MetaLocalFunc ida -> 
+     (match seminfo_idb with
+     | LocalFunction -> 
+	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
+     | Function -> return false
+     | DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
 
  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
      failwith "not handling Opt/Unique/Multi for ident"
