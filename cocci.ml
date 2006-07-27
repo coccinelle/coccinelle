@@ -258,6 +258,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 let def' = Control_flow_c.control_flow_to_ast flow' in
 
                 _current_binding := 
+                  !_current_binding @
                   Ctlcocci_integration.metavars_binding2_to_metavars_binding
                     used_after_env;
 
