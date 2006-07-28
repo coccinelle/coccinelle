@@ -249,6 +249,7 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let make_match n unchecked free_table used_after code =
+  Pretty_print_cocci.rule_elem "" code; Format.print_newline();
   if unchecked
   then wrapPred n (Lib_engine.Match(code),CTL.Control)
   else
@@ -316,8 +317,8 @@ let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
-    notbefore notafter after =
+and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
+    unchecked notbefore notafter after =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
@@ -338,6 +339,11 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
   let make_match = make_match n unchecked free_table used_after in
   let make_raw_match = make_raw_match n in
 
+  let make_meta_rule_elem d =
+    let re = Ast.make_meta_rule_elem (fresh_metavar()) d in
+    let _ = extender (Ast.rewrap stmt (Ast.Atomic(re))) in
+    re in
+
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
@@ -347,8 +353,7 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
-	  let matcher d =
-	    make_match (Ast.make_meta_rule_elem (fresh_metavar()) d) in
+	  let matcher d = make_match (make_meta_rule_elem d) in
 	  let full_metamatch = matcher d in
 	  let first_metamatch =
 	    matcher
@@ -388,8 +393,7 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
 	    wrapPred(Lib_engine.PrefixLabel(label_var),CTL.Control) in
-	  let matcher d =
-	    make_match (Ast.make_meta_rule_elem (fresh_metavar()) d) in
+	  let matcher d = make_match (make_meta_rule_elem d) in
 	  let first_metamatch = matcher d in
 	  let rest_metamatch =
 	    matcher
@@ -595,8 +599,7 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	  Ast.MINUS(_) ->
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
-	    let s = fresh_metavar() in
-	    Some(make_match (Ast.make_meta_rule_elem s d))
+	    Some(make_match (make_meta_rule_elem d))
 	| _ -> None in
       let tmp_whencode =
 (*	if unchecked
