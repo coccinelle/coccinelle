@@ -129,7 +129,12 @@ let rec match_ident context_required pattern id =
 
 let rec match_expr context_required pattern expr =
   match Ast0.unwrap pattern with
-    Ast0.MetaExpr(name,_) -> add_binding name (Ast0.ExprTag expr)
+    Ast0.MetaExpr(name,None) -> add_binding name (Ast0.ExprTag expr)
+  | Ast0.MetaExpr(name,Some ts) ->
+      let expty = Ast0.get_type expr in
+      if List.exists (function t -> Type_cocci.compatible t expty) ts
+      then add_binding name (Ast0.ExprTag expr)
+      else return false
   | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
   | Ast0.MetaErr(namea) -> failwith "metaerr not supported"
   | Ast0.MetaExprList(namea) -> failwith "metaexprlist not supported"

@@ -621,25 +621,29 @@ let triples_witness x trips =
 (* ************************************* *)
 
 (* doesn't call setify, because pre_forall works better without it *)
-let rec pre_exist dir (grp,_,_) y =
-  let exp (s,th,wit) =
-    map (fun s' -> (s',th,wit))
-      (match dir with
-	A.FORWARD -> G.predecessors grp s
-      |	A.BACKWARD -> G.successors grp s) in
-  let res = concatmap exp y in
-  res
+let rec pre_exist dir count (grp,_,_) y =
+  let rec loop y = function
+      0 -> y
+    | n ->
+	let exp (s,th,wit) =
+	  map (fun s' -> (s',th,wit))
+	    (match dir with
+	      A.FORWARD -> G.predecessors grp s
+	    | A.BACKWARD -> G.successors grp s) in
+	loop (concatmap exp y) (n - 1) in
+  loop y count
 ;;
 
-let pre_forall dir ((_,_,states) as m) y = 
+let pre_forall dir count ((_,_,states) as m) y = 
   let arg = triples_wit_complement states (witify y) in
-  let res = unwitify (triples_wit_complement states (pre_exist dir m arg)) in
+  let res =
+    unwitify (triples_wit_complement states (pre_exist dir count m arg)) in
   res
 ;;
 
-let satEX dir m s = setify (pre_exist dir m s);;
+let satEX dir count m s = setify (pre_exist dir count m s);;
 
-let satAX dir m s = pre_forall dir m s
+let satAX dir count m s = pre_forall dir count m s
 ;;
   
 
@@ -652,7 +656,7 @@ let satAU dir m s1 s2 =
     let f y = 
       ctr := !ctr + 1;
 (*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-      let first = pre_forall dir m y in
+      let first = pre_forall dir 1 m y in
       let second = triples_conj s1 first in
       triples_union s2 second in
     let res = setfix f s2 in
@@ -665,13 +669,13 @@ let satEU dir m s1 s2 =
   then s2
   else
     let f y =
-      triples_union s2 (triples_conj s1 (setify (pre_exist dir m y))) in 
+      triples_union s2 (triples_conj s1 (setify (pre_exist dir 1 m y))) in 
     setfix f s2
 ;;
 
 let satAF dir ((_,_,states) as m) s =
   let f y =
-    let pre = pre_forall dir m y in
+    let pre = pre_forall dir 1 m y in
     union y pre in
   setfix f s
 
@@ -683,10 +687,14 @@ let drop_wits keep_negwits s =
   let contains_negwits =
     List.exists
       (function
-	  A.NegWit(_,_,_,_) -> (* print_state "dropping a witness" s; *) true
+	  A.NegWit(_,_,_,_) -> (* print_state "dropping a witness" s;*) true
 	| _ -> false) in
   if keep_negwits
-  then (* under a negation *) s
+  then (* under a negation *)
+    List.map
+      (function (s,th,wits) ->
+	(s,th,List.filter (function A.Wit(_,_,_,_) -> false |_ -> true) wits))
+      s
   else (* not under a negation *)
     List.filter (function (s,th,wits) -> not(contains_negwits wits)) s
 
@@ -716,8 +724,8 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
 		let res = triples_conj phi1res phi2res in
 		check_conj phi phi1res phi2res res;
 		res))
-    | A.EX(dir,phi)            -> satEX dir m (loop keep_negwits phi)
-    | A.AX(dir,phi)            -> satAX dir m (loop keep_negwits phi)
+    | A.EX(dir,count,phi)      -> satEX dir count m (loop keep_negwits phi)
+    | A.AX(dir,count,phi)      -> satAX dir count m (loop keep_negwits phi)
     | A.EF(dir,phi)            -> satEF dir m (loop keep_negwits phi)
     | A.AF(dir,phi)            -> satAF dir m (loop keep_negwits phi)
     | A.EG(dir,phi)            ->
@@ -791,14 +799,18 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
 		anno (triples_conj res1 res2) [child1; child2]))
-    | A.EX(dir,phi1)       -> 
+    | A.EX(dir,count,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
-	Printf.printf "EX\n"; flush stdout;
-	anno (satEX dir m res) [child]
-    | A.AX(dir,phi1)       -> 
+	if count = 1
+	then Printf.printf "EX\n"
+	else Printf.printf "EX^%d\n" count; flush stdout;
+	anno (satEX dir count m res) [child]
+    | A.AX(dir,count,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
-	Printf.printf "AX\n"; flush stdout;
-	anno (pre_forall dir m res) [child]
+	if count = 1
+	then Printf.printf "AX\n"
+	else Printf.printf "AX^%d\n" count; flush stdout;
+	anno (pre_forall dir count m res) [child]
     | A.EF(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "EF\n"; flush stdout;
@@ -900,11 +912,13 @@ let simpleanno l phi res =
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.Implies(phi1,phi2) -> pp "Implies"
     | A.AF(dir,phi1)       -> pp "AF"; pp_dir dir
-    | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir
+    | A.AX(dir,1,phi1)     -> pp "AX"; pp_dir dir
+    | A.AX(dir,count,phi1) -> pp "AX^"; pp (string_of_int count); pp_dir dir
     | A.AG(dir,phi1)       -> pp "AG"; pp_dir dir
     | A.AU(dir,phi1,phi2)  -> pp "AU"; pp_dir dir
     | A.EF(dir,phi1)       -> pp "EF"; pp_dir dir
-    | A.EX(dir,phi1)	   -> pp "EX"; pp_dir dir
+    | A.EX(dir,1,phi1)	   -> pp "EX"; pp_dir dir
+    | A.EX(dir,count,phi1) -> pp "EX^"; pp (string_of_int count); pp_dir dir
     | A.EG(dir,phi1)	   -> pp "EG"; pp_dir dir
     | A.EU(dir,phi1,phi2)  -> pp "EU"; pp_dir dir
     | A.Let (x,phi1,phi2)  -> pp ("Let"^" "^x)

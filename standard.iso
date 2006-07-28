@@ -1,18 +1,44 @@
 Expression
 
 @@
+expression *X;
+@@
+
+X == NULL <=> !X <=> NULL == X
+
+Expression
+
+@@
+int X;
+@@
+
+X == 0 <=> !X <=> 0 == X
+
+Expression
+
+@@
 expression X;
 @@
 
-X == NULL
+X != 0 <=> 0 != X => X
 
-<=>
+Statement
 
- !X
+@@
+int X;
+statement S1, S2;
+@@
 
-<=>
+if (X) S1 else S2 => if (X != 0) S1 else S2
 
-NULL == X
+Statement
+
+@@
+int X;
+statement S;
+@@
+
+if (X) S => if (X != 0) S <=> if (0 != X) S
 
 Expression
 
@@ -66,3 +92,15 @@ T Z = ...;
 <=>
 
 T Z;
+
+Declaration
+
+@@
+identifier Z;
+@@
+
+int Z;
+
+=>
+
+signed int Z;

@@ -55,3 +55,18 @@ and sign = function
 and const_vol = function
     Const -> print_string "const "
   | Volatile -> print_string "volatile "
+
+(* t1 should be less informative than t1, eg t1 = Pointer(Unknown) and t2 =
+Pointer(int) *)
+let compatible t1 = function
+    None -> t1 = Unknown
+  | Some t2 ->
+      let rec loop = function
+	  (Unknown,_) -> true
+	| (ConstVol(cv1,ty1),ConstVol(cv2,ty2)) when cv1 = cv2 ->
+	    loop(ty1,ty2)
+	| (Pointer(ty1),Pointer(ty2)) -> loop(ty1,ty2)
+	| (Array(ty1),Array(ty2)) -> loop(ty1,ty2)
+	| (_,_) -> t1=t2 in
+      loop (t1,t2)
+

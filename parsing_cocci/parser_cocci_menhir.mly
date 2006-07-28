@@ -403,7 +403,7 @@ includes:
 /*****************************************************************************/
 
 fundecl:
-  storage TFunDecl ident TOPar decl_list TCPar
+  storage TFunDecl func_ident TOPar decl_list TCPar
   TOBrace pre_post_decl_statement_and_expression_opt TCBrace
       { Ast0.wrap(Ast0.FunDecl($1, $3,
 			       clt2mcode "(" (startofs($4)) $4, $5,
@@ -689,7 +689,7 @@ postfix_expr(r,pe):
 			      clt2mcode ")" (startofs($4)) $4)) }
 
 primary_expr(recurser,primary_extra):
-   ident   { Ast0.wrap(Ast0.Ident($1)) }
+   func_ident   { Ast0.wrap(Ast0.Ident($1)) }
  | TInt
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (clt2mcode (Ast.Int x) (startofs($1)) clt)) }
@@ -743,7 +743,7 @@ pure_ident_or_meta_ident:
      | x=TMetaExp         { let (name,_,info) = x in (name,info) }
      | x=TMetaErr         { x }
 
-ident: TIdent
+func_ident: TIdent
          { Ast0.wrap(Ast0.Id(id2mcode (startofs($1)) $1)) }
      | TMetaId
          { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1)) }
@@ -751,6 +751,11 @@ ident: TIdent
          { Ast0.wrap(Ast0.MetaFunc(id2mcode (startofs($1)) $1)) }
      | TMetaLocalFunc
 	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode (startofs($1)) $1)) }
+
+ident: TIdent
+         { Ast0.wrap(Ast0.Id(id2mcode (startofs($1)) $1)) }
+     | TMetaId
+         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1)) }
 
 /*****************************************************************************/
 

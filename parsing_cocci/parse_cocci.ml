@@ -566,6 +566,7 @@ let process file isofile verbose =
 	    let minus = Arity.minus_arity minus in
 	    let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	    Insert_plus.insert_plus m p;
+	    Type_infer.type_infer minus;
 	    let minus = Iso_pattern.apply_isos isos minus in
 	    let minus_ast = Ast0toast.ast0toast minus in
 	    if verbose then Pretty_print_cocci.unparse minus_ast;
