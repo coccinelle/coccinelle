@@ -249,7 +249,6 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let make_match n unchecked free_table used_after code =
-  Pretty_print_cocci.rule_elem "" code; Format.print_newline();
   if unchecked
   then wrapPred n (Lib_engine.Match(code),CTL.Control)
   else

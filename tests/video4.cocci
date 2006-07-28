@@ -3,12 +3,12 @@ expression v;
 identifier fld;
 @@
 
-//  m();
-//  <...
+  m();
+  <...
   f();
   <...
   v.fld
   ...>
   g();
-//  ...>
-//  n();
+  ...>
+  n();
