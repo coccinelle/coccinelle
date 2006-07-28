@@ -370,9 +370,6 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	      |	Ast.CONTEXT(_) -> d
 	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
 
-	  let first_node =
-	    let fvs = get_unquantified quantified [s] in
-	    quantify fvs (make_raw_match ast) in
 	  let left_or =
 	    make_seq full_metamatch
 	      (Some(and_opt (wrapNot(prelabel_pred)) after)) in
@@ -382,8 +379,8 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 			   make_seq (wrapAnd(last_metamatch,prelabel_pred))
 			     (Some(and_opt (wrapNot(prelabel_pred))
 				     after))))) in
-	  quantify [label_var]
-	    (wrapAnd(first_node,
+	  quantify (label_var::get_unquantified quantified [s])
+	    (wrapAnd(make_raw_match ast,
 		     wrapAnd(label_pred,wrapOr(left_or,right_or))))
 
       |	Ast.MetaStmt((s,i,d)) ->
@@ -402,14 +399,11 @@ and statement ((free_table,_,used_after) as fvinfo) quantified stmt unchecked
 	      | Ast.PLUS -> failwith "not possible") in
 	  (* first_nodea and first_nodeb are separated here and above to
 	     improve let sharing - only first_nodea is unique to this site *)
-	  let first_nodea =
-	    let fvs = get_unquantified quantified [s] in
-	    quantify fvs (make_raw_match ast) in
 	  let first_nodeb = wrapAnd(first_metamatch,label_pred) in
 	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
 	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
-	  quantify [label_var]
-	    (wrapAnd(first_nodea,
+	  quantify (label_var::get_unquantified quantified [s])
+	    (wrapAnd(make_raw_match ast,
 		     (make_seq first_nodeb
 			(Some (wrapAU(rest_nodes,last_node))))))
       |	_ ->
