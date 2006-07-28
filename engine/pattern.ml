@@ -69,10 +69,7 @@ let return res = fun binding ->
 
 (* other combinator for choice ?
    there is 2 or ? Or and Xor ? (the Disj for instance seems to be a Xor)
-    in fact it is a Xor I think everytime
-*)
-
-
+   in fact it is a Xor I think everytime *)
 
 (******************************************************************************)
 
@@ -311,7 +308,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
                     raise Impossible 
                     
                 | B.ExprStatement (None), _ -> ()
-                | B.ExprStatement (Some e), _ -> Visitor_c.visitor_expr_k bigf e;
+                | B.ExprStatement (Some e), _ -> Visitor_c.visitor_expr_k bigf e
 
                 | B.Selection  (B.If (e, st1, st2)), _ -> 
                     Visitor_c.visitor_expr_k bigf e; 
@@ -322,7 +319,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
                 | B.Iteration  (B.DoWhile (st, e)), _ -> 
                     failwith 
                       ("not handling dowhile, the info is not in the good place in cfg")
-                | B.Iteration  (B.For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
+                | B.Iteration (B.For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
                     Visitor_c.visitor_statement_k bigf
                       (B.ExprStatement (e1opt),i1); 
                     Visitor_c.visitor_statement_k bigf
@@ -450,13 +447,11 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
       check_add_metavars_binding (term ida, Ast_c.MetaExprVal (expb))
 
 
-  (* 
-     old: | A.Edots _, _ -> raise Impossible
+  (* old: | A.Edots _, _ -> raise Impossible
      In fact now can also have the Edots inside normal expression, 
      not just in arg lists.
      in 'x[...];'  
-     less: in if(<... x ... y ...>) 
-   *)
+     less: in if(<... x ... y ...>) *)
   | A.Edots (_, None), _    -> return true
   | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
 
@@ -485,8 +480,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         will be too late, match_ident will not have the info whether it  was a 
         function.
         todo: but how detect when do x.field = f;  how know that f is a Func ?
-        by having computed some information before the matching
-     *)
+        by having computed some information before the matching *)
 
       match_e_e ea1 eb1  >&&> (
 
@@ -742,7 +736,10 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	(qu, (B.StructUnionName ((sb,_), sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
-	  
+
+   (* todo? handle isomorphisms ? because Unsigned Int can be match on a 
+      uint in the C code. But some CEs consists in renaming some types,
+      so we don't want apply isomorphisms every time. *) 
     | A.TypeName sa,  (qu, (B.TypeName sb, _)) ->
 	return ((term sa) =$= sb)
     | (_,_) -> return false (* incompatible constructors *)
@@ -771,7 +768,7 @@ and (match_params:
     ) (return true)
   )
   else return false
-*)
+  *)
 
   match seqstyle with
   | Ordered -> 
@@ -867,11 +864,10 @@ and match_opt f eaopt ebopt =
       )
 
 (******************************************************************************)
-(* Normally Ast_cocci  should reuse some types of Ast_c, 
-   so those functions  should not exist.
-   update: but now Ast_c depends on Ast_cocci, so can't make too Ast_cocci
-    depends on Ast_c, so have to stay with those equal_xxx functions.
-*)
+(* Normally Ast_cocci  should reuse some types of Ast_c, so those functions
+ * should not exist.
+ * update: but now Ast_c depends on Ast_cocci, so can't make too Ast_cocci
+ * depends on Ast_c, so have to stay with those equal_xxx functions. *)
 (******************************************************************************)
 
 and equal_unaryOp a b = 

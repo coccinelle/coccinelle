@@ -304,7 +304,7 @@ let (satbis_to_trans_info:
          )
 
 
-let metavars_binding2_to_metavars_binding   binding2 = 
+let metavars_binding2_to_binding   binding2 = 
   binding2 +> map_filter (fun (s, kind2) -> 
     match kind2 with
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
@@ -312,6 +312,6 @@ let metavars_binding2_to_metavars_binding   binding2 =
     | Lib_engine.LabelVal _ -> None
    )
 
-let metavars_binding_to_metavars_binding2 binding = 
+let metavars_binding_to_binding2 binding = 
   binding +> List.map (fun (s, kind) -> s, Lib_engine.NormalMetaVal kind)
 

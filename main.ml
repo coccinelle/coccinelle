@@ -144,6 +144,7 @@ let main () =
       "-show_ctl",  Arg.Set Flag.show_ctl,    " ";
 
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
+      "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";

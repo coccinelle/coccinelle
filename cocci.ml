@@ -191,7 +191,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
       print_xxxxxxxxxxxxxxxxx();
       pr2 "ctl";
       print_xxxxxxxxxxxxxxxxx();
-      Pretty_print_engine.pp_ctlcocci_no_mcodekind !Flag.inline_let_ctl ctl;
+      Pretty_print_engine.pp_ctlcocci 
+        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
       Format.print_newline();
     end;
     
@@ -200,32 +201,31 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     _current_bindings := [];
     lastround_bindings +> List.iter (fun binding -> 
 
-      let astc     = cprogram_from_file "/tmp/input.c" in
-      let (program, _stat) = astc in
-      
+      let (cprogram, _stat)   = cprogram_from_file "/tmp/input.c" in
+     
       (* 3: iter function *)
-      program +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
+      cprogram +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
         match e with
         | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
-	    Printf.printf "starting function %s\n" funcs;
-            flush stdout;
+	    Printf.printf "starting function %s\n" funcs; flush stdout;
             
             (* Cos caml regexp dont like \n ... *)
             let str = Str.global_replace (Str.regexp "\n") " " s in 
             (* Call the engine algorithms only if have found a flag word. *)
-            if not (!Flag.process_only_when_error_words) || 
-            error_words +> List.exists (fun error -> str =~ (".*" ^ error)) 
+            if not (!Flag.process_only_when_error_words) 
+              || error_words +> List.exists (fun error -> str =~ (".*" ^ error))
             then
               begin
                 let flow = Control_flow_c.ast_to_control_flow def in
                 
-                (try Control_flow_c.deadcode_detection flow
-                with Control_flow_c.DeadCode Some info -> 
-                  pr2 "PBBBBBBBBBBBBBBBBBB";
-                  pr2 (Common.error_message filename ("", info.charpos));
-                  pr2 ("at least 1 deadcode detected (there may be more)," ^
-                       "but I continue")
-                );
+                begin
+                  try Control_flow_c.deadcode_detection flow
+                  with Control_flow_c.DeadCode Some info -> 
+                    pr2 "PBBBBBBBBBBBBBBBBBB";
+                    pr2 (Common.error_message filename ("", info.charpos));
+                    pr2 ("at least 1 deadcode detected (there may be more)," ^
+                         "but I continue")
+                end;
                   
                 (* remove some fake nodes *)
                 let fixed_flow = Ctlcocci_integration.fix_flow_ctl flow in
@@ -237,8 +237,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
                 let current_binding = binding in
                 let current_binding2 = 
-                  Ctlcocci_integration.metavars_binding_to_metavars_binding2
-                    binding
+                  Ctlcocci_integration.metavars_binding_to_binding2 binding
                 in
 
                 let model_ctl  =
@@ -251,6 +250,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     let trans_info = 
                       Ctlcocci_integration.satbis_to_trans_info trans_info2
                     in
+
                     print_xxxxxxxxxxxxxxxxx();
                     pr2 "transformation info returned:";
                     print_xxxxxxxxxxxxxxxxx();
@@ -262,8 +262,9 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
                     (* TODO some union *)
                     _current_bindings := 
-                      Ctlcocci_integration.metavars_binding2_to_metavars_binding
-                        used_after_env :: !_current_bindings;
+                      Ctlcocci_integration.metavars_binding2_to_binding
+                        used_after_env 
+                      :: !_current_bindings;
 
                     (Ast_c.Definition def', Unparse_c.PPnormal)
 		| None -> 
@@ -273,12 +274,12 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
               (Ast_c.Definition def, Unparse_c.PPviatok il)
         | x -> 
             (x, Unparse_c.PPviatok il)
-        ) (* end3: iter function *)
+        ) (* end 3: iter function *)
         +> Unparse_c.pp_program "/tmp/input.c";
-
       command2("cp /tmp/output.c /tmp/input.c");    
-      ) (* end2: iter bindings *)
-  ); (* end1: iter ctl *)
-  Common.command2 ("diff -u  --strip-trailing-cr -b -B " ^ cfile ^ " /tmp/output.c")
 
+      ) (* end 2: iter bindings *)
+  ); (* end 1: iter ctl *)
+  Common.command2 ("diff -u  --strip-trailing-cr -b -B " ^ 
+                   cfile ^ " /tmp/output.c")
 

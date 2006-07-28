@@ -34,8 +34,8 @@ val satbis_to_trans_info :
   (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
   (nodei * Lib_engine.metavars_binding  * Ast_cocci.rule_elem)  list 
 
-val metavars_binding2_to_metavars_binding : 
+val metavars_binding2_to_binding : 
     Lib_engine.metavars_binding2 -> Lib_engine.metavars_binding
 
-val metavars_binding_to_metavars_binding2 : 
+val metavars_binding_to_binding2 : 
     Lib_engine.metavars_binding -> Lib_engine.metavars_binding2
