@@ -17,11 +17,7 @@ statement S;
       T v;
 //+   T *v;
       ...
-(
 -     if (copy_from_user(v,arg,size_of(v)) != 0) return ...;
-|
--     if (copy_from_user(v,arg,size_of(v))) return ...;
-)
       <...
 -     v.fld
 +     v->fld

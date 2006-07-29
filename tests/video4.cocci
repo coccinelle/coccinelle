@@ -1,13 +1,14 @@
 @@
-expression v;
+identifier v;
 identifier fld;
 @@
 
+  int v;
   m();
   <...
   f();
   <...
-  v.fld
+- v.fld
   ...>
   g();
   ...>

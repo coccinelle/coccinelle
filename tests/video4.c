@@ -1,4 +1,5 @@
 int main() {
+  int v;
   m();
   f();
   x();

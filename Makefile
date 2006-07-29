@@ -15,7 +15,7 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OPTFLAGS=
+OPTFLAGS=-p -inline 0
 
 OCAMLC=ocamlc -g   $(ADDONSPATH)
 OCAMLOPT=ocamlopt   $(ADDONSPATH) $(OPTFLAGS)

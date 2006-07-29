@@ -131,7 +131,12 @@ let rec nubBy eq ls =
   | (x::xs) -> x::(nubBy eq xs)
 ;;
 
-let rec nub ls = nubBy (=) ls
+let rec nub ls =
+  match ls with
+    [] -> []
+  | (x::xs) when (List.mem x xs) -> nub xs
+  | (x::xs) -> x::(nub xs)
+;;
 
 let setifyBy eq xs = List.sort compare (nubBy eq xs);;
 
@@ -279,24 +284,26 @@ let eq_sub sub sub' = eq_subBy SUB.eq_mvar SUB.eq_val sub sub'
 let eq_subst th th' = setequalBy eq_sub th th';;
 
 let merge_subBy eqx (===) (>+<) sub sub' =
-  match (sub,sub',eqx (dom_sub sub) (dom_sub sub')) with
-    | (A.Subst (x,v),A.Subst (x',v'),true) -> 
+  if eqx (dom_sub sub) (dom_sub sub')
+  then
+    match (sub,sub') with
+      (A.Subst (x,v),A.Subst (x',v')) -> 
 	if (v === v')
 	then Some [A.Subst(x, v >+< v')]
 	else None
-    | (A.NegSubst(x,v),A.Subst(x',v'),true) ->
+    | (A.NegSubst(x,v),A.Subst(x',v')) ->
 	if (not (v === v'))
 	then Some [A.Subst(x',v')]
 	else None
-    | (A.Subst(x,v),A.NegSubst(x',v'),true) ->
+    | (A.Subst(x,v),A.NegSubst(x',v')) ->
 	if (not (v === v'))
 	then Some [A.Subst(x,v)]
 	else None
-    | (A.NegSubst(x,v),A.NegSubst(x',v'),true) ->
+    | (A.NegSubst(x,v),A.NegSubst(x',v')) ->
 	if (v === v')
 	then Some [A.NegSubst(x,v)]
 	else Some [A.NegSubst(x,v);A.NegSubst(x',v')]
-    | _ -> Some [sub;sub']
+  else Some [sub;sub']
 ;;
 
 (* NOTE: functor *)
@@ -324,7 +331,7 @@ let clean_subst theta =
       theta in
   let rec loop = function
       [] -> []
-    | (A.Subst(x,v)::A.NegSubst(y,v')::rest) when x = y -> (*generic enough?*)
+    | (A.Subst(x,v)::A.NegSubst(y,v')::rest) when SUB.eq_mvar x y ->
 	loop (A.Subst(x,v)::rest)
     | x::xs -> x::(loop xs) in
   loop res
@@ -397,7 +404,7 @@ let negate_wits wits =
 
 (* Triples are equal when the constituents are equal *)
 let eq_trip (s,th,wit) (s',th',wit') =
-  (s = s') && (eq_subst th th') && (eq_wit wit wit');;
+  (s = s') && (eq_wit wit wit') && (eq_subst th th');;
 
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
@@ -676,7 +683,7 @@ let satEU dir m s1 s2 =
 let satAF dir ((_,_,states) as m) s =
   let f y =
     let pre = pre_forall dir 1 m y in
-    union y pre in
+    triples_union y pre in
   setfix f s
 
 let satEF dir ((_,_,states) as m) s = satEU dir m (triples_top states) s
