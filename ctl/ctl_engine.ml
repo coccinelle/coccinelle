@@ -165,11 +165,11 @@ let setequal xs ys = (subseteq xs ys) & (subseteq ys xs);;
 
 (* Fix point calculation *)
 let rec fix eq f x =
-  let x' = f x in if (eq x x') then x' else fix eq f x'
+  let x' = f x in if (eq x' x) then x' else fix eq f x'
 ;;
 
 (* Fix point calculation on set-valued functions *)
-let setfix f x = setify (fix setequal f x);;
+let setfix f x = setify (fix subseteq f x) (*if new is a subset of old, stop*)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -468,10 +468,10 @@ let triples_state_conj trips trips' =
 ;;
 
 let triple_negate (s,th,wits) = 
-  let negstates = [(NegState [s],top_subst,top_wit)] in
+  let negstates = (NegState [s],top_subst,top_wit) in
   let negths = map (fun th -> (PosState s,th,top_wit)) (negate_subst th) in
   let negwits = map (fun nwit -> (PosState s,th,nwit)) (negate_wits wits) in
-    triples_union negstates (triples_union negths negwits)
+    negstates :: (negths @ negwits) (* all different *)
 
 (* FIX ME: it is not necessary to do full conjunction *)
 let triples_complement states (trips : ('pred, 'anno) triples) =
@@ -529,11 +529,11 @@ let negate_wit_wits wits =
   | wits -> [Not(wits)];;
 
 let triple_wit_negate (s,th,wits) = 
-  let negstates = [(NegState [s],top_subst,True)] in
+  let negstates = (NegState [s],top_subst,True) in
   let negths = map (fun th -> (PosState s,th,True)) (negate_subst th) in
   let negwits =
     map (fun nwit -> (PosState s,th,nwit)) (negate_wit_wits wits) in
-    triples_union negstates (triples_union negths negwits)
+    negstates :: (negwits @ negths) (* no need for triples_union, all diff *)
 
 (* FIX ME: it is not necessary to do full conjunction *)
 let triples_wit_complement states trips =
@@ -663,8 +663,14 @@ let satAU dir m s1 s2 =
     let f y = 
       ctr := !ctr + 1;
 (*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+(*      let starter = Sys.time() in*)
       let first = pre_forall dir 1 m y in
+(*      let midder = Sys.time() in*)
       let second = triples_conj s1 first in
+(*      let ender = Sys.time() in
+      Printf.printf "forall %f conj %f init %d forall %d\n"
+	(midder -. starter) (ender -. midder)
+	(List.length y) (List.length first); flush stdout;*)
       triples_union s2 second in
     let res = setfix f s2 in
     res
