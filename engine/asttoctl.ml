@@ -451,14 +451,13 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
        let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq2 after_pred after in
-       let or_cases =
-	 Some (wrapOr(true_branch,wrapOr(fall_branch,after_branch))) in
+       let or_cases = wrapOr(true_branch,wrapOr(fall_branch,after_branch)) in
        (* the code *)
        (match after with
 	 Some _ ->
 	   quantify bfvs
-	     (wrapAnd (make_seq if_header or_cases, wrapEX after_pred))
-       | None -> quantify bfvs (make_seq if_header or_cases))
+	     (wrapAnd (if_header, wrapAnd(wrapAX or_cases, wrapEX after_pred)))
+       | None -> quantify bfvs (wrapAnd(if_header, wrapAX or_cases)))
 	 
   | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
 
@@ -511,18 +510,18 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	                  [] [] None)))*) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq2 after_pred after in
-       let or_cases =
-	 Some (wrapOr(true_branch,wrapOr(false_branch,after_branch))) in
+       let or_cases = wrapOr(true_branch,wrapOr(false_branch,after_branch)) in
        (* the code *)
        (match after with
 	None ->
 	  quantify bothfvs
-	    (wrapAnd (make_seq if_header or_cases, wrapEX(false_pred)))
+	    (wrapAnd (if_header, wrapAnd(wrapAX or_cases, wrapEX false_pred)))
       |	Some after ->
 	  quantify bothfvs
 	    (wrapAnd
-	       (make_seq if_header or_cases,
-		 wrapAnd(wrapEX(false_pred),wrapEX(after_pred)))))
+	       (if_header,
+		 wrapAnd(wrapAX or_cases,
+			 wrapAnd(wrapEX false_pred,wrapEX after_pred)))))
 
   | Ast.While(header,body) ->
    (* the translation in this case is similar to that of an if with no else *)

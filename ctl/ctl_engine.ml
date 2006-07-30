@@ -641,12 +641,15 @@ let rec pre_exist dir count (grp,_,_) y =
   loop y count
 ;;
 
-let pre_forall dir count ((_,_,states) as m) y = 
+let pre_forall dir count ((_,_,states) as m) y =
   let arg = triples_wit_complement states (witify y) in
-  let res =
-    unwitify (triples_wit_complement states (pre_exist dir count m arg)) in
-  res
+  unwitify (triples_wit_complement states (pre_exist dir count m arg))
 ;;
+
+let double_negate (_,_,states) y =
+  let arg = triples_wit_complement states (witify y) in
+  unwitify (triples_wit_complement states arg)
+
 
 let satEX dir count m s = setify (pre_exist dir count m s);;
 
@@ -659,18 +662,13 @@ let satAU dir m s1 s2 =
   if s1 = []
   then s2
   else
+    let s1 = double_negate m s1 in
     let ctr = ref 0 in
     let f y = 
       ctr := !ctr + 1;
 (*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-(*      let starter = Sys.time() in*)
       let first = pre_forall dir 1 m y in
-(*      let midder = Sys.time() in*)
       let second = triples_conj s1 first in
-(*      let ender = Sys.time() in
-      Printf.printf "forall %f conj %f init %d forall %d\n"
-	(midder -. starter) (ender -. midder)
-	(List.length y) (List.length first); flush stdout;*)
       triples_union s2 second in
     let res = setfix f s2 in
     res
@@ -681,6 +679,7 @@ let satEU dir m s1 s2 =
   if s1 = []
   then s2
   else
+    let s1 = double_negate m s1 in
     let f y =
       triples_union s2 (triples_conj s1 (setify (pre_exist dir 1 m y))) in 
     setfix f s2
