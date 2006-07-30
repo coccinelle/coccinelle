@@ -663,6 +663,7 @@ let satAU dir m s1 s2 =
   then s2
   else
     let s1 = double_negate m s1 in
+    let s2 = double_negate m s2 in (* not sure it's worth it but doesn't hurt*)
     let ctr = ref 0 in
     let f y = 
       ctr := !ctr + 1;
@@ -680,18 +681,39 @@ let satEU dir m s1 s2 =
   then s2
   else
     let s1 = double_negate m s1 in
+    let s2 = double_negate m s2 in
     let f y =
       triples_union s2 (triples_conj s1 (setify (pre_exist dir 1 m y))) in 
     setfix f s2
 ;;
 
 let satAF dir ((_,_,states) as m) s =
+  let s = double_negate m s in
   let f y =
     let pre = pre_forall dir 1 m y in
     triples_union y pre in
   setfix f s
 
-let satEF dir ((_,_,states) as m) s = satEU dir m (triples_top states) s
+let satAG dir ((_,_,states) as m) s =
+  let s = double_negate m s in
+  let f y =
+    let pre = pre_forall dir 1 m y in
+    triples_conj y pre in
+  setfix f s
+
+let satEF dir ((_,_,states) as m) s =
+  let s = double_negate m s in
+  let f y =
+    let pre = pre_exist dir 1 m y in
+    triples_union y pre in
+  setfix f s
+
+let satEG dir ((_,_,states) as m) s =
+  let s = double_negate m s in
+  let f y =
+    let pre = pre_exist dir 1 m y in
+    triples_conj y pre in
+  setfix f s
 
 (* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
 info other than the witness *)
@@ -740,14 +762,8 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
     | A.AX(dir,count,phi)      -> satAX dir count m (loop keep_negwits phi)
     | A.EF(dir,phi)            -> satEF dir m (loop keep_negwits phi)
     | A.AF(dir,phi)            -> satAF dir m (loop keep_negwits phi)
-    | A.EG(dir,phi)            ->
-	loop keep_negwits
-	  (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.AF (dir,A.rewrap phi (A.Not phi))))))
-    | A.AG(dir,phi)            ->
-	loop keep_negwits
-	  (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.EF (dir,A.rewrap phi (A.Not phi))))))
+    | A.EG(dir,phi)            -> satEG dir m (loop keep_negwits phi)
+    | A.AG(dir,phi)            -> satAG dir m (loop keep_negwits phi)
     | A.EU(dir,phi1,phi2)      ->
 	(match loop keep_negwits phi2 with
 	  [] -> []
@@ -832,21 +848,13 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	Printf.printf "AF\n"; flush stdout;
 	anno (satAF dir m res) [child]
     | A.EG(dir,phi1)       -> 
-	let (child,res) =
-	  satv keep_negwits
-	    (A.rewrap phi
-	     (A.Not (A.rewrap phi (A.AF (dir,A.rewrap phi (A.Not phi1))))))
-	    env in
+	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "EG\n"; flush stdout;
-	anno res [child]
+	anno (satEG dir m res) [child]
     | A.AG(dir,phi1)       -> 
-	let (child,res) =
-	  satv keep_negwits
-	    (A.rewrap phi
-	       (A.Not (A.rewrap phi (A.EF (dir,A.rewrap phi (A.Not phi1))))))
-	    env in
+	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "AG\n"; flush stdout;
-	anno res [child]
+	anno (satAG dir m res) [child]
 	  
     | A.EU(dir,phi1,phi2)  -> 
 	(match satv keep_negwits phi2 env with
