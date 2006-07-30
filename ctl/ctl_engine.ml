@@ -482,12 +482,16 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
 	  assert (th=top_subst);
 	  assert (wit=top_wit);
 	  map (fun st -> (st,top_subst,top_wit)) (setdiff states ss) in
+  let (simple,complex) =
+    List.partition (function (s,[],[]) -> true | _ -> false) trips in
+  let simple =
+    [(NegState(List.map (function (s,_,_) -> s) simple),
+     top_subst,top_wit)] in
   let rec compl trips =
     match trips with
-      | [] -> List.map (function s -> (PosState s, top_subst, top_wit)) states
-      | (t::[]) -> triple_negate t
+      | [] -> simple
       | (t::ts) -> triples_state_conj (triple_negate t) (compl ts) in
-  setify(concatmap cleanup (compl trips))
+  setify (concatmap cleanup (compl complex))
 ;;
 
 
@@ -544,13 +548,17 @@ let triples_wit_complement states trips =
 	  assert (th=top_subst);
 	  assert (wit=True);
 	  map (fun st -> (st,top_subst,True)) (setdiff states ss) in
+  let (simple,complex) =
+    List.partition (function (s,[],True) -> true | _ -> false) trips in
+  let simple =
+    [(NegState(List.map (function (s,_,_) -> s) simple),
+     top_subst,True)] in
   let rec compl trips =
     match trips with
-      | [] -> List.map (function s -> (PosState s, top_subst, True)) states
-      | (t::[]) -> triple_wit_negate t
+      | [] -> simple
       | (t::ts) -> triples_state_wit_conj (triple_wit_negate t) (compl ts) in
   (* setify not needed here, will be done by others *)
-  concatmap cleanup (compl trips)
+  concatmap cleanup (compl complex)
 ;;
 
 (* even makes a wit for true, which manages to keep around some extra info,
@@ -643,7 +651,7 @@ let rec pre_exist dir count (grp,_,_) y =
 
 let pre_forall dir count ((_,_,states) as m) y =
   let arg = triples_wit_complement states (witify y) in
-  unwitify (triples_wit_complement states (pre_exist dir count m arg))
+  unwitify (triples_wit_complement states(pre_exist dir count m arg))
 ;;
 
 let double_negate (_,_,states) y =
