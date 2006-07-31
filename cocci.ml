@@ -256,22 +256,18 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     print_xxxxxxxxxxxxxxxxx();
                     Pretty_print_engine.pp_transformation_info trans_info;
                     Format.print_newline();
+
+                    (* TODO some union *)
+                    _current_bindings := 
+                      Ctlcocci_integration.metavars_binding2_to_binding
+                        used_after_env 
+                      :: !_current_bindings;
                     
                     if trans_info <> []
                     then 
-                      begin
-
                         let flow' = Transformation.transform trans_info flow  in
                         let def' = Control_flow_c.control_flow_to_ast flow' in
-
-                        (* TODO some union *)
-                        _current_bindings := 
-                          Ctlcocci_integration.metavars_binding2_to_binding
-                            used_after_env 
-                          :: !_current_bindings;
-
                         (Ast_c.Definition def', Unparse_c.PPnormal)
-                      end
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)
 		| None -> 

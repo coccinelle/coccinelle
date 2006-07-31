@@ -29,7 +29,7 @@ let testone x =
     let expected_res = "tests/" ^ x ^ ".res" in
     if Common.lfile_exists expected_res 
     then 
-      let xs = process_output_to_list ("diff -b -B " ^ "/tmp/output.c" ^ 
+      let xs = process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^ 
                                        " "  ^ expected_res) 
       in
       if null xs 
@@ -37,7 +37,7 @@ let testone x =
       else 
         begin
           pr2 "seems incorrect";
-          pr2 "diff (result(<) vs expected_result(>)) = ";
+          pr2 "diff (result(-) vs expected_result(+)) = ";
           xs +> List.iter pr2;
         end
   end
