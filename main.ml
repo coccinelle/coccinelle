@@ -142,9 +142,12 @@ let main () =
       "-compare_with_expected", Arg.Set compare_with_expected, 
       " "; 
 
-      "-show_flow", Arg.Set Flag.show_flow,  " ";
-      "-show_fixed_flow", Arg.Set Flag.show_fixed_flow,  " the one after some fixes.";
-      "-show_ctl",  Arg.Set Flag.show_ctl,    " ";
+      "-show_flow", Arg.Set Flag.show_flow,  
+      " ";
+      "-show_before_fixed_flow", Arg.Set Flag.show_before_fixed_flow,  
+      " the one after some fixes.";
+      "-show_ctl",  Arg.Set Flag.show_ctl,    
+      " ";
 
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
       "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
