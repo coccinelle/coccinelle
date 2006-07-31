@@ -9,6 +9,7 @@ let test_mode = ref false
 let test_ctl_foo = ref false
 let testall_mode = ref false
 
+let compare_with_expected = ref false
 
 (******************************************************************************)
 let testone x = 
@@ -27,7 +28,7 @@ let testone x =
     Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
     let expected_res = "tests/" ^ x ^ ".res" in
-    if Common.lfile_exists expected_res 
+    if Common.lfile_exists expected_res && !compare_with_expected
     then 
       let xs = process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^ 
                                        " "  ^ expected_res) 
@@ -138,6 +139,8 @@ let main () =
       " test the engine with the foo ctl in test.ml";
       "-testall", Arg.Set testall_mode, 
       " ";
+      "-compare_with_expected", Arg.Set compare_with_expected, 
+      " "; 
 
       "-show_flow", Arg.Set Flag.show_flow,  " ";
       "-show_fixed_flow", Arg.Set Flag.show_fixed_flow,  " the one after some fixes.";
