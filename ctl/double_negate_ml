@@ -1,0 +1,75 @@
+(* optimizes triples that have complementary environments and the same
+witnesses *)
+
+let double_negate trips =
+  let y =
+    List.sort
+      (function (s,_,wit) -> function (s',_,wit') -> compare (s,wit) (s',wit'))
+      trips in
+  let rec classify = function
+      [] -> []
+    | ((s,th,wit) as x)::rest ->
+	(match classify rest with
+	  [] -> [[x]]
+	| (((s',th',wit')::_) as x1)::rest ->
+	    if (s,wit) = (s',wit')
+	    then (x::x1)::rest
+	    else [x]::(x1::rest)
+	| _ -> failwith "not possible") in
+  let y =
+    List.map
+      (function
+	  (((s,_,wit)::_) as all) ->
+	    ((s,wit),List.map (function (_,th,_) -> th) all)
+	| _ -> failwith "not possible")
+    (classify y) in
+  let cnf rest_th th =
+    List.fold_left
+      (function rest ->
+	function sub1 ->
+	  List.fold_left
+	    (function rest ->
+	      function subs ->
+		if memBy eq_sub (negate_sub sub1) subs
+		then rest
+		else if memBy eq_sub sub1 subs
+		then subs::rest
+		else (sub1::subs)::rest)
+	    rest rest_th)
+      [] th in
+  let dnf rest_th th =
+    List.fold_left
+      (function rest ->
+	function sub1 ->
+	  List.fold_left
+	    (function rest ->
+	      function subs ->
+		match conj_subst [sub1] subs with
+		  None -> rest
+		| Some th -> th::rest)
+	    rest rest_th)
+      [] th in
+  let res =
+    List.sort compare
+      (List.fold_left
+	 (function rest ->
+	   function
+	       ((s,wit),[th]) -> (s,th,wit)::rest
+	     | ((s,wit),ths) ->
+		 match ths with
+		   [] -> failwith "not possible"
+		 | (th::ths) ->
+		     let (cnf : substitution list) =
+		       List.fold_left cnf
+			 (List.map (function x -> [x]) th) ths in
+		     match cnf with
+		       [] -> (s,[],wit)::rest
+		     | th::ths ->
+			 let res =
+			   setify
+			     (List.fold_left dnf
+				(List.map (function x -> [x]) th)
+				ths) in
+			 (List.map (function th -> (s,th,wit)) res) @ rest)
+	 [] y) in
+  res
