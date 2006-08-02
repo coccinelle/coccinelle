@@ -174,11 +174,13 @@ let (fix_flow_ctl:
   !g#add_arc ((topi, enteri), Control_flow_c.Direct) +> adjust_g;
   !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
 
+(*
   if null ((!g#successors   errornodei)#tolist) &&
      null ((!g#predecessors errornodei)#tolist)
   then
     !g#del_node errornodei +> adjust_g
   else 
+*)
     !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
   let remove_one_node nodei = 
