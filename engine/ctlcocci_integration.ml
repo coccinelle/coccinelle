@@ -169,11 +169,17 @@ let (fix_flow_ctl:
   let exitnodei  = find_node (fun x -> x = Control_flow_c.Exit) in
   let errornodei = find_node (fun x -> x = Control_flow_c.ErrorExit) in
 
+
   !g#add_arc ((topi, topi), Control_flow_c.Direct) +> adjust_g;
   !g#add_arc ((topi, enteri), Control_flow_c.Direct) +> adjust_g;
   !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
-  !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
+  if null ((!g#successors   errornodei)#tolist) &&
+     null ((!g#predecessors errornodei)#tolist)
+  then
+    !g#del_node errornodei +> adjust_g
+  else 
+    !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
   let remove_one_node nodei = 
     let preds = (!g#predecessors nodei)#tolist in
