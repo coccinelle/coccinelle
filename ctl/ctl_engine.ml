@@ -277,6 +277,12 @@ let dom_sub sub =
   | A.NegSubst(x,_) -> x
 ;;
 	
+let ran_sub sub =
+  match sub with
+  | A.Subst(_,x)    -> x
+  | A.NegSubst(_,x) -> x
+;;
+	
 let eq_subBy eqx eqv sub sub' =
   match (sub,sub') with 
     | (A.Subst(x,v),A.Subst(x',v'))       -> (eqx x x') && (eqv v v')
@@ -332,7 +338,7 @@ let clean_subst theta =
 	  match (s,s') with
 	    (A.Subst(_,_),A.NegSubst(_,_)) -> -1
 	  | (A.NegSubst(_,_),A.Subst(_,_)) -> 1
-	  | _ -> 0
+	  | _ -> compare (ran_sub s) (ran_sub s')
 	else res)
       theta in
   let rec loop = function
