@@ -81,13 +81,6 @@ let foldl1 f xs = foldl f (head xs) (tail xs)
 
 type 'a esc = ESC of 'a | CONT of 'a
 
-let rec lazy_foldl f rest = function
-    [] -> rest
-  | (x::xs) ->
-      (match f rest x with
-	ESC x -> x
-      |	CONT x -> lazy_foldl f x xs)
-
 let foldr = List.fold_right;;
 
 let concat = List.concat;;
@@ -147,11 +140,15 @@ let rec nub ls =
   | (x::xs) -> x::(nub xs)
 ;;
 
-let setifyBy eq xs = List.sort compare (nubBy eq xs);;
+let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
 
-let setify xs = List.sort compare (nub xs);;
+let setifyBy eq xs = List.sort state_compare (nubBy eq xs);;
 
-let unionBy eq xs = function
+let setify xs = List.sort state_compare (nub xs);;
+
+let inner_setify xs = List.sort compare (nub xs);;
+
+let unionBy compare eq xs = function
     [] -> xs
   | ys ->
       let rec loop = function
@@ -160,7 +157,7 @@ let unionBy eq xs = function
       List.sort compare (loop xs)
 ;;
 
-let union xs ys = unionBy (=) xs ys;;
+let union xs ys = unionBy state_compare (=) xs ys;;
 
 let setdiff xs ys = filter (fun x -> not (List.mem x ys)) xs;;
 
@@ -395,7 +392,7 @@ let top_wit = ([] : (('pred, 'anno) witness list));;
 
 let eq_wit wit wit' = wit = wit';;
 
-let union_wit wit wit' = union wit wit';;
+let union_wit wit wit' = unionBy compare (=) wit wit';;
 
 let negate_wit wit =
   match wit with
@@ -417,9 +414,13 @@ let eq_trip (s,th,wit) (s',th',wit') =
 
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
-let triples_union trips trips' = unionBy eq_trip trips trips';;
+let triples_union trips trips' = unionBy compare eq_trip trips trips';;
 
 let triples_conj trips trips' =
+  let (shared,trips) =
+    List.partition (function t -> List.mem t trips') trips in
+  let trips' =
+    List.filter (function t -> not(List.mem t shared)) trips' in
   setify (
     foldl
       (function rest ->
@@ -433,7 +434,7 @@ let triples_conj trips trips' =
 		      | _       -> rest)
 		  else rest)
 	     rest trips')
-      [] trips)
+      shared trips)
 ;;
 
 
@@ -610,7 +611,7 @@ let unwitify trips =
 		| Not(a) -> posloop a
 		| True -> [] in
 	      posloop in
-	    List.map (function wit -> (s,th,setify wit)) (push_not wit))
+	    List.map (function wit -> (s,th,inner_setify wit)) (push_not wit))
 	  trips))
 
 (* ********************************** *)
@@ -658,14 +659,9 @@ let rec pre_exist dir count (grp,_,_) y =
   loop y count
 ;;
 
-let pre_forall dir count ((_,_,states) as m) y =
-  let arg = triples_wit_complement states (witify y) in
-  unwitify (triples_wit_complement states(pre_exist dir count m arg))
-;;
-
 exception Empty
 
-let new_pre_forall dir (grp,_,states) y all =
+let pre_forall dir (grp,_,states) y all =
   let pred =
     match dir with A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
   let succ =
@@ -673,7 +669,7 @@ let new_pre_forall dir (grp,_,states) y all =
   let neighbors =
     List.map
       (function p -> (p,succ grp p))
-      (setify(concatmap (function (s,_,_) -> pred grp s) y)) in
+      (inner_setify(concatmap (function (s,_,_) -> pred grp s) y)) in
   let neighbor_triples =
     List.fold_left
       (function rest ->
@@ -695,17 +691,34 @@ let new_pre_forall dir (grp,_,states) y all =
     [] -> []
   | _ -> foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
 
-let double_negate (_,_,states) y =
-  let arg = triples_wit_complement states (witify y) in
-  unwitify (triples_wit_complement states arg)
-
+(* This function relies on y being sorted by state! *)
+let double_negate y =
+  let do_one states y =
+    let arg = triples_wit_complement states (witify y) in
+    unwitify (triples_wit_complement states arg) in
+  let rec loop = function
+      [] -> []
+    | ((s,_,_) as t)::rest ->
+	match loop rest with
+	  [] -> [[t]]
+	| (((s1,_,_)::_) as g1)::rest ->
+	    if s = s1 then (t::g1)::rest else [t]::(g1::rest)
+	| _ -> failwith "not possible" in
+  let res =
+    concatmap
+      (function
+	  [x] -> [x]
+	| ((s,_,_)::_) as y -> do_one [s] y
+	| _ -> failwith "not possible")
+      (loop y) in
+  res
 
 let satEX dir count m s = setify (pre_exist dir count m s);;
 
 let satAX dir count m s =
   let rec loop s = function
       0 -> s
-    | n -> loop (new_pre_forall dir m s s) (n-1) in
+    | n -> loop (pre_forall dir m s s) (n-1) in
   loop s count
 ;;
   
@@ -715,17 +728,16 @@ let satAU dir m s1 s2 =
   if s1 = []
   then s2
   else
-    let s1 = double_negate m s1 in (* essential for good performance *)
-    let s2 = double_negate m s2 in (* not sure it's worth it but doesn't hurt*)
+    let s1 = double_negate s1 in (* essential for good performance *)
+    let s2 = double_negate s2 in (* not sure it's worth it but doesn't hurt*)
     let ctr = ref 0 in
     let rec f y = function
 	[] -> y
       |	new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = new_pre_forall dir m new_info y in
-	  let second = triples_conj s1 first in
-	  let res = triples_union y second in
+	  let first = pre_forall dir m new_info y in
+	  let res = triples_union y (triples_conj s1 first) in
 	  let new_info = setdiff res y in
 	  f res new_info in
     f s2 s2
@@ -736,36 +748,39 @@ let satEU dir m s1 s2 =
   if s1 = []
   then s2
   else
-    let s1 = double_negate m s1 in
-    let s2 = double_negate m s2 in
+    let s1 = double_negate s1 in
+    let s2 = double_negate s2 in
     let f y =
       triples_union s2 (triples_conj s1 (setify (pre_exist dir 1 m y))) in 
     setfix f s2
 ;;
 
-let satAF dir ((_,_,states) as m) s =
-  let s = double_negate m s in
-  let f y =
-    let pre = pre_forall dir 1 m y in
-    triples_union y pre in
-  setfix f s
+let satAF dir m s = 
+  let s = double_negate s in
+  let rec f y = function
+      [] -> y
+    | new_info ->
+	let res = triples_union y (pre_forall dir m new_info y) in
+	let new_info = setdiff res y in
+	f res new_info in
+  f s s
 
 let satAG dir ((_,_,states) as m) s =
-  let s = double_negate m s in
+  let s = double_negate s in
   let f y =
-    let pre = pre_forall dir 1 m y in
+    let pre = pre_forall dir m y y in
     triples_conj y pre in
   setfix f s
 
 let satEF dir ((_,_,states) as m) s =
-  let s = double_negate m s in
+  let s = double_negate s in
   let f y =
     let pre = pre_exist dir 1 m y in
     triples_union y pre in
   setfix f s
 
 let satEG dir ((_,_,states) as m) s =
-  let s = double_negate m s in
+  let s = double_negate s in
   let f y =
     let pre = pre_exist dir 1 m y in
     triples_conj y pre in
@@ -894,7 +909,7 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	if count = 1
 	then Printf.printf "AX\n"
 	else Printf.printf "AX^%d\n" count; flush stdout;
-	anno (pre_forall dir count m res) [child]
+	anno (satAX dir count m res) [child]
     | A.EF(dir,phi1)       -> 
 	let (child,res) = satv keep_negwits phi1 env in
 	Printf.printf "EF\n"; flush stdout;

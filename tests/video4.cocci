@@ -1,15 +1,16 @@
 @@
 identifier v;
 identifier fld;
+expression E;
 @@
 
   int v;
   m();
   <...
-  f();
+  f(E);
   <...
 - v.fld
   ...>
-  g();
+  g(E);
   ...>
   n();
