@@ -79,6 +79,15 @@ let foldl = List.fold_left;;
 
 let foldl1 f xs = foldl f (head xs) (tail xs)
 
+type 'a esc = ESC of 'a | CONT of 'a
+
+let rec lazy_foldl f rest = function
+    [] -> rest
+  | (x::xs) ->
+      (match f rest x with
+	ESC x -> x
+      |	CONT x -> lazy_foldl f x xs)
+
 let foldr = List.fold_right;;
 
 let concat = List.concat;;
@@ -419,9 +428,9 @@ let triples_conj trips trips' =
 	     (function rest ->
 		function (s2,th2,wit2) ->
 		  if (s1 = s2) then
-		    match (conj_subst th1 th2) with
+		    (match (conj_subst th1 th2) with
 		      | Some th -> (s1,th,union_wit wit1 wit2)::rest
-		      | _       -> rest
+		      | _       -> rest)
 		  else rest)
 	     rest trips')
       [] trips)
@@ -654,6 +663,38 @@ let pre_forall dir count ((_,_,states) as m) y =
   unwitify (triples_wit_complement states(pre_exist dir count m arg))
 ;;
 
+exception Empty
+
+let new_pre_forall dir (grp,_,states) y all =
+  let pred =
+    match dir with A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
+  let succ =
+    match dir with A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
+  let neighbors =
+    List.map
+      (function p -> (p,succ grp p))
+      (setify(concatmap (function (s,_,_) -> pred grp s) y)) in
+  let neighbor_triples =
+    List.fold_left
+      (function rest ->
+	function (s,children) ->
+	  try
+	    (List.map
+	       (function child ->
+		 let child_triples =
+		   List.map
+		     (function (_,th,wit) -> (s,th,wit))
+		     (List.filter (function (s1,th,wit) -> s1 = child) all) in
+		 match child_triples with
+		   [] -> raise Empty
+		 | l -> l)
+	       children) :: rest
+	  with Empty -> rest)
+      [] neighbors in
+  match neighbor_triples with
+    [] -> []
+  | _ -> foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
+
 let double_negate (_,_,states) y =
   let arg = triples_wit_complement states (witify y) in
   unwitify (triples_wit_complement states arg)
@@ -661,7 +702,11 @@ let double_negate (_,_,states) y =
 
 let satEX dir count m s = setify (pre_exist dir count m s);;
 
-let satAX dir count m s = pre_forall dir count m s
+let satAX dir count m s =
+  let rec loop s = function
+      0 -> s
+    | n -> loop (new_pre_forall dir m s s) (n-1) in
+  loop s count
 ;;
   
 
@@ -670,17 +715,20 @@ let satAU dir m s1 s2 =
   if s1 = []
   then s2
   else
-    let s1 = double_negate m s1 in
+    let s1 = double_negate m s1 in (* essential for good performance *)
     let s2 = double_negate m s2 in (* not sure it's worth it but doesn't hurt*)
     let ctr = ref 0 in
-    let f y = 
-      ctr := !ctr + 1;
-(*    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-      let first = pre_forall dir 1 m y in
-      let second = triples_conj s1 first in
-      triples_union s2 second in
-    let res = setfix f s2 in
-    res
+    let rec f y = function
+	[] -> y
+      |	new_info ->
+	  ctr := !ctr + 1;
+	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	  let first = new_pre_forall dir m new_info y in
+	  let second = triples_conj s1 first in
+	  let res = triples_union y second in
+	  let new_info = setdiff res y in
+	  f res new_info in
+    f s2 s2
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
