@@ -174,13 +174,11 @@ let (fix_flow_ctl:
   !g#add_arc ((topi, enteri), Control_flow_c.Direct) +> adjust_g;
   !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
 
-(*
   if null ((!g#successors   errornodei)#tolist) &&
      null ((!g#predecessors errornodei)#tolist)
   then
     !g#del_node errornodei +> adjust_g
   else 
-*)
     !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
   let remove_one_node nodei = 
@@ -230,7 +228,8 @@ let (fix_flow_ctl:
 
 let model_for_ctl  cflow binding = 
  let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
- let labels = labels_for_ctl (cflow#nodes#tolist) binding  in
+ (* subtil: the label must operate on newflow, not (old) cflow. *)
+ let labels = labels_for_ctl (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
  

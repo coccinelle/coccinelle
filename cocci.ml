@@ -265,6 +265,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     
                     if trans_info <> []
                     then 
+                      (* I do the transformation on flow, not fixed_flow, 
+                         because the flow_to_ast need my extra information. *)
                       let flow' = Transformation.transform trans_info flow in
                       let def' = Control_flow_c.control_flow_to_ast flow' in
                       (Ast_c.Definition def', Unparse_c.PPnormal)

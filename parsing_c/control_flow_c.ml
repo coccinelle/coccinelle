@@ -55,6 +55,10 @@ open Commonop open Common
  *       - need FallThrough.
  *       - Need know if ErrorExit, 
  *
+ * choice: Julia proposed to do differently, that the flow is in fact just
+ *  a view through the Ast, which means just Ocaml ref, so that when
+ *  modify some nodes, in fact it modifies the ast. But prefer do it 
+ *  the functionnal way.
  * 
  * ----------------------------------------------------------------------
  *
