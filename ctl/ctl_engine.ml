@@ -818,7 +818,7 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
     match A.unwrap phi with
       A.False              -> []
     | A.True               -> triples_top states
-    | A.Pred(p)            -> (label p) (* NOTE: Assume well-formed *)
+    | A.Pred(p)            -> setify (label p) (* NOTE: Assume well-formed *)
     | A.Not(phi)           ->
 	triples_complement states (loop (not keep_negwits) phi)
     | A.Or(phi1,phi2)      ->
@@ -886,7 +886,7 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
       match A.unwrap phi with
       A.False              -> anno [] []
     | A.True               -> anno (triples_top states) []
-    | A.Pred(p)            -> anno (label p) []
+    | A.Pred(p)            -> anno (setify(label p)) []
     | A.Not(phi1)          -> 
 	let (child,res) = satv (not keep_negwits) phi1 env in
 	Printf.printf "not\n"; flush stdout;
