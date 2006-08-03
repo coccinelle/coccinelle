@@ -636,7 +636,8 @@ let triples_witness x trips =
     else (s,newth,[A.Wit(s,th_x,[],wit)]) in	(* [] = annotation *)
   (* not sure that nub is needed here.  would require empty witness case to
      make a duplicate. *)
-  setify (map mkwit trips)
+  (* setify not needed - will be called by dropwits *)
+  map mkwit trips
 ;;
 
 
@@ -720,7 +721,8 @@ let double_negate y =
       (loop y) in
   res
 
-let satEX dir count m s = setify (pre_exist dir count m s);;
+(* drop_negwits will call setify *)
+let satEX dir count m s = pre_exist dir count m s;;
 
 let satAX dir count m s =
   let rec loop s = function
@@ -746,6 +748,9 @@ let satAU dir m s1 s2 =
 	  let first = pre_forall dir m new_info y in
 	  let res = triples_union y (triples_conj s1 first) in
 	  let new_info = setdiff res y in
+	  Printf.printf "iter %d res %d new_info %d\n"
+	  !ctr (List.length res) (List.length new_info);
+	  flush stdout;
 	  f res new_info in
     f s2 s2
 ;;
@@ -801,14 +806,15 @@ let drop_wits keep_negwits s =
       (function
 	  A.NegWit(_,_,_,_) -> (* print_state "dropping a witness" s;*) true
 	| _ -> false) in
-  if keep_negwits
+  setify
+  (if keep_negwits
   then (* under a negation *)
     List.map
       (function (s,th,wits) ->
 	(s,th,List.filter (function A.Wit(_,_,_,_) -> false |_ -> true) wits))
       s
   else (* not under a negation *)
-    List.filter (function (s,th,wits) -> not(contains_negwits wits)) s
+    List.filter (function (s,th,wits) -> not(contains_negwits wits)) s)
 
 type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 
