@@ -336,9 +336,11 @@ let rule_elem arity re =
       print_string " "
   | Ast.Decl(decl) -> print_string arity; declaration decl
   | Ast.SeqStart(brace) ->
-      print_string arity; mcode print_string brace; start_block()
+      print_string arity; mcode print_string brace;
+      if !print_newlines_disj then start_block()
   | Ast.SeqEnd(brace) ->
-      end_block(); print_string arity; mcode print_string brace
+      if !print_newlines_disj then end_block();
+      print_string arity; mcode print_string brace
   | Ast.ExprStatement(exp,sem) ->
       print_string arity; expression exp; mcode print_string sem
   | Ast.IfHeader(iff,lp,exp,rp) ->

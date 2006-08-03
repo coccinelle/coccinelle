@@ -816,51 +816,102 @@ let drop_wits keep_negwits s =
   else (* not under a negation *)
     List.filter (function (s,th,wits) -> not(contains_negwits wits)) s)
 
+
+(* ********************* *)
+(* Environment functions *)
+(* ********************* *)
+
+let extend_required trips required =
+  inner_setify
+    (foldl
+       (function rest ->
+	 function (_,t,_) ->
+	   foldl
+	     (function rest ->
+	       function r ->
+		 match conj_subst t r with None -> rest | Some th -> th::rest)
+	     rest required)
+       [] trips)
+
+let drop_required v required =
+  inner_setify
+    (List.map (List.filter (function sub -> not(dom_sub sub = v))) required)
+
+(* no idea how to write this function ... *)
+let satLabel label required p =
+  let triples = setify(label p) in
+  foldl
+    (function rest ->
+      function ((_,th,_) as t) ->
+	if List.exists
+	    (function th' -> not(conj_subst th th' = None))
+	    required
+	then t::rest
+	else rest)
+    [] triples
+
+(* **************************** *)
+(* End of environment functions *)
+(* **************************** *)
+
 type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 
-let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
-  let rec loop keep_negwits phi : ('pred, 'anno) triples =
+let rec satloop keep_negwits required ((grp,label,states) as m) phi env
+    check_conj =
+  let rec loop keep_negwits required phi : ('pred, 'anno) triples =
     let res =
     match A.unwrap phi with
       A.False              -> []
     | A.True               -> triples_top states
-    | A.Pred(p)            -> setify (label p) (* NOTE: Assume well-formed *)
+    | A.Pred(p)            -> satLabel label required p
     | A.Not(phi)           ->
-	triples_complement states (loop (not keep_negwits) phi)
+	triples_complement states (loop (not keep_negwits) required phi)
     | A.Or(phi1,phi2)      ->
-	triples_union (loop keep_negwits phi1) (loop keep_negwits phi2)
+	triples_union
+	  (loop keep_negwits required phi1)
+	  (loop keep_negwits required phi2)
     | A.And(phi1,phi2)     ->
 	(* phi1 is considered to be more likely to be [], because of the
 	   definition of asttoctl.  Could use heuristics such as the size of
 	   the term *)
-	(match loop keep_negwits phi1 with
+	(match loop keep_negwits required phi1 with
 	  [] -> []
 	| phi1res ->
-	    (match loop keep_negwits phi2 with
+	    let new_required = extend_required phi1res required in
+	    (match loop keep_negwits new_required phi2 with
 	      [] -> []
 	    | phi2res ->
 		let res = triples_conj phi1res phi2res in
 		check_conj phi phi1res phi2res res;
 		res))
-    | A.EX(dir,count,phi)      -> satEX dir count m (loop keep_negwits phi)
-    | A.AX(dir,count,phi)      -> satAX dir count m (loop keep_negwits phi)
-    | A.EF(dir,phi)            -> satEF dir m (loop keep_negwits phi)
-    | A.AF(dir,phi)            -> satAF dir m (loop keep_negwits phi)
-    | A.EG(dir,phi)            -> satEG dir m (loop keep_negwits phi)
-    | A.AG(dir,phi)            -> satAG dir m (loop keep_negwits phi)
+    | A.EX(dir,count,phi)      ->
+	satEX dir count m (loop keep_negwits required phi)
+    | A.AX(dir,count,phi)      ->
+	satAX dir count m (loop keep_negwits required phi)
+    | A.EF(dir,phi)            -> satEF dir m (loop keep_negwits required phi)
+    | A.AF(dir,phi)            -> satAF dir m (loop keep_negwits required phi)
+    | A.EG(dir,phi)            -> satEG dir m (loop keep_negwits required phi)
+    | A.AG(dir,phi)            -> satAG dir m (loop keep_negwits required phi)
     | A.EU(dir,phi1,phi2)      ->
-	(match loop keep_negwits phi2 with
+	(match loop keep_negwits required phi2 with
 	  [] -> []
-	| s2 -> satEU dir m (loop keep_negwits phi1) s2)
+	| s2 ->
+	    let new_required = extend_required s2 required in
+	    satEU dir m (loop keep_negwits new_required phi1) s2)
     | A.AU(dir,phi1,phi2)      ->
-	(match loop keep_negwits phi2 with
+	(match loop keep_negwits required phi2 with
 	  [] -> []
-	| s2 -> satAU dir m (loop keep_negwits phi1) s2)
+	| s2 ->
+	    let new_required = extend_required s2 required in
+	    satAU dir m (loop keep_negwits new_required phi1) s2)
     | A.Implies(phi1,phi2) ->
-	loop keep_negwits (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
-    | A.Exists (v,phi)     -> triples_witness v (loop keep_negwits phi)
+	loop keep_negwits required
+	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
+    | A.Exists (v,phi)     ->
+	let new_required = drop_required v required in
+	triples_witness v (loop keep_negwits new_required phi)
     | A.Let(v,phi1,phi2)   ->
-	satloop keep_negwits m phi2
+	satloop keep_negwits required m phi2
 	  ((v,(ref (Frozen phi1),ref (Frozen phi1))) :: env)
 	  check_conj
     | A.Ref(v)             ->
@@ -871,100 +922,105 @@ let rec satloop keep_negwits ((grp,label,states) as m) phi env check_conj =
 	(match !cell with
 	  Thawed v -> v
 	| Frozen phi ->
-	    let res = loop keep_negwits phi in cell := Thawed res; res) in
+	    let res = loop keep_negwits required phi in
+            (*cell := Thawed res;*) res) in
     drop_wits keep_negwits res in
   
-  loop keep_negwits phi
+  loop keep_negwits required phi
 ;;    
 
 
 (* SAT with tracking *)
-let rec sat_verbose_loop keep_negwits annot maxlvl lvl
+let rec sat_verbose_loop keep_negwits required annot maxlvl lvl
     ((_,label,states) as m) phi env check_conj =
   let anno res children = (annot lvl phi res children,res) in
-  let satv keep_negwits phi0 env =
-    sat_verbose_loop keep_negwits annot maxlvl (lvl+1)
+  let satv keep_negwits required phi0 env =
+    sat_verbose_loop keep_negwits required annot maxlvl (lvl+1)
       m phi0 env check_conj in
   if (lvl > maxlvl) && (maxlvl > -1) then
-    anno (satloop keep_negwits m phi env check_conj) []
+    anno (satloop keep_negwits required m phi env check_conj) []
   else
     let (child,res) =
       match A.unwrap phi with
       A.False              -> anno [] []
     | A.True               -> anno (triples_top states) []
-    | A.Pred(p)            -> anno (setify(label p)) []
+    | A.Pred(p)            -> anno (satLabel label required p) []
     | A.Not(phi1)          -> 
-	let (child,res) = satv (not keep_negwits) phi1 env in
+	let (child,res) = satv (not keep_negwits) required phi1 env in
 	Printf.printf "not\n"; flush stdout;
 	anno (triples_complement states res) [child]
     | A.Or(phi1,phi2)      -> 
-	let (child1,res1) = satv keep_negwits phi1 env in
-	let (child2,res2) = satv keep_negwits phi2 env in
+	let (child1,res1) = satv keep_negwits required phi1 env in
+	let (child2,res2) = satv keep_negwits required phi2 env in
 	Printf.printf "or\n"; flush stdout;
 	anno (triples_union res1 res2) [child1; child2]
     | A.And(phi1,phi2)     -> 
-	(match satv keep_negwits phi1 env with
+	(match satv keep_negwits required phi1 env with
 	  (child1,[]) -> anno [] [child1]
 	| (child1,res1) ->
-	    (match satv keep_negwits phi2 env with
+	    let new_required = extend_required res1 required in
+	    (match satv keep_negwits new_required phi2 env with
 	      (child2,[]) -> anno [] [child1;child2]
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
 		anno (triples_conj res1 res2) [child1; child2]))
     | A.EX(dir,count,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	if count = 1
 	then Printf.printf "EX\n"
 	else Printf.printf "EX^%d\n" count; flush stdout;
 	anno (satEX dir count m res) [child]
     | A.AX(dir,count,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	if count = 1
 	then Printf.printf "AX\n"
 	else Printf.printf "AX^%d\n" count; flush stdout;
 	anno (satAX dir count m res) [child]
     | A.EF(dir,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	Printf.printf "EF\n"; flush stdout;
 	anno (satEF dir m res) [child]
     | A.AF(dir,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	Printf.printf "AF\n"; flush stdout;
 	anno (satAF dir m res) [child]
     | A.EG(dir,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	Printf.printf "EG\n"; flush stdout;
 	anno (satEG dir m res) [child]
     | A.AG(dir,phi1)       -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let (child,res) = satv keep_negwits required phi1 env in
 	Printf.printf "AG\n"; flush stdout;
 	anno (satAG dir m res) [child]
 	  
     | A.EU(dir,phi1,phi2)  -> 
-	(match satv keep_negwits phi2 env with
+	(match satv keep_negwits required phi2 env with
 	  (child2,[]) -> anno [] [child2]
 	| (child2,res2) ->
-	    let (child1,res1) = satv keep_negwits phi1 env in
+	    let new_required = extend_required res2 required in
+	    let (child1,res1) = satv keep_negwits new_required phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
 	    anno (satEU dir m res1 res2) [child1; child2])
     | A.AU(dir,phi1,phi2)      -> 
-	(match satv keep_negwits phi2 env with
+	(match satv keep_negwits required phi2 env with
 	  (child2,[]) -> anno [] [child2]
 	| (child2,res2) ->
-	    let (child1,res1) = satv keep_negwits phi1 env in
+	    let new_required = extend_required res2 required in
+	    let (child1,res1) = satv keep_negwits new_required phi1 env in
 	    Printf.printf "AU %b\n" keep_negwits; flush stdout;
 	    anno (satAU dir m res1 res2) [child1; child2])
     | A.Implies(phi1,phi2) -> 
-	let (child1,res1) = satv (not keep_negwits) phi1 env in
-	let (child2,res2) = satv keep_negwits phi2 env in
+	let (child1,res1) = satv (not keep_negwits) [] phi1 env in
+	let (child2,res2) = satv keep_negwits required phi2 env in
 	anno (triples_union (triples_complement states res1) res2)
 	  [child1; child2]
     | A.Exists (v,phi1)    -> 
-	let (child,res) = satv keep_negwits phi1 env in
+	let new_required = drop_required v required in
+	let (child,res) = satv keep_negwits new_required phi1 env in
 	anno (triples_witness v res) [child]
     | A.Let(v,phi1,phi2)   ->
 	let (child2,res2) =
-	  satv keep_negwits phi2
+	  satv keep_negwits required phi2
 	    ((v,(ref (Frozen phi1),ref (Frozen phi1))) :: env) in
 	anno res2 [child2]
     | A.Ref(v)             ->
@@ -975,22 +1031,22 @@ let rec sat_verbose_loop keep_negwits annot maxlvl lvl
 	(match !cell with
 	  Thawed v -> anno v []
 	| Frozen phi ->
-	    let (child,res) = satv keep_negwits phi env in
-	    cell := Thawed res;
+	    let (child,res) = satv keep_negwits required phi env in
+	    (*cell := Thawed res;*)
 	    anno res [child]) in
     (child,drop_wits keep_negwits res)
 	
 ;;
 
 let sat_verbose annotate maxlvl lvl m phi check_conj =
-  sat_verbose_loop false annotate maxlvl lvl m phi [] check_conj
+  sat_verbose_loop false [[]] annotate maxlvl lvl m phi [] check_conj
 
 (* Type for annotations collected in a tree *)
 type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
 
 let sat_annotree annotate m phi check_conj =
   let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
-    sat_verbose_loop false tree_anno (-1) 0 m phi [] check_conj
+    sat_verbose_loop false [[]] tree_anno (-1) 0 m phi [] check_conj
 ;;
 
 (*
@@ -1059,7 +1115,7 @@ let sat m phi check_conj =
   let res =
     if(!Flag_ctl.verbose_ctl_engine)
     then snd (sat_annotree simpleanno2 m phi check_conj)
-    else satloop false m phi [] check_conj in
+    else satloop false [[]] m phi [] check_conj in
 (* print_state "final result" res;*)
   res
 ;;
