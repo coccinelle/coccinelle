@@ -26,7 +26,7 @@ let pp_predicate = function
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp s; pp ")"
-  | Match re -> Pretty_print_cocci.rule_elem "" re
+  | Match re -> Pretty_print_cocci.print_rule_elem re
   | Label s -> pp "Label("; pp s; pp ")"
   | PrefixLabel s -> pp "PrefixLabel("; pp s; pp ")"
 

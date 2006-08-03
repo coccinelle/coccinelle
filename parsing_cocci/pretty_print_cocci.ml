@@ -3,6 +3,7 @@ module Ast = Ast_cocci
 
 let print_plus_flag = ref true
 let print_minus_flag = ref true
+let print_newlines_disj = ref true
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0
@@ -110,6 +111,20 @@ let rec ident i =
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
+let print_disj_list fn l =
+  if !print_newlines_disj
+  then (print_string "\n("; force_newline())
+  else print_string "(";
+  print_between
+    (function _ ->
+      if !print_newlines_disj
+      then (print_string "\n|"; force_newline())
+      else print_string " | ")
+    fn l;
+  if !print_newlines_disj
+  then (print_string "\n)"; force_newline())
+  else print_string ")"
+
 let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
@@ -164,12 +179,7 @@ let rec expression e =
       print_string "*/"
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
-  | Ast.DisjExpr(exp_list) ->
-      print_string "\n("; force_newline();
-      print_between
-	(function _ -> print_string "\n|"; force_newline())
-	expression exp_list;
-      print_string "\n)"
+  | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(expr_dots) -> nest_dots expression expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
@@ -286,12 +296,7 @@ let rec declaration d =
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; expression exp; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
-  | Ast.DisjDecl(decls) ->
-      print_string "\n("; force_newline();
-      print_between
-	(function _ -> print_string "\n|"; force_newline())
-	declaration decls;
-      print_string "\n)"
+  | Ast.DisjDecl(decls) -> print_disj_list declaration decls
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
@@ -396,8 +401,9 @@ let rec statement arity s =
       dots force_newline (statement arity) body; rule_elem arity rbrace
   | Ast.Disj([stmt_dots]) ->
       print_string arity;
-      dots force_newline (statement arity) stmt_dots
-  | Ast.Disj(stmt_dots_list) ->
+      dots (function _ -> if !print_newlines_disj then force_newline())
+	(statement arity) stmt_dots
+  | Ast.Disj(stmt_dots_list) -> (* ignores newline directive for readability *)
       print_string arity;
       print_string "\n("; force_newline();
       print_between
@@ -472,13 +478,23 @@ let _ =
 
 let unparse x =
   print_string "\n@@\n@@";
+  print_newlines_disj := true;
   force_newline();
   force_newline();
   rule x;
   print_newline()
 
 let rule_elem_to_string x =
+  print_newlines_disj := true;
   Common.format_to_string (function _ -> rule_elem "" x)
 
 let unparse_to_string x =
+  print_newlines_disj := true;
   Common.format_to_string (function _ -> unparse x)
+
+let print_rule_elem re =
+  let nl = !print_newlines_disj in
+  print_newlines_disj := false;
+  rule_elem "" re;
+  print_newlines_disj := nl
+
