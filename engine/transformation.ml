@@ -116,9 +116,12 @@ let rec (transform_re_node:
   | A.Decl _, _ | _, F.Declaration _ -> raise NoMatch
 
   | A.FunHeader (stoa, ida, oparen, paramsa, cparen),
-    F.HeadFunc (idb, (retb, paramsb, isvaargs, (iidotsb, iiparensb)), 
-                stob, compoundb, (infoidb, iistob, iicpb))
+    F.HeadFunc ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob, compoundb), 
+                ii)
     -> 
+      (match ii with
+      | iidb::ioparenb::icparenb::iobraceb::icbraceb::iistob -> 
+
       let stob' = 
         (match stoa with 
         | None -> stob 
@@ -126,11 +129,12 @@ let rec (transform_re_node:
         ) in
       let iistob' = iistob in (* todo *)
 
-      let (idb', infoidb') = 
-        transform_ident Pattern.LocalFunction ida (idb, [infoidb])   binding 
+      let (idb', iidb') = 
+        transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
       in
       
-      let iiparensb' = tag_symbols [oparen;cparen] iiparensb binding in
+      let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
+      in
 
       let seqstyle = 
         (match A.unwrap paramsa with 
@@ -146,10 +150,13 @@ let rec (transform_re_node:
       if isvaargs then failwith "not handling variable length arguments func";
       let iidotsb' = iidotsb in (* todo *)
 
-      let typb' = (retb, paramsb', isvaargs, (iidotsb', iiparensb')) in
+      let typb' = (retb, (paramsb', (isvaargs, iidotsb'))) in
       Control_flow_c.HeadFunc 
-        (idb', typb' , stob', compoundb, (List.hd infoidb', iistob', iicpb))
+        ((idb', typb' , stob', compoundb), 
+         (iidb'++iiparensb'++[iobraceb;icbraceb]++iistob'))
         +> F.rewrap node
+      | _ -> raise Impossible
+      )
       
 
   | A.FunHeader _,_ | _,F.HeadFunc _ -> raise NoMatch
@@ -265,19 +272,20 @@ and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
  fun decla declb -> 
   fun binding -> 
   match declb with
-    (B.DeclList ([var], (iisto, iiptvirgb ))) -> 
+    (B.DeclList ([var], iiptvirgb::iisto)) -> 
       (match A.unwrap decla with
       | A.UnInit (typa, ida, ptvirga) ->
 	  let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
 	  (match var with
-	  | (Some (idb, None, iidb), typb, stob), iivirg -> 
+	  | (Some ((idb, None), iidb::iini), typb, stob), iivirg -> 
+              assert (null iini);
               let typb' = transform_ft_ft typa typb  binding in
               let (idb', iidb') = 
-                transform_ident Pattern.DontKnow ida (idb, [iidb])  binding in
-              
-              let var' = (Some (idb', None, List.hd iidb'), typb', stob), iivirg
+                transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
               in
-              B.DeclList ([var'], (iisto, List.hd iiptvirgb'))
+              let var' = (Some ((idb', None), iidb'), typb', stob), iivirg
+              in
+              B.DeclList ([var'], (iiptvirgb'++iisto))
           
 	  | _ -> failwith "no variable in this declaration, wierd"
           )
@@ -294,10 +302,10 @@ and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
           failwith "not handling Opt/Unique/Multi Decl"
 
       )
-  | (B.DeclList (xs, (iisto, iiptvirgb ))) -> 
+  | (B.DeclList (xs, iiptvirgb::iisto)) -> 
       failwith "More that one variable in one decl. Have to split to transform."
   
-                
+  | _ -> raise Impossible                
   
 (* -------------------------------------------------------------------------- *)
 
@@ -494,9 +502,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
   | A.DisjExpr eas, eb -> 
-      eas +> List.fold_left (fun acc ea -> 
+      eas +> Common.fold_k (fun acc ea k -> 
         try transform_e_e ea acc  binding
-        with NoMatch -> acc
+        with NoMatch -> k acc
         ) eb
 
   | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
@@ -556,7 +564,7 @@ and (transform_arguments:
 and (transform_params: 
    sequence_processing_style -> 
    (Ast_cocci.parameterTypeDef list, 
-    ((Ast_c.parameterTypeDef * Ast_c.il) list)) 
+    ((Ast_c.parameterType * Ast_c.il) list)) 
    transformer) = 
  fun seqstyle pas pbs ->
   fun binding -> 
@@ -580,17 +588,26 @@ and (transform_params:
     | _ -> raise Impossible
 
 and (transform_param: 
-     (Ast_cocci.parameterTypeDef, (Ast_c.parameterTypeDef)) transformer) = 
+     (Ast_cocci.parameterTypeDef, (Ast_c.parameterType)) transformer) = 
  fun pa pb  -> 
   fun binding -> 
     match A.unwrap pa, pb with
-    | A.Param (ida, typa), ((hasreg, idb, typb, (iihasreg, iidb))) -> 
+    | A.Param (ida, typa), ((hasreg, idb, typb), ii_b_s) -> 
+        
+        let idb, iihasreg, iidb = 
+          (match hasreg, idb,  ii_b_s with
+          | false, Some s, [i1] -> s, [], i1
+          | true, Some s, [i1;i2] -> s, [i1], i2
+          | _, None, _ -> raise Impossible
+          | _ -> raise Impossible
+          )
+        in
 
         let (idb', iidb') = 
           transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
         in
         let typb' = transform_ft_ft typa typb binding in
-        ((hasreg, idb', typb', (iihasreg, List.hd iidb'))) 
+        (hasreg, Some idb', typb'), (iihasreg++iidb') 
         
         
     | A.PComma _, _ -> raise Impossible
@@ -681,11 +698,11 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
     | A.StructUnionName(sa, sua), 
-      (qu, (B.StructUnionName ((sb,level), sub), ii)) -> 
+      (qu, (B.StructUnionName (sb, sub), ii)) -> 
         if Pattern.equal_structUnion  (term sua) sub && (term sa) =$= sb
         then
           let ii' = tag_symbols [wrap_mcode sua; sa] ii  binding in
-          (qu, (B.StructUnionName ((sb,level), sub), ii'))
+          (qu, (B.StructUnionName (sb, sub), ii'))
         else raise NoMatch
         
 

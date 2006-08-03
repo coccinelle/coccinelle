@@ -27,7 +27,7 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
     program +> map_filter (fun (e,_) -> 
       match e with
-      | Ast_c.Definition ((funcs, _, _, compound,_)) -> 
+      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
           | [Right st] -> Some st
           | _ -> None
@@ -44,7 +44,7 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
     program +> map_filter (fun (e,_) -> 
       match e with
-      | Ast_c.Definition ((funcs, _, _, compound,_)) -> 
+      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
           | [Right (Ast_c.ExprStatement (Some e),ii)] -> Some e
           | _ -> None
@@ -80,7 +80,7 @@ let flows astc =
   let (program, stat) = astc in
   program +> map_filter (fun (e,_) -> 
     match e with
-    | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
+    | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
         let flow = Control_flow_c.ast_to_control_flow def in
         (try begin Control_flow_c.deadcode_detection flow; Some flow end
         with
@@ -206,7 +206,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
       (* 3: iter function *)
       cprogram +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
         match e with
-        | Ast_c.Definition ((funcs, _, _, c,_) as def) -> 
+        | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
 	    Printf.printf "starting function %s\n" funcs; flush stdout;
             
             (* Cos caml regexp dont like \n ... *)

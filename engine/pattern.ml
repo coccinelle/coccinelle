@@ -62,14 +62,17 @@ let (>&&>) m1 m2 = fun binding ->
 let (>||>) m1 m2 = fun binding ->
   m1 binding ++  m2 binding
 
+(* An exclusiv or (xor). *)
+let (>|+|>) m1 m2 = fun binding -> 
+  let xs = m1 binding in
+  if null xs
+  then m2 binding
+  else xs
+
 let return res = fun binding -> 
   match res with
   | false -> []
   | true -> [binding]
-
-(* other combinator for choice ?
-   there is 2 or ? Or and Xor ? (the Disj for instance seems to be a Xor)
-   in fact it is a Xor I think everytime *)
 
 (******************************************************************************)
 
@@ -220,7 +223,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.Decl _, _ | _, F.Declaration _ -> return false
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 
-    F.HeadFunc (idb, (retb, paramsb, isvaargs, _), stob, statb, _) -> 
+    F.HeadFunc ((idb, (retb, (paramsb, (isvaargs,_))), stob, statb), _) -> 
 
       match_ident LocalFunction ida idb
       >&&>
@@ -398,7 +401,7 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
         xs +> List.fold_left (fun acc var -> 
           acc >||>
           (match var with
-          | (Some (sb, iniopt,_), typb, sto), _ ->
+          | (Some ((sb, iniopt),_), typb, sto), _ ->
               (match iniopt with
               | None -> 
                   (* isomorphisms handled here, good?  cos allow an initializer 
@@ -579,7 +582,7 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
 
   | A.DisjExpr eas, eb -> 
-      eas +> List.fold_left (fun acc ea -> acc >||>  match_e_e ea eb) 
+      eas +> List.fold_left (fun acc ea -> acc >|+|>  match_e_e ea eb) 
         (return false)
 
 
@@ -733,7 +736,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
        (* todo: handle the iso on optionnal size specifification ? *)
 	  
     | A.StructUnionName(sa, sua),
-	(qu, (B.StructUnionName ((sb,_), sub), _)) -> 
+	(qu, (B.StructUnionName (sb, sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
 
@@ -749,7 +752,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 and (match_params: 
        sequence_processing_style -> 
          (Ast_cocci.parameterTypeDef list, 
-          ((Ast_c.parameterTypeDef * Ast_c.il) list)) 
+          ((Ast_c.parameterType * Ast_c.il) list)) 
            matcher) = 
  fun seqstyle pas pbs ->
  (* todo: if contain metavar ? => recurse on two list and consomme *)
@@ -807,10 +810,10 @@ and (match_params:
               check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
               match_params seqstyle xs ys
 
-          | A.Param (ida, typa), ((hasreg, idb, typb, _), ii)::ys -> 
+          | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
               (* todo: use quaopt, hasreg ? *)
               (match_ft_ft typa typb >&&>
-              match_ident DontKnow ida idb
+              match_ident DontKnow ida (some idb)
               ) >&&> 
               match_params seqstyle xs ys
 

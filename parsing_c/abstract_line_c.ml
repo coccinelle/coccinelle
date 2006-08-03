@@ -12,5 +12,7 @@ let al_expr      = Visitor_c.visitor_expr_k_s      strip_info_visitor
 let al_statement = Visitor_c.visitor_statement_k_s strip_info_visitor
 let al_type      = Visitor_c.visitor_type_k_s      strip_info_visitor 
 
-
+let al_program xs = xs +> List.map (fun p -> 
+  Visitor_c.visitor_program_k_s  strip_info_visitor p
+  )
 

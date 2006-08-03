@@ -30,10 +30,16 @@ let testone x =
     let expected_res = "tests/" ^ x ^ ".res" in
     if Common.lfile_exists expected_res && !compare_with_expected
     then 
+      let (c1, _) = Cocci.cprogram_from_file "/tmp/output.c" in
+      let (c2, _) = Cocci.cprogram_from_file expected_res in
+      let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
+      let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
+
       let xs = process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^ 
                                        " "  ^ expected_res) 
+      
       in
-      if null xs 
+      if null xs || c1' =*= c2'
       then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
       else 
         begin
@@ -47,9 +53,13 @@ let testone x =
 (******************************************************************************)
 let testall () =
 
+  let _total = ref 0 in
+  let _good  = ref 0 in
+
   let expected_result_files = 
     readdir_to_file_list "tests/" +> filter (fun s -> 
-      s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0) 
+      s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0)
+      +> sort compare
   in
 
 
@@ -80,21 +90,31 @@ let testall () =
 
 
     add_diagnose (sprintf "%s:\t" fullbase);
+    incr _total;
 
-    let timeout_value = 1 in
+    let timeout_value = 3 in
 
     try (
       Common.timeout_function timeout_value (fun () -> 
         
         Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
+        let (c1, _) = Cocci.cprogram_from_file "/tmp/output.c" in
+        let (c2, _) = Cocci.cprogram_from_file ("tests/" ^ expected_res) in
+        let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
+        let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
+
         let xs = 
           process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^
                                   " "  ^ "tests/" ^ expected_res) 
         in
               
-        if null xs 
-        then add_diagnose "CORRECT\n"
+        if null xs || c1' =*= c2'
+        then 
+          begin 
+            incr _good; 
+            add_diagnose "CORRECT\n" 
+          end
         else 
           begin
             add_diagnose "INCORRECT\n";
@@ -106,12 +126,18 @@ let testall () =
     with exn -> 
       add_diagnose "PROBLEM\n";
       add_diagnose ("   exn = " ^ Printexc.to_string exn ^ "\n")
-                                     );
+    );
 
     pr2 "----------------------";
     pr2 "statistics";
     pr2 "----------------------";
     !diagnose +> List.rev +> List.iter (fun s -> prerr_string s; );
+
+    pr2 "----------------------";
+    pr2 "total score";
+    pr2 "----------------------";
+    pr2 (sprintf "good = %d/%d" !_good !_total);
+
   end
 
 

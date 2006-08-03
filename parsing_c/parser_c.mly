@@ -122,37 +122,39 @@ let fixDeclSpecForFuncDef x =
 (* parameter: (this is the context where we give parameter only when in func DEFINITION not in funct DECLARATION)
    we must have a name  
    this function ensure that we give only parameterTypeDecl with well formed Classic constructor
-   todo?: do we accept other declaration in ? so i must add them to the compound of the deffunc 
-   i dont  have to handle typedef pb here cos C forbid to do VF f { ... } with VF a typedef of func
+   todo?: do we accept other declaration in ? so I must add them to the compound of the deffunc 
+   I dont  have to handle typedef pb here cos C forbid to do VF f { ... } with VF a typedef of func
     cos here we dont see the name of the argument (in the typedef)
 *)
 let (fixOldCDecl: fullType -> fullType) = fun ty ->
   match snd ty with
-  | ((FunctionType (fullt, Classic (params, b, iitodo1)) as _v),iitodo) -> 
+  | ((FunctionType (fullt, (params, (b, iib)))),iifunc) -> 
        (* stdC: If the prototype declaration declares a parameter for a function that you 
 	  are defining (it is part of a function definition), then you must write a name 
 	  within the declarator. Otherwise, you can omit the name.
        *)
       (match params with
-      | [(_, None, (qualif, (BaseType Void,iitodo6)), iitodo3), iitodo4] ->  (* can have  f(void) *)
-          assert (not b);
-          assert (List.length iitodo1 = 0);
-          (fst ty, (FunctionType (fullt, Classic ([], false, iitodo6)),iitodo)) (* uglytrick with the ii *)
+      | [((reg, None, ((qualif, (BaseType Void,_)))),_), _] ->  
+          ty
       | params -> 
-          (params +> List.iter (function ((b, None, _,  iitodo6),iitodo5) -> raise (Semantic ("parameter name omitted", fake_parse_info)) 
-	    | _ -> ())
-             ; ty)
+          (params +> List.iter (function 
+            | (((b, None, _),  iitodo6),iitodo5) -> 
+                raise (Semantic ("parameter name omitted", fake_parse_info)) 
+	    | _ -> ()
+          );
+          ty)
       )
   (* todo? can we declare prototype in the decl or structdef, ... => length <> but good kan meme *)
   | _ -> raise (Semantic ("seems this is not a function", fake_parse_info)) (* gcc say parse error but dont see why *)
 
 
 let fixFunc = function
-  | (((s,iis), (nQ, (FunctionType (fullt, (Classic (params,bool,iidot))),iifunc)), (st,iist)), (cp,iicp)) -> (* todo: nQ is a pattern so dont match *) 
-      let params' = params +> List.map 
-	  (function ((bool, Some s, fullt, (iitodo4,[iis])), iitodo2) -> (bool, s, fullt, (iitodo4, iis)), iitodo2
-	            | _ -> failwith "internal errror: fixOldCDecl not good") in
-      (s, (fullt, params', bool, (iidot, iifunc)), st, cp, (iis, iist, iicp)) (* it must be nullQualif,cos parser construct only this*)
+  | (((s,iis), (nQ, (FunctionType (fullt, (params,bool)),iifunc)), (st,iist)), (cp,iicp)) -> (* todo: nQ is a pattern so dont match *) 
+      params +> List.iter (function 
+            | (((bool, Some s, fullt), _), _) -> ()
+	    | _ -> failwith "internal errror: fixOldCDecl not good"
+       );
+      (s, (fullt, (params, bool)), st, cp), ([iis]++iifunc++iicp++iist) (* it must be nullQualif,cos parser construct only this*)
   | _ -> raise (Semantic ("you are trying to do a function definition but you dont give any parameter", fake_parse_info))
 
 
@@ -169,9 +171,12 @@ let et s () =
 
 
 let fix_add_params_ident = function
-  | ((s, (nQ, (FunctionType (fullt, (Classic (params,bool, iitodo4))),iitodo)), st)) ->  
-      params +> List.iter (function ((bool, Some s, fullt, iitodo1), iitodo2) -> Lexer_parser.add_ident s
-	| _ -> failwith "internal errror: fixOldCDecl not good") 
+  | ((s, (nQ, (FunctionType (fullt, (params, bool)),_)), st)) ->  
+      params +> List.iter (function 
+        | (((bool, Some s, fullt), _), _) -> 
+            Lexer_parser.add_ident s
+	| _ -> failwith "internal errror: fixOldCDecl not good"
+      ) 
   | _ -> ()
     
 %}
@@ -197,7 +202,8 @@ let fix_add_params_ident = function
 %token <Ast_c.info> TDotDot
 
 %token <Ast_c.info> TPtVirg
-%token <Ast_c.info> TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
+%token <Ast_c.info> 
+       TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
        TPlus TMinus TMul TDiv TMod 
 
 %token <Ast_c.info>
@@ -502,16 +508,27 @@ colon_option: TString {}
 decl: decl2  { et "decl" (); $1 }
 
 decl2: decl_spec TPtVirg                   { let (returnType,storage) = fixDeclSpecForDecl $1 
-                                             in DeclList ([(None, returnType, fst storage),[]],  (snd storage, $2))} 
+                                             in DeclList ([(None, returnType, fst storage),[]],  ($2::snd storage))} 
      | decl_spec init_declarator_list TPtVirg 
 	{ let (returnType,storage) = fixDeclSpecForDecl $1 in
           DeclList (
 	       ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
+                 let ini, iini = 
+                   match ini with
+                   | None -> None, []
+                   | Some (ini, iini) -> Some ini, [iini]
+                 in
 		 if fst storage = StoTypedef 
-		 then begin Lexer_parser.add_typedef s; (Some (s, ini, iis), f returnType, StoTypedef),iivirg end
-		 else (Some (s, ini,  iis), f returnType, fst storage),iivirg
-			       )
-	       ),    (snd storage, $3))
+		 then begin 
+                   Lexer_parser.add_typedef s;
+                   (Some ((s, ini), iis::iini), f returnType, StoTypedef),
+                   iivirg 
+                 end
+		 else 
+                   (Some ((s, ini), iis::iini), f returnType, fst storage),
+                   iivirg
+  	         )
+	       ),  ($3::snd storage))
 	} 
 
 /*------------------------------------------------------------------------------*/
@@ -562,7 +579,7 @@ struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
 s_or_u_spec2: struct_or_union ident TOBrace struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
             | struct_or_union       TOBrace struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
 	    | struct_or_union ident                                  
-		{ StructUnionName ((fst $2,-1), fst $1), [snd $1;snd $2] (* -1 for The obscure reason *) }
+		{ StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
 								     
 struct_or_union: struct_or_union2 { et "su" (); $1 }
 
@@ -602,7 +619,7 @@ struct_decl2: spec_qualif_list struct_declarator_list TPtVirg
                   (* gccext: allow empty elements if it is a structdef or enumdef *)
                   let (returnType,storage) = fixDeclSpecForDecl $1 in
                   (if fst storage <> NoSto then internal_error "parsing dont allow this";
-                   FieldDeclList [Simple (None, returnType, []) , []], [$2]
+                   FieldDeclList [(Simple (None, returnType), []) , []], [$2]
                 )
                
                 }
@@ -611,9 +628,9 @@ struct_decl2: spec_qualif_list struct_declarator_list TPtVirg
 struct_declarator_list: struct_declarator                               { [$1,           []] }
 		      | struct_declarator_list TComma struct_declarator { $1 ++ [$3,     [$2]] }
 
-struct_declarator: declarator                    { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x,   [snd (fst $1)])) }
-		 | dotdot const_expr2            { (fun x -> BitField (None, x, $2,              [$1])) }
-		 | declarator dotdot const_expr2 { (fun x -> BitField (Some (fst (fst $1)), ((snd $1) x), $3,      [snd (fst $1);$2])) }
+struct_declarator: declarator                    { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x),   [snd (fst $1)]) }
+		 | dotdot const_expr2            { (fun x -> BitField (None, x, $2),              [$1]) }
+		 | declarator dotdot const_expr2 { (fun x -> BitField (Some (fst (fst $1)), ((snd $1) x), $3),      [snd (fst $1);$2]) }
 
 dotdot: TDotDot  { et "dotdot" (); $1 }
 const_expr2: const_expr { dt "const_expr2" (); $1 }
@@ -621,7 +638,7 @@ const_expr2: const_expr { dt "const_expr2" (); $1 }
 /*------------------------------------------------------------------------------*/
 enum_spec: Tenum        TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
          | Tenum ident  TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
-         | Tenum ident                                                { EnumName ((fst $2),-1),       [$1; snd $2] }
+         | Tenum ident                                                { EnumName (fst $2),       [$1; snd $2] }
 
 enumerator_list: enumerator                        { [$1,          []]   }
 	       | enumerator_list TComma enumerator { $1 ++ [$3,    [$2]] }
@@ -629,8 +646,8 @@ enumerator_list: enumerator                        { [$1,          []]   }
 gcc_comma_opt: TComma {  [$1] } /* gccext:  which allow a trailing ',' in enum (as in perl) */
              | /* */  {  []  }
 
-enumerator: idente                 { ((fst $1, snd $1), None)    }
-          | idente  TEq const_expr { ((fst $1, snd $1), Some ($3,   $2)) }
+enumerator: idente                 { (fst $1, None),      [snd $1]    }
+          | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
 
 
 idente: ident { Lexer_parser.add_ident (fst $1); $1 }
@@ -680,8 +697,8 @@ direct_d:
  | TOPar declarator TCPar                  { (*old: $2*) (fst $2, fun x -> (nQ, (ParenType ((snd $2) x), [$1;$3]))) }/* forunparser: */ 
  | direct_d tocro            tccro         { (fst $1,fun x->(snd $1) (nQ,(Array (None,x),                          [$2;$3]))) }
  | direct_d tocro const_expr tccro         { (fst $1,fun x->(snd $1) (nQ,(Array (Some $3,x),                       [$2;$4])))}
- | direct_d topar            tcpar         { (fst $1,fun x->(snd $1) (nQ,(FunctionType (x,(Classic([],false, []))),[$2;$3])))}
- | direct_d topar parameter_type_list tcpar{ (fst $1,fun x->(snd $1) (nQ,(FunctionType (x, Classic $3),            [$2;$4]))) }
+ | direct_d topar            tcpar         { (fst $1,fun x->(snd $1) (nQ,(FunctionType (x,(([],(false, [])))),[$2;$3])))}
+ | direct_d topar parameter_type_list tcpar{ (fst $1,fun x->(snd $1) (nQ,(FunctionType (x, $3),            [$2;$4]))) }
 
 tocro: TOCro { et "tocro" ();$1 }
 tccro: TCCro { dt "tccro" ();$1 }
@@ -692,8 +709,8 @@ tcpar: TCPar { del_scope ();dt "tcpar" (); Lexer_parser._lexer_hint := None; $1 
 
 
 
-parameter_type_list: parameter_list                  { ($1, false, [])}
-		   | parameter_list TComma TEllipsis { ($1, true,  [$2;$3]) }
+parameter_type_list: parameter_list                  { ($1, (false, []))}
+		   | parameter_list TComma TEllipsis { ($1, (true,  [$2;$3])) }
 
 parameter_list: parameter_decl                       { [$1, []] }
 	      | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
@@ -701,11 +718,11 @@ parameter_list: parameter_decl                       { [$1, []] }
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
 parameter_decl2: decl_spec declaratorp          { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 
-                                                 in (hasreg, Some (fst (fst $2)), ((snd $2) returnType),     (iihasreg, [snd (fst $2)])) }
+                                                 in (hasreg, Some (fst (fst $2)), ((snd $2) returnType)),     (iihasreg ++ [snd (fst $2)]) }
 	      |	 decl_spec abstract_declarator  { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
-		                                 in (hasreg, None, ($2 returnType),      (iihasreg, [])) }
+		                                 in (hasreg, None, ($2 returnType)),      (iihasreg ++ []) }
 	      |	 decl_spec                      { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
-		                                 in (hasreg, None, returnType,           (iihasreg, [])) }
+		                                 in (hasreg, None, returnType),           (iihasreg ++ []) }
 
 declaratorp: declarator { Lexer_parser.add_ident (fst (fst $1)); $1 }
 
@@ -727,10 +744,10 @@ direct_abstract_declarator:
  | TOCro const_expr TCCro                            { fun x ->   (nQ, (Array (Some $2, x),   [$1;$3]))}
  | direct_abstract_declarator TOCro            TCCro { fun x ->$1 (nQ, (Array (None, x),      [$2;$3])) }
  | direct_abstract_declarator TOCro const_expr TCCro { fun x ->$1 (nQ, (Array (Some $3,x),    [$2;$4])) }
- | TOPar TCPar                                       { fun x ->   (nQ, (FunctionType (x, Classic ([],false,  [])),   [$1;$2])) }
- | TOPar parameter_type_list TCPar                   { fun x ->   (nQ, (FunctionType (x, Classic $2),           [$1;$3]))}
- | direct_abstract_declarator TOPar TCPar            { fun x ->$1 (nQ, (FunctionType (x, (Classic ([], false, []))),[$2;$3])) }
- | direct_abstract_declarator TOPar parameter_type_list TCPar { fun x -> $1 (nQ, (FunctionType (x, Classic $3), [$2;$4])) }
+ | TOPar TCPar                                       { fun x ->   (nQ, (FunctionType (x, ([], (false,  []))),   [$1;$2])) }
+ | TOPar parameter_type_list TCPar                   { fun x ->   (nQ, (FunctionType (x, $2),           [$1;$3]))}
+ | direct_abstract_declarator TOPar TCPar            { fun x ->$1 (nQ, (FunctionType (x, (([], (false, [])))),[$2;$3])) }
+ | direct_abstract_declarator TOPar parameter_type_list TCPar { fun x -> $1 (nQ, (FunctionType (x, $3), [$2;$4])) }
 			  
 /*------------------------------------------------------------------------------*/
 initialize: assign_expr                                           { InitExpr $1,                [] }

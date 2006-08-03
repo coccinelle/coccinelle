@@ -1,12 +1,12 @@
-open Common
-open Commonop
+open Common open Commonop
+
 open Ast_c
 
-
 (******************************************************************************)
-(* visitor based on continuation, cleaner (src: based on a (vague) idea from 
-   remy douence) 
-*) 
+(* visitor based on continuation, cleaner.
+ * src: based on a (vague) idea from remy douence.
+ *) 
+(******************************************************************************)
  
 (*
 let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> unit)
@@ -53,13 +53,13 @@ let test =
 (* full visitors for all langage concept,  not just for expression *)
 type visitor_c = 
  { 
-   kexpr:      (((expression  -> unit) * visitor_c) -> expression  -> unit);
-   kstatement: (((statement   -> unit) * visitor_c) -> statement   -> unit);
-   ktype:      (((fullType    -> unit) * visitor_c) -> fullType    -> unit);
+   kexpr:      (expression  -> unit) * visitor_c -> expression  -> unit;
+   kstatement: (statement   -> unit) * visitor_c -> statement   -> unit;
+   ktype:      (fullType    -> unit) * visitor_c -> fullType    -> unit;
 
-   kdecl:      (((declaration -> unit) * visitor_c) -> declaration -> unit);
-   kdef:       (((definition  -> unit) * visitor_c) -> definition  -> unit); 
-   kini:      (((initialiser  -> unit) * visitor_c) -> initialiser  -> unit); 
+   kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
+   kdef:       (definition  -> unit) * visitor_c -> definition  -> unit; 
+   kini:       (initialiser  -> unit) * visitor_c -> initialiser  -> unit; 
  } 
 
 let default_visitor_c = 
@@ -115,7 +115,7 @@ let rec visitor_expr_k = fun bigf expr ->
     | Constructor,typ,[] -> ()
           
     | ParenExpr (e), typ,is -> f (k, bigf) e
-    | x -> error_cant_have x
+    | x -> raise Impossible
   in f (k, bigf) expr
 
 and visitor_statement_k = fun bigf st -> 
@@ -167,8 +167,8 @@ and visitor_type_k = fun bigf t ->
     | (_, (FunctionType (returnt, paramst),_)) -> 
         f (k, bigf) returnt;
         (match paramst with
-        | Classic (ts, b,_) -> 
-            ts +> List.iter (fun ((b, sopt, t, _),_) -> f (k, bigf) t)
+        | (ts, (b,_)) -> 
+            ts +> List.iter (fun (((b, sopt, t), _),_) -> f (k, bigf) t)
         )
 
     | (_, (Enum  (sopt, enumt),_)) -> 
@@ -179,8 +179,8 @@ and visitor_type_k = fun bigf t ->
        fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
          onefield_multivars +> List.iter (fun (field, iicomma) ->
          match field with
-         | Simple (s, t, ii) -> f (k, bigf) t
-         | BitField (sopt, t, expr, _) -> f (k, bigf) t (* TODO expr *)
+         | Simple (s, t), ii -> f (k, bigf) t
+         | BitField (sopt, t, expr), ii -> f (k, bigf) t (* TODO expr *)
          (*
          | DefEnum (s, t) -> 
             f (k, bigf) (nQ, (Enum (Some s, t), iitodovide))
@@ -205,12 +205,12 @@ and visitor_decl_k = fun bigf d ->
   let rec k d = 
     match d with 
       
-    | DeclList (((Some (s, Some (init, iinit), _), t, sto),_)::xs, _) -> 
+    | DeclList (((Some ((s, Some init), _), t, sto),_)::xs, _) -> 
         visitor_type_k bigf t;
         visitor_ini_k bigf init;
         if xs <> []
         then pr2 "TODO parcourir aussi les autres decl, dans les xs"
-    | DeclList (((Some (s, None, _), t, sto),_)::xs, _) -> 
+    | DeclList (((Some ((s, None), _), t, sto),_)::xs, _) -> 
         visitor_type_k bigf t;
         if xs <> []
         then pr2 "TODO parcourir aussi les autres decl, dans les xs"
@@ -219,7 +219,7 @@ and visitor_decl_k = fun bigf d ->
         if xs <> []
         then pr2 "TODO parcourir aussi les autres decl, dans les xs"
 
-    | x -> error_cant_have x
+    | x -> raise Impossible
       
   in f (k, bigf) d 
 
@@ -241,9 +241,9 @@ and visitor_def_k = fun bigf d ->
   let f = bigf.kdef in
   let rec k d = 
     match d with
-    | (s, (returnt, paramst, _, _), sto, (declxs_statxs), _) -> 
+    | (s, (returnt, (paramst, b)), sto, declxs_statxs), _ -> 
         visitor_type_k bigf returnt;
-        List.iter (fun ((b, s, t, _),_) -> visitor_type_k bigf t) paramst;
+        paramst +> List.iter (fun (((b, s, t), _),_) -> visitor_type_k bigf t);
         
         declxs_statxs +> List.iter (function 
           | Left decl -> visitor_decl_k bigf decl 
@@ -257,7 +257,7 @@ and visitor_def_k = fun bigf d ->
 (******************************************************************************)
 type 'a inout = 'a -> 'a 
 
-(* _s for synthetisized attributes *)
+(* _s for synthetizized attributes *)
 type visitor_c_s = { 
   kexpr_s:      (expression inout * visitor_c_s) -> expression inout;
   kstatement_s: (statement  inout * visitor_c_s) -> statement  inout;
@@ -266,6 +266,7 @@ type visitor_c_s = {
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout; 
   kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout; 
+  kprogram_s: (programElement inout * visitor_c_s) -> programElement inout;
 
   kinfo_s: (info inout * visitor_c_s) -> info inout;
  } 
@@ -277,7 +278,9 @@ let default_visitor_c_s =
     kdecl_s      = (fun (k,_) d  -> k d);
     kdef_s       = (fun (k,_) d  -> k d);
     kini_s       = (fun (k,_) d  -> k d);
+    kprogram_s   = (fun (k,_) p  -> k p);
     kinfo_s      = (fun (k,_) i  -> k i);
+
   } 
 
 let rec visitor_expr_k_s = fun bigf expr ->
@@ -384,7 +387,7 @@ and visitor_type_k_s = fun bigf t ->
   and k t = 
     let (q, t) = t in
     let (unwrap_q, iiq) = q in
-    let q' = unwrap_q in     (* TODO ? a visitor for qualifier *)
+    let q' = unwrap_q in     (* todo? a visitor for qualifier *)
     let (unwrap_t, iit) = t in
     let t' = 
     match unwrap_t with
@@ -395,12 +398,11 @@ and visitor_type_k_s = fun bigf t ->
         FunctionType 
           (typef returnt, 
            (match paramst with
-           | Classic (ts, b, iihas3dots) -> 
-               Classic
-                 (ts +> List.map (fun ((b, sopt, t, (iib, iis)),iicomma) -> 
-                   ((b, sopt, typef t, (infolistf iib, infolistf iis)), 
+           | (ts, (b, iihas3dots)) -> 
+                 (ts +> List.map (fun (((b, sopt, t), ii_b_s),iicomma) -> 
+                   (((b, sopt, typef t), infolistf ii_b_s), 
                     infolistf iicomma)),
-                  b, infolistf iihas3dots)
+                  (b, infolistf iihas3dots))
            ))
 
     | Enum  (sopt, enumt) -> 
@@ -412,10 +414,10 @@ and visitor_type_k_s = fun bigf t ->
          FieldDeclList (
           onefield_multivars +> List.map (fun (field, iicomma) ->
             (match field with
-            | Simple (s, t, iis) -> Simple (s, typef t, infolistf iis)
-            | BitField (sopt, t, expr, iis) -> 
-                BitField (sopt, typef t, visitor_expr_k_s bigf expr, 
-                          infolistf iis)
+            | Simple (s, t), iis -> Simple (s, typef t), infolistf iis
+            | BitField (sopt, t, expr), iis -> 
+                BitField (sopt, typef t, visitor_expr_k_s bigf expr), 
+                          infolistf iis
             ), infolistf iicomma
                                          )
          ), infolistf iiptvirg
@@ -437,20 +439,20 @@ and visitor_type_k_s = fun bigf t ->
 
 and visitor_decl_k_s = fun bigf d -> 
   let f = bigf.kdecl_s in 
+  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
   let rec k d = 
     match d with 
-   (* TODO xs *)
-    | DeclList (((Some (s, Some (init,iinit), ii2), t, sto),ii6)::xs, ii) -> 
-        DeclList (((Some (s, Some (visitor_ini_k_s bigf init,iinit), ii2), 
-                    visitor_type_k_s bigf t, 
-                    sto),ii6)::xs, ii)
+    | DeclList (xs, ii) -> DeclList (List.map aux xs,   infolistf ii)
+  and aux ((var, t, sto), iicomma) = 
+    ((var +> map_option (fun ((s, ini), ii_s_ini) -> 
+      (s, ini +> map_option (fun init -> visitor_ini_k_s bigf init)),
+      infolistf ii_s_ini
+        )
+     ),
+     visitor_type_k_s bigf t, 
+     sto),
+    infolistf iicomma
 
-    | DeclList (((Some (s, None, ii2), t, sto),ii6)::xs, ii) -> 
-         DeclList (((Some (s, None, ii2), visitor_type_k_s bigf t, sto),ii6)::xs, ii)
-    | DeclList (((None, t, sto),ii6)::xs, ii) -> 
-         DeclList (((None, visitor_type_k_s bigf t, sto),ii6)::xs, ii)
-    | x -> error_cant_have x
-      
   in f (k, bigf) d 
 
 and visitor_ini_k_s = fun bigf ini -> 
@@ -475,19 +477,47 @@ and visitor_ini_k_s = fun bigf ini ->
 
 and visitor_def_k_s = fun bigf d -> 
   let f = bigf.kdef_s in
+  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
   let rec k d = 
     match d with
-    | (s, (returnt, paramst, b, ii1), sto, (declxs_statxs), ii2) -> 
-        let returnt' = visitor_type_k_s bigf returnt in
-        let paramst' = List.map (fun ((b, s, t, ii3),ii4) -> 
-          ((b, s, visitor_type_k_s bigf t, ii3), ii4)) paramst 
-        in
-        let declxs_statxs' = declxs_statxs +> List.map (function 
-          | Left decl -> Left (visitor_decl_k_s bigf decl) 
-          | Right stat -> Right (visitor_statement_k_s bigf stat)) 
-        in
-        (s, (returnt', paramst', b, ii1), sto, (declxs_statxs'), ii2)
+    | (s, (returnt, (paramst, (b, iib))), sto, declxs_statxs), ii  -> 
+        (s, 
+         (visitor_type_k_s bigf returnt, 
+          (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
+          ((b, s, visitor_type_k_s bigf t), infolistf iibs), infolistf iicomma
+          ), 
+           (b, infolistf iib))), 
+         sto, 
+         declxs_statxs +> List.map (function 
+           | Left decl -> Left (visitor_decl_k_s bigf decl) 
+           | Right stat -> Right (visitor_statement_k_s bigf stat)
+         )),
+        infolistf ii
+
   in f (k, bigf) d 
+and visitor_program_k_s = fun bigf p -> 
+  let f = bigf.kprogram_s in
+  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+  let rec k p = 
+    match p with
+    | Declaration decl -> Declaration (visitor_decl_k_s bigf decl)
+    | Definition def -> Definition (visitor_def_k_s bigf def)
+    | EmptyDef ii -> EmptyDef (infolistf ii)
+    | SpecialDeclMacro (s, xs, ii) -> 
+        SpecialDeclMacro 
+          (s, 
+           xs +> List.map (fun (elem, iicomma) -> 
+             (match elem with
+             | Left e -> Left (visitor_expr_k_s bigf e)
+             | Right (t, sto) -> raise Todo
+             ), infolistf iicomma
+            ),
+           infolistf ii
+          )
+    | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
+    | FinalDef info -> FinalDef (visitor_info_k_s bigf info)
+  in f (k, bigf) p
+  
 
 and visitor_info_k_s = fun bigf info -> 
   let rec infof ii = bigf.kinfo_s (k, bigf) ii

@@ -517,6 +517,8 @@ val ( ++ ) : 'a list -> 'a list -> 'a list
 
 val foldl1 : ('a -> 'a -> 'a) -> 'a list -> 'a
 
+val fold_k : ('a -> 'b -> ('a -> 'a) -> 'a) -> 'a -> 'b list -> 'a
+
 val list_init : 'a list -> 'a list
 val list_last : 'a list -> 'a
 

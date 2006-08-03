@@ -232,12 +232,19 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
 
 
 
-  let (funcs, functype, sto, compound, ((_,_,ii) as moreinfo)) = funcdef in
-  let topstatement = Compound compound, ii in
+  let ((funcs, functype, sto, compound), ii) = funcdef in
+  let iicompound = 
+    (match ii with 
+    | is::ioparen::icparen::iobrace::icbrace::isto -> [iobrace;icbrace]
+    | _ -> raise Impossible
+    )
+  in
+
+  let topstatement = Compound compound, iicompound in
 
 
 
-  let headi = add_node_g (HeadFunc (funcs, functype, sto, [], moreinfo))
+  let headi = add_node_g (HeadFunc ((funcs, functype, sto, []), ii))
                          label_list_empty ("function " ^ funcs) in
   let enteri = add_node_g Enter label_list_empty "[enter]" in
   let exiti  = add_node_g Exit  label_list_empty "[exit]" in
@@ -365,8 +372,8 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
           | Left decl -> 
               let s = 
                 (match decl with
-                | (DeclList ([(Some (s, _,_), typ, sto), _], _)) -> "decl:" ^ s
-                | _ -> "decl_novar"
+                | (DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> "decl:" ^ s
+                | _ -> "decl_novar_or_multivar"
                 ) in
               
               let newi = add_node_g (Declaration (decl)) label_list s in
@@ -603,9 +610,9 @@ let (ast_to_control_flow: definition -> (node, edge) ograph_extended) =
                    | Left decl -> 
                        let s = 
                          (match decl with
-                         | (DeclList ([(Some (s, _,_), typ, sto), _], _)) -> 
+                         | (DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> 
                              "decl:" ^ s
-                         | _ -> "decl_novar"
+                         | _ -> "decl_novar_or_multivar"
                          ) in
                        
                        let newi = add_node_g (Declaration (decl)) label_list  s
@@ -985,7 +992,7 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
     | HeadFunc funcdef -> funcdef  
     | _ -> raise Impossible
   in
-  let (funcs, functype, sto, __compound, iifunc) = funcdef in
+  let ((funcs, functype, sto, __compound), iifunc) = funcdef in
 
 
   (* ------------------------- *)        
@@ -1250,13 +1257,16 @@ let (control_flow_to_ast: (node, edge) ograph_extended -> definition) = fun g ->
   (* todo?: assert stuff on returnkind ? normally lead to an exit node, 
      or nothing *)
 
-  let topcompound2 = 
+  let (topcompound2, ii) = 
     match topcompound with 
-    | (Compound st, ii) -> st  
+    | (Compound st, ii) -> st, ii
     | x -> error_cant_have x 
   in
-
-  (funcs, functype, sto, topcompound2, iifunc)
+  match iifunc, ii with
+  | iidb::ioparenb::icparenb::_iobraceb::_icbraceb::iistob, [i1;i2] -> 
+      (funcs, functype, sto, topcompound2), 
+      iidb::ioparenb::icparenb::i1::i2::iistob
+  | _ -> raise Impossible
  
 
     

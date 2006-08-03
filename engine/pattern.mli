@@ -18,7 +18,7 @@ val match_arguments :
       (Ast_cocci.expression list, Ast_c.expression list) matcher
 val match_params :
     sequence_processing_style ->
-    (Ast_cocci.parameterTypeDef list, (Ast_c.parameterTypeDef * Ast_c.il) list) 
+    (Ast_cocci.parameterTypeDef list, (Ast_c.parameterType * Ast_c.il) list) 
     matcher
 val match_ft_ft : (Ast_cocci.fullType, Ast_c.fullType) matcher
 val match_t_t :   (Ast_cocci.typeC,    Ast_c.fullType) matcher

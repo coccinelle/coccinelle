@@ -183,20 +183,28 @@ let pp_program file x =
    | PPnormal -> 
      (match e with
      | Declaration decl -> Pretty_print_c.pp_decl_gen pr_elem decl
-     | Definition (s, (returnt, paramst, b, (iib,[iifunc1;iifunc2])), sto, 
-                   (declxs_statxs), (is, isto, [i1;i2])) -> 
+     | Definition ((s, (returnt, (paramst, (b, iib))), sto, declxs_statxs), 
+                   is::iifunc1::iifunc2::i1::i2::isto) -> 
          Pretty_print_c.pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
                        returnt;
          pr_elem is;
          pr_elem iifunc1;
-         paramst +> List.iter (fun ((bool, s, fullt, (iib, (iis:info))), iicomma) -> 
-             assert (List.length iicomma <= 1);
-             assert (List.length iib <= 1);
-             (* assert (List.length iis = 1);*)
-             iicomma +> List.iter pr_elem;
-             iib +> List.iter pr_elem;
-             Pretty_print_c.pp_type_with_ident_gen 
-                pr_elem (Some (s, iis)) None fullt;
+         paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
+           iicomma +> List.iter pr_elem;
+           
+           (match b, s, ii_b_s with
+            | false, Some s, [i1] -> 
+                Pretty_print_c.pp_type_with_ident_gen 
+                  pr_elem (Some (s, i1)) None t;
+            | true, Some s, [i1;i2] -> 
+                pr_elem i1;
+                Pretty_print_c.pp_type_with_ident_gen 
+                  pr_elem (Some (s, i2)) None t;
+
+            (* in definition we have name for params, except when f(void) *)
+            | _, None, _ -> raise Impossible 
+            | _ -> raise Impossible
+           )
          );
              
 

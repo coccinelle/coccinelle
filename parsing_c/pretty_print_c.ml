@@ -263,7 +263,7 @@ and (pp_base_type_gen:
             (* handling the first var. Special case, with the first var, we
                print the whole type *)
             (match x with
-            | Simple (sopt, typ, iis), iivirg -> 
+            | (Simple (sopt, typ), iis), iivirg -> 
                 (* first var cant have a preceding ',' *)
                 assert (List.length iivirg = 0); 
                 let identinfo = 
@@ -274,7 +274,7 @@ and (pp_base_type_gen:
                 in
                 pp_type_with_ident_gen pr_elem  identinfo None typ;
 
-            | BitField (sopt, typ, expr, ii), iivirg -> 
+            | (BitField (sopt, typ, expr), ii), iivirg -> 
                 (* first var cant have a preceding ',' *)
                 assert (List.length iivirg = 0); 
                 (match sopt, ii with
@@ -293,7 +293,7 @@ and (pp_base_type_gen:
             
             (* for other vars *)
             xs +> List.iter (function
-              | Simple (sopt, typ, iis), iivirg -> 
+              | (Simple (sopt, typ), iis), iivirg -> 
                   iivirg +> List.iter pr_elem;
                   let identinfo = 
                     (match sopt, iis with 
@@ -303,7 +303,7 @@ and (pp_base_type_gen:
                   in
                   pp_type_with_ident_rest_gen pr_elem identinfo typ;
 
-              | BitField (sopt, typ, expr, ii), iivirg -> 
+              | (BitField (sopt, typ, expr), ii), iivirg -> 
                   iivirg +> List.iter pr_elem;
                   (match sopt, ii with
                   | (Some s, [is;idot]) -> 
@@ -340,12 +340,16 @@ and (pp_base_type_gen:
       | x -> raise Impossible
       );
 
-      enumt +> List.iter (fun (((s, is), eopt)    , iicomma) -> 
+      enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
         assert (List.length iicomma <= 1);
         iicomma +> List.iter pr_elem;
-        pr_elem is;
+        (match eopt, ii_s_eq with
+        | None, [is] -> pr_elem is;
+        | Some e, [is;ieq] -> pr_elem is; pr_elem ieq; pp_expression e
+        | _ -> raise Impossible
+        )
         
-                         );
+      );
 
       (match sopt, iis with
       | (Some s, [i1;i2;i3;i4]) ->    pr_elem i4
@@ -480,22 +484,27 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
   | (FunctionType (returnt, paramst), [i1;i2]) -> 
       pr_elem i1;
       (match paramst with
-      | Classic (ts, b, ii) -> 
-          ts +> List.iter (fun ((b, sopt, t, (ii2, ii4)),ii3) -> 
-            assert ((List.length ii3) <= 1);
-            ii3 +> List.iter pr_elem;
+      | (ts, (b, iib)) -> 
+          ts +> List.iter (fun (((b, sopt, t), ii_b_s),iicomma) -> 
+            assert ((List.length iicomma) <= 1);
+            iicomma +> List.iter pr_elem;
 
-            (match sopt with
-            | None -> assert (List.length ii4 = 0);
+            (match b, sopt, ii_b_s with
+            | false, None, [] -> 
                 pp_type_gen pr_elem t
-            | Some s -> 
-                assert (List.length ii4 = 1); 
-                pp_type_with_ident_gen pr_elem (Some (s, List.hd ii4)) None t;
+            | true, None, [i1] -> 
+                pr_elem i1;
+                pp_type_gen pr_elem t
+
+            | false, Some s, [i1] -> 
+                pp_type_with_ident_gen pr_elem (Some (s, i1)) None t;
+            | true, Some s, [i1;i2] -> 
+                pr_elem i1;
+                pp_type_with_ident_gen pr_elem (Some (s, i2)) None t;
+            | _ -> raise Impossible                
             );
                           );
-          (* normally ii represent the ",..."  but it is also abused with the
-             f(void) case *)
-          ii +> List.iter pr_elem;
+          iib +> List.iter pr_elem;
       );
       pr_elem i2;
       
@@ -516,29 +525,29 @@ and pp_type_gen pr_elem t = pp_type_with_ident_gen pr_elem None None t
 
 (* ---------------------- *)
 and pp_decl_gen pr_elem = function
-  | DeclList (((var, returnType, storage),[])::xs,      (iisto, iivirg)) -> 
+  | DeclList ((((var, returnType, storage),[])::xs), iivirg::iisto) -> 
 
       (* old: iisto +> List.iter pr_elem; *)
 
-      (* handling the first var. Special case, with the first var, we print 
-         the whole type *)
+      (* handling the first var. Special case, we print the whole type *)
       (match var with
-      | Some (s, ini,  iis) -> 
+      | Some ((s, ini),  iis::iini) -> 
           pp_type_with_ident_gen pr_elem (Some (s, iis)) (Some (storage, iisto))
                                  returnType;
-          ini +> do_option (fun (init, iinit) -> 
-            pr_elem iinit; pp_init_gen pr_elem init);
+          ini +> do_option (fun init -> 
+            List.iter pr_elem iini; pp_init_gen pr_elem init);
       | None -> pp_type_gen pr_elem returnType
+      | _ -> raise Impossible
       );
 
       (* for other vars, we just call pp_type_with_ident_rest. *)
       xs +> List.iter (function
-        | ((Some (s, ini, iis), returnType, storage2), iivirg) -> 
+        | ((Some ((s, ini), iis::iini), returnType, storage2), iivirg) -> 
             assert (storage2 = storage);
             iivirg +> List.iter pr_elem;
             pp_type_with_ident_rest_gen pr_elem (Some (s, iis)) returnType;
-            ini +> do_option (fun (init, iinit) -> 
-              pr_elem iinit; pp_init_gen pr_elem init);
+            ini +> do_option (fun (init) -> 
+              List.iter pr_elem iini; pp_init_gen pr_elem init);
 
 
         | x -> raise Impossible
