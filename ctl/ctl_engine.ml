@@ -748,8 +748,8 @@ let satAU dir m s1 s2 =
 	  let first = pre_forall dir m new_info y in
 	  let res = triples_union y (triples_conj s1 first) in
 	  let new_info = setdiff res y in
-	  Printf.printf "iter %d res %d new_info %d\n"
-	  !ctr (List.length res) (List.length new_info);
+	  (*Printf.printf "iter %d res %d new_info %d\n"
+	  !ctr (List.length res) (List.length new_info);*)
 	  flush stdout;
 	  f res new_info in
     f s2 s2
