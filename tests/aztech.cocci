@@ -80,7 +80,7 @@ statement S;
 //  ioctl(...) {
 //    <...
 //(
-//-     if (copy_from_user(&E,arg,sizeof(E))) S
+//-     if (copy_from_user(&*)E,arg,sizeof(E))) S
 //+     { unsigned long *tmp = arg; E = *tmp; }
 //|
 //-     if (copy_to_user(arg,&E,sizeof(E))) S
