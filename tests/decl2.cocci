@@ -4,6 +4,8 @@ identifier ioctl, cmd, arg;
 @@
 
   ioctl(int cmd, void *arg) {
-+   int arg;
+    ...
+-   x
++   y
     ...
   }
