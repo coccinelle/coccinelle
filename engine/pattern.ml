@@ -204,21 +204,17 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   
   | A.Decl decla, F.Declaration declb -> match_re_decl decla declb
   | A.Exp expr, F.Declaration declb -> 
-      let all_exprs = 
-        let globals = ref [] in
-        begin
-          declb +> Visitor_c.visitor_decl_k { 
-            Visitor_c.default_visitor_c with 
-            Visitor_c.kexpr = 
-              (fun (k, bigf) expr -> 
-                    push2 expr globals; 
-                    k expr
-              );
-            };
-          !globals
-        end in
-      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
-        (return false)
+      (function binding ->
+	let globals = ref [] in
+	declb +> Visitor_c.visitor_decl_k
+	  { Visitor_c.default_visitor_c
+	  with 
+	    Visitor_c.kexpr = 
+            (fun (k, bigf) e ->
+	      match match_e_e expr e binding with
+		[] -> (* failed *) k e
+	      |	b -> globals := b @ !globals) };
+        !globals)
 
   | A.Decl _, _ | _, F.Declaration _ -> return false
 
@@ -271,16 +267,16 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
   | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
 
   | A.Exp expr , statement -> 
-      let all_exprs = 
+      (function binding ->
         let globals = ref [] in
         begin
           statement +> Visitor_c.visitor_statement_k { 
             Visitor_c.default_visitor_c with 
             Visitor_c.kexpr = 
-              (fun (k, bigf) expr -> 
-                    push2 expr globals; 
-                    k expr
-              );
+              (fun (k, bigf) e ->
+	      match match_e_e expr e binding with
+		[] -> (* failed *) k e
+	      |	b -> globals := b @ !globals);
             (* Now keep fullstatement inside the control flow node, 
                so that can then get in a MetaStmtVar the fullstatement to later
                pp back when the S is in a +. But that means that 
@@ -339,9 +335,7 @@ and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  =
               )
             };
           !globals
-        end in
-      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
-        (return false)
+	end)
 
 
 
