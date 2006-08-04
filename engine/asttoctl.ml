@@ -265,13 +265,37 @@ let make_match n unchecked free_table used_after code =
 
 let make_raw_match n code = wrapPred n (Lib_engine.Match(code),CTL.Control)
 
-let seq_fvs free_table quantified term1 term2 =
-  let t1fvs = get_unquantified quantified (Hashtbl.find free_table term1) in
-  let t2fvs = get_unquantified quantified (Hashtbl.find free_table term2) in
-  let bothfvs = Common.inter_set t1fvs t2fvs in
-  let t1onlyfvs = Common.minus_set t1fvs bothfvs in
-  let t2onlyfvs = Common.minus_set t2fvs bothfvs in
-  (t1onlyfvs,bothfvs,t2onlyfvs)
+let rec seq_fvs free_table quantified = function
+    [] -> []
+  | term1::terms ->
+      let t1fvs =
+	get_unquantified quantified (Hashtbl.find free_table term1) in
+      let termfvs =
+	List.fold_left Common.union_set []
+	  (List.map
+	     (function t ->
+	       get_unquantified quantified (Hashtbl.find free_table t))
+	     terms) in
+      let bothfvs = Common.inter_set t1fvs termfvs in
+      let t1onlyfvs = Common.minus_set t1fvs bothfvs in
+      (t1onlyfvs,bothfvs)::(seq_fvs free_table quantified terms)
+
+let seq_fvs2 free_table quantified term1 term2 =
+  match seq_fvs free_table quantified [term1;term2] with
+    [(t1fvs,bfvs);(t2fvs,[])] -> (t1fvs,bfvs,t2fvs)
+  | _ -> failwith "impossible"
+
+let seq_fvs3 free_table quantified term1 term2 term3 =
+  match seq_fvs free_table quantified [term1;term2;term3] with
+    [(t1fvs,b12fvs);(t2fvs,b23fvs);(t3fvs,[])] ->
+      (t1fvs,b12fvs,t2fvs,b23fvs,t3fvs)
+  | _ -> failwith "impossible"
+
+let seq_fvs4 free_table quantified term1 term2 term3 term4 =
+  match seq_fvs free_table quantified [term1;term2;term3;term4] with
+    [(t1fvs,b12fvs);(t2fvs,b23fvs);(t3fvs,b34fvs);(t4fvs,[])] ->
+      (t1fvs,b12fvs,t2fvs,b23fvs,t3fvs,b34fvs,t4fvs)
+  | _ -> failwith "impossible"
 
 let quantify n =
   List.fold_right (function cur -> function code -> wrapExists n (cur,code))
@@ -414,17 +438,26 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  make_seq (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,body,rbrace) ->
+      let (lbfvs,b1fvs,_,b2fvs,rbfvs) =
+	seq_fvs3 free_table quantified (FV.Rule_elem lbrace)
+	  (FV.StatementDots body) (FV.Rule_elem rbrace) in
       let v = Hashtbl.find brace_table stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
-      let start_brace = wrapAnd(make_match lbrace,paren_pred) in
-      let end_brace = wrapAnd(make_match rbrace,paren_pred) in
+      let start_brace =
+	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
+      let end_brace =
+	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
       let not_start_brace = wrapAnd(make_raw_match lbrace,paren_pred) in
       let not_end_brace = wrapAnd(make_raw_match rbrace,paren_pred) in
+      let new_quantified =
+	Common.union_set b1fvs (Common.union_set b2fvs (quantified)) in
       wrapExists
-	(v,make_seq start_brace
-	   (Some(dots_stmt fvinfo quantified body unchecked
-		   [not_start_brace] [not_end_brace]
-		   (Some (make_seq end_brace after)))))
+	(v,quantify b1fvs
+	   (make_seq start_brace
+	      (Some(quantify b2fvs
+		      (dots_stmt fvinfo new_quantified body unchecked
+			 [not_start_brace] [not_end_brace]
+			 (Some (make_seq end_brace after)))))))
   | Ast.IfThen(ifheader,branch) ->
 
 (* "if (test) thn" becomes:
@@ -437,7 +470,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 
        (* free variables *) 
        let (efvs,bfvs,_) =
-	 seq_fvs free_table quantified
+	 seq_fvs2 free_table quantified
 	   (FV.Rule_elem ifheader) (FV.Statement branch) in
        let new_quantified = Common.union_set bfvs quantified in
        (* if header *)
@@ -481,10 +514,10 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
  program. *)
        (* free variables *)
        let (e1fvs,b1fvs,_) =
-	 seq_fvs free_table quantified
+	 seq_fvs2 free_table quantified
 	   (FV.Rule_elem ifheader) (FV.Statement branch1) in
        let (e2fvs,b2fvs,_) =
-	 seq_fvs free_table quantified
+	 seq_fvs2 free_table quantified
 	   (FV.Rule_elem ifheader) (FV.Statement branch2) in
        let bothfvs = Common.union_set b1fvs b2fvs in
        let exponlyfvs = Common.inter_set e1fvs e2fvs in
@@ -526,7 +559,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
   | Ast.While(header,body) ->
    (* the translation in this case is similar to that of an if with no else *)
       let (efvs,bfvs,_) =
-	seq_fvs free_table quantified
+	seq_fvs2 free_table quantified
 	  (FV.Rule_elem header) (FV.Statement body) in
       let new_quantified = Common.union_set bfvs quantified in
       let while_header = quantify efvs (make_match header) in
@@ -649,25 +682,33 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	| (None,Some whencode) -> wrapAU(whencode,wrapOr(aftret,exit))
 	| (Some after,Some whencode) -> wrapAU(whencode,wrapOr(after,aftret)))
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
-      let (hfvs,bfvs,_) =
-	seq_fvs free_table quantified
-	  (FV.Rule_elem header) (FV.StatementDots body) in
+      let (hfvs,b1fvs,lbfvs,b2fvs,_,b3fvs,rbfvs) =
+	seq_fvs4 free_table quantified
+	  (FV.Rule_elem header) (FV.Rule_elem lbrace)
+	  (FV.StatementDots body) (FV.Rule_elem rbrace) in
       let function_header = quantify hfvs (make_match header) in
-      let new_quantified = Common.union_set bfvs quantified in
       let v = Hashtbl.find brace_table stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
-      let start_brace = wrapAnd(make_match lbrace,paren_pred) in
-      let end_brace = wrapAnd(make_match rbrace,paren_pred) in
+      let start_brace =
+	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
+      let end_brace =
+	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
       let not_start_brace = wrapAnd(make_raw_match lbrace,paren_pred) in
       let not_end_brace = wrapAnd(make_raw_match rbrace,paren_pred) in
-      quantify bfvs
+      let new_quantified =
+	Common.union_set b1fvs
+	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
+      quantify b1fvs
 	(make_seq function_header
 	   (Some
 	      (wrapExists
-		 (v,(make_seq start_brace
-		       (Some(dots_stmt fvinfo new_quantified body
-			       unchecked [not_start_brace] [not_end_brace]
-			       (Some(make_seq end_brace after)))))))))
+		 (v,
+		  (quantify b2fvs
+		     (make_seq start_brace
+			(Some(quantify b3fvs
+				(dots_stmt fvinfo new_quantified body
+				   unchecked [not_start_brace] [not_end_brace]
+				   (Some(make_seq end_brace after)))))))))))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n";
   | Ast.UniqueStm(stm) ->
