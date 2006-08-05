@@ -104,3 +104,11 @@ int Z;
 =>
 
 signed int Z;
+
+Statement
+
+@@
+statement S;
+@@
+
+{ ... S } => S
