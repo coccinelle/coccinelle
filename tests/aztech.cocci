@@ -21,7 +21,7 @@ identifier v,fld;
   ioctl(...) {
     <...
       T v;
-//+     T *v;
+//+     T *v = arg;
       ...
 -     if (copy_from_user(&v,arg,sizeof(v))) return ...;
       <...
@@ -51,7 +51,7 @@ statement S;
   ioctl(...) {
     <...
       T v;
-//+   T *v;
+//+   T *v = arg;
       <...
 (
 -     v.fld
