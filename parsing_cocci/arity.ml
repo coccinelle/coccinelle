@@ -10,6 +10,11 @@ module Ast = Ast_cocci
 
 let warning s = Printf.printf "warning: %s\n" s
 
+let fail w str =
+  failwith
+    (Printf.sprintf "cocci line %d: %s" ((Ast0.get_info w).Ast0.line_start)
+       str)
+
 let make_opt_unique optfn uniquefn multifn info tgt arity term =
   let term = Ast0.rewrap info term in
   if tgt = arity
@@ -39,6 +44,8 @@ let all_same multi_allowed opt_allowed tgt line arities =
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
+
+let anyopt l fn = List.exists (function w -> fn(Ast0.unwrap w)) l
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -91,17 +98,17 @@ let concat_dots fn d =
 	let l = List.map fn x in
 	if only_dots l
 	then Ast0.DOTS(l)
-	else failwith "inconsistent dots usage"
+	else fail d "inconsistent dots usage"
     | Ast0.CIRCLES(x) ->
 	let l = List.map fn x in
 	if only_circles l
 	then Ast0.CIRCLES(l)
-	else failwith "inconsistent dots usage"
+	else fail d "inconsistent dots usage"
     | Ast0.STARS(x) ->
 	let l = List.map fn x in
 	if only_stars l
 	then Ast0.STARS(l)
-	else failwith "inconsistent dots usage")
+	else fail d "inconsistent dots usage")
 
 let flat_concat_dots fn d =
   match Ast0.unwrap d with
@@ -273,10 +280,13 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let cm = mcode cm in
       make_exp expr tgt arity (Ast0.EComma(cm))
   | Ast0.DisjExpr(starter,exps,ender) ->
-      let res =
-	Ast0.DisjExpr(starter,
-		      List.map (top_expression in_nest opt_allowed tgt) exps,
-		      ender) in
+      let exps = List.map (top_expression in_nest opt_allowed tgt) exps in
+      (match List.rev exps with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptExp(_) -> true | _ -> false)
+	  then fail expr "opt only allowed in the last disjunct"
+      |	_ -> ());
+      let res = Ast0.DisjExpr(starter,exps,ender) in
       Ast0.rewrap expr res
   | Ast0.NestExpr(starter,exp_dots,ender) ->
       let res =
@@ -401,10 +411,13 @@ let rec declaration in_nest tgt decl =
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(ty,id,sem))
   | Ast0.DisjDecl(starter,decls,ender) ->
-      let res =
-	Ast0.DisjDecl(starter,
-		      List.map (declaration in_nest tgt) decls,
-		      ender) in
+      let decls = List.map (declaration in_nest tgt) decls in
+      (match List.rev decls with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptDecl(_) -> true | _ -> false)
+	  then fail decl "opt only allowed in the last disjunct"
+      |	_ -> ());
+      let res = Ast0.DisjDecl(starter,decls,ender) in
       Ast0.rewrap decl res
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
@@ -432,9 +445,9 @@ let parameterTypeDef tgt param =
 	| (Ast0.UniqueIdent(id),Ast0.UniqueType(ty)) ->
 	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(id,ty)))
 	| (Ast0.OptIdent(id),_) ->
-	    failwith "arity mismatch in param declaration"
+	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptType(ty)) ->
-	    failwith "arity mismatch in param declaration"
+	    fail param "arity mismatch in param declaration"
 	| _ -> Ast0.Param(id,ty))
   | Ast0.MetaParam(name) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
@@ -566,12 +579,22 @@ let rec statement in_nest tgt stm =
   | Ast0.Exp(exp) ->
       Ast0.rewrap stm (Ast0.Exp(top_expression in_nest true tgt exp))
   | Ast0.Disj(starter,rule_elem_dots_list,ender) ->
-      Ast0.rewrap stm
-	(Ast0.Disj(starter,
-		   List.map
-		     (function x -> concat_dots (statement in_nest tgt) x)
-		     rule_elem_dots_list,
-		   ender))
+      let stms =
+	List.map (function x -> concat_dots (statement in_nest tgt) x)
+	  rule_elem_dots_list in
+      (match List.rev stms with
+	_::xs ->
+	  let dot_check = function
+	    Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
+	      List.for_all
+		(function s ->
+		  match Ast0.unwrap s with
+		    Ast0.OptStm(_) | Ast0.Dots(_,_) -> true | _ -> false)
+		l in
+	  if anyopt xs dot_check
+	  then fail stm "opt only allowed in the last disjunct"
+      |	_ -> ());
+      Ast0.rewrap stm (Ast0.Disj(starter,stms,ender))
   | Ast0.Nest(starter,rule_elem_dots,ender) ->
       Ast0.rewrap stm
 	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,
@@ -625,18 +648,18 @@ let top_level tgt t =
     | Ast0.INCLUDE(inc,s) ->
 	if mcode2arity inc = Ast0.NONE && mcode2arity s = Ast0.NONE
 	then Ast0.INCLUDE(mcode inc,mcode s)
-	else failwith "unexpected arity for include"
+	else fail t "unexpected arity for include"
     | Ast0.FILEINFO(old_file,new_file) -> 
 	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
 	then Ast0.FILEINFO(mcode old_file,mcode new_file)
-	else failwith "unexpected arity for include"
+	else fail t "unexpected arity for include"
     | Ast0.FUNCTION(stmt) ->
 	Ast0.FUNCTION(statement false tgt stmt)
     | Ast0.CODE(rule_elem_dots) ->
 	Ast0.CODE(concat_dots (statement false tgt) rule_elem_dots)
     | Ast0.ERRORWORDS(exps) ->
 	Ast0.ERRORWORDS(List.map (top_expression false false Ast0.NONE) exps)
-    | Ast0.OTHER(_) -> failwith "eliminated by top_level")
+    | Ast0.OTHER(_) -> fail t "eliminated by top_level")
 
 let rule tgt = List.map (top_level tgt)
 
