@@ -749,7 +749,6 @@ let rewrap_anything = function
 (* --------------------------------------------------------------------- *)
 
 let apply_isos isos rule =
-  Unparse_ast0.unparse rule;
   let isos = List.map (List.map (List.map rewrap_anything)) isos in
   Compute_lines.compute_lines
     (List.map
