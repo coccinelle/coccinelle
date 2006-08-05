@@ -108,7 +108,7 @@ signed int Z;
 Statement
 
 @@
-statement S;
+expression E;
 @@
 
-{ ... S } => S
+{ ... return E; } => return E;
