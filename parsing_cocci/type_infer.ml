@@ -163,7 +163,7 @@ let rec propagate_types env =
   let statement_dots r k d =
     match Ast0.unwrap d with
       Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	process_statement_list [] l; option_default in
+	process_statement_list env l; option_default in
 
   let statement r k s =
     match Ast0.unwrap s with

@@ -39,7 +39,8 @@ let mcodekind brackets fn x = function
 let mcode fn (x,_,_,mc) = mcodekind None fn x mc
 
 let print_context (_,info,i,mc,ty) fn =
-  mcodekind (Some info.Ast0.line_start) fn () !mc
+  mcodekind (Some info.Ast0.line_start) fn () !mc;
+  match !ty with Some ty -> Type_cocci.typeC ty | _ -> ()
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
