@@ -24,17 +24,28 @@ let inline_mcodes =
 	  ([],_) -> ()
 	| replacements ->
 	    let minus_try = function
-		(true,Some (Ast0.MINUS(mreplacements))) ->
-		  (match !mreplacements with
-		    ([],_) -> mreplacements := replacements; true
-		  | _ -> failwith "unexpected plus nodes in a minus tree")
+		(true,mc) ->
+		  if List.for_all
+		      (function
+			  Ast0.MINUS(mreplacements) -> true | _ -> false)
+		      mc
+		  then
+		    (List.iter
+		       (function
+			   Ast0.MINUS(mreplacements) ->
+			     mreplacements := replacements
+			 | _ -> ())
+		       mc;
+		     true)
+		  else false
 	      | _ -> false in
 	    if not (minus_try(einfo.Ast0.attachable_end,
 			      einfo.Ast0.mcode_end)
 		      or
-    	            minus_try(einfo.Ast0.attachable_start,
+    		    minus_try(einfo.Ast0.attachable_start,
 			      einfo.Ast0.mcode_start))
-	    then failwith "minus tree should not have bad code on both sides")
+	    then
+	      failwith "minus tree should not have bad code on both sides")
     | Ast0.CONTEXT(befaft)
     | Ast0.MIXED(befaft) ->
 	let concat starter startinfo ender endinfo =
@@ -45,47 +56,65 @@ let inline_mcodes =
 	      let butlast = List.rev(List.tl(List.rev starter)) in
 	      butlast @ (last@(List.hd ender)) :: (List.tl ender)
 	    else starter @ ender in
-	  (lst,{endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
+	  (lst,
+	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
 	let attach_bef bef beforeinfo = function
-	    (true,Some(Ast0.MINUS(mreplacements))) ->
-	      let (mrepl,tokeninfo) = !mreplacements in
-	      mreplacements := concat bef beforeinfo mrepl tokeninfo
-	  | (true,Some(Ast0.CONTEXT(mbefaft))) ->
-	      (match !mbefaft with
-		(Ast.BEFORE(mbef),mbeforeinfo,a) ->
-		  let (newbef,newinfo) =
-		    concat bef beforeinfo mbef mbeforeinfo in
-		  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
-	      | (Ast.AFTER(maft),_,a) ->
-		  mbefaft := (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
-	      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
-		  let (newbef,newinfo) =
-		    concat bef beforeinfo mbef mbeforeinfo in
-		  mbefaft := (Ast.BEFOREAFTER(newbef,maft),newinfo,a)
-	      | (Ast.NOTHING,_,a) ->
-		  mbefaft := (Ast.BEFORE(bef),beforeinfo,a))
+	    (true,mcl) ->
+	      List.iter
+		(function
+		    Ast0.MINUS(mreplacements) ->
+		      let (mrepl,tokeninfo) = !mreplacements in
+		      mreplacements :=
+			concat bef beforeinfo mrepl tokeninfo
+		  | Ast0.CONTEXT(mbefaft) ->
+		      (match !mbefaft with
+			(Ast.BEFORE(mbef),mbeforeinfo,a) ->
+			  let (newbef,newinfo) =
+			    concat bef beforeinfo mbef mbeforeinfo in
+			  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
+		      | (Ast.AFTER(maft),_,a) ->
+			  mbefaft :=
+			    (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
+		      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
+			  let (newbef,newinfo) =
+			    concat bef beforeinfo mbef mbeforeinfo in
+			  mbefaft :=
+			    (Ast.BEFOREAFTER(newbef,maft),newinfo,a)
+		      | (Ast.NOTHING,_,a) ->
+			  mbefaft := (Ast.BEFORE(bef),beforeinfo,a))
+		  |	_ -> failwith "unexpected annotation")
+		mcl
 	  | _ ->
-	      failwith "context tree should not have bad code on both sides" in
+	      failwith
+		"context tree should not have bad code on both sides" in
 	let attach_aft aft afterinfo = function
-	    (true,Some(Ast0.MINUS(mreplacements))) ->
-	      let (mrepl,tokeninfo) = !mreplacements in
-	      mreplacements := concat mrepl tokeninfo aft afterinfo
-	  | (true,Some(Ast0.CONTEXT(mbefaft))) ->
-	      (match !mbefaft with
-		(Ast.BEFORE(mbef),b,_) ->
-		  mbefaft := (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
-	      | (Ast.AFTER(maft),b,mafterinfo) ->
-		  let (newaft,newinfo) =
-		    concat maft mafterinfo aft afterinfo in
-		  mbefaft := (Ast.AFTER(newaft),b,newinfo)
-	      | (Ast.BEFOREAFTER(mbef,maft),b,mafterinfo) ->
-		  let (newaft,newinfo) =
-		    concat maft mafterinfo aft afterinfo in
-		  mbefaft := (Ast.BEFOREAFTER(mbef,newaft),b,newinfo)
-	      | (Ast.NOTHING,b,_) ->
-		  mbefaft := (Ast.AFTER(aft),b,afterinfo))
+	    (true,mcl) ->
+	      List.iter
+		(function
+		    Ast0.MINUS(mreplacements) ->
+		      let (mrepl,tokeninfo) = !mreplacements in
+		      mreplacements := concat mrepl tokeninfo aft afterinfo
+		  | Ast0.CONTEXT(mbefaft) ->
+		      (match !mbefaft with
+			(Ast.BEFORE(mbef),b,_) ->
+			  mbefaft :=
+			    (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
+		      | (Ast.AFTER(maft),b,mafterinfo) ->
+			  let (newaft,newinfo) =
+			    concat maft mafterinfo aft afterinfo in
+			  mbefaft := (Ast.AFTER(newaft),b,newinfo)
+		      | (Ast.BEFOREAFTER(mbef,maft),b,mafterinfo) ->
+			  let (newaft,newinfo) =
+			    concat maft mafterinfo aft afterinfo in
+			  mbefaft :=
+			    (Ast.BEFOREAFTER(mbef,newaft),b,newinfo)
+		      | (Ast.NOTHING,b,_) ->
+			  mbefaft := (Ast.AFTER(aft),b,afterinfo))
+		  |	_ -> failwith "unexpected annotation")
+		mcl
 	  | _ ->
-	      failwith "context tree should not have bad code on both sides" in
+	      failwith
+		"context tree should not have bad code on both sides" in
 	(match !befaft with
 	  (Ast.BEFORE(bef),beforeinfo,_) ->
 	    attach_bef bef beforeinfo
@@ -105,18 +134,18 @@ let inline_mcodes =
     do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing
-
+    
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
-
+    
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
-
+	
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
-
+	
 let convert_info info =
   { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column }
 

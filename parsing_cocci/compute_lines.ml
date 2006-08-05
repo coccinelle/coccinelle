@@ -7,7 +7,8 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
-let mkres (_,_,index,mcodekind,ty) e (_,lstart,_,_,_) (_,lend,_,_,_) =
+let mkres (_,_,index,mcodekind,ty) e
+    (_,lstart,_,_,_) (_,lend,_,_,_) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
@@ -20,7 +21,24 @@ let mkres (_,_,index,mcodekind,ty) e (_,lstart,_,_,_) (_,lend,_,_,_) =
       Ast0.column = lstart.Ast0.column;
       Ast0.offset = lstart.Ast0.offset } in
   (e,info,index,mcodekind,ty)
-    
+
+let mkmultires (_,_,index,mcodekind,ty) e
+    (_,lstart,_,_,_) (_,lend,_,_,_) (astart,start_mcodes) (aend,end_mcodes) =
+  Printf.printf "mkmultires %d %d\n"
+    (List.length start_mcodes) (List.length end_mcodes);
+  let info =
+    { Ast0.line_start = lstart.Ast0.line_start;
+      Ast0.line_end = lend.Ast0.line_end;
+      Ast0.logical_start = lstart.Ast0.logical_start;
+      Ast0.logical_end = lend.Ast0.logical_end;
+      Ast0.attachable_start = astart;
+      Ast0.attachable_end = aend;
+      Ast0.mcode_start = start_mcodes;
+      Ast0.mcode_end = end_mcodes;
+      Ast0.column = lstart.Ast0.column;
+      Ast0.offset = lstart.Ast0.offset } in
+  (e,info,index,mcodekind,ty)
+
 (* --------------------------------------------------------------------- *)
     
 let get_option fn = function
@@ -34,7 +52,7 @@ let get_option fn = function
 let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
-      Ast0.mcode_start = Some mcodekind; Ast0.mcode_end = Some mcodekind} in
+      Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
   ((),new_info,ref (-1),ref mcodekind,None)
 
 (* mcode is good by default *)
@@ -42,6 +60,14 @@ let bad_mcode (t,a,info,mcodekind) =
   let new_info =
     {info with Ast0.attachable_start = false; Ast0.attachable_end = false} in
   (t,a,new_info,mcodekind)
+
+let get_all_start_info l =
+  (List.for_all (function x -> (Ast0.get_info x).Ast0.attachable_start) l,
+   List.concat (List.map (function x -> (Ast0.get_info x).Ast0.mcode_start) l))
+
+let get_all_end_info l =
+  (List.for_all (function x -> (Ast0.get_info x).Ast0.attachable_end) l,
+   List.concat (List.map (function x -> (Ast0.get_info x).Ast0.mcode_end) l))
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -190,9 +216,11 @@ let rec expression e =
       let ln = promote_mcode cm in mkres e ue ln ln
   | Ast0.DisjExpr(starter,exps,ender) ->
       let starter = bad_mcode starter in
+      let exps = List.map expression exps in
       let ender = bad_mcode ender in
-      mkres e (Ast0.DisjExpr(starter,List.map expression exps,ender))
+      mkmultires e (Ast0.DisjExpr(starter,exps,ender))
 	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info exps) (get_all_end_info exps)
   | Ast0.NestExpr(starter,exp_dots,ender) ->
       let exp_dots = dots is_exp_dots None expression exp_dots in
       let starter = bad_mcode starter in
@@ -273,9 +301,11 @@ let rec declaration d =
       mkres d (Ast0.UnInit(ty,id,sem)) ty (promote_mcode sem)
   | Ast0.DisjDecl(starter,decls,ender) ->
       let starter = bad_mcode starter in
+      let decls = List.map declaration decls in
       let ender = bad_mcode ender in
-      mkres d (Ast0.DisjDecl(starter,List.map declaration decls,ender))
+      mkmultires d (Ast0.DisjDecl(starter,decls,ender))
 	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info decls) (get_all_end_info decls)
   | Ast0.OptDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.OptDecl(declaration decl)) decl decl
@@ -390,8 +420,9 @@ let rec statement s =
       let elems =
 	List.map (function x -> dots is_stm_dots None statement x)
 	  rule_elem_dots_list in
-      mkres s (Ast0.Disj(starter,elems,ender))
+      mkmultires s (Ast0.Disj(starter,elems,ender))
 	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info elems) (get_all_end_info elems)
   | Ast0.Nest(starter,rule_elem_dots,ender) ->
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in

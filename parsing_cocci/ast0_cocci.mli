@@ -17,7 +17,7 @@ type mcodekind =
 type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
 	      attachable_start : bool; attachable_end : bool;
-	      mcode_start : mcodekind option; mcode_end : mcodekind option;
+	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      column : int; offset : int }
 
 type 'a mcode = 'a * arity * info * mcodekind

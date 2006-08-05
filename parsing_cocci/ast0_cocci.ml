@@ -19,11 +19,12 @@ type mcodekind =
 type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
 	      attachable_start : bool; attachable_end : bool;
-	      mcode_start : mcodekind option; mcode_end : mcodekind option;
+	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      column : int; offset : int }
 
 type 'a mcode = 'a * arity * info * mcodekind
-type 'a wrap = 'a * info * int ref * mcodekind ref (* int ref is an index *)
+(* int ref is an index *)
+type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
 
 (* --------------------------------------------------------------------- *)
@@ -240,7 +241,7 @@ let default_info _ = (* why is this a function? *)
   { line_start = -1; line_end = -1;
     logical_start = -1; logical_end = -1;
     attachable_start = true; attachable_end = true;
-    mcode_start = None; mcode_end = None;
+    mcode_start = []; mcode_end = [];
     column = -1; offset = -1 }
 
 let default_befaft _ =
@@ -253,7 +254,8 @@ let context_wrap x =
   (x,default_info(),ref (-1),ref (context_befaft()),ref None)
 let unwrap (x,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
-let rewrap (_,info,index,mcodekind,ty) x = (x,info,index,mcodekind,ty)
+let rewrap (_,info,index,mcodekind,ty) x =
+  (x,info,index,mcodekind,ty)
 let copywrap (_,info,index,mcodekind,ty) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;

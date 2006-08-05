@@ -595,7 +595,7 @@ let copy_plus printer minusify model e =
       (* minusify e *)
       let e = minusify e in
       (* add the replacement information at the root *)
-      (match Ast0.get_mcodekind  e with
+      (match Ast0.get_mcodekind e with
 	Ast0.MINUS(emc) -> emc := !mc (* ! mc contains no references *)
       |	_ -> failwith "not possible 6");
       e
@@ -608,12 +608,12 @@ let copy_plus printer minusify model e =
   | Ast0.PLUS -> failwith "not possible 9"
 
 let mkdisj matcher alts instantiater e disj_maker minusify
-    rebuild_mcodes compute_lines printer =
+    rebuild_mcodes printer =
   let call_instantiate bindings alts =
     List.map
       (function a ->
 	copy_plus printer minusify e
-	  (compute_lines (instantiater bindings (rebuild_mcodes a))))
+	  (instantiater bindings (rebuild_mcodes a)))
       alts in
   let rec inner_loop all_alts = function
       [] -> None
@@ -661,7 +661,6 @@ let transform_expr alts e =
 	(function b -> (instantiate b).V0.rebuilder_expression) e
 	make_disj_expr make_minus.V0.rebuilder_expression
 	(rebuild_mcode start_line).V0.rebuilder_expression
-	Compute_lines.expression
 	Unparse_ast0.expression
   | _ -> e
 
@@ -679,7 +678,6 @@ let transform_decl alts e =
 	(function b -> (instantiate b).V0.rebuilder_declaration) e
 	make_disj_decl make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
-	Compute_lines.declaration
 	Unparse_ast0.declaration
   | _ -> e
 
@@ -697,7 +695,6 @@ let transform_stmt alts e =
 	(function b -> (instantiate b).V0.rebuilder_statement) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
-	Compute_lines.statement
 	(Unparse_ast0.statement "")
   | _ -> e
 
@@ -752,10 +749,12 @@ let rewrap_anything = function
 (* --------------------------------------------------------------------- *)
 
 let apply_isos isos rule =
+  Unparse_ast0.unparse rule;
   let isos = List.map (List.map (List.map rewrap_anything)) isos in
-  List.map
-    (function t ->
-      List.fold_left
-	(function t -> function iso -> transform iso t)
-	t isos)
-    rule
+  Compute_lines.compute_lines
+    (List.map
+       (function t ->
+	 List.fold_left
+	   (function t -> function iso -> transform iso t)
+	   t isos)
+       rule)

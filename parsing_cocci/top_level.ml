@@ -44,8 +44,9 @@ let scan_code l =
       then ([Ast0.wrap(Ast0.CODE(top_dots code))],rest)
       else
 	(List.map
-	   (function
-	       (Ast0.Decl(x),_,_,_,_) -> Ast0.wrap (Ast0.DECL x)
+	   (function d ->
+	     match Ast0.unwrap d with
+	       Ast0.Decl(x) -> Ast0.wrap (Ast0.DECL x)
 	     | _ -> failwith "impossible")
 	   code,
 	 rest)
