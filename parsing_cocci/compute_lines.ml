@@ -24,8 +24,6 @@ let mkres (_,_,index,mcodekind,ty) e
 
 let mkmultires (_,_,index,mcodekind,ty) e
     (_,lstart,_,_,_) (_,lend,_,_,_) (astart,start_mcodes) (aend,end_mcodes) =
-  Printf.printf "mkmultires %d %d\n"
-    (List.length start_mcodes) (List.length end_mcodes);
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
