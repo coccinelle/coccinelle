@@ -155,6 +155,7 @@ let rec propagate_types env =
 	      | Ast0.UniqueDecl(decl) -> process_decl decl
 	      | Ast0.MultiDecl(decl) -> process_decl decl in
 	    process_statement_list ((process_decl decl)@acc) ss
+	| Ast0.Dots(_,_) -> process_statement_list acc ss
 	| _ ->
 	    let recursor = (propagate_types acc).V0.combiner_statement in
 	    List.iter (function s -> let _ = recursor s in ()) all_s) in

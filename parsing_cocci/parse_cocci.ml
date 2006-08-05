@@ -496,8 +496,8 @@ let parse file =
 	Printf.printf "before minus parse\n";
 	*)
 	let minus_res = parse_one PC.minus_main file minus_tokens in
-	Unparse_ast0.unparse minus_res;
 	(*
+	Unparse_ast0.unparse minus_res;
 	Printf.printf "before plus parse\n";
 	*)
 	let plus_res = parse_one PC.plus_main file plus_tokens in
@@ -569,7 +569,7 @@ let process file isofile verbose =
 	    Type_infer.type_infer minus;
 	    let minus = Iso_pattern.apply_isos isos minus in
 	    let minus_ast = Ast0toast.ast0toast minus in
-	    if verbose then Pretty_print_cocci.unparse minus_ast;
+	    Pretty_print_cocci.unparse minus_ast;
 	    (metavars, minus_ast))
 	minus plus in
     let (free_tables,used_after_lists,extenders) =
