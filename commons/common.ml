@@ -1363,7 +1363,7 @@ let rec zip_safe xs ys =
 let rec take n xs = 
   match (n,xs) with
   | (0,_) -> []
-  | (_,[]) -> failwith "not enough"
+  | (_,[]) -> failwith "take: not enough"
   | (n,x::xs) -> x::take (n-1) xs
 
 let rec take_safe n xs =
@@ -1382,7 +1382,7 @@ let take_while p = take_until (p $ not)
 let rec drop n xs = 
   match (n,xs) with
   | (0,_) -> xs
-  | (_,[]) -> failwith "not enough"
+  | (_,[]) -> failwith "drop: not enough"
   | (n,x::xs) -> drop (n-1) xs
 
 (* let _ = Example (drop 3 [1;2;3;4] = [4]) *)

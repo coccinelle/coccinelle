@@ -134,7 +134,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 	  within the declarator. Otherwise, you can omit the name.
        *)
       (match params with
-      | [((reg, None, ((qualif, (BaseType Void,_)))),_), _] ->  
+      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  
           ty
       | params -> 
           (params +> List.iter (function 
@@ -151,10 +151,13 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 let fixFunc = function
   | (((s,iis), (nQ, (FunctionType (fullt, (params,bool)),iifunc)), (st,iist)), (cp,iicp)) -> 
       assert (nQ =*= nullQualif);
-      params +> List.iter (function 
+      (match params with
+      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
+      | params -> 
+        params +> List.iter (function 
             | (((bool, Some s, fullt), _), _) -> ()
 	    | _ -> failwith "internal errror: fixOldCDecl not good"
-       );
+       ));
       (s, (fullt, (params, bool)), st, cp), ([iis]++iifunc++iicp++iist) (* it must be nullQualif,cos parser construct only this*)
   | _ -> raise (Semantic ("you are trying to do a function definition but you dont give any parameter", fake_parse_info))
 
@@ -173,11 +176,15 @@ let et s () =
 
 let fix_add_params_ident = function
   | ((s, (nQ, (FunctionType (fullt, (params, bool)),_)), st)) ->  
-      params +> List.iter (function 
-        | (((bool, Some s, fullt), _), _) -> 
+
+      (match params with
+      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
+      | params -> 
+        params +> List.iter (function 
+         | (((bool, Some s, fullt), _), _) -> 
             Lexer_parser.add_ident s
-	| _ -> failwith "internal errror: fixOldCDecl not good"
-      ) 
+	 | _ -> failwith "internal errror: fixOldCDecl not good"
+      )) 
   | _ -> ()
     
 %}
