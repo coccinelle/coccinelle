@@ -14,7 +14,7 @@ identifier proc_info_func;
 -   hostptr = scsi_host_hn_get(hostno);
     ...
 (
-?-  if (!hostptr) return ...;
+-   if (!hostptr) return ...;
 |
 ?-  if (!hostptr) { ... return ...; }
 )
@@ -24,4 +24,3 @@ identifier proc_info_func;
   }
 
 error words = [scsi_host_hn_get,scsi_host_put]
-
