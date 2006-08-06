@@ -4,8 +4,7 @@ module A = Ast_cocci
 module B = Ast_c
 module F = Control_flow_c
 
-(******************************************************************************)
-
+(*****************************************************************************)
 type sequence_processing_style = Ordered | Unordered
 
 (* put in semantic_c.ml ? *)
@@ -14,44 +13,44 @@ type semantic_info_ident =
   | LocalFunction (* entails Function *)
   | DontKnow
 
+let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
-(******************************************************************************)
-
+(*****************************************************************************)
 (*
-version0: 
-  (Ast_cocci.rule_elem -> Control_flow_c.node -> bool)
-  type ('a, 'b) matcher = 'a -> 'b -> bool
-
-version1: same but with a global variable holding the current binding
- BUT bug
-  - can have multiple possibilities
-  - globals sux
-  - sometimes have to undo, cos if start match, then it binds, and if later
-     it does not match, then must undo the first binds.
-    ex: when match parameters, can  try to match, but then we found far 
-    later that the last argument of a function does not match
-     => have to undo the binding !!!
-     (can handle that too with a global, by saving the global, ... but sux)
-  => better not use global
-
-version2: 
- (binding -> Ast_cocci.rule_elem -> Control_flow_c.node -> binding list)
-  type ('a, 'b) matcher = binding -> 'a -> 'b -> binding list
- Empty list mean failure (let matchfailure = []).
- To be able to have pretty code, have to use partial application powa, and so 
-  the type is in fact
-   type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
- Then by defining the correct combinators, can have quite pretty code (that 
-  looks like the clean code of version0).
-
-opti: return a lazy list of possible matchs ?
-*)
+ * version0: 
+ *   (Ast_cocci.rule_elem -> Control_flow_c.node -> bool)
+ *   type ('a, 'b) matcher = 'a -> 'b -> bool
+ * 
+ * version1: same but with a global variable holding the current binding
+ *  BUT bug
+ *   - can have multiple possibilities
+ *   - globals sux
+ *   - sometimes have to undo, cos if start match, then it binds, and if later
+ *      it does not match, then must undo the first binds.
+ *     ex: when match parameters, can  try to match, but then we found far 
+ *     later that the last argument of a function does not match
+ *      => have to undo the binding !!!
+ *      (can handle that too with a global, by saving the global, ... but sux)
+ *   => better not use global
+ * 
+ * version2: 
+ *  (binding -> Ast_cocci.rule_elem -> Control_flow_c.node -> binding list)
+ *   type ('a, 'b) matcher = binding -> 'a -> 'b -> binding list
+ *  Empty list mean failure (let matchfailure = []).
+ *  To be able to have pretty code, have to use partial application powa, and 
+ *  so the type is in fact
+ *    type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
+ *  Then by defining the correct combinators, can have quite pretty code (that 
+ *   looks like the clean code of version0).
+ * 
+ * opti: return a lazy list of possible matchs ?
+ *)
 
 type ('a, 'b) matcher = 
     'a -> 'b -> Lib_engine.metavars_binding -> Lib_engine.metavars_binding list
 
 (* monad like stuff
-   src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP ?)
+ * src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP)
  *)
 
 let (>&&>) m1 m2 = fun binding ->
@@ -62,7 +61,7 @@ let (>&&>) m1 m2 = fun binding ->
 let (>||>) m1 m2 = fun binding ->
   m1 binding ++  m2 binding
 
-(* An exclusiv or (xor). *)
+(* An exclusive or (xor). *)
 let (>|+|>) m1 m2 = fun binding -> 
   let xs = m1 binding in
   if null xs
@@ -74,7 +73,7 @@ let return res = fun binding ->
   | false -> []
   | true -> [binding]
 
-(******************************************************************************)
+(*****************************************************************************)
 
 (* old: semiglobal for metavar binding (logic vars) *)
 (* old:
@@ -170,59 +169,110 @@ let check_add_metavars_binding = fun (k, valu) binding ->
      _GoodMatch   (binding +> insert_assoc (k, valu'))
   )
   
-
-
-(******************************************************************************)
-
-let term ((s,_,_) : 'a Ast_cocci.mcode) = s
-
+(*****************************************************************************)
 let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
  fun re node -> 
   match A.unwrap re, F.unwrap node with
+
+  (* note: the order of the clauses is important. *)
+
+  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> return false
+
+  (* the metaRuleElem contains just '-' information. We dont need to add
+   * stuff in the environment. If we need stuff in environment, because
+   * there is a + S somewhere, then this will be done via MetaStatement, not
+   * via MetaRuleElem. 
+   * Can match TrueNode/FalseNode/... so must be placed before those cases.
+   *)
   | A.MetaRuleElem _, _ -> return true
 
-  | _, F.Enter | _, F.Exit 
-  | _, F.Fake
-  | _, F.CaseNode _ 
+  | _, F.Fake  | _, F.CaseNode _ 
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
-  | _, F.ErrorExit
     -> return false
 
-  (* obsolete?: it can match a MetaStmt too !! and we have to get all the  
-     concerned nodes *)
+  (* cas general: a Meta can match everything *)
+  | A.MetaStmt (ida),  _unwrap_node -> 
+     (* match only "header"-statement *)
+     (match Control_flow_c.extract_fullstatement node with
+     | Some stb -> check_add_metavars_binding (term ida, Ast_c.MetaStmtVal stb)
+     | None -> return false
+     )
 
-  | A.SeqStart _, F.StartBrace _ -> return true
-  | A.SeqEnd _,   F.EndBrace   _ -> return true
+  (* not me?: *)
+  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
 
-  | A.MetaStmt (ida),  F.StartBrace (_, stb, _) -> 
-      check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
+  | A.Exp expr, nodeb -> 
+     (* Now keep fullstatement inside the control flow node, 
+      * so that can then get in a MetaStmtVar the fullstatement to later
+      * pp back when the S is in a +. But that means that 
+      * Exp will match an Ifnode even if there is no such exp
+      * inside the condition of the Ifnode (because the exp may
+      * be deeper, in the then branch). So have to not visit
+      * all inside a node anymore.
+      * 
+      * update: j'ai choisi d'accrocher au noeud du CFG à la
+      * fois le fullstatement et le partialstatement et appeler le 
+      * visiteur que sur le partialstatement.
+      *)
 
-  | A.SeqStart _, _ | _, F.StartBrace _ -> return false
-  | A.SeqEnd _, _   | _, F.EndBrace _ -> return false
-
-
-  
-  | A.Decl decla, F.Declaration declb -> match_re_decl decla declb
-  | A.Exp expr, F.Declaration declb -> 
+      (* julia's code *)
       (function binding ->
-	let globals = ref [] in
-	declb +> Visitor_c.visitor_decl_k
-	  { Visitor_c.default_visitor_c
-	  with 
-	    Visitor_c.kexpr = 
+        let globals = ref [] in
+        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
             (fun (k, bigf) e ->
 	      match match_e_e expr e binding with
 		[] -> (* failed *) k e
-	      |	b -> globals := b @ !globals) };
-        !globals)
+	      |	b -> globals := b @ !globals);
+              }
+        in
 
-  | A.Decl _, _ | _, F.Declaration _ -> return false
+      (* let all_exprs =  
+          ...
+        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
+              (fun (k, bigf) expr -> push2 expr globals;  k expr );
+           } 
+        in
+       *)
+        let visitor_e = Visitor_c.visitor_expr_k bigf in
+
+        (match nodeb with 
+
+        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
+        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
+
+        | F.IfHeader (_, (e,_)) 
+        | F.SwitchHeader (_, (e,_))
+        | F.WhileHeader (_, (e,_))
+        | F.DoWhileTail (e,_) 
+          -> visitor_e e
+
+        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
+            e1opt +> do_option visitor_e;
+            e2opt +> do_option visitor_e;
+            e3opt +> do_option visitor_e;
+            
+        | F.ReturnExpr (_, (e,_)) -> visitor_e e
+
+        | F.Case  (_, (e,_)) -> visitor_e e
+        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
+
+        | _ -> ()
+        );
+        !globals
+      )
+     (*
+      in
+      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+        (return false)
+       *)
+  
+
+
 
   | A.FunHeader (stoa, ida, _, paramsa, _), 
-    F.HeadFunc ((idb, (retb, (paramsb, (isvaargs,_))), stob, statb), _) -> 
+    F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
 
-      match_ident LocalFunction ida idb
-      >&&>
+      match_ident LocalFunction ida idb >&&>
            (* todo: stoa vs stob *)
            (* todo: isvaargs ? retb ? *)
       (
@@ -238,153 +288,47 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )
          paramsa' paramsb
       )
-  | A.FunHeader _,_ | _,F.HeadFunc _ -> return false
 
-  | _, F.Statement st ->     match_re_st   re st
-          
-      
-      
+  | A.Decl decla, F.Decl declb -> match_re_decl decla declb
 
+  | A.SeqStart _, F.SeqStart _ -> return true
+  | A.SeqEnd _,   F.SeqEnd   _ -> return true
 
-(*--------------------------------------------------------------------------- *)
-
-and (match_re_st: (Ast_cocci.rule_elem, Ast_c.statement) matcher)  = 
- fun re st -> 
-  match A.unwrap re, st with
-
-  (* this is done in match_re_node, or match_re_decl *)
-  | A.FunHeader _, _  | A.Decl _, _ | A.SeqStart _, _  | A.SeqEnd _, _ -> 
-      raise Impossible 
-  | A.MetaRuleElem _, _ -> raise Impossible
-
-
-  (* cas general: a Meta can match everything *)
-  (* obsolete? if stb is a compound ? *)
-  | A.MetaStmt (ida),  stb -> 
-      check_add_metavars_binding (term ida, Ast_c.MetaStmtVal (stb))
-
-  (* not me?: MetaStmList ? *)
-  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
-
-  | A.Exp expr , statement -> 
-      (function binding ->
-        let globals = ref [] in
-        begin
-          statement +> Visitor_c.visitor_statement_k { 
-            Visitor_c.default_visitor_c with 
-            Visitor_c.kexpr = 
-              (fun (k, bigf) e ->
-	      match match_e_e expr e binding with
-		[] -> (* failed *) k e
-	      |	b -> globals := b @ !globals);
-            (* Now keep fullstatement inside the control flow node, 
-               so that can then get in a MetaStmtVar the fullstatement to later
-               pp back when the S is in a +. But that means that 
-               Exp will match an Ifnode even if there is no such exp
-               inside the condition of the Ifnode (because the exp may
-               be deeper, in the then branch). So have to not visit
-               all inside a statement anymore.
-               
-               choice: aurait pu aussi choisir d'accrocher au noeud du CFG à la
-               fois le fullstatement et le partialstatement et appeler le 
-               visiteur que sur le partialstatement.
-             *)
-
-            Visitor_c.kstatement =
-              (fun (k, bigf) stat -> 
-                
-                match stat with
-                | B.Labeled (B.Label (s, st)), _ -> ()
-                | B.Labeled (B.Case  (e, st)), _ -> 
-                    Visitor_c.visitor_expr_k bigf e;
-                | B.Labeled (B.CaseRange  (e, e2, st)), _ -> 
-                    Visitor_c.visitor_expr_k bigf e; 
-                    Visitor_c.visitor_expr_k bigf e2;
-                | B.Labeled (B.Default st), _ -> ()
-
-                | B.Compound ((declxs_statxs)), is ->
-                    (* done in caller, with the pattern on SeqStart&SeqEnd. *)
-                    raise Impossible 
-                    
-                | B.ExprStatement (None), _ -> ()
-                | B.ExprStatement (Some e), _ -> Visitor_c.visitor_expr_k bigf e
-
-                | B.Selection  (B.If (e, st1, st2)), _ -> 
-                    Visitor_c.visitor_expr_k bigf e; 
-                | B.Selection  (B.Switch (e, st)), _ -> 
-                    Visitor_c.visitor_expr_k bigf e; 
-                | B.Iteration  (B.While (e, st)), _ -> 
-                    Visitor_c.visitor_expr_k bigf e
-                | B.Iteration  (B.DoWhile (st, e)), _ -> 
-                    failwith 
-                      ("not handling dowhile, the info is not in the good place in cfg")
-                | B.Iteration (B.For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
-                    Visitor_c.visitor_statement_k bigf
-                      (B.ExprStatement (e1opt),i1); 
-                    Visitor_c.visitor_statement_k bigf
-                      (B.ExprStatement (e2opt),i2); 
-                    Visitor_c.visitor_statement_k bigf
-                      (B.ExprStatement (e3opt),i2); 
-
-
-                | B.Jump (B.Goto s), _ -> ()
-                | B.Jump ((B.Continue|B.Break|B.Return)), _ -> ()
-                | B.Jump (B.ReturnExpr e), _ -> Visitor_c.visitor_expr_k bigf e;
-                | B.Asm, _ -> ()
-
-              )
-            };
-          !globals
-	end)
-
-
-
-  | A.ExprStatement (ep, _),         (B.ExprStatement (Some ec) , ii) -> 
-      match_e_e ep ec
-
-  (* I have just to manage the node itself, so just the head of the 
-     if/while/for,  not its body *)
-  | A.IfHeader (_,_, ea, _), (B.Selection  (B.If (eb, st1b, st2b)), ii) -> 
+  | A.ExprStatement (ea, _), F.ExprStatement (_, (Some eb, ii)) -> 
       match_e_e ea eb
 
-  | A.Else _, _ -> failwith "not handling Else"
-
-  | A.WhileHeader (_, _, ea, _), (B.Iteration  (B.While (eb, stb)), ii) -> 
-      match_e_e ea eb
+  | A.IfHeader (_,_, ea, _), F.IfHeader (_, (eb,ii)) -> match_e_e ea eb
+  | A.Else _,                F.Else _                -> return true
+  | A.WhileHeader (_, _, ea, _), F.WhileHeader (_, (eb,ii)) -> match_e_e ea eb
+  | A.DoHeader _,             F.DoHeader _          -> return true
+  | A.WhileTail (_,_,ea,_,_), F.DoWhileTail (eb,ii) -> match_e_e ea eb
 
   | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), 
-    (B.Iteration  (B.For ((eb1opt,_), (eb2opt,_), (eb3opt,_), stb)), ii) -> 
+    F.ForHeader (_, (((eb1opt,_), (eb2opt,_), (eb3opt,_)), ii)) -> 
       match_opt match_e_e ea1opt eb1opt >&&>
       match_opt match_e_e ea2opt eb2opt >&&>
       match_opt match_e_e ea3opt eb3opt >&&>
       return true
       
-  | A.DoHeader _, (B.Iteration  (B.DoWhile (eb, stb)), ii) -> 
-      failwith "not handling dowhile, the info is not in the good place in cfg"
-  | A.WhileTail _, _ -> 
-      failwith "not handling dowhile, the info is not in the good place in cfg"
 
+  | A.Return _,              F.Return (_, ((),ii))     -> return true
+  | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
 
-  | A.Return _, (B.Jump (B.Return), ii) -> return true
-  | A.ReturnExpr (_, ea, _), (B.Jump (B.ReturnExpr eb), ii) -> match_e_e ea eb
-
-  | _, (B.Compound _, ii) -> raise Impossible (* can only have SeqStart *)
-
-  | _, (B.ExprStatement None, ii) -> return false (* happen ? *)
+  | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
-  | _, (B.Labeled _, ii)              -> return false
-  | _, (B.Asm , ii)                   -> return false
-  | _, (B.Selection (B.Switch _), ii) -> return false
-  | _, (B.Jump (B.Goto _), ii)        -> return false
-  | _, (B.Jump (B.Break), ii)         -> return false
-  | _, (B.Jump (B.Continue), ii)      -> return false
+  | _, F.SwitchHeader _ 
+  | _, F.Label _
+  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
+  | _, F.Goto _ | _, F.Break _ | _, F.Continue _ 
+  | _, F.Asm
+    -> return false
 
   | _, _ -> return false
 
 
-(*--------------------------------------------------------------------------- *)
+(*-------------------------------------------------------------------------- *)
 
 and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
  fun decla declb -> 
@@ -398,7 +342,7 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
           | (Some ((sb, iniopt),_), typb, sto), _ ->
               (match iniopt with
               | None -> 
-                  (* isomorphisms handled here, good?  cos allow an initializer 
+                  (* isomorphisms handled here, good?  cos allow an initializer
                      (iniopt) where a SP does not mention one *)
                   (* todo, use sto? lack of sto in Ast_cocci *)
                   match_ft_ft typa typb >&&>
@@ -422,13 +366,13 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
 
 
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 
-and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
+and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
-  | A.MetaExpr (ida, opttypa),  ((expr, opttypb, ii) as expb) -> 
+  | A.MetaExpr (ida, opttypa),  (((expr, opttypb), ii) as expb) -> 
       (match opttypa, opttypb with
       | None, _ -> return true
       | Some (tas : Type_cocci.typeC list), Some tb -> 
@@ -456,24 +400,25 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
   | A.MetaConst _, _ -> failwith "not handling MetaConst"
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
-  | A.Ident ida,                ((B.Ident idb) , typ, ii) ->
+  | A.Ident ida,                (((B.Ident idb) , typ), ii) ->
       match_ident DontKnow ida idb
 
- (* todo: handle some isomorphisms in int/float ? can have different format 1l 
-    can match a 1.
-    todo: normally string can contain some metavar too, so should recurse on the
-    string *)
-  | A.Constant (A.String sa,_,_),  (B.Constant (B.String (sb, _)), typ,ii)    
+ (* todo: handle some isomorphisms in int/float ? can have different format :
+  *   1l can match a 1.
+  * TODO: normally string can contain some metavar too, so should recurse on 
+  *  the string 
+  *)
+  | A.Constant (A.String sa,_,_),  ((B.Constant (B.String (sb, _)), typ),ii)  
     when sa =$= sb -> return true
-  | A.Constant (A.Char sa,_,_),    (B.Constant (B.Char   (sb, _)), typ,ii)    
+  | A.Constant (A.Char sa,_,_),    ((B.Constant (B.Char   (sb, _)), typ),ii)
     when sa =$= sb -> return true
-  | A.Constant (A.Int sa,_,_),     (B.Constant (B.Int    (sb)), typ,ii)       
+  | A.Constant (A.Int sa,_,_),     ((B.Constant (B.Int    (sb)), typ),ii)
     when sa =$= sb -> return true
-  | A.Constant (A.Float sa,_,_),   (B.Constant (B.Float  (sb, ftyp)), typ,ii) 
+  | A.Constant (A.Float sa,_,_),   ((B.Constant (B.Float  (sb, ftyp)), typ),ii)
     when sa =$= sb -> return true
 
-  | A.FunCall (ea1, _, eas, _), (B.FunCall (eb1, ebs), typ,ii) -> 
-     (* todo: do special case to allow IdMetaFunc, cos doing the recursive call 
+  | A.FunCall (ea1, _, eas, _), ((B.FunCall (eb1, ebs), typ),ii) -> 
+     (* todo: do special case to allow IdMetaFunc, cos doing the recursive call
         will be too late, match_ident will not have the info whether it  was a 
         function.
         todo: but how detect when do x.field = f;  how know that f is a Func ?
@@ -500,31 +445,32 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         eas' ebs'
      )
 
-  | A.Assignment (ea1, opa, ea2),   (B.Assignment (eb1, opb, eb2), typ,ii) -> 
+  | A.Assignment (ea1, opa, ea2),   ((B.Assignment (eb1, opb, eb2), typ),ii) ->
       return (equal_assignOp (term opa)  opb) >&&>
       (match_e_e ea1 eb1 >&&>  match_e_e ea2 eb2) 
 
 
-  | A.CondExpr (ea1, _, ea2opt, _, ea3), (B.CondExpr (eb1, eb2opt, eb3), typ,ii) ->
+  | A.CondExpr (ea1,_,ea2opt,_,ea3), ((B.CondExpr (eb1, eb2opt, eb3), typ),ii) 
+    ->
       match_e_e ea1 eb1 >&&>
       match_opt match_e_e ea2opt eb2opt >&&>
       match_e_e ea3 eb3
    
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.Postfix (ea, opa), (B.Postfix (eb, opb), typ,ii) -> 
+  | A.Postfix (ea, opa), ((B.Postfix (eb, opb), typ),ii) -> 
       return (equal_fixOp (term opa) opb) >&&>
       match_e_e ea eb
 
-  | A.Infix (ea, opa), (B.Infix (eb, opb), typ,ii) -> 
+  | A.Infix (ea, opa), ((B.Infix (eb, opb), typ),ii) -> 
       return (equal_fixOp (term opa) opb) >&&>
       match_e_e ea eb
 
-  | A.Unary (ea, opa), (B.Unary (eb, opb), typ,ii) -> 
+  | A.Unary (ea, opa), ((B.Unary (eb, opb), typ),ii) -> 
       return (equal_unaryOp (term opa) opb) >&&>
       match_e_e ea eb
 
-  | A.Binary (ea1, opa, ea2), (B.Binary (eb1, opb, eb2), typ,ii) -> 
+  | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) -> 
       return (equal_binaryOp (term opa) opb) >&&>
       match_e_e ea1 eb1 >&&> 
       match_e_e ea2 eb2
@@ -532,39 +478,38 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
         
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
 
-  | A.ArrayAccess (ea1, _, ea2, _), (B.ArrayAccess (eb1, eb2), typ,ii) -> 
+  | A.ArrayAccess (ea1, _, ea2, _), ((B.ArrayAccess (eb1, eb2), typ),ii) -> 
       match_e_e ea1 eb1 >&&>
       match_e_e ea2 eb2
 
 
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.RecordAccess (ea, _, ida), (B.RecordAccess (eb, idb), typ,ii) ->
+  | A.RecordAccess (ea, _, ida), ((B.RecordAccess (eb, idb), typ),ii) ->
       match_e_e ea eb >&&>
       match_ident DontKnow ida idb
 
-  | A.RecordPtAccess (ea, _, ida), (B.RecordPtAccess (eb, idb), typ,ii) ->
+  | A.RecordPtAccess (ea, _, ida), ((B.RecordPtAccess (eb, idb), typ),ii) ->
       match_e_e ea eb >&&>
       match_ident DontKnow ida idb
 
   (* todo?: handle some isomorphisms here ? *)
 
-  | A.Cast (_, typa, _, ea), (B.Cast (typb, eb), typ,ii) ->
+  | A.Cast (_, typa, _, ea), ((B.Cast (typb, eb), typ),ii) ->
       match_ft_ft typa typb >&&>
       match_e_e ea eb
 
-  | A.SizeOfExpr (_, ea), (B.SizeOfExpr (eb), typ,ii) ->
+  | A.SizeOfExpr (_, ea), ((B.SizeOfExpr (eb), typ),ii) ->
       match_e_e ea eb
 
-  | A.SizeOfType (_, _, typa, _), (B.SizeOfType (typb), typ,ii) ->
+  | A.SizeOfType (_, _, typa, _), ((B.SizeOfType (typb), typ),ii) ->
       match_ft_ft typa typb
 
   (* todo? iso ? allow all the combinations ? *)
-  | A.Paren (_, ea, _), (B.ParenExpr (eb), typ,ii) -> 
+  | A.Paren (_, ea, _), ((B.ParenExpr (eb), typ),ii) -> 
       match_e_e ea eb
 
   | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
-
 
 
   | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
@@ -585,17 +530,18 @@ and (match_e_e: (Ast_cocci.expression, Ast_c.expression) matcher) = fun ep ec ->
 
 
   (* have not a counter part in coccinelle, for the moment *)
-  | _, (B.Sequence _,_,_) -> return false
+  | _, ((B.Sequence _,_),_) 
 
-  | _, (B.StatementExpr _,_,_) -> return false (* todo ? *)
-  | _, (B.Constructor,_,_) -> return false
-  | _, (B.MacroCall _,_,_) -> return false
-  | _, (B.MacroCall2 _,_,_) -> return false
+  | _, ((B.StatementExpr _,_),_) 
+  | _, ((B.Constructor,_),_) 
+  | _, ((B.MacroCall _,_),_) 
+  | _, ((B.MacroCall2 _,_),_)
+    -> return false
 
   | _, _ -> return false
 
   
-(* -------------------------------------------------------------------------- *)
+(*-------------------------------------------------------------------------- *)
 
 and (match_arguments: 
        sequence_processing_style -> 
@@ -630,7 +576,7 @@ and (match_arguments:
           | A.EComma (_), ys -> raise Impossible 
 
           | A.MetaExprList ida, ys -> 
-              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) 
+              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
@@ -650,7 +596,7 @@ and (match_arguments:
       )
   | Unordered -> failwith "not handling ooo"
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 
 and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
   fun typa typb ->
@@ -741,7 +687,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	return ((term sa) =$= sb)
     | (_,_) -> return false (* incompatible constructors *)
 
-(* -------------------------------------------------------------------------- *)
+(*-------------------------------------------------------------------------- *)
 
 and (match_params: 
        sequence_processing_style -> 
@@ -784,7 +730,7 @@ and (match_params:
 
 
           | A.MetaParamList ida, ys -> 
-              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys)) 
+              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
@@ -800,9 +746,9 @@ and (match_params:
           | A.PComma (_), ys -> raise Impossible 
 
           | A.MetaParam (ida), y::ys -> 
-              (* todo: use quaopt, hasreg ? *)
-              check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
-              match_params seqstyle xs ys
+             (* todo: use quaopt, hasreg ? *)
+             check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
+             match_params seqstyle xs ys
 
           | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
               (* todo: use quaopt, hasreg ? *)
@@ -823,21 +769,20 @@ and (match_params:
   | Unordered -> failwith "handling ooo"
 
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 
 and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
 fun seminfo_idb ida idb -> 
  match A.unwrap ida with
- | (A.Id ida) -> return ((term ida) =$= idb)
- | (A.MetaId ida) -> 
-        check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
+ | A.Id ida -> return ((term ida) =$= idb)
+ | A.MetaId ida -> check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
 
  | A.MetaFunc ida -> 
      (match seminfo_idb with
      | LocalFunction | Function -> 
 	 check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
      | DontKnow -> 
-         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
      )
 
  | A.MetaLocalFunc ida -> 
@@ -846,26 +791,26 @@ fun seminfo_idb ida idb ->
 	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
      | Function -> return false
      | DontKnow -> 
-         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
      )
 
  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
      failwith "not handling Opt/Unique/Multi for ident"
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 and match_opt f eaopt ebopt =
-      (match eaopt, ebopt with
-      | None, None -> return true
-      | Some ea, Some eb -> f ea eb
-      | _, _ -> return false
-      )
+  match eaopt, ebopt with
+  | None, None -> return true
+  | Some ea, Some eb -> f ea eb
+  | _, _ -> return false
 
-(******************************************************************************)
+
+(*****************************************************************************)
 (* Normally Ast_cocci  should reuse some types of Ast_c, so those functions
  * should not exist.
  * update: but now Ast_c depends on Ast_cocci, so can't make too Ast_cocci
  * depends on Ast_c, so have to stay with those equal_xxx functions. *)
-(******************************************************************************)
+(*****************************************************************************)
 
 and equal_unaryOp a b = 
   match a, b with

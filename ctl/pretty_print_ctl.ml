@@ -3,6 +3,10 @@ open Format
 
 open Ast_ctl
 
+(* todo?: a txt_to_latex, that use Format to compute the good space but
+ * then generate latex to better output.
+ *)
+
 let char_and  = "&"
 let char_or   = "v"
 let char_not  = "!"
@@ -14,7 +18,7 @@ let char_or = "\\/"
 let char_not = "-|"
 *)
 
-(* Need introduce the Val constructor, or use -rectype. *)
+(* need introduce the Val constructor, or use -rectype. *)
 type ('a,'b,'c) environment = (string, ('a,'b,'c) binding_val) Common.assoc 
 and ('a, 'b, 'c) binding_val = 
     Val of ('a,'b,'c) generic_ctl * ('a,'b,'c) environment
@@ -72,20 +76,16 @@ let rec (pp_ctl:
              pp "in"; 
              print_space ();
            end;
-	 
-	 let pp_do_in_zero_box f =
-	   Format.open_box 0; f(); Format.close_box () in
 	 pp_do_in_zero_box (fun () -> pp_aux env' phi2);
      | Ref(s)             -> 
 	 if inline_let_def
 	 then
            let Val (phi1,env') = List.assoc s env in
            pp_aux env' phi1
-	     
 	 else 
-       (* pp "Ref(";  *)
+           (* pp "Ref(";  *)
 	   pp s 
-       (* pp ")" *)
+           (* pp ")" *)
 
    and pp_dir = function
        FORWARD -> ()
@@ -110,12 +110,6 @@ let rec (pp_ctl:
        pp_do_in_box (fun () -> pp_aux env phi2);
      end
        
-   and pp_arg env phi = 
-     begin
-       pp_do_in_box (fun () -> pp_aux env phi);
-     end
-       
+   and pp_arg env phi =  pp_do_in_box (fun () -> pp_aux env phi)      
    in
-   begin
-     pp_init (fun () ->  pp_aux [] ctl;)
-   end
+   pp_init (fun () ->  pp_aux [] ctl;)

@@ -16,6 +16,8 @@ open Common open Commonop
 open Ast_c
 
 let rec (iso_e_e: expression -> expression -> bool) = fun a b -> 
+  raise Todo
+(*
   let rec (=~=) a b = 
   match (a, b) with
   | (Ident a, typa, iia), (Ident b, typb, iib) -> a = b
@@ -37,6 +39,7 @@ let rec (iso_e_e: expression -> expression -> bool) = fun a b ->
   | _ -> raise Todo
   in
   a =~= b
+*)
 
 and (iso_st_st: statement -> statement -> bool) = fun a b -> 
   raise Todo
@@ -45,7 +48,7 @@ and (iso_t_t: fullType -> fullType -> bool) = fun a b ->
 
   
 
-
+(*
 let ex1 = 
   (Binary
      ((Ident "a",
@@ -84,5 +87,5 @@ let ex2 =
 
 
 let _ = assert (iso_e_e ex1 ex2)
-
+*)
 

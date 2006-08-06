@@ -25,6 +25,7 @@ let rec (annotate_expr: environment -> context -> expression -> expression) =
  fun env ctx -> fun expr -> 
   let rec aux expr = 
   match expr with
+(*
     | Ident (s), typ, i -> 
         let typ' = raise Todo in
         Ident (s), typ', i
@@ -98,13 +99,10 @@ let rec (annotate_expr: environment -> context -> expression -> expression) =
         let t' = raise Todo in let e' = aux e in 
         Cast   (t', e'), typ', is
 
-    | StatementExpr (((declxs_statxs), is)), typ, is2 -> 
+    | StatementExpr ((statxs, is)), typ, is2 -> 
         let typ' = raise Todo in
-        let declxs_statxs' = declxs_statxs +> List.map (function 
-            Left decl ->  raise Todo
-          | Right stat -> raise Todo
-        )
-        in StatementExpr (((declxs_statxs'), is)), typ', is2 
+        let statxs' = statxs +> List.map (fun stat -> raise Todo)
+        in StatementExpr ((statxs', is)), typ', is2 
     | Constructor,typ, is -> 
         let typ' = raise Todo in
         Constructor,typ', is
@@ -112,7 +110,9 @@ let rec (annotate_expr: environment -> context -> expression -> expression) =
         let typ' = raise Todo in
         let e' = aux e in 
         ParenExpr (e'), typ', is
-    | x -> error_cant_have x
+    | x -> raise Impossible
+*)
+    | x -> raise Todo
   in aux expr
 
 let rec (annotate_program: environment -> program -> program) = fun env ctx -> 

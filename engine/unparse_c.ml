@@ -34,7 +34,7 @@ let pp_program file x =
      (tok, Parse_c.info_from_token tok))) 
    in
    
-   let _lastasked = ref (Common.fake_parse_info, Ast_c.dumbAnnot) in
+   let _lastasked = ref (Common.fake_parse_info, Ast_c.emptyAnnot) in
 
    let is_between_two_minus (infoa,(mcoda,enva)) (infob,(mcodb,envb)) =
      match mcoda, mcodb with
@@ -176,14 +176,14 @@ let pp_program file x =
        (match e with
        | FinalDef (ii,_ANNOT) -> 
            (* todo: less: assert that FinalDef is the last one in the list *)
-           pr_elem ({ii with str = ""},Ast_c.dumbAnnot) 
+           pr_elem ({ii with str = ""},Ast_c.emptyAnnot) 
        | e -> toks +> List.iter (fun x -> pr_elem x)
        )
 
    | PPnormal -> 
      (match e with
      | Declaration decl -> Pretty_print_c.pp_decl_gen pr_elem decl
-     | Definition ((s, (returnt, (paramst, (b, iib))), sto, declxs_statxs), 
+     | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
                    is::iifunc1::iifunc2::i1::i2::isto) -> 
          Pretty_print_c.pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
                        returnt;
@@ -214,9 +214,7 @@ let pp_program file x =
 
          pr_elem iifunc2;
          pr_elem i1; 
-         declxs_statxs +> List.iter (function 
-           | Left decl -> Pretty_print_c.pp_decl_gen pr_elem decl 
-           | Right stat -> Pretty_print_c.pp_statement_gen pr_elem stat);
+         statxs +> List.iter (Pretty_print_c.pp_statement_gen pr_elem);
          pr_elem i2;
 
      | EmptyDef ii -> 
@@ -244,7 +242,7 @@ let pp_program file x =
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
 
-     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.dumbAnnot)
+     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.emptyAnnot)
 
      | x -> error_cant_have x
      )   

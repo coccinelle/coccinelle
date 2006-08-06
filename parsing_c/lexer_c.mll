@@ -16,7 +16,7 @@ let tok     lexbuf  = Lexing.lexeme lexbuf
 let tokinfo lexbuf  = { 
     charpos = Lexing.lexeme_start lexbuf; 
     str     = tok lexbuf  
-  }, Ast_c.dumbAnnot
+  }, Ast_c.emptyAnnot
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 
@@ -381,48 +381,48 @@ rule token = parse
   | " __pmac"  -> TCommentAttrOrMacro (tokinfo lexbuf)  
 
  (* foreach like macro *)
-  | "list_for_each"                -> Tif (tokinfo lexbuf) 
-  | "list_for_each_safe"           -> Tif (tokinfo lexbuf) 
-  | "list_for_each_prev"           -> Tif (tokinfo lexbuf) 
-  | "list_for_each_entry"          -> Tif (tokinfo lexbuf) 
-  | "list_for_each_entry_safe"     -> Tif (tokinfo lexbuf) 
+  | "list_for_each"                -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_safe"           -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_prev"           -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_entry"          -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_entry_safe"     -> Twhile (tokinfo lexbuf) 
 
-  | "list_for_each_rcu"    -> Tif (tokinfo lexbuf) 
+  | "list_for_each_rcu"    -> Twhile (tokinfo lexbuf) 
 
-  | "list_for_each_entry_continue" -> Tif (tokinfo lexbuf) 
-  | "list_for_each_entry_reverse"  -> Tif (tokinfo lexbuf) 
+  | "list_for_each_entry_continue" -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_entry_reverse"  -> Twhile (tokinfo lexbuf) 
 
-  | "hlist_for_each_entry"         -> Tif (tokinfo lexbuf) 
-  | "hlist_for_each_entry_safe"    -> Tif (tokinfo lexbuf) 
+  | "hlist_for_each_entry"         -> Twhile (tokinfo lexbuf) 
+  | "hlist_for_each_entry_safe"    -> Twhile (tokinfo lexbuf) 
 
-  | "for_each_cpu"                 -> Tif (tokinfo lexbuf) 
-  | "for_each_online_cpu"          -> Tif (tokinfo lexbuf) 
-  | "for_each_cpu_mask"            -> Tif (tokinfo lexbuf) 
-  | "for_each_process"             -> Tif (tokinfo lexbuf) 
+  | "for_each_cpu"                 -> Twhile (tokinfo lexbuf) 
+  | "for_each_online_cpu"          -> Twhile (tokinfo lexbuf) 
+  | "for_each_cpu_mask"            -> Twhile (tokinfo lexbuf) 
+  | "for_each_process"             -> Twhile (tokinfo lexbuf) 
 
-  | "gadget_for_each_ep"           -> Tif (tokinfo lexbuf) 
-  | "pci_for_each_dev"             -> Tif (tokinfo lexbuf) 
+  | "gadget_for_each_ep"           -> Twhile (tokinfo lexbuf) 
+  | "pci_for_each_dev"             -> Twhile (tokinfo lexbuf) 
 
-  | "for_all_sbusdev"             -> Tif (tokinfo lexbuf) 
-  | "for_each_sbus"  -> Tif (tokinfo lexbuf) 
-  | "for_each_sbusdev" -> Tif (tokinfo lexbuf) 
-  | "for_each_rx" -> Tif (tokinfo lexbuf) 
+  | "for_all_sbusdev"             -> Twhile (tokinfo lexbuf) 
+  | "for_each_sbus"  -> Twhile (tokinfo lexbuf) 
+  | "for_each_sbusdev" -> Twhile (tokinfo lexbuf) 
+  | "for_each_rx" -> Twhile (tokinfo lexbuf) 
 
-  | "for_each_esp" -> Tif (tokinfo lexbuf) 
+  | "for_each_esp" -> Twhile (tokinfo lexbuf) 
 
-  | "for_each_online_fc_channel" -> Tif (tokinfo lexbuf) 
-  | "FOR_EACH_QUEUED_ELEMENT" -> Tif (tokinfo lexbuf) 
+  | "for_each_online_fc_channel" -> Twhile (tokinfo lexbuf) 
+  | "FOR_EACH_QUEUED_ELEMENT" -> Twhile (tokinfo lexbuf) 
 
-  | "snd_pcm_group_for_each"       -> Tif (tokinfo lexbuf) 
-  | "bio_for_each_segment"         -> Tif (tokinfo lexbuf) 
-  | "__bio_for_each_segment"         -> Tif (tokinfo lexbuf) 
-  | "ITERATE_RDEV"         -> Tif (tokinfo lexbuf) 
-  | "ITERATE_MDDEV"        -> Tif (tokinfo lexbuf) 
-  | "ITERATE_RDEV_PENDING" -> Tif (tokinfo lexbuf) 
-  | "ITERATE_RDEV_GENERIC" -> Tif (tokinfo lexbuf) 
+  | "snd_pcm_group_for_each"       -> Twhile (tokinfo lexbuf) 
+  | "bio_for_each_segment"         -> Twhile (tokinfo lexbuf) 
+  | "__bio_for_each_segment"         -> Twhile (tokinfo lexbuf) 
+  | "ITERATE_RDEV"         -> Twhile (tokinfo lexbuf) 
+  | "ITERATE_MDDEV"        -> Twhile (tokinfo lexbuf) 
+  | "ITERATE_RDEV_PENDING" -> Twhile (tokinfo lexbuf) 
+  | "ITERATE_RDEV_GENERIC" -> Twhile (tokinfo lexbuf) 
 
-  | "rq_for_each_bio" -> Tif (tokinfo lexbuf) 
-  | "list_for_each_continue_rcu" -> Tif (tokinfo lexbuf) 
+  | "rq_for_each_bio" -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_continue_rcu" -> Twhile (tokinfo lexbuf) 
 
  (* higher order, debug like macro *)
   | "DBGINFO" -> THigherOrderMacro (tokinfo lexbuf) 

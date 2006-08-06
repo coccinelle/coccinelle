@@ -1,9 +1,10 @@
 open Common open Commonop
 
+(*****************************************************************************)
 let dir = ref false
 
 let cocci_file = ref ""
-let iso_file = ref ""
+let iso_file   = ref ""
 
 let test_mode = ref false
 let test_ctl_foo = ref false
@@ -11,7 +12,7 @@ let testall_mode = ref false
 
 let compare_with_expected = ref false
 
-(******************************************************************************)
+(*****************************************************************************)
 let testone x = 
   let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
   let x'   = if x =~ "\\(.*\\)_ver0" then matched1 x else x in
@@ -21,7 +22,7 @@ let testone x =
 
   if !iso_file <> "" && not (!iso_file =~ ".*\\.iso")
   then pr2 "warning: seems not a .iso file";
-  let iso_file = if !iso_file = "" then Some "standard.iso" else Some !iso_file 
+  let iso_file = if !iso_file = "" then Some "standard.iso" else Some !iso_file
   in
 
   begin
@@ -37,8 +38,8 @@ let testone x =
 
       let xs = process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^ 
                                        " "  ^ expected_res) 
-      
       in
+
       if null xs || c1' =*= c2'
       then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
       else 
@@ -58,16 +59,14 @@ let testall () =
 
   let expected_result_files = 
     readdir_to_file_list "tests/" +> filter (fun s -> 
-      s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0)
-      +> sort compare
+      s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0
+    ) +> sort compare
   in
-
 
   let diagnose = ref [] in
   let add_diagnose s = push2 s diagnose in
 
   begin
-
    expected_result_files +> List.iter (fun expected_res -> 
     let fullbase = 
       if expected_res =~ "\\(.*\\).res" 
@@ -87,7 +86,6 @@ let testall () =
     then pr2 "warning: seems not a .iso file";
     let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) 
     in
-
 
     add_diagnose (sprintf "%s:\t" fullbase);
     incr _total;
@@ -147,42 +145,41 @@ let main () =
     let args = ref [] in
     let options = Arg.align [ 
       "-dir", Arg.Set dir, 
-      " <dirname> process all files in directory recursively";
+        " <dirname> process all files in directory recursively";
 
       "-cocci_file", Arg.Set_string cocci_file, 
-      " <filename> the semantic patch file";
+        " <filename> the semantic patch file";
 
       "-iso_file",   Arg.Set_string iso_file, 
-      " <filename> the iso file";
+        " <filename> the iso file";
 
       "-error_words_only", Arg.Set Flag.process_only_when_error_words, 
-      " ";
+        " ";
 
 
       "-test", Arg.Set test_mode, 
-      " automatically find the corresponding c and cocci file";
-      "-test_ctl_foo", Arg.Set test_ctl_foo, 
-      " test the engine with the foo ctl in test.ml";
+         " automatically find the corresponding c and cocci file";
       "-testall", Arg.Set testall_mode, 
-      " ";
+         " ";
       "-compare_with_expected", Arg.Set compare_with_expected, 
-      " "; 
+         " "; 
+      "-test_ctl_foo", Arg.Set test_ctl_foo, 
+         " test the engine with the foo ctl in test.ml";
+
 
       "-show_flow", Arg.Set Flag.show_flow,  
-      " ";
+         " ";
       "-show_before_fixed_flow", Arg.Set Flag.show_before_fixed_flow,  
-      " the one after some fixes.";
+         " .";
       "-show_ctl",  Arg.Set Flag.show_ctl,    
-      " ";
-
-      "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
-      "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
+         " ";
+        (* works in conjunction with -show_ctl *)
+        "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
+        "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code, " ";
-
-
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 
@@ -214,21 +211,21 @@ let main () =
 
         let fullxs = 
           if !dir 
-          then 
-            begin
-              assert (xs = []); 
-              process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
-            end 
+          then begin
+            assert (xs = []); 
+            process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
+          end 
           else x::xs 
         in
 
         fullxs +> List.iter (fun cfile -> 
-          Cocci.full_engine (*~print_input_file:(not !dir)*) cfile (Left (cocci_file, iso_file))
+          Cocci.full_engine (*~print_input_file:(not !dir)*) 
+            cfile (Left (cocci_file, iso_file))
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
-   );
-   end
+   )
+  end
 
 
 let _ = if not (!Sys.interactive) then main ()

@@ -1,6 +1,7 @@
 open Common open Commonop
 
 open Ast_c
+module F = Control_flow_c
 
 type 'a distributer = 
     (Ast_c.info -> Ast_c.info) * 
@@ -9,7 +10,7 @@ type 'a distributer =
     'a -> 'a
 
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 let (minusize_token: Ast_c.info -> Ast_c.info) = fun (s, (mcode,env))  -> 
   let mcode' =
     match mcode with
@@ -59,11 +60,11 @@ let nothing_right x = x
 let nothing_left  x = x
 
 
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 
-let  (distribute_mck: 
-  Ast_cocci.mcodekind -> 'a distributer -> 'a -> Ast_c.metavars_binding -> 'a) =
- fun mcodekind distributef expr binding ->
+let (distribute_mck: 
+   Ast_cocci.mcodekind -> 'a distributer -> 'a -> Ast_c.metavars_binding -> 'a)
+ = fun mcodekind distributef expr binding ->
   match mcodekind with
   | Ast_cocci.MINUS (any_xxs) -> 
       distributef 
@@ -88,27 +89,25 @@ let  (distribute_mck:
         )
   | Ast_cocci.PLUS -> raise Impossible
 
-
-
-
-
-(* -------------------------------------------------------------------------- *)
+(* ------------------------------------------------------------------------- *)
 (* Could do the minus more easily by extending visitor_c.ml and adding a 
-   function applied to every mcode. But as I also need to do the add_left and 
-   add_right, which requires to do a different thing for each case, I have not
-   defined this not-so-useful visitor.
-   op = minusize operator.
-   lop = stuff to do on the left.
-   rop = stuff to do on the right.
+ * function applied to every mcode. But as I also need to do the add_left and 
+ * add_right, which requires to do a different thing for each case, I have not
+ * defined this not-so-useful visitor.
+ * op = minusize operator.
+ * lop = stuff to do on the left.
+ * rop = stuff to do on the right.
 *)
 
-let rec (distribute_mck_e: Ast_c.expression distributer) = fun (op, lop, rop) ->
- function
-  | Ident s,  typ,[i1] -> 
-      Ident s,  
-      typ, [i1 +> op +> lop +> rop] 
-  | Constant (String s),        typ, is     -> 
-      Constant (String s), typ,
+let rec (distribute_mck_e: Ast_c.expression distributer)= fun (op,lop,rop) e ->
+ let ((unwrap_e, typ),ii) = e in
+ let (e',ii') = 
+  match unwrap_e, ii with
+  | Ident s, [i1] -> 
+      Ident s, 
+      [i1 +> op +> lop +> rop] 
+  | Constant (String s),        is     -> 
+      Constant (String s),
       (match is with
       | [] -> raise Impossible
       | [i] -> [i +> op +> lop +> rop]
@@ -117,11 +116,11 @@ let rec (distribute_mck_e: Ast_c.expression distributer) = fun (op, lop, rop) ->
           [head +> op +> lop] @ List.map op middle @ [tail +> op +> rop]
       )
   (* only a String can have multiple ii *)
-  | Constant c,  typ, [i1] -> 
-      Constant c,  
-      typ, [i1 +> op +> lop +> rop]
+  | Constant c,  [i1] -> 
+      Constant c, 
+      [i1 +> op +> lop +> rop]
 
-  | FunCall (e, xs), typ,[i2;i3] -> 
+  | FunCall (e, xs), [i2;i3] -> 
       FunCall 
         (distribute_mck_e (op, lop, nothing_right) e,
          xs +> List.map (function 
@@ -130,101 +129,101 @@ let rec (distribute_mck_e: Ast_c.expression distributer) = fun (op, lop, rop) ->
                (ii +> List.map op)
            | (Right e, ii) -> failwith "not handling type in funcall"
                         ) 
-        ),
-      typ, [i2 +> op; i3 +> op +> rop]
+        ), 
+      [i2 +> op; i3 +> op +> rop]
 
-  | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> 
+  | CondExpr (e1, e2, e3),    [i1;i2]    -> 
       CondExpr 
         (distribute_mck_e (op, lop, nothing_right) e1,
          map_option (distribute_mck_e (op, nothing_left, nothing_left)) e2,
          distribute_mck_e (op, nothing_left, rop) e3),
-      typ, [i1 +> op; i2 +> op]
-  | Sequence (e1, e2),          typ,[i]  -> 
+      [i1 +> op; i2 +> op]
+  | Sequence (e1, e2),          [i]  -> 
       Sequence
         (distribute_mck_e (op, lop, nothing_right) e1,
          distribute_mck_e (op, nothing_left, rop) e2),
-      typ, [i +> op]
-  | Assignment (e1, opbis, e2),    typ,[i]  -> 
+      [i +> op]
+  | Assignment (e1, opbis, e2),    [i]  -> 
       Assignment
         (distribute_mck_e (op, lop, nothing_right) e1,
          opbis,
          distribute_mck_e (op, nothing_left, rop) e2),
-      typ, [i +> op]
+      [i +> op]
 
-  | Postfix  (e, opbis),    typ,[i] -> 
+  | Postfix  (e, opbis),    [i] -> 
       Postfix (distribute_mck_e (op, lop, nothing_right) e, opbis),
-      typ, [i +> op +> rop]
+      [i +> op +> rop]
          
-  | Infix    (e, opbis),    typ,[i] -> 
+  | Infix    (e, opbis),    [i] -> 
       Infix (distribute_mck_e (op, nothing_left, rop) e, opbis),
-      typ, [i +> op +> lop]
+      [i +> op +> lop]
 
-  | Unary    (e, opbis),    typ,[i] -> 
+  | Unary    (e, opbis),    [i] -> 
       Unary (distribute_mck_e (op, nothing_left, rop) e, opbis),
-      typ, [i +> op +> lop]
-  | Binary   (e1, opbis, e2),    typ,[i] -> 
+      [i +> op +> lop]
+  | Binary   (e1, opbis, e2),    [i] -> 
       Binary
         (distribute_mck_e (op, lop, nothing_right) e1,
          opbis,
          distribute_mck_e (op, nothing_left, rop) e2),
-      typ, [i +> op]
+      [i +> op]
 
 
-  | ArrayAccess    (e1, e2),   typ,[i1;i2] -> 
+  | ArrayAccess    (e1, e2),   [i1;i2] -> 
       ArrayAccess
         (distribute_mck_e (op, lop, nothing_right) e1,
          distribute_mck_e (op, nothing_left, nothing_right) e2),
-      typ, [i1 +> op; i2 +> op +> rop]
-  | RecordAccess (e, id), typ, [i1;i2] -> 
+      [i1 +> op; i2 +> op +> rop]
+  | RecordAccess (e, id), [i1;i2] -> 
       RecordAccess (distribute_mck_e (op, lop, nothing_right) e, id), 
-      typ, [i1 +> op; i2 +> op +> rop]
-  | RecordPtAccess (e, id), typ, [i1;i2] -> 
+      [i1 +> op; i2 +> op +> rop]
+  | RecordPtAccess (e, id), [i1;i2] -> 
       RecordPtAccess (distribute_mck_e (op, lop, nothing_right) e, id), 
-      typ, [i1 +> op; i2 +> op +> rop]
+      [i1 +> op; i2 +> op +> rop]
 
-  | SizeOfExpr  (e),     typ,[i] -> 
+  | SizeOfExpr  (e),     [i] -> 
       SizeOfExpr (distribute_mck_e (op, nothing_left, rop) e),
-      typ, [i +> op +> lop]
-  | SizeOfType  (t),     typ,[i1;i2;i3] -> 
+      [i +> op +> lop]
+  | SizeOfType  (t),     [i1;i2;i3] -> 
       SizeOfType (distribute_mck_type (op, nothing_left, nothing_right) t),
-      typ, [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]
-  | Cast    (t, e),      typ,[i1;i2] -> 
+      [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]
+  | Cast    (t, e),      [i1;i2] -> 
       Cast 
         (distribute_mck_type (op, nothing_left, nothing_right) t,
          distribute_mck_e (op, nothing_left, rop) e),
-      typ, [i1 +> op +> lop; i2 +> op]
+      [i1 +> op +> lop; i2 +> op]
       
-  | StatementExpr (declxs_statxs, [ii1;ii2]),  typ,[i1;i2] -> 
+  | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] -> 
       StatementExpr
-        (declxs_statxs +> List.map (function
-          | Left decl -> 
-              Left (distribute_mck_decl (op, nothing_left, nothing_right) decl)
-          | Right stat -> 
-              Right (distribute_mck_stat (op, nothing_left, nothing_right) stat)
-                                   ),
+        (statxs +> 
+         List.map (distribute_mck_stat (op, nothing_left, nothing_right)),
          [ii1 +> op; ii2 +> op]),
-      typ, [i1 +> op +> lop; i2 +> op +> rop]
+      [i1 +> op +> lop; i2 +> op +> rop]
 
-  | Constructor, typ,[] -> failwith "Constructor, what to do ? not enough info"
+  | Constructor, [] -> failwith "Constructor, what to do ? not enough info"
 
-  | ParenExpr (e), typ,[i1;i2] -> 
+  | ParenExpr (e), [i1;i2] -> 
       ParenExpr (distribute_mck_e (op, nothing_left, nothing_right) e),
-      typ, [i1 +> op +> lop; i2 +> op +> rop]
+      [i1 +> op +> lop; i2 +> op +> rop]
 
-  | MacroCall  (es),     typ,[i1;i2;i3] -> 
+  | MacroCall  (es),     [i1;i2;i3] -> 
       failwith "MacroCall"
 
-  | MacroCall2  (arg),     typ,[i1;i2;i3] -> 
+  | MacroCall2  (arg),   [i1;i2;i3] -> 
       failwith "MacroCall2"
 
   | x -> raise Impossible
+ in
+ (e', typ), ii'
 
 
-and (distribute_mck_decl: Ast_c.declaration distributer) = fun (op, lop, rop) ->
+(* ------------------------------------------------------------------------- *)
+and (distribute_mck_decl: Ast_c.declaration distributer) = fun (op,lop,rop) ->
  fun decl ->
   raise Todo
 
-and (distribute_mck_stat: Ast_c.statement distributer) = fun (op, lop, rop) -> 
+(* ------------------------------------------------------------------------- *)
+and (distribute_mck_stat: Ast_c.statement distributer) = fun (op,lop,rop) -> 
  function
 
   | Labeled (Label (s, st)), [i1;i2] -> 
@@ -239,26 +238,23 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op, lop, rop) ->
       Labeled (Default (distribute_mck_stat (op, nothing_left, rop) st)),
       [i1 +> op +> lop; i2 +> op]
 
-  | Compound (declxs_statxs), [i1;i2] -> 
+  | Compound statxs, [i1;i2] -> 
       Compound 
-        (declxs_statxs +> List.map (function
-          | Left decl -> 
-              Left (distribute_mck_decl (op, nothing_left, nothing_right) decl)
-          | Right stat -> 
-              Right (distribute_mck_stat (op, nothing_left, nothing_right) stat)
-                )),
+        (statxs +> 
+         List.map (distribute_mck_stat (op, nothing_left, nothing_right))),
       [i1 +> op +> lop; i2 +> op +> rop]
 
   | ExprStatement None, [i] -> 
       ExprStatement None, 
       [i +> op +> lop +> rop]
+  (* When there is a None ? for instance with the else of a just_ifthen *)
   | ExprStatement None, [] -> 
       ExprStatement None, []
   | ExprStatement (Some e), [i] -> 
       ExprStatement (Some (distribute_mck_e (op, lop, nothing_right) e)),
       [i +> op +> rop]
    (* the last ExprStatement of a for does not have a trailing ';' hence the
-      [] for ii  *)
+      [] for ii.  *)
   | ExprStatement (Some e), [] -> 
       ExprStatement (Some (distribute_mck_e (op, lop, rop) e)),
       []
@@ -305,15 +301,15 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op, lop, rop) ->
             distribute_mck_e (op, nothing_left, nothing_right) e)),
       [i1 +> op +> lop; i2 +> op; i3 +> op; i4 +> op; i5 +> op +> rop]
 
-  | Iteration  (For ((e1opt,il1), (e2opt,il2), (e3opt, il3), st)), [i1;i2;i3] ->
+  | Iteration  (For ((e1opt,il1),(e2opt,il2),(e3opt, il3), st)), [i1;i2;i3] ->
       assert (null il3);
       Iteration
         (For 
-           ((map_option (distribute_mck_e (op, nothing_left, nothing_left)) 
+           ((map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
                e1opt, il1 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_left)) 
+            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
                e2opt, il2 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_left)) 
+            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
                e3opt, il3 +> List.map op),
             distribute_mck_stat (op, nothing_left, rop) st)),
       [i1 +> op +> lop; i2 +> op; i3 +> op]
@@ -328,14 +324,128 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op, lop, rop) ->
       Jump 
         (ReturnExpr (distribute_mck_e (op, nothing_left, nothing_right) e)),
       [i1 +> op +> lop; i2 +> op +> rop]
+
+  | Decl decl, [] -> 
+      Decl (distribute_mck_decl (op, nothing_left, nothing_right) decl), []
+          
   | (Asm, []) -> failwith "Asm, what to do ? not enough info"
   | x -> raise Impossible
 
 
 
-
+(* ------------------------------------------------------------------------- *)
 and (distribute_mck_type: Ast_c.fullType distributer) = fun (op, lop, rop) ->
  fun decl ->
   raise Todo
   
+
+(* ------------------------------------------------------------------------- *)
+and (distribute_mck_node: Control_flow_c.node2 distributer) = 
+ fun (op,lop,rop) -> function
+  | F.Enter | F.Exit | F.ErrorExit
+  | F.Fake  | F.CaseNode _
+  | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
+    -> raise Impossible
+  | F.FunHeader _  -> raise Impossible
+
+  | F.Decl decl -> F.Decl (distribute_mck_decl (op, lop, rop) decl) 
+
+  | F.SeqStart (st, level, i1) -> 
+      F.SeqStart (st, level, 
+                  i1 +> op +> lop +> rop) 
+  | F.SeqEnd (level, i2) -> 
+      F.SeqEnd (level, 
+                i2 +> op +> lop +> rop)
+
+
+  | F.ExprStatement (st, (None, [i])) -> 
+      F.ExprStatement (st, (None, 
+                            [i +> op +> lop +> rop]))
+  (* when there is a None ? for instance with the else of a just_ifthen *)
+  | F.ExprStatement (st, (None, [])) ->  F.ExprStatement (st, (None, []))
+  | F.ExprStatement (st, (Some e, [i])) -> 
+      F.ExprStatement (st, 
+                       (Some (distribute_mck_e (op, lop, nothing_right) e),
+                       [i +> op +> rop]))
+   (* the last ExprStatement of a for does not have a trailing ';' hence the
+      [] for ii.  *)
+  | F.ExprStatement (st, (Some e, [])) -> 
+      F.ExprStatement (st, (Some (distribute_mck_e (op, lop, rop) e), []))
+
+
+
+  | F.IfHeader (st, (e, [i1;i2;i3])) -> 
+      F.IfHeader (st,
+                  (distribute_mck_e (op, nothing_left, nothing_right) e,
+                   [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
+                 
+  | F.Else ii -> F.Else (ii +> op +> lop +> rop)
+
+  | F.WhileHeader (st, (e, [i1;i2;i3])) -> 
+      F.WhileHeader (st, 
+                     (distribute_mck_e (op, nothing_left, nothing_right) e,
+                      [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
+
+  | F.DoHeader (st, ii) -> F.DoHeader (st, ii +> op +> lop +> rop)
+  | F.DoWhileTail (e, [i1;i2;i3;i4]) -> 
+      F.DoWhileTail (distribute_mck_e (op, nothing_left, nothing_right) e,
+                     [i1 +> op +> lop; i2 +> op; i3 +> op; i4 +> op +> rop])
+
+  | F.ForHeader (st, (((e1opt,il1),(e2opt,il2),(e3opt, il3)), [i1;i2;i3])) -> 
+      assert (null il3);
+      F.ForHeader (st, 
+          (((map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
+               e1opt, il1 +> List.map op),
+            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
+               e2opt, il2 +> List.map op),
+            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
+               e3opt, il3 +> List.map op)),
+           [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
+
+
+  | F.SwitchHeader (st, (e, [i1;i2;i3])) -> 
+      F.SwitchHeader (st, 
+                      (distribute_mck_e (op, nothing_left, nothing_right) e,
+                       [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
+
+  | F.Return   (st, ((), [i1;i2])) -> 
+      F.Return (st, ((), 
+                     [i1 +> op +> lop; i2 +> op +> rop]))
+  | F.ReturnExpr (st, (e, [i1;i2])) -> 
+      F.ReturnExpr (st, 
+                    (distribute_mck_e (op, nothing_left, nothing_right) e,
+                     [i1 +> op +> lop; i2 +> op +> rop]))
+
+  (* ------------------------ *)
+  (* no counter part in cocci *)
+  | F.Label (st, (s, [i1;i2])) -> 
+      F.Label (st, (s, 
+                    [i1 +> op +> lop; i2 +> op +> rop]))
+  | F.Case  (st, (e, [i1;i2])) -> 
+      F.Case (st, 
+              (distribute_mck_e (op, nothing_left, nothing_right) e,
+               [i1 +> op +> lop; i2 +> op +> rop]))
+  | F.CaseRange (st,  ((e1, e2), ii)) -> raise Todo
+  | F.Default (st, ((), [i1; i2])) -> 
+      F.Default (st, ((), 
+                      [i1 +> op +> lop; i2 +> op +> rop]))
+
+  | F.Goto (st, (s, [i1;i2;i3])) -> 
+      F.Goto (st, (s, 
+                   [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
+  | F.Continue (st, ((), [i1;i2])) -> 
+      F.Continue (st, ((),
+                       [i1 +> op +> lop; i2 +> op +> rop]))
+
+  | F.Break   (st, ((), [i1;i2])) -> 
+      F.Break (st, ((),
+                       [i1 +> op +> lop; i2 +> op +> rop]))
+
+  | F.Asm -> F.Asm
+
+  | _ -> raise Impossible
+
+
+
+
 

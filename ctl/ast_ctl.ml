@@ -44,7 +44,7 @@ let get_line (_,l) = l
 type ('mvar,'value) generic_subst = 
   | Subst of 'mvar * 'value
   | NegSubst of 'mvar * 'value
-type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list;;
+type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list
 
 type ('state,'subst,'anno) generic_witnesstree =
     Wit of

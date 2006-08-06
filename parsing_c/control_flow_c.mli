@@ -1,43 +1,64 @@
 
-type node = node1 * string (* to debug *)
-and node1 = node2 * int list (* The labels. Trick used by ctl engine. *)
-and node2 =
-    HeadFunc of Ast_c.definition
-  | Enter
+open Ast_c
+
+(* The string is for debugging. Used by Ograph_extended.print_graph. 
+ * The int list are Labels. Trick used for CTL engine. 
+ *)
+type node = node1 * string 
+ and node1 = node2 * int list
+ and node2 =
+  | FunHeader of (string * functionType * storage) wrap
+  | Decl   of declaration
+  | SeqStart of statement * int * info
+  | SeqEnd   of int * info
+  | ExprStatement of statement * (expression option) wrap
+  | IfHeader  of statement * expression wrap
+  | Else of info
+  | WhileHeader of statement * expression wrap
+  | DoHeader of statement * info
+  | DoWhileTail of expression wrap
+  | ForHeader of statement * 
+                 (exprStatement wrap * exprStatement wrap * exprStatement wrap)
+                 wrap
+  | SwitchHeader of statement * expression wrap
+  | Return     of statement * unit wrap
+  | ReturnExpr of statement * expression wrap
+
+  (* ------------------------ *)
+  (* no counter part in cocci *)
+  | Label of statement * string wrap
+  | Case  of statement * expression wrap
+  | CaseRange of statement * (expression * expression) wrap
+  | Default of statement * unit wrap
+  | Goto of statement * string wrap
+  | Continue of statement * unit wrap
+  | Break    of statement * unit wrap
+  | Asm
+
+  (* ------------------------ *)
+  (* some control nodes *)
+  | Enter 
   | Exit
-  | Statement of Ast_c.statement
-  | Declaration of Ast_c.declaration
   | Fake
-  | StartBrace of int * Ast_c.statement * Ast_c.info
-  | EndBrace of int * Ast_c.info
-  | CaseNode of int
+  | CaseNode of int 
+
+  (* ------------------------ *)
+  (* for ctl:  *)
   | TrueNode
   | FalseNode
   | AfterNode
   | FallThroughNode
   | ErrorExit
 
-
-
 type edge = Direct
 
-exception DeadCode          of Common.parse_info option
-exception CaseNoSwitch      of Common.parse_info
-exception OnlyBreakInSwitch of Common.parse_info
-exception NoEnclosingLoop   of Common.parse_info
+type cflow = (node, edge) Ograph_extended.ograph_extended
+
 
 val unwrap : node -> node2
 val rewrap : node -> node2 -> node
 val extract_labels : node -> int list
 
-val ast_to_control_flow :
-  Ast_c.definition -> (node, edge) Ograph_extended.ograph_extended
+val get_first_node : cflow -> Ograph_extended.nodei
 
-val control_flow_to_ast :
-  (node, edge) Ograph_extended.ograph_extended -> Ast_c.definition
-
-val deadcode_detection : (node, edge) Ograph_extended.ograph_extended -> unit
-
-val check_control_flow : (node, edge) Ograph_extended.ograph_extended -> unit
-
-val test : Ast_c.definition -> unit
+val extract_fullstatement : node -> Ast_c.statement option

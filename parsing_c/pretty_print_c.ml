@@ -18,12 +18,13 @@ let rec pp_expression_gen pr_elem =
   (* subtil: dont try to shorten the def of pp_statement by omitting e,
      otherwise get infinite funcall and huge memory consumption *)
   let pp_statement e = pp_statement_gen pr_elem e in
-  let rec pp_expression = function
-  | Ident (c),         typ,[i]     -> pr_elem i
-  | Constant (String s),        typ, is     -> is +> List.iter pr_elem
+  let rec pp_expression = fun ((exp, typ), ii) -> 
+    match exp, ii with
+  | Ident (c),         [i]     -> pr_elem i
+  | Constant (String s),        is     -> is +> List.iter pr_elem
   (* only a String can have multiple ii *)
-  | Constant (c),         typ,[i]     -> pr_elem i 
-  | FunCall  (e, es),     typ,[i1;i2] -> 
+  | Constant (c),         [i]     -> pr_elem i 
+  | FunCall  (e, es),     [i1;i2] -> 
       pp_expression e; pr_elem i1; 
       es +> List.iter (fun (e, opt) -> 
         (match opt with
@@ -42,50 +43,48 @@ let rec pp_expression_gen pr_elem =
       
       pr_elem i2;
       
-  | CondExpr (e1, e2, e3),    typ,[i1;i2]    -> 
+  | CondExpr (e1, e2, e3),    [i1;i2]    -> 
       pp_expression e1; pr_elem i1; do_option pp_expression e2; pr_elem i2; 
       pp_expression e3
-  | Sequence (e1, e2),          typ,[i]  -> 
+  | Sequence (e1, e2),          [i]  -> 
       pp_expression e1; pr_elem i; pp_expression e2
-  | Assignment (e1, op, e2),    typ,[i]  -> 
+  | Assignment (e1, op, e2),    [i]  -> 
       pp_expression e1; 
       pr_elem i; 
       pp_expression e2
         
-  | Postfix  (e, op),    typ,[i] -> pp_expression e; pr_elem i;
-  | Infix    (e, op),    typ,[i] -> pr_elem i; pp_expression e;
-  | Unary    (e, op),    typ,[i] -> pr_elem i; pp_expression e
-  | Binary   (e1, op, e2),    typ,[i] -> 
+  | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
+  | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
+  | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
+  | Binary   (e1, op, e2),    [i] -> 
       pp_expression e1;   pr_elem i; pp_expression e2
         
-  | ArrayAccess    (e1, e2),   typ,[i1;i2] -> 
+  | ArrayAccess    (e1, e2),   [i1;i2] -> 
       pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
-  | RecordAccess   (e, s),     typ,[i1;i2] -> 
+  | RecordAccess   (e, s),     [i1;i2] -> 
       pp_expression e; pr_elem i1; pr_elem i2
-  | RecordPtAccess (e, s),     typ,[i1;i2] -> 
+  | RecordPtAccess (e, s),     [i1;i2] -> 
       pp_expression e; pr_elem i1; pr_elem i2
 
-  | SizeOfExpr  (e),     typ,[i] -> pr_elem i; pp_expression e
-  | SizeOfType  (t),     typ,[i1;i2;i3] -> 
+  | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
+  | SizeOfType  (t),     [i1;i2;i3] -> 
       pr_elem i1; pr_elem i2; pp_type_gen pr_elem t; 
       pr_elem i3
-  | Cast    (t, e),      typ,[i1;i2] -> 
+  | Cast    (t, e),      [i1;i2] -> 
       pr_elem i1; pp_type_gen pr_elem t; pr_elem i2; 
       pp_expression e
 
-  | StatementExpr (declxs_statxs, [ii1;ii2]),  typ,[i1;i2] -> 
+  | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] -> 
       pr_elem i1;
       pr_elem ii1;
-      declxs_statxs +> List.iter (function 
-        | Left decl -> pp_decl_gen pr_elem decl 
-        | Right stat -> pp_statement stat);
+      statxs +> List.iter pp_statement;
       pr_elem ii2;
       pr_elem i2;
-  | Constructor, typ,[] -> pr "<<constructur_or_strange_stuff>>"
+  | Constructor, [] -> pr "<<constructur_or_strange_stuff>>"
 
-  | ParenExpr (e), typ,[i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
+  | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-  | MacroCall  (es),     typ,[i1;i2;i3] -> 
+  | MacroCall  (es),     [i1;i2;i3] -> 
 
       let rec pp_action = function 
         | (ActMisc ii) -> ii +> List.iter pr_elem
@@ -119,7 +118,7 @@ let rec pp_expression_gen pr_elem =
       
       pr_elem i3;
 
-  | MacroCall2  (arg),     typ,[i1;i2;i3] -> 
+  | MacroCall2  (arg),     [i1;i2;i3] -> 
       pr_elem i1;
       pr_elem i2;
       (match arg with
@@ -145,15 +144,13 @@ and pp_statement_gen pr_elem =
       pr_elem i1; pp_expression e; pr_elem i2; pp_statement st
   | Labeled (CaseRange  (e, e2, st)), _ -> pr "<<label>>\n";
   | Labeled (Default st), [i1;i2] -> pr_elem i1; pr_elem i2; pp_statement st
-  | Compound (declxs_statxs), [i1;i2] -> 
+  | Compound statxs, [i1;i2] -> 
       pr_elem i1; 
       (* old: when no mix decl/stat
          declxs +> List.iter pp_decl;
          statxs +> List.iter pp_statement;
        *)
-      declxs_statxs +> List.iter (function 
-        | Left decl -> pp_decl_gen pr_elem decl 
-        | Right stat -> pp_statement stat);
+      statxs +> List.iter pp_statement; 
       pr_elem i2;
       
   | ExprStatement (None), [i] -> pr_elem i;
@@ -191,7 +188,10 @@ and pp_statement_gen pr_elem =
       pr_elem i1; pr_elem i2; pr_elem i3;
   | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
   | Jump (ReturnExpr e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2
+
+  | Decl decl, [] -> pp_decl_gen pr_elem decl 
   | (Asm, []) -> pr "<<asm_or_strange_stuff>>";
+
   | x -> raise Impossible
  in
  pp_statement

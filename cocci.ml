@@ -4,8 +4,8 @@ open Common open Commonop
 (*
 
  This file is a kind of driver. It gathers all the important functions 
- from Coccinelle in one place. The different entities of the Coccinelle system
- are :
+ from Coccinelle in one place. The different entities of the Coccinelle 
+ system are:
   - files
 
   - astc
@@ -29,7 +29,7 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
-          | [Right st] -> Some st
+          | [st] -> Some st
           | _ -> None
           )
       | _ -> None
@@ -46,7 +46,7 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
-          | [Right (Ast_c.ExprStatement (Some e),ii)] -> Some e
+          | [(Ast_c.ExprStatement (Some e),ii)] -> Some e
           | _ -> None
           )
       | _ -> None
@@ -59,7 +59,7 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
 (* --------------------------------------------------------------------- *)
 let sp_from_file file iso    = Parse_cocci.process file iso false
 
-let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) = 
+let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     write_file "/tmp/__cocci.cocci" (s);
@@ -81,19 +81,18 @@ let flows astc =
   program +> map_filter (fun (e,_) -> 
     match e with
     | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-        let flow = Control_flow_c.ast_to_control_flow def in
-        (try begin Control_flow_c.deadcode_detection flow; Some flow end
+        let flow = Ast_to_flow.ast_to_control_flow def in
+        (try begin Ast_to_flow.deadcode_detection flow; Some flow end
         with
-           | Control_flow_c.DeadCode None      -> 
+           | Ast_to_flow.DeadCode None      -> 
                pr2 "deadcode detected, but cant trace back the place"; 
                None
-           | Control_flow_c.DeadCode Some info -> 
+           | Ast_to_flow.DeadCode Some info -> 
                pr2 ("deadcode detected: " ^ 
                     (Common.error_message 
                        stat.Parse_c.filename ("", info.charpos) )); 
                None
           )
-          
     | _ -> None
    )
 
@@ -140,40 +139,39 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
         let (all_error_words: string list) = 
           astcocci +> List.hd +> (fun xs -> 
             let res = ref [] in
-            xs +> List.iter (function x ->
+            xs +> List.iter (fun x ->
 	      match Ast_cocci.unwrap x with
-                Ast_cocci.ERRORWORDS es -> 
+              | Ast_cocci.ERRORWORDS es -> 
                   es +> List.iter (fun e -> 
                     (match Ast_cocci.unwrap e with
                     | Ast_cocci.Ident id ->
-			(match Ast_cocci.unwrap id with 
-			  Ast_cocci.Id (s,_,_) -> push2 s res
-			| _ ->
-                            pr2 "warning: does not support complex error words")
+		      (match Ast_cocci.unwrap id with 
+		      | Ast_cocci.Id (s,_,_) -> push2 s res
+		      | _ -> pr2 "warning: does not support complex error words"
+                      )
                     | _ -> pr2 "warning: does not support complex error words"
                     )
-                                  );
+                  );
               | _ -> ()
-                            );
+            );
             List.rev !res
-                                                       ) 
+          ) 
         in
 
         let ctls = (ctls astcocci free_tables extenders used_after_lists) in
 
-        if !Flag.show_ctl then
-          begin
+        if !Flag.show_ctl then begin
             Ctltotex.totex "/tmp/__cocci_ctl.tex" astcocci ctls;
             command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
                       "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
                       "gv __cocci_ctl.ps &");
-          end;
+        end;
 
         (zip ctls used_after_lists, all_error_words)
+
     | Right ctl ->([[ctl], []]), []
     )
   in
-
 
   command2("cp " ^ cfile ^ " /tmp/input.c");
 
@@ -201,26 +199,27 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     _current_bindings := [];
     lastround_bindings +> List.iter (fun binding -> 
 
-      let (cprogram, _stat)   = cprogram_from_file "/tmp/input.c" in
+      let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
      
       (* 3: iter function *)
-      cprogram +> List.map (fun (e, (filename, (pos1, pos2), s, il)) -> 
+      cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
         match e with
         | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-	    Printf.printf "starting function %s\n" funcs; flush stdout;
+	    pr2 ("starting function " ^ funcs);
             
             (* Cos caml regexp dont like \n ... *)
             let str = Str.global_replace (Str.regexp "\n") " " s in 
+
             (* Call the engine algorithms only if have found a flag word. *)
-            if not (!Flag.process_only_when_error_words) 
-              || error_words +> List.exists (fun error -> str =~ (".*" ^ error))
+            if not (!Flag.process_only_when_error_words) ||
+               error_words +> List.exists (fun errw -> str =~ (".*" ^ errw))
             then
               begin
-                let flow = Control_flow_c.ast_to_control_flow def in
+                let flow = Ast_to_flow.ast_to_control_flow def in
                 
                 begin
-                  try Control_flow_c.deadcode_detection flow
-                  with Control_flow_c.DeadCode Some info -> 
+                  try Ast_to_flow.deadcode_detection flow
+                  with Ast_to_flow.DeadCode Some info -> 
                     pr2 "PBBBBBBBBBBBBBBBBBB";
                     pr2 (Common.error_message filename ("", info.charpos));
                     pr2 ("at least 1 deadcode detected (there may be more)," ^
@@ -240,13 +239,24 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                   Ctlcocci_integration.metavars_binding_to_binding2 binding
                 in
 
+                Flag_ctl.loop_in_src_code := false;
+                def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
+                    with Visitor_c.kstatement = (fun (k, bigf) stat -> 
+                       match stat with 
+                       | Ast_c.Iteration _, ii
+                       | Ast_c.Jump (Ast_c.Goto _), ii
+                           -> Flag_ctl.loop_in_src_code := true
+                       | st -> k st
+                             )
+                     };
+
                 let model_ctl  =
 		  Ctlcocci_integration.model_for_ctl flow current_binding in
 		let satres =
 		  Ctlcocci_integration.mysat model_ctl ctl 
                     (used_after_list, current_binding2) in
 		match satres with
-		| Some (trans_info2,used_after_env) ->
+		| Some (trans_info2, used_after_env) ->
                     let trans_info = 
                       Ctlcocci_integration.satbis_to_trans_info trans_info2
                     in
@@ -268,7 +278,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                       (* I do the transformation on flow, not fixed_flow, 
                          because the flow_to_ast need my extra information. *)
                       let flow' = Transformation.transform trans_info flow in
-                      let def' = Control_flow_c.control_flow_to_ast flow' in
+                      let def' = Flow_to_ast.control_flow_to_ast flow' in
                       (Ast_c.Definition def', Unparse_c.PPnormal)
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)

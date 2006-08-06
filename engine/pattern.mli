@@ -10,7 +10,6 @@ type ('a, 'b) matcher =
 
 
 val match_re_node : (Ast_cocci.rule_elem, Control_flow_c.node) matcher
-val match_re_st :   (Ast_cocci.rule_elem, Ast_c.statement)     matcher
 val match_re_decl : (Ast_cocci.declaration, Ast_c.declaration) matcher
 val match_e_e :     (Ast_cocci.expression, Ast_c.expression)   matcher
 val match_arguments :

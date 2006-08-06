@@ -1,42 +1,36 @@
 open Common open Commonop
 
-(* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml *)
+(*****************************************************************************)
+(* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml 
+ * tood?: try to factorize ?
+ *)
+(*****************************************************************************)
 
 module Ast = Ast_cocci
 
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
-
-(* or perhaps can have in plus, for instance a Disj, but  those Disj must be 
-   handled by interactive tool (by proposing alternatives) *)
+(* or perhaps can have in plus, for instance a Disj, but those Disj must be 
+ *  handled by interactive tool (by proposing alternatives) 
+ *)
 exception CantBeInPlus
 
-(* --------------------------------------------------------------------- *)
-
+(*****************************************************************************)
 
 let rec pp_list_list_any (env, current_tabbing, pr, pr_elem) xxs =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
-let print_string = pr 
-in
-let close_box() = () 
-in
-let print_space() = pr " " 
-in
-let force_newline () = ()
-in
+let print_string = pr in
+let close_box() = () in
+let print_space() = pr " "  in
+let force_newline () = () in
 
-let start_block () = ()
-in
-let end_block () = ()
-in
-let print_string_box s = print_string s
-in
+let start_block () = () in
+let end_block () = () in
+let print_string_box s = print_string s in
 
-let print_option = Common.do_option
-in
-let print_between = Common.print_between
-in
+let print_option = Common.do_option in
+let print_between = Common.print_between in
 
 (* --------------------------------------------------------------------- *)
 
@@ -47,12 +41,8 @@ let handle_metavar name fn =
 in
 
 (* --------------------------------------------------------------------- *)
-
 (* Here we don't care about the annotation on s. *)
-let mcode fn = function ((s,_,_)) -> fn s 
-in
-  
-
+let mcode fn = function ((s,_,_)) -> fn s in
 
 (* --------------------------------------------------------------------- *)
 let dots between fn d =
@@ -61,7 +51,6 @@ let dots between fn d =
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 in
-
 
 
 (* --------------------------------------------------------------------- *)
@@ -490,13 +479,13 @@ in
         );
 
         pp_any any
-                      );
+      );
       xxs +> List.iter (fun xs -> 
         pr "\n"; 
         pr current_tabbing;
         xs +> List.iter (fun any -> 
           pp_any any
-                        ); 
-                       )
+          ); 
+      )
   | [] -> ()
 

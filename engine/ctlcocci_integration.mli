@@ -7,22 +7,15 @@ val labels_for_ctl :
   Lib_engine.label_ctlcocci
 
 
-val fix_flow_ctl : 
-   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-   (Control_flow_c.node, Control_flow_c.edge) ograph_extended
+val fix_flow_ctl : Control_flow_c.cflow -> Control_flow_c.cflow
 
 val model_for_ctl :
-  (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-  Lib_engine.metavars_binding ->
-  (Control_flow_c.node, Control_flow_c.edge) ograph_extended *
-   Lib_engine.label_ctlcocci *
-   nodei list
+  Control_flow_c.cflow -> Lib_engine.metavars_binding ->
+  Control_flow_c.cflow * Lib_engine.label_ctlcocci * nodei list
 
 
 val mysat :
-  ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
-   Lib_engine.label_ctlcocci *
-   nodei list) -> 
+  (Control_flow_c.cflow * Lib_engine.label_ctlcocci * nodei list) -> 
   Lib_engine.ctlcocci -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding2) -> 
   ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *

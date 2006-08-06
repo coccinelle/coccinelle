@@ -533,14 +533,12 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 		 None)) in
        let false_pred = wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let false_branch =
-	 make_seq false_pred
-	   (Some (statement fvinfo new_quantified branch2 unchecked
-		    [] [] None))
-	   (*Some to uncomment when there are else nodes in the CFG
-	      (make_seq
+     	   make_seq false_pred
+            (Some
+              (make_seq
 		 (make_match els)
 		 (Some (statement fvinfo new_quantified branch2 unchecked
-	                  [] [] None)))*) in
+	                  [] [] None)))) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq2 after_pred after in
        let or_cases = wrapOr(true_branch,wrapOr(false_branch,after_branch)) in

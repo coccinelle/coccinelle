@@ -1,7 +1,7 @@
 open Common open Commonop
 
 (* todo?: al_expr doit enlever les infos de type ? et doit remettre en 
-   dumb_annot ? *)
+   emptyAnnot ? *)
 
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with

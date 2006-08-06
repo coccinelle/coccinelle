@@ -29,9 +29,9 @@ let (labels_for_ctl:
      let nodes' = nodes +> map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
       (match pred, Control_flow_c.unwrap node with
-      | Lib_engine.Paren s,  (Control_flow_c.StartBrace (bracelevel, _, _)) -> 
+      | Lib_engine.Paren s,  (Control_flow_c.SeqStart (_, bracelevel, _)) -> 
          [(nodei,     [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
-      | Lib_engine.Paren s,  (Control_flow_c.EndBrace (bracelevel, _)) -> 
+      | Lib_engine.Paren s,  (Control_flow_c.SeqEnd (bracelevel, _)) -> 
           [(nodei,    [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
       | Lib_engine.Paren _, _ -> []
 
@@ -46,7 +46,7 @@ let (labels_for_ctl:
           )
           
 
-      | Lib_engine.Match (re), _node -> 
+      | Lib_engine.Match (re), _unwrapnode -> 
           let substs = Pattern.match_re_node re node binding
               (* old: Ast_c.emptyMetavarsBinding *)
           in
@@ -77,13 +77,12 @@ let (labels_for_ctl:
 
       | Lib_engine.Return, node -> 
           (match node with
-            (* todo? should match the Exit code ? *)
-            (* todo: one day try also to match the special function
-               such as panic(); *)
-          | Control_flow_c.Statement (Ast_c.Jump (Ast_c.Return), _) -> 
-              [nodei, []]
-          | Control_flow_c.Statement (Ast_c.Jump (Ast_c.ReturnExpr _), _) -> 
-              [nodei, []]
+            (* todo? should match the Exit code ? 
+             * todo: one day try also to match the special function
+             * such as panic(); 
+             *)
+          | Control_flow_c.Return _ ->  [nodei, []]
+          | Control_flow_c.ReturnExpr _ -> [nodei, []]
           | _ -> []
           )
       )
@@ -115,9 +114,7 @@ let (labels_for_ctl:
 
 
 
-let (control_flow_for_ctl: 
-      (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-      ('a, 'b) ograph_extended) = 
+let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) = 
  fun cflow ->
  (* could erase info on nodes, and edge,  because they are not used by rene *)
   cflow
@@ -144,11 +141,7 @@ let (control_flow_for_ctl:
  * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
  * une fonction qui passe a travers les Fake, mais bof.
  *)
-let (fix_flow_ctl: 
-   (Control_flow_c.node, Control_flow_c.edge) ograph_extended -> 
-   (Control_flow_c.node, Control_flow_c.edge) ograph_extended) = 
- fun  flow ->
-
+let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
   let g = ref flow in
 
   let adjust_g (newg)        = begin  g := newg;    end in
@@ -164,7 +157,7 @@ let (fix_flow_ctl:
   let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
   in
   let enteri = 
-    find_node (function Control_flow_c.HeadFunc _ -> true | _ -> false)
+    find_node (function Control_flow_c.FunHeader _ -> true | _ -> false)
   in
   let exitnodei  = find_node (fun x -> x = Control_flow_c.Exit) in
   let errornodei = find_node (fun x -> x = Control_flow_c.ErrorExit) in
@@ -274,7 +267,7 @@ module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
 
 (******************************************************************************)
 let (mysat:
-       ((Control_flow_c.node, Control_flow_c.edge) ograph_extended *
+       (Control_flow_c.cflow *
         Lib_engine.label_ctlcocci *
         nodei list) -> 
        Lib_engine.ctlcocci -> 

@@ -5,9 +5,9 @@ open Common open Commonop
  * Could have more precise type in fullType, in expression, etc,
  * but it requires to do too much things in parsing (checking no conflicting 
  * structname, computing value, ...).
- * Better to separate concern, so I put '=>' to mean what we would really like.
- * In fact what we really like is a defining another fullType from scratch,
- * because many stuff are just sugar.
+ * Better to separate concern, so I put '=>' to mean what we would really like
+ * (in fact what we really like is a defining another fullType from scratch,
+ * because many stuff are just sugar).
  * 
  * inv: 
  *  Array and FunctionType have also typeQualifier but they dont have sense.
@@ -16,10 +16,9 @@ open Common open Commonop
  *  pointer).
  *
  *
- * Because of ExprStatement,  can have more 'new scope',  but rare I think.
+ * Because of ExprStatement, can have more 'new scope', but rare I think.
  * For instance array of constExpression => possibly an exprStatement and 
- * a new (local) struct defined.
- * Same for Constructor.
+ * a new (local) struct defined. Same for Constructor.
  *
  * Some stuff are tagged semantic: which means that they are computed after
  * parsing.
@@ -31,6 +30,7 @@ open Common open Commonop
  * It is the job of the pretty printer to look at this information and decide
  * to print or not the token (and also the pending '+' associated sometimes 
  * with the token).
+ *
  * The first time that we parse the original C file, the mcodekind is empty, 
  * or more precisely all is tagged as a CONTEXT with NOTHING associated.
  * This is what I call a "clean" expr/statement/....
@@ -44,6 +44,7 @@ open Common open Commonop
 (* forunparser: *)
 type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding) 
 and il = info list
+
 and 'a wrap  = 'a * il   
 
 (* wrap2 is like wrap, except that I use it often for separator such as ','.
@@ -66,15 +67,14 @@ and typeCbis =
   | Enum            of string option * enumType    
   | StructUnion     of string option * structType (* new scope *)
 
-  | StructUnionName of string * structUnion
   | EnumName        of string
+  | StructUnionName of string * structUnion
 
   | TypeName   of string
  
   | ParenType of fullType (* forunparser: *)
-     
-     and structUnion = Struct | Union
-
+ 
+     (* -------------------------------------- *)    
      and  baseType = Void 
                    | IntType   of intType 
 		   | FloatType of floatType
@@ -93,9 +93,11 @@ and typeCbis =
           and floatType = CFloat | CDouble | CLongDouble
 
 
-     (* before unparser, I didn't have a FieldDeclList but just a Field. *)
+     (* -------------------------------------- *)    
+     and structUnion = Struct | Union
      and structType  = structUnion * field wrap list  (* ; *)
 
+        (* before unparser, I didn't have a FieldDeclList but just a Field. *)
          and field  =  FieldDeclList of fieldkind wrap2 list (* , *)
 
           (* At first I thought that a bitfield could be only Signed/Unsigned.
@@ -106,14 +108,16 @@ and typeCbis =
             and fieldkindbis = 
                 | Simple   of string option * fullType
                 | BitField of string option * fullType * constExpression
-                          (* fullType => BitFieldInt | BitFieldUnsigned *) 
+                 (* fullType => BitFieldInt | BitFieldUnsigned *) 
 
 
+     (* -------------------------------------- *)    
      and enumType = (string * constExpression option) wrap (* s = *) 
                     wrap2 (* , *) list 
-                   (* => string * int list*)
+                   (* => string * int list *)
 
 
+     (* -------------------------------------- *)    
      (* return * (params * has "...") *)
      and functionType = fullType * (parameterType wrap2 list * bool wrap)
         and parameterType = (bool * string option * fullType) wrap (* reg s *)
@@ -124,12 +128,8 @@ and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = {const: bool; volatile: bool}
 
 
-
-
-
 (* ------------------------------------------------------------------------- *)
-
-and expression = expressionbis * fullType option (* semantic:  *) * il 
+and expression = (expressionbis * fullType option (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
@@ -156,22 +156,19 @@ and expressionbis =
 
   | ArrayAccess    of expression * expression                   
   | RecordAccess   of expression * string 
-  (* redundant normally, could replace it by DeRef RecordAcces *)
   | RecordPtAccess of expression * string 
+  (* redundant normally, could replace it by DeRef RecordAcces *)
 
   | SizeOfExpr     of expression                                
   | SizeOfType     of fullType                                  
   | Cast           of fullType * expression                     
 
-  (* should be considered as statements, bad C langage *)
-  | StatementExpr of compound wrap (* ( ) *) (* gccext: *)        
-  (* gccext: TODO, we will certainly have to then do a special visitor for 
-     initializer *)
+  (* gccext: *)        
+  | StatementExpr of compound wrap (* ( ) *) 
   | Constructor 
 
-
-  | ParenExpr of expression (* forunparser: *)
-
+  (* forunparser: *)
+  | ParenExpr of expression 
 
   (* cppext: *)
   | MacroCall of (expression, fullType * storage wrap, action_macro) either3
@@ -221,13 +218,11 @@ and expressionbis =
  and constExpression = expression (* => int *)
 
 
-
 (* ------------------------------------------------------------------------- *)
-
 (* note: that assignement is not a statement but an expression; 
  * wonderful C langage.
  * note: I use  'and' for type definition cos gccext allow statement as 
- * expression, so need mutual recursive type definition 
+ * expression, so need mutual recursive type definition.
  *)
 and statement = statementbis wrap 
 and statementbis = 
@@ -237,7 +232,10 @@ and statementbis =
   | Selection     of selection
   | Iteration     of iteration
   | Jump          of jump
-  | Asm (* gccext: *)
+
+  | Decl  of declaration   (* simplify cocci: *)
+  | Asm  (* gccext: *)
+
 
 
   and labeled = Label   of string * statement
@@ -245,9 +243,12 @@ and statementbis =
               | CaseRange of expression * expression * statement (* gccext: *)
 	      |	Default of statement
 
-  (* old: compound = (declaration list * statement list) *)
-  (* cppext: (or because of cpp) *)
-  and compound = ((declaration, statement) either) list 
+  (* cppext: 
+   * old: compound = (declaration list * statement list) 
+   * old: (declaration, statement) either list 
+   * simplify cocci to just have statement list, by integratint Decl in stmt.
+   *)
+  and compound = statement list 
 
   and exprStatement = expression option
 
@@ -270,19 +271,15 @@ and statementbis =
 
 
 
-
-
 (* ------------------------------------------------------------------------- *)
-
 (* 
  * (string * ...) option cos can have empty declaration or struct tag 
  * declaration.
  *   
  * Before I had Typedef constructor, but why make this special case and not 
  * have StructDef, EnumDef, ... so that struc t {...} v will generate 2 
- * declaration ? 
- * So I try to generalise and not have not Typedef too. This requires more 
- * work in parsing. Better to separate concern.
+ * declaration ? So I try to generalise and not have not Typedef too. This
+ * requires more work in parsing. Better to separate concern.
  * 
  * Before the need for unparser, I didn't have a DeclList but just a Decl.
  *)
@@ -307,21 +304,17 @@ and definition = (string * functionType * storage * compound)
 
  
 
-
-
 and program = programElement list
      and programElement = 
           | Declaration of declaration
           | Definition of definition
-          | EmptyDef of il  (* gccext: allow redundant ';' *)
+          | EmptyDef of il      (* gccext: allow redundant ';' *)
           | SpecialDeclMacro of (* cppext: *)
              string * 
              (expression, fullType * storage wrap) either wrap2 list *
              il 
           | NotParsedCorrectly of il
           | FinalDef of info
-
-
 
 
 
@@ -339,16 +332,14 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaExprListVal  of expression list
   | MetaTypeVal      of fullType
   | MetaStmtVal      of statement
-  | MetaParamVal     of (parameterType * il)
-  | MetaParamListVal of (parameterType * il) list
+  | MetaParamVal     of parameterType wrap
+  | MetaParamListVal of (parameterType wrap) list
 
 (*****************************************************************************)
-
-type info_item = (filename * (pos_file *  pos_file) * string * il)
+type info_item = (filename * (pos_file * pos_file) * string * il)
 
 type program2 = programElement2 list
      and programElement2 = programElement * info_item
-
 
 
 (*****************************************************************************)
@@ -356,23 +347,21 @@ let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
-
-let iiTodovide = []
-
 let noType = None
+let noInstr = (ExprStatement (None), [])
 
 let emptyMetavarsBinding = ([]: metavars_binding)
-
-let dumbAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
-
-let noInstr = (ExprStatement (None), [])
+let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
 
 (*****************************************************************************)
 (* abstract line *)
 
 let _Magic_info_number = -10
 
-let al_info x = { charpos = _Magic_info_number; str = (fst x).str }, dumbAnnot
-
+let al_info x = 
+  { charpos = _Magic_info_number; 
+    str = (fst x).str 
+  }, 
+  emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
 
