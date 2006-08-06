@@ -180,6 +180,7 @@ let main () =
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
+      "-loop",                 Arg.Set Flag_ctl.loop_in_src_code, " ";
 
 
 
