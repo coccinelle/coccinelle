@@ -17,11 +17,6 @@ open Common open Commonop
  * look if dependency, if one label  lead to another "naturally" (by a 
  * sequence of Direct without jump, in a compound).
  *
- * TODO: let visited = ref (new oassocb []) in
- * and add each time use a nodei,  so that know if have
- * managed all the nodes (maybe will help spot bugs, such as do we manage
- * well the goto).
- * 
  *)
 (*****************************************************************************)
 
@@ -31,6 +26,8 @@ open Control_flow_c
 open Ograph_extended
 open Oassoc
 open Oassocb
+open Oset
+open Osetb
 
 
 (*---------------------------------------------------------------------------*)
@@ -80,9 +77,29 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
   
   let nodes = g#nodes  in
 
+  (* Add each time use a nodei, so that we know if have managed all the nodes.
+   * Maybe it will help to spot some bugs, such as do we manage well the goto.
+   *)
+  let _visited = ref (new osetb Setb.empty) in
+  let add_visited nodei = _visited := !_visited#add nodei in
+
+  (* I add in _visited only for get_next_node, so for other functions
+   * such as get_next_nodes_ifthenelse_sorted, you have to call explicitely
+   * add_visited 
+   *)
+  let get_next_node g nodei = 
+    add_visited nodei;
+    (* call upper one *)
+    let (nexti, node) = get_next_node g nodei in
+    add_visited nexti;
+    (nexti, node)
+  in
+
+
   (* ------------------------- *)        
   let rec (rebuild_compound_instr_list: nodei -> int -> compound * returnkind)
    = fun starti level -> 
+    add_visited starti;
     match unwrap (nodes#find starti) with
     | SeqEnd (level2,_) -> 
         if level = level2 
@@ -103,6 +120,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
   (* ------------------------- *)        
   and (rebuild_statement: nodei -> (statement * returnkind)) = fun starti -> 
+    add_visited starti;
     match unwrap (nodes#find starti) with
 
     (* ------------------------- *)        
@@ -137,8 +155,15 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         in
         (Compound compound, [i1;i2]),  return
     (* ------------------------- *)        
-    | Label (_fullst, (s, ii)) -> raise Todo
-    | Goto (_fullst, (s,ii)) -> raise Todo
+    | Label (_fullst, (s, ii)) -> 
+
+        let nexti =  get_next_node g starti +> fst in
+        let (st, return) = rebuild_statement nexti in
+        (Labeled (Ast_c.Label (s, st)),ii),  return
+
+    | Goto (_fullst, (s,ii)) -> 
+        
+        (Jump (Ast_c.Goto s), ii), NoNextNode starti
 
     (* ------------------------- *)        
     | ExprStatement (_fullst, (e,ii)) -> 
@@ -151,6 +176,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
          (match get_next_nodes_ifthenelse_sorted g starti with
          | [(theni, TrueNode);  (elsei, FalseNode); (afteri, AfterNode)] -> 
+           add_visited theni; add_visited elsei; add_visited afteri;
                
            let theni' = get_next_node g theni +> fst in
            let elsei' = get_next_node g elsei +> fst in
@@ -185,6 +211,8 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
            )
    
          | [(theni, TrueNode);(falli, FallThroughNode);(afteri, AfterNode)] ->
+             add_visited theni; add_visited falli; add_visited afteri;
+
              let theni' = get_next_node g theni +> fst in
              let (st1, return1) = rebuild_statement theni' in
              let (st2) = (Ast_c.ExprStatement (None), []) in
@@ -202,6 +230,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
              )
    
          | [(theni, TrueNode);  (elsei, FalseNode)] -> 
+             add_visited theni; add_visited elsei;
           (* if no after node, that means that the two branches go wild *)
                
            let theni' = get_next_node g theni +> fst in
@@ -319,6 +348,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
    *)
 
   let starti = get_first_node g in
+  add_visited starti;
 
   let ((funcs, functype, sto), iifuncheader) =  
     match unwrap (nodes#find starti) with 
@@ -340,6 +370,22 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     | (Compound st, ii) -> st, ii
     | x -> raise Impossible
   in
+
+  (* sanity checks *)
+  let visited_nodesi = !_visited in
+  let all_nodesi = (new osetb Setb.empty)#fromlist (List.map fst nodes#tolist)
+  in
+  let diff = (all_nodesi $--$ visited_nodesi)#tolist in
+  let diffnodes = diff +> List.map (fun nodei -> nodei, nodes#find nodei) in
+
+  diffnodes +> List.iter (fun (nodei, node) -> 
+     match unwrap node with
+     | Exit | ErrorExit -> ()
+     | SeqEnd _ -> () (* TODO ?*)
+     | _ -> failwith "pb in flow_to_ast, some nodes have not been visited"
+      );
+
+
   match iifuncheader, iicp with
   | iidb::ioparenb::icparenb::iistob, [i1;i2] -> 
       (funcs, functype, sto, cpfunc), iidb::ioparenb::icparenb::i1::i2::iistob

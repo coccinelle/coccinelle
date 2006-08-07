@@ -751,11 +751,23 @@ and (match_params:
              match_params seqstyle xs ys
 
           | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
-              (* todo: use quaopt, hasreg ? *)
-              (match_ft_ft typa typb >&&>
-              match_ident DontKnow ida (some idb)
-              ) >&&> 
-              match_params seqstyle xs ys
+              (match idb with
+              | Some idb -> 
+                  (* todo: use quaopt, hasreg ? *)
+                  (match_ft_ft typa typb >&&>
+                   match_ident DontKnow ida idb
+                  ) >&&> 
+                  match_params seqstyle xs ys
+              | None -> 
+                  assert (null ys);
+                  assert (
+                    match typb with 
+                    | (_qua, (B.BaseType B.Void,_)) -> true
+                    | _ -> false
+                          );
+   
+                  return false
+              )
 
           | x, [] -> return false
 
