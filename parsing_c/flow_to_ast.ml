@@ -330,7 +330,9 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
 
     (* ------------------------- *)        
-    | Asm -> raise Todo
+    | Asm -> 
+        let iiempty = [] in
+        (Ast_c.Asm, iiempty), LastCurrentNode starti
 
     | CaseNode _ | DoWhileTail _ | Else _ | SeqEnd _ | FunHeader _ -> 
         raise Impossible
@@ -395,13 +397,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
 (*****************************************************************************)
 
-let test statement = 
-  raise Todo
-(* TODO put back
- let g = ast_to_control_flow statement in
- check_control_flow g;
- print_ograph_extended g;
- assert (
-  statement =*= 
-  statement +> ast_to_control_flow +> control_flow_to_ast);
-*)
+let test def = 
+  let g = Ast_to_flow.ast_to_control_flow def in
+  Ast_to_flow.check_control_flow g;
+  print_ograph_extended g;
+  assert (
+  def =*= def +> Ast_to_flow.ast_to_control_flow +>control_flow_to_ast
+ );

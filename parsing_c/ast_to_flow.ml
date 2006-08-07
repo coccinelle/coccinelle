@@ -549,8 +549,47 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         Some newfakeelse
 
         
+    (* This time, may return None, for instance if goto in body of dowhile
+     * (whereas While cant return None). But if return None, certainly 
+     * some deadcode.
+     *)
     | Iteration  (Ast_c.DoWhile (st, e)), ii -> 
-        raise Todo
+       (* starti -> doi ---> ... ---> finalthen (opt) ---> whiletaili
+        *             |--------- newfakethen ---------------|  |---> newfakelse
+        *)
+        let (iido, iiwhiletail) = 
+          match ii with
+          | [i1;i2;i3;i4;i5] -> i1, [i2;i3;i4;i5]
+          | _ -> raise Impossible
+        in
+        let doi = add_node_g (DoHeader (stmt, iido))  lbl "do" in
+        attach_to_previous_node starti doi;
+        let taili = add_node_g (DoWhileTail (e, iiwhiletail)) lbl "whiletail" 
+        in
+
+
+        let newfakethen = add_node_g TrueNode lbl "[dowhiletrue]" in
+        let newfakeelse = add_node_g FalseNode lbl "[enddowhile]" in
+
+        let newauxinfo = { auxinfo_label with context_info =
+           LoopInfo (taili, newfakeelse, auxinfo_label.braces);
+          }
+        in
+
+        !g#add_arc ((taili, newfakethen), Direct) +> adjust_g; 
+        !g#add_arc ((taili, newfakeelse), Direct) +> adjust_g;
+
+        !g#add_arc ((newfakethen, doi), Direct) +> adjust_g; 
+
+        let finalthen = aux_statement (Some doi, newauxinfo) st in 
+        (match finalthen with
+        | None -> raise (DeadCode (Some (ii +> List.hd +> fst)))
+        | Some finali -> 
+            !g#add_arc ((finali, taili), Direct) +> adjust_g;
+            Some newfakeelse
+        )
+            
+
 
     | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)), ii -> 
         let newi = 
@@ -664,7 +703,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        Some newi
         
     (* ------------------------- *)        
-    | Ast_c.Asm, ii -> failwith "asm code"
+    | Ast_c.Asm, ii -> 
+        let newi = add_node_g Asm lbl "asm;" in
+        attach_to_previous_node starti newi;
+        Some newi
 
   in
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
