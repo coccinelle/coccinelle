@@ -272,9 +272,13 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.FunHeader (stoa, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
 
+
       match_ident LocalFunction ida idb >&&>
-           (* todo: stoa vs stob *)
-           (* todo: isvaargs ? retb ? *)
+      
+      (* todo: stoa vs stob 
+       * todo: isvaargs ? retb ?
+       * "iso-by-absence" for storage, and return type.
+       *)
       (
        (* for the pattern phase, no need the EComma *)
        let paramsa' = A.undots paramsa +> List.filter(function x -> 
@@ -331,38 +335,36 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 (*-------------------------------------------------------------------------- *)
 
 and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
- fun decla declb -> 
-  match declb with
-  | (B.DeclList (xs, _)) -> 
-      (match A.unwrap decla with
-      | A.UnInit (typa, sa, _) ->
-        xs +> List.fold_left (fun acc var -> 
-          acc >||>
-          (match var with
-          | (Some ((sb, iniopt),_), typb, sto), _ ->
-              (match iniopt with
-              | None -> 
-                  (* isomorphisms handled here, good?  cos allow an initializer
-                     (iniopt) where a SP does not mention one *)
-                  (* todo, use sto? lack of sto in Ast_cocci *)
-                  match_ft_ft typa typb >&&>
-                  match_ident DontKnow sa sb
-              | Some _ -> return false
-              )
-          | (None, typ, sto), _ -> return false
-          )
-        ) (return false)
-      | A.DisjDecl xs -> 
-          xs +> List.fold_left (fun acc decla -> 
-            acc >||> match_re_decl  decla declb
-              ) (return false)
-      | A.Init _ -> 
-          pr2 "warning: not handling yet initializer patterns"; 
-          return false
-      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> 
-          failwith "not handling Opt/Unique/Multi Decl"
-      )
+ fun decla (B.DeclList (xs, _)) -> 
+   xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
+     (return false)
 
+and match_re_onedecl = fun decla declb -> 
+  match A.unwrap decla, declb with
+    (* could handle iso here but handled in standard.iso *)
+    (* todo, use sto? lack of sto in Ast_cocci *)
+  | A.UnInit (typa, sa, _), ((Some ((sb, None),_), typb, sto), _) ->
+      match_ft_ft typa typb >&&>
+      match_ident DontKnow sa sb
+  | A.Init (typa, sa, _, expa, _), ((Some ((sb, Some ini),_), typb, sto), _) ->
+      match_ft_ft typa typb >&&>
+      match_ident DontKnow sa sb >&&>
+      (match ini with
+      | B.InitExpr expb, _ -> match_e_e expa expb
+      | _ -> 
+          pr2 "warning: complex initializer, cocci does not handle that";
+          return false
+      )
+  | _, ((None, typb, sto), _) -> 
+      failwith "no variable in this declaration, wierd"
+      
+  | A.DisjDecl xs, _ -> 
+      xs +> List.fold_left (fun acc decla -> 
+        acc >|+|> match_re_onedecl decla declb
+        ) (return false)
+  | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
+      failwith "not handling Opt/Unique/Multi Decl"
+  | _, _ -> return false
 
 
 
@@ -585,7 +587,8 @@ and (match_arguments:
                 match_arguments seqstyle xs endxs
              )) (return false)
 
-          (* todo: Opt/Unique/Multi *)
+          | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
+              failwith "not handling Opt/Unique/Multi on expr"
               
 
           | _, y::ys -> 
@@ -602,10 +605,19 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
   fun typa typb ->
     match (A.unwrap typa,typb) with
       (A.Type(cv,ty1),((qu,il),ty2)) ->
-	(* drop out the const/volatile part that has been matched *)
+	(* Drop out the const/volatile part that has been matched.
+         * This is because a SP can contain  const T v; in which case
+         * later in match_t_t when we encounter a T, we must not add in
+         * the environment the whole type.
+         *)
 	let new_il todrop =
 	  List.filter (function (pi,_) -> not(pi.Common.str = todrop)) in
+
+        if qu.B.const && qu.B.volatile 
+        then pr2 "warning: the type is both const & volatile but cocci does not handle that";
+
 	(match cv with
+          (* "iso-by-absence" *)
 	  None -> match_t_t ty1 typb
 	| Some(A.Const,_,_) ->
 	    if qu.B.const
@@ -640,7 +652,10 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
 	let match_sign signa signb = 
           (match signa, signb with
-         (* iso on sign, if not mentioned then free.  tochange? *)
+            (* todo: iso on sign, if not mentioned then free.  tochange? 
+             * but that require to know if signed int because explicit
+             * signed int,  or because implicit signed int.
+             *)
           | None, _ -> return true
           | Some a, b -> return (equal_sign (term a) b)) in
 	
@@ -649,15 +664,19 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	 casting) *)
 	(match term basea, baseb with
 	| A.VoidType,  B.Void -> assert (signaopt = None); return true
-	| A.CharType,  B.IntType B.CChar -> 
-          (* todo?: also match signed CChar2 ? *)
+	| A.CharType,  B.IntType B.CChar when signaopt = None -> 
             return true
+
+
+          (* todo?: also match signed CChar2 ? *)
+
 	| A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
 	    match_sign signaopt signb
 	| A.IntType,   B.IntType (B.Si (signb, B.CInt))   ->
 	    match_sign signaopt signb
 	| A.LongType,  B.IntType (B.Si (signb, B.CLong))  ->
 	    match_sign signaopt signb
+
 	| A.FloatType, B.FloatType (B.CFloat) -> 
             assert (signaopt = None); (* no sign on float in C *)
             return true

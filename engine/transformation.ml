@@ -185,8 +185,8 @@ let rec
       in
       F.ForHeader (st,
             ((transform (ea1opt, [i3]) (eb1opt, ib1),
-             transform (ea2opt, [i4]) (eb2opt, ib2),
-             transform (ea3opt, []) (eb2opt, ib3)),
+              transform (ea2opt, [i4]) (eb2opt, ib2),
+              transform (ea3opt, []) (eb2opt, ib3)),
             tag_symbols [i1;i2;i5] ii  binding))
 
 
@@ -215,40 +215,68 @@ and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
  fun decla declb -> 
   fun binding -> 
   match declb with
-    (B.DeclList ([var], iiptvirgb::iisto)) -> 
-      (match A.unwrap decla with
-      | A.UnInit (typa, ida, ptvirga) ->
-	  let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
-	  (match var with
-	  | (Some ((idb, None), iidb::iini), typb, stob), iivirg -> 
-              assert (null iini);
-              let typb' = transform_ft_ft typa typb  binding in
-              let (idb', iidb') = 
-                transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
-              in
-              let var' = (Some ((idb', None), iidb'), typb', stob), iivirg
-              in
-              B.DeclList ([var'], (iiptvirgb'++iisto))
-          
-	  | _ -> failwith "no variable in this declaration, wierd"
-          )
-      |	A.DisjDecl xs -> 
-          xs +> List.fold_left (fun acc decla -> 
-            try transform_de_de decla acc  binding
-            with NoMatch -> acc
-            ) declb
-            
-      | A.Init _ -> 
-          pr2 "warning: not handling yet initializer patterns"; 
-          raise NoMatch
-      | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> 
-          failwith "not handling Opt/Unique/Multi Decl"
+  | (B.DeclList ([var], iiptvirgb::iisto)) -> 
+      let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
+      in
+      B.DeclList ([var'], iiptvirgb'::iisto)
 
-      )
-  | (B.DeclList (xs, iiptvirgb::iisto)) -> 
-      failwith "More that one variable in one decl. Have to split to transform."
+  | (B.DeclList (x::y::xs, iiptvirgb::iisto)) -> 
+      failwith "More that one variable in decl. Have to split to transform."
   
   | _ -> raise Impossible                
+
+and transform_onedecl = fun decla declb -> 
+ fun binding -> 
+   match A.unwrap decla, declb with
+   | A.UnInit (typa, ida, ptvirga), 
+     (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
+       assert (null iini);
+
+       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+
+       let typb' = transform_ft_ft typa typb  binding in
+       let (idb', iidb') = 
+         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+       in
+       ((Some ((idb', None), iidb'++iini), typb', stob), iivirg), 
+       List.hd iiptvirgb'
+
+   | A.Init (typa, ida, eqa, expa, ptvirga), 
+     (((Some ((idb, Some ini),[iidb;iieqb]), typb, stob), iivirg),iiptvirgb) ->
+
+       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+       let iieqb' = tag_symbols [eqa] [iieqb] binding in
+       let typb' = transform_ft_ft typa typb  binding in
+       let (idb', iidb') = 
+         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+       in
+       let ini' = 
+         match ini with
+         | B.InitExpr expb, ii -> 
+             assert (null ii);
+             B.InitExpr (transform_e_e expa  expb binding), ii
+         | _ -> 
+             pr2 "warning: complex initializer, cocci does not handle that";
+             raise NoMatch
+       in
+       ((Some ((idb', Some ini'), iidb'++iieqb'), typb', stob), iivirg), 
+        List.hd iiptvirgb'
+       
+       
+   | _, (((None, typb, sto), _),_) -> 
+       failwith "no variable in this declaration, wierd"
+
+   | A.DisjDecl xs, declb -> 
+       xs +> Common.fold_k (fun acc decla k -> 
+         try transform_onedecl decla acc  binding
+         with NoMatch -> k acc
+        ) declb
+
+            
+   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
+       failwith "not handling Opt/Unique/Multi Decl"
+   | _, _ -> raise NoMatch
+
   
 (* ------------------------------------------------------------------------- *)
 
