@@ -239,22 +239,26 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                   Ctlcocci_integration.metavars_binding_to_binding2 binding
                 in
 
-                Flag_ctl.loop_in_src_code := false;
-                def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
+		let loop_in_src_code = !Flag_ctl.loop_in_src_code in
+		if not loop_in_src_code
+		then
+                  (Flag_ctl.loop_in_src_code := false;
+                   def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
                     with Visitor_c.kstatement = (fun (k, bigf) stat -> 
-                       match stat with 
+                      match stat with 
                        | Ast_c.Iteration _, ii
                        | Ast_c.Jump (Ast_c.Goto _), ii
                            -> Flag_ctl.loop_in_src_code := true
                        | st -> k st
                              )
-                     };
+                     });
 
                 let model_ctl  =
 		  Ctlcocci_integration.model_for_ctl flow current_binding in
 		let satres =
 		  Ctlcocci_integration.mysat model_ctl ctl 
                     (used_after_list, current_binding2) in
+		Flag_ctl.loop_in_src_code := loop_in_src_code;
 		match satres with
 		| Some (trans_info2, used_after_env) ->
                     let trans_info = 

@@ -993,7 +993,7 @@ let top_level free_table extender used_after t =
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let _ = extender unopt in
       let _ = count_nested_braces unopt in
-      letify
+      (*letify*)
 	(statement (free_table,extender,used_after) [] unopt false [] [] None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
@@ -1002,7 +1002,7 @@ let top_level free_table extender used_after t =
 	  let _ = extender x in
 	  let _ = count_nested_braces x in ())
 	(Ast.undots unopt);
-      letify
+      (*letify*)
 	(dots_stmt (free_table,extender,used_after) [] unopt false [] [] None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 

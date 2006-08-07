@@ -16,7 +16,7 @@ identifier proc_info_func;
 (
 -   if (!hostptr) return ...;
 |
-?-  if (!hostptr) { ... return ...; }
+?-  if (!hostptr) { return ...; } // should have ... return ...;
 )
     ...
 ?-  scsi_host_put(hostptr);

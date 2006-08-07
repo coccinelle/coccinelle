@@ -732,8 +732,56 @@ let satAX dir count m s =
 ;;
   
 
+let rec clean = function
+    [] -> []
+  | ((s,th,[]) as first)::(s',th',wit')::rest when s = s' && th = th' ->
+      clean (first::rest)
+  | x::xs -> x::(clean xs)
+
+(* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
+let satEU dir ((_,_,states) as m) s1 s2 = 
+  if s1 = []
+  then s2
+  else
+    let s1 = double_negate s1 in
+    let s2 = double_negate s2 in
+    let ctr = ref 0 in
+    let rec f y = function
+	[] -> y
+      |	new_info ->
+	  ctr := !ctr + 1;
+	  let first = pre_exist dir 1 m new_info in
+	  let res = triples_union y (triples_conj s1 first) in
+	  (*let res = clean res in*)
+	  let new_info = setdiff res y in
+	  (*Printf.printf "iter %d res %d new_info %d\n"
+	  !ctr (List.length res) (List.length new_info);
+	  flush stdout;*)
+	  f res new_info in
+    f s2 s2
+;;
+
+(* EF phi == E[true U phi] *)
+let satEF dir m s2 = 
+    let s2 = double_negate s2 in
+    let ctr = ref 0 in
+    let rec f y = function
+	[] -> y
+      |	new_info ->
+	  ctr := !ctr + 1;
+	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	  let first = pre_exist dir 1 m new_info in
+	  let res = triples_union y first in
+	  let new_info = setdiff res y in
+	  (*Printf.printf "iter %d res %d new_info %d\n"
+	  !ctr (List.length res) (List.length new_info);
+	  flush stdout;*)
+	  f res new_info in
+    f s2 s2
+;;
+
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
-let satAU dir m s1 s2 = 
+let satAU dir ((_,_,states) as m) s1 s2 = 
   if s1 = []
   then s2
   else
@@ -742,29 +790,17 @@ let satAU dir m s1 s2 =
     let ctr = ref 0 in
     let rec f y = function
 	[] -> y
-      |	new_info ->
+      | new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_forall dir m new_info y in
 	  let res = triples_union y (triples_conj s1 first) in
 	  let new_info = setdiff res y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
-	  !ctr (List.length res) (List.length new_info);*)
-	  flush stdout;
+	  !ctr (List.length res) (List.length new_info);
+	  flush stdout;*)
 	  f res new_info in
     f s2 s2
-;;
-
-(* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
-let satEU dir m s1 s2 = 
-  if s1 = []
-  then s2
-  else
-    let s1 = double_negate s1 in
-    let s2 = double_negate s2 in
-    let f y =
-      triples_union s2 (triples_conj s1 (setify (pre_exist dir 1 m y))) in 
-    setfix f s2
 ;;
 
 let satAF dir m s = 
@@ -782,13 +818,6 @@ let satAG dir ((_,_,states) as m) s =
   let f y =
     let pre = pre_forall dir m y y in
     triples_conj y pre in
-  setfix f s
-
-let satEF dir ((_,_,states) as m) s =
-  let s = double_negate s in
-  let f y =
-    let pre = pre_exist dir 1 m y in
-    triples_union y pre in
   setfix f s
 
 let satEG dir ((_,_,states) as m) s =
@@ -899,11 +928,18 @@ let rec satloop keep_negwits required ((grp,label,states) as m) phi env
 	    let new_required = extend_required s2 required in
 	    satEU dir m (loop keep_negwits new_required phi1) s2)
     | A.AU(dir,phi1,phi2)      ->
-	(match loop keep_negwits required phi2 with
-	  [] -> []
-	| s2 ->
-	    let new_required = extend_required s2 required in
-	    satAU dir m (loop keep_negwits new_required phi1) s2)
+	if !Flag_ctl.loop_in_src_code
+	then
+	  let wrap x = A.rewrap phi x in
+	  loop keep_negwits required
+	    (wrap(A.Not(wrap(A.EU(dir,wrap(A.Not(phi2)),
+				  wrap(A.Not(wrap(A.Or(wrap(A.And(phi1,wrap(A.EF(dir,phi2)))),phi2)))))))))
+	else
+	  (match loop keep_negwits required phi2 with
+	    [] -> []
+	  | s2 ->
+	      let new_required = extend_required s2 required in
+	      satAU dir m (loop keep_negwits new_required phi1) s2)
     | A.Implies(phi1,phi2) ->
 	loop keep_negwits required
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
@@ -1002,13 +1038,21 @@ let rec sat_verbose_loop keep_negwits required annot maxlvl lvl
 	    Printf.printf "EU\n"; flush stdout;
 	    anno (satEU dir m res1 res2) [child1; child2])
     | A.AU(dir,phi1,phi2)      -> 
-	(match satv keep_negwits required phi2 env with
-	  (child2,[]) -> anno [] [child2]
-	| (child2,res2) ->
-	    let new_required = extend_required res2 required in
-	    let (child1,res1) = satv keep_negwits new_required phi1 env in
-	    Printf.printf "AU %b\n" keep_negwits; flush stdout;
-	    anno (satAU dir m res1 res2) [child1; child2])
+	if !Flag_ctl.loop_in_src_code
+	then
+	  let wrap x = A.rewrap phi x in
+	  satv keep_negwits required
+	    (wrap(A.Not(wrap(A.EU(dir,wrap(A.Not(phi2)),
+				  wrap(A.Not(wrap(A.Or(wrap(A.And(phi1,wrap(A.EF(dir,phi2)))),phi2)))))))))
+	    env
+	else
+	  (match satv keep_negwits required phi2 env with
+	    (child2,[]) -> anno [] [child2]
+	  | (child2,res2) ->
+	      let new_required = extend_required res2 required in
+	      let (child1,res1) = satv keep_negwits new_required phi1 env in
+	      Printf.printf "AU %b\n" keep_negwits; flush stdout;
+	      anno (satAU dir m res1 res2) [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	let (child1,res1) = satv (not keep_negwits) [] phi1 env in
 	let (child2,res2) = satv keep_negwits required phi2 env in
