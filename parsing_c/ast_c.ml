@@ -83,7 +83,7 @@ and typeCbis =
            * add  a | SizeT ?
            * note: char and signed char are semantically different!! 
            *)
-          and intType   = CChar | CWchar 
+          and intType   = CChar (* obsolete? | CWchar  *)
 	                | Si of signed
 
            and signed = sign * base

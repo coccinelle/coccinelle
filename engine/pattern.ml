@@ -610,8 +610,9 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
          * later in match_t_t when we encounter a T, we must not add in
          * the environment the whole type.
          *)
-	let new_il todrop =
-	  List.filter (function (pi,_) -> not(pi.Common.str = todrop)) in
+	let new_il todrop = List.filter (fun (pi,_) -> 
+          not(pi.Common.str = todrop)) 
+        in
 
         if qu.B.const && qu.B.volatile 
         then pr2 "warning: the type is both const & volatile but cocci does not handle that";
@@ -641,23 +642,74 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 	pr2 "warning: ignoring + arity on type";
 	match_ft_ft ty typb
 
+(*
+ * Why not (Ast_cocci.typeC, Ast_c.typeC) matcher ?
+ * because when there is MetaType, we want that T record the whole type, 
+ * including the qualifier, and so this type (and the new_il function in
+ * preceding function).
+*)
 and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
   fun typa typb -> 
     match A.unwrap typa, typb with
 
       (* cas general *)
-      A.MetaType ida,  typb -> 
+    | A.MetaType ida,  typb -> 
 	check_add_metavars_binding (term ida, B.MetaTypeVal typb)
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
+
+        (* todo: iso on sign, if not mentioned then free.  tochange? 
+         * but that require to know if signed int because explicit
+         * signed int,  or because implicit signed int.
+         *)
+
+        let compute_signb (baseb, iib) = 
+          let iibs = iib +> List.map (fun (ii,mc) -> ii.Common.str) in
+          match baseb, iibs with
+          | B.Void, ["void"] -> None
+
+          | B.FloatType (B.CFloat), ["float"] -> None
+          | B.FloatType (B.CDouble), ["double"] -> None
+          | B.FloatType (B.CLongDouble), ["long";"double"] -> None
+
+          | B.IntType (B.CChar), ["char"] -> None
+
+
+          | B.IntType (B.Si (sign, base)), xs -> 
+              (match sign, base, xs with
+              | B.Signed, B.CChar2,   ["signed";"char"] -> Some B.Signed
+              | B.UnSigned, B.CChar2,   ["unsigned";"char"] -> Some B.UnSigned
+
+              | B.Signed, B.CShort, ["short"] -> None
+              | B.Signed, B.CShort, ["signed";"short"] -> Some B.Signed
+              | B.UnSigned, B.CShort, ["unsigned";"short"] -> Some B.UnSigned
+
+              | B.Signed, B.CInt, ["int"] -> None
+              | B.Signed, B.CInt, ["signed";"int"] -> Some B.Signed
+              | B.UnSigned, B.CInt, ["unsigned";"int"] -> Some B.UnSigned
+
+              | B.Signed, B.CLong, ["long"] -> None
+              | B.Signed, B.CLong, ["signed";"long"] -> Some B.Signed
+              | B.UnSigned, B.CLong, ["unsigned";"long"] -> Some B.UnSigned
+
+              | B.Signed, B.CLongLong, ["long";"long"] -> None
+              | B.Signed, B.CLongLong, ["signed";"long";"long"] -> 
+                  Some B.Signed
+              | B.UnSigned, B.CLongLong, ["unsigned";"long";"long"] -> 
+                  Some B.UnSigned
+              | _ -> failwith "strange type1, maybe because of weird order"
+              )
+
+          | _ -> failwith "strange type2, maybe because of weird order"
+        in
+        let signbopt = compute_signb (baseb, iib) in
+
 	let match_sign signa signb = 
-          (match signa, signb with
-            (* todo: iso on sign, if not mentioned then free.  tochange? 
-             * but that require to know if signed int because explicit
-             * signed int,  or because implicit signed int.
-             *)
-          | None, _ -> return true
-          | Some a, b -> return (equal_sign (term a) b)) in
+          match signa, signb with
+          | None, None -> return true
+          | Some a, Some b -> return (equal_sign (term a) b)
+          | _, _ -> return false
+        in
 	
 	
       (* handle some iso on type ? (cf complex C rule for possible implicit
@@ -666,16 +718,16 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	| A.VoidType,  B.Void -> assert (signaopt = None); return true
 	| A.CharType,  B.IntType B.CChar when signaopt = None -> 
             return true
+        | A.CharType,  B.IntType (B.Si (_, B.CChar2)) when signaopt <> None -> 
+            match_sign signaopt signbopt
 
 
-          (* todo?: also match signed CChar2 ? *)
-
-	| A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
-	    match_sign signaopt signb
-	| A.IntType,   B.IntType (B.Si (signb, B.CInt))   ->
-	    match_sign signaopt signb
-	| A.LongType,  B.IntType (B.Si (signb, B.CLong))  ->
-	    match_sign signaopt signb
+	| A.ShortType, B.IntType (B.Si (_, B.CShort)) ->
+	    match_sign signaopt signbopt
+	| A.IntType,   B.IntType (B.Si (_, B.CInt))   ->
+	    match_sign signaopt signbopt
+	| A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
+	    match_sign signaopt signbopt
 
 	| A.FloatType, B.FloatType (B.CFloat) -> 
             assert (signaopt = None); (* no sign on float in C *)
@@ -683,7 +735,13 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	| A.DoubleType, B.FloatType (B.CDouble) -> 
             assert (signaopt = None); (* no sign on float in C *)
             return true
-	| x, y -> return false)
+
+        | _, B.IntType (B.Si (_, B.CLongLong)) 
+        | _, B.FloatType B.CLongDouble 
+           -> pr2 "warning: long long or long double not handled by ast_cocci";
+              return false
+	| x, y -> return false
+        )
 	  
   (* todo? iso with array *)
     | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
@@ -694,8 +752,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
         match_opt match_e_e  eaopt ebopt
        (* todo: handle the iso on optionnal size specifification ? *)
 	  
-    | A.StructUnionName(sa, sua),
-	(qu, (B.StructUnionName (sb, sub), _)) -> 
+    | A.StructUnionName(sa, sua), (qu, (B.StructUnionName (sb, sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
 

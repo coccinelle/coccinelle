@@ -57,13 +57,24 @@ let get_next_nodes_ifthenelse_sorted g nodei =
  *)
 let get_next_nodes_switch_sorted g nodei = 
   (g#successors nodei)#tolist +> List.map (fun (nodei, Direct) -> 
+    nodei,
     get_next_node g nodei +> fst, 
     (match unwrap (g#nodes#find nodei) with
     | CaseNode i -> i
     | _ -> raise Impossible
     ))
-   +> List.sort (fun (_, a) (_, b) -> compare a b)
-   +> List.map fst
+   +> List.sort (fun (_, _, a) (_, _, b) -> compare a b)
+   +> List.map (fun (a,b,c) -> (a,b))
+
+
+let rec find_until_good_brace g level lasti = 
+  match get_next_node g lasti with
+  | nexti, SeqEnd (level2, i2) -> 
+      assert (level2 >= level);
+      if level2 = level 
+      then i2
+      else find_until_good_brace g level nexti
+  | _ -> raise Impossible
 
 
 (*---------------------------------------------------------------------------*)
@@ -94,6 +105,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     add_visited nexti;
     (nexti, node)
   in
+
 
 
   (* ------------------------- *)        
@@ -140,18 +152,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
               | _ -> raise Impossible
               )
           | NoNextNode lasti -> 
-              let rec find_until_good_brace lasti = 
-                let nexti = get_next_node g lasti +> fst in
-                (match unwrap (nodes#find nexti) with
-                | SeqEnd (level2, i2) -> 
-                    assert (level2 >= level);
-                    if level2 = level 
-                    then i2
-                    else find_until_good_brace nexti
-                | _ -> raise Impossible
-                )
-              in
-              find_until_good_brace lasti
+              find_until_good_brace g level lasti
         in
         (Compound compound, [i1;i2]),  return
     (* ------------------------- *)        
@@ -262,7 +263,111 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
     (* ------------------------- *)        
     | SwitchHeader (_fullst, (e,ii)) -> 
-        raise Todo
+
+     (* Can have 2 successors, when there is no default case, we also directy
+      * go to the end.
+      *)
+        let succ = 
+          (g#successors starti)#tolist +> List.map (fun (nodei, Direct) -> 
+              nodei, unwrap (g#nodes#find nodei)
+          )
+        in
+        let nexti, endswitchiopt = 
+          match succ with
+          | [nexti, SeqStart _]                   -> nexti, None
+          | [nexti, SeqStart _; endswitchi, Fake] 
+          | [endswitchi, Fake; nexti, SeqStart _] -> nexti, Some endswitchi
+          | _ -> raise Impossible
+        in
+
+        add_visited nexti;
+        let (st, return) = 
+          match unwrap (g#nodes#find nexti) with
+          | SeqStart (_fullst2, level, i1) -> 
+
+              let nodes_sorted = get_next_nodes_switch_sorted g nexti in
+              
+              let list_list_statement = 
+                nodes_sorted +> map_filter (fun (casenodei, nodei) -> 
+                  (* todo: do only if the 'case:' in question have only 1 
+                     predecessor *)
+                  add_visited casenodei;
+                  if ((g#predecessors nodei)#tolist +> List.length) >= 2
+                  then None
+                  else Some (rebuild_compound_instr_list nodei level)
+                ) in
+              let compound = list_list_statement +> List.map fst +> List.concat
+              in
+
+              (* find the endswitch, it must be after the }level node *)
+              let i2_candidat         = ref None in
+              let endswitchi_candidat = ref None in
+
+              list_list_statement +> List.map snd +> List.iter 
+                 (function
+                    (* can be because a return, or a break, but if a break,
+                       when after there should be a close brace level and after the 
+                       endswitch. *)
+                    | NoNextNode nodei -> 
+                        (match unwrap (nodes#find nodei) with
+                        | Break _ -> 
+                            (match get_next_node g nodei with
+                            | nexti, SeqEnd (level2,i2) when level2 = level -> 
+                                if !i2_candidat = None then 
+                                  i2_candidat := Some i2;
+                                
+                                (match get_next_node g nexti with
+                                (* todo? assert the s = "[endswitch]" *)
+                                | nextii, Fake -> 
+                                    endswitchi_candidat := Some nextii
+                                | _ -> raise Impossible
+                                )
+                            | _ -> raise Impossible
+                            )
+                        (* goto  or return *)
+                        | _ -> 
+                            let i2 = find_until_good_brace g level nodei in
+                            if !i2_candidat = None then 
+                              i2_candidat := Some i2;
+                            
+                        )
+  
+                     (* there was no break or return, certainly the default 
+                        case *)
+                    | LastCurrentNode nodei -> 
+                        (match get_next_node g nodei with
+                        | nexti, SeqEnd (level2,i2) when level2 = level -> 
+                            i2_candidat := Some i2;
+                            (match get_next_node g nexti with
+                            | nextii, Fake -> 
+                               endswitchi_candidat := Some nextii
+                            | _ -> raise Impossible
+                            )
+                        | _ -> raise Impossible
+                        )
+                          
+                  );
+               endswitchiopt +> do_option (fun nodei -> 
+                  endswitchi_candidat := Some nodei
+               );
+                
+               let return, i2 = 
+                 match !endswitchi_candidat, !i2_candidat  with 
+                   (* take first one *)
+                 | Some x, Some i2 -> 
+                     add_visited x;
+                     LastCurrentNode x, i2
+                 | None,  Some i2 -> NoNextNode (-1), i2
+                 | _ -> raise Impossible
+               in
+              (Compound compound, [i1;i2]), return
+       
+
+          | _ -> raise Impossible
+          
+       in
+      (Selection (Switch (e, st)), ii), return
+
 
     (* alt: would like to return None, cos it will be handle elsewhere
        or can handle it, but when handle a case in the iter of the
@@ -274,12 +379,13 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         let (st, return) = rebuild_statement nexti in
         (Labeled (Ast_c.Case (e, st)),ii),  return
 
+    | CaseRange _ -> raise Todo
+
     | Default  (_fullst, ((),ii)) -> 
         let nexti =  get_next_node g starti +> fst in
         let (st, return) = rebuild_statement nexti in
         (Labeled (Ast_c.Default st),ii),  return
 
-    | CaseRange _ -> raise Todo
 
     (* ------------------------- *)        
     | WhileHeader (_fullst, (e,ii)) -> 

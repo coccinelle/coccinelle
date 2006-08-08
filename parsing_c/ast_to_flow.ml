@@ -443,7 +443,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                  in
                  !g#add_arc ((newswitchi, newi), Direct) +> adjust_g; 
                  (* new: if have not a default case, then must add an edge 
-                    between start to end *)
+                  * between start to end.
+                  * todo? except if the case[range] coverthe whole spectrum 
+                  *)
+
                  if not (statxs +> List.exists (function 
                    | (Labeled (Ast_c.Default _), _) -> true
                    | _ -> false
@@ -451,8 +454,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                  then
                    !g#add_arc ((newswitchi, newendswitch), Direct) +> adjust_g;
 
-
-         
                  attach_to_previous_node starti newi;
                  let starti = Some newi in
          
@@ -469,9 +470,28 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                          )
              | x -> raise Impossible
          in
-
          attach_to_previous_node finalthen newendswitch;
-         Some newendswitch (* really ? what if has only returns inside *)
+
+
+         (* what if has only returns inside. We must  try to see if the
+          * newendswitch has been used via a 'break;'  or because no 
+          * 'default:')
+          *)
+         (match finalthen with
+         | Some finalthen -> 
+             !g#add_arc ((finalthen, newendswitch), Direct) +> adjust_g;
+             Some newendswitch
+         | None -> 
+             if (!g#predecessors newendswitch)#null
+             then 
+               begin
+                 assert ((!g#successors newendswitch)#null);
+                 !g#del_node newendswitch +> adjust_g;
+                 None
+               end
+             else 
+               Some newendswitch
+         )
 
     | Labeled (Ast_c.Case  (e, st)), ii -> 
         incr counter_for_switch;
