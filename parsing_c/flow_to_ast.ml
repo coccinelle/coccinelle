@@ -72,7 +72,7 @@ let rec find_until_good_brace g level lasti =
   | nexti, SeqEnd (level2, i2) -> 
       assert (level2 >= level);
       if level2 = level 
-      then i2
+      then (nexti,  i2)
       else find_until_good_brace g level nexti
   | _ -> raise Impossible
 
@@ -152,7 +152,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
               | _ -> raise Impossible
               )
           | NoNextNode lasti -> 
-              find_until_good_brace g level lasti
+              find_until_good_brace g level lasti +> snd
         in
         (Compound compound, [i1;i2]),  return
     (* ------------------------- *)        
@@ -314,7 +314,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                             (match get_next_node g nodei with
                             | nexti, SeqEnd (level2,i2) when level2 = level -> 
                                 if !i2_candidat = None then 
-                                  i2_candidat := Some i2;
+                                  i2_candidat := Some (nexti, i2);
                                 
                                 (match get_next_node g nexti with
                                 (* todo? assert the s = "[endswitch]" *)
@@ -326,9 +326,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                             )
                         (* goto  or return *)
                         | _ -> 
-                            let i2 = find_until_good_brace g level nodei in
+                            let (lasti, i2) = 
+                              find_until_good_brace g level nodei in
                             if !i2_candidat = None then 
-                              i2_candidat := Some i2;
+                              i2_candidat := Some (lasti, i2);
                             
                         )
   
@@ -337,7 +338,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                     | LastCurrentNode nodei -> 
                         (match get_next_node g nodei with
                         | nexti, SeqEnd (level2,i2) when level2 = level -> 
-                            i2_candidat := Some i2;
+                            i2_candidat := Some (nexti, i2);
                             (match get_next_node g nexti with
                             | nextii, Fake -> 
                                endswitchi_candidat := Some nextii
@@ -354,10 +355,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                let return, i2 = 
                  match !endswitchi_candidat, !i2_candidat  with 
                    (* take first one *)
-                 | Some x, Some i2 -> 
+                 | Some x, Some (lasti, i2) -> 
                      add_visited x;
                      LastCurrentNode x, i2
-                 | None,  Some i2 -> NoNextNode (-1), i2
+                 | None,  Some (lasti, i2) -> NoNextNode lasti, i2
                  | _ -> raise Impossible
                in
               (Compound compound, [i1;i2]), return
