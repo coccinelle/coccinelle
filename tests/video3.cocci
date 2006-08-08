@@ -17,12 +17,12 @@ statement S;
       T v;
 //+   T *v;
       ...
--     if (copy_from_user(v,arg,size_of(v)) != 0) return ...;
+-     if (copy_from_user(v,arg,sizeof(v)) != 0) return ...;
       <...
 -     v.fld
 +     v->fld
       ...>
-?-    if (copy_to_user(arg,v,size_of(v))) return ...;
+?-    if (copy_to_user(arg,v,sizeof(v))) return ...;
       ...
      }
     ...>

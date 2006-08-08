@@ -3,7 +3,7 @@ void *arg)
 {
    if (cmd == VIDIOCGTUNER) {
      struct video_tuner v;
-     if (copy_from_user(v, arg, size_of(v)) != 0)
+     if (copy_from_user(v, arg, sizeof(v)) != 0)
        ret(-EFAULT); else {}
    }
 }
