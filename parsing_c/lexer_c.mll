@@ -336,8 +336,10 @@ rule token = parse
 
 
  (* typedef *)
+(* still needed ? my LALR(k) tech is not enough ? 
   | "u32" -> Tint (tokinfo lexbuf) 
   | "u16" -> Tint (tokinfo lexbuf) 
+*)
 
  (* struct def component *)
   | "ACPI_STATE_COMMON"            -> TCommentAttrOrMacro (tokinfo lexbuf) 

@@ -6,7 +6,7 @@ open Lib_engine
 let pp = Common.pp 
 
 let pp_binding_kind2 = function
-  | ParenVal s -> pp ("parenvar(" ^ s ^ ")")
+  | ParenVal s -> pp ("pv(" ^ s ^ ")")
   | NormalMetaVal x -> Pretty_print_c.pp_binding_kind x
   | LabelVal xs -> 
       begin
