@@ -22,6 +22,6 @@ statement S;
 -     v.fld
 +     v->fld
       ...>
-?-    if (copy_to_user(arg,&v,size_of(v))) return E2;
+//?-    if (copy_to_user(arg,&v,size_of(v))) return E2;
     ...>
   }
