@@ -158,7 +158,7 @@ static int az_setfreq(struct az_device *dev, unsigned long frequency)
 	return 0;
 }
 
-static int az_ioctl(struct video_device *dev, /*unsigned*/ int cmd, void *arg)
+static int az_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
 {
   struct az_device *az=dev->priv;
   
