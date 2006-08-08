@@ -420,8 +420,6 @@ let eq_trip (s,th,wit) (s',th',wit') =
 
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
-let triples_union trips trips' = unionBy compare eq_trip trips trips';;
-
 let triples_conj trips trips' =
   let (shared,trips) =
     List.partition (function t -> List.mem t trips') trips in
@@ -624,6 +622,30 @@ let unwitify trips =
 (* END OF NEGATION (NegState/Wit style)   *)
 (* ********************************** *)
 
+(* This function relies on y being sorted by state! *)
+let double_negate y =
+  let do_one states y =
+    let arg = triples_wit_complement states (witify y) in
+    unwitify (triples_wit_complement states arg) in
+  let rec loop = function
+      [] -> []
+    | ((s,_,_) as t)::rest ->
+	match loop rest with
+	  [] -> [[t]]
+	| (((s1,_,_)::_) as g1)::rest ->
+	    if s = s1 then (t::g1)::rest else [t]::(g1::rest)
+	| _ -> failwith "not possible" in
+  let res =
+    concatmap
+      (function
+	  [x] -> [x]
+	| ((s,_,_)::_) as y -> do_one [s] y
+	| _ -> failwith "not possible")
+      (loop y) in
+  res
+
+let triples_union trips trips' =
+  unionBy compare eq_trip trips trips';;
 
 let triples_witness x trips = 
   let mkwit ((s,th,wit) as t) =
@@ -699,28 +721,6 @@ let pre_forall dir (grp,_,states) y all =
     [] -> []
   | _ -> foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
 
-(* This function relies on y being sorted by state! *)
-let double_negate y =
-  let do_one states y =
-    let arg = triples_wit_complement states (witify y) in
-    unwitify (triples_wit_complement states arg) in
-  let rec loop = function
-      [] -> []
-    | ((s,_,_) as t)::rest ->
-	match loop rest with
-	  [] -> [[t]]
-	| (((s1,_,_)::_) as g1)::rest ->
-	    if s = s1 then (t::g1)::rest else [t]::(g1::rest)
-	| _ -> failwith "not possible" in
-  let res =
-    concatmap
-      (function
-	  [x] -> [x]
-	| ((s,_,_)::_) as y -> do_one [s] y
-	| _ -> failwith "not possible")
-      (loop y) in
-  res
-
 (* drop_negwits will call setify *)
 let satEX dir count m s = pre_exist dir count m s;;
 
@@ -731,13 +731,6 @@ let satAX dir count m s =
   loop s count
 ;;
   
-
-let rec clean = function
-    [] -> []
-  | ((s,th,[]) as first)::(s',th',wit')::rest when s = s' && th = th' ->
-      clean (first::rest)
-  | x::xs -> x::(clean xs)
-
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU dir ((_,_,states) as m) s1 s2 = 
   if s1 = []
@@ -750,9 +743,9 @@ let satEU dir ((_,_,states) as m) s1 s2 =
 	[] -> y
       |	new_info ->
 	  ctr := !ctr + 1;
+	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir 1 m new_info in
 	  let res = triples_union y (triples_conj s1 first) in
-	  (*let res = clean res in*)
 	  let new_info = setdiff res y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
@@ -879,6 +872,12 @@ let satLabel label required p =
 	else rest)
     [] triples
 
+let print_required required =
+  Printf.printf "required\n";
+  List.iter
+    (function reqd -> print_generic_substitution reqd; Format.print_newline())
+    required
+
 (* **************************** *)
 (* End of environment functions *)
 (* **************************** *)
@@ -928,6 +927,7 @@ let rec satloop keep_negwits required ((grp,label,states) as m) phi env
 	    let new_required = extend_required s2 required in
 	    satEU dir m (loop keep_negwits new_required phi1) s2)
     | A.AU(dir,phi1,phi2)      ->
+	(*print_required required;*)
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in

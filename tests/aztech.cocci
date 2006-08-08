@@ -6,7 +6,7 @@ identifier ioctl, dev, cmd, arg;
   ioctl(
 -       struct video_device *dev,
 +       struct inode *inode, struct file *file,
-	int cmd, void *arg) { // cmd was unsigned int
+	unsigned int cmd, void *arg) {
 +   struct video_device *dev = video_devdata(file);
     ...
   }
@@ -20,8 +20,8 @@ identifier v,fld;
 
   ioctl(...) {
     <...
-      T v;
-//+     T *v = arg;
+-     T v;
++     T *v = arg;
       ...
 -     if (copy_from_user(&v,arg,sizeof(v))) return ...;
       <...
@@ -50,8 +50,8 @@ statement S;
 
   ioctl(...) {
     <...
-      T v;
-//+   T *v = arg;
+-     T v;
++     T *v = arg;
       <...
 (
 -     v.fld
