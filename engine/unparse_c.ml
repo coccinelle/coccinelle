@@ -138,6 +138,21 @@ let pp_program file x =
      (*old: pr info.str *)
      let s = info.str in
 
+     (* UGLY trick *)
+     let s = 
+       if Ast_c.is_al_info info 
+       then
+         (match s with
+         | "char" | "short" | "int" | "double" | "float" | "long" 
+         | "struct" | "union" | "signed" | "unsigned" 
+         | "const" | "volatile"
+           -> s ^ " "
+
+         | x -> x
+         )
+       else s
+     in
+
      match mcode with
      | Ast_cocci.MINUS (any_xxs) -> 
          Unparse_cocci.pp_list_list_any 

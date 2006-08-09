@@ -4,7 +4,7 @@ static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
   
   if (cmd == VIDIOCGTUNER) {
     struct video_tuner v;
-    if (copy_from_user(v, arg, sizeof(v)) != 0)
+    if (copy_from_user(&v, arg, sizeof(v)) != 0)
       return -EFAULT;
     if (v.tuner)	/* Only 1 tuner */
       return -EINVAL;
@@ -19,7 +19,7 @@ static int typhoon_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
   }
   else if (cmd == VIDIOCSTUNER) {
     struct video_tuner v;
-    if (copy_from_user(v, arg, sizeof(v)))
+    if (copy_from_user(&v, arg, sizeof(v)))
       return -EFAULT;
     if (v.tuner != 0)
       return -EINVAL;

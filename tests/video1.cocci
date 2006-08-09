@@ -13,8 +13,8 @@ statement S;
         struct video_device *dev,
         unsigned int cmd, void *arg) {
     <...
-      T v;
-//+   T *v;
+-     T v;
++     T *v;
       ...
 (
 -     if (copy_from_user(&v,arg,sizeof(v)) != 0) return ...;

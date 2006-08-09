@@ -335,8 +335,66 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op,lop,rop) ->
 
 (* ------------------------------------------------------------------------- *)
 and (distribute_mck_type: Ast_c.fullType distributer) = fun (op, lop, rop) ->
- fun decl ->
-  raise Todo
+ fun ((qu, iiqu),(ty, iity)) ->
+  (* UGLY *)
+
+  (* TODO in fact for pointer, the qualifier is after the type *)
+   let (iiqu', lop) = 
+     match iiqu with
+     | [] when not qu.const && not qu.volatile -> [], lop
+     | [i1] when xor qu.const qu.volatile -> 
+         [i1 +> op +> lop], nothing_left
+     | [i1;i2] when qu.const && qu.volatile -> 
+         [i1 +> op +> lop; i2 +> op], nothing_left
+     | _ -> raise Impossible
+   in
+   (qu, iiqu'), 
+    (match ty, iity with
+    | (ParenType t, _)                           -> 
+        failwith "not handling parentype"
+    | (Array (eopt, t), [i1;i2])                 -> 
+        failwith "not handling array"
+    | (FunctionType (returnt, paramst), [i1;i2]) -> 
+        failwith "not handling functiontype"
+    | (Pointer (_,(Pointer _,_)), [i])                           -> 
+        failwith "not handling pointer"
+
+    (* sure that simple pointer, of if complex then catch in recursive call *)
+    | (Pointer t, [i])                           -> 
+        Pointer (distribute_mck_type (op, lop, nothing_right) t),
+        [i +> op +> rop]
+
+    | (StructUnion (sopt, (su, fields)),iis) -> 
+        failwith "not handling structunion"
+
+    | (Enum  (sopt, enumt), iis) -> 
+        failwith "not handling enum"
+
+    | (BaseType base, iis) -> 
+        BaseType base,
+        (match iis with
+        | [] -> raise Impossible
+        | [i] -> [i +> op +> lop +> rop]
+        | x::y::xs -> 
+            let (head, middle, tail) = head_middle_tail (x::y::xs) in
+            [head +> op +> lop] @ List.map op middle @ [tail +> op +> rop]
+        )
+          
+    | (StructUnionName (s, structunion), [i1;i2]) -> 
+        StructUnionName (s, structunion), [i1 +> op +> lop; i2 +> op +> rop]
+          
+    | (EnumName  s, [i1;i2]) -> 
+        EnumName s, [i1 +> op +> lop; i2 +> op +> rop]
+
+    | (TypeName (s), [i1]) -> 
+        TypeName s, [i1 +> op +> lop +> rop]
+      
+
+        
+
+    | _ -> raise Impossible
+    )
+   
   
 
 (* ------------------------------------------------------------------------- *)
