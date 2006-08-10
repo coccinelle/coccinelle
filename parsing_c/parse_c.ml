@@ -1,8 +1,9 @@
 open Fullcommon
 
 
-(******************************************************************************)
-
+(*****************************************************************************)
+(* Stat *)
+(*****************************************************************************)
 type parsing_stat = {
     filename: filename;
     mutable passing_through_lines: int;
@@ -12,15 +13,16 @@ type parsing_stat = {
     mutable bad: int;
   } 
 
-
 (* 
-  todo: stat per dir ?  give in terms of func_or_decl numbers:   
-    nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
-  note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les 
-  valeurs alors on parsera correctemet tout le fichier et pourtant y'aura 
-  aucune def  et donc aucune couverture en fait.   
-  ==> TODO evaluer les parties non parsé ? 
-*)
+ * todo: stat per dir ?  give in terms of func_or_decl numbers:   
+ *   nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
+ *
+ * note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les 
+ * valeurs alors on parsera correctemet tout le fichier et pourtant y'aura 
+ * aucune def  et donc aucune couverture en fait.   
+ * ==> TODO evaluer les parties non parsé ? 
+ *)
+
 let print_parsing_stat_list = fun statxs -> 
   let total = (List.length statxs) in
   let perfect = 
@@ -61,19 +63,24 @@ let print_parsing_stat_list = fun statxs ->
 
 
 
-(******************************************************************************)
+(*****************************************************************************)
+(* wrappers *)
+(*****************************************************************************)
 let pr2 s = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
   else ()
     
 
-(******************************************************************************)
 let wrap_lexbuf_info lexbuf     = 
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
-let wrap_parse_info  parse_info = (parse_info.str,       parse_info.charpos)    
 
-(******************************************************************************)
+let wrap_parse_info  parse_info = 
+  (parse_info.str, parse_info.charpos)
+
+(*****************************************************************************)
+(* lexing only *)
+(*****************************************************************************)
 
 let tokens file = 
  with_open_infile file (fun chan -> 
@@ -112,7 +119,7 @@ let tokens_string string =
     | Lexer_c.Lexical s -> failwith ("lexical error " ^ s ^ "\n =" )
     | e -> raise e
 
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 
 (* because ocamllex force us to do it that way :( cant return a pair to 
    ocamlyacc :( *)
@@ -206,28 +213,31 @@ let info_from_token = function
   | Parser_c.THigherOrderExprExprExprStatement (i) -> i
 
 
-(******************************************************************************)
+(*****************************************************************************)
+(* parsing *)
+(*****************************************************************************)
 let parse file = 
   let lexbuf = Lexing.from_channel (open_in file) in
   let result = Parser_c.main Lexer_c.token lexbuf in
   result
 
 
-let parse_gen parsefunc s = 
-  let lexbuf = Lexing.from_string s in
-  let result = parsefunc Lexer_c.token lexbuf in
-  result
-
+(* old: 
+ * let parse_gen parsefunc s = 
+ *   let lexbuf = Lexing.from_string s in
+ *   let result = parsefunc Lexer_c.token lexbuf in
+ *   result
+*)
 
 
 let parse_gen parsefunc s = 
 
   let toks = tokens_string s in 
   let toks = toks +> List.filter (function 
-      ( (Parser_c.TComment _ 
-         | Parser_c.TCommentSpace _ 
-         | Parser_c.TCommentCpp _ 
-         | Parser_c.TCommentAttrOrMacro _)) -> false 
+    | Parser_c.TComment _ 
+    | Parser_c.TCommentSpace _ 
+    | Parser_c.TCommentCpp _ 
+    | Parser_c.TCommentAttrOrMacro _ -> false 
     | _ -> true) 
   in
 
@@ -244,9 +254,7 @@ let parse_gen parsefunc s =
               !cur_tok
           )in
   let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
-
   let result = parsefunc lexer_function lexbuf_fake in
-
   result
 
 
@@ -254,7 +262,7 @@ let parse_gen parsefunc s =
 (* let _ = parse_gen Parser_c.statement "(struct us_data*)psh->hostdata = NULL;" *)
 
 
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 let parse_print_error file = 
   let chan = (open_in file) in
   let lexbuf = Lexing.from_channel chan in
@@ -262,7 +270,7 @@ let parse_print_error file =
     lexbuf 
       +> Parser_c.main 
           Lexer_c.token
-          (* (fun x -> Lexer_c.token x +> (fun v -> pr2 (Dumper.dump v); v))  *)
+          (* (fun x -> Lexer_c.token x +> (fun v -> pr2 (Dumper.dump v); v)) *)
       +>  (fun x -> x) 
            (* +> (fun x -> pr2 (Dumper.dump x);x ) *)
      (*   +> Semantic.check *)
@@ -280,12 +288,13 @@ let parse_print_error file =
 
 
 
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 open Parser_c
 
 
 (* note: as now go in 2 pass,  there is first all the error message of 
-   the lexer, and then the error of the parser. It is no more interwinded *)
+ * the lexer, and then the error of the parser. It is no more interwinded.
+ *)
 let parse_print_error_heuristic file = 
 
   let table = Common.full_charpos_to_pos file in
@@ -297,34 +306,55 @@ let parse_print_error_heuristic file =
   Lexer_parser.lexer_reset_typedef(); 
   let toks = tokens file in 
   let toks = toks +> List.filter (function 
-      ( (TComment _ 
-        | TCommentSpace _ 
-        | TCommentCpp _ 
-        | TCommentAttrOrMacro _)) -> false 
+    | TComment _ 
+    | TCommentSpace _ 
+    | TCommentCpp _ 
+    | TCommentAttrOrMacro _ -> false 
     | _ -> true) 
   in
 
 
-  (* normally we have:
-      toks = (reverse passed_tok) ++ cur_tok ++ all_tokens   
-        after the call to pop2.
-      toks = (reverse passed_tok) ++ all_tokens   
-        at the and of the lexer_function call.
-     At the very beginning, cur_tok and all_tokens overlap, but not after.
-     At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
-     It is complicated because we cant modify ocamllex and ocamlyacc. 
-     As we want some extended lexing tricks, we have to use such globals. 
+  (* The variable that follows allow for error recovery.
+   *
+   * They are now also used for my lalr(k) technique. Indeed They store 
+   * the futur and previous tokens that were parsed, and so provide enough
+   * context information for powerful lex trick.
+   *
+   * normally we have:
+   * toks = (reverse passed_tok) ++ cur_tok ++ all_tokens   
+   *    after the call to pop2.
+   * toks = (reverse passed_tok) ++ all_tokens   
+   *     at the and of the lexer_function call.
+   * At the very beginning, cur_tok and all_tokens overlap, but not after.
+   * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
+   * It is complicated because we cant modify ocamllex and ocamlyacc. 
+   * As we want some extended lexing tricks, we have to use such globals. 
    *)
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
   let passed_tok = ref [] in
 
   (* normally equal to passed_tok, but this one is used only to put good stuff 
-     in NotParsedCorrectly *)
+   *  in NotParsedCorrectly 
+   *)
   let passed_tok2 = ref [] in 
 
+
+  (* --------------------------------------------------------------------- *)
+  (* hacked_lex *)
+  (* --------------------------------------------------------------------- *)
+
+  (* LALR(k) trick. We can do stuff by adding cases in lexer_c.mll, but
+   * it is more general to do it via my LALR(k) tech. Because here we
+   * can transform some token give some context information. So sometimes
+   * it makes sense to transform a token in one context, sometimes not, 
+   * and lex can not provide us this context information.
+   * Note that the order in the pattern matching is important. Do not 
+   * cut/paste.
+   *)
+
   let lexer_function = 
-          (fun xxxxx -> 
+          (fun _ -> 
             if (match !cur_tok with  Parser_c.EOF x -> true | _ -> false)
             then (pr2 "ALREADY AT END"; !cur_tok)
             else
@@ -374,9 +404,16 @@ let parse_print_error_heuristic file =
               try (
               match (v::(take_safe 10 !all_tokens),  !passed_tok ) with
 
-              (*--------------------------------------------------------------*)
+              (* special cases scsi/g_NCR5380 *)
+              | (TIdent ("ANDP",i1)::TIdent (_,_)::_,   _) -> 
+                  TComma i1
+
+              | (TIdent ("ANDP",i1)::TOPar _::_,   _) -> 
+                  TComma i1
+
+              (*-------------------------------------------------------------*)
               (* stringification of ident *)
-              (*--------------------------------------------------------------*)
+              (*-------------------------------------------------------------*)
               | (TIdent (s,i1)::_,   TOPar _::TIdent ("printk", _)::_) -> 
                   TString ((s, Ast_c.IsChar), i1)
 
@@ -388,9 +425,9 @@ let parse_print_error_heuristic file =
 
 
                    
-              (*--------------------------------------------------------------*)
+              (*-------------------------------------------------------------*)
               (* typedef inference *)
-              (*--------------------------------------------------------------*)
+              (*-------------------------------------------------------------*)
                 (*  xx xx *)
               | (TIdent (s,i1)::TIdent (s2,i2)::_  , _)
                 when (((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true)) && 
@@ -457,10 +494,10 @@ let parse_print_error_heuristic file =
                   Lexer_parser.add_typedef s;
                   TypedefIdent (s, i1)
 
-               (*--------------------------------------------------------------*)
+               (*------------------------------------------------------------*)
                (* if  'x*y' maybe an expr, maybe just a classic multiplication *)
                (* but if have a '=', or ','   I think not *)
-               (*--------------------------------------------------------------*)
+               (*------------------------------------------------------------*)
 
                 (* static xx * yy  *)
               | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , (Tregister _|Tstatic _   |Tvolatile _|Tconst _)::_)
@@ -598,21 +635,24 @@ let parse_print_error_heuristic file =
 
 
 
-(* can have sizeof on expression
+             (* can have sizeof on expression
               | (Tsizeof::TOPar::TIdent s::TCPar::_,   _) -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
                   Tsizeof
-*)
+              *)
 
-              (*--------------------------------------------------------------*)
+              (*-------------------------------------------------------------*)
               (* higher order macro, iterator macro, debug macro *)
-              (*--------------------------------------------------------------*)
-               (* todo: if ident contain a  for_each,  then certainly a macro 
-                    at least do a pr2 ?
+              (*-------------------------------------------------------------*)
+               (* todo: if ident contain a  for_each,  then certainly a macro.
+                * but to be sure should look if there is a { after the (, but
+                * it requires to count the '('. Because this can be expensive,
+                * maybe can do that only when the token contain "for_each".
+                * less: do a pr2 when encounter a for_each ?
                *)
 
-              | (TIdent (s, i1)::TOPar _::Tif _::_ , _)
+              | (TIdent (s, i1)::TOPar _::Tif _::_ ,     _)
                   (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
                 -> 
                  pr2 ("CERTAINLY HIGHER ORDER MACRO, transforming: " ^ s);
@@ -628,10 +668,11 @@ let parse_print_error_heuristic file =
          if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
          v)
   in
+  (* --------------------------------------------------------------------- *)
 
   let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
 
-
+  (* error reporting, stat, and recovery *)
 
   let current_line () = 
     let (info,_) = info_from_token !cur_tok in
@@ -662,10 +703,13 @@ let parse_print_error_heuristic file =
 
 
 
+  (* --------------------------------------------------------------------- *)
+  (* main loop *)
+  (* --------------------------------------------------------------------- *)
   let rec loop () =
 
-    let _ = if !Lexer_parser._handle_typedef = false then pr2 "FALSE _handle_typedef, not normal if dont come from exn" in
-    let _ = Lexer_parser._handle_typedef := true in  (* normally have to do that only when come from an exception in which case the dt() may not have been done *)
+    if !Lexer_parser._handle_typedef = false then pr2 "FALSE _handle_typedef, not normal if dont come from exn";
+    Lexer_parser._handle_typedef := true;  (* normally have to do that only when come from an exception in which case the dt() may not have been done *)
     (* TODO but if was in scoped scope ? have to let only the last scope *)
     (* Lexer_parser.lexer_reset_typedef (); *)
     Lexer_parser._lexer_hint := Some Lexer_parser.Toplevel;
@@ -747,11 +791,13 @@ let parse_print_error_heuristic file =
 
                   (* perhaps a }; ? *)
                   (* obsolete now, because parser.mly allow empty ';' *)
-                  let v = (try List.hd !all_tokens with _ -> raise End_of_file) in
+                  let v = (try List.hd !all_tokens with _ -> raise End_of_file)
+                  in
                   (match v with
                   | TPtVirg _ -> 
                       pr2 "FOUND SYNC bis, eating } and ;";
-                      let v = (try pop2 all_tokens with _ -> raise End_of_file) in
+                      let v = (try pop2 all_tokens with _ -> raise End_of_file)
+                      in
                       cur_tok := v;
                       passed_tok2 := v::!passed_tok2;
                   | _ -> ()

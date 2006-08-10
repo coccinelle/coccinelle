@@ -6,9 +6,20 @@ open Lexer_parser
 
 open Ast_c (* to factorise tokens, OpAssign, ... *)
 
-(* TODO  
-   stdC: multibyte character ??  
-*)
+(*****************************************************************************)
+(* 
+ * todo?: stdC: multibyte character ??  
+ * todo: certains cas cpp hardcodés peuvent peut etre geré maintenant via
+ *  ma lalr(k) technique.
+ *
+ * subtil: ocamllex use side effect on lexbuf, so must take care. 
+ * For instance must do   
+ *  let info = tokinfo lexbuf in 
+ *  TComment (info +> tok_add_s (comment lexbuf)) 
+ * and not 
+ *   TComment (tokinfo lexbuf +> tok_add_s (comment lexbuf)) 
+ * because of the "wierd" order of evaluation of OCaml.
+ *)
 
 exception Lexical of string
 
@@ -22,16 +33,19 @@ let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 
 }
 
-(******************************************************************************)
+(*****************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
 let digit  = ['0'-'9']
 
 (* not used for the moment *)
-let punctuation = ['!' '"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':' 
+let punctuation = ['!' '"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':'
 		   ';' '<' '=' '>' '?' '[' '\\' ']' '^' '{' '|' '}' '~']
-(* 7 = \a = bell in C *)
+let space = [' ' '\t' '\n' '\r' '\011' '\012' ]
 let additionnal = [ ' ' '\b' '\t' '\011' '\n' '\r' '\007' ] 
-(* this is not the only char allowed !! ex @ and $ ` are valid too*)
+(* 7 = \a = bell in C. this is not the only char allowed !! 
+ * ex @ and $ ` are valid too 
+ *)
+
 let cchar = (letter | digit | punctuation | additionnal) 
 
 
@@ -50,31 +64,31 @@ let sign = ['-' '+']
 let exp  = ['e''E'] sign? dec+
 let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
-(*let space = [' ' '\t' '\n' '\r' '\011' '\012' ]*)
 
 
-(******************************************************************************)
-
+(*****************************************************************************)
 rule token = parse
-  | [' ' '\t' '\n' '\r' '\011' '\012' ]+  { TCommentSpace (tokinfo lexbuf) }
-  | "/*"     { 
-    let info = tokinfo lexbuf in 
-    let s2 = comment lexbuf in 
-    TComment (info +> tok_add_s s2) 
-    }
+
+(* ------------------------------------------------------------------------- *)
+(* spacing/comments *)
+(* ------------------------------------------------------------------------- *)
+
+ | [' ' '\t' '\n' '\r' '\011' '\012' ]+  { TCommentSpace (tokinfo lexbuf) }
+ | "/*" { let i = tokinfo lexbuf in TComment (i +> tok_add_s (comment lexbuf))}
 
 
+(* ------------------------------------------------------------------------- *)
+(* cpp part 1 *)
+(* ------------------------------------------------------------------------- *)
 
-(******************************************************************************)
+ (* old:
+  *   | '#'		{ endline lexbuf} // should be line, and not endline 
+  *   and endline = parse  | '\n' 	{ token lexbuf}  
+  *                        |	_	{ endline lexbuf} 
+  *)
 
-(* old:
-    | '#'		{ endline lexbuf} // should be line, and not endline 
-    and endline = parse  | '\n' 	{ token lexbuf}  
-                         |	_	{ endline lexbuf} 
-*)
-
-  (* C++ comment, allowed in gccext,  but normally they are deleted by cpp, 
-     so need this here only when dont call cpp before  *)
+  (* C++ comment, allowed in gccext,  but normally they are deleted by cpp.
+   * So need this here only when dont call cpp before/  *)
   | "//" [^'\r''\n' '\011']*    { TComment (tokinfo lexbuf) } 
 
 
@@ -83,30 +97,26 @@ rule token = parse
   | "#pragma alloc_text" [^'\n']* '\n'          { TCommentCpp (tokinfo lexbuf)}
 
 
-(* todo?:
- have found a # #else  in "newfile-2.6.c",  legal ?   and also a  #/* ... 
-   => just "#" -> token {lexbuf} (that is ignore)
- y'a des (en fait 1) #elif  sans rien  apres
- y'a des (en fait 1) #error sans rien  apres
- y'a des (2) mov dede, #xxx    qui genere du coup exn
- car entouré par des #if 0
- => make as for comment, call a comment_cpp that when #endif finish the comment
-    and if other cpp stuff raise exn
- y'a des (=~10) #if(xxx)  ou le ( est collé direct
- y'a des include"" et include<
- y'a des ` (1)  (derriere un #ifndef linux)
-
-*)
+  (* todo?:
+   *  have found a # #else  in "newfile-2.6.c",  legal ?   and also a  #/* ... 
+   *    => just "#" -> token {lexbuf} (that is ignore)
+   *  y'a 1 #elif  sans rien  apres
+   *  y'a 1 #error sans rien  apres
+   *  y'a 2  mov dede, #xxx    qui genere du coup exn car entouré par des #if 0
+   *  => make as for comment, call a comment_cpp that when #endif finish the
+   *   comment and if other cpp stuff raise exn
+   *  y'a =~10  #if(xxx)  ou le ( est collé direct
+   *  y'a des include"" et include<
+   *  y'a 1 ` (derriere un #ifndef linux)
+   *)
 
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)           
       { let info = tokinfo lexbuf in 
-        let s2 =  cpp_eat_until_nl lexbuf in 
-        TCommentCpp (info +> tok_add_s s2) }
+        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
 
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' 
       { let info = tokinfo lexbuf in 
-        let s2 =  cpp_eat_until_nl lexbuf in 
-        TCommentCpp (info +> tok_add_s s2) }
+        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
       { TCommentCpp (tokinfo lexbuf) }
@@ -129,8 +139,7 @@ rule token = parse
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
       { let info = tokinfo lexbuf in 
-        let s2 = cpp_comment_if_0 lexbuf in 
-        TCommentCpp (info +> tok_add_s s2) }
+        TCommentCpp (info +> tok_add_s (cpp_comment_if_0 lexbuf)) }
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
   | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
@@ -141,36 +150,39 @@ rule token = parse
       { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "if" [' ' '\t']+                                           
       { let info = tokinfo lexbuf in 
-        let s2 =  cpp_eat_until_nl lexbuf in 
-        TCommentCpp (info +> tok_add_s s2) }
+        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
   | "#" [' ' '\t']* "if" '('                
       { let info = tokinfo lexbuf in 
-        let s2 =  cpp_eat_until_nl lexbuf in 
-        TCommentCpp (info +> tok_add_s s2) }
+        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
   | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          
       { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     
       { TCommentCpp (tokinfo lexbuf) }
 
   (* there is a file in 2.6 that have this *)
-  | "##" [' ' '\t']* "else" [' ' '\t' '\n']                                     { TCommentCpp (tokinfo lexbuf) }
+  | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* "ident" [' ' '\t']+                                     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "ident" [' ' '\t']+                                     
+      { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* '\n'                                     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* '\n'
+      { TCommentCpp (tokinfo lexbuf) }
 
    (* special_for_no_exn: in atm/ambassador.c *)
-  | "#include UCODE(" [^'\n']+  '\n'                          { TCommentCpp (tokinfo lexbuf) }
+  | "#include UCODE(" [^'\n']+  '\n'
+      { TCommentCpp (tokinfo lexbuf) }
 
-  | "\\" '\n'                                     { TCommentSpace (tokinfo lexbuf) }
-(*******************************************************************************)
+  | "\\" '\n'
+      { TCommentSpace (tokinfo lexbuf) }
+ 
+ (* ---------------- *)
 
-
-
- (* struct def component *)
+ (* struct def component. todo? generalize via LALR(k) tech by using a
+  *  "in_struct"  context_info.
+  *)
   | "ACPI_COMMON_OBJ_INFO;"        { TCommentAttrOrMacro (tokinfo lexbuf) }
 
-  | "CS_OWNER" [' ' '\t']+ "CS_THIS_MODULE"            { TCommentAttrOrMacro (tokinfo lexbuf) }
+  | "CS_OWNER" [' ' '\t']+ "CS_THIS_MODULE" { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 
  (* misc *)
@@ -179,14 +191,14 @@ rule token = parse
   | "ACPI_MODULE_NAME" [' ' '\t']* "(" [^'\n']+ '\n' { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 
-
  (* common macro of device driver *)
-
  | "I2C_CLIENT_INSMOD;"   { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 
-(* less needed now that allow type in arguments, and that allow mix decl and statement inside func *)
-(* kernel macro *)
+ (* kernel macro: (less needed now that allow type in arguments, and that allow
+  *  mix decl and statement inside func)
+  *)
+
   | "static" [' ' '\t']+ ((['A'-'Z'] (['A'-'Z' '_'] | digit) *) as id)  [' ' '\t']* "(" [^'\n' ';']+ ';' [' ' '\t']* '\n' { 
         (match id with
         | "DECLARE_MUTEX"
@@ -223,8 +235,8 @@ rule token = parse
   | "EXPORT_NO_SYMBOLS;" { TCommentAttrOrMacro (tokinfo lexbuf) }
 
   (* normally can be handled,  but often the module_exist does not have a trailing ;  :(  *)
-  | "module_exit(" letter (letter | digit)* ")"             { TCommentAttrOrMacro (tokinfo lexbuf) }
-  | "module_init(" letter (letter | digit)* ")"             { TCommentAttrOrMacro (tokinfo lexbuf) }
+  | "module_exit(" letter (letter | digit)* ")"  { TCommentAttrOrMacro (tokinfo lexbuf) }
+  | "module_init(" letter (letter | digit)* ")"  { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 (*
 "DECLARE_TASKLET" 
@@ -236,7 +248,9 @@ rule token = parse
   | "DECLARE_COMPLETION" [' ' '\t']* "(" [^'\n']+ '\n'        { TCommentAttrOrMacro (tokinfo lexbuf) }
 
 
-(******************************************************************************)
+(* ------------------------------------------------------------------------- *)
+(* C symbols *)
+(* ------------------------------------------------------------------------- *)
    (* stdC:
     ...   &&   -=   >=   ~   +   ;   ]    
     <<=   &=   ->   >>   %   ,   <   ^    
@@ -291,7 +305,9 @@ rule token = parse
   | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
  
 
-(******************************************************************************)
+(* ------------------------------------------------------------------------- *)
+(* C keywords and ident *)
+(* ------------------------------------------------------------------------- *)
 
   | letter (letter | digit) * 
    (* StdC: must handle at least name of length > 509, but can truncate to 31 
@@ -335,6 +351,9 @@ rule token = parse
        | "__attribute__" -> Tattribute info
 
 
+(* ------------------------------------------------------------------------- *)
+(* cpp part 2 *)
+(* ------------------------------------------------------------------------- *)
  (* typedef *)
 (* still needed ? my LALR(k) tech is not enough ? 
   | "u32" -> Tint (tokinfo lexbuf) 
@@ -346,7 +365,7 @@ rule token = parse
   | "ACPI_PARSE_COMMON"            -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "ACPI_COMMON_DEBUG_MEM_HEADER" -> TCommentAttrOrMacro (tokinfo lexbuf) 
 
- (* attributes *)
+ (* attributes. could perhaps generalize via "__.*" *)
   | "__init"                       -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "__exit"                       -> TCommentAttrOrMacro (tokinfo lexbuf) 
 
@@ -382,58 +401,51 @@ rule token = parse
 
   | " __pmac"  -> TCommentAttrOrMacro (tokinfo lexbuf)  
 
- (* foreach like macro *)
+ (* foreach like macro. here too maybe could generalize via ".*for_each.*" *)
   | "list_for_each"                -> Twhile (tokinfo lexbuf) 
   | "list_for_each_safe"           -> Twhile (tokinfo lexbuf) 
   | "list_for_each_prev"           -> Twhile (tokinfo lexbuf) 
   | "list_for_each_entry"          -> Twhile (tokinfo lexbuf) 
   | "list_for_each_entry_safe"     -> Twhile (tokinfo lexbuf) 
-
-  | "list_for_each_rcu"    -> Twhile (tokinfo lexbuf) 
-
   | "list_for_each_entry_continue" -> Twhile (tokinfo lexbuf) 
   | "list_for_each_entry_reverse"  -> Twhile (tokinfo lexbuf) 
 
   | "hlist_for_each_entry"         -> Twhile (tokinfo lexbuf) 
   | "hlist_for_each_entry_safe"    -> Twhile (tokinfo lexbuf) 
 
+  | "list_for_each_rcu"    -> Twhile (tokinfo lexbuf) 
+  | "list_for_each_continue_rcu" -> Twhile (tokinfo lexbuf) 
   | "for_each_cpu"                 -> Twhile (tokinfo lexbuf) 
   | "for_each_online_cpu"          -> Twhile (tokinfo lexbuf) 
   | "for_each_cpu_mask"            -> Twhile (tokinfo lexbuf) 
   | "for_each_process"             -> Twhile (tokinfo lexbuf) 
-
   | "gadget_for_each_ep"           -> Twhile (tokinfo lexbuf) 
   | "pci_for_each_dev"             -> Twhile (tokinfo lexbuf) 
-
-  | "for_all_sbusdev"             -> Twhile (tokinfo lexbuf) 
   | "for_each_sbus"  -> Twhile (tokinfo lexbuf) 
   | "for_each_sbusdev" -> Twhile (tokinfo lexbuf) 
   | "for_each_rx" -> Twhile (tokinfo lexbuf) 
-
   | "for_each_esp" -> Twhile (tokinfo lexbuf) 
-
   | "for_each_online_fc_channel" -> Twhile (tokinfo lexbuf) 
-  | "FOR_EACH_QUEUED_ELEMENT" -> Twhile (tokinfo lexbuf) 
-
   | "snd_pcm_group_for_each"       -> Twhile (tokinfo lexbuf) 
   | "bio_for_each_segment"         -> Twhile (tokinfo lexbuf) 
   | "__bio_for_each_segment"         -> Twhile (tokinfo lexbuf) 
+  | "rq_for_each_bio" -> Twhile (tokinfo lexbuf) 
+
+  | "for_all_sbusdev"             -> Twhile (tokinfo lexbuf) 
+  | "FOR_EACH_QUEUED_ELEMENT" -> Twhile (tokinfo lexbuf) 
   | "ITERATE_RDEV"         -> Twhile (tokinfo lexbuf) 
   | "ITERATE_MDDEV"        -> Twhile (tokinfo lexbuf) 
   | "ITERATE_RDEV_PENDING" -> Twhile (tokinfo lexbuf) 
   | "ITERATE_RDEV_GENERIC" -> Twhile (tokinfo lexbuf) 
 
-  | "rq_for_each_bio" -> Twhile (tokinfo lexbuf) 
-  | "list_for_each_continue_rcu" -> Twhile (tokinfo lexbuf) 
-
- (* higher order, debug like macro *)
+  (* higher order, debug like macro *)
   | "DBGINFO" -> THigherOrderMacro (tokinfo lexbuf) 
   | "DBGPX" -> THigherOrderMacro (tokinfo lexbuf) 
   | "DFLOW" -> THigherOrderMacro (tokinfo lexbuf) 
-(*  | "DBG" { THigherOrderMacro (tokinfo lexbuf) } *)
+  (*  | "DBG" { THigherOrderMacro (tokinfo lexbuf) } *)
     (* old: | "DBG" [' ' '\t']* "(" '"' [^')' '"' ]+ '"' ')'       { TCommentAttrOrMacro (tokinfo lexbuf) } *)
 
- (* special higher order, debug like macro *)
+  (* special higher order, debug like macro *)
   | "snd_magic_cast" -> THigherOrderExprExprStatement (tokinfo lexbuf) 
   | "IO_STATE" -> THigherOrderExprExprStatement (tokinfo lexbuf) 
 
@@ -443,35 +455,38 @@ rule token = parse
   | "snd_assert"     -> THigherOrderExprStatement (tokinfo lexbuf) 
   | "snd_runtime_check"     -> THigherOrderExprStatement (tokinfo lexbuf) 
 
- (* control-flow extended macro *)
-
+  (* control-flow extended macro *)
   | "TRACE_EXIT" -> Treturn (tokinfo lexbuf) 
 
- (* misc macro *)
+  (* misc macro *)
   (* not needed anymore cos have extended  grammar *)
 
- (* string macro. normally handle quite well by hack_lexed, but some times not enough, if have for instance the XX YY case, so at least add this special case, so no more a XX YY but now a good "XX" YY *)
-  | "KERN_INFO"                  -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
-  | "KERN_ERR"                  -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
-  | "KERN_CRIT"                  -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
-  | "KERN_DEBUG"                  -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
+  (* string macro. normally handle quite well by hack_lexed, but sometimes
+   * not enough, if have for instance the XX YY case, so at least add this
+   * special case, so no more a XX YY but now a good "XX" YY *)
+  | "KERN_INFO"   -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
+  | "KERN_ERR"    -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
+  | "KERN_CRIT"   -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
+  | "KERN_DEBUG"  -> TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
 
 
-
-	 | s -> ((if (s<!>0) = '_' then 
-                  ()(* warning "_ is often reserved for internal use by the compiler and libc\n" () *)
-                 );
-                 (* parse_typedef_fix*)
-                 (* note: now this is no more useful, cos as we use tokens_all, it first parse all as an ident 
-                     and later transform an indent in a typedef. so this job is now done in parse_c.ml
-                 *)
-		 if Lexer_parser.is_typedef s 
-                 then TypedefIdent (s, info) (*pr2 ("TYPEDEF:" ^ s);*) 
-                 else TIdent (s, info)       (*pr2 ("IDENT:" ^ s);*)  
-		)
+  | s -> 
+      ((if (s<!>0) = '_' then 
+        ()(* warning "_ is often reserved for internal use by the compiler and libc\n" () *)
+       );
+        (* parse_typedef_fix*)
+        (* note: now this is no more useful, cos as we use tokens_all, it first parse all as an ident 
+           and later transform an indent in a typedef. so this job is now done in parse_c.ml
+         *)
+	if Lexer_parser.is_typedef s 
+        then TypedefIdent (s, info) (*pr2 ("TYPEDEF:" ^ s);*) 
+        else TIdent (s, info)       (*pr2 ("IDENT:" ^ s);*)  
+       )
       }	
 
-(*******************************************************************************)
+(* ------------------------------------------------------------------------- *)
+(* C constant *)
+(* ------------------------------------------------------------------------- *)
 
   | "'"     { let info = tokinfo lexbuf in let s = char lexbuf   in TChar     ((s,   IsChar),  (info +> tok_add_s (s ^ "'"))) }
   | '"'     { let info = tokinfo lexbuf in let s = string lexbuf in TString   ((s,   IsChar),  (info +> tok_add_s (s ^ "\""))) }
@@ -520,14 +535,14 @@ rule token = parse
 (*  | ['0'-'1']+'b'      { TInt (((tok lexbuf)<!!>(0,-2)) +> int_of_stringbits) } *)
 
 
-(*******************************************************************************)
-  | eof            { let (w,annot) = tokinfo lexbuf in EOF ( { w with Common.str = "EOF"},annot) }
+(* ------------------------------------------------------------------------- *)
+  | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = "EOF"},an) }
 
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 
 
 
-(*******************************************************************************)
+(*****************************************************************************)
 and char = parse
   | (_ as x)                                    "'"  { String.make 1 x }
   | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }     (* TODO, as for octal, do exception  beyond radix exception ? *)
@@ -548,7 +563,7 @@ and char = parse
 
 
 
-(*******************************************************************************)
+(*****************************************************************************)
 (* TODO factorise code with char *)
 and string  = parse
   | '"'                                       { "" }
@@ -577,7 +592,7 @@ and string  = parse
 
 
 
-(*******************************************************************************)
+(*****************************************************************************)
 (* todo?: allow only char-'*' *)
 and comment = parse
   | "*/"     { tok lexbuf   }
@@ -587,13 +602,16 @@ and comment = parse
 
 
 
-(*******************************************************************************)
+(*****************************************************************************)
 (*
- cpp recognize C comments, so when   #define xx (yy) /* comment \n ... */
- then he has already erased the /* comment 
- => dont eat the start of the comment and then get afterwards in the middle of a comment (and so a parse error)
- => have to recognize comments in cpp_eat_until_nl
+ * cpp recognize C comments, so when   #define xx (yy) /* comment \n ... */
+ * then he has already erased the /* comment.
+ * => dont eat the start of the comment and then get afterwards in the middle
+ *  of a comment (and so a parse error).
+ * => have to recognize comments in cpp_eat_until_nl.
 *)
+
+
 and cpp_eat_until_nl = parse
   | "/*"                          { let s = tok lexbuf in let s2 = comment lexbuf in let s3 = cpp_eat_until_nl lexbuf in s ^ s2 ^ s3  } (* fix *)
   | "\n"                          { tok lexbuf } 
@@ -607,24 +625,26 @@ and cpp_comment_if_0 = parse
   | "#" [' ' '\t']* "else"     { tok lexbuf   }
   | "#" [' ' '\t']* "endif"    { tok lexbuf }
 
- (* introduced cos sometimes there is some ifdef in comments inside stuff inside a #if 0 *)
+ (* introduced cos sometimes there is some ifdef in comments inside stuff
+  * inside a #if 0 
+  *)
   | "//" [^'\r''\n' '\011']*   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
 
-
- (* todo?: could do a recursive call ? to allow ifdef inside if 0 *)
+ (* todo: could do a recursive call ? to allow ifdef inside if 0 *)
   | "#" [' ' '\t']* "ifdef"      
   | "#" [' ' '\t']* "ifndef"     
   | "#" [' ' '\t']* "if"         
   | "#" [' ' '\t']* "elif"       { 
     pr2 "GRAVE: a cpp instruction inside a #if 0";
     pr2 "GRAVE: j'arrete la, tant pis pour toi";
-     tok lexbuf 
+    tok lexbuf 
      (* raise (Lexical "GRAVE: a cpp instruction inside a #if 0")  *)
-}
+     }
 
- (* if you introduce new rule, dont forget to add the first symbol here, otherwise 
-    the preceding rule will never fire, hidden by this gigantic [^...]+
- *)
+ (* if you introduce new rule, dont forget to add the first symbol here,
+  * otherwise the preceding rule will never fire, hidden by this gigantic
+  * [^'#' '/']+
+  *)
   | [^ '#' '/']+ { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf (* noteopti: *) }
   | [ '#']   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
   | [ '/']   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }

@@ -92,9 +92,9 @@ let check_add_metavars_binding = function
 
 let with_metaalvars_binding binding f = 
   let oldbinding = !_sg_metavars_binding in
-  let _ = _sg_metavars_binding := binding  in
+  _sg_metavars_binding := binding;
   let res = f _sg_metavars_binding in
-  let _ = _sg_metavars_binding := oldbinding in
+  _sg_metavars_binding := oldbinding;
   res
 
 *)
