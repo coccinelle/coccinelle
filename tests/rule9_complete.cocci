@@ -2,6 +2,7 @@
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
 identifier proc_info_func;
+expression E;
 @@
   proc_info_func (
 +      struct Scsi_Host *hostptr,
@@ -16,6 +17,16 @@ identifier proc_info_func;
 (
 -   if (!hostptr) return ...;
 |
+// first way
+//    if(... 
+//-       || !hostptr
+//      ) return ...;
+//|
+// second way
+//-     if(E || !hostptr) 
+//+     if(E) 
+//       return ...;
+//|
 ?-  if (!hostptr) { return ...; } // should have ... return ...;
 )
     ...
