@@ -23,7 +23,13 @@ identifier v,fld;
 -     T v;
 +     T *v = arg;
       ...
+(
 -     if (copy_from_user(&v,arg,sizeof(v))) return ...;
+|
+-     if (copy_from_user(&v,arg,sizeof(T))) return ...;
+|
+-     if (get_user(v,(T *)arg)) return ...;
+)
       <...
 (
 -     v.fld
@@ -36,7 +42,13 @@ identifier v,fld;
 +     *v
 )
       ...>
-?-    if (copy_to_user(arg,&v,sizeof(v))) return ...;
+(
+-    if (copy_to_user(arg,&v,sizeof(v))) return ...;
+|
+-    if (copy_to_user(arg,&v,sizeof(T))) return ...;
+|
+?-   if (put_user(v,(T *)arg)) return ...;
+)
     ...>
   }
 
@@ -64,13 +76,20 @@ statement S;
 +     *v
 )
       ...>
+(
 -     if (copy_to_user(arg,&v,sizeof(v))) return ...;
+|
+-     if (copy_to_user(arg,&v,sizeof(T))) return ...;
+|
+-     if (put_user(v,(T *)arg)) return ...;
+)
     ...>
   }
 
 @@
 expression E;
 statement S;
+type T;
 // fresh identifier tmp;
 @@
 
@@ -82,8 +101,20 @@ statement S;
 -     if (copy_from_user(&E,arg,sizeof(E))) return ...;
 +     { unsigned long *tmp = arg; E = *tmp; }
 |
+-     if (copy_from_user(&E,arg,sizeof(T))) return ...;
++     { T *tmp = arg; E = *tmp; }
+|
+-     if (get_user(E,(T *)arg)) return ...;
++     { T *tmp = arg; E = *tmp; }
+|
 -     if (copy_to_user(arg,&E,sizeof(E))) return ...;
 +     { unsigned long *tmp = arg; *tmp = E; }
+|
+-     if (copy_to_user(arg,&E,sizeof(T))) return ...;
++     { T *tmp = arg; *tmp = E; }
+|
+-     if (put_user(E,(T *)arg)) return ...;
++     { T *tmp = arg; *tmp = E; }
 )
     ...>
   }

@@ -675,7 +675,6 @@ let triples_witness x trips =
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
 
-(* doesn't call setify, because pre_forall works better without it *)
 let rec pre_exist dir count (grp,_,_) y =
   let rec loop y = function
       0 -> y
@@ -686,7 +685,7 @@ let rec pre_exist dir count (grp,_,_) y =
 	      A.FORWARD -> G.predecessors grp s
 	    | A.BACKWARD -> G.successors grp s) in
 	loop (concatmap exp y) (n - 1) in
-  loop y count
+  setify(loop y count)
 ;;
 
 exception Empty
