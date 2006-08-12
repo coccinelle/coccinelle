@@ -17,11 +17,11 @@ export OCAMLRUNPARAM
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc -g $(ADDONSPATH)
-CAMLOPT=ocamlopt  $(ADDONSPATH) $(OPTFLAGS)
-CAMLLEX = ocamllex
+CAMLC =ocamlc$(OPTBIN) -g $(ADDONSPATH)
+CAMLOPT=ocamlopt$(OPTBIN)  $(ADDONSPATH) $(OPTFLAGS)
+CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep $(ADDONSPATH)
+CAMLDEP = ocamldep$(OPTBIN) $(ADDONSPATH)
 CAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 

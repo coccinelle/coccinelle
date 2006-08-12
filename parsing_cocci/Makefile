@@ -17,11 +17,11 @@ INCLUDE_PATH = -I ../commons
 
 
 # The Caml compilers.
-CAMLC =ocamlc -g
-CAMLOPT = ocamlopt $(OPTFLAGS)
-CAMLLEX = ocamllex
+CAMLC =ocamlc$(OPTBIN) -g
+CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
+CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= menhir --explain
-CAMLDEP = ocamldep
+CAMLDEP = ocamldep$(OPTBIN)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma

@@ -19,11 +19,11 @@ SYSLIBS=str.cma unix.cma
 #for profiling:  -p -inline 0   with OCAMLOPT
 OPTFLAGS=
 
-CAMLC =ocamlc -g $(PP)
-CAMLOPT=ocamlopt  $(PP) $(OPTFLAGS)
-CAMLLEX = ocamllex
+CAMLC =ocamlc$(OPTBIN) -g $(PP)
+CAMLOPT=ocamlopt$(OPTBIN)  $(PP) $(OPTFLAGS)
+CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep $(PP)
+CAMLDEP = ocamldep$(OPTBIN) $(PP)
 CAMLMKTOP=ocamlmktop -g -custom
 
 

@@ -21,11 +21,11 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc -g   $(ADDONSPATH) 
-OCAMLOPT=ocamlopt   $(ADDONSPATH) $(OPTFLAGS)
-OCAMLLEX=ocamllex -ml
+OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) 
+OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
+OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep  $(ADDONSPATH)
+OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 

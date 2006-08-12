@@ -21,11 +21,11 @@ LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma \
 
 
 # The Caml compilers.
-CAMLC =ocamlc -g
-CAMLOPT = ocamlopt $(OPTFLAGS)
-CAMLLEX = ocamllex
+CAMLC =ocamlc$(OPTBIN) -g
+CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
+CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc -v
-CAMLDEP = ocamldep
+CAMLDEP = ocamldep$(OPTBIN)
 
 EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
