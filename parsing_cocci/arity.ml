@@ -253,7 +253,8 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let exp = expression false arity exp in
       make_exp expr tgt arity (Ast0.SizeOfExpr(szf,exp))
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
-      let arity = exp_same (mcode2line szf) (List.map mcode2arity [szf;lp;rp]) in
+      let arity =
+	exp_same (mcode2line szf) (List.map mcode2arity [szf;lp;rp]) in
       let szf = mcode szf in
       let lp = mcode lp in
       let ty = typeC arity ty in
@@ -582,19 +583,24 @@ let rec statement in_nest tgt stm =
       let stms =
 	List.map (function x -> concat_dots (statement in_nest tgt) x)
 	  rule_elem_dots_list in
-      (match List.rev stms with
-	_::xs ->
-	  let dot_check = function
-	    Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	      List.for_all
-		(function s ->
-		  match Ast0.unwrap s with
-		    Ast0.OptStm(_) | Ast0.Dots(_,_) -> true | _ -> false)
-		l in
-	  if anyopt xs dot_check
-	  then fail stm "opt only allowed in the last disjunct"
-      |	_ -> ());
-      Ast0.rewrap stm (Ast0.Disj(starter,stms,ender))
+      (try
+	let unoptd =
+	  List.map
+	    (function x ->
+	      let rebuild =
+		List.map
+		  (function x ->
+		    match Ast0.unwrap x with
+		      Ast0.OptStm(x) -> x
+		    | Ast0.Dots(_,_) -> x
+		    | _ -> failwith "") in
+	      match Ast0.unwrap x with
+		Ast0.DOTS(l) -> Ast0.rewrap x (Ast0.DOTS(rebuild l))
+	      | Ast0.CIRCLES(l) -> Ast0.rewrap x (Ast0.CIRCLES(rebuild l))
+	      | Ast0.STARS(l) -> Ast0.rewrap x (Ast0.STARS(rebuild l)))
+	    stms in
+	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,ender))
+      with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,ender)))
   | Ast0.Nest(starter,rule_elem_dots,ender) ->
       Ast0.rewrap stm
 	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,

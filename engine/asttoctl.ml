@@ -248,20 +248,22 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let make_match n unchecked free_table used_after code =
-  if unchecked
-  then wrapPred n (Lib_engine.Match(code),CTL.Control)
-  else
-    let v = fresh_var() in
-    if contains_modif code
-    then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
-    else
-      let any_used_after =
-	let fvs = Hashtbl.find free_table (FV.Rule_elem code) in
-	List.exists (function x -> List.mem x used_after) fvs in
-      if !onlyModif && not any_used_after
-      then wrapPred n (Lib_engine.Match(code),CTL.Control)
-      else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
+type mode = TopLevel | InDots | NegInNest
+
+let make_match n mode free_table used_after code =
+  match mode with
+    InDots | NegInNest -> wrapPred n (Lib_engine.Match(code),CTL.Control)
+  | _ ->
+      let v = fresh_var() in
+      if contains_modif code
+      then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
+      else
+	let any_used_after =
+	  let fvs = Hashtbl.find free_table (FV.Rule_elem code) in
+	  List.exists (function x -> List.mem x used_after) fvs in
+	if !onlyModif && not any_used_after
+	then wrapPred n (Lib_engine.Match(code),CTL.Control)
+	else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
 let make_raw_match n code = wrapPred n (Lib_engine.Match(code),CTL.Control)
 
@@ -304,8 +306,8 @@ let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
 
 (* notbefore and notafter are the neighbors that should not be found in a ...*)
-(* unchecked of true indicates that the neighbors are not taken into account *)
-let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
+(* mode of true indicates that the neighbors are not taken into account *)
+let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l mode
     notbefore notafter after =
   let n = Ast.get_line l in
   let quantify = quantify n in
@@ -316,21 +318,19 @@ let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
       let rec loop quantified notbefore notafter = function
 	  ([],[]) -> (match after with Some x -> x | None -> wrap n (CTL.True))
 	| ([x],[_]) ->
-	    statement fvinfo quantified x unchecked notbefore notafter after
+	    statement fvinfo quantified x mode notbefore notafter
+	      after
 	| (x::((aft::_) as xs),fv::fvs) ->
 	    let shared = intersectll fv fvs in
 	    let unqshared = get_unquantified quantified shared in
 	    let new_quantified = Common.union_set unqshared quantified in
 	    let make_matches l =
-(*	      if unchecked (* don't bother collecting info that won't be used*)
-	      then []
-	      else*)
-		List.map
-		  (function s ->
-		    statement fvinfo new_quantified s true [] [] None)
-		  l in
+	      List.map
+		(function s ->
+		  statement fvinfo new_quantified s InDots [] [] None)
+		l in
 	    quantify unqshared
-	      (statement fvinfo new_quantified x unchecked notbefore
+	      (statement fvinfo new_quantified x mode notbefore
 		 (make_matches (get_first fvinfo aft))
 		 (Some
 		    (loop new_quantified (make_matches (get_last fvinfo x))
@@ -341,7 +341,7 @@ let rec dots_stmt ((free_table,_,_) as fvinfo) quantified l unchecked
   | Ast.STARS(x) -> failwith "not supported"
 
 and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
-    unchecked notbefore notafter after =
+    mode notbefore notafter after =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
@@ -359,7 +359,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
   let and_opt = and_opt n in
   let make_cond = make_cond n in
   let quantify = quantify n in
-  let make_match = make_match n unchecked free_table used_after in
+  let make_match = make_match n mode free_table used_after in
   let make_raw_match = make_raw_match n in
 
   let make_meta_rule_elem d =
@@ -371,7 +371,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)))
-      |	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d))) ->
+      | Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d))) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
@@ -397,7 +397,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 		  Ast.CONTEXT(Ast.AFTER(aft))
 	      |	Ast.CONTEXT(_) -> d
 	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
-
+	  
 	  let left_or =
 	    make_seq full_metamatch
 	      (Some(and_opt (wrapNot(prelabel_pred)) after)) in
@@ -410,7 +410,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	  quantify (label_var::get_unquantified quantified [s])
 	    (wrapAnd(make_raw_match ast,
 		     wrapAnd(label_pred,wrapOr(left_or,right_or))))
-
+	    
       |	Ast.MetaStmt((s,i,d)) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
@@ -455,7 +455,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	(v,quantify b1fvs
 	   (make_seq start_brace
 	      (Some(quantify b2fvs
-		      (dots_stmt fvinfo new_quantified body unchecked
+		      (dots_stmt fvinfo new_quantified body mode
 			 [not_start_brace] [not_end_brace]
 			 (Some (make_seq end_brace after)))))))
   | Ast.IfThen(ifheader,branch) ->
@@ -479,7 +479,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
        let true_branch =
 	 make_seq
 	   (wrapPred(Lib_engine.TrueBranch,CTL.Control))
-	   (Some(statement fvinfo new_quantified branch unchecked [] []
+	   (Some(statement fvinfo new_quantified branch mode [] []
 		   None)) in
        let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
@@ -529,7 +529,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	 make_seq
 	   (wrapPred(Lib_engine.TrueBranch,CTL.Control))
 	   (Some
-	      (statement fvinfo new_quantified branch1 unchecked [] []
+	      (statement fvinfo new_quantified branch1 mode [] []
 		 None)) in
        let false_pred = wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let false_branch =
@@ -537,7 +537,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
             (Some
               (make_seq
 		 (make_match els)
-		 (Some (statement fvinfo new_quantified branch2 unchecked
+		 (Some (statement fvinfo new_quantified branch2 mode
 	                  [] [] None)))) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq2 after_pred after in
@@ -564,7 +564,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
       let true_branch = wrapPred(Lib_engine.TrueBranch,CTL.Control) in
       let body_line =
 	make_cond true_branch
-	  (statement fvinfo new_quantified body unchecked [] [] None) in
+	  (statement fvinfo new_quantified body mode [] [] None) in
       (match after with
 	None -> quantify bfvs (make_seq while_header (Some body_line))
       | Some after ->
@@ -577,51 +577,57 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 		   (wrapAX(wrapAnd(body_line,after_line)),
 		    wrapEX(after_branch))))))
   | Ast.Disj(stmt_dots_list) ->
+      let do_one e =
+	dots_stmt fvinfo quantified e NegInNest [] [] None in
       let add_nots l e =
 	List.fold_left
-	  (function rest ->
-	    function cur ->
-	      wrapAnd
-		(wrapNot(dots_stmt fvinfo quantified cur true [] [] None),
-		 rest))
+	  (function rest -> function cur -> wrapAnd(wrapNot(do_one cur),rest))
 	  e l in
+      let start_dots x =
+	match Ast.undots x with
+	  y::_ ->
+	    (match Ast.unwrap y with Ast.Dots(_,_,_) -> true | _ -> false)
+	| _ -> false in
+      let process_one nots cur =
+	if start_dots cur
+	then
+	  dots_stmt fvinfo quantified cur mode
+	    ((List.map do_one nots) @ notbefore)
+	    notafter after
+	else
+	  add_nots nots
+	    (dots_stmt fvinfo quantified cur mode notbefore notafter after) in
       let rec loop after = function
 	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
-	| [(nots,cur)] ->
-	    add_nots nots
-	      (dots_stmt fvinfo quantified cur unchecked notbefore notafter
-		 after)
-	| (nots,cur)::rest ->
-	    wrapOr(add_nots nots
-		     (dots_stmt fvinfo quantified cur unchecked
-			notbefore notafter after),
-		   loop after rest) in
+	| [(nots,cur)] -> process_one nots cur
+	| (nots,cur)::rest -> wrapOr(process_one nots cur, loop after rest) in
       loop after (preprocess_disj stmt_dots_list)
   | Ast.Nest(stmt_dots) ->
       let dots_pattern =
-	dots_stmt fvinfo quantified stmt_dots unchecked [] [] None in
+	dots_stmt fvinfo quantified stmt_dots mode [] [] None in
       let udots_pattern =
-	dots_stmt fvinfo quantified stmt_dots true [] [] None in
+	dots_stmt fvinfo quantified stmt_dots NegInNest [] [] None in
       (match after with
-	None -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern))
+	None ->
+	  (match mode with
+	    InDots -> dots_pattern
+	  | _ -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern)))
       |	Some after ->
-(*	  if unchecked
-	  then
-	    wrapAU(wrapOr(dots_pattern,wrapNot udots_pattern),
-		   wrapOr(after,aftret))
-	  else*)
-	    let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
-	    let left =
-	      match notbefore@notafter with
-		[] -> left
-	      |	x::xs ->
-		  wrapAnd
-		    (wrapNot
-		       (List.fold_left
-			  (function rest -> function cur -> wrapOr(cur,rest))
-			  x xs),
-		     left) in
-	    wrapAU(left,wrapOr(after,aftret)))
+	  (match mode with
+	    InDots -> failwith "should be no after?"
+	  | _ -> 
+	      let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
+	      let left =
+		match notbefore@notafter with
+		  [] -> left
+		| x::xs ->
+		    wrapAnd
+		      (wrapNot
+			 (List.fold_left
+			    (function rest -> function cur -> wrapOr(cur,rest))
+			    x xs),
+		       left) in
+	      wrapAU(left,wrapOr(after,aftret))))
   | Ast.Dots((_,i,d),whencodes,tmp_whencode) ->
       let dot_code =
 	match d with
@@ -631,14 +637,9 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 	    Some(make_match (make_meta_rule_elem d))
 	| _ -> None in
       let tmp_whencode =
-(*	if unchecked
-	(* not sure that this is safe, should be more general than pattern *)
-	then []
-	else*)
-	  (List.map
-	     (function s ->
-	       statement fvinfo quantified s unchecked [] [] None)
-	     tmp_whencode) @ notbefore @ notafter in
+	(List.map
+	   (function s -> statement fvinfo quantified s mode [] [] None)
+	   tmp_whencode) @ notbefore @ notafter in
       let phi1 =
 	match tmp_whencode with (* start with tmp_whencode *)
 	  [] -> None
@@ -656,7 +657,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 		List.map
 		  (function w ->
 		    wrapNot
-		      (dots_stmt fvinfo quantified w unchecked [] [] None))
+		      (dots_stmt fvinfo quantified w mode [] [] None))
 		  whencodes in
 	      Some (List.fold_left (function x -> function y -> wrapAnd(x,y))
 		      (List.hd processed) (List.tl processed)) in
@@ -705,7 +706,7 @@ and statement ((free_table,extender,used_after) as fvinfo) quantified stmt
 		     (make_seq start_brace
 			(Some(quantify b3fvs
 				(dots_stmt fvinfo new_quantified body
-				   unchecked [not_start_brace] [not_end_brace]
+				   mode [not_start_brace] [not_end_brace]
 				   (Some(make_seq end_brace after)))))))))))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n";
@@ -735,8 +736,14 @@ and (preprocess_disj :
 	(List.map2
 	   (function ((nots,r) as x) ->
 	     function
-		 Unify_ast.MAYBE -> (cur::nots,r)
-	       | Unify_ast.NO -> x)
+		 Unify_ast.MAYBE -> Printf.printf "does unify\n";
+		   Pretty_print_cocci.statement_dots cur;
+		   Format.print_newline();
+		   Printf.printf "with\n";
+		   Pretty_print_cocci.statement_dots r;
+		   Format.print_newline();
+		   (cur::nots,r)
+	       | Unify_ast.NO -> Printf.printf "doesn't unify\n"; x)
 	   processed template)
       else ([], cur) :: processed
 
@@ -991,10 +998,13 @@ let top_level free_table extender used_after t =
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
+      Printf.printf "unopt code\n";
+      Pretty_print_cocci.statement "" unopt; Format.print_newline();
       let _ = extender unopt in
       let _ = count_nested_braces unopt in
       (*letify*)
-	(statement (free_table,extender,used_after) [] unopt false [] [] None)
+	(statement
+	   (free_table,extender,used_after) [] unopt TopLevel [] [] None)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
       List.iter
@@ -1003,7 +1013,8 @@ let top_level free_table extender used_after t =
 	  let _ = count_nested_braces x in ())
 	(Ast.undots unopt);
       (*letify*)
-	(dots_stmt (free_table,extender,used_after) [] unopt false [] [] None)
+	(dots_stmt
+	   (free_table,extender,used_after) [] unopt TopLevel [] [] None)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)

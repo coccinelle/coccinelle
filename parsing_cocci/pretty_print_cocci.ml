@@ -430,6 +430,9 @@ let rec statement arity s =
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
 
+(* for export only *)
+let statement_dots l = dots force_newline (statement "") l
+
 let top_level t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> declaration decl

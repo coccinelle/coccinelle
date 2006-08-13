@@ -43,9 +43,9 @@ identifier v,fld;
 )
       ...>
 (
--    if (copy_to_user(arg,&v,sizeof(v))) return ...;
+?-   if (copy_to_user(arg,&v,sizeof(v))) return ...;
 |
--    if (copy_to_user(arg,&v,sizeof(T))) return ...;
+?-   if (copy_to_user(arg,&v,sizeof(T))) return ...;
 |
 ?-   if (put_user(v,(T *)arg)) return ...;
 )

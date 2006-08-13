@@ -1,5 +1,7 @@
 val unparse : Ast_cocci.rule -> unit
 val unparse_to_string : Ast_cocci.rule -> string
+val statement : string -> Ast_cocci.statement -> unit
+val statement_dots : Ast_cocci.statement Ast_cocci.dots -> unit
 val rule_elem : string -> Ast_cocci.rule_elem -> unit
 val rule_elem_to_string : Ast_cocci.rule_elem -> string
 
