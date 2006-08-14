@@ -19,10 +19,10 @@ identifier proc_info_func;
 (
 // does not work when put in a disjunction, but work when put alone
 // cf rule9_complete_for13.cocci
-//     if(...
-// -       || !hostptr
-//       ) return ...;
-// |
+     if(...
+-       || !hostptr
+       ) return ...;
+|
 -   if (!hostptr) return ...;
 |
 ?-  if (!hostptr) { return ...; } // should have ... return ...;
