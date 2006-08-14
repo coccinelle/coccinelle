@@ -2,6 +2,7 @@
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
 identifier proc_info_func;
+expression E;
 @@
   proc_info_func (
 +      struct Scsi_Host *hostptr,
@@ -11,23 +12,19 @@ identifier proc_info_func;
     ...
 -   struct Scsi_Host *hostptr;
     ...
-(
--   if(!(hostptr = scsi_host_hn_get(hostno))) return ...;
-|
 -   hostptr = scsi_host_hn_get(hostno);
     ...
-(
-// does not work when put in a disjunction, but work when put alone
-// cf rule9_complete_for13.cocci
-//     if(...
-// -       || !hostptr
-//       ) return ...;
-// |
--   if (!hostptr) return ...;
-|
-?-  if (!hostptr) { return ...; } // should have ... return ...;
-)
-)
+// first way
+
+    if(
+-       || !hostptr
+      ) return ...;
+//|
+// second way
+//-     if(E || !hostptr) 
+//+     if(E) 
+//       return ...;
+//|
     ...
 ?-  scsi_host_put(hostptr);
     ...

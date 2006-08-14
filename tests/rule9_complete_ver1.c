@@ -5,6 +5,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
 	char *pos = buffer;
 	struct Scsi_Host *hostptr;
 	unsigned long f;
+	extern const char *const scsi_device_types[MAX_SCSI_DEVICE_CODE];
 
 	/* if someone is sending us data, just throw it away */
 	if (inout)
@@ -23,6 +24,7 @@ static int usb_storage_proc_info (char *buffer, char **start, off_t offset,
                 scsi_host_put(hostptr); 
 		return -ESRCH;
 	}
+
 
         // ...
 
