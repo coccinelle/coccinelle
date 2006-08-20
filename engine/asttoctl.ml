@@ -352,7 +352,8 @@ let rec get_before sl a =
 and get_before_e s a =
   match Ast.unwrap s with
     Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) -> let _ = get_before stmt_dots a in update s a; a
+  | Ast.Nest(stmt_dots) ->
+      let _ = get_before stmt_dots a in update s a; [Other_dots stmt_dots]
   | Ast.Disj(stmt_dots_list) ->
       List.fold_left
 	(function rest -> function cur ->
@@ -389,7 +390,8 @@ let rec get_after sl a =
 and get_after_e s a =
   match Ast.unwrap s with
     Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) -> let _ = get_after stmt_dots a in update s a; a
+  | Ast.Nest(stmt_dots) ->
+      let _ = get_after stmt_dots a in update s a; [Other_dots stmt_dots]
   | Ast.Disj(stmt_dots_list) ->
       List.fold_left
 	(function rest -> function cur ->
