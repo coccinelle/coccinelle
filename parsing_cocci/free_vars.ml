@@ -111,13 +111,7 @@ let astfvs bound =
     res in
 
   let astfvstatement recursor k s =
-    let (unbound,_) as res =
-      match Ast.unwrap s with
-	Ast.Dots(_,whencode,tmpcode)
-      | Ast.Circles(_,whencode,tmpcode)
-      | Ast.Stars(_,whencode,tmpcode) ->
-	  let _ = List.map recursor.V.combiner_statement tmpcode in k s
-      | _ -> k s in
+    let (unbound,_) as res = k s in
     Hashtbl.add free_table (Statement s) unbound;
     res in
 

@@ -67,7 +67,7 @@ let pdots p =
 
 let sdots s =
   match Ast.unwrap s with
-    Ast.Dots(_,_,_) | Ast.Circles(_,_,_) | Ast.Stars(_,_,_) -> true
+    Ast.Dots(_,_) | Ast.Circles(_,_) | Ast.Stars(_,_) -> true
   | _ -> false
 
 (* --------------------------------------------------------------------- *)
@@ -354,9 +354,9 @@ let rec unify_statement s1 s2 =
 	   (conjunct_bindings (unify_dots unify_statement sdots s1 s2)
 	      (unify_rule_elem rb1 rb2)))
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Dots(_,_,_),_) | (_,Ast.Dots(_,_,_))
-  | (Ast.Circles(_,_,_),_) | (_,Ast.Circles(_,_,_))
-  | (Ast.Stars(_,_,_),_) | (_,Ast.Stars(_,_,_)) -> return true
+  | (Ast.Dots(_,_),_) | (_,Ast.Dots(_,_))
+  | (Ast.Circles(_,_),_) | (_,Ast.Circles(_,_))
+  | (Ast.Stars(_,_),_) | (_,Ast.Stars(_,_)) -> return true
   | (Ast.OptStm(_),_)
   | (Ast.UniqueStm(_),_)
   | (Ast.MultiStm(_),_)

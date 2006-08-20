@@ -299,6 +299,11 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
       ) (* end 2: iter bindings *)
   ); (* end 1: iter ctl *)
-  Common.command2 ("diff -u  --strip-trailing-cr -b -B " ^ 
-                   cfile ^ " /tmp/output.c")
+  let res = Sys.command ("diff -u  --strip-trailing-cr -b -B " ^ 
+			 cfile ^ " /tmp/output.c") in
+  if res = 2
+  then (* bad args? *)
+    let _ = Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c") in
+    ()
+  else ()
 

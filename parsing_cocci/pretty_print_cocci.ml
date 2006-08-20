@@ -416,10 +416,9 @@ let rec statement arity s =
   | Ast.Nest(stmt_dots) ->
       print_string arity;
       nest_dots (statement arity) stmt_dots
-  | Ast.Dots(d,[],_) | Ast.Circles(d,[],_) | Ast.Stars(d,[],_) ->
+  | Ast.Dots(d,[]) | Ast.Circles(d,[]) | Ast.Stars(d,[]) ->
       print_string arity; mcode print_string d
-  | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
-  | Ast.Stars(d,whencode,_) ->
+  | Ast.Dots(d,whencode) | Ast.Circles(d,whencode) | Ast.Stars(d,whencode) ->
       print_string arity; mcode print_string d;
       print_string "   WHEN != ";
       open_box 0;

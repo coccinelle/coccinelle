@@ -259,12 +259,9 @@ and base_statement =
   | Nest          of statement dots
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * rule_elem (* } *)
-  | Dots          of
-      string mcode (* ... *) * statement dots list * statement list
-  | Circles       of
-      string mcode (* ooo *) * statement dots list * statement list
-  | Stars         of
-      string mcode (* *** *) * statement dots list * statement list
+  | Dots          of string mcode (* ... *) * statement dots list
+  | Circles       of string mcode (* ooo *) * statement dots list
+  | Stars         of string mcode (* *** *) * statement dots list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)

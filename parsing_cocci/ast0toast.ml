@@ -402,15 +402,15 @@ let rec statement s =
     | Ast0.Dots(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Dots(d,option_to_list whencode,[])
+	Ast.Dots(d,option_to_list whencode)
     | Ast0.Circles(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Circles(d,option_to_list whencode,[])
+	Ast.Circles(d,option_to_list whencode)
     | Ast0.Stars(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Stars(d,option_to_list whencode,[])
+	Ast.Stars(d,option_to_list whencode)
     | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
 	let stg = get_option mcode stg in
 	let name = ident name in
