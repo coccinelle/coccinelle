@@ -1,5 +1,5 @@
 int foo() {
-  int x;
+  struct foo x;
   return 0;
 }
 
