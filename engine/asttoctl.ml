@@ -224,7 +224,7 @@ let fresh_metavar _ =
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
 
-type after = After of formula | Guard of formula | Tail | NonTail
+type after = After of formula | Guard of formula | Tail
 
 let make_seq n l =
   let rec loop = function
@@ -325,6 +325,7 @@ let intersectll lst nested_list =
 type befaft =
     Paren of Ast.rule_elem * string (*pren_var*)
   | Other of Ast.statement
+  | Other_dots of Ast.statement Ast.dots
 
 let before_after_table =
   (Hashtbl.create(50) :
@@ -351,7 +352,7 @@ let rec get_before sl a =
 and get_before_e s a =
   match Ast.unwrap s with
     Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) -> let _ = get_before stmt_dots [] in update s a; a
+  | Ast.Nest(stmt_dots) -> let _ = get_before stmt_dots a in update s a; a
   | Ast.Disj(stmt_dots_list) ->
       List.fold_left
 	(function rest -> function cur ->
@@ -388,7 +389,7 @@ let rec get_after sl a =
 and get_after_e s a =
   match Ast.unwrap s with
     Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) -> let _ = get_after stmt_dots [] in update s a; a
+  | Ast.Nest(stmt_dots) -> let _ = get_after stmt_dots a in update s a; a
   | Ast.Disj(stmt_dots_list) ->
       List.fold_left
 	(function rest -> function cur ->
@@ -667,8 +668,20 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 	List.fold_left
 	  (function rest -> function cur -> wrapAnd(wrapNot(do_one cur),rest))
 	  e l in
+      let start_dots x =
+	match Ast.undots x with
+	  y::_ ->
+	    (match Ast.unwrap y with Ast.Dots(_,_) -> Some y | _ -> None)
+	| _ -> None in
       let process_one nots cur =
-	add_nots nots (statement_list cur fvinfo after quantified guard) in
+	match start_dots cur with
+	  Some d ->
+	    begin
+	      update d (List.map (function x -> Other_dots x) nots);
+	      statement_list cur fvinfo after quantified guard
+	    end
+	| None ->
+	    add_nots nots (statement_list cur fvinfo after quantified guard) in
       let rec loop after = function
 	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
 	| [(nots,cur)] -> process_one nots cur
@@ -676,9 +689,9 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
       loop after (preprocess_disj stmt_dots_list)
   | Ast.Nest(stmt_dots) ->
       let dots_pattern =
-	statement_list stmt_dots fvinfo NonTail quantified guard in
+	statement_list stmt_dots fvinfo (a2n after) quantified guard in
       let udots_pattern =
-	statement_list stmt_dots fvinfo NonTail quantified true in
+	statement_list stmt_dots fvinfo (a2n after) quantified true in
       (match after with
 	After a ->
 	  let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
@@ -732,7 +745,6 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
       (match (after,phi3) with
 	(Tail,Some whencode) -> wrapAU(whencode,wrapOr(exit,aftret))
       |	(Tail,None) -> wrapAF(wrapOr(exit,aftret))
-      |	(NonTail,_) -> wrap n CTL.True
       |	(After f,Some whencode) | (Guard f,Some whencode) ->
 	  wrapAU(whencode,wrapOr(f,aftret))
       |	(After f,None) | (Guard f,None) -> wrapAF(wrapOr(f,aftret)))
@@ -776,6 +788,7 @@ and process_bef_aft after quantified fvinfo ln = function
       let paren_pred = wrapPred ln (Lib_engine.Paren n,CTL.Control) in
       wrapAnd ln (make_raw_match ln re,paren_pred)
   | Other s -> statement s fvinfo (a2n after) quantified true
+  | Other_dots d -> statement_list d fvinfo (a2n after) quantified true
 
 (* Returns a triple for each disj element.  The first element of the triple is
 Some v if the triple element needs a name, and None otherwise.  The second
