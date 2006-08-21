@@ -134,15 +134,11 @@ static int pcm20_ioctl(struct inode *inode, struct file *file,
 		case VIDIOCGCAP:
 		{
 			struct video_capability *v = arg;
+			memset(v,0,sizeof(*v));
 			v->type=VID_TYPE_TUNER;
 			strcpy(v->name, "Miro PCM20");
 			v->channels=1;
 			v->audios=1;
-			/* No we don't do pictures */
-			v->maxwidth=0;
-			v->maxheight=0;
-			v->minwidth=0;
-			v->minheight=0;
 			return 0;
 		}
 		case VIDIOCGTUNER:

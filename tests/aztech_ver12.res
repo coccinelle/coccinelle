@@ -168,15 +168,11 @@ static int az_ioctl(struct inode *inode, struct file *file,
 	{
 		case VIDIOCGCAP:
 		{
-			struct video_capability v;
+			struct video_capability *v = arg;
+			memset(v,0,sizeof(*v));
 			v->type=VID_TYPE_TUNER;
 			v->channels=1;
 			v->audios=1;
-			/* No we don't do pictures */
-			v->maxwidth=0;
-			v->maxheight=0;
-			v->minwidth=0;
-			v->minheight=0;
 			strcpy(v->name, "Aztech Radio");
 			return 0;
 		}
