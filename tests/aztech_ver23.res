@@ -216,106 +216,93 @@ int zol_is_stereo (struct zol_device *dev)
 	return 0;
 }
 
-static int zol_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
+static int zol_do_ioctl(struct inode *inode, struct file *file,
+			unsigned int cmd, void *arg)
 {
+	struct video_device *dev = video_devdata(file);
 	struct zol_device *zol = dev->priv;
 
 	switch (cmd) {
 	case VIDIOCGCAP:
 		{
-			struct video_capability v;
-			v.type = VID_TYPE_TUNER;
-			v.channels = 1 + zol->stereo;
-			v.audios = 1;
-			/* No we don't do pictures */
-			v.maxwidth = 0;
-			v.maxheight = 0;
-			v.minwidth = 0;
-			v.minheight = 0;
-			strcpy(v.name, "Zoltrix Radio");
-			if (copy_to_user(arg, &v, sizeof(v)))
-				return -EFAULT;
+			struct video_capability *v = arg;
+
+			memset(v,0,sizeof(*v));
+			v->type = VID_TYPE_TUNER;
+			v->channels = 1 + zol->stereo;
+			v->audios = 1;
+			strcpy(v->name, "Zoltrix Radio");
 			return 0;
 		}
 	case VIDIOCGTUNER:
 		{
-			struct video_tuner v;
-			if (copy_from_user(&v, arg, sizeof(v)))
-				return -EFAULT;
-			if (v.tuner)	
+			struct video_tuner *v = arg;
+			if (v->tuner)	
 				return -EINVAL;
-			strcpy(v.name, "FM");
-			v.rangelow = (int) (88.0 * 16000);
-			v.rangehigh = (int) (108.0 * 16000);
-			v.flags = zol_is_stereo(zol)
+			strcpy(v->name, "FM");
+			v->rangelow = (int) (88.0 * 16000);
+			v->rangehigh = (int) (108.0 * 16000);
+			v->flags = zol_is_stereo(zol)
 					? VIDEO_TUNER_STEREO_ON : 0;
-			v.flags |= VIDEO_TUNER_LOW;
-			v.mode = VIDEO_MODE_AUTO;
-			v.signal = 0xFFFF * zol_getsigstr(zol);
-			if (copy_to_user(arg, &v, sizeof(v)))
-				return -EFAULT;
+			v->flags |= VIDEO_TUNER_LOW;
+			v->mode = VIDEO_MODE_AUTO;
+			v->signal = 0xFFFF * zol_getsigstr(zol);
 			return 0;
 		}
 	case VIDIOCSTUNER:
 		{
-			struct video_tuner v;
-			if (copy_from_user(&v, arg, sizeof(v)))
-				return -EFAULT;
-			if (v.tuner != 0)
+			struct video_tuner *v = arg;
+			if (v->tuner != 0)
 				return -EINVAL;
 			/* Only 1 tuner so no setting needed ! */
 			return 0;
 		}
 	case VIDIOCGFREQ:
-		if (copy_to_user(arg, &zol->curfreq, sizeof(zol->curfreq)))
-			return -EFAULT;
+	{
+		unsigned long *freq = arg;
+		*freq = zol->curfreq;
 		return 0;
+	}
 	case VIDIOCSFREQ:
-		if (copy_from_user(&zol->curfreq, arg, sizeof(zol->curfreq)))
-			return -EFAULT;
+	{
+		unsigned long *freq = arg;
+		zol->curfreq = *freq;
 		zol_setfreq(zol, zol->curfreq);
 		return 0;
+	}
 	case VIDIOCGAUDIO:
 		{
-			struct video_audio v;
-			memset(&v, 0, sizeof(v));
-			v.flags |= VIDEO_AUDIO_MUTABLE | VIDEO_AUDIO_VOLUME;
-			v.mode != zol_is_stereo(zol)
+			struct video_audio *v = arg;
+			memset(&v, 0, sizeof(*v));
+			v->flags |= VIDEO_AUDIO_MUTABLE | VIDEO_AUDIO_VOLUME;
+			v->mode != zol_is_stereo(zol)
 				? VIDEO_SOUND_STEREO : VIDEO_SOUND_MONO;
-			v.volume = zol->curvol * 4096;
-			v.step = 4096;
-			strcpy(v.name, "Zoltrix Radio");
-			if (copy_to_user(arg, &v, sizeof(v)))
-				return -EFAULT;
+			v->volume = zol->curvol * 4096;
+			v->step = 4096;
+			strcpy(v->name, "Zoltrix Radio");
 			return 0;
 		}
 	case VIDIOCSAUDIO:
 		{
-			struct video_audio v;
-			if (copy_from_user(&v, arg, sizeof(v)))
-				return -EFAULT;
-			if (v.audio)
+			struct video_audio *v = arg;
+			if (v->audio)
 				return -EINVAL;
 
-			if (v.flags & VIDEO_AUDIO_MUTE)
+			if (v->flags & VIDEO_AUDIO_MUTE)
 				zol_mute(zol);
-			else
-			{
+			else {
 				zol_unmute(zol);
-				zol_setvol(zol, v.volume / 4096);
+				zol_setvol(zol, v->volume / 4096);
 			}
 
-			if (v.mode & VIDEO_SOUND_STEREO)
-			{
+			if (v->mode & VIDEO_SOUND_STEREO) {
 				zol->stereo = 1;
 				zol_setfreq(zol, zol->curfreq);
 			}
-			if (v.mode & VIDEO_SOUND_MONO)
-			{
+			if (v->mode & VIDEO_SOUND_MONO) {
 				zol->stereo = 0;
 				zol_setfreq(zol, zol->curfreq);
 			}
-
 			return 0;
 		}
 	default:

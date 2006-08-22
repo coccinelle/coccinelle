@@ -1,15 +1,10 @@
 @@
-expression E;
+//local function interrupt;
+identifier interrupt, cs;
 @@
 
-- xxx(E);
-
-@@
-@@
-
-- foo();
-
-@@
-@@
-
-- bar(E);
+interrupt(...) {
+  ...
+- if (!cs) { ... return; }
+  ...
+}

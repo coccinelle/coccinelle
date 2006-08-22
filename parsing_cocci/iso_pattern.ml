@@ -208,8 +208,9 @@ let rec match_expr context_required pattern expr =
 	| (Ast0.Edots(_,None),Ast0.Edots(_,_))
 	| (Ast0.Ecircles(_,None),Ast0.Ecircles(_,_))
 	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) -> return true
-	| (Ast0.Edots(_,_),_) | (Ast0.Ecircles(_,_),_)
-	| (Ast0.Estars(_,_),_) -> failwith "whencode not allowed in a pattern"
+	| (Ast0.Edots(_,Some _),_) | (Ast0.Ecircles(_,Some _),_)
+	| (Ast0.Estars(_,Some _),_) ->
+	    failwith "whencode not allowed in a pattern"
 	| (Ast0.OptExp(expa),Ast0.OptExp(expb))
 	| (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb))
 	| (Ast0.MultiExp(expa),Ast0.MultiExp(expb)) ->
@@ -374,8 +375,9 @@ and match_statement context_required pattern s =
       | (Ast0.Dots(_,None),Ast0.Dots(_,_))
       | (Ast0.Circles(_,None),Ast0.Circles(_,_))
       | (Ast0.Stars(_,None),Ast0.Stars(_,_)) -> return true
-      | (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_)
-      | (Ast0.Stars(_,_),_) -> failwith "whencode not allowed in a pattern"
+      | (Ast0.Dots(_,Some _),_) | (Ast0.Circles(_,Some _),_)
+      | (Ast0.Stars(_,Some _),_) ->
+	  failwith "whencode not allowed in a pattern"
       | (Ast0.OptStm(rea),Ast0.OptStm(reb))
       | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
       | (Ast0.MultiStm(rea),Ast0.MultiStm(reb)) ->

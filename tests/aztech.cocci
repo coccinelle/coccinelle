@@ -24,11 +24,11 @@ identifier v,fld;
 +     T *v = arg;
       ...
 (
--     if (copy_from_user(&v,arg,sizeof(v))) return ...;
+-     if (copy_from_user(&v,arg,sizeof(v))) { ... return ...;}
 |
--     if (copy_from_user(&v,arg,sizeof(T))) return ...;
+-     if (copy_from_user(&v,arg,sizeof(T))) { ... return ...;}
 |
--     if (get_user(v,(T *)arg)) return ...;
+-     if (get_user(v,(T *)arg)) { ... return ...;}
 )
       <...
 (
@@ -43,11 +43,11 @@ identifier v,fld;
 )
       ...>
 (
-?-   if (copy_to_user(arg,&v,sizeof(v))) return ...;
+?-   if (copy_to_user(arg,&v,sizeof(v))) { ... return ...;}
 |
-?-   if (copy_to_user(arg,&v,sizeof(T))) return ...;
+?-   if (copy_to_user(arg,&v,sizeof(T))) { ... return ...;}
 |
-?-   if (put_user(v,(T *)arg)) return ...;
+?-   if (put_user(v,(T *)arg)) { ... return ...;}
 )
     ...>
   }
@@ -55,7 +55,6 @@ identifier v,fld;
 @@
 type T;
 identifier v,fld;
-statement S;
 @@
 
 // copy_to_user only
@@ -77,18 +76,90 @@ statement S;
 )
       ...>
 (
--     if (copy_to_user(arg,&v,sizeof(v))) return ...;
+-     if (copy_to_user(arg,&v,sizeof(v))) { ... return ...;}
 |
--     if (copy_to_user(arg,&v,sizeof(T))) return ...;
+-     if (copy_to_user(arg,&v,sizeof(T))) { ... return ...;}
 |
--     if (put_user(v,(T *)arg)) return ...;
+-     if (put_user(v,(T *)arg)) { ... return ...;}
 )
+    ...>
+  }
+
+
+@@
+type T;
+identifier v,fld,fld1;
+@@
+
+  ioctl(...) {
+    <...
+      T *v = arg;
++     memset(v,0,sizeof(*v));
+      ...
+-     v->fld = 0;
+      <...
+-     v->fld1 = 0;
+      ...>
     ...>
   }
 
 @@
 expression E;
-statement S;
+// fresh identifier tmp;
+@@
+
+// copy_from_user and copy_to_user that don't use a local variable
+
+  ioctl(...) {
+    <...
+     {
++     unsigned long *tmp = arg;
+      ...
+(
+-     if (copy_from_user(&E,arg,sizeof(E))) { ... return ...;}
++     E = *tmp;
+|
+-     if (copy_to_user(arg,&E,sizeof(E))) { ... return ...;}
++     *tmp = E;
+)
+      ...
+     }
+    ...>
+  }
+
+@@
+expression E;
+type T;
+// fresh identifier tmp;
+@@
+
+// copy_from_user and copy_to_user that don't use a local variable
+
+  ioctl(...) {
+    <...
+     {
++     T *tmp = arg;
+      ...
+(
+-     if (copy_from_user(&E,arg,sizeof(T))) { ... return ...;}
++     E = *tmp;
+|
+-     if (get_user(E,(T *)arg)) { ... return ...;}
++     E = *tmp;
+|
+-     if (copy_to_user(arg,&E,sizeof(T))) { ... return ...;}
++     *tmp = E;
+|
+-     if (put_user(E,(T *)arg)) { ... return ...;}
++     *tmp = E;
+)
+      ...
+     }
+    ...>
+  }
+
+@@
+expression E;
 type T;
 // fresh identifier tmp;
 @@
@@ -98,22 +169,22 @@ type T;
   ioctl(...) {
     <...
 (
--     if (copy_from_user(&E,arg,sizeof(E))) return ...;
+-     if (copy_from_user(&E,arg,sizeof(E))) { ... return ...;}
 +     { unsigned long *tmp = arg; E = *tmp; }
 |
--     if (copy_from_user(&E,arg,sizeof(T))) return ...;
+-     if (copy_from_user(&E,arg,sizeof(T))) { ... return ...;}
 +     { T *tmp = arg; E = *tmp; }
 |
--     if (get_user(E,(T *)arg)) return ...;
+-     if (get_user(E,(T *)arg)) { ... return ...;}
 +     { T *tmp = arg; E = *tmp; }
 |
--     if (copy_to_user(arg,&E,sizeof(E))) return ...;
+-     if (copy_to_user(arg,&E,sizeof(E))) { ... return ...;}
 +     { unsigned long *tmp = arg; *tmp = E; }
 |
--     if (copy_to_user(arg,&E,sizeof(T))) return ...;
+-     if (copy_to_user(arg,&E,sizeof(T))) { ... return ...;}
 +     { T *tmp = arg; *tmp = E; }
 |
--     if (put_user(E,(T *)arg)) return ...;
+-     if (put_user(E,(T *)arg)) { ... return ...;}
 +     { T *tmp = arg; *tmp = E; }
 )
     ...>
