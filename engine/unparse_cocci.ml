@@ -265,7 +265,7 @@ let rec declaration d =
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; expression exp; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
-  | Ast.DisjDecl(decls) -> raise CantBeInPlus
+  | Ast.DisjDecl(_) | Ast.MetaDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus
 
@@ -372,8 +372,10 @@ in
 
 let rec statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,body,rbrace) ->
-      rule_elem arity lbrace; dots force_newline (statement arity) body;
+    Ast.Seq(lbrace,decls,_,body,rbrace) ->
+      rule_elem arity lbrace;
+      dots force_newline (statement arity) decls;
+      dots force_newline (statement arity) body;
       rule_elem arity rbrace
 
   | Ast.IfThen(header,branch) ->
@@ -392,8 +394,9 @@ let rec statement arity s =
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
+      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 
   | Ast.Disj(_) 

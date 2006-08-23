@@ -345,9 +345,9 @@ let rec statement s =
       Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
     | Ast0.Seq(lbrace,body,rbrace) -> 
 	let lbrace = mcode lbrace in
-	let body = dots statement body in
+	let (decls,dots,body) = separate_decls body in
 	let rbrace = mcode rbrace in
-	Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),body,
+	Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
 		tokenwrap lbrace (Ast.SeqEnd(rbrace)))
     | Ast0.ExprStatement(exp,sem) ->
 	Ast.Atomic(rewrap s(Ast.ExprStatement(expression exp,mcode sem)))
@@ -418,14 +418,38 @@ let rec statement s =
 	let params = parameter_list params in
 	let rp = mcode rp in
 	let lbrace = mcode lbrace in
-	let body = dots statement body in
+	let (decls,dots,body) = separate_decls body in
 	let rbrace = mcode rbrace in
 	Ast.FunDecl(rewrap s (Ast.FunHeader(stg,name,lp,params,rp)),
-		    tokenwrap lbrace (Ast.SeqStart(lbrace)), body,
+		    tokenwrap lbrace (Ast.SeqStart(lbrace)),
+		    decls,dots,body,
 		    tokenwrap rbrace (Ast.SeqEnd(rbrace)))
     | Ast0.OptStm(stm) -> Ast.OptStm(statement stm)
     | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement stm)
     | Ast0.MultiStm(stm) -> Ast.MultiStm(statement stm))
+
+and separate_decls d =
+  let rec collect_decls = function
+      [] -> ([],false,[])
+    | (x::xs) as l ->
+	(match Ast0.unwrap x with
+	  Ast0.Decl(_) ->
+	    let (decls,dots,other) = collect_decls xs in
+	    (x :: decls,dots,other)
+	| Ast0.Dots(_,_) ->
+	    let (decls,dots,other) = collect_decls xs in
+	    (match decls with
+	      [] -> ([],true,x::other)
+	    | _ -> (x :: decls,dots,other))
+	| _ -> ([],false,l)) in
+  let process l d fn =
+    let (decls,dots,other) = collect_decls l in
+    (rewrap d (fn (List.map statement decls)), dots,
+     rewrap d (fn (List.map statement other))) in
+  match Ast0.unwrap d with
+    Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
+  | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
+  | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x)
 
 and option_to_list = function
     Some x -> [x]

@@ -175,6 +175,8 @@ and base_declaration =
   | UnInit of fullType * ident * string mcode (* ; *)
   | DisjDecl   of declaration list
 
+  | MetaDecl of string mcode
+
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
@@ -247,7 +249,8 @@ and base_rule_elem =
 and rule_elem = base_rule_elem wrap
 
 and base_statement =
-    Seq           of rule_elem (* { *) * statement dots * rule_elem (* } *)
+    Seq           of rule_elem (* { *) * statement dots * bool *
+	             statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement
   | IfThenElse    of rule_elem (* header *) * statement *
 	             rule_elem (* else *) * statement
@@ -258,7 +261,7 @@ and base_statement =
   | Disj          of statement dots list
   | Nest          of statement dots
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * rule_elem (* } *)
+     	             statement dots * bool * statement dots * rule_elem (* } *)
   | Dots          of string mcode (* ... *) * statement dots list
   | Circles       of string mcode (* ooo *) * statement dots list
   | Stars         of string mcode (* *** *) * statement dots list
@@ -317,3 +320,4 @@ val unwrap : 'a wrap -> 'a
 val get_line : 'a wrap -> line
 
 val make_meta_rule_elem : string -> mcodekind -> rule_elem
+val make_meta_decl : string -> mcodekind -> declaration

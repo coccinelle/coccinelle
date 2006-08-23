@@ -297,6 +297,7 @@ let rec declaration d =
       print_string " "; expression exp; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.MetaDecl(name) -> mcode print_string name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
@@ -382,8 +383,10 @@ let rule_elem arity re =
 
 let rec statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,body,rbrace) ->
-      rule_elem arity lbrace; dots force_newline (statement arity) body;
+    Ast.Seq(lbrace,decls,_,body,rbrace) ->
+      rule_elem arity lbrace;
+      dots force_newline (statement arity) decls;
+      dots force_newline (statement arity) body;
       rule_elem arity rbrace
   | Ast.IfThen(header,branch) ->
       rule_elem arity header; statement arity branch
@@ -398,9 +401,11 @@ let rec statement arity s =
   | Ast.For(header,body) ->
       rule_elem arity header; statement arity body
   | Ast.Atomic(re) -> rule_elem arity re
-  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) body; rule_elem arity rbrace
+      dots force_newline (statement arity) decls;
+      dots force_newline (statement arity) body;
+      rule_elem arity rbrace
   | Ast.Disj([stmt_dots]) ->
       print_string arity;
       dots (function _ -> if !print_newlines_disj then force_newline())

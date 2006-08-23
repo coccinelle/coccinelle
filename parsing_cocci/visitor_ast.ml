@@ -169,6 +169,7 @@ let combiner bind option_default
       | Ast.UnInit(ty,id,sem) ->
 	  multibind [fullType ty; ident id; string_mcode sem]
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
+      | Ast.MetaDecl(name) -> string_mcode name
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl
       | Ast.MultiDecl(decl) -> declaration decl in
@@ -229,8 +230,9 @@ let combiner bind option_default
   and statement s =
     let k s =
       match Ast.unwrap s with
-	Ast.Seq(lbrace,body,rbrace) ->
-	  multibind [rule_elem lbrace; statement_dots body; rule_elem rbrace]
+	Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+	  multibind [rule_elem lbrace; statement_dots decls;
+		      statement_dots body; rule_elem rbrace]
       | Ast.IfThen(header,branch) ->
 	  multibind [rule_elem header; statement branch]
       | Ast.IfThenElse(header,branch1,els,branch2) ->
@@ -244,8 +246,9 @@ let combiner bind option_default
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
       | Ast.Nest(stmt_dots) -> statement_dots stmt_dots
-      | Ast.FunDecl(header,lbrace,body,rbrace) ->
-	  multibind [rule_elem header; rule_elem lbrace; statement_dots body;
+      | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+	  multibind [rule_elem header; rule_elem lbrace;
+		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
       | Ast.Dots(d,whencode) | Ast.Circles(d,whencode)
       | Ast.Stars(d,whencode) ->
@@ -474,6 +477,7 @@ let rebuilder
 	| Ast.UnInit(ty,id,sem) ->
 	    Ast.UnInit(fullType ty, ident id, string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
+	| Ast.MetaDecl(name) -> Ast.MetaDecl(string_mcode name)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
 	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
 	| Ast.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)) in
@@ -537,8 +541,9 @@ let rebuilder
     let k s =
       Ast.rewrap s
 	(match Ast.unwrap s with
-	  Ast.Seq(lbrace,body,rbrace) ->
-	    Ast.Seq(rule_elem lbrace, statement_dots body, rule_elem rbrace)
+	  Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+	    Ast.Seq(rule_elem lbrace, statement_dots decls, dots,
+		    statement_dots body, rule_elem rbrace)
 	| Ast.IfThen(header,branch) ->
 	    Ast.IfThen(rule_elem header, statement branch)
 	| Ast.IfThenElse(header,branch1,els,branch2) ->
@@ -552,9 +557,10 @@ let rebuilder
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
 	| Ast.Nest(stmt_dots) -> Ast.Nest(statement_dots stmt_dots)
-	| Ast.FunDecl(header,lbrace,body,rbrace) ->
-	    Ast.FunDecl (rule_elem header,rule_elem lbrace,statement_dots body,
-			 rule_elem rbrace)
+	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
+			statement_dots decls, dots,
+			statement_dots body, rule_elem rbrace)
 	| Ast.Dots(d,whencode) ->
 	    Ast.Dots(string_mcode d, List.map statement_dots whencode)
 	| Ast.Circles(d,whencode) ->

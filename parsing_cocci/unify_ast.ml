@@ -315,11 +315,13 @@ and subexp f =
 
 let rec unify_statement s1 s2 =
   match (Ast.unwrap s1,Ast.unwrap s2) with
-    (Ast.Seq(lb1,s1,rb1),Ast.Seq(lb2,s2,rb2)) ->
+    (Ast.Seq(lb1,d1,_,s1,rb1),Ast.Seq(lb2,d2,_,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem lb1 lb2)
 	(conjunct_bindings
 	   (unify_dots unify_statement sdots s1 s2)
-	   (unify_rule_elem rb1 rb2))
+	   (conjunct_bindings
+	      (unify_dots unify_statement sdots d1 d2)
+	      (unify_rule_elem rb1 rb2)))
   | (Ast.IfThen(h1,thn1),Ast.IfThen(h2,thn2)) ->
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement thn1 thn2)
   | (Ast.IfThenElse(h1,thn1,e1,els1),Ast.IfThenElse(h2,thn2,e2,els2)) ->
@@ -348,11 +350,12 @@ let rec unify_statement s1 s2 =
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
   | (Ast.Nest(s1),Ast.Nest(s2)) -> unify_dots unify_statement sdots s1 s2
-  | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
+  | (Ast.FunDecl(h1,lb1,d1,_,s1,rb1),Ast.FunDecl(h2,lb2,d2,_,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)
-	   (conjunct_bindings (unify_dots unify_statement sdots s1 s2)
-	      (unify_rule_elem rb1 rb2)))
+	   (conjunct_bindings (unify_dots unify_statement sdots d1 d2)
+	      (conjunct_bindings (unify_dots unify_statement sdots s1 s2)
+		 (unify_rule_elem rb1 rb2))))
   (* dots can match against anything.  return true to be safe. *)
   | (Ast.Dots(_,_),_) | (_,Ast.Dots(_,_))
   | (Ast.Circles(_,_),_) | (_,Ast.Circles(_,_))

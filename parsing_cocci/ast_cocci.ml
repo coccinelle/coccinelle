@@ -172,7 +172,9 @@ and base_declaration =
     Init of fullType * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
-  | DisjDecl   of declaration list
+  | DisjDecl of declaration list
+
+  | MetaDecl of string mcode
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -246,7 +248,8 @@ and base_rule_elem =
 and rule_elem = base_rule_elem wrap
 
 and base_statement =
-    Seq           of rule_elem (* { *) * statement dots * rule_elem (* } *)
+    Seq           of rule_elem (* { *) * statement dots * bool *
+	             statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement
   | IfThenElse    of rule_elem (* header *) * statement *
 	             rule_elem (* else *) * statement
@@ -257,7 +260,7 @@ and base_statement =
   | Disj          of statement dots list
   | Nest          of statement dots
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * rule_elem (* } *)
+     	             statement dots * bool * statement dots * rule_elem (* } *)
   | Dots          of string mcode (* ... *) * statement dots list
   | Circles       of string mcode (* ooo *) * statement dots list
   | Stars         of string mcode (* *** *) * statement dots list
@@ -319,6 +322,9 @@ let get_line (_,l) = l
 
 let make_meta_rule_elem s d =
   (MetaRuleElem(s,{ line = 0; column = 0 },d), 0)
+
+let make_meta_decl s d =
+  (MetaDecl(s,{ line = 0; column = 0 },d), 0)
 
 (* --------------------------------------------------------------------- *)
 
