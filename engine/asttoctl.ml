@@ -445,7 +445,9 @@ let decl_to_not_decl n dots stmt extender make_match f =
       Ast.rewrap stmt
 	(Ast.Decl (Ast.make_meta_decl "d" (Ast.CONTEXT(Ast.NOTHING)))) in
     let _ = extender (Ast.rewrap stmt (Ast.Atomic(de))) in
-    wrap n (CTL.AU(CTL.FORWARD, wrap n (CTL.Not (make_match de)), f))
+    wrap n (CTL.AU(CTL.FORWARD,
+		   make_match de,
+		   wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f))))
 
 let rec statement_list stmt_list ((free_table,_,_) as fvinfo)
     after quantified guard =

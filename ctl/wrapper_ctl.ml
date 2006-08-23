@@ -217,15 +217,20 @@ struct
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
 		 (WRAPPER_ENV.mvar * SUB.value) list) option) = 
     fun m phi (used_after, binding) ->
-      let noclean = (satbis_noclean m phi) in
+      let noclean = satbis_noclean m phi in
       let res =
 	Common.uniq
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
       try
 	Some (res,
+	   (* throw in the old binding.  By construction it doesn't conflict
+           with any of the new things, and it is useful if there are no new
+	   things.  One could then wonder whether unwrap_wits needs
+	   binding as an argument. *)
 	      collect_used_after used_after
-		(List.map (function (_,env,_) -> env) res))
+		(binding ::
+		 (List.map (function (_,env,_) -> env) res)))
       with INCOMPLETE_BINDINGS -> None
 
 (* END OF MODULE: CTL_ENGINE_BIS *)

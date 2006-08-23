@@ -9,8 +9,7 @@ expression E;
 expression F;
 @@
 
-  bar(F);
-+ ddd(); // if this is dropped, the next rule is not applied
+  xxx(F);
 
 @@
 @@

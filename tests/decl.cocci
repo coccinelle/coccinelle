@@ -1,6 +1,6 @@
 // pb: foo doesn't get added
 @@
-identifier ioctl, cmd, arg;
+statement S;
 @@
 
   ioctl(int cmd, void *arg) {
