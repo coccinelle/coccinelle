@@ -294,7 +294,8 @@ let rec seq_fvs free_table quantified = function
 	     terms) in
       let bothfvs = Common.inter_set t1fvs termfvs in
       let t1onlyfvs = Common.minus_set t1fvs bothfvs in
-      (t1onlyfvs,bothfvs)::(seq_fvs free_table quantified terms)
+      let new_quantified = Common.union_set bothfvs quantified in
+      (t1onlyfvs,bothfvs)::(seq_fvs free_table new_quantified terms)
 
 let seq_fvs2 free_table quantified term1 term2 =
   match seq_fvs free_table quantified [term1;term2] with
