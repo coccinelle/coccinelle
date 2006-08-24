@@ -278,16 +278,21 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
-
-      (* Need to do something with tya *)
-
+      (* todo: isvaargs ? retb ? *)
 
       match_ident LocalFunction ida idb >&&>
-      
-      (* todo: stoa vs stob 
-       * todo: isvaargs ? retb ?
-       * "iso-by-absence" for storage, and return type.
-       *)
+
+      (* "iso-by-absence" for storage, and return type. *)
+      (match stoa with 
+       | None -> return true
+       | Some x -> 
+           assert (term x = A.Static);
+           return (stob = B.Sto B.Static)
+      ) >&&> 
+      (match tya with 
+       | None -> return true
+       | Some tya -> match_ft_ft tya retb
+      ) >&&>
       (
        (* for the pattern phase, no need the EComma *)
        let paramsa' = A.undots paramsa +> List.filter(function x -> 

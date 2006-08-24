@@ -131,14 +131,33 @@ let rec
       (match ii with
       | iidb::ioparenb::icparenb::iistob -> 
 
-	  (* Need to do something with allminus and tya *)
+      let stob' = stob in
+      let (iistob') = 
+        match stoa, stob, iistob with
+        | None, _, _ -> 
+            if allminus 
+            then 
+              let minusizer = iistob +> List.map (fun _ -> 
+                "fake", {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
+                ) in
+              tag_symbols minusizer iistob binding
+            else iistob
+        | Some x, B.Sto B.Static, [stostatic] -> 
+           assert (term x = A.Static);
+            tag_symbols [wrap_mcode x] [stostatic] binding
+           
+        | _ -> raise NoMatch
 
-      let stob' = 
-        (match stoa with 
-        | None -> stob 
-        | Some x -> failwith "not handling storage"
-        ) in
-      let iistob' = iistob in (* todo *)
+      in
+      let retb' = 
+        match tya with
+        | None -> 
+            if allminus 
+            then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
+                     retb binding       
+            else retb
+        | Some tya -> transform_ft_ft tya retb binding
+      in
 
       let (idb', iidb') = 
         transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
@@ -162,7 +181,7 @@ let rec
       let iidotsb' = iidotsb in (* todo *)
 
       F.FunHeader 
-        ((idb', (retb, (paramsb', (isvaargs, iidotsb'))), stob'), 
+        ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
          (iidb'++iiparensb'++iistob'))
       | _ -> raise Impossible
       )

@@ -129,7 +129,7 @@ let testall () =
     pr2 "----------------------";
     pr2 "statistics";
     pr2 "----------------------";
-    !diagnose +> List.rev +> List.iter (fun s -> prerr_string s; );
+    !diagnose +> List.rev +> List.iter (fun s -> print_string s; );
 
     pr2 "----------------------";
     pr2 "total score";
