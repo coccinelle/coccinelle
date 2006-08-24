@@ -126,10 +126,12 @@ let rec
       | _ -> raise Impossible 
       )
 
-  | A.FunHeader (allminus, stoa, ida, oparen, paramsa, cparen),
+  | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
       | iidb::ioparenb::icparenb::iistob -> 
+
+	  (* Need to do something with allminus and tya *)
 
       let stob' = 
         (match stoa with 

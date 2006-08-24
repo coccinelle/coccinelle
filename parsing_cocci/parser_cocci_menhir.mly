@@ -311,8 +311,8 @@ arity: TBang0 { Ast.UNIQUE }
      | /* empty */ { Ast.NONE }
 
 generic_ctype:
-       Tvoid
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType (startofs($1)) $1,
+       t=Tvoid
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType (startofs(t)) t,
 				   None)) }
      | q=ioption(ctype_qualif) ty=Tchar
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.CharType (startofs(ty)) ty,
@@ -323,23 +323,23 @@ generic_ctype:
      | q=ioption(ctype_qualif) ty=Tint
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.IntType (startofs(ty)) ty,
 				   q)) }
-     | Tdouble
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.DoubleType (startofs($1)) $1,
+     | t=Tdouble
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.DoubleType (startofs(t)) t,
 				   None)) }
-     | Tfloat
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType (startofs($1)) $1,
+     | t=Tfloat
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType (startofs(t)) t,
 				   None)) }
      | q=ioption(ctype_qualif) ty=Tlong
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType (startofs(ty)) ty,
 				   q)) }
-     | Tstruct pure_ident
-	 { Ast0.wrap(Ast0.StructUnionName(id2mcode (startofs($2)) $2,
-					  clt2mcode Ast.Struct (startofs($1))
-					    $1)) }
-     | Tunion pure_ident
-	 { Ast0.wrap(Ast0.StructUnionName(id2mcode (startofs($2)) $2,
-					  clt2mcode Ast.Union (startofs($1))
-					    $1)) }
+     | s=Tstruct i=pure_ident
+	 { Ast0.wrap(Ast0.StructUnionName(id2mcode (startofs(i)) i,
+					  clt2mcode Ast.Struct (startofs(s))
+					    s)) }
+     | u=Tunion i=pure_ident
+	 { Ast0.wrap(Ast0.StructUnionName(id2mcode (startofs(i)) i,
+					  clt2mcode Ast.Union (startofs(u))
+					    u)) }
 
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
@@ -403,15 +403,17 @@ includes:
 /*****************************************************************************/
 
 fundecl:
-  storage TFunDecl func_ident TOPar decl_list TCPar
-  TOBrace pre_post_decl_statement_and_expression_opt TCBrace
-      { Ast0.wrap(Ast0.FunDecl($1, None, $3,
-			       clt2mcode "(" (startofs($4)) $4, $5,
-			       clt2mcode ")" (startofs($6)) $6,
-			       clt2mcode "{" (startofs($7)) $7, $8,
-			       clt2mcode "}" (startofs($9)) $9)) }
+  s=storage t=option(generic_ctype)
+  TFunDecl i=func_ident lp=TOPar d=decl_list rp=TCPar
+  lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
+      { Ast0.wrap(Ast0.FunDecl(s, t, i,
+			       clt2mcode "(" (startofs(lp)) lp, d,
+			       clt2mcode ")" (startofs(rp)) rp,
+			       clt2mcode "{" (startofs(lb)) lb, b,
+			       clt2mcode "}" (startofs(rb)) rb)) }
 
-storage: Tstatic      { Some (clt2mcode Ast.Static (startofs($1)) $1) }
+%inline storage:
+         s=Tstatic      { Some (clt2mcode Ast.Static (startofs(s)) s) }
        | /* empty */  { None }
 
 decl: param_ctype ident

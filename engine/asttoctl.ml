@@ -803,7 +803,7 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 		   (make_seq
 		      [start_brace;
 			quantify b3fvs
-			  (statement_list body fvinfo
+			  (statement_list decls fvinfo
 			     (After
 				(decl_to_not_decl n dots stmt extender
 				   make_match
