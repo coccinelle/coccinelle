@@ -274,17 +274,22 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     Pretty_print_engine.pp_transformation_info trans_info;
                     Format.print_newline();
 
-                    (* TODO some union *)
+                    (* Some union. julia say that because the binding is
+                     * determined by the used_after_list, the items
+                     * in the list are kind of sorted, so could
+                     * optimise the union.
+                     *)
                     _current_bindings := 
-                      Ctlcocci_integration.metavars_binding2_to_binding
-                        used_after_env 
-                      :: !_current_bindings;
+                      Common.insert_set 
+                        (Ctlcocci_integration.metavars_binding2_to_binding
+                           used_after_env)
+                        !_current_bindings;
 
                     (* for the ugly hack *)
                     trans_info +> List.iter (fun (_nodei, binding, re) -> 
                       match re with
-                      | Ast_cocci.FunHeader (a,b,c,d,e,f),info -> 
-                          _hack_funheader := Some (binding, ((a,b,c,d,e,f),info))
+                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info -> 
+                          _hack_funheader := Some (binding, ((a,b,c,d,e,f,g),info))
                       | _ -> ()
                       );
                     
@@ -314,12 +319,12 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                ], iivirg::iisto))
            when !_hack_funheader <> None -> 
              let decl = e in
-             let (binding, ((a,b,c,d,e,f),info)) = some !_hack_funheader in
+             let (binding, ((a,b,c,d,e,f,g),info)) = some !_hack_funheader in
 
              (try 
                let node' = 
                  Transformation.transform_re_node 
-                   (Ast_cocci.FunHeader (a,b,c,d,e,f), info)
+                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info)
                    (((Control_flow_c.FunHeader ((s, ft, storage), 
                                                 iisini++iity++iisto)), []),"")
                    binding in

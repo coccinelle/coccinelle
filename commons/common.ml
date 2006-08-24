@@ -1880,7 +1880,10 @@ type 'a set = 'a list
 
 let (empty_set: 'a set) = []
 let (insert_set: 'a -> 'a set -> 'a set) = fun x xs -> 
-  if List.mem x xs then (* let _ = print_string "warning insert: already exist" in *) xs else x::xs
+  if List.mem x xs 
+  then (* let _ = print_string "warning insert: already exist" in *) 
+    xs 
+  else x::xs
 
 let (single_set: 'a -> 'a set) = fun x -> insert_set x empty_set
 let (set: 'a list -> 'a set) = fun xs -> xs +> List.fold_left (flip insert_set) empty_set 
