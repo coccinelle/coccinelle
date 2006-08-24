@@ -411,7 +411,7 @@ let rec statement s =
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
 	Ast.Stars(d,option_to_list whencode)
-    | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+    | Ast0.FunDecl(stg,_,name,lp,params,rp,lbrace,body,rbrace) ->
 	let stg = get_option mcode stg in
 	let name = ident name in
 	let lp = mcode lp in
@@ -420,7 +420,11 @@ let rec statement s =
 	let lbrace = mcode lbrace in
 	let (decls,dots,body) = separate_decls body in
 	let rbrace = mcode rbrace in
-	Ast.FunDecl(rewrap s (Ast.FunHeader(stg,name,lp,params,rp)),
+	let allminus =
+	  match Ast0.get_mcodekind s with
+	    Ast0.MINUS(_) -> true
+	  | _ -> false in
+	Ast.FunDecl(rewrap s (Ast.FunHeader(allminus,stg,name,lp,params,rp)),
 		    tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		    decls,dots,body,
 		    tokenwrap rbrace (Ast.SeqEnd(rbrace)))

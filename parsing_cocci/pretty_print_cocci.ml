@@ -329,7 +329,8 @@ let storage Ast.Static = print_string "static "
 
 let rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(stg,name,lp,params,rp) ->
+    Ast.FunHeader(allminus,stg,name,lp,params,rp) ->
+      print_bool allminus; print_string " ";
       print_string arity;
       print_option (mcode storage) stg;
       ident name; mcode print_string_box lp;

@@ -405,7 +405,7 @@ includes:
 fundecl:
   storage TFunDecl func_ident TOPar decl_list TCPar
   TOBrace pre_post_decl_statement_and_expression_opt TCBrace
-      { Ast0.wrap(Ast0.FunDecl($1, $3,
+      { Ast0.wrap(Ast0.FunDecl($1, None, $3,
 			       clt2mcode "(" (startofs($4)) $4, $5,
 			       clt2mcode ")" (startofs($6)) $6,
 			       clt2mcode "{" (startofs($7)) $7, $8,

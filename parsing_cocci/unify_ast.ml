@@ -257,8 +257,8 @@ let rec unify_parameterTypeDef p1 p2 =
 
 let rec unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
-    (Ast.FunHeader(stg1,nm1,lp1,params1,rp1),
-     Ast.FunHeader(stg2,nm2,lp2,params2,rp2)) ->
+    (Ast.FunHeader(_,stg1,nm1,lp1,params1,rp1),
+     Ast.FunHeader(_,stg2,nm2,lp2,params2,rp2)) ->
        conjunct_bindings (unify_ident nm1 nm2)
 	 (unify_dots unify_parameterTypeDef pdots params1 params2)
   | (Ast.Decl(d1),Ast.Decl(d2)) -> unify_declaration d1 d2

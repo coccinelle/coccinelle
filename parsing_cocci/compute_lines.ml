@@ -439,19 +439,20 @@ let rec statement s =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres s (Ast0.Stars(dots,whencode)) ln ln
-  | Ast0.FunDecl(None,name,lp,params,rp,lbrace,body,rbrace) ->
-      let params = parameter_list (Some(promote_mcode lp)) params in
-      let body =
-	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
+  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+      let ty = get_option typeC ty in
       let name = ident name in
-      mkres s (Ast0.FunDecl(None,name,lp,params,rp,lbrace,body,rbrace))
-	name (promote_mcode rbrace)
-  | Ast0.FunDecl((Some st) as stg,name,lp,params,rp,lbrace,body,rbrace) ->
       let params = parameter_list (Some(promote_mcode lp)) params in
       let body =
 	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
-      mkres s (Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace))
-	(promote_mcode st) (promote_mcode rbrace)
+      let res = Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) in
+      (* cases on what is leftmost *)
+      (match stg with
+	None ->
+	  (match ty with
+	    None -> mkres s res name (promote_mcode rbrace)
+	  | Some x -> mkres s res x (promote_mcode rbrace))
+      | Some st -> mkres s res (promote_mcode st) (promote_mcode rbrace))
   | Ast0.OptStm(stm) ->
       let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
   | Ast0.UniqueStm(stm) ->

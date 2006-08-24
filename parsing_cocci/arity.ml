@@ -623,15 +623,13 @@ let rec statement in_nest tgt stm =
       let whencode =
 	get_option (concat_dots (statement false Ast0.NONE)) whencode in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whencode))
-  | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
 	all_same false true tgt (mcode2line lp)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [lp;rp;lbrace;rbrace])) in
-      let stg =
-	match stg with
-	  None -> None
-	| Some x -> Some (mcode x) in
+      let stg = get_option mcode stg in
+      let ty = get_option (typeC arity) ty in
       let name = ident false false arity name in
       let lp = mcode lp in
       let params = parameter_list arity params in
@@ -640,7 +638,7 @@ let rec statement in_nest tgt stm =
       let body = dots (statement false arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"	
 (* --------------------------------------------------------------------- *)

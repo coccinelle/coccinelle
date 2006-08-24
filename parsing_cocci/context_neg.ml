@@ -358,8 +358,8 @@ let rec equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(stg1,_,lp1,_,rp1,lbrace1,_,rbrace1),
-     Ast0.FunDecl(stg2,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
+    (Ast0.FunDecl(stg1,_,_,lp1,_,rp1,lbrace1,_,rbrace1),
+     Ast0.FunDecl(stg2,_,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
        equal_option stg1 stg2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
        equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
   | (Ast0.Decl(_),Ast0.Decl(_)) -> true

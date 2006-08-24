@@ -305,7 +305,7 @@ in
 
 let rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(stg,name,lp,params,rp) ->
+    Ast.FunHeader(_,stg,name,lp,params,rp) ->
       print_string arity;
       print_option (mcode storage) stg;
       ident name; mcode print_string_box lp;

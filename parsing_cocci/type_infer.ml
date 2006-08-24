@@ -167,7 +167,7 @@ let rec propagate_types env =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+      Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(id,ty) -> [(strip id,Ast0.ast0_type_to_type ty)]

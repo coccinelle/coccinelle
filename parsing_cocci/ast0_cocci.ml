@@ -184,7 +184,7 @@ type base_statement =
   | Dots          of string mcode (* ... *) * statement dots option
   | Circles       of string mcode (* ooo *) * statement dots option
   | Stars         of string mcode (* *** *) * statement dots option
-  | FunDecl of Ast.storage mcode option * ident (* name *) *
+  | FunDecl of Ast.storage mcode option * typeC option * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)

@@ -31,7 +31,7 @@ let mcodekind brackets fn x = function
 	x plus_streams
   | Ast0.PLUS -> fn x
   | Ast0.MIXED(plus_streams) ->
-      let (lb,rb) = ("","") in
+      let (lb,rb) = ("§","½") in
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
@@ -227,9 +227,10 @@ let rec statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  print_string arity;
 	  print_option (mcode U.storage) stg;
+	  print_option typeC ty;
 	  ident name; mcode print_string_box lp;
 	  parameter_list params; close_box(); mcode print_string rp;
 	  print_string " ";

@@ -176,9 +176,10 @@ let combiner bind option_default
   and statement s =
     let k s =
       match Ast0.unwrap s with
-	Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  multibind
-	    [get_option storage_mcode stg; ident name; string_mcode lp;
+	    [get_option storage_mcode stg; get_option typeC ty;
+	      ident name; string_mcode lp;
 	      parameter_dots params; string_mcode rp; string_mcode lbrace;
 	      statement_dots body; string_mcode rbrace]
       | Ast0.Decl(decl) -> declaration decl
@@ -438,8 +439,9 @@ let rebuilder = fun
     let k s =
       Ast0.rewrap s
 	(match Ast0.unwrap s with
-	  Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
-	    Ast0.FunDecl(get_option storage_mcode stg, ident name,
+	  Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	    Ast0.FunDecl(get_option storage_mcode stg,
+			 get_option typeC ty, ident name,
 			 string_mcode lp, parameter_list params,
 			 string_mcode rp, string_mcode lbrace,
 			 statement_dots body, string_mcode rbrace)

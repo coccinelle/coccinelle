@@ -194,8 +194,9 @@ let rec statement table minus s =
       dots (statement table minus) rule_elem_dots
   | Ast0.Dots(_,Some x) | Ast0.Circles(_,Some x) | Ast0.Stars(_,Some x) ->
       dots (statement table minus) x
-  | Ast0.FunDecl(stg,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN table minus name;
+      get_opt (typeC table minus) ty;
       parameter_list table minus params;
       dots (statement table minus) body
   | _ -> () (* no metavariable subterms *)

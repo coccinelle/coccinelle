@@ -214,7 +214,8 @@ and storage = Static
 (* Top-level code *)
 
 and base_rule_elem =
-    FunHeader     of storage mcode option * ident (* name *) *
+    FunHeader     of bool (* true if all minus *) *
+	             storage mcode option * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
   | Decl          of declaration

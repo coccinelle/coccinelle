@@ -269,7 +269,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.FunHeader (stoa, ida, _, paramsa, _), 
+  | A.FunHeader (_,stoa, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
 
 

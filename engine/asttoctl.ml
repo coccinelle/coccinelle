@@ -1104,8 +1104,6 @@ let top_level free_table extender used_after t =
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
-      Printf.printf "unopt code\n";
-      Pretty_print_cocci.statement "" unopt; Format.print_newline();
       let _ = extender unopt in
       let _ = count_nested_braces unopt in
       preprocess_dots_e unopt;
@@ -1113,8 +1111,6 @@ let top_level free_table extender used_after t =
 	(statement unopt (free_table,extender,used_after) Tail [] false)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
-      Printf.printf "unopt code\n";
-      Pretty_print_cocci.statement_dots unopt; Format.print_newline();
       List.iter
 	(function x ->
 	  let _ = extender x in

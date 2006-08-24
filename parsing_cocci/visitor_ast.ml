@@ -192,7 +192,7 @@ let combiner bind option_default
   and rule_elem re =
     let k re =
       match Ast.unwrap re with
-	Ast.FunHeader(stg,name,lp,params,rp) ->
+	Ast.FunHeader(_,stg,name,lp,params,rp) ->
 	  multibind [get_option storage_mcode stg; ident name;
 		      string_mcode lp; parameter_dots params;
 		      string_mcode rp]
@@ -502,8 +502,8 @@ let rebuilder
     let k re =
       Ast.rewrap re
 	(match Ast.unwrap re with
-	  Ast.FunHeader(stg,name,lp,params,rp) ->
-	    Ast.FunHeader(get_option storage_mcode stg, ident name,
+	  Ast.FunHeader(allminus,stg,name,lp,params,rp) ->
+	    Ast.FunHeader(allminus,get_option storage_mcode stg, ident name,
 			  string_mcode lp, parameter_dots params,
 			  string_mcode rp)
 	| Ast.Decl(decl) -> Ast.Decl(declaration decl)
