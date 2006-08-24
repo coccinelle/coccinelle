@@ -256,7 +256,14 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         | F.Case  (_, (e,_)) -> visitor_e e
         | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
 
-        | _ -> ()
+        | (
+          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
+          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
+          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
+          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
+          F.TrueNode|F.Fake|F.Exit|F.Enter|F.Asm
+          ) -> ()
+
         );
         !globals
       )
@@ -341,6 +348,9 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
 
 and match_re_onedecl = fun decla declb -> 
   match A.unwrap decla, declb with
+  | A.MetaDecl ida, _ -> 
+      return true (* todo? add in env ? *)
+
     (* could handle iso here but handled in standard.iso *)
     (* todo, use sto? lack of sto in Ast_cocci *)
   | A.UnInit (typa, sa, _), ((Some ((sb, None),_), typb, sto), _) ->
@@ -355,8 +365,10 @@ and match_re_onedecl = fun decla declb ->
           pr2 "warning: complex initializer, cocci does not handle that";
           return false
       )
+
   | _, ((None, typb, sto), _) -> 
       failwith "no variable in this declaration, wierd"
+
       
   | A.DisjDecl xs, _ -> 
       xs +> List.fold_left (fun acc decla -> 
@@ -752,7 +764,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
         match_opt match_e_e  eaopt ebopt
        (* todo: handle the iso on optionnal size specifification ? *)
 	  
-    | A.StructUnionName(sa, sua), (qu, (B.StructUnionName (sb, sub), _)) -> 
+    | A.StructUnionName (sa, sua), (qu, (B.StructUnionName (sb, sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
 

@@ -1,5 +1,6 @@
 @@
 statement S;
+identifier ioctl;
 @@
 
   ioctl(int cmd, void *arg) {

@@ -451,7 +451,10 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
  fun pr_elem ->
   let rec pp_type_left = fun ((qu, iiqu), (ty, iity)) -> 
   match ty, iity with
-  | (Pointer t, [i]) ->  pr_elem i; pp_type_left t
+  | (Pointer t, [i]) ->  
+      pr_elem i; 
+      iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
+      pp_type_left t
 
   | (Array (eopt, t), [i1;i2]) -> pp_type_left t
   | (FunctionType (returnt, paramst), [i1;i2]) -> pp_type_left returnt
@@ -475,6 +478,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
   let rec pp_type_right = fun ((qu, iiqu), (ty, iity)) -> 
   match ty, iity with
   | (Pointer t, [i]) ->  pp_type_right t
+
   | (Array (eopt, t), [i1;i2]) -> 
       pr_elem i1;
       eopt +> do_option (fun e -> pp_expression_gen pr_elem e);
@@ -533,6 +537,9 @@ and pp_decl_gen pr_elem = function
       (* handling the first var. Special case, we print the whole type *)
       (match var with
       | Some ((s, ini),  iis::iini) -> 
+          if s = "scsi_device_types"
+          then pr2 "ICI"
+          else ();
           pp_type_with_ident_gen pr_elem (Some (s, iis)) (Some (storage, iisto))
                                  returnType;
           ini +> do_option (fun init -> 

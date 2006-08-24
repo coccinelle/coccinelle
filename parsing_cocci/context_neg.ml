@@ -150,7 +150,7 @@ let classify all_marked table code =
 	  let index = (get_index e1)@il in
 	  try
 	    let _ = Hashtbl.find table index in
-	    failwith
+	    failwith (* pad: must be commented to replay the bench of plos *)
 	      (Printf.sprintf "%d: index %s already used\n"
 		 (Ast0.get_info e).Ast0.line_start
 		 (String.concat " " (List.map string_of_int index)))

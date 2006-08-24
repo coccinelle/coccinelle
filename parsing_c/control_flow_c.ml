@@ -174,7 +174,10 @@ let get_first_node g =
 
 let extract_fullstatement node = 
   match unwrap node with
-  | Decl decl -> Some (Ast_c.Decl decl, [])
+  | Decl decl -> 
+      (* new policy. no more considered as a statement *)
+      (* old: Some (Ast_c.Decl decl, []) *)
+      None 
   | Asm -> Some (Ast_c.Asm, [])
 
   | SeqStart (st,_,_) 

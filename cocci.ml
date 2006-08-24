@@ -176,6 +176,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
   command2("cp " ^ cfile ^ " /tmp/input.c");
 
   let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
+  let _hack_funheader = ref None in
 
   (* 1: iter ctl *)  
   ctls +> List.iter (fun  (ctl_toplevel_list, used_after_list) -> 
@@ -234,11 +235,6 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 if !Flag.show_before_fixed_flow 
                 then print_flow flow;
 
-                let current_binding = binding in
-                let current_binding2 = 
-                  Ctlcocci_integration.metavars_binding_to_binding2 binding
-                in
-
 		let loop_in_src_code = !Flag_ctl.loop_in_src_code in
 		if not loop_in_src_code
 		then
@@ -253,12 +249,19 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                              )
                      });
 
+		Flag_ctl.loop_in_src_code := loop_in_src_code;
+
+                let current_binding = binding in
+                let current_binding2 = 
+                  Ctlcocci_integration.metavars_binding_to_binding2 binding
+                in
+
+
                 let model_ctl  =
 		  Ctlcocci_integration.model_for_ctl flow current_binding in
 		let satres =
 		  Ctlcocci_integration.mysat model_ctl ctl 
                     (used_after_list, current_binding2) in
-		Flag_ctl.loop_in_src_code := loop_in_src_code;
 		match satres with
 		| Some (trans_info2, used_after_env) ->
                     let trans_info = 
@@ -276,6 +279,14 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                       Ctlcocci_integration.metavars_binding2_to_binding
                         used_after_env 
                       :: !_current_bindings;
+
+                    (* for the ugly hack *)
+                    trans_info +> List.iter (fun (_nodei, binding, re) -> 
+                      match re with
+                      | Ast_cocci.FunHeader (a,b,c,d,e,f),info -> 
+                          _hack_funheader := Some (binding, ((a,b,c,d,e,f),info))
+                      | _ -> ()
+                      );
                     
                     if trans_info <> []
                     then 
@@ -291,6 +302,46 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
               end
             else 
               (Ast_c.Definition def, Unparse_c.PPviatok il)
+
+
+        (* UGLY HACK *)
+        | Ast_c.Declaration 
+            (Ast_c.DeclList 
+               ([((Some ((s, None), iisini)), 
+                  (qu, (Ast_c.FunctionType ft, iity)), 
+                  storage),
+                 []
+               ], iivirg::iisto))
+           when !_hack_funheader <> None -> 
+             let decl = e in
+             let (binding, ((a,b,c,d,e,f),info)) = some !_hack_funheader in
+
+             (try 
+               let node' = 
+                 Transformation.transform_re_node 
+                   (Ast_cocci.FunHeader (a,b,c,d,e,f), info)
+                   (((Control_flow_c.FunHeader ((s, ft, storage), 
+                                                iisini++iity++iisto)), []),"")
+                   binding in
+               match Control_flow_c.unwrap node' with
+               | Control_flow_c.FunHeader 
+                   ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
+
+                     _hack_funheader := None;
+                     Ast_c.Declaration 
+                       (Ast_c.DeclList 
+                          ([((Some ((s, None), [iis])), 
+                             (qu, (Ast_c.FunctionType ft, [iioparen;iicparen])), 
+                             storage),
+                            []
+                          ], iivirg::iisto)), Unparse_c.PPnormal 
+
+               | _ -> 
+                   raise Impossible
+             with Transformation.NoMatch -> 
+               (decl, Unparse_c.PPviatok il)
+             )
+             
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) (* end 3: iter function *)

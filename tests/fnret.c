@@ -1,1 +1,1 @@
-void foo(int x) { return; }
+static void foo(int x) { return; }

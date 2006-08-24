@@ -282,6 +282,9 @@ and transform_onedecl = fun decla declb ->
    | _, (((None, typb, sto), _),_) -> 
        failwith "no variable in this declaration, wierd"
 
+   | A.MetaDecl ida, _ -> 
+       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
+
    | A.DisjDecl xs, declb -> 
        xs +> Common.fold_k (fun acc decla k -> 
          try transform_onedecl decla acc  binding
@@ -580,20 +583,30 @@ and (transform_param:
     match A.unwrap pa, pb with
     | A.Param (ida, typa), ((hasreg, idb, typb), ii_b_s) -> 
         
-        let idb, iihasreg, iidb = 
+        let kindparam = 
           (match hasreg, idb,  ii_b_s with
-          | false, Some s, [i1] -> s, [], i1
-          | true, Some s, [i1;i2] -> s, [i1], i2
-          | _, None, _ -> raise Impossible
+          | false, Some s, [i1] -> Left (s, [], i1)
+          | true, Some s, [i1;i2] -> Left (s, [i1], i2)
+          | _, None, ii -> 
+              pr2 "NORMALLY IMPOSSIBLE. The Cocci Param has an ident but not the C";
+              Right ii
+              
+              
           | _ -> raise Impossible
           )
         in
-
-        let (idb', iidb') = 
-          transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
-        in
-        let typb' = transform_ft_ft typa typb binding in
-        (hasreg, Some idb', typb'), (iihasreg++iidb') 
+        (match kindparam with
+        | Left (idb, iihasreg, iidb) -> 
+            let (idb', iidb') = 
+              transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
+            in
+            let typb' = transform_ft_ft typa typb binding in
+            (hasreg, Some idb', typb'), (iihasreg++iidb') 
+        | Right iihasreg -> 
+            let typb' = transform_ft_ft typa typb binding in
+            (hasreg, None, typb'), (iihasreg) 
+        )
+            
         
         
     | A.PComma _, _ -> raise Impossible
