@@ -3,7 +3,7 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line)
+type 'a wrap = ('a * line * string list (* free vars *))
 
 type 'a befaft =
     BEFORE      of 'a list list
@@ -260,15 +260,24 @@ and base_statement =
   | For           of rule_elem (* header *) * statement
   | Atomic        of rule_elem
   | Disj          of statement dots list
-  | Nest          of statement dots
+  | Nest          of statement dots * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * bool * statement dots * rule_elem (* } *)
-  | Dots          of string mcode (* ... *) * statement dots list
-  | Circles       of string mcode (* ooo *) * statement dots list
-  | Stars         of string mcode (* *** *) * statement dots list
+  | Dots          of string mcode (* ... *) * statement dots list *
+	             dots_whencode list
+  | Circles       of string mcode (* ooo *) * statement dots list *
+	             dots_whencode list
+  | Stars         of string mcode (* *** *) * statement dots list *
+	             dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)
+
+(* only used with asttoctl *)
+and dots_whencode =
+    WParen of rule_elem * string (*pren_var*)
+  | Other of statement
+  | Other_dots of statement dots
 
 and statement = base_statement wrap
 
@@ -316,17 +325,18 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l) x = (x,l)
-let unwrap (x,_) = x
-let get_line (_,l) = l
+let rewrap (_,l,fvs) x = (x,l,fvs)
+let unwrap (x,_,_) = x
+let get_line (_,l,_) = l
+let get_fvs (_,_,fvs) = fvs
 
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d =
-  (MetaRuleElem(s,{ line = 0; column = 0 },d), 0)
+  (MetaRuleElem(s,{ line = 0; column = 0 },d), 0, [s])
 
 let make_meta_decl s d =
-  (MetaDecl(s,{ line = 0; column = 0 },d), 0)
+  (MetaDecl(s,{ line = 0; column = 0 },d), 0, [s])
 
 (* --------------------------------------------------------------------- *)
 

@@ -163,8 +163,8 @@ let mcode(term,_,info,mcodekind) =
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let rewrap ast0 ast = (ast, (Ast0.get_info ast0).Ast0.line_start)
-let tokenwrap (_,info,_) ast = (ast, info.Ast.line)
+let rewrap ast0 ast = (ast, (Ast0.get_info ast0).Ast0.line_start, [])
+let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [])
 
 let dots fn d =
   rewrap d
@@ -398,19 +398,19 @@ let rec statement s =
     | Ast0.Disj(_,rule_elem_dots_list,_) ->
 	Ast.Disj(List.map (function x -> dots statement x) rule_elem_dots_list)
     | Ast0.Nest(_,rule_elem_dots,_) ->
-	Ast.Nest(dots statement rule_elem_dots)
+	Ast.Nest(dots statement rule_elem_dots,[])
     | Ast0.Dots(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Dots(d,option_to_list whencode)
+	Ast.Dots(d,option_to_list whencode,[])
     | Ast0.Circles(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Circles(d,option_to_list whencode)
+	Ast.Circles(d,option_to_list whencode,[])
     | Ast0.Stars(d,whencode) ->
 	let d = mcode d in
 	let whencode = get_option (dots statement) whencode in
-	Ast.Stars(d,option_to_list whencode)
+	Ast.Stars(d,option_to_list whencode,[])
     | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	let stg = get_option mcode stg in
 	let ty = get_option typeC ty in

@@ -74,40 +74,51 @@ let elim_opt =
   let mcode x = x in
   let donothing r k e = k e in
 
+  let fvlist l =
+    List.fold_left Common.union_set [] (List.map Ast.get_fvs l) in
+
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
       ([],_) -> []
 
-    | (Ast.Dots(_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_) as u)::urest,
+    | (Ast.Dots(_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_) as u)::urest,
        d0::_::d1::rest)
-    | (Ast.Nest(_)::Ast.OptStm(stm)::(Ast.Dots(_,_) as u)::urest,
+    | (Ast.Nest(_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_) as u)::urest,
        d0::_::d1::rest) ->
-	let rw = Ast.rewrap stm in
-	let rwd = Ast.rewrap stm in
-	let new_rest1 = dots_list (u::urest) (d1::rest) in
-	let new_rest2 = dots_list urest rest in
-	[d0;rw(Ast.Disj[rwd(Ast.DOTS(stm::new_rest1));
-			 rwd(Ast.DOTS(new_rest2))])]
+	 let l = Ast.get_line stm in
+	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
+	 let new_rest2 = dots_list urest rest in
+	 let fv_rest1 = fvlist new_rest1 in
+	 let fv_rest2 = fvlist new_rest2 in
+	 [d0;(Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1);
+			(Ast.DOTS(new_rest2),l,fv_rest2)],l,fv_rest1)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
-	let rw = Ast.rewrap stm in
-	let rwd = Ast.rewrap stm in
-	let new_rest = dots_list urest rest in
-	[rw(Ast.Disj[rwd(Ast.DOTS(stm::new_rest));rwd(Ast.DOTS(new_rest))])]
+	 let l = Ast.get_line stm in
+	 let new_rest1 = dots_list urest rest in
+	 let new_rest2 = stm::new_rest1 in
+	 let fv_rest1 = fvlist new_rest1 in
+	 let fv_rest2 = fvlist new_rest2 in
+	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2);
+		     (Ast.DOTS(new_rest1),l,fv_rest1)],l,fv_rest2)]
 
-    | ([Ast.Dots(_,_);Ast.OptStm(stm)],[d1;_]) ->
-	let rw = Ast.rewrap stm in
-	let rwd = Ast.rewrap stm in
-	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));rwd(Ast.DOTS([d1]))])]
+    | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
+	let l = Ast.get_line stm in
+	let fv_stm = Ast.get_fvs stm in
+	let fv_d1 = Ast.get_fvs d1 in
+	let fv_both = Common.union_set fv_stm fv_d1 in
+	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm);
+		       (Ast.DOTS([d1]),l,fv_d1)],l,fv_both)]
 
     | ([Ast.Nest(_);Ast.OptStm(stm)],[d1;_]) ->
+	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
 	let dots =
 	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
 		    Ast.CONTEXT(Ast.NOTHING)),
-		   []) in
-	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));rwd(Ast.DOTS([rw dots]))])]
+		   [],[]) in
+	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));(Ast.DOTS([rw dots]),l,[])])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -133,19 +144,14 @@ paren var has to take into account the names of the nested braces.  On the
 other hand the close brace does not escape, so we don't have to take into
 account other paren variable names. *)
 
-let brace_table =
-  (Hashtbl.create(50) :
-     (Ast.statement (* always a seq/fundecl *),string (*paren var*)) Hashtbl.t)
-
-let count_nested_braces =
+(* called repetitively, which is inefficient, but less trouble than adding a
+new field to Seq and FunDecl *)
+let count_nested_braces s =
   let bind x y = max x y in
   let option_default = 0 in
   let stmt_count r k s =
     match Ast.unwrap s with
-      Ast.Seq(_,_,_,_,_) | Ast.FunDecl(_,_,_,_,_,_) ->
-	let nested = k s in
-	Hashtbl.add brace_table s ("p"^(string_of_int nested));
-	nested + 1
+      Ast.Seq(_,_,_,_,_) | Ast.FunDecl(_,_,_,_,_,_) -> (k s) + 1
     | _ -> k s in
   let donothing r k e = k e in
   let mcode r x = 0 in
@@ -154,45 +160,7 @@ let count_nested_braces =
       donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing stmt_count donothing donothing in
-  recursor.V.combiner_statement
-
-(* --------------------------------------------------------------------- *)
-(* Whenify *)
-(* For A ... B, neither A nor B should occur in the code matched by the ...
-We add these to any when code associated with the dots *)
-
-let rec get_end ((_,extender,_) as fvinfo) f s =
-  match Ast.unwrap s with
-    Ast.Disj(stmt_dots_list) ->
-      List.concat
-	(List.map
-	   (function x ->
-	     match Ast.unwrap x with
-	       Ast.DOTS(l) ->
-		 (match l with [] -> [] | xs -> get_end fvinfo f (f xs))
-	     | _ -> failwith "circles and stars not supported")
-	   stmt_dots_list)
-  | Ast.IfThen(header,_) (* take header only, for both first and last *)
-  | Ast.IfThenElse(header,_,_,_)
-  | Ast.While(header,_) -> 
-      if !simple_get_end
-      then
-	let res = Ast.rewrap s (Ast.Atomic header) in
-	let _ = extender res in
-	[res]
-      else [s]
-  | Ast.Dots(_,_) -> []
-  | Ast.OptStm(stm) -> [stm]
-  | Ast.UniqueStm(stm) -> [stm]
-  | Ast.MultiStm(stm) -> [stm]
-  | _ -> [s]
-
-and get_first fvinfo s =
-  get_end fvinfo (function xs -> List.hd xs) s
-
-and get_last fvinfo s =
-  get_end fvinfo (function xs -> List.hd (List.rev xs)) s
-
+  "p"^(string_of_int (recursor.V.combiner_statement s))
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -264,7 +232,7 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let make_match n guard free_table used_after code =
+let make_match n guard used_after code =
   if guard
   then wrapPred n (Lib_engine.Match(code),CTL.Control)
   else
@@ -273,49 +241,44 @@ let make_match n guard free_table used_after code =
     then wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.Modif v))
     else
       let any_used_after =
-	let fvs = Hashtbl.find free_table (FV.Rule_elem code) in
-	List.exists (function x -> List.mem x used_after) fvs in
+	List.exists (function x -> List.mem x used_after) (Ast.get_fvs code) in
       if !onlyModif && not any_used_after
       then wrapPred n (Lib_engine.Match(code),CTL.Control)
       else wrapExists n (v,wrapPred n (Lib_engine.Match(code),CTL.UnModif v))
 
 let make_raw_match n code = wrapPred n (Lib_engine.Match(code),CTL.Control)
 
-let rec seq_fvs free_table quantified = function
+let rec seq_fvs quantified = function
     [] -> []
-  | term1::terms ->
-      let t1fvs =
-	get_unquantified quantified (Hashtbl.find free_table term1) in
+  | fv1::fvs ->
+      let t1fvs = get_unquantified quantified fv1 in
       let termfvs =
 	List.fold_left Common.union_set []
-	  (List.map
-	     (function t ->
-	       get_unquantified quantified (Hashtbl.find free_table t))
-	     terms) in
+	  (List.map (get_unquantified quantified) fvs) in
       let bothfvs = Common.inter_set t1fvs termfvs in
       let t1onlyfvs = Common.minus_set t1fvs bothfvs in
       let new_quantified = Common.union_set bothfvs quantified in
-      (t1onlyfvs,bothfvs)::(seq_fvs free_table new_quantified terms)
+      (t1onlyfvs,bothfvs)::(seq_fvs new_quantified fvs)
 
-let seq_fvs2 free_table quantified term1 term2 =
-  match seq_fvs free_table quantified [term1;term2] with
+let seq_fvs2 quantified fv1 fv2 =
+  match seq_fvs quantified [fv1;fv2] with
     [(t1fvs,bfvs);(t2fvs,[])] -> (t1fvs,bfvs,t2fvs)
   | _ -> failwith "impossible"
 
-let seq_fvs3 free_table quantified term1 term2 term3 =
-  match seq_fvs free_table quantified [term1;term2;term3] with
+let seq_fvs3 quantified fv1 fv2 fv3 =
+  match seq_fvs quantified [fv1;fv2;fv3] with
     [(t1fvs,b12fvs);(t2fvs,b23fvs);(t3fvs,[])] ->
       (t1fvs,b12fvs,t2fvs,b23fvs,t3fvs)
   | _ -> failwith "impossible"
 
-let seq_fvs4 free_table quantified term1 term2 term3 term4 =
-  match seq_fvs free_table quantified [term1;term2;term3;term4] with
+let seq_fvs4 quantified fv1 fv2 fv3 fv4 =
+  match seq_fvs quantified [fv1;fv2;fv3;fv4] with
     [(t1fvs,b12fvs);(t2fvs,b23fvs);(t3fvs,b34fvs);(t4fvs,[])] ->
       (t1fvs,b12fvs,t2fvs,b23fvs,t3fvs,b34fvs,t4fvs)
   | _ -> failwith "impossible"
 
-let seq_fvs5 free_table quantified term1 term2 term3 term4 term5 =
-  match seq_fvs free_table quantified [term1;term2;term3;term4;term5] with
+let seq_fvs5 quantified fv1 fv2 fv3 fv4 fv5 =
+  match seq_fvs quantified [fv1;fv2;fv3;fv4;fv5] with
     [(t1fvs,b12fvs);(t2fvs,b23fvs);(t3fvs,b34fvs);(t4fvs,b45fvs);(t5fvs,[])] ->
       (t1fvs,b12fvs,t2fvs,b23fvs,t3fvs,b34fvs,t4fvs,b45fvs,t5fvs)
   | _ -> failwith "impossible"
@@ -329,58 +292,53 @@ let intersectll lst nested_list =
 (* --------------------------------------------------------------------- *)
 (* annotate dots with before and after neighbors *)
 
-type befaft =
-    Paren of Ast.rule_elem * string (*pren_var*)
-  | Other of Ast.statement
-  | Other_dots of Ast.statement Ast.dots
-
-let before_after_table =
-  (Hashtbl.create(50) :
-     (Ast.statement (* always a dots *),befaft list ref) Hashtbl.t)
-
-let update e v =
-  let cell =
-    try Hashtbl.find before_after_table e
-    with Not_found ->
-      let cell = ref [] in Hashtbl.add before_after_table e cell; cell in
-  cell := v @ !cell
-
 let rec get_before sl a =
   match Ast.unwrap sl with
     Ast.DOTS(x) ->
       let rec loop sl a =
 	match sl with
-	  [] -> a
-	| e::sl -> loop sl (get_before_e e a) in
-      loop x a
+	  [] -> ([],a)
+	| e::sl ->
+	    let (e,ea) = get_before_e e a in
+	    let (sl,sla) = loop sl ea in
+	    (e::sl,sla) in
+      let (l,a) = loop x a in
+      (Ast.rewrap sl (Ast.DOTS(l)),a)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
 and get_before_e s a =
   match Ast.unwrap s with
-    Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) ->
-      let _ = get_before stmt_dots a in update s a; [Other_dots stmt_dots]
+    Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+  | Ast.Nest(stmt_dots,t) ->
+      let (sd,_) = get_before stmt_dots a in
+      (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
-      List.fold_left
-	(function rest -> function cur ->
-	  Common.union_set (get_before cur a) rest)
-	[] stmt_dots_list
-  | Ast.Atomic(ast) -> [Other s]
-  | Ast.Seq(lbrace,decls,_,body,rbrace) ->
-      let index = Hashtbl.find brace_table s in
-      let _ = get_before body (get_before decls [Paren(lbrace,index)]) in
-      [Paren(rbrace,index)]
-  | Ast.IfThen(ifheader,branch) -> let _ = get_before_e branch [] in [Other s]
+      let (dsl,dsla) =
+	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
+      (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
+  | Ast.Atomic(ast) -> (s,[Ast.Other s])
+  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+      let index = count_nested_braces s in
+      let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
+      let (bd,_) = get_before body dea in
+      (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
+       [Ast.WParen(rbrace,index)])
+  | Ast.IfThen(ifheader,branch) ->
+      let (br,_) = get_before_e branch [] in
+      (Ast.rewrap s (Ast.IfThen(ifheader,br)), [Ast.Other s])
   | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
-      let _ = get_before_e branch1 [] in
-      let _ = get_before_e branch2 [] in
-      [Other s]
-  | Ast.While(header,body) -> let _ = get_before_e body [] in [Other s]
-  | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
-      let index = Hashtbl.find brace_table s in
-      let _ = get_before body (get_before decls [Paren(lbrace,index)]) in
-      []
+      let (br1,_) = get_before_e branch1 [] in
+      let (br2,_) = get_before_e branch2 [] in
+      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2)),[Ast.Other s])
+  | Ast.While(header,body) ->
+      let (bd,_) = get_before_e body [] in
+      (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
+  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+      let index = count_nested_braces s in
+      let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
+      let (bd,_) = get_before body dea in
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
   | _ -> failwith "not supported"
 
 let rec get_after sl a =
@@ -388,92 +346,95 @@ let rec get_after sl a =
     Ast.DOTS(x) ->
       let rec loop sl =
 	match sl with
-	  [] -> a
-	| e::sl -> get_after_e e (loop sl) in
-      loop x
+	  [] -> ([],a)
+	| e::sl ->
+	    let (sl,sla) = loop sl in
+	    let (e,ea) = get_after_e e sla in
+	    (e::sl,ea) in
+      let (l,a) = loop x in
+      (Ast.rewrap sl (Ast.DOTS(l)),a)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
 and get_after_e s a =
   match Ast.unwrap s with
-    Ast.Dots(_,_) -> update s a; a
-  | Ast.Nest(stmt_dots) ->
-      let _ = get_after stmt_dots a in update s a; [Other_dots stmt_dots]
+    Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+  | Ast.Nest(stmt_dots,t) ->
+      let (sd,_) = get_after stmt_dots a in
+      (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
-      List.fold_left
-	(function rest -> function cur ->
-	  Common.union_set (get_after cur a) rest)
-	[] stmt_dots_list
-  | Ast.Atomic(ast) -> [Other s]
-  | Ast.Seq(lbrace,decls,_,body,rbrace) ->
-      let index = Hashtbl.find brace_table s in
-      let _ = get_after decls (get_after body [Paren(rbrace,index)]) in
-      [Paren(lbrace,index)]
-  | Ast.IfThen(ifheader,branch) -> let _ = get_after_e branch a in [Other s]
+      let (dsl,dsla) =
+	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
+      (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
+  | Ast.Atomic(ast) -> (s,[Ast.Other s])
+  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+      let index = count_nested_braces s in
+      let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
+      let (de,_) = get_after decls bda in
+      (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
+       [Ast.WParen(lbrace,index)])
+  | Ast.IfThen(ifheader,branch) ->
+      let (br,_) = get_after_e branch a in
+      (Ast.rewrap s (Ast.IfThen(ifheader,br)),[Ast.Other s])
   | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
-      let _ = get_after_e branch1 a in
-      let _ = get_after_e branch2 a in
-      [Other s]
-  | Ast.While(header,body) -> let _ = get_after_e body a in [Other s]
-  | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
-      let index = Hashtbl.find brace_table s in
-      let _ = get_after decls (get_after body [Paren(rbrace,index)]) in
-      []
+      let (br1,_) = get_after_e branch1 a in
+      let (br2,_) = get_after_e branch2 a in
+      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2)),[Ast.Other s])
+  | Ast.While(header,body) ->
+      let (bd,_) = get_after_e body a in
+      (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
+  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+      let index = count_nested_braces s in
+      let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
+      let (de,_) = get_after decls bda in
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
   | _ -> failwith "not supported"
 
 
-
 let preprocess_dots sl =
-  let _ = get_before sl [] in
-  let _ = get_after sl [] in
-  ()
+  let (sl,_) = get_before sl [] in
+  let (sl,_) = get_after sl [] in
+  sl
 
 let preprocess_dots_e sl =
-  let _ = get_before_e sl [] in
-  let _ = get_after_e sl [] in
-  ()
+  let (sl,_) = get_before_e sl [] in
+  let (sl,_) = get_after_e sl [] in
+  sl
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
-let is_dots y = match Ast.unwrap y with Ast.Dots(_,_) -> Some y | _ -> None
-
-let decl_to_not_decl n dots stmt extender make_match f =
+let decl_to_not_decl n dots stmt make_match f =
   if dots
   then f
   else
     let de =
-      Ast.rewrap stmt
-	(Ast.Decl (Ast.make_meta_decl "d" (Ast.CONTEXT(Ast.NOTHING)))) in
-    let _ = extender (Ast.rewrap stmt (Ast.Atomic(de))) in
+      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) in
+      Ast.rewrap md (Ast.Decl md) in
     wrap n (CTL.AU(CTL.FORWARD,
 		   make_match de,
 		   wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f))))
 
-let rec statement_list stmt_list ((free_table,_,_) as fvinfo)
-    after quantified guard =
+let rec statement_list stmt_list used_after after quantified guard =
   let n = if !line_numbers then Ast.get_line stmt_list else 0 in
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) ->
-      let fvs =
-	List.map (function x -> Hashtbl.find free_table (FV.Statement x)) x in
       let rec loop quantified = function
 	  ([],_) -> (match after with After f -> f | _ -> wrap n CTL.True)
-	| ([e],_) -> statement e fvinfo after quantified guard
+	| ([e],_) -> statement e used_after after quantified guard
 	| (e::sl,fv::fvs) ->
 	    let shared = intersectll fv fvs in
 	    let unqshared = get_unquantified quantified shared in
 	    let new_quantified = Common.union_set unqshared quantified in
 	    quantify n unqshared
-	      (statement e fvinfo (After(loop new_quantified (sl,fvs)))
+	      (statement e used_after (After(loop new_quantified (sl,fvs)))
 		 new_quantified guard)
 	| _ -> failwith "not possible" in
-      loop quantified (x,fvs)
+      loop quantified (x,List.map Ast.get_fvs x)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement stmt ((free_table,extender,used_after) as fvinfo)
-    after quantified guard =
+and statement stmt used_after after quantified guard =
 
   let n = if !line_numbers then Ast.get_line stmt else 0 in
   let wrapExists = wrapExists n in
@@ -491,13 +452,12 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
   let make_seq_after = make_seq_after n in
   let and_opt = and_opt n in
   let quantify = quantify n in
-  let make_match = make_match n guard free_table used_after in
+  let make_match = make_match n guard used_after in
   let make_raw_match = make_raw_match n in
 
   let make_meta_rule_elem d =
-    let re = Ast.make_meta_rule_elem (fresh_metavar()) d in
-    let _ = extender (Ast.rewrap stmt (Ast.Atomic(re))) in
-    re in
+    let nm = fresh_metavar() in
+    Ast.make_meta_rule_elem nm d in
 
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
@@ -566,15 +526,15 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 	    (wrapAnd(make_raw_match ast,
 		     (make_seq [first_nodeb; wrapAU(rest_nodes,last_node)])))
       |	_ ->
-	  let stmt_fvs = Hashtbl.find free_table (FV.Statement stmt) in
+	  let stmt_fvs = Ast.get_fvs stmt in
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  make_seq_after (quantify fvs (make_match ast)) after)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,_,b2fvs,_,b3fvs,rbfvs) =
-	seq_fvs4 free_table quantified
-	  (FV.Rule_elem lbrace) (FV.StatementDots decls)
-	  (FV.StatementDots body) (FV.Rule_elem rbrace) in
-      let v = Hashtbl.find brace_table stmt in
+	seq_fvs4 quantified
+	  (Ast.get_fvs lbrace) (Ast.get_fvs decls)
+	  (Ast.get_fvs body) (Ast.get_fvs rbrace) in
+      let v = count_nested_braces stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace =
 	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
@@ -588,11 +548,11 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 	   (make_seq
 	      [start_brace;
 		quantify b2fvs
-		  (statement_list decls fvinfo
+		  (statement_list decls used_after
 		     (After
-			(decl_to_not_decl n dots stmt extender make_match
+			(decl_to_not_decl n dots stmt make_match
 			   (quantify b3fvs
-			      (statement_list body fvinfo
+			      (statement_list body used_after
 				 (After (make_seq_after end_brace after))
 				 new_quantified3 guard))))
 		     new_quantified2 guard)]))
@@ -608,8 +568,7 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 
        (* free variables *) 
        let (efvs,bfvs,_) =
-	 seq_fvs2 free_table quantified
-	   (FV.Rule_elem ifheader) (FV.Statement branch) in
+	 seq_fvs2 quantified (Ast.get_fvs ifheader) (Ast.get_fvs branch) in
        let new_quantified = Common.union_set bfvs quantified in
        (* if header *)
        let if_header = quantify efvs (make_match ifheader) in
@@ -617,7 +576,7 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
        let true_branch =
 	 make_seq
 	   [wrapPred(Lib_engine.TrueBranch,CTL.Control);
-	     statement branch fvinfo (a2n after) new_quantified guard] in
+	     statement branch used_after (a2n after) new_quantified guard] in
        let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq_after2 after_pred after in
@@ -651,11 +610,9 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
  program. *)
        (* free variables *)
        let (e1fvs,b1fvs,s1fvs) =
-	 seq_fvs2 free_table quantified
-	   (FV.Rule_elem ifheader) (FV.Statement branch1) in
+	 seq_fvs2 quantified (Ast.get_fvs ifheader) (Ast.get_fvs branch1) in
        let (e2fvs,b2fvs,s2fvs) =
-	 seq_fvs2 free_table quantified
-	   (FV.Rule_elem ifheader) (FV.Statement branch2) in
+	 seq_fvs2 quantified (Ast.get_fvs ifheader) (Ast.get_fvs branch2) in
        let bothfvs =
 	 Common.union_set
 	   (Common.union_set b1fvs b2fvs)
@@ -668,12 +625,12 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
        let true_branch =
 	 make_seq
 	   [wrapPred(Lib_engine.TrueBranch,CTL.Control);
-	     statement branch1 fvinfo (a2n after) new_quantified guard] in
+	     statement branch1 used_after (a2n after) new_quantified guard] in
        let false_pred = wrapPred(Lib_engine.FalseBranch,CTL.Control) in
        let false_branch =
      	   make_seq
 	   [false_pred; make_match els;
-	     statement branch2 fvinfo (a2n after) new_quantified guard] in
+	     statement branch2 used_after (a2n after) new_quantified guard] in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
        let after_branch = make_seq_after2 after_pred after in
        let or_cases = wrapOr(true_branch,wrapOr(false_branch,after_branch)) in
@@ -694,40 +651,48 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
    failwith "while is not supported"
   | Ast.Disj(stmt_dots_list) ->
       let do_one e =
-	statement_list e fvinfo (a2n after) quantified true in
+	statement_list e used_after (a2n after) quantified true in
       let add_nots l e =
 	List.fold_left
 	  (function rest -> function cur -> wrapAnd(wrapNot(do_one cur),rest))
 	  e l in
-      let start_dots x =
-	match Ast.undots x with
-	  y::_ -> is_dots y
-	| _ -> None in
       let process_one nots cur =
-	match start_dots cur with
-	  Some d ->
-	    begin
-	      update d (List.map (function x -> Other_dots x) nots);
-	      statement_list cur fvinfo after quantified guard
-	    end
-	| None ->
-	    add_nots nots (statement_list cur fvinfo after quantified guard) in
+	match Ast.unwrap cur with
+	  Ast.DOTS(x::xs) ->
+	    let on = List.map (function x -> Ast.Other_dots x) nots in
+	    (match Ast.unwrap x with
+	      Ast.Dots(d,w,t) ->
+		let cur =
+		  Ast.rewrap cur
+		    (Ast.DOTS((Ast.rewrap x (Ast.Dots(d,w,on@t)))::xs)) in
+		statement_list cur used_after after quantified guard
+	    | Ast.Nest(sd,t) ->
+		let cur =
+		  Ast.rewrap cur
+		    (Ast.DOTS((Ast.rewrap x (Ast.Nest(sd,on@t)))::xs)) in
+		statement_list cur used_after after quantified guard
+	    | _ ->
+		add_nots nots
+		  (statement_list cur used_after after quantified guard))
+	| Ast.DOTS([]) ->
+	    add_nots nots
+	      (statement_list cur used_after after quantified guard)
+	| _ -> failwith "CIRCLES, STARS not supported" in
       let rec loop after = function
 	  [] -> failwith "disj shouldn't be empty" (*wrap n CTL.False*)
 	| [(nots,cur)] -> process_one nots cur
 	| (nots,cur)::rest -> wrapOr(process_one nots cur, loop after rest) in
       loop after (preprocess_disj stmt_dots_list)
-  | Ast.Nest(stmt_dots) ->
+  | Ast.Nest(stmt_dots,befaft) ->
       let dots_pattern =
-	statement_list stmt_dots fvinfo (a2n after) quantified guard in
+	statement_list stmt_dots used_after (a2n after) quantified guard in
       let udots_pattern =
-	statement_list stmt_dots fvinfo (a2n after) quantified true in
+	statement_list stmt_dots used_after (a2n after) quantified true in
       (match after with
 	After a ->
 	  let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
 	  let nots =
-	    List.map (process_bef_aft after quantified fvinfo n)
-	      !(Hashtbl.find before_after_table stmt) in
+	    List.map (process_bef_aft after quantified used_after n) befaft in
 	  let left =
 	    match nots with
 	      [] -> left
@@ -740,7 +705,7 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 		   left) in
 	  wrapAU(left,wrapOr(a,aftret))
       |	_ -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern)))
-  | Ast.Dots((_,i,d),whencodes) ->
+  | Ast.Dots((_,i,d),whencodes,t) ->
       let dot_code =
 	match d with
 	  Ast.MINUS(_) ->
@@ -749,11 +714,10 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 	    Some(make_match (make_meta_rule_elem d))
 	| _ -> None in
       let whencodes =
-	(List.map (process_bef_aft after quantified fvinfo n)
-	   !(Hashtbl.find before_after_table stmt)) @
+	(List.map (process_bef_aft after quantified used_after n) t) @
 	(List.map
 	   (function sl ->
-	     statement_list sl fvinfo (a2n after) quantified true)
+	     statement_list sl used_after (a2n after) quantified true)
 	   whencodes) in
       let phi2 =
 	match whencodes with
@@ -780,12 +744,10 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
       |	(After f,None) | (Guard f,None) -> wrapAF(wrapOr(f,aftret)))
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,_,b3fvs,_,b4fvs,rbfvs) =
-	seq_fvs5 free_table quantified
-	  (FV.Rule_elem header) (FV.Rule_elem lbrace)
-	  (FV.StatementDots decls) (FV.StatementDots body)
-	  (FV.Rule_elem rbrace) in
+	seq_fvs5 quantified (Ast.get_fvs header) (Ast.get_fvs lbrace)
+	  (Ast.get_fvs decls) (Ast.get_fvs body) (Ast.get_fvs rbrace) in
       let function_header = quantify hfvs (make_match header) in
-      let v = Hashtbl.find brace_table stmt in
+      let v = count_nested_braces stmt in
       let paren_pred = wrapPred(Lib_engine.Paren v,CTL.Control) in
       let start_brace =
 	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
@@ -804,12 +766,12 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
 		   (make_seq
 		      [start_brace;
 			quantify b3fvs
-			  (statement_list decls fvinfo
+			  (statement_list decls used_after
 			     (After
-				(decl_to_not_decl n dots stmt extender
+				(decl_to_not_decl n dots stmt
 				   make_match
 				   (quantify b4fvs
-				      (statement_list body fvinfo
+				      (statement_list body used_after
 					 (After
 					    (make_seq_after end_brace after))
 					 new_quantified4 guard))))
@@ -822,12 +784,12 @@ and statement stmt ((free_table,extender,used_after) as fvinfo)
       failwith "arities not yet supported"
   | _ -> failwith "not supported"
 
-and process_bef_aft after quantified fvinfo ln = function
-    Paren (re,n) ->
+and process_bef_aft after quantified used_after ln = function
+    Ast.WParen (re,n) ->
       let paren_pred = wrapPred ln (Lib_engine.Paren n,CTL.Control) in
       wrapAnd ln (make_raw_match ln re,paren_pred)
-  | Other s -> statement s fvinfo (a2n after) quantified true
-  | Other_dots d -> statement_list d fvinfo (a2n after) quantified true
+  | Ast.Other s -> statement s used_after (a2n after) quantified true
+  | Ast.Other_dots d -> statement_list d used_after (a2n after) quantified true
 
 (* Returns a triple for each disj element.  The first element of the triple is
 Some v if the triple element needs a name, and None otherwise.  The second
@@ -1096,30 +1058,27 @@ let letify f =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level free_table extender used_after t =
-  Hashtbl.clear before_after_table;
-  Hashtbl.clear brace_table;
+let top_level used_after t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
   | Ast.INCLUDE(inc,s) -> failwith "not supported include"
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
+      (*Printf.printf "orig\n";
+      Pretty_print_cocci.statement "" stmt;
+      Format.print_newline();*)
       let unopt = elim_opt.V.rebuilder_statement stmt in
-      let _ = extender unopt in
-      let _ = count_nested_braces unopt in
-      preprocess_dots_e unopt;
+      (*Printf.printf "unopt\n";
+      Pretty_print_cocci.statement "" unopt;
+      Format.print_newline();*)
+      let unopt = preprocess_dots_e unopt in
       (*letify*)
-	(statement unopt (free_table,extender,used_after) Tail [] false)
+	(statement unopt used_after Tail [] false)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
-      List.iter
-	(function x ->
-	  let _ = extender x in
-	  let _ = count_nested_braces x in ())
-	(Ast.undots unopt);
-      preprocess_dots unopt;
+      let unopt = preprocess_dots unopt in
       (*letify*)
-	(statement_list unopt (free_table,extender,used_after) Tail [] false)
+	(statement_list unopt used_after Tail [] false)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)
@@ -1130,7 +1089,7 @@ let contains_dots =
   let option_default = false in
   let mcode r x = false in
   let statement r k s =
-    match Ast.unwrap s with Ast.Dots(_,_) -> true | _ -> k s in
+    match Ast.unwrap s with Ast.Dots(_,_,_) -> true | _ -> k s in
   let continue r k e = k e in
   let stop r k e = false in
   let res =
@@ -1143,7 +1102,7 @@ let contains_dots =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctl l free_table extender used_after =
+let asttoctl l used_after =
   ctr := 0;
   lctr := 0;
   sctr := 0;
@@ -1152,7 +1111,7 @@ let asttoctl l free_table extender used_after =
       (function t ->
 	match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
       l in
-  List.map (top_level free_table extender used_after) l
+  List.map (top_level used_after) l
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

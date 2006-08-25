@@ -3,7 +3,7 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line)
+type 'a wrap = ('a * line * string list (* free vars *))
 
 type 'a befaft =
     BEFORE      of 'a list list
@@ -261,15 +261,23 @@ and base_statement =
   | For           of rule_elem (* header *) * statement
   | Atomic        of rule_elem
   | Disj          of statement dots list
-  | Nest          of statement dots
+  | Nest          of statement dots * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * bool * statement dots * rule_elem (* } *)
-  | Dots          of string mcode (* ... *) * statement dots list
-  | Circles       of string mcode (* ooo *) * statement dots list
-  | Stars         of string mcode (* *** *) * statement dots list
+  | Dots          of string mcode (* ... *) * statement dots list *
+	             dots_whencode list
+  | Circles       of string mcode (* ooo *) * statement dots list *
+	             dots_whencode list
+  | Stars         of string mcode (* *** *) * statement dots list *
+	             dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)
+
+and dots_whencode =
+    WParen of rule_elem * string (*pren_var*)
+  | Other of statement
+  | Other_dots of statement dots
 
 and statement = base_statement wrap
 
@@ -320,6 +328,7 @@ val undots : 'a dots -> 'a list
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a
 val get_line : 'a wrap -> line
+val get_fvs : 'a wrap -> string list
 
 val make_meta_rule_elem : string -> mcodekind -> rule_elem
 val make_meta_decl : string -> mcodekind -> declaration

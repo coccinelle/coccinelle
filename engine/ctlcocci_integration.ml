@@ -273,7 +273,8 @@ let (mysat:
        Lib_engine.ctlcocci -> 
        (Lib_engine.mvar list * Lib_engine.metavars_binding2) ->
 	 ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
-	 Lib_engine.metavars_binding2) option) = 
+	 Lib_engine.metavars_binding2,
+	  string) either) = 
   fun (flow, label, states) ctl (used_after, binding2) -> 
     WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
 

@@ -571,7 +571,4 @@ let process file isofile verbose =
 	  Pretty_print_cocci.unparse minus_ast;
 	  (metavars, minus_ast))
       minus plus in
-  let (free_tables,used_after_lists,extenders) =
-    Free_vars.free_vars parsed in
-  let (_,ast_list) = List.split parsed in
-  (ast_list,free_tables,used_after_lists,extenders)
+  Free_vars.free_vars parsed

@@ -132,9 +132,7 @@ let astfvs bound =
 	  bind (recursor.V.combiner_top_level tl) rest)
       option_default in
 
-  ((function l -> (rule l,free_table)),
-   (function s ->
-     let (unbound,_) = recursor.V.combiner_statement s in unbound))
+  (function l -> (rule l,free_table))
 
 let get_names = function
     Ast.MetaIdDecl(ar,nm) -> nm
@@ -151,23 +149,45 @@ let get_names = function
   | Ast.MetaFuncDecl(ar,nm) -> nm
   | Ast.MetaLocalFuncDecl(ar,nm) -> nm
 
+let update table =
+  let statement r k s =
+    let fvs = Hashtbl.find table (Statement s) in
+    let (s,l,_) = k s in
+    (s,l,fvs) in
+
+  let statement_dots r k s =
+    let fvs = Hashtbl.find table (StatementDots s) in
+    let (s,l,_) = k s in
+    (s,l,fvs) in
+
+  let rule_elem r k s =
+    let fvs = Hashtbl.find table (Rule_elem s) in
+    let (s,l,_) = k s in
+    (s,l,fvs) in
+
+  let mcode x = x in
+  let donothing r k e = k e in
+
+  (V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing statement_dots
+    donothing donothing donothing donothing donothing donothing rule_elem
+    statement donothing donothing).V.rebuilder_top_level
 
 let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s
 let set_intersect s1 s2 = List.filter (function n -> List.mem n s2) s1
 let rec loop defined = function
-    [] -> ([],[],[],[])
+    [] -> ([],[],[])
   | (metavar_list,rule)::rest ->
       let locally_defined = List.map get_names metavar_list in
       let not_rebound = set_minus defined locally_defined in
-      let (rulefunction,stmfunction) = astfvs not_rebound in
-      let ((_,locally_free),table) = rulefunction rule in
-      let (later_free,later_tables,later_nonlocally_used,later_fns) =
+      let ((_,locally_free),table) = astfvs not_rebound rule in
+      let (later_free,later_nonlocally_used,later_rules) =
 	loop (Common.union_set defined locally_defined) rest in
       (set_minus (Common.union_set locally_free later_free) locally_defined,
-       table::later_tables,
        later_free::later_nonlocally_used,
-       stmfunction::later_fns)
+       (List.map (update table) rule)::later_rules)
 
 let free_vars rules =
-  let (_,tables,nonlocally_used,extenders) = loop [] rules in
-  (tables,nonlocally_used,extenders)
+  let (_,nonlocally_used,rules) = loop [] rules in
+  (rules,nonlocally_used)

@@ -245,13 +245,13 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots) -> statement_dots stmt_dots
+      | Ast.Nest(stmt_dots,_) -> statement_dots stmt_dots
       | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
-      | Ast.Dots(d,whencode) | Ast.Circles(d,whencode)
-      | Ast.Stars(d,whencode) ->
+      | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
+      | Ast.Stars(d,whencode,_) ->
 	  multibind ((string_mcode d) :: (List.map statement_dots whencode))
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
 	  statement stmt in
@@ -557,17 +557,17 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots) -> Ast.Nest(statement_dots stmt_dots)
+	| Ast.Nest(stmt_dots,t) -> Ast.Nest(statement_dots stmt_dots,t)
 	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,
 			statement_dots body, rule_elem rbrace)
-	| Ast.Dots(d,whencode) ->
-	    Ast.Dots(string_mcode d, List.map statement_dots whencode)
-	| Ast.Circles(d,whencode) ->
-	    Ast.Circles(string_mcode d, List.map statement_dots whencode)
-	| Ast.Stars(d,whencode) ->
-	    Ast.Stars(string_mcode d, List.map statement_dots whencode)
+	| Ast.Dots(d,whencode,t) ->
+	    Ast.Dots(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.Circles(d,whencode,t) ->
+	    Ast.Circles(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.Stars(d,whencode,t) ->
+	    Ast.Stars(string_mcode d, List.map statement_dots whencode, t)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in

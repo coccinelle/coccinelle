@@ -16,10 +16,7 @@ val cexpression_from_string : string -> Ast_c.expression
 
 
 val sp_from_file :
-  string ->
-  string option ->
-  Ast_cocci.rule list * Free_vars.free_table list * string list list *
-  (Ast_cocci.statement -> string list) list
+  string -> string option -> Ast_cocci.rule list * string list list
 val rule_elem_from_string : string -> filename option -> Ast_cocci.rule_elem
 
 
@@ -29,9 +26,5 @@ val print_flow : Control_flow_c.cflow -> unit
 
 
 val ctls :
-  Ast_cocci.rule list ->
-  Free_vars.free_table list ->
-  (Ast_cocci.statement -> string list) list ->
-  string list list ->
-  Lib_engine.ctlcocci list list
+    Ast_cocci.rule list -> string list list -> Lib_engine.ctlcocci list list
 val one_ctl : Lib_engine.ctlcocci list list -> Lib_engine.ctlcocci

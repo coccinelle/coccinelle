@@ -137,7 +137,7 @@ struct
 	 wits)
   ;;
 
-  exception INCOMPLETE_BINDINGS
+  exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
     List.concat
@@ -162,7 +162,7 @@ struct
 		   with Not_found -> rest)
 	       None envs in
 	   match vl with
-	     None -> raise INCOMPLETE_BINDINGS
+	     None -> raise (INCOMPLETE_BINDINGS used_after_var)
 	   | Some vl -> [(used_after_var, vl)])
 	 used_after)
       
@@ -215,15 +215,18 @@ struct
 	   (predicate,SUB.mvar) wrapped_ctl ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		 (WRAPPER_ENV.mvar * SUB.value) list) option) = 
+		 (WRAPPER_ENV.mvar * SUB.value) list,
+		SUB.mvar) Common.either) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
       let res =
 	Common.uniq
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
+      Printf.printf "result is: %d\n" (List.length res);
       try
-	Some (res,
+	Common.Left
+	  (res,
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs
@@ -231,7 +234,7 @@ struct
 	      collect_used_after used_after
 		(binding ::
 		 (List.map (function (_,env,_) -> env) res)))
-      with INCOMPLETE_BINDINGS -> None
+      with INCOMPLETE_BINDINGS x -> Common.Right x
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end

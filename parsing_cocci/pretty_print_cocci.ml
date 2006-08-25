@@ -419,12 +419,13 @@ let rec statement arity s =
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       print_string "\n)"
-  | Ast.Nest(stmt_dots) ->
+  | Ast.Nest(stmt_dots,_) ->
       print_string arity;
       nest_dots (statement arity) stmt_dots
-  | Ast.Dots(d,[]) | Ast.Circles(d,[]) | Ast.Stars(d,[]) ->
+  | Ast.Dots(d,[],_) | Ast.Circles(d,[],_) | Ast.Stars(d,[],_) ->
       print_string arity; mcode print_string d
-  | Ast.Dots(d,whencode) | Ast.Circles(d,whencode) | Ast.Stars(d,whencode) ->
+  | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
+  | Ast.Stars(d,whencode,_) ->
       print_string arity; mcode print_string d;
       print_string "   WHEN != ";
       open_box 0;

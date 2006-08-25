@@ -63,7 +63,7 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     write_file "/tmp/__cocci.cocci" (s);
-    let (astcocci, _,_,_) = sp_from_file "/tmp/__cocci.cocci" iso in
+    let (astcocci, _) = sp_from_file "/tmp/__cocci.cocci" iso in
     let stmt =
       astcocci +> List.hd +> List.hd +> (function x ->
 	match Ast_cocci.unwrap x with
@@ -101,10 +101,7 @@ let one_flow flows = List.hd flows
 let print_flow flow = Ograph_extended.print_ograph_extended flow
 
 (* --------------------------------------------------------------------- *)
-let ctls ast ft ex ua =
-  List.map2
-    (function (ast,ft) -> function (ex,ua) -> Asttoctl.asttoctl ast ft ex ua)
-    (List.combine ast ft) (List.combine ex ua)
+let ctls ast ua  = List.map2 Asttoctl.asttoctl ast ua
 let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
@@ -132,8 +129,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
           pr2 "";
         end;
   
-        let (astcocci,free_tables,used_after_lists,extenders) =
-	  sp_from_file coccifile isofile in
+        let (astcocci,used_after_lists) = sp_from_file coccifile isofile in
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -158,7 +154,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
           ) 
         in
 
-        let ctls = (ctls astcocci free_tables extenders used_after_lists) in
+        let ctls = ctls astcocci used_after_lists in
 
         if !Flag.show_ctl then begin
             Ctltotex.totex "/tmp/__cocci_ctl.tex" astcocci ctls;
@@ -263,7 +259,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 		  Ctlcocci_integration.mysat model_ctl ctl 
                     (used_after_list, current_binding2) in
 		match satres with
-		| Some (trans_info2, used_after_env) ->
+		| Left (trans_info2, used_after_env) ->
                     let trans_info = 
                       Ctlcocci_integration.satbis_to_trans_info trans_info2
                     in
@@ -288,8 +284,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     (* for the ugly hack *)
                     trans_info +> List.iter (fun (_nodei, binding, re) -> 
                       match re with
-                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info -> 
-                          _hack_funheader := Some (binding, ((a,b,c,d,e,f,g),info))
+                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv -> 
+                          _hack_funheader := Some (binding, ((a,b,c,d,e,f,g),info,fv))
                       | _ -> ()
                       );
                     
@@ -302,8 +298,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                       (Ast_c.Definition def', Unparse_c.PPnormal)
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)
-		| None -> 
-                    failwith "None encountered, can't continue"
+		| Right x -> 
+                    failwith ("Unable to find a value for " ^ x)
               end
             else 
               (Ast_c.Definition def, Unparse_c.PPviatok il)
@@ -319,12 +315,13 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                ], iivirg::iisto))
            when !_hack_funheader <> None -> 
              let decl = e in
-             let (binding, ((a,b,c,d,e,f,g),info)) = some !_hack_funheader in
+             let (binding, ((a,b,c,d,e,f,g),info,fv)) =
+	       some !_hack_funheader in
 
              (try 
                let node' = 
                  Transformation.transform_re_node 
-                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info)
+                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv)
                    (((Control_flow_c.FunHeader ((s, ft, storage), 
                                                 iisini++iity++iisto)), []),"")
                    binding in
