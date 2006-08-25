@@ -303,7 +303,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)
 		| None -> 
-                    (Ast_c.Definition def, Unparse_c.PPviatok il)
+                    failwith "None encountered, can't continue"
               end
             else 
               (Ast_c.Definition def, Unparse_c.PPviatok il)

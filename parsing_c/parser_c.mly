@@ -538,9 +538,11 @@ decl2: decl_spec TPtVirg                   { let (returnType,storage) = fixDeclS
   	         )
 	       ),  ($3::snd storage))
 	} 
+     /* | init_declarator_list TPtVirg { failwith "todo" } */
 
 /*------------------------------------------------------------------------------*/
 decl_spec: decl_spec2                   { dt "declspec" (); $1  }
+
 
 decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [snd $1]) } }
 	  | type_spec                     { addTypeD ($1,nullDecl) }
@@ -789,12 +791,10 @@ external_declaration:
                     | TIdent TOPar argument_expr_list TCPar  { EmptyDef [] } /* seems dont work */
 
 function_definition: start_fun compound      { del_scope(); ($1, $2) }
-/*                    | start_fun2 start_fun compound { del_scope(); ($2, $3) } */
 
 start_fun: start_fun2                        { new_scope(); fix_add_params_ident $1; Lexer_parser._lexer_hint := None;  $1 }
 start_fun2: decl_spec declaratorfd           { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
                                                (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
-
 
 
 declaratorfd: declarator { et "declaratorfd" (); $1 }

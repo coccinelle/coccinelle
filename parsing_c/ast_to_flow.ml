@@ -329,6 +329,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let afteri = add_node_g AfterNode lbl "[after]" in
         let lasti  = add_node_g Fake      lbl "[endif]" in
 
+        (* for ErrorExit heuristic *)
         let newauxinfo = { auxinfo_label with  context_info_bis = true; } in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
