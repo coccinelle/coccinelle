@@ -478,8 +478,9 @@ let parse file =
 	(* get transformation rules *)
 	let (more,tokens) =
 	  tokens_all table file false lexbuf [PC.TArobArob] in
-	let tokens = prepare_tokens tokens in
 	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
+	let minus_tokens = prepare_tokens minus_tokens in
+	let plus_tokens = prepare_tokens plus_tokens in
 	(*
 	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
 	Printf.printf "\n\n";
