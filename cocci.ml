@@ -298,8 +298,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)
 		| Right x -> 
-                    failwith ("Unable to find a value for " ^ x) 
-                    (* (Ast_c.Definition def, Unparse_c.PPviatok il) *)
+                    pr2 ("Unable to find a value for " ^ x);
+                    (Ast_c.Definition def, Unparse_c.PPviatok il)
               end
             else 
               (Ast_c.Definition def, Unparse_c.PPviatok il)

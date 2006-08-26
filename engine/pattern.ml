@@ -515,7 +515,9 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
       match_ident DontKnow ida idb
 
   (* todo?: handle some isomorphisms here ? *)
-
+  (* todo?: do some iso-by-absence on cast ? 
+   *    by trying | ea, B.Case (typb, eb) -> match_e_e ea eb ?
+   *)
   | A.Cast (_, typa, _, ea), ((B.Cast (typb, eb), typ),ii) ->
       match_ft_ft typa typb >&&>
       match_e_e ea eb

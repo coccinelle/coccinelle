@@ -13,7 +13,7 @@ identifier proc_info_func;
     ...
 -   hostptr = scsi_host_hn_get(hostno);
     ...
-?-  if (!hostptr) { return ...; }
+?-  if (!hostptr) { ... return ...; }
     ...
 ?-  scsi_host_put(hostptr);
     ...
@@ -26,3 +26,19 @@ identifier proc_info_func;
 +   hostptr->host_no
     ...>
   }
+
+@@ 
+identifier func; 
+expression buffer, start, offset, length, inout, hostno;
+identifier hostptr;
+@@
+
+ func(..., struct Scsi_Host *hostptr, ...) {
+  <...
+   proc_info_func(
++       hostptr,
+        buffer, start, offset, length, 
+-       hostno,
+        inout)
+   ...>
+ }
