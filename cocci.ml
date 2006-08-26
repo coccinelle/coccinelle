@@ -231,8 +231,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                 if !Flag.show_before_fixed_flow 
                 then print_flow flow;
 
-		let loop_in_src_code = !Flag_ctl.loop_in_src_code in
-		if not loop_in_src_code
+		let old_loop_in_src_code = !Flag_ctl.loop_in_src_code in
+		if not old_loop_in_src_code
 		then
                   (Flag_ctl.loop_in_src_code := false;
                    def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
@@ -245,8 +245,6 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                              )
                      });
 
-		Flag_ctl.loop_in_src_code := loop_in_src_code;
-
                 let current_binding = binding in
                 let current_binding2 = 
                   Ctlcocci_integration.metavars_binding_to_binding2 binding
@@ -258,6 +256,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 		let satres =
 		  Ctlcocci_integration.mysat model_ctl ctl 
                     (used_after_list, current_binding2) in
+		Flag_ctl.loop_in_src_code := old_loop_in_src_code;
 		match satres with
 		| Left (trans_info2, used_after_env) ->
                     let trans_info = 
@@ -299,7 +298,8 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     else 
                       (Ast_c.Definition def, Unparse_c.PPviatok il)
 		| Right x -> 
-                    failwith ("Unable to find a value for " ^ x)
+                    failwith ("Unable to find a value for " ^ x) 
+                    (* (Ast_c.Definition def, Unparse_c.PPviatok il) *)
               end
             else 
               (Ast_c.Definition def, Unparse_c.PPviatok il)

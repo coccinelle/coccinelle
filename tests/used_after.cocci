@@ -12,9 +12,8 @@ identifier func;
 // type T;
 @@
 
-- int func(int i)
-+ int func(int i, char j) 
- {
+- int func(int i) {
++ int func(int i, char j) {
   ...    
  }
 
