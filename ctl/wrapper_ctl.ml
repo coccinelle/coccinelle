@@ -223,7 +223,6 @@ struct
 	Common.uniq
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
-      Printf.printf "result is: %d\n" (List.length res);
       try
 	Common.Left
 	  (res,
