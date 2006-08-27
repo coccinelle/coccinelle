@@ -108,6 +108,8 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl = 
 
+  assert (lfile_exists cfile);
+
   if print_input_file then begin
     Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);

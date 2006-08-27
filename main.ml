@@ -14,9 +14,21 @@ let compare_with_expected = ref false
 
 (*****************************************************************************)
 let testone x = 
-  let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
+  let base = if x =~ "\\(.*\\)_ver[0-9]+.*" then matched1 x else x in
   let x'   = if x =~ "\\(.*\\)_ver0" then matched1 x else x in
+  let x' = 
+    if not(lfile_exists ("tests/" ^ x' ^ ".c"))
+    then
+      let candidates = 
+        readdir_to_file_list "tests/" 
+          +> filter (fun s -> s =~ (x' ^ "_.*"))
+          +> List.map (Str.global_replace (Str.regexp "\\.c$") "")
+      in
+      assert (List.length candidates = 1);
+      List.hd candidates
 
+    else x'
+  in
   let cfile      = "tests/" ^ x'   ^ ".c" in 
   let cocci_file = "tests/" ^ base ^ ".cocci" in
 
