@@ -752,7 +752,17 @@ and statement stmt used_after after quantified guard =
       let start_brace =
 	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
       let end_brace =
-	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
+	let stripped_rbrace =
+	  match Ast.unwrap rbrace with
+	    Ast.SeqEnd((data,info,_)) ->
+	      Ast.rewrap rbrace
+		(Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NOTHING))))
+	  | _ -> failwith "unexpected close brace" in
+	let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
+	let errorexit = wrap n (CTL.Pred (Lib_engine.ErrorExit,CTL.Control)) in
+	wrapAnd(quantify rbfvs (make_match rbrace),
+		wrapAU(make_match stripped_rbrace,
+		       wrapOr(exit,errorexit))) in
       let new_quantified3 =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in

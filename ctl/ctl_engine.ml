@@ -1008,7 +1008,6 @@ let rec satloop negated required required_states
 	      s2)
     | A.AU(dir,phi1,phi2)      ->
 	(*print_required required;*)
-	Printf.printf "have a loop? %b\n" (!Flag_ctl.loop_in_src_code);
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in

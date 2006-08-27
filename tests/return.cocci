@@ -8,7 +8,7 @@ foo(...) {
 + xxx();
   return;
 |
-  S
-+ xxx();
+  ccc();
++ yyy();
 )
 }

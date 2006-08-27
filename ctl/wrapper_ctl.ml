@@ -110,7 +110,7 @@ struct
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
   exception NEGATIVE_WITNESS
-  let unwrap_wits prev_env wits =
+  let unwrap_wits prev_env wits modifonly =
     let mkth th =
       Common.map_filter
 	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
@@ -120,6 +120,11 @@ struct
       | A.NegWit(_) -> false in
     let rec loop neg acc = function
 	A.Wit(st,[A.Subst(x,PredVal(A.Modif(v)))],anno,wit) ->
+	  (match wit with
+	    [] -> [(st,acc,v)]
+	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
+      | A.Wit(st,[A.Subst(x,PredVal(A.UnModif(v)))],anno,wit)
+	when not modifonly ->
 	  (match wit with
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
@@ -222,7 +227,12 @@ struct
       let res =
 	Common.uniq
 	  (List.concat
-	     (List.map (fun (_,_,w) -> unwrap_wits binding w) noclean)) in
+	     (List.map (fun (_,_,w) -> unwrap_wits binding w true) noclean)) in
+      let unmodif_res =
+	Common.uniq
+	  (List.concat
+	     (List.map (fun (_,_,w) -> unwrap_wits binding w false)
+		noclean)) in
       try
 	Common.Left
 	  (res,
@@ -232,7 +242,7 @@ struct
 	   binding as an argument. *)
 	      collect_used_after used_after
 		(binding ::
-		 (List.map (function (_,env,_) -> env) res)))
+		 (List.map (function (_,env,_) -> env) unmodif_res)))
       with INCOMPLETE_BINDINGS x -> Common.Right x
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
