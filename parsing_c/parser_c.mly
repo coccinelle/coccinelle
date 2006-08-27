@@ -7,9 +7,12 @@ open Ast_c
 open Semantic_c
 
 (* 
- todo: good error message when parse error caused by typedef (see token, see if ident that is a typedef, ...)
-       special parse error treatment for missing ; (gcc)
-*)
+ * todo: good error message when parse error caused by typedef 
+ *    (see token, see if ident that is a typedef, ...)
+ *      special parse error treatment for missing ; (gcc)
+ * todo: inspire by spatch. look at all the commit in spare git
+ *  to know all the problems they had.
+ *)
 
 let warning s v = 
   if !Flag_parsing_c.verbose_parsing 
