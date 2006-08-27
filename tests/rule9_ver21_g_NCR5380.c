@@ -80,6 +80,9 @@
 
 /*
  * $Log$
+ * Revision 1.1  2006/08/05 16:41:19  julia
+ * *** empty log message ***
+ *
  */
 
 /* settings for DTC3181E card with only Mustek scanner attached */
