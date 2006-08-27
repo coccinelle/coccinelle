@@ -1,7 +1,7 @@
 /* Driver for USB Mass Storage compliant devices
  * SCSI layer glue code
  *
- * $Id: rule9_ver4.res,v 1.1 2006-08-03 21:49:14 pad Exp $
+ * $Id: rule9old_ver4.res,v 1.1 2006-08-27 21:18:03 pad Exp $
  *
  * Current development and maintenance by:
  *   (c) 1999-2002 Matthew Dharm (mdharm-usb@one-eyed-alien.net)
