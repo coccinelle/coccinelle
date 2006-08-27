@@ -135,15 +135,14 @@ Statement
 @@ expression E; @@
 { ... return E; } => return E;
 
-//pad: redundant ? 
-Statement
-@@ expression E; @@
-{ return E; } => return E;
-
-//pad: seems redundant. Is it because 'E' subsume (unify) '...' ?
-//Statement
-//@@ @@
+// Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
+
+//pad: redundant ? 
+//Statement
+//@@ expression E; @@
+//{ return E; } => return E;
+
 
 
 // ---------------------------------------------------------------------------
