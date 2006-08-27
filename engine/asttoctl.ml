@@ -688,8 +688,20 @@ and statement stmt used_after after quantified guard =
 	statement_list stmt_dots used_after (a2n after) quantified guard in
       let udots_pattern =
 	statement_list stmt_dots used_after (a2n after) quantified true in
-      (match after with
-	After a ->
+      (match (after,guard) with
+	(After a,true) ->
+	  let nots =
+	    List.map (process_bef_aft after quantified used_after n) befaft in
+	  (match nots with
+	    [] -> wrapAF(wrapOr(a,aftret))
+	  | x::xs ->
+	      let left =
+		wrapNot
+		  (List.fold_left
+		     (function rest -> function cur -> wrapOr(cur,rest))
+		     x xs) in
+	      wrapAU(left,wrapOr(a,aftret)))
+      |	(After a,false) ->
 	  let left = wrapOr(dots_pattern,wrapNot udots_pattern) in
 	  let nots =
 	    List.map (process_bef_aft after quantified used_after n) befaft in
@@ -704,7 +716,8 @@ and statement stmt used_after after quantified guard =
 			x xs),
 		   left) in
 	  wrapAU(left,wrapOr(a,aftret))
-      |	_ -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern)))
+      |	(_,true) -> wrap n CTL.True
+      |	(_,false) -> wrapAG(wrapOr(dots_pattern,wrapNot udots_pattern)))
   | Ast.Dots((_,i,d),whencodes,t) ->
       let dot_code =
 	match d with

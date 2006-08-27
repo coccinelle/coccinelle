@@ -752,9 +752,9 @@ let satEU dir ((_,_,states) as m) s1 s2 =
       |	new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = pre_exist dir 1 m new_info in
-	  let res = triples_union y (triples_conj s1 first) in
-	  let new_info = setdiff res y in
+	  let first = triples_conj s1 (pre_exist dir 1 m new_info) in
+	  let res = triples_union first y in
+	  let new_info = setdiff first y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
@@ -772,10 +772,11 @@ let satEF dir m s2 =
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir 1 m new_info in
-	  let res = triples_union y first in
-	  let new_info = setdiff res y in
-	  (*Printf.printf "iter %d res %d new_info %d\n"
-	  !ctr (List.length res) (List.length new_info);
+	  let res = triples_union first y in
+	  let new_info = setdiff first y in
+	  (*Printf.printf "EF %s iter %d res %d new_info %d\n"
+	    (if dir = A.BACKWARD then "reachable" else "real ef")
+	    !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
 	  f res new_info in
     f s2 s2
@@ -794,9 +795,9 @@ let satAU dir ((_,_,states) as m) s1 s2 =
       | new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = pre_forall dir m new_info y in
-	  let res = triples_union y (triples_conj s1 first) in
-	  let new_info = setdiff res y in
+	  let first = triples_conj s1 (pre_forall dir m new_info y) in
+	  let res = triples_union first y in
+	  let new_info = setdiff first y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
@@ -809,8 +810,9 @@ let satAF dir m s =
   let rec f y = function
       [] -> y
     | new_info ->
-	let res = triples_union y (pre_forall dir m new_info y) in
-	let new_info = setdiff res y in
+	let first = pre_forall dir m new_info y in
+	let res = triples_union first y in
+	let new_info = setdiff first y in
 	f res new_info in
   f s s
 
@@ -924,6 +926,35 @@ let get_children_required_states dir count (grp,_,_) required_states =
 
 let reachable_table = (Hashtbl.create(50) : (G.node, G.node list) Hashtbl.t)
 
+(* like satEF, but specialized for get_reachable *)
+let reachsatEF (grp,_,_) s2 =
+  let union = unionBy compare (=) in
+  let rec f y = function
+      [] -> y
+    | new_info ->
+	let (pre_collected,new_info) =
+	  List.partition (function Common.Left x -> true | _ -> false)
+	    (List.map
+	       (function x ->
+		 try Common.Left (Hashtbl.find reachable_table x)
+		 with Not_found -> Common.Right x)
+	       new_info) in
+	let y =
+	  List.fold_left
+	    (function rest ->
+	      function Common.Left x -> union x rest
+		| _ -> failwith "not possible")
+	    y pre_collected in
+	let new_info =
+	  List.map
+	    (function Common.Right x -> x | _ -> failwith "not possible")
+	    new_info in
+	let first = inner_setify (concatmap (G.successors grp) new_info) in
+	let res = union first y in
+	let new_info = setdiff first y in
+	f res new_info in
+  f s2 s2
+
 let get_reachable m required_states =
   match required_states with
     None -> None
@@ -934,8 +965,7 @@ let get_reachable m required_states =
 	    try Hashtbl.find reachable_table s
 	    with
 	      Not_found ->
-		let triples = satEF A.BACKWARD m [(s,[],[])] in
-		let states = List.map (function (s,_,_) -> s) triples in
+		let states = reachsatEF m [s] in
 		Hashtbl.add reachable_table s states;
 		states)
 	  states in
