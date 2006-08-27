@@ -194,6 +194,23 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     (* 2: iter binding *)
     let lastround_bindings = !_current_bindings in
     _current_bindings := [];
+
+    (* I have not to look at used_after_list to decide to restart from scratch.
+     * I just need to look if the binding list is empty. Indeed, let's suppose
+     * that a SP have 3 regions/rules. If we don't find a match for the 
+     * first region, then if this first region does not bind metavariable
+     * used after, that is if used_after_list is empty, then 
+     * mysat, even if does not find a match, will return a Left, with
+     * an empty transformation_info, and so current_binding will grow.
+     * On the contrary if the first region must bind some metavariables used
+     * after, and that we dont find any such region, then mysat will
+     * returns lots of Right, and current_binding will not grow, and so
+     * we will have an empty list of binding, and we will catch such a case.
+     *)
+
+    if null(lastround_bindings) then 
+      failwith "Empty list of bindings, I stop";
+
     lastround_bindings +> List.iter (fun binding -> 
 
       let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
