@@ -188,11 +188,11 @@ let combiner bind option_default
 	    [string_mcode lbrace; statement_dots body; string_mcode rbrace]
       | Ast0.ExprStatement(exp,sem) ->
 	  bind (expression exp) (string_mcode sem)
-      | Ast0.IfThen(iff,lp,exp,rp,branch1) ->
+      | Ast0.IfThen(iff,lp,exp,rp,branch1,_) ->
 	  multibind
 	    [string_mcode iff; string_mcode lp; expression exp;
 	      string_mcode rp; statement branch1]
-      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,_) ->
 	  multibind
 	    [string_mcode iff; string_mcode lp; expression exp;
 	      string_mcode rp; statement branch1; string_mcode els;
@@ -451,13 +451,13 @@ let rebuilder = fun
 		     string_mcode rbrace)
 	| Ast0.ExprStatement(exp,sem) ->
 	    Ast0.ExprStatement(expression exp, string_mcode sem)
-	| Ast0.IfThen(iff,lp,exp,rp,branch1) ->
+	| Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	    Ast0.IfThen(string_mcode iff, string_mcode lp, expression exp,
-	      string_mcode rp, statement branch1)
-	| Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+	      string_mcode rp, statement branch1,aft)
+	| Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
 	    Ast0.IfThenElse(string_mcode iff,string_mcode lp,expression exp,
 	      string_mcode rp, statement branch1, string_mcode els,
-	      statement branch2)
+	      statement branch2,aft)
 	| Ast0.While(whl,lp,exp,rp,body) ->
 	    Ast0.While(string_mcode whl, string_mcode lp, expression exp,
 		       string_mcode rp, statement body)

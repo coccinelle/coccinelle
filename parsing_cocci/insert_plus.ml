@@ -91,13 +91,53 @@ let collect_minus_join_points root =
 	[(Favored,info,mc)]
     | _ -> k e in
 
+  let statement r k s =
+    match Ast0.unwrap s with
+      Ast0.IfThen(iff,lp,exp,rp,branch, (ifinfo,aftmc)) ->
+	let iffres = mcode iff in
+	let lpres = mcode lp in
+	let expres = r.V0.combiner_expression exp in
+	let rpres = mcode rp in
+	let branchres = r.V0.combiner_statement branch in
+	let branchres =
+	  match List.rev branchres with
+	    [] -> failwith "empty branch not allowed"
+	  | (fv,info,mc)::rest ->
+	      (match mc with
+		Ast0.MINUS(_) -> branchres
+	      |	Ast0.CONTEXT(_) ->
+		  let new_info = {info with Ast0.attachable_end = false} in
+		  List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
+	      |	_ -> failwith "unexpected mc in branch res") in
+	iffres @ lpres @ expres @ rpres @ branchres
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(ifinfo,aftmc)) ->
+	let iffres = mcode iff in
+	let lpres = mcode lp in
+	let expres = r.V0.combiner_expression exp in
+	let rpres = mcode rp in
+	let branch1res = r.V0.combiner_statement branch1 in
+	let elseres = mcode els in
+	let branch2res = r.V0.combiner_statement branch2 in
+	let branch2res =
+	  match List.rev branch2res with
+	    [] -> failwith "empty branch not allowed"
+	  | (fv,info,mc)::rest ->
+	      (match mc with
+		Ast0.MINUS(_) -> branch2res
+	      |	Ast0.CONTEXT(_) ->
+		  let new_info = {info with Ast0.attachable_end = false} in
+		  List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
+	      |	_ -> failwith "unexpected mc in branch res") in
+	iffres @ lpres @ expres @ rpres @ branch1res @ elseres @ branch2res
+    | _ -> do_nothing r k s in
+
   let do_top r k (e: Ast0.top_level) = k e in
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_top
+    statement do_top
 
 
 let call_collect_minus context_nodes :
@@ -312,10 +352,10 @@ let merge_one = function
       if p < m1, then
          attach p to the beginning of m1.bef if m1 is Good, fail if it is bad
       if p > m1 && p < m2, then consider the following possibilities, in order
-         m1 is Good and favored: attach to the beginning of m1.aft; drop m1
-         m2 is Good and favored: attach to the beginning of m2.bef
-         m1 is Good and unfavored: attach to the beginning of m1.aft; drop m1
-         m2 is Good and unfavored: attach to the beginning of m2.bef
+         m1 is Good and favored: attach to the beginning of m1.aft
+         m2 is Good and favored: attach to the beginning of m2.bef; drop m1
+         m1 is Good and unfavored: attach to the beginning of m1.aft
+         m2 is Good and unfavored: attach to the beginning of m2.bef; drop m1
          also flip m1.bef if the first where > m1
          if we drop m1, then flip m1.aft first
       if p > m2

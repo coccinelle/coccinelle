@@ -191,7 +191,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
     -> return false
 
   (* cas general: a Meta can match everything *)
-  | A.MetaStmt (ida),  _unwrap_node -> 
+  | A.MetaStmt (ida,_),  _unwrap_node -> 
      (* match only "header"-statement *)
      (match Control_flow_c.extract_fullstatement node with
      | Some stb -> check_add_metavars_binding (term ida, Ast_c.MetaStmtVal stb)

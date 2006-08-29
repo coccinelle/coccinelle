@@ -437,12 +437,14 @@ statement:
 | TIf TOPar eexpr TCPar single_statement %prec TIf
     { Ast0.wrap(Ast0.IfThen(clt2mcode "if" (startofs($1)) $1,
 			    clt2mcode "(" (startofs($2)) $2,$3,
-			    clt2mcode ")" (startofs($4)) $4,$5)) }
+			    clt2mcode ")" (startofs($4)) $4,$5,
+			    (Ast0.default_info(),Ast0.context_befaft()))) }
 | TIf TOPar eexpr TCPar single_statement TElse single_statement
     { Ast0.wrap(Ast0.IfThenElse(clt2mcode "if" (startofs($1)) $1,
 				clt2mcode "(" (startofs($2)) $2,$3,
 				clt2mcode ")" (startofs($4)) $4,$5,
-				clt2mcode "else" (startofs($6)) $6,$7)) }
+				clt2mcode "else" (startofs($6)) $6,$7,
+				(Ast0.default_info(),Ast0.context_befaft()))) }
 | fr=TFor lp=TOPar e1=ioption(eexpr) sc1=TPtVirg e2=ioption(eexpr) sc2=TPtVirg
     e3=ioption(eexpr) rp=TCPar s=single_statement
     { Ast0.wrap(Ast0.For(clt2mcode "for" (startofs(fr)) fr,

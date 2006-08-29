@@ -502,7 +502,7 @@ let rec statement in_nest tgt stm =
       let exp = expression false arity exp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.ExprStatement(exp,sem))
-  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+  | Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->
       let arity =
 	stm_same (mcode2line iff) (List.map mcode2arity [iff;lp;rp]) in
       let iff = mcode iff in
@@ -510,8 +510,8 @@ let rec statement in_nest tgt stm =
       let exp = expression false arity exp in
       let rp = mcode rp in
       let branch = statement false arity branch in
-      make_rule_elem stm tgt arity (Ast0.IfThen(iff,lp,exp,rp,branch))
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      make_rule_elem stm tgt arity (Ast0.IfThen(iff,lp,exp,rp,branch,aft))
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
       let arity =
 	stm_same (mcode2line iff) (List.map mcode2arity [iff;lp;rp;els]) in
       let iff = mcode iff in
@@ -522,7 +522,7 @@ let rec statement in_nest tgt stm =
       let els = mcode els in
       let branch2 = statement false arity branch2 in
       make_rule_elem stm tgt arity
-	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2))
+	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft))
   | Ast0.While(wh,lp,exp,rp,body) ->
       let arity =
 	stm_same (mcode2line wh)

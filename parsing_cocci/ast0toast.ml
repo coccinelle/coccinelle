@@ -340,100 +340,106 @@ let parameter_list = dots parameterTypeDef
 (* Top-level code *)
 
 let rec statement s =
-  rewrap s
-    (match Ast0.unwrap s with
-      Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
-    | Ast0.Seq(lbrace,body,rbrace) -> 
-	let lbrace = mcode lbrace in
-	let (decls,dots,body) = separate_decls body in
-	let rbrace = mcode rbrace in
-	Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
-		tokenwrap lbrace (Ast.SeqEnd(rbrace)))
-    | Ast0.ExprStatement(exp,sem) ->
-	Ast.Atomic(rewrap s(Ast.ExprStatement(expression exp,mcode sem)))
-    | Ast0.IfThen(iff,lp,exp,rp,branch) ->
-	Ast.IfThen(rewrap s
-		     (Ast.IfHeader
-			(mcode iff,mcode lp,expression exp,mcode rp)),
-		   statement branch)
-    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
-	let els = mcode els in
-	Ast.IfThenElse
-	  (rewrap s (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	   statement branch1,tokenwrap els (Ast.Else(els)), statement branch2)
-    | Ast0.While(wh,lp,exp,rp,body) ->
-	Ast.While(rewrap s
-		    (Ast.WhileHeader
-		       (mcode wh,mcode lp,expression exp,mcode rp)),
-		  statement body)
-    | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
-	let wh = mcode wh in
-	Ast.Do(rewrap s (Ast.DoHeader(mcode d)), statement body,
-	       tokenwrap wh
-		 (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
-				mcode sem)))
-    | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
-	let fr = mcode fr in
-	let lp = mcode lp in
-	let exp1 = get_option expression exp1 in
-	let sem1 = mcode sem1 in
-	let exp2 = get_option expression exp2 in
-	let sem2= mcode sem2 in
-	let exp3 = get_option expression exp3 in
-	let rp = mcode rp in
-	let body = statement body in
-	Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
-		body)
-    | Ast0.Return(ret,sem) ->
-	Ast.Atomic(rewrap s (Ast.Return(mcode ret,mcode sem)))
-    | Ast0.ReturnExpr(ret,exp,sem) ->
-	Ast.Atomic
-	  (rewrap s (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
-    | Ast0.MetaStmt(name) ->
-	Ast.Atomic(rewrap s (Ast.MetaStmt(mcode name)))
-    | Ast0.MetaStmtList(name) ->
-	Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name)))
-    | Ast0.Exp(exp) ->
-	Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
-    | Ast0.Disj(_,rule_elem_dots_list,_) ->
-	Ast.Disj(List.map (function x -> dots statement x) rule_elem_dots_list)
-    | Ast0.Nest(_,rule_elem_dots,_) ->
-	Ast.Nest(dots statement rule_elem_dots,[])
-    | Ast0.Dots(d,whencode) ->
-	let d = mcode d in
-	let whencode = get_option (dots statement) whencode in
-	Ast.Dots(d,option_to_list whencode,[])
-    | Ast0.Circles(d,whencode) ->
-	let d = mcode d in
-	let whencode = get_option (dots statement) whencode in
-	Ast.Circles(d,option_to_list whencode,[])
-    | Ast0.Stars(d,whencode) ->
-	let d = mcode d in
-	let whencode = get_option (dots statement) whencode in
-	Ast.Stars(d,option_to_list whencode,[])
-    | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-	let stg = get_option mcode stg in
-	let ty = get_option typeC ty in
-	let name = ident name in
-	let lp = mcode lp in
-	let params = parameter_list params in
-	let rp = mcode rp in
-	let lbrace = mcode lbrace in
-	let (decls,dots,body) = separate_decls body in
-	let rbrace = mcode rbrace in
-	let allminus =
-	  match Ast0.get_mcodekind s with
-	    Ast0.MINUS(_) -> true
-	  | _ -> false in
-	Ast.FunDecl(rewrap s
-		      (Ast.FunHeader(allminus,stg,ty,name,lp,params,rp)),
-		    tokenwrap lbrace (Ast.SeqStart(lbrace)),
-		    decls,dots,body,
-		    tokenwrap rbrace (Ast.SeqEnd(rbrace)))
-    | Ast0.OptStm(stm) -> Ast.OptStm(statement stm)
-    | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement stm)
-    | Ast0.MultiStm(stm) -> Ast.MultiStm(statement stm))
-
+  let rec statement seqible s =
+    rewrap s
+      (match Ast0.unwrap s with
+	Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
+      | Ast0.Seq(lbrace,body,rbrace) -> 
+	  let lbrace = mcode lbrace in
+	  let (decls,dots,body) = separate_decls body in
+	  let rbrace = mcode rbrace in
+	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
+		  tokenwrap lbrace (Ast.SeqEnd(rbrace)))
+      | Ast0.ExprStatement(exp,sem) ->
+	  Ast.Atomic(rewrap s(Ast.ExprStatement(expression exp,mcode sem)))
+      | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
+	  Ast.IfThen
+	    (rewrap s
+	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
+	     statement false branch,convert_mcodekind aft)
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
+	  let els = mcode els in
+	  Ast.IfThenElse
+	    (rewrap s
+	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
+	     statement false branch1,tokenwrap els (Ast.Else(els)),
+	     statement false branch2,
+	     convert_mcodekind aft)
+      | Ast0.While(wh,lp,exp,rp,body) ->
+	  Ast.While(rewrap s
+		      (Ast.WhileHeader
+			 (mcode wh,mcode lp,expression exp,mcode rp)),
+		    statement false body)
+      | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
+	  let wh = mcode wh in
+	  Ast.Do(rewrap s (Ast.DoHeader(mcode d)), statement false body,
+		 tokenwrap wh
+		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
+				  mcode sem)))
+      | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
+	  let fr = mcode fr in
+	  let lp = mcode lp in
+	  let exp1 = get_option expression exp1 in
+	  let sem1 = mcode sem1 in
+	  let exp2 = get_option expression exp2 in
+	  let sem2= mcode sem2 in
+	  let exp3 = get_option expression exp3 in
+	  let rp = mcode rp in
+	  let body = statement false body in
+	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
+		  body)
+      | Ast0.Return(ret,sem) ->
+	  Ast.Atomic(rewrap s (Ast.Return(mcode ret,mcode sem)))
+      | Ast0.ReturnExpr(ret,exp,sem) ->
+	  Ast.Atomic
+	    (rewrap s (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
+      | Ast0.MetaStmt(name) ->
+	  Ast.Atomic(rewrap s (Ast.MetaStmt(mcode name,seqible)))
+      | Ast0.MetaStmtList(name) ->
+	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name)))
+      | Ast0.Exp(exp) ->
+	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
+      | Ast0.Disj(_,rule_elem_dots_list,_) ->
+	  Ast.Disj(List.map (function x -> dots (statement seqible) x)
+		     rule_elem_dots_list)
+      | Ast0.Nest(_,rule_elem_dots,_) ->
+	  Ast.Nest(dots (statement true) rule_elem_dots,[])
+      | Ast0.Dots(d,whencode) ->
+	  let d = mcode d in
+	  let whencode = get_option (dots (statement true)) whencode in
+	  Ast.Dots(d,option_to_list whencode,[])
+      | Ast0.Circles(d,whencode) ->
+	  let d = mcode d in
+	  let whencode = get_option (dots (statement true)) whencode in
+	  Ast.Circles(d,option_to_list whencode,[])
+      | Ast0.Stars(d,whencode) ->
+	  let d = mcode d in
+	  let whencode = get_option (dots (statement true)) whencode in
+	  Ast.Stars(d,option_to_list whencode,[])
+      | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	  let stg = get_option mcode stg in
+	  let ty = get_option typeC ty in
+	  let name = ident name in
+	  let lp = mcode lp in
+	  let params = parameter_list params in
+	  let rp = mcode rp in
+	  let lbrace = mcode lbrace in
+	  let (decls,dots,body) = separate_decls body in
+	  let rbrace = mcode rbrace in
+	  let allminus =
+	    match Ast0.get_mcodekind s with
+	      Ast0.MINUS(_) -> true
+	    | _ -> false in
+	  Ast.FunDecl(rewrap s
+			(Ast.FunHeader(allminus,stg,ty,name,lp,params,rp)),
+		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
+		      decls,dots,body,
+		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
+      | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
+      | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
+      | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm)) in
+  statement true s
+    
 and separate_decls d =
   let rec collect_decls = function
       [] -> ([],false,[])
@@ -475,7 +481,8 @@ let top_level t =
     | Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)
     | Ast0.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)
-    | Ast0.CODE(rule_elem_dots) -> Ast.CODE(dots statement rule_elem_dots)
+    | Ast0.CODE(rule_elem_dots) ->
+	Ast.CODE(dots statement rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
     | Ast0.OTHER(_) -> failwith "eliminated by top_level")
 

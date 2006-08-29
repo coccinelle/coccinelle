@@ -58,7 +58,7 @@ let print_around printer term = function
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let mcode fn = function
-    ((x, _, Ast.MINUS(plus_stream)) : 'a Ast.mcode) ->
+    (x, _, Ast.MINUS(plus_stream)) ->
       if !print_minus_flag
       then print_string "-"; 
       fn x; 
@@ -376,7 +376,7 @@ let rule_elem arity re =
       expression exp; mcode print_string sem
   | Ast.MetaRuleElem(name) ->
       print_string arity; mcode print_string name
-  | Ast.MetaStmt(name) ->
+  | Ast.MetaStmt(name,_) ->
       print_string arity; mcode print_string name
   | Ast.MetaStmtList(name) ->
       print_string arity;  mcode print_string name
@@ -389,11 +389,13 @@ let rec statement arity s =
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
-  | Ast.IfThen(header,branch) ->
-      rule_elem arity header; statement arity branch
-  | Ast.IfThenElse(header,branch1,els,branch2) ->
+  | Ast.IfThen(header,branch,aft) ->
+      rule_elem arity header; statement arity branch;
+      mcode (function _ -> ()) ((),(),aft)
+  | Ast.IfThenElse(header,branch1,els,branch2,aft) ->
       rule_elem arity header; statement arity branch1; print_string " ";
-      rule_elem arity els; statement arity branch2
+      rule_elem arity els; statement arity branch2;
+      mcode (function _ -> ()) ((),(),aft)
   | Ast.While(header,body) ->
       rule_elem arity header; statement arity body
   | Ast.Do(header,body,tail) ->

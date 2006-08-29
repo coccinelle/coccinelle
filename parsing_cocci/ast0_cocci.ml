@@ -158,10 +158,11 @@ type base_statement =
   | ExprStatement of expression * string mcode (*;*)
   | IfThen        of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
-	             statement
+	             statement * (info * mcodekind) (* after info *)
   | IfThenElse    of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
-	             statement * string mcode (* else *) * statement
+	             statement * string mcode (* else *) * statement *
+	             (info * mcodekind)
   | While         of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
 	             statement

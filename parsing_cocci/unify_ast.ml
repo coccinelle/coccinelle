@@ -329,9 +329,9 @@ let rec unify_statement s1 s2 =
 	   (conjunct_bindings
 	      (unify_dots unify_statement sdots d1 d2)
 	      (unify_rule_elem rb1 rb2)))
-  | (Ast.IfThen(h1,thn1),Ast.IfThen(h2,thn2)) ->
+  | (Ast.IfThen(h1,thn1,_),Ast.IfThen(h2,thn2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement thn1 thn2)
-  | (Ast.IfThenElse(h1,thn1,e1,els1),Ast.IfThenElse(h2,thn2,e2,els2)) ->
+  | (Ast.IfThenElse(h1,thn1,e1,els1,_),Ast.IfThenElse(h2,thn2,e2,els2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_statement thn1 thn2)
 	   (conjunct_bindings (unify_rule_elem e1 e2)

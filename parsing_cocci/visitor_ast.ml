@@ -221,7 +221,7 @@ let combiner bind option_default
 	  bind (string_mcode ret) (string_mcode sem)
       | Ast.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
-      | Ast.MetaStmt(name) -> string_mcode name
+      | Ast.MetaStmt(name,_) -> string_mcode name
       | Ast.MetaStmtList(name) -> string_mcode name
       | Ast.MetaRuleElem(name) -> string_mcode name
       | Ast.Exp(exp) -> expression exp in
@@ -233,9 +233,9 @@ let combiner bind option_default
 	Ast.Seq(lbrace,decls,dots,body,rbrace) ->
 	  multibind [rule_elem lbrace; statement_dots decls;
 		      statement_dots body; rule_elem rbrace]
-      | Ast.IfThen(header,branch) ->
+      | Ast.IfThen(header,branch,_) ->
 	  multibind [rule_elem header; statement branch]
-      | Ast.IfThenElse(header,branch1,els,branch2) ->
+      | Ast.IfThenElse(header,branch1,els,branch2,_) ->
 	  multibind [rule_elem header; statement branch1; rule_elem els;
 		      statement branch2]
       | Ast.While(header,body) -> multibind [rule_elem header; statement body]
@@ -532,7 +532,7 @@ let rebuilder
 	    Ast.Return(string_mcode ret, string_mcode sem)
 	| Ast.ReturnExpr(ret,exp,sem) ->
 	    Ast.ReturnExpr(string_mcode ret, expression exp, string_mcode sem)
-	| Ast.MetaStmt(name) -> Ast.MetaStmt(string_mcode name)
+	| Ast.MetaStmt(name,seqible) -> Ast.MetaStmt(string_mcode name,seqible)
 	| Ast.MetaStmtList(name) -> Ast.MetaStmtList(string_mcode name)
 	| Ast.MetaRuleElem(name) -> Ast.MetaRuleElem(string_mcode name)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)) in
@@ -545,11 +545,11 @@ let rebuilder
 	  Ast.Seq(lbrace,decls,dots,body,rbrace) ->
 	    Ast.Seq(rule_elem lbrace, statement_dots decls, dots,
 		    statement_dots body, rule_elem rbrace)
-	| Ast.IfThen(header,branch) ->
-	    Ast.IfThen(rule_elem header, statement branch)
-	| Ast.IfThenElse(header,branch1,els,branch2) ->
+	| Ast.IfThen(header,branch,aft) ->
+	    Ast.IfThen(rule_elem header, statement branch,aft)
+	| Ast.IfThenElse(header,branch1,els,branch2,aft) ->
 	    Ast.IfThenElse(rule_elem header, statement branch1, rule_elem els,
-			   statement branch2)
+			   statement branch2, aft)
 	| Ast.While(header,body) -> Ast.While(rule_elem header, statement body)
 	| Ast.Do(header,body,tail) ->
 	    Ast.Do(rule_elem header, statement body, rule_elem tail)

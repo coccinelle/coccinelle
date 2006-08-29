@@ -43,6 +43,7 @@ let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
 let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y))
 let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
 let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,1,x))
+let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,1,x))
 let wrapAXc n count (x) = wrap n (CTL.AX(CTL.FORWARD,count,x))
 let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,1,x))
 let wrapAG n (x) = wrap n (CTL.AG(CTL.FORWARD,x))
@@ -324,13 +325,13 @@ and get_before_e s a =
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
        [Ast.WParen(rbrace,index)])
-  | Ast.IfThen(ifheader,branch) ->
+  | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_before_e branch [] in
-      (Ast.rewrap s (Ast.IfThen(ifheader,br)), [Ast.Other s])
-  | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
+      (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)), [Ast.Other s])
+  | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       let (br1,_) = get_before_e branch1 [] in
       let (br2,_) = get_before_e branch2 [] in
-      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2)),[Ast.Other s])
+      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
   | Ast.While(header,body) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
@@ -373,13 +374,13 @@ and get_after_e s a =
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
        [Ast.WParen(lbrace,index)])
-  | Ast.IfThen(ifheader,branch) ->
+  | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_after_e branch a in
-      (Ast.rewrap s (Ast.IfThen(ifheader,br)),[Ast.Other s])
-  | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
+      (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)),[Ast.Other s])
+  | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       let (br1,_) = get_after_e branch1 a in
       let (br2,_) = get_after_e branch2 a in
-      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2)),[Ast.Other s])
+      (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
   | Ast.While(header,body) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
@@ -442,6 +443,7 @@ and statement stmt used_after after quantified guard =
   let wrapOr = wrapOr n in
   let wrapAU = wrapAU n in
   let wrapAX = wrapAX n in
+  let wrapBackAX = wrapBackAX n in
   let wrapEX = wrapEX n in
   let wrapAG = wrapAG n in
   let wrapAF = wrapAF n in
@@ -462,8 +464,8 @@ and statement stmt used_after after quantified guard =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)))
-      | Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d))) ->
+	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),seqible)
+      | Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d)),seqible) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
@@ -500,11 +502,16 @@ and statement stmt used_after after quantified guard =
 		       make_seq
 			 [wrapAnd(last_metamatch,prelabel_pred);
 			   and_opt (wrapNot(prelabel_pred)) after])] in
-	  quantify (label_var::get_unquantified quantified [s])
-	    (wrapAnd(make_raw_match ast,
-		     wrapAnd(label_pred,wrapOr(left_or,right_or))))
+	  let body =
+	    wrapAnd(make_raw_match ast,
+		    wrapAnd(label_pred,wrapOr(left_or,right_or))) in
+	  if seqible
+	  then
+	    quantify (label_var::get_unquantified quantified [s])
+	      (wrapAnd(wrapNot(wrapBackAX(label_pred)),body))
+	  else quantify (label_var::get_unquantified quantified [s]) body
 	    
-      |	Ast.MetaStmt((s,i,d)) ->
+      |	Ast.MetaStmt((s,i,d),seqible) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
@@ -522,9 +529,15 @@ and statement stmt used_after after quantified guard =
 	  let first_nodeb = wrapAnd(first_metamatch,label_pred) in
 	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
 	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
-	  quantify (label_var::get_unquantified quantified [s])
-	    (wrapAnd(make_raw_match ast,
-		     (make_seq [first_nodeb; wrapAU(rest_nodes,last_node)])))
+	  let body =
+	    wrapAnd
+	      (make_raw_match ast,
+	       (make_seq [first_nodeb; wrapAU(rest_nodes,last_node)])) in
+	  if seqible
+	  then
+	    quantify (label_var::get_unquantified quantified [s])
+	      (wrapAnd(wrapNot(wrapBackAX(label_pred)),body))
+	  else quantify (label_var::get_unquantified quantified [s]) body
       |	_ ->
 	  let stmt_fvs = Ast.get_fvs stmt in
 	  let fvs = get_unquantified quantified stmt_fvs in
@@ -556,7 +569,7 @@ and statement stmt used_after after quantified guard =
 				 (After (make_seq_after end_brace after))
 				 new_quantified3 guard))))
 		     new_quantified2 guard)]))
-  | Ast.IfThen(ifheader,branch) ->
+  | Ast.IfThen(ifheader,branch,aft) ->
 
 (* "if (test) thn" becomes:
     if(test) & AX((TrueBranch & AX thn) v FallThrough v After)
@@ -579,16 +592,25 @@ and statement stmt used_after after quantified guard =
 	     statement branch used_after (a2n after) new_quantified guard] in
        let fall_branch =  wrapPred(Lib_engine.FallThrough,CTL.Control) in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
-       let after_branch = make_seq_after2 after_pred after in
+       let (aft_needed,after_branch) =
+	 match aft with
+	   Ast.CONTEXT(Ast.NOTHING) -> (false,make_seq_after2 after_pred after)
+	 | _ ->
+	     (true,
+	      make_seq_after after_pred
+		(After
+		   (make_seq_after (make_match (make_meta_rule_elem aft))
+		      after))) in
        let or_cases = wrapOr(true_branch,wrapOr(fall_branch,after_branch)) in
        (* the code *)
-       (match after with
-	 After _ -> (* pattern doesn't end here *)
+       (match (after,aft_needed) with
+	 (After _,_) (* pattern doesn't end here *)
+       | (_,true) (* + code added after *) ->
 	   quantify bfvs
 	     (wrapAnd (if_header, wrapAnd(wrapAX or_cases, wrapEX after_pred)))
        | _ -> quantify bfvs (wrapAnd(if_header, wrapAX or_cases)))
 	 
-  | Ast.IfThenElse(ifheader,branch1,els,branch2) ->
+  | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
 
 (*  "if (test) thn else els" becomes:
     if(test) & AX((TrueBranch & AX thn) v
@@ -632,11 +654,20 @@ and statement stmt used_after after quantified guard =
 	   [false_pred; make_match els;
 	     statement branch2 used_after (a2n after) new_quantified guard] in
        let after_pred = wrapPred(Lib_engine.After,CTL.Control) in
-       let after_branch = make_seq_after2 after_pred after in
+       let (aft_needed,after_branch) =
+	 match aft with
+	   Ast.CONTEXT(Ast.NOTHING) -> (false,make_seq_after2 after_pred after)
+	 | _ ->
+	     (true,
+	      make_seq_after after_pred
+		(After
+		   (make_seq_after (make_match (make_meta_rule_elem aft))
+		      after))) in
        let or_cases = wrapOr(true_branch,wrapOr(false_branch,after_branch)) in
        (* the code *)
-       (match after with
-	After _ -> (* pattern doesn't end here *)
+       (match (after,aft_needed) with
+	 (After _,_) (* pattern doesn't end here *)
+       | (_,true) (* + code added after *) ->
 	  quantify bothfvs
 	    (wrapAnd
 	       (if_header,

@@ -243,7 +243,7 @@ and base_rule_elem =
 	             string mcode (* ; *)
 
   | MetaRuleElem  of string mcode  
-  | MetaStmt      of string mcode  
+  | MetaStmt      of string mcode * bool (*true if sequenceable, false in if*)
   | MetaStmtList  of string mcode  
 
   | Exp           of expression
@@ -253,9 +253,9 @@ and rule_elem = base_rule_elem wrap
 and base_statement =
     Seq           of rule_elem (* { *) * statement dots * bool *
 	             statement dots * rule_elem (* } *)
-  | IfThen        of rule_elem (* header *) * statement
+  | IfThen        of rule_elem (* header *) * statement * mcodekind
   | IfThenElse    of rule_elem (* header *) * statement *
-	             rule_elem (* else *) * statement
+	             rule_elem (* else *) * statement * mcodekind
   | While         of rule_elem (* header *) * statement
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
   | For           of rule_elem (* header *) * statement

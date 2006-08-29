@@ -244,12 +244,12 @@ let rec statement arity s =
 	  end_block(); print_string arity; mcode print_string rbrace
       | Ast0.ExprStatement(exp,sem) ->
 	  print_string arity; expression exp; mcode print_string sem
-      | Ast0.IfThen(iff,lp,exp,rp,branch1) ->
+      | Ast0.IfThen(iff,lp,exp,rp,branch1,_) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1
-      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,_) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";

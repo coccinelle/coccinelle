@@ -367,10 +367,10 @@ let rec equal_statement s1 s2 =
       equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
   | (Ast0.ExprStatement(_,sem1),Ast0.ExprStatement(_,sem2)) ->
       equal_mcode sem1 sem2
-  | (Ast0.IfThen(iff1,lp1,_,rp1,_),Ast0.IfThen(iff2,lp2,_,rp2,_)) ->
+  | (Ast0.IfThen(iff1,lp1,_,rp1,_,_),Ast0.IfThen(iff2,lp2,_,rp2,_,_)) ->
       equal_mcode iff1 iff2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
-  | (Ast0.IfThenElse(iff1,lp1,_,rp1,_,els1,_),
-     Ast0.IfThenElse(iff2,lp2,_,rp2,_,els2,_)) ->
+  | (Ast0.IfThenElse(iff1,lp1,_,rp1,_,els1,_,_),
+     Ast0.IfThenElse(iff2,lp2,_,rp2,_,els2,_,_)) ->
        equal_mcode iff1 iff2 &&
 	 equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode els1 els2
   | (Ast0.While(whl1,lp1,_,rp1,_),Ast0.While(whl2,lp2,_,rp2,_)) ->

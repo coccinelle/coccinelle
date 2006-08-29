@@ -101,7 +101,8 @@ let astfvs bound =
   let astfvrule_elem recursor k re =
     let (unbound,_) as res =
       match Ast.unwrap re with
-	Ast.MetaRuleElem(name) | Ast.MetaStmt(name) | Ast.MetaStmtList(name) ->
+	Ast.MetaRuleElem(name) | Ast.MetaStmt(name,_)
+      | Ast.MetaStmtList(name) ->
 	  let id = metaid name in
 	  if List.mem id bound
 	  then bind ([],[id]) (mcode recursor name)

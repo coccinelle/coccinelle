@@ -175,7 +175,7 @@ let rec propagate_types env =
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
 	(propagate_types (fenv@env)).V0.combiner_statement_dots body
-    | Ast0.IfThen(_,_,exp,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_)
+    | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
     | Ast0.While(_,_,exp,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
 	let _ = k s in
 	(match Ast0.get_type exp with

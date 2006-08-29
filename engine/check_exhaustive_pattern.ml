@@ -17,7 +17,7 @@ module F = Control_flow_c
 
 let dumb_astcocci_rule_elem = function
  | A.MetaRuleElem _ -> ()
- | A.MetaStmt (ida) -> ()
+ | A.MetaStmt (ida,_) -> ()
  | A.MetaStmtList _ -> ()
  | A.Exp expr -> ()
  | A.FunHeader (allminus, stoa, tya, ida, _, paramsa, _) -> ()

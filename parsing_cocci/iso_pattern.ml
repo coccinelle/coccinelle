@@ -337,12 +337,13 @@ and match_statement context_required pattern s =
 	  match_dots match_statement context_required bodya bodyb
       | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
 	  match_expr context_required expa expb
-      | (Ast0.IfThen(_,_,expa,_,branch1a),Ast0.IfThen(_,_,expb,_,branch1b)) ->
+      | (Ast0.IfThen(_,_,expa,_,branch1a,_),
+	 Ast0.IfThen(_,_,expb,_,branch1b,_)) ->
 	  conjunct_bindings
 	    (match_expr context_required expa expb)
 	    (match_statement context_required branch1a branch1b)
-      | (Ast0.IfThenElse(_,_,expa,_,branch1a,_,branch2a),
-	 Ast0.IfThenElse(_,_,expb,_,branch1b,_,branch2b)) ->
+      | (Ast0.IfThenElse(_,_,expa,_,branch1a,_,branch2a,_),
+	 Ast0.IfThenElse(_,_,expb,_,branch1b,_,branch2b,_)) ->
 	   conjunct_bindings
 	     (match_expr context_required expa expb)
 	     (conjunct_bindings

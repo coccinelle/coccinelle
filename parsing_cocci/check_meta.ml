@@ -170,9 +170,9 @@ let rec statement table minus s =
     Ast0.Decl(decl) -> declaration ID table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement table minus) body
   | Ast0.ExprStatement(exp,sem) -> expression ID table minus exp
-  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+  | Ast0.IfThen(iff,lp,exp,rp,branch,_) ->
       expression ID table minus exp; statement table minus branch
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,_) ->
       expression ID table minus exp; statement table minus branch1;
       statement table minus branch2
   | Ast0.While(wh,lp,exp,rp,body) ->

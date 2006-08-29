@@ -51,7 +51,15 @@ let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,None)
+  ((),new_info,ref (-1),ref mcodekind,ref None)
+
+let promote_to_statement stm mcodekind =
+  let info = Ast0.get_info stm in
+  let new_info =
+    {info with
+      Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
+      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+  ((),new_info,ref (-1),ref mcodekind,ref None)
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =
@@ -374,16 +382,21 @@ let rec statement s =
   | Ast0.ExprStatement(exp,sem) ->
       let exp = expression exp in
       mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
-  | Ast0.IfThen(iff,lp,exp,rp,branch) ->
+  | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
       let exp = expression exp in
-      let branch = statement branch in
-      mkres s (Ast0.IfThen(iff,lp,exp,rp,branch)) (promote_mcode iff) branch
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2) ->
+      let (_,lend,_,_,_) as branch = statement branch in
+      let right = promote_to_statement branch aft in
+      mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
+	(promote_mcode iff) right
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
       let exp = expression exp in
       let branch1 = statement branch1 in
       let branch2 = statement branch2 in
-      mkres s (Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2))
-	(promote_mcode iff) branch2
+      let right = promote_to_statement branch2 aft in
+      mkres s
+	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
+	  (Ast0.get_info right,aft)))
+	(promote_mcode iff) right
   | Ast0.While(wh,lp,exp,rp,body) ->
       let exp = expression exp in
       let body = statement body in

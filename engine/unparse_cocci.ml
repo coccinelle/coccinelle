@@ -359,7 +359,7 @@ let rule_elem arity re =
   | Ast.MetaRuleElem(name) ->
       raise Impossible
 
-  | Ast.MetaStmt(name) ->
+  | Ast.MetaStmt(name,_) ->
       handle_metavar name  (function
         | Ast_c.MetaStmtVal exp -> 
             Pretty_print_c.pp_statement_gen pr_elem  exp
@@ -379,9 +379,9 @@ let rec statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
 
-  | Ast.IfThen(header,branch) ->
+  | Ast.IfThen(header,branch,_) ->
       rule_elem arity header; statement arity branch
-  | Ast.IfThenElse(header,branch1,els,branch2) ->
+  | Ast.IfThenElse(header,branch1,els,branch2,_) ->
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2
 
