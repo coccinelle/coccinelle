@@ -6,14 +6,18 @@ open Common open Commonop
  *    ver1: just do init,  
  *    ver2: compute depth of label (easy, intercept compound in the visitor)
  *
- * todo: To generate less exception with the breakInsideLoop, analyse correctly
- * the loop deguisé  comme list_for_each (qui sont actuellement retourné comme
- * des Tif par le lexer).
+ * To generate less exception with the breakInsideLoop, analyse correctly
+ * the loop deguisé  comme list_for_each (qui etait retourné comme
+ * des Tif par le lexer, now they are returned as Twhile so less pbs).
+ *
+ * todo:
  * Add a case ForMacro in ast_c (and in lexer/parser), and then do code that 
  * imitates the code for the For.
  *
  * checktodo: after a switch, need check that all the st in the compound start 
  * with a case: ?
+ * checktodo: how ensure that when we call aux_statement recursivly, 
+ * we pass it auxinfo_label and not just auxinfo ? how enforce that ?
  *
  * todo: can have code (and so nodes) in many places, in the size of an array, 
  * in the init of initializer, but also in StatementExpr, ...
@@ -184,7 +188,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   let counter_for_labels = ref 0 in
 
 
-  (**********************************)
   (* Take start, return end.
    * old: old code was returning an int, but goto has no end, so aux_statement 
    * should return   int option.
@@ -198,19 +201,28 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
    *  - to handle the braces, need again pass additionnal info.
    *  - need pass the labels.
    *)
-  (**********************************)
   let rec (aux_statement: (nodei option * additionnal_info) -> statement -> nodei option) = 
    fun (starti, auxinfo) stmt ->
 
-    incr counter_for_labels;
-    let lbl = auxinfo.labels @ [!counter_for_labels] in
-
-    (* Normally the new auxinfo to pass recursively to the next aux_statement.
-     * But in some cases we do and add additionnal stuff. *)
-    let auxinfo_label = 
-      { auxinfo with labels = auxinfo.labels @ [ !counter_for_labels ]; } 
+    if not !Flag_parsing_c.label_strategy_2
+    then 
+      incr counter_for_labels;
+    
+    let lbl = 
+      if not !Flag_parsing_c.label_strategy_2 
+      then auxinfo.labels @ [!counter_for_labels]
+      else auxinfo.labels 
     in
 
+    (* Normally the new auxinfo to pass recursively to the next aux_statement.
+     * But in some cases we add additionnal stuff. *)
+    let auxinfo_label = 
+      if not !Flag_parsing_c.label_strategy_2
+      then
+      { auxinfo with labels = auxinfo.labels @ [ !counter_for_labels ]; } 
+      else auxinfo
+    in
+        
     match stmt with
   
     | Ast_c.Compound statxs, ii -> 
@@ -234,12 +246,25 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newauxinfo = 
           { auxinfo_label with braces = endnode:: auxinfo_label.braces }
         in
+       
 
         attach_to_previous_node starti newi;
         let starti = Some newi in
 
         statxs +> List.fold_left (fun starti statement ->
-           aux_statement (starti, newauxinfo) statement
+          if !Flag_parsing_c.label_strategy_2
+          then 
+            incr counter_for_labels;
+
+          let newauxinfo' = 
+            if !Flag_parsing_c.label_strategy_2
+            then 
+            { newauxinfo with 
+              labels = auxinfo.labels @ [ !counter_for_labels ] 
+            } 
+            else newauxinfo
+          in
+          aux_statement (starti, newauxinfo') statement
         ) starti
 
         (* braces: *)

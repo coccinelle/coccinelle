@@ -193,6 +193,8 @@ let main () =
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
+      "-label_strategy_2",     Arg.Set Flag_parsing_c.label_strategy_2, " ";
+
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 
                      " [options] <path-to-c-dir>\nOptions are:") 
