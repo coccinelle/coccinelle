@@ -21,6 +21,7 @@ type node = node1 * string
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader of statement * expression wrap
+  | EndStatement of info option
   | Return     of statement * unit wrap
   | ReturnExpr of statement * expression wrap
 

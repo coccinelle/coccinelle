@@ -401,11 +401,14 @@ and (distribute_mck_type: Ast_c.fullType distributer) = fun (op, lop, rop) ->
 and (distribute_mck_node: Control_flow_c.node2 distributer) = 
  fun (op,lop,rop) -> function
   | F.Enter | F.Exit | F.ErrorExit
-  | F.Fake  | F.CaseNode _
+  | F.CaseNode _
   | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
     -> raise Impossible
   | F.FunHeader _  -> raise Impossible
 
+  | F.EndStatement None -> raise Impossible
+  | F.EndStatement (Some i) -> 
+      F.EndStatement (Some (i +> op +> lop +> rop))
   | F.Decl decl -> F.Decl (distribute_mck_decl (op, lop, rop) decl) 
 
   | F.SeqStart (st, level, i1) -> 

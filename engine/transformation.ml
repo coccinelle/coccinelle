@@ -29,6 +29,14 @@ let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 let mcodekind (_,i,mc) = mc
 let wrap_mcode (_,i,mc) = ("fake", i, mc)
 
+let mcode_contain_plus = function
+  | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> false
+  | Ast_cocci.CONTEXT _ -> true
+  | Ast_cocci.MINUS ([]) -> false
+  | Ast_cocci.MINUS (x::xs) -> true
+  | Ast_cocci.PLUS -> raise Impossible
+
+
 (* ------------------------------------------------------------------------- *)
 let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il)
   = fun xs ys binding ->
@@ -60,12 +68,26 @@ let rec
 
   | A.MetaRuleElem mcode, unwrap_node -> 
      (match unwrap_node with
-     | F.Fake  | F.CaseNode _
+     | F.CaseNode _
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
-       -> unwrap_node
+       -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then failwith "try add stuff on fake node";
+
+         (* minusize or contextize a fake node is ok *)
+         unwrap_node
+     | F.EndStatement None -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then
+           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
+           let fake_info = Ast_c.al_info fake_info in
+           D.distribute_mck (mcodekind mcode) D.distribute_mck_node 
+             (F.EndStatement (Some fake_info)) binding
+         else unwrap_node
+         
+     | F.EndStatement (Some _) -> raise Impossible (* really ? *)
 
      | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
-
      | n -> D.distribute_mck (mcodekind mcode) D.distribute_mck_node n binding
      )
 
@@ -73,7 +95,7 @@ let rec
   (* rene cant have found that a state containing a fake/exit/... should be 
    * transformed 
    *)
-  | _, F.Fake | _, F.CaseNode _
+  | _, F.EndStatement _ | _, F.CaseNode _
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
     -> raise Impossible
  
@@ -908,7 +930,8 @@ let rec (transform: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
          dont modify fake nodes. So special case before on Fake nodes. *)
       (match F.unwrap node with
       | F.Enter | F.Exit | F.ErrorExit
-      | F.Fake | F.CaseNode _        
+      | F.EndStatement _ | F.CaseNode _        
+      | F.Fake
       | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
           -> ()
       | _ -> assert (not (node =*= node'));

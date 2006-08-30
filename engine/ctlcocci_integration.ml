@@ -153,7 +153,7 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
      +> fst
   in
 
-
+  (* note that must choose a kind that will not be deleted after *)
   let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
   in
   let enteri = 

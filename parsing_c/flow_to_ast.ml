@@ -98,14 +98,25 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
    * such as get_next_nodes_ifthenelse_sorted, you have to call explicitely
    * add_visited 
    *)
+  let get_next_node_old = get_next_node in
   let get_next_node g nodei = 
     add_visited nodei;
     (* call upper one *)
-    let (nexti, node) = get_next_node g nodei in
+    let (nexti, node) = get_next_node_old g nodei in
     add_visited nexti;
     (nexti, node)
   in
 
+  let get_next_node_if_empty_end g nodei =
+    add_visited nodei;
+    match get_next_node_old g nodei with
+    | (nexti, EndStatement None) -> 
+        get_next_node g nodei
+    | (nexti, EndStatement Some x) -> 
+        nodei, unwrap (nodes#find nodei)
+    | _ -> raise Impossible
+    
+  in
 
 
   (* ------------------------- *)        
@@ -201,11 +212,11 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                        (fst (get_next_node g return1) =|= 
                         fst (get_next_node g afteri)));
                (Selection (Ast_c.If (e, st1, st2)),fullii), 
-                LastCurrentNode (get_next_node g return1 +> fst)
+                LastCurrentNode (get_next_node_if_empty_end g return1 +> fst)
            | LastCurrentNode return, NoNextNode _  
            | NoNextNode _ , LastCurrentNode return ->
                (Selection (Ast_c.If (e, st1, st2)),fullii), 
-                LastCurrentNode (get_next_node g return +> fst)
+                LastCurrentNode (get_next_node_if_empty_end g return +> fst)
            | NoNextNode i1 , NoNextNode i2  -> 
                (Selection (Ast_c.If (e, st1, st2)),fullii), 
                 NoNextNode i1 (* could be i2 *)
@@ -224,10 +235,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                  assert (fst (get_next_node g return) =|= 
                          fst (get_next_node g afteri));
                  (Selection (Ast_c.If (e, st1, st2)),fullii), 
-                  LastCurrentNode (get_next_node g afteri +> fst)
+                  LastCurrentNode (get_next_node_if_empty_end g return +> fst)
              | NoNextNode _ -> 
                  (Selection (Ast_c.If (e, st1, st2)),fullii), 
-                  LastCurrentNode (get_next_node g afteri +> fst)
+                  LastCurrentNode (get_next_node_if_empty_end g afteri +> fst)
              )
    
          | [(theni, TrueNode);  (elsei, FalseNode)] -> 
@@ -275,8 +286,9 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         let nexti, endswitchiopt = 
           match succ with
           | [nexti, SeqStart _]                   -> nexti, None
-          | [nexti, SeqStart _; endswitchi, Fake] 
-          | [endswitchi, Fake; nexti, SeqStart _] -> nexti, Some endswitchi
+          | [nexti, SeqStart _; endswitchi, EndStatement _] 
+          | [endswitchi, EndStatement _; nexti, SeqStart _] -> 
+              nexti, Some endswitchi
           | _ -> raise Impossible
         in
 
@@ -318,7 +330,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                                 
                                 (match get_next_node g nexti with
                                 (* todo? assert the s = "[endswitch]" *)
-                                | nextii, Fake -> 
+                                | nextii, EndStatement _ -> 
                                     endswitchi_candidat := Some nextii
                                 | _ -> raise Impossible
                                 )
@@ -340,7 +352,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                         | nexti, SeqEnd (level2,i2) when level2 = level -> 
                             i2_candidat := Some (nexti, i2);
                             (match get_next_node g nexti with
-                            | nextii, Fake -> 
+                            | nextii, EndStatement _ -> 
                                endswitchi_candidat := Some nextii
                             | _ -> raise Impossible
                             )
@@ -435,6 +447,9 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         let iiempty = [] in
         (Ast_c.Decl decl, iiempty), LastCurrentNode starti
 
+    (* ------------------------- *)        
+    | EndStatement (Some x) -> 
+        (Ast_c.ExprStatement None, [x]), LastCurrentNode starti
 
     (* ------------------------- *)        
     | Asm -> 
@@ -448,6 +463,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     | ErrorExit 
     | FallThroughNode|AfterNode
     | FalseNode|TrueNode 
+    | EndStatement None
     | Fake
       -> raise Impossible
   in
@@ -486,7 +502,6 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
   in
   let diff = (all_nodesi $--$ visited_nodesi)#tolist in
   let diffnodes = diff +> List.map (fun nodei -> nodei, nodes#find nodei) in
-
   diffnodes +> List.iter (fun (nodei, node) -> 
      match unwrap node with
      | Exit | ErrorExit -> ()

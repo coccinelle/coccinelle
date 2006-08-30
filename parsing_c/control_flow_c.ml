@@ -7,7 +7,7 @@ open Commonop open Common
  *
  *  - We need later to go back from flow to original ast, because we are 
  *    doing a refactoring tool, so different context. So we have to add
- *    some nodes for '{' or '}' that normally disapear in a CFG.
+ *    some nodes for '{' or '}' or goto that normally disapear in a CFG.
  *    We must keep those entities, in the same way that we must keep the parens
  *    (ParenExpr, ParenType) in the Ast_c during parsing.
  *
@@ -41,13 +41,13 @@ open Commonop open Common
  *       - We need to mark each braces with an identifier so that the CTL
  *         can know if one specific '}' correspond to a specific '{'.
  *
- *       - We add some labels to each node to handle the MetaRuleElem, 
+ *       - We add some labels to each node to handle the MetaRuleElem and 
  *         MetaStatement. It allows to groups nodes that belong to the same
  *         statement. Normally CFG are there to abstract from this, but in
- *         Coccinelle we need sometimes the CFG view, and sometimes the Ast view
- *         and the labels allow that.
+ *         Coccinelle we need sometimes the CFG view, and sometimes the Ast
+ *         view and the labels allow that.
  *
- *       - We even add nodes. We add '}', not only to be able to go back to AST,
+ *       - We even add nodes. We add '}', not only to be able to go back to AST
  *         but also because of the CTL engine. So one '}' may in fact be 
  *         represented by multiple nodes, one in each CFG path.
  * 
@@ -55,9 +55,9 @@ open Commonop open Common
  *       - need FallThrough.
  *       - Need know if ErrorExit, 
  *
- * choice: Julia proposed to do differently, that the flow is in fact just
- *  a view through the Ast, which means just Ocaml ref, so that when
- *  modify some nodes, in fact it modifies the ast. But prefer do it 
+ * choice: Julia proposed that the flow is in fact just
+ *  a view through the Ast, which means just Ocaml ref, so that when we
+ *  modify some nodes, in fact it modifies the ast. But I prefer do it 
  *  the functionnal way.
  * 
  *)
@@ -97,7 +97,6 @@ type node = node1 * string
 
   | IfHeader  of statement * expression wrap
   | Else of info
-  (* | Endif of fake_info *)
 
   | WhileHeader of statement * expression wrap
 
@@ -109,6 +108,11 @@ type node = node1 * string
                  wrap
 
   | SwitchHeader of statement * expression wrap
+
+  (* Used to mark the end of if, while, dowhile, for, switch.
+   * Later we will be able to "accrocher" some cocci code on this node.
+   *)
+  | EndStatement of info option (* fake_info *)
 
   | Return     of statement * unit wrap
   | ReturnExpr of statement * expression wrap
@@ -135,6 +139,9 @@ type node = node1 * string
 
   (* Redundant nodes, often to mark the end of an if/switch.
    * That makes it easier to do later the flow_to_ast. 
+   * update: no more used for the end. see Endstatement. Just used
+   * to mark the start of the function, as required by julia.
+   * Maybe would be better to use instead a Enter2.
    *)
   | Fake 
 
@@ -202,11 +209,11 @@ let extract_fullstatement node =
   | FunHeader _
   | SeqEnd  _ 
   | Else _ 
-  (* | Endif of fake_info *)
+  | EndStatement _
   | DoWhileTail _
   | Enter 
   | Exit
-  | Fake 
+  | Fake
   | CaseNode _
   | TrueNode
   | FalseNode

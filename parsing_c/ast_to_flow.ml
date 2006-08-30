@@ -352,7 +352,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newfakethen = add_node_g TrueNode        lbl "[then]" in
         let newfakeelse = add_node_g FallThroughNode lbl "[fallthrough]" in
         let afteri = add_node_g AfterNode lbl "[after]" in
-        let lasti  = add_node_g Fake      lbl "[endif]" in
+        let lasti  = add_node_g (EndStatement None) lbl "[endif]" in
 
         (* for ErrorExit heuristic *)
         let newauxinfo = { auxinfo_label with  context_info_bis = true; } in
@@ -397,7 +397,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         (match finalthen, finalelse with 
           | (None, None) -> None
           | _ -> 
-              let lasti =  add_node_g Fake      lbl "[endif]" in
+              let lasti =  add_node_g (EndStatement None) lbl "[endif]" in
               let afteri = add_node_g AfterNode lbl "[after]" in
               !g#add_arc ((newi, afteri),  Direct) +> adjust_g;
               !g#add_arc ((afteri, lasti), Direct) +> adjust_g;
@@ -416,7 +416,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
         attach_to_previous_node starti newswitchi;
 
-        let newendswitch = add_node_g Fake lbl "[endswitch]" in
+        let newendswitch = add_node_g (EndStatement None) lbl "[endswitch]" in
 
     
         (* The newswitchi is for the labels to know where to attach.
@@ -810,7 +810,7 @@ let deadcode_detection g =
       | ErrorExit -> ()
       (* old: | Enter -> () *)
 
-      | Fake -> pr2 "control_flow: deadcode sur fake node, pas grave";
+(*    | EndStatement _ -> pr2 "control_flow: deadcode sur fake node, pas grave"; *)
 (*TODO      | EndBrace _ -> () (* todo?: certaines deviennent orphelins *) *)
 (*TODO      | Statement (st,ii::iis) -> raise (DeadCode (Some (fst ii))) *)
       | x -> pr2 "control_flow: orphelin nodes, maybe something wierd happened"

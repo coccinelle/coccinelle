@@ -186,7 +186,9 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
    *)
   | A.MetaRuleElem _, _ -> return true
 
-  | _, F.Fake  | _, F.CaseNode _ 
+  | _, F.Fake
+  | _, F.EndStatement _
+  | _, F.CaseNode _ 
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
     -> return false
 
@@ -261,7 +263,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
           F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
           F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
-          F.TrueNode|F.Fake|F.Exit|F.Enter|F.Asm
+          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm
           ) -> ()
 
         );
