@@ -55,11 +55,11 @@ statement S1,S2;
 
  int C(int i) {
 //  <...  UnitTestEntry(name); if(TestMethod()) { ... }  ...>
-  <...  UnitTestEntry(...); if(...) { ... }  ...>
-//    <... S1 ...>
+//  <...  UnitTestEntry(...); if(...) { ... }  ...>
+    <... S1 ...>
         UnitTestEntry(name); if(TestMethod()) { ... }
-//    <... S2 ...>
-  <...  UnitTestEntry(...); if(...) { ... }  ...>
+    <... S2 ...>
+//  <...  UnitTestEntry(...); if(...) { ... }  ...>
 //  <...  UnitTestEntry(name); if(TestMethod()) { ... }  ...>
   }
 

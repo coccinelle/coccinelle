@@ -194,6 +194,7 @@ let main () =
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
       "-l",     Arg.Set Flag_parsing_c.label_strategy_2, " ";
+      "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 

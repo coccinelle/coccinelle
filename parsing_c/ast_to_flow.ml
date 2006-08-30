@@ -581,7 +581,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newi = add_node_g (WhileHeader (stmt, (e,ii))) lbl "while" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[whiletrue]" in
-        let newfakeelse = add_node_g FalseNode lbl "[endwhile]" in
+        (* let newfakeelse = add_node_g FalseNode lbl "[endwhile]" in *)
+        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newfakeelse = add_node_g (EndStatement None) lbl "[endwhile]" in
 
         let newauxinfo = { auxinfo_label with context_info = 
            LoopInfo (newi, newfakeelse,  auxinfo_label.braces);
@@ -589,7 +591,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
-        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newafter, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newi, newafter), Direct) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
         attach_to_previous_node finalthen newi;
         Some newfakeelse
@@ -615,7 +618,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
 
         let newfakethen = add_node_g TrueNode lbl "[dowhiletrue]" in
-        let newfakeelse = add_node_g FalseNode lbl "[enddowhile]" in
+        (*let newfakeelse = add_node_g FalseNode lbl "[enddowhile]" in *)
+        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newfakeelse = add_node_g (EndStatement None) lbl "[enddowhile]" in
 
         let newauxinfo = { auxinfo_label with context_info =
            LoopInfo (taili, newfakeelse, auxinfo_label.braces);
@@ -623,7 +628,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
 
         !g#add_arc ((taili, newfakethen), Direct) +> adjust_g; 
-        !g#add_arc ((taili, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newafter, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((taili, newafter), Direct) +> adjust_g;
 
         !g#add_arc ((newfakethen, doi), Direct) +> adjust_g; 
 
@@ -643,7 +649,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[fortrue]" in
-        let newfakeelse = add_node_g FalseNode lbl "[endfor]" in
+        (*let newfakeelse = add_node_g FalseNode lbl "[endfor]" in*)
+        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newfakeelse = add_node_g (EndStatement None) lbl "[endfor]" in
 
         let newauxinfo = { auxinfo_label with context_info = 
              LoopInfo (newi, newfakeelse, auxinfo_label.braces); 
@@ -651,7 +659,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
-        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newafter, newfakeelse), Direct) +> adjust_g;
+        !g#add_arc ((newi, newafter), Direct) +> adjust_g;
         let finalthen = aux_statement (Some newfakethen, newauxinfo) st in
         attach_to_previous_node finalthen newi;
         Some newfakeelse
