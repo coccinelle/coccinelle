@@ -403,7 +403,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     (* ------------------------- *)        
     | WhileHeader (_fullst, (e,ii)) -> 
         (match get_next_nodes_ifthenelse_sorted g starti with
-         | [(theni, TrueNode);  (afteri, AfterNode)] -> 
+         | [(theni, TrueNode);  (afteri, FallThroughNode)] -> 
                
            let theni' = get_next_node g theni +> fst in
            let (st, return) = rebuild_statement theni' in
@@ -422,7 +422,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
             (match get_next_node g returni with
             | taili, DoWhileTail (e, iiwhiletail) -> 
                 (match get_next_nodes_ifthenelse_sorted g taili with
-                | [(theni, TrueNode);  (afteri, AfterNode)] -> 
+                | [(theni, TrueNode);  (afteri, FallThroughNode)] -> 
                    add_visited theni;
                    let endfori = get_next_node_if_empty_end g afteri +> fst in
                    (Iteration (Ast_c.DoWhile (st, e)), iido::iiwhiletail),
@@ -437,7 +437,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
     | ForHeader (_fullst, ((e1opt, e2opt, e3opt), ii)) -> 
         (match get_next_nodes_ifthenelse_sorted g starti with
-         | [(theni, TrueNode);  (afteri, AfterNode)] -> 
+         | [(theni, TrueNode);  (afteri, FallThroughNode)] -> 
                
            let theni' = get_next_node g theni +> fst in
            let (st, return) = rebuild_statement theni' in

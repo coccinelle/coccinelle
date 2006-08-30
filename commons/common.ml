@@ -2523,7 +2523,12 @@ let (error_messagebis: filename -> (string * int (* * int *)) -> int -> string) 
  (* characters %d-%d *)
 (* let error_message filename lexbuf decalage = "" *)
 
-let error_message = fun filename (lexeme, lexstart) -> error_messagebis filename (lexeme, lexstart) 0    
+let error_message = fun filename (lexeme, lexstart) -> 
+  try 
+    error_messagebis filename (lexeme, lexstart) 0    
+  with End_of_file -> 
+    pr2 "PB in Common.error_message, position given out of file";
+    raise End_of_file
 
 (*****************************************************************************)
 (* Misc/test *)

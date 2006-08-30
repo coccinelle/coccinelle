@@ -582,7 +582,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[whiletrue]" in
         (* let newfakeelse = add_node_g FalseNode lbl "[endwhile]" in *)
-        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newafter = add_node_g FallThroughNode lbl "[whilefall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[endwhile]" in
 
         let newauxinfo = { auxinfo_label with context_info = 
@@ -619,7 +619,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
         let newfakethen = add_node_g TrueNode lbl "[dowhiletrue]" in
         (*let newfakeelse = add_node_g FalseNode lbl "[enddowhile]" in *)
-        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newafter = add_node_g FallThroughNode lbl "[dowhilefall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[enddowhile]" in
 
         let newauxinfo = { auxinfo_label with context_info =
@@ -650,7 +650,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[fortrue]" in
         (*let newfakeelse = add_node_g FalseNode lbl "[endfor]" in*)
-        let newafter = add_node_g AfterNode lbl "[after]" in
+        let newafter = add_node_g FallThroughNode lbl "[forfall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[endfor]" in
 
         let newauxinfo = { auxinfo_label with context_info = 

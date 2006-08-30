@@ -113,7 +113,7 @@ let rec
   | A.Exp exp, nodeb -> 
       let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.kexpr_s = 
              (fun (k,_) e -> 
-               let e' = k e in (* go inside first *)
+               let e' = k e in
                try transform_e_e exp e'   binding 
                with NoMatch -> e'
              )
@@ -934,7 +934,7 @@ let rec (transform: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       | F.Fake
       | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
           -> ()
-      | _ -> assert (not (node =*= node'));
+      | _ -> () (* assert (not (node =*= node')); *)
       );
 
       acc#replace_node (nodei, node')
