@@ -313,6 +313,23 @@ and get_before_e s a =
     Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
   | Ast.Nest(stmt_dots,t) ->
       let (sd,_) = get_before stmt_dots a in
+      let a =
+	List.filter
+	  (function
+	      Ast.Other a ->
+		let unifies =
+		  Unify_ast.unify_statement_dots
+		    (Ast.rewrap s (Ast.DOTS([a]))) stmt_dots in
+		(match unifies with
+		  Unify_ast.MAYBE -> false
+		| _ -> true)
+	    | Ast.Other_dots a ->
+		let unifies = Unify_ast.unify_statement_dots a stmt_dots in
+		(match unifies with
+		  Unify_ast.MAYBE -> false
+		| _ -> true)
+	    | _ -> true)
+	  a in
       (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
@@ -365,6 +382,23 @@ and get_after_e s a =
     Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
   | Ast.Nest(stmt_dots,t) ->
       let (sd,_) = get_after stmt_dots a in
+      let a =
+	List.filter
+	  (function
+	      Ast.Other a ->
+		let unifies =
+		  Unify_ast.unify_statement_dots
+		    (Ast.rewrap s (Ast.DOTS([a]))) stmt_dots in
+		(match unifies with
+		  Unify_ast.MAYBE -> false
+		| _ -> true)
+	    | Ast.Other_dots a ->
+		let unifies = Unify_ast.unify_statement_dots a stmt_dots in
+		(match unifies with
+		  Unify_ast.MAYBE -> false
+		| _ -> true)
+	    | _ -> true)
+	  a in
       (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
