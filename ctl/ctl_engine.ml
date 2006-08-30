@@ -1233,7 +1233,10 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      satv negated required required_states phi env in
 	    (*cell := Thawed res;*)
 	    anno res [child]) in
-    (child,drop_wits required_states negated res)
+    let cleaned = drop_wits required_states negated res in
+    print_required_states required_states;
+    print_state "after drop_wits" cleaned;
+    (child,cleaned)
 	
 ;;
 

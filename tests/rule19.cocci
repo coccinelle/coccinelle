@@ -2,51 +2,40 @@
 //local function interrupt;
 identifier interrupt;
 identifier intno, dev_id, regs, cs;
+statement S;
 @@
 
 interrupt(int intno, void *dev_id, struct pt_regs *regs) {
   ...
   struct IsdnCardState *cs = dev_id;
-  ...
 - if (!cs) { ... return; }
 + spin_lock(&cs->lock);
   <...
 (
-  spin_lock(...);
+- spin_lock(...);
 |
-  spin_unlock(...);
+- spin_unlock(...);
 |
-  spin_lock_irqsave(...);
+- spin_lock_irqsave(...);
 |
-  spin_lock_irqrestore(...);
+- spin_unlock_irqrestore(...);
 )
   ...>
-+ spin_unlock(&cs->lock);
-  return;
 }
 
+// awkward to have to split, but the statement originally before might be
+// something we want to remove in the nest
 @@
-//local function interrupt;
-identifier interrupt;
-identifier intno, dev_id, regs, cs;
+statement S;
 @@
 
-interrupt(int intno, void *dev_id, struct pt_regs *regs) {
-  ...
-  struct IsdnCardState *cs = dev_id;
-  ...
-- if (!cs) { ... return; }
-+ spin_lock(&cs->lock);
-  <...
+  interrupt(...) {
+    ...
 (
-  spin_lock(...);
++   spin_unlock(&cs->lock);
+    return;
 |
-  spin_unlock(...);
-|
-  spin_lock_irqsave(...);
-|
-  spin_lock_irqrestore(...);
+    S
++   spin_unlock(&cs->lock);
 )
-  ...>
-+ spin_unlock(&cs->lock);
-}
+  }
