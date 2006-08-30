@@ -318,7 +318,10 @@ and get_before_e s a =
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
-  | Ast.Atomic(ast) -> (s,[Ast.Other s])
+  | Ast.Atomic(ast) ->
+      (match Ast.unwrap ast with
+	Ast.MetaStmt(_) -> (s,[])
+      |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
@@ -367,7 +370,10 @@ and get_after_e s a =
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
-  | Ast.Atomic(ast) -> (s,[Ast.Other s])
+  | Ast.Atomic(ast) ->
+      (match Ast.unwrap ast with
+	Ast.MetaStmt(_) -> (s,[])
+      |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in

@@ -57,6 +57,8 @@ let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
   let new_info =
     {info with
+      Ast0.logical_start = info.Ast0.logical_end;
+      Ast0.line_start = info.Ast0.line_end;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
   ((),new_info,ref (-1),ref mcodekind,ref None)

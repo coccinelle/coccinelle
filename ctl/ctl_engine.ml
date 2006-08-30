@@ -1144,6 +1144,10 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	if count = 1
 	then Printf.printf "AX\n"
 	else Printf.printf "AX^%d\n" count; flush stdout;
+	Printf.printf "required states: ";
+	print_required_states required_states;
+	Printf.printf "new required states: ";
+	print_required_states new_required_states;
 	anno (satAX dir count m res) [child]
     | A.EF(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in

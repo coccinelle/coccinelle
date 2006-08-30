@@ -493,10 +493,21 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,info,ref !index,ref (copy_mcodekind !mcodekind),ty) in
 
+  let statement r k e =
+    let s = k e in
+    Ast0.rewrap s
+      (match Ast0.unwrap s with
+	Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
+	  Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
+      | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
+	  Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
+	    (info,copy_mcodekind mc))
+      | s -> s) in
+
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing statement donothing
 
 (* --------------------------------------------------------------------- *)
 

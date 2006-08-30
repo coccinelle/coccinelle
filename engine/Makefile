@@ -41,7 +41,8 @@ CTLOBJS = $(CTLSOURCES:.ml=.cmo)
 CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
 
 
-all: $(EXEC) $(LIB)
+#all: $(EXEC) $(LIB)
+all: $(LIB)
 
 all.opt: $(OPTLIB)
 

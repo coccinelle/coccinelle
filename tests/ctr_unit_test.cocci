@@ -1,14 +1,3 @@
-// @@
-// @@
-//  lastfunction(int i) {
-//   ...
-//   }
-// + int ModuleUnitTest(int i) {
-// +   if(Main()) {
-// +   }
-// + }
-
-
 @@
 identifier C;
 @@
@@ -21,13 +10,6 @@ identifier C;
 +   C();
 +  }
  }
-//  ...
-//  int ModuleUnitTest(int i) { 
-//    if(Main()) {
-//     ...
-// +   C.UnitTest();
-//   }
-//  }
 
 
 @@

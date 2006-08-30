@@ -1,6 +1,6 @@
 
 int classA(int i) {
-  if(classA()) { x=0;  }
+  if(classA()) { x=0; }
 
   UnitTestEntry("A1");
   if(MethodA1()) { }
@@ -12,7 +12,7 @@ int classA(int i) {
 }
 
 int classB(int i) {
-  if(classB()) { x=0;  }
+  if(classB()) { x=0; }
 
   if(MethodB1()) { }
   UnitTestEntry("B2");

@@ -107,6 +107,8 @@ let collect_minus_join_points root =
 		Ast0.MINUS(_) -> branchres
 	      |	Ast0.CONTEXT(_) ->
 		  let new_info = {info with Ast0.attachable_end = false} in
+		  Printf.printf "new_info %d %d\n"
+		    info.Ast0.line_start info.Ast0.line_end;
 		  List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
 	      |	_ -> failwith "unexpected mc in branch res") in
 	iffres @ lpres @ expres @ rpres @ branchres
@@ -183,24 +185,33 @@ let verify l =
       (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.logical_start in
   let token_end_line = function
       (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.logical_end in
+  let token_real_start_line = function
+      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.line_start in
+  let token_real_end_line = function
+      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.line_end in
   List.iter
     (function
 	(index,((_::_) as l1)) ->
 	  let _ =
 	    List.fold_left
-	      (function prev ->
+	      (function (prev,real_prev) ->
 		function cur ->
 		  let ln = token_start_line cur in
 		  if ln < prev
-		  then failwith "error in collection of - tokens\n";
-		  token_end_line cur)
-	      (token_end_line (List.hd l1))
+		  then
+		    failwith
+		      (Printf.sprintf
+			 "error in collection of - tokens %d less than %d"
+			 (token_real_start_line cur) real_prev);
+		  (token_end_line cur,token_real_end_line cur))
+	      (token_end_line (List.hd l1), token_real_end_line (List.hd l1))
 	      (List.tl l1) in
 	  ()
       |	_ -> ()) (* dots, in eg f() has no join points *)
     l
 
 let process_minus minus =
+  Printf.printf "in process minus %d\n" (List.length minus);
   create_root_token_table minus;
   List.concat
     (List.map

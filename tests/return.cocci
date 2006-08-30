@@ -5,10 +5,10 @@ statement S;
 foo(...) {
   ...
 (
-+ xxx();
++ before_return();
   return;
 |
-  ccc();
-+ yyy();
+  S
++ before_return();
 )
 }
