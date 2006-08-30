@@ -21,7 +21,7 @@ let testone x =
     then
       let candidates = 
         readdir_to_file_list "tests/" 
-          +> filter (fun s -> s =~ (x' ^ "_.*"))
+          +> filter (fun s -> s =~ (x' ^ "_.*\\.c$"))
           +> List.map (Str.global_replace (Str.regexp "\\.c$") "")
       in
       assert (List.length candidates = 1);
