@@ -346,7 +346,7 @@ let rec statement s =
 	Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) -> 
 	  let lbrace = mcode lbrace in
-	  let (decls,dots,body) = separate_decls body in
+	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
 		  tokenwrap lbrace (Ast.SeqEnd(rbrace)))
@@ -356,23 +356,24 @@ let rec statement s =
 	  Ast.IfThen
 	    (rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	     statement false branch,convert_mcodekind aft)
+	     statement Ast.NotSequencible branch,convert_mcodekind aft)
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
 	    (rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	     statement false branch1,tokenwrap els (Ast.Else(els)),
-	     statement false branch2,
+	     statement Ast.NotSequencible branch1,tokenwrap els (Ast.Else(els)),
+	     statement Ast.NotSequencible branch2,
 	     convert_mcodekind aft)
       | Ast0.While(wh,lp,exp,rp,body) ->
 	  Ast.While(rewrap s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
-		    statement false body)
+		    statement Ast.NotSequencible body)
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
-	  Ast.Do(rewrap s (Ast.DoHeader(mcode d)), statement false body,
+	  Ast.Do(rewrap s (Ast.DoHeader(mcode d)),
+		 statement Ast.NotSequencible body,
 		 tokenwrap wh
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
 				  mcode sem)))
@@ -385,7 +386,7 @@ let rec statement s =
 	  let sem2= mcode sem2 in
 	  let exp3 = get_option expression exp3 in
 	  let rp = mcode rp in
-	  let body = statement false body in
+	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body)
       | Ast0.Return(ret,sem) ->
@@ -400,21 +401,24 @@ let rec statement s =
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
       | Ast0.Disj(_,rule_elem_dots_list,_) ->
-	  Ast.Disj(List.map (function x -> dots (statement seqible) x)
+	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
       | Ast0.Nest(_,rule_elem_dots,_) ->
-	  Ast.Nest(dots (statement true) rule_elem_dots,[])
+	  Ast.Nest(statement_dots Ast.Sequencible rule_elem_dots,[])
       | Ast0.Dots(d,whencode) ->
 	  let d = mcode d in
-	  let whencode = get_option (dots (statement true)) whencode in
+	  let whencode =
+	    get_option (statement_dots Ast.Sequencible) whencode in
 	  Ast.Dots(d,option_to_list whencode,[])
       | Ast0.Circles(d,whencode) ->
 	  let d = mcode d in
-	  let whencode = get_option (dots (statement true)) whencode in
+	  let whencode =
+	    get_option (statement_dots Ast.Sequencible) whencode in
 	  Ast.Circles(d,option_to_list whencode,[])
       | Ast0.Stars(d,whencode) ->
 	  let d = mcode d in
-	  let whencode = get_option (dots (statement true)) whencode in
+	  let whencode =
+	    get_option (statement_dots Ast.Sequencible) whencode in
 	  Ast.Stars(d,option_to_list whencode,[])
       | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  let stg = get_option mcode stg in
@@ -424,7 +428,7 @@ let rec statement s =
 	  let params = parameter_list params in
 	  let rp = mcode rp in
 	  let lbrace = mcode lbrace in
-	  let (decls,dots,body) = separate_decls body in
+	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  let allminus =
 	    match Ast0.get_mcodekind s with
@@ -437,31 +441,46 @@ let rec statement s =
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
-      | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm)) in
-  statement true s
-    
-and separate_decls d =
-  let rec collect_decls = function
-      [] -> ([],false,[])
-    | (x::xs) as l ->
+      | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
+  and process_list seqible = function
+      [] -> []
+    | x::rest ->
 	(match Ast0.unwrap x with
-	  Ast0.Decl(_) ->
-	    let (decls,dots,other) = collect_decls xs in
-	    (x :: decls,dots,other)
-	| Ast0.Dots(_,_) ->
-	    let (decls,dots,other) = collect_decls xs in
-	    (match decls with
-	      [] -> ([],true,x::other)
-	    | _ -> (x :: decls,dots,other))
-	| _ -> ([],false,l)) in
-  let process l d fn =
-    let (decls,dots,other) = collect_decls l in
-    (rewrap d (fn (List.map statement decls)), dots,
-     rewrap d (fn (List.map statement other))) in
-  match Ast0.unwrap d with
-    Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
-  | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
-  | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x)
+	  Ast0.Dots(_,_) | Ast0.Nest(_) ->
+	    (statement seqible x)::
+	    (process_list (Ast.SequencibleAfterDots []) rest)
+	| _ -> (statement seqible x)::(process_list Ast.Sequencible rest))
+  and statement_dots seqible d =
+    rewrap d
+      (match Ast0.unwrap d with
+	Ast0.DOTS(x) -> Ast.DOTS(process_list seqible x)
+      | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible x)
+      | Ast0.STARS(x) -> Ast.STARS(process_list seqible x))
+  and separate_decls seqible d =
+    let rec collect_decls = function
+	[] -> ([],false,[])
+      | (x::xs) as l ->
+	  (match Ast0.unwrap x with
+	    Ast0.Decl(_) ->
+	      let (decls,dots,other) = collect_decls xs in
+	      (x :: decls,dots,other)
+	  | Ast0.Dots(_,_) ->
+	      let (decls,dots,other) = collect_decls xs in
+	      (match decls with
+		[] -> ([],true,x::other)
+	      | _ -> (x :: decls,dots,other))
+	  | _ -> ([],false,l)) in
+    let process l d fn =
+      let (decls,dots,other) = collect_decls l in
+      (rewrap d (fn (List.map (statement seqible) decls)), dots,
+       rewrap d (fn (process_list seqible other))) in
+    match Ast0.unwrap d with
+      Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
+    | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
+    | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x) in
+
+  statement Ast.Sequencible s
+    
 
 and option_to_list = function
     Some x -> [x]

@@ -242,10 +242,13 @@ and base_rule_elem =
 	             string mcode (* ; *)
 
   | MetaRuleElem  of string mcode  
-  | MetaStmt      of string mcode * bool (*true if sequenceable, false in if*)
+  | MetaStmt      of string mcode * metaStmtInfo
   | MetaStmtList  of string mcode  
 
   | Exp           of expression
+
+and metaStmtInfo =
+    NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
 
 and rule_elem = base_rule_elem wrap
 

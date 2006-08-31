@@ -359,7 +359,7 @@ let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
 let _Magic_info_number = -10
 
 let al_info x = 
-  { x with charpos = _Magic_info_number; 
+  { charpos = _Magic_info_number; 
     str = (fst x).str 
   }, 
   emptyAnnot

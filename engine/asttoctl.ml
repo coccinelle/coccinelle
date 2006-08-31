@@ -337,7 +337,7 @@ and get_before_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_) -> (s,[])
+	Ast.MetaStmt(_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -406,7 +406,35 @@ and get_after_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_) -> (s,[])
+	Ast.MetaStmt(nm,Ast.SequencibleAfterDots _) ->
+	  (* check after information for metavar optimization *)
+	  (* if the error is not desired, could just return [], then
+	     the optimization (check for EF) won't take place *)
+	  List.iter
+	    (function
+		Ast.Other x ->
+		  (match Ast.unwrap x with
+		    Ast.Dots(_,_,_) | Ast.Nest(_,_) ->
+		      failwith
+			"dots/nest not allowed before and after stmt metavar"
+		  | _ -> ())
+	      |	Ast.Other_dots x ->
+		  (match Ast.undots x with
+		    x::_ ->
+		      (match Ast.unwrap x with
+			Ast.Dots(_,_,_) | Ast.Nest(_,_) ->
+			  failwith
+			    ("dots/nest not allowed before and after stmt "^
+			     "metavar")
+		      | _ -> ())
+		  | _ -> ())
+	      |	_ -> ())
+	    a;
+	  (Ast.rewrap s
+	     (Ast.Atomic
+		(Ast.rewrap s
+		   (Ast.MetaStmt(nm,Ast.SequencibleAfterDots a)))),[])
+      |	Ast.MetaStmt(_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -487,6 +515,7 @@ and statement stmt used_after after quantified guard =
   let wrapEX = wrapEX n in
   let wrapAG = wrapAG n in
   let wrapAF = wrapAF n in
+  let wrapEF = wrapEF n in
   let wrapNot = wrapNot n in
   let wrapPred = wrapPred n in
   let make_seq = make_seq n in
@@ -538,18 +567,34 @@ and statement stmt used_after after quantified guard =
 	  let right_or =
 	    make_seq
 	      [first_metamatch;
-		wrapAU(wrapAnd(middle_metamatch,prelabel_pred),
+		wrapAU(middle_metamatch,
 		       make_seq
-			 [wrapAnd(last_metamatch,prelabel_pred);
+			 [wrapAnd(last_metamatch,label_pred);
 			   and_opt (wrapNot(prelabel_pred)) after])] in
-	  let body =
-	    wrapAnd(make_raw_match ast,
-		    wrapAnd(label_pred,wrapOr(left_or,right_or))) in
-	  if seqible
-	  then
-	    quantify (label_var::get_unquantified quantified [s])
-	      (wrapAnd(wrapNot(wrapBackAX(label_pred)),body))
-	  else quantify (label_var::get_unquantified quantified [s]) body
+	  let body f =
+	    wrapAnd(label_pred,
+		    f (wrapAnd(make_raw_match ast,
+			       wrapOr(left_or,right_or)))) in
+	  let id x = x in
+	  (match seqible with
+	    Ast.Sequencible | Ast.SequencibleAfterDots [] ->
+	      quantify (label_var::get_unquantified quantified [s])
+		(body
+		   (function x ->
+		     (wrapAnd(wrapNot(wrapBackAX(label_pred)),x))))
+	  | Ast.SequencibleAfterDots l ->
+	      let afts =
+                List.map (process_bef_aft Tail quantified used_after n) l in
+	      let ors =
+		List.fold_left (function x -> function y -> wrapOr(x,y))
+		  (List.hd afts) (List.tl afts) in
+	      quantify (label_var::get_unquantified quantified [s])
+		(wrapAnd(wrapEF(wrapAnd(ors,wrapBackAX(label_pred))),
+			 body
+			   (function x ->
+			     wrapAnd(wrapNot(wrapBackAX(label_pred)),x))))
+	  | Ast.NotSequencible ->
+	      quantify (label_var::get_unquantified quantified [s]) (body id))
 	    
       |	Ast.MetaStmt((s,i,d),seqible) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
@@ -566,18 +611,35 @@ and statement stmt used_after after quantified guard =
 	      | Ast.PLUS -> failwith "not possible") in
 	  (* first_nodea and first_nodeb are separated here and above to
 	     improve let sharing - only first_nodea is unique to this site *)
-	  let first_nodeb = wrapAnd(first_metamatch,label_pred) in
-	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
+	  let first_nodeb = first_metamatch in
+	  let rest_nodes = rest_metamatch in
 	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
-	  let body =
+	  let body f =
 	    wrapAnd
-	      (make_raw_match ast,
-	       (make_seq [first_nodeb; wrapAU(rest_nodes,last_node)])) in
-	  if seqible
-	  then
-	    quantify (label_var::get_unquantified quantified [s])
-	      (wrapAnd(wrapNot(wrapBackAX(label_pred)),body))
-	  else quantify (label_var::get_unquantified quantified [s]) body
+	      (label_pred,
+	       f (wrapAnd
+		    (make_raw_match ast,
+		     (make_seq
+			[first_nodeb; wrapAU(rest_nodes,last_node)])))) in
+	  (match seqible with
+	    Ast.Sequencible | Ast.SequencibleAfterDots [] ->
+	      quantify (label_var::get_unquantified quantified [s])
+		(body
+		   (function x -> wrapAnd(wrapNot(wrapBackAX(label_pred)),x)))
+	  | Ast.SequencibleAfterDots l ->
+	      let afts =
+                List.map (process_bef_aft Tail quantified used_after n) l in
+	      let ors =
+		List.fold_left (function x -> function y -> wrapOr(x,y))
+		  (List.hd afts) (List.tl afts) in
+	      quantify (label_var::get_unquantified quantified [s])
+		(wrapAnd(wrapEF(wrapAnd(ors,wrapBackAX(label_pred))),
+			 body
+			   (function x ->
+			     wrapAnd(wrapNot(wrapBackAX(label_pred)),x))))
+	  | Ast.NotSequencible ->
+	      quantify (label_var::get_unquantified quantified [s])
+		(body (function x -> x)))
       |	_ ->
 	  let stmt_fvs = Ast.get_fvs stmt in
 	  let fvs = get_unquantified quantified stmt_fvs in

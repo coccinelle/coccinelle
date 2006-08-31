@@ -859,16 +859,16 @@ let drop_wits required_states negated s =
 (* ********************* *)
 
 let extend_required trips required =
-  inner_setify
-    (foldl
-       (function rest ->
-	 function (_,t,_) ->
-	   foldl
-	     (function rest ->
-	       function r ->
-		 match conj_subst t r with None -> rest | Some th -> th::rest)
-	     rest required)
-       [] trips)
+  let add x y = if List.mem x y then y else x::y in
+  foldl
+    (function rest ->
+      function (_,t,_) ->
+	foldl
+	  (function rest ->
+	    function r ->
+	      match conj_subst t r with None -> rest | Some th -> add th rest)
+	  rest required)
+    [] trips
 
 let drop_required v required =
   inner_setify
@@ -1094,6 +1094,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
   let satv negated required required_states phi0 env =
     sat_verbose_loop negated required required_states annot maxlvl (lvl+1)
       m phi0 env check_conj in
+  print_required required;
   if (lvl > maxlvl) && (maxlvl > -1) then
     anno (satloop negated required required_states m phi env check_conj) []
   else
@@ -1144,10 +1145,6 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	if count = 1
 	then Printf.printf "AX\n"
 	else Printf.printf "AX^%d\n" count; flush stdout;
-	Printf.printf "required states: ";
-	print_required_states required_states;
-	Printf.printf "new required states: ";
-	print_required_states new_required_states;
 	anno (satAX dir count m res) [child]
     | A.EF(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
@@ -1233,10 +1230,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      satv negated required required_states phi env in
 	    (*cell := Thawed res;*)
 	    anno res [child]) in
-    let cleaned = drop_wits required_states negated res in
-    print_required_states required_states;
-    print_state "after drop_wits" cleaned;
-    (child,cleaned)
+    (child,drop_wits required_states negated res)
 	
 ;;
 
