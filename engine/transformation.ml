@@ -113,9 +113,8 @@ let rec
   | A.Exp exp, nodeb -> 
       let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.kexpr_s = 
              (fun (k,_) e -> 
-               let e' = k e in
-               try transform_e_e exp e'   binding 
-               with NoMatch -> e'
+               try transform_e_e exp e   binding 
+               with NoMatch -> k e
              )
           }
       in
@@ -332,7 +331,9 @@ and transform_onedecl = fun decla declb ->
        xs +> Common.fold_k (fun acc decla k -> 
          try transform_onedecl decla acc  binding
          with NoMatch -> k acc
-        ) declb
+        )
+        (fun _ -> raise NoMatch)
+        declb
 
             
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
@@ -536,7 +537,9 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       eas +> Common.fold_k (fun acc ea k -> 
         try transform_e_e ea acc  binding
         with NoMatch -> k acc
-        ) eb
+        ) 
+        (fun _ -> raise NoMatch)
+        eb
 
   | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
       failwith "not handling Opt/Unique/Multi on expr"

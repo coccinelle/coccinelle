@@ -1457,9 +1457,9 @@ let remove x xs =
 
 let foldl1 p = function x::xs -> List.fold_left p x xs | _ -> failwith "foldl1"
 
-let fold_k f acc xs = 
+let fold_k f lastk acc xs = 
   let rec aux acc = function
-    | [] -> acc
+    | [] -> lastk acc
     | x::xs -> 
         f acc x (fun acc -> aux acc xs)
   in

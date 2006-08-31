@@ -193,7 +193,7 @@ let main () =
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
-      "-l",     Arg.Set Flag_parsing_c.label_strategy_2, " ";
+      "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
 
     ] in 
