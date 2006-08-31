@@ -197,7 +197,7 @@ let combiner bind option_default
 	    [string_mcode iff; string_mcode lp; expression exp;
 	      string_mcode rp; statement branch1; string_mcode els;
 	      statement branch2]
-      | Ast0.While(whl,lp,exp,rp,body) ->
+      | Ast0.While(whl,lp,exp,rp,body,_) ->
 	  multibind
 	    [string_mcode whl; string_mcode lp; expression exp;
 	      string_mcode rp; statement body]
@@ -206,7 +206,7 @@ let combiner bind option_default
 	    [string_mcode d; statement body; string_mcode whl;
 	      string_mcode lp; expression exp; string_mcode rp;
 	      string_mcode sem]
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body) ->
+      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) ->
 	  multibind
 	    [string_mcode fr; string_mcode lp; get_option expression e1;
 	      string_mcode sem1; get_option expression e2; string_mcode sem2;
@@ -458,19 +458,19 @@ let rebuilder = fun
 	    Ast0.IfThenElse(string_mcode iff,string_mcode lp,expression exp,
 	      string_mcode rp, statement branch1, string_mcode els,
 	      statement branch2,aft)
-	| Ast0.While(whl,lp,exp,rp,body) ->
+	| Ast0.While(whl,lp,exp,rp,body,aft) ->
 	    Ast0.While(string_mcode whl, string_mcode lp, expression exp,
-		       string_mcode rp, statement body)
+		       string_mcode rp, statement body, aft)
 	| Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	    Ast0.Do(string_mcode d, statement body, string_mcode whl,
 		    string_mcode lp, expression exp, string_mcode rp,
 		    string_mcode sem)
-	| Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body) ->
+	| Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
 	    Ast0.For(string_mcode fr, string_mcode lp,
 		     get_option expression e1, string_mcode sem1,
 		     get_option expression e2, string_mcode sem2,
 		     get_option expression e3,
-		     string_mcode rp, statement body)
+		     string_mcode rp, statement body, aft)
 	| Ast0.Return(ret,sem) ->
 	    Ast0.Return(string_mcode ret,string_mcode sem)
 	| Ast0.ReturnExpr(ret,exp,sem) ->

@@ -1,4 +1,4 @@
-/* $Id: rule19_ver15_ix1_micro.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver15_ix1_micro.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for ITK ix1-micro Rev.2 isdn cards
  * derived from the original file teles3.c from Karsten Keil
@@ -25,7 +25,7 @@
 #include "isdnl1.h"
 
 extern const char *CardType[];
-const char *ix1_revision = "$Revision: 1.1 $";
+const char *ix1_revision = "$Revision: 1.2 $";
 static spinlock_t ix1_micro_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)

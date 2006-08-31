@@ -396,13 +396,15 @@ let rec statement arity s =
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2;
       mcode (function _ -> ()) ((),(),aft)
-  | Ast.While(header,body) ->
-      rule_elem arity header; statement arity body
+  | Ast.While(header,body,aft) ->
+      rule_elem arity header; statement arity body;
+      mcode (function _ -> ()) ((),(),aft)
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
-  | Ast.For(header,body) ->
-      rule_elem arity header; statement arity body
+  | Ast.For(header,body,aft) ->
+      rule_elem arity header; statement arity body;
+      mcode (function _ -> ()) ((),(),aft)
   | Ast.Atomic(re) -> rule_elem arity re
   | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;

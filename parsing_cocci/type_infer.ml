@@ -176,7 +176,8 @@ let rec propagate_types env =
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
 	(propagate_types (fenv@env)).V0.combiner_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
-    | Ast0.While(_,_,exp,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
+    | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_)
+    | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) ->
 	let _ = k s in
 	(match Ast0.get_type exp with
 	  None -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))

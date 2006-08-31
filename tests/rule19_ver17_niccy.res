@@ -1,4 +1,4 @@
-/* $Id: rule19_ver17_niccy.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver17_niccy.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for Dr. Neuhaus NICCY PnP and NICCY PCI and
  * compatible (SAGEM cybermodem)
@@ -24,7 +24,7 @@
 #include <linux/isapnp.h>
 
 extern const char *CardType[];
-const char *niccy_revision = "$Revision: 1.1 $";
+const char *niccy_revision = "$Revision: 1.2 $";
 static spinlock_t niccy_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)

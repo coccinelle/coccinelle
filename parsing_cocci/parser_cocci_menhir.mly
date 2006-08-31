@@ -451,11 +451,13 @@ statement:
 			 clt2mcode "(" (startofs(lp)) lp,e1,
 			 clt2mcode ";" (startofs(sc1)) sc1,e2,
 			 clt2mcode ";" (startofs(sc2)) sc2,e3,
-			 clt2mcode ")" (startofs(rp)) rp,s)) }
+			 clt2mcode ")" (startofs(rp)) rp,s,
+			 (Ast0.default_info(),Ast0.context_befaft()))) }
 | TWhile TOPar eexpr TCPar single_statement
     { Ast0.wrap(Ast0.While(clt2mcode "while" (startofs($1)) $1,
 			   clt2mcode "(" (startofs($2)) $2,$3,
-			   clt2mcode ")" (startofs($4)) $4,$5)) }
+			   clt2mcode ")" (startofs($4)) $4,$5,
+			   (Ast0.default_info(),Ast0.context_befaft()))) }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg
     { Ast0.wrap(Ast0.Do(clt2mcode "do" (startofs($1)) $1,$2,
 			clt2mcode "while" (startofs($3)) $3,

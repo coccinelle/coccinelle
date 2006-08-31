@@ -1,4 +1,4 @@
-/* $Id: rule19_ver13_hfcscard.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver13_hfcscard.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for hfcs based cards (Teles3c, ACER P10)
  *
@@ -18,7 +18,7 @@
 
 extern const char *CardType[];
 
-static const char *hfcs_revision = "$Revision: 1.1 $";
+static const char *hfcs_revision = "$Revision: 1.2 $";
 
 static void
 hfcs_interrupt(int intno, void *dev_id, struct pt_regs *regs)

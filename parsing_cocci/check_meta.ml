@@ -175,11 +175,11 @@ let rec statement table minus s =
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,_) ->
       expression ID table minus exp; statement table minus branch1;
       statement table minus branch2
-  | Ast0.While(wh,lp,exp,rp,body) ->
+  | Ast0.While(wh,lp,exp,rp,body,_) ->
       expression ID table minus exp; statement table minus body
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement table minus body; expression ID table minus exp
-  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
+  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,_) ->
       get_opt (expression ID table minus) exp1;
       get_opt (expression ID table minus) exp2;
       get_opt (expression ID table minus) exp3;

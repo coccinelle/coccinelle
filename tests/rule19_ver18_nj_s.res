@@ -1,4 +1,4 @@
-/* $Id: rule19_ver18_nj_s.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver18_nj_s.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * This software may be used and distributed according to the terms
  * of the GNU General Public License, incorporated herein by reference.
@@ -15,7 +15,7 @@
 #include <linux/ppp_defs.h>
 #include "netjet.h"
 
-const char *NETjet_S_revision = "$Revision: 1.1 $";
+const char *NETjet_S_revision = "$Revision: 1.2 $";
 
 static u_char dummyrr(struct IsdnCardState *cs, int chan, u_char off)
 {

@@ -1,4 +1,4 @@
-/* $Id: rule19_ver11_hfc_pci.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver11_hfc_pci.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level driver for CCD´s hfc-pci based cards
  *
@@ -25,7 +25,7 @@
 
 extern const char *CardType[];
 
-static const char *hfcpci_revision = "$Revision: 1.1 $";
+static const char *hfcpci_revision = "$Revision: 1.2 $";
 
 /* table entry in the PCI devices list */
 typedef struct {

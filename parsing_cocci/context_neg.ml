@@ -373,13 +373,13 @@ let rec equal_statement s1 s2 =
      Ast0.IfThenElse(iff2,lp2,_,rp2,_,els2,_,_)) ->
        equal_mcode iff1 iff2 &&
 	 equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode els1 els2
-  | (Ast0.While(whl1,lp1,_,rp1,_),Ast0.While(whl2,lp2,_,rp2,_)) ->
+  | (Ast0.While(whl1,lp1,_,rp1,_,_),Ast0.While(whl2,lp2,_,rp2,_,_)) ->
       equal_mcode whl1 whl2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Do(d1,_,whl1,lp1,_,rp1,sem1),Ast0.Do(d2,_,whl2,lp2,_,rp2,sem2)) ->
       equal_mcode whl1 whl2 && equal_mcode d1 d2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
-  | (Ast0.For(fr1,lp1,_,sem11,_,sem21,_,rp1,_),
-     Ast0.For(fr2,lp2,_,sem12,_,sem22,_,rp2,_)) ->
+  | (Ast0.For(fr1,lp1,_,sem11,_,sem21,_,rp1,_,_),
+     Ast0.For(fr2,lp2,_,sem12,_,sem22,_,rp2,_,_)) ->
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
        equal_mcode rp1 rp2

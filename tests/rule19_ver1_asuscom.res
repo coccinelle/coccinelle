@@ -1,4 +1,4 @@
-/* $Id: rule19_ver1_asuscom.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver1_asuscom.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for ASUSCOM NETWORK INC. ISDNLink cards
  *
@@ -22,7 +22,7 @@
 
 extern const char *CardType[];
 
-const char *Asuscom_revision = "$Revision: 1.1 $";
+const char *Asuscom_revision = "$Revision: 1.2 $";
 
 static spinlock_t asuscom_lock = SPIN_LOCK_UNLOCKED;
 #define byteout(addr,val) outb(val,addr)

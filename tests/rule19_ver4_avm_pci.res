@@ -1,4 +1,4 @@
-/* $Id: rule19_ver4_avm_pci.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver4_avm_pci.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for AVM Fritz!PCI and ISA PnP isdn cards
  *
@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 
 extern const char *CardType[];
-static const char *avm_pci_rev = "$Revision: 1.1 $";
+static const char *avm_pci_rev = "$Revision: 1.2 $";
 static spinlock_t avm_pci_lock = SPIN_LOCK_UNLOCKED;
 
 #define  AVM_FRITZ_PCI		1

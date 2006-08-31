@@ -1,4 +1,4 @@
-/* $Id: rule19_ver20_s0box.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver20_s0box.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for Creatix S0BOX
  *
@@ -17,7 +17,7 @@
 #include "isdnl1.h"
 
 extern const char *CardType[];
-const char *s0box_revision = "$Revision: 1.1 $";
+const char *s0box_revision = "$Revision: 1.2 $";
 static spinlock_t s0box_lock = SPIN_LOCK_UNLOCKED;
 
 static inline void

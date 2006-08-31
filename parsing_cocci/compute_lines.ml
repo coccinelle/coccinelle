@@ -399,22 +399,26 @@ let rec statement s =
 	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
 	  (Ast0.get_info right,aft)))
 	(promote_mcode iff) right
-  | Ast0.While(wh,lp,exp,rp,body) ->
+  | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
       let exp = expression exp in
       let body = statement body in
-      mkres s (Ast0.While(wh,lp,exp,rp,body)) (promote_mcode wh) body
+      let right = promote_to_statement body aft in
+      mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft)))
+	(promote_mcode wh) right
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       let body = statement body in
       let exp = expression exp in
       mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
 	(promote_mcode d) (promote_mcode sem)
-  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
+  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
       let exp1 = get_option expression exp1 in
       let exp2 = get_option expression exp2 in
       let exp3 = get_option expression exp3 in
       let body = statement body in
-      mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body))
-	(promote_mcode fr) body
+      let right = promote_to_statement body aft in
+      mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
+			(Ast0.get_info right,aft)))
+	(promote_mcode fr) right
   | Ast0.Return(ret,sem) as us ->
       mkres s us (promote_mcode ret) (promote_mcode sem)
   | Ast0.ReturnExpr(ret,exp,sem) ->

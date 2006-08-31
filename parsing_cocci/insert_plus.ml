@@ -8,6 +8,10 @@ module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module CN = Context_neg
 
+let get_option f = function
+    None -> []
+  | Some x -> f x
+
 (* --------------------------------------------------------------------- *)
 (* Collect root and all context nodes in a tree *)
 
@@ -92,45 +96,52 @@ let collect_minus_join_points root =
     | _ -> k e in
 
   let statement r k s =
+    let redo_branch branchres (ifinfo,aftmc) =
+      match List.rev branchres with
+	[] -> failwith "empty branch not allowed"
+      | (fv,info,mc)::rest ->
+	  (match mc with
+	    Ast0.MINUS(_) -> branchres
+	  |	Ast0.CONTEXT(_) ->
+	      let new_info = {info with Ast0.attachable_end = false} in
+	      List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
+	  | _ -> failwith "unexpected mc in branch res") in
     match Ast0.unwrap s with
-      Ast0.IfThen(iff,lp,exp,rp,branch, (ifinfo,aftmc)) ->
+      Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->
 	let iffres = mcode iff in
 	let lpres = mcode lp in
 	let expres = r.V0.combiner_expression exp in
 	let rpres = mcode rp in
-	let branchres = r.V0.combiner_statement branch in
-	let branchres =
-	  match List.rev branchres with
-	    [] -> failwith "empty branch not allowed"
-	  | (fv,info,mc)::rest ->
-	      (match mc with
-		Ast0.MINUS(_) -> branchres
-	      |	Ast0.CONTEXT(_) ->
-		  let new_info = {info with Ast0.attachable_end = false} in
-		  Printf.printf "new_info %d %d\n"
-		    info.Ast0.line_start info.Ast0.line_end;
-		  List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
-	      |	_ -> failwith "unexpected mc in branch res") in
+	let branchres = redo_branch (r.V0.combiner_statement branch) aft in
 	iffres @ lpres @ expres @ rpres @ branchres
-    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(ifinfo,aftmc)) ->
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
 	let iffres = mcode iff in
 	let lpres = mcode lp in
 	let expres = r.V0.combiner_expression exp in
 	let rpres = mcode rp in
 	let branch1res = r.V0.combiner_statement branch1 in
 	let elseres = mcode els in
-	let branch2res = r.V0.combiner_statement branch2 in
-	let branch2res =
-	  match List.rev branch2res with
-	    [] -> failwith "empty branch not allowed"
-	  | (fv,info,mc)::rest ->
-	      (match mc with
-		Ast0.MINUS(_) -> branch2res
-	      |	Ast0.CONTEXT(_) ->
-		  let new_info = {info with Ast0.attachable_end = false} in
-		  List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
-	      |	_ -> failwith "unexpected mc in branch res") in
+	let branch2res = redo_branch (r.V0.combiner_statement branch2) aft in
 	iffres @ lpres @ expres @ rpres @ branch1res @ elseres @ branch2res
+    | Ast0.While(whl,lp,exp,rp,body,aft) ->
+	let whlres = mcode whl in
+	let lpres = mcode lp in
+	let expres = r.V0.combiner_expression exp in
+	let rpres = mcode rp in
+	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
+	whlres @ lpres @ expres @ rpres @ bodyres
+    | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+	let frres = mcode fr in
+	let lpres = mcode lp in
+	let e1res = get_option r.V0.combiner_expression e1 in
+	let sem1res = mcode sem1 in
+	let e2res = get_option r.V0.combiner_expression e2 in
+	let sem2res = mcode sem2 in
+	let e3res = get_option r.V0.combiner_expression e3 in
+	let rpres = mcode rp in
+	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
+	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
+	@ bodyres
     | _ -> do_nothing r k s in
 
   let do_top r k (e: Ast0.top_level) = k e in

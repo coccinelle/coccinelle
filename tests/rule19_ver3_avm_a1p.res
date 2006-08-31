@@ -1,4 +1,4 @@
-/* $Id: rule19_ver3_avm_a1p.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver3_avm_a1p.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for the following AVM cards:
  * A1 PCMCIA
@@ -56,7 +56,7 @@
 #define byteout(addr,val) outb(val,addr)
 #define bytein(addr) inb(addr)
 
-static const char *avm_revision = "$Revision: 1.1 $";
+static const char *avm_revision = "$Revision: 1.2 $";
 static spinlock_t avm_a1p_lock = SPIN_LOCK_UNLOCKED;
 
 static inline u_char

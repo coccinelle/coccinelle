@@ -1,4 +1,4 @@
-/* $Id: rule19_ver6_bkm_a8.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver6_bkm_a8.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for Scitel Quadro (4*S0, passive)
  *
@@ -26,7 +26,7 @@
 
 extern const char *CardType[];
 static spinlock_t bkm_a8_lock = SPIN_LOCK_UNLOCKED;
-const char sct_quadro_revision[] = "$Revision: 1.1 $";
+const char sct_quadro_revision[] = "$Revision: 1.2 $";
 
 static const char *sct_quadro_subtypes[] =
 {

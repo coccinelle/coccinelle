@@ -1,4 +1,4 @@
-/* $Id: rule19_ver10_gazel.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver10_gazel.res,v 1.2 2006-08-31 16:57:30 julia Exp $
  *
  * low level stuff for Gazel isdn cards
  *
@@ -21,7 +21,7 @@
 #include <linux/pci.h>
 
 extern const char *CardType[];
-const char *gazel_revision = "$Revision: 1.1 $";
+const char *gazel_revision = "$Revision: 1.2 $";
 static spinlock_t gazel_lock = SPIN_LOCK_UNLOCKED;
 
 #define R647      1

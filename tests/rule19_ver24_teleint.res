@@ -1,4 +1,4 @@
-/* $Id: rule19_ver24_teleint.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver24_teleint.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for TeleInt isdn cards
  *
@@ -18,7 +18,7 @@
 
 extern const char *CardType[];
 
-const char *TeleInt_revision = "$Revision: 1.1 $";
+const char *TeleInt_revision = "$Revision: 1.2 $";
 static spinlock_t teleint_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)

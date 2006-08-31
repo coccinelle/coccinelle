@@ -349,7 +349,7 @@ and match_statement context_required pattern s =
 	     (conjunct_bindings
 		(match_statement context_required branch1a branch1b)
 		(match_statement context_required branch2a branch2b))
-      | (Ast0.While(_,_,expa,_,bodya),Ast0.While(_,_,expb,_,bodyb)) ->
+      | (Ast0.While(_,_,expa,_,bodya,_),Ast0.While(_,_,expb,_,bodyb,_)) ->
 	  conjunct_bindings
 	    (match_expr context_required expa expb)
 	    (match_statement context_required bodya bodyb)
@@ -357,8 +357,8 @@ and match_statement context_required pattern s =
 	  conjunct_bindings
 	    (match_statement context_required bodya bodyb)
 	    (match_expr context_required expa expb)
-      | (Ast0.For(_,_,e1a,_,e2a,_,e3a,_,bodya),
-	 Ast0.For(_,_,e1b,_,e2b,_,e3b,_,bodyb)) ->
+      | (Ast0.For(_,_,e1a,_,e2a,_,e3a,_,bodya,_),
+	 Ast0.For(_,_,e1b,_,e2b,_,e3b,_,bodyb,_)) ->
 	   conjunct_bindings
 	     (match_option (match_expr context_required) e1a e1b)
 	     (conjunct_bindings
@@ -501,6 +501,11 @@ let rebuild_mcode start_line =
 	  Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
       | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
 	  Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
+	    (info,copy_mcodekind mc))
+      | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
+	  Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
+      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
+	  Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
 	    (info,copy_mcodekind mc))
       | s -> s) in
 

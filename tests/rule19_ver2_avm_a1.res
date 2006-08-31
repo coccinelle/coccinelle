@@ -1,4 +1,4 @@
-/* $Id: rule19_ver2_avm_a1.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver2_avm_a1.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for AVM A1 (Fritz) isdn cards
  *
@@ -17,7 +17,7 @@
 #include "isdnl1.h"
 
 extern const char *CardType[];
-static const char *avm_revision = "$Revision: 1.1 $";
+static const char *avm_revision = "$Revision: 1.2 $";
 
 #define	 AVM_A1_STAT_ISAC	0x01
 #define	 AVM_A1_STAT_HSCX	0x02

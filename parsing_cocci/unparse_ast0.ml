@@ -256,7 +256,7 @@ let rec statement arity s =
 	  statement arity branch1;
 	  print_string arity; mcode print_string els; print_string " ";
 	  statement arity branch2
-      | Ast0.While(whl,lp,exp,rp,body) ->
+      | Ast0.While(whl,lp,exp,rp,body,_) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
@@ -268,7 +268,7 @@ let rec statement arity s =
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp;
 	  mcode print_string sem
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body) ->
+      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) ->
 	  print_string arity;
 	  mcode print_string fr; mcode print_string_box lp;
 	  print_option expression e1; mcode print_string sem1;

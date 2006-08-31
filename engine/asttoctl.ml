@@ -352,9 +352,12 @@ and get_before_e s a =
       let (br1,_) = get_before_e branch1 [] in
       let (br2,_) = get_before_e branch2 [] in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
-  | Ast.While(header,body) ->
+  | Ast.While(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
-      (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
+      (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
+  | Ast.For(header,body,aft) ->
+      let (bd,_) = get_before_e body [] in
+      (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
@@ -449,9 +452,12 @@ and get_after_e s a =
       let (br1,_) = get_after_e branch1 a in
       let (br2,_) = get_after_e branch2 a in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
-  | Ast.While(header,body) ->
+  | Ast.While(header,body,aft) ->
       let (bd,_) = get_after_e body a in
-      (Ast.rewrap s (Ast.While(header,bd)),[Ast.Other s])
+      (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
+  | Ast.For(header,body,aft) ->
+      let (bd,_) = get_after_e body a in
+      (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
@@ -779,9 +785,37 @@ and statement stmt used_after after quantified guard =
 	  quantify bothfvs
 	    (wrapAnd (if_header, wrapAnd(wrapAX or_cases, wrapEX false_pred))))
 
-  | Ast.While(header,body) ->
+  | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
    (* the translation in this case is similar to that of an if with no else *)
-   failwith "while is not supported"
+       (* free variables *) 
+      let (efvs,bfvs,_) =
+	seq_fvs2 quantified (Ast.get_fvs header) (Ast.get_fvs body) in
+      let new_quantified = Common.union_set bfvs quantified in
+      (* if header *)
+      let header = quantify efvs (make_match header) in
+      let body =
+	make_seq
+	  [wrapPred(Lib_engine.TrueBranch,CTL.Control);
+	    statement body used_after (a2n after) new_quantified guard] in
+      let after_pred = wrapPred(Lib_engine.FallThrough,CTL.Control) in
+      let (aft_needed,after_branch) =
+	match aft with
+	  Ast.CONTEXT(Ast.NOTHING) -> (false,make_seq_after2 after_pred after)
+	| _ ->
+	    (true,
+	     make_seq_after after_pred
+	       (After
+		  (make_seq_after (make_match (make_meta_rule_elem aft))
+		     after))) in
+      let or_cases = wrapOr(body,after_branch) in
+      (* the code *)
+      (match (after,aft_needed) with
+	(After _,_) (* pattern doesn't end here *)
+      | (_,true) (* + code added after *) ->
+	  quantify bfvs
+	    (wrapAnd (header, wrapAnd(wrapAX or_cases, wrapEX after_pred)))
+      | _ -> quantify bfvs (wrapAnd(header, wrapAX or_cases)))
+
   | Ast.Disj(stmt_dots_list) ->
       let do_one e =
 	statement_list e used_after (a2n after) quantified true in

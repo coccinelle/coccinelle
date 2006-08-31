@@ -1,4 +1,4 @@
-/* $Id: rule19_ver5_bkm_a4t.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver5_bkm_a4t.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for T-Berkom A4T
  *
@@ -23,7 +23,7 @@
 extern const char *CardType[];
 static spinlock_t bkm_a4t_lock = SPIN_LOCK_UNLOCKED;
 
-const char *bkm_a4t_revision = "$Revision: 1.1 $";
+const char *bkm_a4t_revision = "$Revision: 1.2 $";
 
 
 static inline u_char

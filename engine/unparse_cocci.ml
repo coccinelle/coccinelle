@@ -385,12 +385,12 @@ let rec statement arity s =
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2
 
-  | Ast.While(header,body) ->
+  | Ast.While(header,body,_) ->
       rule_elem arity header; statement arity body
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
-  | Ast.For(header,body) ->
+  | Ast.For(header,body,_) ->
       rule_elem arity header; statement arity body
 
   | Ast.Atomic(re) -> rule_elem arity re

@@ -1,4 +1,4 @@
-/* $Id: rule19_ver12_hfc_sx.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver12_hfc_sx.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * level driver for CCD´s hfc-s+/sp based cards
  *
@@ -20,7 +20,7 @@
 
 extern const char *CardType[];
 
-static const char *hfcsx_revision = "$Revision: 1.1 $";
+static const char *hfcsx_revision = "$Revision: 1.2 $";
 
 /***************************************/
 /* IRQ-table for CCDs demo board       */

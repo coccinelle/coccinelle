@@ -1,4 +1,4 @@
-/* $Id: rule19_ver16_mic.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver16_mic.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for mic cards
  *
@@ -18,7 +18,7 @@
 
 extern const char *CardType[];
 
-const char *mic_revision = "$Revision: 1.1 $";
+const char *mic_revision = "$Revision: 1.2 $";
 static spinlock_t mic_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)

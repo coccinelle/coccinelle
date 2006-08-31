@@ -238,10 +238,11 @@ let combiner bind option_default
       | Ast.IfThenElse(header,branch1,els,branch2,_) ->
 	  multibind [rule_elem header; statement branch1; rule_elem els;
 		      statement branch2]
-      | Ast.While(header,body) -> multibind [rule_elem header; statement body]
+      | Ast.While(header,body,_) ->
+	  multibind [rule_elem header; statement body]
       | Ast.Do(header,body,tail) ->
 	  multibind [rule_elem header; statement body; rule_elem tail]
-      | Ast.For(header,body) -> multibind [rule_elem header; statement body]
+      | Ast.For(header,body,_) -> multibind [rule_elem header; statement body]
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
@@ -550,10 +551,12 @@ let rebuilder
 	| Ast.IfThenElse(header,branch1,els,branch2,aft) ->
 	    Ast.IfThenElse(rule_elem header, statement branch1, rule_elem els,
 			   statement branch2, aft)
-	| Ast.While(header,body) -> Ast.While(rule_elem header, statement body)
+	| Ast.While(header,body,aft) ->
+	    Ast.While(rule_elem header, statement body, aft)
 	| Ast.Do(header,body,tail) ->
 	    Ast.Do(rule_elem header, statement body, rule_elem tail)
-	| Ast.For(header,body) -> Ast.For(rule_elem header, statement body)
+	| Ast.For(header,body,aft) ->
+	    Ast.For(rule_elem header, statement body, aft)
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)

@@ -165,7 +165,7 @@ type base_statement =
 	             (info * mcodekind)
   | While         of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
-	             statement
+	             statement * (info * mcodekind) (* after info *)
   | Do            of string mcode (* do *) * statement *
                      string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
@@ -173,7 +173,8 @@ type base_statement =
   | For           of string mcode (* for *) * string mcode (* ( *) *
                      expression option * string mcode (*;*) *
 	             expression option * string mcode (*;*) *
-                     expression option * string mcode (* ) *) * statement
+                     expression option * string mcode (* ) *) * statement *
+	             (info * mcodekind) (* after info *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)

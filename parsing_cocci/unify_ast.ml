@@ -336,12 +336,12 @@ let rec unify_statement s1 s2 =
 	(conjunct_bindings (unify_statement thn1 thn2)
 	   (conjunct_bindings (unify_rule_elem e1 e2)
 	      (unify_statement els1 els2)))
-  | (Ast.While(h1,s1),Ast.While(h2,s2)) ->
+  | (Ast.While(h1,s1,_),Ast.While(h2,s2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
   | (Ast.Do(h1,s1,t1),Ast.Do(h2,s2,t2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_statement s1 s2) (unify_rule_elem t1 t2))
-  | (Ast.For(h1,s1),Ast.For(h2,s2)) ->
+  | (Ast.For(h1,s1,_),Ast.For(h2,s2,_)) ->
       conjunct_bindings (unify_rule_elem h1 h2) (unify_statement s1 s2)
   | (Ast.Atomic(re1),Ast.Atomic(re2)) -> unify_rule_elem re1 re2
   | (Ast.Disj(s1),_) ->

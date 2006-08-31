@@ -258,9 +258,9 @@ and base_statement =
   | IfThen        of rule_elem (* header *) * statement * mcodekind
   | IfThenElse    of rule_elem (* header *) * statement *
 	             rule_elem (* else *) * statement * mcodekind
-  | While         of rule_elem (* header *) * statement
+  | While         of rule_elem (* header *) * statement * mcodekind
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
-  | For           of rule_elem (* header *) * statement
+  | For           of rule_elem (* header *) * statement * mcodekind
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of statement dots * dots_whencode list

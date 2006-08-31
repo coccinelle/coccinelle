@@ -1,4 +1,4 @@
-/* $Id: rule19_ver21_saphir.res,v 1.1 2006-08-30 15:43:40 julia Exp $
+/* $Id: rule19_ver21_saphir.res,v 1.2 2006-08-31 16:57:31 julia Exp $
  *
  * low level stuff for HST Saphir 1
  *
@@ -19,7 +19,7 @@
 #include "isdnl1.h"
 
 extern const char *CardType[];
-static char *saphir_rev = "$Revision: 1.1 $";
+static char *saphir_rev = "$Revision: 1.2 $";
 static spinlock_t saphir_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)

@@ -365,11 +365,11 @@ let rec statement s =
 	     statement Ast.NotSequencible branch1,tokenwrap els (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
 	     convert_mcodekind aft)
-      | Ast0.While(wh,lp,exp,rp,body) ->
+      | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
 	  Ast.While(rewrap s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
-		    statement Ast.NotSequencible body)
+		    statement Ast.NotSequencible body,convert_mcodekind aft)
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
 	  Ast.Do(rewrap s (Ast.DoHeader(mcode d)),
@@ -377,7 +377,7 @@ let rec statement s =
 		 tokenwrap wh
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
 				  mcode sem)))
-      | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body) ->
+      | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
 	  let fr = mcode fr in
 	  let lp = mcode lp in
 	  let exp1 = get_option expression exp1 in
@@ -388,7 +388,7 @@ let rec statement s =
 	  let rp = mcode rp in
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
-		  body)
+		  body,convert_mcodekind aft)
       | Ast0.Return(ret,sem) ->
 	  Ast.Atomic(rewrap s (Ast.Return(mcode ret,mcode sem)))
       | Ast0.ReturnExpr(ret,exp,sem) ->
