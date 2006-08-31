@@ -494,10 +494,8 @@ let context_neg minus plus =
 	let pend = pinfo.Ast0.logical_end in
 	if (iscode m or iscode p) &&
 	  (mend + 1 = pstart or pend + 1 = mstart or (* adjacent *)
-	   (mstart < pstart && mend > pstart) or
-	   (pstart < mstart && pend > mstart) or (* overlapping *)
-	   (mstart <= pstart && mend >= pend) or
-	   (pstart <= mstart && pend >= mend)) (* nested *)
+	   (mstart <= pstart && mend >= pstart) or
+	   (pstart <= mstart && pend >= mstart)) (* overlapping or nested *)
 	then
 	  begin
 	    (* ensure that the root of each tree has a unique index,

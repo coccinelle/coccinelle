@@ -222,7 +222,6 @@ let verify l =
     l
 
 let process_minus minus =
-  Printf.printf "in process minus %d\n" (List.length minus);
   create_root_token_table minus;
   List.concat
     (List.map

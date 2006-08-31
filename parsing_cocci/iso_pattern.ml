@@ -624,10 +624,8 @@ let copy_plus printer minusify model e =
       |	_ -> failwith "not possible 6");
       e
   | Ast0.CONTEXT(mc) ->
-      Printf.printf "in context case\n";
       (match Ast0.get_mcodekind e with
 	Ast0.CONTEXT(emc) ->
-	  Printf.printf "copying mc %s\n"
 	    (match !mc with
 	      (Ast.BEFORE _,_,_) -> "before"
 	    | (Ast.AFTER _,_,_) -> "after"
