@@ -176,7 +176,9 @@ let classify all_marked table code =
   let expression r k e =
     compute_result Ast0.expr e
       (match Ast0.unwrap e with
-	Ast0.Edots(dots,whencode) ->
+	Ast0.NestExpr(starter,exp,ender,whencode) ->
+	  k (Ast0.rewrap e (Ast0.NestExpr(starter,exp,ender,None)))
+      | Ast0.Edots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Edots(dots,None)))
       | Ast0.Ecircles(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
@@ -206,7 +208,9 @@ let classify all_marked table code =
   let statement r k s =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
-	Ast0.Dots(dots,whencode) ->
+	Ast0.Nest(started,stm_dots,ender,whencode) ->
+	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,None)))
+      | Ast0.Dots(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Dots(dots,None)))
       | Ast0.Circles(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Circles(dots,None)))
@@ -304,7 +308,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,ender1),Ast0.DisjExpr(starter2,_,ender2)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
-  | (Ast0.NestExpr(starter1,_,ender1),Ast0.NestExpr(starter2,_,ender2)) ->
+  | (Ast0.NestExpr(starter1,_,ender1,_),Ast0.NestExpr(starter2,_,ender2,_)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
   | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_))
   | (Ast0.Ecircles(dots1,_),Ast0.Ecircles(dots2,_))
@@ -392,7 +396,7 @@ let rec equal_statement s1 s2 =
       equal_mcode name1 name2
   | (Ast0.Disj(starter1,_,ender1),Ast0.Disj(starter2,_,ender2)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
-  | (Ast0.Nest(starter1,_,ender1),Ast0.Nest(starter2,_,ender2)) ->
+  | (Ast0.Nest(starter1,_,ender1,_),Ast0.Nest(starter2,_,ender2,_)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))

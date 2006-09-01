@@ -83,7 +83,7 @@ let elim_opt =
 
     | (Ast.Dots(_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_) as u)::urest,
        d0::_::d1::rest)
-    | (Ast.Nest(_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_) as u)::urest,
+    | (Ast.Nest(_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_) as u)::urest,
        d0::_::d1::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
@@ -110,7 +110,7 @@ let elim_opt =
 	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm);
 		       (Ast.DOTS([d1]),l,fv_d1)],l,fv_both)]
 
-    | ([Ast.Nest(_);Ast.OptStm(stm)],[d1;_]) ->
+    | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
@@ -309,8 +309,11 @@ let rec get_before sl a =
 
 and get_before_e s a =
   match Ast.unwrap s with
-    Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
-  | Ast.Nest(stmt_dots,t) ->
+    Ast.Dots(d,w,t) ->
+      let (w,_) = List.split (List.map (function s -> get_before s []) w) in
+      (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+  | Ast.Nest(stmt_dots,w,t) ->
+      let (w,_) = List.split (List.map (function s -> get_before s []) w) in
       let (sd,_) = get_before stmt_dots a in
       let a =
 	List.filter
@@ -329,7 +332,7 @@ and get_before_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in
-      (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(sd,w,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
@@ -381,8 +384,11 @@ let rec get_after sl a =
 
 and get_after_e s a =
   match Ast.unwrap s with
-    Ast.Dots(d,w,t) -> (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
-  | Ast.Nest(stmt_dots,t) ->
+    Ast.Dots(d,w,t) ->
+      let (w,_) = List.split (List.map (function s -> get_after s []) w) in
+      (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+  | Ast.Nest(stmt_dots,w,t) ->
+      let (w,_) = List.split (List.map (function s -> get_after s []) w) in
       let (sd,_) = get_after stmt_dots a in
       let a =
 	List.filter
@@ -401,7 +407,7 @@ and get_after_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in
-      (Ast.rewrap s (Ast.Nest(sd,a@t)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(sd,w,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
@@ -416,7 +422,7 @@ and get_after_e s a =
 	    (function
 		Ast.Other x ->
 		  (match Ast.unwrap x with
-		    Ast.Dots(_,_,_) | Ast.Nest(_,_) ->
+		    Ast.Dots(_,_,_) | Ast.Nest(_,_,_) ->
 		      failwith
 			"dots/nest not allowed before and after stmt metavar"
 		  | _ -> ())
@@ -424,7 +430,7 @@ and get_after_e s a =
 		  (match Ast.undots x with
 		    x::_ ->
 		      (match Ast.unwrap x with
-			Ast.Dots(_,_,_) | Ast.Nest(_,_) ->
+			Ast.Dots(_,_,_) | Ast.Nest(_,_,_) ->
 			  failwith
 			    ("dots/nest not allowed before and after stmt "^
 			     "metavar")
@@ -832,10 +838,10 @@ and statement stmt used_after after quantified guard =
 		  Ast.rewrap cur
 		    (Ast.DOTS((Ast.rewrap x (Ast.Dots(d,w,on@t)))::xs)) in
 		statement_list cur used_after after quantified guard
-	    | Ast.Nest(sd,t) ->
+	    | Ast.Nest(sd,w,t) ->
 		let cur =
 		  Ast.rewrap cur
-		    (Ast.DOTS((Ast.rewrap x (Ast.Nest(sd,on@t)))::xs)) in
+		    (Ast.DOTS((Ast.rewrap x (Ast.Nest(sd,w,on@t)))::xs)) in
 		statement_list cur used_after after quantified guard
 	    | _ ->
 		add_nots nots
@@ -849,12 +855,19 @@ and statement stmt used_after after quantified guard =
 	| [(nots,cur)] -> process_one nots cur
 	| (nots,cur)::rest -> wrapOr(process_one nots cur, loop after rest) in
       loop after (preprocess_disj stmt_dots_list)
-  | Ast.Nest(stmt_dots,befaft) ->
+  | Ast.Nest(stmt_dots,whencode,befaft) ->
       let dots_pattern =
 	statement_list stmt_dots used_after (a2n after) quantified guard in
       let udots_pattern =
-	statement_list stmt_dots used_after (a2n after) quantified true in
-      (match (after,guard) with
+	let whencodes =
+	  List.map
+	    (function sl ->
+	      statement_list sl used_after (a2n after) quantified true)
+	    whencode in
+	List.fold_left (function rest -> function cur -> wrapOr(cur,rest))
+	  (statement_list stmt_dots used_after (a2n after) quantified true)
+	  whencodes in
+      (match (after,guard&&(whencode=[])) with
 	(After a,true) ->
 	  let nots =
 	    List.map (process_bef_aft after quantified used_after n) befaft in

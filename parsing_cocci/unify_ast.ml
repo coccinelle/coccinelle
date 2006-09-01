@@ -156,7 +156,7 @@ let rec unify_expression e1 e2 =
       disjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
   | (_,Ast.DisjExpr(e2)) ->
       disjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
-  | (Ast.NestExpr(e1),Ast.NestExpr(e2)) ->
+  | (Ast.NestExpr(e1,_),Ast.NestExpr(e2,_)) ->
       unify_dots unify_expression edots e1 e2
 
   (* dots can match against anything.  return true to be safe. *)
@@ -356,7 +356,8 @@ let rec unify_statement s1 s2 =
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
-  | (Ast.Nest(s1,_),Ast.Nest(s2,_)) -> unify_dots unify_statement sdots s1 s2
+  | (Ast.Nest(s1,_,_),Ast.Nest(s2,_,_)) ->
+      unify_dots unify_statement sdots s1 s2
   | (Ast.FunDecl(h1,lb1,d1,_,s1,rb1),Ast.FunDecl(h2,lb2,d2,_,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)

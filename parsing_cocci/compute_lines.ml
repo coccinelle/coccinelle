@@ -229,11 +229,11 @@ let rec expression e =
       mkmultires e (Ast0.DisjExpr(starter,exps,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info exps) (get_all_end_info exps)
-  | Ast0.NestExpr(starter,exp_dots,ender) ->
+  | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
       let exp_dots = dots is_exp_dots None expression exp_dots in
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
-      mkres e (Ast0.NestExpr(starter,exp_dots,ender))
+      mkres e (Ast0.NestExpr(starter,exp_dots,ender,whencode))
 	(promote_mcode starter) (promote_mcode ender)
   | Ast0.Edots(dots,whencode) ->
       let dots = bad_mcode dots in
@@ -440,11 +440,11 @@ let rec statement s =
       mkmultires s (Ast0.Disj(starter,elems,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info elems) (get_all_end_info elems)
-  | Ast0.Nest(starter,rule_elem_dots,ender) ->
+  | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
       let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
-      mkres s (Ast0.Nest(starter,rule_elem_dots,ender))
+      mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode))
 	(promote_mcode starter) (promote_mcode ender)
   | Ast0.Dots(dots,whencode) ->
       let dots = bad_mcode dots in

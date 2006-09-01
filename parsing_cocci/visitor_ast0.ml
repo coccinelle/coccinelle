@@ -115,9 +115,10 @@ let combiner bind option_default
 	  bind (string_mcode starter)
 	    (bind (multibind (List.map expression expr_list))
 	        (string_mcode ender))
-      | Ast0.NestExpr(starter,expr_dots,ender) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	  bind (string_mcode starter)
-	    (bind (expression_dots expr_dots) (string_mcode ender))
+	    (bind (expression_dots expr_dots)
+	       (bind (string_mcode ender) (get_option expression whencode)))
       | Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
       | Ast0.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
@@ -221,9 +222,11 @@ let combiner bind option_default
 	  bind (string_mcode starter)
 	    (bind (multibind (List.map statement_dots statement_dots_list))
 	       (string_mcode ender))
-      | Ast0.Nest(starter,stmt_dots,ender) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	  bind (string_mcode starter)
-	    (bind (statement_dots stmt_dots) (string_mcode ender))
+	    (bind (statement_dots stmt_dots)
+	       (bind (string_mcode ender)
+		  (get_option statement_dots whencode)))
       | Ast0.Exp(exp) -> expression exp
       | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
       | Ast0.Stars(d,whencode) ->
@@ -371,9 +374,9 @@ let rebuilder = fun
 	| Ast0.DisjExpr(starter,expr_list,ender) ->
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
 			  string_mcode ender)
-	| Ast0.NestExpr(starter,expr_dots,ender) ->
+	| Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	    Ast0.NestExpr(string_mcode starter,expression_dots expr_dots,
-			  string_mcode ender)
+			  string_mcode ender, get_option expression whencode)
 	| Ast0.Edots(dots,whencode) ->
 	    Ast0.Edots(string_mcode dots, get_option expression whencode)
 	| Ast0.Ecircles(dots,whencode) ->
@@ -481,9 +484,9 @@ let rebuilder = fun
 	    Ast0.Disj(string_mcode starter,
 		      List.map statement_dots statement_dots_list,
 		      string_mcode ender)
-	| Ast0.Nest(starter,stmt_dots,ender) ->
+	| Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
-		      string_mcode ender)
+		      string_mcode ender,get_option statement_dots whencode)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.Dots(d,whencode) ->
 	    Ast0.Dots(string_mcode d, get_option statement_dots whencode)

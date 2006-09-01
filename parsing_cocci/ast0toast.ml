@@ -239,7 +239,9 @@ let rec expression e =
     | Ast0.MetaExprList(name) -> Ast.MetaExprList(mcode name)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_)     -> Ast.DisjExpr(List.map expression exps)
-    | Ast0.NestExpr(_,exp_dots,_) -> Ast.NestExpr(dots expression exp_dots)
+    | Ast0.NestExpr(_,exp_dots,_,whencode) ->
+	let whencode = get_option expression whencode in
+	Ast.NestExpr(dots expression exp_dots,whencode)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
 	let whencode = get_option expression whencode in
@@ -403,8 +405,11 @@ let rec statement s =
       | Ast0.Disj(_,rule_elem_dots_list,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
-      | Ast0.Nest(_,rule_elem_dots,_) ->
-	  Ast.Nest(statement_dots Ast.Sequencible rule_elem_dots,[])
+      | Ast0.Nest(_,rule_elem_dots,_,whencode) ->
+	  let whencode =
+	    get_option (statement_dots Ast.Sequencible) whencode in
+	  Ast.Nest(statement_dots Ast.Sequencible rule_elem_dots,
+		   option_to_list whencode,[])
       | Ast0.Dots(d,whencode) ->
 	  let d = mcode d in
 	  let whencode =

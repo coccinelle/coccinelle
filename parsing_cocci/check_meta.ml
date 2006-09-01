@@ -113,7 +113,9 @@ let rec expression context table minus e =
   | Ast0.MetaExprList(name) -> if minus then check_table table minus name
   | Ast0.DisjExpr(_,exps,_) ->
       List.iter (expression ID table minus) exps
-  | Ast0.NestExpr(_,exp_dots,_) -> dots (expression ID table minus) exp_dots
+  | Ast0.NestExpr(_,exp_dots,_,w) ->
+      dots (expression ID table minus) exp_dots;
+      get_opt (expression ID table minus) w
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
       expression ID table minus x
   | _ -> () (* no metavariable subterms *)
@@ -190,8 +192,9 @@ let rec statement table minus s =
   | Ast0.Exp(exp) -> expression ID table minus exp
   | Ast0.Disj(_,rule_elem_dots_list,_) ->
       List.iter (dots (statement table minus)) rule_elem_dots_list
-  | Ast0.Nest(_,rule_elem_dots,_) ->
-      dots (statement table minus) rule_elem_dots
+  | Ast0.Nest(_,rule_elem_dots,_,w) ->
+      dots (statement table minus) rule_elem_dots;
+      get_opt (dots (statement table minus)) w
   | Ast0.Dots(_,Some x) | Ast0.Circles(_,Some x) | Ast0.Stars(_,Some x) ->
       dots (statement table minus) x
   | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->

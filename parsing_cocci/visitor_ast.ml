@@ -127,7 +127,8 @@ let combiner bind option_default
       | Ast.MetaExprList(name) -> string_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
-      | Ast.NestExpr(expr_dots) -> expression_dots expr_dots
+      | Ast.NestExpr(expr_dots,whencode) ->
+	  bind (expression_dots expr_dots) (get_option expression whencode)
       | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
       | Ast.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
@@ -246,7 +247,9 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots,_) -> statement_dots stmt_dots
+      | Ast.Nest(stmt_dots,whencode,_) ->
+	  multibind ((statement_dots stmt_dots) ::
+		     (List.map statement_dots whencode))
       | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
@@ -429,7 +432,9 @@ let rebuilder
 	| Ast.MetaExprList(name) -> Ast.MetaExprList(string_mcode name)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
-	| Ast.NestExpr(expr_dots) -> Ast.NestExpr(expression_dots expr_dots)
+	| Ast.NestExpr(expr_dots,whencode) ->
+	    Ast.NestExpr(expression_dots expr_dots,
+			 get_option expression whencode)
 	| Ast.Edots(dots,whencode) ->
 	    Ast.Edots(string_mcode dots,get_option expression whencode)
 	| Ast.Ecircles(dots,whencode) ->
@@ -560,7 +565,9 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots,t) -> Ast.Nest(statement_dots stmt_dots,t)
+	| Ast.Nest(stmt_dots,whencode,t) ->
+	    Ast.Nest(statement_dots stmt_dots,
+		     List.map statement_dots whencode,t)
 	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,

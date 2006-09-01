@@ -84,7 +84,8 @@ and base_expression =
   | MetaExprList   of string mcode (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list * string mcode
-  | NestExpr       of string mcode * expression dots * string mcode
+  | NestExpr       of string mcode * expression dots * string mcode *
+	              expression option
   | Edots          of string mcode (* ... *) * expression option
   | Ecircles       of string mcode (* ooo *) * expression option
   | Estars         of string mcode (* *** *) * expression option
@@ -182,7 +183,8 @@ type base_statement =
   | MetaStmtList  of string mcode  (* only in statement lists *)
   | Exp           of expression  (* only in dotted statement lists *)
   | Disj          of string mcode * statement dots list * string mcode
-  | Nest          of string mcode * statement dots * string mcode
+  | Nest          of string mcode * statement dots * string mcode *
+	             statement dots option
   | Dots          of string mcode (* ... *) * statement dots option
   | Circles       of string mcode (* ooo *) * statement dots option
   | Stars         of string mcode (* *** *) * statement dots option

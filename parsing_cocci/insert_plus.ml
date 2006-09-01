@@ -142,14 +142,28 @@ let collect_minus_join_points root =
 	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
 	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
 	@ bodyres
+    | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+	r.V0.combiner_statement_dots stmt_dots
+    | Ast0.Dots(d,whencode) -> []
+    | Ast0.Circles(d,whencode) -> []
+    | Ast0.Stars(d,whencode) -> []
     | _ -> do_nothing r k s in
+
+  let expression r k e =
+    match Ast0.unwrap e with
+      Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+	r.V0.combiner_expression_dots expr_dots
+    | Ast0.Edots(d,whencode) -> []
+    | Ast0.Ecircles(d,whencode) -> []
+    | Ast0.Estars(d,whencode) -> []
+    | _ -> do_nothing r k e in
 
   let do_top r k (e: Ast0.top_level) = k e in
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing expression do_nothing do_nothing do_nothing
     statement do_top
 
 

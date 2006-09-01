@@ -476,15 +476,30 @@ statement:
 | TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     { Ast0.wrap(Ast0.Nest(clt2mcode "<..." (startofs($1)) $1,
 			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
-			  clt2mcode "...>" (startofs($3)) $3)) }
+			  clt2mcode "...>" (startofs($3)) $3, None)) }
 | TOCircles b=statement_dots(TCircles) TCCircles
     { Ast0.wrap(Ast0.Nest(clt2mcode "<ooo" (startofs($1)) $1,
 			  Ast0.wrap(Ast0.CIRCLES(b (mkdots "ooo"))),
-			  clt2mcode "ooo>" (startofs($3)) $3)) }
+			  clt2mcode "ooo>" (startofs($3)) $3, None)) }
 | TOStars b=statement_dots(TStars) TCStars
     { Ast0.wrap(Ast0.Nest(clt2mcode "<***" (startofs($1)) $1,
 			  Ast0.wrap(Ast0.STARS(b (mkdots "***"))),
-			  clt2mcode "***>" (startofs($3)) $3)) }
+			  clt2mcode "***>" (startofs($3)) $3, None)) }
+| TOEllipsis TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
+    b=statement_dots(TEllipsis) c=TCEllipsis
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<..." (startofs($1)) $1,
+			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
+			  clt2mcode "...>" (startofs(c)) c, Some w)) }
+| TOCircles TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
+    b=statement_dots(TCircles) c=TCCircles
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<ooo" (startofs($1)) $1,
+			  Ast0.wrap(Ast0.CIRCLES(b (mkdots "ooo"))),
+			  clt2mcode "ooo>" (startofs(c)) c, Some w)) }
+| TOStars TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
+    b=statement_dots(TStars) c=TCStars
+    { Ast0.wrap(Ast0.Nest(clt2mcode "<***" (startofs($1)) $1,
+			  Ast0.wrap(Ast0.STARS(b (mkdots "***"))),
+			  clt2mcode "***>" (startofs(c)) c, Some w)) }
 
 statement_dots(dotter):
   r=no_dot_start_end(exp_decl_statement_list,
@@ -579,15 +594,27 @@ nest_expressions:
   TOEllipsis expr_dots(TEllipsis) TCEllipsis
     { Ast0.wrap(Ast0.NestExpr(clt2mcode "<..." (startofs($1)) $1,
 			      Ast0.wrap(Ast0.DOTS($2 (mkedots "..."))),
-			      clt2mcode "...>" (startofs($3)) $3)) }
+			      clt2mcode "...>" (startofs($3)) $3, None)) }
 | TOCircles expr_dots(TCircles) TCCircles
     { Ast0.wrap(Ast0.NestExpr(clt2mcode "<ooo" (startofs($1)) $1,
 			      Ast0.wrap(Ast0.CIRCLES($2 (mkedots "ooo"))),
-			      clt2mcode "ooo>" (startofs($3)) $3)) }
+			      clt2mcode "ooo>" (startofs($3)) $3, None)) }
 | TOStars expr_dots(TStars) TCStars
     { Ast0.wrap(Ast0.NestExpr(clt2mcode "<***" (startofs($1)) $1,
 			      Ast0.wrap(Ast0.STARS($2 (mkedots "***"))),
-			      clt2mcode "***>" (startofs($3)) $3)) }
+			      clt2mcode "***>" (startofs($3)) $3, None)) }
+| TOEllipsis TWhen TNotEq w=eexpr TLineEnd e=expr_dots(TEllipsis) c=TCEllipsis
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<..." (startofs($1)) $1,
+			      Ast0.wrap(Ast0.DOTS(e (mkedots "..."))),
+			      clt2mcode "...>" (startofs(c)) c, Some w)) }
+| TOCircles TWhen TNotEq w=eexpr TLineEnd e=expr_dots(TCircles) c=TCCircles
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<ooo" (startofs($1)) $1,
+			      Ast0.wrap(Ast0.CIRCLES(e (mkedots "ooo"))),
+			      clt2mcode "ooo>" (startofs(c)) c, Some w)) }
+| TOStars TWhen TNotEq w=eexpr TLineEnd e=expr_dots(TStars) c=TCStars
+    { Ast0.wrap(Ast0.NestExpr(clt2mcode "<***" (startofs($1)) $1,
+			      Ast0.wrap(Ast0.STARS(e (mkedots "***"))),
+			      clt2mcode "***>" (startofs(c)) c, Some w)) }
 
 basic_expr(recurser,primary_extra):
   assign_expr(recurser,primary_extra)                        { $1 }

@@ -201,9 +201,9 @@ let rec match_expr context_required pattern expr =
 	| (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
 	    match_typeC context_required tya tyb
 	| (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
-	| (Ast0.DisjExpr(_,expsa,_),Ast0.DisjExpr(_,expsb,_)) ->
+	| (Ast0.DisjExpr(_,expsa,_),_) ->
 	    failwith "not allowed in the pattern of an isomorphism"
-	| (Ast0.NestExpr(_,exp_dotsa,_),Ast0.NestExpr(_,exp_dotsb,_)) ->
+	| (Ast0.NestExpr(_,exp_dotsa,_,_),_) ->
 	    failwith "not allowed in the pattern of an isomorphism"
 	| (Ast0.Edots(_,None),Ast0.Edots(_,_))
 	| (Ast0.Ecircles(_,None),Ast0.Ecircles(_,_))
@@ -369,10 +369,9 @@ and match_statement context_required pattern s =
       | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
       | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
 	  match_expr context_required expa expb
-      | (Ast0.Disj(_,statement_dots_lista,_),
-	 Ast0.Disj(_,statement_dots_listb,_)) ->
+      | (Ast0.Disj(_,statement_dots_lista,_),_) ->
 	   failwith "disj not supported in patterns"
-      | (Ast0.Nest(_,stmt_dotsa,_),Ast0.Nest(_,stmt_dotsb,_)) ->
+      | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
 	  failwith "nest not supported in patterns"
       | (Ast0.Exp(expa),Ast0.Exp(expb)) ->
 	  match_expr context_required expa expb
@@ -408,7 +407,7 @@ let match_top_level context_required pattern t =
 	match_statement context_required statementa statementb
     | (Ast0.CODE(stmt_dotsa),Ast0.CODE(stmt_dotsb)) ->
 	match_dots match_statement context_required stmt_dotsa stmt_dotsb
-    | (Ast0.ERRORWORDS(expsa),Ast0.ERRORWORDS(expsb)) ->
+    | (Ast0.ERRORWORDS(expsa),_) ->
 	failwith "error words not supported in patterns"
     | (Ast0.OTHER(_),_) -> failwith "unexpected code"
     | (_,Ast0.OTHER(_)) -> failwith "unexpected code"

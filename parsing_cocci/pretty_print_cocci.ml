@@ -80,18 +80,18 @@ let dots between fn d =
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots fn d =
+let nest_dots fn f d =
   match Ast.unwrap d with
     Ast.DOTS(l) ->
-      print_string "<..."; start_block();
+      print_string "<..."; f(); start_block();
       print_between force_newline fn l;
       end_block(); print_string "...>"
   | Ast.CIRCLES(l) ->
-      print_string "<ooo"; start_block();
+      print_string "<ooo"; f(); start_block();
       print_between force_newline fn l;
       end_block(); print_string "ooo>"
   | Ast.STARS(l) ->
-      print_string "<***"; start_block();
+      print_string "<***"; f(); start_block();
       print_between force_newline fn l;
       end_block(); print_string "***>"
 
@@ -180,11 +180,16 @@ let rec expression e =
   | Ast.MetaExprList(name) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
-  | Ast.NestExpr(expr_dots) -> nest_dots expression expr_dots
+  | Ast.NestExpr(expr_dots,Some whencode) ->
+      nest_dots expression
+	(function _ -> print_string "   when != "; expression whencode)
+	expr_dots
+  | Ast.NestExpr(expr_dots,None) ->
+      nest_dots expression (function _ -> ()) expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
-      mcode print_string dots; print_string "   WHEN != "; expression whencode
+      mcode print_string dots; print_string "   when != "; expression whencode
   | Ast.Edots(dots,None)
   | Ast.Ecircles(dots,None)
   | Ast.Estars(dots,None) -> mcode print_string dots
@@ -423,22 +428,29 @@ let rec statement arity s =
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       print_string "\n)"
-  | Ast.Nest(stmt_dots,_) ->
+  | Ast.Nest(stmt_dots,[],_) ->
       print_string arity;
-      nest_dots (statement arity) stmt_dots
+      nest_dots (statement arity) (function _ -> ()) stmt_dots
+  | Ast.Nest(stmt_dots,whencode,_) ->
+      print_string arity;
+      nest_dots (statement arity)
+	(function _ -> print_statement_when whencode)
+	stmt_dots
   | Ast.Dots(d,[],_) | Ast.Circles(d,[],_) | Ast.Stars(d,[],_) ->
       print_string arity; mcode print_string d
   | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
   | Ast.Stars(d,whencode,_) ->
-      print_string arity; mcode print_string d;
-      print_string "   WHEN != ";
-      open_box 0;
-      print_between (function _ -> print_string " &"; force_newline())
-      (dots force_newline (statement "")) whencode;
-      close_box()
+      print_string arity; mcode print_string d; print_statement_when whencode
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
+
+and print_statement_when whencode =
+  print_string "   WHEN != ";
+  open_box 0;
+  print_between (function _ -> print_string " &"; force_newline())
+    (dots force_newline (statement "")) whencode;
+  close_box()
 
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l

@@ -136,8 +136,13 @@ let rec expression e =
 	    (function _ -> print_string "\n|"; force_newline())
 	    expression exp_list;
 	  print_string "\n)"
-      | Ast0.NestExpr(starter,expr_dots,ender) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,None) ->
 	  mcode print_string starter;
+	  start_block(); dots force_newline expression expr_dots; end_block();
+	  mcode print_string ender
+      | Ast0.NestExpr(starter,expr_dots,ender,Some whencode) ->
+	  mcode print_string starter; print_string "   WHEN != ";
+	  expression whencode;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
       | Ast0.Edots(dots,Some whencode)
@@ -292,9 +297,13 @@ let rec statement arity s =
 	    (dots force_newline (statement arity))
 	    statement_dots_list;
 	  print_string "\n)"
-      | Ast0.Nest(starter,stmt_dots,ender) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	  print_string arity;
 	  mcode print_string starter;
+	  print_option
+	    (function x ->
+	      print_string "   WHEN != "; open_box 0;
+	      dots force_newline (statement "") x) whencode;
 	  start_block();
 	  dots force_newline (statement arity) stmt_dots;
 	  end_block();

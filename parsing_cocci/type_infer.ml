@@ -114,9 +114,16 @@ let rec propagate_types env =
 	  | Some t ->
 	      List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
 	      Some t)
-      | Ast0.NestExpr(starter,expr_dots,ender) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,None) ->
 	  let _ = r.V0.combiner_expression_dots expr_dots in None
-      | Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> None
+      | Ast0.NestExpr(starter,expr_dots,ender,Some e) ->
+	  let _ = r.V0.combiner_expression_dots expr_dots in
+	  let _ = r.V0.combiner_expression e in None
+      | Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
+	  None
+      | Ast0.Edots(_,Some e) | Ast0.Ecircles(_,Some e)
+      | Ast0.Estars(_,Some e) ->
+	  let _ = r.V0.combiner_expression e in None
       | Ast0.OptExp(exp) -> Ast0.get_type exp
       | Ast0.UniqueExp(exp) -> Ast0.get_type exp
       | Ast0.MultiExp(exp) -> Ast0.get_type exp in
