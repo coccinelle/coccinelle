@@ -507,6 +507,29 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
   | _ -> raise Impossible
 
 
-
+(* ------------------------------------------------------------------------- *)
+and distribute_mck_arge = fun (op, lop, rop) -> 
+  let trans_arg (op, lop, rop) = function
+    | Left e -> Left (distribute_mck_e (op, lop, rop) e)
+    | Right _ -> raise Todo
+  in 
+  function
+  | [] -> raise Todo (* Impossible ? *)
+  | [exp, ii] -> 
+      assert (null ii);
+      [trans_arg (op, lop, rop) exp, ii]
+     
+  | x::y::xs -> 
+     let ((head,ii1), middle, (tail,ii2)) = head_middle_tail (x::y::xs) in
+     assert (null ii1);
+      [trans_arg (op, lop, nothing_right) head, ii1]
+      @
+      List.map (fun (e, ii) -> 
+           trans_arg (op, nothing_left, nothing_right) e,
+           ii +> List.map op)
+       middle
+      @
+      [trans_arg (op, nothing_left, rop) tail, ii1 +> List.map op]
+      
 
 

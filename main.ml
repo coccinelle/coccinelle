@@ -24,7 +24,8 @@ let testone x =
           +> filter (fun s -> s =~ (x' ^ "_.*\\.c$"))
           +> List.map (Str.global_replace (Str.regexp "\\.c$") "")
       in
-      assert (List.length candidates = 1);
+      if (List.length candidates <> 1)
+      then failwith ("cannot find a good match file for: " ^ x);
       List.hd candidates
 
     else x'

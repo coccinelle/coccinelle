@@ -1,3 +1,4 @@
+open Common
 
 type 'a distributer =
     (Ast_c.info -> Ast_c.info) * 
@@ -14,3 +15,8 @@ val distribute_mck_stat : Ast_c.statement   distributer
 val distribute_mck_type : Ast_c.fullType    distributer
 
 val distribute_mck_node : Control_flow_c.node2 distributer
+
+val distribute_mck_arge : 
+    ((Ast_c.expression, Ast_c.fullType * (Ast_c.storage * Ast_c.il)) either * 
+     Ast_c.il) 
+    list distributer

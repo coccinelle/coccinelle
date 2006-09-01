@@ -579,20 +579,31 @@ and (transform_arguments:
     match eas, ebs with
     | [], [] -> []
 
+
     | [ea], [Left eb, ii] -> 
         assert (null ii);
         [Left (transform_e_e ea eb binding),  []]
 
-    | ea::eas,  (Left eb, ii)::ebs -> 
-	(match (A.unwrap ea,eas) with
-	  ((A.EComma i1),ea::eas) ->
+
+
+    | ea::eas,  (eb, ii)::ebs -> 
+	(match (A.unwrap ea,  eas, eb) with
+
+        (* special case. todo: generalize *)
+        | A.Edots (mcode, None), [], Left eb -> 
+            D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
+              ((Left eb,ii)::ebs)   binding
+
+        | ((A.EComma i1),ea::eas, Left eb) ->
             let ii' = tag_symbols [i1] ii   binding in
             (Left (transform_e_e  ea eb binding), ii')::
 	    transform_arguments seqstyle eas ebs   binding
-	| _ ->
+	| _,_, Left eb ->
             assert (null ii);
             (Left (transform_e_e  ea eb binding), [])::
-	    transform_arguments seqstyle eas ebs   binding)
+	    transform_arguments seqstyle eas ebs   binding
+        | _ -> raise Todo
+        )
     | _ -> raise Impossible
 
 
