@@ -269,6 +269,15 @@ let print_state (str : string) (l : ('pred,'anno) triples) =
     l;
   Printf.printf "\n"
     
+let print_required_states = function
+    None -> Printf.printf "no required states\n"
+  | Some states ->
+      Printf.printf "required states: ";
+      List.iter
+	(function x ->
+	  G.print_node x; Format.print_string " "; Format.print_flush())
+	states;
+      Printf.printf "\n"
     
     
 (* ---------------------------------------------------------------------- *)
@@ -684,22 +693,23 @@ let triples_witness x trips =
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
 
-let rec pre_exist dir count (grp,_,_) y =
-  let rec loop y = function
-      0 -> y
-    | n ->
-	let exp (s,th,wit) =
-	  map (fun s' -> (s',th,wit))
-	    (match dir with
-	      A.FORWARD -> G.predecessors grp s
-	    | A.BACKWARD -> G.successors grp s) in
-	loop (concatmap exp y) (n - 1) in
-  setify(loop y count)
+let rec pre_exist dir (grp,_,_) y reqst =
+  let check s =
+    match reqst with None -> true | Some reqst -> List.mem s reqst in
+  let exp (s,th,wit) =
+    concatmap
+      (fun s' -> if check s' then [(s',th,wit)] else [])
+      (match dir with
+	A.FORWARD -> G.predecessors grp s
+      | A.BACKWARD -> G.successors grp s) in
+  setify (concatmap exp y)
 ;;
 
 exception Empty
 
-let pre_forall dir (grp,_,states) y all =
+let pre_forall dir (grp,_,states) y all reqst =
+  let check s =
+    match reqst with None -> true | Some reqst -> List.mem s reqst in
   let pred =
     match dir with A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
   let succ =
@@ -707,7 +717,8 @@ let pre_forall dir (grp,_,states) y all =
   let neighbors =
     List.map
       (function p -> (p,succ grp p))
-      (inner_setify(concatmap (function (s,_,_) -> pred grp s) y)) in
+      (inner_setify
+	 (concatmap (function (s,_,_) -> List.filter check (pred grp s)) y)) in
   let neighbor_triples =
     List.fold_left
       (function rest ->
@@ -730,17 +741,13 @@ let pre_forall dir (grp,_,states) y all =
   | _ -> foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
 
 (* drop_negwits will call setify *)
-let satEX dir count m s = pre_exist dir count m s;;
+let satEX dir m s reqst = pre_exist dir m s reqst;;
 
-let satAX dir count m s =
-  let rec loop s = function
-      0 -> s
-    | n -> loop (pre_forall dir m s s) (n-1) in
-  loop s count
+let satAX dir m s reqst = pre_forall dir m s s reqst
 ;;
   
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
-let satEU dir ((_,_,states) as m) s1 s2 = 
+let satEU dir ((_,_,states) as m) s1 s2 reqst = 
   if s1 = []
   then s2
   else
@@ -752,7 +759,7 @@ let satEU dir ((_,_,states) as m) s1 s2 =
       |	new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = triples_conj s1 (pre_exist dir 1 m new_info) in
+	  let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
@@ -763,7 +770,7 @@ let satEU dir ((_,_,states) as m) s1 s2 =
 ;;
 
 (* EF phi == E[true U phi] *)
-let satEF dir m s2 = 
+let satEF dir m s2 reqst = 
     let s2 = double_negate s2 in
     let ctr = ref 0 in
     let rec f y = function
@@ -771,7 +778,7 @@ let satEF dir m s2 =
       |	new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = pre_exist dir 1 m new_info in
+	  let first = pre_exist dir m new_info reqst in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
 	  (*Printf.printf "EF %s iter %d res %d new_info %d\n"
@@ -783,7 +790,7 @@ let satEF dir m s2 =
 ;;
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
-let satAU dir ((_,_,states) as m) s1 s2 = 
+let satAU dir ((_,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
@@ -795,7 +802,7 @@ let satAU dir ((_,_,states) as m) s1 s2 =
       | new_info ->
 	  ctr := !ctr + 1;
 	  (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = triples_conj s1 (pre_forall dir m new_info y) in
+	  let first = triples_conj s1 (pre_forall dir m new_info y reqst) in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
@@ -805,28 +812,28 @@ let satAU dir ((_,_,states) as m) s1 s2 =
     f s2 s2
 ;;
 
-let satAF dir m s = 
+let satAF dir m s reqst = 
   let s = double_negate s in
   let rec f y = function
       [] -> y
     | new_info ->
-	let first = pre_forall dir m new_info y in
+	let first = pre_forall dir m new_info y reqst in
 	let res = triples_union first y in
 	let new_info = setdiff first y in
 	f res new_info in
   f s s
 
-let satAG dir ((_,_,states) as m) s =
+let satAG dir ((_,_,states) as m) s reqst =
   let s = double_negate s in
   let f y =
-    let pre = pre_forall dir m y y in
+    let pre = pre_forall dir m y y reqst in
     triples_conj y pre in
   setfix f s
 
-let satEG dir ((_,_,states) as m) s =
+let satEG dir ((_,_,states) as m) s reqst =
   let s = double_negate s in
   let f y =
-    let pre = pre_exist dir 1 m y in
+    let pre = pre_exist dir m y reqst in
     triples_conj y pre in
   setfix f s
 
@@ -898,20 +905,10 @@ let print_required required =
     (function reqd -> print_generic_substitution reqd; Format.print_newline())
     required
 
-let print_required_states = function
-    None -> Printf.printf "no required states\n"
-  | Some states ->
-      Printf.printf "required states: ";
-      List.iter
-	(function x ->
-	  G.print_node x; Format.print_string " "; Format.print_flush())
-	states;
-      Printf.printf "\n"
-
 let get_required_states l =
   Some(inner_setify (List.map (function (s,_,_) -> s) l))
 
-let get_children_required_states dir count (grp,_,_) required_states =
+let get_children_required_states dir (grp,_,_) required_states =
   match required_states with
     None -> None
   | Some states ->
@@ -919,10 +916,7 @@ let get_children_required_states dir count (grp,_,_) required_states =
 	match dir with
 	  A.FORWARD -> G.successors
 	| A.BACKWARD -> G.predecessors in
-      let rec loop l = function
-	  0 -> l
-	| n -> loop (List.concat (List.map (fn grp) l)) (n-1) in
-      Some (inner_setify (loop states count))
+      Some (inner_setify (List.concat (List.map (fn grp) states)))
 
 let reachable_table = (Hashtbl.create(50) : (G.node, G.node list) Hashtbl.t)
 
@@ -1008,26 +1002,32 @@ let rec satloop negated required required_states
 		let res = triples_conj phi1res phi2res in
 		check_conj phi phi1res phi2res res;
 		res))
-    | A.EX(dir,count,phi)      ->
+    | A.EX(dir,phi)      ->
 	let new_required_states =
-	  get_children_required_states dir count m required_states in
-	satEX dir count m (loop negated required new_required_states phi)
-    | A.AX(dir,count,phi)      ->
+	  get_children_required_states dir m required_states in
+	satEX dir m (loop negated required new_required_states phi)
+	  required_states
+    | A.AX(dir,phi)      ->
 	let new_required_states =
-	  get_children_required_states dir count m required_states in
-	satAX dir count m (loop negated required new_required_states phi)
+	  get_children_required_states dir m required_states in
+	satAX dir m (loop negated required new_required_states phi)
+	  required_states
     | A.EF(dir,phi)            ->
 	let new_required_states = get_reachable m required_states in
 	satEF dir m (loop negated required new_required_states phi)
+	  new_required_states
     | A.AF(dir,phi)            ->
 	let new_required_states = get_reachable m required_states in
 	satAF dir m (loop negated required new_required_states phi)
+	  new_required_states
     | A.EG(dir,phi)            ->
 	let new_required_states = get_reachable m required_states in
 	satEG dir m (loop negated required new_required_states phi)
+	  new_required_states
     | A.AG(dir,phi)            ->
 	let new_required_states = get_reachable m required_states in
 	satAG dir m (loop negated required new_required_states phi)
+	  new_required_states
     | A.EU(dir,phi1,phi2)      ->
 	let new_required_states = get_reachable m required_states in
 	(match loop negated required new_required_states phi2 with
@@ -1035,7 +1035,7 @@ let rec satloop negated required required_states
 	| s2 ->
 	    let new_required = extend_required s2 required in
 	    satEU dir m (loop negated new_required new_required_states phi1)
-	      s2)
+	      s2 new_required_states)
     | A.AU(dir,phi1,phi2)      ->
 	(*print_required required;*)
 	if !Flag_ctl.loop_in_src_code
@@ -1060,7 +1060,7 @@ let rec satloop negated required required_states
 	  | s2 ->
 	      let new_required = extend_required s2 required in
 	      satAU dir m (loop negated new_required new_required_states phi1)
-		s2)
+		s2 new_required_states)
     | A.Implies(phi1,phi2) ->
 	loop negated required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
@@ -1094,7 +1094,6 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
   let satv negated required required_states phi0 env =
     sat_verbose_loop negated required required_states annot maxlvl (lvl+1)
       m phi0 env check_conj in
-  print_required required;
   if (lvl > maxlvl) && (maxlvl > -1) then
     anno (satloop negated required required_states m phi env check_conj) []
   else
@@ -1128,44 +1127,40 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
 		anno (triples_conj res1 res2) [child1; child2]))
-    | A.EX(dir,count,phi1)       -> 
+    | A.EX(dir,phi1)       -> 
 	let new_required_states =
-	  get_children_required_states dir count m required_states in
+	  get_children_required_states dir m required_states in
 	let (child,res) =
 	  satv negated required new_required_states phi1 env in
-	if count = 1
-	then Printf.printf "EX\n"
-	else Printf.printf "EX^%d\n" count; flush stdout;
-	anno (satEX dir count m res) [child]
-    | A.AX(dir,count,phi1)       -> 
+	Printf.printf "EX\n";
+	anno (satEX dir m res required_states) [child]
+    | A.AX(dir,phi1)       -> 
 	let new_required_states =
-	  get_children_required_states dir count m required_states in
+	  get_children_required_states dir m required_states in
 	let (child,res) =
 	  satv negated required new_required_states phi1 env in
-	if count = 1
-	then Printf.printf "AX\n"
-	else Printf.printf "AX^%d\n" count; flush stdout;
-	anno (satAX dir count m res) [child]
+	Printf.printf "AX\n";
+	anno (satAX dir m res required_states) [child]
     | A.EF(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "EF\n"; flush stdout;
-	anno (satEF dir m res) [child]
+	anno (satEF dir m res new_required_states) [child]
     | A.AF(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "AF\n"; flush stdout;
-	anno (satAF dir m res) [child]
+	anno (satAF dir m res new_required_states) [child]
     | A.EG(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "EG\n"; flush stdout;
-	anno (satEG dir m res) [child]
+	anno (satEG dir m res new_required_states) [child]
     | A.AG(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "AG\n"; flush stdout;
-	anno (satAG dir m res) [child]
+	anno (satAG dir m res new_required_states) [child]
 	  
     | A.EU(dir,phi1,phi2)  -> 
 	let new_required_states = get_reachable m required_states in
@@ -1176,7 +1171,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	    let (child1,res1) =
 	      satv negated new_required new_required_states phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
-	    anno (satEU dir m res1 res2) [child1; child2])
+	    anno (satEU dir m res1 res2 new_required_states) [child1; child2])
     | A.AU(dir,phi1,phi2)      -> 
 	if !Flag_ctl.loop_in_src_code
 	then
@@ -1203,7 +1198,8 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      let (child1,res1) =
 		satv negated new_required new_required_states phi1 env in
 	      Printf.printf "AU %b\n" negated; flush stdout;
-	      anno (satAU dir m res1 res2) [child1; child2])
+	      anno (satAU dir m res1 res2 new_required_states)
+		[child1; child2])
     | A.Implies(phi1,phi2) -> 
 	satv negated required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
@@ -1268,13 +1264,11 @@ let simpleanno l phi res =
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.Implies(phi1,phi2) -> pp "Implies"
     | A.AF(dir,phi1)       -> pp "AF"; pp_dir dir
-    | A.AX(dir,1,phi1)     -> pp "AX"; pp_dir dir
-    | A.AX(dir,count,phi1) -> pp "AX^"; pp (string_of_int count); pp_dir dir
+    | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir
     | A.AG(dir,phi1)       -> pp "AG"; pp_dir dir
     | A.AU(dir,phi1,phi2)  -> pp "AU"; pp_dir dir
     | A.EF(dir,phi1)       -> pp "EF"; pp_dir dir
-    | A.EX(dir,1,phi1)	   -> pp "EX"; pp_dir dir
-    | A.EX(dir,count,phi1) -> pp "EX^"; pp (string_of_int count); pp_dir dir
+    | A.EX(dir,phi1)	   -> pp "EX"; pp_dir dir
     | A.EG(dir,phi1)	   -> pp "EG"; pp_dir dir
     | A.EU(dir,phi1,phi2)  -> pp "EU"; pp_dir dir
     | A.Let (x,phi1,phi2)  -> pp ("Let"^" "^x)

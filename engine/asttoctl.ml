@@ -42,10 +42,9 @@ let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
 let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y))
 let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
-let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,1,x))
-let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,1,x))
-let wrapAXc n count (x) = wrap n (CTL.AX(CTL.FORWARD,count,x))
-let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,1,x))
+let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
+let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,x))
+let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,x))
 let wrapAG n (x) = wrap n (CTL.AG(CTL.FORWARD,x))
 let wrapEG n (x) = wrap n (CTL.EG(CTL.FORWARD,x))
 let wrapAF n (x) = wrap n (CTL.AF(CTL.FORWARD,x))
@@ -203,7 +202,7 @@ let make_seq n l =
   loop l
 
 let make_seq_after2 n first = function
-    After rest -> wrapAnd n (first,wrapAXc n 2 rest)
+    After rest -> wrapAnd n (first,wrapAX n (wrapAX n rest))
   | _ -> first
 
 let make_seq_after n first = function
@@ -1046,11 +1045,11 @@ let rec collect_duplicates f =
   | CTL.Or(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Implies(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.AF(_,phi) -> collect_duplicates phi
-  | CTL.AX(_,_,phi) -> collect_duplicates phi
+  | CTL.AX(_,phi) -> collect_duplicates phi
   | CTL.AG(_,phi) -> collect_duplicates phi
   | CTL.AU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.EF(_,phi) -> collect_duplicates phi
-  | CTL.EX(_,_,phi) -> collect_duplicates phi
+  | CTL.EX(_,phi) -> collect_duplicates phi
   | CTL.EG(_,phi) -> collect_duplicates phi
   | CTL.EU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | _ -> failwith "not possible"
@@ -1102,9 +1101,9 @@ and replace_subformulas dec f =
   | CTL.AF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.AF(dir,new_phi)))
-  | CTL.AX(dir,count,phi) ->
+  | CTL.AX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.AX(dir,count,new_phi)))
+      (acc,CTL.rewrap f (CTL.AX(dir,new_phi)))
   | CTL.AG(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.AG(dir,new_phi)))
@@ -1115,9 +1114,9 @@ and replace_subformulas dec f =
   | CTL.EF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EF(dir,new_phi)))
-  | CTL.EX(dir,count,phi) ->
+  | CTL.EX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.EX(dir,count,new_phi)))
+      (acc,CTL.rewrap f (CTL.EX(dir,new_phi)))
   | CTL.EG(dir,phi) -> 
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EG(dir,new_phi)))
@@ -1141,8 +1140,8 @@ let rec ctl_fvs f =
       match CTL.unwrap f with
 	CTL.False | CTL.True | CTL.Pred(_) -> ([],[])
       | CTL.Not(phi) | CTL.Exists(_,phi)
-      | CTL.AF(_,phi) | CTL.AX(_,_,phi) | CTL.AG(_,phi)
-      | CTL.EF(_,phi) | CTL.EX(_,_,phi) | CTL.EG(_,phi) -> (ctl_fvs phi,[])
+      | CTL.AF(_,phi) | CTL.AX(_,phi) | CTL.AG(_,phi)
+      | CTL.EF(_,phi) | CTL.EX(_,phi) | CTL.EG(_,phi) -> (ctl_fvs phi,[])
       | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
       | CTL.AU(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
 	  let phi1fvs = ctl_fvs phi1 in
@@ -1200,8 +1199,8 @@ let drop_bindings b f = (* innermost bindings first in b *)
 	  (function _ ->
 	    CTL.Implies(drop_one nm term phi1,drop_one nm term phi2))
     | CTL.AF(dir,phi) -> CTL.rewrap f (CTL.AF(dir,drop_one nm term phi))
-    | CTL.AX(dir,count,phi) ->
-	CTL.rewrap f (CTL.AX(dir,count,drop_one nm term phi))
+    | CTL.AX(dir,phi) ->
+	CTL.rewrap f (CTL.AX(dir,drop_one nm term phi))
     | CTL.AG(dir,phi) -> CTL.rewrap f (CTL.AG(dir,drop_one nm term phi))
     | CTL.AU(dir,phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in
@@ -1209,8 +1208,8 @@ let drop_bindings b f = (* innermost bindings first in b *)
 	  (function _ ->
 	    CTL.AU(dir,drop_one nm term phi1,drop_one nm term phi2))
     | CTL.EF(dir,phi) -> CTL.rewrap f (CTL.EF(dir,drop_one nm term phi))
-    | CTL.EX(dir,count,phi) ->
-	CTL.rewrap f (CTL.EX(dir,count,drop_one nm term phi))
+    | CTL.EX(dir,phi) ->
+	CTL.rewrap f (CTL.EX(dir,drop_one nm term phi))
     | CTL.EG(dir,phi) -> CTL.rewrap f (CTL.EG(dir,drop_one nm term phi))
     | CTL.EU(dir,phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in

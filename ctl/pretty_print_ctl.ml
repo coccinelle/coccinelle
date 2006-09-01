@@ -48,16 +48,10 @@ let rec (pp_ctl:
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
      | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;
      | AF(dir,phi1)     -> pp "AF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AX(dir,1,phi1)   -> pp "AX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AX(dir,count,phi1) ->
-	 pp "AX^"; pp (string_of_int count);
-	 pp_dir dir; pp "("; pp_arg env phi1; pp ")"
+     | AX(dir,phi1)   -> pp "AX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | AG(dir,phi1)     -> pp "AG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EF(dir,phi1)     -> pp "EF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | EX(dir,1,phi1)   -> pp "EX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | EX(dir,count,phi1) ->
-	 pp "EX^"; pp (string_of_int count);
-	 pp_dir dir; pp "("; pp_arg env phi1; pp ")"
+     | EX(dir,phi1)   -> pp "EX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EG(dir,phi1)     -> pp "EG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | AU(dir,phi1,phi2)  ->
 	 pp "A"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 

@@ -83,14 +83,10 @@ let rec ctl2c ct pp pv x =
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AF"^diamond^res,ct)
-  | CTL.AX(dir,1,f) ->
+  | CTL.AX(dir,f) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AX"^diamond^res,ct)
-  | CTL.AX(dir,count,f) ->
-      let (diamond,ct) = print_diamond (ct+3) dir in
-      let (res,ct) = pathwrap ct pp pv f
-      in ("\\AX^{"^(string_of_int count)^"}"^diamond^res,ct)
   | CTL.AG(dir,f) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
@@ -105,14 +101,10 @@ let rec ctl2c ct pp pv x =
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\EF"^diamond^res,ct)
-  | CTL.EX(dir,1,f) ->
+  | CTL.EX(dir,f) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\EX"^diamond^res,ct)
-  | CTL.EX(dir,count,f) ->
-      let (diamond,ct) = print_diamond (ct+3) dir in
-      let (res,ct) = pathwrap ct pp pv f
-      in ("\\EX^{"^(string_of_int count)^"}"^diamond^res,ct)
   | CTL.EG(dir,f) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
@@ -160,8 +152,8 @@ and orwrap ct pp pv x =
 
 and pathwrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
-  | CTL.EX(_,_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
       ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
@@ -169,9 +161,9 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
   | CTL.Pred(_)
-  | CTL.EX(_,_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
+  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
       ctl2c ct pp pv x
   | _ ->
