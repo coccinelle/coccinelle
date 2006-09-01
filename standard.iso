@@ -42,6 +42,15 @@ X + Y <=> Y + X
 
 // equivalences between i++, +=1, etc
 
+// I would like to avoid that special case, but
+// we cant transform a ++i in i++ everywhere. We can
+// do it only when the instruction is "alone", such as
+// there is not stuff around it (as in x = i++)
+
+Statement
+@@ expression X, Y; statement S; identifier i; @@
+for(X;Y;i++) S <=> for(X;Y;++i) S
+
 
 // ---------------------------------------------------------------------------
 // Boolean isomorphisms

@@ -244,7 +244,7 @@ let rec
       F.ForHeader (st,
             ((transform (ea1opt, [i3]) (eb1opt, ib1),
               transform (ea2opt, [i4]) (eb2opt, ib2),
-              transform (ea3opt, []) (eb2opt, ib3)),
+              transform (ea3opt, []) (eb3opt, ib3)),
             tag_symbols [i1;i2;i5] ii  binding))
 
 

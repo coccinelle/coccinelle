@@ -23,6 +23,13 @@
 ;;  (setq auto-mode-alist 
 ;;           (cons '("\\.iso$" . cocci-mode) auto-mode-alist))
 
+;;; Todo:
+;; good compile command based on name of buffer.
+;;  (defvar cocci-spatch-path)
+;;  (defvar cocci-isofile-path)
+;; support to show ctl, ... enhance semantic-patch debugging experience
+;; sgrep support ?
+
 ;;; Code:
 
 (defun join-sep (sep xs) 
@@ -45,15 +52,24 @@
 (set-face-foreground 'cocci-minus-face     "SeaGreen3")
 (set-face-foreground 'cocci-plus-face      "salmon")
 
-(setq cocci-c-keywords-list 
-      (list "if" "else" "while" "for" "return"
-            "struct" "union"
-            ))
-(setq cocci-declaration-keywords-list 
-      (list "identifier" "expression" "statement" "type"
-            "local" "function"
+;; can look in lexer_cocci.mll for new identifiers
 
-            "int" "char" "float" "double" "signed" "unsigned" "void"
+(setq cocci-c-keywords-list 
+      (list "if" "else" "while" "do" "for" "return" 
+            "sizeof"
+            "struct" "union"
+            "static" "const" "volatile"
+            ))
+
+(setq cocci-declaration-keywords-list 
+      (list "identifier" "type" "parameter" "constant" "expression" "statement"
+            "function" "local" "list" 
+            "fresh" 
+            ;"error" "words"
+
+            "char" "short" "int" "float" "double" "long" 
+            "void"
+            "signed" "unsigned" 
             ))
       
 (setq cocci-font-lock-keywords 
@@ -64,6 +80,10 @@
    ; modifiers
    ("^\\??\\+.*" . 'cocci-plus-face)
    ("^\\??-.*" . 'cocci-minus-face)
+   ; ! \\+
+
+   ; --- +++
+   ; #cpp
 
    ; comments
    ("//.*" . 'font-lock-comment-face)
@@ -76,19 +96,22 @@
    ; special cocci operators
    ("\\.\\.\\." . 'font-lock-keyword-face)
    ("^[()|]" . 'font-lock-keyword-face)
+   ("\\bwhen[ \t]+!=" . 'font-lock-keyword-face)
+   ("\\bWHEN[ \t]+!=" . 'font-lock-keyword-face)
    
    ; used in iso files
    ("<=>" . 'font-lock-keyword-face)
    ("=>" . 'font-lock-keyword-face)
-   ("Declaration" . 'cocci-special-face)
    ("Expression" . 'cocci-special-face)
    ("Statement" . 'cocci-special-face)
+   ("Declaration" . 'cocci-special-face)
 
 
    ("\\<[0-9]+\\>" . 'cocci-number-face)
 
    (,(join-sep "\\|" 
         (list "(" ")" ";" "," "{" "}" "\\[" "\\]")) .  'cocci-punctuation-face)
+   ; . ->   * + etc
 
    ; c keywords
    (,(concat "\\b\\(" (regexp-opt cocci-c-keywords-list) "\\)\\b") . 
@@ -128,6 +151,7 @@
 
 ;; Used internally while developping coccinelle.
 ;; Allow to switch between the corresponding SP and C file.
+;; todo: handle the _verxxx naming convention.
 (defun switch-between-cocci-c ()
   (interactive)
   (let ((target

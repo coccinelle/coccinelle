@@ -20,7 +20,7 @@ open Ast_c
 
 
 let pp_program file x = 
-
+  
  with_open_outfile "/tmp/output.c" (fun (pr,chan) -> 
    let pr s = pr s; flush chan in
 
@@ -197,17 +197,32 @@ let pp_program file x =
 
    | PPnormal -> 
      (match e with
-     | Declaration decl -> Pretty_print_c.pp_decl_gen pr_elem decl
-     | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
-                   is::iifunc1::iifunc2::i1::i2::isto) -> 
+       | Declaration decl -> Pretty_print_c.pp_decl_gen pr_elem decl
+       | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
+                     is::iifunc1::iifunc2::i1::i2::isto) -> 
+                       
          Pretty_print_c.pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
-                       returnt;
+                         returnt;
          pr_elem is;
          pr_elem iifunc1;
-         paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
-           iicomma +> List.iter pr_elem;
+         
+         (match paramst with
+         | [(((bool, None, t), ii_b_s), iicomma)] -> 
+             assert 
+               (match t with 
+               | qu, (BaseType Void, ii) -> true
+               | _ -> false
+               );
+             assert (null iicomma);
+             assert (null ii_b_s);
+             Pretty_print_c.pp_type_with_ident_gen pr_elem
+               None None t
+             
+         | paramst -> 
+           paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
+            iicomma +> List.iter pr_elem;
            
-           (match b, s, ii_b_s with
+            (match b, s, ii_b_s with
             | false, Some s, [i1] -> 
                 Pretty_print_c.pp_type_with_ident_gen 
                   pr_elem (Some (s, i1)) None t;
@@ -219,9 +234,10 @@ let pp_program file x =
             (* in definition we have name for params, except when f(void) *)
             | _, None, _ -> raise Impossible 
             | _ -> raise Impossible
-           )
+            )
          );
-             
+         );
+            
 
          (* normally ii represent the ",..."  but it is also abused with the f(void) case *)
          (* assert (List.length iib <= 2);*)

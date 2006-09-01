@@ -218,7 +218,7 @@ rule token = parse
 
   | "@@" { start_line true; in_atat := not(!in_atat); TArobArob }
 
-  | "WHEN"
+  | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }
 
