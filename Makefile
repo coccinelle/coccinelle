@@ -15,7 +15,7 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OPTFLAGS=
+OPTFLAGS=-p -inline 0
 
 OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH)
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
@@ -137,3 +137,17 @@ x:
 
 tests:  spatch
 	set -e; for i in $(TESTSUBDIRS); do $(MAKE) -C $$i all; done 
+
+rule9: spatch
+	cd tests/rule9; $(MAKE)
+
+rule18: spatch
+	cd tests/rule18; $(MAKE)
+
+rule19: spatch
+	cd tests/rule19; $(MAKE)
+
+video_usercopy: spatch
+	cd tests/video_usercopy; $(MAKE)
+
+eurosys: rule9 rule18 rule19 video_usercopy

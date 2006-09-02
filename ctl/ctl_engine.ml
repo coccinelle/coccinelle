@@ -947,23 +947,28 @@ let reachsatEF (grp,_,_) s2 =
 	let res = union first y in
 	let new_info = setdiff first y in
 	f res new_info in
-  f s2 s2
+  List.rev(f s2 s2) (* put root first *)
 
 let get_reachable m required_states =
   match required_states with
     None -> None
   | Some states ->
-      let reachables =
-	List.map
-	  (function s ->
-	    try Hashtbl.find reachable_table s
-	    with
-	      Not_found ->
-		let states = reachsatEF m [s] in
-		Hashtbl.add reachable_table s states;
-		states)
-	  states in
-      Some (foldl1 Common.union_set reachables)
+      Some
+	(List.fold_left
+	   (function rest ->
+	     function cur ->
+	       if List.mem cur rest
+	       then rest
+	       else
+		 Common.union_set
+		   (try Hashtbl.find reachable_table cur
+		   with
+		     Not_found ->
+		       let states = reachsatEF m [cur] in
+		       Hashtbl.add reachable_table cur states;
+		       states)
+		   rest)
+	   [] states)
 
 (* **************************** *)
 (* End of environment functions *)
