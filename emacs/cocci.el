@@ -26,7 +26,7 @@
 ;;; Todo:
 ;; good compile command based on name of buffer.
 ;;  (defvar cocci-spatch-path)
-;;  (defvar cocci-isofile-path)
+;;  (defvar cocci-standard-isofile-path)
 ;; support to show ctl, ... enhance semantic-patch debugging experience
 ;; sgrep support ?
 
@@ -78,6 +78,7 @@
    ("^[ \\t]+[-+]" . 'cocci-problem-face)
 
    ; modifiers
+   ;("^\\??\\+.*?//" . 'cocci-plus-face)
    ("^\\??\\+.*" . 'cocci-plus-face)
    ("^\\??-.*" . 'cocci-minus-face)
    ; ! \\+
