@@ -1,8 +1,9 @@
 @@
+local function proc_info_func;
 @@
-
-   foo();
-   <... when != goo()
--  hello();
-   ...>
-   bar();
+  proc_info_func(...) {
+    <...
+-   hostno
++   hostptr->host_no
+    ...>
+  }

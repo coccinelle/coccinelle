@@ -12,6 +12,30 @@ let testall_mode = ref false
 
 let compare_with_expected = ref false
 
+
+(*****************************************************************************)
+let print_diff_expected_res generated_file expected_res = 
+  if Common.lfile_exists expected_res
+  then 
+    let (c1, _) = Cocci.cprogram_from_file generated_file in
+    let (c2, _) = Cocci.cprogram_from_file expected_res in
+    let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
+    let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
+    
+    let xs = process_output_to_list ("diff -u -b -B " ^ 
+                                     generated_file ^ " "  ^ expected_res) 
+    in
+
+    if null xs || c1' =*= c2'
+    then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
+    else 
+      begin
+        pr2 "seems incorrect";
+        pr2 "diff (result(-) vs expected_result(+)) = ";
+        xs +> List.iter pr2;
+      end
+  else failwith ("no such .res file: " ^ expected_res)
+
 (*****************************************************************************)
 let testone x = 
   let base = if x =~ "\\(.*\\)_ver[0-9]+.*" then matched1 x else x in
@@ -42,25 +66,9 @@ let testone x =
     Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
     let expected_res = "tests/" ^ x ^ ".res" in
-    if Common.lfile_exists expected_res && !compare_with_expected
-    then 
-      let (c1, _) = Cocci.cprogram_from_file "/tmp/output.c" in
-      let (c2, _) = Cocci.cprogram_from_file expected_res in
-      let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
-      let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
-
-      let xs = process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^ 
-                                       " "  ^ expected_res) 
-      in
-
-      if null xs || c1' =*= c2'
-      then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
-      else 
-        begin
-          pr2 "seems incorrect";
-          pr2 "diff (result(-) vs expected_result(+)) = ";
-          xs +> List.iter pr2;
-        end
+    let generated_file = "/tmp/output.c" in
+    if !compare_with_expected then 
+      print_diff_expected_res generated_file expected_res;
   end
           
 
@@ -143,6 +151,7 @@ let testall () =
     pr2 "statistics";
     pr2 "----------------------";
     !diagnose +> List.rev +> List.iter (fun s -> print_string s; );
+    flush stdout; flush stderr;
 
     pr2 "----------------------";
     pr2 "total score";
@@ -236,7 +245,14 @@ let main () =
 
         fullxs +> List.iter (fun cfile -> 
           Cocci.full_engine (*~print_input_file:(not !dir)*) 
-            cfile (Left (cocci_file, iso_file))
+            cfile (Left (cocci_file, iso_file));
+
+          let expected_res = 
+            Str.global_replace (Str.regexp "\\.c$") ".res" cfile in
+          let generated_file = "/tmp/output.c" in
+          if !compare_with_expected then 
+            print_diff_expected_res generated_file expected_res;
+
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"

@@ -2527,7 +2527,7 @@ let error_message = fun filename (lexeme, lexstart) ->
   try 
     error_messagebis filename (lexeme, lexstart) 0    
   with End_of_file -> 
-    pr2 "PB in Common.error_message, position given out of file";
+    pr2 ("PB in Common.error_message, position given out of file" ^ filename);
     raise End_of_file
 
 (*****************************************************************************)
