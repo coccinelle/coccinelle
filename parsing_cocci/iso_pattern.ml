@@ -624,13 +624,7 @@ let copy_plus printer minusify model e =
       e
   | Ast0.CONTEXT(mc) ->
       (match Ast0.get_mcodekind e with
-	Ast0.CONTEXT(emc) ->
-	    (match !mc with
-	      (Ast.BEFORE _,_,_) -> "before"
-	    | (Ast.AFTER _,_,_) -> "after"
-	    | (Ast.BEFOREAFTER(_,_),_,_) -> "beforeafter"
-	    | (Ast.NOTHING,_,_) -> "nothing");
-	  emc := !mc
+	Ast0.CONTEXT(emc) -> emc := !mc
       |	_ -> failwith "not possible 7");
       e
   | Ast0.MIXED(_) -> failwith "not possible 8"
