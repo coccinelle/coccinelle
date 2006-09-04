@@ -108,9 +108,9 @@ let match_dots fn context_required d1 d2 =
 
 let rec match_ident context_required pattern id =
   match Ast0.unwrap pattern with
-    Ast0.MetaId(name) -> add_binding name (Ast0.IdentTag id)
-  | Ast0.MetaFunc(name) -> failwith "metafunc not supported"
-  | Ast0.MetaLocalFunc(name) -> failwith "metalocalfunc not supported"
+    Ast0.MetaId(name,_) -> add_binding name (Ast0.IdentTag id)
+  | Ast0.MetaFunc(name,_) -> failwith "metafunc not supported"
+  | Ast0.MetaLocalFunc(name,_) -> failwith "metalocalfunc not supported"
   | up ->
       if not(context_required) or is_context id
       then
@@ -129,15 +129,15 @@ let rec match_ident context_required pattern id =
 
 let rec match_expr context_required pattern expr =
   match Ast0.unwrap pattern with
-    Ast0.MetaExpr(name,None) -> add_binding name (Ast0.ExprTag expr)
-  | Ast0.MetaExpr(name,Some ts) ->
+    Ast0.MetaExpr(name,None,_) -> add_binding name (Ast0.ExprTag expr)
+  | Ast0.MetaExpr(name,Some ts,_) ->
       let expty = Ast0.get_type expr in
       if List.exists (function t -> Type_cocci.compatible t expty) ts
       then add_binding name (Ast0.ExprTag expr)
       else return false
-  | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
-  | Ast0.MetaErr(namea) -> failwith "metaerr not supported"
-  | Ast0.MetaExprList(namea) -> failwith "metaexprlist not supported"
+  | Ast0.MetaConst(namea,_,_) -> failwith "metaconst not supported"
+  | Ast0.MetaErr(namea,_) -> failwith "metaerr not supported"
+  | Ast0.MetaExprList(namea,_) -> failwith "metaexprlist not supported"
   | up ->
       if not(context_required) or is_context expr
       then
@@ -224,7 +224,7 @@ let rec match_expr context_required pattern expr =
 
 and match_typeC context_required pattern t =
   match Ast0.unwrap pattern with
-    Ast0.MetaType(name) -> add_binding name (Ast0.TypeCTag t)
+    Ast0.MetaType(name,_) -> add_binding name (Ast0.TypeCTag t)
   | up ->
       if not(context_required) or is_context t
       then
@@ -286,8 +286,8 @@ and match_decl context_required pattern d =
 
 and match_param context_required pattern p =
   match Ast0.unwrap pattern with
-    Ast0.MetaParam(name) -> add_binding name (Ast0.ParamTag p)
-  | Ast0.MetaParamList(name) -> failwith "metaparamlist not supported"
+    Ast0.MetaParam(name,_) -> add_binding name (Ast0.ParamTag p)
+  | Ast0.MetaParamList(name,_) -> failwith "metaparamlist not supported"
   | up ->
       if not(context_required) or is_context p
       then
@@ -312,8 +312,8 @@ and match_param context_required pattern p =
 
 and match_statement context_required pattern s =
   match Ast0.unwrap pattern with
-    Ast0.MetaStmt(name) -> add_binding name (Ast0.StmtTag s)
-  | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
+    Ast0.MetaStmt(name,_) -> add_binding name (Ast0.StmtTag s)
+  | Ast0.MetaStmtList(name,_) -> failwith "metastmtlist not supported"
   | up ->
       if not(context_required) or is_context s
       then
@@ -524,7 +524,7 @@ let instantiate bindings =
   (* cases where metavariables can occur *)
   let identfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaId(name) ->
+      Ast0.MetaId(name,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
 	    Ast0.IdentTag(id) -> (rebuild_mcode None).V0.rebuilder_ident id
@@ -532,13 +532,13 @@ let instantiate bindings =
 	with
 	  Not_found ->
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
-    | Ast0.MetaFunc(name) -> failwith "metafunc not supported"
-    | Ast0.MetaLocalFunc(name) -> failwith "metalocalfunc not supported"
+    | Ast0.MetaFunc(name,_) -> failwith "metafunc not supported"
+    | Ast0.MetaLocalFunc(name,_) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
   let exprfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,_) ->
+      Ast0.MetaExpr(name,_,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
 	    Ast0.ExprTag(exp) ->
@@ -547,14 +547,14 @@ let instantiate bindings =
 	with
 	  Not_found ->
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
-    | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
-    | Ast0.MetaErr(namea) -> failwith "metaerr not supported"
-    | Ast0.MetaExprList(namea) -> failwith "metaexprlist not supported"
+    | Ast0.MetaConst(namea,_,_) -> failwith "metaconst not supported"
+    | Ast0.MetaErr(namea,_) -> failwith "metaerr not supported"
+    | Ast0.MetaExprList(namea,_) -> failwith "metaexprlist not supported"
     | _ -> k e in
 
   let tyfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaType(name) ->
+      Ast0.MetaType(name,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
 	    Ast0.TypeCTag(ty) -> (rebuild_mcode None).V0.rebuilder_typeC ty
@@ -566,7 +566,7 @@ let instantiate bindings =
 
   let paramfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaParam(name) ->
+      Ast0.MetaParam(name,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
 	    Ast0.ParamTag(param) ->
@@ -575,12 +575,12 @@ let instantiate bindings =
 	with
 	  Not_found ->
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
-    | Ast0.MetaParamList(name) -> failwith "metaparamlist not supported"
+    | Ast0.MetaParamList(name,_) -> failwith "metaparamlist not supported"
     | _ -> k e in
 
   let stmtfn r k e =
     match Ast0.unwrap e with
-    Ast0.MetaStmt(name) ->
+    Ast0.MetaStmt(name,_) ->
 	(try
 	  (match List.assoc (term name) bindings with
 	    Ast0.StmtTag(stmt) ->
@@ -589,7 +589,7 @@ let instantiate bindings =
 	with
 	  Not_found ->
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
-    | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
+    | Ast0.MetaStmtList(name,_) -> failwith "metastmtlist not supported"
     | _ -> k e in
 
   V0.rebuilder

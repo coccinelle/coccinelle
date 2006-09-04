@@ -43,9 +43,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId of string mcode
-  | MetaFunc of string mcode
-  | MetaLocalFunc of string mcode
+  | MetaId of string mcode * bool (* true if inherited *)
+  | MetaFunc of string mcode * bool (* true if inherited *)
+  | MetaLocalFunc of string mcode * bool (* true if inherited *)
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -78,10 +78,13 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
-  | MetaConst      of string mcode * Type_cocci.typeC list option
-  | MetaErr        of string mcode
-  | MetaExpr       of string mcode * Type_cocci.typeC list option
-  | MetaExprList   of string mcode (* only in arg lists *)
+  | MetaConst      of string mcode * Type_cocci.typeC list option *
+	              bool (* true if inherited *)
+  | MetaErr        of string mcode * bool (* true if inherited *)
+  | MetaExpr       of string mcode * Type_cocci.typeC list option *
+	              bool (* true if inherited *)
+  | MetaExprList   of string mcode (* only in arg lists *) *
+	              bool (* true if inherited *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
@@ -106,7 +109,7 @@ and base_typeC =
 	               expression option * string mcode (* ] *)
   | StructUnionName of tagged_string * Ast.structUnion mcode
   | TypeName        of string mcode
-  | MetaType        of string mcode
+  | MetaType        of string mcode * bool (* true if inherited *)
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
@@ -137,8 +140,8 @@ and declaration = base_declaration wrap
 type base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of ident * typeC
-  | MetaParam     of string mcode
-  | MetaParamList of string mcode
+  | MetaParam     of string mcode * bool (* true if inherited *)
+  | MetaParamList of string mcode * bool (* true if inherited *)
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -179,8 +182,8 @@ type base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
-  | MetaStmt      of string mcode  
-  | MetaStmtList  of string mcode  (* only in statement lists *)
+  | MetaStmt      of string mcode  * bool (* true if inherited *)
+  | MetaStmtList  of string mcode * bool (* only in statement lists *)
   | Exp           of expression  (* only in dotted statement lists *)
   | Disj          of string mcode * statement dots list * string mcode
   | Nest          of string mcode * statement dots * string mcode *
@@ -305,7 +308,7 @@ let rec ast0_type_to_type ty =
   | StructUnionName(tag,su) ->
       Type_cocci.StructUnionName(unwrap_mcode tag,structUnion su)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
-  | MetaType(name) -> Type_cocci.MetaType(unwrap_mcode name)
+  | MetaType(name,_) -> Type_cocci.MetaType(unwrap_mcode name)
   | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
       ast0_type_to_type ty
 

@@ -61,9 +61,9 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name) -> mcode print_string name
-      | Ast0.MetaFunc(name) -> mcode print_string name
-      | Ast0.MetaLocalFunc(name) -> mcode print_string name
+      | Ast0.MetaId(name,_) -> mcode print_string name
+      | Ast0.MetaFunc(name,_) -> mcode print_string name
+      | Ast0.MetaLocalFunc(name,_) -> mcode print_string name
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.UniqueIdent(id) -> print_string "!"; ident id
       | Ast0.MultiIdent(id) -> print_string "\\+"; ident id)
@@ -117,18 +117,18 @@ let rec expression e =
           mcode print_string szf;
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp; 
-      | Ast0.MetaConst(name,None) -> mcode print_string name
-      | Ast0.MetaConst(name,Some ty) ->
+      | Ast0.MetaConst(name,None,_) -> mcode print_string name
+      | Ast0.MetaConst(name,Some ty,_) ->
 	  mcode print_string name; print_string "/* ";
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  print_string "*/"
-      | Ast0.MetaErr(name) -> mcode print_string name
-      | Ast0.MetaExpr(name,None) -> mcode print_string name
-      | Ast0.MetaExpr(name,Some ty) ->
+      | Ast0.MetaErr(name,_) -> mcode print_string name
+      | Ast0.MetaExpr(name,None,_) -> mcode print_string name
+      | Ast0.MetaExpr(name,Some ty,_) ->
 	  mcode print_string name; print_string "/*";
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  print_string "*/"
-      | Ast0.MetaExprList(name) -> mcode print_string name
+      | Ast0.MetaExprList(name,_) -> mcode print_string name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_) ->
 	  print_string "\n("; force_newline();
@@ -177,7 +177,7 @@ and typeC t =
       | Ast0.StructUnionName(name,kind) ->
 	  mcode U.structUnion kind; mcode print_string name; print_string " "
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
-      | Ast0.MetaType(name)-> mcode print_string name; print_string " "
+      | Ast0.MetaType(name,_)-> mcode print_string name; print_string " "
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
       | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)
@@ -215,8 +215,8 @@ let rec parameterTypeDef p =
       match Ast0.unwrap p with
 	Ast0.VoidParam(ty) -> typeC ty
       | Ast0.Param(id,ty) -> typeC ty; ident id
-      | Ast0.MetaParam(name) -> mcode print_string name
-      | Ast0.MetaParamList(name) -> mcode print_string name
+      | Ast0.MetaParam(name,_) -> mcode print_string name
+      | Ast0.MetaParamList(name,_) -> mcode print_string name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.Pcircles(dots) -> mcode print_string dots
@@ -285,9 +285,9 @@ let rec statement arity s =
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  print_string arity; mcode print_string ret; print_string " ";
 	  expression exp; mcode print_string sem
-      | Ast0.MetaStmt(name) ->
+      | Ast0.MetaStmt(name,_) ->
 	  print_string arity; mcode print_string name
-      | Ast0.MetaStmtList(name) ->
+      | Ast0.MetaStmtList(name,_) ->
 	  print_string arity;  mcode print_string name
       | Ast0.Disj(_,statement_dots_list,_) ->
 	  print_string arity;

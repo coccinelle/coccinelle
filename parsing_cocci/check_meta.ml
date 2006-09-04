@@ -65,9 +65,11 @@ let ident context table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())	
-  | Ast0.MetaId(name) -> check_table table minus name
-  | Ast0.MetaFunc(name) -> if minus then check_table table minus name
-  | Ast0.MetaLocalFunc(name) -> if minus then check_table table minus name
+  | Ast0.MetaId(name,inherited) -> check_table table minus name
+  | Ast0.MetaFunc(name,inherited) ->
+      if minus then check_table table minus name
+  | Ast0.MetaLocalFunc(name,inherited) ->
+      if minus then check_table table minus name
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
       failwith "unexpected code"
 
@@ -107,10 +109,14 @@ let rec expression context table minus e =
       expression ID table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
       typeC table minus ty
-  | Ast0.MetaConst(name,ty) -> if minus then check_table table minus name
-  | Ast0.MetaExpr(name,ty)  -> if minus then check_table table minus name
-  | Ast0.MetaErr(name)      -> check_table table minus name
-  | Ast0.MetaExprList(name) -> if minus then check_table table minus name
+  | Ast0.MetaConst(name,ty,inherited) ->
+      if minus then check_table table minus name
+  | Ast0.MetaExpr(name,ty,inherited)  ->
+      if minus then check_table table minus name
+  | Ast0.MetaErr(name,inherited)      ->
+      check_table table minus name
+  | Ast0.MetaExprList(name,inherited) ->
+      if minus then check_table table minus name
   | Ast0.DisjExpr(_,exps,_) ->
       List.iter (expression ID table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w) ->
@@ -129,7 +135,7 @@ and typeC table minus t =
   | Ast0.Pointer(ty,star) -> typeC table minus ty
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
-  | Ast0.MetaType(name) -> if minus then check_table table minus name
+  | Ast0.MetaType(name,inherited) -> if minus then check_table table minus name
   | Ast0.OptType(ty) -> typeC table minus ty
   | Ast0.UniqueType(ty) -> typeC table minus ty
   | Ast0.MultiType(ty) -> typeC table minus ty
@@ -158,8 +164,10 @@ let rec declaration context table minus d =
 let parameterTypeDef table minus param =
   match Ast0.unwrap param with
     Ast0.Param(id,ty) -> ident ID table minus id; typeC table minus ty
-  | Ast0.MetaParam(name) -> if minus then check_table table minus name
-  | Ast0.MetaParamList(name) -> if minus then check_table table minus name
+  | Ast0.MetaParam(name,inherited) ->
+      if minus then check_table table minus name
+  | Ast0.MetaParamList(name,inherited) ->
+      if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
 let parameter_list table minus = dots (parameterTypeDef table minus)
@@ -187,8 +195,9 @@ let rec statement table minus s =
       get_opt (expression ID table minus) exp3;
       statement table minus body
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID table minus exp
-  | Ast0.MetaStmt(name) -> if minus then check_table table minus name
-  | Ast0.MetaStmtList(name) -> if minus then check_table table minus name
+  | Ast0.MetaStmt(name,inherited) -> if minus then check_table table minus name
+  | Ast0.MetaStmtList(name,inherited) ->
+      if minus then check_table table minus name
   | Ast0.Exp(exp) -> expression ID table minus exp
   | Ast0.Disj(_,rule_elem_dots_list,_) ->
       List.iter (dots (statement table minus)) rule_elem_dots_list

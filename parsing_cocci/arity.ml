@@ -133,24 +133,24 @@ let ident in_nest opt_allowed tgt i =
 	  [mcode2arity name] in
       let name = mcode name in
       make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name) ->
+  | Ast0.MetaId(name,inherited) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name))
-  | Ast0.MetaFunc(name) ->
+      make_id i tgt arity (Ast0.MetaId(name,inherited))
+  | Ast0.MetaFunc(name,inherited) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaFunc(name))
-  | Ast0.MetaLocalFunc(name) ->
+      make_id i tgt arity (Ast0.MetaFunc(name,inherited))
+  | Ast0.MetaLocalFunc(name,inherited) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaLocalFunc(name))
+      make_id i tgt arity (Ast0.MetaLocalFunc(name,inherited))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
       failwith "unexpected code"
 
@@ -260,22 +260,22 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let ty = typeC arity ty in
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
-  | Ast0.MetaConst(name,ty)  ->
+  | Ast0.MetaConst(name,ty,inherited)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaConst(name,ty))
-  | Ast0.MetaErr(name)  ->
+      make_exp expr tgt arity (Ast0.MetaConst(name,ty,inherited))
+  | Ast0.MetaErr(name,inherited)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaErr(name))
-  | Ast0.MetaExpr(name,ty)  ->
+      make_exp expr tgt arity (Ast0.MetaErr(name,inherited))
+  | Ast0.MetaExpr(name,ty,inherited)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExpr(name,ty))
-  | Ast0.MetaExprList(name) ->
+      make_exp expr tgt arity (Ast0.MetaExpr(name,ty,inherited))
+  | Ast0.MetaExprList(name,inherited) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExprList(name))
+      make_exp expr tgt arity (Ast0.MetaExprList(name,inherited))
   | Ast0.EComma(cm)         ->
       let arity = exp_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -371,11 +371,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.TypeName(name))
-  | Ast0.MetaType(name) ->
+  | Ast0.MetaType(name,inherited) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_typeC typ tgt arity (Ast0.MetaType(name))
+      make_typeC typ tgt arity (Ast0.MetaType(name,inherited))
   | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
       failwith "unexpected code"
 
@@ -450,14 +450,14 @@ let parameterTypeDef tgt param =
 	| (_,Ast0.OptType(ty)) ->
 	    fail param "arity mismatch in param declaration"
 	| _ -> Ast0.Param(id,ty))
-  | Ast0.MetaParam(name) ->
+  | Ast0.MetaParam(name,inherited) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_param param tgt arity (Ast0.MetaParam(name))
-  | Ast0.MetaParamList(name) ->
+      make_param param tgt arity (Ast0.MetaParam(name,inherited))
+  | Ast0.MetaParamList(name,inherited) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_param param tgt arity (Ast0.MetaParamList(name))
+      make_param param tgt arity (Ast0.MetaParamList(name,inherited))
   | Ast0.PComma(cm) ->
       let arity = param_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -569,14 +569,14 @@ let rec statement in_nest tgt stm =
       let exp = expression false arity exp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.ReturnExpr(ret,exp,sem))
-  | Ast0.MetaStmt(name) ->
+  | Ast0.MetaStmt(name,inherited) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_rule_elem stm tgt arity (Ast0.MetaStmt(name))
-  | Ast0.MetaStmtList(name) ->
+      make_rule_elem stm tgt arity (Ast0.MetaStmt(name,inherited))
+  | Ast0.MetaStmtList(name,inherited) ->
       let arity = stm_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name))
+      make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,inherited))
   | Ast0.Exp(exp) ->
       Ast0.rewrap stm (Ast0.Exp(top_expression in_nest true tgt exp))
   | Ast0.Disj(starter,rule_elem_dots_list,ender) ->

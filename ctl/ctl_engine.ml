@@ -173,6 +173,7 @@ let setdiff xs ys = filter (fun x -> not (List.mem x ys)) xs;;
 let subseteqBy eq xs ys = List.for_all (fun x -> memBy eq x ys) xs;;
 
 let subseteq xs ys = List.for_all (fun x -> List.mem x ys) xs;;
+let supseteq xs ys = subseteq ys xs
 
 let setequalBy eq xs ys = (subseteqBy eq xs ys) & (subseteqBy eq ys xs);;
 
@@ -185,6 +186,7 @@ let rec fix eq f x =
 
 (* Fix point calculation on set-valued functions *)
 let setfix f x = setify (fix subseteq f x) (*if new is a subset of old, stop*)
+let setgfix f x = setify (fix supseteq f x) (*if new is a supset of old, stop*)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -828,14 +830,14 @@ let satAG dir ((_,_,states) as m) s reqst =
   let f y =
     let pre = pre_forall dir m y y reqst in
     triples_conj y pre in
-  setfix f s
+  setgfix f s
 
 let satEG dir ((_,_,states) as m) s reqst =
   let s = double_negate s in
   let f y =
     let pre = pre_exist dir m y reqst in
     triples_conj y pre in
-  setfix f s
+  setgfix f s
 
 (* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
 info other than the witness *)
@@ -1022,9 +1024,14 @@ let rec satloop negated required required_states
 	satEF dir m (loop negated required new_required_states phi)
 	  new_required_states
     | A.AF(dir,phi)            ->
-	let new_required_states = get_reachable m required_states in
-	satAF dir m (loop negated required new_required_states phi)
-	  new_required_states
+	if !Flag_ctl.loop_in_src_code
+	then
+	  loop negated required required_states
+	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi)))
+	else
+	  let new_required_states = get_reachable m required_states in
+	  satAF dir m (loop negated required new_required_states phi)
+	    new_required_states
     | A.EG(dir,phi)            ->
 	let new_required_states = get_reachable m required_states in
 	satEG dir m (loop negated required new_required_states phi)
@@ -1152,10 +1159,17 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	Printf.printf "EF\n"; flush stdout;
 	anno (satEF dir m res new_required_states) [child]
     | A.AF(dir,phi1)       -> 
-	let new_required_states = get_reachable m required_states in
-	let (child,res) = satv negated required new_required_states phi1 env in
-	Printf.printf "AF\n"; flush stdout;
-	anno (satAF dir m res new_required_states) [child]
+	if !Flag_ctl.loop_in_src_code
+	then
+	  satv negated required required_states
+	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi)))
+	    env
+	else
+	  (let new_required_states = get_reachable m required_states in
+	  let (child,res) =
+	    satv negated required new_required_states phi1 env in
+	  Printf.printf "AF\n"; flush stdout;
+	  anno (satAF dir m res new_required_states) [child])
     | A.EG(dir,phi1)       -> 
 	let new_required_states = get_reachable m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
@@ -1231,7 +1245,9 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      satv negated required required_states phi env in
 	    (*cell := Thawed res;*)
 	    anno res [child]) in
-    (child,drop_wits required_states negated res)
+    let res = drop_wits required_states negated res in
+    print_state "after drop_wits" res;
+    (child,res)
 	
 ;;
 

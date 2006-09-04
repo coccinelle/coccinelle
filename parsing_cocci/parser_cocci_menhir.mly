@@ -353,7 +353,8 @@ ctype:
 	 { make_cv cv (pointerify ty m (startofs(m))) }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
-	 let ty =Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt)) in
+	 let ty =
+	   Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt,false)) in
 	 make_cv cv (pointerify ty m (startofs(m))) }
 
 param_ctype: // the most general - allows metavariables and type names
@@ -364,7 +365,8 @@ param_ctype: // the most general - allows metavariables and type names
            make_cv cv (pointerify nm m (startofs(m))) }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
-	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt)) in
+	 let ty =
+	   Ast0.wrap(Ast0.MetaType(clt2mcode nm (startofs(ty)) clt,false)) in
 	 make_cv cv (pointerify ty m (startofs(m))) }
 
 ctype_qualif:
@@ -420,7 +422,7 @@ decl: param_ctype ident
 	{ Ast0.wrap(Ast0.Param($2, $1)) }
     | TMetaParam
 	{ let (nm,clt) = $1 in
-	Ast0.wrap(Ast0.MetaParam(clt2mcode nm (startofs($1)) clt)) }
+	Ast0.wrap(Ast0.MetaParam(clt2mcode nm (startofs($1)) clt,false)) }
 
 const_vol:
       Tconst       { clt2mcode Ast.Const (startofs($1)) $1 }
@@ -431,7 +433,7 @@ const_vol:
 statement:
   TMetaStm
     { let (nm,clt) = $1 in
-    Ast0.wrap(Ast0.MetaStmt(clt2mcode nm (startofs($1)) clt)) }
+    Ast0.wrap(Ast0.MetaStmt(clt2mcode nm (startofs($1)) clt,false)) }
 | expr TPtVirg
     { Ast0.wrap(Ast0.ExprStatement ($1, clt2mcode ";" (startofs($2)) $2)) }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
@@ -556,7 +558,7 @@ d_ident:
 decl_statement:
     TMetaStmList
       { let (nm,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmt(clt2mcode nm (startofs($1)) clt))] }
+      [Ast0.wrap(Ast0.MetaStmt(clt2mcode nm (startofs($1)) clt,false))] }
   | decl_var
       { List.map (function x -> Ast0.wrap(Ast0.Decl(x))) $1 }
   | statement { [$1] }
@@ -737,13 +739,13 @@ primary_expr(recurser,primary_extra):
      Ast0.wrap(Ast0.Constant (clt2mcode (Ast.Char x) (startofs($1)) clt)) }
  | TMetaConst
      { let (nm,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaConst(clt2mcode nm (startofs($1)) clt,ty)) }
+     Ast0.wrap(Ast0.MetaConst(clt2mcode nm (startofs($1)) clt,ty,false)) }
  | TMetaErr
      { let (nm,clt) = $1 in
-     Ast0.wrap(Ast0.MetaErr(clt2mcode nm (startofs($1)) clt)) }
+     Ast0.wrap(Ast0.MetaErr(clt2mcode nm (startofs($1)) clt,false)) }
  | TMetaExp
      { let (nm,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(clt2mcode nm (startofs($1)) clt,ty)) }
+     Ast0.wrap(Ast0.MetaExpr(clt2mcode nm (startofs($1)) clt,ty,false)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(clt2mcode "(" (startofs($1)) $1,$2,
 			    clt2mcode ")" (startofs($3)) $3)) }
@@ -779,16 +781,16 @@ pure_ident_or_meta_ident:
 func_ident: TIdent
          { Ast0.wrap(Ast0.Id(id2mcode (startofs($1)) $1)) }
      | TMetaId
-         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1)) }
+         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1,false)) }
      | TMetaFunc
-         { Ast0.wrap(Ast0.MetaFunc(id2mcode (startofs($1)) $1)) }
+         { Ast0.wrap(Ast0.MetaFunc(id2mcode (startofs($1)) $1,false)) }
      | TMetaLocalFunc
-	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode (startofs($1)) $1)) }
+	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode (startofs($1)) $1,false)) }
 
 ident: TIdent
          { Ast0.wrap(Ast0.Id(id2mcode (startofs($1)) $1)) }
      | TMetaId
-         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1)) }
+         { Ast0.wrap(Ast0.MetaId(id2mcode (startofs($1)) $1,false)) }
 
 /*****************************************************************************/
 
@@ -804,12 +806,12 @@ decl_list_start:
   decl  { [$1] }
 | TMetaParamList
     { let (nm,clt) = $1 in
-    [Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($1)) clt))] }
+    [Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($1)) clt,false))] }
 | decl TComma decl_list_start
     { $1::Ast0.wrap(Ast0.PComma(clt2mcode "," (startofs($2)) $2))::$3 }
 | TMetaParamList TComma decl_list_start
     { let (nm,clt) = $1 in
-    Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($1)) clt))::
+    Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($1)) clt,false))::
     Ast0.wrap(Ast0.PComma(clt2mcode "," (startofs($2)) $2))::$3 }
 | TEllipsis list(comma_decls(TEllipsis))
     { Ast0.wrap(Ast0.Pdots(clt2mcode "..." (startofs($1)) $1))::
@@ -830,7 +832,7 @@ comma_decls(dotter):
     { function dot_builder ->
       let (nm,clt) = $2 in
       [Ast0.wrap(Ast0.PComma(clt2mcode "," (startofs($1)) $1));
-	Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($2)) clt))] }
+	Ast0.wrap(Ast0.MetaParamList(clt2mcode nm (startofs($2)) clt,false))] }
 
 /* must be a list of declarations or statements, with no ... or expressions
 for "and" case */
@@ -938,12 +940,12 @@ eexpr_list_start:
       { [$1] }
   | TMetaExpList
       { let (nm,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($1)) clt))] }
+      [Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($1)) clt,false))] }
   | dexpr TComma eexpr_list_start
       { $1::Ast0.wrap(Ast0.EComma(clt2mcode "," (startofs($2)) $2))::$3 }
   | TMetaExpList TComma eexpr_list_start
       { let (nm,clt) = $1 in
-      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($1)) clt))::
+      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($1)) clt,false))::
       Ast0.wrap(Ast0.EComma(clt2mcode "," (startofs($2)) $2))::$3 }
   | d=dots_when(TEllipsis,eexpr) r=list(comma_args(dots_when(TEllipsis,eexpr)))
       { (mkedots "..." d)::
@@ -966,7 +968,7 @@ comma_args(dotter):
     { function dot_builder ->
       let (nm,clt) = $2 in
       [Ast0.wrap(Ast0.EComma(clt2mcode "," (startofs($1)) $1));
-	Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($2)) clt))] }
+	Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($2)) clt,false))] }
 
 eexpr_list_option: eexpr_list { $1 }
          | /* empty */     { Ast0.wrap(Ast0.DOTS([])) }
