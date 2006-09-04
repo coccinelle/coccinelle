@@ -1,14 +1,14 @@
 @@
 //local function fn1;
 identifier fn1;
-identifier cs, event;
+identifier cs, ev;
 @@
 
 // supposed to drop the prototype as well
 
-- fn1(struct IsdnCardState *cs, int event) {
+- fn1(struct IsdnCardState *cs, int ev) {
 -   ...
--   test_and_set_bit(event, &cs->event);
+-   test_and_set_bit(ev, &cs->event);
 -   schedule_work(&cs->work);
 - }
 
@@ -34,14 +34,14 @@ expression cs, ev;
 @@
 //local function fn2;
 identifier fn2;
-identifier bcs, event;
+identifier bcs, ev;
 @@
 
 // supposed to drop the prototype as well
 
-- fn2(struct BCState *bcs, int event) {
+- fn2(struct BCState *bcs, int ev) {
 -   ...
--   bcs->event |= 1 << event;
+-   bcs->event |= 1 << ev;
 -   schedule_work(&bcs->work);
 - }
 
