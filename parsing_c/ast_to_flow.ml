@@ -107,6 +107,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   in
 
 
+  let counter_for_labels = ref 0 in
+  incr counter_for_labels;
+  let lbl_start = [!counter_for_labels] in
 
 
   let ((funcs, functype, sto, compound), ii) = funcdef in
@@ -122,7 +125,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
 
   let headi = add_node_g (FunHeader ((funcs, functype, sto), iifunheader))
-                         lbl_empty ("function " ^ funcs) in
+                         lbl_start ("function " ^ funcs) in
   let enteri = add_node_g Enter lbl_empty "[enter]" in
   let exiti  = add_node_g Exit  lbl_empty "[exit]" in
   !g#add_arc ((headi, enteri), Direct) +> adjust_g;
@@ -185,7 +188,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
    *  case if then later want to  go from CFG to (original) AST. *)
   let counter_for_braces = ref 0 in
   let counter_for_switch = ref 0 in
-  let counter_for_labels = ref 0 in
 
 
   (* Take start, return end.
@@ -769,7 +771,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   let info = { 
     context_info = NoInfo; 
     context_info_bis = false;
-    labels = []; 
+    labels = lbl_start; 
     braces = [] 
   } 
   in
