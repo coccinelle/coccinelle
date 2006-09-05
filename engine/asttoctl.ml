@@ -623,9 +623,8 @@ and statement stmt used_after after quantified guard =
 	  (* first_nodea and first_nodeb are separated here and above to
 	     improve let sharing - only first_nodea is unique to this site *)
 	  let first_nodeb = first_metamatch in
-	  let rest_nodes = rest_metamatch in
-	  let last_node =
-	    make_seq [label_pred;and_opt (wrapNot(prelabel_pred)) after] in
+	  let rest_nodes = wrapAnd(rest_metamatch,prelabel_pred) in
+	  let last_node = and_opt (wrapNot(prelabel_pred)) after in
 	  let body f =
 	    wrapAnd
 	      (label_pred,
