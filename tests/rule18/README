@@ -1,0 +1,20 @@
+avm_pci.c: 
+config.c: 
+diva.c: 
+elsa_ser.c: 
+hfc_2bds0.c: 
+hfc_2bs0.c: 
+hfc_pci.c: 
+hfc_sx.c: 
+hscx.c: 
+hscx_irq.c: 
+ipacx.c: 
+isar.c: 
+jade_irq.c:
+  Doesn't work because the function definition is in the file jade.c.
+  The person who did the patch by hand updated the calls in this file
+  correctly, but the patch does not include anything for jade.c
+
+netjet.c: 
+st5481_b.c: 
+w6692.c: Works!
