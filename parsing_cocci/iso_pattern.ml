@@ -429,17 +429,49 @@ let make_minus =
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind") in
 
-  let donothing r k ((term,info,index,mcodekind,ty) as e) =
-    let e = k e in
-    (match !mcodekind with
+  let update_mc mcodekind =
+    match !mcodekind with
       Ast0.CONTEXT(mc) ->
 	(match !mc with
 	  (Ast.NOTHING,_,_) ->
 	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
 	| _ -> failwith "make_minus: unexpected befaft")
-    | Ast0.MINUS(mc) -> () (* in the part copied from the src term *)
-    | _ -> failwith "make_minus donothing: unexpected mcodekind");
-    e in
+    | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
+    | _ -> failwith "make_minus donothing: unexpected mcodekind" in
+
+  let donothing r k ((term,info,index,mcodekind,ty) as e) =
+    let e = k e in update_mc mcodekind; e in
+
+(*
+  (* special case for whencode, because it isn't processed by contextneg,
+     since it doesn't appear in the + code *)
+  let expression r k ((term,info,index,mcodekind,ty) as e) =
+    match term with
+      Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
+    | Ast0.Estars(dots,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; e
+    | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+	update_mc mcodekind;
+	Ast0.rewrap e
+	  (Ast0.NestExpr(mcode starter,
+			 r.V0.rebuilder_expression_dots expr_dots,
+			 mcode ender,whencode))
+    | _ -> donothing r k e in
+
+  let statement r k ((term,info,index,mcodekind,ty) as e) =
+    match term with
+      Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
+    | Ast0.Stars(d,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; e
+    | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+	update_mc mcodekind;
+	Ast0.rewrap e
+	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
+		     mcode ender,whencode))
+    | _ -> donothing r k e in
+*)
 
   let dots r k ((term,info,index,mcodekind,ty) as e) =
     match term with
@@ -461,7 +493,8 @@ let make_minus =
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots
-    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing (*expression*) donothing donothing donothing
+    donothing (*statement*) donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)

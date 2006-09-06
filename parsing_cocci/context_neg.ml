@@ -165,10 +165,10 @@ let classify all_marked table code =
     | Token(k,il,tl,l) -> mkres builder k [il] [tl] [] [] [l] e
     | Recursor(k,bil,btl,l) -> mkres builder k [] [] bil btl [l] e in
 
-  let make_not_marked = function
+(*  let make_not_marked = function
       Bind(k,il,tl,bil,btl,l) -> Bind(NotAllMarked,il,tl,bil,btl,l)
     | Token(k,il,tl,l) -> Token(NotAllMarked,il,tl,l)
-    | Recursor(k,bil,btl,l) -> Recursor(NotAllMarked,bil,btl,l) in
+    | Recursor(k,bil,btl,l) -> Recursor(NotAllMarked,bil,btl,l) in*)
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 

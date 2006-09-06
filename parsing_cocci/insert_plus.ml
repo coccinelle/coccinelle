@@ -143,7 +143,7 @@ let collect_minus_join_points root =
 	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
 	@ bodyres
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
-	r.V0.combiner_statement_dots stmt_dots
+	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
     | Ast0.Dots(d,whencode) -> []
     | Ast0.Circles(d,whencode) -> []
     | Ast0.Stars(d,whencode) -> []
@@ -152,7 +152,8 @@ let collect_minus_join_points root =
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
-	r.V0.combiner_expression_dots expr_dots
+	mcode starter @
+	r.V0.combiner_expression_dots expr_dots @ mcode ender
     | Ast0.Edots(d,whencode) -> []
     | Ast0.Ecircles(d,whencode) -> []
     | Ast0.Estars(d,whencode) -> []
@@ -424,7 +425,9 @@ let attachbefore (infop,p) m =
       (match repl with
 	Ast.BEFORE(bef) -> neighbors := (Ast.BEFORE(p@bef),new_ti1,ti2)
       |	Ast.AFTER(_) | Ast.BEFOREAFTER(_,_) ->
-	  failwith "attachbefore: should not occur"
+	  failwith
+	    (Printf.sprintf "%d: attachbefore: should not occur"
+	       infop.Ast0.line_start)
       |	Ast.NOTHING ->
 	  neighbors :=
 	    (Ast.BEFORE(p),{new_ti1 with Ast0.tline_start=pln},ti2))
