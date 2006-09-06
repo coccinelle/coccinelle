@@ -61,8 +61,7 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name,inherited) -> mcode print_string name;
-	  if inherited then print_string "inherited"
+      | Ast0.MetaId(name,_) -> mcode print_string name
       | Ast0.MetaFunc(name,_) -> mcode print_string name
       | Ast0.MetaLocalFunc(name,_) -> mcode print_string name
       | Ast0.OptIdent(id) -> print_string "?"; ident id
