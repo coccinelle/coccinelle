@@ -144,10 +144,13 @@ rule9: spatch
 rule18: spatch
 	cd tests/rule18; $(MAKE)
 
+rule18a: spatch
+	cd tests/rule18a; $(MAKE)
+
 rule19: spatch
 	cd tests/rule19; $(MAKE)
 
 video_usercopy: spatch
 	cd tests/video_usercopy; $(MAKE)
 
-eurosys: rule9 rule18 rule19 video_usercopy
+eurosys: rule9 rule18 rule18a rule19 video_usercopy

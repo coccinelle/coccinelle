@@ -172,6 +172,13 @@ let classify all_marked table code =
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 
+  let multibind l =
+    let rec loop = function
+	[] -> option_default
+      |	[x] -> x
+      |	x::xs -> bind x (loop xs) in
+    loop l in
+
   (* no whencode in plus tree so have to drop it *)
   let expression r k e =
     compute_result Ast0.expr e
@@ -185,24 +192,31 @@ let classify all_marked table code =
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
       | Ast0.DisjExpr(starter,expr_list,ender) ->
+	  multibind (List.map r.V0.combiner_expression expr_list)
+(*    why do we want make_not_marked in these cases?
+      must be so that the or doesn't become -, but what problem would that
+      cause?  something to do with isomorphisms?
+      | Ast0.DisjExpr(starter,expr_list,ender) ->
 	  bind (mcode starter)
 	    (bind (List.fold_right bind
 		     (List.map make_not_marked
 			(List.map r.V0.combiner_expression expr_list))
 		     option_default)
-	       (mcode ender))
+	       (mcode ender))*)
       |	_ -> k e) in
 
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,ender) ->
+	  multibind (List.map r.V0.combiner_declaration decls)
+(*	Ast0.DisjDecl(starter,decls,ender) ->
 	  bind (mcode starter)
 	    (bind (List.fold_right bind
 		     (List.map make_not_marked
 			(List.map r.V0.combiner_declaration decls))
 		     option_default)
-	       (mcode ender))
+	       (mcode ender))*)
       |	_ -> k e) in
 
   let statement r k s =
@@ -217,13 +231,14 @@ let classify all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,None)))
       | Ast0.Disj(starter,statement_dots_list,ender) ->
-	  bind (mcode starter)
+	  multibind (List.map r.V0.combiner_statement_dots statement_dots_list)
+(*	  bind (mcode starter)
 	    (bind (List.fold_right bind
 		     (List.map make_not_marked
 			(List.map r.V0.combiner_statement_dots
 			   statement_dots_list))
 		     option_default)
-	       (mcode ender))
+	       (mcode ender))*)
       |	_ -> k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in

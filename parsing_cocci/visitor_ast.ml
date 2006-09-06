@@ -34,7 +34,12 @@ let combiner bind option_default
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     expdotsfn paramdotsfn stmtdotsfn
     identfn exprfn ftfn tyfn paramfn declfn rulefn stmtfn topfn anyfn =
-  let multibind l = List.fold_right bind l option_default in
+  let multibind l =
+    let rec loop = function
+	[] -> option_default
+      |	[x] -> x
+      |	x::xs -> bind x (loop xs) in
+    loop l in
   let get_option f = function
       Some x -> f x
     | None -> option_default in

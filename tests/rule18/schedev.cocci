@@ -8,7 +8,13 @@ identifier bcs, ev;
 
 - fn2(struct BCState *bcs, int ev) {
 -   ...
--   bcs->event |= 1 << ev;
+(
+-   test_and_set_bit(ev, &bcs->event);
+|
+-   set_bit(ev, &bcs->event);
+|
+-   bcs->event |= 1 << ev; // the only case that is used
+)
 -   schedule_work(&bcs->work);
 - }
 

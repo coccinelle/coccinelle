@@ -8,7 +8,13 @@ identifier cs, ev;
 
 - fn1(struct IsdnCardState *cs, int ev) {
 -   ...
+(
 -   test_and_set_bit(ev, &cs->event);
+|
+-   set_bit(ev, &cs->event);
+|
+-   cs->event |= 1 << ev; // found in config.c
+)
 -   schedule_work(&cs->work);
 - }
 
