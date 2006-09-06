@@ -59,17 +59,17 @@ in
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name) -> 
+  | Ast.MetaId(name,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaFunc(name) -> 
+  | Ast.MetaFunc(name,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaFuncVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaLocalFunc(name) -> 
+  | Ast.MetaLocalFunc(name,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaLocalFuncVal id) -> pr id
         | _ -> raise Impossible
@@ -124,22 +124,22 @@ let rec expression e =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp; 
 
-  | Ast.MetaConst(name,None) -> 
+  | Ast.MetaConst(name,None,_) -> 
       failwith "metaConst not handled"
-  | Ast.MetaConst(name,Some ty) ->
+  | Ast.MetaConst(name,Some ty,_) ->
       failwith "metaConst not handled"
 
-  | Ast.MetaErr(name) -> 
+  | Ast.MetaErr(name,_) -> 
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,_typedontcare) -> 
+  | Ast.MetaExpr (name,_typedontcare,_) -> 
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
             Pretty_print_c.pp_expression_gen pr_elem  exp
         | _ -> raise Impossible
                            )
 
-  | Ast.MetaExprList (name) -> 
+  | Ast.MetaExprList (name,_) -> 
       failwith "not handling MetaExprList"
       
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -224,7 +224,7 @@ and typeC ty =
   | Ast.StructUnionName(name,kind) ->
       mcode structUnion kind; mcode print_string name; print_string " "
   | Ast.TypeName(name)-> mcode print_string name; print_string " "
-  | Ast.MetaType(name)-> 
+  | Ast.MetaType(name,_)-> 
       handle_metavar name  (function
         | Ast_c.MetaTypeVal exp -> 
             Pretty_print_c.pp_type_gen pr_elem  exp
@@ -265,7 +265,7 @@ let rec declaration d =
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; expression exp; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
-  | Ast.DisjDecl(_) | Ast.MetaDecl(_) -> raise CantBeInPlus
+  | Ast.DisjDecl(_) | Ast.MetaDecl(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus
 
@@ -278,9 +278,9 @@ let rec parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(id,ty) -> fullType ty; ident id
-  | Ast.MetaParam(name) -> 
+  | Ast.MetaParam(name,_) -> 
       failwith "not handling MetaParam"
-  | Ast.MetaParamList(name) -> 
+  | Ast.MetaParamList(name,_) -> 
       failwith "not handling MetaParamList"
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) 
@@ -356,16 +356,16 @@ let rule_elem arity re =
 
   | Ast.Exp(exp) -> print_string arity; expression exp
 
-  | Ast.MetaRuleElem(name) ->
+  | Ast.MetaRuleElem(name,_) ->
       raise Impossible
 
-  | Ast.MetaStmt(name,_) ->
+  | Ast.MetaStmt(name,_,_) ->
       handle_metavar name  (function
         | Ast_c.MetaStmtVal exp -> 
             Pretty_print_c.pp_statement_gen pr_elem  exp
         | _ -> raise Impossible
                            )
-  | Ast.MetaStmtList(name) ->
+  | Ast.MetaStmtList(name,_) ->
       failwith "MetaStmtList not supported (not even in ast_c metavars binding)"
 in
           

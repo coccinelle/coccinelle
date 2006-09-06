@@ -339,7 +339,7 @@ and get_before_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_,_) -> (s,[])
+	Ast.MetaStmt(_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -414,7 +414,7 @@ and get_after_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(nm,Ast.SequencibleAfterDots _) ->
+	Ast.MetaStmt(nm,Ast.SequencibleAfterDots _,i) ->
 	  (* check after information for metavar optimization *)
 	  (* if the error is not desired, could just return [], then
 	     the optimization (check for EF) won't take place *)
@@ -441,8 +441,8 @@ and get_after_e s a =
 	  (Ast.rewrap s
 	     (Ast.Atomic
 		(Ast.rewrap s
-		   (Ast.MetaStmt(nm,Ast.SequencibleAfterDots a)))),[])
-      |	Ast.MetaStmt(_,_) -> (s,[])
+		   (Ast.MetaStmt(nm,Ast.SequencibleAfterDots a,i)))),[])
+      |	Ast.MetaStmt(_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -544,8 +544,8 @@ and statement stmt used_after after quantified guard =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),seqible)
-      | Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d)),seqible) ->
+	Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),seqible,_)
+      | Ast.MetaStmt((s,i,(Ast.CONTEXT(Ast.AFTER(_)) as d)),seqible,_) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =
@@ -607,7 +607,7 @@ and statement stmt used_after after quantified guard =
 	  | Ast.NotSequencible ->
 	      quantify (label_var::get_unquantified quantified [s]) (body id))
 	    
-      |	Ast.MetaStmt((s,i,d),seqible) ->
+      |	Ast.MetaStmt((s,i,d),seqible,_) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
 	  let prelabel_pred =

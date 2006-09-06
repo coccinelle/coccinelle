@@ -17,7 +17,7 @@ module F = Control_flow_c
 
 let dumb_astcocci_rule_elem = function
  | A.MetaRuleElem _ -> ()
- | A.MetaStmt (ida,_) -> ()
+ | A.MetaStmt (ida,_,_) -> ()
  | A.MetaStmtList _ -> ()
  | A.Exp expr -> ()
  | A.FunHeader (allminus, stoa, tya, ida, _, paramsa, _) -> ()
@@ -44,7 +44,7 @@ let dumb_astcocci_decl = function
  | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> ()
 
 let dumb_astcocci_expr = function
- | A.MetaExpr (ida, opttypa) -> ()
+ | A.MetaExpr (ida, opttypa, _) -> ()
  | A.Edots (_,_) -> ()
  | A.MetaConst _ -> ()
  | A.MetaErr _ -> ()
@@ -81,7 +81,7 @@ let dumb_astcocci_expr = function
 
 
 let dumb_astcocci_type = function
- | A.MetaType ida -> ()
+ | A.MetaType(ida,_) -> ()
  | A.BaseType (basea, signaopt) -> ()
  | A.Pointer (typa, _) -> ()
  | A.Array (typa, _, eaopt, _) -> ()

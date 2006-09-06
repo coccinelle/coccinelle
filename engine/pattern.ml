@@ -193,7 +193,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
     -> return false
 
   (* cas general: a Meta can match everything *)
-  | A.MetaStmt (ida,_),  _unwrap_node -> 
+  | A.MetaStmt (ida,_,_inherited),  _unwrap_node -> 
      (* match only "header"-statement *)
      (match Control_flow_c.extract_fullstatement node with
      | Some stb -> check_add_metavars_binding (term ida, Ast_c.MetaStmtVal stb)
@@ -357,7 +357,7 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
 
 and match_re_onedecl = fun decla declb -> 
   match A.unwrap decla, declb with
-  | A.MetaDecl ida, _ -> 
+  | A.MetaDecl(ida,_inherited), _ -> 
       return true (* todo? add in env ? *)
 
     (* could handle iso here but handled in standard.iso *)
@@ -395,7 +395,7 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
-  | A.MetaExpr (ida, opttypa),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr (ida, opttypa, _inherited),  (((expr, opttypb), ii) as expb) -> 
       (match opttypa, opttypb with
       | None, _ -> return true
       | Some (tas : Type_cocci.typeC list), Some tb -> 
@@ -600,7 +600,7 @@ and (match_arguments:
            (* filtered by the caller, in the case for FunCall *)
           | A.EComma (_), ys -> raise Impossible 
 
-          | A.MetaExprList ida, ys -> 
+          | A.MetaExprList(ida,_inherited), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
@@ -676,7 +676,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
     match A.unwrap typa, typb with
 
       (* cas general *)
-    | A.MetaType ida,  typb -> 
+    | A.MetaType(ida,_inherited),  typb -> 
 	check_add_metavars_binding (term ida, B.MetaTypeVal typb)
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
@@ -828,7 +828,7 @@ and (match_params:
                   ) (return false)
 
 
-          | A.MetaParamList ida, ys -> 
+          | A.MetaParamList(ida,_inherited), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
@@ -844,7 +844,7 @@ and (match_params:
           (* filtered by the caller, in the case for FunDecl *)
           | A.PComma (_), ys -> raise Impossible 
 
-          | A.MetaParam (ida), y::ys -> 
+          | A.MetaParam (ida,_inherited), y::ys -> 
              (* todo: use quaopt, hasreg ? *)
              check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
              match_params seqstyle xs ys
@@ -886,9 +886,10 @@ and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) =
 fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
- | A.MetaId ida -> check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
+ | A.MetaId(ida,_inherited) ->
+     check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
 
- | A.MetaFunc ida -> 
+ | A.MetaFunc (ida,_inherited) -> 
      (match seminfo_idb with
      | LocalFunction | Function -> 
 	 check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
@@ -896,7 +897,7 @@ fun seminfo_idb ida idb ->
          failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
      )
 
- | A.MetaLocalFunc ida -> 
+ | A.MetaLocalFunc (ida,_inherited) -> 
      (match seminfo_idb with
      | LocalFunction -> 
 	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))

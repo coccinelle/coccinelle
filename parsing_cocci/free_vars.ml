@@ -63,7 +63,7 @@ let astfvs bound =
 
   let astfvident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name) | Ast.MetaFunc(name) | Ast.MetaLocalFunc(name) ->
+      Ast.MetaId(name,_) | Ast.MetaFunc(name,_) | Ast.MetaLocalFunc(name,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -72,8 +72,8 @@ let astfvs bound =
 
   let astfvexpr recursor k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,_) | Ast.MetaErr(name) | Ast.MetaExpr(name,_)
-    | Ast.MetaExprList(name) ->
+      Ast.MetaConst(name,_,_) | Ast.MetaErr(name,_) | Ast.MetaExpr(name,_,_)
+    | Ast.MetaExprList(name,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -82,7 +82,7 @@ let astfvs bound =
 
   let astfvtypeC recursor k ty =
     match Ast.unwrap ty with
-      Ast.MetaType(name) ->
+      Ast.MetaType(name,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -91,7 +91,7 @@ let astfvs bound =
 
   let astfvparam recursor k p =
     match Ast.unwrap p with
-      Ast.MetaParam(name) | Ast.MetaParamList(name) ->
+      Ast.MetaParam(name,_) | Ast.MetaParamList(name,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -101,8 +101,8 @@ let astfvs bound =
   let astfvrule_elem recursor k re =
     let (unbound,_) as res =
       match Ast.unwrap re with
-	Ast.MetaRuleElem(name) | Ast.MetaStmt(name,_)
-      | Ast.MetaStmtList(name) ->
+	Ast.MetaRuleElem(name,_) | Ast.MetaStmt(name,_,_)
+      | Ast.MetaStmtList(name,_) ->
 	  let id = metaid name in
 	  if List.mem id bound
 	  then bind ([],[id]) (mcode recursor name)

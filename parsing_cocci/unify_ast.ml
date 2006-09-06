@@ -83,12 +83,12 @@ and unify_ident i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.Id(i1),Ast.Id(i2)) -> return (unify_mcode i1 i2)
 
-  | (Ast.MetaId(_),_)
-  | (Ast.MetaFunc(_),_)
-  | (Ast.MetaLocalFunc(_),_)
-  | (_,Ast.MetaId(_))
-  | (_,Ast.MetaFunc(_))
-  | (_,Ast.MetaLocalFunc(_)) -> return true
+  | (Ast.MetaId(_,_),_)
+  | (Ast.MetaFunc(_,_),_)
+  | (Ast.MetaLocalFunc(_,_),_)
+  | (_,Ast.MetaId(_,_))
+  | (_,Ast.MetaFunc(_,_))
+  | (_,Ast.MetaLocalFunc(_,_)) -> return true
 
   | (Ast.OptIdent(_),_)
   | (Ast.UniqueIdent(_),_)
@@ -141,14 +141,14 @@ let rec unify_expression e1 e2 =
   | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
       unify_expression e1 e2
 
-  | (Ast.MetaConst(_,_),_)
-  | (Ast.MetaErr(_),_)
-  | (Ast.MetaExpr(_,_),_)
-  | (Ast.MetaExprList(_),_)
-  | (_,Ast.MetaConst(_,_))
-  | (_,Ast.MetaErr(_))
-  | (_,Ast.MetaExpr(_,_))
-  | (_,Ast.MetaExprList(_)) -> return true
+  | (Ast.MetaConst(_,_,_),_)
+  | (Ast.MetaErr(_,_),_)
+  | (Ast.MetaExpr(_,_,_),_)
+  | (Ast.MetaExprList(_,_),_)
+  | (_,Ast.MetaConst(_,_,_))
+  | (_,Ast.MetaErr(_,_))
+  | (_,Ast.MetaExpr(_,_,_))
+  | (_,Ast.MetaExprList(_,_)) -> return true
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
@@ -201,8 +201,8 @@ and unify_typeC t1 t2 =
       return (unify_mcode ts1 ts2 && unify_mcode s1 s2)
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 
-  | (Ast.MetaType(_),_)
-  | (_,Ast.MetaType(_)) -> return true
+  | (Ast.MetaType(_,_),_)
+  | (_,Ast.MetaType(_,_)) -> return true
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -241,10 +241,10 @@ let rec unify_parameterTypeDef p1 p2 =
   | (Ast.Param(i1,ft1),Ast.Param(i2,ft2)) ->
       conjunct_bindings (unify_ident i1 i2) (unify_fullType ft1 ft2)
 
-  | (Ast.MetaParam(_),_)
-  | (Ast.MetaParamList(_),_)
-  | (_,Ast.MetaParam(_))
-  | (_,Ast.MetaParamList(_)) -> return true
+  | (Ast.MetaParam(_,_),_)
+  | (Ast.MetaParamList(_,_),_)
+  | (_,Ast.MetaParam(_,_))
+  | (_,Ast.MetaParamList(_,_)) -> return true
 
   | (Ast.PComma(_),Ast.PComma(_)) -> return true
 
@@ -294,12 +294,12 @@ let rec unify_rule_elem re1 re2 =
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2
 
-  | (Ast.MetaRuleElem(_),_)
-  | (Ast.MetaStmt(_),_)
-  | (Ast.MetaStmtList(_),_)
-  | (_,Ast.MetaRuleElem(_))
-  | (_,Ast.MetaStmt(_))
-  | (_,Ast.MetaStmtList(_)) -> return true
+  | (Ast.MetaRuleElem(_,_),_)
+  | (Ast.MetaStmt(_,_,_),_)
+  | (Ast.MetaStmtList(_,_),_)
+  | (_,Ast.MetaRuleElem(_,_))
+  | (_,Ast.MetaStmt(_,_,_))
+  | (_,Ast.MetaStmtList(_,_)) -> return true
 
     (* can match a rule_elem in different parts *)
   | (Ast.Exp(e1),Ast.Exp(e2)) -> return true

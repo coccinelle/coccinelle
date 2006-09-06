@@ -66,7 +66,7 @@ let rec
 
   | _, F.Enter | _, F.Exit | _, F.ErrorExit -> raise Impossible
 
-  | A.MetaRuleElem mcode, unwrap_node -> 
+  | A.MetaRuleElem(mcode,_inherited), unwrap_node -> 
      (match unwrap_node with
      | F.CaseNode _
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
@@ -324,7 +324,7 @@ and transform_onedecl = fun decla declb ->
    | _, (((None, typb, sto), _),_) -> 
        failwith "no variable in this declaration, wierd"
 
-   | A.MetaDecl ida, _ -> 
+   | A.MetaDecl(ida,_inherited), _ -> 
        failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
 
    | A.DisjDecl xs, declb -> 
@@ -350,7 +350,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   match A.unwrap ep, ec with
 
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida, opttypa),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr (ida,opttypa,_inherited),  (((expr, opttypb), ii) as expb) -> 
       (match opttypa, opttypb with
       | None, _ -> ()
       | Some tas, Some tb -> 
@@ -693,7 +693,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
     match A.unwrap typa, typb with
 
      (* cas general *)
-    | A.MetaType ida,  typb -> 
+    | A.MetaType(ida,_inherited),  typb -> 
         (* get binding, assert =*=,  distribute info in ida *)
         (match binding +> List.assoc (term ida) with
         | B.MetaTypeVal typa -> 
@@ -868,7 +868,7 @@ and (transform_ident:
         then idb, tag_symbols [sa] ii binding
         else raise NoMatch
 
-    | A.MetaId ida -> 
+    | A.MetaId(ida,_inherited) -> 
       (* get binding, assert =*=,  distribute info in i1 *)
       let v = binding +> List.assoc ((term ida) : string) in
       (match v with
@@ -878,7 +878,7 @@ and (transform_ident:
           else raise NoMatch
       | _ -> raise Impossible
       )
- | A.MetaFunc ida -> 
+ | A.MetaFunc(ida,_inherited) -> 
      (match seminfo_idb with 
      | Pattern.LocalFunction | Pattern.Function -> 
          let v = binding +> List.assoc ((term ida) : string) in
@@ -893,7 +893,7 @@ and (transform_ident:
         failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
      )
       
- | A.MetaLocalFunc ida -> 
+ | A.MetaLocalFunc(ida,_inherited) -> 
      (match seminfo_idb with
      | Pattern.LocalFunction -> 
          let v = binding +> List.assoc ((term ida) : string) in

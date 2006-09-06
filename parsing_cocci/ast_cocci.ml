@@ -37,6 +37,8 @@ and metavar =
   | MetaFuncDecl of arity * string (* name *)
   | MetaLocalFuncDecl of arity * string (* name *)
 
+and inherited = bool
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -54,9 +56,9 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId of string mcode
-  | MetaFunc of string mcode
-  | MetaLocalFunc of string mcode
+  | MetaId of string mcode * inherited (* true if inherited *)
+  | MetaFunc of string mcode * inherited
+  | MetaLocalFunc of string mcode * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -92,10 +94,10 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of string mcode * Type_cocci.typeC list option
-  | MetaErr        of string mcode
-  | MetaExpr       of string mcode * Type_cocci.typeC list option
-  | MetaExprList   of string mcode (* only in arg lists *)
+  | MetaConst      of string mcode * Type_cocci.typeC list option * inherited
+  | MetaErr        of string mcode * inherited
+  | MetaExpr       of string mcode * Type_cocci.typeC list option * inherited
+  | MetaExprList   of string mcode * inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -147,7 +149,7 @@ and base_typeC =
   | StructUnionName of tagged_string * structUnion mcode
   | TypeName        of string mcode
 
-  | MetaType        of string mcode
+  | MetaType        of string mcode * inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -174,7 +176,7 @@ and base_declaration =
   | UnInit of fullType * ident * string mcode (* ; *)
   | DisjDecl of declaration list
 
-  | MetaDecl of string mcode
+  | MetaDecl of string mcode * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -189,8 +191,8 @@ and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of ident * fullType
 
-  | MetaParam     of string mcode
-  | MetaParamList of string mcode
+  | MetaParam     of string mcode * inherited
+  | MetaParamList of string mcode * inherited
 
   | PComma        of string mcode
 
@@ -241,9 +243,9 @@ and base_rule_elem =
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
 
-  | MetaRuleElem  of string mcode  
-  | MetaStmt      of string mcode * metaStmtInfo
-  | MetaStmtList  of string mcode  
+  | MetaRuleElem  of string mcode * inherited
+  | MetaStmt      of string mcode * metaStmtInfo * inherited
+  | MetaStmtList  of string mcode * inherited
 
   | Exp           of expression
 
@@ -336,10 +338,10 @@ let get_fvs (_,_,fvs) = fvs
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d =
-  (MetaRuleElem(s,{ line = 0; column = 0 },d), 0, [s])
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),false), 0, [s])
 
 let make_meta_decl s d =
-  (MetaDecl(s,{ line = 0; column = 0 },d), 0, [s])
+  (MetaDecl((s,{ line = 0; column = 0 },d),false), 0, [s])
 
 (* --------------------------------------------------------------------- *)
 
