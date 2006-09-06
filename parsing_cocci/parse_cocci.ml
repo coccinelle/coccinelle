@@ -505,7 +505,7 @@ let parse file =
 	(*
 	Printf.printf "after plus parse\n";
 	*)
-	Check_meta.check_meta metavars minus_res plus_res;
+	let minus_res = Check_meta.check_meta metavars minus_res plus_res in
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop () in

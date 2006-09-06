@@ -5,6 +5,7 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
+module V0 = Visitor_ast0
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : (string, unit) Hashtbl.t)
@@ -227,6 +228,66 @@ let top_level table minus t =
 let rule table minus rules = List.iter (top_level table minus) rules
 
 (* --------------------------------------------------------------------- *)
+(* determine for each metavar whether it is declared in the current rule or
+previously *)
+
+let update_metavars metavars =
+  let donothing r k e = k e in
+  let mcode x = x in
+  let bound_mv (name,_,_,_) = List.mem name metavars in
+
+  let ident r k e =
+    match Ast0.unwrap e with
+      Ast0.MetaId(name,_) ->
+	Ast0.rewrap e (Ast0.MetaId(name,bound_mv name))
+    | Ast0.MetaFunc(name,_) ->
+	Ast0.rewrap e (Ast0.MetaFunc(name,bound_mv name))
+    | Ast0.MetaLocalFunc(name,_) ->
+	Ast0.rewrap e (Ast0.MetaLocalFunc(name,bound_mv name))
+    | _ -> k e in
+
+  let expression r k e =
+    match Ast0.unwrap e with
+      Ast0.MetaConst(name,ty,_) ->
+	Ast0.rewrap e (Ast0.MetaConst(name,ty,bound_mv name))
+    | Ast0.MetaErr(name,_) ->
+	Ast0.rewrap e (Ast0.MetaErr(name,bound_mv name))
+    | Ast0.MetaExpr(name,ty,_) ->
+	Ast0.rewrap e (Ast0.MetaExpr(name,ty,bound_mv name))
+    | Ast0.MetaExprList(name,_) ->
+	Ast0.rewrap e (Ast0.MetaExprList(name,bound_mv name))
+    | _ -> k e in
+
+  let typeC r k e =
+    match Ast0.unwrap e with
+      Ast0.MetaType(name,_) ->
+	Ast0.rewrap e (Ast0.MetaType(name,bound_mv name))
+    | _ -> k e in
+
+  let param r k e =
+    match Ast0.unwrap e with
+      Ast0.MetaParam(name,_) ->
+	Ast0.rewrap e (Ast0.MetaParam(name,bound_mv name))
+    | Ast0.MetaParamList(name,_) ->
+	Ast0.rewrap e (Ast0.MetaParamList(name,bound_mv name))
+    | _ -> k e in
+
+  let statement r k e =
+    match Ast0.unwrap e with
+      Ast0.MetaStmt(name,_) ->
+	Ast0.rewrap e (Ast0.MetaStmt(name,bound_mv name))
+    | Ast0.MetaStmtList(name,_) ->
+	Ast0.rewrap e (Ast0.MetaStmtList(name,bound_mv name))
+    | _ -> k e in
+
+  let fn = V0.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    ident expression typeC param donothing statement donothing in
+
+  fn.V0.rebuilder_top_level
+
+(* --------------------------------------------------------------------- *)
 
 let metavar2name = function
     Ast.MetaIdDecl(arity,name) -> name
@@ -278,4 +339,6 @@ let check_meta metavars minus plus =
   check_all_marked "metavariable" other_table "in the - or context code";
   rule [fresh_table;err_table] false plus;
   check_all_marked "fresh identifier metavariable" fresh_table "in the + code";
-  check_all_marked "error metavariable" err_table ""
+  check_all_marked "error metavariable" err_table "";
+  let names = List.map metavar2name metavars in
+  List.map (update_metavars names) minus
