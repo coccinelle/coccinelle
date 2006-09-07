@@ -1,5 +1,6 @@
 SPATCH=../../spatch
 SP=aztech.cocci
+ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP)
 
 SOURCES = aztech_ver10_micropcm20-radio.c \
           aztech_ver11_aimslab.c \
@@ -27,6 +28,6 @@ all: $(OBJS)
 .c.ok: $(SPATCH) $(SP)
 	/bin/rm -f $@ $(<:.c=.failed)
 	test -e $(SPATCH) && \
-	(time $(SPATCH) -compare_with_expected -cocci_file $(SP) $< && \
+	(time $(SPATCH) $(ARGS) $< && \
 	diff -b -q /tmp/output.c $(<:.c=.res) && touch $@) || \
 	touch $(<:.c=.failed)

@@ -166,8 +166,20 @@ T Z = ...; <=> T Z;
 //{ ... return E; } => { return E; } => return E;
 
 Statement
-@@ statement S; @@
-{ ... S } => { S } => S
+@@ @@
+{ ... return ...; } => { return ...; } => return ...;
+Statement
+@@ @@
+{ ... return; } => { return; } => return;
+Statement
+@@ @@
+{ ... break; } => { break; } => break;
+Statement
+@@ @@
+{ ... continue; } => { continue; } => continue;
+Statement
+@@ expression E; @@
+{ ... E; } => { E; } => E;
 
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;

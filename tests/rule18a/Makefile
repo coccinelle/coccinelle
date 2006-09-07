@@ -1,5 +1,6 @@
 SPATCH=../../spatch
 SP=schedev.cocci
+ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP)
 
 SOURCES = amd7930_fn.c \
           config.c \
@@ -23,6 +24,6 @@ all: $(OBJS)
 .c.ok: $(SPATCH) $(SP)
 	/bin/rm -f $@ $(<:.c=.failed)
 	test -e $(SPATCH) && \
-	(time $(SPATCH) -compare_with_expected -cocci_file $(SP) $< && \
+	(time $(SPATCH) $(ARGS) $< && \
 	diff -b -B /tmp/output.c $(<:.c=.res) && touch $@) || \
 	touch $(<:.c=.failed)

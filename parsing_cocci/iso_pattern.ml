@@ -489,7 +489,13 @@ let make_minus =
 		mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info));
 		e
 	    | _ -> failwith "make_minus: unexpected befaft")
-	| _ -> failwith "make_minus donothingxxx: unexpected mcodekind")
+	  (* code already processed by an enclosing iso *)
+	| Ast0.MINUS(mc) -> e
+	| _ ->
+	    failwith
+	      (Printf.sprintf
+		 "%d: make_minus donothingxxx: unexpected mcodekind"
+		 info.Ast0.line_start))
     | _ -> donothing r k e in
 
   V0.rebuilder
