@@ -740,7 +740,8 @@ let pre_forall dir (grp,_,states) y all reqst =
       [] neighbors in
   match neighbor_triples with
     [] -> []
-  | _ -> foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
+  | _ ->
+      foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
 
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
@@ -1162,7 +1163,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	if !Flag_ctl.loop_in_src_code
 	then
 	  satv negated required required_states
-	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi)))
+	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi1)))
 	    env
 	else
 	  (let new_required_states = get_reachable m required_states in
