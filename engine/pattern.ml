@@ -79,7 +79,7 @@ let return res = fun binding ->
 (* old:
 let _sg_metavars_binding = ref empty_metavar_binding
 
-let check_add_metavars_binding = function
+let check_add_metavars_binding  = function
   | MetaId (s1, s2) -> 
       let (good, binding) = check_add (!_sg_metavars_binding.metaId) s1 s2 in
       !_sg_metavars_binding.metaId <- binding;
@@ -117,7 +117,7 @@ let _GoodMatch binding = [binding]
 
 (* pre: if have declared a new metavar that hide another one, then must be 
    passed with a binding that deleted this metavar *)
-let check_add_metavars_binding = fun (k, valu) binding -> 
+let check_add_metavars_binding inherited = fun (k, valu) binding -> 
   (match optionise (fun () -> binding +> List.assoc k) with
   | Some (valu') ->
       if
@@ -152,6 +152,8 @@ let check_add_metavars_binding = fun (k, valu) binding ->
       else _MatchFailure
 
   | None -> 
+     if inherited then _MatchFailure
+     else 
      let valu' = 
       (match valu with
       | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
@@ -193,10 +195,11 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
     -> return false
 
   (* cas general: a Meta can match everything *)
-  | A.MetaStmt (ida,_,_inherited),  _unwrap_node -> 
+  | A.MetaStmt (ida,_,inherited),  _unwrap_node -> 
      (* match only "header"-statement *)
      (match Control_flow_c.extract_fullstatement node with
-     | Some stb -> check_add_metavars_binding (term ida, Ast_c.MetaStmtVal stb)
+     | Some stb -> 
+         check_add_metavars_binding inherited (term ida, Ast_c.MetaStmtVal stb)
      | None -> return false
      )
 
@@ -343,7 +346,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.SwitchHeader _ 
   | _, F.Label _
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ | _, F.Break _ | _, F.Continue _ 
+  | _, F.Goto _ 
   | _, F.Asm
     -> return false
 
@@ -397,7 +400,7 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
-  | A.MetaExpr (ida, opttypa, _inherited),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr (ida, opttypa, inherited),  (((expr, opttypb), ii) as expb) -> 
       (match opttypa, opttypb with
       | None, _ -> return true
       | Some (tas : Type_cocci.typeC list), Some tb -> 
@@ -410,7 +413,7 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
           failwith ("I have not the type information. Certainly a pb in " ^
                     "annotate_typer.ml")
       ) >&&>
-      check_add_metavars_binding (term ida, Ast_c.MetaExprVal (expb))
+      check_add_metavars_binding inherited (term ida, Ast_c.MetaExprVal (expb))
 
 
   (* old: | A.Edots _, _ -> raise Impossible
@@ -602,12 +605,12 @@ and (match_arguments:
            (* filtered by the caller, in the case for FunCall *)
           | A.EComma (_), ys -> raise Impossible 
 
-          | A.MetaExprList(ida,_inherited), ys -> 
+          | A.MetaExprList(ida,inherited), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
-                check_add_metavars_binding 
+                check_add_metavars_binding inherited
                   (term ida, Ast_c.MetaExprListVal (startxs)) >&&>
                 match_arguments seqstyle xs endxs
              )) (return false)
@@ -678,8 +681,8 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
     match A.unwrap typa, typb with
 
       (* cas general *)
-    | A.MetaType(ida,_inherited),  typb -> 
-	check_add_metavars_binding (term ida, B.MetaTypeVal typb)
+    | A.MetaType(ida,inherited),  typb -> 
+	check_add_metavars_binding inherited (term ida, B.MetaTypeVal typb)
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
 
@@ -830,12 +833,12 @@ and (match_params:
                   ) (return false)
 
 
-          | A.MetaParamList(ida,_inherited), ys -> 
+          | A.MetaParamList(ida,inherited), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
                 acc >||> (
-                check_add_metavars_binding
+                check_add_metavars_binding inherited
 		  (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
                 match_params seqstyle xs endxs
              )) (return false)
@@ -846,9 +849,10 @@ and (match_params:
           (* filtered by the caller, in the case for FunDecl *)
           | A.PComma (_), ys -> raise Impossible 
 
-          | A.MetaParam (ida,_inherited), y::ys -> 
+          | A.MetaParam (ida,inherited), y::ys -> 
              (* todo: use quaopt, hasreg ? *)
-             check_add_metavars_binding (term ida, Ast_c.MetaParamVal (y)) >&&>
+             check_add_metavars_binding inherited
+                (term ida, Ast_c.MetaParamVal (y)) >&&>
              match_params seqstyle xs ys
 
           | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
@@ -888,21 +892,23 @@ and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) =
 fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
- | A.MetaId(ida,_inherited) ->
-     check_add_metavars_binding (term ida, Ast_c.MetaIdVal (idb))
+ | A.MetaId(ida,inherited) ->
+     check_add_metavars_binding inherited (term ida, Ast_c.MetaIdVal (idb))
 
- | A.MetaFunc (ida,_inherited) -> 
+ | A.MetaFunc (ida,inherited) -> 
      (match seminfo_idb with
      | LocalFunction | Function -> 
-	 check_add_metavars_binding (term ida, (Ast_c.MetaFuncVal idb))
+         check_add_metavars_binding inherited 
+           (term ida,(Ast_c.MetaFuncVal idb))
      | DontKnow -> 
          failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
      )
 
- | A.MetaLocalFunc (ida,_inherited) -> 
+ | A.MetaLocalFunc (ida,inherited) -> 
      (match seminfo_idb with
      | LocalFunction -> 
-	  check_add_metavars_binding (term ida, (Ast_c.MetaLocalFuncVal idb))
+	  check_add_metavars_binding inherited
+           (term ida, (Ast_c.MetaLocalFuncVal idb))
      | Function -> return false
      | DontKnow -> 
          failwith "MetaFunc and MetaLocalFunc, need semantic info about id"

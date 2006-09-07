@@ -184,15 +184,6 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     
     let ctl = List.hd ctl_toplevel_list in
     
-    if print_input_file then begin
-      print_xxxxxxxxxxxxxxxxx();
-      pr2 "ctl";
-      print_xxxxxxxxxxxxxxxxx();
-      Pretty_print_engine.pp_ctlcocci 
-        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-      Format.print_newline();
-    end;
-    
     (* 2: iter binding *)
     let lastround_bindings = !_current_bindings in
     _current_bindings := [];
@@ -211,8 +202,20 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
      *)
 
     if null(lastround_bindings) then 
-      failwith "Empty list of bindings, I stop";
+      begin 
+        pr2 "Empty list of bindings, I start from scratch";
+        _current_bindings := [Ast_c.emptyMetavarsBinding];
+      end;
 
+    if print_input_file then begin
+      print_xxxxxxxxxxxxxxxxx();
+      pr2 "ctl";
+      print_xxxxxxxxxxxxxxxxx();
+      Pretty_print_engine.pp_ctlcocci 
+        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+      Format.print_newline();
+    end;
+    
     lastround_bindings +> List.iter (fun binding -> 
 
       let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in

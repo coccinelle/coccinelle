@@ -1,25 +1,29 @@
 SPATCH=../../spatch
+ISO=../../standard.iso
+
 SP=rule9.cocci
 
-SOURCES = rule9_ver10_cciss_scsi.c \
-          rule9_ver11_sbpc2.c \
-          rule9_ver12_53c700.c \
-          rule9_ver13_acornscsi.c \
-          rule9_ver14_arxescsi.c \
-          rule9_ver15_cumana_2.c \
-          rule9_ver16_eesox.c \
-          rule9_ver17_powertec.c \
-          rule9_ver18_cpqfcTSinit.c \
-          rule9_ver19_eata_pio.c \
-          rule9_ver20_fcal.c \
-          rule9_ver21_g_NCR5380.c \
-          rule9_ver22_in2000.c \
-          rule9_ver23_ncr53c8xx.c \
-          rule9_ver24_nsp32.c \
-          rule9_ver25_nsp_cs.c \
-          rule9_ver26_sym53c8xx.c \
-          rule9_ver27_sym_glue.c \
-          rule9_ver28_scsiglue.c 
+SOURCES = cciss_scsi.c \
+          sbpc2.c \
+          53c700.c \
+          acornscsi.c \
+          arxescsi.c \
+          cumana_2.c \
+          eesox.c \
+          powertec.c \
+          cpqfcTSinit.c \
+          eata_pio.c \
+          fcal.c \
+          g_NCR5380.c \
+          in2000.c \
+          ncr53c8xx.c \
+          nsp32.c \
+          nsp_cs.c \
+          sym53c8xx.c \
+          sym_glue.c \
+          scsiglue.c 
+
+SOURCES = scsiglue.c 53c700.c
 
 
 OBJS = $(SOURCES:.c=.ok)
@@ -33,6 +37,8 @@ all: $(OBJS)
 .c.ok: $(SPATCH) $(SP)
 	/bin/rm -f $@ $(<:.c=.failed)
 	test -e $(SPATCH) && \
-	(time $(SPATCH) -compare_with_expected -cocci_file $(SP) $< && \
-	diff -b -q /tmp/output.c $(<:.c=.res) && touch $@) || \
-	touch $(<:.c=.failed)
+	($(SPATCH) -iso_file $(ISO) -cocci_file $(SP) -compare_with_expected $< \
+          && touch $@) || (diff -u -b /tmp/output.c $(<:.c=.res) > $(<:.c=.failed) || touch $(<:.c=.failed) )
+
+#touch $(<:.c=.failed)
+

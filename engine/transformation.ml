@@ -264,7 +264,7 @@ let rec
   | _, F.SwitchHeader _ 
   | _, F.Label _
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ | _, F.Break _ | _, F.Continue _ 
+  | _, F.Goto _ 
   | _, F.Asm
     -> raise Impossible
 

@@ -14,7 +14,12 @@ let compare_with_expected = ref false
 
 
 (*****************************************************************************)
-let print_diff_expected_res generated_file expected_res = 
+(* Note that I use a kind of astdiff to know if there is a difference, but
+ * then I use diff to print the differences. So sometimes you have to dig
+ * a little to find really where the real difference (one not involving 
+ * just spacing difference) was.
+ *)
+let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if Common.lfile_exists expected_res
   then 
     let (c1, _) = Cocci.cprogram_from_file generated_file in
@@ -27,12 +32,16 @@ let print_diff_expected_res generated_file expected_res =
     in
 
     if null xs || c1' =*= c2'
-    then pr2 ("seems correct (comparing to " ^ expected_res ^ ")")
+    then begin 
+      pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
+      if doexit then exit 0;
+    end
     else 
       begin
         pr2 "seems incorrect";
         pr2 "diff (result(-) vs expected_result(+)) = ";
         xs +> List.iter pr2;
+        if doexit then exit (-1);
       end
   else failwith ("no such .res file: " ^ expected_res)
 
@@ -68,7 +77,7 @@ let testone x =
     let expected_res = "tests/" ^ x ^ ".res" in
     let generated_file = "/tmp/output.c" in
     if !compare_with_expected then 
-      print_diff_expected_res generated_file expected_res;
+      print_diff_expected_res_and_exit generated_file expected_res true;
   end
           
 
@@ -248,10 +257,12 @@ let main () =
             cfile (Left (cocci_file, iso_file));
 
           let expected_res = 
-            Str.global_replace (Str.regexp "\\.c$") ".res" cfile in
+            Str.global_replace (Str.regexp "\\.c$") ".res" cfile 
+          in
           let generated_file = "/tmp/output.c" in
           if !compare_with_expected then 
-            print_diff_expected_res generated_file expected_res;
+            print_diff_expected_res_and_exit generated_file expected_res 
+              (if List.length fullxs = 1 then true else false);
 
             );
 
