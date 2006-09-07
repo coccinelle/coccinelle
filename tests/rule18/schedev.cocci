@@ -30,12 +30,45 @@ expression bcs, ev;
 @@
 //struct BCState *bcs;
 //int ev;
-expression bcs, ev;
+identifier bcs;
+expression ev;
+identifier fn;
 @@
 
-- bcs->event |= 1 << ev;
-- schedule_work(&bcs->work);
-+ sched_b_event(bcs,ev)
+  fn(...,struct BCState *bcs,...) { // feeble form of type checking
+    <...
+(
+-   test_and_set_bit(ev, &bcs->event);
+|
+-   set_bit(ev, &bcs->event);
+|
+-   bcs->event |= 1 << ev; // the only case that is used
+)
+-   schedule_work(&bcs->work);
++   sched_b_event(bcs,ev);
+    ...>
+  }
+
+@@
+//struct BCState *bcs;
+//int ev;
+identifier bcs;
+expression ev;
+identifier fn;
+@@
+
+    struct BCState *bcs; // feeble form of type checking
+    <...
+(
+-   test_and_set_bit(ev, &bcs->event);
+|
+-   set_bit(ev, &bcs->event);
+|
+-   bcs->event |= 1 << ev; // the only case that is used
+)
+-   schedule_work(&bcs->work);
++   sched_b_event(bcs,ev);
+    ...>
 
 @@
 //struct BCState *bcs;
@@ -43,5 +76,5 @@ expression bcs, ev;
 expression bcs, ev;
 @@
 // added due to experience - interfile effect
-- hscx_sched_event(bcs,ev);
+- hscx_sched_event(bcs,ev)
 + sched_b_event(bcs,ev)

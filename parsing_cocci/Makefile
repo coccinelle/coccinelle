@@ -8,7 +8,8 @@ ast0toast.ml check_meta.ml pretty_print_cocci.ml unparse_ast0.ml top_level.ml \
 type_infer.ml \
 arity.ml compute_lines.ml index.ml context_neg.ml insert_plus.ml \
 iso_pattern.ml unify_ast.ml semantic_cocci.ml data.ml free_vars.ml \
-$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) parse_cocci.ml
+$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) get_constants.ml \
+parse_cocci.ml
 
 LIBS=../commons/commons.cma
 SYSLIBS = str.cma unix.cma

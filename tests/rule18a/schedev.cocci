@@ -30,10 +30,43 @@ expression cs, ev;
 @@
 //struct IsdnCardState *cs;
 //int ev;
-expression cs, ev;
+expression ev;
+identifier fn;
+identifier cs;
 @@
 
+  fn(...,struct IsdnCardState *cs,...) {
+  <...
+(
+-   test_and_set_bit(ev, &cs->event);
+|
+-   set_bit(ev, &cs->event);
+|
+-   cs->event |= 1 << ev;
+)
+-   schedule_work(&cs->work);
++   sched_d_event(cs,ev);
+  ...>
+  }
+
+@@
+//struct IsdnCardState *cs;
+//int ev;
+expression ev;
+identifier cs;
+@@
+
+  struct IsdnCardState *cs;
+  <...
+(
 - test_and_set_bit(ev, &cs->event);
+|
+- set_bit(ev, &cs->event);
+|
+- cs->event |= 1 << ev;
+)
 - schedule_work(&cs->work);
 + sched_d_event(cs,ev);
+  ...>
+
 

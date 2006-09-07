@@ -1,5 +1,5 @@
 (* true = don't see all matched nodes, only modified ones *)
-let onlyModif = ref true
+let onlyModif = ref (*false*) true
 (* set to true for line numbers in the output of ctl_engine *)
 let line_numbers = ref false
 (* if true, only eg if header is included in not for ...s *)

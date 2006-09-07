@@ -1,11 +1,69 @@
 SPATCH=../../spatch
-SP=?
+SP=tty_wakeup.cocci
 
-#pad: note that many .c contain modifications not relevant for rule83.
-# the micro-patch is not that clean :(
-# see the file.gitinfo to select the good C files.
-
-SOURCES = ?
+SOURCES = 68328serial.c \
+          68360serial.c \
+          amiserial.c \
+          aurora.c \
+          bluetty.c \
+          capi.c \
+          cdc-acm.c \
+          con3215.c \
+          ctctty.c \
+          cyclades.c \
+          digi_acceleport.c \
+          empeg.c \
+          epca.c \
+          esp.c \
+          generic_serial.c \
+          hci_ldisc.c \
+          hvc_console.c \
+          hvcs.c \
+          io_edgeport.c \
+          io_ti.c \
+          ir-usb.c \
+          irtty-sir.c \
+          isdn_tty.c \
+          isicom.c \
+          keyspan_pda.c \
+          macserial.c \
+          mcfserial.c \
+          mct_u232.c \
+          mkiss.c \
+          moxa.c \
+          mxser.c \
+          n_tty.c \
+          pc300_tty.c \
+          pcxx.c \
+          ppp_async.c \
+          ppp_synctty.c \
+          pty.c \
+          riscom8.c \
+          rocket.c \
+          sclp_tty.c \
+          sclp_vt220.c \
+          sdla_chdlc.c \
+          selection.c \
+          ser_a2232.c \
+          serial167.c \
+          serial_core.c \
+          serial_tx3912.c \
+          slip.c \
+          specialix.c \
+          stallion.c \
+          strip.c \
+          sx.c \
+          synclink.c \
+          synclink_cs.c \
+          synclinkmp.c \
+          tty_io.c \
+          tty_ioctl.c \
+          usb-serial.c \
+          viocons.c \
+          vme_scc.c \
+          vt_ioctl.c \
+          whiteheat.c \
+          zs.c
 
 OBJS = $(SOURCES:.c=.ok)
 

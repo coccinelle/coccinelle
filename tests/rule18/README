@@ -1,20 +1,21 @@
-avm_pci.c: 
-config.c: 
-diva.c: 
-elsa_ser.c: 
-hfc_2bds0.c: 
-hfc_2bs0.c: 
-hfc_pci.c: 
-hfc_sx.c: 
-hscx.c: 
-hscx_irq.c: 
-ipacx.c: 
-isar.c: 
+avm_pci.c: inline on dropped function not dropped
+config.c: Works!
+diva.c: Works!
+elsa_ser.c: Works!
+hfc_2bds0.c: Works!
+hfc_2bs0.c: Works!
+hfc_pci.c: Works! (version number not updated, comments not dropped)
+hfc_sx.c: Works! (version number not updated, comments not dropped)
+hscx.c: Works!
+hscx_irq.c: Works!
+ipacx.c: deleted prototype replaced by a ;, comments not dropped
+isar.c: SP doesn't drop some #defines that were in this code, and I guess
+   should be defined in the library
 jade_irq.c:
   Doesn't work because the function definition is in the file jade.c.
   The person who did the patch by hand updated the calls in this file
   correctly, but the patch does not include anything for jade.c
 
-netjet.c: 
-st5481_b.c: 
+netjet.c: Works!
+st5481_b.c: Works! (comments not dropped)
 w6692.c: Works!
