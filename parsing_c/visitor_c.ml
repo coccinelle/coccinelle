@@ -294,7 +294,11 @@ let rec visitor_expr_k_s = fun bigf expr ->
                  es +> List.map (fun (e,ii) -> 
                    (match e with
                    | Left e -> Left (exprf e)
-                   | Right e -> failwith "type as param in funcall"
+                   | Right (t, stoil) -> 
+                       let (unwrap_st, ii) = stoil in
+                       Right (visitor_type_k_s bigf t, 
+                              (unwrap_st, List.map (visitor_info_k_s bigf) ii
+                                 ))
                    ), List.map (visitor_info_k_s bigf) ii
                                 )
                 )
@@ -500,7 +504,12 @@ and visitor_program_k_s = fun bigf p ->
            xs +> List.map (fun (elem, iicomma) -> 
              (match elem with
              | Left e -> Left (visitor_expr_k_s bigf e)
-             | Right (t, sto) -> raise Todo
+             | Right (t, stoil) -> 
+                       let (unwrap_st, ii) = stoil in
+                       Right (visitor_type_k_s bigf t, 
+                              (unwrap_st, List.map (visitor_info_k_s bigf) ii
+                                 ))
+
              ), infolistf iicomma
             ),
            infolistf ii
