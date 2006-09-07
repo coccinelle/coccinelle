@@ -161,9 +161,13 @@ T Z = ...; <=> T Z;
 // maybe a cocci patch should require something that looks like what is on
 // the left above to occur in a if or while
 
+//Statement
+//@@ expression E; @@
+//{ ... return E; } => { return E; } => return E;
+
 Statement
-@@ expression E; @@
-{ ... return E; } => return E;
+@@ statement S; @@
+{ ... S } => { S } => S
 
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
