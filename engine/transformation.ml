@@ -248,6 +248,10 @@ let rec
             tag_symbols [i1;i2;i5] ii  binding))
 
 
+  | A.Break (i1, i2), F.Break (st, ((),ii)) -> 
+      F.Break (st, ((), tag_symbols [i1;i2] ii   binding))
+  | A.Continue (i1, i2), F.Continue (st, ((),ii)) -> 
+      F.Continue (st, ((), tag_symbols [i1;i2] ii   binding))
   | A.Return (i1, i2), F.Return (st, ((),ii)) -> 
       F.Return (st, ((), tag_symbols [i1;i2] ii   binding))
   | A.ReturnExpr (i1, ea, i2), F.ReturnExpr (st, (eb, ii)) -> 

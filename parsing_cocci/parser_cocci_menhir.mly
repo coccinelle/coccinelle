@@ -153,6 +153,7 @@ let iso_adjust fn first rest =
 %token<Data.line_type * int * int * int> Tstatic Tconst Tvolatile
 
 %token <Data.line_type * int * int * int> TIf TElse TWhile TFor TDo TReturn
+%token <Data.line_type * int * int * int> TBreak TContinue
 %token <Data.line_type * int * int * int> TSizeof
 %token <Data.line_type * int * int * int> TFunDecl
 %token <string * (Data.line_type * int * int * int)> TIdent
@@ -472,6 +473,12 @@ statement:
 | TReturn TPtVirg
     { Ast0.wrap(Ast0.Return(clt2mcode "return" (startofs($1)) $1,
 			    clt2mcode ";" (startofs($2)) $2)) }
+| TBreak TPtVirg
+    { Ast0.wrap(Ast0.Break(clt2mcode "break" (startofs($1)) $1,
+			   clt2mcode ";" (startofs($2)) $2)) }
+| TContinue TPtVirg
+    { Ast0.wrap(Ast0.Continue(clt2mcode "continue" (startofs($1)) $1,
+			      clt2mcode ";" (startofs($2)) $2)) }
 | TOBrace pre_post_decl_statement_and_expression_opt TCBrace
     { Ast0.wrap(Ast0.Seq(clt2mcode "{" (startofs($1)) $1,$2,
 			 clt2mcode "}" (startofs($3)) $3)) }

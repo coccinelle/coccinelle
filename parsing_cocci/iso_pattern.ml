@@ -366,6 +366,8 @@ and match_statement context_required pattern s =
 		(conjunct_bindings
 		   (match_option (match_expr context_required) e3a e3b)
 		   (match_statement context_required bodya bodyb)))
+      | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
+      | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
       | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
       | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
 	  match_expr context_required expa expb

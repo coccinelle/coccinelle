@@ -223,8 +223,9 @@ let combiner bind option_default
 		      get_option expression e1; string_mcode sem1; 
 		      get_option expression e2; string_mcode sem2; 
 		      get_option expression e3; string_mcode rp]
-      | Ast.Return(ret,sem) ->
-	  bind (string_mcode ret) (string_mcode sem)
+      | Ast.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
+      | Ast.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
+      | Ast.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
       | Ast.MetaStmt(name,_,_) -> string_mcode name
@@ -550,6 +551,10 @@ let rebuilder
 			  get_option expression e1, string_mcode sem1, 
 			  get_option expression e2, string_mcode sem2, 
 			  get_option expression e3, string_mcode rp)
+	| Ast.Break(br,sem) ->
+	    Ast.Break(string_mcode br, string_mcode sem)
+	| Ast.Continue(cont,sem) ->
+	    Ast.Continue(string_mcode cont, string_mcode sem)
 	| Ast.Return(ret,sem) ->
 	    Ast.Return(string_mcode ret, string_mcode sem)
 	| Ast.ReturnExpr(ret,exp,sem) ->

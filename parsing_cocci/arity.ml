@@ -558,6 +558,17 @@ let rec statement in_nest tgt stm =
       let body = statement false arity body in
       make_rule_elem stm tgt arity
 	(Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,aft))
+  | Ast0.Break(br,sem) ->
+      let arity = stm_same (mcode2line br) (List.map mcode2arity [br;sem]) in
+      let br = mcode br in
+      let sem = mcode sem in
+      make_rule_elem stm tgt arity (Ast0.Break(br,sem))
+  | Ast0.Continue(cont,sem) ->
+      let arity =
+	stm_same (mcode2line cont) (List.map mcode2arity [cont;sem]) in
+      let cont = mcode cont in
+      let sem = mcode sem in
+      make_rule_elem stm tgt arity (Ast0.Continue(cont,sem))
   | Ast0.Return(ret,sem) ->
       let arity = stm_same (mcode2line ret) (List.map mcode2arity [ret;sem]) in
       let ret = mcode ret in

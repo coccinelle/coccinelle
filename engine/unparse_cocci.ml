@@ -348,6 +348,10 @@ let rule_elem arity re =
       print_option expression e3; close_box();
       mcode print_string rp; print_string " "
 
+  | Ast.Break(br,sem) ->
+      print_string arity; mcode print_string br; mcode print_string sem
+  | Ast.Continue(cont,sem) ->
+      print_string arity; mcode print_string cont; mcode print_string sem
   | Ast.Return(ret,sem) ->
       print_string arity; mcode print_string ret; mcode print_string sem
   | Ast.ReturnExpr(ret,exp,sem) ->

@@ -402,6 +402,10 @@ let rec equal_statement s1 s2 =
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
        equal_mcode rp1 rp2
+  | (Ast0.Break(br1,sem1),Ast0.Break(br2,sem2)) ->
+      equal_mcode br1 br2 && equal_mcode sem1 sem2
+  | (Ast0.Continue(cont1,sem1),Ast0.Continue(cont2,sem2)) ->
+      equal_mcode cont1 cont2 && equal_mcode sem1 sem2
   | (Ast0.Return(ret1,sem1),Ast0.Return(ret2,sem2)) ->
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
   | (Ast0.ReturnExpr(ret1,_,sem1),Ast0.ReturnExpr(ret2,_,sem2)) ->

@@ -419,6 +419,10 @@ let rec statement s =
       mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
 			(Ast0.get_info right,aft)))
 	(promote_mcode fr) right
+  | Ast0.Break(br,sem) as us ->
+      mkres s us (promote_mcode br) (promote_mcode sem)
+  | Ast0.Continue(cont,sem) as us ->
+      mkres s us (promote_mcode cont) (promote_mcode sem)
   | Ast0.Return(ret,sem) as us ->
       mkres s us (promote_mcode ret) (promote_mcode sem)
   | Ast0.ReturnExpr(ret,exp,sem) ->

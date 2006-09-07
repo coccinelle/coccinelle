@@ -109,7 +109,7 @@ let id_tokens lexbuf =
   | "signed" ->     Tsigned (get_current_line_type lexbuf)
 	
   | "static" ->     Tstatic (get_current_line_type lexbuf)
-  | "const" ->      Tconst (get_current_line_type lexbuf)
+  | "const" ->      Tconst  (get_current_line_type lexbuf)
   | "volatile" ->   Tstatic (get_current_line_type lexbuf)
 
   | "if" ->         TIf     (get_current_line_type lexbuf)
@@ -118,6 +118,8 @@ let id_tokens lexbuf =
   | "do" ->         TDo     (get_current_line_type lexbuf)
   | "for" ->        TFor    (get_current_line_type lexbuf)
   | "return" ->     TReturn (get_current_line_type lexbuf)
+  | "break" ->      TBreak  (get_current_line_type lexbuf)
+  | "continue" ->   TContinue (get_current_line_type lexbuf)
 
   | "sizeof" ->     TSizeof (get_current_line_type lexbuf)
 

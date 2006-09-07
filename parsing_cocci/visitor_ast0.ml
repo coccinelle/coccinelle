@@ -218,6 +218,8 @@ let combiner bind option_default
 	      string_mcode sem1; get_option expression e2; string_mcode sem2;
 	      get_option expression e3;
 	      string_mcode rp; statement body]
+      | Ast0.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
+      | Ast0.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
       | Ast0.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
@@ -488,6 +490,10 @@ let rebuilder = fun
 		     get_option expression e2, string_mcode sem2,
 		     get_option expression e3,
 		     string_mcode rp, statement body, aft)
+	| Ast0.Break(br,sem) ->
+	    Ast0.Break(string_mcode br,string_mcode sem)
+	| Ast0.Continue(cont,sem) ->
+	    Ast0.Continue(string_mcode cont,string_mcode sem)
 	| Ast0.Return(ret,sem) ->
 	    Ast0.Return(string_mcode ret,string_mcode sem)
 	| Ast0.ReturnExpr(ret,exp,sem) ->

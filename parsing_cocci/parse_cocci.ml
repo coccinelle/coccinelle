@@ -59,6 +59,8 @@ let token2c (tok,_) =
   | PC.TFor(clt) -> "for"^(line_type2c clt)
   | PC.TDo(clt) -> "do"^(line_type2c clt)
   | PC.TReturn(clt) -> "return"^(line_type2c clt)
+  | PC.TBreak(clt) -> "break"^(line_type2c clt)
+  | PC.TContinue(clt) -> "continue"^(line_type2c clt)
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
 
   | PC.TSizeof(clt) -> "sizeof"^(line_type2c clt)
@@ -205,7 +207,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSizeof(clt)
-  | PC.TReturn(clt) | PC.TIdent(_,clt)
+  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
   | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt)
   | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt)
   | PC.TMetaId(_,clt) | PC.TMetaType(_,clt)
@@ -307,7 +309,7 @@ let token2line (tok,_) =
 	
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSizeof (clt)
-  | PC.TReturn(clt) | PC.TIdent(_,clt)
+  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 

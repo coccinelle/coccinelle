@@ -331,6 +331,8 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       return true
       
 
+  | A.Break _,               F.Break (_, ((),ii))      -> return true
+  | A.Continue _,            F.Continue (_, ((),ii))   -> return true
   | A.Return _,              F.Return (_, ((),ii))     -> return true
   | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
 

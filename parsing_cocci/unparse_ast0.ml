@@ -280,6 +280,10 @@ let rec statement arity s =
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body
+      | Ast0.Break(br,sem) ->
+	  print_string arity; mcode print_string br; mcode print_string sem
+      | Ast0.Continue(cont,sem) ->
+	  print_string arity; mcode print_string cont; mcode print_string sem
       | Ast0.Return(ret,sem) ->
 	  print_string arity; mcode print_string ret; mcode print_string sem
       | Ast0.ReturnExpr(ret,exp,sem) ->

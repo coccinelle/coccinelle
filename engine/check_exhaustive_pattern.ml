@@ -31,6 +31,8 @@ let dumb_astcocci_rule_elem = function
  | A.DoHeader _ -> ()
  | A.WhileTail (_,_,ea,_,_) -> ()
  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _) -> ()
+ | A.Break _ -> ()
+ | A.Continue _ -> ()
  | A.Return _ -> ()
  | A.ReturnExpr (_, ea, _) -> ()
 
