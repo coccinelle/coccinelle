@@ -110,7 +110,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
   assert (lfile_exists cfile);
 
-  if print_input_file then begin
+  if print_input_file && !Flag.show_c then begin
     Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.print_xxxxxxxxxxxxxxxxx ();
@@ -122,7 +122,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
 
-        if print_input_file then begin
+        if print_input_file && !Flag.show_cocci then begin
           print_xxxxxxxxxxxxxxxxx ();
           pr2 ("processing semantic patch file: " ^ coccifile);
           isofile +> do_option (fun s -> pr2 ("with isos from: " ^ s));
@@ -158,7 +158,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 
         let ctls = ctls astcocci used_after_lists in
 
-        if !Flag.show_ctl then begin
+        if !Flag.show_ctl_tex then begin
             Ctltotex.totex "/tmp/__cocci_ctl.tex" astcocci ctls;
             command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
                       "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
@@ -207,7 +207,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
         _current_bindings := [Ast_c.emptyMetavarsBinding];
       end;
 
-    if print_input_file then begin
+    if print_input_file && !Flag.show_ctl_text then begin
       print_xxxxxxxxxxxxxxxxx();
       pr2 "ctl";
       print_xxxxxxxxxxxxxxxxx();
@@ -284,12 +284,13 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     let trans_info = 
                       Ctlcocci_integration.satbis_to_trans_info trans_info2
                     in
-
-                    print_xxxxxxxxxxxxxxxxx();
-                    pr2 "transformation info returned:";
-                    print_xxxxxxxxxxxxxxxxx();
-                    Pretty_print_engine.pp_transformation_info trans_info;
-                    Format.print_newline();
+                    if !Flag.show_transinfo then begin
+                      print_xxxxxxxxxxxxxxxxx();
+                      pr2 "transformation info returned:";
+                      print_xxxxxxxxxxxxxxxxx();
+                      Pretty_print_engine.pp_transformation_info trans_info;
+                      Format.print_newline();
+                    end;
 
                     (* Some union. julia say that because the binding is
                      * determined by the used_after_list, the items

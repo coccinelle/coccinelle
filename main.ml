@@ -18,6 +18,9 @@ let compare_with_expected = ref false
  * then I use diff to print the differences. So sometimes you have to dig
  * a little to find really where the real difference (one not involving 
  * just spacing difference) was.
+ * Note also that the astdiff is not very accurate. As I skip comments,
+ * macro definitions, those are not in the Ast and if there is a diff
+ * between 2 files regarding macro def, then I will not be able to report it :(
  *)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if Common.lfile_exists expected_res
@@ -192,21 +195,23 @@ let main () =
          " automatically find the corresponding c and cocci file";
       "-testall", Arg.Set testall_mode, 
          " ";
-      "-compare_with_expected", Arg.Set compare_with_expected, 
-         " "; 
       "-test_ctl_foo", Arg.Set test_ctl_foo, 
          " test the engine with the foo ctl in test.ml";
 
+      "-compare_with_expected", Arg.Set compare_with_expected, 
+         " "; 
 
-      "-show_flow", Arg.Set Flag.show_flow,  
-         " ";
-      "-show_before_fixed_flow", Arg.Set Flag.show_before_fixed_flow,  
-         " .";
-      "-show_ctl",  Arg.Set Flag.show_ctl,    
-         " ";
-        (* works in conjunction with -show_ctl *)
+      
+      "-show_c", Arg.Set Flag.show_c,          " ";
+      "-show_cocci", Arg.Set Flag.show_cocci,  " ";
+      "-show_flow", Arg.Set Flag.show_flow,    " ";
+      "-show_before_fixed_flow", Arg.Set Flag.show_before_fixed_flow,  " .";
+      "-show_ctl_tex",  Arg.Set Flag.show_ctl_tex,     " ";
+      "-show_ctl_text",  Arg.Set Flag.show_ctl_text,     " ";
+        (* works in conjunction with -show_ctl* *)
         "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
         "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
+      "-show_transinfo",  Arg.Set Flag.show_transinfo,     " ";
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
@@ -241,7 +246,13 @@ let main () =
         then pr2 "warning: seems not a .iso file";
 
         let cocci_file = !cocci_file in
-        let iso_file = (if !iso_file = "" then None else Some !iso_file) in
+
+        let iso_file = 
+          if !iso_file = "" then 
+            (* todo: try to go back the parent dir to find a standard.iso *)
+            None 
+          else Some !iso_file
+        in
 
         let fullxs = 
           if !dir 
