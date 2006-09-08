@@ -1,12 +1,9 @@
-@@
+@@ expression E;
 @@
 
   for(...;...;...) {
-    ...
-    if (x) { xxx(); }
+    xxx(1);
     <...
-+   replacement();
-    xxx();
+-   xxx(E);
     ...>
-//+   foo();
   }
