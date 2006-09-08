@@ -26,8 +26,8 @@ all: $(OBJS)
 .SUFFIXES: .c .ok
 
 .c.ok: $(SPATCH) $(SP)
-	/bin/rm -f $@ $(<:.c=.failed)
+	/bin/rm -f $@ $(<:.c=.failed) /tmp/output.c
 	test -e $(SPATCH) && \
-	(time $(SPATCH) $(ARGS) $< && \
-	diff -b -q /tmp/output.c $(<:.c=.res) && touch $@) || \
-	touch $(<:.c=.failed)
+	(time $(SPATCH) $(ARGS) $< && touch $@ || touch $(<:.c=.failed))
+	test -e /tmp/output.c && \
+	(diff -b -B -w /tmp/output.c $(<:.c=.res) || true)
