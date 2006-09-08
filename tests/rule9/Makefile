@@ -1,5 +1,6 @@
 SPATCH=../../spatch
 ISO=../../standard.iso
+ARGS=-iso_file $(ISO) -cocci_file $(SP) -compare_with_expected
 
 SP=rule9.cocci
 
@@ -36,9 +37,5 @@ all: $(OBJS)
 
 .c.ok: $(SPATCH) $(SP)
 	/bin/rm -f $@ $(<:.c=.failed)
-	test -e $(SPATCH) && \
-	($(SPATCH) -iso_file $(ISO) -cocci_file $(SP) -compare_with_expected $< \
-          && touch $@) || (diff -u -b /tmp/output.c $(<:.c=.res) > $(<:.c=.failed) || touch $(<:.c=.failed) )
-
-#touch $(<:.c=.failed)
+	($(SPATCH) $(ARGS) $< && touch $(<:.c=.ok)) || (diff -u -b /tmp/output.c $(<:.c=.res) > $(<:.c=.failed))
 

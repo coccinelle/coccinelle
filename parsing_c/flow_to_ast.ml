@@ -12,10 +12,12 @@ open Common open Commonop
  * break/continue
  * goto, labels
  * 
- * todo: maintain a todo list of labels.
+ * Maintain a todo list of labels.
  * If two todos, then ambiguity. Can disambiguate some case by analysing and 
  * look if dependency, if one label  lead to another "naturally" (by a 
  * sequence of Direct without jump, in a compound).
+ * Can also simply look at the info attached to the token to know which one is
+ * the first in the original file.
  *
  *)
 (*****************************************************************************)
@@ -77,6 +79,34 @@ let rec find_until_good_brace g level lasti =
   | _ -> raise Impossible
 
 
+let find_next_best_label_candidate g xs = 
+  assert (not (null xs));
+  let nodes = g#nodes#tolist  in
+
+  let nodesinfo = xs +> List.map (fun label -> 
+    let nodes_of_label = 
+      nodes +> map_filter (fun (i, node) -> 
+        match unwrap node with 
+        | Label (_fullst, (s, ii)) -> 
+            assert (List.length ii = 2);
+            let common_info = fst (List.hd ii) in
+            if s = label
+            then Some (i, common_info)
+            else None
+        | _ -> None
+        ) in
+    assert (is_singleton nodes_of_label);
+    List.hd nodes_of_label
+      ) in
+  let sorted = nodesinfo +> List.sort (fun (ia, iia) (ib, iib) -> 
+    assert (iia.charpos > 0 && iib.charpos > 0);
+    compare iia.charpos iib.charpos
+      ) in
+  List.hd sorted +> fst
+        
+
+    
+
 (*---------------------------------------------------------------------------*)
 type returnkind = 
   | LastCurrentNode of nodei 
@@ -96,7 +126,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
   (* I add in _visited only for get_next_node, so for other functions
    * such as get_next_nodes_ifthenelse_sorted, you have to call explicitely
-   * add_visited 
+   * add_visited.
    *)
   let get_next_node_old = get_next_node in
   let get_next_node g nodei = 
@@ -118,6 +148,13 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     
   in
 
+  (* maintain todo list of labels *)
+  let _labels_done = ref (new osetb Setb.empty) in
+  let _labels_todo = ref (new osetb Setb.empty) in
+  let _level_toplevel = ref  (-1) in
+
+
+
 
   (* ------------------------- *)        
   let rec (rebuild_compound_instr_list: nodei -> int -> compound * returnkind)
@@ -133,7 +170,20 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     | x -> 
         let (st, return) = rebuild_statement starti in
         (match return with
-        | NoNextNode _ -> [st], return (* because of a Goto or Return *)
+        | NoNextNode _ -> 
+            if level = !_level_toplevel
+            then 
+              let diff = !_labels_todo $--$ !_labels_done in
+              if diff#null 
+              then [st], return
+              else 
+                let nexti = find_next_best_label_candidate g (diff#tolist) in
+                let (compound, return) = 
+                  rebuild_compound_instr_list nexti level in
+                st::compound, return
+                
+            else 
+              [st], return (* because of a Goto or Return *)
         | LastCurrentNode nodei -> 
             let nexti = get_next_node g nodei +> fst in
             let (compound, return) = rebuild_compound_instr_list nexti level in
@@ -169,12 +219,13 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     (* ------------------------- *)        
     | Label (_fullst, (s, ii)) -> 
 
+        _labels_done := !_labels_done#add s;
         let nexti =  get_next_node g starti +> fst in
         let (st, return) = rebuild_statement nexti in
         (Labeled (Ast_c.Label (s, st)),ii),  return
 
     | Goto (_fullst, (s,ii)) -> 
-        
+        _labels_todo := !_labels_todo#add s;
         (Jump (Ast_c.Goto s), ii), NoNextNode starti
 
     (* ------------------------- *)        
@@ -506,7 +557,12 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
   let (topcompound, returnkind) = 
     (match get_next_node g starti with
     | (nexti,  Enter)  -> 
-        let nextii = get_next_node g nexti +> fst in
+        let (nextii, node) = get_next_node g nexti in
+        (match node with
+        | SeqStart (_fullst2, level, i1) -> 
+            _level_toplevel := level
+        | _ -> raise Impossible
+        );
         rebuild_statement nextii
     | x -> raise Impossible (* there must be an Enter node after the HeadFun *)
     )
