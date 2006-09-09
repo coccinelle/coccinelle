@@ -1039,15 +1039,7 @@ and (preprocess_disj :
 	([], cur) ::
 	(List.map2
 	   (function ((nots,r) as x) ->
-	     function
-		 Unify_ast.MAYBE -> Printf.printf "does unify\n";
-		   Pretty_print_cocci.statement_dots cur;
-		   Format.print_newline();
-		   Printf.printf "with\n";
-		   Pretty_print_cocci.statement_dots r;
-		   Format.print_newline();
-		   (cur::nots,r)
-	       | Unify_ast.NO -> Printf.printf "doesn't unify\n"; x)
+	     function Unify_ast.MAYBE -> (cur::nots,r) | Unify_ast.NO -> x)
 	   processed template)
       else ([], cur) :: processed
 

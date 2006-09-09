@@ -30,9 +30,9 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
     let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
     let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
     
-    let xs = process_output_to_list ("diff -u -b -B " ^ 
-                                     generated_file ^ " "  ^ expected_res) 
-    in
+    let xs =
+      process_output_to_list ("diff -u -b -B " ^ 
+                              generated_file ^ " "  ^ expected_res) in
 
     if null xs || c1' =*= c2'
     then begin 
@@ -136,9 +136,8 @@ let testall () =
         let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
 
         let xs = 
-          process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^
-                                  " "  ^ "tests/" ^ expected_res) 
-        in
+            process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^
+                                    " "  ^ "tests/" ^ expected_res) in
               
         if null xs || c1' =*= c2'
         then 

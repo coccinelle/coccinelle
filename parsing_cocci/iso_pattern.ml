@@ -1,3 +1,9 @@
+(* Potential problem: offset of mcode is not updated when an iso is
+instantiated, implying that a term may end up with many mcodes with the
+same offset.  On the other hand, at the moment offset only seems to be used
+before this phase.  Furthermore add_dot_binding relies on the offset to
+remain the same between matching an iso and instantiating it with bindings. *)
+
 (* --------------------------------------------------------------------- *)
 (* match a SmPL expression against a SmPL abstract syntax tree,
 either - or + *)
@@ -50,9 +56,19 @@ let anything_equal = function
   | _ -> false
 
 let term (var1,_,_,_) = var1
+let dot_term  (var1,_,info,_) =
+  var1 ^ (string_of_int info.Ast0.offset)
 
 let add_binding var exp bindings =
   let var = term var in
+  try
+    let cur = List.assoc var bindings in
+    if anything_equal(exp,cur) then Some bindings else None
+  with Not_found -> Some ((var,exp)::bindings)
+
+let add_dot_binding var exp bindings =
+  let var = dot_term var in
+  Printf.printf "calling dot_binding for %s\n" var;
   try
     let cur = List.assoc var bindings in
     if anything_equal(exp,cur) then Some bindings else None
@@ -96,326 +112,334 @@ let match_list fn la lb =
       (return true) la lb
   else return false
 
-let match_dots fn context_required d1 d2 =
-  if not(context_required) or is_context d2
-  then
-    match (Ast0.unwrap d1, Ast0.unwrap d2) with
-      (Ast0.DOTS(la),Ast0.DOTS(lb))
-    | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
-    | (Ast0.STARS(la),Ast0.STARS(lb)) -> match_list (fn context_required) la lb
-    | _ -> return false
-  else return false
+let match_maker context_required whencode_allowed =
 
-let rec match_ident context_required pattern id =
-  match Ast0.unwrap pattern with
-    Ast0.MetaId(name,_) -> add_binding name (Ast0.IdentTag id)
-  | Ast0.MetaFunc(name,_) -> failwith "metafunc not supported"
-  | Ast0.MetaLocalFunc(name,_) -> failwith "metalocalfunc not supported"
-  | up ->
-      if not(context_required) or is_context id
-      then
-	match (up,Ast0.unwrap id) with
-	  (Ast0.Id(namea),Ast0.Id(nameb)) -> return (mcode_equal namea nameb)
-	| (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
-	| (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb))
-	| (Ast0.MultiIdent(ida),Ast0.MultiIdent(idb)) ->
-	    match_ident context_required ida idb
-	| (_,Ast0.OptIdent(idb))
-	| (_,Ast0.UniqueIdent(idb))
-	| (_,Ast0.MultiIdent(idb)) ->
-	    match_ident context_required pattern idb
-	| _ -> return false
-      else return false
+  let match_dots fn d1 d2 =
+    if not(context_required) or is_context d2
+    then
+      match (Ast0.unwrap d1, Ast0.unwrap d2) with
+	(Ast0.DOTS(la),Ast0.DOTS(lb))
+      | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
+      | (Ast0.STARS(la),Ast0.STARS(lb)) -> match_list fn la lb
+      | _ -> return false
+    else return false in
 
-let rec match_expr context_required pattern expr =
-  match Ast0.unwrap pattern with
-    Ast0.MetaExpr(name,None,_) -> add_binding name (Ast0.ExprTag expr)
-  | Ast0.MetaExpr(name,Some ts,_) ->
-      let expty = Ast0.get_type expr in
-      if List.exists (function t -> Type_cocci.compatible t expty) ts
-      then add_binding name (Ast0.ExprTag expr)
-      else return false
-  | Ast0.MetaConst(namea,_,_) -> failwith "metaconst not supported"
-  | Ast0.MetaErr(namea,_) -> failwith "metaerr not supported"
-  | Ast0.MetaExprList(namea,_) -> failwith "metaexprlist not supported"
-  | up ->
-      if not(context_required) or is_context expr
-      then
-	match (up,Ast0.unwrap expr) with
-	  (Ast0.Ident(ida),Ast0.Ident(idb)) ->
-	    match_ident context_required ida idb
-	| (Ast0.Constant(consta),Ast0.Constant(constb)) ->
-	    return (mcode_equal consta constb)
-	| (Ast0.FunCall(fna,_,argsa,_),Ast0.FunCall(fnb,lp,argsb,rp)) ->
-	    conjunct_bindings (match_expr context_required fna fnb)
-	      (match_dots match_expr context_required argsa argsb)
-	| (Ast0.Assignment(lefta,opa,righta),
-	   Ast0.Assignment(leftb,opb,rightb)) ->
-	     if mcode_equal opa opb
-	     then
-	       conjunct_bindings (match_expr context_required lefta leftb)
-		 (match_expr context_required righta rightb)
-	     else return false
-	| (Ast0.CondExpr(exp1a,_,exp2a,_,exp3a),
-	   Ast0.CondExpr(exp1b,lp,exp2b,rp,exp3b)) ->
-	     conjunct_bindings (match_expr context_required exp1a exp1b)
-	       (conjunct_bindings
-		  (match_option (match_expr context_required) exp2a exp2b)
-		  (match_expr context_required exp3a exp3b))
-	| (Ast0.Postfix(expa,opa),Ast0.Postfix(expb,opb)) ->
-	    if mcode_equal opa opb
-	    then match_expr context_required expa expb
-	    else return false
-	| (Ast0.Infix(expa,opa),Ast0.Infix(expb,opb)) ->
-	    if mcode_equal opa opb
-	    then match_expr context_required expa expb
-	    else return false
-	| (Ast0.Unary(expa,opa),Ast0.Unary(expb,opb)) ->
-	    if mcode_equal opa opb
-	    then match_expr context_required expa expb
-	    else return false
-	| (Ast0.Binary(lefta,opa,righta),Ast0.Binary(leftb,opb,rightb)) ->
-	    if mcode_equal opa opb
-	    then
-	      conjunct_bindings (match_expr context_required lefta leftb)
-		(match_expr context_required righta rightb)
-	    else return false
-	| (Ast0.Paren(_,expa,_),Ast0.Paren(lp,expb,rp)) ->
-	    match_expr context_required expa expb
-	| (Ast0.ArrayAccess(exp1a,_,exp2a,_),
-	   Ast0.ArrayAccess(exp1b,lb,exp2b,rb)) ->
-	     conjunct_bindings (match_expr context_required exp1a exp1b)
-	       (match_expr context_required exp2a exp2b)
-	| (Ast0.RecordAccess(expa,_,fielda),
-	   Ast0.RecordAccess(expb,op,fieldb))
-	| (Ast0.RecordPtAccess(expa,_,fielda),
-	   Ast0.RecordPtAccess(expb,op,fieldb)) ->
-	     conjunct_bindings
-	       (match_ident context_required fielda fieldb)
-	       (match_expr context_required expa expb)
-	| (Ast0.Cast(_,tya,_,expa),Ast0.Cast(lp,tyb,rp,expb)) ->
-	    conjunct_bindings (match_typeC context_required tya tyb)
-	      (match_expr context_required expa expb)
-	| (Ast0.SizeOfExpr(_,expa),Ast0.SizeOfExpr(szf,expb)) ->
-	      match_expr context_required expa expb
-	| (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
-	    match_typeC context_required tya tyb
-	| (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
-	| (Ast0.DisjExpr(_,expsa,_),_) ->
-	    failwith "not allowed in the pattern of an isomorphism"
-	| (Ast0.NestExpr(_,exp_dotsa,_,_),_) ->
-	    failwith "not allowed in the pattern of an isomorphism"
-	| (Ast0.Edots(_,None),Ast0.Edots(_,_))
-	| (Ast0.Ecircles(_,None),Ast0.Ecircles(_,_))
-	| (Ast0.Estars(_,None),Ast0.Estars(_,_)) -> return true
-	| (Ast0.Edots(_,Some _),_) | (Ast0.Ecircles(_,Some _),_)
-	| (Ast0.Estars(_,Some _),_) ->
-	    failwith "whencode not allowed in a pattern"
-	| (Ast0.OptExp(expa),Ast0.OptExp(expb))
-	| (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb))
-	| (Ast0.MultiExp(expa),Ast0.MultiExp(expb)) ->
-	    match_expr context_required expa expb
-	| (_,Ast0.OptExp(expb))
-	| (_,Ast0.UniqueExp(expb))
-	| (_,Ast0.MultiExp(expb)) ->
-	    match_expr context_required pattern expb
-	| _ -> return false
-      else return false
+  let rec match_ident pattern id =
+    match Ast0.unwrap pattern with
+      Ast0.MetaId(name,_) -> add_binding name (Ast0.IdentTag id)
+    | Ast0.MetaFunc(name,_) -> failwith "metafunc not supported"
+    | Ast0.MetaLocalFunc(name,_) -> failwith "metalocalfunc not supported"
+    | up ->
+	if not(context_required) or is_context id
+	then
+	  match (up,Ast0.unwrap id) with
+	    (Ast0.Id(namea),Ast0.Id(nameb)) -> return (mcode_equal namea nameb)
+	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
+	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb))
+	  | (Ast0.MultiIdent(ida),Ast0.MultiIdent(idb)) -> match_ident ida idb
+	  | (_,Ast0.OptIdent(idb))
+	  | (_,Ast0.UniqueIdent(idb))
+	  | (_,Ast0.MultiIdent(idb)) -> match_ident pattern idb
+	  | _ -> return false
+	else return false in
 
-and match_typeC context_required pattern t =
-  match Ast0.unwrap pattern with
-    Ast0.MetaType(name,_) -> add_binding name (Ast0.TypeCTag t)
-  | up ->
-      if not(context_required) or is_context t
-      then
-	match (up,Ast0.unwrap t) with
-	  (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
-	    if mcode_equal cva cvb
-	    then match_typeC context_required tya tyb
-	    else return false
-	| (Ast0.BaseType(tya,signa),Ast0.BaseType(tyb,signb)) ->
-	    return (mcode_equal tya tyb &&
-		    bool_match_option mcode_equal signa signb)
-	| (Ast0.Pointer(tya,_),Ast0.Pointer(tyb,star)) ->
-	    match_typeC context_required tya tyb
-	| (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
-	    conjunct_bindings (match_typeC context_required tya tyb)
-	      (match_option (match_expr context_required) sizea sizeb)
-	| (Ast0.StructUnionName(namea,kinda),
-	   Ast0.StructUnionName(nameb,kindb)) ->
-	    return (mcode_equal namea nameb && mcode_equal kinda kindb)
-	| (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
-	    return (mcode_equal namea nameb)
-	| (Ast0.OptType(tya),Ast0.OptType(tyb))
-	| (Ast0.UniqueType(tya),Ast0.UniqueType(tyb))
-	| (Ast0.MultiType(tya),Ast0.MultiType(tyb)) ->
-	    match_typeC context_required tya tyb
-	| (_,Ast0.OptType(tyb))
-	| (_,Ast0.UniqueType(tyb))
-	| (_,Ast0.MultiType(tyb)) ->
-	    match_typeC context_required pattern tyb
-	| _ -> return false
-      else return false
+  let rec match_expr pattern expr =
+    match Ast0.unwrap pattern with
+      Ast0.MetaExpr(name,None,_) -> add_binding name (Ast0.ExprTag expr)
+    | Ast0.MetaExpr(name,Some ts,_) ->
+	let expty = Ast0.get_type expr in
+	if List.exists (function t -> Type_cocci.compatible t expty) ts
+	then add_binding name (Ast0.ExprTag expr)
+	else return false
+    | Ast0.MetaConst(namea,_,_) -> failwith "metaconst not supported"
+    | Ast0.MetaErr(namea,_) -> failwith "metaerr not supported"
+    | Ast0.MetaExprList(namea,_) -> failwith "metaexprlist not supported"
+    | up ->
+	if not(context_required) or is_context expr
+	then
+	  match (up,Ast0.unwrap expr) with
+	    (Ast0.Ident(ida),Ast0.Ident(idb)) ->
+	      match_ident ida idb
+	  | (Ast0.Constant(consta),Ast0.Constant(constb)) ->
+	      return (mcode_equal consta constb)
+	  | (Ast0.FunCall(fna,_,argsa,_),Ast0.FunCall(fnb,lp,argsb,rp)) ->
+	      conjunct_bindings (match_expr fna fnb)
+		(match_dots match_expr argsa argsb)
+	  | (Ast0.Assignment(lefta,opa,righta),
+	     Ast0.Assignment(leftb,opb,rightb)) ->
+	       if mcode_equal opa opb
+	       then
+		 conjunct_bindings (match_expr lefta leftb)
+		   (match_expr righta rightb)
+	       else return false
+	  | (Ast0.CondExpr(exp1a,_,exp2a,_,exp3a),
+	     Ast0.CondExpr(exp1b,lp,exp2b,rp,exp3b)) ->
+	       conjunct_bindings (match_expr exp1a exp1b)
+		 (conjunct_bindings (match_option match_expr exp2a exp2b)
+		    (match_expr exp3a exp3b))
+	  | (Ast0.Postfix(expa,opa),Ast0.Postfix(expb,opb)) ->
+	      if mcode_equal opa opb
+	      then match_expr expa expb
+	      else return false
+	  | (Ast0.Infix(expa,opa),Ast0.Infix(expb,opb)) ->
+	      if mcode_equal opa opb
+	      then match_expr expa expb
+	      else return false
+	  | (Ast0.Unary(expa,opa),Ast0.Unary(expb,opb)) ->
+	      if mcode_equal opa opb
+	      then match_expr expa expb
+	      else return false
+	  | (Ast0.Binary(lefta,opa,righta),Ast0.Binary(leftb,opb,rightb)) ->
+	      if mcode_equal opa opb
+	      then
+		conjunct_bindings (match_expr lefta leftb)
+		  (match_expr righta rightb)
+	      else return false
+	  | (Ast0.Paren(_,expa,_),Ast0.Paren(lp,expb,rp)) ->
+	      match_expr expa expb
+	  | (Ast0.ArrayAccess(exp1a,_,exp2a,_),
+	     Ast0.ArrayAccess(exp1b,lb,exp2b,rb)) ->
+	       conjunct_bindings (match_expr exp1a exp1b)
+		 (match_expr exp2a exp2b)
+	  | (Ast0.RecordAccess(expa,_,fielda),
+	     Ast0.RecordAccess(expb,op,fieldb))
+	  | (Ast0.RecordPtAccess(expa,_,fielda),
+	     Ast0.RecordPtAccess(expb,op,fieldb)) ->
+	       conjunct_bindings (match_ident fielda fieldb)
+		 (match_expr expa expb)
+	  | (Ast0.Cast(_,tya,_,expa),Ast0.Cast(lp,tyb,rp,expb)) ->
+	      conjunct_bindings (match_typeC tya tyb)
+		(match_expr expa expb)
+	  | (Ast0.SizeOfExpr(_,expa),Ast0.SizeOfExpr(szf,expb)) ->
+	      match_expr expa expb
+	  | (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
+	      match_typeC tya tyb
+	  | (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
+	  | (Ast0.DisjExpr(_,expsa,_),_) ->
+	      failwith "not allowed in the pattern of an isomorphism"
+	  | (Ast0.NestExpr(_,exp_dotsa,_,_),_) ->
+	      failwith "not allowed in the pattern of an isomorphism"
+	  | (Ast0.Edots(_,None),Ast0.Edots(_,None))
+	  | (Ast0.Ecircles(_,None),Ast0.Ecircles(_,None))
+	  | (Ast0.Estars(_,None),Ast0.Estars(_,None)) -> return true
+	  | (Ast0.Edots(ed,None),Ast0.Edots(_,Some wc))
+	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(_,Some wc))
+	  | (Ast0.Estars(ed,None),Ast0.Estars(_,Some wc)) ->
+	    (* hope that mcode of edots is unique somehow *)
+	      let (edots_whencode_allowed,_) = whencode_allowed in
+	      if edots_whencode_allowed
+	      then add_dot_binding ed (Ast0.ExprTag wc)
+	      else
+		(Printf.printf "warning: not applying iso because of whencode";
+		 return false)
+	  | (Ast0.Edots(_,Some _),_) | (Ast0.Ecircles(_,Some _),_)
+	  | (Ast0.Estars(_,Some _),_) ->
+	      failwith "whencode not allowed in a pattern"
+	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
+	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb))
+	  | (Ast0.MultiExp(expa),Ast0.MultiExp(expb)) -> match_expr expa expb
+	  | (_,Ast0.OptExp(expb))
+	  | (_,Ast0.UniqueExp(expb))
+	  | (_,Ast0.MultiExp(expb)) -> match_expr pattern expb
+	  | _ -> return false
+	else return false
 
-and match_decl context_required pattern d =
-  if not(context_required) or is_context d
-  then
-    match (Ast0.unwrap pattern,Ast0.unwrap d) with
-      (Ast0.Init(tya,ida,_,expa,_),Ast0.Init(tyb,idb,_,expb,_)) ->
-	conjunct_bindings
-	  (match_typeC context_required tya tyb)
-	  (conjunct_bindings
-	     (match_ident context_required ida idb)
-	     (match_expr context_required expa expb))
-    | (Ast0.UnInit(tya,ida,_),Ast0.UnInit(tyb,idb,_)) ->
-	conjunct_bindings
-	  (match_typeC context_required tya tyb)
-	  (match_ident context_required ida idb)
-    | (Ast0.DisjDecl(_,declsa,_),Ast0.DisjDecl(_,declsb,_)) ->
-	failwith "not allowed in the pattern of an isomorphism"
-    | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
-    | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
-    | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) ->
-	match_decl context_required decla declb
-    | (_,Ast0.OptDecl(declb))
-    | (_,Ast0.UniqueDecl(declb))
-    | (_,Ast0.MultiDecl(declb)) ->
-	match_decl context_required pattern declb
-    | _ -> return false
-  else return false
-
-and match_param context_required pattern p =
-  match Ast0.unwrap pattern with
-    Ast0.MetaParam(name,_) -> add_binding name (Ast0.ParamTag p)
-  | Ast0.MetaParamList(name,_) -> failwith "metaparamlist not supported"
-  | up ->
-      if not(context_required) or is_context p
-      then
-	match (up,Ast0.unwrap p) with
-	  (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) ->
-	    match_typeC context_required tya tyb
-	| (Ast0.Param(ida,tya),Ast0.Param(idb,tyb)) ->
-	    conjunct_bindings
-	      (match_typeC context_required tya tyb)
-	      (match_ident context_required ida idb)
-	| (Ast0.PComma(_),Ast0.PComma(_))
-	| (Ast0.Pdots(_),Ast0.Pdots(_))
-	| (Ast0.Pcircles(_),Ast0.Pcircles(_)) -> return true
-	| (Ast0.OptParam(parama),Ast0.OptParam(paramb))
-	| (Ast0.UniqueParam(parama),Ast0.UniqueParam(paramb)) ->
-	    match_param context_required parama paramb
-	| (_,Ast0.OptParam(paramb))
-	| (_,Ast0.UniqueParam(paramb)) ->
-	    match_param context_required pattern paramb
-	| _ -> return false
-      else return false
-
-and match_statement context_required pattern s =
-  match Ast0.unwrap pattern with
-    Ast0.MetaStmt(name,_) -> add_binding name (Ast0.StmtTag s)
-  | Ast0.MetaStmtList(name,_) -> failwith "metastmtlist not supported"
-  | up ->
-      if not(context_required) or is_context s
-      then
-	match (up,Ast0.unwrap s) with
-	(Ast0.FunDecl(stga,tya,namea,_,paramsa,_,_,bodya,_),
-	  Ast0.FunDecl(stgb,tyb,nameb,_,paramsb,_,_,bodyb,_)) ->
-	    if bool_match_option mcode_equal stga stgb
-	    then
-	      conjunct_bindings
-		(match_option (match_typeC context_required) tya tyb)
-		(conjunct_bindings
-		   (match_ident context_required namea nameb)
+  and match_typeC pattern t =
+    match Ast0.unwrap pattern with
+      Ast0.MetaType(name,_) -> add_binding name (Ast0.TypeCTag t)
+    | up ->
+	if not(context_required) or is_context t
+	then
+	  match (up,Ast0.unwrap t) with
+	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
+	      if mcode_equal cva cvb
+	      then match_typeC tya tyb
+	      else return false
+	  | (Ast0.BaseType(tya,signa),Ast0.BaseType(tyb,signb)) ->
+	      return (mcode_equal tya tyb &&
+		      bool_match_option mcode_equal signa signb)
+	  | (Ast0.Pointer(tya,_),Ast0.Pointer(tyb,star)) -> match_typeC tya tyb
+	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
+	      conjunct_bindings (match_typeC tya tyb)
+		(match_option match_expr sizea sizeb)
+	  | (Ast0.StructUnionName(namea,kinda),
+	     Ast0.StructUnionName(nameb,kindb)) ->
+	       return (mcode_equal namea nameb && mcode_equal kinda kindb)
+	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
+	      return (mcode_equal namea nameb)
+	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
+	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb))
+	  | (Ast0.MultiType(tya),Ast0.MultiType(tyb)) -> match_typeC tya tyb
+	  | (_,Ast0.OptType(tyb))
+	  | (_,Ast0.UniqueType(tyb))
+	  | (_,Ast0.MultiType(tyb)) -> match_typeC pattern tyb
+	  | _ -> return false
+	else return false
+	    
+  and match_decl pattern d =
+    if not(context_required) or is_context d
+    then
+      match (Ast0.unwrap pattern,Ast0.unwrap d) with
+	(Ast0.Init(tya,ida,_,expa,_),Ast0.Init(tyb,idb,_,expb,_)) ->
+	  conjunct_bindings (match_typeC tya tyb)
+	    (conjunct_bindings (match_ident ida idb) (match_expr expa expb))
+      | (Ast0.UnInit(tya,ida,_),Ast0.UnInit(tyb,idb,_)) ->
+	  conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
+      | (Ast0.DisjDecl(_,declsa,_),Ast0.DisjDecl(_,declsb,_)) ->
+	  failwith "not allowed in the pattern of an isomorphism"
+      | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
+      | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
+      | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) -> match_decl decla declb
+      | (_,Ast0.OptDecl(declb))
+      | (_,Ast0.UniqueDecl(declb))
+      | (_,Ast0.MultiDecl(declb)) -> match_decl pattern declb
+      | _ -> return false
+    else return false
+	
+  and match_param pattern p =
+    match Ast0.unwrap pattern with
+      Ast0.MetaParam(name,_) -> add_binding name (Ast0.ParamTag p)
+    | Ast0.MetaParamList(name,_) -> failwith "metaparamlist not supported"
+    | up ->
+	if not(context_required) or is_context p
+	then
+	  match (up,Ast0.unwrap p) with
+	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
+	  | (Ast0.Param(ida,tya),Ast0.Param(idb,tyb)) ->
+	      conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
+	  | (Ast0.PComma(_),Ast0.PComma(_))
+	  | (Ast0.Pdots(_),Ast0.Pdots(_))
+	  | (Ast0.Pcircles(_),Ast0.Pcircles(_)) -> return true
+	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb))
+	  | (Ast0.UniqueParam(parama),Ast0.UniqueParam(paramb)) ->
+	      match_param parama paramb
+	  | (_,Ast0.OptParam(paramb))
+	  | (_,Ast0.UniqueParam(paramb)) -> match_param pattern paramb
+	  | _ -> return false
+	else return false
+	    
+  and match_statement pattern s =
+    match Ast0.unwrap pattern with
+      Ast0.MetaStmt(name,_) -> add_binding name (Ast0.StmtTag s)
+    | Ast0.MetaStmtList(name,_) -> failwith "metastmtlist not supported"
+    | up ->
+	if not(context_required) or is_context s
+	then
+	  match (up,Ast0.unwrap s) with
+	    (Ast0.FunDecl(stga,tya,namea,_,paramsa,_,_,bodya,_),
+	     Ast0.FunDecl(stgb,tyb,nameb,_,paramsb,_,_,bodyb,_)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_bindings
+		   (match_option match_typeC tya tyb)
 		   (conjunct_bindings
-		      (match_dots match_param context_required paramsa paramsb)
-		      (match_dots match_statement context_required
-			 bodya bodyb)))
-	    else return false
-      | (Ast0.Decl(decla),Ast0.Decl(declb)) ->
-	  match_decl context_required decla declb
-      | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
-	  match_dots match_statement context_required bodya bodyb
-      | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
-	  match_expr context_required expa expb
-      | (Ast0.IfThen(_,_,expa,_,branch1a,_),
-	 Ast0.IfThen(_,_,expb,_,branch1b,_)) ->
-	  conjunct_bindings
-	    (match_expr context_required expa expb)
-	    (match_statement context_required branch1a branch1b)
-      | (Ast0.IfThenElse(_,_,expa,_,branch1a,_,branch2a,_),
-	 Ast0.IfThenElse(_,_,expb,_,branch1b,_,branch2b,_)) ->
-	   conjunct_bindings
-	     (match_expr context_required expa expb)
-	     (conjunct_bindings
-		(match_statement context_required branch1a branch1b)
-		(match_statement context_required branch2a branch2b))
-      | (Ast0.While(_,_,expa,_,bodya,_),Ast0.While(_,_,expb,_,bodyb,_)) ->
-	  conjunct_bindings
-	    (match_expr context_required expa expb)
-	    (match_statement context_required bodya bodyb)
-      | (Ast0.Do(_,bodya,_,_,expa,_,_),Ast0.Do(_,bodyb,_,_,expb,_,_)) ->
-	  conjunct_bindings
-	    (match_statement context_required bodya bodyb)
-	    (match_expr context_required expa expb)
-      | (Ast0.For(_,_,e1a,_,e2a,_,e3a,_,bodya,_),
-	 Ast0.For(_,_,e1b,_,e2b,_,e3b,_,bodyb,_)) ->
-	   conjunct_bindings
-	     (match_option (match_expr context_required) e1a e1b)
-	     (conjunct_bindings
-		(match_option (match_expr context_required) e2a e2b)
-		(conjunct_bindings
-		   (match_option (match_expr context_required) e3a e3b)
-		   (match_statement context_required bodya bodyb)))
-      | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
-      | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
-      | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
-      | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
-	  match_expr context_required expa expb
-      | (Ast0.Disj(_,statement_dots_lista,_),_) ->
-	   failwith "disj not supported in patterns"
-      | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
-	  failwith "nest not supported in patterns"
-      | (Ast0.Exp(expa),Ast0.Exp(expb)) ->
-	  match_expr context_required expa expb
-      | (Ast0.Dots(_,None),Ast0.Dots(_,_))
-      | (Ast0.Circles(_,None),Ast0.Circles(_,_))
-      | (Ast0.Stars(_,None),Ast0.Stars(_,_)) -> return true
-      | (Ast0.Dots(_,Some _),_) | (Ast0.Circles(_,Some _),_)
-      | (Ast0.Stars(_,Some _),_) ->
-	  failwith "whencode not allowed in a pattern"
-      | (Ast0.OptStm(rea),Ast0.OptStm(reb))
-      | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
-      | (Ast0.MultiStm(rea),Ast0.MultiStm(reb)) ->
-	  match_statement context_required rea reb
-      | (_,Ast0.OptStm(reb))
-      | (_,Ast0.UniqueStm(reb))
-      | (_,Ast0.MultiStm(reb)) -> match_statement context_required pattern reb
-      |	_ -> return false
-      else return false
+		      (match_ident namea nameb)
+		      (conjunct_bindings
+			 (match_dots match_param paramsa paramsb)
+			 (match_dots match_statement bodya bodyb)))
+	       else return false
+	  | (Ast0.Decl(decla),Ast0.Decl(declb)) -> match_decl decla declb
+	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
+	      match_dots match_statement bodya bodyb
+	  | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
+	      match_expr expa expb
+	  | (Ast0.IfThen(_,_,expa,_,branch1a,_),
+	     Ast0.IfThen(_,_,expb,_,branch1b,_)) ->
+	       conjunct_bindings (match_expr expa expb)
+		 (match_statement branch1a branch1b)
+	  | (Ast0.IfThenElse(_,_,expa,_,branch1a,_,branch2a,_),
+	     Ast0.IfThenElse(_,_,expb,_,branch1b,_,branch2b,_)) ->
+	       conjunct_bindings
+		 (match_expr expa expb)
+		 (conjunct_bindings
+		    (match_statement branch1a branch1b)
+		    (match_statement branch2a branch2b))
+	  | (Ast0.While(_,_,expa,_,bodya,_),Ast0.While(_,_,expb,_,bodyb,_)) ->
+	      conjunct_bindings (match_expr expa expb)
+		(match_statement bodya bodyb)
+	  | (Ast0.Do(_,bodya,_,_,expa,_,_),Ast0.Do(_,bodyb,_,_,expb,_,_)) ->
+	      conjunct_bindings (match_statement bodya bodyb)
+		(match_expr expa expb)
+	  | (Ast0.For(_,_,e1a,_,e2a,_,e3a,_,bodya,_),
+	     Ast0.For(_,_,e1b,_,e2b,_,e3b,_,bodyb,_)) ->
+	       conjunct_bindings
+		 (match_option match_expr e1a e1b)
+		 (conjunct_bindings
+		    (match_option match_expr e2a e2b)
+		    (conjunct_bindings
+		       (match_option match_expr e3a e3b)
+		       (match_statement bodya bodyb)))
+	  | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
+	  | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
+	  | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
+	  | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
+	      match_expr expa expb
+	  | (Ast0.Disj(_,statement_dots_lista,_),_) ->
+	      failwith "disj not supported in patterns"
+	  | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
+	      failwith "nest not supported in patterns"
+	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
+	  | (Ast0.Dots(_,None),Ast0.Dots(_,None))
+	  | (Ast0.Circles(_,None),Ast0.Circles(_,None))
+	  | (Ast0.Stars(_,None),Ast0.Stars(_,None)) -> return true
+	  | (Ast0.Dots(d,None),Ast0.Dots(_,Some wc))
+	  | (Ast0.Circles(d,None),Ast0.Circles(_,Some wc))
+	  | (Ast0.Stars(d,None),Ast0.Stars(_,Some wc)) ->
+	  (* hope that mcode of dots is unique somehow *)
+	      let (_,dots_whencode_allowed) = whencode_allowed in
+	      if dots_whencode_allowed
+	      then add_dot_binding d (Ast0.DotsStmtTag wc)
+	      else
+		(Printf.printf "warning: not applying iso because of whencode";
+		 return false)
+	  | (Ast0.Dots(_,Some _),_) | (Ast0.Circles(_,Some _),_)
+	  | (Ast0.Stars(_,Some _),_) ->
+	      failwith "whencode not allowed in a pattern"
+	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
+	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
+	  | (Ast0.MultiStm(rea),Ast0.MultiStm(reb)) -> match_statement rea reb
+	  | (_,Ast0.OptStm(reb))
+	  | (_,Ast0.UniqueStm(reb))
+	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
+	  |	_ -> return false
+	else return false in
+(*
+  let match_top_level pattern t =
+    if not(context_required) or is_context t
+    then
+      match (Ast0.unwrap pattern,Ast0.unwrap t) with
+	(Ast0.DECL(decla),Ast0.DECL(declb)) ->
+	  match_decl decla declb
+      | (Ast0.INCLUDE(inca,namea),Ast0.INCLUDE(incb,nameb)) ->
+	  return (mcode_equal inca incb && mcode_equal namea nameb)
+      | (Ast0.FILEINFO(old_filea,new_filea),
+	 Ast0.FILEINFO(old_fileb,new_fileb)) ->
+	   return (mcode_equal old_filea old_fileb &&
+		   mcode_equal new_filea new_fileb)
+      | (Ast0.FUNCTION(statementa),Ast0.FUNCTION(statementb)) ->
+	  match_statement statementa statementb
+      | (Ast0.CODE(stmt_dotsa),Ast0.CODE(stmt_dotsb)) ->
+	  match_dots match_statement stmt_dotsa stmt_dotsb
+      | (Ast0.ERRORWORDS(expsa),_) ->
+	  failwith "error words not supported in patterns"
+      | (Ast0.OTHER(_),_) -> failwith "unexpected code"
+      | (_,Ast0.OTHER(_)) -> failwith "unexpected code"
+      | _ -> return false
+    else return false in
+*)
+  (match_expr, match_decl, match_statement)
 
-let match_top_level context_required pattern t =
-  if not(context_required) or is_context t
-  then
-    match (Ast0.unwrap pattern,Ast0.unwrap t) with
-      (Ast0.DECL(decla),Ast0.DECL(declb)) ->
-	match_decl context_required decla declb
-    | (Ast0.INCLUDE(inca,namea),Ast0.INCLUDE(incb,nameb)) ->
-	return (mcode_equal inca incb && mcode_equal namea nameb)
-    | (Ast0.FILEINFO(old_filea,new_filea),
-       Ast0.FILEINFO(old_fileb,new_fileb)) ->
-	return (mcode_equal old_filea old_fileb &&
-		mcode_equal new_filea new_fileb)
-    | (Ast0.FUNCTION(statementa),Ast0.FUNCTION(statementb)) ->
-	match_statement context_required statementa statementb
-    | (Ast0.CODE(stmt_dotsa),Ast0.CODE(stmt_dotsb)) ->
-	match_dots match_statement context_required stmt_dotsa stmt_dotsb
-    | (Ast0.ERRORWORDS(expsa),_) ->
-	failwith "error words not supported in patterns"
-    | (Ast0.OTHER(_),_) -> failwith "unexpected code"
-    | (_,Ast0.OTHER(_)) -> failwith "unexpected code"
-    | _ -> return false
-  else return false
+let match_expr context_required whencode_allowed =
+  let (fn,_,_) = match_maker context_required whencode_allowed in
+  fn
 
+let match_decl context_required whencode_allowed =
+  let (_,fn,_) = match_maker context_required whencode_allowed in
+  fn
+
+let match_statement context_required whencode_allowed =
+  let (_,_,fn) = match_maker context_required whencode_allowed in
+  fn
 
 (* --------------------------------------------------------------------- *)
 (* make an entire tree MINUS *)
@@ -444,15 +468,19 @@ let make_minus =
   let donothing r k ((term,info,index,mcodekind,ty) as e) =
     let e = k e in update_mc mcodekind; e in
 
-(*
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
   let expression r k ((term,info,index,mcodekind,ty) as e) =
     match term with
-      Ast0.Edots(dots,whencode) | Ast0.Ecircles(dots,whencode)
+      Ast0.Edots(dots,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Edots(dots,whencode))
+    | Ast0.Ecircles(dots,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Ecircles(dots,whencode))
     | Ast0.Estars(dots,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; e
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Estars(dots,whencode))
     | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	update_mc mcodekind;
 	Ast0.rewrap e
@@ -463,17 +491,19 @@ let make_minus =
 
   let statement r k ((term,info,index,mcodekind,ty) as e) =
     match term with
-      Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
-    | Ast0.Stars(d,whencode) ->
+      Ast0.Dots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; e
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
+    | Ast0.Circles(d,whencode) ->
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
+    | Ast0.Stars(d,whencode) ->
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Stars(mcode d,whencode))
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	update_mc mcodekind;
 	Ast0.rewrap e
 	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
 		     mcode ender,whencode))
     | _ -> donothing r k e in
-*)
 
   let dots r k ((term,info,index,mcodekind,ty) as e) =
     match term with
@@ -501,14 +531,14 @@ let make_minus =
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots
-    donothing donothing (*expression*) donothing donothing donothing
-    donothing (*statement*) donothing
+    donothing expression donothing donothing donothing
+    statement donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
 
 (* mcodes will be side effected later with plus code, so we have to copy
-then on instantiating an insomorphism.  One could wonder whether it would
+then on instantiating an isomorphism.  One could wonder whether it would
 be better not to use side-effects, but they are convenient for insert_plus
 where is it useful to manipulate a list of the mcodes but side-effect a tree *)
 let rebuild_mcode start_line =
@@ -555,6 +585,42 @@ let rebuild_mcode start_line =
     donothing donothing donothing donothing donothing statement donothing
 
 (* --------------------------------------------------------------------- *)
+(* The problem of whencode.  If an isomorphism contains dots in multiple
+rules, then the code that is matched cannot contain whencode, because we
+won't know which dots it goes with. Should worry about nests, but they
+aren't allowed in isomorphisms for the moment. *)
+
+let count_edots =
+  let mcode x = 0 in
+  let option_default = 0 in
+  let bind x y = x + y in
+  let donothing r k e = k e in
+  let exprfn r k e =
+    match Ast0.unwrap e with
+      Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> 1
+  | _ -> 0 in
+
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing exprfn donothing donothing donothing donothing donothing
+
+let count_dots =
+  let mcode x = 0 in
+  let option_default = 0 in
+  let bind x y = x + y in
+  let donothing r k e = k e in
+  let stmtfn r k e =
+    match Ast0.unwrap e with
+      Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> 1
+  | _ -> 0 in
+
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing donothing donothing donothing donothing stmtfn donothing
+
+(* --------------------------------------------------------------------- *)
 
 let instantiate bindings =
   let mcode x = x in
@@ -591,6 +657,24 @@ let instantiate bindings =
     | Ast0.MetaConst(namea,_,_) -> failwith "metaconst not supported"
     | Ast0.MetaErr(namea,_) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,_) -> failwith "metaexprlist not supported"
+    | Ast0.Edots(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Edots(d,Some exp))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | Ast0.Ecircles(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Ecircles(d,Some exp))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | Ast0.Estars(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.ExprTag(exp) -> Ast0.rewrap e (Ast0.Estars(d,Some exp))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
     | _ -> k e in
 
   let tyfn r k e =
@@ -631,6 +715,26 @@ let instantiate bindings =
 	  Not_found ->
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
     | Ast0.MetaStmtList(name,_) -> failwith "metastmtlist not supported"
+    | Ast0.Dots(d,_) ->
+	Printf.printf "trying to find whencode for %s\n"
+	  (dot_term d);
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Dots(d,Some stms))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | Ast0.Circles(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Circles(d,Some stms))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | Ast0.Stars(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Stars(d,Some stms))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
     | _ -> k e in
 
   V0.rebuilder
@@ -669,30 +773,44 @@ let copy_plus printer minusify model e =
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
 
+let whencode_allowed prev_ecount prev_dcount ecount dcount rest =
+  let other_ecount = (* number of edots *)
+    List.fold_left (function rest -> function (_,ec,dc) -> ec + rest)
+      prev_ecount rest in
+  let other_dcount = (* number of dots *)
+    List.fold_left (function rest -> function (_,ec,dc) -> dc + rest)
+      prev_dcount rest in
+  (ecount = 0 or other_ecount = 0, dcount = 0 or other_dcount = 0)
+
 let mkdisj matcher alts instantiater e disj_maker minusify
     rebuild_mcodes printer =
   let call_instantiate bindings alts =
     List.map
-      (function a ->
+      (function (a,_,_) ->
 	copy_plus printer minusify e
 	  (instantiater bindings (rebuild_mcodes a)))
       alts in
-  let rec inner_loop all_alts = function
-      [] -> None
-    | (pattern::rest) ->
-	(match matcher (context_required e) pattern e init_env with
-	  None -> inner_loop all_alts rest
+  let rec inner_loop all_alts prev_ecount prev_dcount = function
+      [] -> Common.Left (prev_ecount, prev_dcount)
+    | ((pattern,ecount,dcount)::rest) ->
+	let wc = whencode_allowed prev_ecount prev_dcount ecount dcount rest in
+	(match matcher (context_required e) wc pattern e init_env with
+	  None ->
+	    inner_loop all_alts
+	      (prev_ecount + ecount) (prev_dcount + dcount) rest
 	| Some bindings ->
 	    (match List.concat all_alts with
-	      [x] -> None
-	    | all_alts -> Some (call_instantiate bindings all_alts))) in
-  let rec outer_loop = function
+	      [x] -> Common.Left (prev_ecount, prev_dcount) (* why None??? *)
+	    | all_alts ->
+		Common.Right (call_instantiate bindings all_alts))) in
+  let rec outer_loop prev_ecount prev_dcount = function
       [] -> e (* nothing matched *)
     | (alts::rest) as all_alts ->
-	match inner_loop all_alts alts with
-	  None -> outer_loop rest
-	| Some res -> disj_maker res in
-  outer_loop alts
+	match inner_loop all_alts prev_ecount prev_dcount alts with
+	  Common.Left(prev_ecount, prev_dcount) ->
+	    outer_loop prev_ecount prev_dcount rest
+	| Common.Right res -> disj_maker res in
+  outer_loop 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
 let disj_starter =
@@ -717,7 +835,11 @@ let transform_expr alts e =
       let alts =
 	List.map
 	  (List.map
-	     (function Ast0.ExprTag(p) -> p | _ -> failwith "invalid alt"))
+	     (function
+		 Ast0.ExprTag(p) ->
+		   (p,count_edots.V0.combiner_expression p,
+		    count_dots.V0.combiner_expression p)
+	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_expr alts
 	(function b -> (instantiate b).V0.rebuilder_expression) e
@@ -734,7 +856,11 @@ let transform_decl alts e =
       let alts =
 	List.map
 	  (List.map
-	     (function Ast0.DeclTag(p) -> p | _ -> failwith "invalid alt"))
+	     (function
+		 Ast0.DeclTag(p) ->
+		   (p,count_edots.V0.combiner_declaration p,
+		    count_dots.V0.combiner_declaration p)
+	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl alts
 	(function b -> (instantiate b).V0.rebuilder_declaration) e
@@ -751,7 +877,11 @@ let transform_stmt alts e =
       let alts =
 	List.map
 	  (List.map
-	     (function Ast0.StmtTag(p) -> p | _ -> failwith "invalid alt"))
+	     (function
+		 Ast0.StmtTag(p) ->
+		   (p,count_edots.V0.combiner_statement p,
+		    count_dots.V0.combiner_statement p)
+	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement alts
 	(function b -> (instantiate b).V0.rebuilder_statement) e

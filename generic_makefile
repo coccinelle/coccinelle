@@ -13,4 +13,5 @@ all: $(OBJS)
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
 	(test -e /tmp/output.c && \
-	(diff -b -B -w /tmp/output.c $(<:.c=.res) || true)) || true
+	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
+	true)) || true

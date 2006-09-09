@@ -167,19 +167,34 @@ T Z = ...; <=> T Z;
 
 Statement
 @@ @@
-{ ... return ...; } => { return ...; } => return ...;
+{ ... return ...; } => return ...;
 Statement
 @@ @@
-{ ... return; } => { return; } => return;
+{ return ...; } => return ...;
 Statement
 @@ @@
-{ ... break; } => { break; } => break;
+{ ... return; } => return;
 Statement
 @@ @@
-{ ... continue; } => { continue; } => continue;
+{ return; } => return;
+Statement
+@@ @@
+{ ... break; } => break;
+Statement
+@@ @@
+{ break; } => break;
+Statement
+@@ @@
+{ ... continue; } => continue;
+Statement
+@@ @@
+{ continue; } => continue;
 Statement
 @@ expression E; @@
-{ ... E; } => { E; } => E;
+{ ... E; } => E;
+Statement
+@@ expression E; @@
+{ E; } => E;
 
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
