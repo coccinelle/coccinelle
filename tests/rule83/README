@@ -1,0 +1,87 @@
+68328serial.c: code inside #if 0 not changed
+68360serial.c: programmer has removed {} that the CE makes unnecessary
+amiserial.c: programmer has forgotten to drop 2 calls to wake_up_interruptible 
+aurora.c: code doesn't parse due to another CE that failed
+*** bluetty.c:
+	in one case programmer has removed {} that the CE makes unnecessary
+	in another case, debugging code interrupts the pattern.  Should
+	extend whencode to deal with this.
+capi.c: FILL THIS IN!!!
+??? cdc-acm.c:
+        programmer dropped a local variable involved in the CE code and
+	inlined its definition.
+con3215.c: Works!
+*** ctctty.c:
+	in one case the programmer forgot to drop a call to
+	 wake_up_interruptible
+	in another, the conditional that the SP looks for has an extra
+	 test expression
+cyclades.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
+digi_acceleport.c: programmer has forgotten to drop 1 call to
+   wake_up_interruptible
+empeg.c: Works!
+epca.c: programmer has forgotten to drop 3 calls to wake_up_interruptible
+   and has not done introduced the call to tty_ldisc_flush in one case
+esp.c: Works!
+generic_serial.c: FILL THIS IN!!!
+hci_ldisc.c: programmer has not done introduced the call to tty_ldisc_flush
+   in one case
+hvc_console.c: Works!
+hvcs.c: Works!
+io_edgeport.c: Works!
+io_ti.c: Works!
+ir-usb.c: Works!
+irtty-sir.c: Works!
+isdn_tty.c: programmer has forgotten to drop one call to
+   wake_up_interruptible and has used a non-existent variable (tty) as the
+   argument to one call to tty_ldisc_flush
+isicom.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
+keyspan_pda.c: Works!
+macserial.c: programmer has removed {} that the CE makes unnecessary
+mcfserial.c: programmer added #if 0 #endif around some code
+mct_u232.c: Works!
+mkiss.c: programmer dropped the use of tty_ldisc_flush completely
+moxa.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
+	in both cases, the programmer has put an undeclared variable (tty)
+	as the argument to tty_wakeup
+mxser.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
+n_tty.c: FILL THIS IN!!!
+pc300_tty.c: FILL THIS IN!!!
+pcxx.c: programmer has additionally done some other evolution	
+ppp_async.c: Works!
+ppp_synctty.c: Works!
+pty.c: programmer has not done introduced the call to tty_ldisc_flush
+   in one case
+riscom8.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
+rocket.c: FILL THIS IN!!!
+sclp_tty.c: the programmer has put an undeclared variable (tty) as the
+   argument to tty_wakeup
+*** sclp_vt220.c:
+	the conditional that the SP looks for has an extra test expression
+*** sdla_chdlc.c:
+	programmer has additionally done some other evolution	
+	in two cases there are two calls to wake_up_interruptible, one
+	outside an ifdef and another inside.  Both the programmer and
+	spatch delete only the one outside.
+selection.c: programmer has additionally done some other evolution	
+ser_a2232.c: SPATCH CRASHES!!!
+serial167.c: programmer has additionally done some other evolution
+serial_core.c:
+serial_tx3912.c: Works!
+slip.c:
+specialix.c:
+stallion.c:
+strip.c:
+sx.c: Works!
+synclink.c:
+synclink_cs.c:
+synclinkmp.c:
+tty_io.c:
+tty_ioctl.c:
+tty_wakeup_ver1.c:
+usb-serial.c:
+viocons.c:
+vme_scc.c:
+vt_ioctl.c:
+whiteheat.c: Works!
+zs.c: Works!

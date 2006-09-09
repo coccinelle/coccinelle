@@ -774,6 +774,8 @@ let copy_plus printer minusify model e =
   | Ast0.PLUS -> failwith "not possible 9"
 
 let whencode_allowed prev_ecount prev_dcount ecount dcount rest =
+  (* actually, if ecount or dcount is 0, the flag doesn't matter, because it
+     won't be tested *)
   let other_ecount = (* number of edots *)
     List.fold_left (function rest -> function (_,ec,dc) -> ec + rest)
       prev_ecount rest in

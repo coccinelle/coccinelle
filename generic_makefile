@@ -12,6 +12,9 @@ all: $(OBJS)
 	(time $(SPATCH) $(ARGS) $<) 2> $(<:.c=.ok) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
-	(test -e /tmp/output.c && \
+	(test -e /tmp/output.c && test -e $(<:.c=.ok) \
+	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.ok)) || \
+	true)) || true
+	(test -e /tmp/output.c && test -e $(<:.c=.failed) \
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
 	true)) || true
