@@ -30,19 +30,19 @@ probe(...) {
   ...
 }
 
-//@@
-//@@
-//
-//   ...
-//   probe(...)
-//   <...
-//   { ...
-//+    release_region(req_reg_arg1, req_reg_arg2);
-//     return ...;
-//   }
-//   ...>
-//-  request_region(req_reg_arg1, req_reg_arg2, req_reg_arg3)
-//   ...
+@@
+@@
+
+   ...
+   probe(...)
+   <...
+   { ...
++    release_region(req_reg_arg1, req_reg_arg2);
+     return ...;
+   }
+   ...>
+-  request_region(req_reg_arg1, req_reg_arg2, req_reg_arg3);
+   ...
 
 // --------------------------------------------------------------------
 // intraprocedural case
@@ -58,7 +58,7 @@ identifier x;
       { ... return ...; }
     <...
     { ...
-+    release_region(req_reg_arg1, req_reg_arg2);
++     release_region(req_reg_arg1, req_reg_arg2);
       return ...;
     }
     ...>
