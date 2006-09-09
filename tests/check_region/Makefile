@@ -1,5 +1,5 @@
 SP=check_region.cocci
 
-SOURCES = 
+SOURCES = gscd.c
 
 include ../../generic_makefile
