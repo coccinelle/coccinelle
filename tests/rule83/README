@@ -40,7 +40,7 @@ keyspan_pda.c: Works!
 macserial.c: programmer has removed {} that the CE makes unnecessary
 mcfserial.c: programmer added #if 0 #endif around some code
 mct_u232.c: Works!
-mkiss.c: programmer dropped the use of tty_ldisc_flush completely
+mkiss.c: programmer dropped a use of tty_ldisc_flush completely
 moxa.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
 	in both cases, the programmer has put an undeclared variable (tty)
 	as the argument to tty_wakeup
@@ -71,7 +71,7 @@ serial_tx3912.c: Works!
 slip.c:
 specialix.c:
 stallion.c:
-strip.c:
+strip.c: programmer dropped a use of tty_ldisc_flush completely
 sx.c: Works!
 synclink.c:
 synclink_cs.c:
@@ -81,7 +81,7 @@ tty_ioctl.c:
 tty_wakeup_ver1.c:
 usb-serial.c:
 viocons.c:
-vme_scc.c:
-vt_ioctl.c:
+vme_scc.c: programmer has removed {} that the CE makes unnecessary
+vt_ioctl.c: SPATCH CRASHES!!!
 whiteheat.c: Works!
 zs.c: Works!
