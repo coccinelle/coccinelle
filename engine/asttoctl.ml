@@ -31,6 +31,34 @@ let subset l1 l2 = List.for_all (function x -> List.mem x l2) l1
 
 (* --------------------------------------------------------------------- *)
 
+let rec drop_vs f =
+  CTL.rewrap f
+    (match CTL.unwrap f with
+      CTL.False as x ->  x
+    | CTL.True as x -> x
+    | CTL.Pred(p) as x -> x
+    | CTL.Not(phi) -> CTL.Not(drop_vs phi)
+    | CTL.Exists(v,phi) ->
+	(match CTL.unwrap phi with
+	  CTL.Pred((x,CTL.Modif v1)) when v = v1 -> CTL.Pred((x,CTL.Control))
+	| _ -> CTL.Exists(v,drop_vs phi))
+    | CTL.And(phi1,phi2) -> CTL.And(drop_vs phi1,drop_vs phi2)
+    | CTL.Or(phi1,phi2) -> CTL.Or(drop_vs phi1,drop_vs phi2)
+    | CTL.Implies(phi1,phi2) -> CTL.Implies(drop_vs phi1,drop_vs phi2)
+    | CTL.AF(dir,phi1,phi2) -> CTL.AF(dir,drop_vs phi1,drop_vs phi2)
+    | CTL.AX(dir,phi) -> CTL.AX(dir,drop_vs phi)
+    | CTL.AG(dir,phi) -> CTL.AG(dir,drop_vs phi)
+    | CTL.AU(dir,phi1,phi2,phi3) ->
+	CTL.AU(dir,drop_vs phi1,drop_vs phi2,drop_vs phi3)
+    | CTL.EF(dir,phi) -> CTL.EF(dir,drop_vs phi)
+    | CTL.EX(dir,phi) -> CTL.EX(dir,drop_vs phi)
+    | CTL.EG(dir,phi) -> CTL.EG(dir,drop_vs phi)
+    | CTL.EU(dir,phi1,phi2) -> CTL.EU(dir,drop_vs phi1,drop_vs phi2)
+    | CTL.Ref(v) as x -> x
+    | CTL.Let(v,term1,body) -> CTL.Let(v,drop_vs term1,drop_vs body))
+
+(* --------------------------------------------------------------------- *)
+
 let wrap n ctl = (ctl,n)
 
 let aftret =
@@ -40,14 +68,14 @@ let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
 let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
-let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y))
+let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y,drop_vs y))
 let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
 let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
 let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,x))
 let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,x))
 let wrapAG n (x) = wrap n (CTL.AG(CTL.FORWARD,x))
 let wrapEG n (x) = wrap n (CTL.EG(CTL.FORWARD,x))
-let wrapAF n (x) = wrap n (CTL.AF(CTL.FORWARD,x))
+let wrapAF n (x) = wrap n (CTL.AF(CTL.FORWARD,x,drop_vs x))
 let wrapEF n (x) = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot n (x) = wrap n (CTL.Not(x))
 let wrapPred n (x) = wrap n (CTL.Pred(x))
@@ -491,9 +519,8 @@ let decl_to_not_decl n dots stmt make_match f =
     let de =
       let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) in
       Ast.rewrap md (Ast.Decl md) in
-    wrap n (CTL.AU(CTL.FORWARD,
-		   make_match de,
-		   wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f))))
+    wrapAU n (make_match de,
+	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
 
 let rec statement_list stmt_list used_after after quantified guard =
   let n = if !line_numbers then Ast.get_line stmt_list else 0 in
@@ -1057,10 +1084,11 @@ let rec collect_duplicates f =
   | CTL.And(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Or(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Implies(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
-  | CTL.AF(_,phi) -> collect_duplicates phi
+  | CTL.AF(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.AX(_,phi) -> collect_duplicates phi
   | CTL.AG(_,phi) -> collect_duplicates phi
-  | CTL.AU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.AU(_,phi1,phi2,phi3) ->
+      collect_duplicates phi1; collect_duplicates phi2; collect_duplicates phi3
   | CTL.EF(_,phi) -> collect_duplicates phi
   | CTL.EX(_,phi) -> collect_duplicates phi
   | CTL.EG(_,phi) -> collect_duplicates phi
@@ -1111,19 +1139,21 @@ and replace_subformulas dec f =
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       (acc1@acc2,CTL.rewrap f (CTL.Implies(new_phi1,new_phi2)))
-  | CTL.AF(dir,phi) ->
-      let (acc,new_phi) = replace_formulas dec phi in
-      (acc,CTL.rewrap f (CTL.AF(dir,new_phi)))
+  | CTL.AF(dir,phi1,phi2) ->
+      let (acc,new_phi1) = replace_formulas dec phi1 in
+      let (acc,new_phi2) = replace_formulas dec phi2 in
+      (acc,CTL.rewrap f (CTL.AF(dir,new_phi1,new_phi2)))
   | CTL.AX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.AX(dir,new_phi)))
   | CTL.AG(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.AG(dir,new_phi)))
-  | CTL.AU(dir,phi1,phi2) ->
+  | CTL.AU(dir,phi1,phi2,phi3) ->
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
-      (acc1@acc2,CTL.rewrap f (CTL.AU(dir,new_phi1,new_phi2)))
+      let (acc3,new_phi3) = replace_formulas dec phi3 in
+      (acc1@acc2@acc3,CTL.rewrap f (CTL.AU(dir,new_phi1,new_phi2,new_phi3)))
   | CTL.EF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EF(dir,new_phi)))
@@ -1153,10 +1183,18 @@ let rec ctl_fvs f =
       match CTL.unwrap f with
 	CTL.False | CTL.True | CTL.Pred(_) -> ([],[])
       | CTL.Not(phi) | CTL.Exists(_,phi)
-      | CTL.AF(_,phi) | CTL.AX(_,phi) | CTL.AG(_,phi)
+      | CTL.AX(_,phi) | CTL.AG(_,phi)
       | CTL.EF(_,phi) | CTL.EX(_,phi) | CTL.EG(_,phi) -> (ctl_fvs phi,[])
+      | CTL.AU(_,phi1,phi2,phi3) ->
+	  let phi1fvs = ctl_fvs phi1 in
+	  let phi2fvs = ctl_fvs phi2 in
+	  let phi3fvs = ctl_fvs phi3 in
+	  (Common.union_set phi1fvs (Common.union_set phi2fvs phi3fvs),
+	   Common.union_set (intersect phi1fvs phi2fvs)
+	     (Common.union_set (intersect phi1fvs phi3fvs)
+		(intersect phi2fvs phi3fvs)))
       | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
-      | CTL.AU(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
+      | CTL.AF(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
 	  let phi1fvs = ctl_fvs phi1 in
 	  let phi2fvs = ctl_fvs phi2 in
 	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
@@ -1211,15 +1249,20 @@ let drop_bindings b f = (* innermost bindings first in b *)
 	process_binary f ffvs inter nm term
 	  (function _ ->
 	    CTL.Implies(drop_one nm term phi1,drop_one nm term phi2))
-    | CTL.AF(dir,phi) -> CTL.rewrap f (CTL.AF(dir,drop_one nm term phi))
-    | CTL.AX(dir,phi) ->
-	CTL.rewrap f (CTL.AX(dir,drop_one nm term phi))
-    | CTL.AG(dir,phi) -> CTL.rewrap f (CTL.AG(dir,drop_one nm term phi))
-    | CTL.AU(dir,phi1,phi2) ->
+    | CTL.AF(dir,phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term
 	  (function _ ->
-	    CTL.AU(dir,drop_one nm term phi1,drop_one nm term phi2))
+	    CTL.AF(dir,drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.AX(dir,phi) ->
+	CTL.rewrap f (CTL.AX(dir,drop_one nm term phi))
+    | CTL.AG(dir,phi) -> CTL.rewrap f (CTL.AG(dir,drop_one nm term phi))
+    | CTL.AU(dir,phi1,phi2,phi3) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ ->
+	    CTL.AU(dir,drop_one nm term phi1,drop_one nm term phi2,
+		   drop_one nm term phi3))
     | CTL.EF(dir,phi) -> CTL.rewrap f (CTL.EF(dir,drop_one nm term phi))
     | CTL.EX(dir,phi) ->
 	CTL.rewrap f (CTL.EX(dir,drop_one nm term phi))

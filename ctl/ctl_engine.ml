@@ -1024,11 +1024,11 @@ let rec satloop negated required required_states
 	let new_required_states = get_reachable m required_states in
 	satEF dir m (loop negated required new_required_states phi)
 	  new_required_states
-    | A.AF(dir,phi)            ->
+    | A.AF(dir,phi,unchecked_phi)            ->
 	if !Flag_ctl.loop_in_src_code
 	then
 	  loop negated required required_states
-	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi)))
+	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi,unchecked_phi)))
 	else
 	  let new_required_states = get_reachable m required_states in
 	  satAF dir m (loop negated required new_required_states phi)
@@ -1049,7 +1049,7 @@ let rec satloop negated required required_states
 	    let new_required = extend_required s2 required in
 	    satEU dir m (loop negated new_required new_required_states phi1)
 	      s2 new_required_states)
-    | A.AU(dir,phi1,phi2)      ->
+    | A.AU(dir,phi1,phi2,uncheckedphi2)      ->
 	(*print_required required;*)
 	if !Flag_ctl.loop_in_src_code
 	then
@@ -1059,7 +1059,7 @@ let rec satloop negated required required_states
 	       (A.Not
 		  (wrap
 		     (A.EU
-			(dir,wrap(A.Not(phi2)),
+			(dir,wrap(A.Not(uncheckedphi2)),
 			 wrap
 			   (A.And
 			      (wrap
@@ -1159,11 +1159,11 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "EF\n"; flush stdout;
 	anno (satEF dir m res new_required_states) [child]
-    | A.AF(dir,phi1)       -> 
+    | A.AF(dir,phi1,uncheckedphi1)       -> 
 	if !Flag_ctl.loop_in_src_code
 	then
 	  satv negated required required_states
-	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi1)))
+	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi1,uncheckedphi1)))
 	    env
 	else
 	  (let new_required_states = get_reachable m required_states in
@@ -1192,7 +1192,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      satv negated new_required new_required_states phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
 	    anno (satEU dir m res1 res2 new_required_states) [child1; child2])
-    | A.AU(dir,phi1,phi2)      -> 
+    | A.AU(dir,phi1,phi2,uncheckedphi2)      -> 
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in
@@ -1201,7 +1201,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	       (A.Not
 		  (wrap
 		     (A.EU
-			(dir,wrap(A.Not(phi2)),
+			(dir,wrap(A.Not(uncheckedphi2)),
 			 wrap
 			   (A.And
 			      (wrap
@@ -1285,10 +1285,10 @@ let simpleanno l phi res =
     | A.And(phi1,phi2)     -> pp "And"
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.Implies(phi1,phi2) -> pp "Implies"
-    | A.AF(dir,phi1)       -> pp "AF"; pp_dir dir
+    | A.AF(dir,phi1,_)     -> pp "AF"; pp_dir dir
     | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir
     | A.AG(dir,phi1)       -> pp "AG"; pp_dir dir
-    | A.AU(dir,phi1,phi2)  -> pp "AU"; pp_dir dir
+    | A.AU(dir,phi1,phi2,_)-> pp "AU"; pp_dir dir
     | A.EF(dir,phi1)       -> pp "EF"; pp_dir dir
     | A.EX(dir,phi1)	   -> pp "EX"; pp_dir dir
     | A.EG(dir,phi1)	   -> pp "EG"; pp_dir dir

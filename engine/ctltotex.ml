@@ -79,7 +79,7 @@ let rec ctl2c ct pp pv x =
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = wrap (ct+1) pp pv f2 in
       (res1^" \\rightarrow "^res2,ct)
-  | CTL.AF(dir,f) ->
+  | CTL.AF(dir,f,_) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AF"^diamond^res,ct)
@@ -91,7 +91,7 @@ let rec ctl2c ct pp pv x =
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AG"^diamond^res,ct)
-  | CTL.AU(dir,f1,f2) ->
+  | CTL.AU(dir,f1,f2,_) ->
       let (diamond,ct) = print_diamond (ct+1) dir in
       let (res1,ct) = existswrap (ct+1) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
@@ -152,7 +152,7 @@ and orwrap ct pp pv x =
 
 and pathwrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_,_) | CTL.AG(_,_) | CTL.AU(_,_,_,_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -161,7 +161,7 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_,_) | CTL.AG(_,_) | CTL.AU(_,_,_,_)
   | CTL.Pred(_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
