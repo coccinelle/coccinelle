@@ -1,7 +1,3 @@
-SPATCH=../../spatch
-ISO=../../standard.iso
-ARGS=-iso_file $(ISO) -cocci_file $(SP) -compare_with_expected
-
 SP=rule9.cocci
 
 SOURCES = cciss_scsi.c \
@@ -26,16 +22,4 @@ SOURCES = cciss_scsi.c \
 
 SOURCES = scsiglue.c 53c700.c
 
-
-OBJS = $(SOURCES:.c=.ok)
-
-all: $(OBJS)
-	ls *ok *failed
-
-.SUFFIXES:
-.SUFFIXES: .c .ok
-
-.c.ok: $(SPATCH) $(SP)
-	/bin/rm -f $@ $(<:.c=.failed)
-	($(SPATCH) $(ARGS) $< && touch $(<:.c=.ok)) || (diff -u -b /tmp/output.c $(<:.c=.res) > $(<:.c=.failed))
-
+include ../generic_makefile

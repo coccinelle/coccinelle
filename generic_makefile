@@ -1,0 +1,16 @@
+SPATCH=../../spatch
+
+ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP)
+
+OBJS = $(SOURCES:.c=.ok)
+
+all: $(OBJS)
+	ls *ok *failed
+
+%.ok: %.c $(SPATCH) $(SP)
+	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
+	(time $(SPATCH) $(ARGS) $<) 2> $(<:.c=.ok) || \
+	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.failed)) || \
+	touch $(<:.c=.failed)
+	(test -e /tmp/output.c && \
+	(diff -b -B -w /tmp/output.c $(<:.c=.res) || true)) || true

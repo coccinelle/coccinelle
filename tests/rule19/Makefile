@@ -1,4 +1,3 @@
-SPATCH=../../spatch
 SP=rule19.cocci
 
 SOURCES = rule19_ver10_gazel.c \
@@ -31,13 +30,4 @@ SOURCES = rule19_ver10_gazel.c \
           rule19_ver9_enternow_pci.c
 
 
-OBJS = $(SOURCES:.c=.ok)
-
-all: $(OBJS)
-	ls *ok *failed
-
-%.ok: %.c $(SPATCH) $(SP)
-	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
-	time $(SPATCH) $(ARGS) $< && touch $(<:.c=.ok) || touch $(<:.c=.failed)
-	test -e /tmp/output.c && \
-	(diff -b -B -w /tmp/output.c $(<:.c=.res) || true)
+include ../generic_makefile
