@@ -652,8 +652,6 @@ let disj_fail bindings e =
 
 (* isomorphism code is by default CONTEXT *)
 let copy_plus printer minusify model e =
-  Printf.printf "in copy_plus\n";
-  printer model; Format.print_newline();
   match Ast0.get_mcodekind model with
     Ast0.MINUS(mc) ->
       (* minusify e *)
