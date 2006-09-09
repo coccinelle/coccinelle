@@ -36,12 +36,8 @@ OBJS = $(SOURCES:.c=.ok)
 all: $(OBJS)
 	ls *ok *failed
 
-.SUFFIXES:
-.SUFFIXES: .c .ok
-
-.c.ok: $(SPATCH) $(SP)
-	/bin/rm -f $@ $(<:.c=.failed)
-	test -e $(SPATCH) && \
-	(time $(SPATCH) -compare_with_expected -cocci_file $(SP) $< && \
-	diff -b -q /tmp/output.c $(<:.c=.res) && touch $@) || \
-	touch $(<:.c=.failed)
+%.ok: %.c $(SPATCH) $(SP)
+	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
+	time $(SPATCH) $(ARGS) $< && touch $(<:.c=.ok) || touch $(<:.c=.failed)
+	test -e /tmp/output.c && \
+	(diff -b -B -w /tmp/output.c $(<:.c=.res) || true)
