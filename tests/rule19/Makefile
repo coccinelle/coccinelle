@@ -30,4 +30,4 @@ SOURCES = rule19_ver10_gazel.c \
           rule19_ver9_enternow_pci.c
 
 
-include ../generic_makefile
+include ../../generic_makefile

@@ -22,4 +22,4 @@ SOURCES = cciss_scsi.c \
 
 SOURCES = scsiglue.c 53c700.c
 
-include ../generic_makefile
+include ../../generic_makefile

@@ -17,4 +17,4 @@ SOURCES = avm_pci.c \
           st5481_b.c \
           w6692.c
 
-include ../generic_makefile
+include ../../generic_makefile

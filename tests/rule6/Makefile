@@ -2,4 +2,4 @@ SP=mem_map.cocci
 
 SOURCES = 
 
-include ../generic_makefile
+include ../../generic_makefile

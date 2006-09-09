@@ -15,4 +15,4 @@ SOURCES = aztech_ver10_micropcm20-radio.c \
           aztech_ver22_typhoon.c \
           aztech_ver23_zoltrix.c
 
-include ../generic_makefile
+include ../../generic_makefile
