@@ -34,7 +34,8 @@ OPTOBJS = $(SOURCES:.ml=.cmx)
 
 
 
-all: $(TARGET).byte $(TARGET).cma
+#all: $(TARGET).byte $(TARGET).cma
+all: $(TARGET).cma
 #$(TARGET).top
 #$(TARGET).opt
 
