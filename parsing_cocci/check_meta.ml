@@ -118,7 +118,7 @@ let rec expression context table minus e =
       check_table table minus name
   | Ast0.MetaExprList(name,inherited) ->
       if minus then check_table table minus name
-  | Ast0.DisjExpr(_,exps,_) ->
+  | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression ID table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w) ->
       dots (expression ID table minus) exp_dots;
@@ -154,7 +154,7 @@ let rec declaration context table minus d =
       ident context table minus id; expression ID table minus exp
   | Ast0.UnInit(ty,id,sem) ->
       typeC table minus ty; ident context table minus id
-  | Ast0.DisjDecl(_,decls,_) ->
+  | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID table minus) decls
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
@@ -200,7 +200,7 @@ let rec statement table minus s =
   | Ast0.MetaStmtList(name,inherited) ->
       if minus then check_table table minus name
   | Ast0.Exp(exp) -> expression ID table minus exp
-  | Ast0.Disj(_,rule_elem_dots_list,_) ->
+  | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement table minus)) rule_elem_dots_list
   | Ast0.Nest(_,rule_elem_dots,_,w) ->
       dots (statement table minus) rule_elem_dots;

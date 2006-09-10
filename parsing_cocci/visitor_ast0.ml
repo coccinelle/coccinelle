@@ -116,10 +116,20 @@ let combiner bind option_default
       | Ast0.MetaExpr(name,ty,_) -> string_mcode name
       | Ast0.MetaExprList(name,_) -> string_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
-      | Ast0.DisjExpr(starter,expr_list,ender) ->
-	  bind (string_mcode starter)
-	    (bind (multibind (List.map expression expr_list))
-	        (string_mcode ender))
+      | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+	  (match expr_list with
+	    [] -> failwith "bad disjunction"
+	  | x::xs ->
+	      bind (string_mcode starter)
+		(bind (expression x)
+		   (bind
+		      (multibind
+			 (List.map2
+			    (function mid ->
+			      function x ->
+				bind (string_mcode mid) (expression x))
+			    mids xs))
+	              (string_mcode ender))))
       | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	  bind (string_mcode starter)
 	    (bind (expression_dots expr_dots)
@@ -158,10 +168,20 @@ let combiner bind option_default
 		      string_mcode sem]
       | Ast0.UnInit(ty,id,sem) ->
 	  multibind [typeC ty; ident id; string_mcode sem]
-      |	Ast0.DisjDecl(starter,decls,ender) ->
-	  bind (string_mcode starter)
-	    (bind (multibind (List.map declaration decls))
-	       (string_mcode ender))
+      |	Ast0.DisjDecl(starter,decls,mids,ender) ->
+	  (match decls with
+	    [] -> failwith "bad disjunction"
+	  | x::xs ->
+	      bind (string_mcode starter)
+		(bind (declaration x)
+		   (bind
+		      (multibind
+			 (List.map2
+			    (function mid ->
+			      function x ->
+				bind (string_mcode mid) (declaration x))
+			    mids xs))
+	              (string_mcode ender))))
       | Ast0.OptDecl(decl) -> declaration decl
       | Ast0.UniqueDecl(decl) -> declaration decl
       | Ast0.MultiDecl(decl) -> declaration decl in
@@ -225,10 +245,20 @@ let combiner bind option_default
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
       | Ast0.MetaStmt(name,_) -> string_mcode name
       | Ast0.MetaStmtList(name,_) -> string_mcode name
-      | Ast0.Disj(starter,statement_dots_list,ender) ->
-	  bind (string_mcode starter)
-	    (bind (multibind (List.map statement_dots statement_dots_list))
-	       (string_mcode ender))
+      | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+	  (match statement_dots_list with
+	    [] -> failwith "bad disjunction"
+	  | x::xs ->
+	      bind (string_mcode starter)
+		(bind (statement_dots x)
+		   (bind
+		      (multibind
+			 (List.map2
+			    (function mid ->
+			      function x ->
+				bind (string_mcode mid) (statement_dots x))
+			    mids xs))
+	              (string_mcode ender))))
       | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	  bind (string_mcode starter)
 	    (bind (statement_dots stmt_dots)
@@ -384,9 +414,9 @@ let rebuilder = fun
 	| Ast0.MetaExprList(name,inherited) ->
 	    Ast0.MetaExprList(string_mcode name,inherited)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)
-	| Ast0.DisjExpr(starter,expr_list,ender) ->
+	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
-			  string_mcode ender)
+			  List.map string_mcode mids,string_mcode ender)
 	| Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	    Ast0.NestExpr(string_mcode starter,expression_dots expr_dots,
 			  string_mcode ender, get_option expression whencode)
@@ -430,9 +460,9 @@ let rebuilder = fun
 		      string_mcode sem)
 	| Ast0.UnInit(ty,id,sem) ->
 	    Ast0.UnInit(typeC ty, ident id, string_mcode sem)
-	| Ast0.DisjDecl(starter,decls,ender) ->
+	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,
-			  string_mcode ender)
+			  List.map string_mcode mids,string_mcode ender)
 	| Ast0.OptDecl(decl) -> Ast0.OptDecl(declaration decl)
 	| Ast0.UniqueDecl(decl) -> Ast0.UniqueDecl(declaration decl)
 	| Ast0.MultiDecl(decl) -> Ast0.MultiDecl(declaration decl)) in
@@ -502,9 +532,10 @@ let rebuilder = fun
 	    Ast0.MetaStmt(string_mcode name,inherited)
 	| Ast0.MetaStmtList(name,inherited) ->
 	    Ast0.MetaStmtList(string_mcode name,inherited)
-	| Ast0.Disj(starter,statement_dots_list,ender) ->
+	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	    Ast0.Disj(string_mcode starter,
 		      List.map statement_dots statement_dots_list,
+		      List.map string_mcode mids,
 		      string_mcode ender)
 	| Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,

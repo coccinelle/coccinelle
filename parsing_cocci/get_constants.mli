@@ -1,1 +1,1 @@
-val get_constants : Ast0_cocci.rule list -> string list
+val get_constants : Ast_cocci.rule list -> string list

@@ -149,9 +149,7 @@ let union_all l = List.fold_left Common.union_set [] l
 let classify all_marked table code =
   let mkres builder k il tl bil btl l e =
     (if k = AllMarked
-    then (Printf.printf "all marking:\n";
-	  Unparse_ast0.unparse_anything (builder e);
-      Ast0.set_mcodekind e (all_marked())) (* definitive *)
+    then Ast0.set_mcodekind e (all_marked()) (* definitive *)
     else
       let check_index il tl =
 	if List.for_all is_context tl
@@ -182,21 +180,15 @@ let classify all_marked table code =
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 
-  let multibind l =
-    let rec loop = function
-	[] -> option_default
-      |	[x] -> x
-      |	x::xs -> bind x (loop xs) in
-    loop l in
-
   let disj_cases starter code fn ender =
     (* neutral_mcode used so starter and ender don't have an affect on
        whether the code is considered all plus/minus, but so that they are
-       consider in the index list, which is needed to make a disj
-       with something in one branch and nothing in the other different
-       from code that just has the something.  Cannot agglomerate over |
-       boundaries, because two - cases might have different + code, and
-       don't want to put the + code together into one unit. *)
+       consider in the index list, which is needed to make a disj with
+       something in one branch and nothing in the other different from code
+       that just has the something (starter/ender enough, mids not needed
+       for this).  Cannot agglomerate over | boundaries, because two -
+       cases might have different + code, and don't want to put the + code
+       together into one unit. *)
 	bind (neutral_mcode starter)
 	  (bind (List.fold_right bind
 		   (List.map make_not_marked (List.map fn code))
@@ -215,14 +207,14 @@ let classify all_marked table code =
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,ender) -> 
+      | Ast0.DisjExpr(starter,expr_list,_,ender) -> 
 	    disj_cases starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
-	Ast0.DisjDecl(starter,decls,ender) ->
+	Ast0.DisjDecl(starter,decls,_,ender) ->
 	  disj_cases starter decls r.V0.combiner_declaration ender
       |	_ -> k e) in
 
@@ -237,7 +229,7 @@ let classify all_marked table code =
 	  k (Ast0.rewrap s (Ast0.Circles(dots,None)))
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,None)))
-      | Ast0.Disj(starter,statement_dots_list,ender) ->
+      | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
       |	_ -> k s) in
@@ -322,8 +314,11 @@ let rec equal_expression e1 e2 =
   | (Ast0.MetaExprList(name1,_),Ast0.MetaExprList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
-  | (Ast0.DisjExpr(starter1,_,ender1),Ast0.DisjExpr(starter2,_,ender2)) ->
-      equal_mcode starter1 starter2 && equal_mcode ender1 ender2
+  | (Ast0.DisjExpr(starter1,_,mids1,ender1),
+     Ast0.DisjExpr(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 && 
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
   | (Ast0.NestExpr(starter1,_,ender1,_),Ast0.NestExpr(starter2,_,ender2,_)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
   | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_))
@@ -414,8 +409,10 @@ let rec equal_statement s1 s2 =
   | (Ast0.MetaStmt(name1,_),Ast0.MetaStmt(name2,_))
   | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Disj(starter1,_,ender1),Ast0.Disj(starter2,_,ender2)) ->
-      equal_mcode starter1 starter2 && equal_mcode ender1 ender2
+  | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
+      equal_mcode starter1 starter2 && 
+      List.for_all2 equal_mcode mids1 mids2 &&
+      equal_mcode ender1 ender2
   | (Ast0.Nest(starter1,_,ender1,_),Ast0.Nest(starter2,_,ender2,_)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true

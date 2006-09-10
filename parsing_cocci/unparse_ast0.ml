@@ -139,7 +139,7 @@ let rec expression e =
 	  print_string "*/"
       | Ast0.MetaExprList(name,_) -> mcode print_string name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
-      | Ast0.DisjExpr(_,exp_list,_) ->
+      | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  print_string "\n("; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
@@ -205,7 +205,7 @@ let rec declaration d =
 	  mcode print_string eq; print_string " ";expression exp;
 	  mcode print_string sem
       | Ast0.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
-      | Ast0.DisjDecl(_,decls,_) ->
+      | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
@@ -302,7 +302,7 @@ let rec statement arity s =
 	  print_string arity; mcode print_string name
       | Ast0.MetaStmtList(name,_) ->
 	  print_string arity;  mcode print_string name
-      | Ast0.Disj(_,statement_dots_list,_) ->
+      | Ast0.Disj(_,statement_dots_list,_,_) ->
 	  print_string arity;
 	  print_string "\n("; force_newline();
 	  print_between

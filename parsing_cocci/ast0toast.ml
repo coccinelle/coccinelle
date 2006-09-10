@@ -148,19 +148,19 @@ let check_allminus s =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,ender) ->
+      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.V0.combiner_expression expr_list
     | _ -> k e in
 
   let declaration r k e =
     match Ast0.unwrap e with
-      Ast0.DisjDecl(starter,decls,ender) ->
+      Ast0.DisjDecl(starter,decls,mids,ender) ->
 	List.for_all r.V0.combiner_declaration decls
     | _ -> k e in
 
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Disj(starter,statement_dots_list,ender) ->
+      Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	List.for_all r.V0.combiner_statement_dots statement_dots_list
     | _ -> k e in
 
@@ -279,7 +279,7 @@ let rec expression e =
     | Ast0.MetaExprList(name,inherited) ->
 	Ast.MetaExprList(mcode name,inherited)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
-    | Ast0.DisjExpr(_,exps,_)     -> Ast.DisjExpr(List.map expression exps)
+    | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode) ->
 	let whencode = get_option expression whencode in
 	Ast.NestExpr(dots expression exp_dots,whencode)
@@ -357,7 +357,7 @@ let rec declaration d =
 	let sem = mcode sem in
 	Ast.Init(ty,id,eq,exp,sem)
     | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
-    | Ast0.DisjDecl(_,decls,_)     -> Ast.DisjDecl(List.map declaration decls)
+    | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
     | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl))
@@ -450,7 +450,7 @@ let rec statement s =
 	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name,inherited)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
-      | Ast0.Disj(_,rule_elem_dots_list,_) ->
+      | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
       | Ast0.Nest(_,rule_elem_dots,_,whencode) ->

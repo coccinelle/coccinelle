@@ -334,6 +334,7 @@ val undots : 'a dots -> 'a list
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a
+val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
 val get_fvs : 'a wrap -> string list
 

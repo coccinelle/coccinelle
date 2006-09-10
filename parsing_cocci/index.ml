@@ -63,7 +63,7 @@ let expression e =
   | Ast0.MetaExpr(name,ty,_) -> [33]
   | Ast0.MetaExprList(name,_) -> [34]
   | Ast0.EComma(cm) -> [35]
-  | Ast0.DisjExpr(_,expr_list,_) -> [36]
+  | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
   | Ast0.NestExpr(_,expr_dots,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
   | Ast0.Ecircles(dots,whencode) -> [39]
@@ -89,7 +89,7 @@ let declaration d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(ty,id,sem) -> [55]
-  | Ast0.DisjDecl(_,decls,_) -> [97] (* added after *)
+  | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.MultiDecl(decl) -> [58]
@@ -124,7 +124,7 @@ let statement s =
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
   | Ast0.MetaStmt(name,_) -> [79]
   | Ast0.MetaStmtList(name,_) -> [80]
-  | Ast0.Disj(_,statement_dots_list,_) -> [81]
+  | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
   | Ast0.Nest(_,stmt_dots,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]
   | Ast0.Dots(d,whencode) -> [84]

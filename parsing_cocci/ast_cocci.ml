@@ -334,6 +334,7 @@ and anything =
 
 let rewrap (_,l,fvs) x = (x,l,fvs)
 let unwrap (x,_,_) = x
+let unwrap_mcode (x,_,_) = x
 let get_line (_,l,_) = l
 let get_fvs (_,_,fvs) = fvs
 

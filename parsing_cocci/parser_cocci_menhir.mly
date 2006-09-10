@@ -171,7 +171,7 @@ let iso_adjust fn first rest =
 %token <Data.line_type * int * int * int> TCircles TOCircles TCCircles
 %token <Data.line_type * int * int * int> TStars TOStars TCStars
 
-%token <Data.line_type * int * int * int> TWhy TDotDot TBang TOPar TOPar0 TMid
+%token <Data.line_type * int * int * int> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.line_type * int * int * int> TMid0 TCPar TCPar0
 
 %token <string * (Data.line_type * int * int * int)> TInclude
@@ -519,13 +519,14 @@ statement_dots(dotter):
 /* a statement on its own */
 single_statement:
     statement                         { $1 }
-  | TOPar0 mid_list(statement) TCPar0
+  | TOPar0 midzero_list(statement) TCPar0
       /* degenerate case, elements are single statements and thus don't
 	contain dots */
-      { Ast0.wrap
+      { let (mids,code) = $2 in
+        Ast0.wrap
 	  (Ast0.Disj(clt2mcode "(" (startofs($1)) $1,
-		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) $2,
-		     clt2mcode ")" (startofs($3)) $3)) }
+		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
+		     mids, clt2mcode ")" (startofs($3)) $3)) }
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */
@@ -570,13 +571,16 @@ decl_statement:
       { List.map (function x -> Ast0.wrap(Ast0.Decl(x))) $1 }
   | statement { [$1] }
   | TOPar0 pre_post_decl_statement_and_expression_opt_mid TCPar0
-      { if List.for_all
-	  (function x ->
-	    match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
-	  $2
+      { let (first,rest) = $2 in
+        let (mids,code) = List.split rest in
+	let code = first :: code in
+	if List.for_all
+	    (function x ->
+	      match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
+	    code
       then []
       else [Ast0.wrap(Ast0.Disj(clt2mcode "(" (startofs($1)) $1,
-				$2,
+				code, mids,
 				clt2mcode ")" (startofs($3)) $3))] }
 
 /*****************************************************************************/
@@ -757,8 +761,9 @@ primary_expr(recurser,primary_extra):
      { Ast0.wrap(Ast0.Paren(clt2mcode "(" (startofs($1)) $1,$2,
 			    clt2mcode ")" (startofs($3)) $3)) }
  | TOPar0 midzero_list(recurser) TCPar0
-     { Ast0.wrap(Ast0.DisjExpr(clt2mcode "(" (startofs($1)) $1,
-			       $2,
+     { let (mids,code) = $2 in
+       Ast0.wrap(Ast0.DisjExpr(clt2mcode "(" (startofs($1)) $1,
+			       code, mids,
 			       clt2mcode ")" (startofs($3)) $3)) }
  | primary_extra { $1 }
 
@@ -956,13 +961,17 @@ pre_post_decl_statement_and_expression_opt:
   | pre_post_decl_statement_and_expression  { $1 }
 
 pre_post_decl_statement_and_expression_opt_mid:
-    pre_post_decl_statement_and_expression       { [$1] }
-  | /* empty */                                  { [Ast0.wrap(Ast0.DOTS([]))] }
+    pre_post_decl_statement_and_expression       { ($1,[]) }
+  | /* empty */                          { (Ast0.wrap(Ast0.DOTS([])),[]) }
   | pre_post_decl_statement_and_expression TMid0
-      pre_post_decl_statement_and_expression_opt_mid { $1::$3 }
+      pre_post_decl_statement_and_expression_opt_mid
+      { let (first,rest) = $3 in
+        ($1,(clt2mcode "|" (startofs($2)) $2,first)::rest) }
   | TMid0
       pre_post_decl_statement_and_expression_opt_mid
-      { Ast0.wrap(Ast0.DOTS([]))::$2 }
+      { let (first,rest) = $2 in
+        (Ast0.wrap(Ast0.DOTS([])),
+	 (clt2mcode "|" (startofs($1)) $1,first)::rest) }
 
 /* ---------------------------------------------------------------------- */
 
@@ -1023,11 +1032,12 @@ eexpr_list_option: eexpr_list { $1 }
 comma_list(elem):
   separated_nonempty_list(TComma,elem) { $1 }
 
-mid_list(elem):
-  separated_nonempty_list(TMid,elem) { $1 }
-
 midzero_list(elem):
-  separated_nonempty_list(TMid0,elem) { $1 }
+  elem list(mzl(elem))
+     { let (mids,code) = List.split $2 in (mids,($1::code)) }
+
+mzl(elem):
+  TMid0 elem { (clt2mcode "|" (startofs($1)) $1, $2) }
 
 // SEQ1
 // at least one instance of grammar/ender

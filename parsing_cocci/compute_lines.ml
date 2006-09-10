@@ -222,11 +222,12 @@ let rec expression e =
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) as ue ->
       let ln = promote_mcode cm in mkres e ue ln ln
-  | Ast0.DisjExpr(starter,exps,ender) ->
+  | Ast0.DisjExpr(starter,exps,mids,ender) ->
       let starter = bad_mcode starter in
       let exps = List.map expression exps in
+      let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
-      mkmultires e (Ast0.DisjExpr(starter,exps,ender))
+      mkmultires e (Ast0.DisjExpr(starter,exps,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info exps) (get_all_end_info exps)
   | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
@@ -307,11 +308,12 @@ let rec declaration d =
       let ty = typeC ty in
       let id = ident id in
       mkres d (Ast0.UnInit(ty,id,sem)) ty (promote_mcode sem)
-  | Ast0.DisjDecl(starter,decls,ender) ->
+  | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let starter = bad_mcode starter in
       let decls = List.map declaration decls in
+      let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
-      mkmultires d (Ast0.DisjDecl(starter,decls,ender))
+      mkmultires d (Ast0.DisjDecl(starter,decls,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info decls) (get_all_end_info decls)
   | Ast0.OptDecl(decl) ->
@@ -435,13 +437,14 @@ let rec statement s =
   | Ast0.Exp(exp) ->
       let exp = expression exp in
       mkres s (Ast0.Exp(exp)) exp exp
-  | Ast0.Disj(starter,rule_elem_dots_list,ender) ->
+  | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let starter = bad_mcode starter in
+      let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
       let elems =
 	List.map (function x -> dots is_stm_dots None statement x)
 	  rule_elem_dots_list in
-      mkmultires s (Ast0.Disj(starter,elems,ender))
+      mkmultires s (Ast0.Disj(starter,elems,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info elems) (get_all_end_info elems)
   | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->

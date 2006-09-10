@@ -215,7 +215,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
 	      match_typeC tya tyb
 	  | (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
-	  | (Ast0.DisjExpr(_,expsa,_),_) ->
+	  | (Ast0.DisjExpr(_,expsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.NestExpr(_,exp_dotsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
@@ -285,7 +285,7 @@ let match_maker context_required whencode_allowed =
 	    (conjunct_bindings (match_ident ida idb) (match_expr expa expb))
       | (Ast0.UnInit(tya,ida,_),Ast0.UnInit(tyb,idb,_)) ->
 	  conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
-      | (Ast0.DisjDecl(_,declsa,_),Ast0.DisjDecl(_,declsb,_)) ->
+      | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
       | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
@@ -374,7 +374,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
 	  | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
 	      match_expr expa expb
-	  | (Ast0.Disj(_,statement_dots_lista,_),_) ->
+	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
 	  | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
 	      failwith "nest not supported in patterns"
@@ -821,13 +821,29 @@ let disj_starter =
 let disj_ender =
   ("(",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
 
+let disj_mid _ =
+  ("|",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
+
 let make_disj_expr el =
-  Ast0.context_wrap (Ast0.DisjExpr(disj_starter,el,disj_ender))
+  let mids =
+    match el with
+      [] -> failwith "bad disjunction"
+    | x::xs -> List.map disj_mid xs in
+  Ast0.context_wrap (Ast0.DisjExpr(disj_starter,el,mids,disj_ender))
 let make_disj_decl dl =
-  Ast0.context_wrap (Ast0.DisjDecl(disj_starter,dl,disj_ender))
+  let mids =
+    match dl with
+      [] -> failwith "bad disjunction"
+    | x::xs -> List.map disj_mid xs in
+  Ast0.context_wrap (Ast0.DisjDecl(disj_starter,dl,mids,disj_ender))
 let make_disj_stmt sl =
   let dotify x = Ast0.context_wrap (Ast0.DOTS[x]) in
-  Ast0.context_wrap (Ast0.Disj(disj_starter,List.map dotify sl,disj_ender))
+  let mids =
+    match sl with
+      [] -> failwith "bad disjunction"
+    | x::xs -> List.map disj_mid xs in
+  Ast0.context_wrap
+    (Ast0.Disj(disj_starter,List.map dotify sl,mids,disj_ender))
 
 let transform_expr alts e =
   match alts with

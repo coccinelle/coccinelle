@@ -80,7 +80,8 @@ and base_expression =
   | MetaExpr       of string mcode * Type_cocci.typeC list option * bool
   | MetaExprList   of string mcode * bool (* only in arg lists *)
   | EComma         of string mcode (* only in arg lists *)
-  | DisjExpr       of string mcode * expression list * string mcode
+  | DisjExpr       of string mcode * expression list * string mcode list *
+	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
 	              expression option
   | Edots          of string mcode (* ... *) * expression option
@@ -121,7 +122,8 @@ type base_declaration =
     Init of typeC * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of typeC * ident * string mcode (* ; *)
-  | DisjDecl   of string mcode * declaration list * string mcode
+  | DisjDecl   of string mcode * declaration list * string mcode list *
+	          string mcode
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
@@ -181,7 +183,8 @@ type base_statement =
   | MetaStmt      of string mcode * bool
   | MetaStmtList  of string mcode * bool (* only in statement lists *)
   | Exp           of expression  (* only in dotted statement lists *)
-  | Disj          of string mcode * statement dots list * string mcode
+  | Disj          of string mcode * statement dots list * string mcode list *
+	             string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             statement dots option
   | Dots          of string mcode (* ... *) * statement dots option

@@ -280,14 +280,14 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let arity = exp_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
       make_exp expr tgt arity (Ast0.EComma(cm))
-  | Ast0.DisjExpr(starter,exps,ender) ->
+  | Ast0.DisjExpr(starter,exps,mids,ender) ->
       let exps = List.map (top_expression in_nest opt_allowed tgt) exps in
       (match List.rev exps with
 	_::xs ->
 	  if anyopt xs (function Ast0.OptExp(_) -> true | _ -> false)
 	  then fail expr "opt only allowed in the last disjunct"
       |	_ -> ());
-      let res = Ast0.DisjExpr(starter,exps,ender) in
+      let res = Ast0.DisjExpr(starter,exps,mids,ender) in
       Ast0.rewrap expr res
   | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
       let res =
@@ -411,14 +411,14 @@ let rec declaration in_nest tgt decl =
       let id = ident false false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(ty,id,sem))
-  | Ast0.DisjDecl(starter,decls,ender) ->
+  | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let decls = List.map (declaration in_nest tgt) decls in
       (match List.rev decls with
 	_::xs ->
 	  if anyopt xs (function Ast0.OptDecl(_) -> true | _ -> false)
 	  then fail decl "opt only allowed in the last disjunct"
       |	_ -> ());
-      let res = Ast0.DisjDecl(starter,decls,ender) in
+      let res = Ast0.DisjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
@@ -590,7 +590,7 @@ let rec statement in_nest tgt stm =
       make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,inherited))
   | Ast0.Exp(exp) ->
       Ast0.rewrap stm (Ast0.Exp(top_expression in_nest true tgt exp))
-  | Ast0.Disj(starter,rule_elem_dots_list,ender) ->
+  | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
 	List.map (function x -> concat_dots (statement in_nest tgt) x)
 	  rule_elem_dots_list in
@@ -610,8 +610,8 @@ let rec statement in_nest tgt stm =
 	      | Ast0.CIRCLES(l) -> Ast0.rewrap x (Ast0.CIRCLES(rebuild l))
 	      | Ast0.STARS(l) -> Ast0.rewrap x (Ast0.STARS(rebuild l)))
 	    stms in
-	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,ender))
-      with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,ender)))
+	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,mids,ender))
+      with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender)))
   | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->
       Ast0.rewrap stm
 	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,

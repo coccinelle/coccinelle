@@ -106,7 +106,7 @@ let rec propagate_types env =
       | Ast0.MetaExpr(name,ty,_) -> None
       | Ast0.MetaExprList(name,_) -> None
       | Ast0.EComma(cm) -> None
-      | Ast0.DisjExpr(_,exp_list,_) ->
+      | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  let types = List.map Ast0.get_type exp_list in
 	  let combined = List.fold_left lub_type None types in
 	  (match combined with
@@ -156,7 +156,7 @@ let rec propagate_types env =
 		  (propagate_types (acc@env)).V0.combiner_expression exp;
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(ty,id,_) -> [(strip id,Ast0.ast0_type_to_type ty)]
-	      | Ast0.DisjDecl(_,disjs,_) ->
+	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)
 	      | Ast0.OptDecl(decl) -> process_decl decl
 	      | Ast0.UniqueDecl(decl) -> process_decl decl

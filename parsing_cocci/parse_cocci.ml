@@ -123,7 +123,6 @@ let token2c (tok,_) =
   | PC.TBang(clt)  -> "!"^(line_type2c clt)
   | PC.TOPar(clt)  -> "("^(line_type2c clt)
   | PC.TOPar0(clt) -> "("^(line_type2c clt)
-  | PC.TMid(clt)   -> "|"^(line_type2c clt)
   | PC.TMid0(clt)  -> "|"^(line_type2c clt)
   | PC.TCPar(clt)  -> ")"^(line_type2c clt)
   | PC.TCPar0(clt) -> ")"^(line_type2c clt)
@@ -226,7 +225,7 @@ let split_token ((tok,_) as t) =
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(clt)
-  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(clt) | PC.TMid(clt)
+  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(clt)
   | PC.TMid0(clt) | PC.TCPar(clt) | PC.TCPar0(clt) -> split t clt
 
   | PC.TInc(clt) | PC.TDec(clt) -> split t clt
@@ -331,7 +330,7 @@ let token2line (tok,_) =
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt)    
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
-  | PC.TOPar0(clt) | PC.TMid(clt) | PC.TMid0(clt) | PC.TCPar(clt)  
+  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar(clt)  
   | PC.TCPar0(clt) 
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt) 
@@ -574,4 +573,7 @@ let process file isofile verbose =
 	  Pretty_print_cocci.unparse minus_ast;
 	  (metavars, minus_ast))
       minus plus in
-  Free_vars.free_vars parsed
+  let (code,ua) = Free_vars.free_vars parsed in
+  let tokens = Get_constants.get_constants code in
+  (code,ua,tokens)
+

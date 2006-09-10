@@ -13,6 +13,9 @@ let testall_mode = ref false
 let compare_with_expected = ref false
 
 
+(* if true, stores output in file.cocci_res *)
+let save_output_file = ref false
+
 (*****************************************************************************)
 (* Note that I use a kind of astdiff to know if there is a difference, but
  * then I use diff to print the differences. So sometimes you have to dig
@@ -218,6 +221,7 @@ let main () =
 
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
+      "-save_output_file", Arg.Set save_output_file, " ";
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 
@@ -273,7 +277,9 @@ let main () =
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
               (if List.length fullxs = 1 then true else false);
-
+	  if !save_output_file
+	  then
+	    let _ = Sys.command ("cp /tmp/output.c "^cfile^".cocci_res") in ()
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"

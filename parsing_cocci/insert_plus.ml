@@ -144,9 +144,8 @@ let collect_minus_join_points root =
 	@ bodyres
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
-    | Ast0.Dots(d,whencode) -> []
-    | Ast0.Circles(d,whencode) -> []
-    | Ast0.Stars(d,whencode) -> []
+    | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
+    | Ast0.Stars(d,whencode) -> mcode d (* ignore whencode *)
     | _ -> do_nothing r k s in
 
   let expression r k e =
@@ -154,9 +153,8 @@ let collect_minus_join_points root =
       Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	mcode starter @
 	r.V0.combiner_expression_dots expr_dots @ mcode ender
-    | Ast0.Edots(d,whencode) -> []
-    | Ast0.Ecircles(d,whencode) -> []
-    | Ast0.Estars(d,whencode) -> []
+    | Ast0.Edots(d,whencode) | Ast0.Ecircles(d,whencode)
+    | Ast0.Estars(d,whencode) -> mcode d (* ignore whencode *)
     | _ -> do_nothing r k e in
 
   let do_top r k (e: Ast0.top_level) = k e in

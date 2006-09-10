@@ -63,7 +63,7 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     write_file "/tmp/__cocci.cocci" (s);
-    let (astcocci, _) = sp_from_file "/tmp/__cocci.cocci" iso in
+    let (astcocci, _,_) = sp_from_file "/tmp/__cocci.cocci" iso in
     let stmt =
       astcocci +> List.hd +> List.hd +> (function x ->
 	match Ast_cocci.unwrap x with
@@ -106,8 +106,11 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
 
+exception NotWorthTrying
+
 let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl = 
 
+  try
   assert (lfile_exists cfile);
 
   if print_input_file && !Flag.show_c then begin
@@ -131,7 +134,15 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
           pr2 "";
         end;
   
-        let (astcocci,used_after_lists) = sp_from_file coccifile isofile in
+        let (astcocci,used_after_lists,tokens) =
+	  sp_from_file coccifile isofile in
+
+	(match
+	  Sys.command
+	    (Printf.sprintf "egrep -q '(%s)' %s"
+	       (String.concat "|" tokens) cfile) with
+	  0 -> (* success*) ()
+	| _ -> (* failure *) raise NotWorthTrying);
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -377,4 +388,4 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
   ); (* end 1: iter ctl *)
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
-
+    with NotWorthTrying -> ()
