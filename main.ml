@@ -267,9 +267,6 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-	  if !save_output_file
-	  then command2 ("rm -f /tmp/output.c");
-
           Cocci.full_engine (*~print_input_file:(not !dir)*) 
             cfile (Left (cocci_file, iso_file));
 
