@@ -267,6 +267,9 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
+	  if !save_output_file
+	  then command2 ("rm -f /tmp/output.c");
+
           Cocci.full_engine (*~print_input_file:(not !dir)*) 
             cfile (Left (cocci_file, iso_file));
 
@@ -278,8 +281,7 @@ let main () =
             print_diff_expected_res_and_exit generated_file expected_res 
               (if List.length fullxs = 1 then true else false);
 	  if !save_output_file
-	  then
-	    let _ = Sys.command ("cp /tmp/output.c "^cfile^".cocci_res") in ()
+	  then command2 ("cp /tmp/output.c "^cfile^".cocci_res")
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
