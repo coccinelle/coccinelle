@@ -3,6 +3,8 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module U = Pretty_print_cocci
 
+let quiet = ref false (* false = no decoration on - context, etc *)
+
 let start_block str =
   force_newline(); print_string "  "; open_box 0
 
@@ -18,20 +20,27 @@ let print_between between fn = Common.print_between between fn
 let mcodekind brackets fn x = function
     Ast0.MINUS(plus_stream) ->
       let (lb,rb) =
-	match brackets with Some _ -> ("[","]") | None -> ("","") in
+	if !quiet
+	then ("","")
+	else match brackets with Some _ -> ("[","]") | None -> ("","") in
       let (plus_stream,_) = !plus_stream in
-      print_string "-"; print_string lb; fn x; print_string rb;
+      if !quiet
+      then fn x
+      else (print_string "-"; print_string lb; fn x; print_string rb);
       U.print_anything ">>> " plus_stream
   | Ast0.CONTEXT(plus_streams) ->
       let (lb,rb) =
-	match brackets with
-	  Some x -> ("[",("]^"^(string_of_int x))) | None -> ("","") in
+	if !quiet
+	then ("","")
+	else
+	  match brackets with
+	    Some x -> ("[",("]^"^(string_of_int x))) | None -> ("","") in
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
   | Ast0.PLUS -> fn x
   | Ast0.MIXED(plus_streams) ->
-      let (lb,rb) = ("§","½") in
+      let (lb,rb) =if !quiet then ("","") else  ("§","½") in
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
@@ -351,6 +360,8 @@ let rule =
   print_between (function _ -> force_newline(); force_newline()) top_level
 
 let unparse_anything x =
+  let q = !quiet in
+  quiet := true;
   (match x with
     Ast0.DotsExprTag(d) -> expression_dots d
   | Ast0.DotsParamTag(d) -> parameter_list d
@@ -362,6 +373,7 @@ let unparse_anything x =
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
   | Ast0.TopTag(d) -> top_level d);
+  quiet := q;
   print_newline()
 
 let unparse x =

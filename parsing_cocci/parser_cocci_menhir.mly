@@ -857,6 +857,12 @@ exp_decl_statement_list:
 			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
 			  clt2mcode "...>" (startofs($4)) $4, None)))::
       $5 }
+  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
+      /* HACK!!! */
+    { [(Ast0.wrap(Ast0.Exp($1)));
+	(Ast0.wrap(Ast0.Nest(clt2mcode "<..." (startofs($2)) $2,
+			     Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
+			     clt2mcode "...>" (startofs($4)) $4, None)))] }
 
   | pure_decl_statement_list                { $1 }
 
@@ -873,6 +879,16 @@ fun_exp_decl_statement_list:
 			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
 			  clt2mcode "...>" (startofs($4)) $4, None)))))::
       $5 }
+
+  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
+      /* HACK!!! */
+    { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))));
+      (Ast0.wrap
+	 (Ast0.OTHER
+	    (Ast0.wrap
+	       (Ast0.Nest(clt2mcode "<..." (startofs($2)) $2,
+			  Ast0.wrap(Ast0.DOTS(b (mkdots "..."))),
+			  clt2mcode "...>" (startofs($4)) $4, None)))))] }
 
   | f=nonempty_list(fun_decl_statement)        { List.concat f }
 

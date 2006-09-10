@@ -134,6 +134,43 @@ let inline_mcodes =
     do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing
+
+(* --------------------------------------------------------------------- *)
+(* For function declarations.  Can't use the mcode at the root, because that
+might be mixed when the function contains ()s, where agglomeration of -s is
+not possible. *)
+
+let check_allminus s =
+  let donothing r k e = k e in
+  let bind x y = x && y in
+  let option_default = true in
+  let mcode (_,_,_,mc) = match mc with Ast0.MINUS(_) -> true | _ -> false in
+
+  let expression r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjExpr(starter,expr_list,ender) ->
+	List.for_all r.V0.combiner_expression expr_list
+    | _ -> k e in
+
+  let declaration r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjDecl(starter,decls,ender) ->
+	List.for_all r.V0.combiner_declaration decls
+    | _ -> k e in
+
+  let statement r k e =
+    match Ast0.unwrap e with
+      Ast0.Disj(starter,statement_dots_list,ender) ->
+	List.for_all r.V0.combiner_statement_dots statement_dots_list
+    | _ -> k e in
+
+  let combiner = 
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing
+      donothing expression donothing donothing declaration
+      statement donothing in
+  combiner.V0.combiner_statement s
     
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -370,7 +407,8 @@ let rec statement s =
 	  Ast.IfThenElse
 	    (rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	     statement Ast.NotSequencible branch1,tokenwrap els (Ast.Else(els)),
+	     statement Ast.NotSequencible branch1,
+	     tokenwrap els (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
 	     convert_mcodekind aft)
       | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
@@ -445,10 +483,7 @@ let rec statement s =
 	  let lbrace = mcode lbrace in
 	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  let allminus =
-	    match Ast0.get_mcodekind s with
-	      Ast0.MINUS(_) -> true
-	    | _ -> false in
+	  let allminus = check_allminus s in
 	  Ast.FunDecl(rewrap s
 			(Ast.FunHeader(allminus,stg,ty,name,lp,params,rp)),
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),

@@ -49,17 +49,26 @@ probe(...) {
 // --------------------------------------------------------------------
 
 @@
-expression req_reg_arg1, req_reg_arg2, req_reg_arg3;
+statement S;
+expression new_req_reg_arg1, new_req_reg_arg2, new_req_reg_arg3;
 identifier x;
 @@
 
--   if (check_region(req_reg_arg1, req_reg_arg2))
-+   if (!request_region(req_reg_arg1, req_reg_arg2, req_reg_arg3))
-      { ... return ...; }
+//? for(...; ...; ...) {
+    ...
+-   if (check_region(new_req_reg_arg1, new_req_reg_arg2))
++   if (!request_region(new_req_reg_arg1, new_req_reg_arg2, new_req_reg_arg3))
+	S
+    <...
++    release_region(new_req_reg_arg1, new_req_reg_arg2);
+     continue;
+    ...>
+//+   release_region(new_req_reg_arg1, new_req_reg_arg2);
+//? }
     <...
     { ...
-+     release_region(req_reg_arg1, req_reg_arg2);
++     release_region(new_req_reg_arg1, new_req_reg_arg2);
       return ...;
     }
     ...>
--   request_region(req_reg_arg1, req_reg_arg2, req_reg_arg3);
+-   request_region(new_req_reg_arg1, new_req_reg_arg2, new_req_reg_arg3);

@@ -134,6 +134,14 @@ let mcode (_,_,info,mcodekind) =
   | Ast0.CONTEXT(_) -> Token(NotAllMarked,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
+let neutral_mcode (_,_,info,mcodekind) =
+  let offset = info.Ast0.offset in
+  match mcodekind with
+    Ast0.MINUS(_) -> Token(Neutral,offset,mcodekind,[])
+  | Ast0.PLUS -> Token(Neutral,offset,mcodekind,[])
+  | Ast0.CONTEXT(_) -> Token(Neutral,offset,mcodekind,[offset])
+  | _ -> failwith "not possible"
+
 let is_context = function Ast0.CONTEXT(_) -> true | _ -> false
 
 let union_all l = List.fold_left Common.union_set [] l
@@ -141,7 +149,9 @@ let union_all l = List.fold_left Common.union_set [] l
 let classify all_marked table code =
   let mkres builder k il tl bil btl l e =
     (if k = AllMarked
-    then Ast0.set_mcodekind e (all_marked()) (* definitive *)
+    then (Printf.printf "all marking:\n";
+	  Unparse_ast0.unparse_anything (builder e);
+      Ast0.set_mcodekind e (all_marked())) (* definitive *)
     else
       let check_index il tl =
 	if List.for_all is_context tl
@@ -165,10 +175,10 @@ let classify all_marked table code =
     | Token(k,il,tl,l) -> mkres builder k [il] [tl] [] [] [l] e
     | Recursor(k,bil,btl,l) -> mkres builder k [] [] bil btl [l] e in
 
-(*  let make_not_marked = function
+  let make_not_marked = function
       Bind(k,il,tl,bil,btl,l) -> Bind(NotAllMarked,il,tl,bil,btl,l)
     | Token(k,il,tl,l) -> Token(NotAllMarked,il,tl,l)
-    | Recursor(k,bil,btl,l) -> Recursor(NotAllMarked,bil,btl,l) in*)
+    | Recursor(k,bil,btl,l) -> Recursor(NotAllMarked,bil,btl,l) in
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 
@@ -178,6 +188,20 @@ let classify all_marked table code =
       |	[x] -> x
       |	x::xs -> bind x (loop xs) in
     loop l in
+
+  let disj_cases starter code fn ender =
+    (* neutral_mcode used so starter and ender don't have an affect on
+       whether the code is considered all plus/minus, but so that they are
+       consider in the index list, which is needed to make a disj
+       with something in one branch and nothing in the other different
+       from code that just has the something.  Cannot agglomerate over |
+       boundaries, because two - cases might have different + code, and
+       don't want to put the + code together into one unit. *)
+	bind (neutral_mcode starter)
+	  (bind (List.fold_right bind
+		   (List.map make_not_marked (List.map fn code))
+		   option_default)
+	     (neutral_mcode ender)) in
 
   (* no whencode in plus tree so have to drop it *)
   let expression r k e =
@@ -191,32 +215,15 @@ let classify all_marked table code =
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,ender) ->
-	  multibind (List.map r.V0.combiner_expression expr_list)
-(*    why do we want make_not_marked in these cases?
-      must be so that the or doesn't become -, but what problem would that
-      cause?  something to do with isomorphisms?
-      | Ast0.DisjExpr(starter,expr_list,ender) ->
-	  bind (mcode starter)
-	    (bind (List.fold_right bind
-		     (List.map make_not_marked
-			(List.map r.V0.combiner_expression expr_list))
-		     option_default)
-	       (mcode ender))*)
+      | Ast0.DisjExpr(starter,expr_list,ender) -> 
+	    disj_cases starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,ender) ->
-	  multibind (List.map r.V0.combiner_declaration decls)
-(*	Ast0.DisjDecl(starter,decls,ender) ->
-	  bind (mcode starter)
-	    (bind (List.fold_right bind
-		     (List.map make_not_marked
-			(List.map r.V0.combiner_declaration decls))
-		     option_default)
-	       (mcode ender))*)
+	  disj_cases starter decls r.V0.combiner_declaration ender
       |	_ -> k e) in
 
   let statement r k s =
@@ -231,14 +238,8 @@ let classify all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,None)))
       | Ast0.Disj(starter,statement_dots_list,ender) ->
-	  multibind (List.map r.V0.combiner_statement_dots statement_dots_list)
-(*	  bind (mcode starter)
-	    (bind (List.fold_right bind
-		     (List.map make_not_marked
-			(List.map r.V0.combiner_statement_dots
-			   statement_dots_list))
-		     option_default)
-	       (mcode ender))*)
+	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
+	    ender
       |	_ -> k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in
