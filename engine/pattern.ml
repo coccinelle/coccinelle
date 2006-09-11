@@ -451,7 +451,19 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
         function.
         todo: but how detect when do x.field = f;  how know that f is a Func ?
         by having computed some information before the matching *)
-
+      
+     (* todo? 
+      * could allow match with FunCall containing types. Even if ast_cocci
+      * does not allow type in parameter, ast_cocci allow f(...) and
+      * those ... could match type. But for the moment I do it a simpler way,
+      * I dont match at all when there is a type in the arguments
+      *)
+     if (ebs +> List.map fst +> List.exists (function
+        | Left e -> false
+        | Right typ -> true
+        ))
+     then return false
+     else    
       match_e_e ea1 eb1  >&&> (
 
       (* for the pattern phase, no need the EComma *)
