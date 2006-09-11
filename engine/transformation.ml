@@ -757,6 +757,9 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
               | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
                   Some (B.UnSigned, i1), [i2]
 
+              | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
+                  Some (B.UnSigned, i1), []
+
               | B.Signed, B.CLong, ["long",i1] -> None, [i1]
               | B.Signed, B.CLong, ["signed",i1;"long",i2] -> 
                   Some (B.Signed, i1), [i2]

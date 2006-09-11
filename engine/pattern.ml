@@ -727,6 +727,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
               | B.Signed, B.CInt, ["int"] -> None
               | B.Signed, B.CInt, ["signed";"int"] -> Some B.Signed
               | B.UnSigned, B.CInt, ["unsigned";"int"] -> Some B.UnSigned
+              | B.UnSigned, B.CInt, ["unsigned";] -> Some B.UnSigned (*fix*)
 
               | B.Signed, B.CLong, ["long"] -> None
               | B.Signed, B.CLong, ["signed";"long"] -> Some B.Signed
