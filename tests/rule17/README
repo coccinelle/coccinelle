@@ -1,0 +1,70 @@
+amd7930.c: 
+  * contains related but independent CE: moving declaration of (struct)
+    variable from argument list to local variable replacing argument
+    with (void *)
+  * independent CE: names of field members in sub-structures, e.g.:
+      - schedule_work(&bcs->hw.amd7930.tq_xmt);
+      + schedule_work(&bcs->hw.amd7930.xmt_work);
+  * strange typecasts
+
+amd7930_fn.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+avm_pci.c:
+  * Fatal error: exception Failure("strange type1, maybe because of
+    weird order")
+
+config.c: 
+  * failed to remove assignment "cs->work.data = cs" (change rule?)
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+elsa_ser.c:
+  * "Fatal error: exception Unix.Unix_error(20, "stat",
+    "/tmp/output.c")
+
+hfc_2bds0.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+hfc_2bs0.c: Works!
+
+hfc_pci.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+hfc_sx.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+hscx.c: Works!
+
+icc.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+ipacx.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+isac.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+isar.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
+
+isdnl1.c:
+  * moving declaration (see amd7930.c)
+  * null check of moved declaration should be (re-)moved (change
+    rule?)
+
+jade.c: Works!
+
+netjet.c: Works!
+
+w6692.c:
+  * moving declaration (see amd7930.c)
+  * INIT_WORK must(?) also change final argument (change rule?)
