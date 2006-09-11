@@ -765,9 +765,9 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	  let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
-	  Printf.printf "iter %d res %d new_info %d\n"
+	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
-	  flush stdout;
+	  flush stdout;*)
 	  f res new_info in
     f s2 s2
 ;;
@@ -921,10 +921,13 @@ let get_children_required_states dir (grp,_,_) required_states =
 	| A.BACKWARD -> G.predecessors in
       Some (inner_setify (List.concat (List.map (fn grp) states)))
 
-let reachable_table = (Hashtbl.create(50) : (G.node, G.node list) Hashtbl.t)
+let reachable_table =
+  (Hashtbl.create(50) : (G.node * A.direction, G.node list) Hashtbl.t)
 
 (* like satEF, but specialized for get_reachable *)
-let reachsatEF (grp,_,_) s2 =
+let reachsatEF dir (grp,_,_) s2 =
+  let dirop =
+    match dir with A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
   let union = unionBy compare (=) in
   let rec f y = function
       [] -> y
@@ -933,7 +936,7 @@ let reachsatEF (grp,_,_) s2 =
 	  List.partition (function Common.Left x -> true | _ -> false)
 	    (List.map
 	       (function x ->
-		 try Common.Left (Hashtbl.find reachable_table x)
+		 try Common.Left (Hashtbl.find reachable_table (x,dir))
 		 with Not_found -> Common.Right x)
 	       new_info) in
 	let y =
@@ -946,13 +949,13 @@ let reachsatEF (grp,_,_) s2 =
 	  List.map
 	    (function Common.Right x -> x | _ -> failwith "not possible")
 	    new_info in
-	let first = inner_setify (concatmap (G.successors grp) new_info) in
+	let first = inner_setify (concatmap (dirop grp) new_info) in
 	let res = union first y in
 	let new_info = setdiff first y in
 	f res new_info in
   List.rev(f s2 s2) (* put root first *)
 
-let get_reachable m required_states =
+let get_reachable dir m required_states =
   match required_states with
     None -> None
   | Some states ->
@@ -964,11 +967,11 @@ let get_reachable m required_states =
 	       then rest
 	       else
 		 Common.union_set
-		   (try Hashtbl.find reachable_table cur
+		   (try Hashtbl.find reachable_table (cur,dir)
 		   with
 		     Not_found ->
-		       let states = reachsatEF m [cur] in
-		       Hashtbl.add reachable_table cur states;
+		       let states = reachsatEF dir m [cur] in
+		       Hashtbl.add reachable_table (cur,dir) states;
 		       states)
 		   rest)
 	   [] states)
@@ -989,18 +992,15 @@ let rec satloop negated required required_states
     ((grp,label,states) as m) phi env
     check_conj =
   let rec loop negated required required_states phi =
-    print_required_states required_states;
     let res =
     match A.unwrap phi with
       A.False              -> []
     | A.True               -> triples_top states
     | A.Pred(p)            -> satLabel label required required_states p
     | A.Not(phi)           ->
-	Printf.printf "not\n";
 	triples_complement states
 	  (loop (not negated) required required_states phi)
     | A.Or(phi1,phi2)      ->
-	Printf.printf "and\n";
 	triples_union
 	  (loop negated required required_states phi1)
 	  (loop negated required required_states phi2)
@@ -1030,7 +1030,7 @@ let rec satloop negated required required_states
 	satAX dir m (loop negated required new_required_states phi)
 	  required_states
     | A.EF(dir,phi)            ->
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	satEF dir m (loop negated required new_required_states phi)
 	  new_required_states
     | A.AF(dir,phi,unchecked_phi)            ->
@@ -1040,20 +1040,19 @@ let rec satloop negated required required_states
 	  loop negated required required_states
 	    (A.rewrap phi (A.AU(dir,tr,phi,tr,unchecked_phi)))
 	else
-	  let new_required_states = get_reachable m required_states in
+	  let new_required_states = get_reachable dir m required_states in
 	  satAF dir m (loop negated required new_required_states phi)
 	    new_required_states
     | A.EG(dir,phi)            ->
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	satEG dir m (loop negated required new_required_states phi)
 	  new_required_states
     | A.AG(dir,phi)            ->
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	satAG dir m (loop negated required new_required_states phi)
 	  new_required_states
     | A.EU(dir,phi1,phi2)      ->
-	Printf.printf "EU\n";
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	(match loop negated required new_required_states phi2 with
 	  [] -> []
 	| s2 ->
@@ -1061,7 +1060,6 @@ let rec satloop negated required required_states
 	    let s1 = loop negated new_required new_required_states phi1 in
 	    satEU dir m s1 s2 new_required_states)
     | A.AU(dir,phi1,phi2,uncheckedphi1,uncheckedphi2)      ->
-	Printf.printf "AU\n";
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in
@@ -1083,7 +1081,7 @@ let rec satloop negated required required_states
 						    uncheckedphi2)))))),
 			       wrap(A.Not phi2))))))))
 	else
-	  let new_required_states = get_reachable m required_states in
+	  let new_required_states = get_reachable dir m required_states in
 	  (match loop negated required new_required_states phi2 with
 	    [] -> []
 	  | s2 ->
@@ -1165,7 +1163,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	Printf.printf "AX\n";
 	anno (satAX dir m res required_states) [child]
     | A.EF(dir,phi1)       -> 
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "EF\n"; flush stdout;
 	anno (satEF dir m res new_required_states) [child]
@@ -1177,24 +1175,24 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	    (A.rewrap phi (A.AU(dir,tr,phi1,tr,uncheckedphi1)))
 	    env
 	else
-	  (let new_required_states = get_reachable m required_states in
+	  (let new_required_states = get_reachable dir m required_states in
 	  let (child,res) =
 	    satv negated required new_required_states phi1 env in
 	  Printf.printf "AF\n"; flush stdout;
 	  anno (satAF dir m res new_required_states) [child])
     | A.EG(dir,phi1)       -> 
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "EG\n"; flush stdout;
 	anno (satEG dir m res new_required_states) [child]
     | A.AG(dir,phi1)       -> 
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	let (child,res) = satv negated required new_required_states phi1 env in
 	Printf.printf "AG\n"; flush stdout;
 	anno (satAG dir m res new_required_states) [child]
 	  
     | A.EU(dir,phi1,phi2)  -> 
-	let new_required_states = get_reachable m required_states in
+	let new_required_states = get_reachable dir m required_states in
 	(match satv negated required new_required_states phi2 env with
 	  (child2,[]) -> anno [] [child2]
 	| (child2,res2) ->
@@ -1226,7 +1224,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 			       wrap(A.Not phi2))))))))
 	    env
 	else
-	  let new_required_states = get_reachable m required_states in
+	  let new_required_states = get_reachable dir m required_states in
 	  (match satv negated required new_required_states phi2 env with
 	    (child2,[]) -> anno [] [child2]
 	  | (child2,res2) ->
