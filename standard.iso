@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Note: the order of the rule have an importance. As we do not do a pointfix,
+// Note: the order of the rule have an importance. As we do not do a fixpoint,
 // changing the order may impact the result. For instance, if we have
 // iso1 =  x+y <=> y+x  and iso2 = i++ <=> i=i+1; 
 // if in SP we have i++; and in C code we have i=1+i;
@@ -81,7 +81,7 @@ i++; <=> ++i; <=> i+=1; <=> i=i+1;
 // That's why in the previous iso, we have explicitely force
 // the i++ do be alone with the ';'
 // But unfortunately in the last expression of the for there is no ';'
-// so the previous rule cannot be applied, and this special case. 
+// so the previous rule cannot be applied, hence this special case. 
 Statement
 @@ expression X, Y; statement S; identifier i; @@
 for(X;Y;i++) S <=> for(X;Y;++i) S

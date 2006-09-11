@@ -59,6 +59,7 @@
             "sizeof"
             "struct" "union"
             "static" "const" "volatile"
+            "break" "continue"
             ))
 
 (setq cocci-declaration-keywords-list 
