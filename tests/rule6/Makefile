@@ -1,54 +1,49 @@
 SP=mem_map.cocci
 
-# files that begins with a number (such as 2_cpia.c) are "duplicate" of the file
-# without number, but they result from another micro-patch.
-
 # normally cocci should detect a bug with cs46xx.c
 # the final good result for this file is in 1_cs46xx.res
 
-SOURCES = adv7175.c \
-	  audio.c \
-	  bt856.c \
-	  btaudio.c \
+# if you also want to handle the removal of the #include, then 
+# extract the .c and /res from the second micro-patch. In that case
+# there will be duplicate c files, and some c files will be identical to some res files.
+
+# a7fe32f7a98f83218f85b2196fed0485f1d5dc22
+#  main
+# 0d3db480b649edffd4c0b43e956d1e6be5816a2f
+#  remove #include, remove wrapper.h (E)
+#  and also do a CE in a a .h (drm_memory.h)
+# fb346e7bf88ec59e6da20fe6a7813e650b19d1d7
+#  bugfix by morton
+
+
+SOURCES = audio.c \
 	  cmpci.c \
 	  cpia.c \
 	  cs4281_wrapper-24.c \
 	  cs4281m.c \
 	  cs46xx.c \
 	  dmabuf.c \
-	  dv1394.c \
 	  es1370.c \
 	  es1371.c \
 	  esssolo1.c \
 	  ftape-buffer.c \
-	  ftape-ctl.c \
 	  i810_audio.c \
-	  ibmcam.c \
 	  ite8172.c \
 	  maestro.c \
 	  maestro3.c \
 	  meye.c \
-	  nec_vrc5477.c \
-	  ohci1394.c \
 	  ov511.c \
-	  passthrough.c \
 	  planb.c \
 	  pwc-if.c \
-	  saa7185.c \
 	  se401.c \
 	  sonicvibes.c \
 	  sscape.c \
-	  stradis.c \
 	  stv680.c \
 	  trident.c \
-	  ultracam.c \
-	  usb-midi.c \
 	  usbvideo.c \
-	  via82cxxx_audio.c \
 	  vicam.c \
-	  video1394.c \
-	  zftape-init.c \
 	  zr36067.c \
-	  zr36120_mem.c
+	  zr36120_mem.c 
+
 
 include ../../generic_makefile
