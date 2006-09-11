@@ -1,7 +1,6 @@
 open Common
 
 val full_engine : 
-  ?print_input_file:bool ->
   filename -> (filename * filename option, Lib_engine.ctlcocci) either ->  
   unit
 

@@ -267,7 +267,7 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          Cocci.full_engine (*~print_input_file:(not !dir)*) 
+          Cocci.full_engine
             cfile (Left (cocci_file, iso_file));
 
           let expected_res = 

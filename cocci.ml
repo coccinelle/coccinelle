@@ -108,12 +108,12 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 exception NotWorthTrying
 
-let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl = 
+let full_engine cfile coccifile_and_iso_or_ctl = 
 
   try
   assert (lfile_exists cfile);
 
-  if print_input_file && !Flag.show_c then begin
+  if !Flag.show_c then begin
     Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.print_xxxxxxxxxxxxxxxxx ();
@@ -125,7 +125,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
 
-        if print_input_file && !Flag.show_cocci then begin
+        if !Flag.show_cocci then begin
           print_xxxxxxxxxxxxxxxxx ();
           pr2 ("processing semantic patch file: " ^ coccifile);
           isofile +> do_option (fun s -> pr2 ("with isos from: " ^ s));
@@ -218,7 +218,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
         _current_bindings := [Ast_c.emptyMetavarsBinding];
       end;
 
-    if print_input_file && !Flag.show_ctl_text then begin
+    if !Flag.show_ctl_text then begin
       print_xxxxxxxxxxxxxxxxx();
       pr2 "ctl";
       print_xxxxxxxxxxxxxxxxx();
