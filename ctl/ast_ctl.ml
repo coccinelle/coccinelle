@@ -22,8 +22,11 @@ type ('pred,'mvar,'anno) generic_ctl =
 	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
   | AX of direction * (('pred,'mvar,'anno) generic_ctl)
   | AG of direction * (('pred,'mvar,'anno) generic_ctl)
-  | AU of direction * (('pred,'mvar,'anno) generic_ctl) * 
-      (('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
+  | AU of direction *
+	(* versions with exists v *)
+	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl) *
+	(* versions without exists v *)
+	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
   | EF of direction * (('pred,'mvar,'anno) generic_ctl)
   | EX of direction * (('pred,'mvar,'anno) generic_ctl)
   | EG of direction * (('pred,'mvar,'anno) generic_ctl)

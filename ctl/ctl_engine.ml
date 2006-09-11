@@ -765,7 +765,6 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	  let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
-	  print_state "new info" new_info;
 	  Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;
@@ -974,6 +973,12 @@ let get_reachable m required_states =
 		   rest)
 	   [] states)
 
+let ctr = ref 0
+let new_var _ =
+  let c = !ctr in
+  ctr := !ctr + 1;
+  Printf.sprintf "_c%d" c
+
 (* **************************** *)
 (* End of environment functions *)
 (* **************************** *)
@@ -984,15 +989,18 @@ let rec satloop negated required required_states
     ((grp,label,states) as m) phi env
     check_conj =
   let rec loop negated required required_states phi =
+    print_required_states required_states;
     let res =
     match A.unwrap phi with
       A.False              -> []
     | A.True               -> triples_top states
     | A.Pred(p)            -> satLabel label required required_states p
     | A.Not(phi)           ->
+	Printf.printf "not\n";
 	triples_complement states
 	  (loop (not negated) required required_states phi)
     | A.Or(phi1,phi2)      ->
+	Printf.printf "and\n";
 	triples_union
 	  (loop negated required required_states phi1)
 	  (loop negated required required_states phi2)
@@ -1028,8 +1036,9 @@ let rec satloop negated required required_states
     | A.AF(dir,phi,unchecked_phi)            ->
 	if !Flag_ctl.loop_in_src_code
 	then
+	  let tr = A.rewrap phi A.True in
 	  loop negated required required_states
-	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi,unchecked_phi)))
+	    (A.rewrap phi (A.AU(dir,tr,phi,tr,unchecked_phi)))
 	else
 	  let new_required_states = get_reachable m required_states in
 	  satAF dir m (loop negated required new_required_states phi)
@@ -1043,18 +1052,16 @@ let rec satloop negated required required_states
 	satAG dir m (loop negated required new_required_states phi)
 	  new_required_states
     | A.EU(dir,phi1,phi2)      ->
+	Printf.printf "EU\n";
 	let new_required_states = get_reachable m required_states in
 	(match loop negated required new_required_states phi2 with
 	  [] -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
-	    print_required required;
-	    Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
-	      false phi;
-	    satEU dir m (loop negated new_required new_required_states phi1)
-	      s2 new_required_states)
-    | A.AU(dir,phi1,phi2,uncheckedphi2)      ->
-	(*print_required required;*)
+	    let s1 = loop negated new_required new_required_states phi1 in
+	    satEU dir m s1 s2 new_required_states)
+    | A.AU(dir,phi1,phi2,uncheckedphi1,uncheckedphi2)      ->
+	Printf.printf "AU\n";
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in
@@ -1068,10 +1075,12 @@ let rec satloop negated required required_states
 			   (A.And
 			      (wrap
 				 (A.Not
-				    (wrap(A.And(phi1,
-						wrap
-						  (A.EF
-						     (dir,uncheckedphi2)))))),
+				    (wrap
+				       (A.And(phi1,
+					      wrap
+						(A.EF
+						   (dir,
+						    uncheckedphi2)))))),
 			       wrap(A.Not phi2))))))))
 	else
 	  let new_required_states = get_reachable m required_states in
@@ -1088,19 +1097,13 @@ let rec satloop negated required required_states
 	let new_required = drop_required v required in
 	triples_witness v (loop negated new_required required_states phi)
     | A.Let(v,phi1,phi2)   ->
-	satloop negated required required_states m phi2
-	  ((v,(ref (Frozen phi1),ref (Frozen phi1))) :: env)
+	(* should only be used when the properties negated, required,
+	   and required_states are known to be the same or at least
+	   compatible between all the uses.  this is not checked. *)
+	let res = loop negated required required_states phi1 in
+	satloop negated required required_states m phi2 ((v,res) :: env)
 	  check_conj
-    | A.Ref(v)             ->
-	let cell =
-	  match (negated,List.assoc v env) with
-	    (false,(cell,_)) -> cell
-	  | (true,(_,cell)) -> cell in
-	(match !cell with
-	  Thawed v -> v
-	| Frozen phi ->
-	    let res = loop negated required required_states phi in
-            (*cell := Thawed res;*) res) in
+    | A.Ref(v)             -> List.assoc v env in
     drop_wits required_states negated res in
   
   loop negated required required_states phi
@@ -1169,8 +1172,9 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
     | A.AF(dir,phi1,uncheckedphi1)       -> 
 	if !Flag_ctl.loop_in_src_code
 	then
+	  let tr = A.rewrap phi A.True in
 	  satv negated required required_states
-	    (A.rewrap phi (A.AU(dir,A.rewrap phi A.True,phi1,uncheckedphi1)))
+	    (A.rewrap phi (A.AU(dir,tr,phi1,tr,uncheckedphi1)))
 	    env
 	else
 	  (let new_required_states = get_reachable m required_states in
@@ -1199,7 +1203,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	      satv negated new_required new_required_states phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
 	    anno (satEU dir m res1 res2 new_required_states) [child1; child2])
-    | A.AU(dir,phi1,phi2,uncheckedphi2)      -> 
+    | A.AU(dir,phi1,phi2,uncheckedphi1,uncheckedphi2)      -> 
 	if !Flag_ctl.loop_in_src_code
 	then
 	  let wrap x = A.rewrap phi x in
@@ -1213,10 +1217,12 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 			   (A.And
 			      (wrap
 				 (A.Not
-				    (wrap(A.And(phi1,
-						wrap
-						  (A.EF
-						     (dir,uncheckedphi2)))))),
+				    (wrap
+				       (A.And(phi1,
+					      wrap
+						(A.EF
+						   (dir,
+						    uncheckedphi2)))))),
 			       wrap(A.Not phi2))))))))
 	    env
 	else
@@ -1240,22 +1246,12 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	  satv negated new_required required_states phi1 env in
 	anno (triples_witness v res) [child]
     | A.Let(v,phi1,phi2)   ->
+	let (child1,res1) =
+	  satv negated required required_states phi1 env in
 	let (child2,res2) =
-	  satv negated required required_states phi2
-	    ((v,(ref (Frozen phi1),ref (Frozen phi1))) :: env) in
-	anno res2 [child2]
-    | A.Ref(v)             ->
-	let cell =
-	  match (negated,List.assoc v env) with
-	    (false,(cell,_)) -> cell
-	  | (true,(_,cell)) -> cell in
-	(match !cell with
-	  Thawed v -> anno v []
-	| Frozen phi ->
-	    let (child,res) =
-	      satv negated required required_states phi env in
-	    (*cell := Thawed res;*)
-	    anno res [child]) in
+	  satv negated required required_states phi2 ((v,res1) :: env) in
+	anno res2 [child1;child2]
+    | A.Ref(v)             -> anno (List.assoc v env) [] in
     let res = drop_wits required_states negated res in
     print_state "after drop_wits" res;
     (child,res)
@@ -1298,7 +1294,7 @@ let simpleanno l phi res =
     | A.AF(dir,phi1,_)     -> pp "AF"; pp_dir dir
     | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir
     | A.AG(dir,phi1)       -> pp "AG"; pp_dir dir
-    | A.AU(dir,phi1,phi2,_)-> pp "AU"; pp_dir dir
+    | A.AU(dir,phi1,phi2,_,_)-> pp "AU"; pp_dir dir
     | A.EF(dir,phi1)       -> pp "EF"; pp_dir dir
     | A.EX(dir,phi1)	   -> pp "EX"; pp_dir dir
     | A.EG(dir,phi1)	   -> pp "EG"; pp_dir dir

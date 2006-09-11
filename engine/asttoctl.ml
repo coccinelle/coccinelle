@@ -48,8 +48,8 @@ let rec drop_vs f =
     | CTL.AF(dir,phi1,phi2) -> CTL.AF(dir,drop_vs phi1,drop_vs phi2)
     | CTL.AX(dir,phi) -> CTL.AX(dir,drop_vs phi)
     | CTL.AG(dir,phi) -> CTL.AG(dir,drop_vs phi)
-    | CTL.AU(dir,phi1,phi2,phi3) ->
-	CTL.AU(dir,drop_vs phi1,drop_vs phi2,drop_vs phi3)
+    | CTL.AU(dir,phi1,phi2,phi3,phi4) ->
+	CTL.AU(dir,drop_vs phi1,drop_vs phi2,drop_vs phi3,drop_vs phi4)
     | CTL.EF(dir,phi) -> CTL.EF(dir,drop_vs phi)
     | CTL.EX(dir,phi) -> CTL.EX(dir,drop_vs phi)
     | CTL.EG(dir,phi) -> CTL.EG(dir,drop_vs phi)
@@ -68,7 +68,7 @@ let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
 let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
-let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y,drop_vs y))
+let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y,drop_vs x,drop_vs y))
 let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
 let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
 let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,x))
@@ -1079,8 +1079,9 @@ let rec collect_duplicates f =
   | CTL.AF(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.AX(_,phi) -> collect_duplicates phi
   | CTL.AG(_,phi) -> collect_duplicates phi
-  | CTL.AU(_,phi1,phi2,phi3) ->
-      collect_duplicates phi1; collect_duplicates phi2; collect_duplicates phi3
+  | CTL.AU(_,phi1,phi2,phi3,phi4) ->
+      collect_duplicates phi1; collect_duplicates phi2;
+      collect_duplicates phi3; collect_duplicates phi4
   | CTL.EF(_,phi) -> collect_duplicates phi
   | CTL.EX(_,phi) -> collect_duplicates phi
   | CTL.EG(_,phi) -> collect_duplicates phi
@@ -1141,11 +1142,13 @@ and replace_subformulas dec f =
   | CTL.AG(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.AG(dir,new_phi)))
-  | CTL.AU(dir,phi1,phi2,phi3) ->
+  | CTL.AU(dir,phi1,phi2,phi3,phi4) ->
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       let (acc3,new_phi3) = replace_formulas dec phi3 in
-      (acc1@acc2@acc3,CTL.rewrap f (CTL.AU(dir,new_phi1,new_phi2,new_phi3)))
+      let (acc4,new_phi4) = replace_formulas dec phi4 in
+      (acc1@acc2@acc3@acc4,
+       CTL.rewrap f (CTL.AU(dir,new_phi1,new_phi2,new_phi3,new_phi4)))
   | CTL.EF(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EF(dir,new_phi)))
@@ -1177,14 +1180,11 @@ let rec ctl_fvs f =
       | CTL.Not(phi) | CTL.Exists(_,phi)
       | CTL.AX(_,phi) | CTL.AG(_,phi)
       | CTL.EF(_,phi) | CTL.EX(_,phi) | CTL.EG(_,phi) -> (ctl_fvs phi,[])
-      | CTL.AU(_,phi1,phi2,phi3) ->
+      | CTL.AU(_,phi1,phi2,phi3,phi4) ->
 	  let phi1fvs = ctl_fvs phi1 in
 	  let phi2fvs = ctl_fvs phi2 in
-	  let phi3fvs = ctl_fvs phi3 in
-	  (Common.union_set phi1fvs (Common.union_set phi2fvs phi3fvs),
-	   Common.union_set (intersect phi1fvs phi2fvs)
-	     (Common.union_set (intersect phi1fvs phi3fvs)
-		(intersect phi2fvs phi3fvs)))
+	  (* phi3 has the same fvs as phi1 and phi4 as phi2 *)
+	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
       | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
       | CTL.AF(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
 	  let phi1fvs = ctl_fvs phi1 in
@@ -1249,12 +1249,12 @@ let drop_bindings b f = (* innermost bindings first in b *)
     | CTL.AX(dir,phi) ->
 	CTL.rewrap f (CTL.AX(dir,drop_one nm term phi))
     | CTL.AG(dir,phi) -> CTL.rewrap f (CTL.AG(dir,drop_one nm term phi))
-    | CTL.AU(dir,phi1,phi2,phi3) ->
+    | CTL.AU(dir,phi1,phi2,phi3,phi4) ->
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term
 	  (function _ ->
 	    CTL.AU(dir,drop_one nm term phi1,drop_one nm term phi2,
-		   drop_one nm term phi3))
+		   drop_one nm term phi3,drop_one nm term phi4))
     | CTL.EF(dir,phi) -> CTL.rewrap f (CTL.EF(dir,drop_one nm term phi))
     | CTL.EX(dir,phi) ->
 	CTL.rewrap f (CTL.EX(dir,drop_one nm term phi))
@@ -1275,6 +1275,7 @@ let drop_bindings b f = (* innermost bindings first in b *)
     f b
 
 let letify f =
+  failwith "this code should not be used!!!";
   Hashtbl.clear formula_table;
   Hashtbl.clear ctlfv_table;
   (* create a count of the number of occurrences of each subformula *)

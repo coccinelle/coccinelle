@@ -53,7 +53,7 @@ let rec (pp_ctl:
      | EF(dir,phi1)     -> pp "EF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EX(dir,phi1)   -> pp "EX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EG(dir,phi1)   -> pp "EG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AU(dir,phi1,phi2,_) ->
+     | AU(dir,phi1,phi2,_,_) ->
 	 pp "A"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
      | EU(dir,phi1,phi2)  ->
 	 pp "E"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
