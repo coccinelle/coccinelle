@@ -533,3 +533,45 @@ and distribute_mck_arge = fun (op, lop, rop) ->
       
 
 
+
+and distribute_mck_params = fun (op, lop, rop) -> 
+  let trans_arg (op, lop, rop) = function
+    | ((b, s, t), ii_b_s) -> 
+        (match b, s, ii_b_s with
+        | false, Some s, [i1] -> 
+            (* TODO normally could not do stuff on i1 as is
+             * we should have a distribute_mck_type_with_ident func 
+             *)
+            (false, Some s, distribute_mck_type (op, lop, nothing_right) t),
+            [i1 +> op +> rop]
+
+        | true, Some s, [i1;i2] -> 
+            (true, Some s, 
+            distribute_mck_type (op, nothing_left, nothing_right) t),
+            [i1 +> op +> lop;  i2 +> op +> rop]
+        (* in definition we have name for params, except when f(void) *)
+        | _, None, _ -> raise Impossible 
+        | _ -> raise Impossible
+        )
+        
+  in 
+  function
+  | [] -> raise Todo (* Impossible ? *)
+  | [exp, ii] -> 
+      assert (null ii);
+      [trans_arg (op, lop, rop) exp, ii]
+     
+  | x::y::xs -> 
+     let ((head,ii1), middle, (tail,ii2)) = head_middle_tail (x::y::xs) in
+     assert (null ii1);
+      [trans_arg (op, lop, nothing_right) head, ii1]
+      @
+      List.map (fun (e, ii) -> 
+           trans_arg (op, nothing_left, nothing_right) e,
+           ii +> List.map op)
+       middle
+      @
+      [trans_arg (op, nothing_left, rop) tail, ii1 +> List.map op]
+      
+
+

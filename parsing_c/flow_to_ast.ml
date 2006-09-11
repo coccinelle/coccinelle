@@ -600,6 +600,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 let test def = 
   let g = Ast_to_flow.ast_to_control_flow def in
   Ast_to_flow.check_control_flow g;
+  Ast_to_flow.deadcode_detection g;
   print_ograph_extended g;
   assert (
   def =*= def +> Ast_to_flow.ast_to_control_flow +>control_flow_to_ast

@@ -579,36 +579,37 @@ and (transform_arguments:
    transformer) = 
  fun seqstyle eas ebs ->
   fun binding -> 
-    (* TODO and when have dots ? *)
-    match eas, ebs with
-    | [], [] -> []
+    let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
+    let rewrapper xs = xs +> List.map snd in
 
+    match unwrapper eas, ebs with
+    | [],   [] -> []
+    | [A.Edots (mcode, None), ea], [] -> 
+        if mcode_contain_plus (mcodekind mcode)
+        then failwith "todo:I have no token that I could accroche myself on"
+        else []
+    | _, [] -> raise NoMatch
+    | [], eb::ebs -> raise NoMatch
 
-    | [ea], [Left eb, ii] -> 
+    (* special case. todo: generalize *)
+    | [A.Edots (mcode, None), ea], ebs -> 
+        D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
+
+    | (A.EComma i1, _)::(una,ea)::eas, (Left eb, ii)::ebs -> 
+        let ii' = tag_symbols [i1] ii   binding in
+        (Left (transform_e_e  ea eb binding), ii')::
+	transform_arguments seqstyle (rewrapper eas) ebs   binding
+
+   (* The first argument is handled here. Then cocci will always contain
+    * some EComma and a following expression, so the previous case will
+    * handle that.
+    *)
+    | (una, ea)::eas, (Left eb, ii)::ebs -> 
         assert (null ii);
-        [Left (transform_e_e ea eb binding),  []]
+        (Left (transform_e_e  ea eb binding), [])::
+	transform_arguments seqstyle (rewrapper eas) ebs   binding
 
-
-
-    | ea::eas,  (eb, ii)::ebs -> 
-	(match (A.unwrap ea,  eas, eb) with
-
-        (* special case. todo: generalize *)
-        | A.Edots (mcode, None), [], Left eb -> 
-            D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
-              ((Left eb,ii)::ebs)   binding
-
-        | ((A.EComma i1),ea::eas, Left eb) ->
-            let ii' = tag_symbols [i1] ii   binding in
-            (Left (transform_e_e  ea eb binding), ii')::
-	    transform_arguments seqstyle eas ebs   binding
-	| _,_, Left eb ->
-            assert (null ii);
-            (Left (transform_e_e  ea eb binding), [])::
-	    transform_arguments seqstyle eas ebs   binding
-        | _ -> raise Todo
-        )
-    | _ -> raise Impossible
+    | _ -> raise Todo
 
 
 and (transform_params: 
@@ -618,24 +619,32 @@ and (transform_params:
    transformer) = 
  fun seqstyle pas pbs ->
   fun binding -> 
-    match pas, pbs with
-    | [], [] -> []
-    | [pa], [pb, ii] -> 
-        assert (null ii);
-        [transform_param pa pb binding, ii]
-    | pa::pas, (pb, ii)::pbs -> 
-	(match (A.unwrap pa,pas) with
-        | ((A.PComma i1), pa::pas) ->
-            let ii' = tag_symbols [i1] ii binding in
-            (transform_param pa pb binding, ii')::
-	    transform_params seqstyle pas pbs  binding
-	| _ ->
-            assert (null ii);
-            ((transform_param pa pb binding),[])::
-              transform_params seqstyle pas pbs binding
-        )
+    let unwrapper xs = xs +> List.map (fun pa -> A.unwrap pa, pa) in
+    let rewrapper xs = xs +> List.map snd in
 
-    | _ -> raise Impossible
+    match unwrapper pas, pbs with
+    | [], [] -> []
+    | [A.Pdots (mcode), pa], [] -> 
+        if mcode_contain_plus (mcodekind mcode)
+        then failwith "todo:I have no token that I could accroche myself on"
+        else []
+    | _, [] -> raise NoMatch
+    | [], eb::ebs -> raise NoMatch
+
+    (* special case. todo: generalize *)
+    | [A.Pdots (mcode), pa], pbs -> 
+        D.distribute_mck (mcodekind mcode) D.distribute_mck_params pbs  binding
+
+    | (A.PComma i1, _)::(una,pa)::pas, (pb, ii)::pbs -> 
+        let ii' = tag_symbols [i1] ii binding in
+        (transform_param pa pb binding, ii')::
+	transform_params seqstyle (rewrapper pas) pbs  binding
+
+    | (unpa,pa)::pas, (pb, ii)::pbs -> 
+        assert (null ii);
+        ((transform_param pa pb binding),[])::
+        transform_params seqstyle (rewrapper pas) pbs binding
+
 
 and (transform_param: 
      (Ast_cocci.parameterTypeDef, (Ast_c.parameterType)) transformer) = 

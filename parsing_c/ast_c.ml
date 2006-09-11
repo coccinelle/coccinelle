@@ -187,8 +187,8 @@ and expressionbis =
    * are 31 bits. So simpler to do string.
    * Same reason to have string instead of int list, for String.
    *
-   * note: that -2 is not a constant, it is the unary operator - apply to 
-   * constant 2. So the string must represent a positive integer only 
+   * note: that -2 is not a constant, it is the unary operator - applied to 
+   * constant 2. So the string must represent a positive integer only.
    *)
   and constant = 
   | String of (string * isWchar) 
@@ -246,7 +246,7 @@ and statementbis =
   (* cppext: 
    * old: compound = (declaration list * statement list) 
    * old: (declaration, statement) either list 
-   * simplify cocci to just have statement list, by integratint Decl in stmt.
+   * simplify cocci to just have statement list, by integrating Decl in stmt.
    *)
   and compound = statement list 
 

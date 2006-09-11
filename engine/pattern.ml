@@ -619,7 +619,7 @@ and (match_arguments:
               failwith "not handling Opt/Unique/Multi on expr"
               
 
-          | _, y::ys -> 
+          | _x, y::ys -> 
               match_e_e x y >&&> 
               match_arguments seqstyle xs ys
           | x, [] -> return false

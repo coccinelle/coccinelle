@@ -946,6 +946,12 @@ let rec find_some p = function
       match p x with
       |	Some v -> v
       |	None -> find_some p l
+(* same
+let map_find f xs = 
+  xs +> List.map f +> List.find (function Some x -> true | None -> false)
+    +> (function Some x -> x | None -> raise Impossible)
+*)
+
 
 
 (*****************************************************************************)

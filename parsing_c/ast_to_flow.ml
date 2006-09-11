@@ -6,13 +6,13 @@ open Common open Commonop
  *    ver1: just do init,  
  *    ver2: compute depth of label (easy, intercept compound in the visitor)
  *
+ * todo: 
  * To generate less exception with the breakInsideLoop, analyse correctly
- * the loop deguisé  comme list_for_each (qui etait retourné comme
- * des Tif par le lexer, now they are returned as Twhile so less pbs).
- *
- * todo:
+ * the loop deguisé  comme list_for_each 
  * Add a case ForMacro in ast_c (and in lexer/parser), and then do code that 
  * imitates the code for the For.
+ * note: the list_for_each was previously converted into Tif by the lexer, 
+ * now they are returned as Twhile so less pbs. But not perfect solutio.
  *
  * checktodo: after a switch, need check that all the st in the compound start 
  * with a case: ?
@@ -43,10 +43,11 @@ open Oassocb
 (* Information used internally in ast_to_flow and passed recursively. *) 
 type additionnal_info =  { 
 
-  context_info: context_info;
+  ctx: context_info;
+  ctx_stack: context_info list;
 
   (* are we under a ifthen[noelse]. Used for ErrorExit *)
-  context_info_bis: bool; 
+  ctx_bis: bool; 
 
   (* ctl_braces: the nodei list is to handle current imbrication depth.
    * It contains the must-close '}'. 
@@ -64,7 +65,7 @@ type additionnal_info =  {
   * context point, for instance at the switch point. So that when deeper,
   * we can compute the difference between the number of '}' from root to
   * the context point to close the good number of '}' . For instance 
-  * where there is a 'continue', we must close only until the switch.
+  * where there is a 'continue', we must close only until the for.
   *)
   and context_info =
       | NoInfo 
@@ -300,7 +301,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
        let ilabel = labels_assoc#find s in
        (* attach_to_previous_node starti ilabel; 
-        * todo: special_case: suppose that always goto to toplevel of function, 
+        * todo: special_case: suppose that always goto to toplevel of function,
         * hence the Common.init 
         * todo?: can perhaps report when a goto is not a classic error_goto ? 
         * that is when it does not jump to the toplevel of the function.
@@ -357,7 +358,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let lasti  = add_node_g (EndStatement None) lbl "[endif]" in
 
         (* for ErrorExit heuristic *)
-        let newauxinfo = { auxinfo_label with  context_info_bis = true; } in
+        let newauxinfo = { auxinfo_label with  ctx_bis = true; } in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
@@ -465,8 +466,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                  in
 
                  (* new: cos of switch *)
-                 let newauxinfo = { newauxinfo with context_info = 
-                       SwitchInfo (newi, newendswitch, auxinfo.braces);
+                 let newauxinfo = { newauxinfo with 
+                       ctx = SwitchInfo (newi, newendswitch, auxinfo.braces);
+                       ctx_stack = newauxinfo.ctx::newauxinfo.ctx_stack
                    }
                  in
                  !g#add_arc ((newswitchi, newi), Direct) +> adjust_g; 
@@ -527,7 +529,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
         let newi = add_node_g (Case (stmt, (e, ii))) lbl "case:" in
 
-        (match auxinfo.context_info with
+        (match auxinfo.ctx with
         | SwitchInfo (startbrace, switchendi, _braces) -> 
             (* no need to attach to previous for the first case, cos would be
              * redundant. *)
@@ -554,7 +556,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newi = add_node_g (Default (stmt, ((),ii))) lbl "case default:" in
         attach_to_previous_node starti newi;
 
-        (match auxinfo.context_info with
+        (match auxinfo.ctx with
         | SwitchInfo (startbrace, switchendi, _braces) -> 
              let newcasenodei = 
                add_node_g (CaseNode switchrank) 
@@ -587,8 +589,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newafter = add_node_g FallThroughNode lbl "[whilefall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[endwhile]" in
 
-        let newauxinfo = { auxinfo_label with context_info = 
-           LoopInfo (newi, newfakeelse,  auxinfo_label.braces);
+        let newauxinfo = { auxinfo_label with
+           ctx = LoopInfo (newi, newfakeelse,  auxinfo_label.braces);
+           ctx_stack = auxinfo_label.ctx::auxinfo_label.ctx_stack
           }
         in
 
@@ -624,8 +627,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newafter = add_node_g FallThroughNode lbl "[dowhilefall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[enddowhile]" in
 
-        let newauxinfo = { auxinfo_label with context_info =
-           LoopInfo (taili, newfakeelse, auxinfo_label.braces);
+        let newauxinfo = { auxinfo_label with
+           ctx = LoopInfo (taili, newfakeelse, auxinfo_label.braces);
+           ctx_stack = auxinfo_label.ctx::auxinfo_label.ctx_stack
           }
         in
 
@@ -655,8 +659,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newafter = add_node_g FallThroughNode lbl "[forfall]" in
         let newfakeelse = add_node_g (EndStatement None) lbl "[endfor]" in
 
-        let newauxinfo = { auxinfo_label with context_info = 
-             LoopInfo (newi, newfakeelse, auxinfo_label.braces); 
+        let newauxinfo = { auxinfo_label with
+             ctx = LoopInfo (newi, newfakeelse, auxinfo_label.braces); 
+             ctx_stack = auxinfo_label.ctx::auxinfo_label.ctx_stack
           }
         in
 
@@ -684,7 +689,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
         (* let newi = some starti in *)
 
-        (match auxinfo.context_info with
+        (match auxinfo.ctx with
         | LoopInfo (loopstarti, loopendi, braces) -> 
             let desti = 
               (match x with 
@@ -711,7 +716,31 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                 !g#add_arc ((newi, loopendi), Direct) +> adjust_g;
                 None
               end
-            else raise (OnlyBreakInSwitch (fst (List.hd ii)))
+            else 
+              (* old: raise (OnlyBreakInSwitch (fst (List.hd ii)))
+               * in fact can have a continue, 
+               *)
+             if x = Ast_c.Continue then
+               (try 
+                 let (loopstarti, loopendi, braces) = 
+                   auxinfo.ctx_stack +> find_some (function 
+                     | LoopInfo (loopstarti, loopendi, braces) -> 
+                         Some (loopstarti, loopendi, braces)
+                     | _ -> None
+                                                  ) in
+                 let desti = loopstarti in
+                 let difference = 
+                   List.length auxinfo.braces - List.length braces in
+                 assert (difference >= 0);
+                 let toend = take difference auxinfo.braces in
+                 let newi = insert_all_braces toend newi in
+                 !g#add_arc ((newi, desti), Direct) +> adjust_g;
+                 None
+                 
+                 with Not_found -> 
+                   raise (OnlyBreakInSwitch (fst (List.hd ii)))
+               )
+             else raise Impossible
         | NoInfo -> raise (NoEnclosingLoop (fst (List.hd ii)))
         )        
 
@@ -739,7 +768,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         let newi = insert_all_braces auxinfo.braces newi in
 
-        if auxinfo.context_info_bis
+        if auxinfo.ctx_bis
         then !g#add_arc ((newi, errorexiti), Direct) +> adjust_g
         else !g#add_arc ((newi, exiti), Direct) +> adjust_g
         ;
@@ -769,8 +798,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
 
   let info = { 
-    context_info = NoInfo; 
-    context_info_bis = false;
+    ctx = NoInfo; 
+    ctx_stack = [];
+    ctx_bis = false;
     labels = lbl_start; 
     braces = [] 
   } 
@@ -782,29 +812,30 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
 (*****************************************************************************)
 (*
- note: deadCode detection
-  What is dead code ? when there is no starti  to start from ? => make starti 
-  an option too ?
-  Si on arrive sur un label: au moment d'un deadCode, on peut verifier les 
-  predecesseurs de ce label, auquel cas si y'en a, ca veut dire qu'en fait c'est
-  pas du deadCode et que donc on peut se permettre de partir d'un starti à None.
-  Mais si on a   xx; goto far:; near: yy; zz; far: goto near:. Bon ca doit etre 
-  un cas tres tres rare, mais a cause de notre parcours, on va rejeter ce 
-  programme car au moment d'arriver sur near:  on n'a pas encore de 
-  predecesseurs pour ce label.
-  De meme, meme le cas simple ou la derniere instruction c'est un return, alors 
-  ca va generer un DeadCode :(
-  => Make a first pass where dont launch exn at all, create nodes, if starti is 
-     None then dont add    arc. 
-     A second pass, just check that all nodes (except enter) have predecessors. 
-      (todo: if the pb is at a fake node, then try first successos that is 
-      non fake)
-  => Make starti  an option too.
-     So type is now  int option -> statement -> int option.
-
- old: I think that DeadCode is too aggressive, what if  have both return in 
-  else/then ? 
-*)
+ * note: deadCode detection
+ * What is dead code ? when there is no starti  to start from ? => make starti
+ * an option too ?
+ * Si on arrive sur un label: au moment d'un deadCode, on peut verifier les 
+ * predecesseurs de ce label, auquel cas si y'en a, ca veut dire qu'en fait 
+ * c'est pas du deadCode et que donc on peut se permettre de partir d'un starti
+ * à None.
+ * Mais si on a   xx; goto far:; near: yy; zz; far: goto near:. Bon ca doit
+ * etre un cas tres tres rare, mais a cause de notre parcours, on va rejeter
+ * ce programme car au moment d'arriver sur near:  on n'a pas encore de 
+ * predecesseurs pour ce label.
+ * De meme, meme le cas simple ou la derniere instruction c'est un return, 
+ * alors ca va generer un DeadCode :(
+ *  => Make a first pass where dont launch exn at all, create nodes, if starti
+ *   is None then dont add    arc. 
+ *     Make a second pass, just check that all nodes (except enter) have
+ *      predecessors. (todo: if the pb is at a fake node, then try first
+ *      successos that is non fake)
+ *  => Make starti  an option too.
+ *     So type is now  int option -> statement -> int option.
+ * 
+ * old: I think that DeadCode is too aggressive, what if  have both return in 
+ *  else/then ? 
+ *)
 
 let deadcode_detection g = 
   (* phase 2, deadcode detection 
@@ -820,11 +851,14 @@ let deadcode_detection g =
       | FunHeader _ -> ()
       | ErrorExit -> ()
       (* old: | Enter -> () *)
-
-(*    | EndStatement _ -> pr2 "control_flow: deadcode sur fake node, pas grave"; *)
-(*TODO      | EndBrace _ -> () (* todo?: certaines deviennent orphelins *) *)
-(*TODO      | Statement (st,ii::iis) -> raise (DeadCode (Some (fst ii))) *)
-      | x -> pr2 "control_flow: orphelin nodes, maybe something wierd happened"
+      (*      | EndStatement _ -> pr2 "control_flow: deadcode sur fake node, pas grave"; *)
+      | SeqEnd _ -> () (* todo?: certaines deviennent orphelins *)
+      | x -> 
+          (match Control_flow_c.extract_fullstatement node with
+          | Some (st, ii::iis) -> raise (DeadCode (Some (fst ii)))
+          | _ -> 
+             pr2 "control_flow: orphelin nodes, maybe something wierd happened"
+                )
       )
     )
 

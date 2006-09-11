@@ -142,7 +142,7 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
 	    (Printf.sprintf "egrep -q '(%s)' %s"
 	       (String.concat "|" tokens) cfile) with
 	  0 -> (* success*) ()
-	| _ -> (* failure *) raise NotWorthTrying);
+	| _ -> (* failure *) pr2 "raised NotWorthTrying"; raise NotWorthTrying);
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -253,7 +253,9 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
                     pr2 "PBBBBBBBBBBBBBBBBBB";
                     pr2 (Common.error_message filename ("", info.charpos));
                     pr2 ("at least 1 deadcode detected (there may be more)," ^
-                         "but I continue")
+                         "but I continue");
+                    pr2 "maybe because of cpp #ifdef side effects";
+                      
                 end;
                   
                 (* remove some fake nodes *)
@@ -388,4 +390,5 @@ let full_engine ?(print_input_file=true) cfile coccifile_and_iso_or_ctl =
   ); (* end 1: iter ctl *)
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
-    with NotWorthTrying -> ()
+  with NotWorthTrying -> 
+    command2("cp /tmp/input.c /tmp/output.c");    
