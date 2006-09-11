@@ -209,11 +209,11 @@ let main () =
       "-show_flow", Arg.Set Flag.show_flow,    " ";
       "-show_before_fixed_flow", Arg.Set Flag.show_before_fixed_flow,  " .";
       "-show_ctl_tex",  Arg.Set Flag.show_ctl_tex,     " ";
-      "-show_ctl_text",  Arg.Set Flag.show_ctl_text,     " ";
+      "-no_show_ctl_text",  Arg.Clear Flag.show_ctl_text,     " ";
         (* works in conjunction with -show_ctl* *)
         "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
         "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
-      "-show_transinfo",  Arg.Set Flag.show_transinfo,     " ";
+      "-no_show_transinfo",  Arg.Clear Flag.show_transinfo,     " ";
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
