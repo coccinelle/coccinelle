@@ -265,13 +265,16 @@ let combiner bind option_default
 	       (bind (string_mcode ender)
 		  (get_option statement_dots whencode)))
       | Ast0.Exp(exp) -> expression exp
-      | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
-      | Ast0.Stars(d,whencode) ->
-	  bind (string_mcode d) (get_option statement_dots whencode)
+      | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
+	  bind (string_mcode d) (whencode statement_dots statement whn)
       | Ast0.OptStm(re) -> statement re
       | Ast0.UniqueStm(re) -> statement re
       | Ast0.MultiStm(re) -> statement re in
     stmtfn all_functions k s
+  and whencode notfn alwaysfn = function
+      Ast0.NoWhen -> option_default
+    | Ast0.WhenNot a -> notfn a
+    | Ast0.WhenAlways a -> alwaysfn a
   and top_level t =
     let k t =
       match Ast0.unwrap t with
@@ -541,16 +544,20 @@ let rebuilder = fun
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
 		      string_mcode ender,get_option statement_dots whencode)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
-	| Ast0.Dots(d,whencode) ->
-	    Ast0.Dots(string_mcode d, get_option statement_dots whencode)
-	| Ast0.Circles(d,whencode) ->
-	    Ast0.Circles(string_mcode d, get_option statement_dots whencode)
-	| Ast0.Stars(d,whencode) ->
-	    Ast0.Stars(string_mcode d, get_option statement_dots whencode)
+	| Ast0.Dots(d,whn) ->
+	    Ast0.Dots(string_mcode d, whencode statement_dots statement whn)
+	| Ast0.Circles(d,whn) ->
+	    Ast0.Circles(string_mcode d, whencode statement_dots statement whn)
+	| Ast0.Stars(d,whn) ->
+	    Ast0.Stars(string_mcode d, whencode statement_dots statement whn)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
     stmtfn all_functions k s
+  and whencode notfn alwaysfn = function
+      Ast0.NoWhen -> Ast0.NoWhen
+    | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
+    | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
   and top_level t =
     let k t =
       Ast0.rewrap t

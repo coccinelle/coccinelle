@@ -379,12 +379,13 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
 	      failwith "nest not supported in patterns"
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
-	  | (Ast0.Dots(_,None),Ast0.Dots(_,None))
-	  | (Ast0.Circles(_,None),Ast0.Circles(_,None))
-	  | (Ast0.Stars(_,None),Ast0.Stars(_,None)) -> return true
-	  | (Ast0.Dots(d,None),Ast0.Dots(_,Some wc))
-	  | (Ast0.Circles(d,None),Ast0.Circles(_,Some wc))
-	  | (Ast0.Stars(d,None),Ast0.Stars(_,Some wc)) ->
+	  | (Ast0.Dots(_,Ast0.NoWhen),Ast0.Dots(_,Ast0.NoWhen))
+	  | (Ast0.Circles(_,Ast0.NoWhen),Ast0.Circles(_,Ast0.NoWhen))
+	  | (Ast0.Stars(_,Ast0.NoWhen),Ast0.Stars(_,Ast0.NoWhen)) ->
+	      return true
+	  | (Ast0.Dots(d,Ast0.NoWhen),Ast0.Dots(_,Ast0.WhenNot wc))
+	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenNot wc))
+	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenNot wc)) ->
 	  (* hope that mcode of dots is unique somehow *)
 	      let (_,dots_whencode_allowed) = whencode_allowed in
 	      if dots_whencode_allowed
@@ -392,8 +393,17 @@ let match_maker context_required whencode_allowed =
 	      else
 		(Printf.printf "warning: not applying iso because of whencode";
 		 return false)
-	  | (Ast0.Dots(_,Some _),_) | (Ast0.Circles(_,Some _),_)
-	  | (Ast0.Stars(_,Some _),_) ->
+	  | (Ast0.Dots(d,Ast0.NoWhen),Ast0.Dots(_,Ast0.WhenAlways wc))
+	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenAlways wc))
+	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenAlways wc)) ->
+	  (* hope that mcode of dots is unique somehow *)
+	      let (_,dots_whencode_allowed) = whencode_allowed in
+	      if dots_whencode_allowed
+	      then add_dot_binding d (Ast0.StmtTag wc)
+	      else
+		(Printf.printf "warning: not applying iso because of whencode";
+		 return false)
+	  | (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_) | (Ast0.Stars(_,_),_) ->
 	      failwith "whencode not allowed in a pattern"
 	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
 	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
@@ -472,15 +482,15 @@ let make_minus =
      since it doesn't appear in the + code *)
   let expression r k ((term,info,index,mcodekind,ty) as e) =
     match term with
-      Ast0.Edots(dots,whencode) ->
+      Ast0.Edots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Edots(dots,whencode))
-    | Ast0.Ecircles(dots,whencode) ->
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
+    | Ast0.Ecircles(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Ecircles(dots,whencode))
-    | Ast0.Estars(dots,whencode) ->
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Ecircles(mcode d,whencode))
+    | Ast0.Estars(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Estars(dots,whencode))
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
     | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
 	update_mc mcodekind;
 	Ast0.rewrap e
@@ -720,19 +730,28 @@ let instantiate bindings =
 	  (dot_term d);
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Dots(d,Some stms))
+	    Ast0.DotsStmtTag(stms) ->
+	      Ast0.rewrap e (Ast0.Dots(d,Ast0.WhenNot stms))
+	  | Ast0.StmtTag(stm) ->
+	      Ast0.rewrap e (Ast0.Dots(d,Ast0.WhenAlways stm))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Circles(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Circles(d,Some stms))
+	    Ast0.DotsStmtTag(stms) ->
+	      Ast0.rewrap e (Ast0.Circles(d,Ast0.WhenNot stms))
+	  | Ast0.StmtTag(stm) ->
+	      Ast0.rewrap e (Ast0.Circles(d,Ast0.WhenAlways stm))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | Ast0.Stars(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) -> Ast0.rewrap e (Ast0.Stars(d,Some stms))
+	    Ast0.DotsStmtTag(stms) ->
+	      Ast0.rewrap e (Ast0.Stars(d,Ast0.WhenNot stms))
+	  | Ast0.StmtTag(stm) ->
+	      Ast0.rewrap e (Ast0.Stars(d,Ast0.WhenAlways stm))
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> k e in

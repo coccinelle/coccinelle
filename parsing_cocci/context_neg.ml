@@ -224,11 +224,11 @@ let classify all_marked table code =
 	Ast0.Nest(started,stm_dots,ender,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,None)))
       | Ast0.Dots(dots,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Dots(dots,None)))
+	  k (Ast0.rewrap s (Ast0.Dots(dots,Ast0.NoWhen)))
       | Ast0.Circles(dots,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Circles(dots,None)))
+	  k (Ast0.rewrap s (Ast0.Circles(dots,Ast0.NoWhen)))
       | Ast0.Stars(dots,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Stars(dots,None)))
+	  k (Ast0.rewrap s (Ast0.Stars(dots,Ast0.NoWhen)))
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
 	    ender

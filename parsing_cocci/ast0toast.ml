@@ -458,21 +458,24 @@ let rec statement s =
 	    get_option (statement_dots Ast.Sequencible) whencode in
 	  Ast.Nest(statement_dots Ast.Sequencible rule_elem_dots,
 		   option_to_list whencode,[])
-      | Ast0.Dots(d,whencode) ->
+      | Ast0.Dots(d,whn) ->
 	  let d = mcode d in
-	  let whencode =
-	    get_option (statement_dots Ast.Sequencible) whencode in
-	  Ast.Dots(d,option_to_list whencode,[])
-      | Ast0.Circles(d,whencode) ->
+	  let whn =
+	    whencode (statement_dots Ast.Sequencible)
+	      (statement Ast.NotSequencible) whn in
+	  Ast.Dots(d,whn,[])
+      | Ast0.Circles(d,whn) ->
 	  let d = mcode d in
-	  let whencode =
-	    get_option (statement_dots Ast.Sequencible) whencode in
-	  Ast.Circles(d,option_to_list whencode,[])
-      | Ast0.Stars(d,whencode) ->
+	  let whn =
+	    whencode (statement_dots Ast.Sequencible)
+	      (statement Ast.NotSequencible) whn in
+	  Ast.Circles(d,whn,[])
+      | Ast0.Stars(d,whn) ->
 	  let d = mcode d in
-	  let whencode =
-	    get_option (statement_dots Ast.Sequencible) whencode in
-	  Ast.Stars(d,option_to_list whencode,[])
+	  let whn =
+	    whencode (statement_dots Ast.Sequencible)
+	      (statement Ast.NotSequencible) whn in
+	  Ast.Stars(d,whn,[])
       | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  let stg = get_option mcode stg in
 	  let ty = get_option typeC ty in
@@ -492,6 +495,12 @@ let rec statement s =
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
+
+  and whencode notfn alwaysfn = function
+      Ast0.NoWhen -> Ast.NoWhen
+    | Ast0.WhenNot a -> Ast.WhenNot (notfn a)
+    | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
+
   and process_list seqible = function
       [] -> []
     | x::rest ->

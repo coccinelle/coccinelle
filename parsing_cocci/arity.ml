@@ -616,24 +616,27 @@ let rec statement in_nest tgt stm =
       Ast0.rewrap stm
 	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,
 		   ender,whencode))
-  | Ast0.Dots(dots,whencode)    ->
+  | Ast0.Dots(dots,whn)    ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode =
-	get_option (concat_dots (statement false Ast0.NONE)) whencode in
-      make_rule_elem stm tgt arity (Ast0.Dots(dots,whencode))
-  | Ast0.Circles(dots,whencode) ->
+      let whn =
+	whencode (concat_dots (statement false Ast0.NONE))
+	  (statement false Ast0.NONE) whn in
+      make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
+  | Ast0.Circles(dots,whn) ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode =
-	get_option (concat_dots (statement false Ast0.NONE)) whencode in
-      make_rule_elem stm tgt arity (Ast0.Circles(dots,whencode))
-  | Ast0.Stars(dots,whencode)   ->
+      let whn =
+	whencode (concat_dots (statement false Ast0.NONE))
+	  (statement false Ast0.NONE) whn in
+      make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
+  | Ast0.Stars(dots,whn)   ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      let whencode =
-	get_option (concat_dots (statement false Ast0.NONE)) whencode in
-      make_rule_elem stm tgt arity (Ast0.Stars(dots,whencode))
+      let whn =
+	whencode (concat_dots (statement false Ast0.NONE))
+	  (statement false Ast0.NONE) whn in
+      make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
   | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
 	all_same false true tgt (mcode2line lp)
@@ -652,6 +655,12 @@ let rec statement in_nest tgt stm =
 	(Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"	
+
+and whencode notfn alwaysfn = function
+    Ast0.NoWhen -> Ast0.NoWhen
+  | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
+  | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
+
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 (* Haven't thought much about arity here... *)

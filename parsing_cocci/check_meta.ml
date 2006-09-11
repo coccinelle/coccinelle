@@ -205,14 +205,19 @@ let rec statement table minus s =
   | Ast0.Nest(_,rule_elem_dots,_,w) ->
       dots (statement table minus) rule_elem_dots;
       get_opt (dots (statement table minus)) w
-  | Ast0.Dots(_,Some x) | Ast0.Circles(_,Some x) | Ast0.Stars(_,Some x) ->
-      dots (statement table minus) x
+  | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
+      whencode (dots (statement table minus)) (statement table minus) x
   | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN table minus name;
       get_opt (typeC table minus) ty;
       parameter_list table minus params;
       dots (statement table minus) body
   | _ -> () (* no metavariable subterms *)
+
+and whencode notfn alwaysfn = function
+    Ast0.NoWhen -> ()
+  | Ast0.WhenNot a -> notfn a
+  | Ast0.WhenAlways a -> alwaysfn a
 
 (* --------------------------------------------------------------------- *)
 (* Rules *)

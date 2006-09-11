@@ -193,9 +193,12 @@ type base_statement =
 	             string mcode list (* the |s *)  * string mcode
   | Nest          of string mcode * statement dots * string mcode *
 	             statement dots option
-  | Dots          of string mcode (* ... *) * statement dots option
-  | Circles       of string mcode (* ooo *) * statement dots option
-  | Stars         of string mcode (* *** *) * statement dots option
+  | Dots          of string mcode (* ... *) *
+                     (statement dots,statement) whencode
+  | Circles       of string mcode (* ooo *) *
+	             (statement dots,statement) whencode
+  | Stars         of string mcode (* *** *) *
+	             (statement dots,statement) whencode
   | FunDecl of Ast.storage mcode option * typeC option * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
@@ -203,6 +206,11 @@ type base_statement =
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
+
+and ('a,'b) whencode =
+    NoWhen
+  | WhenNot of 'a
+  | WhenAlways of 'b
 
 and statement = base_statement wrap
 

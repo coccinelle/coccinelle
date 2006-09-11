@@ -260,12 +260,16 @@ let combiner bind option_default
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
-      | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
-      | Ast.Stars(d,whencode,_) ->
-	  multibind ((string_mcode d) :: (List.map statement_dots whencode))
+      | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
+	  bind (string_mcode d) (whencode statement_dots statement whn)
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
 	  statement stmt in
     stmtfn all_functions k s
+
+  and whencode notfn alwaysfn = function
+      Ast.NoWhen -> option_default
+    | Ast.WhenNot a -> notfn a
+    | Ast.WhenAlways a -> alwaysfn a
     
   and top_level t =
     let k t =
@@ -596,16 +600,21 @@ let rebuilder
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,
 			statement_dots body, rule_elem rbrace)
-	| Ast.Dots(d,whencode,t) ->
-	    Ast.Dots(string_mcode d, List.map statement_dots whencode, t)
-	| Ast.Circles(d,whencode,t) ->
-	    Ast.Circles(string_mcode d, List.map statement_dots whencode, t)
-	| Ast.Stars(d,whencode,t) ->
-	    Ast.Stars(string_mcode d, List.map statement_dots whencode, t)
+	| Ast.Dots(d,whn,t) ->
+	    Ast.Dots(string_mcode d, whencode statement_dots statement whn, t)
+	| Ast.Circles(d,whn,t) ->
+	    Ast.Circles(string_mcode d,whencode statement_dots statement whn,t)
+	| Ast.Stars(d,whn,t) ->
+	    Ast.Stars(string_mcode d, whencode statement_dots statement whn, t)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in
     stmtfn all_functions k s
+
+  and whencode notfn alwaysfn = function
+      Ast.NoWhen -> Ast.NoWhen
+    | Ast.WhenNot a -> Ast.WhenNot (notfn a)
+    | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     
   and top_level t =
     let k t =

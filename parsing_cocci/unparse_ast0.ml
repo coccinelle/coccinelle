@@ -322,17 +322,19 @@ let rec statement arity s =
 	  end_block();
 	  mcode print_string ender
       | Ast0.Exp(exp) -> print_string arity; expression exp
-      | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
-      | Ast0.Stars(d,whencode) ->
+      | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;
-	  print_option
-	    (function x ->
-	      print_string "   WHEN != "; open_box 0;
-	      dots force_newline (statement "") x) whencode;
-	  close_box()
+	  whencode (dots force_newline (statement "")) (statement "") whn
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.MultiStm(re) -> statement "\\+" re)
+
+and whencode notfn alwaysfn = function
+    Ast0.NoWhen -> ()
+  | Ast0.WhenNot a ->
+      print_string "   WHEN != "; open_box 0; notfn a; close_box()
+  | Ast0.WhenAlways a ->
+      print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
 
 let statement_dots = dots (function _ -> ()) (statement "")
 

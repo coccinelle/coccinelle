@@ -279,16 +279,19 @@ rule token = parse
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TOPar0 (get_current_line_type lexbuf))}
+  | "\\(" { start_line true; TOPar0 (get_current_line_type lexbuf) }
   | "|" { if !current_line_started
 	  then (start_line true; TOr (get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 (get_current_line_type lexbuf))}
+  | "\\|" { start_line true; TMid0 (get_current_line_type lexbuf) }
   | ")" { if !current_line_started
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TCPar0 (get_current_line_type lexbuf))}
+  | "\\)" { start_line true; TCPar0 (get_current_line_type lexbuf) }
 
   | '[' { start_line true; TOCro (get_current_line_type lexbuf) }
   | ']' { start_line true; TCCro (get_current_line_type lexbuf) }

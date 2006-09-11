@@ -440,11 +440,9 @@ let rec statement arity s =
       nest_dots (statement arity)
 	(function _ -> print_statement_when whencode)
 	stmt_dots
-  | Ast.Dots(d,[],_) | Ast.Circles(d,[],_) | Ast.Stars(d,[],_) ->
-      print_string arity; mcode print_string d
-  | Ast.Dots(d,whencode,_) | Ast.Circles(d,whencode,_)
-  | Ast.Stars(d,whencode,_) ->
-      print_string arity; mcode print_string d; print_statement_when whencode
+  | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
+      print_string arity; mcode print_string d;
+      whencode (dots force_newline (statement "")) (statement "") whn
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
@@ -455,6 +453,15 @@ and print_statement_when whencode =
   print_between (function _ -> print_string " &"; force_newline())
     (dots force_newline (statement "")) whencode;
   close_box()
+
+
+and whencode notfn alwaysfn = function
+    Ast.NoWhen -> ()
+  | Ast.WhenNot a ->
+      print_string "   WHEN != "; open_box 0; notfn a; close_box()
+  | Ast.WhenAlways a ->
+      print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
+
 
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l

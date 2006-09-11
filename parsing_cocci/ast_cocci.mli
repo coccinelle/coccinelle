@@ -271,15 +271,23 @@ and base_statement =
   | Nest          of statement dots * statement dots list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * bool * statement dots * rule_elem (* } *)
-  | Dots          of string mcode (* ... *) * statement dots list *
+  | Dots          of string mcode (* ... *) *
+	             (statement dots,statement) whencode *
 	             dots_whencode list
-  | Circles       of string mcode (* ooo *) * statement dots list *
+  | Circles       of string mcode (* ooo *) *
+	             (statement dots,statement) whencode *
 	             dots_whencode list
-  | Stars         of string mcode (* *** *) * statement dots list *
+  | Stars         of string mcode (* *** *) *
+	             (statement dots,statement) whencode *
 	             dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)
+
+and ('a,'b) whencode =
+    NoWhen
+  | WhenNot of 'a
+  | WhenAlways of 'b
 
 and dots_whencode =
     WParen of rule_elem * string (*pren_var*)

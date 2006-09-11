@@ -145,7 +145,7 @@ let elim_opt =
 	let dots =
 	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
 		    Ast.CONTEXT(Ast.NOTHING)),
-		   [],[]) in
+		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));(Ast.DOTS([rw dots]),l,[])])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
@@ -337,9 +337,14 @@ let rec get_before sl a =
 
 and get_before_e s a =
   match Ast.unwrap s with
-    Ast.Dots(d,w,t) ->
-      let (w,_) = List.split (List.map (function s -> get_before s []) w) in
-      (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+    Ast.Dots(d,Ast.NoWhen,t) ->
+      (Ast.rewrap s (Ast.Dots(d,Ast.NoWhen,a@t)),a)
+  | Ast.Dots(d,Ast.WhenNot w,t) ->
+      let (w,_) = get_before w [] in
+      (Ast.rewrap s (Ast.Dots(d,Ast.WhenNot w,a@t)),a)
+  | Ast.Dots(d,Ast.WhenAlways w,t) ->
+      let (w,_) = get_before_e w [] in
+      (Ast.rewrap s (Ast.Dots(d,Ast.WhenAlways w,a@t)),a)
   | Ast.Nest(stmt_dots,w,t) ->
       let (w,_) = List.split (List.map (function s -> get_before s []) w) in
       let (sd,_) = get_before stmt_dots a in
@@ -412,9 +417,14 @@ let rec get_after sl a =
 
 and get_after_e s a =
   match Ast.unwrap s with
-    Ast.Dots(d,w,t) ->
-      let (w,_) = List.split (List.map (function s -> get_after s []) w) in
-      (Ast.rewrap s (Ast.Dots(d,w,a@t)),a)
+    Ast.Dots(d,Ast.NoWhen,t) ->
+      (Ast.rewrap s (Ast.Dots(d,Ast.NoWhen,a@t)),a)
+  | Ast.Dots(d,Ast.WhenNot w,t) ->
+      let (w,_) = get_after w [] in
+      (Ast.rewrap s (Ast.Dots(d,Ast.WhenNot w,a@t)),a)
+  | Ast.Dots(d,Ast.WhenAlways w,t) ->
+      let (w,_) = get_after_e w [] in
+      (Ast.rewrap s (Ast.Dots(d,Ast.WhenAlways w,a@t)),a)
   | Ast.Nest(stmt_dots,w,t) ->
       let (w,_) = List.split (List.map (function s -> get_after s []) w) in
       let (sd,_) = get_after stmt_dots a in
@@ -933,20 +943,24 @@ and statement stmt used_after after quantified guard =
 	    Some(make_match (make_meta_rule_elem d))
 	| _ -> None in
       let whencodes =
-	(List.map (process_bef_aft after quantified used_after n) t) @
-	(List.map
-	   (function sl ->
-	     statement_list sl used_after (a2n after) quantified true)
-	   whencodes) in
+	(match whencodes with
+	  Ast.NoWhen -> []
+	| Ast.WhenNot whencodes ->
+	    [wrapNot
+		(statement_list whencodes used_after (a2n after) quantified
+		   true)]
+	| Ast.WhenAlways s ->
+	    [statement s used_after (a2n after) quantified true]) @
+	(List.map wrapNot
+	   (List.map (process_bef_aft after quantified used_after n) t)) in
       let phi2 =
 	match whencodes with
 	  [] -> None
 	| x::xs ->
 	    Some
-	      (wrapNot
-		 (List.fold_left
-		    (function rest -> function cur -> wrapOr(cur,rest))
-		    x xs)) in
+	      (List.fold_left
+		 (function rest -> function cur -> wrapAnd(cur,rest))
+		 x xs) in
       let phi3 =
 	match (dot_code,phi2) with (* add - on dots, if any *)
 	  (None,None) -> None
@@ -1275,7 +1289,7 @@ let drop_bindings b f = (* innermost bindings first in b *)
     f b
 
 let letify f =
-  failwith "this code should not be used!!!";
+  failwith "this code should not be used!!!"(*;
   Hashtbl.clear formula_table;
   Hashtbl.clear ctlfv_table;
   (* create a count of the number of occurrences of each subformula *)
@@ -1291,7 +1305,7 @@ let letify f =
   let bindings = rev_order_bindings bindings in
   (* insert bindings as lets into the formula *)
   let res = drop_bindings bindings new_f in
-  res
+  res*)
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

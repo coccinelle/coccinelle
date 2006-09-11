@@ -510,9 +510,29 @@ statement:
 			  Ast0.wrap(Ast0.STARS(b (mkdots "***"))),
 			  clt2mcode "***>" (startofs(c)) c, Some w)) }
 
+/* a statement that fits into a single rule_elem.  should nests be included?
+what about statement metavariables? */
+rule_elem_statement:
+  expr TPtVirg
+    { Ast0.wrap(Ast0.ExprStatement ($1, clt2mcode ";" (startofs($2)) $2)) }
+| TReturn eexpr TPtVirg
+    { Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" (startofs($1)) $1,$2,
+				clt2mcode ";" (startofs($3)) $3)) }
+| TReturn TPtVirg
+    { Ast0.wrap(Ast0.Return(clt2mcode "return" (startofs($1)) $1,
+			    clt2mcode ";" (startofs($2)) $2)) }
+| TBreak TPtVirg
+    { Ast0.wrap(Ast0.Break(clt2mcode "break" (startofs($1)) $1,
+			   clt2mcode ";" (startofs($2)) $2)) }
+| TContinue TPtVirg
+    { Ast0.wrap(Ast0.Continue(clt2mcode "continue" (startofs($1)) $1,
+			      clt2mcode ";" (startofs($2)) $2)) }
+
+
 statement_dots(dotter):
   r=no_dot_start_end(exp_decl_statement_list,
-		     dots_when(dotter,pre_post_decl_statement_or_expression))
+		     dots_when(dotter,pre_post_decl_statement_or_expression,
+			       rule_elem_statement))
   { function dot_builder ->
     List.concat (r (function x -> [dot_builder x])) }
 
@@ -768,7 +788,7 @@ primary_expr(recurser,primary_extra):
  | primary_extra { $1 }
 
 expr_dots(dotter):
-    r=no_dot_start_end(dexpr,dots_when(dotter,eexpr)) { r }
+    r=no_dot_start_end(dexpr,edots_when(dotter,eexpr)) { r }
 
 /*****************************************************************************/
 
@@ -916,6 +936,7 @@ appear by itself.  always nonempty and cannot just be dots.  allows fns too. */
 minus_function_decl_statement_or_expression: /* doesn't allow just ... */
     opt_dot_start_end(fun_exp_decl_statement_list,
 		      pre_post_decl_statement_or_expression,
+		      rule_elem_statement,
 		      fun_exp_decl_statement_list)
     { List.concat
 	($1 (function x -> function y ->
@@ -926,6 +947,7 @@ plus_function_decl_statement_or_expression: /* does allow just ... */
   | first=loption(fun_exp_decl_statement_list)
       second=required_dot_start_with_ender(fun_exp_decl_statement_list,
 				    pre_post_decl_statement_or_expression,
+				    rule_elem_statement,
 				    fun_exp_decl_statement_list)
       { List.concat
 	   (first ::
@@ -940,6 +962,7 @@ appear by itself.  always nonempty and cannot just be dots. */
 pre_post_decl_statement_or_expression:
   opt_dot_start_end(exp_decl_statement_list,
 		    pre_post_decl_statement_or_expression,
+		    rule_elem_statement,
 		    exp_decl_statement_list)
   { top_dots(List.concat ($1 (function x -> function y -> [mkdots x y]))) }
 
@@ -951,6 +974,7 @@ pre_post_decl_statement_and_expression:
   | first=loption(pure_decl_statement_list)
       second=required_dot_start_with_ender(exp_decl_statement_list,
 				    pre_post_decl_statement_or_expression,
+				    rule_elem_statement,
 				    pure_decl_statement_list)
       { top_dots
 	  (List.concat
@@ -1000,13 +1024,16 @@ eexpr_list_start:
       { let (nm,clt) = $1 in
       Ast0.wrap(Ast0.MetaExprList(clt2mcode nm (startofs($1)) clt,false))::
       Ast0.wrap(Ast0.EComma(clt2mcode "," (startofs($2)) $2))::$3 }
-  | d=dots_when(TEllipsis,eexpr) r=list(comma_args(dots_when(TEllipsis,eexpr)))
+  | d=edots_when(TEllipsis,eexpr)
+	r=list(comma_args(edots_when(TEllipsis,eexpr)))
       { (mkedots "..." d)::
 	(List.concat (List.map (function x -> x (mkedots "...")) r)) }
-  | d=dots_when(TCircles,eexpr) r=list(comma_args(dots_when(TCircles,eexpr)))
+  | d=edots_when(TCircles,eexpr)
+	r=list(comma_args(edots_when(TCircles,eexpr)))
       { (mkedots "ooo" d)::
 	(List.concat (List.map (function x -> x (mkedots "ooo")) r)) }
-  | d=dots_when(TStars,eexpr) r=list(comma_args(dots_when(TStars,eexpr)))
+  | d=edots_when(TStars,eexpr)
+	r=list(comma_args(edots_when(TStars,eexpr)))
       { (mkedots "***" d)::
 	(List.concat (List.map (function x -> x (mkedots "***")) r)) }
 
@@ -1042,16 +1069,23 @@ mzl(elem):
 // SEQ1
 // at least one instance of grammar/ender
 
-opt_dot_start_end(grammar,when_grammar,ender):
+opt_dot_start_end(grammar,when_grammar,simple_when_grammar,ender):
    start=ender { function dot_builder -> [start] }
- | r=opt_dot_start_end_pattern(grammar,dots_when(TEllipsis,when_grammar),
-     ender,opt_dot_end_ellipsis(grammar,when_grammar,ender))
+ | r=opt_dot_start_end_pattern(grammar,
+			       dots_when(TEllipsis,when_grammar,
+					 simple_when_grammar),
+     ender,opt_dot_end_ellipsis(grammar,when_grammar,
+				simple_when_grammar,ender))
    { function dot_builder -> r (dot_builder "...") }
- | r=opt_dot_start_end_pattern(grammar,dots_when(TCircles,when_grammar),
-     ender,opt_dot_end_circles(grammar,when_grammar,ender))
+ | r=opt_dot_start_end_pattern(grammar,dots_when(TCircles,when_grammar,
+						 simple_when_grammar),
+     ender,opt_dot_end_circles(grammar,when_grammar,
+			       simple_when_grammar,ender))
    { function dot_builder -> r (dot_builder "ooo") }
- | r=opt_dot_start_end_pattern(grammar,dots_when(TStars,when_grammar),
-     ender,opt_dot_end_stars(grammar,when_grammar,ender))
+ | r=opt_dot_start_end_pattern(grammar,dots_when(TStars,when_grammar,
+						 simple_when_grammar),
+     ender,opt_dot_end_stars(grammar,when_grammar,
+			     simple_when_grammar,ender))
    { function dot_builder -> r (dot_builder "***") }
 
 %inline opt_dot_start_end_pattern(grammar,dotter,ender,continue):
@@ -1062,72 +1096,82 @@ opt_dot_start_end(grammar,when_grammar,ender):
  | d=dotter c=continue // continue is never empty
      { function dot_builder -> (dot_builder d) :: (c dot_builder) }
 
-opt_dot_end_ellipsis(grammar,when_grammar,ender):
+opt_dot_end_ellipsis(grammar,when_grammar,simple_when_grammar,ender):
    g=ender { function dot_builder -> [g] }
- | g=grammar d=dots_when(TEllipsis,when_grammar)
+ | g=grammar d=dots_when(TEllipsis,when_grammar,simple_when_grammar)
      { function dot_builder -> [g ; dot_builder d ] }
- | g=grammar d=dots_when(TEllipsis,when_grammar)
-     r=opt_dot_end_ellipsis(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TEllipsis,when_grammar,simple_when_grammar)
+     r=opt_dot_end_ellipsis(grammar,when_grammar,simple_when_grammar,ender)
      { function dot_builder -> g :: (dot_builder d) :: (r dot_builder) }
 
-opt_dot_end_circles(grammar,when_grammar,ender):
+opt_dot_end_circles(grammar,when_grammar,simple_when_grammar,ender):
    g=ender { function dot_builder -> [g] }
- | g=grammar d=dots_when(TCircles,when_grammar)
+ | g=grammar d=dots_when(TCircles,when_grammar,simple_when_grammar)
      { function dot_builder -> [g ; dot_builder d ] }
- | g=grammar d=dots_when(TCircles,when_grammar)
-     r=opt_dot_end_circles(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TCircles,when_grammar,simple_when_grammar)
+     r=opt_dot_end_circles(grammar,when_grammar,simple_when_grammar,ender)
      { function dot_builder -> g :: (dot_builder d) :: (r dot_builder) }
 
-opt_dot_end_stars(grammar,when_grammar,ender):
+opt_dot_end_stars(grammar,when_grammar,simple_when_grammar,ender):
    g=ender { function dot_builder -> [g] }
- | g=grammar d=dots_when(TStars,when_grammar)
+ | g=grammar d=dots_when(TStars,when_grammar,simple_when_grammar)
      { function dot_builder -> [g ; dot_builder d ] }
- | g=grammar d=dots_when(TStars,when_grammar)
-     r=opt_dot_end_stars(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TStars,when_grammar,simple_when_grammar)
+     r=opt_dot_end_stars(grammar,when_grammar,simple_when_grammar,ender)
      { function dot_builder -> g :: (dot_builder d) :: (r dot_builder) }
 
 // SEQ2, ender optional
-%inline required_dot_start_with_ender(grammar,when_grammar,ender):
- | start=dots_when(TEllipsis,when_grammar)
-     finish=no_dot_start_ellipsis(grammar,when_grammar,ender)
+%inline required_dot_start_with_ender(grammar,when_grammar,
+				      simple_when_grammar,ender):
+ | start=dots_when(TEllipsis,when_grammar,simple_when_grammar)
+     finish=no_dot_start_ellipsis(grammar,when_grammar,simple_when_grammar,
+				  ender)
    { (function dot_builder ->
        (dot_builder "..." start) :: (finish (dot_builder "..."))) }
- | start=dots_when(TCircles,when_grammar)
-     finish=no_dot_start_circles(grammar,when_grammar,ender)
+ | start=dots_when(TCircles,when_grammar,simple_when_grammar)
+     finish=no_dot_start_circles(grammar,when_grammar,simple_when_grammar,
+				 ender)
    { (function dot_builder ->
        (dot_builder "ooo" start) :: (finish (dot_builder "ooo"))) }
- | start=dots_when(TStars,when_grammar)
-     finish=no_dot_start_stars(grammar,when_grammar,ender)
+ | start=dots_when(TStars,when_grammar,simple_when_grammar)
+     finish=no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender)
    { (function dot_builder ->
        (dot_builder "***" start) :: (finish (dot_builder "***"))) }
 
-no_dot_start_ellipsis(grammar,when_grammar,ender):
+no_dot_start_ellipsis(grammar,when_grammar,simple_when_grammar,ender):
    /* empty */    { function dot_builder -> [] }
  | e=ender
        { function dot_builder -> [e] }
- | g=grammar d=dots_when(TEllipsis,when_grammar) 
-       r=no_dot_start_ellipsis(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TEllipsis,when_grammar,simple_when_grammar) 
+       r=no_dot_start_ellipsis(grammar,when_grammar,simple_when_grammar,ender)
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
-no_dot_start_circles(grammar,when_grammar,ender):
+no_dot_start_circles(grammar,when_grammar,simple_when_grammar,ender):
        { function dot_builder -> [] }
  | e=ender
        { function dot_builder -> [e] }
- | g=grammar d=dots_when(TCircles,when_grammar) 
-       r=no_dot_start_circles(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TCircles,when_grammar,simple_when_grammar) 
+       r=no_dot_start_circles(grammar,when_grammar,simple_when_grammar,ender)
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
-no_dot_start_stars(grammar,when_grammar,ender):
+no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender):
        { function dot_builder -> [] }
  | e=ender
        { function dot_builder -> [e] }
- | g=grammar d=dots_when(TStars,when_grammar) 
-       r=no_dot_start_stars(grammar,when_grammar,ender)
+ | g=grammar d=dots_when(TStars,when_grammar,simple_when_grammar) 
+       r=no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender)
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
-%inline dots_when(dotter,when_grammar):
+%inline edots_when(dotter,when_grammar):
     d=dotter                                      { (d,startofs(d),None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,startofs(d),Some w) }
+
+%inline dots_when(dotter,when_grammar,simple_when_grammar):
+    d=dotter                                 { (d,startofs(d),Ast0.NoWhen) }
+  | d=dotter TWhen TNotEq w=when_grammar TLineEnd
+      { (d,startofs(d),Ast0.WhenNot w) }
+  | d=dotter TWhen TEq w=simple_when_grammar TLineEnd
+      { (d,startofs(d),Ast0.WhenAlways w) }
 
 // used in NEST
 %inline no_dot_start_end(grammar,dotter):
