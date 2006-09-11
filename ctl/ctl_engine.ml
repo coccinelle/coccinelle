@@ -765,9 +765,10 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	  let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	  let res = triples_union first y in
 	  let new_info = setdiff first y in
-	  (*Printf.printf "iter %d res %d new_info %d\n"
+	  print_state "new info" new_info;
+	  Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
-	  flush stdout;*)
+	  flush stdout;
 	  f res new_info in
     f s2 s2
 ;;
@@ -1047,6 +1048,9 @@ let rec satloop negated required required_states
 	  [] -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
+	    print_required required;
+	    Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
+	      false phi;
 	    satEU dir m (loop negated new_required new_required_states phi1)
 	      s2 new_required_states)
     | A.AU(dir,phi1,phi2,uncheckedphi2)      ->
@@ -1064,7 +1068,10 @@ let rec satloop negated required required_states
 			   (A.And
 			      (wrap
 				 (A.Not
-				    (wrap(A.And(phi1,wrap(A.EF(dir,phi2)))))),
+				    (wrap(A.And(phi1,
+						wrap
+						  (A.EF
+						     (dir,uncheckedphi2)))))),
 			       wrap(A.Not phi2))))))))
 	else
 	  let new_required_states = get_reachable m required_states in
@@ -1206,7 +1213,10 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 			   (A.And
 			      (wrap
 				 (A.Not
-				    (wrap(A.And(phi1,wrap(A.EF(dir,phi2)))))),
+				    (wrap(A.And(phi1,
+						wrap
+						  (A.EF
+						     (dir,uncheckedphi2)))))),
 			       wrap(A.Not phi2))))))))
 	    env
 	else
