@@ -1,0 +1,738 @@
+commit a7fe32f7a98f83218f85b2196fed0485f1d5dc22
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Wed Apr 23 04:27:45 2003 -0700
+
+    [PATCH] don't use mem_map_reserve/mem_map_unreserve
+    
+    They are obsfucating aliases for SetPageReserved/ClearPageReserved.
+    And once they're gone we can nuke <linux/wrapper.h>
+
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 18f63ec..37d6ffd 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -555,7 +555,7 @@ pfm_rvmalloc(unsigned long size)
+ 		memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 		adr=(unsigned long) mem;
+ 		while (size > 0) {
+-			mem_map_reserve(vmalloc_to_page((void *)adr));
++			SetPageReserved(vmalloc_to_page((void *)adr));
+ 			adr+=PAGE_SIZE;
+ 			size-=PAGE_SIZE;
+ 		}
+@@ -571,7 +571,7 @@ pfm_rvfree(void *mem, unsigned long size
+ 	if (mem) {
+ 		adr=(unsigned long) mem;
+ 		while ((long) size > 0) {
+-			mem_map_unreserve(vmalloc_to_page((void*)adr));
++			ClearPageReserved(vmalloc_to_page((void*)adr));
+ 			adr+=PAGE_SIZE;
+ 			size-=PAGE_SIZE;
+ 		}
+diff --git a/drivers/char/ftape/lowlevel/ftape-buffer.c b/drivers/char/ftape/lowlevel/ftape-buffer.c
+index 41da6cb..a0fe764 100644
+--- a/drivers/char/ftape/lowlevel/ftape-buffer.c
++++ b/drivers/char/ftape/lowlevel/ftape-buffer.c
+@@ -50,7 +50,7 @@ static inline void *dmaalloc(size_t size
+ 		struct page *page;
+ 
+ 		for (page = virt_to_page(addr); page < virt_to_page(addr+size); page++)
+-			mem_map_reserve(page);
++			SetPageReserved(page);
+ 	}
+ 	return (void *)addr;
+ }
+@@ -62,7 +62,7 @@ static inline void dmafree(void *addr, s
+ 
+ 		for (page = virt_to_page((unsigned long)addr);
+ 		     page < virt_to_page((unsigned long)addr+size); page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		free_pages((unsigned long) addr, get_order(size));
+ 	}
+ }
+diff --git a/drivers/media/video/cpia.c b/drivers/media/video/cpia.c
+index 7584a44..6dd23da 100644
+--- a/drivers/media/video/cpia.c
++++ b/drivers/media/video/cpia.c
+@@ -234,7 +234,7 @@ static void *rvmalloc(unsigned long size
+ 	memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -251,7 +251,7 @@ static void rvfree(void *mem, unsigned l
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/drivers/media/video/meye.c b/drivers/media/video/meye.c
+index 9169c61..298c32d 100644
+--- a/drivers/media/video/meye.c
++++ b/drivers/media/video/meye.c
+@@ -139,7 +139,7 @@ static void *rvmalloc(unsigned long size
+ 		memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	        adr = (unsigned long)mem;
+ 		while (size > 0) {
+-			mem_map_reserve(vmalloc_to_page((void *)adr));
++			SetPageReserved(vmalloc_to_page((void *)adr));
+ 			adr += PAGE_SIZE;
+ 			size -= PAGE_SIZE;
+ 		}
+@@ -153,7 +153,7 @@ static void rvfree(void * mem, unsigned 
+ 	if (mem) {
+ 	        adr = (unsigned long) mem;
+ 		while ((long) size > 0) {
+-			mem_map_unreserve(vmalloc_to_page((void *)adr));
++			ClearPageReserved(vmalloc_to_page((void *)adr));
+ 			adr += PAGE_SIZE;
+ 			size -= PAGE_SIZE;
+ 		}
+diff --git a/drivers/media/video/planb.c b/drivers/media/video/planb.c
+index 398ac14..6013e7a 100644
+--- a/drivers/media/video/planb.c
++++ b/drivers/media/video/planb.c
+@@ -146,12 +146,12 @@ #endif /* PLANB_GSCANLINE */
+ 								|GFP_DMA, 0);
+ 		if (!pb->rawbuf[i])
+ 			break;
+-		mem_map_reserve(virt_to_page(pb->rawbuf[i]));
++		SetPageReserved(virt_to_page(pb->rawbuf[i]));
+ 	}
+ 	if (i-- < npage) {
+ 		printk(KERN_DEBUG "PlanB: init_grab: grab buffer not allocated\n");
+ 		for (; i > 0; i--) {
+-			mem_map_unreserve(virt_to_page(pb->rawbuf[i]));
++			ClearPageReserved(virt_to_page(pb->rawbuf[i]));
+ 			free_pages((unsigned long)pb->rawbuf[i], 0);
+ 		}
+ 		kfree(pb->rawbuf);
+@@ -412,7 +412,7 @@ static void planb_prepare_close(struct p
+ 	}
+ 	if(pb->rawbuf) {
+ 		for (i = 0; i < pb->rawbuf_size; i++) {
+-			mem_map_unreserve(virt_to_page(pb->rawbuf[i]));
++			ClearPageReserved(virt_to_page(pb->rawbuf[i]));
+ 			free_pages((unsigned long)pb->rawbuf[i], 0);
+ 		}
+ 		kfree(pb->rawbuf);
+diff --git a/drivers/media/video/zr36067.c b/drivers/media/video/zr36067.c
+index 357261e..4e9b38f 100644
+--- a/drivers/media/video/zr36067.c
++++ b/drivers/media/video/zr36067.c
+@@ -64,7 +64,6 @@ #include <linux/wrapper.h>
+ #include <linux/spinlock.h>
+ #include <linux/vmalloc.h>
+ #include <linux/i2c-old.h>
+-#define     MAP_NR(x)       virt_to_page(x)
+ #define     ZORAN_HARDWARE  VID_HARDWARE_ZR36067
+ 
+ #include <linux/videodev.h>
+@@ -303,7 +302,7 @@ static int v4l_fbuffer_alloc(struct zora
+ 			zr->v4l_gbuf[i].fbuffer_phys = virt_to_phys(mem);
+ 			zr->v4l_gbuf[i].fbuffer_bus = virt_to_bus(mem);
+ 			for (off = 0; off < v4l_bufsize; off += PAGE_SIZE)
+-				mem_map_reserve(MAP_NR(mem + off));
++				SetPageReserved(virt_to_page(mem + off));
+ 			DEBUG1(printk
+ 			       (KERN_INFO
+ 				"%s: V4L frame %d mem 0x%lx (bus: 0x%lx)\n",
+@@ -366,7 +365,7 @@ static void v4l_fbuffer_free(struct zora
+ 		if (v4l_bufsize <= MAX_KMALLOC_MEM) {
+ 			mem = zr->v4l_gbuf[i].fbuffer;
+ 			for (off = 0; off < v4l_bufsize; off += PAGE_SIZE)
+-				mem_map_unreserve(MAP_NR(mem + off));
++				ClearPageReserved(virt_to_page(mem + off));
+ 			kfree((void *) zr->v4l_gbuf[i].fbuffer);
+ 		}
+ #if defined(CONFIG_BIGPHYS_AREA)
+@@ -445,7 +444,7 @@ static int jpg_fbuffer_alloc(struct zora
+ 			zr->jpg_gbuf[i].frag_tab[1] =
+ 			    ((zr->jpg_bufsize / 4) << 1) | 1;
+ 			for (off = 0; off < zr->jpg_bufsize; off += PAGE_SIZE)
+-				mem_map_reserve(MAP_NR(mem + off));
++				SetPageReserved(virt_to_page(mem + off));
+ 		} else {
+ 			/* jpg_bufsize is allreay page aligned */
+ 			for (j = 0; j < zr->jpg_bufsize / PAGE_SIZE; j++) 
+@@ -463,7 +462,7 @@ static int jpg_fbuffer_alloc(struct zora
+ 				    virt_to_bus((void *) mem);
+ 				zr->jpg_gbuf[i].frag_tab[2 * j + 1] =
+ 				    (PAGE_SIZE / 4) << 1;
+-				mem_map_reserve(MAP_NR(mem));
++				SetPageReserved(virt_to_page(mem));
+ 			}
+ 
+ 			zr->jpg_gbuf[i].frag_tab[2 * j - 1] |= 1;
+@@ -503,7 +502,7 @@ static void jpg_fbuffer_free(struct zora
+ 								  [0]);
+ 				for (off = 0; off < zr->jpg_bufsize;
+ 				     off += PAGE_SIZE)
+-					mem_map_unreserve(MAP_NR
++					ClearPageReserved(virt_to_page
+ 							  (mem + off));
+ 				kfree((void *) mem);
+ 				zr->jpg_gbuf[i].frag_tab[0] = 0;
+@@ -513,7 +512,7 @@ static void jpg_fbuffer_free(struct zora
+ 			for (j = 0; j < zr->jpg_bufsize / PAGE_SIZE; j++) {
+ 				if (!zr->jpg_gbuf[i].frag_tab[2 * j])
+ 					break;
+-				mem_map_unreserve(MAP_NR
++				ClearPageReserved(virt_to_page
+ 						  (bus_to_virt
+ 						   (zr->jpg_gbuf[i].
+ 						    frag_tab[2 * j])));
+diff --git a/drivers/media/video/zr36120_mem.c b/drivers/media/video/zr36120_mem.c
+index 008fb7e..6312b4a 100644
+--- a/drivers/media/video/zr36120_mem.c
++++ b/drivers/media/video/zr36120_mem.c
+@@ -51,7 +51,7 @@ #endif
+ 	if (mem) {
+ 		unsigned long adr = (unsigned long)mem;
+ 		while (size > 0) {
+-			mem_map_reserve(virt_to_page(phys_to_virt(adr)));
++			SetPageReserved(virt_to_page(phys_to_virt(adr)));
+ 			adr += PAGE_SIZE;
+ 			size -= PAGE_SIZE;
+ 		}
+@@ -65,7 +65,7 @@ void bfree(void* mem, unsigned long size
+ 		unsigned long adr = (unsigned long)mem;
+ 		unsigned long siz = size;
+ 		while (siz > 0) {
+-			mem_map_unreserve(virt_to_page(phys_to_virt(adr)));
++			ClearPageReserved(virt_to_page(phys_to_virt(adr)));
+ 			adr += PAGE_SIZE;
+ 			siz -= PAGE_SIZE;
+ 		}
+diff --git a/drivers/usb/class/audio.c b/drivers/usb/class/audio.c
+index c8fe300..f318098 100644
+--- a/drivers/usb/class/audio.c
++++ b/drivers/usb/class/audio.c
+@@ -450,7 +450,7 @@ static void dmabuf_release(struct dmabuf
+ 	for(nr = 0; nr < NRSGBUF; nr++) {
+ 		if (!(p = db->sgbuf[nr]))
+ 			continue;
+-		mem_map_unreserve(virt_to_page(p));
++		ClearPageReserved(virt_to_page(p));
+ 		free_page((unsigned long)p);
+ 		db->sgbuf[nr] = NULL;
+ 	}
+@@ -492,7 +492,7 @@ static int dmabuf_init(struct dmabuf *db
+ 			if (!p)
+ 				return -ENOMEM;
+ 			db->sgbuf[nr] = p;
+-			mem_map_reserve(virt_to_page(p));
++			SetPageReserved(virt_to_page(p));
+ 		}
+ 		memset(db->sgbuf[nr], AFMT_ISUNSIGNED(db->format) ? 0x80 : 0, PAGE_SIZE);
+ 		if ((nr << PAGE_SHIFT) >= db->dmasize)
+diff --git a/drivers/usb/media/ov511.c b/drivers/usb/media/ov511.c
+index 7f45672..d9bc1f3 100644
+--- a/drivers/usb/media/ov511.c
++++ b/drivers/usb/media/ov511.c
+@@ -357,7 +357,7 @@ rvmalloc(unsigned long size)
+ 	memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -375,7 +375,7 @@ rvfree(void *mem, unsigned long size)
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/drivers/usb/media/pwc-if.c b/drivers/usb/media/pwc-if.c
+index 19fe160..d8eec6c 100644
+--- a/drivers/usb/media/pwc-if.c
++++ b/drivers/usb/media/pwc-if.c
+@@ -211,7 +211,7 @@ static void * rvmalloc(unsigned long siz
+ 	        adr=(unsigned long) mem;
+ 		while (size > 0) 
+                 {
+-			mem_map_reserve(vmalloc_to_page((void *)adr));
++			SetPageReserved(vmalloc_to_page((void *)adr));
+ 			adr+=PAGE_SIZE;
+ 			size-=PAGE_SIZE;
+ 		}
+@@ -228,7 +228,7 @@ static void rvfree(void * mem, unsigned 
+ 	        adr=(unsigned long) mem;
+ 		while ((long) size > 0) 
+                 {
+-			mem_map_unreserve(vmalloc_to_page((void *)adr));
++			ClearPageReserved(vmalloc_to_page((void *)adr));
+ 			adr+=PAGE_SIZE;
+ 			size-=PAGE_SIZE;
+ 		}
+diff --git a/drivers/usb/media/se401.c b/drivers/usb/media/se401.c
+index f1f3210..716a5e8 100644
+--- a/drivers/usb/media/se401.c
++++ b/drivers/usb/media/se401.c
+@@ -99,7 +99,7 @@ static void *rvmalloc(unsigned long size
+ 	memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -116,7 +116,7 @@ static void rvfree(void *mem, unsigned l
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/drivers/usb/media/stv680.c b/drivers/usb/media/stv680.c
+index f811362..a7dde04 100644
+--- a/drivers/usb/media/stv680.c
++++ b/drivers/usb/media/stv680.c
+@@ -151,7 +151,7 @@ static void *rvmalloc (unsigned long siz
+ 	memset (mem, 0, size);	/* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -167,7 +167,7 @@ static void rvfree (void *mem, unsigned 
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/drivers/usb/media/usbvideo.c b/drivers/usb/media/usbvideo.c
+index 873019c..e0e4a21 100644
+--- a/drivers/usb/media/usbvideo.c
++++ b/drivers/usb/media/usbvideo.c
+@@ -103,7 +103,7 @@ static void *usbvideo_rvmalloc(unsigned 
+ 	memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -120,7 +120,7 @@ static void usbvideo_rvfree(void *mem, u
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/drivers/usb/media/vicam.c b/drivers/usb/media/vicam.c
+index adb8751..93c4878 100644
+--- a/drivers/usb/media/vicam.c
++++ b/drivers/usb/media/vicam.c
+@@ -379,7 +379,7 @@ static void *rvmalloc(unsigned long size
+ 	memset(mem, 0, size); /* Clear the ram out, no junk to the user */
+ 	adr = (unsigned long) mem;
+ 	while (size > 0) {
+-		mem_map_reserve(vmalloc_to_page((void *)adr));
++		SetPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+@@ -396,7 +396,7 @@ static void rvfree(void *mem, unsigned l
+ 
+ 	adr = (unsigned long) mem;
+ 	while ((long) size > 0) {
+-		mem_map_unreserve(vmalloc_to_page((void *)adr));
++		ClearPageReserved(vmalloc_to_page((void *)adr));
+ 		adr += PAGE_SIZE;
+ 		size -= PAGE_SIZE;
+ 	}
+diff --git a/sound/oss/cmpci.c b/sound/oss/cmpci.c
+index a66c0da..0a759f0 100644
+--- a/sound/oss/cmpci.c
++++ b/sound/oss/cmpci.c
+@@ -938,7 +938,7 @@ static void dealloc_dmabuf(struct dmabuf
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (pstart = virt_to_page(db->rawbuf); pstart <= pend; pstart++)
+-			mem_map_unreserve(pstart);
++			ClearPageReserved(pstart);
+ 		free_pages((unsigned long)db->rawbuf, db->buforder);
+ 	}
+ 	db->rawbuf = NULL;
+@@ -987,7 +987,7 @@ static int prog_dmabuf(struct cm_state *
+ 		/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (pstart = virt_to_page(db->rawbuf); pstart <= pend; pstart++)
+-			mem_map_reserve(pstart);
++			SetPageReserved(pstart);
+ 	}
+ 	bytepersec = rate << sample_shift[fmt];
+ 	bufs = PAGE_SIZE << db->buforder;
+diff --git a/sound/oss/cs4281/cs4281_wrapper-24.c b/sound/oss/cs4281/cs4281_wrapper-24.c
+index ee64276..ffa6200 100644
+--- a/sound/oss/cs4281/cs4281_wrapper-24.c
++++ b/sound/oss/cs4281/cs4281_wrapper-24.c
+@@ -28,8 +28,6 @@ #include <linux/spinlock.h>
+ 
+ int cs4281_resume_null(struct pci_dev *pcidev) { return 0; }
+ int cs4281_suspend_null(struct pci_dev *pcidev, u32 state) { return 0; }
+-#define cs4x_mem_map_reserve(page) mem_map_reserve(page)
+-#define cs4x_mem_map_unreserve(page) mem_map_unreserve(page)
+ 
+ #define free_dmabuf(state, dmabuf) \
+ 	pci_free_consistent(state->pcidev, \
+diff --git a/sound/oss/cs4281/cs4281m.c b/sound/oss/cs4281/cs4281m.c
+index 7d16e83..1083b00 100644
+--- a/sound/oss/cs4281/cs4281m.c
++++ b/sound/oss/cs4281/cs4281m.c
+@@ -1705,7 +1705,7 @@ extern void dealloc_dmabuf(struct cs4281
+ 		    virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) -
+ 				 1);
+ 		for (map = virt_to_page(db->rawbuf); map <= mapend; map++)
+-			cs4x_mem_map_unreserve(map);
++			ClearPageReserved(map);
+ 		free_dmabuf(s, db);
+ 	}
+ 	if (s->tmpbuff && (db->type == CS_TYPE_ADC)) {
+@@ -1714,7 +1714,7 @@ extern void dealloc_dmabuf(struct cs4281
+ 		    virt_to_page(s->tmpbuff +
+ 				 (PAGE_SIZE << s->buforder_tmpbuff) - 1);
+ 		for (map = virt_to_page(s->tmpbuff); map <= mapend; map++)
+-			cs4x_mem_map_unreserve(map);
++			ClearPageReserved(map);
+ 		free_dmabuf2(s, db);
+ 	}
+ 	s->tmpbuff = NULL;
+@@ -1763,7 +1763,7 @@ static int prog_dmabuf(struct cs4281_sta
+ 
+ 		// 2. mark each physical page in range as 'reserved'.
+ 		for (map = virt_to_page(db->rawbuf); map <= mapend; map++)
+-			cs4x_mem_map_reserve(map);
++			SetPageReserved(map);
+ 	}
+ 	if (!s->tmpbuff && (db->type == CS_TYPE_ADC)) {
+ 		for (order = df; order >= DMABUF_MINORDER;
+@@ -1786,7 +1786,7 @@ static int prog_dmabuf(struct cs4281_sta
+ 
+ 		// 2. mark each physical page in range as 'reserved'.
+ 		for (map = virt_to_page(s->tmpbuff); map <= mapend; map++)
+-			cs4x_mem_map_reserve(map);
++			SetPageReserved(map);
+ 	}
+ 	if (db->type == CS_TYPE_DAC) {
+ 		if (s->prop_dac.fmt & (AFMT_S16_LE | AFMT_U16_LE))
+diff --git a/sound/oss/cs46xx.c b/sound/oss/cs46xx.c
+index ee682b9..cfe99bb 100644
+--- a/sound/oss/cs46xx.c
++++ b/sound/oss/cs46xx.c
+@@ -1196,7 +1196,7 @@ static int alloc_dmabuf(struct cs_state 
+ 
+ 	// 2. mark each physical page in range as 'reserved'.
+ 	for (map = virt_to_page(dmabuf->rawbuf); map <= mapend; map++)
+-		cs4x_mem_map_reserve(map);
++		SetPageReserved(map);
+ 
+ 	CS_DBGOUT(CS_PARMS, 9, printk("cs46xx: alloc_dmabuf(): allocated %ld (order = %d) bytes at %p\n",
+ 	       PAGE_SIZE << order, order, rawbuf) );
+@@ -1233,7 +1233,7 @@ static int alloc_dmabuf(struct cs_state 
+ 
+ 	// 2. mark each physical page in range as 'reserved'.
+ 	for (map = virt_to_page(dmabuf->tmpbuff); map <= mapend; map++)
+-		cs4x_mem_map_reserve(map);
++		SetPageReserved(map);
+ 	return 0;
+ }
+ 
+@@ -1248,7 +1248,7 @@ static void dealloc_dmabuf(struct cs_sta
+ 		mapend = virt_to_page(dmabuf->rawbuf + 
+ 				(PAGE_SIZE << dmabuf->buforder) - 1);
+ 		for (map = virt_to_page(dmabuf->rawbuf); map <= mapend; map++)
+-			cs4x_mem_map_unreserve(map);
++			cs4x_ClearPageReserved(map);
+ 		free_dmabuf(state->card, dmabuf);
+ 	}
+ 
+@@ -1257,7 +1257,7 @@ static void dealloc_dmabuf(struct cs_sta
+ 		mapend = virt_to_page(dmabuf->tmpbuff +
+ 				(PAGE_SIZE << dmabuf->buforder_tmpbuff) - 1);
+ 		for (map = virt_to_page(dmabuf->tmpbuff); map <= mapend; map++)
+-			cs4x_mem_map_unreserve(map);
++			cs4x_ClearPageReserved(map);
+ 		free_dmabuf2(state->card, dmabuf);
+ 	}
+ 
+diff --git a/sound/oss/cs46xx_wrapper-24.h b/sound/oss/cs46xx_wrapper-24.h
+index c5727c7..08a7f6b 100644
+--- a/sound/oss/cs46xx_wrapper-24.h
++++ b/sound/oss/cs46xx_wrapper-24.h
+@@ -31,9 +31,6 @@ #include <linux/spinlock.h>
+ #define CS_OWNER owner:
+ #define CS_THIS_MODULE THIS_MODULE,
+ void cs46xx_null(struct pci_dev *pcidev) { return; }
+-#define cs4x_mem_map_reserve(page) mem_map_reserve(page)
+-#define cs4x_mem_map_unreserve(page) mem_map_unreserve(page)
+-
+ #define free_dmabuf(card, dmabuf) \
+ 	pci_free_consistent((card)->pci_dev, \
+ 			    PAGE_SIZE << (dmabuf)->buforder, \
+diff --git a/sound/oss/dmabuf.c b/sound/oss/dmabuf.c
+index 4b3a6ba..a3acbd6 100644
+--- a/sound/oss/dmabuf.c
++++ b/sound/oss/dmabuf.c
+@@ -116,7 +116,7 @@ static int sound_alloc_dmap(struct dma_b
+ 	dmap->raw_buf_phys = virt_to_bus(start_addr);
+ 
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+-		mem_map_reserve(page);
++		SetPageReserved(page);
+ 	return 0;
+ }
+ 
+@@ -136,7 +136,7 @@ static void sound_free_dmap(struct dma_b
+ 	end_addr = start_addr + dmap->buffsize;
+ 
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+-		mem_map_unreserve(page);
++		ClearPageReserved(page);
+ 
+ 	free_pages((unsigned long) dmap->raw_buf, sz);
+ 	dmap->raw_buf = NULL;
+diff --git a/sound/oss/es1370.c b/sound/oss/es1370.c
+index ed412fd..97a13ff 100644
+--- a/sound/oss/es1370.c
++++ b/sound/oss/es1370.c
+@@ -551,7 +551,7 @@ static inline void dealloc_dmabuf(struct
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(s->dev, PAGE_SIZE << db->buforder, db->rawbuf, db->dmaaddr);
+ 	}
+ 	db->rawbuf = NULL;
+@@ -577,7 +577,7 @@ static int prog_dmabuf(struct es1370_sta
+ 		/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_reserve(page);
++			SetPageReserved(page);
+ 	}
+ 	fmt &= ES1370_FMT_MASK;
+ 	bytepersec = rate << sample_shift[fmt];
+diff --git a/sound/oss/es1371.c b/sound/oss/es1371.c
+index 443677a..a309820 100644
+--- a/sound/oss/es1371.c
++++ b/sound/oss/es1371.c
+@@ -887,7 +887,7 @@ static inline void dealloc_dmabuf(struct
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(s->dev, PAGE_SIZE << db->buforder, db->rawbuf, db->dmaaddr);
+ 	}
+ 	db->rawbuf = NULL;
+@@ -913,7 +913,7 @@ static int prog_dmabuf(struct es1371_sta
+ 		/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_reserve(page);
++			SetPageReserved(page);
+ 	}
+ 	fmt &= ES1371_FMT_MASK;
+ 	bytepersec = rate << sample_shift[fmt];
+diff --git a/sound/oss/esssolo1.c b/sound/oss/esssolo1.c
+index ed6ecdf..0aea1e0 100644
+--- a/sound/oss/esssolo1.c
++++ b/sound/oss/esssolo1.c
+@@ -423,7 +423,7 @@ static inline void dealloc_dmabuf(struct
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(s->dev, PAGE_SIZE << db->buforder, db->rawbuf, db->dmaaddr);
+ 	}
+ 	db->rawbuf = NULL;
+@@ -449,7 +449,7 @@ static int prog_dmabuf(struct solo1_stat
+ 		/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_reserve(page);
++			SetPageReserved(page);
+ 	}
+ 	if (s->fmt & (AFMT_S16_LE | AFMT_U16_LE))
+ 		sample_shift++;
+diff --git a/sound/oss/i810_audio.c b/sound/oss/i810_audio.c
+index 3f10d2c..9470d3c 100644
+--- a/sound/oss/i810_audio.c
++++ b/sound/oss/i810_audio.c
+@@ -941,7 +941,7 @@ #endif
+ 	/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 	pend = virt_to_page(rawbuf + (PAGE_SIZE << order) - 1);
+ 	for (page = virt_to_page(rawbuf); page <= pend; page++)
+-		mem_map_reserve(page);
++		SetPageReserved(page);
+ 
+ 	return 0;
+ }
+@@ -956,7 +956,7 @@ static void dealloc_dmabuf(struct i810_s
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(dmabuf->rawbuf + (PAGE_SIZE << dmabuf->buforder) - 1);
+ 		for (page = virt_to_page(dmabuf->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(state->card->pci_dev, PAGE_SIZE << dmabuf->buforder,
+ 				    dmabuf->rawbuf, dmabuf->dma_handle);
+ 	}
+diff --git a/sound/oss/ite8172.c b/sound/oss/ite8172.c
+index c88a317..75c03b5 100644
+--- a/sound/oss/ite8172.c
++++ b/sound/oss/ite8172.c
+@@ -640,7 +640,7 @@ static inline void dealloc_dmabuf(struct
+ 	/* undo marking the pages as reserved */
+ 	pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 	for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-	    mem_map_unreserve(page);
++	    ClearPageReserved(page);
+ 	pci_free_consistent(s->dev, PAGE_SIZE << db->buforder,
+ 			    db->rawbuf, db->dmaaddr);
+     }
+@@ -670,7 +670,7 @@ static int prog_dmabuf(struct it8172_sta
+ 	   otherwise remap_page_range doesn't do what we want */
+ 	pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 	for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-	    mem_map_reserve(page);
++	    SetPageReserved(page);
+     }
+ 
+     db->count = 0;
+diff --git a/sound/oss/maestro.c b/sound/oss/maestro.c
+index 9938514..ff7415d 100644
+--- a/sound/oss/maestro.c
++++ b/sound/oss/maestro.c
+@@ -2949,7 +2949,7 @@ allocate_buffers(struct ess_state *s)
+ 	/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 	pend = virt_to_page(rawbuf + (PAGE_SIZE << order) - 1);
+ 	for (page = virt_to_page(rawbuf); page <= pend; page++)
+-		mem_map_reserve(page);
++		SetPageReserved(page);
+ 
+ 	return 0;
+ } 
+@@ -2967,7 +2967,7 @@ free_buffers(struct ess_state *s)
+ 
+ 	pend = virt_to_page(s->card->dmapages + (PAGE_SIZE << s->card->dmaorder) - 1);
+ 	for (page = virt_to_page(s->card->dmapages); page <= pend; page++)
+-		mem_map_unreserve(page);
++		ClearPageReserved(page);
+ 
+ 	free_pages((unsigned long)s->card->dmapages,s->card->dmaorder);
+ 	s->card->dmapages = NULL;
+diff --git a/sound/oss/maestro3.c b/sound/oss/maestro3.c
+index 29a31d0..159d010 100644
+--- a/sound/oss/maestro3.c
++++ b/sound/oss/maestro3.c
+@@ -1939,7 +1939,7 @@ allocate_dmabuf(struct pci_dev *pci_dev,
+ 
+         pend = virt_to_page(db->rawbuf + (PAGE_SIZE << order) - 1);
+         for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-            mem_map_reserve(page);
++            SetPageReserved(page);
+     }
+ 
+ 
+@@ -1970,7 +1970,7 @@ free_dmabuf(struct pci_dev *pci_dev, str
+         struct page *page, *pend;
+         pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+         for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-            mem_map_unreserve(page);
++            ClearPageReserved(page);
+     }
+ 
+ 
+diff --git a/sound/oss/sonicvibes.c b/sound/oss/sonicvibes.c
+index 0ba7aee..33c9d53 100644
+--- a/sound/oss/sonicvibes.c
++++ b/sound/oss/sonicvibes.c
+@@ -709,7 +709,7 @@ static void dealloc_dmabuf(struct sv_sta
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(s->dev, PAGE_SIZE << db->buforder, db->rawbuf, db->dmaaddr);
+ 	}
+ 	db->rawbuf = NULL;
+@@ -760,7 +760,7 @@ static int prog_dmabuf(struct sv_state *
+ 		/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 		pend = virt_to_page(db->rawbuf + (PAGE_SIZE << db->buforder) - 1);
+ 		for (page = virt_to_page(db->rawbuf); page <= pend; page++)
+-			mem_map_reserve(page);
++			SetPageReserved(page);
+ 	}
+ 	bytepersec = rate << sample_shift[fmt];
+ 	bufs = PAGE_SIZE << db->buforder;
+diff --git a/sound/oss/sscape.c b/sound/oss/sscape.c
+index e6c54fe..08d020e 100644
+--- a/sound/oss/sscape.c
++++ b/sound/oss/sscape.c
+@@ -839,7 +839,7 @@ static int sscape_alloc_dma(sscape_info 
+ 	devc->raw_buf_phys = virt_to_bus(start_addr);
+ 
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+-		mem_map_reserve(page);
++		SetPageReserved(page);
+ 	return 1;
+ }
+ 
+@@ -855,7 +855,7 @@ static void sscape_free_dma(sscape_info 
+ 	end_addr = start_addr + devc->buffsize;
+ 
+ 	for (page = virt_to_page(start_addr); page <= virt_to_page(end_addr); page++)
+-		mem_map_unreserve(page);
++		ClearPageReserved(page);
+ 
+ 	free_pages((unsigned long) devc->raw_buf, sz);
+ 	devc->raw_buf = NULL;
+diff --git a/sound/oss/trident.c b/sound/oss/trident.c
+index d608cab..60691cd 100644
+--- a/sound/oss/trident.c
++++ b/sound/oss/trident.c
+@@ -1222,7 +1222,7 @@ static int alloc_dmabuf(struct dmabuf* d
+ 	/* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
+ 	pend = virt_to_page(rawbuf + (PAGE_SIZE << order) - 1);
+ 	for (page = virt_to_page(rawbuf); page <= pend; page++)
+-		mem_map_reserve(page);
++		SetPageReserved(page);
+ 
+ 	return 0;
+ }
+@@ -1253,7 +1253,7 @@ static void dealloc_dmabuf(struct dmabuf
+ 		/* undo marking the pages as reserved */
+ 		pend = virt_to_page(dmabuf->rawbuf + (PAGE_SIZE << dmabuf->buforder) - 1);
+ 		for (page = virt_to_page(dmabuf->rawbuf); page <= pend; page++)
+-			mem_map_unreserve(page);
++			ClearPageReserved(page);
+ 		pci_free_consistent(pci_dev, PAGE_SIZE << dmabuf->buforder,
+ 				    dmabuf->rawbuf, dmabuf->dma_handle);
+ 		dmabuf->rawbuf = NULL;
