@@ -527,7 +527,12 @@ rule_elem_statement:
 | TContinue TPtVirg
     { Ast0.wrap(Ast0.Continue(clt2mcode "continue" (startofs($1)) $1,
 			      clt2mcode ";" (startofs($2)) $2)) }
-
+| TOPar0 midzero_list(rule_elem_statement) TCPar0
+    { let (mids,code) = $2 in
+    Ast0.wrap
+      (Ast0.Disj(clt2mcode "(" (startofs($1)) $1,
+		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
+		 mids, clt2mcode ")" (startofs($3)) $3)) }
 
 statement_dots(dotter):
   r=no_dot_start_end(exp_decl_statement_list,
