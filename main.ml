@@ -24,31 +24,31 @@ let save_output_file = ref false
  * Note also that the astdiff is not very accurate. As I skip comments,
  * macro definitions, those are not in the Ast and if there is a diff
  * between 2 files regarding macro def, then I will not be able to report it :(
+ * update: I now put the toplevel #define at least in the Ast.
+ *
+ * todo?: do astdiff, tokendiff, linediff ? 
  *)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if Common.lfile_exists expected_res
   then 
-    let (c1, _) = Cocci.cprogram_from_file generated_file in
-    let (c2, _) = Cocci.cprogram_from_file expected_res in
-    let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
-    let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
-    
-    let xs =
-      process_output_to_list ("diff -u -b -B " ^ 
-                              generated_file ^ " "  ^ expected_res) in
-
-    if null xs || c1' =*= c2'
-    then begin 
+    let (correct, diffxs) = 
+      Compare_c.compare 
+        (Cocci.cprogram_from_file generated_file)
+        (Cocci.cprogram_from_file expected_res)
+    in
+    (match correct with
+    | Compare_c.Correct -> 
       pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
       if doexit then exit 0;
-    end
-    else 
-      begin
-        pr2 "seems incorrect";
+    | Compare_c.Incorrect s -> 
+        pr2 ("seems incorrect: " ^ s);
         pr2 "diff (result(-) vs expected_result(+)) = ";
-        xs +> List.iter pr2;
+        diffxs +> List.iter pr2;
         if doexit then exit (-1);
-      end
+    | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
+        pr2 "seems incorrect, but only because of code that was not parsable";
+        if doexit then exit (-1);
+    )
   else failwith ("no such .res file: " ^ expected_res)
 
 (*****************************************************************************)
@@ -133,28 +133,23 @@ let testall () =
         
         Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
-        let (c1, _) = Cocci.cprogram_from_file "/tmp/output.c" in
-        let (c2, _) = Cocci.cprogram_from_file ("tests/" ^ expected_res) in
-        let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
-        let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
-
-        let xs = 
-            process_output_to_list ("diff -u -b -B " ^ "/tmp/output.c" ^
-                                    " "  ^ "tests/" ^ expected_res) in
-              
-        if null xs || c1' =*= c2'
-        then 
-          begin 
+        let (correct, diffxs) = 
+          Compare_c.compare 
+            (Cocci.cprogram_from_file "/tmp/output.c")
+            (Cocci.cprogram_from_file ("tests/" ^ expected_res))
+        in
+        (match correct with
+        | Compare_c.Correct -> 
             incr _good; 
             add_diagnose "CORRECT\n" 
-          end
-        else 
-          begin
-            add_diagnose "INCORRECT\n";
+        | Compare_c.Incorrect s -> 
+            add_diagnose ("INCORRECT:" ^ s ^ "\n");
             add_diagnose "    diff (result(<) vs expected_result(>)) = \n";
-            xs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
-          end;
-                                      )
+            diffxs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
+        | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
+            add_diagnose "seems incorrect, but only because of code that was not parsable";
+        )
+      )
      )
     with exn -> 
       add_diagnose "PROBLEM\n";
@@ -200,8 +195,8 @@ let main () =
       "-test_ctl_foo", Arg.Set test_ctl_foo, 
          " test the engine with the foo ctl in test.ml";
 
-      "-compare_with_expected", Arg.Set compare_with_expected, 
-         " "; 
+      "-compare_with_expected", Arg.Set compare_with_expected, " "; 
+      "-save_output_file", Arg.Set save_output_file, " ";
 
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";
@@ -218,13 +213,12 @@ let main () =
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
-      "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
       "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
 
+      "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
-      "-save_output_file", Arg.Set save_output_file, " ";
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 

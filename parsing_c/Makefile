@@ -6,6 +6,7 @@ SOURCES = \
  visitor_c.ml abstract_line_c.ml \
  control_flow_c.ml ast_to_flow.ml flow_to_ast.ml \
  lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
+ compare_c.ml
 
 
 SYSLIBS = str.cma unix.cma 

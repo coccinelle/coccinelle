@@ -34,8 +34,8 @@ clean:
 	 $<
 
 info:
-	ls *.ok
-	ls *.failed
+	-ls *.ok
+	-ls *.failed
 	make info_ok
 	make info_failed
 
