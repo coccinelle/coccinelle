@@ -248,8 +248,9 @@ let pp_program file x =
          statxs +> List.iter (Pretty_print_c.pp_statement_gen pr_elem);
          pr_elem i2;
 
-     | EmptyDef ii -> 
-           ii +> List.iter pr_elem
+     | EmptyDef ii -> ii +> List.iter pr_elem
+     | CPPDefine ii -> ii +> List.iter pr_elem
+     | CPPInclude ii -> ii +> List.iter pr_elem
 
      | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
          pr_elem i1;
@@ -274,8 +275,7 @@ let pp_program file x =
          ii +> List.iter pr_elem 
 
      | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.emptyAnnot)
-
-     | x -> error_cant_have x
+     | _ -> raise Impossible
      )   
    );
  )

@@ -174,21 +174,19 @@ and visitor_type_k = fun bigf t ->
         )
 
     | (Enum  (sopt, enumt),_) -> 
-        pr2 "TODO enumt may contain some expression (in visitor_c)"; 
-        ()
+        enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
+          eopt +> do_option (visitor_expr_k bigf)
+          );    
+        
     | (StructUnion (sopt, (_, fields)),_) -> 
 
        fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
          onefield_multivars +> List.iter (fun (field, iicomma) ->
          match field with
          | Simple (s, t), ii -> f (k, bigf) t
-         | BitField (sopt, t, expr), ii -> f (k, bigf) t (* TODO expr *)
-         (*
-         | DefEnum (s, t) -> 
-            f (k, bigf) (nQ, (Enum (Some s, t), iitodovide))
-         | DefStruct (s, t) -> 
-            f (k, bigf) (nQ, (StructUnion (Some s, t), iitodovide))
-         *)
+         | BitField (sopt, t, expr), ii -> 
+             visitor_expr_k bigf expr;
+             f (k, bigf) t 
          ))
 
 
@@ -208,7 +206,7 @@ and visitor_decl_k = fun bigf d ->
   and aux ((var, t, sto), iicomma) = 
     visitor_type_k bigf t;
     var +> do_option (fun ((s, ini), ii_s_ini) -> 
-      ini +> do_option (fun init -> visitor_ini_k bigf init;)
+      ini +> do_option (visitor_ini_k bigf)
         );
   in f (k, bigf) d 
 
@@ -391,8 +389,12 @@ and visitor_type_k_s = fun bigf t ->
            ))
 
     | Enum  (sopt, enumt) -> 
-        pr2 "TODO enumt contain some expression"; 
-        Enum  (sopt, enumt) 
+        Enum (sopt,
+              enumt +> List.map (fun (((s, eopt),ii_s_eq), iicomma) -> 
+                ((s, fmap (visitor_expr_k_s bigf) eopt), infolistf ii_s_eq),
+                infolistf iicomma
+                                )
+             )
     | StructUnion (sopt, (su, fields)) -> 
        StructUnion (sopt, (su, 
         fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
@@ -501,6 +503,8 @@ and visitor_program_k_s = fun bigf p ->
             ),
            infolistf ii
           )
+    | CPPInclude ii -> CPPInclude (infolistf ii)
+    | CPPDefine ii -> CPPDefine (infolistf ii)
     | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
     | FinalDef info -> FinalDef (visitor_info_k_s bigf info)
   in f (k, bigf) p

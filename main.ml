@@ -220,6 +220,8 @@ let main () =
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
+      "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
+
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
       "-save_output_file", Arg.Set save_output_file, " ";

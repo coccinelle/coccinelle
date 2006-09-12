@@ -19,6 +19,11 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
  * and not 
  *   TComment (tokinfo lexbuf +> tok_add_s (comment lexbuf)) 
  * because of the "wierd" order of evaluation of OCaml.
+ *
+ * Note: Can't use Lexer_parser._lexer_hint here to do different things,
+ * because now we call the lexer to get all the token (tokens_all), and then
+ * we parse. So we can't have the _lexer_hint info here. We can have it only in
+ * parse_c. For the same reason, the typedef handling here is useless.
  *)
 
 exception Lexical of string
@@ -111,30 +116,25 @@ rule token = parse
    *)
 
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)           
-      { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
-
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' 
       { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
+        TDefine (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
       { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* "error" [' ' '\t'] [^'\n']* '\n' 
+
+  | "#" [' ' '\t']* "error"   [' ' '\t']+  [^'\n']* '\n' 
+  | "#" [' ' '\t']* "warning" [' ' '\t']+ [^'\n']* '\n'                        
+  | "#" [' ' '\t']* "abort"   [' ' '\t']+ [^'\n']* '\n'                         
       { TCommentCpp (tokinfo lexbuf)} 
+
   | "#" [' ' '\t']* "error"                                             
       { TCommentCpp (tokinfo lexbuf)} (* in drivers/char/tpqic02.c *)
 
-  | "#" [' ' '\t']* "warning" [' ' '\t']+ [^'\n']* '\n'                        
-      { TCommentCpp (tokinfo lexbuf)} 
-  | "#" [' ' '\t']* "abort" [' ' '\t']+ [^'\n']* '\n'                         
-      { TCommentCpp (tokinfo lexbuf)} 
-
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
-      { TCommentCpp (tokinfo lexbuf) } 
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           
-      { TCommentCpp (tokinfo lexbuf) }
+      { TInclude (tokinfo lexbuf) }
 
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 

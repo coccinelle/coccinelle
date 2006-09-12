@@ -6,7 +6,8 @@ ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP) \
 OBJS = $(SOURCES:.c=.ok)
 
 all: $(OBJS)
-	ls *ok *failed
+	ls *ok 
+	ls *failed
 
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
@@ -23,3 +24,11 @@ all: $(OBJS)
 
 clean:
 	rm -f *.ok *.failed
+
+
+%.ok2: %.c $(SPATCH) $(SP)
+	$(SPATCH) -iso_file ../../standard.iso -cocci_file $(SP) \
+	-compare_with_expected -debug_cpp \
+	 $<
+
+

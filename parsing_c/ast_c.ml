@@ -313,6 +313,8 @@ and program = programElement list
              string * 
              (expression, fullType * storage wrap) either wrap2 list *
              il 
+          | CPPInclude of il
+          | CPPDefine of il
           | NotParsedCorrectly of il
           | FinalDef of info
 

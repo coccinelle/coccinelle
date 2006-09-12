@@ -128,6 +128,8 @@ let info_from_token = function
   | Parser_c.TCommentSpace  (i) -> i
   | Parser_c.TCommentCpp  (i) -> i
   | Parser_c.TCommentAttrOrMacro  (i) -> i
+  | Parser_c.TDefine  (i) -> i
+  | Parser_c.TInclude  (i) -> i
   | Parser_c.TString ((string, isWchar), i) -> i
   | Parser_c.TChar  ((string, isWchar), i) -> i
   | Parser_c.TIdent  (s, i) -> i
@@ -353,8 +355,8 @@ let parse_print_error_heuristic file =
    * cut/paste.
    *)
 
-  let lexer_function = 
-          (fun _ -> 
+  let rec lexer_function = 
+          (fun lexbuf -> 
             if (match !cur_tok with  Parser_c.EOF x -> true | _ -> false)
             then (pr2 "ALREADY AT END"; !cur_tok)
             else
@@ -658,11 +660,24 @@ let parse_print_error_heuristic file =
               | (TIdent (s, i1)::TOPar _::Tif _::_ ,     _)
                   (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
                 -> 
-                 if !Flag_parsing_c.debug_macro 
+                 if !Flag_parsing_c.debug_cpp 
                  then pr2 ("CERTAINLY HIGHER ORDER MACRO, transforming: " ^ s);
                  THigherOrderMacro i1
                   
+              (*-------------------------------------------------------------*)
+              | TDefine ii::_, _ -> 
+                  if !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel
+                  then TDefine ii
+                  else begin
+                    if !Flag_parsing_c.debug_cpp
+                    then pr2 ("DEFINE inside function, I treat it as comment");
+                    TCommentCpp ii
+                  end
+               (* do same for Include ? (often found #include inside structdef)
+                *)
 
+                    
+              (*-------------------------------------------------------------*)
               | _ -> v
 
                ) with _ -> pr2 "ESN"; v
@@ -670,7 +685,10 @@ let parse_print_error_heuristic file =
          passed_tok := v::!passed_tok;
          passed_tok2 := v::!passed_tok2;
          if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
-         v)
+         match v with
+         | TCommentCpp _ -> lexer_function lexbuf
+         | v -> 
+             v)
   in
   (* --------------------------------------------------------------------- *)
 

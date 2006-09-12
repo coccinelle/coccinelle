@@ -193,7 +193,7 @@ let fix_add_params_ident = function
 %}
 
 %token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
-
+%Token <Ast_c.info> TDefine TInclude
 
 %token <(string * Ast_c.isWchar) * Ast_c.info> TString
 %token <(string * Ast_c.isWchar) * Ast_c.info> TChar
@@ -813,6 +813,8 @@ external_declaration2:
          
          /* in ~/kernels/src/linux-2.5.2/drivers/isdn/hisax/isdnl3.c sometimes the function ends with }; instead of just } */
          | TPtVirg    { EmptyDef [$1] } 
+         | TInclude   { CPPInclude [$1] }
+         | TDefine    { CPPDefine [$1] }
 
          | EOF        { FinalDef $1 } 
 
