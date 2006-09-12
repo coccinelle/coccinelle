@@ -27,8 +27,9 @@ let pp_program file x =
    let _table = Common.full_charpos_to_pos file in
 
    (* note: that not exactly same tokens as in parsing, cos in parsing there is
-      some transformation of tokens such as TIdent in Typedef, TIdent in TString
-      but for what we are interested here, it is not really important. *)
+    * some transformation of tokens such as TIdent in Typedef,TIdent in TString
+    * but for what we are interested here, it is not really important. 
+    *)
    let toks = (Parse_c.tokens file) in 
    let toks = ref (toks +> List.map (fun tok -> 
      (tok, Parse_c.info_from_token tok))) 
@@ -74,6 +75,17 @@ let pp_program file x =
           | Parser_c.TCommentSpace i -> true
           | Parser_c.TCommentCpp i -> true
           | Parser_c.TCommentAttrOrMacro i -> true
+
+          (* Can be treated as comment, Hence this case.
+           * If was not treated as comment, then should have synced on it
+           * before, so no problem to add this case.
+           * In fact can have a problem if the stuff before was deleted,
+           * and so during the sync it will go too far taking also a possible
+           * define that may be deleted by the SP. But, we normally 
+           * cant delete a token. A token is marked as minus, but not deleted,
+           * so normally no problem.
+           *)
+          | Parser_c.TDefine i -> true
           | _ -> false
           ))
       in
@@ -101,6 +113,8 @@ let pp_program file x =
               then pr i.str;
           | Parser_c.TCommentCpp         (i,_) -> pr i.str
           | Parser_c.TCommentAttrOrMacro (i,_) -> pr i.str
+
+          | Parser_c.TDefine (i,_) -> pr i.str
           | x -> error_cant_have x
           );
          );

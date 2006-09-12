@@ -22,13 +22,26 @@ all: $(OBJS)
 	true)) || true
 
 
+#-----------------------------------------------------------------------------
+# Pad stuff
+#-----------------------------------------------------------------------------
 clean:
 	rm -f *.ok *.failed
-
 
 %.ok2: %.c $(SPATCH) $(SP)
 	$(SPATCH) -iso_file ../../standard.iso -cocci_file $(SP) \
 	-compare_with_expected -debug_cpp \
 	 $<
 
+info:
+	ls *.ok
+	ls *.failed
+	make info_ok
+	make info_failed
+
+info_ok:
+	../../extract_info_ok_failed.pl *.ok
+
+info_failed:
+	../../extract_info_ok_failed.pl *.failed
 

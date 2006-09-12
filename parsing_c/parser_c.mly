@@ -589,11 +589,13 @@ type_qualif: Tconst    { {const=true  ; volatile=false}, $1 }
 /*------------------------------------------------------------------------------*/
 struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
 
-s_or_u_spec2: struct_or_union ident TOBrace struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
-            | struct_or_union       TOBrace struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
+s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
+            | struct_or_union       tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
 	    | struct_or_union ident                                  
 		{ StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
-								     
+
+tobrace_struct: TOBrace { Lexer_parser._lexer_hint := None; $1 }
+
 struct_or_union: struct_or_union2 { et "su" (); $1 }
 
 struct_or_union2: Tstruct { Struct, $1 }
