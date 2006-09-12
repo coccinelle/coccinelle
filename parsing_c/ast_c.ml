@@ -164,7 +164,7 @@ and expressionbis =
   | Cast           of fullType * expression                     
 
   (* gccext: *)        
-  | StatementExpr of compound wrap (* (Â ) *) 
+  | StatementExpr of compound wrap (* ( ) *) 
   | Constructor 
 
   (* forunparser: *)
@@ -233,7 +233,7 @@ and statementbis =
   | Iteration     of iteration
   | Jump          of jump
 
-  | Decl  of declaration   (* simplify cocci: *)
+  | Decl  of declaration (* simplify cocci: only start of compound normally *)
   | Asm  (* gccext: *)
 
 

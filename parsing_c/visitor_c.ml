@@ -204,25 +204,12 @@ and visitor_type_k = fun bigf t ->
 
 and visitor_decl_k = fun bigf d -> 
   let f = bigf.kdecl in 
-  let rec k d = 
-    match d with 
-      
-    | DeclList (((Some ((s, Some init), _), t, sto),_)::xs, _) -> 
-        visitor_type_k bigf t;
-        visitor_ini_k bigf init;
-        if xs <> []
-        then pr2 "TODO parcourir aussi les autres decl, dans les xs"
-    | DeclList (((Some ((s, None), _), t, sto),_)::xs, _) -> 
-        visitor_type_k bigf t;
-        if xs <> []
-        then pr2 "TODO parcourir aussi les autres decl, dans les xs"
-    | DeclList (((None, t, sto),_)::xs, _) -> 
-        visitor_type_k bigf t;
-        if xs <> []
-        then pr2 "TODO parcourir aussi les autres decl, dans les xs"
-
-    | x -> raise Impossible
-      
+  let rec k (DeclList (xs,ii)) = List.iter aux xs 
+  and aux ((var, t, sto), iicomma) = 
+    visitor_type_k bigf t;
+    var +> do_option (fun ((s, ini), ii_s_ini) -> 
+      ini +> do_option (fun init -> visitor_ini_k bigf init;)
+        );
   in f (k, bigf) d 
 
 and visitor_ini_k = fun bigf ini -> 

@@ -397,7 +397,9 @@ let parse_print_error_heuristic file =
               | "acpi_status" -> ()
 
               | s when s =~ ".*_t$" -> ()
-              | _ ->  pr2 ("CERTAINLY TYPEDEF, promoting: " ^ s)
+              | _ ->  
+                  if !Flag_parsing_c.debug_typedef
+                  then pr2 ("CERTAINLY TYPEDEF, promoting: " ^ s)
             in
 
             let v = 
@@ -437,7 +439,8 @@ let parse_print_error_heuristic file =
                 -> 
                          (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
                   msg_typedef s; 
-                  pr2 ("DISABLE typedef cos special case: " ^ s); 
+                  if !Flag_parsing_c.debug_typedef 
+                  then pr2 ("DISABLE typedef cos special case: " ^ s); 
                   (* parse_typedef_fix3:
                             acpi_object		acpi_object;
                       mal parsé, car pas le temps d'appeler  dt()  dans le type_spec. car le parser en interne
@@ -655,7 +658,8 @@ let parse_print_error_heuristic file =
               | (TIdent (s, i1)::TOPar _::Tif _::_ ,     _)
                   (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
                 -> 
-                 pr2 ("CERTAINLY HIGHER ORDER MACRO, transforming: " ^ s);
+                 if !Flag_parsing_c.debug_macro 
+                 then pr2 ("CERTAINLY HIGHER ORDER MACRO, transforming: " ^ s);
                  THigherOrderMacro i1
                   
 
@@ -708,7 +712,9 @@ let parse_print_error_heuristic file =
   (* --------------------------------------------------------------------- *)
   let rec loop () =
 
-    if !Lexer_parser._handle_typedef = false then pr2 "FALSE _handle_typedef, not normal if dont come from exn";
+    if !Lexer_parser._handle_typedef = false && !Flag_parsing_c.debug_typedef
+    then pr2 "FALSE _handle_typedef, not normal if dont come from exn";
+
     Lexer_parser._handle_typedef := true;  (* normally have to do that only when come from an exception in which case the dt() may not have been done *)
     (* TODO but if was in scoped scope ? have to let only the last scope *)
     (* Lexer_parser.lexer_reset_typedef (); *)
@@ -803,7 +809,7 @@ let parse_print_error_heuristic file =
                   | _ -> ()
                   )
                        
-(*
+(* reput ? why in comment ?
             | (Tstatic _, 0)  -> 
                   pr2 ("FOUND SYNC 2 at line "^ i_to_s line);
                   when_found();

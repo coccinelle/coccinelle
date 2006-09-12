@@ -19,3 +19,7 @@ all: $(OBJS)
 	(test -e /tmp/output.c && test -e $(<:.c=.failed) && \
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
 	true)) || true
+
+
+clean:
+	rm -f *.ok *.failed

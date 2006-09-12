@@ -25,24 +25,18 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
   begin
     write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ "\n}");
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
-    program +> map_filter (fun (e,_) -> 
+    program +> find_some (fun (e,_) -> 
       match e with
-      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
-          (match compound with
-          | [st] -> Some st
-          | _ -> None
-          )
+      | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
       | _ -> None
       )
-      +> List.hd
-    
   end
 
 let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   begin
     write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ ";\n}");
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
-    program +> map_filter (fun (e,_) -> 
+    program +> find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
@@ -51,8 +45,6 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
           )
       | _ -> None
       )
-      +> List.hd
-    
   end
   
 
@@ -134,15 +126,16 @@ let full_engine cfile coccifile_and_iso_or_ctl =
           pr2 "";
         end;
   
-        let (astcocci,used_after_lists,tokens) =
-	  sp_from_file coccifile isofile in
+        let (astcocci,used_after_lists,tokens) = sp_from_file coccifile isofile
+        in
 
 	(match
 	  Sys.command
 	    (Printf.sprintf "egrep -q '(%s)' %s"
 	       (String.concat "|" tokens) cfile) with
-	  0 -> (* success*) ()
-	| _ -> (* failure *) pr2 "raised NotWorthTrying"; raise NotWorthTrying);
+	| 0 -> (* success*) ()
+	| _ -> (* failure *) pr2 "raised NotWorthTrying"; raise NotWorthTrying
+        );
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -252,9 +245,9 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                   with Ast_to_flow.DeadCode Some info -> 
                     pr2 "PBBBBBBBBBBBBBBBBBB";
                     pr2 (Common.error_message filename ("", info.charpos));
-                    pr2 ("at least 1 deadcode detected (there may be more)," ^
-                         "but I continue");
-                    pr2 "maybe because of cpp #ifdef side effects";
+                    pr2 ("At least 1 DEADCODE detected (there may be more)," ^
+                         "but I continue.");
+                    pr2 "Maybe because of cpp #ifdef side effects.";
                       
                 end;
                   
@@ -379,6 +372,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
              with Transformation.NoMatch -> 
                (decl, Unparse_c.PPviatok il)
              )
+          (* END UGLY HACK *)
              
         | x -> 
             (x, Unparse_c.PPviatok il)
@@ -390,5 +384,4 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   ); (* end 1: iter ctl *)
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
-  with NotWorthTrying -> 
-    command2("cp " ^ cfile ^ " /tmp/output.c");    
+  with NotWorthTrying -> command2("cp " ^ cfile ^ " /tmp/output.c");    

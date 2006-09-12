@@ -224,7 +224,7 @@ rule token = parse
         | s when s =~ ".*_ATTR$" -> ()
         | s when s =~ "^DEFINE_.*" -> ()
 
-        | _ -> pr2 ("Passing: " ^ id)
+        | _ -> pr2 ("PassingMacro: " ^ id)
         ); 
         TCommentAttrOrMacro (tokinfo lexbuf) 
      }
