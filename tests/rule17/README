@@ -9,57 +9,52 @@ amd7930.c:
 
 amd7930_fn.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
-avm_pci.c:
-  * Fatal error: exception Failure("strange type1, maybe because of
-    weird order")
+avm_pci.c: Works!
 
 config.c: 
-  * failed to remove assignment "cs->work.data = cs" (change rule?)
+  * assignment "cs->work.data = cs" should be removed (change rule?)
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
-elsa_ser.c:
-  * "Fatal error: exception Unix.Unix_error(20, "stat",
-    "/tmp/output.c")
+elsa_ser.c: Works!
 
 hfc_2bds0.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
 hfc_2bs0.c: Works!
 
 hfc_pci.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * Also got: "PBBBBBBBBBBBBBBBBBB" a number of times
 
 hfc_sx.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
 hscx.c: Works!
 
 icc.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
 ipacx.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
 
 isac.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
 isar.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
 
 isdnl1.c:
   * moving declaration (see amd7930.c)
-  * null check of moved declaration should be (re-)moved (change
-    rule?)
+  * null check of moved declaration should be (re-)moved
 
 jade.c: Works!
 
@@ -67,4 +62,5 @@ netjet.c: Works!
 
 w6692.c:
   * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (change rule?)
+  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * Also got: "PBBBBBBBBBBBBBBBBBB" a number of times
