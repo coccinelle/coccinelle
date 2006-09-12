@@ -953,7 +953,7 @@ let rec (transform: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       (* subtil: not cflow#nodes but acc#nodes *)
       let node  = acc#nodes#assoc nodei in 
 
-      pr2 "transform one node";
+      if !Flag_engine.show_misc then pr2 "transform one node";
       let node' = transform_re_node rule_elem node binding in
 
       (* assert that have done something. But with metaruleElem sometimes 

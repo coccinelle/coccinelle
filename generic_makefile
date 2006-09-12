@@ -1,7 +1,7 @@
 SPATCH=../../spatch
 
 ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP) \
--no_show_ctl_text -no_show_transinfo
+-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
 
 OBJS = $(SOURCES:.c=.ok)
 

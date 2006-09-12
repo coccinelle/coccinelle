@@ -206,6 +206,10 @@ let main () =
       "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
       "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
       "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
+      "-no_show_misc",   Arg.Unit (fun () -> 
+        Flag.show_misc := false;
+        Flag_engine.show_misc := false;
+        ), " ";
 
       (* works in conjunction with -show_ctl* *)
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
@@ -214,6 +218,7 @@ let main () =
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
 
+      "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";

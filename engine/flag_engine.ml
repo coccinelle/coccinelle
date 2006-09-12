@@ -7,3 +7,4 @@ let sgrep_mode = ref false
 (* false = simpler formulas, only for debugging *)
 let useEU = ref true
 
+let show_misc = ref true

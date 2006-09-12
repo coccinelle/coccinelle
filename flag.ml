@@ -13,3 +13,6 @@ let show_cocci = ref false
 let show_ctl_tex = ref false
 let show_ctl_text = ref true
 let show_transinfo = ref true
+
+
+let show_misc = ref true
