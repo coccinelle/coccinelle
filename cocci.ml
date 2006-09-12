@@ -391,4 +391,4 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
   with NotWorthTrying -> 
-    command2("cp /tmp/input.c /tmp/output.c");    
+    command2("cp " ^ cfile ^ " /tmp/output.c");    
