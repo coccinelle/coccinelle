@@ -1,0 +1,86 @@
+commit 14149d7ecf8298bc6e69cd4fd5d620e0b78a8355
+Author: Alexander Viro <viro@math.psu.edu>
+Date:   Thu Oct 17 19:36:36 2002 -0700
+
+    [PATCH] mcd.c
+    
+    	* switched to private queue
+    	* set ->queue
+
+diff --git a/drivers/cdrom/mcd.c b/drivers/cdrom/mcd.c
+index 1494c25..a12e6c6 100644
+--- a/drivers/cdrom/mcd.c
++++ b/drivers/cdrom/mcd.c
+@@ -102,7 +102,7 @@ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ 
+ #define MAJOR_NR MITSUMI_CDROM_MAJOR
+-#define DEVICE_NR(device) (minor(device))
++#define QUEUE (&mcd_queue)
+ #include <linux/blk.h>
+ 
+ #define mcd_port mcd		/* for compatible parameter passing with "insmod" */
+@@ -116,6 +116,7 @@ static int mcd1xhold;
+ 
+ /* Is the drive connected properly and responding?? */
+ static int mcdPresent;
++static struct request_queue mcd_queue;
+ 
+ #define QUICK_LOOP_DELAY udelay(45)	/* use udelay */
+ #define QUICK_LOOP_COUNT 20
+@@ -123,7 +124,6 @@ #define QUICK_LOOP_COUNT 20
+ static int current_valid(void)
+ {
+         return !blk_queue_empty(QUEUE) &&
+-	        major(CURRENT->rq_dev) == MAJOR_NR &&
+ 		CURRENT->cmd == READ &&
+ 		CURRENT->sector != -1;
+ }
+@@ -188,9 +188,9 @@ static void mcd_release(struct cdrom_dev
+ static int mcd_media_changed(struct cdrom_device_info *cdi, int disc_nr);
+ static int mcd_tray_move(struct cdrom_device_info *cdi, int position);
+ static spinlock_t mcd_spinlock = SPIN_LOCK_UNLOCKED;
+-int mcd_audio_ioctl(struct cdrom_device_info *cdi, unsigned int cmd,
++static int mcd_audio_ioctl(struct cdrom_device_info *cdi, unsigned int cmd,
+ 		    void *arg);
+-int mcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
++static int mcd_drive_status(struct cdrom_device_info *cdi, int slot_nr);
+ 
+ static struct timer_list mcd_timer;
+ 
+@@ -1076,8 +1076,7 @@ int __init mcd_init(void)
+ 		goto out_region;
+ 	}
+ 
+-	blk_init_queue(BLK_DEFAULT_QUEUE(MAJOR_NR), do_mcd_request,
+-		       &mcd_spinlock);
++	blk_init_queue(&mcd_queue, do_mcd_request, &mcd_spinlock);
+ 
+ 	/* check for card */
+ 
+@@ -1154,6 +1153,7 @@ int __init mcd_init(void)
+ 		printk(KERN_ERR "mcd: Unable to register Mitsumi CD-ROM.\n");
+ 		goto out_cdrom;
+ 	}
++	disk->queue = &mcd_queue;
+ 	add_disk(disk);
+ 	printk(msg);
+ 	return 0;
+@@ -1164,7 +1164,7 @@ out_probe:
+ 	release_region(mcd_port, 4);
+ out_region:
+ 	unregister_blkdev(MAJOR_NR, "mcd");
+-	blk_cleanup_queue(BLK_DEFAULT_QUEUE(MAJOR_NR));
++	blk_cleanup_queue(&mcd_queue);
+ 	put_disk(disk);
+ 	return -EIO;
+ }
+@@ -1543,7 +1543,7 @@ void __exit mcd_exit(void)
+ 		printk(KERN_WARNING "Can't unregister major mcd\n");
+ 		return;
+ 	}
+-	blk_cleanup_queue(BLK_DEFAULT_QUEUE(MAJOR_NR));
++	blk_cleanup_queue(&mcd_queue);
+ 	del_timer_sync(&mcd_timer);
+ }
+ 

@@ -1,0 +1,29 @@
+Rule 33
+----------------------------------------------------------------------
+Spatch revision: N/A
+Cocci file     : rule33.cocci
+Cocci file rev.: N/A
+----------------------------------------------------------------------
+Note that the rule only works with: 
+
+  E && major(CURRENT->rq_dev) == MAJOR_NR
+
+not 
+
+  major(CURRENT->rq_dev) == MAJOR_NR && E
+
+also had to use current_valid(...) instead of current_valid(void)
+because of spatch parser problems.
+----------------------------------------------------------------------
+aztcd.c
+  * [unrelated] many (seemingly) unrelated changes
+
+mcd.c
+  * [unrelated] many (seemingly) unrelated changes
+
+optcd.c
+  * [unrelated] many (seemingly) unrelated changes
+
+sjcd.c
+  * [unrelated] many (seemingly) unrelated changes
+

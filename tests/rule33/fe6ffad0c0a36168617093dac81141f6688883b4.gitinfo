@@ -1,0 +1,111 @@
+commit fe6ffad0c0a36168617093dac81141f6688883b4
+Author: Alexander Viro <viro@math.psu.edu>
+Date:   Thu Oct 17 19:36:56 2002 -0700
+
+    [PATCH] sjcd.c
+    
+    	* switched to private queue
+    	* set ->queue
+    	* switched to new methods
+
+diff --git a/drivers/cdrom/sjcd.c b/drivers/cdrom/sjcd.c
+index 9dcdda8..58f1116 100644
+--- a/drivers/cdrom/sjcd.c
++++ b/drivers/cdrom/sjcd.c
+@@ -77,11 +77,12 @@ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ 
+ #define MAJOR_NR SANYO_CDROM_MAJOR
+-#define DEVICE_NR(device) (minor(device))
++#define QUEUE (&sjcd_queue)
+ #include <linux/blk.h>
+ #include "sjcd.h"
+ 
+ static int sjcd_present = 0;
++static struct request_queue sjcd_queue;
+ 
+ #define SJCD_BUF_SIZ 32		/* cdr-h94a has internal 64K buffer */
+ 
+@@ -453,15 +454,11 @@ #endif
+ /*
+  * Check the drive if the disk is changed. Should be revised.
+  */
+-static int sjcd_disk_change(kdev_t full_dev)
++static int sjcd_disk_change(struct gendisk *disk)
+ {
+ #if 0
+-	printk("SJCD: sjcd_disk_change( 0x%x )\n", full_dev);
++	printk("SJCD: sjcd_disk_change(%s)\n", disk->disk_name);
+ #endif
+-	if (minor(full_dev) > 0) {
+-		printk("SJCD: request error: invalid device minor.\n");
+-		return 0;
+-	}
+ 	if (!sjcd_command_is_in_progress)
+ 		sjcd_get_status();
+ 	return (sjcd_status_valid ? sjcd_media_is_changed : 0);
+@@ -1067,7 +1064,6 @@ static void sjcd_invalidate_buffers(void
+ static int current_valid(void)
+ {
+         return !blk_queue_empty(QUEUE) &&
+-	        major(CURRENT->rq_dev) == MAJOR_NR &&
+ 		CURRENT->cmd == READ &&
+ 		CURRENT->sector != -1;
+ }
+@@ -1645,11 +1641,11 @@ #endif
+  * A list of file operations allowed for this cdrom.
+  */
+ static struct block_device_operations sjcd_fops = {
+-	.owner			= THIS_MODULE,
+-	.open			= sjcd_open,
+-	.release		= sjcd_release,
+-	.ioctl			= sjcd_ioctl,
+-	.check_media_change	= sjcd_disk_change,
++	.owner		= THIS_MODULE,
++	.open		= sjcd_open,
++	.release	= sjcd_release,
++	.ioctl		= sjcd_ioctl,
++	.media_changed	= sjcd_disk_change,
+ };
+ 
+ /*
+@@ -1686,8 +1682,8 @@ #endif
+ 		return (-EIO);
+ 	}
+ 
+-	blk_init_queue(BLK_DEFAULT_QUEUE(MAJOR_NR), do_sjcd_request, &sjcd_lock);
+-	blk_queue_hardsect_size(BLK_DEFAULT_QUEUE(MAJOR_NR), 2048);
++	blk_init_queue(&sjcd_queue, do_sjcd_request, &sjcd_lock);
++	blk_queue_hardsect_size(&sjcd_queue, 2048);
+ 
+ 	sjcd_disk = alloc_disk(1);
+ 	if (!sjcd_disk) {
+@@ -1786,13 +1782,14 @@ #endif
+ 	printk(KERN_INFO "SJCD: Status: port=0x%x.\n", sjcd_base);
+ 	devfs_register(NULL, "sjcd", DEVFS_FL_DEFAULT, MAJOR_NR, 0,
+ 		       S_IFBLK | S_IRUGO | S_IWUGO, &sjcd_fops, NULL);
++	sjcd_disk->queue = &sjcd_queue;
+ 	add_disk(sjcd_disk);
+ 
+ 	sjcd_present++;
+ 	return (0);
+ out3:
+ 	release_region(sjcd_base, 4);
+-	blk_cleanup_queue(BLK_DEFAULT_QUEUE(MAJOR_NR));
++	blk_cleanup_queue(&sjcd_queue);
+ out2:
+ 	put_disk(sjcd_disk);
+ out1:
+@@ -1807,11 +1804,10 @@ static void __exit sjcd_exit(void)
+ 	del_gendisk(sjcd_disk);
+ 	put_disk(sjcd_disk);
+ 	release_region(sjcd_base, 4);
+-	blk_cleanup_queue(BLK_DEFAULT_QUEUE(MAJOR_NR));
++	blk_cleanup_queue(&sjcd_queue);
+ 	if ((unregister_blkdev(MAJOR_NR, "sjcd") == -EINVAL))
+ 		printk("SJCD: cannot unregister device.\n");
+ 	printk(KERN_INFO "SJCD: module: removed.\n");
+-	return (0);
+ }
+ 
+ module_init(sjcd_init);

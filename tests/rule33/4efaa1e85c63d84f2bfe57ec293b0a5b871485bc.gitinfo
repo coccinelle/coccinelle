@@ -1,0 +1,106 @@
+commit 4efaa1e85c63d84f2bfe57ec293b0a5b871485bc
+Author: Alexander Viro <viro@math.psu.edu>
+Date:   Thu Oct 17 19:36:46 2002 -0700
+
+    [PATCH] optcd.c
+    
+    	* switched to private queue
+    	* set ->queue
+    	* switched to new methods
+
+diff --git a/drivers/cdrom/optcd.c b/drivers/cdrom/optcd.c
+index 6abce53..01e2cff 100644
+--- a/drivers/cdrom/optcd.c
++++ b/drivers/cdrom/optcd.c
+@@ -76,7 +76,7 @@ #include <linux/devfs_fs_kernel.h>
+ #include <asm/io.h>
+ 
+ #define MAJOR_NR OPTICS_CDROM_MAJOR
+-#define DEVICE_NR(device) (minor(device))
++#define QUEUE (&opt_queue)
+ #include <linux/blk.h>
+ 
+ #include <linux/cdrom.h>
+@@ -265,8 +265,8 @@ static int sleep_timeout;	/* max # of ti
+ static DECLARE_WAIT_QUEUE_HEAD(waitq);
+ static void sleep_timer(unsigned long data);
+ static struct timer_list delay_timer = {function: sleep_timer};
+-spinlock_t optcd_lock = SPIN_LOCK_UNLOCKED;
+-
++static spinlock_t optcd_lock = SPIN_LOCK_UNLOCKED;
++static struct request_queue opt_queue;
+ 
+ /* Timer routine: wake up when desired flag goes low,
+    or when timeout expires. */
+@@ -977,7 +977,6 @@ #endif /* MULTISESSION */
+ static int current_valid(void)
+ {
+         return !blk_queue_empty(QUEUE) &&
+-	        major(CURRENT->rq_dev) == MAJOR_NR &&
+ 		CURRENT->cmd == READ &&
+ 		CURRENT->sector != -1;
+ }
+@@ -1896,8 +1895,8 @@ static int opt_release(struct inode *ip,
+ 	int status;
+ 
+ 	DEBUG((DEBUG_VFS, "executing opt_release"));
+-	DEBUG((DEBUG_VFS, "inode: %p, inode -> i_rdev: 0x%x, file: %p\n",
+-		ip, ip -> i_rdev, fp));
++	DEBUG((DEBUG_VFS, "inode: %p, device: %s, file: %p\n",
++		ip, ip->i_bdev->bd_disk->disk_name, fp));
+ 
+ 	if (!--open_count) {
+ 		toc_uptodate = 0;
+@@ -1918,10 +1917,11 @@ static int opt_release(struct inode *ip,
+ 
+ 
+ /* Check if disk has been changed */
+-static int opt_media_change(kdev_t dev)
++static int opt_media_change(struct gendisk *disk)
+ {
+ 	DEBUG((DEBUG_VFS, "executing opt_media_change"));
+-	DEBUG((DEBUG_VFS, "dev: 0x%x; disk_changed = %d\n", dev, disk_changed));
++	DEBUG((DEBUG_VFS, "dev: %s; disk_changed = %d\n",
++			disk->disk_name, disk_changed));
+ 
+ 	if (disk_changed) {
+ 		disk_changed = 0;
+@@ -1973,11 +1973,11 @@ static int __init version_ok(void)
+ 
+ 
+ static struct block_device_operations opt_fops = {
+-	.owner			= THIS_MODULE,
+-	.open			= opt_open,
+-	.release		= opt_release,
+-	.ioctl			= opt_ioctl,
+-	.check_media_change	= opt_media_change,
++	.owner		= THIS_MODULE,
++	.open		= opt_open,
++	.release	= opt_release,
++	.ioctl		= opt_ioctl,
++	.media_changed	= opt_media_change,
+ };
+ 
+ #ifndef MODULE
+@@ -2054,9 +2054,9 @@ static int __init optcd_init(void)
+ 	}
+ 	devfs_register (NULL, "optcd", DEVFS_FL_DEFAULT, MAJOR_NR, 0,
+ 			S_IFBLK | S_IRUGO | S_IWUGO, &opt_fops, NULL);
+-	blk_init_queue(BLK_DEFAULT_QUEUE(MAJOR_NR), do_optcd_request,
+-		       &optcd_lock);
+-	blk_queue_hardsect_size(BLK_DEFAULT_QUEUE(MAJOR_NR), 2048);
++	blk_init_queue(&opt_queue, do_optcd_request, &optcd_lock);
++	blk_queue_hardsect_size(&opt_queue, 2048);
++	optcd_disk->queue = &opt_queue;
+ 	add_disk(optcd_disk);
+ 
+ 	printk(KERN_INFO "optcd: DOLPHIN 8000 AT CDROM at 0x%x\n", optcd_port);
+@@ -2073,7 +2073,7 @@ static void __exit optcd_exit(void)
+ 		printk(KERN_ERR "optcd: what's that: can't unregister\n");
+ 		return;
+ 	}
+-	blk_cleanup_queue(BLK_DEFAULT_QUEUE(MAJOR_NR));
++	blk_cleanup_queue(&opt_queue);
+ 	release_region(optcd_port, 4);
+ 	printk(KERN_INFO "optcd: module released.\n");
+ }
