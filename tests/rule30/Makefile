@@ -36,7 +36,7 @@ SOURCES = acsi.c \
 	  swim_iop.c \
 	  xd.c \
 	  xpram.c \
-	  z2ram.c \
+	  z2ram.c
 
 
 # 
