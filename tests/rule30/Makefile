@@ -42,8 +42,3 @@ SOURCES = acsi.c \
 # 
 include ../../generic_makefile
 
-#
-printvars:
-	@echo "SP: ${SP}"
-	@echo "ARGS: ${ARGS}"
-	@echo "SPATCHCMD: ${SPATCHCMD}"
