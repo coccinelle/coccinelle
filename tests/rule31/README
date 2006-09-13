@@ -1,0 +1,117 @@
+Rule 31
+Spatch revision: N/A
+Cocci file     : rule31.cocci
+Cocci file rev.: N/A
+----------------------------------------------------------------------
+acsi.c
+  * independent (unrelated?): DEVICE_INTR is replaced by do_acsi
+  * [rule change] CLEAR_INTR should be replaced by do_acsi some places
+
+amiflop.c
+  * PBBB...
+  * deadcode
+  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
+    be removed
+
+ataflop.c
+  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
+    be removed
+
+cdu31a.c
+  * PBBBB...
+  * deadcode
+  * exception Common.Impossible
+
+cm206.c
+  * [isomorphism] too many braces around transformed code
+
+fd1772.c
+  * PBBB...
+  * deadcode
+  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
+    be removed
+
+ftl.c
+  * Fatal error: exception Not_found
+
+gscd.c
+  * PBBB...
+  * [isomorphism] too many braces
+
+hd.c
+  * independent (unrelated?): remove "#define DEVICE_INTR do_hd" and
+    replace all uses of DEVICE_INTR accordingly
+  * independent: add "#define TIMEOUT_VALUE ..."
+  * [rule change] some CLEAR_INTR should be replaced by "do_hd = NULL"
+
+jsflash.c
+  * [isomorphism] too many braces
+
+mcdx.c
+  * PBBB...
+  * deadcode
+  * exception Failure("pb in flow_to_ast, some nodes have not been
+    visited")
+
+mfmhd.c
+  * independent: remove "#define DEVICE_INTR do_mfm" and replace uses
+    of DEVICE_INTR accordingly
+
+mtdblock.c
+  * Fatal error: exception Common.Impossible
+
+mtdblock_ro.c
+  * [parser] unparseable code
+
+nftlcore.c
+  * Fatal error: exception Ast_to_flow.DeadCode(_)
+
+osst.c
+  * raised NotWorthTrying
+  * independent: remove "#define DEVICE_INTR do_osst"
+
+pcd.c
+  * [isomorphism] too many braces
+
+pd.c
+  * [isomorphism] too many braces
+
+pf.c
+  * [isomorphism] too many braces
+
+ps2esdi.c
+  * [cpp] GRAVE: a cpp instruction inside a #if 0
+  * [isomorphism] too many braces
+
+sbpcd.c
+  * [cpp] GRAVE:...
+  * PBBB...
+  * deadcode
+  * control_flow: orphelin nodes, maybe something wierd happened
+  * Fatal error: exception Common.Impossible
+
+sonycd535.c
+  * Fatal error: exception Common.Impossible
+
+st.c
+  * raised NotWorthTrying
+  * independent: remove "#define DEVICE_INTR do_st"
+
+swim3.c
+  * independent: remove "#define DEVICE_INTR do_floppy"
+
+swim_iop.c
+  * independent: remove "#define DEVICE_INTR do_floppy"
+
+xd.c
+  * [isomorphism] too many braces
+
+xpram.c
+  * PBBB...
+  * deadcode
+  * Fatal error: exception Not_found
+
+z2ram.c
+  * PBBB...
+  * deadcode
+  * [isomorphism] too many braces
