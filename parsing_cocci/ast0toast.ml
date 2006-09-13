@@ -200,8 +200,9 @@ let mcode(term,_,info,mcodekind) =
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
-let rewrap ast0 ast = (ast, (Ast0.get_info ast0).Ast0.line_start, [])
-let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [])
+let rewrap ast0 ast =
+  (ast, (Ast0.get_info ast0).Ast0.line_start, [], Ast.NoDots)
+let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [], Ast.NoDots)
 
 let dots fn d =
   rewrap d
@@ -386,6 +387,11 @@ let parameter_list = dots parameterTypeDef
 
 let rec statement s =
   let rec statement seqible s =
+    let rewrap ast0 ast =
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [],
+       match Ast0.get_dots_bef_aft s with
+	 Ast0.NoDots -> Ast.NoDots
+       | Ast0.BetweenDots s -> Ast.BetweenDots (statement seqible s)) in
     rewrap s
       (match Ast0.unwrap s with
 	Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))

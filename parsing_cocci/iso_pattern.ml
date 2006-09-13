@@ -19,8 +19,8 @@ type isomorphism = Ast0_cocci.anything list list
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
-    let (term,info,index,mc,ty) = k e in
-    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None) in
+    let (term,info,index,mc,ty,dots) = k e in
+    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
@@ -100,8 +100,8 @@ let bool_match_option f t1 t2 =
   | (None, None) -> true
   | _ -> false
 
-let is_context (_,_,_,mc,_) =
-  match !mc with Ast0.CONTEXT(cell) -> true | _ -> false
+let is_context e =
+  match Ast0.get_mcodekind e with Ast0.CONTEXT(cell) -> true | _ -> false
 
 let match_list fn la lb =
   if List.length la = List.length lb
@@ -475,13 +475,15 @@ let make_minus =
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
     | _ -> failwith "make_minus donothing: unexpected mcodekind" in
 
-  let donothing r k ((term,info,index,mcodekind,ty) as e) =
+  let donothing r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
     let e = k e in update_mc mcodekind; e in
 
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
-  let expression r k ((term,info,index,mcodekind,ty) as e) =
-    match term with
+  let expression r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
       Ast0.Edots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
@@ -499,8 +501,9 @@ let make_minus =
 			 mcode ender,whencode))
     | _ -> donothing r k e in
 
-  let statement r k ((term,info,index,mcodekind,ty) as e) =
-    match term with
+  let statement r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
       Ast0.Dots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
@@ -515,8 +518,10 @@ let make_minus =
 		     mcode ender,whencode))
     | _ -> donothing r k e in
 
-  let dots r k ((term,info,index,mcodekind,ty) as e) =
-    match term with
+  let dots r k e =
+    let info = Ast0.get_info e in
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
       Ast0.DOTS([]) ->
 	(* if context is - this should be - as well.  There are no tokens
 	   here though, so the bottom-up minusifier in context_neg leaves it
@@ -565,29 +570,31 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind) in
 
-  let donothing r k e =
-    let (term,info,index,mcodekind,ty) = k e in
+  let copy_one (term,info,index,mcodekind,ty,dots) =
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
-    (term,info,ref !index,ref (copy_mcodekind !mcodekind),ty) in
+    (term,info,ref !index,ref (copy_mcodekind !mcodekind),ty,dots) in
+
+  let donothing r k e = copy_one (k e) in
 
   let statement r k e =
     let s = k e in
-    Ast0.rewrap s
-      (match Ast0.unwrap s with
-	Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
-	  Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
-      | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
-	  Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
-	    (info,copy_mcodekind mc))
-      | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
-	  Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
-	  Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
-	    (info,copy_mcodekind mc))
-      | s -> s) in
+    copy_one
+      (Ast0.rewrap s
+	 (match Ast0.unwrap s with
+	   Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
+	     Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
+	 | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
+	     Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
+	       (info,copy_mcodekind mc))
+	 | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
+	     Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
+	 | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
+	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
+		      (info,copy_mcodekind mc))
+	 | s -> s)) in
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -763,8 +770,8 @@ let instantiate bindings =
 
 (* --------------------------------------------------------------------- *)
 
-let is_minus (_,_,_,mc,_) =
-  match !mc with Ast0.MINUS(cell) -> true | _ -> false
+let is_minus e =
+  match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
 
 let context_required e = not(is_minus e)
 

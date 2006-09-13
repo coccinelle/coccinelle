@@ -73,6 +73,7 @@ let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
 let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
 let wrapBackAX n (x) = wrap n (CTL.AX(CTL.BACKWARD,x))
 let wrapEX n (x) = wrap n (CTL.EX(CTL.FORWARD,x))
+let wrapBackEX n (x) = wrap n (CTL.EX(CTL.BACKWARD,x))
 let wrapAG n (x) = wrap n (CTL.AG(CTL.FORWARD,x))
 let wrapEG n (x) = wrap n (CTL.EG(CTL.FORWARD,x))
 let wrapAF n (x) = wrap n (CTL.AF(CTL.FORWARD,x,drop_vs x))
@@ -118,8 +119,9 @@ let elim_opt =
 	 let new_rest2 = dots_list urest rest in
 	 let fv_rest1 = fvlist new_rest1 in
 	 let fv_rest2 = fvlist new_rest2 in
-	 [d0;(Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1);
-			(Ast.DOTS(new_rest2),l,fv_rest2)],l,fv_rest1)]
+	 [d0;(Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1,Ast.NoDots);
+			(Ast.DOTS(new_rest2),l,fv_rest2,Ast.NoDots)],
+	      l,fv_rest1,Ast.NoDots)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
@@ -127,16 +129,18 @@ let elim_opt =
 	 let new_rest2 = stm::new_rest1 in
 	 let fv_rest1 = fvlist new_rest1 in
 	 let fv_rest2 = fvlist new_rest2 in
-	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2);
-		     (Ast.DOTS(new_rest1),l,fv_rest1)],l,fv_rest2)]
+	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2,Ast.NoDots);
+		     (Ast.DOTS(new_rest1),l,fv_rest1,Ast.NoDots)],
+	   l,fv_rest2,Ast.NoDots)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
 	let fv_d1 = Ast.get_fvs d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
-	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm);
-		       (Ast.DOTS([d1]),l,fv_d1)],l,fv_both)]
+	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,Ast.NoDots);
+		       (Ast.DOTS([d1]),l,fv_d1,Ast.NoDots)],
+	     l,fv_both,Ast.NoDots)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -146,7 +150,8 @@ let elim_opt =
 	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
 		    Ast.CONTEXT(Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
-	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));(Ast.DOTS([rw dots]),l,[])])]
+	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
+			 (Ast.DOTS([rw dots]),l,[],Ast.NoDots)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -561,6 +566,7 @@ and statement stmt used_after after quantified guard =
   let wrapAX = wrapAX n in
   let wrapBackAX = wrapBackAX n in
   let wrapEX = wrapEX n in
+  let wrapBackEX = wrapBackEX n in
   let wrapAG = wrapAG n in
   let wrapAF = wrapAF n in
   let wrapEF = wrapEF n in
@@ -691,7 +697,36 @@ and statement stmt used_after after quantified guard =
       |	_ ->
 	  let stmt_fvs = Ast.get_fvs stmt in
 	  let fvs = get_unquantified quantified stmt_fvs in
-	  make_seq_after (quantify fvs (make_match ast)) after)
+	  let between_dots = Ast.get_dots_bef_aft stmt in
+	  let term = make_match ast in
+	  let term =
+	    match between_dots with
+	      Ast.BetweenDots brace_term ->
+		(match Ast.unwrap brace_term with
+		  Ast.Atomic(brace_ast) ->
+		    let case1 =
+		      wrapAnd
+			(wrapOr
+			   (wrapBackEX
+			      (wrapPred(Lib_engine.TrueBranch,CTL.Control)),
+			    wrapBackEX
+			      (wrapBackEX(wrapPred(Lib_engine.FalseBranch,
+						   CTL.Control)))),
+			 make_match brace_ast) in
+		    let case2 =
+		      wrapAnd
+			(wrapNot
+			   (wrapOr
+			      (wrapBackEX
+				 (wrapPred(Lib_engine.TrueBranch,CTL.Control)),
+			       wrapBackEX
+				 (wrapBackEX(wrapPred(Lib_engine.FalseBranch,
+						      CTL.Control))))),
+			 term) in
+		    wrapOr(case1,case2)
+		| _ -> failwith "not possible")
+	    | Ast.NoDots -> term in
+	  make_seq_after (quantify fvs term) after)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,_,b2fvs,_,b3fvs,rbfvs) =
 	seq_fvs4 quantified

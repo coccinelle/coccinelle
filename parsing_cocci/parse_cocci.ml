@@ -569,6 +569,7 @@ let process file isofile verbose =
 	  Insert_plus.insert_plus m p;
 	  Type_infer.type_infer minus;
 	  let minus = Iso_pattern.apply_isos isos minus in
+	  let minus = Single_statement.single_statement minus in
 	  let minus_ast = Ast0toast.ast0toast minus in
 	  Pretty_print_cocci.unparse minus_ast;
 	  (metavars, minus_ast))

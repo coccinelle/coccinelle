@@ -26,6 +26,9 @@ type 'a mcode = 'a * arity * info * mcodekind
 (* int ref is an index *)
 type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
+      * dots_bef_aft (* only for statements *)
+
+and dots_bef_aft = NoDots | BetweenDots of statement
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -124,7 +127,7 @@ and typeC = base_typeC wrap
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-type base_declaration =
+and base_declaration =
     Init of typeC * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of typeC * ident * string mcode (* ; *)
@@ -139,7 +142,7 @@ and declaration = base_declaration wrap
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-type base_parameterTypeDef =
+and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of ident * typeC
   | MetaParam     of string mcode * bool (* true if inherited *)
@@ -157,7 +160,7 @@ and parameter_list = parameterTypeDef dots
 (* --------------------------------------------------------------------- *)
 (* Statement*)
 
-type base_statement =
+and base_statement =
     Decl          of declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
@@ -269,14 +272,14 @@ let default_befaft _ =
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
-let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),ref None)
+let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots)
 let context_wrap x =
-  (x,default_info(),ref (-1),ref (context_befaft()),ref None)
-let unwrap (x,_,_,_,_) = x
+  (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots)
+let unwrap (x,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
-let rewrap (_,info,index,mcodekind,ty) x =
-  (x,info,index,mcodekind,ty)
-let copywrap (_,info,index,mcodekind,ty) x =
+let rewrap (_,info,index,mcodekind,ty,dots) x =
+  (x,info,index,mcodekind,ty,dots)
+let copywrap (_,info,index,mcodekind,ty,dots) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;
      logical_start = info.logical_start; logical_end = info.logical_end;
@@ -284,14 +287,17 @@ let copywrap (_,info,index,mcodekind,ty) x =
      attachable_end = info.attachable_end;
      mcode_start = info.mcode_start; mcode_end = info.mcode_end;
      column = info.column; offset = info.offset },
-   ref !index,ref !mcodekind,ref !ty)
-let get_info (_,info,_,_,_) = info
-let get_index (_,_,index,_,_) = !index
-let set_index (_,_,index,_,_) i = index := i
-let get_mcodekind (_,_,_,mcodekind,_) = !mcodekind
-let set_mcodekind (_,_,_,mcodekind,_) mk = mcodekind := mk
-let set_type (_,_,_,_,ty) t = ty := t
-let get_type (_,_,_,_,ty) = !ty
+   ref !index,ref !mcodekind,ref !ty,dots)
+let get_info (_,info,_,_,_,_) = info
+let get_index (_,_,index,_,_,_) = !index
+let set_index (_,_,index,_,_,_) i = index := i
+let get_mcodekind (_,_,_,mcodekind,_,_) = !mcodekind
+let get_mcodekind_ref (_,_,_,mcodekind,_,_) = mcodekind
+let set_mcodekind (_,_,_,mcodekind,_,_) mk = mcodekind := mk
+let set_type (_,_,_,_,ty,_) t = ty := t
+let get_type (_,_,_,_,ty,_) = !ty
+let get_dots_bef_aft (_,_,_,_,_,d) = d
+let set_dots_bef_aft (a,b,c,d,e,_) dots_bef_aft = (a,b,c,d,e,dots_bef_aft)
 
 (* --------------------------------------------------------------------- *)
 

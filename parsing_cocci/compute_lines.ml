@@ -7,8 +7,8 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
-let mkres (_,_,index,mcodekind,ty) e
-    (_,lstart,_,_,_) (_,lend,_,_,_) =
+let mkres (_,_,index,mcodekind,ty,d) e
+    (_,lstart,_,_,_,_) (_,lend,_,_,_,_) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
@@ -20,10 +20,11 @@ let mkres (_,_,index,mcodekind,ty) e
       Ast0.mcode_end = lend.Ast0.mcode_end;
       Ast0.column = lstart.Ast0.column;
       Ast0.offset = lstart.Ast0.offset } in
-  (e,info,index,mcodekind,ty)
+  (e,info,index,mcodekind,ty,d)
 
-let mkmultires (_,_,index,mcodekind,ty) e
-    (_,lstart,_,_,_) (_,lend,_,_,_) (astart,start_mcodes) (aend,end_mcodes) =
+let mkmultires (_,_,index,mcodekind,ty,d) e
+    (_,lstart,_,_,_,_) (_,lend,_,_,_,_)
+    (astart,start_mcodes) (aend,end_mcodes) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
@@ -35,7 +36,7 @@ let mkmultires (_,_,index,mcodekind,ty) e
       Ast0.mcode_end = end_mcodes;
       Ast0.column = lstart.Ast0.column;
       Ast0.offset = lstart.Ast0.offset } in
-  (e,info,index,mcodekind,ty)
+  (e,info,index,mcodekind,ty,d)
 
 (* --------------------------------------------------------------------- *)
     
@@ -51,7 +52,7 @@ let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,ref None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
 
 let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
@@ -61,7 +62,7 @@ let promote_to_statement stm mcodekind =
       Ast0.line_start = info.Ast0.line_end;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
-  ((),new_info,ref (-1),ref mcodekind,ref None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =
@@ -99,9 +100,10 @@ let dot_list is_dots fn = function
       let (last_attachable,last_mcode) =
 	get_node backward
 	  (function x -> (x.Ast0.attachable_end,x.Ast0.mcode_end)) in
-      let (first_code,first_info,first_index,first_mcodekind,first_ty) =
+      let (first_code,first_info,first_index,first_mcodekind,first_ty,
+	   first_d) =
 	List.hd forward in
-      let (last_code,last_info,last_index,last_mcodekind,last_ty) =
+      let (last_code,last_info,last_index,last_mcodekind,last_ty,last_d) =
 	List.hd backward in
       let first_info =
 	{ first_info with
@@ -112,8 +114,9 @@ let dot_list is_dots fn = function
 	  Ast0.attachable_end = last_attachable;
 	  Ast0.mcode_end = last_mcode } in
       let first =
-	(first_code,first_info,first_index,first_mcodekind,first_ty) in
-      let last = (last_code,last_info,last_index,last_mcodekind,last_ty) in
+	(first_code,first_info,first_index,first_mcodekind,first_ty,first_d) in
+      let last =
+	(last_code,last_info,last_index,last_mcodekind,last_ty,last_d) in
       (forward,first,last)
       
 let dots is_dots prev fn d =
@@ -121,11 +124,11 @@ let dots is_dots prev fn d =
     (Some prev,Ast0.DOTS([])) ->
       mkres d (Ast0.DOTS []) prev prev
   | (None,Ast0.DOTS([])) ->
-      let (_,_,index,mcodekind,ty) = d in
+      let (_,_,index,mcodekind,ty,dots) = d in
       (Ast0.DOTS [],
        {(Ast0.get_info d)
        with Ast0.attachable_start = false; Ast0.attachable_end = false},
-       index,mcodekind,ty)
+       index,mcodekind,ty,dots)
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend
@@ -388,7 +391,7 @@ let rec statement s =
       mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
   | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
       let exp = expression exp in
-      let (_,lend,_,_,_) as branch = statement branch in
+      let (_,lend,_,_,_,_) as branch = statement branch in
       let right = promote_to_statement branch aft in
       mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
 	(promote_mcode iff) right

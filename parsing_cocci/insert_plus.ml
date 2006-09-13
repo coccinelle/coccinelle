@@ -71,7 +71,7 @@ let create_root_token_table minus =
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
   List.iter
-    (function (t,info,index,mcodekind,ty) ->
+    (function (t,info,index,mcodekind,ty,dots) ->
       try let _ = Hashtbl.find root_token_table !index in ()
       with Not_found -> Hashtbl.add root_token_table !index [])
     minus
@@ -87,7 +87,7 @@ let collect_minus_join_points root =
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
 
-  let do_nothing r k ((_,info,index,mcodekind,_) as e) =
+  let do_nothing r k ((_,info,index,mcodekind,_,_) as e) =
     match !mcodekind with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
@@ -282,7 +282,7 @@ let collect_plus_nodes root =
   let mcode fn (term,_,info,mcodekind) =
     match mcodekind with Ast0.PLUS -> [(info,fn term)] | _ -> [] in
 
-  let do_nothing fn r k ((term,info,index,mcodekind,ty) as e) =
+  let do_nothing fn r k ((term,info,index,mcodekind,ty,dots) as e) =
     match !mcodekind with
       (Ast0.CONTEXT(_)) when not(!index = root_index) -> []
     | Ast0.PLUS -> [(info,fn e)]

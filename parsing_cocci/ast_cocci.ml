@@ -3,19 +3,21 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line * string list (* free vars *))
+type 'a wrap = ('a * line * string list (*free vars*) * dots_bef_aft)
 
-type 'a befaft =
+and 'a befaft =
     BEFORE      of 'a list list
   | AFTER       of 'a list list
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-type 'a mcode = 'a * info * mcodekind
+and 'a mcode = 'a * info * mcodekind
  and mcodekind =
     MINUS       of anything list list
   | CONTEXT     of anything befaft
   | PLUS
+
+and dots_bef_aft = NoDots | BetweenDots of statement
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -340,19 +342,20 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs) x = (x,l,fvs)
-let unwrap (x,_,_) = x
+let rewrap (_,l,fvs,d) x = (x,l,fvs,d)
+let unwrap (x,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_) = l
-let get_fvs (_,_,fvs) = fvs
+let get_line (_,l,_,_) = l
+let get_fvs (_,_,fvs,_) = fvs
+let get_dots_bef_aft (_,_,_,d) = d
 
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d =
-  (MetaRuleElem((s,{ line = 0; column = 0 },d),false), 0, [s])
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),false), 0, [s], NoDots)
 
 let make_meta_decl s d =
-  (MetaDecl((s,{ line = 0; column = 0 },d),false), 0, [s])
+  (MetaDecl((s,{ line = 0; column = 0 },d),false), 0, [s], NoDots)
 
 (* --------------------------------------------------------------------- *)
 

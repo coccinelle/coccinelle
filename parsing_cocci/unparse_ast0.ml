@@ -47,7 +47,7 @@ let mcodekind brackets fn x = function
 
 let mcode fn (x,_,_,mc) = mcodekind None fn x mc
 
-let print_context (_,info,i,mc,ty) fn =
+let print_context (_,info,i,mc,ty,_) fn =
   mcodekind (Some info.Ast0.line_start) fn () !mc
 
 (* --------------------------------------------------------------------- *)

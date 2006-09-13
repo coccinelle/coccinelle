@@ -153,18 +153,18 @@ let get_names = function
 let update table =
   let statement r k s =
     let fvs = Hashtbl.find table (Statement s) in
-    let (s,l,_) = k s in
-    (s,l,fvs) in
+    let (s,l,_,d) = k s in
+    (s,l,fvs,d) in
 
   let statement_dots r k s =
     let fvs = Hashtbl.find table (StatementDots s) in
-    let (s,l,_) = k s in
-    (s,l,fvs) in
+    let (s,l,_,d) = k s in
+    (s,l,fvs,d) in
 
   let rule_elem r k s =
     let fvs = Hashtbl.find table (Rule_elem s) in
-    let (s,l,_) = k s in
-    (s,l,fvs) in
+    let (s,l,_,d) = k s in
+    (s,l,fvs,d) in
 
   let mcode x = x in
   let donothing r k e = k e in

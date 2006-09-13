@@ -23,6 +23,9 @@ type info = { line_start : int; line_end : int;
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
+      * dots_bef_aft
+
+and dots_bef_aft = NoDots | BetweenDots of statement
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -118,7 +121,7 @@ and typeC = base_typeC wrap
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-type base_declaration =
+and base_declaration =
     Init of typeC * ident * string mcode (*=*) * expression *
 	string mcode (*;*)
   | UnInit of typeC * ident * string mcode (* ; *)
@@ -133,7 +136,7 @@ and declaration = base_declaration wrap
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-type base_parameterTypeDef =
+and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of ident * typeC
   | MetaParam     of string mcode * bool
@@ -151,7 +154,7 @@ and parameter_list = parameterTypeDef dots
 (* --------------------------------------------------------------------- *)
 (* Statement*)
 
-type base_statement =
+and base_statement =
     Decl          of declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
@@ -269,9 +272,12 @@ val get_info : 'a wrap -> info
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_mcodekind : 'a wrap -> mcodekind
+val get_mcodekind_ref : 'a wrap -> mcodekind ref
 val set_mcodekind : 'a wrap -> mcodekind -> unit
 val set_type : 'a wrap -> Type_cocci.typeC option -> unit
 val get_type : 'a wrap -> Type_cocci.typeC option
+val set_dots_bef_aft : statement -> dots_bef_aft -> statement
+val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val fresh_index : unit -> int
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC

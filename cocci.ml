@@ -312,8 +312,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                     (* modify also the proto. *)
                     trans_info +> List.iter (fun (_nodei, binding, re) -> 
                       match re with
-                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv -> 
-                          push2  (binding, ((a,b,c,d,e,f,g),info,fv))
+                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
+                          push2  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
                             _hack_funheader
                       | _ -> ()
                       );
@@ -345,7 +345,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   ); (* end 1: iter ctl *)
 
 
-  !_hack_funheader +> List.iter (fun ((binding, ((a,b,c,d,e,f,g),info,fv))) -> 
+  !_hack_funheader +>
+  List.iter (fun ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
    
       let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
       cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
@@ -359,7 +360,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                ], iiptvirg::iisto))  -> 
              (try 
                Transformation.transform_proto
-                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv)
+                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv, dots)
                    (((Control_flow_c.FunHeader ((s, ft, storage), 
                                                 iisini++iity++iisto)), []),"")
                    binding (qu, iiptvirg, storage) g

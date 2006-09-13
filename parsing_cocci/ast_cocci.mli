@@ -3,19 +3,21 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line * string list (* free vars *))
+type 'a wrap = ('a * line * string list (*free vars*) * dots_bef_aft)
 
-type 'a befaft =
+and 'a befaft =
     BEFORE      of 'a list list
   | AFTER       of 'a list list
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-type 'a mcode = 'a * info * mcodekind
+and 'a mcode = 'a * info * mcodekind
  and mcodekind =
     MINUS       of anything list list
   | CONTEXT     of anything befaft
   | PLUS
+
+and dots_bef_aft = NoDots | BetweenDots of statement
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -345,6 +347,7 @@ val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
 val get_fvs : 'a wrap -> string list
+val get_dots_bef_aft : statement -> dots_bef_aft
 
 val make_meta_rule_elem : string -> mcodekind -> rule_elem
 val make_meta_decl : string -> mcodekind -> declaration
