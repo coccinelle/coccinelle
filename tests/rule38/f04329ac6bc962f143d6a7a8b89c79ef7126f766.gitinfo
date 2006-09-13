@@ -1,0 +1,308 @@
+commit f04329ac6bc962f143d6a7a8b89c79ef7126f766
+Author: Dave Jones <davej@codemonkey.org.uk>
+Date:   Tue Feb 25 02:06:58 2003 -0800
+
+    [PATCH] pnp_activate_dev API changes.
+    
+    Someone nuked the 2nd arg in 2.5.62, but didn't fix up
+    all the callers. Lazy.
+
+diff --git a/drivers/isdn/hisax/asuscom.c b/drivers/isdn/hisax/asuscom.c
+index da25348..b86727b 100644
+--- a/drivers/isdn/hisax/asuscom.c
++++ b/drivers/isdn/hisax/asuscom.c
+@@ -283,7 +283,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "AsusPnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pd, NULL) < 0) {
++					if (pnp_activate_dev(pd) < 0) {
+ 						printk(KERN_ERR "AsusPnP: activate failed\n");
+ 						pnp_device_detach(pd);
+ 						return 0;
+diff --git a/drivers/isdn/hisax/avm_pci.c b/drivers/isdn/hisax/avm_pci.c
+index 2385f77..d938e3d 100644
+--- a/drivers/isdn/hisax/avm_pci.c
++++ b/drivers/isdn/hisax/avm_pci.c
+@@ -632,7 +632,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "FritzPnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pnp_avm, NULL) < 0) {
++					if (pnp_activate_dev(pnp_avm) < 0) {
+ 						printk(KERN_ERR "FritzPnP: activate failed\n");
+ 						pnp_device_detach(pnp_avm);
+ 						return 0;
+diff --git a/drivers/isdn/hisax/diva.c b/drivers/isdn/hisax/diva.c
+index 09e5fe3..c9cf0dd 100644
+--- a/drivers/isdn/hisax/diva.c
++++ b/drivers/isdn/hisax/diva.c
+@@ -600,7 +600,7 @@ #ifdef __ISAPNP__
+ 							printk(KERN_ERR "Diva PnP: attach failed\n");
+ 							return 0;
+ 						}
+-						if (pnp_activate_dev(pd, NULL) < 0) {
++						if (pnp_activate_dev(pd) < 0) {
+ 							printk(KERN_ERR "Diva PnP: activate failed\n");
+ 							pnp_device_detach(pd);
+ 							return 0;
+diff --git a/drivers/isdn/hisax/elsa.c b/drivers/isdn/hisax/elsa.c
+index 645257c..f9d4ed9 100644
+--- a/drivers/isdn/hisax/elsa.c
++++ b/drivers/isdn/hisax/elsa.c
+@@ -864,7 +864,7 @@ #ifdef __ISAPNP__
+ 							printk(KERN_ERR "Elsa PnP: attach failed\n");
+ 							return 0;
+ 						}
+-						if (pnp_activate_dev(pd, NULL) < 0) {
++						if (pnp_activate_dev(pd) < 0) {
+ 							pnp_device_detach(pd);
+ 							printk(KERN_ERR "Elsa PnP: activate failed\n");
+ 							return 0;
+diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
+index 566cf36..31d5ce1 100644
+--- a/drivers/isdn/hisax/hfc_sx.c
++++ b/drivers/isdn/hisax/hfc_sx.c
+@@ -1200,7 +1200,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "HFC PnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pd, NULL) < 0) {
++					if (pnp_activate_dev(pd) < 0) {
+ 						printk(KERN_ERR "HFC PnP: activate failed\n");
+ 						pnp_device_detach(pd);
+ 						return 0;
+diff --git a/drivers/isdn/hisax/hfcscard.c b/drivers/isdn/hisax/hfcscard.c
+index 93b5a5d..ede8af6 100644
+--- a/drivers/isdn/hisax/hfcscard.c
++++ b/drivers/isdn/hisax/hfcscard.c
+@@ -193,7 +193,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "HFC PnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pd, NULL) < 0) {
++					if (pnp_activate_dev(pd) < 0) {
+ 						printk(KERN_ERR "HFC PnP: activate failed\n");
+ 						pnp_device_detach(pd);
+ 						return 0;
+diff --git a/drivers/isdn/hisax/isurf.c b/drivers/isdn/hisax/isurf.c
+index feb2078..6c5dd61 100644
+--- a/drivers/isdn/hisax/isurf.c
++++ b/drivers/isdn/hisax/isurf.c
+@@ -223,7 +223,7 @@ #ifdef __ISAPNP__
+ 					printk(KERN_ERR "ISurfPnP: attach failed\n");
+ 					return 0;
+ 				}
+-				if (pnp_activate_dev(pd, NULL) < 0) {
++				if (pnp_activate_dev(pd) < 0) {
+ 					printk(KERN_ERR "ISurfPnP: activate failed\n");
+ 					pnp_device_detach(pd);
+ 					return 0;
+diff --git a/drivers/isdn/hisax/ix1_micro.c b/drivers/isdn/hisax/ix1_micro.c
+index 62b0f5f..58bc320 100644
+--- a/drivers/isdn/hisax/ix1_micro.c
++++ b/drivers/isdn/hisax/ix1_micro.c
+@@ -208,7 +208,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "ITK PnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pd, NULL) < 0) {
++					if (pnp_activate_dev(pd) < 0) {
+ 						printk(KERN_ERR "ITK PnP: activate failed\n");
+ 						pnp_device_detach(pd);
+ 						return 0;
+diff --git a/drivers/isdn/hisax/niccy.c b/drivers/isdn/hisax/niccy.c
+index 3e6aefa..e34cb5b 100644
+--- a/drivers/isdn/hisax/niccy.c
++++ b/drivers/isdn/hisax/niccy.c
+@@ -232,7 +232,7 @@ #ifdef __ISAPNP__
+ 				printk(KERN_ERR "NiccyPnP: attach failed\n");
+ 				return 0;
+ 			}
+-			if (pnp_activate_dev(pd, NULL) < 0) {
++			if (pnp_activate_dev(pd) < 0) {
+ 				printk(KERN_ERR "NiccyPnP: activate failed\n");
+ 				pnp_device_detach(pd);
+ 				return 0;
+diff --git a/drivers/isdn/hisax/sedlbauer.c b/drivers/isdn/hisax/sedlbauer.c
+index d88e438..54b1891 100644
+--- a/drivers/isdn/hisax/sedlbauer.c
++++ b/drivers/isdn/hisax/sedlbauer.c
+@@ -524,7 +524,7 @@ #ifdef __ISAPNP__
+ 							printk(KERN_ERR "Sedlbauer PnP: attach failed\n");
+ 							return 0;
+ 						}
+-						if (pnp_activate_dev(pd, NULL) < 0) {
++						if (pnp_activate_dev(pd) < 0) {
+ 							printk(KERN_ERR "Sedlbauer PnP: activate failed\n");
+ 							pnp_device_detach(pd);
+ 							return 0;
+diff --git a/drivers/isdn/hisax/teles3.c b/drivers/isdn/hisax/teles3.c
+index 06528fd..08aec06 100644
+--- a/drivers/isdn/hisax/teles3.c
++++ b/drivers/isdn/hisax/teles3.c
+@@ -227,7 +227,7 @@ #ifdef __ISAPNP__
+ 						printk(KERN_ERR "Teles PnP: attach failed\n");
+ 						return 0;
+ 					}
+-					if (pnp_activate_dev(pnp_dev, NULL) < 0) {
++					if (pnp_activate_dev(pnp_dev) < 0) {
+ 						printk(KERN_ERR "Teles PnP: activate failed\n");
+ 						pnp_device_detach(pnp_dev);
+ 						return 0;
+diff --git a/drivers/media/radio/radio-sf16fmi.c b/drivers/media/radio/radio-sf16fmi.c
+index 4eae614..9962c43 100644
+--- a/drivers/media/radio/radio-sf16fmi.c
++++ b/drivers/media/radio/radio-sf16fmi.c
+@@ -262,7 +262,7 @@ static int isapnp_fmi_probe(void)
+ 		return -ENODEV;
+ 	if (pnp_device_attach(dev) < 0)
+ 		return -EAGAIN;
+-	if (pnp_activate_dev(dev, NULL) < 0) {
++	if (pnp_activate_dev(dev) < 0) {
+ 		printk ("radio-sf16fmi: PnP configure failed (out of resources?)\n");
+ 		pnp_device_detach(dev);
+ 		return -ENOMEM;
+diff --git a/drivers/net/3c509.c b/drivers/net/3c509.c
+index 28a83c9..fa7af13 100644
+--- a/drivers/net/3c509.c
++++ b/drivers/net/3c509.c
+@@ -385,7 +385,7 @@ #ifdef __ISAPNP__
+ 					    idev))) {
+ 			if (pnp_device_attach(idev) < 0)
+ 				continue;
+-			if (pnp_activate_dev(idev, NULL) < 0) {
++			if (pnp_activate_dev(idev) < 0) {
+ 			      __again:
+ 			      	pnp_device_detach(idev);
+ 			      	continue;
+diff --git a/drivers/net/3c515.c b/drivers/net/3c515.c
+index b23de1c..74b275e 100644
+--- a/drivers/net/3c515.c
++++ b/drivers/net/3c515.c
+@@ -469,7 +469,7 @@ #ifdef __ISAPNP__
+ 
+ 			if (pnp_device_attach(idev) < 0)
+ 				continue;
+-			if (pnp_activate_dev(idev, NULL) < 0) {
++			if (pnp_activate_dev(idev) < 0) {
+ 				printk("pnp activate failed (out of resources?)\n");
+ 				pnp_device_detach(idev);
+ 				return -ENOMEM;
+diff --git a/drivers/net/ne.c b/drivers/net/ne.c
+index a165a94..7884fd7 100644
+--- a/drivers/net/ne.c
++++ b/drivers/net/ne.c
+@@ -205,7 +205,7 @@ static int __init ne_probe_isapnp(struct
+ 			/* Avoid already found cards from previous calls */
+ 			if (pnp_device_attach(idev) < 0)
+ 				continue;
+-			if (pnp_activate_dev(idev, NULL) < 0) {
++			if (pnp_activate_dev(idev) < 0) {
+ 			      	pnp_device_detach(idev);
+ 			      	continue;
+ 			}
+diff --git a/drivers/net/sb1000.c b/drivers/net/sb1000.c
+index 6f1e1dd..5bd2a95 100644
+--- a/drivers/net/sb1000.c
++++ b/drivers/net/sb1000.c
+@@ -170,7 +170,7 @@ sb1000_probe(struct net_device *dev)
+ 		 
+ 		if (pnp_device_attach(idev) < 0)
+ 			continue;
+-		if (pnp_activate_dev(idev, NULL) < 0) {
++		if (pnp_activate_dev(idev) < 0) {
+ 		      __again:
+ 			pnp_device_detach(idev);
+ 			continue;
+diff --git a/drivers/net/smc-ultra.c b/drivers/net/smc-ultra.c
+index a98fb49..c687bc1 100644
+--- a/drivers/net/smc-ultra.c
++++ b/drivers/net/smc-ultra.c
+@@ -293,7 +293,7 @@ static int __init ultra_probe_isapnp(str
+                         /* Avoid already found cards from previous calls */
+                         if (pnp_device_attach(idev) < 0)
+                         	continue;
+-                        if (pnp_activate_dev(idev, NULL) < 0) {
++                        if (pnp_activate_dev(idev) < 0) {
+                               __again:
+                         	pnp_device_detach(idev);
+                         	continue;
+diff --git a/drivers/pcmcia/i82365.c b/drivers/pcmcia/i82365.c
+index 6403c61..bc95bde 100644
+--- a/drivers/pcmcia/i82365.c
++++ b/drivers/pcmcia/i82365.c
+@@ -846,7 +846,7 @@ #ifdef CONFIG_PNP
+ 	
+ 	    printk("PNP ");
+ 	    
+-	    if (pnp_activate_dev(dev, NULL) < 0) {
++	    if (pnp_activate_dev(dev) < 0) {
+ 		printk("activate failed\n");
+ 		pnp_device_detach(dev);
+ 		break;
+diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
+index 0e9b75f..749d253 100644
+--- a/drivers/scsi/aha152x.c
++++ b/drivers/scsi/aha152x.c
+@@ -1131,7 +1131,7 @@ #ifdef __ISAPNP__
+ 	while ( setup_count<ARRAY_SIZE(setup) && (dev=pnp_find_dev(NULL, ISAPNP_VENDOR('A','D','P'), ISAPNP_FUNCTION(0x1505), dev)) ) {
+ 		if (pnp_device_attach(dev) < 0)
+ 			continue;
+-		if (pnp_activate_dev(dev, NULL) < 0) {
++		if (pnp_activate_dev(dev) < 0) {
+ 			pnp_device_detach(dev);
+ 			continue;
+ 		}
+diff --git a/drivers/scsi/aha1542.c b/drivers/scsi/aha1542.c
+index 622a693..8c6ae0e 100644
+--- a/drivers/scsi/aha1542.c
++++ b/drivers/scsi/aha1542.c
+@@ -1161,7 +1161,7 @@ #endif
+ 			if(pnp_device_attach(pdev)<0)
+ 				continue;
+ 			
+-			if(pnp_activate_dev(pdev, NULL)<0) {
++			if(pnp_activate_dev(pdev)<0) {
+ 				pnp_device_detach(pdev);
+ 				continue;
+ 			}
+diff --git a/drivers/scsi/g_NCR5380.c b/drivers/scsi/g_NCR5380.c
+index 1b27978..d54dd43 100644
+--- a/drivers/scsi/g_NCR5380.c
++++ b/drivers/scsi/g_NCR5380.c
+@@ -323,7 +323,7 @@ int __init generic_NCR5380_detect(Scsi_H
+ 				printk(KERN_ERR "dtc436e probe: attach failed\n");
+ 				continue;
+ 			}
+-			if (pnp_activate_dev(dev, NULL) < 0) {
++			if (pnp_activate_dev(dev) < 0) {
+ 				printk(KERN_ERR "dtc436e probe: activate failed\n");
+ 				pnp_device_detach(dev);
+ 				continue;
+diff --git a/drivers/scsi/sym53c416.c b/drivers/scsi/sym53c416.c
+index 9613244..811cb6d 100644
+--- a/drivers/scsi/sym53c416.c
++++ b/drivers/scsi/sym53c416.c
+@@ -679,7 +679,7 @@ #endif
+ 				printk(KERN_WARNING "sym53c416: unable to attach PnP device.\n");
+ 				continue;
+ 			}
+-			if(pnp_activate_dev(idev, NULL)<0)
++			if(pnp_activate_dev(idev)<0)
+ 			{
+ 				printk(KERN_WARNING "sym53c416: unable to activate PnP device.\n");
+ 				pnp_device_detach(idev);
+diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
+index cfc22ad..581d692 100644
+--- a/drivers/telephony/ixj.c
++++ b/drivers/telephony/ixj.c
+@@ -7717,7 +7717,7 @@ int __init ixj_probe_isapnp(int *cnt)
+ 				printk("pnp attach failed %d \n", result);
+ 				break;
+ 			}
+-			if (pnp_activate_dev(dev, NULL) < 0) {
++			if (pnp_activate_dev(dev) < 0) {
+ 				printk("pnp activate failed (out of resources?)\n");
+ 				pnp_device_detach(dev);
+ 				return -ENOMEM;
