@@ -1,0 +1,55 @@
+acsi.c: Works!
+
+amiflop.c
+
+ataflop.c: Works!
+
+aztcd.c
+
+cdu31a.c
+
+cm206.c: Works!
+
+fd1772.c
+
+ftl.c
+
+gscd.c: Works!
+
+hd.c
+
+jsflash.c: Works!
+
+mcd.c
+
+mcdx.c
+
+mfmhd.c: Works!
+
+nftlcore.c
+
+optcd.c
+
+pcd.c: Works!
+
+pd.c: Works!
+
+pf.c: Works!
+
+ps2esdi.c: Works!
+
+sbpcd.c
+
+sjcd.c
+
+sonycd535.c
+
+swim3.c
+
+swim_iop.c
+
+xd.c: Works!
+
+xpram.c
+
+z2ram.c: Works!
