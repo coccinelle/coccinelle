@@ -178,7 +178,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   command2("cp " ^ cfile ^ " /tmp/input.c");
 
   let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
-  let _hack_funheader = ref None in
+  let _hack_funheader = ref [] in
 
   (* 1: iter ctl *)  
   ctls +> List.iter (fun  (ctl_toplevel_list, used_after_list) -> 
@@ -309,11 +309,12 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                            used_after_env)
                         !_current_bindings;
 
-                    (* for the ugly hack *)
+                    (* modify also the proto. *)
                     trans_info +> List.iter (fun (_nodei, binding, re) -> 
                       match re with
                       | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv -> 
-                          _hack_funheader := Some (binding, ((a,b,c,d,e,f,g),info,fv))
+                          push2  (binding, ((a,b,c,d,e,f,g),info,fv))
+                            _hack_funheader
                       | _ -> ()
                       );
                     
@@ -334,46 +335,6 @@ let full_engine cfile coccifile_and_iso_or_ctl =
               (Ast_c.Definition def, Unparse_c.PPviatok il)
 
 
-        (* UGLY HACK *)
-        | Ast_c.Declaration 
-            (Ast_c.DeclList 
-               ([((Some ((s, None), iisini)), 
-                  (qu, (Ast_c.FunctionType ft, iity)), 
-                  storage),
-                 []
-               ], iivirg::iisto))
-           when !_hack_funheader <> None -> 
-             let decl = e in
-             let (binding, ((a,b,c,d,e,f,g),info,fv)) =
-	       some !_hack_funheader in
-
-             (try 
-               let node' = 
-                 Transformation.transform_re_node 
-                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv)
-                   (((Control_flow_c.FunHeader ((s, ft, storage), 
-                                                iisini++iity++iisto)), []),"")
-                   binding in
-               match Control_flow_c.unwrap node' with
-               | Control_flow_c.FunHeader 
-                   ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
-
-                     _hack_funheader := None;
-                     Ast_c.Declaration 
-                       (Ast_c.DeclList 
-                          ([((Some ((s, None), [iis])), 
-                             (qu, (Ast_c.FunctionType ft, [iioparen;iicparen])), 
-                             storage),
-                            []
-                          ], iivirg::iisto)), Unparse_c.PPnormal 
-
-               | _ -> 
-                   raise Impossible
-             with Transformation.NoMatch -> 
-               (decl, Unparse_c.PPviatok il)
-             )
-          (* END UGLY HACK *)
-             
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) (* end 3: iter function *)
@@ -382,6 +343,38 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
       ) (* end 2: iter bindings *)
   ); (* end 1: iter ctl *)
+
+
+  !_hack_funheader +> List.iter (fun ((binding, ((a,b,c,d,e,f,g),info,fv))) -> 
+   
+      let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+      cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
+        match ebis with
+        | Ast_c.Declaration 
+            (Ast_c.DeclList 
+               ([((Some ((s, None), iisini)), 
+                  (qu, (Ast_c.FunctionType ft, iity)), 
+                  storage),
+                 []
+               ], iiptvirg::iisto))  -> 
+             (try 
+               Transformation.transform_proto
+                   (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv)
+                   (((Control_flow_c.FunHeader ((s, ft, storage), 
+                                                iisini++iity++iisto)), []),"")
+                   binding (qu, iiptvirg, storage) g
+                 +> (fun x -> x,  Unparse_c.PPnormal)
+             with Transformation.NoMatch -> 
+               (ebis, Unparse_c.PPviatok il)
+             )
+             
+        | x -> 
+            (x, Unparse_c.PPviatok il)
+        ) 
+        +> Unparse_c.pp_program "/tmp/input.c";
+      command2("cp /tmp/output.c /tmp/input.c");    
+   );
+
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
   with NotWorthTrying -> command2("cp " ^ cfile ^ " /tmp/output.c");    

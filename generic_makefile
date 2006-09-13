@@ -9,6 +9,12 @@ all: $(OBJS)
 	ls *ok 
 	ls *failed
 
+#pad: 
+#    .SUFFIXES: .c .ok
+#    .c.ok: $(SPATCH) $(SP)
+# does not work because the old suffix rule does not allow additionnal
+# dependencies (at the right of ':'). Cf make info manual.
+
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
 	(time $(SPATCH) $(ARGS) $<) 2> $(<:.c=.ok) || \

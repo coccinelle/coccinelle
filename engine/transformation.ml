@@ -36,6 +36,9 @@ let mcode_contain_plus = function
   | Ast_cocci.MINUS (x::xs) -> true
   | Ast_cocci.PLUS -> raise Impossible
 
+let mcode_simple_minus = function
+  | Ast_cocci.MINUS ([]) -> true
+  | _ -> false
 
 (* ------------------------------------------------------------------------- *)
 let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il)
@@ -940,6 +943,37 @@ and transform_option f t1 t2 =
   | _ -> raise NoMatch
 
 
+
+
+(*****************************************************************************)
+let transform_proto a b binding (qu, iiptvirg, storage) infolastparen = 
+  let node' = transform_re_node a b binding in
+  match F.unwrap node' with
+  | F.FunHeader 
+      ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
+
+        (* Also delete the ';' at the end of the proto.
+         * The heuristic is to see if the ')' was deleted. Buggy but
+         * first step.
+         * todo: what if SP is '-f(int i) { +f(int i, char j) { ' 
+         * I will not accuratly modify the proto.
+         * todo?: maybe can use the allminusinfo of Ast_cocci.FunHeader ?
+         *)
+        let iiptvirg' = 
+          if mcode_simple_minus (mcodekind infolastparen)
+          then tag_one_symbol infolastparen iiptvirg  binding
+          else iiptvirg
+        in
+        B.Declaration 
+          (B.DeclList 
+             ([((Some ((s, None), [iis])), 
+                (qu, (B.FunctionType ft, [iioparen;iicparen])), 
+                storage),
+               []
+             ], iiptvirg'::iisto)) 
+          
+  | _ -> 
+      raise Impossible
 
 
 (*****************************************************************************)
