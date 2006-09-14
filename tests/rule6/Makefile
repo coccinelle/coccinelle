@@ -43,7 +43,9 @@ SOURCES = audio.c \
 	  usbvideo.c \
 	  vicam.c \
 	  zr36067.c \
-	  zr36120_mem.c 
+	  zr36120_mem.c \
+	  2.6.0/au1000.c \
+	  2.6.0/ite8172.c
 
 
 include ../../generic_makefile

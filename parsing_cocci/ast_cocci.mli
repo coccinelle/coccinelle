@@ -295,6 +295,7 @@ and dots_whencode =
     WParen of rule_elem * string (*pren_var*)
   | Other of statement
   | Other_dots of statement dots
+  | OrOther_dots of statement dots
 
 and statement = base_statement wrap
 

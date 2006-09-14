@@ -16,6 +16,8 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | Or  of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
+  | SeqOr  of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | AF of direction *

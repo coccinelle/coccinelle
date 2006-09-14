@@ -521,6 +521,7 @@ let rec statement s =
 	Ast0.DOTS(x) -> Ast.DOTS(process_list seqible x)
       | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible x)
       | Ast0.STARS(x) -> Ast.STARS(process_list seqible x))
+
   and separate_decls seqible d =
     let rec collect_decls = function
 	[] -> ([],false,[])
@@ -534,7 +535,35 @@ let rec statement s =
 	      (match decls with
 		[] -> ([],true,x::other)
 	      | _ -> (x :: decls,dots,other))
-	  | _ -> ([],false,l)) in
+	  | Ast0.Disj(starter,stmt_dots_list,mids,ender) ->
+	      let disjs = List.map collect_dot_decls stmt_dots_list in
+	      let all_decls = List.for_all (function (_,_,s) -> s=[]) disjs in
+	      let all_dots = List.for_all (function (_,d,_) -> d) disjs in
+	      let all_not_dots =
+		List.for_all (function (_,d,_) -> not d) disjs in
+	      let all_stmts = List.for_all (function (d,_,_) -> d=[]) disjs in
+	      if all_decls
+	      then
+		let (decls,dots,other) = collect_decls xs in
+		(x :: decls,dots,other)
+	      else
+		if all_stmts && all_dots
+		then ([],true,l)
+		else
+		  if all_stmts && all_not_dots
+		  then ([],false,l)
+		  else
+		    begin
+		      Printf.printf
+			"warning: mixes stmts and decls, not skipping initial decls";
+		      ([],true,l)
+		    end
+	  | _ -> ([],false,l))
+    and collect_dot_decls d =
+      match Ast0.unwrap d with
+	Ast0.DOTS(x) -> collect_decls x
+      | Ast0.CIRCLES(x) -> collect_decls x
+      | Ast0.STARS(x) -> collect_decls x in
     let process l d fn =
       let (decls,dots,other) = collect_decls l in
       (rewrap d (fn (List.map (statement seqible) decls)), dots,

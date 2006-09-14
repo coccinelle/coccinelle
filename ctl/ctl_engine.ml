@@ -1004,6 +1004,13 @@ let rec satloop negated required required_states
 	triples_union
 	  (loop negated required required_states phi1)
 	  (loop negated required required_states phi2)
+    | A.SeqOr(phi1,phi2)      ->
+	let res1 = loop negated required required_states phi1 in
+	let res2 = loop negated required required_states phi2 in
+	let res1neg =
+	  List.map (function (s,th,_) -> (s,th,[])) res1 in
+	triples_union res1
+	  (triples_conj (triples_complement states res1neg) res2)
     | A.And(phi1,phi2)     ->
 	(* phi1 is considered to be more likely to be [], because of the
 	   definition of asttoctl.  Could use heuristics such as the size of
@@ -1136,6 +1143,17 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	  satv negated required required_states phi2 env in
 	Printf.printf "or\n"; flush stdout;
 	anno (triples_union res1 res2) [child1; child2]
+    | A.SeqOr(phi1,phi2)      -> 
+	let (child1,res1) =
+	  satv negated required required_states phi1 env in
+	let (child2,res2) =
+	  satv negated required required_states phi2 env in
+	let res1neg =
+	  List.map (function (s,th,_) -> (s,th,[])) res1 in
+	Printf.printf "seqor\n"; flush stdout;
+	anno (triples_union res1
+		(triples_conj (triples_complement states res1neg) res2))
+	  [child1; child2]
     | A.And(phi1,phi2)     -> 
 	(match satv negated required required_states phi1 env with
 	  (child1,[]) -> anno [] [child1]
@@ -1288,6 +1306,7 @@ let simpleanno l phi res =
     | A.Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
     | A.And(phi1,phi2)     -> pp "And"
     | A.Or(phi1,phi2)      -> pp "Or"
+    | A.SeqOr(phi1,phi2)   -> pp "SeqOr"
     | A.Implies(phi1,phi2) -> pp "Implies"
     | A.AF(dir,phi1,_)     -> pp "AF"; pp_dir dir
     | A.AX(dir,phi1)       -> pp "AX"; pp_dir dir

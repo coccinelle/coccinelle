@@ -44,6 +44,7 @@ let rec drop_vs f =
 	| _ -> CTL.Exists(v,drop_vs phi))
     | CTL.And(phi1,phi2) -> CTL.And(drop_vs phi1,drop_vs phi2)
     | CTL.Or(phi1,phi2) -> CTL.Or(drop_vs phi1,drop_vs phi2)
+    | CTL.SeqOr(phi1,phi2) -> CTL.SeqOr(drop_vs phi1,drop_vs phi2)
     | CTL.Implies(phi1,phi2) -> CTL.Implies(drop_vs phi1,drop_vs phi2)
     | CTL.AF(dir,phi1,phi2) -> CTL.AF(dir,drop_vs phi1,drop_vs phi2)
     | CTL.AX(dir,phi) -> CTL.AX(dir,drop_vs phi)
@@ -68,6 +69,7 @@ let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists n (x,y) = wrap n (CTL.Exists(x,y))
 let wrapAnd n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr n (x,y) = wrap n (CTL.Or(x,y))
+let wrapSeqOr n (x,y) = wrap n (CTL.SeqOr(x,y))
 let wrapAU n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y,drop_vs x,drop_vs y))
 let wrapEU n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
 let wrapAX n (x) = wrap n (CTL.AX(CTL.FORWARD,x))
@@ -562,6 +564,7 @@ and statement stmt used_after after quantified guard =
   let wrapExists = wrapExists n in
   let wrapAnd = wrapAnd n in
   let wrapOr = wrapOr n in
+  let wrapSeqOr = wrapSeqOr n in
   let wrapAU = wrapAU n in
   let wrapAX = wrapAX n in
   let wrapBackAX = wrapBackAX n in
@@ -894,6 +897,16 @@ and statement stmt used_after after quantified guard =
       | _ -> quantify bfvs (wrapAnd(header, wrapAX or_cases)))
 
   | Ast.Disj(stmt_dots_list) ->
+      let processed =
+	List.map
+	  (function x -> statement_list x used_after after quantified guard)
+	  stmt_dots_list in
+      let rec loop = function
+	  [] -> wrap n CTL.True
+	| [x] -> x
+	| x::xs -> wrapSeqOr(x,loop xs) in
+      loop processed
+(*
       let do_one e =
 	statement_list e used_after (a2n after) quantified true in
       let add_nots l e =
@@ -903,9 +916,14 @@ and statement stmt used_after after quantified guard =
       let process_one nots cur =
 	match Ast.unwrap cur with
 	  Ast.DOTS(x::xs) ->
-	    let on = List.map (function x -> Ast.Other_dots x) nots in
+	    let on = List.map (function x -> Ast.OrOther_dots x) nots in
 	    (match Ast.unwrap x with
 	      Ast.Dots(d,w,t) ->
+		List.iter
+		  (function x ->
+		    Printf.printf "a not\n";
+		    Pretty_print_cocci.statement_dots x)
+		  nots;
 		let cur =
 		  Ast.rewrap cur
 		    (Ast.DOTS((Ast.rewrap x (Ast.Dots(d,w,on@t)))::xs)) in
@@ -927,6 +945,7 @@ and statement stmt used_after after quantified guard =
 	| [(nots,cur)] -> process_one nots cur
 	| (nots,cur)::rest -> wrapOr(process_one nots cur, loop after rest) in
       loop after (preprocess_disj stmt_dots_list)
+*)
   | Ast.Nest(stmt_dots,whencode,befaft) ->
       let dots_pattern =
 	statement_list stmt_dots used_after (a2n after) quantified guard in
@@ -1068,6 +1087,7 @@ and process_bef_aft after quantified used_after ln = function
       wrapAnd ln (make_raw_match ln re,paren_pred)
   | Ast.Other s -> statement s used_after (a2n after) quantified true
   | Ast.Other_dots d -> statement_list d used_after (a2n after) quantified true
+  | Ast.OrOther_dots d -> statement_list d used_after Tail quantified true
 
 (* Returns a triple for each disj element.  The first element of the triple is
 Some v if the triple element needs a name, and None otherwise.  The second
@@ -1124,6 +1144,7 @@ let rec collect_duplicates f =
   | CTL.Exists(v,phi) -> collect_duplicates phi
   | CTL.And(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Or(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.SeqOr(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.Implies(phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.AF(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
   | CTL.AX(_,phi) -> collect_duplicates phi
@@ -1177,6 +1198,10 @@ and replace_subformulas dec f =
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       (acc1@acc2,CTL.rewrap f (CTL.Or(new_phi1,new_phi2)))
+  | CTL.SeqOr(phi1,phi2) ->
+      let (acc1,new_phi1) = replace_formulas dec phi1 in
+      let (acc2,new_phi2) = replace_formulas dec phi2 in
+      (acc1@acc2,CTL.rewrap f (CTL.SeqOr(new_phi1,new_phi2)))
   | CTL.Implies(phi1,phi2) -> 
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
@@ -1234,8 +1259,8 @@ let rec ctl_fvs f =
 	  let phi2fvs = ctl_fvs phi2 in
 	  (* phi3 has the same fvs as phi1 and phi4 as phi2 *)
 	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
-      | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.Implies(phi1,phi2)
-      | CTL.AF(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
+      | CTL.And(phi1,phi2) | CTL.Or(phi1,phi2) | CTL.SeqOr(phi1,phi2)
+      | CTL.Implies(phi1,phi2) | CTL.AF(_,phi1,phi2) | CTL.EU(_,phi1,phi2) ->
 	  let phi1fvs = ctl_fvs phi1 in
 	  let phi2fvs = ctl_fvs phi2 in
 	  (Common.union_set phi1fvs phi2fvs,intersect phi1fvs phi2fvs)
@@ -1285,6 +1310,11 @@ let drop_bindings b f = (* innermost bindings first in b *)
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term
 	  (function _ -> CTL.Or(drop_one nm term phi1,drop_one nm term phi2))
+    | CTL.SeqOr(phi1,phi2) ->
+	let (ffvs,inter) = find_fvs f in
+	process_binary f ffvs inter nm term
+	  (function _ ->
+	    CTL.SeqOr(drop_one nm term phi1,drop_one nm term phi2))
     | CTL.Implies(phi1,phi2) ->
 	let (ffvs,inter) = find_fvs f in
 	process_binary f ffvs inter nm term

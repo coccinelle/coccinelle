@@ -9,6 +9,7 @@ open Ast_ctl
 
 let char_and  = "&"
 let char_or   = "v"
+let char_seqor   = "|"
 let char_not  = "!"
 let char_back = "^"
 
@@ -46,6 +47,7 @@ let rec (pp_ctl:
 	 pp ")"
      | And(phi1,phi2)     -> pp_2args env char_and phi1 phi2; 
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
+     | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
      | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;
      | AF(dir,phi1,_)   -> pp "AF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | AX(dir,phi1)   -> pp "AX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
