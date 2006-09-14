@@ -1,5 +1,6 @@
 open Common open Commonop
 
+module CCI = Ctlcocci_integration
 (* --------------------------------------------------------------------- *)
 (*
 
@@ -183,8 +184,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   (* 1: iter ctl *)  
   ctls +> List.iter (fun  (ctl_toplevel_list, used_after_list) -> 
     
-    if List.length ctl_toplevel_list <> 1 
-    then failwith "I handle only one toplevel element per region";
+   if List.length ctl_toplevel_list = 1 
+   then begin
     
     let ctl = List.hd ctl_toplevel_list in
     
@@ -252,12 +253,10 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                 end;
                   
                 (* remove some fake nodes *)
-                let fixed_flow = Ctlcocci_integration.fix_flow_ctl flow in
+                let fixed_flow = CCI.fix_flow_ctl flow in
                 
-                if !Flag.show_flow 
-                then print_flow fixed_flow;
-                if !Flag.show_before_fixed_flow 
-                then print_flow flow;
+                if !Flag.show_flow              then print_flow fixed_flow;
+                if !Flag.show_before_fixed_flow then print_flow flow;
 
 		let old_loop_in_src_code = !Flag_ctl.loop_in_src_code in
 		if not old_loop_in_src_code
@@ -274,22 +273,19 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                      });
 
                 let current_binding = binding in
-                let current_binding2 = 
-                  Ctlcocci_integration.metavars_binding_to_binding2 binding
+                let current_binding2 = CCI.metavars_binding_to_binding2 binding
                 in
 
 
-                let model_ctl  =
-		  Ctlcocci_integration.model_for_ctl flow current_binding in
-		let satres =
-		  Ctlcocci_integration.mysat model_ctl ctl 
-                    (used_after_list, current_binding2) in
+                let model_ctl  = CCI.model_for_ctl flow current_binding in
+		let satres = 
+                  CCI.mysat model_ctl ctl (used_after_list, current_binding2) 
+                in
+
 		Flag_ctl.loop_in_src_code := old_loop_in_src_code;
 		match satres with
 		| Left (trans_info2, used_after_env) ->
-                    let trans_info = 
-                      Ctlcocci_integration.satbis_to_trans_info trans_info2
-                    in
+                    let trans_info = CCI.satbis_to_trans_info trans_info2 in
                     if !Flag.show_transinfo then begin
                       print_xxxxxxxxxxxxxxxxx();
                       pr2 "transformation info returned:";
@@ -305,8 +301,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                      *)
                     _current_bindings := 
                       Common.insert_set 
-                        (Ctlcocci_integration.metavars_binding2_to_binding
-                           used_after_env)
+                        (CCI.metavars_binding2_to_binding used_after_env)
                         !_current_bindings;
 
                     (* modify also the proto. *)
@@ -338,11 +333,91 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) (* end 3: iter function *)
-        +> Unparse_c.pp_program "/tmp/input.c";
+        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
       command2("cp /tmp/output.c /tmp/input.c");    
 
       ) (* end 2: iter bindings *)
+   end
+   else begin
+     (* todo: use current_binding
+      * todo: merge with the case when List.length = 1
+      *) 
+     (* (binding *  (funcname * transformed) list) list *)
+     let _current_bindings_multictl = ref [(Ast_c.emptyMetavarsBinding,[])] in
+     let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+     
+     let _compteur1 = ref 0 in 
+     (* iter ctl_toplevel 1 bis *)
+     ctl_toplevel_list +> List.iter (fun ctl -> 
+       let lastround_bindings_multi = !_current_bindings_multictl in
+       _current_bindings_multictl := [];
+       incr _compteur1;
+       pr2 ("CTL part:" ^ i_to_s !_compteur1);
+       let _compteur2 = ref 0 in 
+       (* iter binding and already *)
+       lastround_bindings_multi +> List.iter (fun (binding, already) -> 
+
+         incr _compteur2;
+         pr2 ("binding part:" ^ i_to_s !_compteur2);
+
+         (* iter program *)
+         cprogram +> List.iter (fun (e, (filename, pos, s, il)) -> 
+           match e with
+           | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+               if not (List.mem funcs (Common.keys already))
+               then begin
+                 let flow = Ast_to_flow.ast_to_control_flow def in
+                 let fixed_flow = CCI.fix_flow_ctl flow in
+                 let current_binding = binding in
+                 let current_binding2 = CCI.metavars_binding_to_binding2 current_binding in
+                 let model_ctl  = CCI.model_for_ctl flow current_binding in
+		 let satres = CCI.mysat model_ctl ctl (used_after_list, current_binding2) in
+		 match satres with
+		 | Left (trans_info2, used_after_env) ->
+                     let trans_info = CCI.satbis_to_trans_info trans_info2 in
+                     if !Flag.show_transinfo then begin
+                       pr2 ("FOUND STUFF: in " ^ funcs);
+                       Pretty_print_engine.pp_transformation_info trans_info;
+                       Format.print_newline();
+                     end;
+                     let flow' = Transformation.transform trans_info flow in
+                     let def' = Flow_to_ast.control_flow_to_ast flow' in
+                     
+
+                     let newbinding = 
+                       (CCI.metavars_binding2_to_binding used_after_env)
+                     in
+
+                     push2 (newbinding, (funcs, def')::already)
+                       _current_bindings_multictl;
+                 | Right x -> 
+                     pr2 ("Unable to find a value for " ^ x);
+               end
+                 
+           | x -> 
+               ()
+          )
+         )
+       );
+     (* assert no conflict. can concern different function ? *)
+     assert (List.length !_current_bindings_multictl = 1);
+     let (binding, list_func) = List.hd !_current_bindings_multictl in
+     cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
+       match e with
+       | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+           if List.mem funcs (Common.keys list_func)
+           then (Ast_c.Definition (List.assoc funcs list_func), 
+                 Unparse_c.PPnormal)
+           else (Ast_c.Definition def, Unparse_c.PPviatok il) 
+             
+       | x -> (x, Unparse_c.PPviatok il)
+       )
+        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
+      command2("cp /tmp/output.c /tmp/input.c");    
+     end
+
   ); (* end 1: iter ctl *)
+
 
 
   !_hack_funheader +>
@@ -372,10 +447,11 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) 
-        +> Unparse_c.pp_program "/tmp/input.c";
+        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
       command2("cp /tmp/output.c /tmp/input.c");    
    );
 
   (* may need --strip-trailing-cr under windows *)
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
+
   with NotWorthTrying -> command2("cp " ^ cfile ^ " /tmp/output.c");    
