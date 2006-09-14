@@ -1,24 +1,24 @@
-int one() {
+int f1() {
 }
 
-int two() {
+int f2() {
 }
 
-int three() {
+int f3() {
   bar(7);
 }
 
-int four() {
+int f4() {
   foo(12);
 }
 
-int five() {
+int f5() {
   bar(12);
 }
 
-int six() {
-  one();
-  two();
-  three();
+int main() {
+  f1();
+  f2();
+  f3();
 }
 
