@@ -1,0 +1,2679 @@
+commit aa78091f0f2860df00a4ccc5d4609afd9d831dd0
+Author: Andrew Morton <akpm@zip.com.au>
+Date:   Mon Apr 29 23:52:37 2002 -0700
+
+    [PATCH] cleanup page flags
+    
+    page->flags cleanup.
+    
+    Moves the definitions of the page->flags bits and all the PageFoo
+    macros into linux/page-flags.h.  That file is currently included from
+    mm.h, but the stage is set to remove that and include page-flags.h
+    direct in all .c files which require that.  (120 of them).
+    
+    The patch also makes all the page flag macros and functions consistent:
+    
+    For PG_foo, the following functions are defined:
+    
+    	SetPageFoo
+    	ClearPageFoo
+    	TestSetPageFoo
+    	TestClearPageFoo
+    	PageFoo
+    
+    and that's it.
+    
+    - Page_Uptodate is renamed to PageUptodate
+    
+    - LockPage is removed.  All users updated to use SetPageLocked
+    
+    - UnlockPage is removed.  All callers updated to use unlock_page().
+      it's a real function - there's no need to hide that fact.
+    
+    - PageTestandClearReferenced renamed to TestClearPageReferenced
+    
+    - PageSetSlab renamed to SetPageSlab
+    
+    - __SetPageReserved is removed.  It's an infinitesimally small
+       microoptimisation, and is inconsistent.
+    
+    - TryLockPage is renamed to TestSetPageLocked
+    
+    - PageSwapCache() is renamed to page_swap_cache(), so it doesn't
+      pretend to be a page->flags bit test.
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index d312758..907f184 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -217,14 +217,14 @@ static int lo_send(struct loop_device *l
+ 		offset = 0;
+ 		index++;
+ 		pos += size;
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
+ 	up(&mapping->host->i_sem);
+ 	return 0;
+ 
+ unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ fail:
+ 	up(&mapping->host->i_sem);
+diff --git a/drivers/block/rd.c b/drivers/block/rd.c
+index 3310efd..f3255de 100644
+--- a/drivers/block/rd.c
++++ b/drivers/block/rd.c
+@@ -106,19 +106,19 @@ int rd_blocksize = BLOCK_SIZE;			/* bloc
+  */
+ static int ramdisk_readpage(struct file *file, struct page * page)
+ {
+-	if (!Page_Uptodate(page)) {
++	if (!PageUptodate(page)) {
+ 		memset(kmap(page), 0, PAGE_CACHE_SIZE);
+ 		kunmap(page);
+ 		flush_dcache_page(page);
+ 		SetPageUptodate(page);
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ }
+ 
+ static int ramdisk_prepare_write(struct file *file, struct page *page, unsigned offset, unsigned to)
+ {
+-	if (!Page_Uptodate(page)) {
++	if (!PageUptodate(page)) {
+ 		void *addr = page_address(page);
+ 		memset(addr, 0, PAGE_CACHE_SIZE);
+ 		flush_dcache_page(page);
+@@ -173,7 +173,7 @@ static int rd_blkdev_pagecache_IO(int rw
+ 				goto out;
+ 			err = 0;
+ 
+-			if (!Page_Uptodate(page)) {
++			if (!PageUptodate(page)) {
+ 				memset(kmap(page), 0, PAGE_CACHE_SIZE);
+ 				kunmap(page);
+ 				SetPageUptodate(page);
+@@ -206,7 +206,7 @@ static int rd_blkdev_pagecache_IO(int rw
+ 			SetPageDirty(page);
+ 		}
+ 		if (unlock)
+-			UnlockPage(page);
++			unlock_page(page);
+ 		__free_page(page);
+ 	} while (size);
+ 
+diff --git a/drivers/char/agp/agpgart_be.c b/drivers/char/agp/agpgart_be.c
+index 424f094..bb93e5a 100644
+--- a/drivers/char/agp/agpgart_be.c
++++ b/drivers/char/agp/agpgart_be.c
+@@ -785,7 +785,7 @@ static void agp_generic_destroy_page(uns
+ 
+ 	page = virt_to_page(pt);
+ 	put_page(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	free_page((unsigned long) pt);
+ 	atomic_dec(&agp_bridge.current_memory_agp);
+ }
+@@ -2780,7 +2780,7 @@ static void ali_destroy_page(unsigned lo
+ 
+ 	page = virt_to_page(pt);
+ 	put_page(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	free_page((unsigned long) pt);
+ 	atomic_dec(&agp_bridge.current_memory_agp);
+ }
+diff --git a/drivers/char/drm/i810_dma.c b/drivers/char/drm/i810_dma.c
+index 86a9733..968cf38 100644
+--- a/drivers/char/drm/i810_dma.c
++++ b/drivers/char/drm/i810_dma.c
+@@ -287,7 +287,7 @@ static unsigned long i810_alloc_page(drm
+ 		return 0;
+ 
+ 	get_page(virt_to_page(address));
+-	LockPage(virt_to_page(address));
++	SetPageLocked(virt_to_page(address));
+ 
+ 	return address;
+ }
+@@ -297,7 +297,7 @@ static void i810_free_page(drm_device_t 
+ 	if (page) {
+ 		struct page *p = virt_to_page(page);
+ 		put_page(p);
+-		UnlockPage(p);
++		unlock_page(p);
+ 		free_page(page);
+ 	}
+ }
+diff --git a/drivers/md/lvm-snap.c b/drivers/md/lvm-snap.c
+index f0e6257..c90947f 100644
+--- a/drivers/md/lvm-snap.c
++++ b/drivers/md/lvm-snap.c
+@@ -26,7 +26,7 @@
+  *
+  *    05/07/2000 - implemented persistent snapshot support
+  *    23/11/2000 - used cpu_to_le64 rather than my own macro
+- *    25/01/2001 - Put LockPage back in
++ *    25/01/2001 - Put SetPageLocked back in
+  *    01/02/2001 - A dropped snapshot is now set as inactive
+  *    12/03/2001 - lvm_pv_get_number changes:
+  *                 o made it static
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 1580ecd..7099f6c 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -489,7 +489,7 @@ static int read_disk_sb(mdk_rdev_t * rde
+ 	if (IS_ERR(page))
+ 		goto out;
+ 	wait_on_page(page);
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto fail;
+ 	if (PageError(page))
+ 		goto fail;
+@@ -948,14 +948,14 @@ static int write_disk_sb(mdk_rdev_t * rd
+ 						offs + MD_SB_BYTES);
+ 	if (error)
+ 		goto unlock;
+-	UnlockPage(page);
++	unlock_page(page);
+ 	wait_on_page(page);
+ 	page_cache_release(page);
+ 	fsync_bdev(bdev);
+ skip:
+ 	return 0;
+ unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ fail:
+ 	printk("md: write_disk_sb failed for device %s\n", partition_name(dev));
+diff --git a/drivers/mtd/devices/blkmtd.c b/drivers/mtd/devices/blkmtd.c
+index f1535be..4fcf437 100644
+--- a/drivers/mtd/devices/blkmtd.c
++++ b/drivers/mtd/devices/blkmtd.c
+@@ -175,9 +175,9 @@ static int blkmtd_readpage(mtd_raw_dev_d
+   DEBUG(2, "blkmtd: readpage called, dev = `%s' page = %p index = %ld\n",
+ 	bdevname(rawdevice->binding), page, page->index);
+ 
+-  if(Page_Uptodate(page)) {
++  if(PageUptodate(page)) {
+     DEBUG(2, "blkmtd: readpage page %ld is already upto date\n", page->index);
+-    UnlockPage(page);
++    unlock_page(page);
+     return 0;
+   }
+ 
+@@ -203,7 +203,7 @@ static int blkmtd_readpage(mtd_raw_dev_d
+ 	}
+ 	SetPageUptodate(page);
+ 	flush_dcache_page(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	spin_unlock(&mbd_writeq_lock);
+ 	return 0;
+       }
+@@ -281,7 +281,7 @@ #endif
+     err = 0;
+   }
+   flush_dcache_page(page);
+-  UnlockPage(page);
++  unlock_page(page);
+   DEBUG(2, "blkmtd: readpage: finished, err = %d\n", err);
+   return 0;
+ }
+@@ -416,7 +416,7 @@ #endif
+       write_queue_tail %= write_queue_sz;
+       if(!item->iserase) {
+ 	for(i = 0 ; i < item->pagecnt; i++) {
+-	  UnlockPage(item->pages[i]);
++	  unlock_page(item->pages[i]);
+ 	  __free_pages(item->pages[i], 0);
+ 	}
+ 	kfree(item->pages);
+@@ -470,7 +470,7 @@ static int queue_page_write(mtd_raw_dev_
+       outpage = alloc_pages(GFP_KERNEL, 0);
+       if(!outpage) {
+ 	while(i--) {
+-	  UnlockPage(new_pages[i]);
++	  unlock_page(new_pages[i]);
+ 	  __free_pages(new_pages[i], 0);
+ 	}
+ 	kfree(new_pages);
+@@ -607,7 +607,7 @@ static int blkmtd_erase(struct mtd_info 
+     if(!err) {
+       while(pagecnt--) {
+ 	SetPageUptodate(pages[pagecnt]);
+-	UnlockPage(pages[pagecnt]);
++	unlock_page(pages[pagecnt]);
+ 	page_cache_release(pages[pagecnt]);
+ 	flush_dcache_page(pages[pagecnt]);
+       }
+@@ -663,7 +663,7 @@ static int blkmtd_read(struct mtd_info *
+       return PTR_ERR(page);
+     }
+     wait_on_page(page);
+-    if(!Page_Uptodate(page)) {
++    if(!PageUptodate(page)) {
+       /* error reading page */
+       printk("blkmtd: read: page not uptodate\n");
+       page_cache_release(page);
+@@ -806,7 +806,7 @@ static int blkmtd_write(struct mtd_info 
+       }
+       memcpy(page_address(page), buf, PAGE_SIZE);
+       pages[pagecnt++] = page;
+-      UnlockPage(page);
++      unlock_page(page);
+       SetPageUptodate(page);
+       pagenr++;
+       pagesc--;
+@@ -962,7 +962,7 @@ #endif
+     kfree(write_queue);
+ 
+   if(erase_page) {
+-    UnlockPage(erase_page);
++    unlock_page(erase_page);
+     __free_pages(erase_page, 0);
+   }
+   printk("blkmtd: unloaded for %s\n", device);
+diff --git a/fs/affs/file.c b/fs/affs/file.c
+index 465d34c..31bea7c 100644
+--- a/fs/affs/file.c
++++ b/fs/affs/file.c
+@@ -618,7 +618,7 @@ affs_readpage_ofs(struct file *file, str
+ 	err = affs_do_readpage_ofs(file, page, 0, to);
+ 	if (!err)
+ 		SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+@@ -630,7 +630,7 @@ static int affs_prepare_write_ofs(struct
+ 	int err = 0;
+ 
+ 	pr_debug("AFFS: prepare_write(%u, %ld, %d, %d)\n", (u32)inode->i_ino, page->index, from, to);
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		return 0;
+ 
+ 	size = inode->i_size;
+@@ -830,7 +830,7 @@ affs_truncate(struct inode *inode)
+ 		res = mapping->a_ops->prepare_write(NULL, page, size, size);
+ 		if (!res)
+ 			res = mapping->a_ops->commit_write(NULL, page, size, size);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		mark_inode_dirty(inode);
+ 		unlock_kernel();
+diff --git a/fs/affs/symlink.c b/fs/affs/symlink.c
+index b4c2e20..29f42c0 100644
+--- a/fs/affs/symlink.c
++++ b/fs/affs/symlink.c
+@@ -67,12 +67,12 @@ static int affs_symlink_readpage(struct 
+ 	unlock_kernel();
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ fail:
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 942a8b8..fd43932 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -552,7 +552,7 @@ static void end_buffer_io_async(struct b
+ 	 */
+ 	if (page_uptodate && !PageError(page))
+ 		SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return;
+ 
+ still_busy:
+@@ -804,7 +804,7 @@ init_page_buffers(struct page *page, str
+ 	unsigned int b_state;
+ 
+ 	b_state = 1 << BH_Mapped;
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		b_state |= 1 << BH_Uptodate;
+ 
+ 	do {
+@@ -867,7 +867,7 @@ grow_dev_page(struct block_device *bdev,
+ 
+ failed:
+ 	buffer_error();
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return NULL;
+ }
+@@ -906,7 +906,7 @@ grow_buffers(struct block_device *bdev, 
+ 	page = grow_dev_page(bdev, block, index, size);
+ 	if (!page)
+ 		return 0;
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return 1;
+ }
+@@ -1253,7 +1253,7 @@ static int __block_write_full_page(struc
+ 	if (!page_has_buffers(page)) {
+ 		if (S_ISBLK(inode->i_mode))
+ 			buffer_error();
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			buffer_error();
+ 		create_empty_buffers(page, 1 << inode->i_blkbits,
+ 					(1 << BH_Dirty)|(1 << BH_Uptodate));
+@@ -1346,7 +1346,7 @@ done:
+ 		} while (bh != head);
+ 		if (uptodate)
+ 			SetPageUptodate(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 	}
+ 	return err;
+ recover:
+@@ -1411,7 +1411,7 @@ static int __block_prepare_write(struct 
+ 	    block++, block_start=block_end, bh = bh->b_this_page) {
+ 		block_end = block_start + blocksize;
+ 		if (block_end <= from || block_start >= to) {
+-			if (Page_Uptodate(page))
++			if (PageUptodate(page))
+ 				mark_buffer_uptodate(bh, 1);
+ 			continue;
+ 		}
+@@ -1423,7 +1423,7 @@ static int __block_prepare_write(struct 
+ 			if (buffer_new(bh)) {
+ 				clear_bit(BH_New, &bh->b_state);
+ 				unmap_underlying_metadata(bh);
+-				if (Page_Uptodate(page)) {
++				if (PageUptodate(page)) {
+ 					if (!buffer_mapped(bh))
+ 						buffer_error();
+ 					mark_buffer_uptodate(bh, 1);
+@@ -1439,7 +1439,7 @@ static int __block_prepare_write(struct 
+ 				continue;
+ 			}
+ 		}
+-		if (Page_Uptodate(page)) {
++		if (PageUptodate(page)) {
+ 			mark_buffer_uptodate(bh, 1);
+ 			continue; 
+ 		}
+@@ -1541,7 +1541,7 @@ int block_read_full_page(struct page *pa
+ 
+ 	if (!PageLocked(page))
+ 		PAGE_BUG(page);
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		buffer_error();
+ 	blocksize = 1 << inode->i_blkbits;
+ 	if (!page_has_buffers(page))
+@@ -1588,7 +1588,7 @@ int block_read_full_page(struct page *pa
+ 		 */
+ 		if (!PageError(page))
+ 			SetPageUptodate(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		return 0;
+ 	}
+ 
+@@ -1656,7 +1656,7 @@ int generic_cont_expand(struct inode *in
+ 	if (!err) {
+ 		err = mapping->a_ops->commit_write(NULL, page, offset, offset);
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	if (err > 0)
+ 		err = 0;
+@@ -1688,7 +1688,7 @@ int cont_prepare_write(struct page *page
+ 			goto out;
+ 		/* we might sleep */
+ 		if (*bytes>>PAGE_CACHE_SHIFT != pgpos) {
+-			UnlockPage(new_page);
++			unlock_page(new_page);
+ 			page_cache_release(new_page);
+ 			continue;
+ 		}
+@@ -1707,7 +1707,7 @@ int cont_prepare_write(struct page *page
+ 		__block_commit_write(inode, new_page,
+ 				zerofrom, PAGE_CACHE_SIZE);
+ 		kunmap(new_page);
+-		UnlockPage(new_page);
++		unlock_page(new_page);
+ 		page_cache_release(new_page);
+ 	}
+ 
+@@ -1746,7 +1746,7 @@ out1:
+ out_unmap:
+ 	ClearPageUptodate(new_page);
+ 	kunmap(new_page);
+-	UnlockPage(new_page);
++	unlock_page(new_page);
+ 	page_cache_release(new_page);
+ out:
+ 	return status;
+@@ -1836,7 +1836,7 @@ int block_truncate_page(struct address_s
+ 	}
+ 
+ 	/* Ok, it's mapped. Make sure it's up-to-date */
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		mark_buffer_uptodate(bh, 1);
+ 
+ 	if (!buffer_uptodate(bh)) {
+@@ -1856,7 +1856,7 @@ int block_truncate_page(struct address_s
+ 	err = 0;
+ 
+ unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ out:
+ 	return err;
+@@ -1879,7 +1879,7 @@ int block_write_full_page(struct page *p
+ 	/* Is the page fully outside i_size? (truncate in progress) */
+ 	offset = inode->i_size & (PAGE_CACHE_SIZE-1);
+ 	if (page->index >= end_index+1 || !offset) {
+-		UnlockPage(page);
++		unlock_page(page);
+ 		return -EIO;
+ 	}
+ 
+@@ -2119,7 +2119,7 @@ int block_symlink(struct inode *inode, c
+ 	mark_inode_dirty(inode);
+ 	return 0;
+ fail_map:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ fail:
+ 	return err;
+@@ -2131,7 +2131,7 @@ fail:
+ static void check_ttfb_buffer(struct page *page, struct buffer_head *bh)
+ {
+ 	if (!buffer_uptodate(bh)) {
+-		if (Page_Uptodate(page) && page->mapping
++		if (PageUptodate(page) && page->mapping
+ 			&& buffer_mapped(bh)	/* discard_buffer */
+ 			&& S_ISBLK(page->mapping->host->i_mode))
+ 		{
+@@ -2190,7 +2190,7 @@ static /*inline*/ int drop_buffers(struc
+ 		bh = bh->b_this_page;
+ 	} while (bh != head);
+ 
+-	if (!was_uptodate && Page_Uptodate(page))
++	if (!was_uptodate && PageUptodate(page))
+ 		buffer_error();
+ 
+ 	do {
+diff --git a/fs/coda/symlink.c b/fs/coda/symlink.c
+index 15dc80a..eed35dd 100644
+--- a/fs/coda/symlink.c
++++ b/fs/coda/symlink.c
+@@ -40,13 +40,13 @@ static int coda_symlink_filler(struct fi
+ 		goto fail;
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ 
+ fail:
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return error;
+ }
+ 
+diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
+index e896ada..b363263 100644
+--- a/fs/cramfs/inode.c
++++ b/fs/cramfs/inode.c
+@@ -425,7 +425,7 @@ static int cramfs_readpage(struct file *
+ 	kunmap(page);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ }
+ 
+diff --git a/fs/efs/symlink.c b/fs/efs/symlink.c
+index 5dd10f5..d775c01 100644
+--- a/fs/efs/symlink.c
++++ b/fs/efs/symlink.c
+@@ -42,13 +42,13 @@ static int efs_symlink_readpage(struct f
+ 	unlock_kernel();
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ fail:
+ 	unlock_kernel();
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 247cdca..a07034d 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -166,7 +166,7 @@ static struct page * ext2_get_page(struc
+ 	if (!IS_ERR(page)) {
+ 		wait_on_page(page);
+ 		kmap(page);
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			goto fail;
+ 		if (!PageChecked(page))
+ 			ext2_check_page(page);
+@@ -417,7 +417,7 @@ void ext2_set_link(struct inode *dir, st
+ 	de->inode = cpu_to_le32(inode->i_ino);
+ 	ext2_set_de_type (de, inode);
+ 	err = ext2_commit_chunk(page, from, to);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	ext2_put_page(page);
+ 	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
+ 	mark_inode_dirty(dir);
+@@ -512,7 +512,7 @@ got_it:
+ 	mark_inode_dirty(dir);
+ 	/* OFFSET_CACHE */
+ out_unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	ext2_put_page(page);
+ out:
+ 	return err;
+@@ -553,7 +553,7 @@ int ext2_delete_entry (struct ext2_dir_e
+ 		pde->rec_len = cpu_to_le16(to-from);
+ 	dir->inode = 0;
+ 	err = ext2_commit_chunk(page, from, to);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	inode->i_ctime = inode->i_mtime = CURRENT_TIME;
+ 	mark_inode_dirty(inode);
+ out:
+@@ -597,7 +597,7 @@ int ext2_make_empty(struct inode *inode,
+ 
+ 	err = ext2_commit_chunk(page, 0, chunk_size);
+ fail:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return err;
+ }
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 3240e12..309d42c 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -1291,7 +1291,7 @@ static int ext3_writepage(struct page *p
+ 	/* bget() all the buffers */
+ 	if (order_data) {
+ 		if (!page_has_buffers(page)) {
+-			if (!Page_Uptodate(page))
++			if (!PageUptodate(page))
+ 				buffer_error();
+ 			create_empty_buffers(page,
+ 				inode->i_sb->s_blocksize,
+@@ -1332,7 +1332,7 @@ out_fail:
+ 	
+ 	unlock_kernel();
+ 	SetPageDirty(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return ret;
+ }
+ 
+@@ -1422,7 +1422,7 @@ static int ext3_block_truncate_page(hand
+ 	}
+ 
+ 	/* Ok, it's mapped. Make sure it's up-to-date */
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		set_bit(BH_Uptodate, &bh->b_state);
+ 
+ 	if (!buffer_uptodate(bh)) {
+@@ -1457,7 +1457,7 @@ static int ext3_block_truncate_page(hand
+ 	}
+ 
+ unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ out:
+ 	return err;
+diff --git a/fs/freevxfs/vxfs_immed.c b/fs/freevxfs/vxfs_immed.c
+index a13e260..c076c9c 100644
+--- a/fs/freevxfs/vxfs_immed.c
++++ b/fs/freevxfs/vxfs_immed.c
+@@ -132,7 +132,7 @@ vxfs_immed_readpage(struct file *fp, str
+ 	
+ 	flush_dcache_page(pp);
+ 	SetPageUptodate(pp);
+-        UnlockPage(pp);
++        unlock_page(pp);
+ 
+ 	return 0;
+ }
+diff --git a/fs/freevxfs/vxfs_subr.c b/fs/freevxfs/vxfs_subr.c
+index 0b1a480..ebd26eb 100644
+--- a/fs/freevxfs/vxfs_subr.c
++++ b/fs/freevxfs/vxfs_subr.c
+@@ -73,7 +73,7 @@ vxfs_get_page(struct address_space *mapp
+ 	if (!IS_ERR(pp)) {
+ 		wait_on_page(pp);
+ 		kmap(pp);
+-		if (!Page_Uptodate(pp))
++		if (!PageUptodate(pp))
+ 			goto fail;
+ 		/** if (!PageChecked(pp)) **/
+ 			/** vxfs_check_page(pp); **/
+diff --git a/fs/hpfs/namei.c b/fs/hpfs/namei.c
+index cacd39c..85ddc8a 100644
+--- a/fs/hpfs/namei.c
++++ b/fs/hpfs/namei.c
+@@ -448,14 +448,14 @@ int hpfs_symlink_readpage(struct file *f
+ 	unlock_kernel();
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ 
+ fail:
+ 	unlock_kernel();
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 	
+diff --git a/fs/isofs/compress.c b/fs/isofs/compress.c
+index 8a0e9b0..4ce2fb2 100644
+--- a/fs/isofs/compress.c
++++ b/fs/isofs/compress.c
+@@ -164,7 +164,7 @@ static int zisofs_readpage(struct file *
+ 				flush_dcache_page(page);
+ 				SetPageUptodate(page);
+ 				kunmap(page);
+-				UnlockPage(page);
++				unlock_page(page);
+ 				if ( fpage == xpage )
+ 					err = 0; /* The critical page */
+ 				else
+@@ -282,7 +282,7 @@ static int zisofs_readpage(struct file *
+ 					flush_dcache_page(page);
+ 					SetPageUptodate(page);
+ 					kunmap(page);
+-					UnlockPage(page);
++					unlock_page(page);
+ 					if ( fpage == xpage )
+ 						err = 0; /* The critical page */
+ 					else
+@@ -313,7 +313,7 @@ eio:
+ 			if ( fpage == xpage )
+ 				SetPageError(page);
+ 			kunmap(page);
+-			UnlockPage(page);
++			unlock_page(page);
+ 			if ( fpage != xpage )
+ 				page_cache_release(page);
+ 		}
+diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
+index 17b2bb5..8513cf1 100644
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -566,7 +566,7 @@ static int rock_ridge_symlink_readpage(s
+ 	unlock_kernel();
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ 
+ 	/* error exit from macro */
+@@ -584,7 +584,7 @@ static int rock_ridge_symlink_readpage(s
+ 	unlock_kernel();
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return -EIO;
+ }
+ 
+diff --git a/fs/jffs/inode-v23.c b/fs/jffs/inode-v23.c
+index 4bfad31..05c8a54 100644
+--- a/fs/jffs/inode-v23.c
++++ b/fs/jffs/inode-v23.c
+@@ -739,7 +739,7 @@ jffs_do_readpage_nolock(struct file *fil
+ 		  (f->name ? f->name : ""), (long)page->index));
+ 
+ 	get_page(page);
+-	/* Don't LockPage(page), should be locked already */
++	/* Don't SetPageLocked(page), should be locked already */
+ 	buf = page_address(page);
+ 	ClearPageUptodate(page);
+ 	ClearPageError(page);
+@@ -789,7 +789,7 @@ jffs_do_readpage_nolock(struct file *fil
+ static int jffs_readpage(struct file *file, struct page *page)
+ {
+ 	int ret = jffs_do_readpage_nolock(file, page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return ret;
+ }
+ 
+@@ -1519,7 +1519,7 @@ jffs_prepare_write(struct file *filp, st
+ 	/* FIXME: we should detect some error conditions here */
+ 
+ 	/* Bugger that. We should make sure the page is uptodate */
+-	if (!Page_Uptodate(page) && (from || to < PAGE_CACHE_SIZE))
++	if (!PageUptodate(page) && (from || to < PAGE_CACHE_SIZE))
+ 		return jffs_do_readpage_nolock(filp, page);
+ 
+ 	return 0;
+diff --git a/fs/jffs2/file.c b/fs/jffs2/file.c
+index 9767703..96064cd 100644
+--- a/fs/jffs2/file.c
++++ b/fs/jffs2/file.c
+@@ -281,7 +281,7 @@ int jffs2_do_readpage_nolock (struct ino
+ int jffs2_do_readpage_unlock(struct inode *inode, struct page *pg)
+ {
+ 	int ret = jffs2_do_readpage_nolock(inode, pg);
+-	UnlockPage(pg);
++	unlock_page(pg);
+ 	return ret;
+ }
+ 
+@@ -371,7 +371,7 @@ int jffs2_prepare_write (struct file *fi
+ 	
+ 
+ 	/* Read in the page if it wasn't already present */
+-	if (!Page_Uptodate(pg) && (start || end < PAGE_SIZE))
++	if (!PageUptodate(pg) && (start || end < PAGE_SIZE))
+ 		ret = jffs2_do_readpage_nolock(inode, pg);
+ 	D1(printk(KERN_DEBUG "end prepare_write()\n"));
+ 	up(&f->sem);
+diff --git a/fs/jfs/jfs_metapage.c b/fs/jfs/jfs_metapage.c
+index 31ed1c2..b0f57ed 100644
+--- a/fs/jfs/jfs_metapage.c
++++ b/fs/jfs/jfs_metapage.c
+@@ -494,7 +494,7 @@ static inline void sync_metapage(metapag
+ 		waitfor_one_page(page);
+ 	}
+ 
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ }
+ 
+@@ -527,7 +527,7 @@ void release_metapage(metapage_t * mp)
+ 			mp->data = 0;
+ 			if (test_bit(META_dirty, &mp->flag))
+ 				__write_metapage(mp);
+-			UnlockPage(mp->page);
++			unlock_page(mp->page);
+ 			if (test_bit(META_sync, &mp->flag)) {
+ 				sync_metapage(mp);
+ 				clear_bit(META_sync, &mp->flag);
+@@ -536,7 +536,7 @@ void release_metapage(metapage_t * mp)
+ 			if (test_bit(META_discard, &mp->flag)) {
+ 				lock_page(mp->page);
+ 				block_flushpage(mp->page, 0);
+-				UnlockPage(mp->page);
++				unlock_page(mp->page);
+ 			}
+ 
+ 			page_cache_release(mp->page);
+@@ -593,7 +593,7 @@ void invalidate_metapages(struct inode *
+ 			page = find_lock_page(mapping, lblock>>l2BlocksPerPage);
+ 			if (page) {
+ 				block_flushpage(page, 0);
+-				UnlockPage(page);
++				unlock_page(page);
+ 			}
+ 		}
+ 	}
+@@ -610,7 +610,7 @@ void invalidate_inode_metapages(struct i
+ 		clear_bit(META_dirty, &mp->flag);
+ 		set_bit(META_discard, &mp->flag);
+ 		kunmap(mp->page);
+-		UnlockPage(mp->page);
++		unlock_page(mp->page);
+ 		page_cache_release(mp->page);
+ 		INCREMENT(mpStat.pagefree);
+ 		mp->data = 0;
+diff --git a/fs/minix/dir.c b/fs/minix/dir.c
+index a89969d..57b286d 100644
+--- a/fs/minix/dir.c
++++ b/fs/minix/dir.c
+@@ -66,7 +66,7 @@ static struct page * dir_get_page(struct
+ 	if (!IS_ERR(page)) {
+ 		wait_on_page(page);
+ 		kmap(page);
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			goto fail;
+ 	}
+ 	return page;
+@@ -269,7 +269,7 @@ int minix_delete_entry(struct minix_dir_
+ 		de->inode = 0;
+ 		err = dir_commit_chunk(page, from, to);
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	dir_put_page(page);
+ 	inode->i_ctime = inode->i_mtime = CURRENT_TIME;
+ 	mark_inode_dirty(inode);
+@@ -303,7 +303,7 @@ int minix_make_empty(struct inode *inode
+ 
+ 	err = dir_commit_chunk(page, 0, 2 * sbi->s_dirsize);
+ fail:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return err;
+ }
+@@ -369,7 +369,7 @@ void minix_set_link(struct minix_dir_ent
+ 		de->inode = inode->i_ino;
+ 		err = dir_commit_chunk(page, from, to);
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	dir_put_page(page);
+ 	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
+ 	mark_inode_dirty(dir);
+diff --git a/fs/namei.c b/fs/namei.c
+index fe17892..111e110 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2098,7 +2098,7 @@ static char *page_getlink(struct dentry 
+ 	if (IS_ERR(page))
+ 		goto sync_fail;
+ 	wait_on_page(page);
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto async_fail;
+ 	*ppage = page;
+ 	return kmap(page);
+diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
+index feb133c..cfaade2 100644
+--- a/fs/ncpfs/dir.c
++++ b/fs/ncpfs/dir.c
+@@ -430,7 +430,7 @@ static int ncp_readdir(struct file *filp
+ 	ctl.cache = cache = kmap(page);
+ 	ctl.head  = cache->head;
+ 
+-	if (!Page_Uptodate(page) || !ctl.head.eof)
++	if (!PageUptodate(page) || !ctl.head.eof)
+ 		goto init_cache;
+ 
+ 	if (filp->f_pos == 2) {
+@@ -456,7 +456,7 @@ static int ncp_readdir(struct file *filp
+ 			if (!ctl.page)
+ 				goto invalid_cache;
+ 			ctl.cache = kmap(ctl.page);
+-			if (!Page_Uptodate(ctl.page))
++			if (!PageUptodate(ctl.page))
+ 				goto invalid_cache;
+ 		}
+ 		while (ctl.idx < NCP_DIRCACHE_SIZE) {
+@@ -481,7 +481,7 @@ static int ncp_readdir(struct file *filp
+ 		if (ctl.page) {
+ 			kunmap(ctl.page);
+ 			SetPageUptodate(ctl.page);
+-			UnlockPage(ctl.page);
++			unlock_page(ctl.page);
+ 			page_cache_release(ctl.page);
+ 			ctl.page = NULL;
+ 		}
+@@ -491,7 +491,7 @@ static int ncp_readdir(struct file *filp
+ invalid_cache:
+ 	if (ctl.page) {
+ 		kunmap(ctl.page);
+-		UnlockPage(ctl.page);
++		unlock_page(ctl.page);
+ 		page_cache_release(ctl.page);
+ 		ctl.page = NULL;
+ 	}
+@@ -523,13 +523,13 @@ finished:
+ 		cache->head = ctl.head;
+ 		kunmap(page);
+ 		SetPageUptodate(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
+ 	if (ctl.page) {
+ 		kunmap(ctl.page);
+ 		SetPageUptodate(ctl.page);
+-		UnlockPage(ctl.page);
++		unlock_page(ctl.page);
+ 		page_cache_release(ctl.page);
+ 	}
+ out:
+@@ -597,7 +597,7 @@ ncp_fill_cache(struct file *filp, void *
+ 		if (ctl.page) {
+ 			kunmap(ctl.page);
+ 			SetPageUptodate(ctl.page);
+-			UnlockPage(ctl.page);
++			unlock_page(ctl.page);
+ 			page_cache_release(ctl.page);
+ 		}
+ 		ctl.cache = NULL;
+diff --git a/fs/ncpfs/symlink.c b/fs/ncpfs/symlink.c
+index 044fe0f..fe3f9be 100644
+--- a/fs/ncpfs/symlink.c
++++ b/fs/ncpfs/symlink.c
+@@ -81,7 +81,7 @@ static int ncp_symlink_readpage(struct f
+ 		goto fail;
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ 
+ failEIO:
+@@ -90,7 +90,7 @@ failEIO:
+ fail:
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return error;
+ }
+ 
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 4ce6cee..0ead215 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -123,12 +123,12 @@ int nfs_readdir_filler(nfs_readdir_descr
+ 	 */
+ 	if (page->index == 0)
+ 		invalidate_inode_pages(inode);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+  error:
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	invalidate_inode_pages(inode);
+ 	desc->error = error;
+ 	return -EIO;
+@@ -202,7 +202,7 @@ int find_dirent_page(nfs_readdir_descrip
+ 		status = PTR_ERR(page);
+ 		goto out;
+ 	}
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto read_error;
+ 
+ 	/* NOTE: Someone else may have changed the READDIRPLUS flag */
+diff --git a/fs/nfs/read.c b/fs/nfs/read.c
+index f85bec8..54e7307 100644
+--- a/fs/nfs/read.c
++++ b/fs/nfs/read.c
+@@ -145,7 +145,7 @@ nfs_readpage_sync(struct file *file, str
+ 
+ io_error:
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return result;
+ }
+ 
+@@ -226,7 +226,7 @@ nfs_async_read_error(struct list_head *h
+ 		page = req->wb_page;
+ 		nfs_list_remove_request(req);
+ 		SetPageError(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		nfs_clear_request(req);
+ 		nfs_release_request(req);
+ 		nfs_unlock_request(req);
+@@ -430,7 +430,7 @@ nfs_readpage_result(struct rpc_task *tas
+ 			SetPageError(page);
+ 		flush_dcache_page(page);
+ 		kunmap(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 
+ 		dprintk("NFS: read (%s/%Ld %d@%Ld)\n",
+                         req->wb_inode->i_sb->s_id,
+@@ -483,7 +483,7 @@ out:
+ 	return error;
+ 
+ out_error:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	goto out;
+ }
+ 
+diff --git a/fs/nfs/symlink.c b/fs/nfs/symlink.c
+index 82203f1..2c6e1de 100644
+--- a/fs/nfs/symlink.c
++++ b/fs/nfs/symlink.c
+@@ -44,13 +44,13 @@ static int nfs_symlink_filler(struct ino
+ 		goto error;
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ 
+ error:
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return -EIO;
+ }
+ 
+@@ -64,7 +64,7 @@ static char *nfs_getlink(struct inode *i
+ 				(filler_t *)nfs_symlink_filler, inode);
+ 	if (IS_ERR(page))
+ 		goto read_failed;
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto getlink_read_error;
+ 	*ppage = page;
+ 	p = kmap(page);
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 8a61cea..6b667c2 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -272,7 +272,7 @@ do_it:
+ 	}
+ 	unlock_kernel();
+ out:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err; 
+ }
+ 
+diff --git a/fs/ntfs/aops.c b/fs/ntfs/aops.c
+index 339fbc0..d6b4416 100644
+--- a/fs/ntfs/aops.c
++++ b/fs/ntfs/aops.c
+@@ -89,7 +89,7 @@ static void end_buffer_read_file_async(s
+ 	spin_unlock_irqrestore(&page_uptodate_lock, flags);
+ 	if (!PageError(page))
+ 		SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return;
+ still_busy:
+ 	spin_unlock_irqrestore(&page_uptodate_lock, flags);
+@@ -227,7 +227,7 @@ handle_zblock:
+ 		SetPageUptodate(page);
+ 	else /* Signal synchronous i/o error. */
+ 		nr = -EIO;
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return nr;
+ }
+ 
+@@ -329,7 +329,7 @@ put_unm_unl_err_out:
+ unm_unl_err_out:
+ 	unmap_mft_record(READ, ni);
+ unl_err_out:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+@@ -388,7 +388,7 @@ static void end_buffer_read_mftbmp_async
+ 	spin_unlock_irqrestore(&page_uptodate_lock, flags);
+ 	if (!PageError(page))
+ 		SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return;
+ still_busy:
+ 	spin_unlock_irqrestore(&page_uptodate_lock, flags);
+@@ -507,7 +507,7 @@ handle_zblock:
+ 		SetPageUptodate(page);
+ 	else /* Signal synchronous i/o error. */
+ 		nr = -EIO;
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return nr;
+ }
+ 
+@@ -613,7 +613,7 @@ static void end_buffer_read_mst_async(st
+ 			SetPageError(page);
+ 		}
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return;
+ still_busy:
+ 	spin_unlock_irqrestore(&page_uptodate_lock, flags);
+@@ -761,7 +761,7 @@ handle_zblock:
+ 		SetPageUptodate(page);
+ 	else /* Signal synchronous i/o error. */
+ 		nr = -EIO;
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return nr;
+ }
+ 
+diff --git a/fs/ntfs/compress.c b/fs/ntfs/compress.c
+index 2a98ac3..b2fd831 100644
+--- a/fs/ntfs/compress.c
++++ b/fs/ntfs/compress.c
+@@ -198,7 +198,7 @@ return_error:
+ 			flush_dcache_page(dp);
+ 			kunmap(dp);
+ 			SetPageUptodate(dp);
+-			UnlockPage(dp);
++			unlock_page(dp);
+ 			if (di == xpage)
+ 				*xpage_done = 1;
+ 			else
+@@ -491,7 +491,7 @@ int ntfs_file_read_compressed_block(stru
+ 		kfree(bhs);
+ 		kfree(pages);
+ 		SetPageError(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		ntfs_error(vol->sb, "Failed to allocate internal buffers.");
+ 		return -ENOMEM;
+ 	}
+@@ -521,13 +521,13 @@ int ntfs_file_read_compressed_block(stru
+ 			 * in and/or dirty or we would be losing data or at
+ 			 * least wasting our time.
+ 			 */
+-			if (!PageDirty(page) && (!Page_Uptodate(page) ||
++			if (!PageDirty(page) && (!PageUptodate(page) ||
+ 					PageError(page))) {
+ 				ClearPageError(page);
+ 				kmap(page);
+ 				continue;
+ 			}
+-			UnlockPage(page);
++			unlock_page(page);
+ 			page_cache_release(page);
+ 			pages[i] = NULL;
+ 		}
+@@ -668,7 +668,7 @@ retry_remap:
+ 				flush_dcache_page(page);
+ 				kunmap(page);
+ 				SetPageUptodate(page);
+-				UnlockPage(page);
++				unlock_page(page);
+ 				if (cur_page == xpage)
+ 					xpage_done = 1;
+ 				else
+@@ -738,7 +738,7 @@ retry_remap:
+ 				flush_dcache_page(page);
+ 				kunmap(page);
+ 				SetPageUptodate(page);
+-				UnlockPage(page);
++				unlock_page(page);
+ 				if (cur2_page == xpage)
+ 					xpage_done = 1;
+ 				else
+@@ -775,7 +775,7 @@ retry_remap:
+ 						SetPageError(page);
+ 					flush_dcache_page(page);
+ 					kunmap(page);
+-					UnlockPage(page);
++					unlock_page(page);
+ 					if (prev_cur_page != xpage)
+ 						page_cache_release(page);
+ 					pages[prev_cur_page] = NULL;
+@@ -806,7 +806,7 @@ retry_remap:
+ 				SetPageError(page);
+ 			flush_dcache_page(page);
+ 			kunmap(page);
+-			UnlockPage(page);
++			unlock_page(page);
+ 			if (cur_page != xpage)
+ 				page_cache_release(page);
+ 			pages[cur_page] = NULL;
+@@ -853,7 +853,7 @@ err_out:
+ 				SetPageError(page);
+ 			flush_dcache_page(page);
+ 			kunmap(page);
+-			UnlockPage(page);
++			unlock_page(page);
+ 			if (i != xpage)
+ 				page_cache_release(page);
+ 		}
+diff --git a/fs/ntfs/ntfs.h b/fs/ntfs/ntfs.h
+index fff7d83..de5a049 100644
+--- a/fs/ntfs/ntfs.h
++++ b/fs/ntfs/ntfs.h
+@@ -190,7 +190,7 @@ static inline struct page *ntfs_map_page
+ 	if (!IS_ERR(page)) {
+ 		wait_on_page(page);
+ 		kmap(page);
+-		if (Page_Uptodate(page) && !PageError(page))
++		if (PageUptodate(page) && !PageError(page))
+ 			return page;
+ 		ntfs_unmap_page(page);
+ 		return ERR_PTR(-EIO);
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index c7acc41..bbff13e 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -1215,7 +1215,7 @@ handle_partial_page:
+ 			continue;
+ 		}
+ 		wait_on_page(page);
+-		if (!Page_Uptodate(page)) {
++		if (!PageUptodate(page)) {
+ 			ntfs_debug("Async read_cache_page() error. Skipping "
+ 					"page (index 0x%lx).", index - 1);
+ 			/* Ignore pages which errored asynchronously. */
+@@ -1298,7 +1298,7 @@ handle_partial_page:
+ 			continue;
+ 		}
+ 		wait_on_page(page);
+-		if (!Page_Uptodate(page)) {
++		if (!PageUptodate(page)) {
+ 			ntfs_debug("Async read_cache_page() error. Skipping "
+ 					"page (index 0x%lx).", index - 1);
+ 			/* Ignore pages which errored asynchronously. */
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 003f996..1bb7d32 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -433,7 +433,7 @@ unsigned char *read_dev_sector(struct bl
+ 			(filler_t *)mapping->a_ops->readpage, NULL);
+ 	if (!IS_ERR(page)) {
+ 		wait_on_page(page);
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			goto fail;
+ 		if (PageError(page))
+ 			goto fail;
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index b1e2319..6d31e93 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -47,20 +47,20 @@ static struct inode_operations ramfs_dir
+  */
+ static int ramfs_readpage(struct file *file, struct page * page)
+ {
+-	if (!Page_Uptodate(page)) {
++	if (!PageUptodate(page)) {
+ 		memset(kmap(page), 0, PAGE_CACHE_SIZE);
+ 		kunmap(page);
+ 		flush_dcache_page(page);
+ 		SetPageUptodate(page);
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ }
+ 
+ static int ramfs_prepare_write(struct file *file, struct page *page, unsigned offset, unsigned to)
+ {
+ 	void *addr = kmap(page);
+-	if (!Page_Uptodate(page)) {
++	if (!PageUptodate(page)) {
+ 		memset(addr, 0, PAGE_CACHE_SIZE);
+ 		flush_dcache_page(page);
+ 		SetPageUptodate(page);
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index 27d4c44..e6c6bae 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -273,7 +273,7 @@ research:
+             kunmap(bh_result->b_page) ;
+ 	// We do not return -ENOENT if there is a hole but page is uptodate, because it means
+ 	// That there is some MMAPED data associated with it that is yet to be written to disk.
+-	if ((args & GET_BLOCK_NO_HOLE) && !Page_Uptodate(bh_result->b_page) ) {
++	if ((args & GET_BLOCK_NO_HOLE) && !PageUptodate(bh_result->b_page) ) {
+ 	    return -ENOENT ;
+ 	}
+         return 0 ;
+@@ -295,7 +295,7 @@ research:
+ 	} else 
+ 	    // We do not return -ENOENT if there is a hole but page is uptodate, because it means
+ 	    // That there is some MMAPED data associated with it that is yet to  be written to disk.
+-	    if ((args & GET_BLOCK_NO_HOLE) && !Page_Uptodate(bh_result->b_page) ) {
++	    if ((args & GET_BLOCK_NO_HOLE) && !PageUptodate(bh_result->b_page) ) {
+ 	    ret = -ENOENT ;
+ 	    }
+ 
+@@ -328,7 +328,7 @@ research:
+ 	** read old data off disk.  Set the up to date bit on the buffer instead
+ 	** and jump to the end
+ 	*/
+-	    if (Page_Uptodate(bh_result->b_page)) {
++	    if (PageUptodate(bh_result->b_page)) {
+ 		mark_buffer_uptodate(bh_result, 1);
+ 		goto finished ;
+     }
+@@ -500,7 +500,7 @@ static int convert_tail_for_hole(struct 
+ 
+ unlock:
+     if (tail_page != hole_page) {
+-        UnlockPage(tail_page) ;
++        unlock_page(tail_page) ;
+ 	page_cache_release(tail_page) ;
+     }
+ out:
+@@ -1722,7 +1722,7 @@ out:
+     return error ;
+ 
+ unlock:
+-    UnlockPage(page) ;
++    unlock_page(page) ;
+     page_cache_release(page) ;
+     return error ;
+ }
+@@ -1794,7 +1794,7 @@ void reiserfs_truncate_file(struct inode
+ 	        mark_buffer_dirty(bh) ;
+ 	    }
+ 	}
+-	UnlockPage(page) ;
++	unlock_page(page) ;
+ 	page_cache_release(page) ;
+     }
+ 
+@@ -1996,7 +1996,7 @@ static int reiserfs_write_full_page(stru
+     if (nr) {
+         submit_bh_for_writepage(arr, nr) ;
+     } else {
+-        UnlockPage(page) ;
++        unlock_page(page) ;
+     }
+     if (!partial)
+         SetPageUptodate(page) ;
+@@ -2007,7 +2007,7 @@ fail:
+     if (nr) {
+         submit_bh_for_writepage(arr, nr) ;
+     } else {
+-        UnlockPage(page) ;
++        unlock_page(page) ;
+     }
+     ClearPageUptodate(page) ;
+     return error ;
+diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
+index a3c2d85..ef41742 100644
+--- a/fs/reiserfs/ioctl.c
++++ b/fs/reiserfs/ioctl.c
+@@ -83,7 +83,7 @@ int reiserfs_unpack (struct inode * inod
+     kunmap(page) ; /* mapped by prepare_write */
+ 
+ out_unlock:
+-    UnlockPage(page) ;
++    unlock_page(page) ;
+     page_cache_release(page) ;
+ 
+ out:
+diff --git a/fs/reiserfs/tail_conversion.c b/fs/reiserfs/tail_conversion.c
+index 68f8fc2..bd7a3e8 100644
+--- a/fs/reiserfs/tail_conversion.c
++++ b/fs/reiserfs/tail_conversion.c
+@@ -106,7 +106,7 @@ int direct2indirect (struct reiserfs_tra
+ 	** this avoids overwriting good data from writepage() with old data
+ 	** from the disk or buffer cache
+ 	*/
+-	if (buffer_uptodate(unbh) || Page_Uptodate(unbh->b_page)) {
++	if (buffer_uptodate(unbh) || PageUptodate(unbh->b_page)) {
+ 	    up_to_date_bh = NULL ;
+ 	} else {
+ 	    up_to_date_bh = unbh ;
+diff --git a/fs/romfs/inode.c b/fs/romfs/inode.c
+index b833c85..369e2cf 100644
+--- a/fs/romfs/inode.c
++++ b/fs/romfs/inode.c
+@@ -432,7 +432,7 @@ romfs_readpage(struct file *file, struct
+ 	}
+ 	flush_dcache_page(page);
+ 
+-	UnlockPage(page);
++	unlock_page(page);
+ 
+ 	kunmap(page);
+ err_out:
+diff --git a/fs/smbfs/cache.c b/fs/smbfs/cache.c
+index 20ba2c2..687027d 100644
+--- a/fs/smbfs/cache.c
++++ b/fs/smbfs/cache.c
+@@ -37,7 +37,7 @@ smb_invalid_dir_cache(struct inode * dir
+ 	if (!page)
+ 		goto out;
+ 
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto out_unlock;
+ 
+ 	cache = kmap(page);
+@@ -46,7 +46,7 @@ smb_invalid_dir_cache(struct inode * dir
+ 	kunmap(page);
+ 	SetPageUptodate(page);
+ out_unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ out:
+ 	return;
+@@ -172,7 +172,7 @@ smb_fill_cache(struct file *filp, void *
+ 		if (ctl.page) {
+ 			kunmap(ctl.page);
+ 			SetPageUptodate(ctl.page);
+-			UnlockPage(ctl.page);
++			unlock_page(ctl.page);
+ 			page_cache_release(ctl.page);
+ 		}
+ 		ctl.cache = NULL;
+diff --git a/fs/smbfs/dir.c b/fs/smbfs/dir.c
+index 897fdbe..3c1385a 100644
+--- a/fs/smbfs/dir.c
++++ b/fs/smbfs/dir.c
+@@ -102,9 +102,9 @@ smb_readdir(struct file *filp, void *dir
+ 	ctl.cache = cache = kmap(page);
+ 	ctl.head  = cache->head;
+ 
+-	if (!Page_Uptodate(page) || !ctl.head.eof) {
++	if (!PageUptodate(page) || !ctl.head.eof) {
+ 		VERBOSE("%s/%s, page uptodate=%d, eof=%d\n",
+-			 DENTRY_PATH(dentry), Page_Uptodate(page),ctl.head.eof);
++			 DENTRY_PATH(dentry), PageUptodate(page),ctl.head.eof);
+ 		goto init_cache;
+ 	}
+ 
+@@ -136,7 +136,7 @@ smb_readdir(struct file *filp, void *dir
+ 			if (!ctl.page)
+ 				goto invalid_cache;
+ 			ctl.cache = kmap(ctl.page);
+-			if (!Page_Uptodate(ctl.page))
++			if (!PageUptodate(ctl.page))
+ 				goto invalid_cache;
+ 		}
+ 		while (ctl.idx < SMB_DIRCACHE_SIZE) {
+@@ -162,7 +162,7 @@ smb_readdir(struct file *filp, void *dir
+ 		if (ctl.page) {
+ 			kunmap(ctl.page);
+ 			SetPageUptodate(ctl.page);
+-			UnlockPage(ctl.page);
++			unlock_page(ctl.page);
+ 			page_cache_release(ctl.page);
+ 			ctl.page = NULL;
+ 		}
+@@ -172,7 +172,7 @@ smb_readdir(struct file *filp, void *dir
+ invalid_cache:
+ 	if (ctl.page) {
+ 		kunmap(ctl.page);
+-		UnlockPage(ctl.page);
++		unlock_page(ctl.page);
+ 		page_cache_release(ctl.page);
+ 		ctl.page = NULL;
+ 	}
+@@ -197,13 +197,13 @@ finished:
+ 		cache->head = ctl.head;
+ 		kunmap(page);
+ 		SetPageUptodate(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
+ 	if (ctl.page) {
+ 		kunmap(ctl.page);
+ 		SetPageUptodate(ctl.page);
+-		UnlockPage(ctl.page);
++		unlock_page(ctl.page);
+ 		page_cache_release(ctl.page);
+ 	}
+ out:
+diff --git a/fs/smbfs/file.c b/fs/smbfs/file.c
+index 4bc482e..464041d 100644
+--- a/fs/smbfs/file.c
++++ b/fs/smbfs/file.c
+@@ -94,7 +94,7 @@ smb_readpage_sync(struct dentry *dentry,
+ 
+ io_error:
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return result;
+ }
+ 
+@@ -199,7 +199,7 @@ do_it:
+ 	get_page(page);
+ 	err = smb_writepage_sync(inode, page, 0, offset);
+ 	SetPageUptodate(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	put_page(page);
+ 	return err;
+ }
+diff --git a/fs/sysv/dir.c b/fs/sysv/dir.c
+index 41e13fe..b02acc9 100644
+--- a/fs/sysv/dir.c
++++ b/fs/sysv/dir.c
+@@ -60,7 +60,7 @@ static struct page * dir_get_page(struct
+ 	if (!IS_ERR(page)) {
+ 		wait_on_page(page);
+ 		kmap(page);
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			goto fail;
+ 	}
+ 	return page;
+@@ -233,7 +233,7 @@ got_it:
+ 	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
+ 	mark_inode_dirty(dir);
+ out_unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ out_page:
+ 	dir_put_page(page);
+ out:
+@@ -255,7 +255,7 @@ int sysv_delete_entry(struct sysv_dir_en
+ 		BUG();
+ 	de->inode = 0;
+ 	err = dir_commit_chunk(page, from, to);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	dir_put_page(page);
+ 	inode->i_ctime = inode->i_mtime = CURRENT_TIME;
+ 	mark_inode_dirty(inode);
+@@ -288,7 +288,7 @@ int sysv_make_empty(struct inode *inode,
+ 
+ 	err = dir_commit_chunk(page, 0, 2 * SYSV_DIRSIZE);
+ fail:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return err;
+ }
+@@ -352,7 +352,7 @@ void sysv_set_link(struct sysv_dir_entry
+ 		BUG();
+ 	de->inode = cpu_to_fs16(inode->i_sb, inode->i_ino);
+ 	err = dir_commit_chunk(page, from, to);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	dir_put_page(page);
+ 	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
+ 	mark_inode_dirty(dir);
+diff --git a/fs/udf/file.c b/fs/udf/file.c
+index bba20e6..30e3889 100644
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -71,7 +71,7 @@ static int udf_adinicb_readpage(struct f
+ 	SetPageUptodate(page);
+ out:
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+@@ -102,7 +102,7 @@ static int udf_adinicb_writepage(struct 
+ 	SetPageUptodate(page);
+ out:
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+diff --git a/fs/udf/inode.c b/fs/udf/inode.c
+index 1148833..485af6c 100644
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -186,7 +186,7 @@ void udf_expand_file_adinicb(struct inod
+ 	page = grab_cache_page(inode->i_mapping, 0);
+ 	if (!PageLocked(page))
+ 		PAGE_BUG(page);
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 	{
+ 		kaddr = kmap(page);
+ 		memset(kaddr + UDF_I_LENALLOC(inode), 0x00,
+diff --git a/fs/udf/symlink.c b/fs/udf/symlink.c
+index c9c5154..dc6317f 100644
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -111,13 +111,13 @@ static int udf_symlink_filler(struct fil
+ 	unlock_kernel();
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ out:
+ 	unlock_kernel();
+ 	SetPageError(page);
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return err;
+ }
+ 
+diff --git a/fs/umsdos/dir.c b/fs/umsdos/dir.c
+index 4586fc6..d971092 100644
+--- a/fs/umsdos/dir.c
++++ b/fs/umsdos/dir.c
+@@ -693,7 +693,7 @@ struct dentry *umsdos_solve_hlink (struc
+ 	if (IS_ERR(page))
+ 		goto out;
+ 	wait_on_page(page);
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto async_fail;
+ 
+ 	dentry_dst = ERR_PTR(-ENOMEM);
+diff --git a/fs/umsdos/emd.c b/fs/umsdos/emd.c
+index 2b64394..3ea53f8 100644
+--- a/fs/umsdos/emd.c
++++ b/fs/umsdos/emd.c
+@@ -140,7 +140,7 @@ int umsdos_emd_dir_readentry (struct den
+ 	if (IS_ERR(page))
+ 		goto sync_fail;
+ 	wait_on_page(page);
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto async_fail;
+ 	p = (struct umsdos_dirent*)(kmap(page)+offs);
+ 
+@@ -166,7 +166,7 @@ int umsdos_emd_dir_readentry (struct den
+ 			goto sync_fail;
+ 		}
+ 		wait_on_page(page2);
+-		if (!Page_Uptodate(page2)) {
++		if (!PageUptodate(page2)) {
+ 			kunmap(page);
+ 			page_cache_release(page2);
+ 			goto async_fail;
+@@ -276,7 +276,7 @@ int umsdos_writeentry (struct dentry *pa
+ 			goto out_unlock3;
+ 		ret = mapping->a_ops->commit_write(NULL,page,offs,
+ 					PAGE_CACHE_SIZE);
+-		UnlockPage(page2);
++		unlock_page(page2);
+ 		page_cache_release(page2);
+ 		if (ret)
+ 			goto out_unlock;
+@@ -292,7 +292,7 @@ int umsdos_writeentry (struct dentry *pa
+ 		if (ret)
+ 			goto out_unlock;
+ 	}
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 		
+ 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+@@ -304,13 +304,13 @@ out:
+ 	Printk (("umsdos_writeentry /mn/: returning %d...\n", ret));
+ 	return ret;
+ out_unlock3:
+-	UnlockPage(page2);
++	unlock_page(page2);
+ 	page_cache_release(page2);
+ out_unlock2:
+ 	ClearPageUptodate(page);
+ 	kunmap(page);
+ out_unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	printk ("UMSDOS:  problem with EMD file:  can't write\n");
+ 	goto out_dput;
+@@ -393,7 +393,7 @@ static int umsdos_find (struct dentry *d
+ 			if (IS_ERR(page))
+ 				goto sync_fail;
+ 			wait_on_page(page);
+-			if (!Page_Uptodate(page))
++			if (!PageUptodate(page))
+ 				goto async_fail;
+ 			p = kmap(page);
+ 		}
+@@ -442,7 +442,7 @@ static int umsdos_find (struct dentry *d
+ 				goto sync_fail;
+ 			}
+ 			wait_on_page(next_page);
+-			if (!Page_Uptodate(next_page)) {
++			if (!PageUptodate(next_page)) {
+ 				page_cache_release(page);
+ 				page = next_page;
+ 				goto async_fail;
+diff --git a/fs/umsdos/inode.c b/fs/umsdos/inode.c
+index 79b5bb2..93a33d8 100644
+--- a/fs/umsdos/inode.c
++++ b/fs/umsdos/inode.c
+@@ -300,7 +300,7 @@ dentry->d_parent->d_name.name, dentry->d
+ 	 * EMD file. The msdos fs is not even called.
+ 	 */
+ out_unlock:
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ out_dput:
+ 	dput(demd);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b548d2c..e8451ae 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -191,11 +191,6 @@ #define page_count(p)		atomic_read(&(p)-
+ #define set_page_count(p,v) 	atomic_set(&(p)->count, v)
+ 
+ /*
+- * Various page->flags bits:
+- *
+- * PG_reserved is set for special pages, which can never be swapped
+- * out. Some of them might not even exist (eg empty_bad_page)...
+- *
+  * Multiple processes may "see" the same page. E.g. for untouched
+  * mappings of /dev/null, all processes see the same page full of
+  * zeroes, and text pages of executables and shared libraries have
+@@ -224,8 +219,6 @@ #define set_page_count(p,v) 	atomic_set(
+  * page's address_space.  Usually, this is the address of a circular
+  * list of the page's disk buffers.
+  *
+- * The PG_private bitflag is set if page->private contains a valid
+- * value.
+  * For pages belonging to inodes, the page->count is the number of
+  * attaches, plus 1 if `private' contains something, plus one for
+  * the page cache itself.
+@@ -244,64 +237,9 @@ #define set_page_count(p,v) 	atomic_set(
+  *   to be written to disk,
+  * - private pages which have been modified may need to be swapped out
+  *   to swap space and (later) to be read back into memory.
+- * During disk I/O, PG_locked_dontuse is used. This bit is set before I/O
+- * and reset when I/O completes. page_waitqueue(page) is a wait queue of all
+- * tasks waiting for the I/O on this page to complete.
+- * PG_uptodate tells whether the page's contents is valid.
+- * When a read completes, the page becomes uptodate, unless a disk I/O
+- * error happened.
+- *
+- * For choosing which pages to swap out, inode pages carry a
+- * PG_referenced bit, which is set any time the system accesses
+- * that page through the (mapping,index) hash table. This referenced
+- * bit, together with the referenced bit in the page tables, is used
+- * to manipulate page->age and move the page across the active,
+- * inactive_dirty and inactive_clean lists.
+- *
+- * Note that the referenced bit, the page->lru list_head and the
+- * active, inactive_dirty and inactive_clean lists are protected by
+- * the pagemap_lru_lock, and *NOT* by the usual PG_locked_dontuse bit!
+- *
+- * PG_skip is used on sparc/sparc64 architectures to "skip" certain
+- * parts of the address space.
+- *
+- * PG_error is set to indicate that an I/O error occurred on this page.
+- *
+- * PG_arch_1 is an architecture specific page state bit.  The generic
+- * code guarantees that this bit is cleared for a page when it first
+- * is entered into the page cache.
+- *
+- * PG_highmem pages are not permanently mapped into the kernel virtual
+- * address space, they need to be kmapped separately for doing IO on
+- * the pages. The struct page (these bits with information) are always
+- * mapped into kernel address space...
+  */
+ 
+ /*
+- * Don't use the *_dontuse flags.  Use the macros.  Otherwise
+- * you'll break locked- and dirty-page accounting.
+- */
+-#define PG_locked_dontuse	 0	/* Page is locked. Don't touch. */
+-#define PG_error		 1
+-#define PG_referenced		 2
+-#define PG_uptodate		 3
+-
+-#define PG_dirty_dontuse	 4
+-#define PG_unused		 5	/* err.  This is unused. */
+-#define PG_lru			 6
+-#define PG_active		 7
+-
+-#define PG_slab			 8	/* slab debug (Suparna wants this) */
+-#define PG_skip			10	/* kill me now: obsolete */
+-#define PG_highmem		11
+-#define PG_checked		12	/* kill me in 2.5.<early>. */
+-
+-#define PG_arch_1		13
+-#define PG_reserved		14
+-#define PG_launder		15	/* written out by VM pressure.. */
+-#define PG_private		16	/* Has something at ->private */
+-
+-/*
+  * FIXME: take this include out, include page-flags.h in
+  * files which need it (119 of them)
+  */
+@@ -444,14 +382,6 @@ extern void show_mem(void);
+ extern void si_meminfo(struct sysinfo * val);
+ extern void swapin_readahead(swp_entry_t);
+ 
+-extern struct address_space swapper_space;
+-#define PageSwapCache(page) ((page)->mapping == &swapper_space)
+-
+-static inline int is_page_cache_freeable(struct page * page)
+-{
+-	return page_count(page) - !!PagePrivate(page) == 1;
+-}
+-
+ extern int can_share_swap_page(struct page *);
+ extern int remove_exclusive_swap_page(struct page *);
+ 
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 9ae7a80..aeba6b4 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -6,6 +6,70 @@ #ifndef PAGE_FLAGS_H
+ #define PAGE_FLAGS_H
+ 
+ /*
++ * Various page->flags bits:
++ *
++ * PG_reserved is set for special pages, which can never be swapped out. Some
++ * of them might not even exist (eg empty_bad_page)...
++ *
++ * The PG_private bitflag is set if page->private contains a valid value.
++ *
++ * During disk I/O, PG_locked_dontuse is used. This bit is set before I/O and
++ * reset when I/O completes. page_waitqueue(page) is a wait queue of all tasks
++ * waiting for the I/O on this page to complete.
++ *
++ * PG_uptodate tells whether the page's contents is valid.  When a read
++ * completes, the page becomes uptodate, unless a disk I/O error happened.
++ *
++ * For choosing which pages to swap out, inode pages carry a PG_referenced bit,
++ * which is set any time the system accesses that page through the (mapping,
++ * index) hash table.  This referenced bit, together with the referenced bit
++ * in the page tables, is used to manipulate page->age and move the page across
++ * the active, inactive_dirty and inactive_clean lists.
++ *
++ * Note that the referenced bit, the page->lru list_head and the active,
++ * inactive_dirty and inactive_clean lists are protected by the
++ * pagemap_lru_lock, and *NOT* by the usual PG_locked_dontuse bit!
++ *
++ * PG_skip is used on sparc/sparc64 architectures to "skip" certain parts of
++ * the address space.
++ *
++ * PG_error is set to indicate that an I/O error occurred on this page.
++ *
++ * PG_arch_1 is an architecture specific page state bit.  The generic code
++ * guarantees that this bit is cleared for a page when it first is entered into
++ * the page cache.
++ *
++ * PG_highmem pages are not permanently mapped into the kernel virtual address
++ * space, they need to be kmapped separately for doing IO on the pages.  The
++ * struct page (these bits with information) are always mapped into kernel
++ * address space...
++ */
++
++/*
++ * Don't use the *_dontuse flags.  Use the macros.  Otherwise you'll break
++ * locked- and dirty-page accounting.  The top eight bits of page->flags are
++ * used for page->zone, so putting flag bits there doesn't work.
++ */
++#define PG_locked_dontuse	 0	/* Page is locked. Don't touch. */
++#define PG_error		 1
++#define PG_referenced		 2
++#define PG_uptodate		 3
++
++#define PG_dirty_dontuse	 4
++#define PG_lru			 5
++#define PG_active		 6
++#define PG_slab			 7	/* slab debug (Suparna wants this) */
++
++#define PG_skip			 8	/* kill me now: obsolete */
++#define PG_highmem		 9
++#define PG_checked		10	/* kill me in 2.5.<early>. */
++#define PG_arch_1		11
++
++#define PG_reserved		12
++#define PG_launder		13	/* written out by VM pressure.. */
++#define PG_private		14	/* Has something at ->private */
++
++/*
+  * Global page accounting.  One instance per CPU.
+  */
+ extern struct page_state {
+@@ -30,7 +94,6 @@ #define dec_page_state(member)	mod_page_
+ /*
+  * Manipulation of page state flags
+  */
+-#define UnlockPage(page)	unlock_page(page)
+ #define PageLocked(page)	test_bit(PG_locked_dontuse, &(page)->flags)
+ #define SetPageLocked(page)						\
+ 	do {								\
+@@ -38,8 +101,7 @@ #define SetPageLocked(page)						\
+ 				&(page)->flags))			\
+ 			inc_page_state(nr_locked);			\
+ 	} while (0)
+-#define LockPage(page)		SetPageLocked(page)	/* grr.  kill me */
+-#define TryLockPage(page)						\
++#define TestSetPageLocked(page)						\
+ 	({								\
+ 		int ret;						\
+ 		ret = test_and_set_bit(PG_locked_dontuse,		\
+@@ -71,9 +133,9 @@ #define ClearPageError(page)	clear_bit(P
+ #define PageReferenced(page)	test_bit(PG_referenced, &(page)->flags)
+ #define SetPageReferenced(page)	set_bit(PG_referenced, &(page)->flags)
+ #define ClearPageReferenced(page)	clear_bit(PG_referenced, &(page)->flags)
+-#define PageTestandClearReferenced(page)	test_and_clear_bit(PG_referenced, &(page)->flags)
++#define TestClearPageReferenced(page) test_and_clear_bit(PG_referenced, &(page)->flags)
+ 
+-#define Page_Uptodate(page)	test_bit(PG_uptodate, &(page)->flags)
++#define PageUptodate(page)	test_bit(PG_uptodate, &(page)->flags)
+ #define SetPageUptodate(page)	set_bit(PG_uptodate, &(page)->flags)
+ #define ClearPageUptodate(page)	clear_bit(PG_uptodate, &(page)->flags)
+ 
+@@ -118,8 +180,8 @@ #define SetPageActive(page)	set_bit(PG_a
+ #define ClearPageActive(page)	clear_bit(PG_active, &(page)->flags)
+ 
+ #define PageSlab(page)		test_bit(PG_slab, &(page)->flags)
+-#define PageSetSlab(page)	set_bit(PG_slab, &(page)->flags)
+-#define PageClearSlab(page)	clear_bit(PG_slab, &(page)->flags)
++#define SetPageSlab(page)	set_bit(PG_slab, &(page)->flags)
++#define ClearPageSlab(page)	clear_bit(PG_slab, &(page)->flags)
+ 
+ #ifdef CONFIG_HIGHMEM
+ #define PageHighMem(page)	test_bit(PG_highmem, &(page)->flags)
+@@ -133,7 +195,6 @@ #define SetPageChecked(page)	set_bit(PG_
+ #define PageReserved(page)	test_bit(PG_reserved, &(page)->flags)
+ #define SetPageReserved(page)	set_bit(PG_reserved, &(page)->flags)
+ #define ClearPageReserved(page)	clear_bit(PG_reserved, &(page)->flags)
+-#define __SetPageReserved(page)	__set_bit(PG_reserved, &(page)->flags)
+ 
+ #define PageLaunder(page)	test_bit(PG_launder, &(page)->flags)
+ #define SetPageLaunder(page)	set_bit(PG_launder, &(page)->flags)
+@@ -142,4 +203,11 @@ #define SetPagePrivate(page)	set_bit(PG_
+ #define ClearPagePrivate(page)	clear_bit(PG_private, &(page)->flags)
+ #define PagePrivate(page)	test_bit(PG_private, &(page)->flags)
+ 
++/*
++ * The PageSwapCache predicate doesn't use a PG_flag at this time,
++ * but it may again do so one day.
++ */
++extern struct address_space swapper_space;
++#define PageSwapCache(page) ((page)->mapping == &swapper_space)
++
+ #endif	/* PAGE_FLAGS_H */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index d95ba06..80211d1 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -120,7 +120,7 @@ void invalidate_inode_pages(struct inode
+ 			continue;
+ 
+ 		/* ..or locked */
+-		if (TryLockPage(page))
++		if (TestSetPageLocked(page))
+ 			continue;
+ 
+ 		if (PagePrivate(page) && !try_to_release_page(page, 0))
+@@ -131,11 +131,11 @@ void invalidate_inode_pages(struct inode
+ 
+ 		__lru_cache_del(page);
+ 		__remove_inode_page(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		continue;
+ unlock:
+-		UnlockPage(page);
++		unlock_page(page);
+ 		continue;
+ 	}
+ 
+@@ -201,7 +201,7 @@ static int truncate_list_pages(struct ad
+ 			int failed;
+ 
+ 			page_cache_get(page);
+-			failed = TryLockPage(page);
++			failed = TestSetPageLocked(page);
+ 
+ 			list_del(head);
+ 			if (!failed)
+@@ -221,7 +221,7 @@ static int truncate_list_pages(struct ad
+ 				} else 
+ 					truncate_complete_page(page);
+ 
+-				UnlockPage(page);
++				unlock_page(page);
+ 			} else
+  				wait_on_page(page);
+ 
+@@ -321,11 +321,11 @@ static int invalidate_list_pages2(struct
+ 	while (curr != head) {
+ 		page = list_entry(curr, struct page, list);
+ 
+-		if (!TryLockPage(page)) {
++		if (!TestSetPageLocked(page)) {
+ 			int __unlocked;
+ 
+ 			__unlocked = invalidate_this_page2(mapping, page, curr, head);
+-			UnlockPage(page);
++			unlock_page(page);
+ 			unlocked |= __unlocked;
+ 			if (!__unlocked) {
+ 				curr = curr->prev;
+@@ -405,7 +405,7 @@ static int do_buffer_fdatasync(struct ad
+ 		if (page_has_buffers(page))
+ 			retval |= fn(page);
+ 
+-		UnlockPage(page);
++		unlock_page(page);
+ 		write_lock(&mapping->page_lock);
+ 		curr = page->list.next;
+ 		page_cache_release(page);
+@@ -470,7 +470,7 @@ int fail_writepage(struct page *page)
+ 
+ 	/* Set the page dirty again, unlock */
+ 	SetPageDirty(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ }
+ 
+@@ -659,6 +659,11 @@ void ___wait_on_page(struct page *page)
+ 
+ /*
+  * Unlock the page and wake up sleepers in ___wait_on_page.
++ *
++ * The first mb is necessary to safely close the critical section opened by the
++ * TryLockPage(), the second mb is necessary to enforce ordering between
++ * the clear_bit and the read of the waitqueue (to avoid SMP races with a
++ * parallel wait_on_page).
+  */
+ void unlock_page(struct page *page)
+ {
+@@ -689,7 +694,7 @@ static void __lock_page(struct page *pag
+ 			sync_page(page);
+ 			schedule();
+ 		}
+-		if (!TryLockPage(page))
++		if (!TestSetPageLocked(page))
+ 			break;
+ 	}
+ 	__set_task_state(tsk, TASK_RUNNING);
+@@ -708,7 +713,7 @@ EXPORT_SYMBOL(wake_up_page);
+  */
+ void lock_page(struct page *page)
+ {
+-	if (TryLockPage(page))
++	if (TestSetPageLocked(page))
+ 		__lock_page(page);
+ }
+ 
+@@ -741,7 +746,7 @@ struct page *find_trylock_page(struct ad
+ 
+ 	read_lock(&mapping->page_lock);
+ 	page = radix_tree_lookup(&mapping->page_tree, offset);
+-	if (page && TryLockPage(page))
++	if (page && TestSetPageLocked(page))
+ 		page = NULL;
+ 	read_unlock(&mapping->page_lock);
+ 	return page;
+@@ -765,14 +770,14 @@ repeat:
+ 	page = radix_tree_lookup(&mapping->page_tree, offset);
+ 	if (page) {
+ 		page_cache_get(page);
+-		if (TryLockPage(page)) {
++		if (TestSetPageLocked(page)) {
+ 			write_unlock(&mapping->page_lock);
+ 			lock_page(page);
+ 			write_lock(&mapping->page_lock);
+ 
+ 			/* Has the page been truncated while we slept? */
+ 			if (page->mapping != mapping || page->index != offset) {
+-				UnlockPage(page);
++				unlock_page(page);
+ 				page_cache_release(page);
+ 				goto repeat;
+ 			}
+@@ -881,12 +886,12 @@ struct page *grab_cache_page_nowait(stru
+ 	page = find_get_page(mapping, index);
+ 
+ 	if ( page ) {
+-		if ( !TryLockPage(page) ) {
++		if ( !TestSetPageLocked(page) ) {
+ 			/* Page found and locked */
+ 			/* This test is overly paranoid, but what the heck... */
+ 			if ( unlikely(page->mapping != mapping || page->index != index) ) {
+ 				/* Someone reallocated this page under us. */
+-				UnlockPage(page);
++				unlock_page(page);
+ 				page_cache_release(page);
+ 				return NULL;
+ 			} else {
+@@ -990,7 +995,7 @@ found_page:
+ 		page_cache_get(page);
+ 		write_unlock(&mapping->page_lock);
+ 
+-		if (!Page_Uptodate(page))
++		if (!PageUptodate(page))
+ 			goto page_not_up_to_date;
+ page_ok:
+ 		/* If users can be writing to this page using arbitrary
+@@ -1027,7 +1032,7 @@ page_ok:
+ 		break;
+ 
+ page_not_up_to_date:
+-		if (Page_Uptodate(page))
++		if (PageUptodate(page))
+ 			goto page_ok;
+ 
+ 		/* Get exclusive access to the page ... */
+@@ -1035,14 +1040,14 @@ page_not_up_to_date:
+ 
+ 		/* Did it get unhashed before we got the lock? */
+ 		if (!page->mapping) {
+-			UnlockPage(page);
++			unlock_page(page);
+ 			page_cache_release(page);
+ 			continue;
+ 		}
+ 
+ 		/* Did somebody else fill it already? */
+-		if (Page_Uptodate(page)) {
+-			UnlockPage(page);
++		if (PageUptodate(page)) {
++			unlock_page(page);
+ 			goto page_ok;
+ 		}
+ 
+@@ -1051,10 +1056,10 @@ readpage:
+ 		error = mapping->a_ops->readpage(filp, page);
+ 
+ 		if (!error) {
+-			if (Page_Uptodate(page))
++			if (PageUptodate(page))
+ 				goto page_ok;
+ 			wait_on_page(page);
+-			if (Page_Uptodate(page))
++			if (PageUptodate(page))
+ 				goto page_ok;
+ 			error = -EIO;
+ 		}
+@@ -1518,7 +1523,7 @@ retry_find:
+ 	 * Ok, found a page in the page cache, now we need to check
+ 	 * that it's up-to-date.
+ 	 */
+-	if (!Page_Uptodate(page))
++	if (!PageUptodate(page))
+ 		goto page_not_uptodate;
+ 
+ success:
+@@ -1559,20 +1564,20 @@ page_not_uptodate:
+ 
+ 	/* Did it get unhashed while we waited for it? */
+ 	if (!page->mapping) {
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		goto retry_all;
+ 	}
+ 
+ 	/* Did somebody else get it up-to-date? */
+-	if (Page_Uptodate(page)) {
+-		UnlockPage(page);
++	if (PageUptodate(page)) {
++		unlock_page(page);
+ 		goto success;
+ 	}
+ 
+ 	if (!mapping->a_ops->readpage(file, page)) {
+ 		wait_on_page(page);
+-		if (Page_Uptodate(page))
++		if (PageUptodate(page))
+ 			goto success;
+ 	}
+ 
+@@ -1586,20 +1591,20 @@ page_not_uptodate:
+ 
+ 	/* Somebody truncated the page on us? */
+ 	if (!page->mapping) {
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		goto retry_all;
+ 	}
+ 
+ 	/* Somebody else successfully read it in? */
+-	if (Page_Uptodate(page)) {
+-		UnlockPage(page);
++	if (PageUptodate(page)) {
++		unlock_page(page);
+ 		goto success;
+ 	}
+ 	ClearPageError(page);
+ 	if (!mapping->a_ops->readpage(file, page)) {
+ 		wait_on_page(page);
+-		if (Page_Uptodate(page))
++		if (PageUptodate(page))
+ 			goto success;
+ 	}
+ 
+@@ -2001,7 +2006,7 @@ repeat:
+ 
+ /*
+  * Read into the page cache. If a page already exists,
+- * and Page_Uptodate() is not set, try to fill the page.
++ * and PageUptodate() is not set, try to fill the page.
+  */
+ struct page *read_cache_page(struct address_space *mapping,
+ 				unsigned long index,
+@@ -2016,17 +2021,17 @@ retry:
+ 	if (IS_ERR(page))
+ 		goto out;
+ 	mark_page_accessed(page);
+-	if (Page_Uptodate(page))
++	if (PageUptodate(page))
+ 		goto out;
+ 
+ 	lock_page(page);
+ 	if (!page->mapping) {
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		goto retry;
+ 	}
+-	if (Page_Uptodate(page)) {
+-		UnlockPage(page);
++	if (PageUptodate(page)) {
++		unlock_page(page);
+ 		goto out;
+ 	}
+ 	err = filler(data, page);
+@@ -2271,7 +2276,7 @@ unlock:
+ 		kunmap(page);
+ 		/* Mark it unlocked again and drop the page.. */
+ 		SetPageReferenced(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 
+ 		if (status < 0)
+@@ -2307,7 +2312,7 @@ sync_failure:
+ 	 * few blocks outside i_size.  Trim these off again.
+ 	 */
+ 	kunmap(page);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	if (pos + bytes > inode->i_size)
+ 		vmtruncate(inode, inode->i_size);
+diff --git a/mm/memory.c b/mm/memory.c
+index 0bad3cf..b3158d2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -653,7 +653,7 @@ void unmap_kiobuf (struct kiobuf *iobuf)
+ 		map = iobuf->maplist[i];
+ 		if (map) {
+ 			if (iobuf->locked)
+-				UnlockPage(map);
++				unlock_page(map);
+ 			/* FIXME: cache flush missing for rw==READ
+ 			 * FIXME: call the correct reference counting function
+ 			 */
+@@ -698,11 +698,11 @@ int lock_kiovec(int nr, struct kiobuf *i
+ 			if (!page)
+ 				continue;
+ 			
+-			if (TryLockPage(page)) {
++			if (TestSetPageLocked(page)) {
+ 				while (j--) {
+ 					struct page *tmp = *--ppage;
+ 					if (tmp)
+-						UnlockPage(tmp);
++						unlock_page(tmp);
+ 				}
+ 				goto retry;
+ 			}
+@@ -768,7 +768,7 @@ int unlock_kiovec(int nr, struct kiobuf 
+ 			page = *ppage;
+ 			if (!page)
+ 				continue;
+-			UnlockPage(page);
++			unlock_page(page);
+ 		}
+ 	}
+ 	return 0;
+@@ -982,7 +982,7 @@ static int do_wp_page(struct mm_struct *
+ 	if (!VALID_PAGE(old_page))
+ 		goto bad_wp_page;
+ 
+-	if (!TryLockPage(old_page)) {
++	if (!TestSetPageLocked(old_page)) {
+ 		int reuse = can_share_swap_page(old_page);
+ 		unlock_page(old_page);
+ 		if (reuse) {
+diff --git a/mm/mincore.c b/mm/mincore.c
+index 21ce861..1fd1405 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -31,7 +31,7 @@ static unsigned char mincore_page(struct
+ 
+ 	page = find_get_page(as, pgoff);
+ 	if (page) {
+-		present = Page_Uptodate(page);
++		present = PageUptodate(page);
+ 		page_cache_release(page);
+ 	}
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 5219717..940f2e6 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -355,7 +355,7 @@ int generic_writeback_mapping(struct add
+ 					done = 1;
+ 			}
+ 		} else
+-			UnlockPage(page);
++			unlock_page(page);
+ 
+ 		page_cache_release(page);
+ 		write_lock(&mapping->page_lock);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 041aa8b..b4d6cb3 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -879,7 +879,7 @@ void __init free_area_init_core(int nid,
+ 			struct page *page = mem_map + offset + i;
+ 			set_page_zone(page, nid * MAX_NR_ZONES + j);
+ 			set_page_count(page, 0);
+-			__SetPageReserved(page);
++			SetPageReserved(page);
+ 			memlist_init(&page->list);
+ 			if (j != ZONE_HIGHMEM)
+ 				set_page_address(page, __va(zone_start_paddr));
+diff --git a/mm/page_io.c b/mm/page_io.c
+index cacb395..cc615a8 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -99,7 +99,7 @@ void rw_swap_page(int rw, struct page *p
+ 	if (page->mapping != &swapper_space)
+ 		PAGE_BUG(page);
+ 	if (!rw_swap_page_base(rw, entry, page))
+-		UnlockPage(page);
++		unlock_page(page);
+ }
+ 
+ /*
+@@ -120,7 +120,7 @@ void rw_swap_page_nolock(int rw, swp_ent
+ 	/* needs sync_page to wait I/O completation */
+ 	page->mapping = &swapper_space;
+ 	if (!rw_swap_page_base(rw, entry, page))
+-		UnlockPage(page);
++		unlock_page(page);
+ 	wait_on_page(page);
+ 	page->mapping = NULL;
+ }
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 31a19c4..fdabed5 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -466,7 +466,7 @@ static int shmem_writepage(struct page *
+ 		spin_unlock(&info->lock);
+ 		SetPageUptodate(page);
+ 		set_page_dirty(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		return 0;
+ 	}
+ 
+@@ -512,7 +512,7 @@ repeat:
+ 
+ 	page = find_get_page(mapping, idx);
+ 	if (page) {
+-		if (TryLockPage(page))
++		if (TestSetPageLocked(page))
+ 			goto wait_retry;
+ 		spin_unlock (&info->lock);
+ 		return page;
+@@ -533,7 +533,7 @@ repeat:
+ 				return ERR_PTR(-ENOMEM);
+ 			}
+ 			wait_on_page(page);
+-			if (!Page_Uptodate(page) && entry->val == swap.val) {
++			if (!PageUptodate(page) && entry->val == swap.val) {
+ 				page_cache_release(page);
+ 				return ERR_PTR(-EIO);
+ 			}
+@@ -545,12 +545,12 @@ repeat:
+ 		}
+ 
+ 		/* We have to do this with page locked to prevent races */
+-		if (TryLockPage(page)) 
++		if (TestSetPageLocked(page)) 
+ 			goto wait_retry;
+ 
+ 		error = move_from_swap_cache(page, idx, mapping);
+ 		if (error < 0) {
+-			UnlockPage(page);
++			unlock_page(page);
+ 			return ERR_PTR(error);
+ 		}
+ 
+@@ -614,7 +614,7 @@ static int shmem_getpage(struct inode * 
+ 	if (IS_ERR (*ptr))
+ 		goto failed;
+ 
+-	UnlockPage(*ptr);
++	unlock_page(*ptr);
+ 	up (&info->sem);
+ 	return 0;
+ failed:
+@@ -864,7 +864,7 @@ shmem_file_write(struct file *file,const
+ 		}
+ unlock:
+ 		/* Mark it unlocked again and drop the page.. */
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 
+ 		if (status < 0)
+@@ -1140,7 +1140,7 @@ static int shmem_symlink(struct inode * 
+ 		memcpy(kaddr, symname, len);
+ 		kunmap(page);
+ 		SetPageDirty(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 		up(&info->sem);
+ 		inode->i_op = &shmem_symlink_inode_operations;
+diff --git a/mm/slab.c b/mm/slab.c
+index 109777f..d5e2817 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -544,7 +544,7 @@ static inline void kmem_freepages (kmem_
+ 	 * vm_scan(). Shouldn't be a worry.
+ 	 */
+ 	while (i--) {
+-		PageClearSlab(page);
++		ClearPageSlab(page);
+ 		page++;
+ 	}
+ 	free_pages((unsigned long)addr, cachep->gfporder);
+@@ -1198,7 +1198,7 @@ static int kmem_cache_grow (kmem_cache_t
+ 	do {
+ 		SET_PAGE_CACHE(page, cachep);
+ 		SET_PAGE_SLAB(page, slabp);
+-		PageSetSlab(page);
++		SetPageSlab(page);
+ 		page++;
+ 	} while (--i);
+ 
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 6e91894..85002f1 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -24,7 +24,7 @@ #include <asm/pgtable.h>
+ static int swap_writepage(struct page *page)
+ {
+ 	if (remove_exclusive_swap_page(page)) {
+-		UnlockPage(page);
++		unlock_page(page);
+ 		return 0;
+ 	}
+ 	rw_swap_page(WRITE, page);
+@@ -244,9 +244,9 @@ void free_page_and_swap_cache(struct pag
+ 	 * exclusive_swap_page() _with_ the lock. 
+ 	 * 					- Marcelo
+ 	 */
+-	if (PageSwapCache(page) && !TryLockPage(page)) {
++	if (PageSwapCache(page) && !TestSetPageLocked(page)) {
+ 		remove_exclusive_swap_page(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 	}
+ 	page_cache_release(page);
+ }
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index f93135a..4037406 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -348,7 +348,7 @@ void free_swap_and_cache(swp_entry_t ent
+ 			delete_from_swap_cache(page);
+ 			SetPageDirty(page);
+ 		}
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
+ }
+@@ -689,7 +689,7 @@ static int try_to_unuse(unsigned int typ
+ 		 * mark page dirty so try_to_swap_out will preserve it.
+ 		 */
+ 		SetPageDirty(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 		page_cache_release(page);
+ 
+ 		/*
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 91effe1..f097d65 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -35,6 +35,11 @@ #include <asm/tlbflush.h>
+  */
+ #define DEF_PRIORITY (6)
+ 
++static inline int is_page_cache_freeable(struct page * page)
++{
++	return page_count(page) - !!PagePrivate(page) == 1;
++}
++
+ /*
+  * On the swap_out path, the radix-tree node allocations are performing
+  * GFP_ATOMIC allocations under PF_MEMALLOC.  They can completely
+@@ -87,7 +92,7 @@ static inline int try_to_swap_out(struct
+ 	if (!memclass(page_zone(page), classzone))
+ 		return 0;
+ 
+-	if (TryLockPage(page))
++	if (TestSetPageLocked(page))
+ 		return 0;
+ 
+ 	/* From this point on, the odds are that we're going to
+@@ -114,7 +119,7 @@ set_swap_pte:
+ 		set_pte(page_table, swp_entry_to_pte(entry));
+ drop_pte:
+ 		mm->rss--;
+-		UnlockPage(page);
++		unlock_page(page);
+ 		{
+ 			int freeable = page_count(page) -
+ 				!!PagePrivate(page) <= 2;
+@@ -181,7 +186,7 @@ drop_pte:
+ 	/* No swap space left */
+ preserve:
+ 	set_pte(page_table, pte);
+-	UnlockPage(page);
++	unlock_page(page);
+ 	return 0;
+ }
+ 
+@@ -416,7 +421,7 @@ static int shrink_cache(int nr_pages, zo
+ 		 * The page is locked. IO in progress?
+ 		 * Move it to the back of the list.
+ 		 */
+-		if (unlikely(TryLockPage(page))) {
++		if (unlikely(TestSetPageLocked(page))) {
+ 			if (PageLaunder(page) && (gfp_mask & __GFP_FS)) {
+ 				page_cache_get(page);
+ 				spin_unlock(&pagemap_lru_lock);
+@@ -490,7 +495,7 @@ static int shrink_cache(int nr_pages, zo
+ 					 * taking the lru lock
+ 					 */
+ 					spin_lock(&pagemap_lru_lock);
+-					UnlockPage(page);
++					unlock_page(page);
+ 					__lru_cache_del(page);
+ 
+ 					/* effectively free the page here */
+@@ -511,7 +516,7 @@ static int shrink_cache(int nr_pages, zo
+ 				}
+ 			} else {
+ 				/* failed to drop the buffers so stop here */
+-				UnlockPage(page);
++				unlock_page(page);
+ 				page_cache_release(page);
+ 
+ 				spin_lock(&pagemap_lru_lock);
+@@ -528,7 +533,7 @@ static int shrink_cache(int nr_pages, zo
+ 				goto page_freeable;
+ 			write_unlock(&mapping->page_lock);
+ 		}
+-		UnlockPage(page);
++		unlock_page(page);
+ page_mapped:
+ 		if (--max_mapped >= 0)
+ 			continue;
+@@ -548,7 +553,7 @@ page_freeable:
+ 		 */
+ 		if (PageDirty(page)) {
+ 			write_unlock(&mapping->page_lock);
+-			UnlockPage(page);
++			unlock_page(page);
+ 			continue;
+ 		}
+ 
+@@ -565,7 +570,7 @@ page_freeable:
+ 		}
+ 
+ 		__lru_cache_del(page);
+-		UnlockPage(page);
++		unlock_page(page);
+ 
+ 		/* effectively free the page here */
+ 		page_cache_release(page);
+@@ -597,7 +602,7 @@ static void refill_inactive(int nr_pages
+ 
+ 		page = list_entry(entry, struct page, lru);
+ 		entry = entry->prev;
+-		if (PageTestandClearReferenced(page)) {
++		if (TestClearPageReferenced(page)) {
+ 			list_del(&page->lru);
+ 			list_add(&page->lru, &active_list);
+ 			continue;

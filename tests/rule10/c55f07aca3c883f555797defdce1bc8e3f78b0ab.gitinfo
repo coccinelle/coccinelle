@@ -1,0 +1,857 @@
+commit c55f07aca3c883f555797defdce1bc8e3f78b0ab
+Author: Andy Grover <agrover@groveronline.com>
+Date:   Wed Apr 23 21:22:54 2003 -0700
+
+    ACPI: Update to 20030424
+    - Remove an unused parameter from lowlevel read/write functions
+    - FADT initialization cleanups
+
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index cd9dd6d..6281f49 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -113,7 +113,7 @@ acpi_ec_wait (
+ 	switch (event) {
+ 	case ACPI_EC_EVENT_OBF:
+ 		do {
+-			acpi_hw_low_level_read(8, &acpi_ec_status, &ec->status_addr, 0);
++			acpi_hw_low_level_read(8, &acpi_ec_status, &ec->status_addr);
+ 			if (acpi_ec_status & ACPI_EC_FLAG_OBF)
+ 				return 0;
+ 			udelay(ACPI_EC_UDELAY);
+@@ -121,7 +121,7 @@ acpi_ec_wait (
+ 		break;
+ 	case ACPI_EC_EVENT_IBE:
+ 		do {
+-			acpi_hw_low_level_read(8, &acpi_ec_status, &ec->status_addr, 0);
++			acpi_hw_low_level_read(8, &acpi_ec_status, &ec->status_addr);
+ 			if (!(acpi_ec_status & ACPI_EC_FLAG_IBF))
+ 				return 0;
+ 			udelay(ACPI_EC_UDELAY);
+@@ -161,18 +161,18 @@ acpi_ec_read (
+ 	
+ 	spin_lock_irqsave(&ec->lock, flags);
+ 
+-	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_READ, &ec->command_addr, 0);
++	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_READ, &ec->command_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_IBE);
+ 	if (result)
+ 		goto end;
+ 
+-	acpi_hw_low_level_write(8, address, &ec->data_addr, 0);
++	acpi_hw_low_level_write(8, address, &ec->data_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_OBF);
+ 	if (result)
+ 		goto end;
+ 
+ 
+-	acpi_hw_low_level_read(8, data, &ec->data_addr, 0);
++	acpi_hw_low_level_read(8, data, &ec->data_addr);
+ 
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Read [%02x] from address [%02x]\n",
+ 		*data, address));
+@@ -211,17 +211,17 @@ acpi_ec_write (
+ 
+ 	spin_lock_irqsave(&ec->lock, flags);
+ 
+-	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_WRITE, &ec->command_addr, 0);
++	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_WRITE, &ec->command_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_IBE);
+ 	if (result)
+ 		goto end;
+ 
+-	acpi_hw_low_level_write(8, address, &ec->data_addr, 0);
++	acpi_hw_low_level_write(8, address, &ec->data_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_IBE);
+ 	if (result)
+ 		goto end;
+ 
+-	acpi_hw_low_level_write(8, data, &ec->data_addr, 0);
++	acpi_hw_low_level_write(8, data, &ec->data_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_IBE);
+ 	if (result)
+ 		goto end;
+@@ -310,12 +310,12 @@ acpi_ec_query (
+ 	 */
+ 	spin_lock_irqsave(&ec->lock, flags);
+ 
+-	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_QUERY, &ec->command_addr, 0);
++	acpi_hw_low_level_write(8, ACPI_EC_COMMAND_QUERY, &ec->command_addr);
+ 	result = acpi_ec_wait(ec, ACPI_EC_EVENT_OBF);
+ 	if (result)
+ 		goto end;
+ 	
+-	acpi_hw_low_level_read(8, data, &ec->data_addr, 0);
++	acpi_hw_low_level_read(8, data, &ec->data_addr);
+ 	if (!*data)
+ 		result = -ENODATA;
+ 
+@@ -355,7 +355,7 @@ acpi_ec_gpe_query (
+ 		goto end;	
+ 
+ 	spin_lock_irqsave(&ec->lock, flags);
+-	acpi_hw_low_level_read(8, &value, &ec->command_addr, 0);
++	acpi_hw_low_level_read(8, &value, &ec->command_addr);
+ 	spin_unlock_irqrestore(&ec->lock, flags);
+ 
+ 	/* TBD: Implement asynch events!
+diff --git a/drivers/acpi/events/evgpe.c b/drivers/acpi/events/evgpe.c
+index 2fc32e1..4cb089d 100644
+--- a/drivers/acpi/events/evgpe.c
++++ b/drivers/acpi/events/evgpe.c
+@@ -170,7 +170,7 @@ acpi_ev_gpe_detect (
+ 			/* Read the Status Register */
+ 
+ 			status = acpi_hw_low_level_read (ACPI_GPE_REGISTER_WIDTH, &in_value,
+-					 &gpe_register_info->status_address, 0);
++					 &gpe_register_info->status_address);
+ 			gpe_register_info->status = (u8) in_value;
+ 			if (ACPI_FAILURE (status)) {
+ 				goto unlock_and_exit;
+@@ -179,7 +179,7 @@ acpi_ev_gpe_detect (
+ 			/* Read the Enable Register */
+ 
+ 			status = acpi_hw_low_level_read (ACPI_GPE_REGISTER_WIDTH, &in_value,
+-					 &gpe_register_info->enable_address, 0);
++					 &gpe_register_info->enable_address);
+ 			gpe_register_info->enable = (u8) in_value;
+ 			if (ACPI_FAILURE (status)) {
+ 				goto unlock_and_exit;
+diff --git a/drivers/acpi/events/evgpeblk.c b/drivers/acpi/events/evgpeblk.c
+index 6592b23..9159335 100644
+--- a/drivers/acpi/events/evgpeblk.c
++++ b/drivers/acpi/events/evgpeblk.c
+@@ -634,13 +634,13 @@ acpi_ev_create_gpe_info_blocks (
+ 		 * by writing a '0'.
+ 		 */
+ 		status = acpi_hw_low_level_write (ACPI_GPE_REGISTER_WIDTH, 0x00,
+-				 &this_register->enable_address, 0);
++				 &this_register->enable_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto error_exit;
+ 		}
+ 
+ 		status = acpi_hw_low_level_write (ACPI_GPE_REGISTER_WIDTH, 0xFF,
+-				 &this_register->status_address, 0);
++				 &this_register->status_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto error_exit;
+ 		}
+diff --git a/drivers/acpi/hardware/hwgpe.c b/drivers/acpi/hardware/hwgpe.c
+index d7fa0b5..1ba86f7 100644
+--- a/drivers/acpi/hardware/hwgpe.c
++++ b/drivers/acpi/hardware/hwgpe.c
+@@ -77,7 +77,7 @@ acpi_hw_enable_gpe (
+ 	 * to enable the GPE, and write out the new register.
+ 	 */
+ 	status = acpi_hw_low_level_read (8, &in_byte,
+-			  &gpe_event_info->register_info->enable_address, 0);
++			  &gpe_event_info->register_info->enable_address);
+ 	if (ACPI_FAILURE (status)) {
+ 		return (status);
+ 	}
+@@ -85,7 +85,7 @@ acpi_hw_enable_gpe (
+ 	/* Write with the new GPE bit enabled */
+ 
+ 	status = acpi_hw_low_level_write (8, (in_byte | gpe_event_info->bit_mask),
+-			  &gpe_event_info->register_info->enable_address, 0);
++			  &gpe_event_info->register_info->enable_address);
+ 
+ 	return (status);
+ }
+@@ -164,7 +164,7 @@ acpi_hw_disable_gpe (
+ 	 * and write out the new register value to disable the GPE.
+ 	 */
+ 	status = acpi_hw_low_level_read (8, &in_byte,
+-			  &gpe_register_info->enable_address, 0);
++			  &gpe_register_info->enable_address);
+ 	if (ACPI_FAILURE (status)) {
+ 		return (status);
+ 	}
+@@ -172,7 +172,7 @@ acpi_hw_disable_gpe (
+ 	/* Write the byte with this GPE bit cleared */
+ 
+ 	status = acpi_hw_low_level_write (8, (in_byte & ~(gpe_event_info->bit_mask)),
+-			  &gpe_register_info->enable_address, 0);
++			  &gpe_register_info->enable_address);
+ 	if (ACPI_FAILURE (status)) {
+ 		return (status);
+ 	}
+@@ -246,7 +246,7 @@ acpi_hw_clear_gpe (
+ 	 * clear this GPE.
+ 	 */
+ 	status = acpi_hw_low_level_write (8, gpe_event_info->bit_mask,
+-			  &gpe_event_info->register_info->status_address, 0);
++			  &gpe_event_info->register_info->status_address);
+ 
+ 	return (status);
+ }
+@@ -293,7 +293,7 @@ acpi_hw_get_gpe_status (
+ 
+ 	/* GPE Enabled? */
+ 
+-	status = acpi_hw_low_level_read (8, &in_byte, &gpe_register_info->enable_address, 0);
++	status = acpi_hw_low_level_read (8, &in_byte, &gpe_register_info->enable_address);
+ 	if (ACPI_FAILURE (status)) {
+ 		goto unlock_and_exit;
+ 	}
+@@ -310,7 +310,7 @@ acpi_hw_get_gpe_status (
+ 
+ 	/* GPE active (set)? */
+ 
+-	status = acpi_hw_low_level_read (8, &in_byte, &gpe_register_info->status_address, 0);
++	status = acpi_hw_low_level_read (8, &in_byte, &gpe_register_info->status_address);
+ 	if (ACPI_FAILURE (status)) {
+ 		goto unlock_and_exit;
+ 	}
+@@ -360,7 +360,7 @@ acpi_hw_disable_gpe_block (
+ 
+ 	for (i = 0; i < gpe_block->register_count; i++) {
+ 		status = acpi_hw_low_level_write (8, 0x00,
+-				 &gpe_block->register_info[i].enable_address, (u32) i);
++				 &gpe_block->register_info[i].enable_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			return (status);
+ 		}
+@@ -401,7 +401,7 @@ acpi_hw_clear_gpe_block (
+ 
+ 	for (i = 0; i < gpe_block->register_count; i++) {
+ 		status = acpi_hw_low_level_write (8, 0xFF,
+-				 &gpe_block->register_info[i].status_address, (u32) i);
++				 &gpe_block->register_info[i].status_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			return (status);
+ 		}
+@@ -447,7 +447,7 @@ acpi_hw_disable_non_wakeup_gpe_block (
+ 		 * will be using it to restore all the GPEs later.
+ 		 */
+ 		status = acpi_hw_low_level_read (8, &in_value,
+-				 &gpe_register_info->enable_address, 0);
++				 &gpe_register_info->enable_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			return (status);
+ 		}
+@@ -458,7 +458,7 @@ acpi_hw_disable_non_wakeup_gpe_block (
+ 		 * Disable all GPEs except wakeup GPEs.
+ 		 */
+ 		status = acpi_hw_low_level_write (8, gpe_register_info->wake_enable,
+-				&gpe_register_info->enable_address, 0);
++				&gpe_register_info->enable_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			return (status);
+ 		}
+@@ -539,7 +539,7 @@ acpi_hw_enable_non_wakeup_gpe_block (
+ 		 * Blast them back in.
+ 		 */
+ 		status = acpi_hw_low_level_write (8, gpe_register_info->enable,
+-				 &gpe_register_info->enable_address, 0);
++				 &gpe_register_info->enable_address);
+ 		if (ACPI_FAILURE (status)) {
+ 			return (status);
+ 		}
+diff --git a/drivers/acpi/hardware/hwregs.c b/drivers/acpi/hardware/hwregs.c
+index 638c732..25e05b1 100644
+--- a/drivers/acpi/hardware/hwregs.c
++++ b/drivers/acpi/hardware/hwregs.c
+@@ -93,7 +93,7 @@ acpi_hw_clear_acpi_status (void)
+ 
+ 	if (acpi_gbl_FADT->xpm1b_evt_blk.address) {
+ 		status = acpi_hw_low_level_write (16, ACPI_BITMASK_ALL_FIXED_STATUS,
+-				 &acpi_gbl_FADT->xpm1b_evt_blk, 0);
++				 &acpi_gbl_FADT->xpm1b_evt_blk);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+@@ -470,7 +470,6 @@ acpi_hw_register_read (
+ {
+ 	u32                             value1 = 0;
+ 	u32                             value2 = 0;
+-	u32                             bank_offset;
+ 	acpi_status                     status;
+ 
+ 
+@@ -487,50 +486,53 @@ acpi_hw_register_read (
+ 	switch (register_id) {
+ 	case ACPI_REGISTER_PM1_STATUS:           /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_FADT->xpm1a_evt_blk, 0);
++		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_FADT->xpm1a_evt_blk);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_FADT->xpm1b_evt_blk, 0);
++		/* PM1B is optional */
++
++		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_FADT->xpm1b_evt_blk);
+ 		value1 |= value2;
+ 		break;
+ 
+ 
+-	case ACPI_REGISTER_PM1_ENABLE:           /* 16-bit access*/
++	case ACPI_REGISTER_PM1_ENABLE:           /* 16-bit access */
+ 
+-		bank_offset = ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len);
+-		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_FADT->xpm1a_evt_blk, bank_offset);
++		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_xpm1a_enable);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_FADT->xpm1b_evt_blk, bank_offset);
++		/* PM1B is optional */
++
++		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_xpm1b_enable);
+ 		value1 |= value2;
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM1_CONTROL:          /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_FADT->xpm1a_cnt_blk, 0);
++		status = acpi_hw_low_level_read (16, &value1, &acpi_gbl_FADT->xpm1a_cnt_blk);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_FADT->xpm1b_cnt_blk, 0);
++		status = acpi_hw_low_level_read (16, &value2, &acpi_gbl_FADT->xpm1b_cnt_blk);
+ 		value1 |= value2;
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM2_CONTROL:          /* 8-bit access */
+ 
+-		status = acpi_hw_low_level_read (8, &value1, &acpi_gbl_FADT->xpm2_cnt_blk, 0);
++		status = acpi_hw_low_level_read (8, &value1, &acpi_gbl_FADT->xpm2_cnt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM_TIMER:             /* 32-bit access */
+ 
+-		status = acpi_hw_low_level_read (32, &value1, &acpi_gbl_FADT->xpm_tmr_blk, 0);
++		status = acpi_hw_low_level_read (32, &value1, &acpi_gbl_FADT->xpm_tmr_blk);
+ 		break;
+ 
+ 	case ACPI_REGISTER_SMI_COMMAND_BLOCK:    /* 8-bit access */
+@@ -577,7 +579,6 @@ acpi_hw_register_write (
+ 	u32                             register_id,
+ 	u32                             value)
+ {
+-	u32                             bank_offset;
+ 	acpi_status                     status;
+ 
+ 
+@@ -594,59 +595,62 @@ acpi_hw_register_write (
+ 	switch (register_id) {
+ 	case ACPI_REGISTER_PM1_STATUS:           /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_evt_blk, 0);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_evt_blk);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_evt_blk, 0);
++		/* PM1B is optional */
++
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_evt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM1_ENABLE:           /* 16-bit access*/
+ 
+-		bank_offset = ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len);
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_evt_blk, bank_offset);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_xpm1a_enable);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_evt_blk, bank_offset);
++		/* PM1B is optional */
++
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_xpm1b_enable);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM1_CONTROL:          /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_cnt_blk, 0);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_cnt_blk);
+ 		if (ACPI_FAILURE (status)) {
+ 			goto unlock_and_exit;
+ 		}
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_cnt_blk, 0);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_cnt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM1A_CONTROL:         /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_cnt_blk, 0);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1a_cnt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM1B_CONTROL:         /* 16-bit access */
+ 
+-		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_cnt_blk, 0);
++		status = acpi_hw_low_level_write (16, value, &acpi_gbl_FADT->xpm1b_cnt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM2_CONTROL:          /* 8-bit access */
+ 
+-		status = acpi_hw_low_level_write (8, value, &acpi_gbl_FADT->xpm2_cnt_blk, 0);
++		status = acpi_hw_low_level_write (8, value, &acpi_gbl_FADT->xpm2_cnt_blk);
+ 		break;
+ 
+ 
+ 	case ACPI_REGISTER_PM_TIMER:             /* 32-bit access */
+ 
+-		status = acpi_hw_low_level_write (32, value, &acpi_gbl_FADT->xpm_tmr_blk, 0);
++		status = acpi_hw_low_level_write (32, value, &acpi_gbl_FADT->xpm_tmr_blk);
+ 		break;
+ 
+ 
+@@ -676,11 +680,11 @@ unlock_and_exit:
+  *
+  * FUNCTION:    acpi_hw_low_level_read
+  *
+- * PARAMETERS:  Register            - GAS register structure
+- *              Offset              - Offset from the base address in the GAS
+- *              Width               - 8, 16, or 32
++ * PARAMETERS:  Width               - 8, 16, or 32
++ *              Value               - Where the value is returned
++ *              Register            - GAS register structure
+  *
+- * RETURN:      Value read
++ * RETURN:      Status
+  *
+  * DESCRIPTION: Read from either memory, IO, or PCI config space.
+  *
+@@ -690,11 +694,8 @@ acpi_status
+ acpi_hw_low_level_read (
+ 	u32                             width,
+ 	u32                             *value,
+-	struct acpi_generic_address     *reg,
+-	u32                             offset)
++	struct acpi_generic_address     *reg)
+ {
+-	acpi_physical_address           mem_address;
+-	acpi_io_address                 io_address;
+ 	struct acpi_pci_id              pci_id;
+ 	u16                             pci_register;
+ 	acpi_status                     status;
+@@ -721,19 +722,16 @@ acpi_hw_low_level_read (
+ 	switch (reg->address_space_id) {
+ 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+ 
+-		mem_address = (reg->address
+-				  + (acpi_physical_address) offset);
+-
+-		status = acpi_os_read_memory (mem_address, value, width);
++		status = acpi_os_read_memory (
++				 (acpi_physical_address) reg->address,
++				 value, width);
+ 		break;
+ 
+ 
+ 	case ACPI_ADR_SPACE_SYSTEM_IO:
+ 
+-		io_address = (acpi_io_address) (reg->address
+-				   + (acpi_physical_address) offset);
+-
+-		status = acpi_os_read_port (io_address, value, width);
++		status = acpi_os_read_port ((acpi_io_address) reg->address,
++				 value, width);
+ 		break;
+ 
+ 
+@@ -743,15 +741,16 @@ acpi_hw_low_level_read (
+ 		pci_id.bus     = 0;
+ 		pci_id.device  = ACPI_PCI_DEVICE (reg->address);
+ 		pci_id.function = ACPI_PCI_FUNCTION (reg->address);
+-		pci_register   = (u16) (ACPI_PCI_REGISTER (reg->address)
+-				  + offset);
++		pci_register   = (u16) ACPI_PCI_REGISTER (reg->address);
+ 
+-		status = acpi_os_read_pci_configuration (&pci_id, pci_register, value, width);
++		status = acpi_os_read_pci_configuration (&pci_id, pci_register,
++				 value, width);
+ 		break;
+ 
+ 
+ 	default:
+-		ACPI_DEBUG_PRINT ((ACPI_DB_ERROR, "Unsupported address space: %X\n", reg->address_space_id));
++		ACPI_DEBUG_PRINT ((ACPI_DB_ERROR,
++			"Unsupported address space: %X\n", reg->address_space_id));
+ 		status = AE_BAD_PARAMETER;
+ 		break;
+ 	}
+@@ -767,12 +766,10 @@ acpi_hw_low_level_read (
+  * PARAMETERS:  Width               - 8, 16, or 32
+  *              Value               - To be written
+  *              Register            - GAS register structure
+- *              Offset              - Offset from the base address in the GAS
+- *
+  *
+- * RETURN:      Value read
++ * RETURN:      Status
+  *
+- * DESCRIPTION: Read from either memory, IO, or PCI config space.
++ * DESCRIPTION: Write to either memory, IO, or PCI config space.
+  *
+  ******************************************************************************/
+ 
+@@ -780,11 +777,8 @@ acpi_status
+ acpi_hw_low_level_write (
+ 	u32                             width,
+ 	u32                             value,
+-	struct acpi_generic_address     *reg,
+-	u32                             offset)
++	struct acpi_generic_address     *reg)
+ {
+-	acpi_physical_address           mem_address;
+-	acpi_io_address                 io_address;
+ 	struct acpi_pci_id              pci_id;
+ 	u16                             pci_register;
+ 	acpi_status                     status;
+@@ -809,19 +803,16 @@ acpi_hw_low_level_write (
+ 	switch (reg->address_space_id) {
+ 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+ 
+-		mem_address = (reg->address
+-				  + (acpi_physical_address) offset);
+-
+-		status = acpi_os_write_memory (mem_address, value, width);
++		status = acpi_os_write_memory (
++				 (acpi_physical_address) reg->address,
++				 value, width);
+ 		break;
+ 
+ 
+ 	case ACPI_ADR_SPACE_SYSTEM_IO:
+ 
+-		io_address = (acpi_io_address) (reg->address
+-				   + (acpi_physical_address) offset);
+-
+-		status = acpi_os_write_port (io_address, value, width);
++		status = acpi_os_write_port ((acpi_io_address) reg->address,
++				 value, width);
+ 		break;
+ 
+ 
+@@ -831,15 +822,16 @@ acpi_hw_low_level_write (
+ 		pci_id.bus     = 0;
+ 		pci_id.device  = ACPI_PCI_DEVICE (reg->address);
+ 		pci_id.function = ACPI_PCI_FUNCTION (reg->address);
+-		pci_register   = (u16) (ACPI_PCI_REGISTER (reg->address)
+-				  + offset);
++		pci_register   = (u16) ACPI_PCI_REGISTER (reg->address);
+ 
+-		status = acpi_os_write_pci_configuration (&pci_id, pci_register, (acpi_integer) value, width);
++		status = acpi_os_write_pci_configuration (&pci_id, pci_register,
++				 (acpi_integer) value, width);
+ 		break;
+ 
+ 
+ 	default:
+-		ACPI_DEBUG_PRINT ((ACPI_DB_ERROR, "Unsupported address space: %X\n", reg->address_space_id));
++		ACPI_DEBUG_PRINT ((ACPI_DB_ERROR,
++			"Unsupported address space: %X\n", reg->address_space_id));
+ 		status = AE_BAD_PARAMETER;
+ 		break;
+ 	}
+diff --git a/drivers/acpi/hardware/hwtimer.c b/drivers/acpi/hardware/hwtimer.c
+index b8053a1..897dd6d 100644
+--- a/drivers/acpi/hardware/hwtimer.c
++++ b/drivers/acpi/hardware/hwtimer.c
+@@ -108,7 +108,7 @@ acpi_get_timer (
+ 		return_ACPI_STATUS (AE_BAD_PARAMETER);
+ 	}
+ 
+-	status = acpi_hw_low_level_read (32, ticks, &acpi_gbl_FADT->xpm_tmr_blk, 0);
++	status = acpi_hw_low_level_read (32, ticks, &acpi_gbl_FADT->xpm_tmr_blk);
+ 
+ 	return_ACPI_STATUS (status);
+ }
+diff --git a/drivers/acpi/resources/rsxface.c b/drivers/acpi/resources/rsxface.c
+index 63fd9ac..cb2d60e 100644
+--- a/drivers/acpi/resources/rsxface.c
++++ b/drivers/acpi/resources/rsxface.c
+@@ -379,25 +379,31 @@ acpi_resource_to_address64 (
+ {
+ 	struct acpi_resource_address16      *address16;
+ 	struct acpi_resource_address32      *address32;
+-	struct acpi_resource_address64      *address64;
+ 
+ 
+ 	switch (resource->id) {
+ 	case ACPI_RSTYPE_ADDRESS16:
++
+ 		address16 = (struct acpi_resource_address16 *) &resource->data;
+ 		ACPI_COPY_ADDRESS(out, address16);
+ 		break;
+ 
++
+ 	case ACPI_RSTYPE_ADDRESS32:
++
+ 		address32 = (struct acpi_resource_address32 *) &resource->data;
+ 		ACPI_COPY_ADDRESS(out, address32);
+ 		break;
+ 
++
+ 	case ACPI_RSTYPE_ADDRESS64:
+-		address64 = (struct acpi_resource_address64 *) &resource->data;
+-		ACPI_COPY_ADDRESS(out, address64);
++
++		/* Simple copy for 64 bit source */
++
++		ACPI_MEMCPY (out, &resource->data, sizeof (struct acpi_resource_address64));
+ 		break;
+ 
++
+ 	default:
+ 		return (AE_BAD_PARAMETER);
+ 	}
+diff --git a/drivers/acpi/tables/tbconvrt.c b/drivers/acpi/tables/tbconvrt.c
+index ae9f597..552c8eb 100644
+--- a/drivers/acpi/tables/tbconvrt.c
++++ b/drivers/acpi/tables/tbconvrt.c
+@@ -164,6 +164,36 @@ acpi_tb_convert_to_xsdt (
+ }
+ 
+ 
++/******************************************************************************
++ *
++ * FUNCTION:    acpi_tb_init_generic_address
++ *
++ * PARAMETERS:  new_gas_struct      - GAS struct to be initialized
++ *              register_bit_width  - Width of this register
++ *              Address             - Address of the register
++ *
++ * RETURN:      None
++ *
++ * DESCRIPTION: Initialize a GAS structure.
++ *
++ ******************************************************************************/
++
++static void
++acpi_tb_init_generic_address (
++	struct acpi_generic_address     *new_gas_struct,
++	u8                              register_bit_width,
++	acpi_physical_address           address)
++{
++
++	ACPI_STORE_ADDRESS (new_gas_struct->address, address);
++
++	new_gas_struct->address_space_id = ACPI_ADR_SPACE_SYSTEM_IO;
++	new_gas_struct->register_bit_width = register_bit_width;
++	new_gas_struct->register_bit_offset = 0;
++	new_gas_struct->reserved        = 0;
++}
++
++
+ /*******************************************************************************
+  *
+  * FUNCTION:    acpi_tb_convert_fadt1
+@@ -233,14 +263,34 @@ acpi_tb_convert_fadt1 (
+ 	/*
+ 	 * Convert the V1.0 block addresses to V2.0 GAS structures
+ 	 */
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1a_evt_blk, local_fadt->pm1_evt_len, local_fadt->V1_pm1a_evt_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1b_evt_blk, local_fadt->pm1_evt_len, local_fadt->V1_pm1b_evt_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1a_cnt_blk, local_fadt->pm1_cnt_len, local_fadt->V1_pm1a_cnt_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1b_cnt_blk, local_fadt->pm1_cnt_len, local_fadt->V1_pm1b_cnt_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm2_cnt_blk, local_fadt->pm2_cnt_len, local_fadt->V1_pm2_cnt_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm_tmr_blk, local_fadt->pm_tm_len, local_fadt->V1_pm_tmr_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xgpe0_blk,  0,                     local_fadt->V1_gpe0_blk);
+-	ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xgpe1_blk,  0,                     local_fadt->V1_gpe1_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm1a_evt_blk, local_fadt->pm1_evt_len,
++			  (acpi_physical_address)   local_fadt->V1_pm1a_evt_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm1b_evt_blk, local_fadt->pm1_evt_len,
++			  (acpi_physical_address)   local_fadt->V1_pm1b_evt_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm1a_cnt_blk, local_fadt->pm1_cnt_len,
++			  (acpi_physical_address)   local_fadt->V1_pm1a_cnt_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm1b_cnt_blk, local_fadt->pm1_cnt_len,
++			  (acpi_physical_address)   local_fadt->V1_pm1b_cnt_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm2_cnt_blk, local_fadt->pm2_cnt_len,
++			  (acpi_physical_address)   local_fadt->V1_pm2_cnt_blk);
++	acpi_tb_init_generic_address (&local_fadt->xpm_tmr_blk, local_fadt->pm_tm_len,
++			  (acpi_physical_address)   local_fadt->V1_pm_tmr_blk);
++	acpi_tb_init_generic_address (&local_fadt->xgpe0_blk, 0,
++			  (acpi_physical_address)   local_fadt->V1_gpe0_blk);
++	acpi_tb_init_generic_address (&local_fadt->xgpe1_blk, 0,
++			  (acpi_physical_address)   local_fadt->V1_gpe1_blk);
++
++	/* Create separate GAS structs for the PM1 Enable registers */
++
++	acpi_tb_init_generic_address (&acpi_gbl_xpm1a_enable,
++		 (u8) ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len),
++		 (acpi_physical_address) (local_fadt->xpm1a_evt_blk.address +
++			ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len)));
++
++	acpi_tb_init_generic_address (&acpi_gbl_xpm1b_enable,
++		 (u8) ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len),
++		 (acpi_physical_address) (local_fadt->xpm1b_evt_blk.address +
++			ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len)));
+ }
+ 
+ 
+@@ -282,44 +332,58 @@ acpi_tb_convert_fadt2 (
+ 	}
+ 
+ 	if (!(local_fadt->xpm1a_evt_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1a_evt_blk,
+-			local_fadt->pm1_evt_len, local_fadt->V1_pm1a_evt_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm1a_evt_blk,
++			local_fadt->pm1_evt_len, (acpi_physical_address) local_fadt->V1_pm1a_evt_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xpm1b_evt_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1b_evt_blk,
+-			local_fadt->pm1_evt_len, local_fadt->V1_pm1b_evt_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm1b_evt_blk,
++			local_fadt->pm1_evt_len, (acpi_physical_address) local_fadt->V1_pm1b_evt_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xpm1a_cnt_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1a_cnt_blk,
+-			local_fadt->pm1_cnt_len, local_fadt->V1_pm1a_cnt_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm1a_cnt_blk,
++			local_fadt->pm1_cnt_len, (acpi_physical_address) local_fadt->V1_pm1a_cnt_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xpm1b_cnt_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm1b_cnt_blk,
+-			local_fadt->pm1_cnt_len, local_fadt->V1_pm1b_cnt_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm1b_cnt_blk,
++			local_fadt->pm1_cnt_len, (acpi_physical_address) local_fadt->V1_pm1b_cnt_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xpm2_cnt_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm2_cnt_blk,
+-			local_fadt->pm2_cnt_len, local_fadt->V1_pm2_cnt_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm2_cnt_blk,
++			local_fadt->pm2_cnt_len, (acpi_physical_address) local_fadt->V1_pm2_cnt_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xpm_tmr_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xpm_tmr_blk,
+-			local_fadt->pm_tm_len, local_fadt->V1_pm_tmr_blk);
++		acpi_tb_init_generic_address (&local_fadt->xpm_tmr_blk,
++			local_fadt->pm_tm_len, (acpi_physical_address) local_fadt->V1_pm_tmr_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xgpe0_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xgpe0_blk,
+-			0, local_fadt->V1_gpe0_blk);
++		acpi_tb_init_generic_address (&local_fadt->xgpe0_blk,
++			0, (acpi_physical_address) local_fadt->V1_gpe0_blk);
+ 	}
+ 
+ 	if (!(local_fadt->xgpe1_blk.address)) {
+-		ASL_BUILD_GAS_FROM_V1_ENTRY (local_fadt->xgpe1_blk,
+-			0, local_fadt->V1_gpe1_blk);
++		acpi_tb_init_generic_address (&local_fadt->xgpe1_blk,
++			0, (acpi_physical_address) local_fadt->V1_gpe1_blk);
+ 	}
++
++	/* Create separate GAS structs for the PM1 Enable registers */
++
++	acpi_tb_init_generic_address (&acpi_gbl_xpm1a_enable,
++		(u8) ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len),
++		(acpi_physical_address) (local_fadt->xpm1a_evt_blk.address +
++			ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len)));
++	acpi_gbl_xpm1a_enable.address_space_id = local_fadt->xpm1a_evt_blk.address_space_id;
++
++	acpi_tb_init_generic_address (&acpi_gbl_xpm1b_enable,
++		(u8) ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len),
++		(acpi_physical_address) (local_fadt->xpm1b_evt_blk.address +
++			ACPI_DIV_2 (acpi_gbl_FADT->pm1_evt_len)));
++	acpi_gbl_xpm1b_enable.address_space_id = local_fadt->xpm1b_evt_blk.address_space_id;
+ }
+ 
+ 
+diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
+index f7532f9..15f9684 100644
+--- a/include/acpi/acconfig.h
++++ b/include/acpi/acconfig.h
+@@ -64,7 +64,7 @@ #define _ACCONFIG_H
+ 
+ /* Version string */
+ 
+-#define ACPI_CA_VERSION                 0x20030418
++#define ACPI_CA_VERSION                 0x20030424
+ 
+ /* Maximum objects in the various object caches */
+ 
+diff --git a/include/acpi/acglobal.h b/include/acpi/acglobal.h
+index 55f7eb9..59a3643 100644
+--- a/include/acpi/acglobal.h
++++ b/include/acpi/acglobal.h
+@@ -105,6 +105,8 @@ ACPI_EXTERN struct acpi_common_facs     
+  */
+ ACPI_EXTERN u8                                  acpi_gbl_integer_bit_width;
+ ACPI_EXTERN u8                                  acpi_gbl_integer_byte_width;
++ACPI_EXTERN struct acpi_generic_address         acpi_gbl_xpm1a_enable;
++ACPI_EXTERN struct acpi_generic_address         acpi_gbl_xpm1b_enable;
+ 
+ /*
+  * Since there may be multiple SSDTs and PSDTS, a single pointer is not
+diff --git a/include/acpi/achware.h b/include/acpi/achware.h
+index 1d34e75..4be6958 100644
+--- a/include/acpi/achware.h
++++ b/include/acpi/achware.h
+@@ -98,15 +98,13 @@ acpi_status
+ acpi_hw_low_level_read (
+ 	u32                             width,
+ 	u32                             *value,
+-	struct acpi_generic_address     *reg,
+-	u32                             offset);
++	struct acpi_generic_address     *reg);
+ 
+ acpi_status
+ acpi_hw_low_level_write (
+ 	u32                             width,
+ 	u32                             value,
+-	struct acpi_generic_address     *reg,
+-	u32                             offset);
++	struct acpi_generic_address     *reg);
+ 
+ acpi_status
+ acpi_hw_clear_acpi_status (
+diff --git a/include/acpi/acmacros.h b/include/acpi/acmacros.h
+index 7b0f65b..7160c41 100644
+--- a/include/acpi/acmacros.h
++++ b/include/acpi/acmacros.h
+@@ -441,26 +441,6 @@ #define INCREMENT_ARG_LIST(list)        
+ 
+ 
+ /*
+- * Build a GAS structure from earlier ACPI table entries (V1.0 and 0.71 extensions)
+- *
+- * 1) Address space
+- * 2) Length in bytes -- convert to length in bits
+- * 3) Bit offset is zero
+- * 4) Reserved field is zero
+- * 5) Expand address to 64 bits
+- */
+-#define ASL_BUILD_GAS_FROM_ENTRY(a,b,c,d)   do {a.address_space_id = (u8) d;\
+-												a.register_bit_width = (u8) ACPI_MUL_8 (b);\
+-												a.register_bit_offset = 0;\
+-												a.reserved = 0;\
+-												ACPI_STORE_ADDRESS (a.address,(acpi_physical_address) c);} while (0)
+-
+-/* ACPI V1.0 entries -- address space is always I/O */
+-
+-#define ASL_BUILD_GAS_FROM_V1_ENTRY(a,b,c)  ASL_BUILD_GAS_FROM_ENTRY(a,b,c,ACPI_ADR_SPACE_SYSTEM_IO)
+-
+-
+-/*
+  * Reporting macros that are never compiled out
+  */
+ 

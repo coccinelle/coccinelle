@@ -1,0 +1,1488 @@
+commit a2bcb3a084f4312844639e18cbe7eb7256c7c23c
+Author: Andrew Morton <akpm@zip.com.au>
+Date:   Mon Apr 29 23:54:18 2002 -0700
+
+    [PATCH] page writeback locking update
+    
+    - Fixes a performance problem - callers of
+      prepare_write/commit_write, etc are locking pages, which synchronises
+      them behind writeback, which also locks these pages.  Significant
+      slowdowns for some workloads.
+    
+    - So pages are no longer locked while under writeout.  Introduce a
+      new PG_writeback and associated infrastructure to support this design
+      change.
+    
+    - Pages which are under read I/O still use PageLocked.  Pages which
+      are under write I/O have PageWriteback() true.
+    
+      I considered creating Page_IO instead of PageWriteback, and marking
+      both readin and writeout pages as PageIO().  So pages are unlocked
+      during both read and write.  There just doesn't seem a need to do
+      this - nobody ever needs unblocking access to a page which is under
+      read I/O.
+    
+    - Pages under swapout (brw_page) are PageLocked, not PageWriteback.
+      So their treatment is unchangeded.
+    
+      It's not obvious that pages which are under swapout actually need
+      the more asynchronous behaviour of PageWriteback.
+    
+      I was setting the swapout pages PageWriteback and unlocking them
+      prior to submitting the buffers in brw_page().  This led to deadlocks
+      on the exit_mmap->zap_page_range->free_swap_and_cache path.  These
+      functions call block_flushpage under spinlock.  If the page is
+      unlocked but has locked buffers, block_flushpage->discard_buffer()
+      sleeps.  Under spinlock.  So that will need fixing if for some reason
+      we want swapout to use PageWriteback.
+    
+      Kernel has called block_flushpage() under spinlock for a long time.
+       It is assuming that a locked page will never have locked buffers.
+      This appears to be true, but it's ugly.
+    
+    - Adds new function wait_on_page_writeback().  Renames wait_on_page()
+      to wait_on_page_locked() to remind people that they need to call the
+      appropriate one.
+    
+    - Renames filemap_fdatasync() to filemap_fdatawrite().  It's more
+      accurate - "sync" implies, if anything, writeout and wait.  (fsync,
+      msync) Or writeout.  it's not clear.
+    
+    - Subtly changes the filemap_fdatawrite() internals - this function
+      used to do a lock_page() - it waited for any other user of the page
+      to let go before submitting new I/O against a page.  It has been
+      changed to simply skip over any pages which are currently under
+      writeback.
+    
+      This is the right thing to do for memory-cleansing reasons.
+    
+      But it's the wrong thing to do for data consistency operations (eg,
+      fsync()).  For those operations we must ensure that all data which
+      was dirty *at the time of the system call* are tight on disk before
+      the call returns.
+    
+      So all places which care about this have been converted to do:
+    
+    	filemap_fdatawait(mapping);	/* Wait for current writeback */
+    	filemap_fdatawrite(mapping);	/* Write all dirty pages */
+    	filemap_fdatawait(mapping);	/* Wait for I/O to complete */
+    
+    - Fixes a truncate_inode_pages problem - truncate currently will
+      block when it hits a locked page, so it ends up getting into lockstep
+      behind writeback and all of the file is pointlessly written back.
+    
+      One fix for this is for truncate to simply walk the page list in the
+      opposite direction from writeback.
+    
+      I chose to use a separate cleansing pass.  It is more
+      CPU-intensive, but it is surer and clearer.  This is because there is
+      no reason why the per-address_space ->vm_writeback and
+      ->writeback_mapping functions *have* to perform writeout in
+      ->dirty_pages order.  They may choose to do something totally
+      different.
+    
+      (set_page_dirty() is an a_op now, so address_spaces could almost
+      privatise the whole dirty-page handling thing.  Except
+      truncate_inode_pages and invalidate_inode_pages assume that the pages
+      are on the address_space lists.  hmm.  So making truncate_inode_pages
+      and invalidate_inode_pages a_ops would make some sense).
+
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 7099f6c..410731e 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -488,7 +488,7 @@ static int read_disk_sb(mdk_rdev_t * rde
+ 			(filler_t *)mapping->a_ops->readpage, NULL);
+ 	if (IS_ERR(page))
+ 		goto out;
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	if (!PageUptodate(page))
+ 		goto fail;
+ 	if (PageError(page))
+@@ -949,7 +949,7 @@ static int write_disk_sb(mdk_rdev_t * rd
+ 	if (error)
+ 		goto unlock;
+ 	unlock_page(page);
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	page_cache_release(page);
+ 	fsync_bdev(bdev);
+ skip:
+diff --git a/drivers/mtd/devices/blkmtd.c b/drivers/mtd/devices/blkmtd.c
+index 4fcf437..63eca2b 100644
+--- a/drivers/mtd/devices/blkmtd.c
++++ b/drivers/mtd/devices/blkmtd.c
+@@ -662,7 +662,7 @@ static int blkmtd_read(struct mtd_info *
+     if(IS_ERR(page)) {
+       return PTR_ERR(page);
+     }
+-    wait_on_page(page);
++    wait_on_page_locked(page);
+     if(!PageUptodate(page)) {
+       /* error reading page */
+       printk("blkmtd: read: page not uptodate\n");
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c811529..5add2e4 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -180,22 +180,9 @@ static loff_t block_llseek(struct file *
+ 	return retval;
+ }
+ 	
+-/*
+- * AKPM: fixme.  unneeded stuff here.
+- */
+ static int __block_fsync(struct inode * inode)
+ {
+-	int ret, err;
+-
+-	ret = filemap_fdatasync(inode->i_mapping);
+-	err = sync_buffers(inode->i_bdev, 1);
+-	if (err && !ret)
+-		ret = err;
+-	err = filemap_fdatawait(inode->i_mapping);
+-	if (err && !ret)
+-		ret = err;
+-
+-	return ret;
++	return sync_buffers(inode->i_bdev, 1);
+ }
+ 
+ /*
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 273ea1b..9f16600 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -123,7 +123,9 @@ void unlock_buffer(struct buffer_head *b
+ 	 * waitqueue, which is used here. (Well.  Other locked buffers
+ 	 * against the page will pin it.  But complain anyway).
+ 	 */
+-	if (atomic_read(&bh->b_count) == 0 && !PageLocked(bh->b_page))
++	if (atomic_read(&bh->b_count) == 0 &&
++			!PageLocked(bh->b_page) &&
++			!PageWriteback(bh->b_page))
+ 		buffer_error();
+ 
+ 	clear_buffer_locked(bh);
+@@ -205,12 +207,14 @@ void end_buffer_io_sync(struct buffer_he
+  * via its mapping.  Does not take the superblock lock.
+  *
+  * If `wait' is true, wait on the writeout.
++ *
++ * FIXME: rename this function.
+  */
+ int sync_buffers(struct block_device *bdev, int wait)
+ {
+ 	int ret;
+ 
+-	ret = filemap_fdatasync(bdev->bd_inode->i_mapping);
++	ret = filemap_fdatawrite(bdev->bd_inode->i_mapping);
+ 	if (wait) {
+ 		int err;
+ 
+@@ -341,18 +345,21 @@ asmlinkage long sys_fsync(unsigned int f
+ 
+ 	ret = -EINVAL;
+ 	if (!file->f_op || !file->f_op->fsync) {
+-		/* Why?  We can still call filemap_fdatasync */
++		/* Why?  We can still call filemap_fdatawrite */
+ 		goto out_putf;
+ 	}
+ 
+ 	/* We need to protect against concurrent writers.. */
+ 	down(&inode->i_sem);
+-	ret = filemap_fdatasync(inode->i_mapping);
++	ret = filemap_fdatawait(inode->i_mapping);
++	err = filemap_fdatawrite(inode->i_mapping);
++	if (!ret)
++		ret = err;
+ 	err = file->f_op->fsync(file, dentry, 0);
+-	if (err && !ret)
++	if (!ret)
+ 		ret = err;
+ 	err = filemap_fdatawait(inode->i_mapping);
+-	if (err && !ret)
++	if (!ret)
+ 		ret = err;
+ 	up(&inode->i_sem);
+ 
+@@ -382,12 +389,15 @@ asmlinkage long sys_fdatasync(unsigned i
+ 		goto out_putf;
+ 
+ 	down(&inode->i_sem);
+-	ret = filemap_fdatasync(inode->i_mapping);
++	ret = filemap_fdatawait(inode->i_mapping);
++	err = filemap_fdatawrite(inode->i_mapping);
++	if (!ret)
++		ret = err;
+ 	err = file->f_op->fsync(file, dentry, 1);
+-	if (err && !ret)
++	if (!ret)
+ 		ret = err;
+ 	err = filemap_fdatawait(inode->i_mapping);
+-	if (err && !ret)
++	if (!ret)
+ 		ret = err;
+ 	up(&inode->i_sem);
+ 
+@@ -604,7 +614,13 @@ static void end_buffer_io_async(struct b
+ 	 */
+ 	if (page_uptodate && !PageError(page))
+ 		SetPageUptodate(page);
+-	unlock_page(page);
++	if (PageWriteback(page)) {
++		/* It was a write */
++		end_page_writeback(page);
++	} else {
++		/* read */
++		unlock_page(page);
++	}
+ 	return;
+ 
+ still_busy:
+@@ -632,6 +648,7 @@ inline void set_buffer_async_io(struct b
+ 	bh->b_end_io = end_buffer_io_async;
+ 	set_buffer_async(bh);
+ }
++EXPORT_SYMBOL(set_buffer_async_io);
+ 
+ /*
+  * osync is designed to support O_SYNC io.  It waits synchronously for
+@@ -1168,6 +1185,8 @@ int try_to_release_page(struct page *pag
+ 
+ 	if (!PageLocked(page))
+ 		BUG();
++	if (PageWriteback(page))
++		return 0;
+ 	
+ 	if (mapping && mapping->a_ops->releasepage)
+ 		return mapping->a_ops->releasepage(page, gfp_mask);
+@@ -1317,8 +1336,7 @@ static int __block_write_full_page(struc
+ 	struct buffer_head *bh, *head;
+ 	int nr_underway = 0;
+ 
+-	if (!PageLocked(page))
+-		BUG();
++	BUG_ON(!PageLocked(page));
+ 
+ 	last_block = (inode->i_size - 1) >> inode->i_blkbits;
+ 
+@@ -1385,6 +1403,10 @@ static int __block_write_full_page(struc
+ 		bh = bh->b_this_page;
+ 	} while (bh != head);
+ 
++	BUG_ON(PageWriteback(page));
++	SetPageWriteback(page);		/* Keeps try_to_free_buffers() away */
++	unlock_page(page);
++
+ 	/*
+ 	 * The page may come unlocked any time after the *first* submit_bh()
+ 	 * call.  Be careful with its buffers.
+@@ -1418,7 +1440,7 @@ done:
+ 		} while (bh != head);
+ 		if (uptodate)
+ 			SetPageUptodate(page);
+-		unlock_page(page);
++		end_page_writeback(page);
+ 	}
+ 	return err;
+ recover:
+@@ -1426,6 +1448,7 @@ recover:
+ 	 * ENOSPC, or some other error.  We may already have added some
+ 	 * blocks to the file, so we need to write these out to avoid
+ 	 * exposing stale data.
++	 * The page is currently locked and not marked for writeback
+ 	 */
+ 	ClearPageUptodate(page);
+ 	bh = head;
+@@ -1453,6 +1476,9 @@ recover:
+ 		}
+ 		bh = next;
+ 	} while (bh != head);
++	BUG_ON(PageWriteback(page));
++	SetPageWriteback(page);
++	unlock_page(page);
+ 	goto done;
+ }
+ 
+@@ -2082,6 +2108,12 @@ int brw_kiovec(int rw, int nr, struct ki
+  *
+  * FIXME: we need a swapper_inode->get_block function to remove
+  *        some of the bmap kludges and interface ugliness here.
++ *
++ * NOTE: unlike file pages, swap pages are locked while under writeout.
++ * This is to avoid a deadlock which occurs when free_swap_and_cache()
++ * calls block_flushpage() under spinlock and hits a locked buffer, and
++ * schedules under spinlock.   Another approach would be to teach
++ * find_trylock_page() to also trylock the page's writeback flags.
+  */
+ int brw_page(int rw, struct page *page,
+ 		struct block_device *bdev, sector_t b[], int size)
+@@ -2100,7 +2132,7 @@ int brw_page(int rw, struct page *page,
+ 		bh->b_blocknr = *(b++);
+ 		bh->b_bdev = bdev;
+ 		set_buffer_mapped(bh);
+-		if (rw == WRITE)	/* To support submit_bh debug tests */
++		if (rw == WRITE)
+ 			set_buffer_uptodate(bh);
+ 		set_buffer_async_io(bh);
+ 		bh = bh->b_this_page;
+@@ -2138,7 +2170,7 @@ int block_symlink(struct inode *inode, c
+ 	 * OTOH it's obviously correct and should make the page up-to-date.
+ 	 */
+ 	err = mapping->a_ops->readpage(NULL, page);
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	page_cache_release(page);
+ 	if (err < 0)
+ 		goto fail;
+@@ -2238,6 +2270,8 @@ int try_to_free_buffers(struct page *pag
+ 	int ret = 0;
+ 
+ 	BUG_ON(!PageLocked(page));
++	if (PageWriteback(page))
++		return 0;
+ 
+ 	if (page->mapping == NULL)	/* swapped-in anon page */
+ 		return drop_buffers(page);
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index d019e5a..8d355d3 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -161,7 +161,7 @@ static struct page * ext2_get_page(struc
+ 	struct page *page = read_cache_page(mapping, n,
+ 				(filler_t*)mapping->a_ops->readpage, NULL);
+ 	if (!IS_ERR(page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		kmap(page);
+ 		if (!PageUptodate(page))
+ 			goto fail;
+diff --git a/fs/freevxfs/vxfs_subr.c b/fs/freevxfs/vxfs_subr.c
+index ebd26eb..09b07ca 100644
+--- a/fs/freevxfs/vxfs_subr.c
++++ b/fs/freevxfs/vxfs_subr.c
+@@ -71,7 +71,7 @@ vxfs_get_page(struct address_space *mapp
+ 			(filler_t*)mapping->a_ops->readpage, NULL);
+ 
+ 	if (!IS_ERR(pp)) {
+-		wait_on_page(pp);
++		wait_on_page_locked(pp);
+ 		kmap(pp);
+ 		if (!PageUptodate(pp))
+ 			goto fail;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 9e46777..3bdc242 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -129,10 +129,13 @@ static void __sync_single_inode(struct i
+ 	inode->i_state &= ~I_DIRTY;
+ 	spin_unlock(&inode_lock);
+ 
++	if (wait)
++		filemap_fdatawait(mapping);
++
+ 	if (mapping->a_ops->writeback_mapping)
+ 		mapping->a_ops->writeback_mapping(mapping, nr_to_write);
+ 	else
+-		filemap_fdatasync(mapping);
++		filemap_fdatawrite(mapping);
+ 
+ 	/* Don't write the inode if only I_DIRTY_PAGES was set */
+ 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC))
+@@ -499,7 +502,7 @@ int generic_osync_inode(struct inode *in
+ 	if (what & (OSYNC_METADATA|OSYNC_DATA))
+ 		err = fsync_inode_buffers(inode);
+ 	if (what & OSYNC_DATA) {
+-		err2 = filemap_fdatasync(inode->i_mapping);
++		err2 = filemap_fdatawrite(inode->i_mapping);
+ 		if (!err)
+ 			err = err2;
+ 	}
+diff --git a/fs/jffs2/gc.c b/fs/jffs2/gc.c
+index 6acb2ba..665a921 100644
+--- a/fs/jffs2/gc.c
++++ b/fs/jffs2/gc.c
+@@ -760,7 +760,7 @@ static int jffs2_garbage_collect_dnode(s
+ 
+ 	kunmap(pg);
+ 	/* XXX: Does the page get freed automatically? */
+-	/* AAA: Judging by the unmount getting stuck in __wait_on_page, nope. */
++	/* AAA: Judging by the unmount getting stuck in __wait_on_page_locked, nope. */
+ 	page_cache_release(pg);
+ 	return ret;
+ }
+diff --git a/fs/jfs/jfs_dmap.c b/fs/jfs/jfs_dmap.c
+index 644ec9e..b866386 100644
+--- a/fs/jfs/jfs_dmap.c
++++ b/fs/jfs/jfs_dmap.c
+@@ -325,7 +325,8 @@ int dbSync(struct inode *ipbmap)
+ 	/*
+ 	 * write out dirty pages of bmap
+ 	 */
+-	filemap_fdatasync(ipbmap->i_mapping);
++	filemap_fdatawait(ipbmap->i_mapping);
++	filemap_fdatawrite(ipbmap->i_mapping);
+ 	filemap_fdatawait(ipbmap->i_mapping);
+ 
+ 	ipbmap->i_state |= I_DIRTY;
+diff --git a/fs/jfs/jfs_imap.c b/fs/jfs/jfs_imap.c
+index 88f8c02..9360c94 100644
+--- a/fs/jfs/jfs_imap.c
++++ b/fs/jfs/jfs_imap.c
+@@ -282,7 +282,8 @@ int diSync(struct inode *ipimap)
+ 	/*
+ 	 * write out dirty pages of imap
+ 	 */
+-	filemap_fdatasync(ipimap->i_mapping);
++	filemap_fdatawait(ipimap->i_mapping);
++	filemap_fdatawrite(ipimap->i_mapping);
+ 	filemap_fdatawait(ipimap->i_mapping);
+ 
+ 	diWriteSpecial(ipimap);
+@@ -608,7 +609,8 @@ void diFreeSpecial(struct inode *ip)
+ 		jERROR(1, ("diFreeSpecial called with NULL ip!\n"));
+ 		return;
+ 	}
+-	filemap_fdatasync(ip->i_mapping);
++	filemap_fdatawait(ip->i_mapping);
++	filemap_fdatawrite(ip->i_mapping);
+ 	filemap_fdatawait(ip->i_mapping);
+ 	truncate_inode_pages(ip->i_mapping, 0);
+ 	iput(ip);
+diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
+index ee3abdc..2fb6ffa 100644
+--- a/fs/jfs/jfs_logmgr.c
++++ b/fs/jfs/jfs_logmgr.c
+@@ -966,9 +966,12 @@ int lmLogSync(log_t * log, int nosyncwai
+ 		 * We need to make sure all of the "written" metapages
+ 		 * actually make it to disk
+ 		 */
+-		filemap_fdatasync(sbi->ipbmap->i_mapping);
+-		filemap_fdatasync(sbi->ipimap->i_mapping);
+-		filemap_fdatasync(sbi->direct_inode->i_mapping);
++		filemap_fdatawait(sbi->ipbmap->i_mapping);
++		filemap_fdatawait(sbi->ipimap->i_mapping);
++		filemap_fdatawait(sbi->direct_inode->i_mapping);
++		filemap_fdatawrite(sbi->ipbmap->i_mapping);
++		filemap_fdatawrite(sbi->ipimap->i_mapping);
++		filemap_fdatawrite(sbi->direct_inode->i_mapping);
+ 		filemap_fdatawait(sbi->ipbmap->i_mapping);
+ 		filemap_fdatawait(sbi->ipimap->i_mapping);
+ 		filemap_fdatawait(sbi->direct_inode->i_mapping);
+diff --git a/fs/jfs/jfs_txnmgr.c b/fs/jfs/jfs_txnmgr.c
+index fafc77b..986feb8 100644
+--- a/fs/jfs/jfs_txnmgr.c
++++ b/fs/jfs/jfs_txnmgr.c
+@@ -1155,7 +1155,7 @@ int txCommit(tid_t tid,		/* transaction 
+ 		jfs_ip = JFS_IP(ip);
+ 
+ 		/*
+-		 * BUGBUG - Should we call filemap_fdatasync here instead
++		 * BUGBUG - Should we call filemap_fdatawrite here instead
+ 		 * of fsync_inode_data?
+ 		 * If we do, we have a deadlock condition since we may end
+ 		 * up recursively calling jfs_get_block with the IWRITELOCK
+@@ -1164,7 +1164,8 @@ int txCommit(tid_t tid,		/* transaction 
+ 		 */
+ 		if ((!S_ISDIR(ip->i_mode))
+ 		    && (tblk->flag & COMMIT_DELETE) == 0) {
+-			filemap_fdatasync(ip->i_mapping);
++			filemap_fdatawait(ip->i_mapping);
++			filemap_fdatawrite(ip->i_mapping);
+ 			filemap_fdatawait(ip->i_mapping);
+ 		}
+ 
+diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+index eeda6fc..46f0cce 100644
+--- a/fs/jfs/super.c
++++ b/fs/jfs/super.c
+@@ -151,7 +151,8 @@ static void jfs_put_super(struct super_b
+ 	 * We need to clean out the direct_inode pages since this inode
+ 	 * is not in the inode hash.
+ 	 */
+-	filemap_fdatasync(sbi->direct_inode->i_mapping);
++	filemap_fdatawait(sbi->direct_inode->i_mapping);
++	filemap_fdatawrite(sbi->direct_inode->i_mapping);
+ 	filemap_fdatawait(sbi->direct_inode->i_mapping);
+ 	truncate_inode_pages(sbi->direct_mapping, 0);
+ 	iput(sbi->direct_inode);
+@@ -338,7 +339,8 @@ out_no_rw:
+ 		jERROR(1, ("jfs_umount failed with return code %d\n", rc));
+ 	}
+ out_mount_failed:
+-	filemap_fdatasync(sbi->direct_inode->i_mapping);
++	filemap_fdatawait(sbi->direct_inode->i_mapping);
++	filemap_fdatawrite(sbi->direct_inode->i_mapping);
+ 	filemap_fdatawait(sbi->direct_inode->i_mapping);
+ 	truncate_inode_pages(sbi->direct_mapping, 0);
+ 	make_bad_inode(sbi->direct_inode);
+diff --git a/fs/minix/dir.c b/fs/minix/dir.c
+index 735129b..19b5c62 100644
+--- a/fs/minix/dir.c
++++ b/fs/minix/dir.c
+@@ -61,7 +61,7 @@ static struct page * dir_get_page(struct
+ 	struct page *page = read_cache_page(mapping, n,
+ 				(filler_t*)mapping->a_ops->readpage, NULL);
+ 	if (!IS_ERR(page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		kmap(page);
+ 		if (!PageUptodate(page))
+ 			goto fail;
+diff --git a/fs/namei.c b/fs/namei.c
+index 111e110..407d142 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2097,7 +2097,7 @@ static char *page_getlink(struct dentry 
+ 				NULL);
+ 	if (IS_ERR(page))
+ 		goto sync_fail;
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	if (!PageUptodate(page))
+ 		goto async_fail;
+ 	*ppage = page;
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index d8151c1..0f66660 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -169,7 +169,7 @@ static int nfs_commit_write(struct file 
+ }
+ 
+ /*
+- * The following is used by wait_on_page(), generic_file_readahead()
++ * The following is used by wait_on_page_locked(), generic_file_readahead()
+  * to initiate the completion of any page readahead operations.
+  */
+ static int nfs_sync_page(struct page *page)
+@@ -279,14 +279,17 @@ nfs_lock(struct file *filp, int cmd, str
+ 	 * Flush all pending writes before doing anything
+ 	 * with locks..
+ 	 */
+-	status = filemap_fdatasync(inode->i_mapping);
++	status = filemap_fdatawait(inode->i_mapping);
++	status2 = filemap_fdatawrite(inode->i_mapping);
++	if (!status)
++		status = status2;
+ 	down(&inode->i_sem);
+ 	status2 = nfs_wb_all(inode);
+-	if (status2 && !status)
++	if (!status)
+ 		status = status2;
+ 	up(&inode->i_sem);
+ 	status2 = filemap_fdatawait(inode->i_mapping);
+-	if (status2 && !status)
++	if (!status)
+ 		status = status2;
+ 	if (status < 0)
+ 		return status;
+@@ -305,7 +308,8 @@ nfs_lock(struct file *filp, int cmd, str
+ 	 */
+  out_ok:
+ 	if ((IS_SETLK(cmd) || IS_SETLKW(cmd)) && fl->fl_type != F_UNLCK) {
+-		filemap_fdatasync(inode->i_mapping);
++		filemap_fdatawait(inode->i_mapping);
++		filemap_fdatawrite(inode->i_mapping);
+ 		down(&inode->i_sem);
+ 		nfs_wb_all(inode);      /* we may have slept */
+ 		up(&inode->i_sem);
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 5b61dcd..5a105fc 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -749,7 +749,8 @@ #endif
+ 	if (!S_ISREG(inode->i_mode))
+ 		attr->ia_valid &= ~ATTR_SIZE;
+ 
+-	filemap_fdatasync(inode->i_mapping);
++	filemap_fdatawait(inode->i_mapping);
++	filemap_fdatawrite(inode->i_mapping);
+ 	error = nfs_wb_all(inode);
+ 	filemap_fdatawait(inode->i_mapping);
+ 	if (error)
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index ffe421d..e0fe43b 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -508,7 +508,8 @@ inline void nfsd_dosync(struct file *fil
+ 	struct inode *inode = dp->d_inode;
+ 	int (*fsync) (struct file *, struct dentry *, int);
+ 
+-	filemap_fdatasync(inode->i_mapping);
++	filemap_fdatawait(inode->i_mapping);
++	filemap_fdatawrite(inode->i_mapping);
+ 	if (fop && (fsync = fop->fsync))
+ 		fsync(filp, dp, 0);
+ 	filemap_fdatawait(inode->i_mapping);
+diff --git a/fs/ntfs/ntfs.h b/fs/ntfs/ntfs.h
+index de5a049..d3a4c9d 100644
+--- a/fs/ntfs/ntfs.h
++++ b/fs/ntfs/ntfs.h
+@@ -188,7 +188,7 @@ static inline struct page *ntfs_map_page
+ 			(filler_t*)mapping->a_ops->readpage, NULL);
+ 
+ 	if (!IS_ERR(page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		kmap(page);
+ 		if (PageUptodate(page) && !PageError(page))
+ 			return page;
+diff --git a/fs/ntfs/super.c b/fs/ntfs/super.c
+index bbff13e..9a2bc86 100644
+--- a/fs/ntfs/super.c
++++ b/fs/ntfs/super.c
+@@ -1214,7 +1214,7 @@ handle_partial_page:
+ 					"page (index 0x%lx).", index - 1);
+ 			continue;
+ 		}
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		if (!PageUptodate(page)) {
+ 			ntfs_debug("Async read_cache_page() error. Skipping "
+ 					"page (index 0x%lx).", index - 1);
+@@ -1297,7 +1297,7 @@ handle_partial_page:
+ 					"page (index 0x%lx).", index - 1);
+ 			continue;
+ 		}
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		if (!PageUptodate(page)) {
+ 			ntfs_debug("Async read_cache_page() error. Skipping "
+ 					"page (index 0x%lx).", index - 1);
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 1bb7d32..d3e5593 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -432,7 +432,7 @@ unsigned char *read_dev_sector(struct bl
+ 	page = read_cache_page(mapping, n/sect,
+ 			(filler_t *)mapping->a_ops->readpage, NULL);
+ 	if (!IS_ERR(page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		if (!PageUptodate(page))
+ 			goto fail;
+ 		if (PageError(page))
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index 7d6f4e3..ef5cc3b 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -1990,21 +1990,27 @@ static int reiserfs_write_full_page(stru
+ 	block++ ;
+     } while(bh != head) ;
+ 
++    if (!partial)
++        SetPageUptodate(page) ;
++    BUG_ON(PageWriteback(page));
++    SetPageWriteback(page);
++    unlock_page(page);
++
+     /* if this page only had a direct item, it is very possible for
+     ** nr == 0 without there being any kind of error.
+     */
+     if (nr) {
+         submit_bh_for_writepage(arr, nr) ;
+     } else {
+-        unlock_page(page) ;
++        end_page_writeback(page) ;
+     }
+-    if (!partial)
+-        SetPageUptodate(page) ;
+ 
+     return 0 ;
+ 
+ fail:
+     if (nr) {
++        SetPageWriteback(page);
++        unlock_page(page);
+         submit_bh_for_writepage(arr, nr) ;
+     } else {
+         unlock_page(page) ;
+diff --git a/fs/smbfs/file.c b/fs/smbfs/file.c
+index 464041d..79a830f 100644
+--- a/fs/smbfs/file.c
++++ b/fs/smbfs/file.c
+@@ -354,7 +354,8 @@ smb_file_release(struct inode *inode, st
+ 		/* We must flush any dirty pages now as we won't be able to
+ 		   write anything after close. mmap can trigger this.
+ 		   "openers" should perhaps include mmap'ers ... */
+-		filemap_fdatasync(inode->i_mapping);
++		filemap_fdatawait(inode->i_mapping);
++		filemap_fdatawrite(inode->i_mapping);
+ 		filemap_fdatawait(inode->i_mapping);
+ 		smb_close(inode);
+ 	}
+diff --git a/fs/smbfs/inode.c b/fs/smbfs/inode.c
+index 01cc883..6807dd3 100644
+--- a/fs/smbfs/inode.c
++++ b/fs/smbfs/inode.c
+@@ -645,7 +645,8 @@ smb_notify_change(struct dentry *dentry,
+ 			DENTRY_PATH(dentry),
+ 			(long) inode->i_size, (long) attr->ia_size);
+ 
+-		filemap_fdatasync(inode->i_mapping);
++		filemap_fdatawait(inode->i_mapping);
++		filemap_fdatawrite(inode->i_mapping);
+ 		filemap_fdatawait(inode->i_mapping);
+ 
+ 		error = smb_open(dentry, O_WRONLY);
+diff --git a/fs/sysv/dir.c b/fs/sysv/dir.c
+index 89a732b..ee72656 100644
+--- a/fs/sysv/dir.c
++++ b/fs/sysv/dir.c
+@@ -55,7 +55,7 @@ static struct page * dir_get_page(struct
+ 	struct page *page = read_cache_page(mapping, n,
+ 				(filler_t*)mapping->a_ops->readpage, NULL);
+ 	if (!IS_ERR(page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		kmap(page);
+ 		if (!PageUptodate(page))
+ 			goto fail;
+diff --git a/fs/umsdos/dir.c b/fs/umsdos/dir.c
+index d971092..5e926d6 100644
+--- a/fs/umsdos/dir.c
++++ b/fs/umsdos/dir.c
+@@ -692,7 +692,7 @@ struct dentry *umsdos_solve_hlink (struc
+ 	dentry_dst=(struct dentry *)page;
+ 	if (IS_ERR(page))
+ 		goto out;
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	if (!PageUptodate(page))
+ 		goto async_fail;
+ 
+diff --git a/fs/umsdos/emd.c b/fs/umsdos/emd.c
+index 3ea53f8..0619039 100644
+--- a/fs/umsdos/emd.c
++++ b/fs/umsdos/emd.c
+@@ -139,7 +139,7 @@ int umsdos_emd_dir_readentry (struct den
+ 			(filler_t*)mapping->a_ops->readpage, NULL);
+ 	if (IS_ERR(page))
+ 		goto sync_fail;
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	if (!PageUptodate(page))
+ 		goto async_fail;
+ 	p = (struct umsdos_dirent*)(kmap(page)+offs);
+@@ -165,7 +165,7 @@ int umsdos_emd_dir_readentry (struct den
+ 			page = page2;
+ 			goto sync_fail;
+ 		}
+-		wait_on_page(page2);
++		wait_on_page_locked(page2);
+ 		if (!PageUptodate(page2)) {
+ 			kunmap(page);
+ 			page_cache_release(page2);
+@@ -392,7 +392,7 @@ static int umsdos_find (struct dentry *d
+ 			page = read_cache_page(mapping,index,readpage,NULL);
+ 			if (IS_ERR(page))
+ 				goto sync_fail;
+-			wait_on_page(page);
++			wait_on_page_locked(page);
+ 			if (!PageUptodate(page))
+ 				goto async_fail;
+ 			p = kmap(page);
+@@ -441,7 +441,7 @@ static int umsdos_find (struct dentry *d
+ 				page = next_page;
+ 				goto sync_fail;
+ 			}
+-			wait_on_page(next_page);
++			wait_on_page_locked(next_page);
+ 			if (!PageUptodate(next_page)) {
+ 				page_cache_release(page);
+ 				page = next_page;
+diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+index 20a586b..59fe771 100644
+--- a/include/linux/buffer_head.h
++++ b/include/linux/buffer_head.h
+@@ -157,7 +157,7 @@ struct buffer_head *bread(kdev_t dev, in
+ 
+ 
+ /* reiserfs_writepage needs this */
+-void set_buffer_async_io(struct buffer_head *bh) ;
++void set_buffer_async_io(struct buffer_head *bh);
+ void invalidate_inode_buffers(struct inode *);
+ void invalidate_bdev(struct block_device *, int);
+ void __invalidate_buffers(kdev_t dev, int);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 2446f2f..c9cbe2d 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1150,7 +1150,7 @@ extern void invalidate_inode_pages(struc
+ extern void invalidate_inode_pages2(struct address_space *);
+ extern void write_inode_now(struct inode *, int);
+ extern void sync_inodes_sb(struct super_block *);
+-extern int filemap_fdatasync(struct address_space *);
++extern int filemap_fdatawrite(struct address_space *);
+ extern int filemap_fdatawait(struct address_space *);
+ extern void sync_supers(void);
+ extern int bmap(struct inode *, int);
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index bfe502d..549bf63 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -68,7 +68,7 @@ typedef struct zone_struct {
+ 	 * table, they should be so rare as to be outweighed by the
+ 	 * benefits from the saved space.
+ 	 *
+-	 * __wait_on_page() and unlock_page() in mm/filemap.c, are the
++	 * __wait_on_page_locked() and unlock_page() in mm/filemap.c, are the
+ 	 * primary users of these fields, and in mm/page_alloc.c
+ 	 * free_area_init_core() performs the initialization of them.
+ 	 */
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index e9b1296..a5431a8 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -64,6 +64,7 @@ #define PG_reserved		11
+ 
+ #define PG_launder		12	/* written out by VM pressure.. */
+ #define PG_private		13	/* Has something at ->private */
++#define PG_writeback		14	/* Page is under writeback */
+ 
+ /*
+  * Global page accounting.  One instance per CPU.
+@@ -199,6 +200,14 @@ #define SetPagePrivate(page)	set_bit(PG_
+ #define ClearPagePrivate(page)	clear_bit(PG_private, &(page)->flags)
+ #define PagePrivate(page)	test_bit(PG_private, &(page)->flags)
+ 
++#define PageWriteback(page)	test_bit(PG_writeback, &(page)->flags)
++#define SetPageWriteback(page)	set_bit(PG_writeback, &(page)->flags)
++#define ClearPageWriteback(page) clear_bit(PG_writeback, &(page)->flags)
++#define TestSetPageWriteback(page)	\
++	test_and_set_bit(PG_writeback, &(page)->flags)
++#define TestClearPageWriteback(page)	\
++	test_and_clear_bit(PG_writeback, &(page)->flags)
++
+ /*
+  * The PageSwapCache predicate doesn't use a PG_flag at this time,
+  * but it may again do so one day.
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index babd79d..bc3f551 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -73,16 +73,18 @@ static inline void ___add_to_page_cache(
+ 
+ extern void FASTCALL(lock_page(struct page *page));
+ extern void FASTCALL(unlock_page(struct page *page));
++extern void end_page_writeback(struct page *page);
+ 
+-extern void ___wait_on_page(struct page *);
++extern void ___wait_on_page_locked(struct page *);
+ 
+-static inline void wait_on_page(struct page * page)
++static inline void wait_on_page_locked(struct page *page)
+ {
+ 	if (PageLocked(page))
+-		___wait_on_page(page);
++		___wait_on_page_locked(page);
+ }
+ 
+ extern void wake_up_page(struct page *);
++extern void wait_on_page_writeback(struct page *page);
+ 
+ typedef int filler_t(void *, struct page*);
+ 
+diff --git a/kernel/ksyms.c b/kernel/ksyms.c
+index 5c9d982..44d30bf 100644
+--- a/kernel/ksyms.c
++++ b/kernel/ksyms.c
+@@ -168,7 +168,6 @@ EXPORT_SYMBOL(d_lookup);
+ EXPORT_SYMBOL(__d_path);
+ EXPORT_SYMBOL(mark_buffer_dirty);
+ EXPORT_SYMBOL(end_buffer_io_sync);
+-EXPORT_SYMBOL(set_buffer_async_io);
+ EXPORT_SYMBOL(__mark_inode_dirty);
+ EXPORT_SYMBOL(get_empty_filp);
+ EXPORT_SYMBOL(init_private_file);
+@@ -209,7 +208,6 @@ EXPORT_SYMBOL(ll_rw_block);
+ EXPORT_SYMBOL(submit_bh);
+ EXPORT_SYMBOL(unlock_buffer);
+ EXPORT_SYMBOL(__wait_on_buffer);
+-EXPORT_SYMBOL(___wait_on_page);
+ EXPORT_SYMBOL(generic_direct_IO);
+ EXPORT_SYMBOL(block_write_full_page);
+ EXPORT_SYMBOL(block_read_full_page);
+@@ -305,7 +303,7 @@ EXPORT_SYMBOL(default_llseek);
+ EXPORT_SYMBOL(dentry_open);
+ EXPORT_SYMBOL(filemap_nopage);
+ EXPORT_SYMBOL(filemap_sync);
+-EXPORT_SYMBOL(filemap_fdatasync);
++EXPORT_SYMBOL(filemap_fdatawrite);
+ EXPORT_SYMBOL(filemap_fdatawait);
+ EXPORT_SYMBOL(lock_page);
+ EXPORT_SYMBOL(unlock_page);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 795993c..c4689a9 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -201,6 +201,17 @@ static int truncate_list_pages(struct ad
+ 			int failed;
+ 
+ 			page_cache_get(page);
++			if (PageWriteback(page)) {
++				/*
++				 * urgggh. This function is utterly foul,
++				 * and this addition doesn't help.  Kill.
++				 */
++				write_unlock(&mapping->page_lock);
++				wait_on_page_writeback(page);
++				unlocked = 1;
++				write_lock(&mapping->page_lock);
++				goto restart;
++			}
+ 			failed = TestSetPageLocked(page);
+ 
+ 			list_del(head);
+@@ -223,7 +234,7 @@ static int truncate_list_pages(struct ad
+ 
+ 				unlock_page(page);
+ 			} else
+- 				wait_on_page(page);
++ 				wait_on_page_locked(page);
+ 
+ 			page_cache_release(page);
+ 
+@@ -240,6 +251,23 @@ static int truncate_list_pages(struct ad
+ 	return unlocked;
+ }
+ 
++/*
++ * Unconditionally clean all pages outside `start'.  The mapping lock
++ * must be held.
++ */
++static void clean_list_pages(struct address_space *mapping,
++		struct list_head *head, unsigned long start)
++{
++	struct page *page;
++	struct list_head *curr;
++
++	for (curr = head->next; curr != head; curr = curr->next) {
++		page = list_entry(curr, struct page, list);
++		if (page->index > start)
++			ClearPageDirty(page);
++	}
++}
++
+ /**
+  * truncate_inode_pages - truncate *all* the pages from an offset
+  * @mapping: mapping to truncate
+@@ -256,6 +284,8 @@ void truncate_inode_pages(struct address
+ 	int unlocked;
+ 
+ 	write_lock(&mapping->page_lock);
++	clean_list_pages(mapping, &mapping->io_pages, start);
++	clean_list_pages(mapping, &mapping->dirty_pages, start);
+ 	do {
+ 		unlocked |= truncate_list_pages(mapping,
+ 				&mapping->io_pages, start, &partial);
+@@ -321,6 +351,13 @@ static int invalidate_list_pages2(struct
+ 	while (curr != head) {
+ 		page = list_entry(curr, struct page, list);
+ 
++		if (PageWriteback(page)) {
++			write_unlock(&mapping->page_lock);
++			wait_on_page_writeback(page);
++			unlocked = 1;
++			write_lock(&mapping->page_lock);
++			goto restart;
++		}
+ 		if (!TestSetPageLocked(page)) {
+ 			int __unlocked;
+ 
+@@ -339,7 +376,7 @@ static int invalidate_list_pages2(struct
+ 			page_cache_get(page);
+ 			write_unlock(&mapping->page_lock);
+ 			unlocked = 1;
+-			wait_on_page(page);
++			wait_on_page_locked(page);
+ 		}
+ 
+ 		page_cache_release(page);
+@@ -403,17 +440,16 @@ int fail_writepage(struct page *page)
+ 	unlock_page(page);
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL(fail_writepage);
+ 
+ /**
+- *  filemap_fdatasync - walk the list of dirty pages of the given address space
++ *  filemap_fdatawrite - walk the list of dirty pages of the given address space
+  *                      and writepage() all of them.
+  *
+  *  @mapping: address space structure to write
+  *
+  */
+-int filemap_fdatasync(struct address_space *mapping)
++int filemap_fdatawrite(struct address_space *mapping)
+ {
+ 	if (mapping->a_ops->writeback_mapping)
+ 		return mapping->a_ops->writeback_mapping(mapping, NULL);
+@@ -437,15 +473,18 @@ int filemap_fdatawait(struct address_spa
+ 		struct page *page = list_entry(mapping->locked_pages.next, struct page, list);
+ 
+ 		list_del(&page->list);
+-		list_add(&page->list, &mapping->clean_pages);
++		if (PageDirty(page))
++			list_add(&page->list, &mapping->dirty_pages);
++		else
++			list_add(&page->list, &mapping->clean_pages);
+ 
+-		if (!PageLocked(page))
++		if (!PageWriteback(page))
+ 			continue;
+ 
+ 		page_cache_get(page);
+ 		write_unlock(&mapping->page_lock);
+ 
+-		___wait_on_page(page);
++		wait_on_page_writeback(page);
+ 		if (PageError(page))
+ 			ret = -EIO;
+ 
+@@ -562,14 +601,7 @@ static inline wait_queue_head_t *page_wa
+ 	return &zone->wait_table[hash_ptr(page, zone->wait_table_bits)];
+ }
+ 
+-/* 
+- * Wait for a page to get unlocked.
+- *
+- * This must be called with the caller "holding" the page,
+- * ie with increased "page->count" so that the page won't
+- * go away during the wait..
+- */
+-void ___wait_on_page(struct page *page)
++static void wait_on_page_bit(struct page *page, int bit_nr)
+ {
+ 	wait_queue_head_t *waitqueue = page_waitqueue(page);
+ 	struct task_struct *tsk = current;
+@@ -578,22 +610,51 @@ void ___wait_on_page(struct page *page)
+ 	add_wait_queue(waitqueue, &wait);
+ 	do {
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+-		if (!PageLocked(page))
++		if (!test_bit(bit_nr, &page->flags))
+ 			break;
+ 		sync_page(page);
+ 		schedule();
+-	} while (PageLocked(page));
++	} while (test_bit(bit_nr, &page->flags));
+ 	__set_task_state(tsk, TASK_RUNNING);
+ 	remove_wait_queue(waitqueue, &wait);
+ }
+ 
+-/*
+- * Unlock the page and wake up sleepers in ___wait_on_page.
++/* 
++ * Wait for a page to be unlocked.
++ *
++ * This must be called with the caller "holding" the page,
++ * ie with increased "page->count" so that the page won't
++ * go away during the wait..
++ */
++void ___wait_on_page_locked(struct page *page)
++{
++	wait_on_page_bit(page, PG_locked_dontuse);
++}
++EXPORT_SYMBOL(___wait_on_page_locked);
++
++/* 
++ * Wait for a page to complete writeback
++ */
++void wait_on_page_writeback(struct page *page)
++{
++	wait_on_page_bit(page, PG_writeback);
++}
++EXPORT_SYMBOL(wait_on_page_writeback);
++
++/**
++ * unlock_page() - unlock a locked page
++ *
++ * @page: the page
++ *
++ * Unlocks the page and wakes up sleepers in ___wait_on_page_locked().
++ * Also wakes sleepers in wait_on_page_writeback() because the wakeup
++ * mechananism between PageLocked pages and PageWriteback pages is shared.
++ * But that's OK - sleepers in wait_on_page_writeback() just go back to sleep.
+  *
+  * The first mb is necessary to safely close the critical section opened by the
+  * TryLockPage(), the second mb is necessary to enforce ordering between
+  * the clear_bit and the read of the waitqueue (to avoid SMP races with a
+- * parallel wait_on_page).
++ * parallel wait_on_page_locked()).
+  */
+ void unlock_page(struct page *page)
+ {
+@@ -608,6 +669,22 @@ void unlock_page(struct page *page)
+ }
+ 
+ /*
++ * End writeback against a page.
++ */
++void end_page_writeback(struct page *page)
++{
++	wait_queue_head_t *waitqueue = page_waitqueue(page);
++	clear_bit(PG_launder, &(page)->flags);
++	smp_mb__before_clear_bit();
++	if (!TestClearPageWriteback(page))
++		BUG();
++	smp_mb__after_clear_bit(); 
++	if (waitqueue_active(waitqueue))
++		wake_up_all(waitqueue);
++}
++EXPORT_SYMBOL(end_page_writeback);
++
++/*
+  * Get a lock on the page, assuming we need to sleep
+  * to get it..
+  */
+@@ -988,7 +1065,7 @@ readpage:
+ 		if (!error) {
+ 			if (PageUptodate(page))
+ 				goto page_ok;
+-			wait_on_page(page);
++			wait_on_page_locked(page);
+ 			if (PageUptodate(page))
+ 				goto page_ok;
+ 			error = -EIO;
+@@ -1082,7 +1159,9 @@ static ssize_t generic_file_direct_IO(in
+ 	 * Flush to disk exclusively the _data_, metadata must remain
+ 	 * completly asynchronous or performance will go to /dev/null.
+ 	 */
+-	retval = filemap_fdatasync(mapping);
++	retval = filemap_fdatawait(mapping);
++	if (retval == 0)
++		retval = filemap_fdatawrite(mapping);
+ 	if (retval == 0)
+ 		retval = filemap_fdatawait(mapping);
+ 	if (retval < 0)
+@@ -1504,7 +1583,7 @@ page_not_uptodate:
+ 	}
+ 
+ 	if (!mapping->a_ops->readpage(file, page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		if (PageUptodate(page))
+ 			goto success;
+ 	}
+@@ -1531,7 +1610,7 @@ page_not_uptodate:
+ 	}
+ 	ClearPageError(page);
+ 	if (!mapping->a_ops->readpage(file, page)) {
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 		if (PageUptodate(page))
+ 			goto success;
+ 	}
+diff --git a/mm/memory.c b/mm/memory.c
+index b3158d2..53a8799 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -738,7 +738,7 @@ int lock_kiovec(int nr, struct kiobuf *i
+ 			return -EINVAL;
+ 		
+ 		/* Try again...  */
+-		wait_on_page(page);
++		wait_on_page_locked(page);
+ 	}
+ 	
+ 	if (++repeat < 16)
+diff --git a/mm/msync.c b/mm/msync.c
+index 9edee73..f292e0d 100644
+--- a/mm/msync.c
++++ b/mm/msync.c
+@@ -138,19 +138,21 @@ static int msync_interval(struct vm_area
+ 
+ 		if (!ret && (flags & (MS_SYNC|MS_ASYNC))) {
+ 			struct inode * inode = file->f_dentry->d_inode;
++			int err;
+ 
+ 			down(&inode->i_sem);
+-			ret = filemap_fdatasync(inode->i_mapping);
++			ret = filemap_fdatawait(inode->i_mapping);
++			err = filemap_fdatawrite(inode->i_mapping);
++			if (!ret)
++				ret = err;
+ 			if (flags & MS_SYNC) {
+-				int err;
+-
+ 				if (file->f_op && file->f_op->fsync) {
+ 					err = file->f_op->fsync(file, file->f_dentry, 1);
+ 					if (err && !ret)
+ 						ret = err;
+ 				}
+ 				err = filemap_fdatawait(inode->i_mapping);
+-				if (err && !ret)
++				if (!ret)
+ 					ret = err;
+ 			}
+ 			up(&inode->i_sem);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 41d9f41..9f0a544 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -290,23 +290,14 @@ EXPORT_SYMBOL(generic_vm_writeback);
+  * address_space_operation for filesystems which are using multipage BIO
+  * writeback.
+  *
+- * We need to be careful to avoid deadlocks here.  mpage_bio_writepage() does
+- * not immediately start I/O against each page.  It waits until the bio is
+- * full, or until mpage_bio_flush() is called.  So generic_writeback_mapping()
+- * is locking multiple pages without necessarily starting I/O against them.
+- *
+- * AB/BA deadlocks are avoided via locking implemented in the filesystem.
+- * Only one process ever has multiple locked pages against any mapping.
+- *
+- * FIXME: doing the locking in the fs is a bit grotty, but it allows us to
+- * not have to put a new semaphore in struct inode.  The fs could
+- * pass its bio_write_state up here, I guess.
++ * (The next two paragraphs refer to code which isn't here yet, but they
++ *  explain the presence of address_space.io_pages)
+  *
+  * Pages can be moved from clean_pages or locked_pages onto dirty_pages
+  * at any time - it's not possible to lock against that.  So pages which
+  * have already been added to a BIO may magically reappear on the dirty_pages
+  * list.  And generic_writeback_mapping() will again try to lock those pages.
+- * But I/O has not yet been started agains the page.  Thus deadlock.
++ * But I/O has not yet been started against the page.  Thus deadlock.
+  *
+  * To avoid this, the entire contents of the dirty_pages list are moved
+  * onto io_pages up-front.  We then walk io_pages, locking the
+@@ -315,9 +306,15 @@ EXPORT_SYMBOL(generic_vm_writeback);
+  * This has the added benefit of preventing a livelock which would otherwise
+  * occur if pages are being dirtied faster than we can write them out.
+  *
+- * Thus generic_writeback_mapping() only makes the guarantee that all pages
+- * which were dirty at the time it was called will have I/O started against
+- * them.  And it's not possible to make a stronger guarantee than that.
++ * If a page is already under I/O, generic_writeback_mapping() skips it, even
++ * if it's dirty.  This is desirable behaviour for memory-cleaning writeback,
++ * but it is INCORRECT for data-integrity system calls such as fsync().  fsync()
++ * and msync() need to guarentee that all the data which was dirty at the time
++ * the call was made get new I/O started against them.  The way to do this is
++ * to run filemap_fdatawait() before calling filemap_fdatawrite().
++ *
++ * It's fairly rare for PageWriteback pages to be on ->dirty_pages.  It
++ * means that someone redirtied the page while it was under I/O.
+  */
+ int generic_writeback_mapping(struct address_space *mapping, int *nr_to_write)
+ {
+@@ -336,9 +333,19 @@ int generic_writeback_mapping(struct add
+ 		struct page *page = list_entry(mapping->io_pages.prev,
+ 					struct page, list);
+ 		list_del(&page->list);
+-		list_add(&page->list, &mapping->locked_pages);
+-		if (!PageDirty(page))
++		if (PageWriteback(page)) {
++			if (PageDirty(page)) {
++				list_add(&page->list, &mapping->dirty_pages);
++				continue;
++			}
++			list_add(&page->list, &mapping->locked_pages);
++			continue;
++		}
++		if (!PageDirty(page)) {
++			list_add(&page->list, &mapping->clean_pages);
+ 			continue;
++		}
++		list_add(&page->list, &mapping->locked_pages);
+ 
+ 		page_cache_get(page);
+ 		write_unlock(&mapping->page_lock);
+@@ -354,8 +361,9 @@ int generic_writeback_mapping(struct add
+ 				if (*nr_to_write <= 0)
+ 					done = 1;
+ 			}
+-		} else
++		} else {
+ 			unlock_page(page);
++		}
+ 
+ 		page_cache_release(page);
+ 		write_lock(&mapping->page_lock);
+@@ -390,21 +398,25 @@ int write_one_page(struct page *page, in
+ 
+ 	BUG_ON(!PageLocked(page));
+ 
++	if (wait && PageWriteback(page))
++		wait_on_page_writeback(page);
++
+ 	write_lock(&mapping->page_lock);
+ 	list_del(&page->list);
+-	list_add(&page->list, &mapping->locked_pages);
+-	write_unlock(&mapping->page_lock);
+-
+ 	if (TestClearPageDirty(page)) {
++		list_add(&page->list, &mapping->locked_pages);
+ 		page_cache_get(page);
++		write_unlock(&mapping->page_lock);
+ 		ret = mapping->a_ops->writepage(page);
+ 		if (ret == 0 && wait) {
+-			wait_on_page(page);
++			wait_on_page_writeback(page);
+ 			if (PageError(page))
+ 				ret = -EIO;
+ 		}
+ 		page_cache_release(page);
+ 	} else {
++		list_add(&page->list, &mapping->clean_pages);
++		write_unlock(&mapping->page_lock);
+ 		unlock_page(page);
+ 	}
+ 	return ret;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1499885..a377932 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -109,6 +109,8 @@ static void __free_pages_ok (struct page
+ 		BUG();
+ 	if (PageActive(page))
+ 		BUG();
++	if (PageWriteback(page))
++		BUG();
+ 	ClearPageDirty(page);
+ 	page->flags &= ~(1<<PG_referenced);
+ 
+@@ -303,6 +305,8 @@ static struct page * balance_classzone(z
+ 						BUG();
+ 					if (PageDirty(page))
+ 						BUG();
++					if (PageWriteback(page))
++						BUG();
+ 
+ 					break;
+ 				}
+diff --git a/mm/page_io.c b/mm/page_io.c
+index f3018ee..b474126 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -117,6 +117,9 @@ void rw_swap_page_nolock(int rw, swp_ent
+ 	page->mapping = &swapper_space;
+ 	if (!rw_swap_page_base(rw, entry, page))
+ 		unlock_page(page);
+-	wait_on_page(page);
++	if (rw == WRITE)
++		wait_on_page_writeback(page);
++	else
++		wait_on_page_locked(page);
+ 	page->mapping = NULL;
+ }
+diff --git a/mm/readahead.c b/mm/readahead.c
+index f38fdb1..86d54f5 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -153,7 +153,7 @@ void do_page_cache_readahead(struct file
+ 	}
+ 
+ 	/*
+-	 * Do this now, rather than at the next wait_on_page().
++	 * Do this now, rather than at the next wait_on_page_locked().
+ 	 */
+ 	run_task_queue(&tq_disk);
+ 
+diff --git a/mm/shmem.c b/mm/shmem.c
+index fdabed5..64330ed 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -532,7 +532,7 @@ repeat:
+ 					goto repeat;
+ 				return ERR_PTR(-ENOMEM);
+ 			}
+-			wait_on_page(page);
++			wait_on_page_locked(page);
+ 			if (!PageUptodate(page) && entry->val == swap.val) {
+ 				page_cache_release(page);
+ 				return ERR_PTR(-EIO);
+@@ -595,7 +595,7 @@ no_space:
+ 
+ wait_retry:
+ 	spin_unlock (&info->lock);
+-	wait_on_page(page);
++	wait_on_page_locked(page);
+ 	page_cache_release(page);
+ 	goto repeat;
+ }
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 4037406..f9e1d38 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -589,11 +589,12 @@ static int try_to_unuse(unsigned int typ
+ 		 * Wait for and lock page.  When do_swap_page races with
+ 		 * try_to_unuse, do_swap_page can handle the fault much
+ 		 * faster than try_to_unuse can locate the entry.  This
+-		 * apparently redundant "wait_on_page" lets try_to_unuse
++		 * apparently redundant "wait_on_page_locked" lets try_to_unuse
+ 		 * defer to do_swap_page in such a case - in some tests,
+ 		 * do_swap_page and try_to_unuse repeatedly compete.
+ 		 */
+-		wait_on_page(page);
++		wait_on_page_locked(page);
++		wait_on_page_writeback(page);
+ 		lock_page(page);
+ 
+ 		/*
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f097d65..caa7401 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -95,6 +95,9 @@ static inline int try_to_swap_out(struct
+ 	if (TestSetPageLocked(page))
+ 		return 0;
+ 
++	if (PageWriteback(page))
++		goto out_unlock;
++
+ 	/* From this point on, the odds are that we're going to
+ 	 * nuke this pte, so read and clear the pte.  This hook
+ 	 * is needed on CPUs which update the accessed and dirty
+@@ -186,6 +189,7 @@ drop_pte:
+ 	/* No swap space left */
+ preserve:
+ 	set_pte(page_table, pte);
++out_unlock:
+ 	unlock_page(page);
+ 	return 0;
+ }
+@@ -421,17 +425,25 @@ static int shrink_cache(int nr_pages, zo
+ 		 * The page is locked. IO in progress?
+ 		 * Move it to the back of the list.
+ 		 */
+-		if (unlikely(TestSetPageLocked(page))) {
++		if (unlikely(PageWriteback(page))) {
+ 			if (PageLaunder(page) && (gfp_mask & __GFP_FS)) {
+ 				page_cache_get(page);
+ 				spin_unlock(&pagemap_lru_lock);
+-				wait_on_page(page);
++				wait_on_page_writeback(page);
+ 				page_cache_release(page);
+ 				spin_lock(&pagemap_lru_lock);
+ 			}
+ 			continue;
+ 		}
+ 
++		if (TestSetPageLocked(page))
++			continue;
++
++		if (PageWriteback(page)) {	/* The non-racy check */
++			unlock_page(page);
++			continue;
++		}
++
+ 		mapping = page->mapping;
+ 
+ 		if (PageDirty(page) && is_page_cache_freeable(page) &&
+@@ -457,10 +469,10 @@ static int shrink_cache(int nr_pages, zo
+ 			writeback = a_ops->vm_writeback;
+ 			writepage = a_ops->writepage;
+ 			if (writeback || writepage) {
+-				ClearPageDirty(page);
+ 				SetPageLaunder(page);
+ 				page_cache_get(page);
+ 				spin_unlock(&pagemap_lru_lock);
++				ClearPageDirty(page);
+ 
+ 				if (writeback) {
+ 					int nr_to_write = WRITEOUT_PAGES;
