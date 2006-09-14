@@ -1,0 +1,383 @@
+commit c5e29a233547eea2c1fabeae96d896e25ab43adc
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Thu Feb 13 09:11:07 2003 -0500
+
+    [PATCH] remove scsi_set_pci_device
+    
+    .. and update all callers to use the generic scsi_set_device.
+
+diff --git a/Documentation/scsi/scsi_mid_low_api.txt b/Documentation/scsi/scsi_mid_low_api.txt
+index a469bb4..f2529ef 100644
+--- a/Documentation/scsi/scsi_mid_low_api.txt
++++ b/Documentation/scsi/scsi_mid_low_api.txt
+@@ -404,15 +404,15 @@ void scsi_report_bus_reset(struct Scsi_H
+ 
+ 
+ /**
+- * scsi_set_pci_device - place PCI device reference in host structure
++ * scsi_set_device - place device reference in host structure
+  * @shost: a pointer to a scsi host instance
+- * @pdev: pointer to PCI device instance to assign
++ * @pdev: pointer to device instance to assign
+  *
+  *	Returns nothing
+  *
+  *      Notes: Defined in drivers/scsi/hosts.h .
+  **/
+-void scsi_set_pci_device(struct Scsi_Host * shost, struct pci_dev * pdev)
++void scsi_set_device(struct Scsi_Host * shost, struct device * dev)
+ 
+ 
+ /**
+diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
+index 71b4961..6dec316 100644
+--- a/drivers/block/cciss_scsi.c
++++ b/drivers/block/cciss_scsi.c
+@@ -839,7 +839,7 @@ #	endif	
+ 	sh->hostdata[0] = (unsigned long) hba[i];
+ 	sh->irq = hba[i]->intr;
+ 	sh->unique_id = sh->irq;
+-	scsi_set_pci_device(sh, hba[i]->pdev);
++	scsi_set_device(sh, &hba[i]->pdev->dev);
+ 
+ 	return 1;	/* Say we have 1 scsi adapter, this will be */
+ 			/* called multiple times, once for each adapter */
+diff --git a/drivers/message/fusion/mptscsih.c b/drivers/message/fusion/mptscsih.c
+index 9234e92..982c4f0 100644
+--- a/drivers/message/fusion/mptscsih.c
++++ b/drivers/message/fusion/mptscsih.c
+@@ -1769,7 +1769,7 @@ #endif
+ 
+ 				/* Set the pci device pointer in Scsi_Host structure.
+ 				 */
+-				scsi_set_pci_device(sh, this->pcidev);
++				scsi_set_device(sh, &this->pcidev->dev);
+ 
+ 				spin_unlock_irqrestore(&this->FreeQlock, flags);
+ 
+diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
+index 7d3a468..84ca810 100644
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -960,7 +960,9 @@ #if LINUX_VERSION_CODE >= KERNEL_VERSION
+ 			host->max_sectors = TW_MAX_SECTORS;
+ #endif
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
++			scsi_set_device(host, &tw_pci_dev->dev);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
+ 			scsi_set_pci_device(host, tw_pci_dev);
+ #endif
+ 
+diff --git a/drivers/scsi/AM53C974.c b/drivers/scsi/AM53C974.c
+index 3015fa7..9858d1c 100644
+--- a/drivers/scsi/AM53C974.c
++++ b/drivers/scsi/AM53C974.c
+@@ -680,7 +680,7 @@ #endif
+ 		printk(KERN_WARNING "AM53C974: Unable to register host, aborting.\n");
+ 		return 0;
+ 	}
+-	scsi_set_pci_device(instance, pdev);
++	scsi_set_device(instance, &pdev->dev);
+ 	hostdata = (struct AM53C974_hostdata *) instance->hostdata;
+ 	instance->base = 0;
+ 	instance->io_port = pci_resource_start(pdev, 0);
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index f061fec..da306b0 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -1707,6 +1707,13 @@ config OKTAGON_SCSI
+ 	  see the picture at
+ 	  <http://amiga.multigraph.com/photos/oktagon.html>.
+ 
++config SCSI_PC980155
++	tristate "NEC PC-9801-55 SCSI support"
++	depends on X86_PC9800 && SCSI
++	help
++	  If you have the NEC PC-9801-55 SCSI interface card or compatibles
++	  for NEC PC-9801/PC-9821, say Y.
++
+ #      bool 'Cyberstorm Mk III SCSI support (EXPERIMENTAL)' CONFIG_CYBERSTORMIII_SCSI
+ #      bool 'GVP Turbo 040/060 SCSI support (EXPERIMENTAL)' CONFIG_GVP_TURBO_SCSI
+ endmenu
+diff --git a/drivers/scsi/aacraid/linit.c b/drivers/scsi/aacraid/linit.c
+index 6915d91..787a232 100644
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -217,7 +217,7 @@ static int aac_detect(Scsi_Host_Template
+ 			host_ptr->irq = dev->irq;		/* Adapter IRQ number */
+ 			/* host_ptr->base = ( char * )(dev->resource[0].start & ~0xff); */
+ 			host_ptr->base = dev->resource[0].start;
+-			scsi_set_pci_device(host_ptr, dev);
++			scsi_set_device(host_ptr, &dev->dev);
+ 			dprintk((KERN_DEBUG "Device base address = 0x%lx [0x%lx].\n", host_ptr->base, dev->resource[0].start));
+ 			dprintk((KERN_DEBUG "Device irq = 0x%x.\n", dev->irq));
+ 			/*
+diff --git a/drivers/scsi/advansys.c b/drivers/scsi/advansys.c
+index 067baac..446b122 100644
+--- a/drivers/scsi/advansys.c
++++ b/drivers/scsi/advansys.c
+@@ -4791,9 +4791,8 @@ #endif /* CONFIG_PCI */
+             if (shp == NULL) {
+                 continue;
+             }
+-#ifdef CONFIG_PCI
+-	    scsi_set_pci_device(shp, pci_devp);
+-#endif
++
++	    scsi_set_device(shp, &pci_devp->dev);
+ 
+             /* Save a pointer to the Scsi_host of each board found. */
+             asc_host[asc_board_count++] = shp;
+diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
+index ca94f4c..7ed9e50 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_osm.c
++++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
+@@ -2381,7 +2381,9 @@ #endif
+ 		ahd_set_name(ahd, new_name);
+ 	}
+ 	host->unique_id = ahd->unit;
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
++	scsi_set_device(host, &ahd->dev_softc->dev);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
+ 	scsi_set_pci_device(host, ahd->dev_softc);
+ #endif
+ 	ahd_linux_initialize_scsi_bus(ahd);
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+index a12ad53..6bfe585 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+@@ -1861,7 +1861,9 @@ #endif
+ 		ahc_set_name(ahc, new_name);
+ 	}
+ 	host->unique_id = ahc->unit;
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
++	scsi_set_device(host, &ahc->dev_softc->dev);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,4)
+ 	scsi_set_pci_device(host, ahc->dev_softc);
+ #endif
+ 	ahc_linux_initialize_scsi_bus(ahc);
+diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
+index 560bea0..e1860db 100644
+--- a/drivers/scsi/aic7xxx_old.c
++++ b/drivers/scsi/aic7xxx_old.c
+@@ -8450,7 +8450,7 @@ aic7xxx_alloc(Scsi_Host_Template *sht, s
+     }
+     p->host_no = host->host_no;
+   }
+-  scsi_set_pci_device(host, p->pdev);
++  scsi_set_device(host, &p->pdev->dev);
+   return (p);
+ }
+ 
+diff --git a/drivers/scsi/cpqfcTSinit.c b/drivers/scsi/cpqfcTSinit.c
+index 3528bdd..e9d5738 100644
+--- a/drivers/scsi/cpqfcTSinit.c
++++ b/drivers/scsi/cpqfcTSinit.c
+@@ -337,7 +337,7 @@ #endif
+       DEBUG_PCI(printk("  PciDev->baseaddress[3]= %lx\n", 
+ 				PciDev->resource[3].start));
+ 
+-      scsi_set_pci_device(HostAdapter, PciDev);      
++      scsi_set_device(HostAdapter, &PciDev->dev);
+       HostAdapter->irq = PciDev->irq;  // copy for Scsi layers
+       
+       // HP Tachlite uses two (255-byte) ranges of Port I/O (lower & upper),
+diff --git a/drivers/scsi/dmx3191d.c b/drivers/scsi/dmx3191d.c
+index 0f905a0..ecdec32 100644
+--- a/drivers/scsi/dmx3191d.c
++++ b/drivers/scsi/dmx3191d.c
+@@ -86,7 +86,7 @@ static int __init dmx3191d_detect(Scsi_H
+ 			release_region(port, DMX3191D_REGION);
+ 			continue;
+ 		}
+-		scsi_set_pci_device(instance, pdev);
++		scsi_set_device(instance, &pdev->dev);
+ 		instance->io_port = port;
+ 		instance->irq = pdev->irq;
+ 		NCR5380_init(instance, FLAG_NO_PSEUDO_DMA | FLAG_DTC3181E);
+diff --git a/drivers/scsi/fdomain.c b/drivers/scsi/fdomain.c
+index 162bd05..ec83c7d 100644
+--- a/drivers/scsi/fdomain.c
++++ b/drivers/scsi/fdomain.c
+@@ -960,7 +960,7 @@ #endif
+    	return 0;
+    shpnt->irq = interrupt_level;
+    shpnt->io_port = port_base;
+-   scsi_set_pci_device(shpnt, pdev);
++   scsi_set_device(shpnt, &pdev->dev);
+    shpnt->n_io_port = 0x10;
+    print_banner( shpnt );
+ 
+diff --git a/drivers/scsi/hosts.h b/drivers/scsi/hosts.h
+index 6d26e62..2389b94 100644
+--- a/drivers/scsi/hosts.h
++++ b/drivers/scsi/hosts.h
+@@ -27,7 +27,6 @@ #define _HOSTS_H
+ #include <linux/config.h>
+ #include <linux/proc_fs.h>
+ #include <linux/types.h>
+-#include <linux/pci.h>
+ 
+ struct scsi_host_cmd_pool;
+ 
+@@ -534,13 +533,6 @@ static inline struct device *scsi_get_de
+         return shost->host_gendev;
+ }
+ 
+-static inline void scsi_set_pci_device(struct Scsi_Host *shost,
+-                                       struct pci_dev *pdev)
+-{
+-        scsi_set_device(shost, &pdev->dev);
+-}
+-
+-
+ /*
+  * Prototypes for functions/data in scsi_scan.c
+  */
+diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
+index 40c270c..0889552 100644
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -6731,7 +6731,7 @@ ips_register_scsi( int index){
+ 	kfree(oldha);
+ 	ips_sh[index] = sh;
+ 	ips_ha[index] = ha;
+-	scsi_set_pci_device(sh, ha->pcidev);
++	scsi_set_device(sh, &ha->pcidev->dev);
+ 
+ 	/* Store away needed values for later use */
+ 	sh->io_port = ha->io_addr;
+diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+index 640ba4d..9fd98b3 100644
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -2963,7 +2963,7 @@ #endif
+ 		 */
+ 		host->max_sectors = 1024;
+ 
+-		scsi_set_pci_device(host, pdev);
++		scsi_set_device(host, &pdev->dev);
+ 		megaCfg = (mega_host_config *) host->hostdata;
+ 		memset (megaCfg, 0, sizeof (mega_host_config));
+ 
+diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
+index a6b1a1b..08da728 100644
+--- a/drivers/scsi/nsp32.c
++++ b/drivers/scsi/nsp32.c
+@@ -1661,7 +1661,7 @@ static int nsp32_detect(Scsi_Host_Templa
+ 	host->unique_id	  = data->BaseAddress;
+ 	host->n_io_port	  = data->NumAddress;
+ 	host->base        = data->MmioAddress;
+-	scsi_set_pci_device(host, data->Pci);
++	scsi_set_device(host, &data->Pci->dev);
+ 
+ 	data->Host        = host;
+ 	spin_lock_init(&(data->Lock));
+diff --git a/drivers/scsi/pci2000.c b/drivers/scsi/pci2000.c
+index cb67ce1..337d60a 100644
+--- a/drivers/scsi/pci2000.c
++++ b/drivers/scsi/pci2000.c
+@@ -707,7 +707,7 @@ int Pci2000_Detect (Scsi_Host_Template *
+ 			goto unregister;
+ 			}
+ 		
+-		scsi_set_pci_device(pshost, pdev);
++		scsi_set_device(pshost, &pdev->dev);
+ 		pshost->irq = pdev->irq;
+ 		setirq = 1;
+ 		padapter->irqOwned = 0;
+diff --git a/drivers/scsi/pci2220i.c b/drivers/scsi/pci2220i.c
+index ac003fa..fc88b4b 100644
+--- a/drivers/scsi/pci2220i.c
++++ b/drivers/scsi/pci2220i.c
+@@ -2549,7 +2549,7 @@ int Pci2220i_Detect (Scsi_Host_Template 
+ 		if ( GetRegs (pshost, FALSE, pcidev) )
+ 			goto unregister;
+ 
+-		scsi_set_pci_device(pshost, pcidev);
++		scsi_set_device(pshost, &pcidev->dev);
+ 		pshost->max_id = padapter->numberOfDrives;
+ 		for ( z = 0;  z < padapter->numberOfDrives;  z++ )
+ 			{
+diff --git a/drivers/scsi/qla1280.c b/drivers/scsi/qla1280.c
+index dc61815..54d0776 100644
+--- a/drivers/scsi/qla1280.c
++++ b/drivers/scsi/qla1280.c
+@@ -814,7 +814,7 @@ qla1280_do_device_init(struct pci_dev *p
+ 		goto error;
+ 	}
+ 
+-	scsi_set_pci_device(host, pdev);
++	scsi_set_device(host, &pdev->dev);
+ 	ha = (struct scsi_qla_host *)host->hostdata;
+ 	/* Clear our data area */
+ 	memset(ha, 0, sizeof(struct scsi_qla_host));
+diff --git a/drivers/scsi/qlogicfc.c b/drivers/scsi/qlogicfc.c
+index 41e5fd8..f973a25 100644
+--- a/drivers/scsi/qlogicfc.c
++++ b/drivers/scsi/qlogicfc.c
+@@ -731,7 +731,7 @@ int isp2x00_detect(Scsi_Host_Template * 
+ 			        printk("qlogicfc%d : could not register host.\n", hosts);
+ 				continue;
+ 			}
+- 			scsi_set_pci_device(host, pdev);
++ 			scsi_set_device(host, &pdev->dev);
+ 			host->max_id = QLOGICFC_MAX_ID + 1;
+ 			host->max_lun = QLOGICFC_MAX_LUN;
+ 			hostdata = (struct isp2x00_hostdata *) host->hostdata;
+diff --git a/drivers/scsi/qlogicisp.c b/drivers/scsi/qlogicisp.c
+index f27e38e..1152107 100644
+--- a/drivers/scsi/qlogicisp.c
++++ b/drivers/scsi/qlogicisp.c
+@@ -685,7 +685,7 @@ int isp1020_detect(Scsi_Host_Template *t
+ 		memset(hostdata, 0, sizeof(struct isp1020_hostdata));
+ 
+ 		hostdata->pci_dev = pdev;
+-		scsi_set_pci_device(host, pdev);
++		scsi_set_device(host, &pdev->dev);
+ 
+ 		if (isp1020_init(host))
+ 			goto fail_and_unregister;
+diff --git a/drivers/scsi/sym53c8xx.c b/drivers/scsi/sym53c8xx.c
+index 3848121..cae16c9 100644
+--- a/drivers/scsi/sym53c8xx.c
++++ b/drivers/scsi/sym53c8xx.c
+@@ -5890,7 +5890,7 @@ #endif
+ 	instance->dma_channel	= 0;
+ 	instance->cmd_per_lun	= MAX_TAGS;
+ 	instance->can_queue	= (MAX_START-4);
+-	scsi_set_pci_device(instance, device->pdev);
++	scsi_set_device(instance, &device->pdev->dev);
+ 
+ 	np->check_integrity       = 0;
+ 
+diff --git a/drivers/scsi/sym53c8xx_2/sym_glue.c b/drivers/scsi/sym53c8xx_2/sym_glue.c
+index e6a076f..09dd64a 100644
+--- a/drivers/scsi/sym53c8xx_2/sym_glue.c
++++ b/drivers/scsi/sym53c8xx_2/sym_glue.c
+@@ -2130,7 +2130,7 @@ #endif
+ 
+ 	SYM_UNLOCK_HCB(np, flags);
+ 
+-	scsi_set_pci_device(instance, dev->pdev);
++	scsi_set_device(instance, &dev->pdev->dev);
+ 
+ 	/*
+ 	 *  Now let the generic SCSI driver
+diff --git a/drivers/scsi/tmscsim.c b/drivers/scsi/tmscsim.c
+index d63d2c0..63696d9 100644
+--- a/drivers/scsi/tmscsim.c
++++ b/drivers/scsi/tmscsim.c
+@@ -2206,7 +2206,7 @@ #endif
+     psh = scsi_register( psht, sizeof(DC390_ACB) );
+     if( !psh ) return( -1 );
+ 	
+-    scsi_set_pci_device(psh, pdev);
++    scsi_set_device(psh, &pdev->dev);
+     pACB = (PACB) psh->hostdata;
+     DC390_LOCKA_INIT;
+     DC390_LOCK_ACB;
