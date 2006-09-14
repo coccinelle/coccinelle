@@ -383,13 +383,17 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                      let flow' = Transformation.transform trans_info flow in
                      let def' = Flow_to_ast.control_flow_to_ast flow' in
                      
-
-                     let newbinding = 
-                       (CCI.metavars_binding2_to_binding used_after_env)
-                     in
-
-                     push2 (newbinding, (funcs, def')::already)
+                     if not (null trans_info)
+                     then begin
+                      let newbinding = snd3 (List.hd trans_info) in
+                      (*
+                      let newbinding = 
+                        (CCI.metavars_binding2_to_binding used_after_env)
+                      in
+                     *)
+                      push2 (newbinding, (funcs, def')::already)
                        _current_bindings_multictl;
+                      end
                  | Right x -> 
                      pr2 ("Unable to find a value for " ^ x);
                end
