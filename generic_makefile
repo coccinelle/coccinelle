@@ -6,8 +6,10 @@ ARGS=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP) \
 OBJS = $(SOURCES:.c=.ok)
 
 all: $(OBJS)
-	ls *ok 
-	ls *failed
+	ls *.ok
+	ls *.failed
+#	find . -name "*.ok" -print
+#	find . -name "*.failed" -print
 
 #pad: 
 #    .SUFFIXES: .c .ok
