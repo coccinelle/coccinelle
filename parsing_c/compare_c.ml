@@ -8,6 +8,18 @@ type compare_result =
   | Incorrect of string
   | IncorrectOnlyInNotParsedCorrectly
 
+(* Note that I use a kind of astdiff to know if there is a difference, but
+ * then I use diff to print the differences. So sometimes you have to dig
+ * a little to find really where the real difference (one not involving 
+ * just spacing difference) was.
+ * Note also that the astdiff is not very accurate. As I skip comments,
+ * macro definitions, those are not in the Ast and if there is a diff
+ * between 2 files regarding macro def, then I will not be able to report it :(
+ * update: I now put the toplevel #define at least in the Ast.
+ *
+ * todo?: do astdiff, tokendiff, linediff ? 
+ * I have the info for tokendiff, because c1 and c2 are programElement2.
+ *)
 let compare (c1,stat1) (c2, stat2)  =
 
     let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in

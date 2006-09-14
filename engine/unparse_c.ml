@@ -18,19 +18,22 @@ open Ast_c
 
 
 
-
-let pp_program file x = 
+(* In addition to the Ast in x, I also take the name of the input file,
+ * because I reparse it to be able later to synchrnize, get the comments,
+ * that are not in the Ast.
+ *)
+let pp_program infile outfile x = 
   
- with_open_outfile "/tmp/output.c" (fun (pr,chan) -> 
+ with_open_outfile outfile (fun (pr,chan) -> 
    let pr s = pr s; flush chan in
 
-   let _table = Common.full_charpos_to_pos file in
+   let _table = Common.full_charpos_to_pos infile in
 
    (* note: that not exactly same tokens as in parsing, cos in parsing there is
     * some transformation of tokens such as TIdent in Typedef,TIdent in TString
     * but for what we are interested here, it is not really important. 
     *)
-   let toks = (Parse_c.tokens file) in 
+   let toks = (Parse_c.tokens infile) in 
    let toks = ref (toks +> List.map (fun tok -> 
      (tok, Parse_c.info_from_token tok))) 
    in

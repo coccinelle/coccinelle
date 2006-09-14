@@ -17,17 +17,6 @@ let compare_with_expected = ref false
 let save_output_file = ref false
 
 (*****************************************************************************)
-(* Note that I use a kind of astdiff to know if there is a difference, but
- * then I use diff to print the differences. So sometimes you have to dig
- * a little to find really where the real difference (one not involving 
- * just spacing difference) was.
- * Note also that the astdiff is not very accurate. As I skip comments,
- * macro definitions, those are not in the Ast and if there is a diff
- * between 2 files regarding macro def, then I will not be able to report it :(
- * update: I now put the toplevel #define at least in the Ast.
- *
- * todo?: do astdiff, tokendiff, linediff ? 
- *)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if Common.lfile_exists expected_res
   then 
