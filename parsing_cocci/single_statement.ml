@@ -11,7 +11,11 @@ plus slice. Or at least be sure that the new stuff is on the far left or
 far right. *)
 let rec adding_something s =
   match Ast0.get_mcodekind s with
-    Ast0.MINUS(_) -> true
+    Ast0.MINUS(mc) ->
+      (match !mc with
+	(* do better for the common case of replacing a stmt by another one *)
+	([[Ast.StatementTag(_)]],tinfo) -> false
+      |	_ -> true)
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
       (match text with Ast.NOTHING -> false | _ -> true)
@@ -96,63 +100,108 @@ let add_braces orig_s =
   Ast0.set_mcodekind s new_mcodekind;
   s
 
-let rec process dots_before dots_after =
-  let donothing r k e = k e in
-  let mcode x = x in
+(* ---------------------------------------------------------------------- *)
 
-  let is_dots x =
-    match Ast0.unwrap x with
-      Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
-    | _ -> false in
+let is_dots x =
+  match Ast0.unwrap x with
+    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
+  | _ -> false
 
-  let rec do_statement_dots dots_before dots_after = function
-      [] -> []
-    | dots::rest when is_dots dots ->
-	dots::(do_statement_dots true dots_after rest)
-    | [x] -> [(process dots_before dots_after).V0.rebuilder_statement x]
-    | x::(dots::_ as rest) when is_dots dots ->
-	((process dots_before true).V0.rebuilder_statement x)::
-	do_statement_dots false dots_after rest
-    | x::rest ->
-	((process dots_before false).V0.rebuilder_statement x)::
-	do_statement_dots false dots_after rest in
+let rec statement dots_before dots_after s =
+  let do_one s =
+    if dots_before && dots_after && adding_something s
+    then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))
+    else s in
 
-  let statement_dots r k d =
-    Ast0.rewrap d
-      (match Ast0.unwrap d with
-	Ast0.DOTS(l) ->
-	  Ast0.DOTS(do_statement_dots dots_before dots_after l)
-      | Ast0.CIRCLES(l) ->
-	  Ast0.CIRCLES(do_statement_dots dots_before dots_after l)
-      | Ast0.STARS(l) ->
-	  Ast0.STARS(do_statement_dots dots_before dots_after l)) in
+  match Ast0.unwrap s with
+    Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+      Ast0.rewrap s
+	(Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,
+		      statement_dots false false body,
+		      rbrace))
+  | Ast0.Decl(_) -> s
+  | Ast0.Seq(lbrace,body,rbrace) ->
+      Ast0.rewrap s
+	(Ast0.Seq(lbrace,statement_dots false false body,rbrace))
+  | Ast0.ExprStatement(exp,sem) -> do_one s
+  | Ast0.IfThen(iff,lp,exp,rp,branch1,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.IfThen(iff,lp,exp,rp,statement false false branch1,x)))
+  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.IfThenElse
+	      (iff,lp,exp,rp,statement false false branch1,els,
+		statement false false branch2,x)))
+  | Ast0.While(whl,lp,exp,rp,body,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.While(whl,lp,exp,rp,statement false false body,x)))
+  | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.Do(d,statement false false body,whl,lp,exp,rp,sem)))
+  | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,statement false false body,
+		     x)))
+  | Ast0.Break(br,sem) -> do_one s
+  | Ast0.Continue(cont,sem) -> do_one s
+  | Ast0.Return(ret,sem) -> do_one s
+  | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
+  | Ast0.MetaStmt(name,_) -> do_one s
+  | Ast0.MetaStmtList(name,_) -> do_one s
+  | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+      Ast0.rewrap s
+	(Ast0.Disj(starter,
+		   List.map (statement_dots dots_before dots_after)
+		     statement_dots_list,
+		   mids,ender))
+  | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+      Ast0.rewrap s
+	(Ast0.Nest(starter,statement_dots true true stmt_dots,ender,whencode))
+  | Ast0.Exp(exp) -> s
+  | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
+  | Ast0.OptStm(re) -> 
+      Ast0.rewrap s
+	(Ast0.OptStm(statement dots_before dots_after re))
+  | Ast0.UniqueStm(re) ->
+      Ast0.rewrap s
+	(Ast0.UniqueStm( statement dots_before dots_after re))
+  | Ast0.MultiStm(re) ->
+      Ast0.rewrap s
+	(Ast0.MultiStm(statement dots_before dots_after re))
+  
+and do_statement_dots dots_before dots_after = function
+    [] -> []
+  | dots::rest when is_dots dots ->
+      dots::(do_statement_dots true dots_after rest)
+  | [x] -> [statement dots_before dots_after x]
+  | x::(dots::_ as rest) when is_dots dots ->
+      (statement dots_before dots_after x)::
+      do_statement_dots false dots_after rest
+  | x::rest ->
+      (statement dots_before dots_after x)::
+      do_statement_dots false dots_after rest
+	
+and statement_dots dots_before dots_after d =
+  Ast0.rewrap d
+    (match Ast0.unwrap d with
+      Ast0.DOTS(l) ->
+	Ast0.DOTS(do_statement_dots dots_before dots_after l)
+    | Ast0.CIRCLES(l) ->
+	Ast0.CIRCLES(do_statement_dots dots_before dots_after l)
+    | Ast0.STARS(l) ->
+	Ast0.STARS(do_statement_dots dots_before dots_after l))
 
-  let get_option f = function
-      Some x -> Some (f x)
-    | None -> None in
-
-  let statement r k s =
-    match Ast0.unwrap s with
-      Ast0.Nest(starter,stmt_dots,ender,whencode) ->
-	Ast0.rewrap s
-	  (Ast0.Nest(mcode starter,
-		     (process true true).V0.rebuilder_statement_dots stmt_dots,
-		     mcode ender,
-		     get_option r.V0.rebuilder_statement_dots whencode))
-    | Ast0.Disj(_,_,_,_) -> k s
-    | Ast0.Exp(_) -> k s
-    | Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> k s
-    | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) -> k s
-    | _ ->
-	let res = k s in
-	if dots_before && dots_after && adding_something s
-	then Ast0.set_dots_bef_aft res (Ast0.BetweenDots(add_braces res))
-	else res in
-
-  V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing statement_dots
-    donothing donothing donothing donothing donothing statement donothing
+let top_level t =
+  Ast0.rewrap t
+    (match Ast0.unwrap t with
+      Ast0.FUNCTION(stmt_dots) -> Ast0.FUNCTION(statement true true stmt_dots)
+    | Ast0.CODE(stmt_dots) -> Ast0.CODE(statement_dots true true stmt_dots)
+    | t -> t)
 
 let single_statement l =
-  List.map (process true true).V0.rebuilder_top_level l
+  List.map top_level l
