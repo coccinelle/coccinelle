@@ -1,0 +1,153 @@
+Rule 42
+----------------------------------------------------------------------
+Time-stamp: <2006-09-15 15:46:24 rrh>
+Cocci file: rule42.cocci
+Revision  : N/A
+----------------------------------------------------------------------
+
+10_symlink.c: Works!
+
+11_compress.c
+  * [spatch] orphelin nodes...
+  * Fatal error: exception Common.Impossible
+
+12_inode.c: Works!
+
+13_inode.c: Works!
+
+14_inode.c: Works!
+
+15_dir.c
+  * Fatal error: exception Common.Impossible
+
+16_file.c: Works!
+
+17_dir.c: Works!
+
+18_file.c: Works!
+
+19_inode.c: Works!
+
+1_symlink.c: Works!
+
+20_symlink.c: Works!
+
+21_dir.c
+  * Fatal error: exception Common.Impossible
+
+22_inode.c: Works!
+
+2_symlink.c: Works!
+
+3_inode.c: Works!
+  * [spatch] orphelin nodes...
+
+4_file.c: Works!
+
+5_dir.c
+  * [bug] CE not performed in expected result
+
+6_namei.c: Works!
+
+7_dir.c: Works!
+
+8_symlink.c: Works!
+
+9_dir.c
+  * [parser] unparseable code
+
+agpgart_be.c: Works!
+  * PBBB...
+
+aops.c: Works!
+
+blkmtd.c: Works!
+
+buffer.c
+  * Fatal error: exception Common.Impossible
+
+cache.c: Works!
+
+check.c
+  * Fatal error: exception Common.Impossible
+
+compress.c: Works!
+
+dir.c: Works!
+
+emd.c
+  * Fatal error: exception Common.Impossible
+
+file.c: Works!
+
+filemap.c
+  * Fatal error: exception Failure("pb in flow_to_ast, some nodes have
+    not been visited") 
+
+i810_dma.c: Works!
+
+inode.c: Works!
+
+inode-v23.c
+  * Fatal error: exception Common.Todo
+
+ioctl.c: Works!
+
+jfs_metapage.c: Works!
+
+loop.c: Works!
+
+lvm-snap.c: Works!
+
+md.c
+  * Fatal error: exception Not_found
+
+memory.c: Works!
+
+mincore.c: Works!
+
+namei.c: Works!
+
+page_alloc.c: Works!
+  * [spatch] PassingMacro FASTCALL
+  * [spatch] orphelin nodes...
+
+page_io.c: Works!
+
+page-writeback.c: Works!
+
+rd.c: Works!
+
+read.c
+  * Fatal error: exception Common.Impossible
+
+rock.c
+  * [parser] unparseable code
+
+shmem.c
+  * Fatal error: exception Common.Impossible
+
+slab.c: Works!
+  * PBBB...
+
+super.c: Works!
+  * [spatch] PBBB...
+
+swapfile.c: Works!
+
+swap_state.c: Works!
+
+symlink.c: Works!
+
+tail_conversion.c: Works!
+
+vmscan.c
+  * Fatal error: exception Ast_to_flow.DeadCode(_)
+
+vxfs_immed.c
+  * [parser] unparseable code
+
+vxfs_subr.c
+  * [parser] unparseable code
+
+write.c: Works!
