@@ -237,7 +237,7 @@ struct
 		noclean)) in
       try
 	Common.Left
-	  (res,noclean = [],
+	  (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs

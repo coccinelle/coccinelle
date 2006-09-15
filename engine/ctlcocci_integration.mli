@@ -19,6 +19,7 @@ val mysat :
   Lib_engine.ctlcocci -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding2) -> 
   ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
+     bool *
      Lib_engine.metavars_binding2,
    string) either
 

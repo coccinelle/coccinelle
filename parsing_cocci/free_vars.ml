@@ -176,10 +176,9 @@ let inner_non_locally_used l =
   let rec loop bound = function
       [] -> []
     | x::xs ->
-	let x = List.filter (function x -> not (List.mem x bound)) x in
-	let x =
-	  List.filter (function x -> List.exists (List.mem x) xs) x in
-	x::(loop (x@bound) xs) in
+	let all = Common.union_set x bound in
+	let x = List.filter (function x -> List.exists (List.mem x) xs) all in
+	x::(loop all xs) in
   loop [] l
 
 let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s

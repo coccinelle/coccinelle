@@ -74,6 +74,11 @@ let rec ctl2c ct pp pv x =
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = orwrap (ct+1) pp pv f2 in
       (res1^" \\vee "^res2,ct)
+  | CTL.SeqOr(f1,f2) ->
+      let (res1,ct) = orwrap ct pp pv f1 in
+      let (res1,ct) = check_ct ct res1 in
+      let (res2,ct) = orwrap (ct+1) pp pv f2 in
+      (res1^" \\mid "^res2,ct)
   | CTL.Implies(f1,f2) ->
       let (res1,ct) = wrap ct pp pv f1 in
       let (res1,ct) = check_ct ct res1 in

@@ -53,6 +53,7 @@ module CTL_ENGINE_BIS :
 	   (predicate,SUB.mvar) wrapped_ctl ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		 (WRAPPER_ENV.mvar * SUB.value) list,
+		  bool *
+		  (WRAPPER_ENV.mvar * SUB.value) list,
 		SUB.mvar) Common.either
 end
