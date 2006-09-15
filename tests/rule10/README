@@ -1,0 +1,19 @@
+Rule 10
+----------------------------------------------------------------------
+Time-stamp: <2006-09-15 14:10:54 rrh>
+Cocci file: rule10.cocci
+Revision  : N/A
+----------------------------------------------------------------------
+
+ec.c: Works!
+
+evgpeblk.c: Works!
+
+evgpe.c: Works!
+
+hwgpe.c: Works!
+
+hwregs.c:
+  * Many unrelated modifications
+
+hwtimer.c: Works!
