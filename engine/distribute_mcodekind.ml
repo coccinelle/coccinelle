@@ -521,7 +521,7 @@ and distribute_mck_arge = fun (op, lop, rop) ->
      
   | x::y::xs -> 
      let ((head,ii1), middle, (tail,ii2)) = head_middle_tail (x::y::xs) in
-     assert (null ii1);
+      assert (null ii1);
       [trans_arg (op, lop, nothing_right) head, ii1]
       @
       List.map (fun (e, ii) -> 

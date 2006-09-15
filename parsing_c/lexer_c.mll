@@ -134,7 +134,7 @@ rule token = parse
 
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           
-      { TInclude (tokinfo lexbuf) }
+      { TCommentCpp (tokinfo lexbuf) }
 
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
@@ -374,6 +374,9 @@ rule token = parse
 
   | "__initdata"                   -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "__cacheline_aligned"          -> TCommentAttrOrMacro (tokinfo lexbuf) 
+  | "____cacheline_aligned"          -> TCommentAttrOrMacro (tokinfo lexbuf) 
+
+
 
   | "__devinit"                    -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "__devexit"                    -> TCommentAttrOrMacro (tokinfo lexbuf) 
@@ -402,6 +405,7 @@ rule token = parse
   | " __pmac"  -> TCommentAttrOrMacro (tokinfo lexbuf)  
 
  (* foreach like macro. here too maybe could generalize via ".*for_each.*" *)
+ (* and have an heuristic with my lalr(k) technique *)
   | "list_for_each"                -> Twhile (tokinfo lexbuf) 
   | "list_for_each_safe"           -> Twhile (tokinfo lexbuf) 
   | "list_for_each_prev"           -> Twhile (tokinfo lexbuf) 
@@ -437,6 +441,8 @@ rule token = parse
   | "ITERATE_MDDEV"        -> Twhile (tokinfo lexbuf) 
   | "ITERATE_RDEV_PENDING" -> Twhile (tokinfo lexbuf) 
   | "ITERATE_RDEV_GENERIC" -> Twhile (tokinfo lexbuf) 
+
+  | "for_each_online_node"             -> Twhile (tokinfo lexbuf) 
 
   (* higher order, debug like macro *)
   | "DBGINFO" -> THigherOrderMacro (tokinfo lexbuf) 

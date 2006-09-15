@@ -598,6 +598,19 @@ and (transform_arguments:
     | [A.Edots (mcode, None), ea], ebs -> 
         D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
 
+
+    | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (Left eb, ii)::ebs -> 
+        let ii' = tag_symbols [i1] ii   binding in
+        (match 
+        D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
+          ((Left eb, [](*subtil*))::ebs)
+           binding
+        with
+        | (Left eb, [])::ebs -> (Left eb, ii')::ebs
+        | _ -> raise Impossible
+        )
+        
+
     | (A.EComma i1, _)::(una,ea)::eas, (Left eb, ii)::ebs -> 
         let ii' = tag_symbols [i1] ii   binding in
         (Left (transform_e_e  ea eb binding), ii')::

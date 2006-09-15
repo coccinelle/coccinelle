@@ -431,13 +431,15 @@ let full_engine cfile coccifile_and_iso_or_ctl =
          )
        );
      (* assert no conflict. can concern different function ? *)
-     assert (List.length !_current_bindings_multictl = 1);
-     let (binding, list_func) = List.hd !_current_bindings_multictl in
-     cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
-       match e with
-       | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+     (match (List.length !_current_bindings_multictl) with
+     | 0 ->  command2("cp /tmp/input.c /tmp/output.c");    
+     | 1 -> 
+       let (binding, list_func) = List.hd !_current_bindings_multictl in
+       cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
+         match e with
+         | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
            if List.mem funcs (Common.keys list_func)
-           then (Ast_c.Definition (List.assoc funcs list_func), 
+            then (Ast_c.Definition (List.assoc funcs list_func), 
                  Unparse_c.PPnormal)
            else (Ast_c.Definition def, Unparse_c.PPviatok il) 
              
@@ -445,6 +447,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
        )
         +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
       command2("cp /tmp/output.c /tmp/input.c");    
+     | n -> failwith "multiple candidates for multi mini-rules, TODO"
+           );
      end
 
   ); (* end 1: iter ctl *)
