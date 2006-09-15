@@ -68,7 +68,6 @@ let add_binding var exp bindings =
 
 let add_dot_binding var exp bindings =
   let var = dot_term var in
-  Printf.printf "calling dot_binding for %s\n" var;
   try
     let cur = List.assoc var bindings in
     if anything_equal(exp,cur) then Some bindings else None
