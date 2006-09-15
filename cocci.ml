@@ -351,8 +351,19 @@ let full_engine cfile coccifile_and_iso_or_ctl =
      
      let _compteur1 = ref 0 in 
      (* iter ctl_toplevel 1 bis *)
-     ctl_toplevel_list +> List.iter (fun ctl -> 
-       let lastround_bindings_multi = !_current_bindings_multictl in
+
+     
+     let rec union_after already = function
+       | [] -> []
+       | x::xs -> 
+           let u = Common.union_set x already in
+           u::union_after u xs
+     in
+     let used_after_list2 = union_after [] used_after_list in
+
+     zip ctl_toplevel_list used_after_list2 +> List.iter 
+      (fun (ctl, used_after_one_ctl) -> 
+       let lastround_bindings_multi = List.rev !_current_bindings_multictl in
        _current_bindings_multictl := [];
        incr _compteur1;
        pr2 ("CTL part:" ^ i_to_s !_compteur1);
@@ -373,13 +384,15 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                  let _fixed_flow = CCI.fix_flow_ctl flow in
                  let current_binding = binding in
                  let current_binding2 = CCI.metavars_binding_to_binding2 current_binding in
+
+                 pr2 "start binding = ";
+                 Pretty_print_c.pp_binding current_binding;
+                 Format.print_newline();
+
                  let model_ctl  = CCI.model_for_ctl flow current_binding in
-		 (* change this!!! *)
-		 let used_after_list =
-		   List.fold_left Common.union_set [] used_after_list in
 		 let satres =
 		   CCI.mysat model_ctl ctl
-		     (used_after_list, current_binding2) in
+		     (used_after_one_ctl, current_binding2) in
 		 match satres with
 		 | Left (trans_info2, used_after_env) ->
                      let trans_info = CCI.satbis_to_trans_info trans_info2 in
@@ -388,17 +401,21 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                        Pretty_print_engine.pp_transformation_info trans_info;
                        Format.print_newline();
                      end;
+
+                     if !_compteur1 = 3 && !_compteur2 = 1  && funcs = "main"
+                     then 
+                       pr2 "THIS ONE SHOULD MATCH";
+
                      let flow' = Transformation.transform trans_info flow in
                      let def' = Flow_to_ast.control_flow_to_ast flow' in
                      
                      if not (null trans_info)
                      then begin
-                      let newbinding = snd3 (List.hd trans_info) in
-                      (*
+                      (* when used_after is not good *)
+                      (* let newbinding = snd3 (List.hd trans_info) in *)
                       let newbinding = 
                         (CCI.metavars_binding2_to_binding used_after_env)
                       in
-                     *)
                       push2 (newbinding, (funcs, def')::already)
                        _current_bindings_multictl;
                       end

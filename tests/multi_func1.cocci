@@ -5,13 +5,13 @@ expression A;
 
   fn1(...) {
 -   foo(A); 
-+   bidon(A, fn1);
+//+   bidon(A, fn1);
 
   }
 
   fn2(...) {
 -   bar(A);
-+   bidon(A, fn1, fn2);
+//+   bidon(A, fn1, fn2);
   }
 
   fn3(...) {
