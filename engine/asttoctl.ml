@@ -1428,7 +1428,7 @@ let asttoctl l used_after =
       (function t ->
 	match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
       l in
-  List.map (top_level used_after) l
+  List.map2 top_level used_after l
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

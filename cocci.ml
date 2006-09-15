@@ -278,6 +278,9 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
 
                 let model_ctl  = CCI.model_for_ctl flow current_binding in
+		(* change this!!! *)
+		let used_after_list =
+		  List.fold_left Common.union_set [] used_after_list in
 		let satres = 
                   CCI.mysat model_ctl ctl (used_after_list, current_binding2) 
                 in
@@ -367,11 +370,16 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                if not (List.mem funcs (Common.keys already))
                then begin
                  let flow = Ast_to_flow.ast_to_control_flow def in
-                 let fixed_flow = CCI.fix_flow_ctl flow in
+                 let _fixed_flow = CCI.fix_flow_ctl flow in
                  let current_binding = binding in
                  let current_binding2 = CCI.metavars_binding_to_binding2 current_binding in
                  let model_ctl  = CCI.model_for_ctl flow current_binding in
-		 let satres = CCI.mysat model_ctl ctl (used_after_list, current_binding2) in
+		 (* change this!!! *)
+		 let used_after_list =
+		   List.fold_left Common.union_set [] used_after_list in
+		 let satres =
+		   CCI.mysat model_ctl ctl
+		     (used_after_list, current_binding2) in
 		 match satres with
 		 | Left (trans_info2, used_after_env) ->
                      let trans_info = CCI.satbis_to_trans_info trans_info2 in

@@ -126,12 +126,9 @@ let astfvs bound =
       astfvident astfvexpr donothing astfvtypeC astfvparam donothing
       astfvrule_elem astfvstatement donothing donothing in
 
-  let rule =
-    List.fold_left
-      (function rest ->
-	function tl ->
-	  bind (recursor.V.combiner_top_level tl) rest)
-      option_default in
+  let rule l =
+    let all = List.map recursor.V.combiner_top_level l in
+    (all,List.fold_left bind option_default all) in
 
   (function l -> (rule l,free_table))
 
@@ -175,6 +172,16 @@ let update table =
     donothing donothing donothing donothing donothing donothing rule_elem
     statement donothing donothing).V.rebuilder_top_level
 
+let inner_non_locally_used l =
+  let rec loop bound = function
+      [] -> []
+    | x::xs ->
+	let x = List.filter (function x -> not (List.mem x bound)) x in
+	let x =
+	  List.filter (function x -> List.exists (List.mem x) xs) x in
+	x::(loop (x@bound) xs) in
+  loop [] l
+
 let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s
 let set_intersect s1 s2 = List.filter (function n -> List.mem n s2) s1
 let rec loop defined = function
@@ -182,11 +189,14 @@ let rec loop defined = function
   | (metavar_list,rule)::rest ->
       let locally_defined = List.map get_names metavar_list in
       let not_rebound = set_minus defined locally_defined in
-      let ((_,locally_free),table) = astfvs not_rebound rule in
+      let ((all_info,(_,locally_free)),table) = astfvs not_rebound rule in
+      let (_,all_locally_frees) = List.split all_info in
       let (later_free,later_nonlocally_used,later_rules) =
 	loop (Common.union_set defined locally_defined) rest in
       (set_minus (Common.union_set locally_free later_free) locally_defined,
-       later_free::later_nonlocally_used,
+       (List.map (function x -> Common.union_set x later_free)
+	  (inner_non_locally_used all_locally_frees))
+       ::later_nonlocally_used,
        (List.map (update table) rule)::later_rules)
 
 let free_vars rules =
