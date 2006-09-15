@@ -1,0 +1,58 @@
+commit 264f48646e6829b4d00a0e058452578318e6fb15
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove the line_driver devfs_name field as it's no longer needed
+    
+    Also fixes all drivers that set this field.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
+index ee1fe6a..5ca57ca 100644
+--- a/arch/um/drivers/line.c
++++ b/arch/um/drivers/line.c
+@@ -654,7 +654,6 @@ struct tty_driver *line_register_devfs(s
+ 
+ 	driver->driver_name = line_driver->name;
+ 	driver->name = line_driver->device_name;
+-	driver->devfs_name = line_driver->devfs_name;
+ 	driver->major = line_driver->major;
+ 	driver->minor_start = line_driver->minor_start;
+ 	driver->type = line_driver->type;
+diff --git a/arch/um/drivers/ssl.c b/arch/um/drivers/ssl.c
+index a4d6415..6dafd6f 100644
+--- a/arch/um/drivers/ssl.c
++++ b/arch/um/drivers/ssl.c
+@@ -54,7 +54,6 @@ static int ssl_remove(int n);
+ static struct line_driver driver = {
+ 	.name 			= "UML serial line",
+ 	.device_name 		= "ttyS",
+-	.devfs_name 		= "tts/",
+ 	.major 			= TTY_MAJOR,
+ 	.minor_start 		= 64,
+ 	.type 		 	= TTY_DRIVER_TYPE_SERIAL,
+diff --git a/arch/um/drivers/stdio_console.c b/arch/um/drivers/stdio_console.c
+index 61db8b2..856f568 100644
+--- a/arch/um/drivers/stdio_console.c
++++ b/arch/um/drivers/stdio_console.c
+@@ -60,7 +60,6 @@ static int con_remove(int n);
+ static struct line_driver driver = {
+ 	.name 			= "UML console",
+ 	.device_name 		= "tty",
+-	.devfs_name 		= "vc/",
+ 	.major 			= TTY_MAJOR,
+ 	.minor_start 		= 0,
+ 	.type 		 	= TTY_DRIVER_TYPE_CONSOLE,
+diff --git a/arch/um/include/line.h b/arch/um/include/line.h
+index 6ac0f82..27bf2f6 100644
+--- a/arch/um/include/line.h
++++ b/arch/um/include/line.h
+@@ -17,7 +17,6 @@ #include "mconsole_kern.h"
+ struct line_driver {
+ 	char *name;
+ 	char *device_name;
+-	char *devfs_name;
+ 	short major;
+ 	short minor_start;
+ 	short type;

@@ -1,0 +1,34 @@
+commit fee68d1cc0d9bd863e51c16cdcd707737b16bb38
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove it from the feature_removal.txt file
+    
+    This file was created due to the issue regarding how to notify people
+    that devfs was going to be removed.  Finally remove the entry as it has
+    served its purpose.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 027285d..ddfd770 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -6,17 +6,6 @@ be removed from this file.
+ 
+ ---------------------------
+ 
+-What:	devfs
+-When:	July 2005
+-Files:	fs/devfs/*, include/linux/devfs_fs*.h and assorted devfs
+-	function calls throughout the kernel tree
+-Why:	It has been unmaintained for a number of years, has unfixable
+-	races, contains a naming policy within the kernel that is
+-	against the LSB, and can be replaced by using udev.
+-Who:	Greg Kroah-Hartman <greg@kroah.com>
+-
+----------------------------
+-
+ What:	RAW driver (CONFIG_RAW_DRIVER)
+ When:	December 2005
+ Why:	declared obsolete since kernel 2.6.3

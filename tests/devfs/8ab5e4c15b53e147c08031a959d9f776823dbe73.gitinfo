@@ -1,0 +1,880 @@
+commit 8ab5e4c15b53e147c08031a959d9f776823dbe73
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove devfs_remove() function from the kernel tree
+    
+    Removes the devfs_remove() function and all callers of it.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/arch/sparc64/solaris/socksys.c b/arch/sparc64/solaris/socksys.c
+index 30ba116..09664ab 100644
+--- a/arch/sparc64/solaris/socksys.c
++++ b/arch/sparc64/solaris/socksys.c
+@@ -205,5 +205,4 @@ cleanup_socksys(void)
+ {
+ 	if (unregister_chrdev(30, "socksys"))
+ 		printk ("Couldn't unregister socksys character device\n");
+-	devfs_remove ("socksys");
+ }
+diff --git a/drivers/block/acsi_slm.c b/drivers/block/acsi_slm.c
+index b087b3a..7495fef 100644
+--- a/drivers/block/acsi_slm.c
++++ b/drivers/block/acsi_slm.c
+@@ -1027,10 +1027,6 @@ int init_module(void)
+ 
+ void cleanup_module(void)
+ {
+-	int i;
+-	for (i = 0; i < MAX_SLM; i++)
+-		devfs_remove("slm/%d", i);
+-	devfs_remove("slm");
+ 	if (unregister_chrdev( ACSI_MAJOR, "slm" ) != 0)
+ 		printk( KERN_ERR "acsi_slm: cleanup_module failed\n");
+ 	atari_stram_free( SLMBuffer );
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 5eb6fb7..2701ed7 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -348,7 +348,6 @@ static void __devexit cpqarray_remove_on
+ 	for(j = 0; j < NWD; j++) {
+ 		if (ida_gendisk[i][j]->flags & GENHD_FL_UP)
+ 			del_gendisk(ida_gendisk[i][j]);
+-		devfs_remove("ida/c%dd%d",i,j);
+ 		put_disk(ida_gendisk[i][j]);
+ 	}
+ 	blk_cleanup_queue(hba[i]->queue);
+@@ -1844,7 +1843,6 @@ static void __exit cpqarray_exit(void)
+ 		}
+ 	}
+ 
+-	devfs_remove("ida");
+ 	remove_proc_entry("cpqarray", proc_root_driver);
+ }
+ 
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index ec14e6e..8e101a9 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3952,20 +3952,6 @@ static struct block_device_operations fl
+ 	.media_changed	= check_floppy_change,
+ 	.revalidate_disk = floppy_revalidate,
+ };
+-static char *table[] = {
+-	"", "d360", "h1200", "u360", "u720", "h360", "h720",
+-	"u1440", "u2880", "CompaQ", "h1440", "u1680", "h410",
+-	"u820", "h1476", "u1722", "h420", "u830", "h1494", "u1743",
+-	"h880", "u1040", "u1120", "h1600", "u1760", "u1920",
+-	"u3200", "u3520", "u3840", "u1840", "u800", "u1600",
+-	NULL
+-};
+-static int t360[] = { 1, 0 },
+-	t1200[] = { 2, 5, 6, 10, 12, 14, 16, 18, 20, 23, 0 },
+-	t3in[] = { 8, 9, 26, 27, 28, 7, 11, 15, 19, 24, 25, 29, 31, 3, 4, 13,
+-			17, 21, 22, 30, 0 };
+-static int *table_sup[] =
+-    { NULL, t360, t1200, t3in + 5 + 8, t3in + 5, t3in, t3in };
+ 
+ /*
+  * Floppy Driver initialization
+@@ -4244,7 +4230,7 @@ static int __init floppy_init(void)
+ 
+ 	err = register_blkdev(FLOPPY_MAJOR, "fd");
+ 	if (err)
+-		goto out_devfs_remove;
++		goto out_put_disk;
+ 
+ 	floppy_queue = blk_init_queue(do_fd_request, &floppy_lock);
+ 	if (!floppy_queue) {
+@@ -4403,8 +4389,6 @@ out_unreg_region:
+ 	blk_cleanup_queue(floppy_queue);
+ out_unreg_blkdev:
+ 	unregister_blkdev(FLOPPY_MAJOR, "fd");
+-out_devfs_remove:
+-	devfs_remove("floppy");
+ out_put_disk:
+ 	while (dr--) {
+ 		del_timer(&motor_off_timer[dr]);
+@@ -4565,19 +4549,6 @@ #ifdef MODULE
+ 
+ static char *floppy;
+ 
+-static void unregister_devfs_entries(int drive)
+-{
+-	int i;
+-
+-	if (UDP->cmos < ARRAY_SIZE(default_drive_params)) {
+-		i = 0;
+-		do {
+-			devfs_remove("floppy/%d%s", drive,
+-				     table[table_sup[UDP->cmos][i]]);
+-		} while (table_sup[UDP->cmos][i++]);
+-	}
+-}
+-
+ static void __init parse_floppy_cfg_string(char *cfg)
+ {
+ 	char *ptr;
+@@ -4614,13 +4585,11 @@ void cleanup_module(void)
+ 		if ((allowed_drive_mask & (1 << drive)) &&
+ 		    fdc_state[FDC(drive)].version != FDC_NONE) {
+ 			del_gendisk(disks[drive]);
+-			unregister_devfs_entries(drive);
+ 			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
+ 			platform_device_unregister(&floppy_device[drive]);
+ 		}
+ 		put_disk(disks[drive]);
+ 	}
+-	devfs_remove("floppy");
+ 
+ 	del_timer_sync(&fd_timeout);
+ 	del_timer_sync(&fd_timer);
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index f650d20..0319b09 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1308,7 +1308,6 @@ static int __init loop_init(void)
+ out_mem4:
+ 	while (i--)
+ 		blk_cleanup_queue(loop_dev[i].lo_queue);
+-	devfs_remove("loop");
+ 	i = max_loop;
+ out_mem3:
+ 	while (i--)
+@@ -1331,7 +1330,6 @@ static void loop_exit(void)
+ 		blk_cleanup_queue(loop_dev[i].lo_queue);
+ 		put_disk(disks[i]);
+ 	}
+-	devfs_remove("loop");
+ 	if (unregister_blkdev(LOOP_MAJOR, "loop"))
+ 		printk(KERN_WARNING "loop: cannot unregister blkdev\n");
+ 
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 618e258..c24b349 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -685,7 +685,6 @@ static void __exit nbd_cleanup(void)
+ 			put_disk(disk);
+ 		}
+ 	}
+-	devfs_remove("nbd");
+ 	unregister_blkdev(NBD_MAJOR, "nbd");
+ 	printk(KERN_INFO "nbd: unregistered device at major %d\n", NBD_MAJOR);
+ }
+diff --git a/drivers/block/paride/pg.c b/drivers/block/paride/pg.c
+index 3d464f7..e6f1614 100644
+--- a/drivers/block/paride/pg.c
++++ b/drivers/block/paride/pg.c
+@@ -695,13 +695,10 @@ static void __exit pg_exit(void)
+ 
+ 	for (unit = 0; unit < PG_UNITS; unit++) {
+ 		struct pg *dev = &devices[unit];
+-		if (dev->present) {
++		if (dev->present)
+ 			class_device_destroy(pg_class, MKDEV(major, unit));
+-			devfs_remove("pg/%u", unit);
+-		}
+ 	}
+ 	class_destroy(pg_class);
+-	devfs_remove("pg");
+ 	unregister_chrdev(major, name);
+ 
+ 	for (unit = 0; unit < PG_UNITS; unit++) {
+diff --git a/drivers/block/paride/pt.c b/drivers/block/paride/pt.c
+index c85bdcb..ea12073 100644
+--- a/drivers/block/paride/pt.c
++++ b/drivers/block/paride/pt.c
+@@ -992,12 +992,9 @@ static void __exit pt_exit(void)
+ 	for (unit = 0; unit < PT_UNITS; unit++)
+ 		if (pt[unit].present) {
+ 			class_device_destroy(pt_class, MKDEV(major, unit));
+-			devfs_remove("pt/%d", unit);
+ 			class_device_destroy(pt_class, MKDEV(major, unit + 128));
+-			devfs_remove("pt/%dn", unit);
+ 		}
+ 	class_destroy(pt_class);
+-	devfs_remove("pt");
+ 	unregister_chrdev(major, name);
+ 	for (unit = 0; unit < PT_UNITS; unit++)
+ 		if (pt[unit].present)
+diff --git a/drivers/block/rd.c b/drivers/block/rd.c
+index 67821a8..acaa2ab 100644
+--- a/drivers/block/rd.c
++++ b/drivers/block/rd.c
+@@ -412,7 +412,6 @@ static void __exit rd_cleanup(void)
+ 		put_disk(rd_disks[i]);
+ 		blk_cleanup_queue(rd_queue[i]);
+ 	}
+-	devfs_remove("rd");
+ 	unregister_blkdev(RAMDISK_MAJOR, "ramdisk");
+ }
+ 
+diff --git a/drivers/block/sx8.c b/drivers/block/sx8.c
+index 9fb3f51..a366ea8 100644
+--- a/drivers/block/sx8.c
++++ b/drivers/block/sx8.c
+@@ -1736,7 +1736,6 @@ static void carm_remove_one (struct pci_
+ 
+ 	free_irq(pdev->irq, host);
+ 	carm_free_disks(host);
+-	devfs_remove(DRV_NAME);
+ 	unregister_blkdev(host->major, host->name);
+ 	if (host->major == 160)
+ 		clear_bit(0, &carm_major_alloc);
+diff --git a/drivers/block/ub.c b/drivers/block/ub.c
+index 088e5ba..b68abc9 100644
+--- a/drivers/block/ub.c
++++ b/drivers/block/ub.c
+@@ -2453,7 +2453,6 @@ static int __init ub_init(void)
+ 	return 0;
+ 
+ err_register:
+-	devfs_remove(DEVFS_NAME);
+ 	unregister_blkdev(UB_MAJOR, DRV_NAME);
+ err_regblkdev:
+ 	return rc;
+@@ -2463,7 +2462,6 @@ static void __exit ub_exit(void)
+ {
+ 	usb_deregister(&ub_driver);
+ 
+-	devfs_remove(DEVFS_NAME);
+ 	unregister_blkdev(UB_MAJOR, DRV_NAME);
+ 	usb_usual_clear_present(USB_US_TYPE_UB);
+ }
+diff --git a/drivers/cdrom/sbpcd.c b/drivers/cdrom/sbpcd.c
+index ee4499a..55cbd23 100644
+--- a/drivers/cdrom/sbpcd.c
++++ b/drivers/cdrom/sbpcd.c
+@@ -5904,7 +5904,6 @@ static void sbpcd_exit(void)
+ 		if (D_S[j].drv_id==-1) continue;
+ 		del_gendisk(D_S[j].disk);
+ 		put_disk(D_S[j].disk);
+-		devfs_remove("sbp/c0t%d", j);
+ 		vfree(D_S[j].sbp_buf);
+ 		if (D_S[j].sbp_audsiz>0)
+ 			vfree(D_S[j].aud_buf);
+@@ -5915,7 +5914,6 @@ static void sbpcd_exit(void)
+ 		}
+ 		vfree(D_S[j].sbpcd_infop);
+ 	}
+-	devfs_remove("sbp");
+ 	msg(DBG_INF, "%s module released.\n", major_name);
+ }
+ 
+diff --git a/drivers/char/dsp56k.c b/drivers/char/dsp56k.c
+index 45caf77..ee32e58 100644
+--- a/drivers/char/dsp56k.c
++++ b/drivers/char/dsp56k.c
+@@ -533,7 +533,6 @@ static void __exit dsp56k_cleanup_driver
+ 	class_device_destroy(dsp56k_class, MKDEV(DSP56K_MAJOR, 0));
+ 	class_destroy(dsp56k_class);
+ 	unregister_chrdev(DSP56K_MAJOR, "dsp56k");
+-	devfs_remove("dsp56k");
+ }
+ module_exit(dsp56k_cleanup_driver);
+ 
+diff --git a/drivers/char/dtlk.c b/drivers/char/dtlk.c
+index e34b4f4..6da88e2 100644
+--- a/drivers/char/dtlk.c
++++ b/drivers/char/dtlk.c
+@@ -354,7 +354,6 @@ static void __exit dtlk_cleanup (void)
+ 
+ 	dtlk_write_tts(DTLK_CLEAR);
+ 	unregister_chrdev(dtlk_major, "dtlk");
+-	devfs_remove("dtlk");
+ 	release_region(dtlk_port_lpc, DTLK_IO_EXTENT);
+ }
+ 
+diff --git a/drivers/char/ftape/zftape/zftape-init.c b/drivers/char/ftape/zftape/zftape-init.c
+index 8c6090c..e09ad2b 100644
+--- a/drivers/char/ftape/zftape/zftape-init.c
++++ b/drivers/char/ftape/zftape/zftape-init.c
+@@ -362,17 +362,11 @@ static void zft_exit(void)
+ 		TRACE(ft_t_info, "successful");
+ 	}
+         for (i = 0; i < 4; i++) {
+-		devfs_remove("qft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i));
+-		devfs_remove("nqft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i + 4));
+-		devfs_remove("zqft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i + 16));
+-		devfs_remove("nzqft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i + 20));
+-		devfs_remove("rawqft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i + 32));
+-		devfs_remove("nrawqft%i", i);
+ 		class_device_destroy(zft_class, MKDEV(QIC117_TAPE_MAJOR, i + 36));
+ 	}
+ 	class_destroy(zft_class);
+diff --git a/drivers/char/ip2/ip2main.c b/drivers/char/ip2/ip2main.c
+index afc25db..5d2d573 100644
+--- a/drivers/char/ip2/ip2main.c
++++ b/drivers/char/ip2/ip2main.c
+@@ -414,9 +414,7 @@ #endif
+ 			/* free io addresses and Tibet */
+ 			release_region( ip2config.addr[i], 8 );
+ 			class_device_destroy(ip2_class, MKDEV(IP2_IPL_MAJOR, 4 * i));
+-			devfs_remove("ip2/ipl%d", i);
+ 			class_device_destroy(ip2_class, MKDEV(IP2_IPL_MAJOR, 4 * i + 1));
+-			devfs_remove("ip2/stat%d", i);
+ 		}
+ 		/* Disable and remove interrupt handler. */
+ 		if ( (ip2config.irq[i] > 0) && have_requested_irq(ip2config.irq[i]) ) {	
+@@ -425,7 +423,6 @@ #endif
+ 		}
+ 	}
+ 	class_destroy(ip2_class);
+-	devfs_remove("ip2");
+ 	if ( ( err = tty_unregister_driver ( ip2_tty_driver ) ) ) {
+ 		printk(KERN_ERR "IP2: failed to unregister tty driver (%d)\n", err);
+ 	}
+diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+index ec22aba..3103ed8 100644
+--- a/drivers/char/ipmi/ipmi_devintf.c
++++ b/drivers/char/ipmi/ipmi_devintf.c
+@@ -833,7 +833,6 @@ static void ipmi_smi_gone(int if_num)
+ 	}
+ 	class_device_destroy(ipmi_class, dev);
+ 	mutex_unlock(&reg_list_mutex);
+-	devfs_remove("ipmidev/%d", if_num);
+ }
+ 
+ static struct ipmi_smi_watcher smi_watcher =
+@@ -893,7 +892,6 @@ static __exit void cleanup_ipmi(void)
+ 	mutex_unlock(&reg_list_mutex);
+ 	class_destroy(ipmi_class);
+ 	ipmi_smi_watcher_unregister(&smi_watcher);
+-	devfs_remove(DEVICE_NAME);
+ 	unregister_chrdev(ipmi_major, DEVICE_NAME);
+ }
+ module_exit(cleanup_ipmi);
+diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
+index 1395d4a..0a5808e 100644
+--- a/drivers/char/istallion.c
++++ b/drivers/char/istallion.c
+@@ -849,11 +849,8 @@ #endif
+ 		return;
+ 	}
+ 	put_tty_driver(stli_serial);
+-	for (i = 0; i < 4; i++) {
+-		devfs_remove("staliomem/%d", i);
++	for (i = 0; i < 4; i++)
+ 		class_device_destroy(istallion_class, MKDEV(STL_SIOMEMMAJOR, i));
+-	}
+-	devfs_remove("staliomem");
+ 	class_destroy(istallion_class);
+ 	if ((i = unregister_chrdev(STL_SIOMEMMAJOR, "staliomem")))
+ 		printk("STALLION: failed to un-register serial memory device, "
+diff --git a/drivers/char/lp.c b/drivers/char/lp.c
+index 1a08e8e..530b19d 100644
+--- a/drivers/char/lp.c
++++ b/drivers/char/lp.c
+@@ -930,7 +930,6 @@ #endif
+ out_class:
+ 	class_destroy(lp_class);
+ out_devfs:
+-	devfs_remove("printers");
+ 	unregister_chrdev(LP_MAJOR, "lp");
+ 	return err;
+ }
+@@ -978,10 +977,8 @@ #endif
+ 		if (lp_table[offset].dev == NULL)
+ 			continue;
+ 		parport_unregister_device(lp_table[offset].dev);
+-		devfs_remove("printers/%d", offset);
+ 		class_device_destroy(lp_class, MKDEV(LP_MAJOR, offset));
+ 	}
+-	devfs_remove("printers");
+ 	class_destroy(lp_class);
+ }
+ 
+diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+index 71e5137..bf2e49e 100644
+--- a/drivers/char/misc.c
++++ b/drivers/char/misc.c
+@@ -271,7 +271,6 @@ int misc_deregister(struct miscdevice * 
+ 	down(&misc_sem);
+ 	list_del(&misc->list);
+ 	class_device_destroy(misc_class, MKDEV(MISC_MAJOR, misc->minor));
+-	devfs_remove(misc->devfs_name);
+ 	if (i < DYNAMIC_MINORS && i>0) {
+ 		misc_minors[i>>3] &= ~(1 << (misc->minor & 7));
+ 	}
+diff --git a/drivers/char/ppdev.c b/drivers/char/ppdev.c
+index ba35079..c8a2eb1 100644
+--- a/drivers/char/ppdev.c
++++ b/drivers/char/ppdev.c
+@@ -770,7 +770,7 @@ static struct parport_driver pp_driver =
+ 
+ static int __init ppdev_init (void)
+ {
+-	int i, err = 0;
++	int err = 0;
+ 
+ 	if (register_chrdev (PP_MAJOR, CHRDEV, &pp_fops)) {
+ 		printk (KERN_WARNING CHRDEV ": unable to get major %d\n",
+@@ -791,9 +791,6 @@ static int __init ppdev_init (void)
+ 	goto out;
+ 
+ out_class:
+-	for (i = 0; i < PARPORT_MAX; i++)
+-		devfs_remove("parports/%d", i);
+-	devfs_remove("parports");
+ 	class_destroy(ppdev_class);
+ out_chrdev:
+ 	unregister_chrdev(PP_MAJOR, CHRDEV);
+@@ -803,12 +800,8 @@ out:
+ 
+ static void __exit ppdev_cleanup (void)
+ {
+-	int i;
+ 	/* Clean up all parport stuff */
+-	for (i = 0; i < PARPORT_MAX; i++)
+-		devfs_remove("parports/%d", i);
+ 	parport_unregister_driver(&pp_driver);
+-	devfs_remove("parports");
+ 	class_destroy(ppdev_class);
+ 	unregister_chrdev (PP_MAJOR, CHRDEV);
+ }
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index 72c8ee4..941a17a 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -318,12 +318,6 @@ error:
+ 
+ static void __exit raw_exit(void)
+ {
+-	int i;
+-
+-	for (i = 1; i < MAX_RAW_MINORS; i++)
+-		devfs_remove("raw/raw%d", i);
+-	devfs_remove("raw/rawctl");
+-	devfs_remove("raw");
+ 	class_device_destroy(raw_class, MKDEV(RAW_MAJOR, 0));
+ 	class_destroy(raw_class);
+ 	cdev_del(&raw_cdev);
+diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
+index a1a68f9..7840eb1 100644
+--- a/drivers/char/stallion.c
++++ b/drivers/char/stallion.c
+@@ -773,11 +773,8 @@ #endif
+ 		restore_flags(flags);
+ 		return;
+ 	}
+-	for (i = 0; i < 4; i++) {
+-		devfs_remove("staliomem/%d", i);
++	for (i = 0; i < 4; i++)
+ 		class_device_destroy(stallion_class, MKDEV(STL_SIOMEMMAJOR, i));
+-	}
+-	devfs_remove("staliomem");
+ 	if ((i = unregister_chrdev(STL_SIOMEMMAJOR, "staliomem")))
+ 		printk("STALLION: failed to un-register serial memory device, "
+ 			"errno=%d\n", -i);
+diff --git a/drivers/char/tipar.c b/drivers/char/tipar.c
+index 0dc83a5..48476f8 100644
+--- a/drivers/char/tipar.c
++++ b/drivers/char/tipar.c
+@@ -515,7 +515,6 @@ out_class:
+ 	class_destroy(tipar_class);
+ 
+ out_chrdev:
+-	devfs_remove("ticables/par");
+ 	unregister_chrdev(TIPAR_MAJOR, "tipar");
+ out:
+ 	return err;	
+@@ -536,10 +535,8 @@ tipar_cleanup_module(void)
+ 			continue;
+ 		parport_unregister_device(table[i].dev);
+ 		class_device_destroy(tipar_class, MKDEV(TIPAR_MAJOR, i));
+-		devfs_remove("ticables/par/%d", i);
+ 	}
+ 	class_destroy(tipar_class);
+-	devfs_remove("ticables/par");
+ 
+ 	pr_info("tipar: module unloaded\n");
+ }
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 0b9a33c..b8e03a3 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -2997,7 +2997,6 @@ struct class_device *tty_register_device
+  */
+ void tty_unregister_device(struct tty_driver *driver, unsigned index)
+ {
+-	devfs_remove("%s%d", driver->devfs_name, index + driver->name_base);
+ 	class_device_destroy(tty_class, MKDEV(driver->major, driver->minor_start) + index);
+ }
+ 
+diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+index 1633d82..2266fba 100644
+--- a/drivers/char/vc_screen.c
++++ b/drivers/char/vc_screen.c
+@@ -485,8 +485,6 @@ void vcs_make_devfs(struct tty_struct *t
+ }
+ void vcs_remove_devfs(struct tty_struct *tty)
+ {
+-	devfs_remove("vcc/%u", tty->index + 1);
+-	devfs_remove("vcc/a%u", tty->index + 1);
+ 	class_device_destroy(vc_class, MKDEV(VCS_MAJOR, tty->index + 1));
+ 	class_device_destroy(vc_class, MKDEV(VCS_MAJOR, tty->index + 129));
+ }
+diff --git a/drivers/char/viotape.c b/drivers/char/viotape.c
+index 4c1a128..b101134 100644
+--- a/drivers/char/viotape.c
++++ b/drivers/char/viotape.c
+@@ -970,8 +970,6 @@ static int viotape_remove(struct vio_dev
+ {
+ 	int i = vdev->unit_address;
+ 
+-	devfs_remove("iseries/nvt%d", i);
+-	devfs_remove("iseries/vt%d", i);
+ 	class_device_destroy(tape_class, MKDEV(VIOTAPE_MAJOR, i | 0x80));
+ 	class_device_destroy(tape_class, MKDEV(VIOTAPE_MAJOR, i));
+ 	return 0;
+diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
+index 1c8fe77..1200d1d 100644
+--- a/drivers/isdn/capi/capi.c
++++ b/drivers/isdn/capi/capi.c
+@@ -1550,7 +1550,6 @@ static void __exit capi_exit(void)
+ 	class_device_destroy(capi_class, MKDEV(capi_major, 0));
+ 	class_destroy(capi_class);
+ 	unregister_chrdev(capi_major, "capi20");
+-	devfs_remove("isdn/capi20");
+ 
+ #ifdef CONFIG_ISDN_CAPI_MIDDLEWARE
+ 	capinc_tty_exit();
+diff --git a/drivers/isdn/hardware/eicon/divamnt.c b/drivers/isdn/hardware/eicon/divamnt.c
+index 12465b3..83841d1 100644
+--- a/drivers/isdn/hardware/eicon/divamnt.c
++++ b/drivers/isdn/hardware/eicon/divamnt.c
+@@ -178,7 +178,6 @@ static struct file_operations divas_main
+ 
+ static void divas_maint_unregister_chrdev(void)
+ {
+-	devfs_remove(DEVNAME);
+ 	unregister_chrdev(major, DEVNAME);
+ }
+ 
+diff --git a/drivers/isdn/hardware/eicon/divasi.c b/drivers/isdn/hardware/eicon/divasi.c
+index 2d80d94..dcd5b65 100644
+--- a/drivers/isdn/hardware/eicon/divasi.c
++++ b/drivers/isdn/hardware/eicon/divasi.c
+@@ -145,7 +145,6 @@ static struct file_operations divas_idi_
+ 
+ static void divas_idi_unregister_chrdev(void)
+ {
+-	devfs_remove(DEVNAME);
+ 	unregister_chrdev(major, DEVNAME);
+ }
+ 
+diff --git a/drivers/isdn/hardware/eicon/divasmain.c b/drivers/isdn/hardware/eicon/divasmain.c
+index 71b3e06..bbb7d8f 100644
+--- a/drivers/isdn/hardware/eicon/divasmain.c
++++ b/drivers/isdn/hardware/eicon/divasmain.c
+@@ -678,7 +678,6 @@ static struct file_operations divas_fops
+ 
+ static void divas_unregister_chrdev(void)
+ {
+-	devfs_remove(DEVNAME);
+ 	unregister_chrdev(major, DEVNAME);
+ }
+ 
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index 6e1b51d..361d50b 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -74,7 +74,6 @@ static int dm_hash_init(void)
+ static void dm_hash_exit(void)
+ {
+ 	dm_hash_remove_all(0);
+-	devfs_remove(DM_DIR);
+ }
+ 
+ /*-----------------------------------------------------------------
+@@ -171,15 +170,6 @@ static void free_cell(struct hash_cell *
+ }
+ 
+ /*
+- * devfs stuff.
+- */
+-static int unregister_with_devfs(struct hash_cell *hc)
+-{
+-	devfs_remove(DM_DIR"/%s", hc->name);
+-	return 0;
+-}
+-
+-/*
+  * The kdev_t and uuid of a device can never change once it is
+  * initially inserted.
+  */
+@@ -234,7 +224,6 @@ static void __hash_remove(struct hash_ce
+ 	/* remove from the dev hash */
+ 	list_del(&hc->uuid_list);
+ 	list_del(&hc->name_list);
+-	unregister_with_devfs(hc);
+ 	dm_set_mdptr(hc->md, NULL);
+ 
+ 	table = dm_get_table(hc->md);
+@@ -330,8 +319,6 @@ static int dm_hash_rename(const char *ol
+ 	/*
+ 	 * rename and move the name cell.
+ 	 */
+-	unregister_with_devfs(hc);
+-
+ 	list_del(&hc->name_list);
+ 	old_name = hc->name;
+ 	hc->name = new_name;
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index ee7320b..9fc2314 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -5611,15 +5611,9 @@ static __exit void md_exit(void)
+ {
+ 	mddev_t *mddev;
+ 	struct list_head *tmp;
+-	int i;
++
+ 	blk_unregister_region(MKDEV(MAJOR_NR,0), MAX_MD_DEVS);
+ 	blk_unregister_region(MKDEV(mdp_major,0), MAX_MD_DEVS << MdpMinorShift);
+-	for (i=0; i < MAX_MD_DEVS; i++)
+-		devfs_remove("md/%d", i);
+-	for (i=0; i < MAX_MD_DEVS; i++)
+-		devfs_remove("md/d%d", i);
+-
+-	devfs_remove("md");
+ 
+ 	unregister_blkdev(MAJOR_NR,"md");
+ 	unregister_blkdev(mdp_major, "mdp");
+diff --git a/drivers/media/dvb/dvb-core/dvbdev.c b/drivers/media/dvb/dvb-core/dvbdev.c
+index 8e926d9..40774fe 100644
+--- a/drivers/media/dvb/dvb-core/dvbdev.c
++++ b/drivers/media/dvb/dvb-core/dvbdev.c
+@@ -248,9 +248,6 @@ void dvb_unregister_device(struct dvb_de
+ 	if (!dvbdev)
+ 		return;
+ 
+-	devfs_remove("dvb/adapter%d/%s%d", dvbdev->adapter->num,
+-			dnames[dvbdev->type], dvbdev->id);
+-
+ 	class_device_destroy(dvb_class, MKDEV(DVB_MAJOR, nums2minor(dvbdev->adapter->num,
+ 					dvbdev->type, dvbdev->id)));
+ 
+@@ -314,8 +311,6 @@ EXPORT_SYMBOL(dvb_register_adapter);
+ 
+ int dvb_unregister_adapter(struct dvb_adapter *adap)
+ {
+-	devfs_remove("dvb/adapter%d", adap->num);
+-
+ 	if (mutex_lock_interruptible(&dvbdev_register_lock))
+ 		return -ERESTARTSYS;
+ 	list_del (&adap->list_head);
+@@ -421,7 +416,6 @@ error:
+ 
+ static void __exit exit_dvbdev(void)
+ {
+-	devfs_remove("dvb");
+ 	class_destroy(dvb_class);
+ 	cdev_del(&dvb_device_cdev);
+ 	unregister_chrdev_region(MKDEV(DVB_MAJOR, 0), MAX_DVB_MINORS);
+diff --git a/drivers/media/video/videodev.c b/drivers/media/video/videodev.c
+index cc67ee9..3178353 100644
+--- a/drivers/media/video/videodev.c
++++ b/drivers/media/video/videodev.c
+@@ -1601,7 +1601,6 @@ void video_unregister_device(struct vide
+ 	if(video_device[vfd->minor]!=vfd)
+ 		panic("videodev: bad unregister");
+ 
+-	devfs_remove(vfd->devfs_name);
+ 	video_device[vfd->minor]=NULL;
+ 	class_device_unregister(&vfd->class_dev);
+ 	mutex_unlock(&videodev_lock);
+diff --git a/drivers/mmc/mmc_block.c b/drivers/mmc/mmc_block.c
+index 82c660b..2e5218b 100644
+--- a/drivers/mmc/mmc_block.c
++++ b/drivers/mmc/mmc_block.c
+@@ -564,7 +564,6 @@ static int __init mmc_blk_init(void)
+ static void __exit mmc_blk_exit(void)
+ {
+ 	mmc_unregister_driver(&mmc_driver);
+-	devfs_remove("mmc");
+ 	unregister_blkdev(major, "mmc");
+ }
+ 
+diff --git a/drivers/net/ppp_generic.c b/drivers/net/ppp_generic.c
+index 52bc515..16a59ca 100644
+--- a/drivers/net/ppp_generic.c
++++ b/drivers/net/ppp_generic.c
+@@ -2674,7 +2674,6 @@ static void __exit ppp_cleanup(void)
+ 	cardmap_destroy(&all_ppp_units);
+ 	if (unregister_chrdev(PPP_MAJOR, "ppp") != 0)
+ 		printk(KERN_ERR "PPP: failed to unregister PPP device\n");
+-	devfs_remove("ppp");
+ 	class_device_destroy(ppp_class, MKDEV(PPP_MAJOR, 0));
+ 	class_destroy(ppp_class);
+ }
+diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
+index c7b5306..3d1e2b6 100644
+--- a/drivers/net/wan/cosa.c
++++ b/drivers/net/wan/cosa.c
+@@ -418,12 +418,9 @@ static void __exit cosa_exit(void)
+ 	int i;
+ 	printk(KERN_INFO "Unloading the cosa module\n");
+ 
+-	for (i=0; i<nr_cards; i++) {
++	for (i=0; i<nr_cards; i++)
+ 		class_device_destroy(cosa_class, MKDEV(cosa_major, i));
+-		devfs_remove("cosa/%d", i);
+-	}
+ 	class_destroy(cosa_class);
+-	devfs_remove("cosa");
+ 	for (cosa=cosa_cards; nr_cards--; cosa++) {
+ 		/* Clean up the per-channel data */
+ 		for (i=0; i<cosa->nchannels; i++) {
+diff --git a/drivers/s390/block/dasd.c b/drivers/s390/block/dasd.c
+index 09bf44f..8b67ce0 100644
+--- a/drivers/s390/block/dasd.c
++++ b/drivers/s390/block/dasd.c
+@@ -1834,7 +1834,6 @@ #endif
+ 	}
+ 	dasd_gendisk_exit();
+ 	dasd_devmap_exit();
+-	devfs_remove("dasd");
+ 	if (dasd_debug_area != NULL) {
+ 		debug_unregister(dasd_debug_area);
+ 		dasd_debug_area = NULL;
+diff --git a/drivers/s390/block/xpram.c b/drivers/s390/block/xpram.c
+index 36bc01f..15aad01 100644
+--- a/drivers/s390/block/xpram.c
++++ b/drivers/s390/block/xpram.c
+@@ -474,7 +474,6 @@ static int __init xpram_setup_blkdev(voi
+ 
+ 	return 0;
+ out_unreg:
+-	devfs_remove("slram");
+ 	unregister_blkdev(XPRAM_MAJOR, XPRAM_NAME);
+ out:
+ 	while (i--)
+@@ -493,7 +492,6 @@ static void __exit xpram_exit(void)
+ 		put_disk(xpram_disks[i]);
+ 	}
+ 	unregister_blkdev(XPRAM_MAJOR, XPRAM_NAME);
+-	devfs_remove("slram");
+ 	blk_cleanup_queue(xpram_queue);
+ 	sysdev_unregister(&xpram_sys_device);
+ 	sysdev_class_unregister(&xpram_sysclass);
+diff --git a/drivers/sbus/char/bpp.c b/drivers/sbus/char/bpp.c
+index e680de4..03ff5a3 100644
+--- a/drivers/sbus/char/bpp.c
++++ b/drivers/sbus/char/bpp.c
+@@ -1039,9 +1039,6 @@ static void __exit bpp_cleanup(void)
+ {
+ 	unsigned idx;
+ 
+-	for (idx = 0; idx < BPP_NO; idx++)
+-		devfs_remove("bpp/%d", idx);
+-	devfs_remove("bpp");
+ 	unregister_chrdev(BPP_MAJOR, dev_name);
+ 
+ 	for (idx = 0;  idx < BPP_NO; idx++) {
+diff --git a/drivers/sbus/char/vfc_dev.c b/drivers/sbus/char/vfc_dev.c
+index 5d32384..55b2b31 100644
+--- a/drivers/sbus/char/vfc_dev.c
++++ b/drivers/sbus/char/vfc_dev.c
+@@ -712,7 +712,6 @@ static void deinit_vfc_device(struct vfc
+ {
+ 	if(dev == NULL)
+ 		return;
+-	devfs_remove("vfc/%d", dev->instance);
+ 	sbus_iounmap(dev->regs, sizeof(struct vfc_regs));
+ 	kfree(dev);
+ }
+@@ -726,7 +725,6 @@ void cleanup_module(void)
+ 	for (devp = vfc_dev_lst; *devp; devp++)
+ 		deinit_vfc_device(*devp);
+ 
+-	devfs_remove("vfc");
+ 	kfree(vfc_dev_lst);
+ 	return;
+ }
+diff --git a/drivers/telephony/phonedev.c b/drivers/telephony/phonedev.c
+index 80f9fe4..bc5b1d2 100644
+--- a/drivers/telephony/phonedev.c
++++ b/drivers/telephony/phonedev.c
+@@ -123,7 +123,6 @@ void phone_unregister_device(struct phon
+ 	mutex_lock(&phone_lock);
+ 	if (phone_device[pfd->minor] != pfd)
+ 		panic("phone: bad unregister");
+-	devfs_remove("phone/%d", pfd->minor);
+ 	phone_device[pfd->minor] = NULL;
+ 	mutex_unlock(&phone_lock);
+ }
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index be2479a..afa56a8 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1357,7 +1357,6 @@ unregister_framebuffer(struct fb_info *f
+ 	i = fb_info->node;
+ 	if (!registered_fb[i])
+ 		return -EINVAL;
+-	devfs_remove("fb/%d", i);
+ 
+ 	if (fb_info->pixmap.addr &&
+ 	    (fb_info->pixmap.flags & FB_PIXMAP_DEFAULT))
+diff --git a/fs/coda/psdev.c b/fs/coda/psdev.c
+index f478222..aaf6462 100644
+--- a/fs/coda/psdev.c
++++ b/fs/coda/psdev.c
+@@ -409,12 +409,9 @@ #endif
+ 	}
+ 	return 0;
+ out:
+-	for (i = 0; i < MAX_CODADEVS; i++) {
++	for (i = 0; i < MAX_CODADEVS; i++)
+ 		class_device_destroy(coda_psdev_class, MKDEV(CODA_PSDEV_MAJOR, i));
+-		devfs_remove("coda/%d", i);
+-	}
+ 	class_destroy(coda_psdev_class);
+-	devfs_remove("coda");
+ 	unregister_chrdev(CODA_PSDEV_MAJOR, "coda");
+ 	coda_sysctl_clean();
+ out1:
+@@ -431,12 +428,9 @@ static void __exit exit_coda(void)
+         if ( err != 0 ) {
+                 printk("coda: failed to unregister filesystem\n");
+         }
+-	for (i = 0; i < MAX_CODADEVS; i++) {
++	for (i = 0; i < MAX_CODADEVS; i++)
+ 		class_device_destroy(coda_psdev_class, MKDEV(CODA_PSDEV_MAJOR, i));
+-		devfs_remove("coda/%d", i);
+-	}
+ 	class_destroy(coda_psdev_class);
+-	devfs_remove("coda");
+ 	unregister_chrdev(CODA_PSDEV_MAJOR, "coda");
+ 	coda_sysctl_clean();
+ 	coda_destroy_inodecache();
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index d7a5078..202f50a 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -320,7 +320,6 @@ void delete_partition(struct gendisk *di
+ 	p->nr_sects = 0;
+ 	p->ios[0] = p->ios[1] = 0;
+ 	p->sectors[0] = p->sectors[1] = 0;
+-	devfs_remove("%s/part%d", disk->devfs_name, part);
+ 	sysfs_remove_link(&p->kobj, "subsystem");
+ 	if (p->holder_dir)
+ 		kobject_unregister(p->holder_dir);
+diff --git a/include/linux/devfs_fs_kernel.h b/include/linux/devfs_fs_kernel.h
+index c7d05db..2036d2e 100644
+--- a/include/linux/devfs_fs_kernel.h
++++ b/include/linux/devfs_fs_kernel.h
+@@ -6,7 +6,4 @@ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <asm/semaphore.h>
+ 
+-static inline void devfs_remove(const char *fmt, ...)
+-{
+-}
+ #endif				/*  _LINUX_DEVFS_FS_KERNEL_H  */

@@ -1,0 +1,459 @@
+commit f4eaa37017a5a68f67ef86729508022c13fb8e6d
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove the tty_driver devfs_name field as it's no longer needed
+    
+    Also fixes all drivers that set this field.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/drivers/char/cyclades.c b/drivers/char/cyclades.c
+index 122e7a7..2657eeb 100644
+--- a/drivers/char/cyclades.c
++++ b/drivers/char/cyclades.c
+@@ -5250,7 +5250,6 @@ cy_init(void)
+     cy_serial_driver->owner = THIS_MODULE;
+     cy_serial_driver->driver_name = "cyclades";
+     cy_serial_driver->name = "ttyC";
+-    cy_serial_driver->devfs_name = "tts/C";
+     cy_serial_driver->major = CYCLADES_MAJOR;
+     cy_serial_driver->minor_start = 0;
+     cy_serial_driver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/epca.c b/drivers/char/epca.c
+index 9cad850..881d742 100644
+--- a/drivers/char/epca.c
++++ b/drivers/char/epca.c
+@@ -1232,7 +1232,6 @@ static int __init pc_init(void)
+ 
+ 	pc_driver->owner = THIS_MODULE;
+ 	pc_driver->name = "ttyD"; 
+-	pc_driver->devfs_name = "tts/D";
+ 	pc_driver->major = DIGI_MAJOR; 
+ 	pc_driver->minor_start = 0;
+ 	pc_driver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/esp.c b/drivers/char/esp.c
+index 922174d..9827d17 100644
+--- a/drivers/char/esp.c
++++ b/drivers/char/esp.c
+@@ -2449,7 +2449,6 @@ static int __init espserial_init(void)
+ 	
+ 	esp_driver->owner = THIS_MODULE;
+ 	esp_driver->name = "ttyP";
+-	esp_driver->devfs_name = "tts/P";
+ 	esp_driver->major = ESP_IN_MAJOR;
+ 	esp_driver->minor_start = 0;
+ 	esp_driver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+index a5c6a9d..6e380ae 100644
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -820,7 +820,6 @@ int __init hvc_init(void)
+ 		return -ENOMEM;
+ 
+ 	drv->owner = THIS_MODULE;
+-	drv->devfs_name = "hvc/";
+ 	drv->driver_name = "hvc";
+ 	drv->name = "hvc";
+ 	drv->major = HVC_MAJOR;
+diff --git a/drivers/char/hvcs.c b/drivers/char/hvcs.c
+index 8d97b39..2019175 100644
+--- a/drivers/char/hvcs.c
++++ b/drivers/char/hvcs.c
+@@ -1364,7 +1364,6 @@ static int __init hvcs_module_init(void)
+ 
+ 	hvcs_tty_driver->driver_name = hvcs_driver_name;
+ 	hvcs_tty_driver->name = hvcs_device_node;
+-	hvcs_tty_driver->devfs_name = hvcs_device_node;
+ 
+ 	/*
+ 	 * We'll let the system assign us a major number, indicated by leaving
+diff --git a/drivers/char/hvsi.c b/drivers/char/hvsi.c
+index a0370ed..7b04eb1 100644
+--- a/drivers/char/hvsi.c
++++ b/drivers/char/hvsi.c
+@@ -1154,7 +1154,6 @@ static int __init hvsi_init(void)
+ 		return -ENOMEM;
+ 
+ 	hvsi_driver->owner = THIS_MODULE;
+-	hvsi_driver->devfs_name = "hvsi/";
+ 	hvsi_driver->driver_name = "hvsi";
+ 	hvsi_driver->name = "hvsi";
+ 	hvsi_driver->major = HVSI_MAJOR;
+diff --git a/drivers/char/ip2/ip2main.c b/drivers/char/ip2/ip2main.c
+index a273eef..2db55d1 100644
+--- a/drivers/char/ip2/ip2main.c
++++ b/drivers/char/ip2/ip2main.c
+@@ -671,7 +671,6 @@ #endif /* CONFIG_PCI */
+ 
+ 	ip2_tty_driver->owner		    = THIS_MODULE;
+ 	ip2_tty_driver->name                 = "ttyF";
+-	ip2_tty_driver->devfs_name	    = "tts/F";
+ 	ip2_tty_driver->driver_name          = pcDriver_name;
+ 	ip2_tty_driver->major                = IP2_TTY_MAJOR;
+ 	ip2_tty_driver->minor_start          = 0;
+diff --git a/drivers/char/isicom.c b/drivers/char/isicom.c
+index efaaa19..478bf4d 100644
+--- a/drivers/char/isicom.c
++++ b/drivers/char/isicom.c
+@@ -1581,7 +1581,6 @@ static int __devinit isicom_register_tty
+ 
+ 	isicom_normal->owner			= THIS_MODULE;
+ 	isicom_normal->name 			= "ttyM";
+-	isicom_normal->devfs_name	 	= "isicom/";
+ 	isicom_normal->major			= ISICOM_NMAJOR;
+ 	isicom_normal->minor_start		= 0;
+ 	isicom_normal->type			= TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/moxa.c b/drivers/char/moxa.c
+index f43c2e0..afa2cda 100644
+--- a/drivers/char/moxa.c
++++ b/drivers/char/moxa.c
+@@ -342,7 +342,6 @@ static int __init moxa_init(void)
+ 	init_MUTEX(&moxaBuffSem);
+ 	moxaDriver->owner = THIS_MODULE;
+ 	moxaDriver->name = "ttyMX";
+-	moxaDriver->devfs_name = "tts/a";
+ 	moxaDriver->major = ttymajor;
+ 	moxaDriver->minor_start = 0;
+ 	moxaDriver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index 345f8b8..d3a5092 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -264,7 +264,6 @@ static void __init legacy_pty_init(void)
+ 	pty_driver->owner = THIS_MODULE;
+ 	pty_driver->driver_name = "pty_master";
+ 	pty_driver->name = "pty";
+-	pty_driver->devfs_name = "pty/m";
+ 	pty_driver->major = PTY_MASTER_MAJOR;
+ 	pty_driver->minor_start = 0;
+ 	pty_driver->type = TTY_DRIVER_TYPE_PTY;
+@@ -282,7 +281,6 @@ static void __init legacy_pty_init(void)
+ 	pty_slave_driver->owner = THIS_MODULE;
+ 	pty_slave_driver->driver_name = "pty_slave";
+ 	pty_slave_driver->name = "ttyp";
+-	pty_slave_driver->devfs_name = "pty/s";
+ 	pty_slave_driver->major = PTY_SLAVE_MAJOR;
+ 	pty_slave_driver->minor_start = 0;
+ 	pty_slave_driver->type = TTY_DRIVER_TYPE_PTY;
+diff --git a/drivers/char/riscom8.c b/drivers/char/riscom8.c
+index 657c0d8..c84c3c3 100644
+--- a/drivers/char/riscom8.c
++++ b/drivers/char/riscom8.c
+@@ -1634,7 +1634,6 @@ static inline int rc_init_drivers(void)
+ 	memset(IRQ_to_board, 0, sizeof(IRQ_to_board));
+ 	riscom_driver->owner = THIS_MODULE;
+ 	riscom_driver->name = "ttyL";
+-	riscom_driver->devfs_name = "tts/L";
+ 	riscom_driver->major = RISCOM8_NORMAL_MAJOR;
+ 	riscom_driver->type = TTY_DRIVER_TYPE_SERIAL;
+ 	riscom_driver->subtype = SERIAL_TYPE_NORMAL;
+diff --git a/drivers/char/rocket.c b/drivers/char/rocket.c
+index 0708c51..ed511ec 100644
+--- a/drivers/char/rocket.c
++++ b/drivers/char/rocket.c
+@@ -2427,7 +2427,6 @@ static int __init rp_init(void)
+ 
+ 	rocket_driver->owner = THIS_MODULE;
+ 	rocket_driver->flags = TTY_DRIVER_NO_DEVFS;
+-	rocket_driver->devfs_name = "tts/R";
+ 	rocket_driver->name = "ttyR";
+ 	rocket_driver->driver_name = "Comtrol RocketPort";
+ 	rocket_driver->major = TTY_ROCKET_MAJOR;
+diff --git a/drivers/char/serial167.c b/drivers/char/serial167.c
+index 037c940..c851eea 100644
+--- a/drivers/char/serial167.c
++++ b/drivers/char/serial167.c
+@@ -2235,7 +2235,6 @@ #endif
+     /* Initialize the tty_driver structure */
+     
+     cy_serial_driver->owner = THIS_MODULE;
+-    cy_serial_driver->devfs_name = "tts/";
+     cy_serial_driver->name = "ttyS";
+     cy_serial_driver->major = TTY_MAJOR;
+     cy_serial_driver->minor_start = 64;
+diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
+index 36df18c..38fdd4d 100644
+--- a/drivers/char/stallion.c
++++ b/drivers/char/stallion.c
+@@ -3075,7 +3075,6 @@ static int __init stl_init(void)
+ 	stl_serial->owner = THIS_MODULE;
+ 	stl_serial->driver_name = stl_drvname;
+ 	stl_serial->name = "ttyE";
+-	stl_serial->devfs_name = "tts/E";
+ 	stl_serial->major = STL_SERIALMAJOR;
+ 	stl_serial->minor_start = 0;
+ 	stl_serial->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/viocons.c b/drivers/char/viocons.c
+index 4e53603..07f5ce4 100644
+--- a/drivers/char/viocons.c
++++ b/drivers/char/viocons.c
+@@ -1152,7 +1152,6 @@ static int __init viocons_init2(void)
+ 	viotty_driver = alloc_tty_driver(VTTY_PORTS);
+ 	viotty_driver->owner = THIS_MODULE;
+ 	viotty_driver->driver_name = "vioconsole";
+-	viotty_driver->devfs_name = "vcs/";
+ 	viotty_driver->name = "tty";
+ 	viotty_driver->name_base = 1;
+ 	viotty_driver->major = TTY_MAJOR;
+diff --git a/drivers/char/vme_scc.c b/drivers/char/vme_scc.c
+index fd00822..fe99fc1 100644
+--- a/drivers/char/vme_scc.c
++++ b/drivers/char/vme_scc.c
+@@ -147,7 +147,6 @@ static int scc_init_drivers(void)
+ 	scc_driver->owner = THIS_MODULE;
+ 	scc_driver->driver_name = "scc";
+ 	scc_driver->name = "ttyS";
+-	scc_driver->devfs_name = "tts/";
+ 	scc_driver->major = TTY_MAJOR;
+ 	scc_driver->minor_start = SCC_MINOR_BASE;
+ 	scc_driver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 42afe7c..d6f6503 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -2662,7 +2662,6 @@ int __init vty_init(void)
+ 	if (!console_driver)
+ 		panic("Couldn't allocate console driver\n");
+ 	console_driver->owner = THIS_MODULE;
+-	console_driver->devfs_name = "vc/";
+ 	console_driver->name = "tty";
+ 	console_driver->name_base = 1;
+ 	console_driver->major = TTY_MAJOR;
+diff --git a/drivers/isdn/capi/capi.c b/drivers/isdn/capi/capi.c
+index 334402e..a518ec5 100644
+--- a/drivers/isdn/capi/capi.c
++++ b/drivers/isdn/capi/capi.c
+@@ -1336,7 +1336,6 @@ static int capinc_tty_init(void)
+ 
+ 	drv->owner = THIS_MODULE;
+ 	drv->driver_name = "capi_nc";
+-	drv->devfs_name = "capi/";
+ 	drv->name = "capi";
+ 	drv->major = capi_ttymajor;
+ 	drv->minor_start = 0;
+diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
+index 8a45715..3845def 100644
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -41,7 +41,6 @@ MODULE_PARM_DESC(cidmode, "Call-ID mode"
+ #define GIGASET_MINORS     1
+ #define GIGASET_MINOR      16
+ #define GIGASET_MODULENAME "bas_gigaset"
+-#define GIGASET_DEVFSNAME  "gig/bas/"
+ #define GIGASET_DEVNAME    "ttyGB"
+ 
+ /* length limit according to Siemens 3070usb-protokoll.doc ch. 2.1 */
+@@ -2349,8 +2348,7 @@ static int __init bas_gigaset_init(void)
+ 	/* allocate memory for our driver state and intialize it */
+ 	if ((driver = gigaset_initdriver(GIGASET_MINOR, GIGASET_MINORS,
+ 				       GIGASET_MODULENAME, GIGASET_DEVNAME,
+-				       GIGASET_DEVFSNAME, &gigops,
+-				       THIS_MODULE)) == NULL)
++				       &gigops, THIS_MODULE)) == NULL)
+ 		goto error;
+ 
+ 	/* allocate memory for our device state and intialize it */
+diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
+index acb7e26..578e679 100644
+--- a/drivers/isdn/gigaset/common.c
++++ b/drivers/isdn/gigaset/common.c
+@@ -1092,14 +1092,12 @@ EXPORT_SYMBOL_GPL(gigaset_freedriver);
+  *	minors		Number of minors this driver can handle
+  *	procname	Name of the driver
+  *	devname		Name of the device files (prefix without minor number)
+- *	devfsname	Devfs name of the device files without %d
+  * return value:
+  *	Pointer to the gigaset_driver structure on success, NULL on failure.
+  */
+ struct gigaset_driver *gigaset_initdriver(unsigned minor, unsigned minors,
+ 					  const char *procname,
+ 					  const char *devname,
+-					  const char *devfsname,
+ 					  const struct gigaset_ops *ops,
+ 					  struct module *owner)
+ {
+@@ -1139,7 +1137,7 @@ struct gigaset_driver *gigaset_initdrive
+ 		drv->cs[i].minor_index = i;
+ 	}
+ 
+-	gigaset_if_initdriver(drv, procname, devname, devfsname);
++	gigaset_if_initdriver(drv, procname, devname);
+ 
+ 	spin_lock_irqsave(&driver_lock, flags);
+ 	list_add(&drv->list, &drivers);
+diff --git a/drivers/isdn/gigaset/gigaset.h b/drivers/isdn/gigaset/gigaset.h
+index 8d63d82..1ca3bfd 100644
+--- a/drivers/isdn/gigaset/gigaset.h
++++ b/drivers/isdn/gigaset/gigaset.h
+@@ -769,7 +769,6 @@ void gigaset_block_channels(struct cards
+ struct gigaset_driver *gigaset_initdriver(unsigned minor, unsigned minors,
+ 					  const char *procname,
+ 					  const char *devname,
+-					  const char *devfsname,
+ 					  const struct gigaset_ops *ops,
+ 					  struct module *owner);
+ 
+@@ -892,7 +891,7 @@ int gigaset_fill_inbuf(struct inbuf_t *i
+ 
+ /* initialize interface */
+ void gigaset_if_initdriver(struct gigaset_driver *drv, const char *procname,
+-			   const char *devname, const char *devfsname);
++			   const char *devname);
+ /* release interface */
+ void gigaset_if_freedriver(struct gigaset_driver *drv);
+ /* add minor */
+diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
+index 74fd234..9f8628b 100644
+--- a/drivers/isdn/gigaset/interface.c
++++ b/drivers/isdn/gigaset/interface.c
+@@ -673,10 +673,9 @@ EXPORT_SYMBOL_GPL(gigaset_if_receive);
+  *	drv		Driver
+  *	procname	Name of the driver (e.g. for /proc/tty/drivers)
+  *	devname		Name of the device files (prefix without minor number)
+- *	devfsname	Devfs name of the device files without %d
+  */
+ void gigaset_if_initdriver(struct gigaset_driver *drv, const char *procname,
+-			   const char *devname, const char *devfsname)
++			   const char *devname)
+ {
+ 	unsigned minors = drv->minors;
+ 	int ret;
+@@ -700,7 +699,6 @@ void gigaset_if_initdriver(struct gigase
+ 	tty->num =		drv->minors;
+ 
+ 	tty->owner =		THIS_MODULE;
+-	tty->devfs_name =	devfsname;
+ 
+ 	tty->init_termios          = tty_std_termios; //FIXME
+ 	tty->init_termios.c_cflag  = B9600 | CS8 | CREAD | HUPCL | CLOCAL; //FIXME
+diff --git a/drivers/isdn/gigaset/usb-gigaset.c b/drivers/isdn/gigaset/usb-gigaset.c
+index d86ab68..6e05d9d 100644
+--- a/drivers/isdn/gigaset/usb-gigaset.c
++++ b/drivers/isdn/gigaset/usb-gigaset.c
+@@ -41,7 +41,6 @@ MODULE_PARM_DESC(cidmode, "Call-ID mode"
+ #define GIGASET_MINORS     1
+ #define GIGASET_MINOR      8
+ #define GIGASET_MODULENAME "usb_gigaset"
+-#define GIGASET_DEVFSNAME  "gig/usb/"
+ #define GIGASET_DEVNAME    "ttyGU"
+ 
+ #define IF_WRITEBUF 2000 //FIXME  // WAKEUP_CHARS: 256
+@@ -896,8 +895,7 @@ static int __init usb_gigaset_init(void)
+ 	/* allocate memory for our driver state and intialize it */
+ 	if ((driver = gigaset_initdriver(GIGASET_MINOR, GIGASET_MINORS,
+ 				       GIGASET_MODULENAME, GIGASET_DEVNAME,
+-				       GIGASET_DEVFSNAME, &ops,
+-				       THIS_MODULE)) == NULL)
++				       &ops, THIS_MODULE)) == NULL)
+ 		goto error;
+ 
+ 	/* allocate memory for our device state and intialize it */
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index 2ac9024..e7f0f15 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -1890,7 +1890,6 @@ isdn_tty_modem_init(void)
+ 	if (!m->tty_modem)
+ 		return -ENOMEM;
+ 	m->tty_modem->name = "ttyI";
+-	m->tty_modem->devfs_name = "isdn/ttyI";
+ 	m->tty_modem->major = ISDN_TTY_MAJOR;
+ 	m->tty_modem->minor_start = 0;
+ 	m->tty_modem->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/s390/char/tty3270.c b/drivers/s390/char/tty3270.c
+index 9a14177..43c8c9f 100644
+--- a/drivers/s390/char/tty3270.c
++++ b/drivers/s390/char/tty3270.c
+@@ -1785,7 +1785,6 @@ tty3270_init(void)
+ 	 * proc_entry, set_termios, flush_buffer, set_ldisc, write_proc
+ 	 */
+ 	driver->owner = THIS_MODULE;
+-	driver->devfs_name = "ttyTUB/";
+ 	driver->driver_name = "ttyTUB";
+ 	driver->name = "ttyTUB";
+ 	driver->major = IBM_TTY3270_MAJOR;
+diff --git a/drivers/tc/zs.c b/drivers/tc/zs.c
+index 2dffa8e..582d926 100644
+--- a/drivers/tc/zs.c
++++ b/drivers/tc/zs.c
+@@ -1745,7 +1745,6 @@ int __init zs_init(void)
+ 	/* Not all of this is exactly right for us. */
+ 
+ 	serial_driver->owner = THIS_MODULE;
+-	serial_driver->devfs_name = "tts/";
+ 	serial_driver->name = "ttyS";
+ 	serial_driver->major = TTY_MAJOR;
+ 	serial_driver->minor_start = 64;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index d41dc67..a0b9edd 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1145,7 +1145,6 @@ static int __init acm_init(void)
+ 	acm_tty_driver->owner = THIS_MODULE,
+ 	acm_tty_driver->driver_name = "acm",
+ 	acm_tty_driver->name = "ttyACM",
+-	acm_tty_driver->devfs_name = "usb/acm/",
+ 	acm_tty_driver->major = ACM_TTY_MAJOR,
+ 	acm_tty_driver->minor_start = 0,
+ 	acm_tty_driver->type = TTY_DRIVER_TYPE_SERIAL,
+diff --git a/drivers/usb/gadget/serial.c b/drivers/usb/gadget/serial.c
+index 9d6e1d2..2c8e5c1 100644
+--- a/drivers/usb/gadget/serial.c
++++ b/drivers/usb/gadget/serial.c
+@@ -588,7 +588,6 @@ static int __init gs_module_init(void)
+ 	gs_tty_driver->owner = THIS_MODULE;
+ 	gs_tty_driver->driver_name = GS_SHORT_NAME;
+ 	gs_tty_driver->name = "ttygs";
+-	gs_tty_driver->devfs_name = "usb/ttygs/";
+ 	gs_tty_driver->major = GS_MAJOR;
+ 	gs_tty_driver->minor_start = GS_MINOR_START;
+ 	gs_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index a30135c..db7f54b 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1059,7 +1059,6 @@ static int __init usb_serial_init(void)
+ 
+ 	usb_serial_tty_driver->owner = THIS_MODULE;
+ 	usb_serial_tty_driver->driver_name = "usbserial";
+-	usb_serial_tty_driver->devfs_name = "usb/tts/";
+ 	usb_serial_tty_driver->name = 	"ttyUSB";
+ 	usb_serial_tty_driver->major = SERIAL_TTY_MAJOR;
+ 	usb_serial_tty_driver->minor_start = 0;
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index b368b29..0bd31f0 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -157,7 +157,6 @@ struct tty_driver {
+ 	struct cdev cdev;
+ 	struct module	*owner;
+ 	const char	*driver_name;
+-	const char	*devfs_name;
+ 	const char	*name;
+ 	int	name_base;	/* offset of printed name */
+ 	int	major;		/* major device number */
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 74368f7..afb3c52 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -1025,7 +1025,6 @@ int rfcomm_init_ttys(void)
+ 
+ 	rfcomm_tty_driver->owner	= THIS_MODULE;
+ 	rfcomm_tty_driver->driver_name	= "rfcomm";
+-	rfcomm_tty_driver->devfs_name	= "bluetooth/rfcomm/";
+ 	rfcomm_tty_driver->name		= "rfcomm";
+ 	rfcomm_tty_driver->major	= RFCOMM_TTY_MAJOR;
+ 	rfcomm_tty_driver->minor_start	= RFCOMM_TTY_MINOR;
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 6f20b42..b592c4b 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -124,7 +124,6 @@ static int __init ircomm_tty_init(void)
+ 	driver->owner		= THIS_MODULE;
+ 	driver->driver_name     = "ircomm";
+ 	driver->name            = "ircomm";
+-	driver->devfs_name      = "ircomm";
+ 	driver->major           = IRCOMM_TTY_MAJOR;
+ 	driver->minor_start     = IRCOMM_TTY_MINOR;
+ 	driver->type            = TTY_DRIVER_TYPE_SERIAL;

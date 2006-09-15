@@ -1,0 +1,36 @@
+commit 5e483075a1f9862a65af648d1d939499969c7b5d
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove the videodevice devfs_name field as it's no longer needed
+    
+    Also fixes all drivers that set this field.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/drivers/media/video/videodev.c b/drivers/media/video/videodev.c
+index a802a7e..b26ebaf 100644
+--- a/drivers/media/video/videodev.c
++++ b/drivers/media/video/videodev.c
+@@ -1570,8 +1570,7 @@ int video_register_device(struct video_d
+ 		vfd->class_dev.dev = vfd->dev;
+ 	vfd->class_dev.class       = &video_class;
+ 	vfd->class_dev.devt        = MKDEV(VIDEO_MAJOR, vfd->minor);
+-	sprintf(vfd->devfs_name, "%s%d", name_base, i - base);
+-	strlcpy(vfd->class_dev.class_id, vfd->devfs_name, BUS_ID_SIZE);
++	sprintf(vfd->class_dev.class_id, "%s%d", name_base, i - base);
+ 	class_device_register(&vfd->class_dev);
+ 	class_device_create_file(&vfd->class_dev,
+ 				&class_device_attr_name);
+diff --git a/include/media/v4l2-dev.h b/include/media/v4l2-dev.h
+index a1b4731..62dae1a 100644
+--- a/include/media/v4l2-dev.h
++++ b/include/media/v4l2-dev.h
+@@ -314,7 +314,6 @@ #endif
+ 	/* for videodev.c intenal usage -- please don't touch */
+ 	int users;                     /* video_exclusive_{open|close} ... */
+ 	struct mutex lock;             /* ... helper function uses these   */
+-	char devfs_name[64];           /* devfs */
+ 	struct class_device class_dev; /* sysfs */
+ };
+ 

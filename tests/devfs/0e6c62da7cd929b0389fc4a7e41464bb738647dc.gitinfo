@@ -1,0 +1,55 @@
+commit 0e6c62da7cd929b0389fc4a7e41464bb738647dc
+Author: Greg Kroah-Hartman <gregkh@suse.de>
+Date:   Mon Jun 20 21:15:16 2005 -0700
+
+    [PATCH] devfs: Remove devfs_*_tape() functions from the kernel tree
+    
+    Removes the devfs_register_tape() and devfs_unregister_tape() functions
+    and all callers of them.
+    
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+diff --git a/drivers/char/viotape.c b/drivers/char/viotape.c
+index 11c7e9d..ebc337a 100644
+--- a/drivers/char/viotape.c
++++ b/drivers/char/viotape.c
+@@ -246,7 +246,6 @@ static struct device *tape_device[VIOTAP
+  */
+ static struct {
+ 	unsigned char	cur_part;
+-	int		dev_handle;
+ 	unsigned char	part_stat_rwi[MAX_PARTITIONS];
+ } state[VIOTAPE_MAX_TAPE];
+ 
+@@ -964,7 +963,6 @@ static int viotape_probe(struct vio_dev 
+ 	devfs_mk_cdev(MKDEV(VIOTAPE_MAJOR, i | 0x80),
+ 			S_IFCHR | S_IRUSR | S_IWUSR, "iseries/nvt%d", i);
+ 	sprintf(tapename, "iseries/vt%d", i);
+-	state[i].dev_handle = devfs_register_tape(tapename);
+ 	printk(VIOTAPE_KERN_INFO "tape %s is iSeries "
+ 			"resource %10.10s type %4.4s, model %3.3s\n",
+ 			tapename, viotape_unitinfo[i].rsrcname,
+@@ -978,7 +976,6 @@ static int viotape_remove(struct vio_dev
+ 
+ 	devfs_remove("iseries/nvt%d", i);
+ 	devfs_remove("iseries/vt%d", i);
+-	devfs_unregister_tape(state[i].dev_handle);
+ 	class_device_destroy(tape_class, MKDEV(VIOTAPE_MAJOR, i | 0x80));
+ 	class_device_destroy(tape_class, MKDEV(VIOTAPE_MAJOR, i));
+ 	return 0;
+diff --git a/include/linux/devfs_fs_kernel.h b/include/linux/devfs_fs_kernel.h
+index 3dd430e..d1dd876 100644
+--- a/include/linux/devfs_fs_kernel.h
++++ b/include/linux/devfs_fs_kernel.h
+@@ -25,11 +25,4 @@ static inline int devfs_mk_dir(const cha
+ static inline void devfs_remove(const char *fmt, ...)
+ {
+ }
+-static inline int devfs_register_tape(const char *name)
+-{
+-	return -1;
+-}
+-static inline void devfs_unregister_tape(int num)
+-{
+-}
+ #endif				/*  _LINUX_DEVFS_FS_KERNEL_H  */
