@@ -34,11 +34,12 @@ type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
 (* ********************************************************************** *)
 
 (* This module must convert the labelling function passed as parameter, by
-   using convert_label. Then create a SUBST2 module handling the wrapped_binding.
-   Then it can instantiates the generic CTL_ENGINE module. Call sat.
-   And then process the witness tree to remove all that is not revelevant for
-   the transformation phase.
+   using convert_label. Then create a SUBST2 module handling the
+   wrapped_binding.  Then it can instantiates the generic CTL_ENGINE
+   module. Call sat.  And then process the witness tree to remove all that
+   is not revelevant for the transformation phase.
 *)
+
 module CTL_ENGINE_BIS =
   functor (SUB : Ctl_engine.SUBST) ->
     functor (G : Ctl_engine.GRAPH) ->
@@ -220,7 +221,8 @@ struct
 	   (predicate,SUB.mvar) wrapped_ctl ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		 (WRAPPER_ENV.mvar * SUB.value) list,
+		  bool *
+		  (WRAPPER_ENV.mvar * SUB.value) list,
 		SUB.mvar) Common.either) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
@@ -235,7 +237,7 @@ struct
 		noclean)) in
       try
 	Common.Left
-	  (res,
+	  (res,noclean = [],
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs

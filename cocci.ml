@@ -287,7 +287,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
 		Flag_ctl.loop_in_src_code := old_loop_in_src_code;
 		match satres with
-		| Left (trans_info2, used_after_env) ->
+		| Left (trans_info2, returned_any_states, used_after_env) ->
                     let trans_info = CCI.satbis_to_trans_info trans_info2 in
                     if !Flag.show_transinfo then begin
                       print_xxxxxxxxxxxxxxxxx();
@@ -394,7 +394,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 		   CCI.mysat model_ctl ctl
 		     (used_after_one_ctl, current_binding2) in
 		 match satres with
-		 | Left (trans_info2, used_after_env) ->
+		 | Left (trans_info2, returned_any_states, used_after_env) ->
                      let trans_info = CCI.satbis_to_trans_info trans_info2 in
                      if !Flag.show_transinfo then begin
                        pr2 ("FOUND STUFF: in " ^ funcs);
