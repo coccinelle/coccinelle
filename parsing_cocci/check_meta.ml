@@ -66,10 +66,10 @@ let ident context table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())	
-  | Ast0.MetaId(name,inherited) -> check_table table minus name
-  | Ast0.MetaFunc(name,inherited) ->
+  | Ast0.MetaId(name) -> check_table table minus name
+  | Ast0.MetaFunc(name) ->
       if minus then check_table table minus name
-  | Ast0.MetaLocalFunc(name,inherited) ->
+  | Ast0.MetaLocalFunc(name) ->
       if minus then check_table table minus name
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
       failwith "unexpected code"
@@ -110,13 +110,13 @@ let rec expression context table minus e =
       expression ID table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
       typeC table minus ty
-  | Ast0.MetaConst(name,ty,inherited) ->
+  | Ast0.MetaConst(name,ty) ->
       if minus then check_table table minus name
-  | Ast0.MetaExpr(name,ty,inherited)  ->
+  | Ast0.MetaExpr(name,ty)  ->
       if minus then check_table table minus name
-  | Ast0.MetaErr(name,inherited)      ->
+  | Ast0.MetaErr(name)      ->
       check_table table minus name
-  | Ast0.MetaExprList(name,inherited) ->
+  | Ast0.MetaExprList(name) ->
       if minus then check_table table minus name
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression ID table minus) exps
@@ -136,7 +136,7 @@ and typeC table minus t =
   | Ast0.Pointer(ty,star) -> typeC table minus ty
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
-  | Ast0.MetaType(name,inherited) -> if minus then check_table table minus name
+  | Ast0.MetaType(name) -> if minus then check_table table minus name
   | Ast0.OptType(ty) -> typeC table minus ty
   | Ast0.UniqueType(ty) -> typeC table minus ty
   | Ast0.MultiType(ty) -> typeC table minus ty
@@ -165,9 +165,9 @@ let rec declaration context table minus d =
 let parameterTypeDef table minus param =
   match Ast0.unwrap param with
     Ast0.Param(id,ty) -> ident ID table minus id; typeC table minus ty
-  | Ast0.MetaParam(name,inherited) ->
+  | Ast0.MetaParam(name) ->
       if minus then check_table table minus name
-  | Ast0.MetaParamList(name,inherited) ->
+  | Ast0.MetaParamList(name) ->
       if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
@@ -196,8 +196,8 @@ let rec statement table minus s =
       get_opt (expression ID table minus) exp3;
       statement table minus body
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID table minus exp
-  | Ast0.MetaStmt(name,inherited) -> if minus then check_table table minus name
-  | Ast0.MetaStmtList(name,inherited) ->
+  | Ast0.MetaStmt(name) -> if minus then check_table table minus name
+  | Ast0.MetaStmtList(name) ->
       if minus then check_table table minus name
   | Ast0.Exp(exp) -> expression ID table minus exp
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
@@ -231,66 +231,6 @@ let top_level table minus t =
   | _ -> () (* no metavariables possible *)
 
 let rule table minus rules = List.iter (top_level table minus) rules
-
-(* --------------------------------------------------------------------- *)
-(* determine for each metavar whether it is declared in the current rule or
-previously *)
-
-let update_metavars metavars =
-  let donothing r k e = k e in
-  let mcode x = x in
-  let free_mv (name,_,_,_) = not(List.mem name metavars) in
-
-  let ident r k e =
-    match Ast0.unwrap e with
-      Ast0.MetaId(name,_) ->
-	Ast0.rewrap e (Ast0.MetaId(name,free_mv name))
-    | Ast0.MetaFunc(name,_) ->
-	Ast0.rewrap e (Ast0.MetaFunc(name,free_mv name))
-    | Ast0.MetaLocalFunc(name,_) ->
-	Ast0.rewrap e (Ast0.MetaLocalFunc(name,free_mv name))
-    | _ -> k e in
-
-  let expression r k e =
-    match Ast0.unwrap e with
-      Ast0.MetaConst(name,ty,_) ->
-	Ast0.rewrap e (Ast0.MetaConst(name,ty,free_mv name))
-    | Ast0.MetaErr(name,_) ->
-	Ast0.rewrap e (Ast0.MetaErr(name,free_mv name))
-    | Ast0.MetaExpr(name,ty,_) ->
-	Ast0.rewrap e (Ast0.MetaExpr(name,ty,free_mv name))
-    | Ast0.MetaExprList(name,_) ->
-	Ast0.rewrap e (Ast0.MetaExprList(name,free_mv name))
-    | _ -> k e in
-
-  let typeC r k e =
-    match Ast0.unwrap e with
-      Ast0.MetaType(name,_) ->
-	Ast0.rewrap e (Ast0.MetaType(name,free_mv name))
-    | _ -> k e in
-
-  let param r k e =
-    match Ast0.unwrap e with
-      Ast0.MetaParam(name,_) ->
-	Ast0.rewrap e (Ast0.MetaParam(name,free_mv name))
-    | Ast0.MetaParamList(name,_) ->
-	Ast0.rewrap e (Ast0.MetaParamList(name,free_mv name))
-    | _ -> k e in
-
-  let statement r k e =
-    match Ast0.unwrap e with
-      Ast0.MetaStmt(name,_) ->
-	Ast0.rewrap e (Ast0.MetaStmt(name,free_mv name))
-    | Ast0.MetaStmtList(name,_) ->
-	Ast0.rewrap e (Ast0.MetaStmtList(name,free_mv name))
-    | _ -> k e in
-
-  let fn = V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    ident expression typeC param donothing statement donothing in
-
-  fn.V0.rebuilder_top_level
 
 (* --------------------------------------------------------------------- *)
 
@@ -344,6 +284,4 @@ let check_meta metavars minus plus =
   check_all_marked "metavariable" other_table "in the - or context code";
   rule [fresh_table;err_table] false plus;
   check_all_marked "fresh identifier metavariable" fresh_table "in the + code";
-  check_all_marked "error metavariable" err_table "";
-  let names = List.map metavar2name metavars in
-  List.map (update_metavars names) minus
+  check_all_marked "error metavariable" err_table ""

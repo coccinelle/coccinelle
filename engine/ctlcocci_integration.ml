@@ -75,6 +75,8 @@ let (labels_for_ctl:
       | Lib_engine.Exit, _  -> []
       | Lib_engine.ErrorExit, _  -> []
 
+      | Lib_engine.Include _, _  -> failwith "include should not be checked"
+
       | Lib_engine.Return, node -> 
           (match node with
             (* todo? should match the Exit code ? 

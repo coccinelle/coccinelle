@@ -39,7 +39,7 @@ and metavar =
   | MetaFuncDecl of arity * string (* name *)
   | MetaLocalFuncDecl of arity * string (* name *)
 
-and inherited = bool
+and inherited = bool (* true if inherited *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

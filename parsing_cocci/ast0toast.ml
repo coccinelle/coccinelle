@@ -218,10 +218,10 @@ let rec ident i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,inherited) -> Ast.MetaId(mcode name,inherited)
-    | Ast0.MetaFunc(name,inherited) -> Ast.MetaFunc(mcode name,inherited)
-    | Ast0.MetaLocalFunc(name,inherited) ->
-	Ast.MetaLocalFunc(mcode name,inherited)
+    | Ast0.MetaId(name) -> Ast.MetaId(mcode name,false)
+    | Ast0.MetaFunc(name) -> Ast.MetaFunc(mcode name,false)
+    | Ast0.MetaLocalFunc(name) ->
+	Ast.MetaLocalFunc(mcode name,false)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
     | Ast0.MultiIdent(id) -> Ast.MultiIdent(ident id))
@@ -272,13 +272,13 @@ let rec expression e =
 	Ast.SizeOfExpr(mcode szf,expression exp)
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
-    | Ast0.MetaConst(name,ty,inherited) ->
-	Ast.MetaConst(mcode name,ty,inherited)
-    | Ast0.MetaErr(name,inherited)  -> Ast.MetaErr(mcode name,inherited)
-    | Ast0.MetaExpr(name,ty,inherited)  ->
-	Ast.MetaExpr(mcode name,ty,inherited)
-    | Ast0.MetaExprList(name,inherited) ->
-	Ast.MetaExprList(mcode name,inherited)
+    | Ast0.MetaConst(name,ty) ->
+	Ast.MetaConst(mcode name,ty,false)
+    | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name,false)
+    | Ast0.MetaExpr(name,ty)  ->
+	Ast.MetaExpr(mcode name,ty,false)
+    | Ast0.MetaExprList(name) ->
+	Ast.MetaExprList(mcode name,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode) ->
@@ -322,8 +322,8 @@ and typeC t =
     | Ast0.StructUnionName(name,kind) ->
 	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode name,mcode kind)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
-    | Ast0.MetaType(name,inherited) ->
-	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,inherited)))
+    | Ast0.MetaType(name) ->
+	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,false)))
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
     | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty))
@@ -339,7 +339,7 @@ and base_typeC t =
     | Ast0.StructUnionName(name,kind) ->
 	Ast.StructUnionName(mcode name,mcode kind)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-    | Ast0.MetaType(name,inherited) -> Ast.MetaType(mcode name,inherited)
+    | Ast0.MetaType(name) -> Ast.MetaType(mcode name,false)
     | _ -> failwith "unexpected type")
     
 (* --------------------------------------------------------------------- *)
@@ -371,9 +371,8 @@ let rec parameterTypeDef p =
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
     | Ast0.Param(id,ty) -> Ast.Param(ident id,typeC ty)
-    | Ast0.MetaParam(name,inherited) -> Ast.MetaParam(mcode name,inherited)
-    | Ast0.MetaParamList(name,inherited) ->
-	Ast.MetaParamList(mcode name,inherited)
+    | Ast0.MetaParam(name) -> Ast.MetaParam(mcode name,false)
+    | Ast0.MetaParamList(name) -> Ast.MetaParamList(mcode name,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)
@@ -450,10 +449,10 @@ let rec statement s =
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  Ast.Atomic
 	    (rewrap s (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
-      | Ast0.MetaStmt(name,inherited) ->
-	  Ast.Atomic(rewrap s (Ast.MetaStmt(mcode name,seqible,inherited)))
-      | Ast0.MetaStmtList(name,inherited) ->
-	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name,inherited)))
+      | Ast0.MetaStmt(name) ->
+	  Ast.Atomic(rewrap s (Ast.MetaStmt(mcode name,seqible,false)))
+      | Ast0.MetaStmtList(name) ->
+	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name,false)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->

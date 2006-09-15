@@ -34,7 +34,7 @@ let rec propagate_types env =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.Id(id) | Ast0.MetaId(id,_) ->
+      Ast0.Id(id) | Ast0.MetaId(id) ->
 	(try Some(List.assoc (Ast0.unwrap_mcode id) env)
 	with Not_found -> None)
     | _ -> k i in
@@ -99,12 +99,12 @@ let rec propagate_types env =
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
-      | Ast0.MetaConst(name,Some [ty],_) -> Some ty
-      | Ast0.MetaConst(name,_,_) -> None
-      | Ast0.MetaErr(name,_) -> None
-      | Ast0.MetaExpr(name,Some [ty],_) -> Some ty
-      | Ast0.MetaExpr(name,ty,_) -> None
-      | Ast0.MetaExprList(name,_) -> None
+      | Ast0.MetaConst(name,Some [ty]) -> Some ty
+      | Ast0.MetaConst(name,_) -> None
+      | Ast0.MetaErr(name) -> None
+      | Ast0.MetaExpr(name,Some [ty]) -> Some ty
+      | Ast0.MetaExpr(name,ty) -> None
+      | Ast0.MetaExprList(name) -> None
       | Ast0.EComma(cm) -> None
       | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  let types = List.map Ast0.get_type exp_list in
@@ -135,9 +135,9 @@ let rec propagate_types env =
   let rec strip id =
     match Ast0.unwrap id with
       Ast0.Id(name) -> Ast0.unwrap_mcode name
-    | Ast0.MetaId(name,_) -> Ast0.unwrap_mcode name
-    | Ast0.MetaFunc(name,_) -> Ast0.unwrap_mcode name
-    | Ast0.MetaLocalFunc(name,_) -> Ast0.unwrap_mcode name
+    | Ast0.MetaId(name) -> Ast0.unwrap_mcode name
+    | Ast0.MetaFunc(name) -> Ast0.unwrap_mcode name
+    | Ast0.MetaLocalFunc(name) -> Ast0.unwrap_mcode name
     | Ast0.OptIdent(id) -> strip id
     | Ast0.UniqueIdent(id) -> strip id
     | Ast0.MultiIdent(id) -> strip id in

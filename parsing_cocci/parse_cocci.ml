@@ -506,7 +506,7 @@ let parse file =
 	(*
 	Printf.printf "after plus parse\n";
 	*)
-	let minus_res = Check_meta.check_meta metavars minus_res plus_res in
+	Check_meta.check_meta metavars minus_res plus_res;
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop () in
@@ -571,10 +571,10 @@ let process file isofile verbose =
 	  let minus = Iso_pattern.apply_isos isos minus in
 	  let minus = Single_statement.single_statement minus in
 	  let minus_ast = Ast0toast.ast0toast minus in
-	  Pretty_print_cocci.unparse minus_ast;
 	  (metavars, minus_ast))
       minus plus in
   let (code,ua) = Free_vars.free_vars parsed in
+  List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
   (code,ua,tokens)
 

@@ -11,6 +11,7 @@ type predicate =
   | Match of Ast_cocci.rule_elem
   | Label of string
   | PrefixLabel of string
+  | Include of string
 
 type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
 

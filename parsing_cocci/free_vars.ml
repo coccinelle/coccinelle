@@ -198,6 +198,83 @@ let rec loop defined = function
        ::later_nonlocally_used,
        (List.map (update table) rule)::later_rules)
 
+(* --------------------------------------------------------------------- *)
+(* determine for each metavar whether it is declared in the current rule or
+previously *)
+
+let update_metavars previous_metavars =
+  let donothing r k e = k e in
+  let mcode x = x in
+  let free_mv (name,_,_) = List.mem name previous_metavars in
+
+  let ident r k e =
+    match Ast.unwrap e with
+      Ast.MetaId(name,_) ->
+	Ast.rewrap e (Ast.MetaId(name,free_mv name))
+    | Ast.MetaFunc(name,_) ->
+	Ast.rewrap e (Ast.MetaFunc(name,free_mv name))
+    | Ast.MetaLocalFunc(name,_) ->
+	Ast.rewrap e (Ast.MetaLocalFunc(name,free_mv name))
+    | _ -> k e in
+
+  let expression r k e =
+    match Ast.unwrap e with
+      Ast.MetaConst(name,ty,_) ->
+	Ast.rewrap e (Ast.MetaConst(name,ty,free_mv name))
+    | Ast.MetaErr(name,_) ->
+	Ast.rewrap e (Ast.MetaErr(name,free_mv name))
+    | Ast.MetaExpr(name,ty,_) ->
+	Ast.rewrap e (Ast.MetaExpr(name,ty,free_mv name))
+    | Ast.MetaExprList(name,_) ->
+	Ast.rewrap e (Ast.MetaExprList(name,free_mv name))
+    | _ -> k e in
+
+  let typeC r k e =
+    match Ast.unwrap e with
+      Ast.MetaType(name,_) ->
+	Ast.rewrap e (Ast.MetaType(name,free_mv name))
+    | _ -> k e in
+
+  let param r k e =
+    match Ast.unwrap e with
+      Ast.MetaParam(name,_) ->
+	Ast.rewrap e (Ast.MetaParam(name,free_mv name))
+    | Ast.MetaParamList(name,_) ->
+	Ast.rewrap e (Ast.MetaParamList(name,free_mv name))
+    | _ -> k e in
+
+  let rule_elem r k e =
+    match Ast.unwrap e with
+      Ast.MetaStmt(name,msi,_) ->
+	Ast.rewrap e (Ast.MetaStmt(name,msi,free_mv name))
+    | Ast.MetaStmtList(name,_) ->
+	Ast.rewrap e (Ast.MetaStmtList(name,free_mv name))
+    | _ -> k e in
+
+  let fn = V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    ident expression donothing typeC param donothing rule_elem donothing
+      donothing donothing in
+
+  fn.V.rebuilder_top_level
+
+let update_loop nonlocally_used rules =
+  let rec inner_loop = function
+      ([],nonlocally_used) -> ([],nonlocally_used)
+    | (x::xs,nlu::nonlocally_used) ->
+	let (xs,rest_nonlocally_used) = inner_loop (xs, nonlocally_used) in
+	(update_metavars nlu x::xs,rest_nonlocally_used)
+    | _ -> failwith "not possible" in
+  let rec outer_loop nonlocally_used = function
+      [] -> []
+    | x::xs ->
+	let (x,nonlocally_used) = inner_loop (x,nonlocally_used) in
+	x::(outer_loop nonlocally_used xs) in
+  outer_loop ([]::List.concat nonlocally_used) rules
+
+(* --------------------------------------------------------------------- *)
+
 let free_vars rules =
   let (_,nonlocally_used,rules) = loop [] rules in
-  (rules,nonlocally_used)
+  (update_loop nonlocally_used rules,nonlocally_used)
