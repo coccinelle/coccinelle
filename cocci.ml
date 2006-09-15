@@ -365,6 +365,17 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
      zip ctl_toplevel_list used_after_list2 +> List.iter 
       (fun (ctl, used_after_one_ctl) -> 
+
+    if !Flag.show_ctl_text then begin
+      print_xxxxxxxxxxxxxxxxx();
+      pr2 "ctl";
+      print_xxxxxxxxxxxxxxxxx();
+      Pretty_print_engine.pp_ctlcocci 
+        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+      Format.print_newline();
+    end;
+
+
        let lastround_bindings_multi = List.rev !_current_bindings_multictl in
        _current_bindings_multictl := [];
        incr _compteur1;
@@ -380,10 +391,48 @@ let full_engine cfile coccifile_and_iso_or_ctl =
          cprogram +> List.iter (fun (e, (filename, pos, s, il)) -> 
            match e with
            | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+
+
                if not (List.mem funcs (Common.keys already))
                then begin
+                 if !Flag.show_misc then pr2 ("starting function " ^ funcs);
+
                  let flow = Ast_to_flow.ast_to_control_flow def in
-                 let _fixed_flow = CCI.fix_flow_ctl flow in
+
+                begin
+                  try Ast_to_flow.deadcode_detection flow
+                  with Ast_to_flow.DeadCode Some info -> 
+                    pr2 "PBBBBBBBBBBBBBBBBBB";
+                    pr2 (Common.error_message filename ("", info.charpos));
+                    pr2 ("At least 1 DEADCODE detected (there may be more)," ^
+                         "but I continue.");
+                    pr2 "Maybe because of cpp #ifdef side effects.";
+                      
+                end;
+
+
+                 let fixed_flow = CCI.fix_flow_ctl flow in
+
+
+                if !Flag.show_flow              then print_flow fixed_flow;
+                if !Flag.show_before_fixed_flow then print_flow flow;
+
+
+		let old_loop_in_src_code = !Flag_ctl.loop_in_src_code in
+		if not old_loop_in_src_code
+		then
+                  (Flag_ctl.loop_in_src_code := false;
+                   def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
+                    with Visitor_c.kstatement = (fun (k, bigf) stat -> 
+                      match stat with 
+                       | Ast_c.Iteration _, ii
+                       | Ast_c.Jump (Ast_c.Goto _), ii
+                           -> Flag_ctl.loop_in_src_code := true
+                       | st -> k st
+                             )
+                     });
+
+
                  let current_binding = binding in
                  let current_binding2 = CCI.metavars_binding_to_binding2 current_binding in
 
@@ -395,18 +444,25 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 		 let satres =
 		   CCI.mysat model_ctl ctl
 		     (used_after_one_ctl, current_binding2) in
+
+		Flag_ctl.loop_in_src_code := old_loop_in_src_code;
 		 match satres with
 		 | Left (trans_info2, returned_any_states, used_after_env) ->
                      let trans_info = CCI.satbis_to_trans_info trans_info2 in
-                     if !Flag.show_transinfo then begin
-                       pr2 ("FOUND STUFF: in " ^ funcs);
-                       Pretty_print_engine.pp_transformation_info trans_info;
-                       Format.print_newline();
-                     end;
 
+                    if !Flag.show_transinfo then begin
+                      print_xxxxxxxxxxxxxxxxx();
+                      pr2 "transformation info returned:";
+                      print_xxxxxxxxxxxxxxxxx();
+                      Pretty_print_engine.pp_transformation_info trans_info;
+                      Format.print_newline();
+                    end;
+
+                     (*
                      if !_compteur1 = 3 && !_compteur2 = 1  && funcs = "main"
                      then 
                        pr2 "THIS ONE SHOULD MATCH";
+                     *)
 
                      let flow' = Transformation.transform trans_info flow in
                      let def' = Flow_to_ast.control_flow_to_ast flow' in

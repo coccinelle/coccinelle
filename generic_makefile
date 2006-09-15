@@ -41,6 +41,10 @@ clean:
 	-compare_with_expected -debug_cpp \
 	 $<
 
+count:
+	-ls -l *.ok | wc -l
+	-ls -l *.failed | wc -l
+
 info:
 	-ls *.ok
 	-ls *.failed
