@@ -359,7 +359,9 @@ let full_engine cfile coccifile_and_iso_or_ctl =
            let u = Common.union_set x already in
            u::union_after u xs
      in
-     let used_after_list2 = union_after [] used_after_list in
+     let used_after_list2 = 
+       union_after [] used_after_list  (*   *)
+     in
 
      zip ctl_toplevel_list used_after_list2 +> List.iter 
       (fun (ctl, used_after_one_ctl) -> 
@@ -409,7 +411,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                      let flow' = Transformation.transform trans_info flow in
                      let def' = Flow_to_ast.control_flow_to_ast flow' in
                      
-                     if not (null trans_info)
+                     if returned_any_states (* not (null trans_info) *)
                      then begin
                       (* when used_after is not good *)
                       (* let newbinding = snd3 (List.hd trans_info) in *)

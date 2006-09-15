@@ -15,16 +15,16 @@ expression A;
   }
 
   fn3(...) {
-+   bidon(A, fn1, fn2);
+//+   bidon(A, fn1, fn2);
     fn1(...);
     fn2(...);
     // bug need: ...  (partial match didn't help that much)
     ...
   }
 
-@@
-@@
-- bidon(...);
+//@@
+//@@
+//- bidon(...);
 
 // @@
 // @@
