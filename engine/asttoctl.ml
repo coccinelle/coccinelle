@@ -1378,9 +1378,9 @@ let letify f =
 let top_level used_after t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
-  | Ast.INCLUDE(inc,(s,_,_)) ->
+  | Ast.INCLUDE(inc,s) ->
       (* no indication of whether inc or s is modified *)
-      wrap 0 (CTL.Pred((Lib_engine.Include s,CTL.Control)))
+      wrap 0 (CTL.Pred((Lib_engine.Include(inc,s),CTL.Control)))
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       (*Printf.printf "orig\n";

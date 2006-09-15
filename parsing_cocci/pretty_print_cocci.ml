@@ -101,8 +101,7 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,free) -> mcode print_string name;
-      if free then print_string "true" else print_string "false"
+  | Ast.MetaId(name,_) -> mcode print_string name
   | Ast.MetaFunc(name,_) -> mcode print_string name
   | Ast.MetaLocalFunc(name,_) -> mcode print_string name
   | Ast.OptIdent(id) -> print_string "?"; ident id
@@ -173,8 +172,7 @@ let rec expression e =
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string "*/"
   | Ast.MetaErr(name,_) -> mcode print_string name
-  | Ast.MetaExpr(name,None,free) -> mcode print_string name;
-      if free then print_string "true" else print_string "false"
+  | Ast.MetaExpr(name,None,_) -> mcode print_string name
   | Ast.MetaExpr(name,Some ty,_) ->
       mcode print_string name; print_string "/*";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
