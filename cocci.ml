@@ -342,7 +342,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
       ) (* end 2: iter bindings *)
    end
    else begin
-     (* todo: use current_binding
+     (* done: use current_binding
       * todo: merge with the case when List.length = 1
       *) 
      (* (binding *  (funcname * transformed) list) list *)

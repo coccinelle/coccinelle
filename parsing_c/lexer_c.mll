@@ -134,7 +134,7 @@ rule token = parse
 
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           
-      { TCommentCpp (tokinfo lexbuf) }
+      { (*TOFIX*) TCommentCpp (tokinfo lexbuf) }
 
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
