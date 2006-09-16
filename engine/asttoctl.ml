@@ -1376,6 +1376,7 @@ let letify f =
 (* Function declaration *)
 
 let top_level used_after t =
+  Printf.printf "used_after %s\n" (String.concat " " used_after);
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
   | Ast.INCLUDE(inc,s) ->

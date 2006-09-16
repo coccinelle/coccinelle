@@ -219,7 +219,6 @@ fn1(...) {
 +     release_region(req5_reg_arg1, req5_reg_arg2);
       return ...;
     ...>
--   request_region(req5_reg_arg1, req5_reg_arg2, req5_reg_arg3);
  ...
  fn2(...)
  ...
@@ -270,6 +269,11 @@ fn1(...) {
 +   release_region(E, req6_reg_arg2);
  }
  ...
+ <...
++  release_region(req6_reg_arg1, req6_reg_arg2);
+   return ...;
+ ...>
+ ...
  fn2(...)
  ...
 }
@@ -279,10 +283,10 @@ fn1(...) {
 // --------------------------------------------------------------------
 
 @@
-expression req7_reg_arg1, req7_reg_arg2, req7_reg_arg3;
+expression req7_reg_arg2;
 expression E;
 identifier x;
-identifier fn1, fn2;
+identifier fn1;
 @@
 
 fn1(...) {
@@ -301,18 +305,35 @@ fn1(...) {
  ...
 }
 
+@@
+expression req7_reg_arg1, req7_reg_arg3;
+identifier y;
+identifier fn2;
+@@
+
 fn2(...) {
     ...
-    if (\(fn1(...) \| !fn1(...) \))
-       { ... when = \( printk(...); \| dbg(...); \)
+(
+   y = fn1(...);
+    ...
+   if (\(y \| !y \))
+      { ... when = \( printk(...); \| dbg(...); \)
 	return ...; }
+|
+   if (\(fn1(...) \| !fn1(...) \))
+      { ... when = \( printk(...); \| dbg(...); \)
+	return ...; }
+)
     <...
-+     release_region(req7_reg_arg1, req7_reg_arg2);
-      return ...;
++   release_region(req7_reg_arg1, req7_reg_arg2);
+    return ...;
     ...>
 -   request_region(req7_reg_arg1, req7_reg_arg2, req7_reg_arg3);
     ...
 }
+
+@@
+@@
 
 fn1(...) {
  ...
@@ -338,10 +359,10 @@ fn1(...) {
 // --------------------------------------------------------------------
 
 @@
-expression req8_reg_arg1, req8_reg_arg2, req8_reg_arg3;
+expression req8_reg_arg2;
 expression E;
 identifier x;
-identifier fn1, fn2;
+identifier fn1;
 @@
 
 fn1(...) {
@@ -359,16 +380,30 @@ fn1(...) {
       { ... when = \( printk(...); \| dbg(...); \)
 	continue; }
 )
-    ...
+ ...
  }
 ...
 }
 
+@@
+expression req8_reg_arg1, req8_reg_arg3;
+identifier y;
+identifier fn2;
+@@
+
 fn2(...) {
     ...
-    if (\(fn1(...) \| !fn1(...) \))
-       { ... when = \( printk(...); \| dbg(...); \)
+(
+   y = fn1(...);
+    ...
+   if (\(y \| !y \))
+      { ... when = \( printk(...); \| dbg(...); \)
 	return ...; }
+|
+   if (\(fn1(...) \| !fn1(...) \))
+      { ... when = \( printk(...); \| dbg(...); \)
+	return ...; }
+)
     <...
 +   release_region(req8_reg_arg1, req8_reg_arg2);
     return ...;
@@ -376,6 +411,9 @@ fn2(...) {
 -   request_region(req8_reg_arg1, req8_reg_arg2, req8_reg_arg3);
     ...
 }
+
+@@
+@@
 
 fn1(...) {
  ...

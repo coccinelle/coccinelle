@@ -146,6 +146,9 @@ struct
   exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
+    Printf.printf "need bindings for\n";
+    List.iter (function x -> print_var x; print_string " ") used_after;
+    Format.print_newline();
     List.concat
       (List.map
 	 (function used_after_var ->
@@ -168,7 +171,7 @@ struct
 		   with Not_found -> rest)
 	       None envs in
 	   match vl with
-	     None -> raise (INCOMPLETE_BINDINGS used_after_var)
+	     None -> [] (*raise (INCOMPLETE_BINDINGS used_after_var)*)
 	   | Some vl -> [(used_after_var, vl)])
 	 used_after)
       
@@ -186,7 +189,7 @@ struct
       | A.NegWit(st,th,anno,wit) -> loop (A.Wit(st,th,anno,wit)) in
     List.fold_left Common.union_set [] (List.map loop wits)
 
-  let check_conjunction phipsi res_phi res_psi res_phipsi =
+  let check_conjunction phipsi res_phi res_psi res_phipsi = () (*
     let phi_code = collect_predvar_bindings res_phi in
     let psi_code = collect_predvar_bindings res_psi in
     let all_code = collect_predvar_bindings res_phipsi in
@@ -204,7 +207,7 @@ struct
 	      Printf.printf "\n")
 	    l in
     check "left" (Common.minus_set phi_code all_code);
-    check "right" (Common.minus_set psi_code all_code)
+    check "right" (Common.minus_set psi_code all_code) *)
 
   (* ----------------------------------------------------- *)
 
@@ -225,6 +228,7 @@ struct
 		  (WRAPPER_ENV.mvar * SUB.value) list,
 		SUB.mvar) Common.either) =
     fun m phi (used_after, binding) ->
+      Printf.printf "starting satbis\n"; flush stdout;
       let noclean = satbis_noclean m phi in
       let res =
 	Common.uniq

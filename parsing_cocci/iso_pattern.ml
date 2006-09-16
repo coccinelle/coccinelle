@@ -732,8 +732,6 @@ let instantiate bindings =
 	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
     | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
     | Ast0.Dots(d,_) ->
-	Printf.printf "trying to find whencode for %s\n"
-	  (dot_term d);
 	(try
 	  (match List.assoc (dot_term d) bindings with
 	    Ast0.DotsStmtTag(stms) ->

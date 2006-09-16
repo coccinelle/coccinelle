@@ -884,6 +884,12 @@ let drop_required v required =
   inner_setify
     (List.map (List.filter (function sub -> not(dom_sub sub = v))) required)
 
+let print_required required =
+  Printf.printf "required\n";
+  List.iter
+    (function reqd -> print_generic_substitution reqd; Format.print_newline())
+    required
+
 (* no idea how to write this function ... *)
 let satLabel label required required_states p =
   let triples = setify(label p) in
@@ -901,12 +907,6 @@ let satLabel label required required_states p =
 	then t::rest
 	else rest)
     [] triples
-
-let print_required required =
-  Printf.printf "required\n";
-  List.iter
-    (function reqd -> print_generic_substitution reqd; Format.print_newline())
-    required
 
 let get_required_states l =
   Some(inner_setify (List.map (function (s,_,_) -> s) l))

@@ -165,6 +165,9 @@ T Z = ...; <=> T Z;
 
 Statement
 @@ @@
+return ...; => return;
+Statement
+@@ @@
 { ... return ...; } => return ...;
 Statement
 @@ @@
