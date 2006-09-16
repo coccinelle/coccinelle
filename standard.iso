@@ -235,3 +235,11 @@ Statement
 // ---------------------------------------------------------------------------
 
 // x->f <=> *x.f
+
+// julia don't want a x->f<=> x.f, so have just =>
+
+//todo: normally if E is typed metavar, should have to change 
+//its type and remove the '*'. 
+Expression
+@@ expression E; identifier field; @@
+E->field => E.field

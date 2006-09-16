@@ -346,7 +346,13 @@ let full_engine cfile coccifile_and_iso_or_ctl =
       * todo: merge with the case when List.length = 1
       *) 
      (* (binding *  (funcname * transformed) list) list *)
-     let _current_bindings_multictl = ref [(Ast_c.emptyMetavarsBinding,[])] in
+     let _current_bindings_multictl = 
+       if List.length !_current_bindings = 1
+       then
+         ref [(List.hd !_current_bindings, [])]
+        (* [(Ast_c.emptyMetavarsBinding,[])] *)
+       else failwith "too many inherited environments for mini-rules"
+     in
      let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
      
      let _compteur1 = ref 0 in 
@@ -360,7 +366,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
            u::union_after u xs
      in
      let used_after_list2 = 
-       union_after [] used_after_list  (*   *)
+       (*union_after [] *) used_after_list  (* no more need the fix *)
      in
 
      zip ctl_toplevel_list used_after_list2 +> List.iter 
@@ -502,7 +508,9 @@ let full_engine cfile coccifile_and_iso_or_ctl =
        | x -> (x, Unparse_c.PPviatok il)
        )
         +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
-      command2("cp /tmp/output.c /tmp/input.c");    
+       command2("cp /tmp/output.c /tmp/input.c");    
+       _current_bindings := [binding]
+       
      | n -> failwith "multiple candidates for multi mini-rules, TODO"
            );
      end
