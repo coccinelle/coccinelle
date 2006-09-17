@@ -317,8 +317,6 @@ let match_maker context_required whencode_allowed =
   and match_statement pattern s =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name) ->
-	Printf.printf "adding a binding %b\n" context_required;
-	Unparse_ast0.statement "" s; Format.print_newline();
 	add_binding name (Ast0.StmtTag s)
     | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
     | up ->
@@ -785,21 +783,45 @@ let copy_plus printer minusify model e =
       let e = minusify e in
       (* add the replacement information at the root *)
       (match Ast0.get_mcodekind e with
-	Ast0.MINUS(emc) -> emc := !mc (* ! mc contains no references *)
+	Ast0.MINUS(emc) ->
+	  emc :=
+	    (match (!mc,!emc) with
+	      (([],_),(x,t)) | ((x,_),([],t)) -> (x,t)
+	    | _ -> failwith "how can we combine minuses?")
       |	_ -> failwith "not possible 6");
       e
   | Ast0.CONTEXT(mc) ->
       (match Ast0.get_mcodekind e with
-	Ast0.CONTEXT(emc) -> emc := !mc
+	Ast0.CONTEXT(emc) ->
+	  let (mba,_,_) = !mc in
+	  let (eba,tb,ta) = !emc in
+	  (* merging may be required when a term is replaced by a subterm *)
+	  let merged =
+	    match (mba,eba) with
+	      (x,Ast.NOTHING) | (Ast.NOTHING,x) -> x
+	    | (Ast.BEFORE(b1),Ast.BEFORE(b2)) -> Ast.BEFORE(b1@b2)
+	    | (Ast.BEFORE(b),Ast.AFTER(a)) -> Ast.BEFOREAFTER(b,a)
+	    | (Ast.BEFORE(b1),Ast.BEFOREAFTER(b2,a)) ->
+		Ast.BEFOREAFTER(b1@b2,a)
+	    | (Ast.AFTER(a),Ast.BEFORE(b)) -> Ast.BEFOREAFTER(b,a)
+	    | (Ast.AFTER(a1),Ast.AFTER(a2)) ->Ast.AFTER(a2@a1)
+	    | (Ast.AFTER(a1),Ast.BEFOREAFTER(b,a2)) -> Ast.BEFOREAFTER(b,a2@a1)
+	    | (Ast.BEFOREAFTER(b1,a),Ast.BEFORE(b2)) ->
+		Ast.BEFOREAFTER(b1@b2,a)
+	    | (Ast.BEFOREAFTER(b,a1),Ast.AFTER(a2)) ->
+		Ast.BEFOREAFTER(b,a2@a1)
+	    | (Ast.BEFOREAFTER(b1,a1),Ast.BEFOREAFTER(b2,a2)) ->
+		 Ast.BEFOREAFTER(b1@b2,a2@a1) in
+	  emc := (merged,tb,ta)
       |	Ast0.MINUS(emc) ->
-	  let (anything_bef_aft,t1,t2) = !mc in
+	  let (anything_bef_aft,_,_) = !mc in
+	  let (anythings,t) = !emc in
 	  emc :=
 	    (match anything_bef_aft with
-	      Ast.BEFORE(b) -> (b,t1)
-	    | Ast.AFTER(a) -> (a,t2)
-	    | Ast.BEFOREAFTER(b,a) ->
-		(b@a,{t1 with Ast0.tline_end = t2.Ast0.tline_end})
-	    | Ast.NOTHING -> ([],t1))
+	      Ast.BEFORE(b) -> (b@anythings,t)
+	    | Ast.AFTER(a) -> (anythings@a,t)
+	    | Ast.BEFOREAFTER(b,a) -> (b@anythings@a,t)
+	    | Ast.NOTHING -> (anythings,t))
       |	_ -> failwith "not possible 7");
       e
   | Ast0.MIXED(_) -> failwith "not possible 8"
@@ -830,11 +852,9 @@ let mkdisj matcher alts instantiater e disj_maker minusify
 	let wc = whencode_allowed prev_ecount prev_dcount ecount dcount rest in
 	(match matcher (context_required e) wc pattern e init_env with
 	  None ->
-	    Printf.printf "failed\n";
 	    inner_loop all_alts
 	      (prev_ecount + ecount) (prev_dcount + dcount) rest
 	| Some bindings ->
-	    Printf.printf "succeeded\n";
 	    (match List.concat all_alts with
 	      [x] -> Common.Left (prev_ecount, prev_dcount)
 	    | all_alts ->
@@ -842,13 +862,10 @@ let mkdisj matcher alts instantiater e disj_maker minusify
   let rec outer_loop prev_ecount prev_dcount = function
       [] -> e (* nothing matched *)
     | (alts::rest) as all_alts ->
-	Printf.printf "all alts %d\n" (List.length (List.concat all_alts));
 	match inner_loop all_alts prev_ecount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_dcount) ->
-	    Printf.printf "not so good\n";
 	    outer_loop prev_ecount prev_dcount rest
-	| Common.Right res ->
-	    Printf.printf "doing something\n"; disj_maker res in
+	| Common.Right res -> disj_maker res in
   outer_loop 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
