@@ -896,14 +896,7 @@ let satLabel label required required_states p =
   foldl
     (function rest ->
       function ((s,th,_) as t) ->
-	let check_s =
-	  match required_states with
-	    None -> true
-	  | Some states -> List.mem s states in
-	if check_s &&
-	  List.exists
-	    (function th' -> not(conj_subst th th' = None))
-	    required
+	if List.exists (function th' -> not(conj_subst th th' = None)) required
 	then t::rest
 	else rest)
     [] triples

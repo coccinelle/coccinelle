@@ -165,9 +165,6 @@ T Z = ...; <=> T Z;
 
 Statement
 @@ @@
-return ...; => return;
-Statement
-@@ @@
 { ... return ...; } => return ...;
 Statement
 @@ @@
@@ -196,6 +193,9 @@ Statement
 Statement
 @@ expression E; @@
 { E; } => E;
+Statement
+@@ @@
+return ...; => return;
 
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;

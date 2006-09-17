@@ -318,10 +318,12 @@ fn2(...) {
     ...
    if (\(y \| !y \))
       { ... when = \( printk(...); \| dbg(...); \)
++       release_region(req7_reg_arg1, req7_reg_arg2);
 	return ...; }
 |
    if (\(fn1(...) \| !fn1(...) \))
       { ... when = \( printk(...); \| dbg(...); \)
++       release_region(req7_reg_arg1, req7_reg_arg2);
 	return ...; }
 )
     <...
@@ -398,10 +400,12 @@ fn2(...) {
     ...
    if (\(y \| !y \))
       { ... when = \( printk(...); \| dbg(...); \)
++       release_region(req8_reg_arg1, req8_reg_arg2);
 	return ...; }
 |
    if (\(fn1(...) \| !fn1(...) \))
       { ... when = \( printk(...); \| dbg(...); \)
++       release_region(req8_reg_arg1, req8_reg_arg2);
 	return ...; }
 )
     <...
