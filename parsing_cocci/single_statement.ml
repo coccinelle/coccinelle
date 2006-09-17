@@ -107,6 +107,11 @@ let is_dots x =
     Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
   | _ -> false
 
+let all_minus s =
+  match Ast0.get_mcodekind s with
+    Ast0.MINUS(_) -> true
+  | _ -> false
+
 let rec statement dots_before dots_after s =
   let do_one s =
     if dots_before && dots_after && adding_something s
@@ -125,27 +130,32 @@ let rec statement dots_before dots_after s =
 	(Ast0.Seq(lbrace,statement_dots false false body,rbrace))
   | Ast0.ExprStatement(exp,sem) -> do_one s
   | Ast0.IfThen(iff,lp,exp,rp,branch1,x) ->
+      let flag = not(all_minus s) in
       do_one
 	(Ast0.rewrap s
-	   (Ast0.IfThen(iff,lp,exp,rp,statement false false branch1,x)))
+	   (Ast0.IfThen(iff,lp,exp,rp,statement flag flag branch1,x)))
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,x) ->
+      let flag = not(all_minus s) in
       do_one
 	(Ast0.rewrap s
 	   (Ast0.IfThenElse
-	      (iff,lp,exp,rp,statement false false branch1,els,
-		statement false false branch2,x)))
+	      (iff,lp,exp,rp,statement flag flag branch1,els,
+		statement true true branch2,x)))
   | Ast0.While(whl,lp,exp,rp,body,x) ->
+      let flag = not(all_minus s) in
       do_one
 	(Ast0.rewrap s
-	   (Ast0.While(whl,lp,exp,rp,statement false false body,x)))
+	   (Ast0.While(whl,lp,exp,rp,statement flag flag body,x)))
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
+      let flag = not(all_minus s) in
       do_one
 	(Ast0.rewrap s
-	   (Ast0.Do(d,statement false false body,whl,lp,exp,rp,sem)))
+	   (Ast0.Do(d,statement flag flag body,whl,lp,exp,rp,sem)))
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,x) ->
+      let flag = not(all_minus s) in
       do_one
 	(Ast0.rewrap s
-	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,statement false false body,
+	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,statement flag flag body,
 		     x)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s

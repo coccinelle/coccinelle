@@ -114,14 +114,11 @@ let match_list fn la lb =
 let match_maker context_required whencode_allowed =
 
   let match_dots fn d1 d2 =
-    if not(context_required) or is_context d2
-    then
-      match (Ast0.unwrap d1, Ast0.unwrap d2) with
-	(Ast0.DOTS(la),Ast0.DOTS(lb))
-      | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
-      | (Ast0.STARS(la),Ast0.STARS(lb)) -> match_list fn la lb
-      | _ -> return false
-    else return false in
+    match (Ast0.unwrap d1, Ast0.unwrap d2) with
+      (Ast0.DOTS(la),Ast0.DOTS(lb))
+    | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
+    | (Ast0.STARS(la),Ast0.STARS(lb)) -> match_list fn la lb
+    | _ -> return false in
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
@@ -319,7 +316,10 @@ let match_maker context_required whencode_allowed =
 	    
   and match_statement pattern s =
     match Ast0.unwrap pattern with
-      Ast0.MetaStmt(name) -> add_binding name (Ast0.StmtTag s)
+      Ast0.MetaStmt(name) ->
+	Printf.printf "adding a binding %b\n" context_required;
+	Unparse_ast0.statement "" s; Format.print_newline();
+	add_binding name (Ast0.StmtTag s)
     | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
     | up ->
 	if not(context_required) or is_context s
@@ -791,6 +791,15 @@ let copy_plus printer minusify model e =
   | Ast0.CONTEXT(mc) ->
       (match Ast0.get_mcodekind e with
 	Ast0.CONTEXT(emc) -> emc := !mc
+      |	Ast0.MINUS(emc) ->
+	  let (anything_bef_aft,t1,t2) = !mc in
+	  emc :=
+	    (match anything_bef_aft with
+	      Ast.BEFORE(b) -> (b,t1)
+	    | Ast.AFTER(a) -> (a,t2)
+	    | Ast.BEFOREAFTER(b,a) ->
+		(b@a,{t1 with Ast0.tline_end = t2.Ast0.tline_end})
+	    | Ast.NOTHING -> ([],t1))
       |	_ -> failwith "not possible 7");
       e
   | Ast0.MIXED(_) -> failwith "not possible 8"
@@ -821,20 +830,25 @@ let mkdisj matcher alts instantiater e disj_maker minusify
 	let wc = whencode_allowed prev_ecount prev_dcount ecount dcount rest in
 	(match matcher (context_required e) wc pattern e init_env with
 	  None ->
+	    Printf.printf "failed\n";
 	    inner_loop all_alts
 	      (prev_ecount + ecount) (prev_dcount + dcount) rest
 	| Some bindings ->
+	    Printf.printf "succeeded\n";
 	    (match List.concat all_alts with
-	      [x] -> Common.Left (prev_ecount, prev_dcount) (* why None??? *)
+	      [x] -> Common.Left (prev_ecount, prev_dcount)
 	    | all_alts ->
 		Common.Right (call_instantiate bindings all_alts))) in
   let rec outer_loop prev_ecount prev_dcount = function
       [] -> e (* nothing matched *)
     | (alts::rest) as all_alts ->
+	Printf.printf "all alts %d\n" (List.length (List.concat all_alts));
 	match inner_loop all_alts prev_ecount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_dcount) ->
+	    Printf.printf "not so good\n";
 	    outer_loop prev_ecount prev_dcount rest
-	| Common.Right res -> disj_maker res in
+	| Common.Right res ->
+	    Printf.printf "doing something\n"; disj_maker res in
   outer_loop 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
