@@ -100,6 +100,8 @@
    ("^[()|]" . 'font-lock-keyword-face)
    ("\\bwhen[ \t]+!=" . 'font-lock-keyword-face)
    ("\\bWHEN[ \t]+!=" . 'font-lock-keyword-face)
+   ("\\bwhen[ \t]+=" . 'font-lock-keyword-face)
+   ("\\bWHEN[ \t]+=" . 'font-lock-keyword-face)
    
    ; used in iso files
    ("<=>" . 'font-lock-keyword-face)
