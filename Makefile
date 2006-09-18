@@ -15,7 +15,8 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OPTFLAGS=-p -inline 0
+#OPTFLAGS=-p -inline 0
+#pad: but no need to uncomment the line, 'make forprofiling' does that for you.
 
 OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH)
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
@@ -130,30 +131,31 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
-x:
-     
 
 -include .depend
 
+# Regression testing
 tests:  spatch
 	set -e; for i in $(TESTSUBDIRS); do $(MAKE) -C $$i all; done 
 
-rule9: spatch
-	cd tests/rule9; $(MAKE)
 
-rule18: spatch
-	cd tests/rule18; $(MAKE)
+# Benchs
+%.ruledir: spatch
+	cd tests/$(@:.ruledir=); $(MAKE) SPATCH=../../spatch.opt
 
-rule18a: spatch
-	cd tests/rule18a; $(MAKE)
+HARD=devfs video_usercopy     
+# check_region 
 
-rule19: spatch
-	cd tests/rule19; $(MAKE)
+MIDDLE=
+#rule9 rule6 rule18 rule18a rule19(big?)  rule74 rule83 (pad-bugs?)
 
-rule83: spatch
-	cd tests/rule83; $(MAKE)
 
-video_usercopy: spatch
-	cd tests/video_usercopy; $(MAKE)
+#easy: 10, 17, 30(lots of pad-bugs), 31, 33, 36?, 37(ugly), 38, 42, 48?, 53, 57, 82!, 85
 
-eurosys: rule9 rule18 rule18a rule19 rule83 video_usercopy
+#rule10 rule17 rule30 rule31 rule33 rule38  rule42    
+#no cocci yet: rule53 rule57 rule82 rule85 
+
+#EUROSYS= rule9 rule18 rule18a rule19 rule83 video_usercopy
+EUROSYS=$(HARD) $(MIDDLE) $(EASY)
+
+eurosys: $(EUROSYS:=.ruledir)
