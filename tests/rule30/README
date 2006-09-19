@@ -1,55 +1,87 @@
+Cocci file: rule30.cocci
+
+------------------------------------------------------------------------------
+
 acsi.c: Works!
+ [status] ok
 
 amiflop.c
+ [status] UNKNOWN
 
 ataflop.c: Works!
+ [status] ok
 
 aztcd.c
+ [status] UNKNOWN
 
 cdu31a.c
+ [status] UNKNOWN
 
 cm206.c: Works!
+ [status] ok
 
 fd1772.c
+ [status] UNKNOWN
 
 ftl.c
+ [status] UNKNOWN
 
 gscd.c: Works!
+ [status] ok
 
 hd.c
+ [status] UNKNOWN
 
 jsflash.c: Works!
+ [status] ok
 
 mcd.c
+ [status] UNKNOWN
 
 mcdx.c
+ [status] UNKNOWN
 
 mfmhd.c: Works!
+ [status] ok
 
 nftlcore.c
+ [status] UNKNOWN
 
 optcd.c
+ [status] UNKNOWN
 
 pcd.c: Works!
+ [status] ok
 
 pd.c: Works!
+ [status] ok
 
 pf.c: Works!
+ [status] ok
 
 ps2esdi.c: Works!
+ [status] ok
 
 sbpcd.c
+ [status] UNKNOWN
 
 sjcd.c
+ [status] UNKNOWN
 
 sonycd535.c
+ [status] UNKNOWN
 
 swim3.c
+ [status] UNKNOWN
 
 swim_iop.c
+ [status] UNKNOWN
 
 xd.c: Works!
+ [status] ok
 
 xpram.c
+ [status] UNKNOWN
 
 z2ram.c: Works!
+ [status] ok

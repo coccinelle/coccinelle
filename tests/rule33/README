@@ -16,18 +16,22 @@ also had to use current_valid(...) instead of current_valid(void)
 because of spatch parser problems.
 ----------------------------------------------------------------------
 aztcd.c
+  [status] spatch-ok
   * Basically works
   * [unrelated] many (seemingly) unrelated changes
 
 mcd.c
+  [status] spatch-ok
   * Basically works
   * [unrelated] many (seemingly) unrelated changes
 
 optcd.c
+  [status] spatch-ok
   * Basically works
   * [unrelated] many (seemingly) unrelated changes
 
 sjcd.c
+  [status] spatch-ok
   * Basically works
   * [unrelated] many (seemingly) unrelated changes
 

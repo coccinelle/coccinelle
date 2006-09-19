@@ -80,15 +80,15 @@ BEGIN {
     }
 }
 END {
-  printf "No. of files    : %6d\n", no_of_files;
-  printf "Total # of lines: %6d\n", tot_file_size_lines;
-  printf "Avg. # of lines : %9.2f\n", (tot_file_size_lines / no_of_files);
-  printf "Total size (KB) : %6d\n", tot_file_size_bytes;
-  printf "Avg. size (KB)  : %9.2f\n", (tot_file_size_bytes / no_of_files);
-  printf "Minimum time    : %9.2fs (%s)\n", 
+  printf "!!No. of files    : %6d\n", no_of_files;
+  printf "  Total # of lines: %6d\n", tot_file_size_lines;
+  printf "!!Avg. # of lines : %9.2f\n", (tot_file_size_lines / no_of_files);
+  printf "  Total size (KB) : %6d\n", tot_file_size_bytes;
+  printf "  Avg. size (KB)  : %9.2f\n", (tot_file_size_bytes / no_of_files);
+  printf "  Minimum time    : %9.2fs (%s)\n", 
     min_running_time, min_running_file;
-  printf "Maximum time    : %9.2fs (%s)\n", 
+  printf "!!Maximum time    : %9.2fs (%s)\n", 
     max_running_time, max_running_file;
-  printf "Total time      : %9.2fs\n", sum_running_time;
-  printf "Average time    : %9.2fs\n", (sum_running_time / no_of_files);
+  printf "  Total time      : %9.2fs\n", sum_running_time;
+  printf "!!Average time    : %9.2fs\n", (sum_running_time / no_of_files);
 }

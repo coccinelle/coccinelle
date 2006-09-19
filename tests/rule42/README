@@ -6,148 +6,209 @@ Revision  : N/A
 ----------------------------------------------------------------------
 
 10_symlink.c: Works!
+ [status] ok
 
 11_compress.c
+ [status] fail
   * [spatch] orphelin nodes...
   * Fatal error: exception Common.Impossible
 
 12_inode.c: Works!
+ [status] ok
 
 13_inode.c: Works!
+ [status] ok
 
 14_inode.c: Works!
+ [status] ok
 
 15_dir.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 16_file.c: Works!
+ [status] ok
 
 17_dir.c: Works!
+ [status] ok
 
 18_file.c: Works!
+ [status] ok
 
 19_inode.c: Works!
+ [status] ok
 
 1_symlink.c: Works!
+ [status] ok
 
 20_symlink.c: Works!
+ [status] ok
 
 21_dir.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 22_inode.c: Works!
+ [status] ok
 
 2_symlink.c: Works!
+ [status] ok
 
 3_inode.c: Works!
+ [status] ok
   * [spatch] orphelin nodes...
 
 4_file.c: Works!
+ [status] ok
 
 5_dir.c
+ [status] wrong
   * [bug] CE not performed in expected result
 
 6_namei.c: Works!
+ [status] ok
 
 7_dir.c: Works!
+ [status] ok
 
 8_symlink.c: Works!
+ [status] ok
 
 9_dir.c
+ [status] fail
   * [parser] unparseable code
 
 agpgart_be.c: Works!
+ [status] ok
   * PBBB...
 
 aops.c: Works!
+ [status] ok
 
 blkmtd.c: Works!
+ [status] ok
 
 buffer.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 cache.c: Works!
+ [status] ok
 
 check.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 compress.c: Works!
+ [status] ok
 
 dir.c: Works!
+ [status] ok
 
 emd.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 file.c: Works!
+ [status] ok
 
 filemap.c
+ [status] fail
   * Fatal error: exception Failure("pb in flow_to_ast, some nodes have
     not been visited") 
 
 i810_dma.c: Works!
+ [status] ok
 
 inode.c: Works!
+ [status] ok
 
 inode-v23.c
+ [status] fail
   * Fatal error: exception Common.Todo
 
 ioctl.c: Works!
+ [status] ok
 
 jfs_metapage.c: Works!
+ [status] ok
 
 loop.c: Works!
+ [status] ok
 
 lvm-snap.c: Works!
+ [status] ok
 
 md.c
+ [status] fail
   * Fatal error: exception Not_found
 
 memory.c: Works!
+ [status] ok
 
 mincore.c: Works!
+ [status] ok
 
 namei.c: Works!
+ [status] ok
 
 page_alloc.c: Works!
+ [status] ok
   * [spatch] PassingMacro FASTCALL
   * [spatch] orphelin nodes...
 
 page_io.c: Works!
+ [status] ok
 
 page-writeback.c: Works!
+ [status] ok
 
 rd.c: Works!
+ [status] ok
 
 read.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 rock.c
+ [status] fail
   * [parser] unparseable code
 
 shmem.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 slab.c: Works!
+ [status] ok
   * PBBB...
 
 super.c: Works!
+ [status] ok
   * [spatch] PBBB...
 
 swapfile.c: Works!
+ [status] ok
 
 swap_state.c: Works!
+ [status] ok
 
 symlink.c: Works!
+ [status] ok
 
 tail_conversion.c: Works!
+ [status] ok
 
 vmscan.c
+ [status] fail
   * Fatal error: exception Ast_to_flow.DeadCode(_)
 
 vxfs_immed.c
+ [status] fail
   * [parser] unparseable code
 
 vxfs_subr.c
+ [status] fail
   * [parser] unparseable code
 
 write.c: Works!
+ [status] ok

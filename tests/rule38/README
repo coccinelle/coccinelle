@@ -5,57 +5,81 @@ Cocci file     : rule38.cocci
 Cocci file rev.: N/A
 ----------------------------------------------------------------------
 3c509.c: Works!
+ [status] ok
   * GRAVE: ...
 
 3c515.c: Works!
+ [status] ok
 
 ad1848.c:
+ [status] spatch-ok
   * Basically works
   * [unrelated] change in name of field member
 
 aha152x.c: Works!
+ [status] ok
 
 aha1542.c
+ [status] fail
   * GRAVE:...
   * PBBB...
   * Fatal error: exception Common.Impossible (in flow_to_ast.ml)
 
 asuscom.c: Works!
+ [status] ok
 
 avm_pci.c: Works!
+ [status] ok
 
 diva.c: Works!
+ [status] ok
 
 elsa.c: Works!
+ [status] ok
 
 g_NCR5380.c
+ [status] fail
   * [parser] unparseable code
 
 hfcscard.c: Works!
+ [status] ok
 
 hfc_sx.c: Works!
+ [status] ok
 
 i82365.c: Works!
+ [status] ok
 
 isurf.c: Works!
+ [status] ok
 
 ix1_micro.c: Works!
+ [status] ok
 
 ixj.c: Works!
+ [status] ok
   * PBB...
 
 ne.c: Works!
+ [status] ok
 
 niccy.c: Works!
+ [status] ok
 
 radio-sf16fmi.c: Works!
+ [status] ok
 
 sb1000.c: Works!
+ [status] ok
 
 sedlbauer.c: Works!
+ [status] ok
 
 smc-ultra.c: Works!
+ [status] ok
 
 sym53c416.c: Works!
+ [status] ok
 
 teles3.c: Works!
+ [status] ok
