@@ -1,4 +1,21 @@
+Rule 17
+----------------------------------------------------------------------
+Cocci file      : rule17.cocci
+Size of SP file :
+No. of files    :     18 [ok: 6; spatch-ok: 12; fail: 0; wrong: 0]
+Bugs            :      0
+Total # of lines:  18260
+Avg. # of lines :   1014.44
+Total size (KB) :    528
+Avg. size (KB)  :     29.33
+Minimum time    :      0.71s (elsa_ser.ok)
+Maximum time    :     28.15s (config.failed)
+Total time      :    136.42s
+Average time    :      7.58s
+----------------------------------------------------------------------
+
 amd7930.c: 
+  * [status] spatch-ok
   * contains related but independent CE: moving declaration of (struct)
     variable from argument list to local variable replacing argument
     with (void *)
@@ -8,59 +25,76 @@ amd7930.c:
   * strange typecasts
 
 amd7930_fn.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
-avm_pci.c: Works!
+avm_pci.c:
+  * [status] ok
 
-config.c: 
-  * assignment "cs->work.data = cs" should be removed (change rule?)
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+config.c:
+  * [status] spatch-ok
+  * [independent] assignment "cs->work.data = cs" should be removed
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
-elsa_ser.c: Works!
+elsa_ser.c:
+  * [status] ok
 
 hfc_2bds0.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
-hfc_2bs0.c: Works!
+hfc_2bs0.c:
+  * [status] ok
 
 hfc_pci.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
-  * Also got: "PBBBBBBBBBBBBBBBBBB" a number of times
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * PBBB...
 
 hfc_sx.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
-hscx.c: Works!
+hscx.c:
+  * [status] ok
 
 icc.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
 ipacx.c:
-  * moving declaration (see amd7930.c)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
 
 isac.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
 isar.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] INIT_WORK: change final argument (works with rul17full)
 
 isdnl1.c:
-  * moving declaration (see amd7930.c)
-  * null check of moved declaration should be (re-)moved
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] null check of moved declaration should be (re-)moved
 
-jade.c: Works!
+jade.c:
+  * [status] ok
 
-netjet.c: Works!
+netjet.c:
+  * [status] ok
 
 w6692.c:
-  * moving declaration (see amd7930.c)
-  * INIT_WORK must(?) also change final argument (works with rul17full)
-  * Also got: "PBBBBBBBBBBBBBBBBBB" a number of times
+  * [status] spatch-ok
+  * [independent] moving declaration (see amd7930.c)
+  * [independent] null check of moved declaration should be (re-)moved
+  * PBBB...
