@@ -28,9 +28,9 @@ BEGIN {
 
   # Parse time field
   split($2,timearr,/[m.]/);
-  current_time = strtonum(timearr[1]) * 60.0;   # minutes
-  current_time += strtonum(timearr[2]);         # seconds
-  current_time += strtonum(timearr[3]) / 1000.0; # 1/1000th sec.
+  current_time = timearr[1] * 60.0;   # minutes
+  current_time += timearr[2];         # seconds
+  current_time += timearr[3] / 1000.0; # 1/1000th sec.
 
   # Print progress
   printf "%6.3fs (%s)\n", current_time, current_file;
@@ -55,7 +55,7 @@ BEGIN {
 
   # Update file sizes (in lines)  
   ("wc -l " current_file) | getline;
-  current_size_lines = strtonum($1);
+  current_size_lines = $1;
   tot_file_size_lines += current_size_lines;
   if(current_size_lines > max_file_size_lines)
     {
@@ -68,7 +68,7 @@ BEGIN {
 
   # Update file sizes (in bytes)  
   ("du " current_file) | getline;
-  current_size_bytes = strtonum($1);
+  current_size_bytes = $1;
   tot_file_size_bytes += current_size_bytes;
   if(current_size_bytes > max_file_size_bytes)
     {
