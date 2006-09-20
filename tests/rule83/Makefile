@@ -55,7 +55,6 @@ SOURCES = 68328serial.c \
           synclink.c \
           synclink_cs.c \
           synclinkmp.c \
-          tty_io.c \
           tty_ioctl.c \
           usb-serial.c \
           viocons.c \
@@ -64,4 +63,4 @@ SOURCES = 68328serial.c \
           whiteheat.c \
           zs.c
 
-include ../../generic_makefile
+include ../../generic_makefile2
