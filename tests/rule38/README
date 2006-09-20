@@ -4,6 +4,7 @@ Cocci file      : rule38.cocci
 Size of SP file :     ?
 No. of files    :    24 [ok: 21; spatch-ok: 1; fail: 2; wrong: 0]
 Bugs            :     0
+Bugfix          :     2
 ----------------------------------------------------------------------
 
 3c509.c
@@ -16,6 +17,7 @@ Bugs            :     0
 ad1848.c
   * [status] spatch-ok
   * [independent] change in name of field member
+  * [bugfix] there was a bug in the original update
 
 aha152x.c
   * [status] ok
@@ -41,6 +43,7 @@ elsa.c
 g_NCR5380.c
   * [status] fail
   * [parser] unparseable code
+  * there was a bug in the original update
 
 hfcscard.c
   * [status] ok
@@ -81,6 +84,7 @@ smc-ultra.c
 
 sym53c416.c
   * [status] ok
+  * [bugfix] there was a bug in the original update
 
 teles3.c
   * [status] ok
