@@ -2,8 +2,11 @@ Rule 31
 ----------------------------------------------------------------------
 Cocci file      : rule31.cocci
 Size of SP file :     ?
-No. of files    :    28 [ok: 0; spatch-ok: 19; fail: 9; wrong: 0]
+No. of files    :    26 [ok: 0; spatch-ok: 17; fail: 9; wrong: 0]
 Bugs            :     0
+----------------------------------------------------------------------
+NOTE: files "osst.c" and "st.c" are not included in SOURCES since they
+      contain nothing to transform (raised NotWorthTrying)
 ----------------------------------------------------------------------
 
 acsi.c
@@ -77,11 +80,6 @@ nftlcore.c
   * [status] fail
   * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
-osst.c
-  * [status] spatch-ok (???)
-  * [exc] raised NotWorthTrying
-  * [independent] remove "#define DEVICE_INTR do_osst"
-
 pcd.c
   * [status] spatch-ok
   * [compare] too many braces
@@ -109,11 +107,6 @@ sbpcd.c
 sonycd535.c
   * [status] fail
   * [exc] Fatal error: exception Common.Impossible
-
-st.c
-  * [status] spatch-ok (???)
-  * [exc] raised NotWorthTrying
-  * [independent] remove "#define DEVICE_INTR do_st"
 
 swim3.c
   * [status] spatch-ok
