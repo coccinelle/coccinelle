@@ -24,3 +24,21 @@ $filename.c
 ------------------------------------------------------------------------------
 
 // Only the Cocci file : ...  and the [status] lines are mandatory
+
+// Categories:
+//
+//   ok        : when the SP applies cleanly, i.e., there are no other
+//               changes, no bugs, etc. Differences in comments and
+//               whitespace _may_ be acceptable; if in doubt use
+//               spatch-ok; typically this category is only used for
+//               .ok -files
+//   spatch-ok : when the SP did as expected but there were other
+//               changes and/or bugs; typically this category is used
+//               for manually reviewed .failed files
+//   fail      : spatch fails for some reason (and throws an exception)
+//   wrong     : spatch does not fail, but does not produce the
+//               "correct" and/or expected result either; this
+//               indicates either an error (or lacking feature) in
+//               spatch or possibly bugs made by the maintainer
+//   UNKNOWN   : self-explanatory
+//
