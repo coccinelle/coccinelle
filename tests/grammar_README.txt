@@ -9,7 +9,7 @@ $filename.c
  [status]  ok|spatch-ok|fail|wrong|UNKNOWN
  [note] bugfix=$n
  [comment] ...
- [todo_hint] parser|ctl|pad|julia|rene|pad|pad|pad
+ [todo_hint] parser|cpp|iso|ctl|pad|julia|rene|pad|pad|pad
  [exn] ...
 
 

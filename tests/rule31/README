@@ -4,86 +4,107 @@ Cocci file     : rule31.cocci
 Cocci file rev.: N/A
 ----------------------------------------------------------------------
 acsi.c
+ [status] UNKNOWN
   * independent (unrelated?): DEVICE_INTR is replaced by do_acsi
   * [rule change] CLEAR_INTR should be replaced by do_acsi some places
 
 amiflop.c
+ [status] UNKNOWN
   * PBBB...
   * deadcode
   * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
     be removed
 
 ataflop.c
+ [status] UNKNOWN
   * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
     be removed
 
 cdu31a.c
+ [status] UNKNOWN
   * PBBBB...
   * deadcode
   * exception Common.Impossible
 
 cm206.c
+ [status] UNKNOWN
   * [isomorphism] too many braces around transformed code
 
 fd1772.c
+ [status] UNKNOWN
   * PBBB...
   * deadcode
   * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
     be removed
 
 ftl.c
+ [status] fail
   * Fatal error: exception Not_found
 
 gscd.c
+ [status] UNKNOWN
   * PBBB...
   * [isomorphism] too many braces
 
 hd.c
+ [status] UNKNOWN
   * independent (unrelated?): remove "#define DEVICE_INTR do_hd" and
     replace all uses of DEVICE_INTR accordingly
   * independent: add "#define TIMEOUT_VALUE ..."
   * [rule change] some CLEAR_INTR should be replaced by "do_hd = NULL"
 
 jsflash.c
+ [status] UNKNOWN
   * [isomorphism] too many braces
 
 mcdx.c
+ [status] UNKNOWN
   * PBBB...
   * deadcode
   * exception Failure("pb in flow_to_ast, some nodes have not been
     visited")
 
 mfmhd.c
+ [status] UNKNOWN
   * independent: remove "#define DEVICE_INTR do_mfm" and replace uses
     of DEVICE_INTR accordingly
 
 mtdblock.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 mtdblock_ro.c
+ [status] fail
   * [parser] unparseable code
 
 nftlcore.c
+ [status] fail
   * Fatal error: exception Ast_to_flow.DeadCode(_)
 
 osst.c
+ [status] UNKNOWN
   * raised NotWorthTrying
   * independent: remove "#define DEVICE_INTR do_osst"
 
 pcd.c
+ [status] UNKNOWN
   * [isomorphism] too many braces
 
 pd.c
+ [status] UNKNOWN
   * [isomorphism] too many braces
 
 pf.c
+ [status] UNKNOWN
   * [isomorphism] too many braces
 
 ps2esdi.c
+ [status] UNKNOWN
   * [cpp] GRAVE: a cpp instruction inside a #if 0
   * [isomorphism] too many braces
 
 sbpcd.c
+ [status] UNKNOWN
   * [cpp] GRAVE:...
   * PBBB...
   * deadcode
@@ -91,27 +112,34 @@ sbpcd.c
   * Fatal error: exception Common.Impossible
 
 sonycd535.c
+ [status] fail
   * Fatal error: exception Common.Impossible
 
 st.c
+ [status] UNKNOWN
   * raised NotWorthTrying
   * independent: remove "#define DEVICE_INTR do_st"
 
 swim3.c
+ [status] UNKNOWN
   * independent: remove "#define DEVICE_INTR do_floppy"
 
 swim_iop.c
+ [status] UNKNOWN
   * independent: remove "#define DEVICE_INTR do_floppy"
 
 xd.c
+ [status] UNKNOWN
   * [isomorphism] too many braces
 
 xpram.c
+ [status] UNKNOWN
   * PBBB...
   * deadcode
   * Fatal error: exception Not_found
 
 z2ram.c
+ [status] UNKNOWN
   * PBBB...
   * deadcode
   * [isomorphism] too many braces
