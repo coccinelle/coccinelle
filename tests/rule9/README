@@ -1,0 +1,84 @@
+Cocci file      : rule9.cocci
+
+------------------------------------------------------------------------------
+cciss_scsi.c \
+ * [status] ok
+ * space differences
+
+cpqfcTSinit.c \
+ * [status] ok
+ * comments should also be erased
+
+53c700.c \
+ * [status] spatch-ok
+ * [bug] maintainer forgot to remove the decl of hostptr, shadowing
+     the one now given in parameter.
+
+acornscsi.c \
+ * [status] wrong
+ * can be made ok  if modify SP
+
+arxescsi.c \
+ * [status] spatch-ok
+ * [bug] maintainer forgot to remove hostno parameter
+
+cumana_2.c \
+ * [status] ok
+ * space differences
+
+eesox.c \
+ * [status] ok
+ * space differences
+
+
+eata_pio.c \
+ * [status] ok
+ * space differences
+
+
+fcal.c \
+ * [status] ok
+ * space differences
+
+g_NCR5380.c \
+ * [status] ok
+ * comments differences
+
+in2000.c \
+ * [status] fail
+ * because of cpp
+
+ncr53c8xx.c \
+ * [status] wrong
+ * can be made ok  by modifying SP
+
+nsp32.c \
+ * [status] spatch-ok
+ * comments difference, and when modifying proto I put the name of the var host
+   whereas maintainer remove it (as for the other parameter)
+
+nsp_cs.c \
+ * [status] wrong
+ * cpp
+
+powertec.c \
+ * [status] spatch-ok
+ * [bug] maintainer changed some if in If in .res (making .res code unparsable)
+
+
+sbp2.c \
+ * [status] ok
+ * space differences
+
+sym53c8xx.c \
+ * [status] ok
+ * space differences
+
+sym_glue.c \
+ * [status] ok
+ * space differences
+
+
+scsiglue.c 
+ * [status] spatch-ok
+ * unrelated, maintainer also remove the if containing one of the scsi_host_put
