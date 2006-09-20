@@ -1,7 +1,7 @@
 Cocci file: schedev.cocci
 
 avm_pci.c: inline on dropped function not dropped
- [status] UNKNOWN
+ [status] ok
 
 config.c: Works!
  [status] ok
@@ -30,18 +30,18 @@ hscx.c: Works!
 hscx_irq.c: Works!
  [status] ok
 
-ipacx.c: deleted prototype replaced by a ;, comments not dropped
- [status] UNKNOWN
+ipacx.c: Works!
+ [status] ok
 
 isar.c: SP doesn't drop some #defines that were in this code, and I guess
    should be defined in the library
- [status] UNKNOWN
+ [status] fail
 
 jade_irq.c:
   Doesn't work because the function definition is in the file jade.c.
   The person who did the patch by hand updated the calls in this file
   correctly, but the patch does not include anything for jade.c
- [status] UNKNOWN
+ [status] fail
 
 netjet.c: Works!
  [status] ok

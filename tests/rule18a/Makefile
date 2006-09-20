@@ -8,7 +8,6 @@ SOURCES = amd7930_fn.c \
           icc.c \
           ipacx.c \
           isac.c \
-          jade.c \
           w6692.c
 
-include ../../generic_makefile
+include ../../generic_makefile2
