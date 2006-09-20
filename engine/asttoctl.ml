@@ -1156,6 +1156,7 @@ let rec collect_duplicates f =
   | CTL.EX(_,phi) -> collect_duplicates phi
   | CTL.EG(_,phi) -> collect_duplicates phi
   | CTL.EU(_,phi1,phi2) -> collect_duplicates phi1; collect_duplicates phi2
+  | CTL.Uncheck(phi) -> collect_duplicates phi
   | _ -> failwith "not possible"
 
 let assign_variables _ =
@@ -1376,7 +1377,6 @@ let letify f =
 (* Function declaration *)
 
 let top_level used_after t =
-  Printf.printf "used_after %s\n" (String.concat " " used_after);
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
   | Ast.INCLUDE(inc,s) ->

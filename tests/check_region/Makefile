@@ -4,9 +4,15 @@ SOURCES = case1.c case2.c case3.c case4.c
 
 include ../../generic_makefile
 
-CRARGS=ARGS=-iso_file ../../standard.iso -save_output_file -cocci_file $(SP) \
--no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
+CRARGS=
 
 
-cr: $(SPATCH) $(SP)
-	find drivers -name "*.c" -exec $(SPATCH) $(CRARGS) {} \;
+cr: $(SPATCH) check_region1.cocci check_region2.cocci check_region3.cocci \
+check_region4.cocci check_region5.cocci check_region6.cocci \
+check_region7.cocci check_region8.cocci
+	find drivers -name "*.c" -exec sh run_one {} \;
+
+cd: $(SPATCH) check_region1.cocci check_region2.cocci check_region3.cocci \
+check_region4.cocci check_region5.cocci check_region6.cocci \
+check_region7.cocci check_region8.cocci
+	find drivers/cdrom -name "*.c" -exec sh run_one {} \;

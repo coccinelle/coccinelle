@@ -990,6 +990,9 @@ let rec satloop negated required required_states
       A.False              -> []
     | A.True               -> triples_top states
     | A.Pred(p)            -> satLabel label required required_states p
+    | A.Uncheck(phi1) ->
+	let res1 = loop negated required required_states phi1 in
+	setify(List.map (function (s,th,_) -> (s,th,[])) res1)
     | A.Not(phi)           ->
 	triples_complement states
 	  (loop (not negated) required required_states phi)
@@ -1001,7 +1004,7 @@ let rec satloop negated required required_states
 	let res1 = loop negated required required_states phi1 in
 	let res2 = loop negated required required_states phi2 in
 	let res1neg =
-	  List.map (function (s,th,_) -> (s,th,[])) res1 in
+	  setify(List.map (function (s,th,_) -> (s,th,[])) res1) in
 	triples_union res1
 	  (triples_conj (triples_complement states res1neg) res2)
     | A.And(phi1,phi2)     ->
@@ -1068,7 +1071,7 @@ let rec satloop negated required required_states
 	       (A.Not
 		  (wrap
 		     (A.EU
-			(dir,wrap(A.Not(uncheckedphi2)),
+			(dir,wrap(A.Not(wrap(A.Uncheck(uncheckedphi2)))),
 			 wrap
 			   (A.And
 			      (wrap
@@ -1078,7 +1081,7 @@ let rec satloop negated required required_states
 					      wrap
 						(A.EF
 						   (dir,
-						    uncheckedphi2)))))),
+						    wrap(A.Uncheck(uncheckedphi2)))))))),
 			       wrap(A.Not phi2))))))))
 	else
 	  let new_required_states = get_reachable dir m required_states in
@@ -1124,6 +1127,11 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
 	anno (satLabel label required required_states p) []
+    | A.Uncheck(phi1) ->
+	let (child1,res1) =
+	  satv negated required required_states phi1 env in
+	Printf.printf "anno\n"; flush stdout;
+	anno (setify(List.map (function (s,th,_) -> (s,th,[])) res1)) [child1]
     | A.Not(phi1)          -> 
 	let (child,res) =
 	  satv (not negated) required required_states phi1 env in
@@ -1221,7 +1229,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 	       (A.Not
 		  (wrap
 		     (A.EU
-			(dir,wrap(A.Not(uncheckedphi2)),
+			(dir,wrap(A.Not(wrap(A.Uncheck(uncheckedphi2)))),
 			 wrap
 			   (A.And
 			      (wrap
@@ -1231,7 +1239,7 @@ let rec sat_verbose_loop negated required required_states annot maxlvl lvl
 					      wrap
 						(A.EF
 						   (dir,
-						    uncheckedphi2)))))),
+						    wrap(A.Uncheck(uncheckedphi2)))))))),
 			       wrap(A.Not phi2))))))))
 	    env
 	else
@@ -1311,6 +1319,7 @@ let simpleanno l phi res =
     | A.EU(dir,phi1,phi2)  -> pp "EU"; pp_dir dir
     | A.Let (x,phi1,phi2)  -> pp ("Let"^" "^x)
     | A.Ref(s)             -> pp ("Ref("^s^")")
+    | A.Uncheck(s)         -> pp "Uncheck"
 ;;
 
 

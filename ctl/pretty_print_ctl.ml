@@ -82,6 +82,8 @@ let rec (pp_ctl:
            (* pp "Ref(";  *)
 	   pp s 
            (* pp ")" *)
+     | Uncheck(phi1) ->
+	 pp "Uncheck"; pp "("; pp_arg env phi1; pp ")"
 
    and pp_dir = function
        FORWARD -> ()

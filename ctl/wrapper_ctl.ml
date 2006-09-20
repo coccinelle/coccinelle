@@ -146,9 +146,6 @@ struct
   exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
-    Printf.printf "need bindings for\n";
-    List.iter (function x -> print_var x; print_string " ") used_after;
-    Format.print_newline();
     List.concat
       (List.map
 	 (function used_after_var ->
@@ -228,7 +225,6 @@ struct
 		  (WRAPPER_ENV.mvar * SUB.value) list,
 		SUB.mvar) Common.either) =
     fun m phi (used_after, binding) ->
-      Printf.printf "starting satbis\n"; flush stdout;
       let noclean = satbis_noclean m phi in
       let res =
 	Common.uniq

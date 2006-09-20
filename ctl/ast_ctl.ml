@@ -38,6 +38,7 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Ref of string
+  | Uncheck of (('pred,'mvar,'anno) generic_ctl)
 
 and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)
 
