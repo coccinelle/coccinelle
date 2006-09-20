@@ -2,7 +2,7 @@ Rule 42
 ----------------------------------------------------------------------
 Cocci file      : rule42.cocci
 Size of SP file :     ?
-No. of files    :    61 [ok: 44; spatch-ok: ?; fail: 16; wrong: 1(??)]
+No. of files    :    61 [ok: 45; spatch-ok: 0; fail: 16; wrong: 1(??)]
 Bugs            :     0
 ----------------------------------------------------------------------
 
