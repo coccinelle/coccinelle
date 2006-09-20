@@ -1,0 +1,54 @@
+SPATCH=../../spatch
+#SPATCH=../../spatch.opt  # for the bench !!!
+
+ARGS?=-iso_file ../../standard.iso -cocci_file $(SP) \
+-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
+
+OBJS = $(SOURCES:.c=.ok)
+
+all: $(OBJS)
+	ls *.ok || true
+	ls *.failed || true
+#	find . -name "*.ok" -print
+#	find . -name "*.failed" -print
+
+#pad: 
+#    .SUFFIXES: .c .ok
+#    .c.ok: $(SPATCH) $(SP)
+# does not work because the old suffix rule does not allow additionnal
+# dependencies (at the right of ':'). Cf make info manual.
+
+%.ok: %.c $(SPATCH) $(SP)
+	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
+	time $(SPATCH) $(ARGS) $< || true
+	(test -e /tmp/output.c && \
+	(diff -b -B -w /tmp/output.c $(<:.c=.res) > $(<:.c=.ok) || mv $(<:.c=.ok) $(<:.c=.failed))) || touch $(<:.c=.failed)
+
+
+#-----------------------------------------------------------------------------
+# Pad stuff
+#-----------------------------------------------------------------------------
+clean:
+	rm -f *.ok *.failed
+
+%.ok2: %.c $(SPATCH) $(SP)
+	$(SPATCH) -iso_file ../../standard.iso -cocci_file $(SP) \
+	-compare_with_expected -debug_cpp \
+	 $<
+
+count:
+	-ls -l *.ok | wc -l
+	-ls -l *.failed | wc -l
+
+info:
+	-ls *.ok
+	-ls *.failed
+	make info_ok
+	make info_failed
+
+info_ok:
+	../../extract_info_ok_failed.pl *.ok
+
+info_failed:
+	../../extract_info_ok_failed.pl *.failed
+
