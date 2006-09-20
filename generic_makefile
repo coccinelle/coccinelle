@@ -1,8 +1,13 @@
+COCCIDIR=../..
+SPATCH=${COCCIDIR}/spatch
+ISOFILE=-iso_file ${COCCIDIR}/standard.iso
 SPATCH=../../spatch
 #SPATCH=../../spatch.opt  # for the bench !!!
 
-ARGS?=-iso_file ../../standard.iso -compare_with_expected -cocci_file $(SP) \
--no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
+ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
+
+
+SPATCHCMD=${SPATCH} ${ISOFILE} -compare_with_expected -cocci_file ${SP} ${ARGS}
 
 OBJS = $(SOURCES:.c=.ok)
 
@@ -20,7 +25,7 @@ all: $(OBJS)
 
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
-	(time $(SPATCH) $(ARGS) $<) 2> $(<:.c=.ok) || \
+	(time $(SPATCHCMD) $<) 2> $(<:.c=.ok) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
 	(test -e /tmp/output.c && test -e $(<:.c=.ok) && \
