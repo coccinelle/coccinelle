@@ -1,214 +1,267 @@
-68328serial.c: code inside #if 0 not changed
-  [status] ok
+Rule 83
+----------------------------------------------------------------------
+Cocci file      : tty_wakeup.cocci
+Size of SP file :     ?
+No. of files    :    62 [ok: 36; spatch-ok: 16; fail: 3; wrong: 7]
+Bugs            :     ?
+----------------------------------------------------------------------
+NOTE: tty_io is not included because it is the library file
+----------------------------------------------------------------------
 
-68360serial.c: programmer has removed {} that the CE makes unnecessary
-  [status] ok
+68328serial.c
+  * [status] ok
+  * code inside #if 0 not changed
 
-amiserial.c: programmer has forgotten to drop 2 calls to
-  wake_up_interruptible 
-  [status] spatch-ok
+68360serial.c
+  * [status] ok
+  * programmer has removed {} that the CE makes unnecessary
 
-aurora.c: code doesn't parse due to another CE that failed
-  [status] fail
+amiserial.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible
 
-*** bluetty.c:
-	in one case programmer has removed {} that the CE makes unnecessary.
-  [status] ok
+aurora.c
+  * [status] fail
+  * [parser] unparseable code
+  * code doesn't parse due to another CE that failed
 
-capi.c: enclosing tests in the wrong form
-  [status] fail
+bluetty.c
+  * [status] ok
+  * in one case programmer has removed {} that the CE makes unnecessary
 
-??? cdc-acm.c:
-        programmer dropped a local variable involved in the CE code and
-	inlined its definition.
-  [status] ok
+capi.c
+  * [status] wrong
+  * [wrong] enclosing tests in the wrong form
 
-con3215.c: Works!
-  [status] ok
+cdc-acm.c
+  * [status] ok
+  * programmer dropped a local variable involved in the CE code and
+    inlined its definition.
 
-*** ctctty.c:
-	in one case the programmer forgot to drop a call to
-	 wake_up_interruptible
-	in another, the conditional that the SP looks for has an extra
-	 test expression
-  [status] fail
+con3215.c
+  * [status] ok
 
-cyclades.c: programmer has forgotten to drop 2 calls to
-  wake_up_interruptible
-  [status] spatch-ok
+ctctty.c
+  * [status] wrong
+  * [bug?] in one case the programmer forgot to drop a call to
+    wake_up_interruptible
+  * [wrong] the conditional that the SP looks for has an extra test
+    expression
 
-digi_acceleport.c: programmer has forgotten to drop 1 call to
-   wake_up_interruptible
-  [status] spatch-ok
+cyclades.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible
 
-empeg.c: Works!
-  [status] ok
+digi_acceleport.c 
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 1 call to
+    wake_up_interruptible
 
-epca.c: programmer has forgotten to drop 3 calls to wake_up_interruptible
-   and has not done introduced the call to tty_ldisc_flush in one case
-  [status] spatch-ok
+empeg.c
+  * [status] ok
 
-esp.c: Works!
-  [status] ok
+epca.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 3 calls to
+    wake_up_interruptible
+  * [bug?] programmer has not introduced the call to tty_ldisc_flush
+    in one case
 
-generic_serial.c: in two cases programmer did not drop
-  wake_up_interruptible
-  programmer dropped a ; on a call to func_enter
-  [status] spatch-ok
+esp.c
+  * [status] ok
 
-hci_ldisc.c: programmer has not done introduced the call to tty_ldisc_flush
-   in one case
-  [status] spatch-ok
+generic_serial.c
+  * [status] spatch-ok
+  * [bug?] in two cases programmer did not drop wake_up_interruptible
+  * [bug?] programmer dropped a ; on a call to func_enter
 
-hvc_console.c: Works!
-  [status] ok
+hci_ldisc.c 
+  * [status] spatch-ok
+  * [bug?] programmer has not introduced the call to tty_ldisc_flush
+    in one case
 
-hvcs.c: Works!
-  [status] ok
+hvc_console.c
+  * [status] ok
 
-io_edgeport.c: Works!
-  [status] ok
+hvcs.c
+  * [status] ok
 
-io_ti.c: Works!
-  [status] ok
+io_edgeport.c
+  * [status] ok
 
-ir-usb.c: Works!
-  [status] ok
+io_ti.c
+  * [status] ok
 
-irtty-sir.c: Works!
-  [status] ok
+ir-usb.c
+  * [status] ok
 
-isdn_tty.c: programmer has forgotten to drop one call to
-   wake_up_interruptible and has used a non-existent variable (tty) as the
-   argument to one call to tty_ldisc_flush
-  [status] spatch-ok
+irtty-sir.c
+  * [status] ok
 
-isicom.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
-  [status] spatch-ok
+isdn_tty.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop one call to
+    wake_up_interruptible
+  * [bug?] programmer has used a non-existent variable (tty) as the
+    argument to one call to tty_ldisc_flush
 
-keyspan_pda.c: Works!
-  [status] ok
+isicom.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible
 
-macserial.c: programmer has removed {} that the CE makes unnecessary
-  [status] ok
+keyspan_pda.c
+  * [status] ok
 
-mcfserial.c: programmer added #if 0 #endif around some code
-  [status] ok
+macserial.c
+  * [status] ok
+  * programmer has removed {} that the CE makes unnecessary
 
-mct_u232.c: Works!
-  [status] ok
+mcfserial.c
+  * [status] ok
+  * programmer added #if 0 #endif around some code
 
-mkiss.c: programmer dropped a use of tty_ldisc_flush completely
-  [status] ok
+mct_u232.c
+  * [status] ok
 
-moxa.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
-	in both cases, the programmer has put an undeclared variable (tty)
-	as the argument to tty_wakeup
-  [status] spatch-ok
+mkiss.c
+  * [status] ok
+  * programmer dropped a use of tty_ldisc_flush completely
 
-mxser.c: programmer has forgotten to drop 2 calls to wake_up_interruptible
-  [status] spatch-ok
+moxa.c
+  * [status] spatch-ok
+  * [bug?] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible in both cases, the programmer has put an
+    undeclared variable (tty) as the argument to tty_wakeup
 
-n_tty.c: programmer made some other changes
-  [status] ok
+mxser.c
+  * [status] spatch-ok
+  * [bug] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible
 
-pc300_tty.c: old code used some other macro for debugging
-  [status] fail
+n_tty.c
+  * [status] ok
+  * programmer made some other changes
 
-pcxx.c: programmer has additionally done some other evolution	
-  [status] ok
+pc300_tty.c
+  * [status] wrong
+  * old code used some other macro for debugging
 
-ppp_async.c: Works!
-  [status] ok
+pcxx.c
+  * [status] ok
+  * programmer has additionally done some other evolution
 
-ppp_synctty.c: Works!
-  [status] ok
+ppp_async.c
+  * [status] ok
 
-pty.c: programmer has not done introduced the call to tty_ldisc_flush
-   in one case
-  [status] spatch-ok
+ppp_synctty.c
+  * [status] ok
 
-riscom8.c: programmer has forgotten to drop 2 calls to
-  wake_up_interruptible
-  [status] spatch-ok
+pty.c
+  * [status] spatch-ok
+  * [bug?] programmer has not done introduced the call to
+    tty_ldisc_flush in one case
 
-rocket.c: three instances of the wake_up_interruptible problem
-  other evolutions done too
-  [status] spatch-ok
+riscom8.c
+  * [status] spatch-ok
+  * [bug] programmer has forgotten to drop 2 calls to
+    wake_up_interruptible
 
-sclp_tty.c: the programmer has put an undeclared variable (tty) as the
-   argument to tty_wakeup
-  [status] spatch-ok
+rocket.c
+  * [status] spatch-ok
+  * [bug] three instances of the wake_up_interruptible problem
+  * other evolutions done too
 
-*** sclp_vt220.c:
-	the programmer has put an undeclared variable (tty)
-	as the argument to tty_wakeup
-  [status] spatch-ok
+sclp_tty.c
+  * [status] spatch-ok
+  * [bug] the programmer has put an undeclared variable (tty) as the
+    argument to tty_wakeup
 
-sdla_chdlc.c: programmer has additionally done some other evolution	
-  [status] ok
+sclp_vt220.c
+  * [status] spatch-ok
+  * [bug] the programmer has put an undeclared variable (tty)
+    as the argument to tty_wakeup
 
-selection.c: programmer has additionally done some other evolution	
-  [status] ok
+sdla_chdlc.c
+  * [status] ok
+  * programmer has additionally done some other evolution
 
-ser_a2232.c: SPATCH CRASHES!!!
-  [status] fail
+selection.c
+  * [status] ok
+  * programmer has additionally done some other evolution
 
-serial167.c: programmer has additionally done some other evolution
-  [status] ok
+ser_a2232.c
+  * [status] fail
+  * SPATCH CRASHES!!!
 
-serial_core.c: programmer did some inlining, and dropped a test
-  [status] ok
+serial167.c
+  * [status] ok
+  * programmer has additionally done some other evolution
 
-serial_tx3912.c: Works!
-  [status] ok
+serial_core.c
+  * [status] ok
+  * programmer did some inlining, and dropped a test
 
-slip.c: flush_buffer code completely dropped by programmer
-  [status] ok
+serial_tx3912.c
+  * [status] ok
 
-specialix.c: programmer left a wake_up_interruptible in one case
-  [status] spatch-ok
+slip.c
+  * [status] ok
+  * flush_buffer code completely dropped by programmer
 
-stallion.c: Works!
-  [status] ok
+specialix.c
+  * [status] spatch-ok
+  * programmer left a wake_up_interruptible in one case
 
-strip.c: programmer dropped a use of tty_ldisc_flush completely
-  [status] ok
+stallion.c
+  * [status] ok
 
-sx.c: Works!
-  [status] ok
+strip.c
+  * [status] ok
+  * programmer dropped a use of tty_ldisc_flush completely
 
-synclink.c: old code used some other strategy for debugging
-  other changes not studied carefully
-  [status] fail
+sx.c
+  * [status] ok
 
-synclink_cs.c: old code used some other strategy for debugging
-  other changes not studied carefully
-  [status] fail
+synclink.c
+  * [status] wrong
+  * [wrong] old code used some other strategy for debugging
+  * other changes not studied carefully
 
-synclinkmp.c: old code used some other strategy for debugging
-  other changes not studied carefully
-  [status] fail
+synclink_cs.c 
+  * [status] wrong
+  * [wrong] old code used some other strategy for debugging
+  * other changes not studied carefully
 
-tty_ioctl.c: something else in if condition.  maybe other changes.
-  [status] fail
+synclinkmp.c
+  * [status] wrong
+  * [wrong] old code used some other strategy for debugging
+  * other changes not studied carefully
 
-usb-serial.c: Works!
-  [status] ok
+tty_ioctl.c
+  * [status] wrong
+  * [wrong] something else in if condition
+  * maybe other changes
 
-viocons.c: Works!
-  [status] ok
+usb-serial.c
+  * [status] ok
 
-vme_scc.c: programmer has removed {} that the CE makes unnecessary
-  [status] ok
+viocons.c
+  * [status] ok
 
-vt_ioctl.c: SPATCH CRASHES!!!
-  [status] fail
+vme_scc.c
+  * [status] ok
+  * programmer has removed {} that the CE makes unnecessary
 
-whiteheat.c: Works!
-  [status] ok
+vt_ioctl.c
+  * [status] fail
+  * SPATCH CRASHES!!!
 
-zs.c: Works!
-  [status] ok
+whiteheat.c
+  * [status] ok
 
-tty_io is not included because it is the library file
+zs.c
+  * [status] ok
+
