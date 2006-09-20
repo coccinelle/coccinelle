@@ -1,7 +1,8 @@
 SP=rule9.cocci
+#SP=rule9_plos_updated.cocci
 
 SOURCES = cciss_scsi.c \
-          sbpc2.c \
+          sbp2.c \
           53c700.c \
           acornscsi.c \
           arxescsi.c \
@@ -20,6 +21,6 @@ SOURCES = cciss_scsi.c \
           sym_glue.c \
           scsiglue.c 
 
-SOURCES = scsiglue.c 53c700.c
+#SOURCES = scsiglue.c 53c700.c
 
 include ../../generic_makefile
