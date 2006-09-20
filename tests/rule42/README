@@ -1,214 +1,214 @@
 Rule 42
 ----------------------------------------------------------------------
-Time-stamp: <2006-09-15 15:46:24 rrh>
-Cocci file: rule42.cocci
-Revision  : N/A
+Cocci file      : rule42.cocci
+Size of SP file :     ?
+No. of files    :    61 [ok: 44; spatch-ok: ?; fail: 16; wrong: 1(??)]
+Bugs            :     0
 ----------------------------------------------------------------------
 
-10_symlink.c: Works!
- [status] ok
+10_symlink.c
+  * [status] ok
 
 11_compress.c
- [status] fail
-  * [spatch] orphelin nodes...
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * control_flow: orphelin nodes, maybe something wierd happened
+  * [exc] Fatal error: exception Common.Impossible
 
-12_inode.c: Works!
- [status] ok
+12_inode.c
+  * [status] ok
 
-13_inode.c: Works!
- [status] ok
+13_inode.c
+  * [status] ok
 
-14_inode.c: Works!
- [status] ok
+14_inode.c
+  * [status] ok
 
 15_dir.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-16_file.c: Works!
- [status] ok
+16_file.c
+  * [status] ok
 
-17_dir.c: Works!
- [status] ok
+17_dir.c
+  * [status] ok
 
-18_file.c: Works!
- [status] ok
+18_file.c
+  * [status] ok
 
-19_inode.c: Works!
- [status] ok
+19_inode.c
+  * [status] ok
 
-1_symlink.c: Works!
- [status] ok
+1_symlink.c
+  * [status] ok
 
-20_symlink.c: Works!
- [status] ok
+20_symlink.c
+  * [status] ok
 
 21_dir.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-22_inode.c: Works!
- [status] ok
+22_inode.c
+  * [status] ok
 
-2_symlink.c: Works!
- [status] ok
+2_symlink.c
+  * [status] ok
 
-3_inode.c: Works!
- [status] ok
-  * [spatch] orphelin nodes...
+3_inode.c
+  * [status] ok
+  * control_flow: orphelin nodes, maybe something wierd happened
 
-4_file.c: Works!
- [status] ok
+4_file.c
+  * [status] ok
 
 5_dir.c
- [status] wrong
-  * [bug] CE not performed in expected result
+  * [status] ok
 
-6_namei.c: Works!
- [status] ok
+6_namei.c
+  * [status] ok
 
-7_dir.c: Works!
- [status] ok
+7_dir.c
+  * [status] ok
 
-8_symlink.c: Works!
- [status] ok
+8_symlink.c
+  * [status] ok
 
 9_dir.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
-agpgart_be.c: Works!
- [status] ok
+agpgart_be.c
+  * [status] ok
   * PBBB...
 
-aops.c: Works!
- [status] ok
+aops.c
+  * [status] ok
 
-blkmtd.c: Works!
- [status] ok
+blkmtd.c
+  * [status] ok
 
 buffer.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-cache.c: Works!
- [status] ok
+cache.c
+  * [status] ok
 
 check.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-compress.c: Works!
- [status] ok
+compress.c
+  * [status] ok
 
-dir.c: Works!
- [status] ok
+dir.c
+  * [status] ok
 
 emd.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-file.c: Works!
- [status] ok
+file.c
+  * [status] ok
 
 filemap.c
- [status] fail
-  * Fatal error: exception Failure("pb in flow_to_ast, some nodes have
+  * [status] fail
+  * [exc] Fatal error: exception Failure("pb in flow_to_ast, some nodes have
     not been visited") 
 
-i810_dma.c: Works!
- [status] ok
+i810_dma.c
+  * [status] ok
 
-inode.c: Works!
- [status] ok
+inode.c
+  * [status] ok
 
 inode-v23.c
- [status] fail
-  * Fatal error: exception Common.Todo
+  * [status] fail
+  * [exc] Fatal error: exception Common.Todo
 
-ioctl.c: Works!
- [status] ok
+ioctl.c
+  * [status] ok
 
-jfs_metapage.c: Works!
- [status] ok
+jfs_metapage.c
+  * [status] ok
 
-loop.c: Works!
- [status] ok
+loop.c
+  * [status] ok
 
-lvm-snap.c: Works!
- [status] ok
+lvm-snap.c
+  * [status] ok
 
 md.c
- [status] fail
-  * Fatal error: exception Not_found
+  * [status] fail
+  * [exc] Fatal error: exception Not_found
 
-memory.c: Works!
- [status] ok
+memory.c
+  * [status] ok
 
-mincore.c: Works!
- [status] ok
+mincore.c
+  * [status] ok
 
-namei.c: Works!
- [status] ok
+namei.c
+  * [status] ok
 
-page_alloc.c: Works!
- [status] ok
-  * [spatch] PassingMacro FASTCALL
-  * [spatch] orphelin nodes...
+page_alloc.c
+  * [status] ok
+  * PassingMacro FASTCALL
+  * control_flow: orphelin nodes, maybe something wierd happened
 
-page_io.c: Works!
- [status] ok
+page_io.c
+  * [status] ok
 
-page-writeback.c: Works!
- [status] ok
+page-writeback.c
+  * [status] ok
 
-rd.c: Works!
- [status] ok
+rd.c
+  * [status] ok
 
 read.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 rock.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
 shmem.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-slab.c: Works!
- [status] ok
+slab.c
+  * [status] ok
   * PBBB...
 
-super.c: Works!
- [status] ok
+super.c
+  * [status] ok
   * [spatch] PBBB...
 
-swapfile.c: Works!
- [status] ok
+swapfile.c
+  * [status] ok
 
-swap_state.c: Works!
- [status] ok
+swap_state.c
+  * [status] ok
 
-symlink.c: Works!
- [status] ok
+symlink.c
+  * [status] ok
 
-tail_conversion.c: Works!
- [status] ok
+tail_conversion.c
+  * [status] ok
 
 vmscan.c
- [status] fail
-  * Fatal error: exception Ast_to_flow.DeadCode(_)
+  * [status] fail
+  * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 vxfs_immed.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
 vxfs_subr.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
-write.c: Works!
- [status] ok
+write.c
+  * [status] ok
