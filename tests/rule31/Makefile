@@ -21,14 +21,12 @@ SOURCES = acsi.c        \
 	  mtdblock.c	\
 	  mtdblock_ro.c \
 	  nftlcore.c	\
-#	  osst.c	\
 	  pcd.c		\
 	  pd.c		\
 	  pf.c		\
 	  ps2esdi.c	\
 	  sbpcd.c	\
 	  sonycd535.c	\
-#	  st.c		\
 	  swim3.c	\
 	  swim_iop.c	\
 	  xd.c		\
