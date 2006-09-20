@@ -1,87 +1,123 @@
-Cocci file: rule30.cocci
-
+Rule 30
+------------------------------------------------------------------------------
+Cocci file      : rule30.cocci
+Size of SP file :     ?
+No. of files    :    28 [ok: 12; spatch-ok: 2; fail: 13; wrong: 1]
+Bugs            :     3
 ------------------------------------------------------------------------------
 
-acsi.c: Works!
- [status] ok
+acsi.c
+  * [status] ok
+  * PBB...
 
 amiflop.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
+  * control_flow: orphelin nodes, maybe something wierd happened
 
-ataflop.c: Works!
- [status] ok
+ataflop.c
+  * [status] ok
 
 aztcd.c
- [status] UNKNOWN
+  * [status] spatch-ok
+  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
+  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
+  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
 
 cdu31a.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
+  * PBB...
 
-cm206.c: Works!
- [status] ok
+cm206.c
+  * [status] ok
 
 fd1772.c
- [status] UNKNOWN
+  * [status] wrong
+  * [rule] "end_request(CURRENT, 1)" should be "end_request(req, 1)"
+    this seems to be part of an independent CE?
+  * PBB...
 
 ftl.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Not_found
 
-gscd.c: Works!
- [status] ok
+gscd.c
+  * [status] ok
+  * PBB..
 
 hd.c
- [status] UNKNOWN
+  * [status] fail
+  * [parser] unparseable code
 
-jsflash.c: Works!
- [status] ok
+jsflash.c
+  * [status] ok
 
 mcd.c
- [status] UNKNOWN
+  * [status] fail
+  * [parser] unparseable code
 
 mcdx.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Failure("pb in flow_to_ast, some
+    nodes have not been visited") 
+  * PBB...
 
-mfmhd.c: Works!
- [status] ok
+mfmhd.c
+  * [status] ok
 
 nftlcore.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 optcd.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-pcd.c: Works!
- [status] ok
+pcd.c
+  * [status] ok
 
-pd.c: Works!
- [status] ok
+pd.c
+  * [status] ok
 
-pf.c: Works!
- [status] ok
+pf.c
+  * [status] ok
 
-ps2esdi.c: Works!
- [status] ok
+ps2esdi.c
+  * [status] ok
+  * GRAVE:...
 
 sbpcd.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
+  * control_flow: orphelin nodes, maybe something wierd happened
+  * GRAVE...
+  * PBB...
 
 sjcd.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 sonycd535.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 swim3.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 swim_iop.c
- [status] UNKNOWN
+  * [status] spatch-ok
+  * [independent] similar CE of "swimiop_send_request"
 
-xd.c: Works!
- [status] ok
+xd.c
+  * [status] ok
 
 xpram.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Not_found
+  * PBB...
 
-z2ram.c: Works!
- [status] ok
+z2ram.c
+  * [status] ok
+  * PBB...
