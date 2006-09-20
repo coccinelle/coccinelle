@@ -1,85 +1,86 @@
 Rule 38
 ----------------------------------------------------------------------
-Spatch revision: N/A
-Cocci file     : rule38.cocci
-Cocci file rev.: N/A
+Cocci file      : rule38.cocci
+Size of SP file :     ?
+No. of files    :    24 [ok: 21; spatch-ok: 1; fail: 2; wrong: 0]
+Bugs            :     0
 ----------------------------------------------------------------------
-3c509.c: Works!
- [status] ok
+
+3c509.c
+  * [status] ok
   * GRAVE: ...
 
-3c515.c: Works!
- [status] ok
+3c515.c
+  * [status] ok
 
-ad1848.c:
- [status] spatch-ok
-  * Basically works
-  * [unrelated] change in name of field member
+ad1848.c
+  * [status] spatch-ok
+  * [independent] change in name of field member
 
-aha152x.c: Works!
- [status] ok
+aha152x.c
+  * [status] ok
 
 aha1542.c
- [status] fail
+  * [status] fail
   * GRAVE:...
   * PBBB...
-  * Fatal error: exception Common.Impossible (in flow_to_ast.ml)
+  * [exc] Fatal error: exception Common.Impossible
 
-asuscom.c: Works!
- [status] ok
+asuscom.c
+  * [status] ok
 
-avm_pci.c: Works!
- [status] ok
+avm_pci.c
+  * [status] ok
 
-diva.c: Works!
- [status] ok
+diva.c
+  * [status] ok
 
-elsa.c: Works!
- [status] ok
+elsa.c
+  * [status] ok
 
 g_NCR5380.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
-hfcscard.c: Works!
- [status] ok
+hfcscard.c
+  * [status] ok
 
-hfc_sx.c: Works!
- [status] ok
+hfc_sx.c
+  * [status] ok
 
-i82365.c: Works!
- [status] ok
+i82365.c
+  * [status] ok
 
-isurf.c: Works!
- [status] ok
+isurf.c
+  * [status] ok
 
-ix1_micro.c: Works!
- [status] ok
+ix1_micro.c
+  * [status] ok
 
-ixj.c: Works!
- [status] ok
+ixj.c
+  * [status] ok
   * PBB...
 
-ne.c: Works!
- [status] ok
+ne.c
+  * [status] ok
 
-niccy.c: Works!
- [status] ok
+niccy.c
+  * [status] ok
 
-radio-sf16fmi.c: Works!
- [status] ok
+radio-sf16fmi.c
+  * [status] ok
 
-sb1000.c: Works!
- [status] ok
+sb1000.c
+  * [status] ok
 
-sedlbauer.c: Works!
- [status] ok
+sedlbauer.c
+  * [status] ok
 
-smc-ultra.c: Works!
- [status] ok
+smc-ultra.c
+  * [status] ok
 
-sym53c416.c: Works!
- [status] ok
+sym53c416.c
+  * [status] ok
 
-teles3.c: Works!
- [status] ok
+teles3.c
+  * [status] ok
