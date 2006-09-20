@@ -149,13 +149,41 @@ HARD=devfs video_usercopy
 MIDDLE=
 #rule9 rule6 rule18 rule18a rule19(big?)  rule74 rule83 (pad-bugs?)
 
-
+EASY=
 #easy: 10, 17, 30(lots of pad-bugs), 31, 33, 36?, 37(ugly), 38, 42, 48?, 53, 57, 82!, 85
+#rule10 rule17 rule30 rule31 rule33 rule38  rule42    rule82
+#no cocci yet: rule53 rule57  rule85 
 
-#rule10 rule17 rule30 rule31 rule33 rule38  rule42    
-#no cocci yet: rule53 rule57 rule82 rule85 
-
-#EUROSYS= rule9 rule18 rule18a rule19 rule83 video_usercopy
 EUROSYS=$(HARD) $(MIDDLE) $(EASY)
 
 eurosys: $(EUROSYS:=.ruledir)
+
+
+#rule9 = proc_info
+
+#check_region
+#video_usercopy
+#rule6=mem_map
+
+#devfs
+#rule82 = pci_save_state
+
+#rule18=sched_events   BCS
+#rule18a=sched_events  ISDN
+#rule19=spin_lock
+#rule74=atomic_dec 
+#rule83=tty_wakeup
+
+#rule10=acpi_hw_low_level_read
+#rule17=
+#rule30=
+#rule31=
+#rule33=
+#rule38=
+#ruke42=
+
+
+
+
+
+
