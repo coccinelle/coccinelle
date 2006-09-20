@@ -1,54 +1,75 @@
-Cocci file: schedev.cocci
+Rule 18
+----------------------------------------------------------------------
+Cocci file      : schedev.cocci
+Size of SP file :     ?
+No. of files    :    16 [ok: 14; spatch-ok: 0; fail: 0; wrong: 2]
+Bugs            :     0
+----------------------------------------------------------------------
+NOTE: "schedev_ver100.c" not included in SOURCES
+----------------------------------------------------------------------
 
-avm_pci.c: inline on dropped function not dropped
- [status] ok
+avm_pci.c
+  * [status] ok
+  * inline on dropped function not dropped
 
-config.c: Works!
- [status] ok
+config.c
+  * [status] ok
 
-diva.c: Works!
- [status] ok
+diva.c
+  * [status] ok
+  * PBB...
 
-elsa_ser.c: Works!
- [status] ok
+elsa_ser.c
+  * [status] ok
+  * PBB..
 
-hfc_2bds0.c: Works!
- [status] ok
+hfc_2bds0.c
+  * [status] ok
 
-hfc_2bs0.c: Works!
- [status] ok
+hfc_2bs0.c
+  * [status] ok
 
-hfc_pci.c: Works! (version number not updated, comments not dropped)
- [status] ok
+hfc_pci.c
+  * [status] ok
+  * PBB...
+  * version number not updated
+  *  comments not dropped
 
-hfc_sx.c: Works! (version number not updated, comments not dropped)
- [status] ok
+hfc_sx.c
+  * [status] ok
+  * version number not updated
+  *  comments not dropped
 
-hscx.c: Works!
- [status] ok
+hscx.c
+  * [status] ok
 
-hscx_irq.c: Works!
- [status] ok
+hscx_irq.c
+  * [status] ok
 
-ipacx.c: Works!
- [status] ok
+ipacx.c
+  * [status] ok
 
-isar.c: SP doesn't drop some #defines that were in this code, and I guess
-   should be defined in the library
- [status] fail
+isar.c
+  * [status] wrong
+  * [rule] SP doesn't drop some #defines that were in this code, and I
+    guess should be defined in the library
+  * warning: complex initializer, cocci does not handle that
 
 jade_irq.c:
-  Doesn't work because the function definition is in the file jade.c.
-  The person who did the patch by hand updated the calls in this file
-  correctly, but the patch does not include anything for jade.c
- [status] fail
+  * [status] wrong
+  * [rule] Doesn't work because the function definition is in the file
+    jade.c. The person who did the patch by hand updated the calls in
+    this file correctly, but the patch does not include anything for
+    jade.c
 
-netjet.c: Works!
- [status] ok
+netjet.c
+  * [status] ok
 
-st5481_b.c: Works! (comments not dropped)
- [status] ok
+st5481_b.c
+  * [status] ok
+  * comments not dropped
 
-w6692.c: Works!
- [status] ok
+w6692.c
+  * [status] ok
+  * PBB..
 
