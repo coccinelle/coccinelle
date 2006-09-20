@@ -1,8 +1,8 @@
 Rule 31
 ----------------------------------------------------------------------
 Cocci file      : rule31.cocci
-Size of SP file :
-No. of files    :    28
+Size of SP file :     ?
+No. of files    :    28 [ok: 0; spatch-ok: 19; fail: 9; wrong: 0]
 Bugs            :     0
 ----------------------------------------------------------------------
 
