@@ -1,0 +1,758 @@
+commit 9dafbbf7b83f3007e1c976eddb720f2a8fa112ea
+Author: Kai Germaschewski <kai@tp1.ruhr-uni-bochum.de>
+Date:   Sun Nov 24 01:40:39 2002 -0600
+
+    ISDN/HiSax: Shared sched_event() for D-channel
+    
+    No reason to duplicate sched_event() all over the drivers...
+
+diff --git a/drivers/isdn/hisax/amd7930_fn.c b/drivers/isdn/hisax/amd7930_fn.c
+index 369a81f..3e90bc6 100644
+--- a/drivers/isdn/hisax/amd7930_fn.c
++++ b/drivers/isdn/hisax/amd7930_fn.c
+@@ -268,18 +268,6 @@ Amd7930_bh(void *data)
+ }
+ 
+ 
+-void
+-Amd7930_sched_event(struct IsdnCardState *cs, int event) // ok
+-{
+-
+-	if (cs->debug & L1_DEB_ISAC) {
+-		debugl1(cs, "AMD7930: sched_event 0x%X", event);
+-        }
+-
+-        test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+ static void
+ Amd7930_empty_Dfifo(struct IsdnCardState *cs, int flag)
+ {
+@@ -339,7 +327,7 @@ Amd7930_empty_Dfifo(struct IsdnCardState
+                                 /* throw damaged packets away, reset recieve-buffer, indicate RX */
+ 				ptr = cs->rcvbuf;
+ 				cs->rcvidx = 0;
+-				Amd7930_sched_event(cs, D_RCVBUFREADY);
++				sched_d_event(cs, D_RCVBUFREADY);
+ 			}
+                 }
+ 		/* Packet to long, overflow */
+@@ -455,7 +443,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				Amd7930_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+                         /* restart frame */
+                         if (cs->tx_skb) {
+ 				skb_push(cs->tx_skb, cs->tx_cnt);
+@@ -473,7 +461,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+ 		if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			Amd7930_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+                 /* restart TX-Frame */
+                 if (cs->tx_skb) {
+ 			skb_push(cs->tx_skb, cs->tx_cnt);
+@@ -494,7 +482,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+                 if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			Amd7930_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+ 		if (cs->tx_skb) {
+ 			if (cs->tx_skb->len)
+ 				Amd7930_fill_Dfifo(cs);
+@@ -523,7 +511,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+                 if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			Amd7930_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+ 
+                 if (cs->tx_skb) {
+         		if (cs->debug & L1_DEB_ISAC)
+@@ -541,7 +529,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+ 			Amd7930_fill_Dfifo(cs);
+ 		}
+                 else
+-			Amd7930_sched_event(cs, D_XMTBUFREADY);
++			sched_d_event(cs, D_XMTBUFREADY);
+ 		/* AMD interrupts on */
+                 AmdIrqOn(cs);
+         }
+@@ -556,7 +544,7 @@ void Amd7930_interrupt(struct IsdnCardSt
+ 
+ 		cs->dc.amd7930.ph_state = (lsr & 0x7) + 2;
+ 
+-		Amd7930_sched_event(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		/* AMD interrupts on */
+                 AmdIrqOn(cs);
+ 	}
+@@ -662,7 +650,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				Amd7930_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			break;
+ 		default:
+ 			if (cs->debug & L1_DEB_WARN)
+diff --git a/drivers/isdn/hisax/config.c b/drivers/isdn/hisax/config.c
+index 804ae91..e3a1e07 100644
+--- a/drivers/isdn/hisax/config.c
++++ b/drivers/isdn/hisax/config.c
+@@ -1798,12 +1798,6 @@ void hisax_unregister(struct hisax_d_if 
+ 
+ #include "isdnl1.h"
+ 
+-static void hisax_sched_event(struct IsdnCardState *cs, int event)
+-{
+-	cs->event |= 1 << event;
+-	schedule_work(&cs->work);
+-}
+-
+ static void hisax_bh(void *data)
+ {
+ 	struct IsdnCardState *cs = data;
+@@ -1847,15 +1841,15 @@ static void hisax_d_l1l2(struct hisax_if
+ 	switch (pr) {
+ 	case PH_ACTIVATE | INDICATION:
+ 		set_bit(0, &d_if->ph_state);
+-		hisax_sched_event(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		break;
+ 	case PH_DEACTIVATE | INDICATION:
+ 		clear_bit(0, &d_if->ph_state);
+-		hisax_sched_event(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		break;
+ 	case PH_DATA | INDICATION:
+ 		skb_queue_tail(&cs->rq, arg);
+-		hisax_sched_event(cs, D_RCVBUFREADY);
++		sched_d_event(cs, D_RCVBUFREADY);
+ 		break;
+ 	case PH_DATA | CONFIRM:
+ 		skb = skb_dequeue(&cs->sq);
+@@ -1873,7 +1867,7 @@ static void hisax_d_l1l2(struct hisax_if
+ 		break;
+ 	case PH_DATA_E | INDICATION:
+ 		skb_queue_tail(&d_if->erq, arg);
+-		hisax_sched_event(cs, E_RCVBUFREADY);
++		sched_d_event(cs, E_RCVBUFREADY);
+ 		break;
+ 	default:
+ 		printk("pr %#x\n", pr);
+diff --git a/drivers/isdn/hisax/hfc_2bds0.c b/drivers/isdn/hisax/hfc_2bds0.c
+index 6f03cc8..32e42fa 100644
+--- a/drivers/isdn/hisax/hfc_2bds0.c
++++ b/drivers/isdn/hisax/hfc_2bds0.c
+@@ -603,13 +603,6 @@ hfcd_bh(void *data)
+ 		DChannel_proc_xmt(cs);
+ }
+ 
+-void
+-sched_event_D(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+ static
+ int receive_dmsg(struct IsdnCardState *cs)
+ {
+@@ -707,7 +700,7 @@ #ifdef ERROR_STATISTIC
+ #endif
+ 				} else {
+ 					skb_queue_tail(&cs->rq, skb);
+-					sched_event_D(cs, D_RCVBUFREADY);
++					sched_d_event(cs, D_RCVBUFREADY);
+ 				}
+ 			}
+ 		} else
+@@ -838,7 +831,7 @@ hfc2bds0_interrupt(struct IsdnCardState 
+ 			debugl1(cs, "ph_state chg %d->%d", cs->dc.hfcd.ph_state,
+ 				exval);
+ 		cs->dc.hfcd.ph_state = exval;
+-		sched_event_D(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		val &= ~0x40;
+ 	}
+ 	while (val) {
+@@ -907,7 +900,7 @@ hfc2bds0_interrupt(struct IsdnCardState 
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				sched_event_D(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) {
+ 				if (cs->tx_skb->len) {
+ 					if (!test_and_set_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags)) {
+@@ -932,7 +925,7 @@ hfc2bds0_interrupt(struct IsdnCardState 
+ 					debugl1(cs, "hfc_fill_dfifo irq blocked");
+ 				}
+ 			} else
+-				sched_event_D(cs, D_XMTBUFREADY);
++				sched_d_event(cs, D_XMTBUFREADY);
+ 		}
+       afterXPR:
+ 		if (cs->hw.hfcD.int_s1 && count--) {
+diff --git a/drivers/isdn/hisax/hfc_pci.c b/drivers/isdn/hisax/hfc_pci.c
+index b1dea1d..13b6a35 100644
+--- a/drivers/isdn/hisax/hfc_pci.c
++++ b/drivers/isdn/hisax/hfc_pci.c
+@@ -186,17 +186,6 @@ hfcpci_Timer(struct IsdnCardState *cs)
+  */
+ }
+ 
+-
+-/*********************************/
+-/* schedule a new D-channel task */
+-/*********************************/
+-static void
+-sched_event_D_pci(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+ /************************************************/
+ /* select a b-channel entry matching and active */
+ /************************************************/
+@@ -389,7 +378,7 @@ #endif
+ 			df->za[df->f2 & D_FREG_MASK].z2 = cpu_to_le16((le16_to_cpu(zp->z2) + total) & (D_FIFO_SIZE - 1));
+ 
+ 			skb_queue_tail(&cs->rq, skb);
+-			sched_event_D_pci(cs, D_RCVBUFREADY);
++			sched_d_event(cs, D_RCVBUFREADY);
+ 		} else
+ 			printk(KERN_WARNING "HFC-PCI: D receive out of memory\n");
+ 	}
+@@ -984,13 +973,13 @@ hfcpci_interrupt(int intno, void *dev_id
+ 			debugl1(cs, "ph_state chg %d->%d", cs->dc.hfcpci.ph_state,
+ 				exval);
+ 		cs->dc.hfcpci.ph_state = exval;
+-		sched_event_D_pci(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		val &= ~0x40;
+ 	}
+ 	if (val & 0x80) {	/* timer irq */
+ 		if (cs->hw.hfcpci.nt_mode) {
+ 			if ((--cs->hw.hfcpci.nt_timer) < 0)
+-				sched_event_D_pci(cs, D_L1STATECHANGE);
++				sched_d_event(cs, D_L1STATECHANGE);
+ 		}
+ 		val &= ~0x80;
+ 		Write_hfc(cs, HFCPCI_CTMT, cs->hw.hfcpci.ctmt | HFCPCI_CLTIMER);
+@@ -1063,7 +1052,7 @@ hfcpci_interrupt(int intno, void *dev_id
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				sched_event_D_pci(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) {
+ 				if (cs->tx_skb->len) {
+ 					if (!test_and_set_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags)) {
+@@ -1088,7 +1077,7 @@ hfcpci_interrupt(int intno, void *dev_id
+ 					debugl1(cs, "hfcpci_fill_dfifo irq blocked");
+ 				}
+ 			} else
+-				sched_event_D_pci(cs, D_XMTBUFREADY);
++				sched_d_event(cs, D_XMTBUFREADY);
+ 		}
+ 	      afterXPR:
+ 		if (cs->hw.hfcpci.int_s1 && count--) {
+diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
+index cf05c5e..f89946d 100644
+--- a/drivers/isdn/hisax/hfc_sx.c
++++ b/drivers/isdn/hisax/hfc_sx.c
+@@ -457,16 +457,6 @@ hfcsx_Timer(struct IsdnCardState *cs)
+ }
+ 
+ 
+-/*********************************/
+-/* schedule a new D-channel task */
+-/*********************************/
+-static void
+-sched_event_D_sx(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+ /************************************************/
+ /* select a b-channel entry matching and active */
+ /************************************************/
+@@ -501,7 +491,7 @@ receive_dmsg(struct IsdnCardState *cs)
+ 	  skb = read_fifo(cs, HFCSX_SEL_D_RX, 0);
+ 	  if (skb) {
+ 	    skb_queue_tail(&cs->rq, skb);
+-	    sched_event_D_sx(cs, D_RCVBUFREADY);
++	    sched_d_event(cs, D_RCVBUFREADY);
+ 	  }
+ 	} while (--count && skb);
+ 
+@@ -783,13 +773,13 @@ hfcsx_interrupt(int intno, void *dev_id,
+ 			debugl1(cs, "ph_state chg %d->%d", cs->dc.hfcsx.ph_state,
+ 				exval);
+ 		cs->dc.hfcsx.ph_state = exval;
+-		sched_event_D_sx(cs, D_L1STATECHANGE);
++		sched_d_event(cs, D_L1STATECHANGE);
+ 		val &= ~0x40;
+ 	}
+ 	if (val & 0x80) {	/* timer irq */
+ 		if (cs->hw.hfcsx.nt_mode) {
+ 			if ((--cs->hw.hfcsx.nt_timer) < 0)
+-				sched_event_D_sx(cs, D_L1STATECHANGE);
++				sched_d_event(cs, D_L1STATECHANGE);
+ 		}
+ 		val &= ~0x80;
+ 		Write_hfc(cs, HFCSX_CTMT, cs->hw.hfcsx.ctmt | HFCSX_CLTIMER);
+@@ -862,7 +852,7 @@ hfcsx_interrupt(int intno, void *dev_id,
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				sched_event_D_sx(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) {
+ 				if (cs->tx_skb->len) {
+ 					if (!test_and_set_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags)) {
+@@ -887,7 +877,7 @@ hfcsx_interrupt(int intno, void *dev_id,
+ 					debugl1(cs, "hfcsx_fill_dfifo irq blocked");
+ 				}
+ 			} else
+-				sched_event_D_sx(cs, D_XMTBUFREADY);
++				sched_d_event(cs, D_XMTBUFREADY);
+ 		}
+ 	      afterXPR:
+ 		if (cs->hw.hfcsx.int_s1 && count--) {
+diff --git a/drivers/isdn/hisax/icc.c b/drivers/isdn/hisax/icc.c
+index 51ef38f..f57d23c 100644
+--- a/drivers/isdn/hisax/icc.c
++++ b/drivers/isdn/hisax/icc.c
+@@ -167,13 +167,6 @@ icc_fill_fifo(struct IsdnCardState *cs)
+ }
+ 
+ void
+-icc_sched_event(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+-void
+ icc_interrupt(struct IsdnCardState *cs, u_char val)
+ {
+ 	u_char exval, v1;
+@@ -219,7 +212,7 @@ #endif
+ 			spin_unlock_irqrestore(&icc_lock, flags);
+ 		}
+ 		cs->rcvidx = 0;
+-		icc_sched_event(cs, D_RCVBUFREADY);
++		sched_d_event(cs, D_RCVBUFREADY);
+ 	}
+ 	if (val & 0x40) {	/* RPF */
+ 		icc_empty_fifo(cs, 32);
+@@ -233,7 +226,7 @@ #endif
+ 		if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			icc_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+ 		if (cs->tx_skb) {
+ 			if (cs->tx_skb->len) {
+ 				icc_fill_fifo(cs);
+@@ -248,7 +241,7 @@ #endif
+ 			cs->tx_cnt = 0;
+ 			icc_fill_fifo(cs);
+ 		} else
+-			icc_sched_event(cs, D_XMTBUFREADY);
++			sched_d_event(cs, D_XMTBUFREADY);
+ 	}
+       afterXPR:
+ 	if (val & 0x04) {	/* CISQ */
+@@ -259,7 +252,7 @@ #endif
+ 			cs->dc.icc.ph_state = (exval >> 2) & 0xf;
+ 			if (cs->debug & L1_DEB_ISAC)
+ 				debugl1(cs, "ph_state change %x", cs->dc.icc.ph_state);
+-			icc_sched_event(cs, D_L1STATECHANGE);
++			sched_d_event(cs, D_L1STATECHANGE);
+ 		}
+ 		if (exval & 1) {
+ 			exval = cs->readisac(cs, ICC_CIR1);
+@@ -289,7 +282,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				icc_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) { /* Restart frame */
+ 				skb_push(cs->tx_skb, cs->tx_cnt);
+ 				cs->tx_cnt = 0;
+@@ -367,14 +360,14 @@ #if ARCOFI_USE
+ 				cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+ 				cs->dc.icc.mocr |= 0x0a;
+ 				cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+-				icc_sched_event(cs, D_RX_MON0);
++				sched_d_event(cs, D_RX_MON0);
+ 			}
+ 			if (v1 & 0x40) {
+ 				cs->dc.icc.mocr &= 0x0f;
+ 				cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+ 				cs->dc.icc.mocr |= 0xa0;
+ 				cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+-				icc_sched_event(cs, D_RX_MON1);
++				sched_d_event(cs, D_RX_MON1);
+ 			}
+ 			if (v1 & 0x02) {
+ 				if ((!cs->dc.icc.mon_tx) || (cs->dc.icc.mon_txc && 
+@@ -386,11 +379,11 @@ #if ARCOFI_USE
+ 					cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+ 					if (cs->dc.icc.mon_txc &&
+ 						(cs->dc.icc.mon_txp >= cs->dc.icc.mon_txc))
+-						icc_sched_event(cs, D_TX_MON0);
++						sched_d_event(cs, D_TX_MON0);
+ 					goto AfterMOX0;
+ 				}
+ 				if (cs->dc.icc.mon_txc && (cs->dc.icc.mon_txp >= cs->dc.icc.mon_txc)) {
+-					icc_sched_event(cs, D_TX_MON0);
++					sched_d_event(cs, D_TX_MON0);
+ 					goto AfterMOX0;
+ 				}
+ 				cs->writeisac(cs, ICC_MOX0,
+@@ -409,11 +402,11 @@ #if ARCOFI_USE
+ 					cs->writeisac(cs, ICC_MOCR, cs->dc.icc.mocr);
+ 					if (cs->dc.icc.mon_txc &&
+ 						(cs->dc.icc.mon_txp >= cs->dc.icc.mon_txc))
+-						icc_sched_event(cs, D_TX_MON1);
++						sched_d_event(cs, D_TX_MON1);
+ 					goto AfterMOX1;
+ 				}
+ 				if (cs->dc.icc.mon_txc && (cs->dc.icc.mon_txp >= cs->dc.icc.mon_txc)) {
+-					icc_sched_event(cs, D_TX_MON1);
++					sched_d_event(cs, D_TX_MON1);
+ 					goto AfterMOX1;
+ 				}
+ 				cs->writeisac(cs, ICC_MOX1,
+@@ -536,7 +529,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				icc_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			break;
+ 		default:
+ 			if (cs->debug & L1_DEB_WARN)
+@@ -628,7 +621,7 @@ initicc(struct IsdnCardState *cs)
+ 	val = cs->readisac(cs, ICC_CIR0);
+ 	debugl1(cs, "ICC CIR0 %x", val);
+ 	cs->dc.icc.ph_state = (val >> 2) & 0xf;
+-	icc_sched_event(cs, D_L1STATECHANGE);
++	sched_d_event(cs, D_L1STATECHANGE);
+ 	/* Disable all IRQ */
+ 	cs->writeisac(cs, ICC_MASK, 0xFF);
+ 
+diff --git a/drivers/isdn/hisax/ipacx.c b/drivers/isdn/hisax/ipacx.c
+index 524eae8..3aecad3 100644
+--- a/drivers/isdn/hisax/ipacx.c
++++ b/drivers/isdn/hisax/ipacx.c
+@@ -38,7 +38,6 @@ static void dch_l2l1(struct PStack *st, 
+ static void dbusy_timer_handler(struct IsdnCardState *cs);
+ static void ipacx_new_ph(struct IsdnCardState *cs);
+ static void dch_bh(void *data);
+-static void dch_sched_event(struct IsdnCardState *cs, int event);
+ static void dch_empty_fifo(struct IsdnCardState *cs, int count);
+ static void dch_fill_fifo(struct IsdnCardState *cs);
+ static inline void dch_int(struct IsdnCardState *cs);
+@@ -76,8 +75,8 @@ cic_int(struct IsdnCardState *cs)
+ 
+ 	event = cs->readisac(cs, IPACX_CIR0) >> 4;
+ 	if (cs->debug &L1_DEB_ISAC) debugl1(cs, "cic_int(event=%#x)", event);
+-  cs->dc.isac.ph_state = event;
+-  dch_sched_event(cs, D_L1STATECHANGE);
++	cs->dc.isac.ph_state = event;
++	sched_d_event(cs, D_L1STATECHANGE);
+ }
+ 
+ //==========================================================
+@@ -297,16 +296,6 @@ dch_bh(void *data)
+ }
+ 
+ //----------------------------------------------------------
+-// proceed with bottom half handler dch_bh()
+-//----------------------------------------------------------
+-static void
+-dch_sched_event(struct IsdnCardState *cs, int event)
+-{
+-	set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+-//----------------------------------------------------------
+ // Fill buffer from receive FIFO
+ //----------------------------------------------------------
+ static void 
+@@ -415,7 +404,7 @@ dch_int(struct IsdnCardState *cs)
+ 			}
+     }
+ 	  cs->rcvidx = 0;
+-		dch_sched_event(cs, D_RCVBUFREADY);
++		sched_d_event(cs, D_RCVBUFREADY);
+ 	}
+ 
+ 	if (istad &0x40) {  // RPF
+@@ -431,7 +420,7 @@ dch_int(struct IsdnCardState *cs)
+ 		if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			dch_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+     if (cs->tx_skb) {
+       if (cs->tx_skb->len) {
+         dch_fill_fifo(cs);
+@@ -448,7 +437,7 @@ dch_int(struct IsdnCardState *cs)
+       dch_fill_fifo(cs);
+     } 
+     else {
+-      dch_sched_event(cs, D_XMTBUFREADY);
++      sched_d_event(cs, D_XMTBUFREADY);
+     }  
+   }  
+   afterXPR:
+diff --git a/drivers/isdn/hisax/isac.c b/drivers/isdn/hisax/isac.c
+index 7941b85..8d712c3 100644
+--- a/drivers/isdn/hisax/isac.c
++++ b/drivers/isdn/hisax/isac.c
+@@ -171,13 +171,6 @@ isac_fill_fifo(struct IsdnCardState *cs)
+ }
+ 
+ void
+-isac_sched_event(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+-void
+ isac_interrupt(struct IsdnCardState *cs, u_char val)
+ {
+ 	u_char exval, v1;
+@@ -223,7 +216,7 @@ #endif
+ 			spin_unlock_irqrestore(&isac_lock, flags);
+ 		}
+ 		cs->rcvidx = 0;
+-		isac_sched_event(cs, D_RCVBUFREADY);
++		sched_d_event(cs, D_RCVBUFREADY);
+ 	}
+ 	if (val & 0x40) {	/* RPF */
+ 		isac_empty_fifo(cs, 32);
+@@ -237,7 +230,7 @@ #endif
+ 		if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			isac_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+ 		if (cs->tx_skb) {
+ 			if (cs->tx_skb->len) {
+ 				isac_fill_fifo(cs);
+@@ -252,7 +245,7 @@ #endif
+ 			cs->tx_cnt = 0;
+ 			isac_fill_fifo(cs);
+ 		} else
+-			isac_sched_event(cs, D_XMTBUFREADY);
++			sched_d_event(cs, D_XMTBUFREADY);
+ 	}
+       afterXPR:
+ 	if (val & 0x04) {	/* CISQ */
+@@ -263,7 +256,7 @@ #endif
+ 			cs->dc.isac.ph_state = (exval >> 2) & 0xf;
+ 			if (cs->debug & L1_DEB_ISAC)
+ 				debugl1(cs, "ph_state change %x", cs->dc.isac.ph_state);
+-			isac_sched_event(cs, D_L1STATECHANGE);
++			sched_d_event(cs, D_L1STATECHANGE);
+ 		}
+ 		if (exval & 1) {
+ 			exval = cs->readisac(cs, ISAC_CIR1);
+@@ -293,7 +286,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				isac_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) { /* Restart frame */
+ 				skb_push(cs->tx_skb, cs->tx_cnt);
+ 				cs->tx_cnt = 0;
+@@ -371,14 +364,14 @@ #if ARCOFI_USE
+ 				cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+ 				cs->dc.isac.mocr |= 0x0a;
+ 				cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+-				isac_sched_event(cs, D_RX_MON0);
++				sched_d_event(cs, D_RX_MON0);
+ 			}
+ 			if (v1 & 0x40) {
+ 				cs->dc.isac.mocr &= 0x0f;
+ 				cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+ 				cs->dc.isac.mocr |= 0xa0;
+ 				cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+-				isac_sched_event(cs, D_RX_MON1);
++				sched_d_event(cs, D_RX_MON1);
+ 			}
+ 			if (v1 & 0x02) {
+ 				if ((!cs->dc.isac.mon_tx) || (cs->dc.isac.mon_txc && 
+@@ -390,11 +383,11 @@ #if ARCOFI_USE
+ 					cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+ 					if (cs->dc.isac.mon_txc &&
+ 						(cs->dc.isac.mon_txp >= cs->dc.isac.mon_txc))
+-						isac_sched_event(cs, D_TX_MON0);
++						sched_d_event(cs, D_TX_MON0);
+ 					goto AfterMOX0;
+ 				}
+ 				if (cs->dc.isac.mon_txc && (cs->dc.isac.mon_txp >= cs->dc.isac.mon_txc)) {
+-					isac_sched_event(cs, D_TX_MON0);
++					sched_d_event(cs, D_TX_MON0);
+ 					goto AfterMOX0;
+ 				}
+ 				cs->writeisac(cs, ISAC_MOX0,
+@@ -413,11 +406,11 @@ #if ARCOFI_USE
+ 					cs->writeisac(cs, ISAC_MOCR, cs->dc.isac.mocr);
+ 					if (cs->dc.isac.mon_txc &&
+ 						(cs->dc.isac.mon_txp >= cs->dc.isac.mon_txc))
+-						isac_sched_event(cs, D_TX_MON1);
++						sched_d_event(cs, D_TX_MON1);
+ 					goto AfterMOX1;
+ 				}
+ 				if (cs->dc.isac.mon_txc && (cs->dc.isac.mon_txp >= cs->dc.isac.mon_txc)) {
+-					isac_sched_event(cs, D_TX_MON1);
++					sched_d_event(cs, D_TX_MON1);
+ 					goto AfterMOX1;
+ 				}
+ 				cs->writeisac(cs, ISAC_MOX1,
+@@ -538,7 +531,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				isac_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			break;
+ 		default:
+ 			if (cs->debug & L1_DEB_WARN)
+@@ -656,7 +649,7 @@ initisac(struct IsdnCardState *cs)
+ 	val = cs->readisac(cs, ISAC_CIR0);
+ 	debugl1(cs, "ISAC CIR0 %x", val);
+ 	cs->dc.isac.ph_state = (val >> 2) & 0xf;
+-	isac_sched_event(cs, D_L1STATECHANGE);
++	sched_d_event(cs, D_L1STATECHANGE);
+ 
+ 	/* RESET Receiver and Transmitter */
+ 	cs->writeisac(cs, ISAC_CMDR, 0x41);
+diff --git a/drivers/isdn/hisax/isdnl1.h b/drivers/isdn/hisax/isdnl1.h
+index b7da21e..adde542 100644
+--- a/drivers/isdn/hisax/isdnl1.h
++++ b/drivers/isdn/hisax/isdnl1.h
+@@ -42,6 +42,13 @@ sched_b_event(struct BCState *bcs, int e
+ 	schedule_work(&bcs->work);
+ }
+ 
++static inline void
++sched_d_event(struct IsdnCardState *cs, int event)
++{
++	set_bit(event, &cs->event);
++	schedule_work(&cs->work);
++}
++
+ /* called with the card lock held */
+ static inline void
+ xmit_complete_b(struct BCState *bcs)
+diff --git a/drivers/isdn/hisax/jade.c b/drivers/isdn/hisax/jade.c
+index eacfc23..2c2164f 100644
+--- a/drivers/isdn/hisax/jade.c
++++ b/drivers/isdn/hisax/jade.c
+@@ -134,13 +134,6 @@ modejade(struct BCState *bcs, int mode, 
+ 	cs->BC_Write_Reg(cs, jade, jade_HDLC_IMR, 0x00);
+ }
+ 
+-void
+-jade_sched_event(struct BCState *bcs, int event)
+-{
+-    bcs->event |= 1 << event;
+-    schedule_work(&bcs->work);
+-}
+-
+ static void
+ jade_l2l1(struct PStack *st, int pr, void *arg)
+ {
+diff --git a/drivers/isdn/hisax/w6692.c b/drivers/isdn/hisax/w6692.c
+index bc1516c..b3e5f71 100644
+--- a/drivers/isdn/hisax/w6692.c
++++ b/drivers/isdn/hisax/w6692.c
+@@ -132,13 +132,6 @@ W6692_bh(void *data)
+  */
+ }
+ 
+-void
+-W6692_sched_event(struct IsdnCardState *cs, int event)
+-{
+-	test_and_set_bit(event, &cs->event);
+-	schedule_work(&cs->work);
+-}
+-
+ static void
+ W6692_empty_fifo(struct IsdnCardState *cs, int count)
+ {
+@@ -356,7 +349,7 @@ W6692_interrupt(int intno, void *dev_id,
+ 			}
+ 		}
+ 		cs->rcvidx = 0;
+-		W6692_sched_event(cs, D_RCVBUFREADY);
++		sched_d_event(cs, D_RCVBUFREADY);
+ 	}
+ 	if (val & W_INT_D_RMR) {	/* RMR */
+ 		W6692_empty_fifo(cs, W_D_FIFO_THRESH);
+@@ -365,7 +358,7 @@ W6692_interrupt(int intno, void *dev_id,
+ 		if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 			del_timer(&cs->dbusytimer);
+ 		if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-			W6692_sched_event(cs, D_CLEARBUSY);
++			sched_d_event(cs, D_CLEARBUSY);
+ 		if (cs->tx_skb) {
+ 			if (cs->tx_skb->len) {
+ 				W6692_fill_fifo(cs);
+@@ -380,7 +373,7 @@ W6692_interrupt(int intno, void *dev_id,
+ 			cs->tx_cnt = 0;
+ 			W6692_fill_fifo(cs);
+ 		} else
+-			W6692_sched_event(cs, D_XMTBUFREADY);
++			sched_d_event(cs, D_XMTBUFREADY);
+ 	}
+       afterXFR:
+ 	if (val & (W_INT_XINT0 | W_INT_XINT1)) {	/* XINT0/1 - never */
+@@ -397,7 +390,7 @@ W6692_interrupt(int intno, void *dev_id,
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				W6692_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			if (cs->tx_skb) {	/* Restart frame */
+ 				skb_push(cs->tx_skb, cs->tx_cnt);
+ 				cs->tx_cnt = 0;
+@@ -429,7 +422,7 @@ W6692_interrupt(int intno, void *dev_id,
+ 				cs->dc.w6692.ph_state = v1 & W_CIR_COD_MASK;
+ 				if (cs->debug & L1_DEB_ISAC)
+ 					debugl1(cs, "ph_state_change %x", cs->dc.w6692.ph_state);
+-				W6692_sched_event(cs, D_L1STATECHANGE);
++				sched_d_event(cs, D_L1STATECHANGE);
+ 			}
+ 			if (v1 & W_CIR_SCC) {
+ 				v1 = cs->readW6692(cs, W_SQR);
+@@ -555,7 +548,7 @@ #endif
+ 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
+ 				del_timer(&cs->dbusytimer);
+ 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
+-				W6692_sched_event(cs, D_CLEARBUSY);
++				sched_d_event(cs, D_CLEARBUSY);
+ 			break;
+ 		default:
+ 			if (cs->debug & L1_DEB_WARN)

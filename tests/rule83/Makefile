@@ -63,4 +63,4 @@ SOURCES = 68328serial.c \
           whiteheat.c \
           zs.c
 
-include ../../generic_makefile2
+include ../../generic_makefile

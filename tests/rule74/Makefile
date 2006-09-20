@@ -12,4 +12,4 @@ SOURCES = multipath.c \
           raid5_fixed.c \
           raid6main_fixed.c
 
-include ../../generic_makefile2
+include ../../generic_makefile

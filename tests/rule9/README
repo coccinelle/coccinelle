@@ -1,5 +1,7 @@
 Cocci file      : rule9.cocci
 
+Bugs            :     3
+
 ------------------------------------------------------------------------------
 cciss_scsi.c \
  * [status] ok
@@ -59,7 +61,11 @@ nsp32.c \
 
 nsp_cs.c \
  * [status] wrong
- * cpp
+ * there is an loop over hostno, which was the old way to compute a hosptr, 
+   enclosed by an ifdef VERSION_xxx and we correctly remove the get in
+   the then of the ifdef,  but transform hostno in the else branch
+   which is wrong. Morover we don't delete the if (host == NULL) that
+   come after. WIERD
 
 powertec.c \
  * [status] spatch-ok
