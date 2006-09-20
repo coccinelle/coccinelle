@@ -1,8 +1,9 @@
 Rule 33
 ----------------------------------------------------------------------
-Spatch revision: N/A
-Cocci file     : rule33.cocci
-Cocci file rev.: N/A
+Cocci file      : rule33.cocci
+Size of SP file :     ?
+No. of files    :     4 [ok: 0; spatch-ok: 4; fail: 0; wrong: 0]
+Bugs            :     0
 ----------------------------------------------------------------------
 Note that the rule only works with: 
 
@@ -16,22 +17,18 @@ also had to use current_valid(...) instead of current_valid(void)
 because of spatch parser problems.
 ----------------------------------------------------------------------
 aztcd.c
-  [status] spatch-ok
-  * Basically works
-  * [unrelated] many (seemingly) unrelated changes
+  * [status] spatch-ok
+  * [independent] many (seemingly) unrelated changes
 
 mcd.c
-  [status] spatch-ok
-  * Basically works
-  * [unrelated] many (seemingly) unrelated changes
+  * [status] spatch-ok
+  * [independent] many (seemingly) unrelated changes
 
 optcd.c
-  [status] spatch-ok
-  * Basically works
-  * [unrelated] many (seemingly) unrelated changes
+  * [status] spatch-ok
+  * [independent] many (seemingly) unrelated changes
 
 sjcd.c
-  [status] spatch-ok
-  * Basically works
-  * [unrelated] many (seemingly) unrelated changes
+  * [status] spatch-ok
+  * [independent] many (seemingly) unrelated changes
 
