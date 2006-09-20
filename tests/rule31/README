@@ -1,145 +1,138 @@
 Rule 31
-Spatch revision: N/A
-Cocci file     : rule31.cocci
-Cocci file rev.: N/A
 ----------------------------------------------------------------------
+Cocci file      : rule31.cocci
+Size of SP file :
+No. of files    :    28
+Bugs            :     0
+----------------------------------------------------------------------
+
 acsi.c
- [status] UNKNOWN
-  * independent (unrelated?): DEVICE_INTR is replaced by do_acsi
-  * [rule change] CLEAR_INTR should be replaced by do_acsi some places
+  * [status] spatch-ok (???)
+  * [independent] (unrelated?): DEVICE_INTR is replaced by do_acsi
+  * [rule] CLEAR_INTR should be replaced by do_acsi some places
 
 amiflop.c
- [status] UNKNOWN
+  * [status] spatch-ok
   * PBBB...
-  * deadcode
-  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
-    be removed
+  * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 ataflop.c
- [status] UNKNOWN
-  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
-    be removed
+  * [status] spatch-ok
+  * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 cdu31a.c
- [status] UNKNOWN
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
   * PBBBB...
-  * deadcode
-  * exception Common.Impossible
 
 cm206.c
- [status] UNKNOWN
-  * [isomorphism] too many braces around transformed code
+  * [status] spatch-ok
+  * [compare] too many braces around transformed code
 
 fd1772.c
- [status] UNKNOWN
+  * [status] spatch-ok
   * PBBB...
-  * deadcode
-  * independent (unrelated?): "#define DEVICE_INTR do_floppy" should
-    be removed
+  * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 ftl.c
- [status] fail
-  * Fatal error: exception Not_found
+  * [status] fail
+  * [exc] Fatal error: exception Not_found
 
 gscd.c
- [status] UNKNOWN
+  * [status] spatch-ok
   * PBBB...
-  * [isomorphism] too many braces
+  * [compare] too many braces
 
 hd.c
- [status] UNKNOWN
-  * independent (unrelated?): remove "#define DEVICE_INTR do_hd" and
-    replace all uses of DEVICE_INTR accordingly
-  * independent: add "#define TIMEOUT_VALUE ..."
-  * [rule change] some CLEAR_INTR should be replaced by "do_hd = NULL"
+  * [status] spatch-ok (???)
+  * [independent] remove "#define DEVICE_INTR do_hd" and replace all
+    uses of DEVICE_INTR accordingly
+  * [independent] add "#define TIMEOUT_VALUE ..."
+  * [rule] some CLEAR_INTR should be replaced by "do_hd = NULL"
 
 jsflash.c
- [status] UNKNOWN
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * [compare] too many braces
 
 mcdx.c
- [status] UNKNOWN
+  * [status] fail
   * PBBB...
-  * deadcode
-  * exception Failure("pb in flow_to_ast, some nodes have not been
-    visited")
+  * [exc] Fatal error: exception Failure("pb in flow_to_ast, some
+    nodes have not been visited")
 
 mfmhd.c
- [status] UNKNOWN
-  * independent: remove "#define DEVICE_INTR do_mfm" and replace uses
+  * [status] spatch-ok (???)
+  * [independent] remove "#define DEVICE_INTR do_mfm" and replace uses
     of DEVICE_INTR accordingly
 
 mtdblock.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 mtdblock_ro.c
- [status] fail
+  * [status] fail
   * [parser] unparseable code
 
 nftlcore.c
- [status] fail
-  * Fatal error: exception Ast_to_flow.DeadCode(_)
+  * [status] fail
+  * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 osst.c
- [status] UNKNOWN
-  * raised NotWorthTrying
-  * independent: remove "#define DEVICE_INTR do_osst"
+  * [status] spatch-ok (???)
+  * [exc] raised NotWorthTrying
+  * [independent] remove "#define DEVICE_INTR do_osst"
 
 pcd.c
- [status] UNKNOWN
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * [compare] too many braces
 
 pd.c
- [status] UNKNOWN
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * [compare] too many braces
 
 pf.c
- [status] UNKNOWN
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * [compare] too many braces
 
 ps2esdi.c
- [status] UNKNOWN
-  * [cpp] GRAVE: a cpp instruction inside a #if 0
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * GRAVE: a cpp instruction inside a #if 0
+  * [compare] too many braces
 
 sbpcd.c
- [status] UNKNOWN
-  * [cpp] GRAVE:...
+  * [status] fail
+  * GRAVE:...
   * PBBB...
-  * deadcode
   * control_flow: orphelin nodes, maybe something wierd happened
-  * Fatal error: exception Common.Impossible
+  * [exc] Fatal error: exception Common.Impossible
 
 sonycd535.c
- [status] fail
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 st.c
- [status] UNKNOWN
-  * raised NotWorthTrying
-  * independent: remove "#define DEVICE_INTR do_st"
+  * [status] spatch-ok (???)
+  * [exc] raised NotWorthTrying
+  * [independent] remove "#define DEVICE_INTR do_st"
 
 swim3.c
- [status] UNKNOWN
-  * independent: remove "#define DEVICE_INTR do_floppy"
+  * [status] spatch-ok
+  * [independent] remove "#define DEVICE_INTR do_floppy"
 
 swim_iop.c
- [status] UNKNOWN
-  * independent: remove "#define DEVICE_INTR do_floppy"
+  * [status] spatch-ok
+  * [independent] remove "#define DEVICE_INTR do_floppy"
 
 xd.c
- [status] UNKNOWN
-  * [isomorphism] too many braces
+  * [status] spatch-ok
+  * [compare] too many braces
 
 xpram.c
- [status] UNKNOWN
+  * [status] fail
   * PBBB...
-  * deadcode
-  * Fatal error: exception Not_found
+  * [exc] Fatal error: exception Not_found
 
 z2ram.c
- [status] UNKNOWN
+  * [status] spatch-ok
   * PBBB...
-  * deadcode
-  * [isomorphism] too many braces
+  * [compare] too many braces
