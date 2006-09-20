@@ -1,37 +1,49 @@
 Rule 36
-Spatch revision: N/A
-Cocci file     : rule36.cocci
-Cocci file rev.: N/A
+----------------------------------------------------------------------
+Cocci file      : rule36.cocci
+Size of SP file :     ?
+No. of files    :    10 [ok: 4; spatch-ok: 1; fail: 5; wrong: 0]
+Bugs            :     0
 ----------------------------------------------------------------------
 1_usb.c
+  * [status] fail
   * PBBB...
-  * deadcode
-  * exception Failure("pb in flow_to_ast, some nodes have not been visited")
+  * [exc] Fatal error: exception Failure("pb in flow_to_ast, some
+    nodes have not been visited") 
 
-cdc-ether.c: Works!
+cdc-ether.c
+  * [status] ok
   * PBBB...
-  * deadcode
+
 
 hcd.c
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
-pegasus.c: Works!
+pegasus.c
+  * [status] ok
 
 uhci.c
-  * Fatal error: exception Not_found
+  * [status] fail
+  * [exc] Fatal error: exception Not_found
 
 usb.c
-  * independent: Missing the addition of an entire structure
-  * [isomorphism?] comments?!?
+  * [status] spatch-ok
+  * [independent] Missing the addition of an entire structure
+  * [compare] comments
 
-usbnet.c: Works!
+usbnet.c
+  * [status] ok
 
 usb-ohci.c
-  * Fatal error: exception Common.Impossible
+  * [status] fail
+  * [exc] Fatal error: exception Common.Impossible
 
 usb-uhci.c
+  * [status] fail
   * [parser] unparseable code
 
-usbvideo.c: Works!
+usbvideo.c
+  * [status] ok
   * PBBB...
-  * deadcode
+
