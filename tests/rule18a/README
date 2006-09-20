@@ -1,0 +1,38 @@
+Rule 18a
+----------------------------------------------------------------------
+Cocci file      : schedev.cocci
+Size of SP file :     ?
+No. of files    :     9 [ok: 9; spatch-ok: 0; fail: 0; wrong: 0]
+Bugs            :     0
+----------------------------------------------------------------------
+NOTE: "jade.c" is not included in SOURCES
+----------------------------------------------------------------------
+
+amd7930_fn.c
+  * [status] ok
+
+config.c
+  * [status] ok
+
+hfc_2bds0.c
+  * [status] ok
+
+hfc_pci.c
+  * [status] ok
+  * PBB...
+
+hfc_sx.c
+  * [status] ok
+
+icc.c
+  * [status] ok
+
+ipacx.c
+  * [status] ok
+
+isac.c
+  * [status] ok
+
+w6692.c
+  * [status] ok
+  * PBB...
