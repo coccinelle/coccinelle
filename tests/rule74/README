@@ -1,0 +1,12 @@
+multipath.c:
+  [status] spatch-ok
+
+raid1.c:
+  [status] spatch-ok
+
+raid5.c:
+  [status] spatch-ok
+
+raid6main.c:
+  [status] spatch-ok
+
