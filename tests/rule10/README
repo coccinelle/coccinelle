@@ -1,28 +1,28 @@
 Rule 10
 ----------------------------------------------------------------------
-Time-stamp: <2006-09-15 14:10:54 rrh>
-Cocci file: rule10.cocci
-Revision  : N/A
-
-pad: I have uptdate to rene_format_version_2 without looking to .failed
- and .ok,  just by translating rene's comment in the more formal format.
+Cocci file      : rule10.cocci
+Size of SP file :     ?
+No. of files    :     6 [ok: 5; spatch-ok: 1; fail: 0; wrong: 0]
+Bugs            :     ?
 ----------------------------------------------------------------------
+NOTE: The files "rsxface.c" and "tbconvrt.c" are not included
+----------------------------------------------------------------------
+ec.c
+  * [status] ok
 
-ec.c: 
- [status] ok
+evgpeblk.c
+  * [status] ok
 
-evgpeblk.c: Works!
- [status] ok
+evgpe.c
+  * [status] ok
 
-evgpe.c: Works!
- [status] ok
+hwgpe.c
+  * [status] ok
 
-hwgpe.c: Works!
- [status] ok
+hwregs.c
+  * [status] spatch-ok
+  * [compare] whitespace
+  * [independent] many independent changes
 
-hwregs.c:
- [status] spatch-ok
-  * Many unrelated modifications
-
-hwtimer.c: Works!
- [status] ok
+hwtimer.c
+  * [status] ok
