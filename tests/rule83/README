@@ -2,7 +2,7 @@ Rule 83
 ----------------------------------------------------------------------
 Cocci file      : tty_wakeup.cocci
 Size of SP file :     ?
-No. of files    :    62 [ok: 36; spatch-ok: 16; fail: 3; wrong: 7]
+No. of files    :    62 [ok: 36; spatch-ok: 16; fail: 3; wrong: 6]
 Bugs            :     ?
 ----------------------------------------------------------------------
 NOTE: tty_io is not included because it is the library file
