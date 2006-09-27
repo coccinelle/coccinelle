@@ -13,3 +13,5 @@ let debug_cfg = ref false
 let show_flow_labels = ref true
 
 let label_strategy_2 = ref true
+
+let opti_parsing = ref true

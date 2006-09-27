@@ -52,6 +52,9 @@ print "  Size P = $sizeP\n";
 my $ratioSPvsP = ($sizeSP * 100.0) / $sizeP;
 printf "!!Ratio SP vs P = %3.1f\%\n", $ratioSPvsP;
 
+my $ratioPvsSP = $sizeP / $sizeSP;
+printf "!!Ratio SP vs P = %3.1f\n", $ratioPvsSP;
+
 
 my $totalstatus = $ok + $fail + $wrong + $unknown;
 print "----------------------------------------------------------------\n";

@@ -260,8 +260,15 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          Cocci.full_engine
-            cfile (Left (cocci_file, iso_file));
+          (try 
+            Cocci.full_engine
+              cfile (Left (cocci_file, iso_file));
+          with
+            e -> 
+              if !dir 
+              then pr2 ("EXN:" ^ Printexc.to_string e)
+              else raise e
+          );
 
           let expected_res = 
             Str.global_replace (Str.regexp "\\.c$") ".res" cfile 

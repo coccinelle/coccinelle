@@ -294,6 +294,8 @@ let parse_print_error file =
 open Parser_c
 
 
+let _LookAhead = 10
+
 (* note: as now go in 2 pass,  there is first all the error message of 
  * the lexer, and then the error of the parser. It is no more interwinded.
  *)
@@ -302,6 +304,7 @@ let parse_print_error_heuristic file =
   let table = Common.full_charpos_to_pos file in
   let filelines = (""::Common.cat file) +> Array.of_list in
 
+  (* pr2 ("1" ^ timenow()); *)
 
   (* bugfix: the lexer too do some conversion (ok, he does need anymore, 
      but still ...)so have to reste lexer here too !!!  *)
@@ -314,6 +317,7 @@ let parse_print_error_heuristic file =
     | TCommentAttrOrMacro _ -> false 
     | _ -> true) 
   in
+  (* pr2 ("2" ^ timenow()); *)
 
 
   (* The variable that follows allow for error recovery.
@@ -406,7 +410,7 @@ let parse_print_error_heuristic file =
 
             let v = 
               try (
-              match (v::(take_safe 10 !all_tokens),  !passed_tok ) with
+              match (v::(take_safe _LookAhead !all_tokens),  !passed_tok ) with
 
               (* special cases scsi/g_NCR5380 *)
               | (TIdent ("ANDP",i1)::TIdent (_,_)::_,   _) -> 
@@ -709,18 +713,29 @@ let parse_print_error_heuristic file =
     have_timeout          = false;
   } in
 
+
+
+  (* opti ? *)
   let get_slice_file filename (line1, line2) = 
+   if not !Flag_parsing_c.opti_parsing then
     cat filename 
       +> drop (line1 - 1)
       +> take (line2 - line1 + 1)
       +> unlines
+    else "TODO remove opti_parsing flag"
   in
 
+  (* opti ? *)
   let build_info_item point1 point2 = 
+   (* if not !Flag_parsing_c.opti_parsing then *)
     (* todo: give correct column, and charpos (for the moment not needed) *)
-    let info_of_toks = (List.rev (List.map info_from_token !passed_tok2)) in
-    (file, ( ((point1, 0), 0), ((point2, 0), 0)),  get_slice_file file (point1, point2), info_of_toks) in 
-
+   (* let info_of_toks = (List.rev (List.map info_from_token !passed_tok2)) in *)
+    let info_of_toks = (Common.map_eff_rev info_from_token !passed_tok2) in
+    (file, ( ((point1, 0), 0), ((point2, 0), 0)),  get_slice_file file (point1, point2), info_of_toks) 
+(*   else 
+    (file, ( ((point1, 0), 0), ((point2, 0), 0)),  get_slice_file file (point1, point2), [])
+*)
+  in
 
 
 
@@ -777,9 +792,18 @@ let parse_print_error_heuristic file =
     with e -> 
       begin
         (match e with
-         | Lexer_c.Lexical s ->          pr2 ("lexical error " ^ s ^ "\n =" ^  (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
-         | Parsing.Parse_error ->        pr2 ("parse error \n = " ^            (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
-         | Semantic_c.Semantic (s, i) -> pr2 ("semantic error " ^ s ^ "\n =" ^ (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
+         | Lexer_c.Lexical s ->          
+            if not !Flag_parsing_c.opti_parsing then
+            pr2 ("lexical error " ^ s ^ "\n =" ^  
+                 (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
+         | Parsing.Parse_error ->        
+            if not !Flag_parsing_c.opti_parsing then
+            pr2 ("parse error \n = " ^            
+                 (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
+         | Semantic_c.Semantic (s, i) -> 
+            if not !Flag_parsing_c.opti_parsing then
+            pr2 ("semantic error " ^ s ^ "\n =" ^ 
+                 (error_message file (wrap_parse_info (info_from_token !cur_tok +> fst)  ) ))
          | e -> 
             raise e
         );
@@ -844,7 +868,12 @@ let parse_print_error_heuristic file =
            let checkpoint2 = current_line () in
            
            (* bugfix: do it here cos if put in in the full exprt NotParsedCorrectly ( ...!passed_tok2) ...::loop()  then  bug *)
-           let info_of_bads = (List.rev (List.map info_from_token !passed_tok2)) in
+           let info_of_bads = 
+             (* if not !Flag_parsing_c.opti_parsing then *)
+             (* opti: (List.rev (List.map info_from_token !passed_tok2))  *)
+             (Common.map_eff_rev info_from_token !passed_tok2) 
+             (* else [] *)
+           in
            let builded_info = build_info_item checkpoint checkpoint2 in
            (Ast_c.NotParsedCorrectly info_of_bads , builded_info)
            ::loop ()
