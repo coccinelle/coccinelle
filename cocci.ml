@@ -223,7 +223,10 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     
     lastround_bindings +> List.iter (fun binding -> 
 
+      let bef = Sys.time() in
       let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+      let aft = Sys.time() in
+      Printf.printf "parse time %f\n" (aft -. bef);
      
       (* 3: iter function *)
       cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 

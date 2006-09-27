@@ -50,6 +50,10 @@ Expression
 @@ expression X; @@
 X != 0 <=> 0 != X => X
 
+Expression
+@@ expression X; @@
+X != NULL <=> NULL != X => X
+
 
 Expression
 @@ expression X,Y; @@
