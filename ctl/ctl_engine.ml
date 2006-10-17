@@ -1,4 +1,4 @@
-let pBENCH = ref true
+let pBENCH = ref false
 let timeout = 600
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
