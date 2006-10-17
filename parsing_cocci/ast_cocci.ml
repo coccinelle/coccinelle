@@ -17,7 +17,7 @@ and 'a mcode = 'a * info * mcodekind
   | CONTEXT     of anything befaft
   | PLUS
 
-and dots_bef_aft = NoDots | BetweenDots of statement
+and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -269,7 +269,8 @@ and base_statement =
   | For           of rule_elem (* header *) * statement * mcodekind
   | Atomic        of rule_elem
   | Disj          of statement dots list
-  | Nest          of statement dots * statement dots list * dots_whencode list
+  | Nest          of statement dots * (statement dots,statement) whencode *
+	             dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * bool * statement dots * rule_elem (* } *)
   | Dots          of string mcode (* ... *) *
@@ -295,7 +296,6 @@ and dots_whencode =
     WParen of rule_elem * string (*pren_var*)
   | Other of statement
   | Other_dots of statement dots
-  | OrOther_dots of statement dots
 
 and statement = base_statement wrap
 

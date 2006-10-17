@@ -84,7 +84,7 @@ let rec ctl2c ct pp pv x =
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = wrap (ct+1) pp pv f2 in
       (res1^" \\rightarrow "^res2,ct)
-  | CTL.AF(dir,f,_) ->
+  | CTL.AF(dir,f) ->
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AF"^diamond^res,ct)
@@ -96,7 +96,7 @@ let rec ctl2c ct pp pv x =
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AG"^diamond^res,ct)
-  | CTL.AU(dir,f1,f2,_,_) ->
+  | CTL.AU(dir,f1,f2) ->
       let (diamond,ct) = print_diamond (ct+1) dir in
       let (res1,ct) = existswrap (ct+1) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
@@ -131,6 +131,20 @@ let rec ctl2c ct pp pv x =
       (Printf.sprintf
 	 "\\mita{\\sf{let}} \\, %s = %s \\, \\mita{\\sf{in}} \\, %s\n"
 	 v res1 res2, ct)
+  | CTL.LetR(d,v,f1,f2) ->
+      let (diamond,ct) = print_diamond (ct+2) d in
+      let (v,len) = texify (pv v) in
+      let (res1,ct) = letwrap (ct+len+5) pp pv f1 in
+      let (res1,ct) = check_ct ct res1 in
+      let (res2,ct) = letwrap (ct+3) pp pv f2 in
+      let (res2,ct) = check_ct ct res2 in
+      (Printf.sprintf
+	 "\\mita{\\sf{let}}%s \\, %s = %s \\, \\mita{\\sf{in}} \\, %s\n"
+	 diamond v res1 res2, ct)
+  | CTL.Uncheck(f) ->
+      let (res,ct) = pathwrap ct pp pv f
+      in (res^"^u",ct+1)
+  | CTL.Dots _ -> failwith "unexpected Dots"
 
 and wrap ct pp pv x =
   match CTL.unwrap x with
@@ -157,7 +171,7 @@ and orwrap ct pp pv x =
 
 and pathwrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_,_) | CTL.AG(_,_) | CTL.AU(_,_,_,_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -166,7 +180,7 @@ and pathwrap ct pp pv x =
 
 and existswrap ct pp pv x =
   match CTL.unwrap x with
-    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_,_) | CTL.AG(_,_) | CTL.AU(_,_,_,_,_)
+    CTL.Ref _ | CTL.AX(_,_) | CTL.AF(_,_) | CTL.AG(_,_) | CTL.AU(_,_,_)
   | CTL.Pred(_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
@@ -214,6 +228,9 @@ let pred2c = function
       let s = Pretty_print_cocci.rule_elem_to_string re in
       let (s,len) = texify s in
       (Printf.sprintf "%s" s,len)
+  | Lib_engine.Include(_,s) ->
+      let (s,len) = texify (Ast_cocci.unwrap_mcode s) in
+      ("\\msf{#include}("^s^")",8+len)
 
 let totex out_file rules ctls =
   let o = open_out out_file in
@@ -221,6 +238,7 @@ let totex out_file rules ctls =
   List.iter2
     (function ast_list ->
       function ctls ->
+	let (ctls,_) = List.split ctls in
 	ctltotex ast_list pred2c (function x -> x) ctls o)
     rules ctls;
   make_postlude o;

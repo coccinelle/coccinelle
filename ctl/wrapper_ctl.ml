@@ -91,7 +91,8 @@ struct
     end
 
   (* Instantiate a wrapped version of CTL_ENGINE *)
-  module WRAPPER_ENGINE = Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G) (WRAPPER_PRED)
+  module WRAPPER_ENGINE =
+    Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G) (WRAPPER_PRED)
 
   (* Wrap a label function *)
   let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 
@@ -209,16 +210,17 @@ struct
   (* ----------------------------------------------------- *)
 
   (* The wrapper for sat from the CTL_ENGINE *)
-  let satbis_noclean (grp,lab,states) phi :
+  let satbis_noclean (grp,lab,states) (phi,reqopt) :
       ('pred,'anno) WRAPPER_ENGINE.triples =
-    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi check_conjunction
+    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi reqopt check_conjunction
       
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-	   (predicate,SUB.mvar) wrapped_ctl ->
+	   ((predicate,SUB.mvar) wrapped_ctl *
+	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
 		  bool *
@@ -246,6 +248,8 @@ struct
 		(binding ::
 		 (List.map (function (_,env,_) -> env) unmodif_res)))
       with INCOMPLETE_BINDINGS x -> Common.Right x
+
+let print_bench _ = WRAPPER_ENGINE.print_bench()
 
 (* END OF MODULE: CTL_ENGINE_BIS *)
 end

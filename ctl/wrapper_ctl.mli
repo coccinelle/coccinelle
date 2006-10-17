@@ -43,17 +43,21 @@ module CTL_ENGINE_BIS :
 	G.cfg *
 	(predicate, G.node, WRAPPER_ENV.mvar, SUB.value) labelfunc *
 	G.node list ->
-	  (WRAPPER_PRED.t, WRAPPER_ENV.mvar, int) Ast_ctl.generic_ctl ->
-            (WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples
+	  ((WRAPPER_PRED.t, WRAPPER_ENV.mvar, int) Ast_ctl.generic_ctl *
+	     (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
+               (WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples
 
     val satbis :
 	G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
-	   (predicate,SUB.mvar) wrapped_ctl ->
+	   ((predicate,SUB.mvar) wrapped_ctl *
+	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
                ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
 		  bool *
 		  (WRAPPER_ENV.mvar * SUB.value) list,
 		SUB.mvar) Common.either
+
+    val print_bench : unit -> unit
 end

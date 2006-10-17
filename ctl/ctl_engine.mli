@@ -36,9 +36,6 @@ sig
   val print_predicate : t -> unit
 end
 
-exception TODO_CTL
-exception NEVER_CTL
-
 module CTL_ENGINE :
   functor (SUB : SUBST) ->
     functor (G : GRAPH) ->
@@ -58,9 +55,12 @@ module CTL_ENGINE :
         val sat :
           G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
             (P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	    ((P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	      (P.t,'anno) triples ->
-	      (P.t,'anno) triples ->
-	      (P.t,'anno) triples -> unit) -> (* check_conjunction *)
-	    (P.t,'anno) triples
+	      (P.t list * P.t list) ->
+		((P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
+		  (P.t,'anno) triples ->
+		  (P.t,'anno) triples ->
+		  (P.t,'anno) triples -> unit) -> (* check_conjunction *)
+		    (P.t,'anno) triples
+
+	val print_bench : unit -> unit
       end

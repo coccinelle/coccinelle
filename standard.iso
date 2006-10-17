@@ -255,6 +255,8 @@ return ...; => return;
 
 //todo: normally if E is typed metavar, should have to change 
 //its type and remove the '*'. 
-Expression
-@@ expression E; identifier field; @@
-E->field => E.field
+//doesn't work, because the terms are not equivalent, so a problem if there
+//is + code
+//Expression
+//@@ expression E; identifier field; @@
+//E->field => E.field

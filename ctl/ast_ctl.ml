@@ -16,18 +16,13 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | Or  of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | SeqOr  of (('pred,'mvar,'anno) generic_ctl) * 
-      (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | AF of direction *
-	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
+  | AF of direction * (('pred,'mvar,'anno) generic_ctl)
   | AX of direction * (('pred,'mvar,'anno) generic_ctl)
   | AG of direction * (('pred,'mvar,'anno) generic_ctl)
   | AU of direction *
 	(* versions with exists v *)
-	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl) *
-	(* versions without exists v *)
 	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
   | EF of direction * (('pred,'mvar,'anno) generic_ctl)
   | EX of direction * (('pred,'mvar,'anno) generic_ctl)
@@ -37,7 +32,23 @@ type ('pred,'mvar,'anno) generic_ctl =
   | Let of string * 
       (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
+  | LetR of direction * string * (* evals phi1 wrt reachable states *)
+      (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Ref of string
+  | SeqOr of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
+  | Dots of
+      (* dir * (before_after * before_after_guard) * nest * whennots * when *
+	 rest *)
+      direction *
+	((('pred,'mvar,'anno) generic_ctl) *
+	   (('pred,'mvar,'anno) generic_ctl)) list *
+	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
 
 and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)

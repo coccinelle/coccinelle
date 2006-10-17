@@ -94,7 +94,12 @@ let one_flow flows = List.hd flows
 let print_flow flow = Ograph_extended.print_ograph_extended flow
 
 (* --------------------------------------------------------------------- *)
-let ctls ast ua  = List.map2 Asttoctl.asttoctl ast ua
+let ctls ast ua  =
+  List.map2
+    (function ast -> function ua ->
+      List.combine
+	(Asttoctl2.asttoctl ast ua) (Asttomember.asttomember ast ua))
+    ast ua
 let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
@@ -172,7 +177,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
         (zip ctls used_after_lists, all_error_words)
 
-    | Right ctl ->([[ctl], []]), []
+    | Right ctl ->([[(ctl,([],[]))], []]), []
     )
   in
 
@@ -216,6 +221,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
       print_xxxxxxxxxxxxxxxxx();
       pr2 "ctl";
       print_xxxxxxxxxxxxxxxxx();
+      let (ctl,_) = ctl in
       Pretty_print_engine.pp_ctlcocci 
         !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
       Format.print_newline();
@@ -223,10 +229,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     
     lastround_bindings +> List.iter (fun binding -> 
 
-      let bef = Sys.time() in
       let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
-      let aft = Sys.time() in
-      Printf.printf "parse time %f\n" (aft -. bef);
      
       (* 3: iter function *)
       cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
@@ -379,6 +382,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
       print_xxxxxxxxxxxxxxxxx();
       pr2 "ctl";
       print_xxxxxxxxxxxxxxxxx();
+      let (ctl,_) = ctl in
       Pretty_print_engine.pp_ctlcocci 
         !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
       Format.print_newline();

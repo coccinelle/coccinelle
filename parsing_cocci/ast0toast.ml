@@ -384,13 +384,20 @@ let parameter_list = dots parameterTypeDef
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
+let ctr = ref 0
+let get_ctr _ =
+  let c = !ctr in
+  ctr := !ctr + 1;
+  c
+
 let rec statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
       (ast, (Ast0.get_info ast0).Ast0.line_start, [],
        match Ast0.get_dots_bef_aft s with
 	 Ast0.NoDots -> Ast.NoDots
-       | Ast0.BetweenDots s -> Ast.BetweenDots (statement seqible s)) in
+       | Ast0.BetweenDots s ->
+	   Ast.BetweenDots (statement seqible s,get_ctr())) in
     rewrap s
       (match Ast0.unwrap s with
 	Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
@@ -459,10 +466,12 @@ let rec statement s =
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
       | Ast0.Nest(_,rule_elem_dots,_,whencode) ->
-	  let whencode =
-	    get_option (statement_dots Ast.Sequencible) whencode in
-	  Ast.Nest(statement_dots Ast.Sequencible rule_elem_dots,
-		   option_to_list whencode,[])
+	  Ast.Nest
+	    (statement_dots Ast.Sequencible rule_elem_dots,
+	     (match whencode with
+	       None -> Ast.NoWhen
+	     | Some x -> Ast.WhenNot (statement_dots Ast.Sequencible x)),
+	     [])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in
 	  let whn =

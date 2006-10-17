@@ -27,5 +27,9 @@ val print_flow : Control_flow_c.cflow -> unit
 
 val ctls :
     Ast_cocci.rule list ->
-      string list list list -> Lib_engine.ctlcocci list list
+      string list list list ->
+	(Lib_engine.ctlcocci *
+	   ((Lib_engine.predicate * string Ast_ctl.modif) list *
+	      (Lib_engine.predicate * string Ast_ctl.modif) list))
+	  list list
 val one_ctl : Lib_engine.ctlcocci list list -> Lib_engine.ctlcocci

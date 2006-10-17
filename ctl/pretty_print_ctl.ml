@@ -49,13 +49,13 @@ let rec (pp_ctl:
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
      | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;
-     | AF(dir,phi1,_)   -> pp "AF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
+     | AF(dir,phi1)   -> pp "AF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | AX(dir,phi1)   -> pp "AX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | AG(dir,phi1)     -> pp "AG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EF(dir,phi1)     -> pp "EF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EX(dir,phi1)   -> pp "EX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
      | EG(dir,phi1)   -> pp "EG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AU(dir,phi1,phi2,_,_) ->
+     | AU(dir,phi1,phi2) ->
 	 pp "A"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
      | EU(dir,phi1,phi2)  ->
 	 pp "E"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
@@ -66,6 +66,20 @@ let rec (pp_ctl:
 	 then
            begin
              pp ("Let"^" "^x);
+	     pp " = ";
+             pp_do_in_box (fun () -> pp_aux env phi1);
+             print_space ();
+             pp "in"; 
+             print_space ();
+           end;
+	 pp_do_in_zero_box (fun () -> pp_aux env' phi2);
+     | LetR (dir,x,phi1,phi2)  -> 
+	 let env' = (x, (Val (phi1,env)))::env in
+	 
+	 if not inline_let_def
+	 then
+           begin
+             pp ("LetR"^" "^x); pp_dir dir;
 	     pp " = ";
              pp_do_in_box (fun () -> pp_aux env phi1);
              print_space ();
@@ -84,6 +98,7 @@ let rec (pp_ctl:
            (* pp ")" *)
      | Uncheck(phi1) ->
 	 pp "Uncheck"; pp "("; pp_arg env phi1; pp ")"
+     | Dots _ -> failwith "should not occur"
 
    and pp_dir = function
        FORWARD -> ()

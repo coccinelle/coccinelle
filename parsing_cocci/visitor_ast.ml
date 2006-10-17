@@ -253,9 +253,9 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots,whencode,_) ->
-	  multibind ((statement_dots stmt_dots) ::
-		     (List.map statement_dots whencode))
+      | Ast.Nest(stmt_dots,whn,_) ->
+	  bind (statement_dots stmt_dots)
+	    (whencode statement_dots statement whn)
       | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
@@ -593,9 +593,9 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots,whencode,t) ->
+	| Ast.Nest(stmt_dots,whn,t) ->
 	    Ast.Nest(statement_dots stmt_dots,
-		     List.map statement_dots whencode,t)
+		     whencode statement_dots statement whn,t)
 	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,

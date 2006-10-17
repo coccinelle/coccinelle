@@ -267,12 +267,17 @@ module CFG =
 module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
 
 
-(******************************************************************************)
+(*****************************************************************************)
+
+let print_bench _ = WRAPPED_ENGINE.print_bench()
+
+type pred = Lib_engine.predicate * string Ast_ctl.modif
+
 let (mysat:
        (Control_flow_c.cflow *
         Lib_engine.label_ctlcocci *
         nodei list) -> 
-       Lib_engine.ctlcocci -> 
+       (Lib_engine.ctlcocci * (pred list * pred list)) -> 
        (Lib_engine.mvar list * Lib_engine.metavars_binding2) ->
 	 ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
 	    bool *

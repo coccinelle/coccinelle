@@ -116,6 +116,9 @@ let testall () =
     incr _total;
 
     let timeout_value = 3 in
+    (* benchmarking *)
+    let timeout_value = 30 in
+    (* end benchmarking *)
 
     try (
       Common.timeout_function timeout_value (fun () -> 
@@ -127,6 +130,10 @@ let testall () =
             (Cocci.cprogram_from_file "/tmp/output.c")
             (Cocci.cprogram_from_file ("tests/" ^ expected_res))
         in
+	(* benchmarking *)
+	Printf.printf "%s\n" expected_res;
+	Ctlcocci_integration.print_bench();
+	(* end benchmarking *)
         (match correct with
         | Compare_c.Correct -> 
             incr _good; 
@@ -274,11 +281,14 @@ let main () =
             Str.global_replace (Str.regexp "\\.c$") ".res" cfile 
           in
           let generated_file = "/tmp/output.c" in
+
+	  Ctlcocci_integration.print_bench();
+
+	  if !save_output_file
+	  then command2 ("cp /tmp/output.c "^cfile^".cocci_res");
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
-              (if List.length fullxs = 1 then true else false);
-	  if !save_output_file
-	  then command2 ("cp /tmp/output.c "^cfile^".cocci_res")
+              (if List.length fullxs = 1 then true else false)
             );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
@@ -286,4 +296,6 @@ let main () =
   end
 
 
-let _ = if not (!Sys.interactive) then main ()
+let _ =
+  
+  if not (!Sys.interactive) then (main ();Ctlcocci_integration.print_bench())
