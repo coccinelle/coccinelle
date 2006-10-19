@@ -1,4 +1,4 @@
-let pBENCH = ref false
+external c_counter : unit -> int = "c_counter"
 let timeout = 600
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
@@ -1680,10 +1680,13 @@ let bench_sat (_,_,states) fn =
 	      try
 		Common.timeout_function timeout
 		  (fun () ->
+		    let x = c_counter() in
 		    let bef = Sys.time() in
 		    let res = iter fn 1 in
 		    let aft = Sys.time() in
+		    let y = c_counter() in
 		    time := !time +. (aft -. bef);
+		    Printf.printf "c counter %d %d\n" x y;
 		    List.iter2
 		      (function (ctr,calls,_,save_ctr,save_calls) ->
 			function (current_ctr,current_calls,current_cfg,
@@ -1733,19 +1736,22 @@ let bench_sat (_,_,states) fn =
       else failwith "something doesn't work"
       
 let print_bench _ =
-  List.iter
-    (function (name,options,time,counter_info) ->
-      Printf.fprintf stderr "%f %s: " !time name)
-    perms;
-  List.iter
-    (function (name,options,time,counter_info) ->
-      Printf.fprintf stderr "Numbers: %f " !time;
-      List.iter
-	(function (ctr,calls,cfg,max_cfg) ->
-	  Printf.fprintf stderr "%d %d %d %d " !ctr !calls !cfg !max_cfg)
-	counter_info;
-      Printf.fprintf stderr "\n")
-    perms
+  if !Flag_ctl.bench
+  then
+    (List.iter
+       (function (name,options,time,counter_info) ->
+	 Printf.fprintf stderr "%f %s: " !time name)
+       perms;
+     Printf.fprintf stderr "\n";
+     List.iter
+       (function (name,options,time,counter_info) ->
+	 Printf.fprintf stderr "Numbers: %f " !time;
+	 List.iter
+	   (function (ctr,calls,cfg,max_cfg) ->
+	     Printf.fprintf stderr "%d %d %d %d " !ctr !calls !cfg !max_cfg)
+	   counter_info;
+	 Printf.fprintf stderr "\n")
+       perms)
 
 (* ---------------------------------------------------------------------- *)
 (* preprocssing: ignore irrelevant functions *)
@@ -1776,12 +1782,12 @@ let sat m phi reqopt check_conj =
       if(!Flag_ctl.verbose_ctl_engine)
       then
 	let fn _ = snd (sat_annotree simpleanno2 m phi check_conj) in
-	if !pBENCH
+	if !Flag_ctl.bench
 	then bench_sat m fn
 	else fn()
       else
 	let fn _ = satloop false [[]] None m phi [] check_conj in
-	if !pBENCH
+	if !Flag_ctl.bench
 	then bench_sat m fn
 	else fn() in
 (* print_state "final result" res;*)

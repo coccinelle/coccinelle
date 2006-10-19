@@ -25,6 +25,7 @@ CAMLDEP = ocamldep$(OPTBIN) $(ADDONSPATH)
 CAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
 
 
+
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
@@ -63,6 +64,9 @@ clean::
 
 .ml.cmx:
 	$(CAMLOPT) $(INCLUDE_PATH) -c $<
+
+
+
 
 # clean rule for others files
 clean::

@@ -20,11 +20,13 @@ module CCI = Ctlcocci_integration
 *)
 
 (* --------------------------------------------------------------------- *)
+let mktmp s = if !Flag.windows then ("/cygwin"^s) else s
+
 let cprogram_from_file  file = Parse_c.parse_print_error_heuristic file
 
 let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
   begin
-    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ "\n}");
+    write_file (mktmp "/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
     let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
     program +> find_some (fun (e,_) -> 
       match e with
@@ -35,8 +37,8 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
 
 let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   begin
-    write_file "/tmp/__cocci.c" ("void main() { \n" ^ s ^ ";\n}");
-    let (program, _stat) = cprogram_from_file "/tmp/__cocci.c" in
+    write_file (mktmp "/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
+    let (program, _stat) = cprogram_from_file (mktmp "/tmp/__cocci.c") in
     program +> find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
@@ -55,8 +57,8 @@ let sp_from_file file iso    = Parse_cocci.process file iso false
 let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
-    write_file "/tmp/__cocci.cocci" (s);
-    let (astcocci, _,_) = sp_from_file "/tmp/__cocci.cocci" iso in
+    write_file (mktmp "/tmp/__cocci.cocci") (s);
+    let (astcocci, _,_) = sp_from_file (mktmp "/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +> List.hd +> List.hd +> (function x ->
 	match Ast_cocci.unwrap x with
@@ -135,13 +137,15 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         let (astcocci,used_after_lists,tokens) = sp_from_file coccifile isofile
         in
 
-	(match
-	  Sys.command
-	    (Printf.sprintf "egrep -q '(%s)' %s"
-	       (String.concat "|" tokens) cfile) with
-	| 0 -> (* success*) ()
-	| _ -> (* failure *) pr2 "raised NotWorthTrying"; raise NotWorthTrying
-        );
+	if not !Flag.windows
+	then
+	  (match
+	    Sys.command
+	      (Printf.sprintf "egrep -q '(%s)' %s"
+		 (String.concat "|" tokens) cfile) with
+	  | 0 -> (* success*) ()
+	  | _ -> (* failure *)
+	      pr2 "raised NotWorthTrying"; raise NotWorthTrying);
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -169,7 +173,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         let ctls = ctls astcocci used_after_lists in
 
         if !Flag.show_ctl_tex then begin
-            Ctltotex.totex "/tmp/__cocci_ctl.tex" astcocci ctls;
+            Ctltotex.totex (mktmp "/tmp/__cocci_ctl.tex") astcocci ctls;
             command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
                       "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
                       "gv __cocci_ctl.ps &");
@@ -229,7 +233,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
     
     lastround_bindings +> List.iter (fun binding -> 
 
-      let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+      let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
      
       (* 3: iter function *)
       cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
@@ -342,7 +346,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) (* end 3: iter function *)
-        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
+        +> Unparse_c.pp_program (mktmp "/tmp/input.c") (mktmp "/tmp/output.c");
       command2("cp /tmp/output.c /tmp/input.c");    
 
       ) (* end 2: iter bindings *)
@@ -359,7 +363,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         (* [(Ast_c.emptyMetavarsBinding,[])] *)
        else failwith "too many inherited environments for mini-rules"
      in
-     let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+     let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
      
      let _compteur1 = ref 0 in 
      (* iter ctl_toplevel 1 bis *)
@@ -514,7 +518,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
              
        | x -> (x, Unparse_c.PPviatok il)
        )
-        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
+        +> Unparse_c.pp_program (mktmp "/tmp/input.c") (mktmp "/tmp/output.c");
        command2("cp /tmp/output.c /tmp/input.c");    
        _current_bindings := [binding]
        
@@ -529,7 +533,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   !_hack_funheader +>
   List.iter (fun ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
    
-      let (cprogram, _stat)  = cprogram_from_file "/tmp/input.c" in
+      let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
       cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
         match ebis with
         | Ast_c.Declaration 
@@ -553,7 +557,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) 
-        +> Unparse_c.pp_program "/tmp/input.c" "/tmp/output.c";
+        +> Unparse_c.pp_program (mktmp "/tmp/input.c") (mktmp "/tmp/output.c");
       command2("cp /tmp/output.c /tmp/input.c");    
    );
 

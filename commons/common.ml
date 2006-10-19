@@ -2634,3 +2634,4 @@ let format_to_string f =
     loop() in
   (try loop() with End_of_file -> ());
   String.concat "\n" (List.rev !lines)
+

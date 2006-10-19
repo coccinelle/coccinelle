@@ -16,3 +16,5 @@ let show_transinfo = ref true
 
 
 let show_misc = ref true
+
+let windows = ref false

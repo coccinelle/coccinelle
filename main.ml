@@ -12,6 +12,7 @@ let testall_mode = ref false
 
 let compare_with_expected = ref false
 
+let mktmp = Cocci.mktmp
 
 (* if true, stores output in file.cocci_res *)
 let save_output_file = ref false
@@ -70,7 +71,7 @@ let testone x =
     Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
     let expected_res = "tests/" ^ x ^ ".res" in
-    let generated_file = "/tmp/output.c" in
+    let generated_file = (mktmp "/tmp/output.c") in
     if !compare_with_expected then 
       print_diff_expected_res_and_exit generated_file expected_res true;
   end
@@ -127,7 +128,7 @@ let testall () =
 
         let (correct, diffxs) = 
           Compare_c.compare 
-            (Cocci.cprogram_from_file "/tmp/output.c")
+            (Cocci.cprogram_from_file (mktmp "/tmp/output.c"))
             (Cocci.cprogram_from_file ("tests/" ^ expected_res))
         in
 	(* benchmarking *)
@@ -280,7 +281,7 @@ let main () =
           let expected_res = 
             Str.global_replace (Str.regexp "\\.c$") ".res" cfile 
           in
-          let generated_file = "/tmp/output.c" in
+          let generated_file = (mktmp "/tmp/output.c") in
 
 	  Ctlcocci_integration.print_bench();
 

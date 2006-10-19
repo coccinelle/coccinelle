@@ -33,3 +33,5 @@ val ctls :
 	      (Lib_engine.predicate * string Ast_ctl.modif) list))
 	  list list
 val one_ctl : Lib_engine.ctlcocci list list -> Lib_engine.ctlcocci
+
+val mktmp : string -> string
