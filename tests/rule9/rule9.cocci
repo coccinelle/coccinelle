@@ -27,18 +27,18 @@ identifier proc_info_func;
     ...>
   }
 
-//@@ 
-//identifier func; 
-//expression buffer, start, offset, length, inout, hostno;
-//identifier hostptr;
-//@@
-//
-// func(..., struct Scsi_Host *hostptr, ...) {
-//  <...
-//   proc_info_func(
-//+       hostptr,
-//        buffer, start, offset, length, 
-//-       hostno,
-//        inout)
-//   ...>
-// }
+@@ 
+identifier func; 
+expression buffer, start, offset, length, inout, hostno;
+identifier hostptr;
+@@
+
+ func(..., struct Scsi_Host *hostptr, ...) {
+  <...
+   proc_info_func(
++       hostptr,
+        buffer, start, offset, length, 
+-       hostno,
+        inout)
+   ...>
+ }
