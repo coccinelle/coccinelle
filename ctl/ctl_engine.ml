@@ -797,7 +797,7 @@ let rec pre_exist dir (grp,_,_) y reqst =
 exception Empty
 
 let pre_forall dir ((grp,_,states) as m) y all reqst =
-  if !pPRE_FORALL_OPT
+  if true(*!pPRE_FORALL_OPT*)
   then
     let check s =
       match reqst with
@@ -837,8 +837,10 @@ let pre_forall dir ((grp,_,states) as m) y all reqst =
     | _ ->
 	foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
   else
-    triples_complement states
-      (pre_exist dir m (triples_complement states all) reqst)
+    let one = triples_complement states all in
+    let two = pre_exist dir m one reqst in
+    let three = triples_complement states two in
+    three
 
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
@@ -1477,9 +1479,9 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  else res in
 	anno res []
     | A.Dots _ -> failwith "should not occur" in
-    let res = drop_wits required_states res in
-    print_state "after drop_wits" res;
-    (child,res)
+    let res1 = drop_wits required_states res in
+    if not(res1 = res) then print_state "after drop_wits" res;
+    (child,res1)
 	
 ;;
 
@@ -1632,7 +1634,6 @@ let perms =
     (function (opt,x) ->
       (opt,x,ref 0.0,
        (List.map (function _ -> (ref 0, ref 0, ref 0, ref 0)) counters)))
-    (*[("all",options)]*)
     [("none",[]);unch;("all",options);not_unchecked;conj_neg_opt;
        required_opts;
        required_states_opts;required_env_opts;au_opt]
@@ -1708,7 +1709,8 @@ let bench_sat (_,_,states) fn =
 		  begin
 		    let aft = Sys.time() in
 		    time := -100.0;
-		    Printf.fprintf stderr "Timeout at %f on:\n" (aft -. bef);
+		    Printf.fprintf stderr "Timeout at %f on: %s\n"
+		      (aft -. bef) name;
 		    []
 		  end in
 	    let _ = Sys.command "free > /tmp/freeout" in
@@ -1733,7 +1735,9 @@ let bench_sat (_,_,states) fn =
   | res::rest ->
       if List.for_all (function x -> x = res) rest
       then res
-      else failwith "something doesn't work"
+      else
+	(List.iter (print_state "a state") answers;
+	 failwith "something doesn't work")
       
 let print_bench _ =
   if !Flag_ctl.bench

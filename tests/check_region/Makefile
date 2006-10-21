@@ -26,3 +26,8 @@ FILES=check_region1.cocci check_region2.cocci
 benchmark: $(SPATCH) $(FILES)
 	time find drivers/cdrom -name "*.c" -exec sh run_one {} \;
 	time find drivers/scsi -name "*.c" -exec sh run_one {} \;
+
+size:
+	/bin/rm -f sizes
+	touch sizes
+	find drivers -name "*.c" -exec sh run_one {} \;
