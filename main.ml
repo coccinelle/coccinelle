@@ -194,6 +194,7 @@ let main () =
 
       "-compare_with_expected", Arg.Set compare_with_expected, " "; 
       "-save_output_file", Arg.Set save_output_file, " ";
+      "-bench", Arg.Set Flag_ctl.bench, " ";
 
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";

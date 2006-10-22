@@ -724,6 +724,7 @@ let unwitify trips =
 (* ********************************** *)
 
 (* This function relies on y being sorted by state! *)
+(* on the other hand, it doesn't seem like a good idea, see wd/negate *)
 let double_negate y =
   if !pDOUBLE_NEGATE_OPT
   then
@@ -854,8 +855,6 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
-    let s1 = double_negate s1 in
-    let s2 = double_negate s2 in
     (*let ctr = ref 0 in*)
     if !pNEW_INFO_OPT
     then
@@ -885,7 +884,6 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 (* EF phi == E[true U phi] *)
 let satEF dir m s2 reqst = 
   inc satEF_calls;
-  let s2 = double_negate s2 in
     (*let ctr = ref 0 in*)
   if !pNEW_INFO_OPT
   then
@@ -918,8 +916,6 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
-    let s1 = double_negate s1 in (* essential for good performance *)
-    let s2 = double_negate s2 in (* not sure it's worth it but doesn't hurt*)
     (*let ctr = ref 0 in*)
     if !pNEW_INFO_OPT
     then
@@ -948,7 +944,6 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 
 let satAF dir m s reqst = 
   inc satAF_calls;
-  let s = double_negate s in
     if !pNEW_INFO_OPT
     then
       let rec f y newinfo =
@@ -970,7 +965,6 @@ let satAF dir m s reqst =
 
 let satAG dir ((_,_,states) as m) s reqst =
   inc satAG_calls;
-  let s = double_negate s in
   let f y =
     inc satAG_ctr;
     let pre = pre_forall dir m y y reqst in
@@ -979,7 +973,6 @@ let satAG dir ((_,_,states) as m) s reqst =
 
 let satEG dir ((_,_,states) as m) s reqst =
   inc satEG_calls;
-  let s = double_negate s in
   let f y =
     inc satEG_ctr;
     let pre = pre_exist dir m y reqst in
@@ -1563,7 +1556,6 @@ let options =
   [(pTRIPLES_CONJ_OPT,"triples_conj_opt");
     (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
     (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
-    (pDOUBLE_NEGATE_OPT,"double_negate_opt");
     (pPRE_FORALL_OPT,"pre_forall_opt");
     (pNEW_INFO_OPT,"new_info_opt");
     (pREQUIRED_ENV_OPT,"required_env_opt");
@@ -1576,7 +1568,6 @@ let not_unchecked =
    [(pTRIPLES_CONJ_OPT,"triples_conj_opt");
      (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
      (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
-     (pDOUBLE_NEGATE_OPT,"double_negate_opt");
      (pPRE_FORALL_OPT,"pre_forall_opt");
      (pNEW_INFO_OPT,"new_info_opt");
      (pREQUIRED_ENV_OPT,"required_env_opt");
@@ -1585,40 +1576,40 @@ let not_unchecked =
 
 let sat_memo =
   match options with
-    [_;_;_;_;_;_;_;satl;_;unch] -> ("memoize satl, unch",[satl;unch])
+    [_;_;_;_;_;_;satl;_;unch] -> ("memoize satl, unch",[satl;unch])
   | _ -> failwith "bad options"
 
 let conj_neg_opt =
   match options with
-    [conj1;compl1;compl2;_;_;_;_;_;_;unch] ->
+    [conj1;compl1;compl2;_;_;_;_;_;unch] ->
       ("conj and neg",[conj1;compl1;compl2;unch])
   | _ -> failwith "bad options"
 
 let required_opts =
   match options with
-    [_;_;_;_;_;_;req_env;_;req_states;unch] ->
+    [_;_;_;_;_;req_env;_;req_states;unch] ->
       ("req env and state",[req_env;req_states;unch])
   | _ -> failwith "bad options"
 
 let required_env_opts =
   match options with
-    [_;_;_;_;_;_;req_env;_;_;unch] -> ("req env",[req_env;unch])
+    [_;_;_;_;_;req_env;_;_;unch] -> ("req env",[req_env;unch])
   | _ -> failwith "bad options"
 
 let required_states_opts =
   match options with
-    [_;_;_;_;_;_;_;_;req_states;unch] -> ("req state",[req_states;unch])
+    [_;_;_;_;_;_;_;req_states;unch] -> ("req state",[req_states;unch])
   | _ -> failwith "bad options"
 
 let unch =
   match options with
-    [_;_;_;_;_;_;_;_;_;unch] -> ("unchecked only",[unch])
+    [_;_;_;_;_;_;_;_;unch] -> ("unchecked only",[unch])
   | _ -> failwith "bad options"
 
 let au_opt =
   match options with
-    [_;_;_;double;pre_forall;new_info;_;_;_;unch] ->
-      ("path opts",[double;pre_forall;new_info;unch])
+    [_;_;_;pre_forall;new_info;_;_;_;unch] ->
+      ("path opts",[pre_forall;new_info;unch])
   | _ -> failwith "bad options"
 
 let counters =
@@ -1634,7 +1625,7 @@ let perms =
     (function (opt,x) ->
       (opt,x,ref 0.0,
        (List.map (function _ -> (ref 0, ref 0, ref 0, ref 0)) counters)))
-    [("none",[]);unch;("all",options);not_unchecked;conj_neg_opt;
+    [("all",options);("none",[]);unch;not_unchecked;conj_neg_opt;
        required_opts;
        required_states_opts;required_env_opts;au_opt]
 
@@ -1646,6 +1637,8 @@ let drop_negwits s =
 	| A.Wit(_,_,_,w) -> contains_negwits w)
       l in
   setify (List.filter (function (s,th,wits) -> not(contains_negwits wits)) s)
+
+exception Out
 
 let rec iter fn = function
     1 -> fn()
@@ -1681,13 +1674,10 @@ let bench_sat (_,_,states) fn =
 	      try
 		Common.timeout_function timeout
 		  (fun () ->
-		    let x = c_counter() in
 		    let bef = Sys.time() in
 		    let res = iter fn 1 in
 		    let aft = Sys.time() in
-		    let y = c_counter() in
 		    time := !time +. (aft -. bef);
-		    Printf.printf "c counter %d %d\n" x y;
 		    List.iter2
 		      (function (ctr,calls,_,save_ctr,save_calls) ->
 			function (current_ctr,current_calls,current_cfg,
@@ -1733,21 +1723,16 @@ let bench_sat (_,_,states) fn =
   match answers with
     [] -> []
   | res::rest ->
-      if List.for_all (function x -> x = res) rest
-      then res
-      else
+      (if not(List.for_all (function x -> x = res) rest)
+      then
 	(List.iter (print_state "a state") answers;
-	 failwith "something doesn't work")
+	 Printf.printf "something doesn't work\n");
+      res)
       
 let print_bench _ =
   if !Flag_ctl.bench
   then
     (List.iter
-       (function (name,options,time,counter_info) ->
-	 Printf.fprintf stderr "%f %s: " !time name)
-       perms;
-     Printf.fprintf stderr "\n";
-     List.iter
        (function (name,options,time,counter_info) ->
 	 Printf.fprintf stderr "Numbers: %f " !time;
 	 List.iter
