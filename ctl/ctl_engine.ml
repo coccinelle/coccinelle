@@ -26,19 +26,13 @@ let pUNCHECK_OPT = ref true
 
 let inc cell = cell := !cell + 1
 
-let satEU_ctr = ref 0
-let satAU_ctr = ref 0
-let satEF_ctr = ref 0
-let satAF_ctr = ref 0
-let satEG_ctr = ref 0
-let satAG_ctr = ref 0
-
 let satEU_calls = ref 0
 let satAU_calls = ref 0
 let satEF_calls = ref 0
 let satAF_calls = ref 0
 let satEG_calls = ref 0
 let satAG_calls = ref 0
+
 
 let ctr = ref 0
 let new_let _ =
@@ -859,7 +853,6 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
     if !pNEW_INFO_OPT
     then
       let rec f y new_info =
-	inc satEU_ctr;
 	match new_info with
 	  [] -> y
 	| new_info ->
@@ -875,7 +868,6 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
       f s2 s2
     else
       let f y =
-	inc satEU_ctr;
 	let pre = pre_exist dir m y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
@@ -888,7 +880,6 @@ let satEF dir m s2 reqst =
   if !pNEW_INFO_OPT
   then
     let rec f y new_info =
-      inc satEF_ctr;
       match new_info with
 	[] -> y
       | new_info ->
@@ -905,7 +896,6 @@ let satEF dir m s2 reqst =
     f s2 s2
   else
     let f y =
-      inc satEF_ctr;
       let pre = pre_exist dir m y reqst in
       triples_union s2 pre in
     setfix f s2
@@ -920,7 +910,6 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
     if !pNEW_INFO_OPT
     then
     let rec f y newinfo =
-      inc satAU_ctr;
       match newinfo with
 	[] -> y
       | new_info ->
@@ -936,7 +925,6 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
     f s2 s2
     else
       let f y =
-	inc satAU_ctr;
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
@@ -944,29 +932,26 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 
 let satAF dir m s reqst = 
   inc satAF_calls;
-    if !pNEW_INFO_OPT
-    then
-      let rec f y newinfo =
-	inc satAF_ctr;
-	match newinfo with
-	  [] -> y
-	| new_info ->
-	    let first = pre_forall dir m new_info y reqst in
-	    let res = triples_union first y in
-	    let new_info = setdiff first y in
-	    f res new_info in
-      f s s
-    else
-      let f y =
-	inc satAF_ctr;
-	let pre = pre_forall dir m y y reqst in
-	triples_union s pre in
-      setfix f s
+  if !pNEW_INFO_OPT
+  then
+    let rec f y newinfo =
+      match newinfo with
+	[] -> y
+      | new_info ->
+	  let first = pre_forall dir m new_info y reqst in
+	  let res = triples_union first y in
+	  let new_info = setdiff first y in
+	  f res new_info in
+    f s s
+  else
+    let f y =
+      let pre = pre_forall dir m y y reqst in
+      triples_union s pre in
+    setfix f s
 
 let satAG dir ((_,_,states) as m) s reqst =
   inc satAG_calls;
   let f y =
-    inc satAG_ctr;
     let pre = pre_forall dir m y y reqst in
     triples_conj y pre in
   setgfix f s
@@ -974,7 +959,6 @@ let satAG dir ((_,_,states) as m) s reqst =
 let satEG dir ((_,_,states) as m) s reqst =
   inc satEG_calls;
   let f y =
-    inc satEG_ctr;
     let pre = pre_exist dir m y reqst in
     triples_conj y pre in
   setgfix f s
@@ -1552,82 +1536,80 @@ let simpleanno2 l phi res =
 (* Benchmarking                                                           *)
 (* ---------------------------------------------------------------------- *)
 
+type optentry = bool ref * string
+type options = {label : optentry; unch : optentry;
+		 conj : optentry; compl1 : optentry; compl2 : optentry;
+		 preall : optentry; newinfo : optentry;
+		 reqenv : optentry; reqstates : optentry}
+
 let options =
-  [(pTRIPLES_CONJ_OPT,"triples_conj_opt");
-    (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
-    (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
-    (pPRE_FORALL_OPT,"pre_forall_opt");
-    (pNEW_INFO_OPT,"new_info_opt");
-    (pREQUIRED_ENV_OPT,"required_env_opt");
-    (pSATLABEL_MEMO_OPT,"satlabel_memo_opt");
-    (pREQUIRED_STATES_OPT,"required_states_opt");
-    (pUNCHECK_OPT,"uncheck_opt")]
+  {label = (pSATLABEL_MEMO_OPT,"satlabel_memo_opt");
+    unch = (pUNCHECK_OPT,"uncheck_opt");
+    conj = (pTRIPLES_CONJ_OPT,"triples_conj_opt");
+    compl1 = (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
+    compl2 = (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
+    preall = (pPRE_FORALL_OPT,"pre_forall_opt");
+    newinfo = (pNEW_INFO_OPT,"new_info_opt");
+    reqenv = (pREQUIRED_ENV_OPT,"required_env_opt");
+    reqstates = (pREQUIRED_STATES_OPT,"required_states_opt")}
 
-let not_unchecked =
-  ("all but unchecked",
-   [(pTRIPLES_CONJ_OPT,"triples_conj_opt");
-     (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
-     (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
-     (pPRE_FORALL_OPT,"pre_forall_opt");
-     (pNEW_INFO_OPT,"new_info_opt");
-     (pREQUIRED_ENV_OPT,"required_env_opt");
-     (pSATLABEL_MEMO_OPT,"satlabel_memo_opt");
-     (pREQUIRED_STATES_OPT,"required_states_opt")])
+let baseline =
+  [("none                    ",[]);
+    ("label                   ",[options.label]);
+    ("unch                    ",[options.unch]);
+    ("unch and label          ",[options.label;options.unch])]
 
-let sat_memo =
-  match options with
-    [_;_;_;_;_;_;satl;_;unch] -> ("memoize satl, unch",[satl;unch])
-  | _ -> failwith "bad options"
+let conjneg =
+  [("conj                    ", [options.conj]);
+    ("compl1                  ", [options.compl1]);
+    ("compl12                 ", [options.compl1;options.compl2]);
+    ("conj/compl12            ", [options.conj;options.compl1;options.compl2]);
+    ("conj unch satl          ", [options.conj;options.unch;options.label]);
+    ("compl1 unch satl        ", [options.compl1;options.unch;options.label]);
+    ("compl12 unch satl       ",
+     [options.compl1;options.compl2;options.unch;options.label]);
+    ("conj/compl12 unch satl  ",
+     [options.conj;options.compl1;options.compl2;options.unch;options.label])]
 
-let conj_neg_opt =
-  match options with
-    [conj1;compl1;compl2;_;_;_;_;_;unch] ->
-      ("conj and neg",[conj1;compl1;compl2;unch])
-  | _ -> failwith "bad options"
+let path =
+  [("preall                  ", [options.preall]);
+    ("newinfo                 ", [options.newinfo]);
+    ("preall/newinfo          ", [options.preall;options.newinfo]);
+    ("preall unch satl        ", [options.preall;options.unch;options.label]);
+    ("newinfo unch satl       ", [options.newinfo;options.unch;options.label]);
+    ("preall/newinfo unch satl",
+     [options.preall;options.newinfo;options.unch;options.label])]
 
-let required_opts =
-  match options with
-    [_;_;_;_;_;req_env;_;req_states;unch] ->
-      ("req env and state",[req_env;req_states;unch])
-  | _ -> failwith "bad options"
+let required =
+  [("reqenv                  ", [options.reqenv]);
+    ("reqstates               ", [options.reqstates]);
+    ("reqenv/states           ", [options.reqenv;options.reqstates]);
+    ("reqenv unch satl        ", [options.reqenv;options.unch;options.label]);
+    ("reqstates unch satl     ",
+     [options.reqstates;options.unch;options.label]);
+    ("reqenv/states unch satl ",
+     [options.reqenv;options.reqstates;options.unch;options.label])]
 
-let required_env_opts =
-  match options with
-    [_;_;_;_;_;req_env;_;_;unch] -> ("req env",[req_env;unch])
-  | _ -> failwith "bad options"
+let all_options =
+  [options.label;options.unch;options.conj;options.compl1;options.compl2;
+    options.preall;options.newinfo;options.reqenv;options.reqstates]
 
-let required_states_opts =
-  match options with
-    [_;_;_;_;_;_;_;req_states;unch] -> ("req state",[req_states;unch])
-  | _ -> failwith "bad options"
-
-let unch =
-  match options with
-    [_;_;_;_;_;_;_;_;unch] -> ("unchecked only",[unch])
-  | _ -> failwith "bad options"
-
-let au_opt =
-  match options with
-    [_;_;_;pre_forall;new_info;_;_;_;unch] ->
-      ("path opts",[pre_forall;new_info;unch])
-  | _ -> failwith "bad options"
+let all =
+  [("all                     ",all_options)]
 
 let counters =
-  [(satEU_ctr, satEU_calls, "satEU", ref 0, ref 0);
-    (satAU_ctr, satAU_calls, "satAU", ref 0, ref 0);
-    (satEF_ctr, satEF_calls, "satEF", ref 0, ref 0);
-    (satAF_ctr, satAF_calls, "satAF", ref 0, ref 0);
-    (satEG_ctr, satEG_calls, "satEG", ref 0, ref 0);
-    (satAG_ctr, satAG_calls, "satAG", ref 0, ref 0)]
+  [(satEU_calls, "satEU", ref 0);
+    (satAU_calls, "satAU", ref 0);
+    (satEF_calls, "satEF", ref 0);
+    (satAF_calls, "satAF", ref 0);
+    (satEG_calls, "satEG", ref 0);
+    (satAG_calls, "satAG", ref 0)]
 
 let perms =
   map
     (function (opt,x) ->
-      (opt,x,ref 0.0,
-       (List.map (function _ -> (ref 0, ref 0, ref 0, ref 0)) counters)))
-    [("all",options);("none",[]);unch;not_unchecked;conj_neg_opt;
-       required_opts;
-       required_states_opts;required_env_opts;au_opt]
+      (opt,x,ref 0.0,List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
+    (all@baseline@conjneg@path@required)
 
 let drop_negwits s =
   let rec contains_negwits l =
@@ -1642,7 +1624,10 @@ exception Out
 
 let rec iter fn = function
     1 -> fn()
-  | n -> let _ = fn() in iter fn (n-1)
+  | n -> let _ = fn() in
+    (Hashtbl.clear reachable_table;
+     Hashtbl.clear memo_label;
+     iter fn (n-1))
 
 let copy_to_stderr fl =
   let i = open_in fl in
@@ -1653,7 +1638,7 @@ let copy_to_stderr fl =
   close_in i
 
 let bench_sat (_,_,states) fn =
-  List.iter (function (opt,_) -> opt := false) options;
+  List.iter (function (opt,_) -> opt := false) all_options;
   let answers =
     concatmap
       (function (name,options,time,counter_info) ->
@@ -1665,9 +1650,7 @@ let bench_sat (_,_,states) fn =
 	    Hashtbl.clear reachable_table;
 	    Hashtbl.clear memo_label;
 	    List.iter (function (opt,_) -> opt := true) options;
-	    List.iter
-	      (function (ctr,calls,_,save_ctr,save_calls) ->
-		save_ctr := !ctr; save_calls := !calls)
+	    List.iter (function (calls,_,save_calls) -> save_calls := !calls)
 	      counters;
 	    let res =
 	      let bef = Sys.time() in
@@ -1679,11 +1662,8 @@ let bench_sat (_,_,states) fn =
 		    let aft = Sys.time() in
 		    time := !time +. (aft -. bef);
 		    List.iter2
-		      (function (ctr,calls,_,save_ctr,save_calls) ->
-			function (current_ctr,current_calls,current_cfg,
-				  current_max_cfg) ->
-			  current_ctr :=
-			    !current_ctr + (!ctr - !save_ctr);
+		      (function (calls,_,save_calls) ->
+			function (current_calls,current_cfg,current_max_cfg) ->
 			  current_calls :=
 			    !current_calls + (!calls - !save_calls);
 			  if (!calls - !save_calls) > 0
@@ -1734,10 +1714,10 @@ let print_bench _ =
   then
     (List.iter
        (function (name,options,time,counter_info) ->
-	 Printf.fprintf stderr "Numbers: %f " !time;
+	 Printf.fprintf stderr "%s Numbers: %f " name !time;
 	 List.iter
-	   (function (ctr,calls,cfg,max_cfg) ->
-	     Printf.fprintf stderr "%d %d %d %d " !ctr !calls !cfg !max_cfg)
+	   (function (calls,cfg,max_cfg) ->
+	     Printf.fprintf stderr "%d %d %d " !calls !cfg !max_cfg)
 	   counter_info;
 	 Printf.fprintf stderr "\n")
        perms)
