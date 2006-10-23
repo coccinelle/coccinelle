@@ -10,8 +10,6 @@ and witnesses are empty *)
 let pTRIPLES_COMPLEMENT_SIMPLE_OPT = ref true
 (* "Double negate" the arguments of the path operators *)
 let pDOUBLE_NEGATE_OPT = ref true
-(* Clever implementation instead of !exists(!phi) *)
-let pPRE_FORALL_OPT = ref true
 (* Only do pre_forall/pre_exists on new elements in fixpoint iteration *)
 let pNEW_INFO_OPT = ref true
 (* Filter the result of the label function to drop entries that aren't
@@ -607,141 +605,6 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
 (* ********************************** *)
 (* END OF NEGATION (NegState style)   *)
 (* ********************************** *)
-
-type 'a wit = Wit of 'a | And of 'a wit * 'a wit | Not of 'a wit | True
-
-(* Conjunction on triples with "special states" *)
-let triples_state_wit_conj trips trips' =
-  let mkand = function
-      (True,x) -> x
-    | (x,True) -> x
-    | (Not(True),x) -> Not(True)
-    | (x,Not(True)) -> Not(True)
-    | (x,y) when x = y -> x
-    | (x,y) -> And(x,y) in
-  setify (
-    foldl
-      (function rest ->
-	 function (s1,th1,wit1) ->
-	   foldl
-	     (function rest ->
-		function (s2,th2,wit2) ->
-		  match compatible_states(s1,s2) with
-		    Some s ->
-		      (match (conj_subst th1 th2) with
-			Some th -> (s,th,mkand(wit1,wit2))::rest
-		      | _       -> rest)
-		  | _ -> rest)
-	     rest trips')
-      [] trips)
-;;
-
-let negate_wit_wits wits =
-  match wits with
-    True -> []
-  | wits -> [Not(wits)];;
-
-let triple_wit_negate (s,th,wits) = 
-  let negstates = (NegState [s],top_subst,True) in
-  let negths = map (fun th -> (PosState s,th,True)) (negate_subst th) in
-  let negwits =
-    map (fun nwit -> (PosState s,th,nwit)) (negate_wit_wits wits) in
-    negstates :: (negwits @ negths) (* no need for triples_union, all diff *)
-
-(* FIX ME: it is not necessary to do full conjunction *)
-let triples_wit_complement states trips =
-  let cleanup (s,th,wit) =
-    match s with
-      | PosState s' -> [(s',th,wit)]
-      | NegState ss ->
-	  assert (th=top_subst);
-	  assert (wit=True);
-	  map (fun st -> (st,top_subst,True)) (setdiff states ss) in
-  let (simple,complex) =
-    List.partition (function (s,[],True) -> true | _ -> false) trips in
-  let simple =
-    [(NegState(List.map (function (s,_,_) -> s) simple),
-     top_subst,True)] in
-  let rec compl trips =
-    match trips with
-      | [] -> simple
-      | (t::ts) -> triples_state_wit_conj (triple_wit_negate t) (compl ts) in
-  (* setify not needed here, will be done by others *)
-  concatmap cleanup (compl complex)
-;;
-
-(* even makes a wit for true, which manages to keep around some extra info,
-eg (15,p = paren(1),[]) v (15,p != paren(1),[]) double unchecked is
-(15,p = paren(1),[]) v (15,p != paren(1),[]), not (15,[],[]) *)
-let witify trips =
-  List.map
-    (function (s,th,[]) -> (s,th,True) | (s,th,wit) -> (s,th,Wit wit))
-    trips
-
-let rec wit2c = function
-    Wit(_) -> "wit"
-  | And(a1,a2) -> Printf.sprintf "%s & %s" (wit2c a1) (wit2c a2)
-  | Not(a) -> Printf.sprintf "(not %s)" (wit2c a)
-  | True -> "true"
-
-let unwitify trips =
-  setify
-    (List.concat
-       (List.map
-	  (function (s,th,wit) ->
-	    let push_not =
-	      let rec posloop = function
-		  Wit(w) -> [w]
-		| And(a1,a2) ->
-		    let a1res = posloop a1 in
-		    let a2res = posloop a2 in
-		    foldl
-		      (function rest -> function a1 ->
-			foldl
-			  (function rest -> function a2 ->
-			    (a1@a2)::rest)
-			  rest a2res)
-		      [] a1res
-		| Not(a) -> negloop a
-		| True -> [[]]
-	      and negloop = function
-		  Wit(w) -> failwith "unexpected unchecked witness"
-		| And(a1,a2) -> (negloop a1) @ (negloop a2)
-		| Not(a) -> posloop a
-		| True -> [] in
-	      posloop in
-	    List.map (function wit -> (s,th,inner_setify wit)) (push_not wit))
-	  trips))
-
-(* ********************************** *)
-(* END OF NEGATION (NegState/Wit style)   *)
-(* ********************************** *)
-
-(* This function relies on y being sorted by state! *)
-(* on the other hand, it doesn't seem like a good idea, see wd/negate *)
-let double_negate y =
-  if !pDOUBLE_NEGATE_OPT
-  then
-    let do_one states y =
-      let arg = triples_wit_complement states (witify y) in
-      unwitify (triples_wit_complement states arg) in
-    let rec loop = function
-	[] -> []
-      | ((s,_,_) as t)::rest ->
-	  match loop rest with
-	    [] -> [[t]]
-	  | (((s1,_,_)::_) as g1)::rest ->
-	      if s = s1 then (t::g1)::rest else [t]::(g1::rest)
-	  | _ -> failwith "not possible" in
-    let res =
-      concatmap
-	(function
-	    [x] -> [x]
-	  | ((s,_,_)::_) as y -> do_one [s] y
-	  | _ -> failwith "not possible")
-	(loop y) in
-    res
-  else y
       
 let triples_union trips trips' =
   unionBy compare eq_trip trips trips';;
@@ -791,55 +654,48 @@ let rec pre_exist dir (grp,_,_) y reqst =
 
 exception Empty
 
-let pre_forall dir ((grp,_,states) as m) y all reqst =
-  if true(*!pPRE_FORALL_OPT*)
-  then
-    let check s =
-      match reqst with
-	None -> true | Some reqst -> List.mem s reqst in
-    let pred =
-      match dir with
-	A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
-    let succ =
-      match dir with
-	A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
-    let neighbors =
-      List.map
-	(function p -> (p,succ grp p))
-	(inner_setify
-	   (concatmap
-	      (function (s,_,_) -> List.filter check (pred grp s)) y)) in
-    let neighbor_triples =
-      List.fold_left
-	(function rest ->
-	  function (s,children) ->
-	    try
-	      (List.map
-		 (function child ->
-		   let child_triples =
-		     List.map
-		       (function (_,th,wit) -> (s,th,wit))
-		       (List.filter
-			  (function (s1,th,wit) -> s1 = child) all) in
-		   match child_triples with
-		     [] -> raise Empty
-		   | l -> l)
-		 children) :: rest
-	    with Empty -> rest)
-	[] neighbors in
-    match neighbor_triples with
-      [] -> []
-    | _ ->
-	foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
-  else
-    let one = triples_complement states all in
-    let two = pre_exist dir m one reqst in
-    let three = triples_complement states two in
-    three
-
+let pre_forall dir (grp,_,states) y all reqst =
+  let check s =
+    match reqst with
+      None -> true | Some reqst -> List.mem s reqst in
+  let pred =
+    match dir with
+      A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
+  let succ =
+    match dir with
+      A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
+  let neighbors =
+    List.map
+      (function p -> (p,succ grp p))
+      (inner_setify
+	 (concatmap
+	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
+  let neighbor_triples =
+    List.fold_left
+      (function rest ->
+	function (s,children) ->
+	  try
+	    (List.map
+	       (function child ->
+		 let child_triples =
+		   List.map
+		     (function (_,th,wit) -> (s,th,wit))
+		     (List.filter
+			(function (s1,th,wit) -> s1 = child) all) in
+		 match child_triples with
+		   [] -> raise Empty
+		 | l -> l)
+	       children) :: rest
+	  with Empty -> rest)
+      [] neighbors in
+  match neighbor_triples with
+    [] -> []
+  | _ ->
+      foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
+	
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
-
+    
 let satAX dir m s reqst = pre_forall dir m s s reqst
 ;;
 
@@ -1539,7 +1395,7 @@ let simpleanno2 l phi res =
 type optentry = bool ref * string
 type options = {label : optentry; unch : optentry;
 		 conj : optentry; compl1 : optentry; compl2 : optentry;
-		 preall : optentry; newinfo : optentry;
+		 newinfo : optentry;
 		 reqenv : optentry; reqstates : optentry}
 
 let options =
@@ -1548,7 +1404,6 @@ let options =
     conj = (pTRIPLES_CONJ_OPT,"triples_conj_opt");
     compl1 = (pTRIPLES_COMPLEMENT_OPT,"triples_complement_opt");
     compl2 = (pTRIPLES_COMPLEMENT_SIMPLE_OPT,"triples_complement_simple_opt");
-    preall = (pPRE_FORALL_OPT,"pre_forall_opt");
     newinfo = (pNEW_INFO_OPT,"new_info_opt");
     reqenv = (pREQUIRED_ENV_OPT,"required_env_opt");
     reqstates = (pREQUIRED_STATES_OPT,"required_states_opt")}
@@ -1572,13 +1427,8 @@ let conjneg =
      [options.conj;options.compl1;options.compl2;options.unch;options.label])]
 
 let path =
-  [("preall                  ", [options.preall]);
-    ("newinfo                 ", [options.newinfo]);
-    ("preall/newinfo          ", [options.preall;options.newinfo]);
-    ("preall unch satl        ", [options.preall;options.unch;options.label]);
-    ("newinfo unch satl       ", [options.newinfo;options.unch;options.label]);
-    ("preall/newinfo unch satl",
-     [options.preall;options.newinfo;options.unch;options.label])]
+  [("newinfo                 ", [options.newinfo]);
+    ("newinfo unch satl       ", [options.newinfo;options.unch;options.label])]
 
 let required =
   [("reqenv                  ", [options.reqenv]);
@@ -1592,7 +1442,7 @@ let required =
 
 let all_options =
   [options.label;options.unch;options.conj;options.compl1;options.compl2;
-    options.preall;options.newinfo;options.reqenv;options.reqstates]
+    options.newinfo;options.reqenv;options.reqstates]
 
 let all =
   [("all                     ",all_options)]
