@@ -1420,9 +1420,10 @@ let conjneg =
     ("compl12                 ", [options.compl1;options.compl2]);
     ("conj/compl12            ", [options.conj;options.compl1;options.compl2]);
     ("conj unch satl          ", [options.conj;options.unch;options.label]);
+(*
     ("compl1 unch satl        ", [options.compl1;options.unch;options.label]);
     ("compl12 unch satl       ",
-     [options.compl1;options.compl2;options.unch;options.label]);
+     [options.compl1;options.compl2;options.unch;options.label]); *)
     ("conj/compl12 unch satl  ",
      [options.conj;options.compl1;options.compl2;options.unch;options.label])]
 
@@ -1434,9 +1435,9 @@ let required =
   [("reqenv                  ", [options.reqenv]);
     ("reqstates               ", [options.reqstates]);
     ("reqenv/states           ", [options.reqenv;options.reqstates]);
-    ("reqenv unch satl        ", [options.reqenv;options.unch;options.label]);
+(*  ("reqenv unch satl        ", [options.reqenv;options.unch;options.label]);
     ("reqstates unch satl     ",
-     [options.reqstates;options.unch;options.label]);
+     [options.reqstates;options.unch;options.label]);*)
     ("reqenv/states unch satl ",
      [options.reqenv;options.reqstates;options.unch;options.label])]
 
