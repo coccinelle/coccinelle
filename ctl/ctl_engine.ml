@@ -31,6 +31,7 @@ let satAF_calls = ref 0
 let satEG_calls = ref 0
 let satAG_calls = ref 0
 
+let triples = ref 0
 
 let ctr = ref 0
 let new_let _ =
@@ -715,8 +716,8 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	    (*ctr := !ctr + 1;
 	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
-	    let res = triples_union first y in
 	    let new_info = setdiff first y in
+	    let res = setify (new_info @ y) in
 	    (*Printf.printf "iter %d res %d new_info %d\n"
 	    !ctr (List.length res) (List.length new_info);
 	    flush stdout;*)
@@ -742,8 +743,8 @@ let satEF dir m s2 reqst =
 	    (*ctr := !ctr + 1;
 	       print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir m new_info reqst in
-	  let res = triples_union first y in
 	  let new_info = setdiff first y in
+	  let res = setify (new_info @ y) in
 	    (*Printf.printf "EF %s iter %d res %d new_info %d\n"
 	       (if dir = A.BACKWARD then "reachable" else "real ef")
 	       !ctr (List.length res) (List.length new_info);
@@ -772,8 +773,8 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 	  (*ctr := !ctr + 1;
 	  print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = triples_conj s1 (pre_forall dir m new_info y reqst) in
-	  let res = triples_union first y in
 	  let new_info = setdiff first y in
+	  let res = setify (new_info @ y) in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
@@ -795,8 +796,8 @@ let satAF dir m s reqst =
 	[] -> y
       | new_info ->
 	  let first = pre_forall dir m new_info y reqst in
-	  let res = triples_union first y in
 	  let new_info = setdiff first y in
+	  let res = setify (new_info @ y) in
 	  f res new_info in
     f s s
   else
@@ -939,8 +940,8 @@ let reachsatEF dir (grp,_,_) s2 =
 	    (function Common.Right x -> x | _ -> failwith "not possible")
 	    new_info in
 	let first = inner_setify (concatmap (dirop grp) new_info) in
-	let res = union first y in
 	let new_info = setdiff first y in
+	let res = new_info @ y in
 	f res new_info in
   List.rev(f s2 s2) (* put root first *)
 
@@ -1125,6 +1126,7 @@ let rec satloop unchecked required required_states
 	then List.map (function (s,th,_) -> (s,th,[])) res
 	else res
     | A.Dots _ -> failwith "should not occur" in
+    if !Flag_ctl.bench then triples := !triples + (List.length res);
     drop_wits required_states res in
   
   loop unchecked required required_states phi
@@ -1459,7 +1461,8 @@ let counters =
 let perms =
   map
     (function (opt,x) ->
-      (opt,x,ref 0.0,List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
+      (opt,x,ref 0.0,ref 0,
+       List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
     (all@baseline@conjneg@path@required)
 
 let drop_negwits s =
@@ -1478,6 +1481,7 @@ let rec iter fn = function
   | n -> let _ = fn() in
     (Hashtbl.clear reachable_table;
      Hashtbl.clear memo_label;
+     triples := 0;
      iter fn (n-1))
 
 let copy_to_stderr fl =
@@ -1492,7 +1496,7 @@ let bench_sat (_,_,states) fn =
   List.iter (function (opt,_) -> opt := false) all_options;
   let answers =
     concatmap
-      (function (name,options,time,counter_info) ->
+      (function (name,options,time,trips,counter_info) ->
 	let gcinfo1 = Gc.quick_stat () in
 	if !time > float_of_int timeout then time := -100.0;
 	if not (!time = -100.0)
@@ -1503,6 +1507,7 @@ let bench_sat (_,_,states) fn =
 	    List.iter (function (opt,_) -> opt := true) options;
 	    List.iter (function (calls,_,save_calls) -> save_calls := !calls)
 	      counters;
+	    triples := 0;
 	    let res =
 	      let bef = Sys.time() in
 	      try
@@ -1512,6 +1517,7 @@ let bench_sat (_,_,states) fn =
 		    let res = iter fn 1 in
 		    let aft = Sys.time() in
 		    time := !time +. (aft -. bef);
+		    trips := !trips + !triples;
 		    List.iter2
 		      (function (calls,_,save_calls) ->
 			function (current_calls,current_cfg,current_max_cfg) ->
@@ -1564,8 +1570,8 @@ let print_bench _ =
   if !Flag_ctl.bench
   then
     (List.iter
-       (function (name,options,time,counter_info) ->
-	 Printf.fprintf stderr "%s Numbers: %f " name !time;
+       (function (name,options,time,trips,counter_info) ->
+	 Printf.fprintf stderr "%s Numbers: %f %d " name !time !trips;
 	 List.iter
 	   (function (calls,cfg,max_cfg) ->
 	     Printf.fprintf stderr "%d %d %d " !calls !cfg !max_cfg)
