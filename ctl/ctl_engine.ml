@@ -179,15 +179,6 @@ let rec nub ls =
 
 let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
 
-(* very simple minded *)
-let rec subsume = function
-    [] -> []
-  | (s1,th1,[])::(s2,th2,w2)::rest ->
-      if s1 = s2 && th1 = th2
-      then subsume ((s1,th1,[])::rest)
-      else (s1,th1,[])::subsume((s2,th2,w2)::rest)
-  | t::rest -> t::(subsume rest)
-
 let setifyBy eq xs = List.sort state_compare (nubBy eq xs);;
 
 let setify xs = List.sort state_compare (nub xs);;
@@ -717,12 +708,12 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	    let new_info = setdiff first y in
-	    let res = setify (new_info @ y) in
+	    let res = new_info @ y in
 	    (*Printf.printf "iter %d res %d new_info %d\n"
 	    !ctr (List.length res) (List.length new_info);
 	    flush stdout;*)
 	    f res new_info in
-      f s2 s2
+      List.sort state_compare (f s2 s2)
     else
       let f y =
 	let pre = pre_exist dir m y reqst in
@@ -744,13 +735,13 @@ let satEF dir m s2 reqst =
 	       print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir m new_info reqst in
 	  let new_info = setdiff first y in
-	  let res = setify (new_info @ y) in
+	  let res = new_info @ y in
 	    (*Printf.printf "EF %s iter %d res %d new_info %d\n"
 	       (if dir = A.BACKWARD then "reachable" else "real ef")
 	       !ctr (List.length res) (List.length new_info);
 	       flush stdout;*)
 	  f res new_info in
-    f s2 s2
+    List.sort state_compare (f s2 s2)
   else
     let f y =
       let pre = pre_exist dir m y reqst in
@@ -774,12 +765,12 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 	  print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = triples_conj s1 (pre_forall dir m new_info y reqst) in
 	  let new_info = setdiff first y in
-	  let res = setify (new_info @ y) in
+	  let res = new_info @ y in
 	  (*Printf.printf "iter %d res %d new_info %d\n"
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
 	  f res new_info in
-    f s2 s2
+    List.sort state_compare (f s2 s2)
     else
       let f y =
 	let pre = pre_forall dir m y y reqst in
@@ -797,9 +788,9 @@ let satAF dir m s reqst =
       | new_info ->
 	  let first = pre_forall dir m new_info y reqst in
 	  let new_info = setdiff first y in
-	  let res = setify (new_info @ y) in
+	  let res = new_info @ y in
 	  f res new_info in
-    f s s
+    List.sort state_compare (f s s)
   else
     let f y =
       let pre = pre_forall dir m y y reqst in
