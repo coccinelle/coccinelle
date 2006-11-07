@@ -7,7 +7,7 @@
  * 
  * (In all truth, Jed Schimmel wrote all this code.)
  *
- * $Id$
+ * 
  */
 #include <linux/init.h>
 #include <linux/types.h>

@@ -1,5 +1,5 @@
 /* 
- * $Id$
+ * 
  *
  * blkmtd.c - use a block device as a fake MTD
  *

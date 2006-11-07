@@ -1,5 +1,5 @@
 /* 
- * $Id: blkmtd.res,v 1.1 2006-09-14 11:13:15 pad Exp $
+ * 
  *
  * blkmtd.c - use a block device as a fake MTD
  *

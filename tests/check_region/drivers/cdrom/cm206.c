@@ -1,6 +1,6 @@
 /* cm206.c. A linux-driver for the cm206 cdrom player with cm260 adapter card.
    Copyright (c) 1995--1997 David A. van Leeuwen.
-   $Id$
+   
    
      This program is free software; you can redistribute it and/or modify
      it under the terms of the GNU General Public License as published by

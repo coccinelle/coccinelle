@@ -23,7 +23,7 @@
   Some small formal changes - aeb, 950809
 */
 
-static const char * cvsid = "$Id$";
+static const char * cvsid = "";
 const char * osst_version = "0.9.4.3";
 
 /* The "failure to reconnect" firmware bug */

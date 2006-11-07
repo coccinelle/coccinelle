@@ -1,4 +1,4 @@
-/* $Id$ */
+/*  */
 #define ASC_VERSION "3.2M"    /* AdvanSys Driver Version */
 
 /*

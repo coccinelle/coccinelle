@@ -1,4 +1,4 @@
-/* $Id$
+/* 
  *  linux/kernel/scsi_debug.c
  *
  *  Copyright (C) 1992  Eric Youngdale

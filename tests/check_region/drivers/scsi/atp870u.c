@@ -1,4 +1,4 @@
-/* $Id$
+/* 
  *  linux/kernel/atp870u.c
  *
  *  Copyright (C) 1997	Wu Ching Chen

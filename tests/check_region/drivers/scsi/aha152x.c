@@ -13,9 +13,12 @@
  * General Public License for more details.
  *
  *
- * $Id$
+ * 
  *
  * $Log$
+ * Revision 1.1  2006/09/20 15:28:58  julia
+ * *** empty log message ***
+ *
  * Revision 2.3  2000/11/04 16:40:26  fischer
  * - handle data overruns
  * - extend timeout for data phases

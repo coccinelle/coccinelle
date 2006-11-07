@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ident "$Id$"
+#ident ""
 
 /*
  * Veritas filesystem driver - support for 'immed' inodes.

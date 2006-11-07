@@ -1,4 +1,4 @@
-/* $Id$
+/* 
  *  linux/kernel/aha1542.c
  *
  *  Copyright (C) 1992  Tommy Thorn

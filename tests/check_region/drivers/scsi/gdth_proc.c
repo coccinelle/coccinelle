@@ -1,5 +1,5 @@
 /* gdth_proc.c 
- * $Id$
+ * 
  */
 
 #include "gdth_ioctl.h"

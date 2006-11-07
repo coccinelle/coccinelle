@@ -1,4 +1,4 @@
-/* $Id$
+/* 
  *  linux/drivers/scsi/wd7000.c
  *
  *  Copyright (C) 1992  Thomas Wuensche

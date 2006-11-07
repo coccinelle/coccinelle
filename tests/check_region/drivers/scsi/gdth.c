@@ -23,6 +23,9 @@
  * Tested with Linux 1.2.13, ..., 2.2.4                                 *
  *                                                                      *
  * $Log$
+ * Revision 1.1  2006/09/20 15:28:58  julia
+ * *** empty log message ***
+ *
  * Revision 1.23  1999/03/26 09:12:31  achim
  * Default value for hdr_channel set to 0
  *
@@ -120,7 +123,7 @@
  * Initial revision
  *
  ************************************************************************/
-#ident "$Id$" 
+#ident "" 
 
 /* All GDT Disk Array Controllers are fully supported by this driver.
  * This includes the PCI/EISA/ISA SCSI Disk Array Controllers and the

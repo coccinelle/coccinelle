@@ -4,7 +4,7 @@
  *	Description: Device Driver for Tekram DC-390 (T) PCI SCSI      *
  *		     Bus Master Host Adapter			       *
  ***********************************************************************/
-/* $Id$ */
+/*  */
 
 static void __inline__
 dc390_freetag (PDCB pDCB, PSRB pSRB)

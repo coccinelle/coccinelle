@@ -31,7 +31,7 @@
  * provisions above, a recipient may use your version of this file
  * under either the RHEPL or the GPL.
  *
- * $Id: 4_file.res,v 1.1 2006-09-14 11:13:15 pad Exp $
+ * 
  *
  */
 
