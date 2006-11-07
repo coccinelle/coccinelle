@@ -1,4 +1,7 @@
-// ---------------------------------------------------------------------------
+// ****************************************************************************
+// Standard C isomorphisms
+// ****************************************************************************
+
 // Note: the order of the rule have an importance. As we do not do a fixpoint,
 // changing the order may impact the result. For instance, if we have
 // iso1 =  x+y <=> y+x  and iso2 = i++ <=> i=i+1; 
@@ -6,6 +9,8 @@
 // Does the SP match the C ? 
 //  - Yes if iso2 precede iso1 in this file, 
 //  - No otherwise.
+
+
 
 // ---------------------------------------------------------------------------
 // Spacing (include comments) isomorphisms
