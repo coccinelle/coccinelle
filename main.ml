@@ -1,21 +1,29 @@
 open Common open Commonop
 
 (*****************************************************************************)
+(* 
+ * This module handle the IO, the special name of files, ... 
+ * The pure algorithmic stuff is in other modules.
+ *)
+(*****************************************************************************)
+
 let dir = ref false
 
 let cocci_file = ref ""
 let iso_file   = ref ""
 
 let test_mode = ref false
-let test_ctl_foo = ref false
 let testall_mode = ref false
+let test_ctl_foo = ref false
 
 let compare_with_expected = ref false
+let save_output_file = ref false (* if true, stores output in file.cocci_res *)
+
+
+let action = ref "" 
+
 
 let mktmp = Cocci.mktmp
-
-(* if true, stores output in file.cocci_res *)
-let save_output_file = ref false
 
 (*****************************************************************************)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
@@ -172,18 +180,15 @@ let main () =
   begin
     let args = ref [] in
     let options = Arg.align [ 
-      "-dir", Arg.Set dir, 
-        " <dirname> process all files in directory recursively";
-
       "-cocci_file", Arg.Set_string cocci_file, 
         " <filename> the semantic patch file";
 
       "-iso_file",   Arg.Set_string iso_file, 
         " <filename> the iso file";
 
-      "-error_words_only", Arg.Set Flag.process_only_when_error_words, 
-        " ";
 
+      "-dir", Arg.Set dir, 
+        " <dirname> process all files in directory recursively";
 
       "-test", Arg.Set test_mode, 
          " automatically find the corresponding c and cocci file";
@@ -196,6 +201,7 @@ let main () =
       "-save_output_file", Arg.Set save_output_file, " ";
       "-bench", Arg.Set Flag_ctl.bench, " ";
 
+      "-error_words_only", Arg.Set Flag.process_only_when_error_words, " ";
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";
       "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
@@ -213,15 +219,34 @@ let main () =
       "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
       "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
 
+      "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
 
-      "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
+
       "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
+      "-debug_lexer",        Arg.Set        Flag_parsing_c.debug_lexer , " ";
+      "-debug_etdt",         Arg.Set        Flag_parsing_c.debug_etdt , "  ";
+      "-debug_cfg",          Arg.Set        Flag_parsing_c.debug_cfg , "  ";
+      
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
+
       "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
+
+      "-action", Arg.Set_string action , 
+         (" <action>  (default_value = " ^ !action ^")" ^ 
+          "\n\t possibles actions are:
+
+               tokens
+               parse_c
+               parse_cocci
+               control_flow
+
+         so to test C parser, do -action parse_c ...
+                "
+       );
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 
@@ -236,6 +261,71 @@ let main () =
     | [x] when !test_ctl_foo -> 
         let cfile = x in 
         Cocci.full_engine cfile (Right (Test.foo_ctl ()));
+
+    | x::xs when !action <> "" -> 
+        (match !action, x::xs with
+        | "tokens_c", [file] -> 
+            Flag_parsing_c.debug_lexer := true; 
+            Flag_parsing_c.verbose_parsing := true;
+            Parse_c.tokens file +> List.iter (fun x -> pr2 (Dumper.dump x))
+        | "parse_c", x::xs -> 
+            let fullxs = 
+              if !dir
+              then (assert (xs = []); 
+                    process_output_to_list ("find " ^ x ^" -name \"*.c\"")) 
+              else x::xs 
+            in
+            
+            let _stat_list = ref [] in
+
+            fullxs +> List.iter (fun file -> 
+              pr2 ("HANDLING: " ^ file);
+
+              if not (file =~ ".*\\.c") 
+              then pr2 "warning: seems not a .c file";
+
+              file +> Parse_c.parse_print_error_heuristic +> (fun (x, stat) -> 
+                push2 stat _stat_list)
+                ;
+             (* file +> Parse_c.parse_print_error +> (fun (x) -> ()); *)
+             );
+            if not (null !_stat_list) 
+            then Parse_c.print_parsing_stat_list !_stat_list;
+        | "parse_cocci", [file] -> 
+            if not (file =~ ".*\\.cocci") 
+            then pr2 "warning: seems not a .cocci file";
+            (try 
+              let (xs,_,_) = Cocci.sp_from_file file None in
+              xs +> List.iter (fun rule -> 
+                Pretty_print_cocci.unparse rule
+                              )
+            with x -> pr2 "BAD" 
+            )
+        | "control_flow", [file] -> 
+            if not (file =~ ".*\\.c") 
+            then pr2 "warning: seems not a .c file";
+            file 
+              +> Parse_c.parse_print_error_heuristic
+              +> (fun (program, stat) -> 
+                program +> List.iter (fun (e,_) -> 
+                  match e with
+                  | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
+                      pr2 funcs;
+                      (try 
+                        Flow_to_ast.test def
+                      with 
+                      | Ast_to_flow.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"
+                      | Ast_to_flow.DeadCode Some info -> pr2 ("deadcode detected: " ^ (error_message file ("", info.charpos) ))
+                        
+                      )
+                    
+                  | _ -> ()
+                 );
+                 )
+        | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
+        | _ -> failwith "no action for this"
+        )
+        
         
     | x::xs -> 
 
@@ -251,11 +341,11 @@ let main () =
         let cocci_file = !cocci_file in
 
         let iso_file = 
-          if !iso_file = "" then 
-            (* todo: try to go back the parent dir recursively 
-             * to find a standard.iso 
-             *)
-            None 
+          (* todo: try to go back the parent dir recursively 
+           * to find a standard.iso 
+           *)
+          if !iso_file = "" 
+          then None 
           else Some !iso_file
         in
 
@@ -269,9 +359,7 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          (try 
-            Cocci.full_engine
-              cfile (Left (cocci_file, iso_file));
+          (try Cocci.full_engine cfile (Left (cocci_file, iso_file))
           with
             e -> 
               if !dir 
@@ -288,16 +376,17 @@ let main () =
 
 	  if !save_output_file
 	  then command2 ("cp /tmp/output.c "^cfile^".cocci_res");
+
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
               (if List.length fullxs = 1 then true else false)
-            );
+          );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
+   (* pr2 (profiling_diagnostic ()); *)
    )
   end
 
 
 let _ =
-  
   if not (!Sys.interactive) then (main ();Ctlcocci_integration.print_bench())

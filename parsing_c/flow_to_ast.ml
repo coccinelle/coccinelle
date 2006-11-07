@@ -54,8 +54,9 @@ let get_next_nodes_ifthenelse_sorted g nodei =
      +> List.map (fun (x,y,z) -> (x,y))
 
 
-(* todo: return also a special node, when has no default case, there is a 
- * direct edge from startswitch to endswitch. 
+(* It is called from the '{' node in "switch(x) { ... " so the problem 
+ * of the direct edge from startswitch to endswitch is handled in the caller
+ * of this function, not here.
  *)
 let get_next_nodes_switch_sorted g nodei = 
   (g#successors nodei)#tolist +> List.map (fun (nodei, Direct) -> 
@@ -375,7 +376,16 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                         (match unwrap (nodes#find nodei) with
                         | Break _ -> 
                             (match get_next_node g nodei with
-                            | nexti, SeqEnd (level2,i2) when level2 = level -> 
+                            | nexti, SeqEnd (level2,i2) -> 
+                                (* when level2 = level    is wrong, because
+                                 * if have case x: { foo(); break }, we
+                                 * have to find the good }, the one that close
+                                 * the switch 
+                                 *)
+  
+                                let (nexti, i2) = 
+                                  find_until_good_brace g level nodei in
+
                                 if !i2_candidat = None then 
                                   i2_candidat := Some (nexti, i2);
                                 
@@ -399,10 +409,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                      (* there was no break or return, certainly the default 
                         case *)
                     | LastCurrentNode nodei -> 
-                        (match get_next_node g nodei with
-                        | nexti, SeqEnd (level2,i2) when level2 = level -> 
+                        (match unwrap (nodes#find nodei) with
+                        | SeqEnd (level2,i2) when level2 = level -> 
                             i2_candidat := Some (nexti, i2);
-                            (match get_next_node g nexti with
+                            (match get_next_node g nodei with
                             | nextii, EndStatement _ -> 
                                endswitchi_candidat := Some nextii
                             | _ -> raise Impossible
