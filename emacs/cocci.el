@@ -64,6 +64,8 @@
 (defvar cocci-spatch-args 
   "-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc")
 (defvar cocci-spatch-default-output "/tmp/output.c")
+(defvar cocci-save-merge-result nil
+  "Determines if the result of merging files should be saved.")
 
 
 ;--------------------------------------------------
@@ -98,7 +100,17 @@
 (defvar cocci-current-cocci nil
   "The current cocci-file")
 
-(defvar cocci-spatch-output (generate-new-buffer "*Spatch Output*"))
+(defvar cocci-spatch-output nil
+  "The buffer for spatch output")
+
+;--------------------------------------------------
+; Misc helpers
+;--------------------------------------------------
+
+(defun get-spatch-output-buffer ()
+  (if (buffer-live-p cocci-spatch-output)
+      cocci-spatch-output
+    (setq cocci-spatch-output (generate-new-buffer "*Spatch Output*"))))
 
 
 ;--------------------------------------------------
@@ -181,9 +193,10 @@
 ;		  (insert-buffer buffer-C)
 		  (kill-buffer buffer-A)
 		  (kill-buffer buffer-B)
-		  (switch-to-buffer buffer-C)
-		  (delete-other-windows)
-		  (ediff-write-merge-buffer-and-maybe-kill buffer-C original)
+		  (when cocci-save-merge-result
+		    (switch-to-buffer buffer-C)
+		    (delete-other-windows)
+		    (ediff-write-merge-buffer-and-maybe-kill buffer-C original))
 ;		  (kill-buffer buffer-C)
 		  (set-window-configuration windows)
 		  (message "Merge resolved; you may save the buffer"))))
@@ -231,8 +244,7 @@ names are substituted (useful for Makefiles)."
   "Use EDiff to review and apply semantic patch."
   (interactive)
   (let ((file (dired-get-filename t))
-	(out-buf (or cocci-spatch-output 
-		     (generate-new-buffer "*Spatch Output*"))))
+	(out-buf (get-spatch-output-buffer)))
     (message "Applying SP '%s' to file '%s'..." 
 	     (file-name-nondirectory cocci-current-cocci) 
 	     (file-name-nondirectory file))
