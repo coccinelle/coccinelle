@@ -70,4 +70,4 @@ SOURCES = 10_symlink.c  \
 
 
 #
-include ../../generic_makefile
+include ../generic_makefile

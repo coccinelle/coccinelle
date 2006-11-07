@@ -47,4 +47,4 @@ SOURCES = 3c59x.c           \
 
 
 #
-include ../../generic_makefile
+include ../generic_makefile

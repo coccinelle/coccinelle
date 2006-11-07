@@ -34,4 +34,4 @@ SOURCES = 3c509.c          \
 
 
 # 
-include ../../generic_makefile
+include ../generic_makefile

@@ -10,4 +10,4 @@ SOURCES = amd7930_fn.c \
           isac.c \
           w6692.c
 
-include ../../generic_makefile
+include ../generic_makefile

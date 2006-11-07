@@ -20,4 +20,4 @@ SOURCES = amd7930.c \
 	  w6692.c
 
 
-include ../../generic_makefile
+include ../generic_makefile

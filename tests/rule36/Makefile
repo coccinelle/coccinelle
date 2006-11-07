@@ -19,4 +19,4 @@ SOURCES = 1_usb.c     \
 	  usbvideo.c
 
 # 
-include ../../generic_makefile
+include ../generic_makefile

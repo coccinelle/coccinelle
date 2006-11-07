@@ -60,4 +60,4 @@ SOURCES = CDCEther.c \
           wacom.c \
           whiteheat.c
 
-include ../../generic_makefile
+include ../generic_makefile

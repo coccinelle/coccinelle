@@ -16,4 +16,4 @@ SOURCES = avm_pci.c \
           netjet.c \
           w6692.c
 
-include ../../generic_makefile
+include ../generic_makefile

@@ -48,4 +48,4 @@ SOURCES = audio.c \
 	  2.6.0/ite8172.c
 
 
-include ../../generic_makefile
+include ../generic_makefile

@@ -20,4 +20,4 @@ SOURCES = ec.c       \
 
 
 #
-include ../../generic_makefile
+include ../generic_makefile
