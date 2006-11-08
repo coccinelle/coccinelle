@@ -249,7 +249,18 @@ let full_engine cfile coccifile_and_iso_or_ctl =
                error_words +> List.exists (fun errw -> str =~ (".*" ^ errw))
             then
               begin
-                let flow = Ast_to_flow.ast_to_control_flow def in
+                let flow = 
+                  try Ast_to_flow.ast_to_control_flow def 
+                  with Ast_to_flow.DeadCode Some info -> 
+                    pr2 "PBBBBBBBBBBBBBBBBBB";
+                    pr2 (Common.error_message filename ("", info.charpos));
+                    failwith 
+                      ("At least 1 DEADCODE detected (there may be more)," ^
+                       "but I can't continue." ^ 
+                       "Maybe because of cpp #ifdef side effects."
+                      );
+                    
+                in
                 
                 begin
                   try Ast_to_flow.deadcode_detection flow

@@ -30,7 +30,7 @@ exception DeadCode of Common.parse_info option
 exception CaseNoSwitch      of Common.parse_info
 exception OnlyBreakInSwitch of Common.parse_info
 exception NoEnclosingLoop   of Common.parse_info
-
+(* exception GotoCantFindLabel *)
 
 open Ast_c
 open Control_flow_c
@@ -277,7 +277,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                * qu'il y'a eu un return (ou goto), et donc forcement les 
                * braces auront au moins ete crée une fois, et donc flow_to_ast
                * marchera.
-               * todo?: sauf si le goto revient en arriere ?
+               * Sauf si le goto revient en arriere ? mais dans ce cas
+               * ca veut dire que le programme boucle. Pour qu'il boucle pas
+               * il faut forcement au moins un return.
                *)
               let endi = !g#add_node endnode +> adjust_g_i in
               !g#add_arc ((starti, endi), Direct) +> adjust_g;
@@ -299,7 +301,11 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        let newi = add_node_g (Goto (stmt, (s,ii))) lbl ("goto " ^ s ^ ":") in
        attach_to_previous_node starti newi;
 
-       let ilabel = labels_assoc#find s in
+       let ilabel = 
+         try labels_assoc#find s 
+         with Not_found -> failwith ("cant jump to " ^ s ^ 
+                                     ": because we can't find this label")
+       in
        (* attach_to_previous_node starti ilabel; 
         * todo: special_case: suppose that always goto to toplevel of function,
         * hence the Common.init 
@@ -641,7 +647,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
         let finalthen = aux_statement (Some doi, newauxinfo) st in 
         (match finalthen with
-        | None -> raise (DeadCode (Some (ii +> List.hd +> fst)))
+        | None -> 
+            if (!g#predecessors taili)#null
+            then raise (DeadCode (Some (ii +> List.hd +> fst)))
+            else Some newfakeelse
         | Some finali -> 
             !g#add_arc ((finali, taili), Direct) +> adjust_g;
             Some newfakeelse
@@ -850,6 +859,7 @@ let deadcode_detection g =
       (match unwrap node with
       | FunHeader _ -> ()
       | ErrorExit -> ()
+      | Exit -> () (* if have in .c   loop: if(x) return; i++; goto loop *)
       (* old: | Enter -> () *)
       (*      | EndStatement _ -> pr2 "control_flow: deadcode sur fake node, pas grave"; *)
       | SeqEnd _ -> () (* todo?: certaines deviennent orphelins *)

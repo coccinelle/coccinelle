@@ -54,7 +54,7 @@ let get_next_nodes_ifthenelse_sorted g nodei =
      +> List.map (fun (x,y,z) -> (x,y))
 
 
-(* It is called from the '{' node in "switch(x) {Â ... " so the problem 
+(* It is called from the '{' node in "switch(x) { ...  }" so the problem 
  * of the direct edge from startswitch to endswitch is handled in the caller
  * of this function, not here.
  *)
@@ -77,7 +77,7 @@ let rec find_until_good_brace g level lasti =
       if level2 = level 
       then (nexti,  i2)
       else find_until_good_brace g level nexti
-  | _ -> raise Impossible
+  | _ -> raise Not_found
 
 
 let find_next_best_label_candidate g xs = 
@@ -214,7 +214,21 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
               | _ -> raise Impossible
               )
           | NoNextNode lasti -> 
-              find_until_good_brace g level lasti +> snd
+              (try 
+                find_until_good_brace g level lasti +> snd
+              with Not_found -> 
+                (* When have in func { loop: if(x) return; i++; goto loop },
+                 * the '}' does not follow lasti. the '}' is somewhere else.
+                 * We use brute force this time.
+                 *)
+                nodes#tolist +> Common.find_some (fun (nodei, _node) -> 
+                    match unwrap (nodes#find  nodei) with 
+                   | SeqEnd(level2, i2) when level2 = level -> 
+                       Some (nodei, i2)
+                   | _ -> None 
+                ) +> snd
+              )
+
         in
         (Compound compound, [i1;i2]),  return
     (* ------------------------- *)        
@@ -492,7 +506,29 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
                 )
             | _ -> raise Impossible
             )
-        | NoNextNode _ -> raise Impossible
+        | NoNextNode _ -> 
+           (* Certainly because of wierd C program, involving continue.
+            * cf parsing_c/tests/flow_dowhile_deadcode.c. Have to find
+            * the whiletail. For the moment do it brute force.
+            *)
+             let lbldo = extract_labels (nodes#find starti) in
+             nodes#tolist +> Common.find_some (fun (taili, node) -> 
+                match unwrap (nodes#find  taili) with 
+                 | DoWhileTail (e, iiwhiletail) 
+                   when lbldo = extract_labels node -> 
+                    add_visited taili;
+                    Some
+                    (match get_next_nodes_ifthenelse_sorted g taili with
+                    | [(theni, TrueNode);  (afteri, FallThroughNode)] -> 
+                       add_visited theni;
+                       let endfori = get_next_node_if_empty_end g afteri +> fst in
+                      (Iteration (Ast_c.DoWhile (st, e)), iido::iiwhiletail),
+                      LastCurrentNode endfori
+                    | _ -> raise Impossible
+                    )
+                 | _ -> None 
+                )
+
         )
         
 
