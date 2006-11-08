@@ -48,3 +48,6 @@ SOURCES = 3c59x.c           \
 
 #
 include ../generic_makefile
+
+clean::
+	rm -f bugfix_files/*.ok bugfix_files/.*failed

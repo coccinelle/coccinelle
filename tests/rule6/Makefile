@@ -49,3 +49,6 @@ SOURCES = audio.c \
 
 
 include ../generic_makefile
+
+clean::
+	rm -f 2.6.0/*.ok 2.6.0/.*failed
