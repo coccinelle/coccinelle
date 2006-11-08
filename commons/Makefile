@@ -14,11 +14,11 @@ SRC = dumper.ml suffix_tree.ml \
 
 SYSLIBS=str.cma unix.cma
 
-# The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
 OPTFLAGS=
 
+# The Caml compilers.
 CAMLC =ocamlc$(OPTBIN) -g $(PP)
 CAMLOPT=ocamlopt$(OPTBIN)  $(PP) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)

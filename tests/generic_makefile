@@ -2,7 +2,7 @@ COCCIDIR=../..
 SPATCH=$(COCCIDIR)/spatch
 ISOFILE=-iso_file $(COCCIDIR)/standard.iso
 SPATCH=../../spatch
-#SPATCH=../../spatch.opt  # for the bench !!!
+SPATCH=../../spatch.opt  # for the bench !!!
 
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc
 
@@ -47,12 +47,12 @@ clean:
 	-compare_with_expected -debug_cpp \
 	 $<
 
-count:
+score:
 	-ls -l *.ok | wc -l
 	-ls -l *.failed | wc -l
 
 info_order:
-	set -e; for i in $(SOURCES); do ../../extract_info_ok_failed.pl $$i.ok $$i.failed; done 
+	set -e; for i in $(SOURCES); do ../../scripts/extract_info_ok_failed.pl $$i.ok $$i.failed; done 
 
 info2:
 	-ls *.ok

@@ -2,6 +2,7 @@ TARGET=spatch
 
 SRC = flag.ml cocci.ml test.ml main.ml
 
+
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
@@ -36,6 +37,13 @@ OPTOBJS = $(SRC:.ml=.cmx)
 all: rec $(EXEC)
 opt: rec.opt $(OPTEXEC)
 
+test: $(TARGET)
+	./$(TARGET) -testall
+
+#can add -inline 0  to see all the functions in the profile.
+forprofiling:
+	$(MAKE) OPTFLAGS="-p " opt
+
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
@@ -66,7 +74,6 @@ prim.o: prim.c
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
-
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
@@ -77,12 +84,6 @@ test.ml:
 
 beforedepend:: test.ml
 
-
-
-
-#can add -inline 0  to see all the functions in the profile.
-forprofiling:
-	$(MAKE) OPTFLAGS="-p " opt
 
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

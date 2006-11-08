@@ -30,7 +30,7 @@ LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
 GENERATED= $(LEXER_SOURCES:.mll=.ml) \
-$(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli)
+	   $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli)
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
 
