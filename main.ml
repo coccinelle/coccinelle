@@ -199,7 +199,7 @@ let main () =
 
       "-compare_with_expected", Arg.Set compare_with_expected, " "; 
       "-save_output_file", Arg.Set save_output_file, " ";
-      "-bench", Arg.Set Flag_ctl.bench, " ";
+      "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
       "-error_words_only", Arg.Set Flag.process_only_when_error_words, " ";
       

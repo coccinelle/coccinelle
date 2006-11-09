@@ -1,5 +1,5 @@
 external c_counter : unit -> int = "c_counter"
-let timeout = 600
+let timeout = 800
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
 let pTRIPLES_CONJ_OPT = ref true
@@ -1117,7 +1117,7 @@ let rec satloop unchecked required required_states
 	then List.map (function (s,th,_) -> (s,th,[])) res
 	else res
     | A.Dots _ -> failwith "should not occur" in
-    if !Flag_ctl.bench then triples := !triples + (List.length res);
+    if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     drop_wits required_states res in
   
   loop unchecked required required_states phi
@@ -1488,7 +1488,7 @@ let bench_sat (_,_,states) fn =
   let answers =
     concatmap
       (function (name,options,time,trips,counter_info) ->
-	let gcinfo1 = Gc.quick_stat () in
+	let iterct = !Flag_ctl.bench in
 	if !time > float_of_int timeout then time := -100.0;
 	if not (!time = -100.0)
 	then
@@ -1505,7 +1505,7 @@ let bench_sat (_,_,states) fn =
 		Common.timeout_function timeout
 		  (fun () ->
 		    let bef = Sys.time() in
-		    let res = iter fn 1 in
+		    let res = iter fn iterct in
 		    let aft = Sys.time() in
 		    time := !time +. (aft -. bef);
 		    trips := !trips + !triples;
@@ -1531,16 +1531,6 @@ let bench_sat (_,_,states) fn =
 		      (aft -. bef) name;
 		    []
 		  end in
-	    let _ = Sys.command "free > /tmp/freeout" in
-	    copy_to_stderr "/tmp/freeout";
-	    let gcinfo2 = Gc.quick_stat () in
-	    Printf.fprintf stderr
-	      "GC: minor %d major %d minor words %f major words %f\n"
-	      (gcinfo2.Gc.minor_collections - gcinfo1.Gc.minor_collections)
-	      (gcinfo2.Gc.major_collections - gcinfo1.Gc.major_collections)
-	      (gcinfo2.Gc.minor_words -. gcinfo1.Gc.minor_words)
-	      (gcinfo2.Gc.major_words -. gcinfo1.Gc.major_words);
-	    flush stderr;
 	    List.iter (function (opt,_) -> opt := false) options;
 	    res
 	  end
@@ -1558,14 +1548,16 @@ let bench_sat (_,_,states) fn =
       res)
       
 let print_bench _ =
-  if !Flag_ctl.bench
+  let iterct = !Flag_ctl.bench in
+  if iterct > 0
   then
     (List.iter
        (function (name,options,time,trips,counter_info) ->
-	 Printf.fprintf stderr "%s Numbers: %f %d " name !time !trips;
+	 Printf.fprintf stderr "%s Numbers: %f %d "
+	   name (!time /. (float_of_int iterct)) !trips;
 	 List.iter
 	   (function (calls,cfg,max_cfg) ->
-	     Printf.fprintf stderr "%d %d %d " !calls !cfg !max_cfg)
+	     Printf.fprintf stderr "%d %d %d " (!calls / iterct) !cfg !max_cfg)
 	   counter_info;
 	 Printf.fprintf stderr "\n")
        perms)
@@ -1599,12 +1591,12 @@ let sat m phi reqopt check_conj =
       if(!Flag_ctl.verbose_ctl_engine)
       then
 	let fn _ = snd (sat_annotree simpleanno2 m phi check_conj) in
-	if !Flag_ctl.bench
+	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn()
       else
 	let fn _ = satloop false [[]] None m phi [] check_conj in
-	if !Flag_ctl.bench
+	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn() in
 (* print_state "final result" res;*)
