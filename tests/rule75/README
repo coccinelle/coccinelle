@@ -1,0 +1,3 @@
+concerns the new function pci_set_consistent_dma_mask
+by hand we have only considered the evolution in the sound/pci directory of
+Linux 2.6.3

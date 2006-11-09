@@ -1,0 +1,2 @@
+concerns functions that have snd_pcm_lib_preallocate as a substring
+Linux 2.6.5

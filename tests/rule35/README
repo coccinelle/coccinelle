@@ -1,0 +1,3 @@
+The evolution occurs in Linux 2.5.3 and affects 23 files in the
+isdn/hisax directory.  It affects code using field names such as l1l2 and
+l2l1.

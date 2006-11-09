@@ -1,0 +1,3 @@
+concerns existing calls to the function
+snd_pcm_lib_preallocate_pages_for_all
+Linux 2.6.5

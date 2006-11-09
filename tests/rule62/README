@@ -1,0 +1,3 @@
+Linux 2.5.39
+block, ide, md, mtd, s390, and scsi directories
+calls to blk_clear are dropped
