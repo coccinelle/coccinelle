@@ -89,6 +89,7 @@ let rec propagate_types env =
 	      Some(T.BaseType(T.BoolType,None)))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
+	  Ast0.set_type exp2 (T.BaseType(T.IntType,None));
 	  (match Ast0.get_type exp1 with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
@@ -153,7 +154,7 @@ let rec propagate_types env =
 	    let rec process_decl decl =
 	      match Ast0.unwrap decl with
 		Ast0.Init(ty,id,_,exp,_) ->
-		  (propagate_types (acc@env)).V0.combiner_expression exp;
+		  (propagate_types (acc@env)).V0.combiner_initialiser exp;
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(ty,id,_) -> [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.DisjDecl(_,disjs,_,_) ->

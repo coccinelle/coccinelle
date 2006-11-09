@@ -179,9 +179,9 @@ let rec nub ls =
 
 let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
 
-let setifyBy eq xs = List.sort state_compare (nubBy eq xs);;
+let setifyBy eq xs = nubBy eq xs;;
 
-let setify xs = List.sort state_compare (nub xs);;
+let setify xs = nub xs;;
 
 let inner_setify xs = List.sort compare (nub xs);;
 
@@ -713,7 +713,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	    !ctr (List.length res) (List.length new_info);
 	    flush stdout;*)
 	    f res new_info in
-      List.sort state_compare (f s2 s2)
+      f s2 s2
     else
       let f y =
 	let pre = pre_exist dir m y reqst in
@@ -741,7 +741,7 @@ let satEF dir m s2 reqst =
 	       !ctr (List.length res) (List.length new_info);
 	       flush stdout;*)
 	  f res new_info in
-    List.sort state_compare (f s2 s2)
+    f s2 s2
   else
     let f y =
       let pre = pre_exist dir m y reqst in
@@ -770,7 +770,7 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 	  !ctr (List.length res) (List.length new_info);
 	  flush stdout;*)
 	  f res new_info in
-    List.sort state_compare (f s2 s2)
+    f s2 s2
     else
       let f y =
 	let pre = pre_forall dir m y y reqst in
@@ -790,7 +790,7 @@ let satAF dir m s reqst =
 	  let new_info = setdiff first y in
 	  let res = new_info @ y in
 	  f res new_info in
-    List.sort state_compare (f s s)
+    f s s
   else
     let f y =
       let pre = pre_forall dir m y y reqst in

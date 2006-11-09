@@ -6,7 +6,8 @@ SRC = flag.ml cocci.ml test.ml main.ml
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
-     engine/cocciengine.cma prim.o
+     engine/cocciengine.cma
+CLIBS=prim.o
 
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
@@ -54,12 +55,12 @@ rec.opt:
 $(EXEC): $(OBJS) $(LIBS)
 	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS)
 
-$(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+$(TARGET).top: $(OBJS) $(LIBS) $(CLIBS)
+	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(CLIBS) $(OBJS)
 
-$(OPTEXEC): $(OPTOBJS) $(OPTLIBS)
+$(OPTEXEC): $(OPTOBJS) $(LIBS:.cma=.cmxa) $(CLIBS)
 	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) \
-	  $(LIBS:.cma=.cmxa) $(OPTOBJS)
+	  $(LIBS:.cma=.cmxa) $(CLIBS) $(OPTOBJS)
 
 
 INC=$(dir $(shell which ocaml))

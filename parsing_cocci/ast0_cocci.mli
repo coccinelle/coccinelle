@@ -122,7 +122,7 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of typeC * ident * string mcode (*=*) * expression *
+    Init of typeC * ident * string mcode (*=*) * initialiser *
 	string mcode (*;*)
   | UnInit of typeC * ident * string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list * string mcode list *
@@ -132,6 +132,30 @@ and base_declaration =
   | MultiDecl  of declaration (* only allowed in nests *)
 
 and declaration = base_declaration wrap
+
+(* --------------------------------------------------------------------- *)
+(* Initializers *)
+
+and base_initialiser =
+    InitExpr of expression 
+  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
+  | InitGccDotName of
+      string mcode (*.*) * ident (* name *) * string mcode (*=*) *
+	initialiser (* gccext: *)
+  | InitGccName of ident (* name *) * string mcode (*:*) *
+	initialiser
+  | InitGccIndex of
+      string mcode (*[*) * expression * string mcode (*]*) *
+	string mcode (*=*) * initialiser
+  | InitGccRange of
+      string mcode (*[*) * expression * string mcode (*...*) *
+        expression * string mcode (*]*) * string mcode (*=*) * initialiser
+  | IComma of string mcode
+  | Idots  of string mcode (* ... *)
+
+and initialiser = base_initialiser wrap
+
+and initialiser_list = initialiser dots
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

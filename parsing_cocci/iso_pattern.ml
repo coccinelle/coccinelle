@@ -276,9 +276,9 @@ let match_maker context_required whencode_allowed =
     if not(context_required) or is_context d
     then
       match (Ast0.unwrap pattern,Ast0.unwrap d) with
-	(Ast0.Init(tya,ida,_,expa,_),Ast0.Init(tyb,idb,_,expb,_)) ->
+	(Ast0.Init(tya,ida,_,inia,_),Ast0.Init(tyb,idb,_,inib,_)) ->
 	  conjunct_bindings (match_typeC tya tyb)
-	    (conjunct_bindings (match_ident ida idb) (match_expr expa expb))
+	    (conjunct_bindings (match_ident ida idb) (match_init inia inib))
       | (Ast0.UnInit(tya,ida,_),Ast0.UnInit(tyb,idb,_)) ->
 	  conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
@@ -291,7 +291,30 @@ let match_maker context_required whencode_allowed =
       | (_,Ast0.MultiDecl(declb)) -> match_decl pattern declb
       | _ -> return false
     else return false
-	
+
+  and match_init pattern i =
+    if not(context_required) or is_context i
+    then
+      match (Ast0.unwrap pattern,Ast0.unwrap i) with
+	(Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
+	  match_expr expa expb
+      | (Ast0.InitList(initlista),Ast0.InitList(initlistb)) ->
+	  match_dots match_init initlista initlistb
+      | (Ast0.InitGccDotName(_,namea,_,inia),
+	 Ast0.InitGccDotName(_,nameb,_,inib) ->
+	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
+      | (Ast0.InitGccName(namea,_,inia),Ast0.InitGccName(nameb,_,inib)) ->
+	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
+      | (Ast0.InitGccIndex(_,expa,_,_,inia),
+	 Ast0.InitGccIndex(_,expb,_,_,inib)) ->
+	   conjunct_bindings (match_exp expa expb) (match_init inia inib)
+      | (Ast0.InitGccRange(_,exp1a,_,exp2a,_,_,inia),
+	 Ast0.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
+	   conjunct_bindings (match_exp exp1a exp1b)
+	    (conjunct_bindings (match_exp exp2a exp2b) (match_init inia inib))
+      | (Ast0.IComma(_),Ast0.IComma(_)) -> return true
+      | (Ast0.IDots(_),Ast0.IDots(_)) -> return true
+
   and match_param pattern p =
     match Ast0.unwrap pattern with
       Ast0.MetaParam(name) -> add_binding name (Ast0.ParamTag p)

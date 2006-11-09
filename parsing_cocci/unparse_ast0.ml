@@ -216,6 +216,34 @@ let rec declaration d =
       | Ast0.MultiDecl(decl) -> print_string "\\+"; declaration decl)
 
 (* --------------------------------------------------------------------- *)
+(* Initialiser *)
+
+and initialiser i =
+  print_context i
+    (function _ ->
+      match Ast0.unwrap i with
+	Ast0.InitExpr(exp) -> expression exp
+      | Ast0.InitList(lb,initlist,rb) ->
+	  mcode print_string lb; dots initialiser initlist;
+	  mcode print_string rb
+      | Ast0.InitGccDotName(dot,name,eq,ini) ->
+	  mcode print_string dot; ident name; print_string " ";
+	  mcode print_string eq; print_string " "; initialiser ini
+      | Ast0.InitGccName(name,eq,ini) ->
+	  ident name; mcode print_string eq; initialiser ini
+      | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
+	  mcode print_string lb; expression exp; mcode print_string rb;
+	  print_string " "; mcode print_string eq; print_string " ";
+	  initialiser ini
+      | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+	  mcode print_string lb; expression exp1; mcode print_string dots;
+	  expression exp2; mcode print_string rb;
+	  print_string " "; mcode print_string eq; print_string " ";
+	  initialiser ini
+      | Ast0.IComma(cm) -> mcode print_string cm
+      | Ast0.IDots(d) -> mcode print_string d
+
+(* --------------------------------------------------------------------- *)
 (* Parameter *)
 
 let rec parameterTypeDef p =

@@ -305,7 +305,7 @@ let rec declaration d =
     Ast0.Init(ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
-      let exp = expression exp in
+      let exp = initialiser exp in
       mkres d (Ast0.Init(ty,id,eq,exp,sem)) ty (promote_mcode sem)
   | Ast0.UnInit(ty,id,sem) ->
       let ty = typeC ty in
@@ -328,7 +328,55 @@ let rec declaration d =
   | Ast0.MultiDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.MultiDecl(declaration decl)) decl decl
+
+(* --------------------------------------------------------------------- *)
+(* Initializer *)
+
+and is_init_dots i =
+  match Ast0.unwrap i with
+    Ast0.Idots(_) -> true
+  | _ -> false
 	
+and initialiser i =
+  match Ast0.unwrap i with
+    Ast0.InitExpr(exp) ->
+      let exp = expression exp in
+      mkres i (Ast0.InitExpr(exp)) exp exp
+  | Ast0.InitList(lb,initlist,rb) ->
+      let initlist =
+	dots is_init_dots (Some(promote_mcode lb)) initialiser initlist in
+      mkres i (Ast0.InitList(lb,initlist,rb))
+	(promote_mcode lb) (promote_mcode rb)
+  | Ast0.InitGccDotName(dot,name,eq,ini) ->
+      let name = ident name in
+      let ini = initialiser ini in
+      mkres i (Ast0.InitGccDotName(dot,name,eq,ini)) (promote_mcode dot) ini
+  | Ast0.InitGccName(name,eq,ini) ->
+      let name = ident name in
+      let ini = initialiser ini in
+      mkres i (Ast0.InitGccName(name,eq,ini)) name ini
+  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
+      let exp = expression exp in
+      let ini = initialiser ini in
+      mkres i (Ast0.InitGccIndex(lb,exp,rb,eq,ini)) (promote_mcode lb) ini
+  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+      let exp1 = expression exp1 in
+      let exp2 = expression exp2 in
+      let ini = initialiser ini in
+      mkres i (Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini))
+	(promote_mcode lb) ini
+  | Ast0.IComma(cm) as up ->
+      let ln = promote_mcode cm in mkres p up ln ln
+  | Ast0.IDots(d) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres p (Ast0.Idots(dots)) ln ln
+
+let initialiser_list prev = dots is_init_dots prev initialiser
+
+(* for export *)
+let initialiser_dots x = dots is_init_dots None initialiser x
+
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
@@ -363,7 +411,7 @@ let rec parameterTypeDef p =
   | Ast0.UniqueParam(param) ->
       let res = parameterTypeDef param in
       mkres p (Ast0.UniqueParam(res)) res res
-	
+
 let parameter_list prev = dots is_param_dots prev parameterTypeDef
 
 (* for export *)

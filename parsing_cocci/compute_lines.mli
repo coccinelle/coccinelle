@@ -6,6 +6,9 @@ val expression_dots :
 val parameter_dots :
     Ast0_cocci.parameterTypeDef Ast0_cocci.dots ->
       Ast0_cocci.parameterTypeDef Ast0_cocci.dots
+val initialiser_dots :
+    Ast0_cocci.initialiser Ast0_cocci.dots ->
+      Ast0_cocci.initialiser Ast0_cocci.dots
 val statement_dots :
     Ast0_cocci.statement Ast0_cocci.dots ->
       Ast0_cocci.statement Ast0_cocci.dots

@@ -1,4 +1,5 @@
 (* create an index for each constructor *)
+(* current max is 109 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -93,6 +94,17 @@ let declaration d =
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.MultiDecl(decl) -> [58]
+
+let initialiser i =
+  match Ast0.unwrap i with
+    Ast0.InitExpr(exp) -> [102] (* added after *)
+  | Ast0.InitList(initlist) -> [103]
+  | Ast0.InitGccDotName(dot,name,eq,ini) -> [104]
+  | Ast0.InitGccName(name,eq,ini) -> [105]
+  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) -> [106]
+  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) -> [107]
+  | Ast0.IComma(cm) -> [108]
+  | Ast0.IDots(d) -> [109]
 	
 let parameterTypeDef p =
   match Ast0.unwrap p with
