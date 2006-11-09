@@ -102,13 +102,21 @@ let add_ident s    =
   end
 
 
-type lexer_hint = 
-  | ParameterDeclaration 
-  | StructDefinition
-  | Statements
-  | Toplevel
+type lexer_hint = { 
+    mutable parameterDeclaration: bool;
+    mutable structDefinition: bool;
+    mutable statements: bool;
+    mutable toplevel: bool;
+  }
 
-let _lexer_hint = ref (None: lexer_hint option)
+let default_hint () = { 
+  parameterDeclaration = false;
+  structDefinition = false;
+  statements = false;
+  toplevel = false;
+}
+
+let _lexer_hint = ref (default_hint())
 
 
 let lexer_reset_typedef () = 
@@ -116,6 +124,6 @@ let lexer_reset_typedef () =
   _handle_typedef := true;
   typedef := Hashtbl.create 100;
   scoped_typedef := [[]];
-  _lexer_hint := Some Toplevel;
+  _lexer_hint := { (default_hint ()) with toplevel = true; } ;
   end
 

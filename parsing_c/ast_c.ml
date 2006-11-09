@@ -257,6 +257,7 @@ and statementbis =
    | Switch of expression * statement 
    (* need check that all elements in the compound start with a case: 
       (otherwise unreachable code)  *)
+   | IfCpp of statement list * statement list
 
 
   and iteration     = 

@@ -193,7 +193,8 @@ let fix_add_params_ident = function
 %}
 
 %token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
-%Token <Ast_c.info> TDefine TInclude
+%token <Ast_c.info> TDefine TInclude
+%token <Ast_c.info> TIfdef TIfdefelse TEndif
 
 %token <(string * Ast_c.isWchar) * Ast_c.info> TString
 %token <(string * Ast_c.isWchar) * Ast_c.info> TChar
@@ -445,14 +446,18 @@ statement_list: statement { [$1] }
 	      | statement_list statement { $1 ++ [$2] }
 
 compound2:  { ([]) }
-        | compound3 { ($1) }
+        | stat_or_decl_list { ($1) }
 
-compound3: 
+stat_or_decl_list: 
         | stat_or_decl { [$1] }                          
-        | compound3 stat_or_decl { $1 ++ [$2] }
+        | stat_or_decl_list stat_or_decl { $1 ++ [$2] }
 
 stat_or_decl: decl      { Decl $1, [] }
             | statement { $1 }
+            | TIfdef stat_or_decl_list TIfdefelse stat_or_decl_list TEndif 
+                { Selection (IfCpp ($2, $4)), [$1;$3;$5] }
+            | TIfdef stat_or_decl_list TEndif 
+                { Selection (IfCpp ($2, [])), [$1;$3] }
 
 
 
@@ -594,7 +599,7 @@ s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace 
 	    | struct_or_union ident                                  
 		{ StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
 
-tobrace_struct: TOBrace { Lexer_parser._lexer_hint := None; $1 }
+tobrace_struct: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
 
 struct_or_union: struct_or_union2 { et "su" (); $1 }
 
@@ -718,8 +723,8 @@ direct_d:
 tocro: TOCro { et "tocro" ();$1 }
 tccro: TCCro { dt "tccro" ();$1 }
 
-topar: TOPar { new_scope ();et "topar" (); Lexer_parser._lexer_hint := Some ParameterDeclaration; $1  }
-tcpar: TCPar { del_scope ();dt "tcpar" (); Lexer_parser._lexer_hint := None; $1  }
+topar: TOPar { new_scope ();et "topar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- true; $1  }
+tcpar: TCPar { del_scope ();dt "tcpar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- false; $1  }
 
 
 
@@ -786,8 +791,8 @@ initialize2: arith_expr                                         { InitExpr $1,  
 /********************************************************************************/
 
 translation_unit: 
-                | external_declaration                  { Lexer_parser._lexer_hint := Some Toplevel;   [$1] }
-	        | translation_unit external_declaration { Lexer_parser._lexer_hint := Some Toplevel; $1 ++ [$2] }
+                | external_declaration                  { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
+	        | translation_unit external_declaration { !Lexer_parser._lexer_hint.toplevel <- true; $1 ++ [$2] }
 
 external_declaration: 
                     | function_definition               { Definition (fixFunc $1) }
@@ -797,7 +802,7 @@ external_declaration:
 
 function_definition: start_fun compound      { del_scope(); ($1, $2) }
 
-start_fun: start_fun2                        { new_scope(); fix_add_params_ident $1; Lexer_parser._lexer_hint := None;  $1 }
+start_fun: start_fun2                        { new_scope(); fix_add_params_ident $1; !Lexer_parser._lexer_hint.toplevel <- false;  $1 }
 start_fun2: decl_spec declaratorfd           { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
                                                (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
 

@@ -312,7 +312,7 @@ let main () =
                   | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
                       pr2 funcs;
                       (try 
-                        Flow_to_ast.test def
+                        Flow_to_ast.test !Flag.show_flow def
                       with 
                       | Ast_to_flow.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"
                       | Ast_to_flow.DeadCode Some info -> pr2 ("deadcode detected: " ^ (error_message file ("", info.charpos) ))

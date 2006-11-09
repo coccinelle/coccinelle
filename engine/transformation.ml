@@ -269,6 +269,7 @@ let rec
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
   | _, F.Goto _ 
   | _, F.Asm
+  | _, F.IfCpp _
     -> raise Impossible
 
   | _, _ -> raise NoMatch

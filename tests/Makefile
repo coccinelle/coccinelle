@@ -1,4 +1,3 @@
-
 MAKESUBDIRS=devfs video_usercopy usb_submit_urb \
  rule10 rule17 rule18 rule18a rule19 rule30 rule31 rule33 rule36 rule38 \
  rule42   rule6 rule74 rule82 rule83  rule9 
@@ -18,9 +17,4 @@ clean:
 score:
 	find -name "*.ok" | wc -l
 	find -name "*.failed" | wc -l
-
-
-
-
-
 

@@ -13,6 +13,14 @@ type parsing_stat = {
     mutable bad: int;
   } 
 
+let default_stat file =  { 
+    filename = file;
+    passing_through_lines = 0;
+    bad = 0;
+    correct = 0;
+    have_timeout          = false;
+  }
+
 (* 
  * todo: stat per dir ?  give in terms of func_or_decl numbers:   
  *   nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
@@ -121,7 +129,7 @@ let tokens_string string =
 
 (*---------------------------------------------------------------------------*)
 
-(* because ocamllex force us to do it that way :( cant return a pair to 
+(* Because ocamllex force us to do it that way :( cant return a pair to 
    ocamlyacc :( *)
 let info_from_token = function
   | Parser_c.TComment  (i) -> i
@@ -130,6 +138,9 @@ let info_from_token = function
   | Parser_c.TCommentAttrOrMacro  (i) -> i
   | Parser_c.TDefine  (i) -> i
   | Parser_c.TInclude  (i) -> i
+  | Parser_c.TIfdef  (i) -> i
+  | Parser_c.TIfdefelse  (i) -> i
+  | Parser_c.TEndif  (i) -> i
   | Parser_c.TString ((string, isWchar), i) -> i
   | Parser_c.TChar  ((string, isWchar), i) -> i
   | Parser_c.TIdent  (s, i) -> i
@@ -231,7 +242,6 @@ let parse file =
  *   result
 *)
 
-
 let parse_gen parsefunc s = 
 
   let toks = tokens_string s in 
@@ -292,7 +302,7 @@ let parse_print_error file =
 
 (*---------------------------------------------------------------------------*)
 open Parser_c
-
+open Lexer_parser
 
 let _LookAhead = 10
 
@@ -472,7 +482,7 @@ let parse_print_error_heuristic file =
                 when 
                      ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
-                    && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration
+                    && !Lexer_parser._lexer_hint.parameterDeclaration
                 -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
@@ -523,7 +533,7 @@ let parse_print_error_heuristic file =
                 when ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
                   &&
-                  !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration -> 
+                  !Lexer_parser._lexer_hint.parameterDeclaration -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
                   TypedefIdent (s, i1)
@@ -534,7 +544,7 @@ let parse_print_error_heuristic file =
                 when ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
                   &&
-                  !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel 
+                  !Lexer_parser._lexer_hint.toplevel 
                 -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
@@ -546,7 +556,7 @@ let parse_print_error_heuristic file =
                 when ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
                   &&
-                  !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel 
+                  !Lexer_parser._lexer_hint.toplevel 
                 -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
@@ -557,7 +567,7 @@ let parse_print_error_heuristic file =
                 when ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
                   &&
-                  !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel 
+                  !Lexer_parser._lexer_hint.toplevel 
                 -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
@@ -593,7 +603,7 @@ let parse_print_error_heuristic file =
                 when ((match take_safe 1 !passed_tok with [Tstruct _] -> false | _ -> true) &&
                      ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true)))
                     &&
-                  !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration -> 
+                  !Lexer_parser._lexer_hint.parameterDeclaration -> 
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
                   TypedefIdent (s, i1)
@@ -669,8 +679,10 @@ let parse_print_error_heuristic file =
                  THigherOrderMacro i1
                   
               (*-------------------------------------------------------------*)
+              (* CPP *)
+              (*-------------------------------------------------------------*)
               | TDefine ii::_, _ -> 
-                  if !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel
+                  if !Lexer_parser._lexer_hint.toplevel
                   then TDefine ii
                   else begin
                     if !Flag_parsing_c.debug_cpp
@@ -679,6 +691,17 @@ let parse_print_error_heuristic file =
                   end
                (* do same for Include ? (often found #include inside structdef)
                 *)
+
+              | ((TIfdef ii | TIfdefelse ii | TEndif ii) as x)::_, _ -> 
+                 if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
+                 else 
+                  if not !Lexer_parser._lexer_hint.toplevel
+                  then x
+                  else begin
+                    if !Flag_parsing_c.debug_cpp
+                    then pr2 ("ifdef or related outside function. I treat it as comment");
+                    TCommentCpp ii
+                  end
 
                     
               (*-------------------------------------------------------------*)
@@ -705,15 +728,7 @@ let parse_print_error_heuristic file =
     fst table.(info.charpos)
    in
 
-  let stat = { 
-    filename = file;
-    passing_through_lines = 0;
-    bad = 0;
-    correct = 0;
-    have_timeout          = false;
-  } in
-
-
+  let stat = default_stat file in
 
   (* opti ? *)
   let get_slice_file filename (line1, line2) = 
@@ -751,7 +766,7 @@ let parse_print_error_heuristic file =
     Lexer_parser._handle_typedef := true;  (* normally have to do that only when come from an exception in which case the dt() may not have been done *)
     (* TODO but if was in scoped scope ? have to let only the last scope *)
     (* Lexer_parser.lexer_reset_typedef (); *)
-    Lexer_parser._lexer_hint := Some Lexer_parser.Toplevel;
+    Lexer_parser._lexer_hint := {(default_hint ()) with toplevel = true; };
 
     passed_tok2 := [];
 
@@ -882,7 +897,7 @@ let parse_print_error_heuristic file =
    ) in
 
 
-  Lexer_parser.lexer_reset_typedef ();
+  (* still? Lexer_parser.lexer_reset_typedef (); *)
   let v = loop() in
   (v, stat)
 

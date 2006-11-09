@@ -137,6 +137,9 @@ and visitor_statement_k = fun bigf st ->
 
     | Selection  (If (e, st1, st2)), _ -> 
         visitor_expr_k bigf e; f (k, bigf) st1; f (k, bigf) st2;
+    | Selection (IfCpp (st1s, st2s)), _ -> 
+        st1s +> List.iter (visitor_statement_k bigf);
+        st2s +> List.iter (visitor_statement_k bigf)
     | Selection  (Switch (e, st)), _ -> 
         visitor_expr_k bigf e; f (k, bigf) st;
     | Iteration  (While (e, st)), _ -> 
@@ -337,6 +340,10 @@ and visitor_statement_k_s = fun bigf st ->
     | ExprStatement (Some e) -> ExprStatement (Some ((visitor_expr_k_s bigf) e))
     | Selection (If (e, st1, st2)) -> 
         Selection  (If ((visitor_expr_k_s bigf) e, statf st1, statf st2))
+    | Selection (IfCpp (st1s, st2s)) -> 
+        Selection  (IfCpp 
+                      (st1s +> List.map (visitor_statement_k_s bigf),
+                       st2s +> List.map (visitor_statement_k_s bigf)))
     | Selection (Switch (e, st))   -> 
         Selection  (Switch ((visitor_expr_k_s bigf) e, statf st))
     | Iteration (While (e, st))    -> 

@@ -192,6 +192,19 @@ and pp_statement_gen pr_elem =
   | Decl decl, [] -> pp_decl_gen pr_elem decl 
   | (Asm, []) -> pr "<<asm_or_strange_stuff>>";
 
+  | Selection  (IfCpp (st1s, st2s)), i1::i2::is -> 
+      pr_elem i1; 
+      st1s +> List.iter pp_statement; 
+      (match (st2s, is) with
+      | [], [] -> pr_elem i2
+      | x::xs, [i3] -> 
+          pr_elem i2;
+          st2s +> List.iter pp_statement; 
+          pr_elem i3;
+          
+      | _ -> raise Impossible
+      )
+
   | x -> raise Impossible
  in
  pp_statement

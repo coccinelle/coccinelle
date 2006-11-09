@@ -138,6 +138,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     (nexti, node)
   in
 
+  (* endif julia's trick, so that can accrocher some stuff on an endif node *)
   let get_next_node_if_empty_end g nodei =
     add_visited nodei;
     match get_next_node_old g nodei with
@@ -168,6 +169,10 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         (* can raise Todo instead ? cos all opening { are correctly ended
            with a } *)
         else raise Impossible
+    (* for ifcpp *)
+    | EndStatement (None) -> 
+        [], LastCurrentNode starti
+
     | x -> 
         let (st, return) = rebuild_statement starti in
         (match return with
@@ -178,6 +183,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
               if diff#null 
               then [st], return
               else 
+                (* if had some wierd goto *)
                 let nexti = find_next_best_label_candidate g (diff#tolist) in
                 let (compound, return) = 
                   rebuild_compound_instr_list nexti level in
@@ -337,6 +343,43 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
            )
          | x -> raise Impossible
          )
+
+    (* ------------------------- *)        
+    | IfCpp (_fullst, ((),ii)) -> 
+
+         (match get_next_nodes_ifthenelse_sorted g starti with
+         | [(theni, TrueNode);  (elsei, FalseNode)] -> 
+           add_visited theni; add_visited elsei;
+               
+           let theni' = get_next_node g theni +> fst in
+           let elsei' = get_next_node g elsei +> fst in
+
+           let (st1s, return1) = rebuild_compound_instr_list theni' (-1) in
+           let (st2s, return2) = rebuild_compound_instr_list elsei' (-1) in
+
+
+           (* Previous commands dont stop at the next intr, but stops at the 
+              endifcpp node, which is a EndStatement None. So the returnxx here
+              are different from the previous If-case code *)
+           
+   
+           (match return1, return2 with
+           | LastCurrentNode return1, LastCurrentNode return2 -> 
+               assert (return1 = return2); (* it's the endifcpp node *)
+               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+                LastCurrentNode (return1)
+           | LastCurrentNode return, NoNextNode _  
+           | NoNextNode _ , LastCurrentNode return ->
+               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+                LastCurrentNode (return)
+           | NoNextNode i1 , NoNextNode i2  -> 
+               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+                NoNextNode i1 (* could be i2 *)
+           )
+         | _ -> raise Impossible
+         )
+   
+
 
     (* ------------------------- *)        
     | SwitchHeader (_fullst, (e,ii)) -> 
@@ -643,11 +686,11 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
 (*****************************************************************************)
 
-let test def = 
+let test do_print def = 
   let g = Ast_to_flow.ast_to_control_flow def in
   Ast_to_flow.check_control_flow g;
   Ast_to_flow.deadcode_detection g;
-  print_ograph_extended g;
+  if do_print then print_ograph_extended g;
   assert (
   def =*= def +> Ast_to_flow.ast_to_control_flow +>control_flow_to_ast
  );

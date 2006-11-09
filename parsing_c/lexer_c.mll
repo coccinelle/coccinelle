@@ -143,11 +143,11 @@ rule token = parse
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
   | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
-     { TCommentCpp (tokinfo lexbuf) }
+     { TIfdef (tokinfo lexbuf) }
   | "#" [' ' '\t']* "ifndef" [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
      { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "endif"  [' ' '\t' '\n']                                   
-      { TCommentCpp (tokinfo lexbuf) }
+      { TEndif (tokinfo lexbuf) }
   | "#" [' ' '\t']* "if" [' ' '\t']+                                           
       { let info = tokinfo lexbuf in 
         TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
@@ -157,7 +157,7 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          
       { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     
-      { TCommentCpp (tokinfo lexbuf) }
+      { TIfdefelse (tokinfo lexbuf) }
 
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TCommentCpp (tokinfo lexbuf) }

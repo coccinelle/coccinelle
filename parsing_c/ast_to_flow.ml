@@ -417,6 +417,36 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
              end
         )
         
+    | Selection  (Ast_c.IfCpp (st1s, st2s)), ii -> 
+
+        let newi = add_node_g (IfCpp (stmt, ((), ii))) lbl "ifcpp" in
+        attach_to_previous_node starti newi;
+        let newfakethen = add_node_g TrueNode  lbl "[then]" in
+        let newfakeelse = add_node_g FalseNode lbl "[else]" in
+
+        !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
+        !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
+
+        let aux_statement_list (starti, newauxinfo) statxs =
+        statxs +> List.fold_left (fun starti statement ->
+          aux_statement (starti, newauxinfo) statement
+        ) starti
+        in
+
+
+        let finalthen = aux_statement_list (Some newfakethen, auxinfo_label) st1s in
+        let finalelse = aux_statement_list (Some newfakeelse, auxinfo_label) st2s in
+
+        (match finalthen, finalelse with 
+          | (None, None) -> None
+          | _ -> 
+              let lasti =  add_node_g (EndStatement None) lbl "[endifcpp]" in
+              begin
+                attach_to_previous_node finalthen lasti;
+                attach_to_previous_node finalelse lasti;
+                Some lasti
+             end
+        )
         
 
      (* ------------------------- *)        

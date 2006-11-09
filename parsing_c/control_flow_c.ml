@@ -129,6 +129,7 @@ type node = node1 * string
   | Break    of statement * unit wrap
 
   | Asm
+  | IfCpp of statement * unit wrap
 
 
   (* ------------------------ *)
@@ -186,6 +187,7 @@ let extract_fullstatement node =
       (* old: Some (Ast_c.Decl decl, []) *)
       None 
   | Asm -> Some (Ast_c.Asm, [])
+  | IfCpp _ -> None (* other ? *)
 
   | SeqStart (st,_,_) 
   | ExprStatement (st, _)

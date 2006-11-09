@@ -266,7 +266,8 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
           F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
           F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
-          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm
+          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
+          F.IfCpp _
           ) -> ()
 
         );
@@ -348,6 +349,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
   | _, F.Goto _ 
   | _, F.Asm
+  | _, F.IfCpp _
     -> return false
 
   | _, _ -> return false

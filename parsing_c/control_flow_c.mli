@@ -35,6 +35,7 @@ type node = node1 * string
   | Continue of statement * unit wrap
   | Break    of statement * unit wrap
   | Asm
+  | IfCpp of statement * unit wrap
 
   (* ------------------------ *)
   (* some control nodes *)
