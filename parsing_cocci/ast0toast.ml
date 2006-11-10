@@ -131,8 +131,8 @@ let inline_mcodes =
     | Ast0.PLUS -> () in
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
@@ -167,8 +167,8 @@ let check_allminus s =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
-      donothing expression donothing donothing declaration
+      donothing donothing donothing donothing
+      donothing expression donothing donothing donothing declaration
       statement donothing in
   combiner.V0.combiner_statement s
     
@@ -350,13 +350,13 @@ and base_typeC t =
 let rec declaration d =
   rewrap d
     (match Ast0.unwrap d with
-      Ast0.Init(ty,id,eq,exp,sem) ->
-	let ty = typeC ty in
+      Ast0.Init(ty,id,eq,exp,sem) -> failwith "not supported"
+	(*let ty = typeC ty in
 	let id = ident id in
 	let eq = mcode eq in
 	let exp = expression exp in
 	let sem = mcode sem in
-	Ast.Init(ty,id,eq,exp,sem)
+	Ast.Init(ty,id,eq,exp,sem)*)
     | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)

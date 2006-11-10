@@ -55,7 +55,7 @@ type rebuilder =
       rebuilder_typeC : Ast0_cocci.typeC inout;
       rebuilder_declaration : Ast0_cocci.declaration inout;
       rebuilder_initialiser : Ast0_cocci.initialiser inout;
-      rebuilder_initialiser_list : Ast0_cocci.initiliser_list inout;
+      rebuilder_initialiser_list : Ast0_cocci.initialiser_list inout;
       rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;

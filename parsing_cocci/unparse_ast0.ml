@@ -200,9 +200,9 @@ let rec declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.Init(ty,id,eq,exp,sem) ->
+	Ast0.Init(ty,id,eq,ini,sem) ->
 	  typeC ty; ident id; print_string " ";
-	  mcode print_string eq; print_string " ";expression exp;
+	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
       | Ast0.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
@@ -224,7 +224,8 @@ and initialiser i =
       match Ast0.unwrap i with
 	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb) ->
-	  mcode print_string lb; dots initialiser initlist;
+	  mcode print_string lb;
+	  let _ = dots (function _ -> ()) initialiser initlist in
 	  mcode print_string rb
       | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	  mcode print_string dot; ident name; print_string " ";
@@ -242,6 +243,9 @@ and initialiser i =
 	  initialiser ini
       | Ast0.IComma(cm) -> mcode print_string cm
       | Ast0.IDots(d) -> mcode print_string d
+      | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
+      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
+      | Ast0.MultiIni(ini) -> print_string "+"; initialiser ini)
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -400,6 +404,7 @@ let unparse_anything x =
   | Ast0.ExprTag(d) -> expression d
   | Ast0.TypeCTag(d) -> typeC d
   | Ast0.ParamTag(d) -> parameterTypeDef d
+  | Ast0.InitTag(d) -> initialiser d
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
   | Ast0.TopTag(d) -> top_level d);

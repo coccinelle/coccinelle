@@ -22,6 +22,7 @@ let set_mcodekind x mcodekind =
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
 
@@ -34,6 +35,7 @@ let set_index x index =
   | Ast0.ExprTag(d) -> Ast0.set_index d index
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
   | Ast0.ParamTag(d) -> Ast0.set_index d index
+  | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
@@ -46,6 +48,7 @@ let get_index = function
   | Ast0.ExprTag(d) -> Index.expression d
   | Ast0.TypeCTag(d) -> Index.typeC d
   | Ast0.ParamTag(d) -> Index.parameterTypeDef d
+  | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.TopTag(d) -> Index.top_level d
@@ -347,7 +350,7 @@ let rec equal_typeC t1 t2 =
   | (Ast0.MultiType(_),Ast0.MultiType(_)) -> true
   | _ -> false
 
-let rec equal_declaration d1 d2 =
+let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.Init(_,_,eq1,_,sem1),Ast0.Init(_,_,eq2,_,sem2)) ->
       equal_mcode eq1 eq2 && equal_mcode sem1 sem2
@@ -356,8 +359,29 @@ let rec equal_declaration d1 d2 =
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.MultiDecl(_),Ast0.MultiDecl(_)) -> true
   | _ -> false
+
+let equal_initialiser i1 i2 =
+  match (Ast0.unwrap i1,Ast0.unwrap i2) with
+    (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
+  | (Ast0.InitList(lb1,_,rb1),Ast0.InitList(lb2,_,rb2)) ->
+      (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2)
+  | (Ast0.InitGccDotName(dot1,_,eq1,_),Ast0.InitGccDotName(dot2,_,eq2,_)) ->
+      (equal_mcode dot1 dot2) && (equal_mcode eq1 eq2)
+  | (Ast0.InitGccName(_,eq,_),Ast0.InitGccName(_,eq,_)) -> equal_mcode eq1 eq2
+  | (Ast0.InitGccIndex(lb,_,rb,eq,_),Ast0.InitGccIndex(lb,_,rb,eq,_)) ->
+      (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
+  | (Ast0.InitGccRange(lb1,_,dots1,_,rb1,eq1,_),
+     Ast0.InitGccRange(lb2,_,dots2,_,rb2,eq2,_)) ->
+      (equal_mcode lb1 lb2) && (equal_mcode dots1 dots2) &&
+       (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
+  | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
+  | (Ast0.IDots(d1),Ast0.IDots(d2)) -> equal_mcode d1 d2
+  | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
+  | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
+  | (Ast0.MultiIni(_),Ast0.MultiIni(_)) -> true
+  | _ -> false
 	
-let rec equal_parameterTypeDef p1 p2 =
+let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
@@ -446,6 +470,7 @@ let root_equal e1 e2 =
   | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
   | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
   | (Ast0.ParamTag(p1),Ast0.ParamTag(p2)) -> equal_parameterTypeDef p1 p2
+  | (Ast0.InitTag(d1),Ast0.InitTag(d2)) -> equal_initialiser d1 d2
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2

@@ -314,6 +314,12 @@ let match_maker context_required whencode_allowed =
 	    (conjunct_bindings (match_exp exp2a exp2b) (match_init inia inib))
       | (Ast0.IComma(_),Ast0.IComma(_)) -> return true
       | (Ast0.IDots(_),Ast0.IDots(_)) -> return true
+      | (Ast0.OptIni(ia),Ast0.OptIni(ib))
+      | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib))
+      | (Ast0.MultiIni(ia),Ast0.MultiIni(ib)) -> match_init ia ib
+      | (_,Ast0.OptIni(ib))
+      | (_,Ast0.UniqueIni(ib))
+      | (_,Ast0.MultiIni(ib)) -> match_init pattern ib
 
   and match_param pattern p =
     match Ast0.unwrap pattern with

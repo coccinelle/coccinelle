@@ -593,16 +593,10 @@ initialize:
   | TOBrace TCBrace
       { InitList(clt2mcode "{" $1,[],clt2mcode "}" $2) }
 
-initialize_list:
-    initialize2
-      { [$1] }
-  | initialize2 TComma initialize_list
-      { $1::Ast.IComma(clt2mcode "," $2)::$3 }
-
 initialize2:
-  /* arithexpr and not eexpr because can have ambiguity with comma */
-  arith_expr(eexpr,dot_expressions)
-    { InitExpr($1) }
+  /*arithexpr and not eexpr because can have ambiguity with comma*/
+  /*dots and nests probably not allowed at top level, haven't looked into why*/
+  arith_expr(eexpr,invalid) { InitExpr($1) }
 | TOBrace initialize_list TCBrace
     { InitList(clt2mcode "{" $1,$2,clt2mcode "}" $3) }
 | TOBrace TCBrace
@@ -622,8 +616,8 @@ initialize_list:
    initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
 
 initialize_list_start:
-  initialize  { [$1] }
-| initialize TComma initialize_list_start
+  initialize2  { [$1] }
+| initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
 | TEllipsis list(comma_initializers(TEllipsis))
     { Ast0.wrap(Ast0.Idots(clt2mcode "..." $1))::
@@ -634,7 +628,7 @@ comma_initializers(dotter):
     { function dot_builder ->
       [Ast0.wrap(Ast0.IComma(clt2mcode "," $1));
 	dot_builder $2] }
-| TComma initialize
+| TComma initialize2
     { function dot_builder ->
       [Ast0.wrap(Ast0.IComma(clt2mcode "," $1)); $2] }
 

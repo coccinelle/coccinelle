@@ -89,7 +89,7 @@ let rec propagate_types env =
 	      Some(T.BaseType(T.BoolType,None)))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	  Ast0.set_type exp2 (T.BaseType(T.IntType,None));
+	  Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)));
 	  (match Ast0.get_type exp1 with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
@@ -195,8 +195,9 @@ let rec propagate_types env =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing statement_dots
-    ident expression donothing donothing donothing statement donothing
+    donothing donothing donothing statement_dots
+    ident expression donothing donothing donothing donothing statement
+    donothing
 
 let type_infer code =
   let fn = (propagate_types []).V0.combiner_top_level in

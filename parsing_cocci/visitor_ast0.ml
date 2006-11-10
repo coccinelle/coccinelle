@@ -172,8 +172,8 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast0.unwrap d with
-	Ast0.Init(ty,id,eq,exp,sem) ->
-	  multibind [typeC ty; ident id; string_mcode eq; expression exp;
+	Ast0.Init(ty,id,eq,ini,sem) ->
+	  multibind [typeC ty; ident id; string_mcode eq; initialiser ini;
 		      string_mcode sem]
       | Ast0.UnInit(ty,id,sem) ->
 	  multibind [typeC ty; ident id; string_mcode sem]
@@ -199,7 +199,9 @@ let combiner bind option_default
     let k i =
       match Ast0.unwrap i with
 	Ast0.InitExpr(exp) -> expression exp
-      | Ast0.InitList(initlist) -> dots initialiser initlist
+      | Ast0.InitList(lb,initlist,rb) ->
+	  multibind
+	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
       | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	  multibind
 	    [string_mcode dot; ident name; string_mcode eq; initialiser ini]
@@ -215,8 +217,11 @@ let combiner bind option_default
 	      expression exp2; string_mcode rb; string_mcode eq;
 	      initialiser ini]
       | Ast0.IComma(cm) -> string_mcode cm
-      | Ast0.IDots(d) -> string_mcode d in
-    initfn all_functions k p
+      | Ast0.IDots(d) -> string_mcode d
+      | Ast0.OptIni(i) -> initialiser i
+      | Ast0.UniqueIni(i) -> initialiser i
+      | Ast0.MultiIni(i) -> initialiser i in
+    initfn all_functions k i
   and parameterTypeDef p =
     let k p =
       match Ast0.unwrap p with
@@ -330,6 +335,7 @@ let combiner bind option_default
       combiner_typeC = typeC;
       combiner_declaration = declaration;
       combiner_initialiser = initialiser;
+      combiner_initialiser_list = initialiser_dots;
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_statement = statement;
@@ -380,14 +386,14 @@ let rebuilder = fun
 	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map expression l)
 	| Ast0.STARS(l) -> Ast0.STARS(List.map expression l)) in
     dotsexprfn all_functions k d
-  and initialiser_list d =
-    let k d =
-      Ast0.rewrap d
-	(match Ast0.unwrap d with
+  and initialiser_list i =
+    let k i =
+      Ast0.rewrap i
+	(match Ast0.unwrap i with
 	  Ast0.DOTS(l) -> Ast0.DOTS(List.map initialiser l)
 	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map initialiser l)
 	| Ast0.STARS(l) -> Ast0.STARS(List.map initialiser l)) in
-    dotsparamfn all_functions k d
+    dotsinitfn all_functions k i
   and parameter_list d =
     let k d =
       Ast0.rewrap d
@@ -506,8 +512,8 @@ let rebuilder = fun
     let k d =
       Ast0.rewrap d
 	(match Ast0.unwrap d with
-	  Ast0.Init(ty,id,eq,exp,sem) ->
-	    Ast0.Init(typeC ty, ident id, string_mcode eq, expression exp,
+	  Ast0.Init(ty,id,eq,ini,sem) ->
+	    Ast0.Init(typeC ty, ident id, string_mcode eq, initialiser ini,
 		      string_mcode sem)
 	| Ast0.UnInit(ty,id,sem) ->
 	    Ast0.UnInit(typeC ty, ident id, string_mcode sem)
@@ -520,26 +526,32 @@ let rebuilder = fun
     declfn all_functions k d
   and initialiser i =
     let k i =
-      match Ast0.unwrap i with
-	Ast0.InitExpr(exp) -> Ast0.InitExpr(expression exp)
-      | Ast0.InitList(initlist) -> Ast0.InitList(dots initialiser initlist)
-      | Ast0.InitGccDotName(dot,name,eq,ini) ->
-	  Ast0.InitGccDotName
-	    (string_mcode dot, ident name, string_mcode eq, initialiser ini)
-      | Ast0.InitGccName(name,eq,ini) ->
-	  Ast0.InitGccName(ident name, string_mcode eq, initialiser ini)
-      | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-	  Ast0.InitGccIndex
-	    (string_mcode lb, expression exp, string_mcode rb,
-	     string_mcode eq, initialiser ini)
-      | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	  Ast0.InitGccRange
-	    (string_mcode lb, expression exp1, string_mcode dots,
-	     expression exp2, string_mcode rb, string_mcode eq,
-	     initialiser ini)
-      | Ast0.IComma(cm) -> Ast0.IComma(string_mcode cm)
-      | Ast0.IDots(d) -> Ast0.IDots(string_mcode d) in
-    initfn all_functions k p
+      Ast0.rewrap i
+	(match Ast0.unwrap i with
+	  Ast0.InitExpr(exp) -> Ast0.InitExpr(expression exp)
+	| Ast0.InitList(lb,initlist,rb) ->
+	    Ast0.InitList(string_mcode lb, initialiser_list initlist,
+			  string_mcode rb)
+	| Ast0.InitGccDotName(dot,name,eq,ini) ->
+	    Ast0.InitGccDotName
+	      (string_mcode dot, ident name, string_mcode eq, initialiser ini)
+	| Ast0.InitGccName(name,eq,ini) ->
+	    Ast0.InitGccName(ident name, string_mcode eq, initialiser ini)
+	| Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
+	    Ast0.InitGccIndex
+	      (string_mcode lb, expression exp, string_mcode rb,
+	       string_mcode eq, initialiser ini)
+	| Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+	    Ast0.InitGccRange
+	      (string_mcode lb, expression exp1, string_mcode dots,
+	       expression exp2, string_mcode rb, string_mcode eq,
+	       initialiser ini)
+	| Ast0.IComma(cm) -> Ast0.IComma(string_mcode cm)
+	| Ast0.IDots(d) -> Ast0.IDots(string_mcode d)
+	| Ast0.OptIni(i) -> Ast0.OptIni(initialiser i)
+	| Ast0.UniqueIni(i) -> Ast0.UniqueIni(initialiser i)
+	| Ast0.MultiIni(i) -> Ast0.MultiIni(initialiser i)) in
+    initfn all_functions k i
   and parameterTypeDef p =
     let k p =
       Ast0.rewrap p
@@ -656,6 +668,8 @@ let rebuilder = fun
       rebuilder_expression = expression;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
+      rebuilder_initialiser = initialiser;
+      rebuilder_initialiser_list = initialiser_list;
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_list;
       rebuilder_statement = statement;

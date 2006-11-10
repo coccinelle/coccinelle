@@ -151,7 +151,10 @@ and base_initialiser =
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
   | IComma of string mcode
-  | Idots  of string mcode (* ... *)
+  | IDots  of string mcode (* ... *)
+  | OptIni    of initialiser
+  | UniqueIni of initialiser
+  | MultiIni  of initialiser
 
 and initialiser = base_initialiser wrap
 
@@ -261,6 +264,7 @@ type anything =
   | ExprTag of expression
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
+  | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
   | TopTag of top_level

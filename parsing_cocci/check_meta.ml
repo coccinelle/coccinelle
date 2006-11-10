@@ -137,9 +137,8 @@ and typeC table minus t =
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name) -> if minus then check_table table minus name
-  | Ast0.OptType(ty) -> typeC table minus ty
-  | Ast0.UniqueType(ty) -> typeC table minus ty
-  | Ast0.MultiType(ty) -> typeC table minus ty
+  | Ast0.OptType(ty) | Ast0.UniqueType(ty) | Ast0.MultiType(ty) ->
+      failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
 (* --------------------------------------------------------------------- *)
@@ -151,7 +150,7 @@ let rec declaration context table minus d =
   match Ast0.unwrap d with
     Ast0.Init(ty,id,eq,exp,sem) ->
       typeC table minus ty;
-      ident context table minus id; initialiser ID table minus exp
+      ident context table minus id; initialiser table minus exp
   | Ast0.UnInit(ty,id,sem) ->
       typeC table minus ty; ident context table minus id
   | Ast0.DisjDecl(_,decls,_,_) ->
@@ -164,12 +163,19 @@ let rec declaration context table minus d =
 
 and initialiser table minus ini =
   match Ast0.unwrap ini with
-    Ast0.InitExpr(exp) -> expression table minus exp
-  | Ast0.InitList(lb,initlist,rb) -> initialiser table minus initlist
+    Ast0.InitExpr(exp) -> expression ID table minus exp
+  | Ast0.InitList(lb,initlist,rb) -> dots (initialiser table minus) initlist
   | Ast0.InitGccDotName(dot,name,eq,ini) ->
+      ident FIELD table minus name; initialiser table minus ini
   | Ast0.InitGccName(name,eq,ini) ->
+      ident FIELD table minus name; initialiser table minus ini
   | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
+      expression ID table minus exp; initialiser table minus ini
   | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+      expression ID table minus exp1; expression ID table minus exp2;
+      initialiser table minus ini
+  | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.MultiIni(_) ->
+      failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 	
 and initialiser_list table minus = dots (initialiser table minus)
