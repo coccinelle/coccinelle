@@ -148,9 +148,18 @@ and typeC table minus t =
 
 let rec declaration context table minus d =
   match Ast0.unwrap d with
-    Ast0.Init(ty,id,eq,exp,sem) ->
-      typeC table minus ty;
-      ident context table minus id; initialiser table minus exp
+    Ast0.Init(ty,id,eq,ini,sem) ->
+      (match Ast0.unwrap ini with
+	Ast0.InitExpr exp ->
+	  typeC table minus ty;
+	  ident context table minus id; expression ID table minus exp
+      |	_ ->
+	  if minus
+	  then
+	    failwith "complex initializer specification not allowed in - code"
+	  else
+	    (typeC table minus ty;
+	     ident context table minus id; initialiser table minus ini))
   | Ast0.UnInit(ty,id,sem) ->
       typeC table minus ty; ident context table minus id
   | Ast0.DisjDecl(_,decls,_,_) ->

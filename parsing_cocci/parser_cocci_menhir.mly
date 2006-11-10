@@ -358,9 +358,16 @@ param_ctype: // the most general - allows metavariables and type names
            make_cv cv (pointerify nm m) }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
-	 let ty =
-	   Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
+	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
 	 make_cv cv (pointerify ty m) }
+
+fn_ctype: // allows metavariables
+       ty=generic_ctype m=list(TMul)
+	 { pointerify ty m }
+     | ty=TMetaType m=list(TMul)
+	 { let (nm,clt) = ty in
+	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
+	 pointerify ty m }
 
 ctype_qualif:
        Tunsigned   { clt2mcode Ast.Unsigned $1 }
@@ -398,7 +405,7 @@ includes:
 /*****************************************************************************/
 
 fundecl:
-  s=storage t=option(generic_ctype)
+  s=storage t=option(fn_ctype)
   TFunDecl i=func_ident lp=TOPar d=decl_list rp=TCPar
   lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
       { Ast0.wrap(Ast0.FunDecl(s, t, i,
@@ -615,7 +622,8 @@ initialize_list:
    initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
 
 initialize_list_start:
-  initialize2  { [$1] }
+  initialize2        { [$1] }
+| initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))] }
 | initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
 | d=edots_when(TEllipsis,initialize)
@@ -624,7 +632,10 @@ initialize_list_start:
       (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  c=TComma d=dotter
+  c=TComma
+    { function dot_builder ->
+      [Ast0.wrap(Ast0.IComma(clt2mcode "," c))] }
+| c=TComma d=dotter
     { function dot_builder ->
       [Ast0.wrap(Ast0.IComma(clt2mcode "," c)); dot_builder d] }
 | c=TComma i=initialize2
