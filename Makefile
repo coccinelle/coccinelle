@@ -7,7 +7,6 @@ SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
      engine/cocciengine.cma
-CLIBS=prim.o
 
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
@@ -20,6 +19,7 @@ export OCAMLRUNPARAM
 #for profiling:  -p -inline 0   with OCAMLOPT
 #pad: 'make forprofiling' below does that for you.
 
+#OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom      -- for C code
 OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
 OCAMLLEX=ocamllex$(OPTBIN) -ml
@@ -55,21 +55,21 @@ rec.opt:
 $(EXEC): $(OBJS) $(LIBS)
 	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS)
 
-$(TARGET).top: $(OBJS) $(LIBS) $(CLIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(CLIBS) $(OBJS)
+$(TARGET).top: $(OBJS) $(LIBS)
+	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
-$(OPTEXEC): $(OPTOBJS) $(LIBS:.cma=.cmxa) $(CLIBS)
+$(OPTEXEC): $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) \
-	  $(LIBS:.cma=.cmxa) $(CLIBS) $(OPTOBJS)
+	  $(LIBS:.cma=.cmxa) $(OPTOBJS)
 
 
-INC=$(dir $(shell which ocaml))
-INCX=$(INC:/=)
-INCY=$(dir $(INCX))
-INCZ=$(INCY:/=)/lib/ocaml
-
-prim.o: prim.c
-	gcc -c -o prim.o -I $(INCZ) prim.c
+#INC=$(dir $(shell which ocaml))
+#INCX=$(INC:/=)
+#INCY=$(dir $(INCX))
+#INCZ=$(INCY:/=)/lib/ocaml
+#
+#prim.o: prim.c
+#	gcc -c -o prim.o -I $(INCZ) prim.c
 
 
 clean::

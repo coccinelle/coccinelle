@@ -1,4 +1,4 @@
-external c_counter : unit -> int = "c_counter"
+(*external c_counter : unit -> int = "c_counter"*)
 let timeout = 800
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
