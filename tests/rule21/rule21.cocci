@@ -1,6 +1,7 @@
 @@
 //fresh identifier agp_driver_struct;
 function fn;
+type T;
 identifier dev;
 @@
 
@@ -9,7 +10,8 @@ identifier dev;
 +   .owner = THIS_MODULE,
 + };
 
-T fn (struct pci_dev *dev, ...) {
+//want: fn (struct pci_dev *dev, ...) {
+T fn (struct pci_dev *dev) {
     ...
 -   agp_register_driver(dev);
 +   agp_driver_struct.dev = dev;
@@ -17,8 +19,8 @@ T fn (struct pci_dev *dev, ...) {
     ...
   }
 
-@@ @@
--   agp_unregister_driver();
-+   agp_unregister_driver(&agp_driver_struct);
+//@@ @@
+//-   agp_unregister_driver();
+//+   agp_unregister_driver(&agp_driver_struct);
 
 

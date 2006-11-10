@@ -70,9 +70,12 @@ let l2c l =
   | Ast0.OTHER(_) -> "other"
 
 let rec top_level l =
-  match scan_code l with
+  let res = match scan_code l with
     (code,[]) -> code
   | (code,rest) ->
       (match scan_top_decl rest with
 	(top_decls,[]) -> code@top_decls
-      |	(top_decls,rest) -> code @ top_decls @ (top_level rest))
+      |	(top_decls,rest) -> code @ top_decls @ (top_level rest)) in
+  Printf.printf "one slice\n";
+  List.iter (function x -> Printf.printf "%s\n" (l2c x)) res;
+  res

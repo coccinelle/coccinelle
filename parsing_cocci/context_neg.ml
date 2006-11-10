@@ -532,7 +532,8 @@ let context_neg minus plus =
   Hashtbl.clear minus_table;
   Hashtbl.clear plus_table;
   let rec loop = function
-      ([],_) -> []
+      ([],[]) -> []
+    | ([],l) -> failwith (Printf.sprintf "%d plus things remaining" (List.length l))
     | (minus,[]) ->
 	let _ =
 	  List.map
