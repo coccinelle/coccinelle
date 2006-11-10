@@ -282,11 +282,11 @@ let mk_token x            = Ast.Token x
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
-let mk_initdots x  = failwith "not supported"
+let mk_initdots x  = Ast.InitDotsTag (Ast0toast.initialiser_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC x)
-let mk_init x      = failwith "not supported"
+let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
 let mk_param x     = Ast.ParamTag (Ast0toast.parameterTypeDef x)
 
 let collect_plus_nodes root =

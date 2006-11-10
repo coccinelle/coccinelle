@@ -29,8 +29,8 @@ let get_constants rules =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing
-      ident expression donothing donothing donothing donothing
+      donothing donothing donothing donothing
+      ident expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing in
 
   let rule_fn tls =

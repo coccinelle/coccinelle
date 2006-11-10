@@ -350,18 +350,48 @@ and base_typeC t =
 let rec declaration d =
   rewrap d
     (match Ast0.unwrap d with
-      Ast0.Init(ty,id,eq,exp,sem) -> failwith "not supported"
-	(*let ty = typeC ty in
+      Ast0.Init(ty,id,eq,ini,sem) ->
+	let ty = typeC ty in
 	let id = ident id in
 	let eq = mcode eq in
-	let exp = expression exp in
+	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(ty,id,eq,exp,sem)*)
+	Ast.Init(ty,id,eq,ini,sem)
     | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
     | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl))
+
+(* --------------------------------------------------------------------- *)
+(* Initialiser *)
+
+and initialiser i =
+  rewrap i
+    (match Ast0.unwrap i with
+      Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
+    | Ast0.InitList(lb,initlist,rb) ->
+	Ast.InitList(mcode lb,dots initialiser initlist,mcode rb)
+    | Ast0.InitGccDotName(dot,name,eq,ini) ->
+	Ast.InitGccDotName(mcode dot,ident name,mcode eq,initialiser ini)
+    | Ast0.InitGccName(name,eq,ini) ->
+	Ast.InitGccName(ident name,mcode eq,initialiser ini)
+    | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
+	Ast.InitGccIndex(mcode lb,expression exp,mcode rb,mcode eq,
+			  initialiser ini)
+    | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+	Ast.InitGccRange(mcode lb,expression exp1,mcode dots,
+			  expression exp2,mcode rb,mcode eq,initialiser ini)
+    | Ast0.IComma(cm) -> Ast.IComma(mcode cm)
+    | Ast0.Idots(dots,whencode) ->
+	let dots = mcode dots in
+	let whencode = get_option initialiser whencode in
+	Ast.Idots(dots,whencode)
+    | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
+    | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini)
+    | Ast0.MultiIni(ini) -> Ast.MultiIni(initialiser ini))
+
+let initialiser_dots = dots initialiser
     
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

@@ -66,6 +66,11 @@ let edots e =
     Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> true
   | _ -> false
 
+let idots i =
+  match Ast.unwrap i with
+    Ast.Idots(_,_) -> true
+  | _ -> false
+
 let pdots p =
   match Ast.unwrap p with
     Ast.Pdots(_) | Ast.Pcircles(_) -> true
@@ -212,9 +217,9 @@ and unify_typeC t1 t2 =
 
 let rec unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
-    (Ast.Init(ft1,id1,eq1,e1,s1),Ast.Init(ft2,id2,eq2,e2,s2)) ->
+    (Ast.Init(ft1,id1,eq1,i1,s1),Ast.Init(ft2,id2,eq2,i2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2)
-	(conjunct_bindings (unify_ident id1 id2) (unify_expression e1 e2))
+	(conjunct_bindings (unify_ident id1 id2) (unify_initialiser i1 i2))
   | (Ast.UnInit(ft1,id1,s1),Ast.UnInit(ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
   | (Ast.DisjDecl(d1),_) ->
@@ -229,7 +234,44 @@ let rec unify_declaration d1 d2 =
   | (Ast.MultiDecl(_),_)
   | (_,Ast.OptDecl(_))
   | (_,Ast.UniqueDecl(_))
-  | (_,Ast.MultiDecl(_)) -> failwith "unsupported ident"
+  | (_,Ast.MultiDecl(_)) -> failwith "unsupported decl"
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
+(* Initializer *)
+
+and unify_initialiser i1 i2 =
+  match (Ast.unwrap i1,Ast.unwrap i2) with
+    (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
+      unify_expression expa expb
+  | (Ast.InitList(_,initlista,_),Ast.InitList(_,initlistb,_)) ->
+      unify_dots unify_initialiser idots initlista initlistb
+  | (Ast.InitGccDotName(_,namea,_,inia),
+     Ast.InitGccDotName(_,nameb,_,inib)) ->
+       conjunct_bindings
+	 (unify_ident namea nameb) (unify_initialiser inia inib)
+  | (Ast.InitGccName(namea,_,inia),Ast.InitGccName(nameb,_,inib)) ->
+      conjunct_bindings (unify_ident namea nameb) (unify_initialiser inia inib)
+  | (Ast.InitGccIndex(_,expa,_,_,inia),
+     Ast.InitGccIndex(_,expb,_,_,inib)) ->
+       conjunct_bindings
+	 (unify_expression expa expb) (unify_initialiser inia inib)
+  | (Ast.InitGccRange(_,exp1a,_,exp2a,_,_,inia),
+     Ast.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
+       conjunct_bindings (unify_expression exp1a exp1b)
+	 (conjunct_bindings (unify_expression exp2a exp2b)
+	    (unify_initialiser inia inib))
+  | (Ast.IComma(_),Ast.IComma(_)) -> return true
+
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Idots(_,_),_) | (_,Ast.Idots(_,_)) -> return true
+	
+  | (Ast.OptIni(_),_)
+  | (Ast.UniqueIni(_),_)
+  | (Ast.MultiIni(_),_)
+  | (_,Ast.OptIni(_))
+  | (_,Ast.UniqueIni(_))
+  | (_,Ast.MultiIni(_)) -> failwith "unsupported decl"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -317,8 +359,8 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
-      donothing expr donothing donothing donothing donothing
+      donothing donothing donothing donothing
+      donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 

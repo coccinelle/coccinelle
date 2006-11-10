@@ -372,11 +372,11 @@ and match_re_onedecl = fun decla declb ->
   | A.UnInit (typa, sa, _), ((Some ((sb, None),_), typb, sto), _) ->
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb
-  | A.Init (typa, sa, _, expa, _), ((Some ((sb, Some ini),_), typb, sto), _) ->
+  | A.Init (typa, sa, _, inia, _),((Some ((sb, Some inib),_), typb, sto), _) ->
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb >&&>
-      (match ini with
-      | B.InitExpr expb, _ -> match_e_e expa expb
+      (match (A.unwrap inia,inib) with
+      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
       | _ -> 
           pr2 "warning: complex initializer, cocci does not handle that";
           return false

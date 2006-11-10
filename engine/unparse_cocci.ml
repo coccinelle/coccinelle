@@ -261,14 +261,45 @@ in
 
 let rec declaration d =
   match Ast.unwrap d with
-    Ast.Init(ty,id,eq,exp,sem) ->
+    Ast.Init(ty,id,eq,ini,sem) ->
       fullType ty; ident id; print_string " "; mcode print_string eq;
-      print_string " "; expression exp; mcode print_string sem
+      print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus
 
+(* --------------------------------------------------------------------- *)
+(* Initialiser *)
+
+and initialiser i =
+  match Ast.unwrap i with
+    Ast.InitExpr(exp) -> expression exp
+  | Ast.InitList(lb,initlist,rb) ->
+      mcode print_string lb;
+      let _ = dots (function _ -> ()) initialiser initlist in
+      mcode print_string rb
+  | Ast.InitGccDotName(dot,name,eq,ini) ->
+      mcode print_string dot; ident name; print_string " ";
+      mcode print_string eq; print_string " "; initialiser ini
+  | Ast.InitGccName(name,eq,ini) ->
+      ident name; mcode print_string eq; initialiser ini
+  | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
+      mcode print_string lb; expression exp; mcode print_string rb;
+      print_string " "; mcode print_string eq; print_string " ";
+      initialiser ini
+  | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
+      mcode print_string lb; expression exp1; mcode print_string dots;
+      expression exp2; mcode print_string rb;
+      print_string " "; mcode print_string eq; print_string " ";
+      initialiser ini
+  | Ast.IComma(cm) -> mcode print_string cm
+  | Ast.Idots(d,Some whencode) ->
+      mcode print_string d; print_string "   WHEN != ";
+      initialiser whencode
+  | Ast.Idots(d,None) -> mcode print_string d
+  | Ast.OptIni(ini) | Ast.UniqueIni(ini) | Ast.MultiIni(ini) ->
+      raise CantBeInPlus
 in
 
 (* --------------------------------------------------------------------- *)
@@ -454,6 +485,7 @@ let rec pp_any = function
   | Ast.ArithOpTag(x) -> arithOp x
   | Ast.LogicalOpTag(x) -> logicalOp x
 
+  | Ast.InitTag(x) -> initialiser x
   | Ast.DeclarationTag(x) -> declaration x
   | Ast.ParameterTypeDefTag(x) -> parameterTypeDef x
 
@@ -469,6 +501,7 @@ let rec pp_any = function
   (* this is not '...', but a list of expr/statement/params, and 
      normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
+  | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x
   | Ast.ParamDotsTag(x) -> parameter_list x
   | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
 

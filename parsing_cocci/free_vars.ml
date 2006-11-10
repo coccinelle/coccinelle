@@ -122,8 +122,8 @@ let astfvs bound =
 
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing astfvstatement_dots
-      astfvident astfvexpr donothing astfvtypeC astfvparam donothing
+      donothing donothing donothing astfvstatement_dots
+      astfvident astfvexpr donothing astfvtypeC donothing astfvparam donothing
       astfvrule_elem astfvstatement donothing donothing in
 
   let rule l =
@@ -167,10 +167,10 @@ let update table =
   let donothing r k e = k e in
 
   (V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing statement_dots
-    donothing donothing donothing donothing donothing donothing rule_elem
-    statement donothing donothing).V.rebuilder_top_level
+     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+     donothing donothing donothing statement_dots
+     donothing donothing donothing donothing donothing donothing donothing
+     rule_elem statement donothing donothing).V.rebuilder_top_level
 
 let inner_non_locally_used l =
   let rec loop bound = function
@@ -252,10 +252,10 @@ let update_metavars previous_metavars =
     | _ -> k e in
 
   let fn = V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    ident expression donothing typeC param donothing rule_elem donothing
-      donothing donothing in
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing
+      ident expression donothing typeC donothing param donothing rule_elem
+      donothing donothing donothing in
 
   fn.V.rebuilder_top_level
 

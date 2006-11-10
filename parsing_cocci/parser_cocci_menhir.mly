@@ -967,7 +967,7 @@ fun_exp_decl_statement_list:
 
   | f=nonempty_list(fun_decl_statement)        { List.concat f }
 
-%inline fun_decl_statement:
+fun_decl_statement:
     d=decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) d }
   | f=fundecl        { [Ast0.wrap(Ast0.FUNCTION(f))] }
 
@@ -1138,7 +1138,7 @@ opt_dot_start_end(grammar,when_grammar,simple_when_grammar,ender):
 			     simple_when_grammar,ender))
    { function dot_builder -> r (dot_builder "***") }
 
-%inline opt_dot_start_end_pattern(grammar,dotter,ender,continue):
+opt_dot_start_end_pattern(grammar,dotter,ender,continue):
    g=grammar d=dotter
      { function dot_builder -> [g; (dot_builder d)] }
  | g=grammar d=dotter c=continue
@@ -1171,7 +1171,7 @@ opt_dot_end_stars(grammar,when_grammar,simple_when_grammar,ender):
      { function dot_builder -> g :: (dot_builder d) :: (r dot_builder) }
 
 // SEQ2, ender optional
-%inline required_dot_start_with_ender(grammar,when_grammar,
+required_dot_start_with_ender(grammar,when_grammar,
 				      simple_when_grammar,ender):
  | start=dots_when(TEllipsis,when_grammar,simple_when_grammar)
      finish=no_dot_start_ellipsis(grammar,when_grammar,simple_when_grammar,
@@ -1212,11 +1212,11 @@ no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender):
        r=no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender)
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
-/*%inline*/ edots_when(dotter,when_grammar):
+edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-/*%inline*/ dots_when(dotter,when_grammar,simple_when_grammar):
+dots_when(dotter,when_grammar,simple_when_grammar):
     d=dotter                                 { (d,Ast0.NoWhen) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd
       { (d,Ast0.WhenNot w) }
@@ -1224,7 +1224,7 @@ no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender):
       { (d,Ast0.WhenAlways w) }
 
 // used in NEST
-%inline no_dot_start_end(grammar,dotter):
+no_dot_start_end(grammar,dotter):
   g=grammar dg=list(pair(dotter,grammar))
   { function dot_builder ->
       g :: (List.concat(List.map (function (d,g) -> [dot_builder d;g]) dg)) }

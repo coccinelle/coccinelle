@@ -23,9 +23,9 @@ let contains_modif x used_after =
       let recursor =
 	V.combiner bind option_default
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	  do_nothing do_nothing do_nothing
+	  do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing in
+	  do_nothing do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
     else true
 

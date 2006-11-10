@@ -307,7 +307,7 @@ and transform_onedecl = fun decla declb ->
        ((Some ((idb', None), iidb'++iini), typb', stob), iivirg), 
        List.hd iiptvirgb'
 
-   | A.Init (typa, ida, eqa, expa, ptvirga), 
+   | A.Init (typa, ida, eqa, inia, ptvirga), 
      (((Some ((idb, Some ini),[iidb;iieqb]), typb, stob), iivirg),iiptvirgb) ->
 
        let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
@@ -317,8 +317,8 @@ and transform_onedecl = fun decla declb ->
          transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
        in
        let ini' = 
-         match ini with
-         | B.InitExpr expb, ii -> 
+         match (A.unwrap inia,ini) with
+         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
              assert (null ii);
              B.InitExpr (transform_e_e expa  expb binding), ii
          | _ -> 

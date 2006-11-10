@@ -173,7 +173,7 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of fullType * ident * string mcode (*=*) * expression *
+    Init of fullType * ident * string mcode (*=*) * initialiser *
 	string mcode (*;*)
   | UnInit of fullType * ident * string mcode (* ; *)
   | DisjDecl of declaration list
@@ -185,6 +185,33 @@ and base_declaration =
   | MultiDecl  of declaration (* only allowed in nests *)
 
 and declaration = base_declaration wrap
+
+(* --------------------------------------------------------------------- *)
+(* Initializers *)
+
+and base_initialiser =
+    InitExpr of expression 
+  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
+  | InitGccDotName of
+      string mcode (*.*) * ident (* name *) * string mcode (*=*) *
+	initialiser (* gccext: *)
+  | InitGccName of ident (* name *) * string mcode (*:*) *
+	initialiser
+  | InitGccIndex of
+      string mcode (*[*) * expression * string mcode (*]*) *
+	string mcode (*=*) * initialiser
+  | InitGccRange of
+      string mcode (*[*) * expression * string mcode (*...*) *
+        expression * string mcode (*]*) * string mcode (*=*) * initialiser
+  | IComma of string mcode
+  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
+  | OptIni    of initialiser
+  | UniqueIni of initialiser
+  | MultiIni  of initialiser
+
+and initialiser = base_initialiser wrap
+
+and initialiser_list = initialiser dots
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -328,6 +355,7 @@ and anything =
   | ArithOpTag          of arithOp
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
+  | InitTag             of initialiser
   | ParameterTypeDefTag of parameterTypeDef
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
@@ -337,6 +365,7 @@ and anything =
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
+  | InitDotsTag         of initialiser dots
   | StmtDotsTag         of statement dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
