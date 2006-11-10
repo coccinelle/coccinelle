@@ -1212,11 +1212,11 @@ no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender):
        r=no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender)
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
-%inline edots_when(dotter,when_grammar):
+/*%inline*/ edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-%inline dots_when(dotter,when_grammar,simple_when_grammar):
+/*%inline*/ dots_when(dotter,when_grammar,simple_when_grammar):
     d=dotter                                 { (d,Ast0.NoWhen) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd
       { (d,Ast0.WhenNot w) }
