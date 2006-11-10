@@ -151,7 +151,7 @@ and base_initialiser =
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
   | IComma of string mcode
-  | IDots  of string mcode (* ... *)
+  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
   | MultiIni  of initialiser
@@ -258,6 +258,7 @@ and rule = top_level list
 
 type anything =
     DotsExprTag of expression dots
+  | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | IdentTag of ident
@@ -270,12 +271,14 @@ type anything =
   | TopTag of top_level
 
 val dotsExpr : expression dots -> anything
+val dotsInit : initialiser dots -> anything
 val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val ident : ident -> anything
 val expr : expression -> anything
 val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
+val ini : initialiser -> anything
 val decl : declaration -> anything
 val stmt : statement -> anything
 val top : top_level -> anything

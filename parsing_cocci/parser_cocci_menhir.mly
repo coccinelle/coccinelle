@@ -60,35 +60,40 @@ let clt2mcode str = function
 
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
-let id2mcode offset (name, clt) = clt2mcode name offset clt
+let id2mcode  (name, clt) = clt2mcode name clt
 
-let mkdots str (dot,offset,whencode) =
+let mkdots str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Dots(clt2mcode str offset dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Circles(clt2mcode str offset dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Stars(clt2mcode str offset dot, whencode))
+    "..." -> Ast0.wrap(Ast0.Dots(clt2mcode str dot, whencode))
+  | "ooo" -> Ast0.wrap(Ast0.Circles(clt2mcode str dot, whencode))
+  | "***" -> Ast0.wrap(Ast0.Stars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkedots str (dot,offset,whencode) =
+let mkedots str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Edots(clt2mcode str offset dot, whencode))
-  | "ooo" -> Ast0.wrap(Ast0.Ecircles(clt2mcode str offset dot, whencode))
-  | "***" -> Ast0.wrap(Ast0.Estars(clt2mcode str offset dot, whencode))
+    "..." -> Ast0.wrap(Ast0.Edots(clt2mcode str dot, whencode))
+  | "ooo" -> Ast0.wrap(Ast0.Ecircles(clt2mcode str dot, whencode))
+  | "***" -> Ast0.wrap(Ast0.Estars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkpdots str offset dot =
+let mkidots str (dot,whencode) =
   match str with
-    "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str offset dot))
-  | "ooo" -> Ast0.wrap(Ast0.Pcircles(clt2mcode str offset dot))
+    "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let arith_op ast_op left op opoffset right =
+let mkpdots str dot =
+  match str with
+    "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
+  | "ooo" -> Ast0.wrap(Ast0.Pcircles(clt2mcode str dot))
+  | _ -> failwith "cannot happen"
+
+let arith_op ast_op left op right =
   Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Arith ast_op) opoffset op, right))
+    (Ast0.Binary(left, clt2mcode (Ast.Arith ast_op) op, right))
 
-let logic_op ast_op left op opoffset right =
+let logic_op ast_op left op right =
   Ast0.wrap
-    (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) opoffset op, right))
+    (Ast0.Binary(left, clt2mcode (Ast.Logical ast_op) op, right))
 
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
@@ -107,19 +112,17 @@ let top_dots l =
 
 (* here the offset is that of the first in the sequence of *s, not that of
 each * individually *)
-let pointerify ty m offset =
+let pointerify ty m =
   List.fold_left
     (function inner ->
       function cur ->
-	Ast0.wrap(Ast0.Pointer(inner,clt2mcode "*" offset cur)))
+	Ast0.wrap(Ast0.Pointer(inner,clt2mcode "*" cur)))
     ty m
 
 let ty_pointerify ty m =
   List.fold_left
     (function inner -> function cur -> Type_cocci.Pointer(inner))
     ty m
-
-let startofs _ = -1
 
 (* Left is <=>, Right is =>.  Collect <=>s. *)
 let iso_adjust fn first rest =
@@ -311,34 +314,25 @@ arity: TBang0 { Ast.UNIQUE }
 
 generic_ctype:
        t=Tvoid
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t,
-				   None)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t, None)) }
      | q=ioption(ctype_qualif) ty=Tchar
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.CharType ty,
-				   q)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.CharType ty, q)) }
      | q=ioption(ctype_qualif) ty=Tshort
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.ShortType ty,
-				   q)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.ShortType ty, q)) }
      | q=ioption(ctype_qualif) ty=Tint
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.IntType ty,
-				   q)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.IntType ty, q)) }
      | t=Tdouble
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.DoubleType t,
-				   None)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.DoubleType t, None)) }
      | t=Tfloat
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType t,
-				   None)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType t, None)) }
      | q=ioption(ctype_qualif) ty=Tlong
-         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType ty,
-				   q)) }
+         { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType ty, q)) }
      | s=Tstruct i=pure_ident
 	 { Ast0.wrap(Ast0.StructUnionName(id2mcode i,
-					  clt2mcode Ast.Struct
-					    s)) }
+					  clt2mcode Ast.Struct s)) }
      | u=Tunion i=pure_ident
 	 { Ast0.wrap(Ast0.StructUnionName(id2mcode i,
-					  clt2mcode Ast.Union
-					    u)) }
+					  clt2mcode Ast.Union u)) }
 
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
@@ -587,30 +581,35 @@ d_ident:
 
 initialize:
     eexpr
-      { InitExpr($1) }
+      { Ast0.wrap(Ast0.InitExpr($1)) }
   | TOBrace initialize_list TCBrace
-      { InitList(clt2mcode "{" $1,$2,clt2mcode "}" $3) }
+      { Ast0.wrap(Ast0.InitList(clt2mcode "{" $1,$2,clt2mcode "}" $3)) }
   | TOBrace TCBrace
-      { InitList(clt2mcode "{" $1,[],clt2mcode "}" $2) }
+      { Ast0.wrap
+	  (Ast0.InitList(clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
+			 clt2mcode "}" $2)) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
   /*dots and nests probably not allowed at top level, haven't looked into why*/
-  arith_expr(eexpr,invalid) { InitExpr($1) }
+  arith_expr(eexpr,invalid) { Ast0.wrap(Ast0.InitExpr($1)) }
 | TOBrace initialize_list TCBrace
-    { InitList(clt2mcode "{" $1,$2,clt2mcode "}" $3) }
+    { Ast0.wrap(Ast0.InitList(clt2mcode "{" $1,$2,clt2mcode "}" $3)) }
 | TOBrace TCBrace
-    { InitList(clt2mcode "{" $1,[],clt2mcode "}" $2) }
+    { Ast0.wrap
+	(Ast0.InitList(clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
+		       clt2mcode "}" $2)) }
            /* gccext:, labeled elements */
 | TDot ident TEq initialize2
-    { InitGccDotName(clt2mcode "." $1,$2,clt2mcode "=" $3,$4) } 
+    { Ast0.wrap(Ast0.InitGccDotName(clt2mcode "." $1,$2,clt2mcode "=" $3,$4)) }
 | ident TDotDot initialize2
-    { InitGccName($1,clt2mcode ":" $2,$3) } /* in old kernel */
+    { Ast0.wrap(Ast0.InitGccName($1,clt2mcode ":" $2,$3)) } /* in old kernel */
 | TOCro eexpr TCCro TEq initialize2
-    { InitGccIndex(clt2mcode "[" $1,$2,clt2mcode "]" $3,clt2mcode "=" $4,$5) }
+    { Ast0.wrap(Ast0.InitGccIndex(clt2mcode "[" $1,$2,clt2mcode "]" $3,
+				  clt2mcode "=" $4,$5)) }
 | TOCro eexpr TEllipsis eexpr TCCro TEq initialize2
-    { InitGccRange(clt2mcode "[" $1,$2,clt2mcode "..." $3,$4,clt2mcode "]" $5,
-		   clt2mcode "=" $6,$7) }
+    { Ast0.wrap(Ast0.InitGccRange(clt2mcode "[" $1,$2,clt2mcode "..." $3,
+				  $4,clt2mcode "]" $5,clt2mcode "=" $6,$7)) }
 
 initialize_list:
    initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
@@ -619,18 +618,18 @@ initialize_list_start:
   initialize2  { [$1] }
 | initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
-| TEllipsis list(comma_initializers(TEllipsis))
-    { Ast0.wrap(Ast0.Idots(clt2mcode "..." $1))::
-      (List.concat(List.map (function x -> x (mkpdots "...")) $2)) }
+| d=edots_when(TEllipsis,initialize)
+      r=list(comma_initializers(edots_when(TEllipsis,initialize)))
+    { (mkidots "..." d)::
+      (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  TComma dotter
+  c=TComma d=dotter
     { function dot_builder ->
-      [Ast0.wrap(Ast0.IComma(clt2mcode "," $1));
-	dot_builder $2] }
-| TComma initialize2
+      [Ast0.wrap(Ast0.IComma(clt2mcode "," c)); dot_builder d] }
+| c=TComma i=initialize2
     { function dot_builder ->
-      [Ast0.wrap(Ast0.IComma(clt2mcode "," $1)); $2] }
+      [Ast0.wrap(Ast0.IComma(clt2mcode "," c)); i] }
 
 
 /* a statement that is part of a list */
@@ -1214,15 +1213,15 @@ no_dot_start_stars(grammar,when_grammar,simple_when_grammar,ender):
        { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
 
 %inline edots_when(dotter,when_grammar):
-    d=dotter                                      {  }
-  | d=dotter TWhen TNotEq w=when_grammar TLineEnd {  }
+    d=dotter                                      { (d,None) }
+  | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
 %inline dots_when(dotter,when_grammar,simple_when_grammar):
-    d=dotter                                 {  }
+    d=dotter                                 { (d,Ast0.NoWhen) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd
-      {  }
+      { (d,Ast0.WhenNot w) }
   | d=dotter TWhen TEq w=simple_when_grammar TLineEnd
-      {  }
+      { (d,Ast0.WhenAlways w) }
 
 // used in NEST
 %inline no_dot_start_end(grammar,dotter):

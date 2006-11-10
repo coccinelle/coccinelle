@@ -55,8 +55,8 @@ and contains_only_minus s =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
-      donothing expression donothing donothing declaration
+      donothing donothing donothing donothing
+      donothing expression donothing donothing donothing declaration
       statement donothing in
   combiner.V0.combiner_statement s
 

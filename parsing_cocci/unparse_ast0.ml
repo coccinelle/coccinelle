@@ -242,10 +242,15 @@ and initialiser i =
 	  print_string " "; mcode print_string eq; print_string " ";
 	  initialiser ini
       | Ast0.IComma(cm) -> mcode print_string cm
-      | Ast0.IDots(d) -> mcode print_string d
+      | Ast0.Idots(d,Some whencode) ->
+	  mcode print_string d; print_string "   WHEN != ";
+	  initialiser whencode
+      | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
       | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
       | Ast0.MultiIni(ini) -> print_string "+"; initialiser ini)
+
+let initialiser_list = dots (function _ -> ()) initialiser
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -399,6 +404,7 @@ let unparse_anything x =
   (match x with
     Ast0.DotsExprTag(d) -> expression_dots d
   | Ast0.DotsParamTag(d) -> parameter_list d
+  | Ast0.DotsInitTag(d) -> initialiser_list d
   | Ast0.DotsStmtTag(d) -> statement_dots d
   | Ast0.IdentTag(d) -> ident d
   | Ast0.ExprTag(d) -> expression d

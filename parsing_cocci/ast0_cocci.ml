@@ -154,7 +154,7 @@ and base_initialiser =
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
   | IComma of string mcode
-  | IDots  of string mcode (* ... *)
+  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
   | MultiIni  of initialiser
@@ -260,6 +260,7 @@ and rule = top_level list
 
 type anything =
     DotsExprTag of expression dots
+  | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | IdentTag of ident
@@ -273,11 +274,13 @@ type anything =
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x
+let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
 let typeC x = TypeCTag x
 let param x = ParamTag x
+let ini x = InitTag x
 let decl x = DeclTag x
 let stmt x = StmtTag x
 let top x = TopTag x

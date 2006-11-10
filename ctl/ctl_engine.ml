@@ -1584,7 +1584,7 @@ let sat m phi reqopt check_conj =
   Hashtbl.clear reachable_table;
   Hashtbl.clear memo_label;
   let (x,label,states) = m in
-  if true(*preprocess label reqopt*)
+  if (!Flag_ctl.bench > 0) or (preprocess label reqopt)
   then
     let m = (x,label,List.sort compare states) in
     let res =

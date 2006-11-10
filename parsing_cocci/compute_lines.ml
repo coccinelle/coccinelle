@@ -334,7 +334,7 @@ let rec declaration d =
 
 and is_init_dots i =
   match Ast0.unwrap i with
-    Ast0.IDots(_) -> true
+    Ast0.Idots(_,_) -> true
   | _ -> false
 	
 and initialiser i =
@@ -367,10 +367,10 @@ and initialiser i =
 	(promote_mcode lb) ini
   | Ast0.IComma(cm) as up ->
       let ln = promote_mcode cm in mkres i up ln ln
-  | Ast0.IDots(dots) ->
+  | Ast0.Idots(dots,whencode) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
-      mkres i (Ast0.IDots(dots)) ln ln
+      mkres i (Ast0.Idots(dots,whencode)) ln ln
   | Ast0.OptIni(ini) ->
       let ini = initialiser ini in
       mkres i (Ast0.OptIni(ini)) ini ini

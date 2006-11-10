@@ -15,6 +15,7 @@ module U = Unparse_ast0
 let set_mcodekind x mcodekind =
   match x with
     Ast0.DotsExprTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsInitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -29,6 +30,7 @@ let set_mcodekind x mcodekind =
 let set_index x index =
   match x with
     Ast0.DotsExprTag(d) -> Ast0.set_index d index
+  | Ast0.DotsInitTag(d) -> Ast0.set_index d index
   | Ast0.DotsParamTag(d) -> Ast0.set_index d index
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
@@ -42,6 +44,7 @@ let set_index x index =
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
+  | Ast0.DotsInitTag(d) -> Index.initialiser_dots d
   | Ast0.DotsParamTag(d) -> Index.parameter_dots d
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.IdentTag(d) -> Index.ident d
@@ -221,6 +224,13 @@ let classify all_marked table code =
 	  disj_cases starter decls r.V0.combiner_declaration ender
       |	_ -> k e) in
 
+  let initialiser r k i =
+    compute_result Ast0.ini i
+      (match Ast0.unwrap i with
+	Ast0.Idots(dots,whencode) ->
+	  k (Ast0.rewrap i (Ast0.Idots(dots,None)))
+      |	_ -> k i) in
+
   let statement r k s =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
@@ -242,10 +252,10 @@ let classify all_marked table code =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsParam)
-      (do_nothing Ast0.dotsStmt)
+      (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
+      (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.ident) expression
-      (do_nothing Ast0.typeC) (do_nothing Ast0.param) declaration
+      (do_nothing Ast0.typeC) initialiser (do_nothing Ast0.param) declaration
       statement (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 
@@ -367,15 +377,16 @@ let equal_initialiser i1 i2 =
       (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2)
   | (Ast0.InitGccDotName(dot1,_,eq1,_),Ast0.InitGccDotName(dot2,_,eq2,_)) ->
       (equal_mcode dot1 dot2) && (equal_mcode eq1 eq2)
-  | (Ast0.InitGccName(_,eq,_),Ast0.InitGccName(_,eq,_)) -> equal_mcode eq1 eq2
-  | (Ast0.InitGccIndex(lb,_,rb,eq,_),Ast0.InitGccIndex(lb,_,rb,eq,_)) ->
+  | (Ast0.InitGccName(_,eq1,_),Ast0.InitGccName(_,eq2,_)) ->
+      equal_mcode eq1 eq2
+  | (Ast0.InitGccIndex(lb1,_,rb1,eq1,_),Ast0.InitGccIndex(lb2,_,rb2,eq2,_)) ->
       (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
   | (Ast0.InitGccRange(lb1,_,dots1,_,rb1,eq1,_),
      Ast0.InitGccRange(lb2,_,dots2,_,rb2,eq2,_)) ->
       (equal_mcode lb1 lb2) && (equal_mcode dots1 dots2) &&
        (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
   | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
-  | (Ast0.IDots(d1),Ast0.IDots(d2)) -> equal_mcode d1 d2
+  | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
   | (Ast0.MultiIni(_),Ast0.MultiIni(_)) -> true

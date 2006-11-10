@@ -23,11 +23,14 @@ let strip_info =
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
+      failwith "not a possible variable binding"
+  | (Ast0.DotsInitTag(d1),Ast0.DotsInitTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       failwith "not a possible variable binding"
@@ -41,6 +44,9 @@ let anything_equal = function
   | (Ast0.TypeCTag(d1),Ast0.TypeCTag(d2)) ->
       (strip_info.V0.rebuilder_typeC d1) =
       (strip_info.V0.rebuilder_typeC d2)
+  | (Ast0.InitTag(d1),Ast0.InitTag(d2)) ->
+      (strip_info.V0.rebuilder_initialiser d1) =
+      (strip_info.V0.rebuilder_initialiser d2)
   | (Ast0.ParamTag(d1),Ast0.ParamTag(d2)) ->
       (strip_info.V0.rebuilder_parameter d1) =
       (strip_info.V0.rebuilder_parameter d2)
@@ -222,7 +228,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Ecircles(ed,None),Ast0.Ecircles(_,Some wc))
 	  | (Ast0.Estars(ed,None),Ast0.Estars(_,Some wc)) ->
 	    (* hope that mcode of edots is unique somehow *)
-	      let (edots_whencode_allowed,_) = whencode_allowed in
+	      let (edots_whencode_allowed,_,_) = whencode_allowed in
 	      if edots_whencode_allowed
 	      then add_dot_binding ed (Ast0.ExprTag wc)
 	      else
@@ -298,28 +304,40 @@ let match_maker context_required whencode_allowed =
       match (Ast0.unwrap pattern,Ast0.unwrap i) with
 	(Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
 	  match_expr expa expb
-      | (Ast0.InitList(initlista),Ast0.InitList(initlistb)) ->
+      | (Ast0.InitList(_,initlista,_),Ast0.InitList(_,initlistb,_)) ->
 	  match_dots match_init initlista initlistb
       | (Ast0.InitGccDotName(_,namea,_,inia),
-	 Ast0.InitGccDotName(_,nameb,_,inib) ->
+	 Ast0.InitGccDotName(_,nameb,_,inib)) ->
 	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
       | (Ast0.InitGccName(namea,_,inia),Ast0.InitGccName(nameb,_,inib)) ->
 	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
       | (Ast0.InitGccIndex(_,expa,_,_,inia),
 	 Ast0.InitGccIndex(_,expb,_,_,inib)) ->
-	   conjunct_bindings (match_exp expa expb) (match_init inia inib)
+	   conjunct_bindings (match_expr expa expb) (match_init inia inib)
       | (Ast0.InitGccRange(_,exp1a,_,exp2a,_,_,inia),
 	 Ast0.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
-	   conjunct_bindings (match_exp exp1a exp1b)
-	    (conjunct_bindings (match_exp exp2a exp2b) (match_init inia inib))
+	   conjunct_bindings (match_expr exp1a exp1b)
+	    (conjunct_bindings (match_expr exp2a exp2b) (match_init inia inib))
       | (Ast0.IComma(_),Ast0.IComma(_)) -> return true
-      | (Ast0.IDots(_),Ast0.IDots(_)) -> return true
+      | (Ast0.Idots(_,None),Ast0.Idots(_,None)) -> return true
+      | (Ast0.Idots(id,None),Ast0.Idots(_,Some wc)) ->
+	  (* hope that mcode of edots is unique somehow *)
+	  let (_,idots_whencode_allowed,_) = whencode_allowed in
+	  if idots_whencode_allowed
+	  then add_dot_binding id (Ast0.InitTag wc)
+	  else
+	    (Printf.printf "warning: not applying iso because of whencode";
+	     return false)
+      | (Ast0.Idots(_,Some _),_) ->
+	  failwith "whencode not allowed in a pattern"
       | (Ast0.OptIni(ia),Ast0.OptIni(ib))
       | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib))
       | (Ast0.MultiIni(ia),Ast0.MultiIni(ib)) -> match_init ia ib
       | (_,Ast0.OptIni(ib))
       | (_,Ast0.UniqueIni(ib))
       | (_,Ast0.MultiIni(ib)) -> match_init pattern ib
+      | _ -> return false
+    else return false
 
   and match_param pattern p =
     match Ast0.unwrap pattern with
@@ -413,7 +431,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenNot wc))
 	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenNot wc)) ->
 	  (* hope that mcode of dots is unique somehow *)
-	      let (_,dots_whencode_allowed) = whencode_allowed in
+	      let (_,_,dots_whencode_allowed) = whencode_allowed in
 	      if dots_whencode_allowed
 	      then add_dot_binding d (Ast0.DotsStmtTag wc)
 	      else
@@ -423,7 +441,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenAlways wc))
 	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenAlways wc)) ->
 	  (* hope that mcode of dots is unique somehow *)
-	      let (_,dots_whencode_allowed) = whencode_allowed in
+	      let (_,_,dots_whencode_allowed) = whencode_allowed in
 	      if dots_whencode_allowed
 	      then add_dot_binding d (Ast0.StmtTag wc)
 	      else
@@ -544,6 +562,14 @@ let make_minus =
 		     mcode ender,whencode))
     | _ -> donothing r k e in
 
+  let initialiser r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
+      Ast0.Idots(d,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
+    | _ -> donothing r k e in
+
   let dots r k e =
     let info = Ast0.get_info e in
     let mcodekind = Ast0.get_mcodekind_ref e in
@@ -571,8 +597,8 @@ let make_minus =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    dots dots dots
-    donothing expression donothing donothing donothing
+    dots dots dots dots
+    donothing expression donothing initialiser donothing donothing
     statement donothing
 
 (* --------------------------------------------------------------------- *)
@@ -624,8 +650,9 @@ let rebuild_mcode start_line =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    donothing donothing donothing donothing donothing statement donothing
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
+    donothing statement donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -645,8 +672,23 @@ let count_edots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
+    donothing
+
+let count_idots =
+  let mcode x = 0 in
+  let option_default = 0 in
+  let bind x y = x + y in
+  let donothing r k e = k e in
+  let initfn r k e =
+    match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
+
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing
+    donothing donothing donothing initfn donothing donothing donothing
+    donothing
 
 let count_dots =
   let mcode x = 0 in
@@ -660,8 +702,9 @@ let count_dots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    donothing donothing donothing donothing donothing stmtfn donothing
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing stmtfn
+    donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -789,8 +832,8 @@ let instantiate bindings =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    identfn exprfn tyfn paramfn donothing stmtfn donothing
+    donothing donothing donothing donothing
+    identfn exprfn tyfn donothing paramfn donothing stmtfn donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -856,46 +899,53 @@ let copy_plus printer minusify model e =
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
 
-let whencode_allowed prev_ecount prev_dcount ecount dcount rest =
+let whencode_allowed prev_ecount prev_icount prev_dcount
+    ecount icount dcount rest =
   (* actually, if ecount or dcount is 0, the flag doesn't matter, because it
      won't be tested *)
   let other_ecount = (* number of edots *)
-    List.fold_left (function rest -> function (_,ec,dc) -> ec + rest)
+    List.fold_left (function rest -> function (_,ec,ic,dc) -> ec + rest)
       prev_ecount rest in
+  let other_icount = (* number of dots *)
+    List.fold_left (function rest -> function (_,ec,ic,dc) -> ic + rest)
+      prev_icount rest in
   let other_dcount = (* number of dots *)
-    List.fold_left (function rest -> function (_,ec,dc) -> dc + rest)
+    List.fold_left (function rest -> function (_,ec,ic,dc) -> dc + rest)
       prev_dcount rest in
-  (ecount = 0 or other_ecount = 0, dcount = 0 or other_dcount = 0)
+  (ecount = 0 or other_ecount = 0, icount = 0 or other_icount = 0,
+   dcount = 0 or other_dcount = 0)
 
 let mkdisj matcher alts instantiater e disj_maker minusify
     rebuild_mcodes printer =
   let call_instantiate bindings alts =
     List.map
-      (function (a,_,_) ->
+      (function (a,_,_,_) ->
 	copy_plus printer minusify e
 	  (instantiater bindings (rebuild_mcodes a)))
       alts in
-  let rec inner_loop all_alts prev_ecount prev_dcount = function
-      [] -> Common.Left (prev_ecount, prev_dcount)
-    | ((pattern,ecount,dcount)::rest) ->
-	let wc = whencode_allowed prev_ecount prev_dcount ecount dcount rest in
+  let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
+      [] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
+    | ((pattern,ecount,icount,dcount)::rest) ->
+	let wc =
+	  whencode_allowed prev_ecount prev_icount prev_dcount
+	    ecount dcount icount rest in
 	(match matcher (context_required e) wc pattern e init_env with
 	  None ->
-	    inner_loop all_alts
-	      (prev_ecount + ecount) (prev_dcount + dcount) rest
+	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
+	      (prev_dcount + dcount) rest
 	| Some bindings ->
 	    (match List.concat all_alts with
-	      [x] -> Common.Left (prev_ecount, prev_dcount)
+	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
 		Common.Right (call_instantiate bindings all_alts))) in
-  let rec outer_loop prev_ecount prev_dcount = function
+  let rec outer_loop prev_ecount prev_icount prev_dcount = function
       [] -> e (* nothing matched *)
     | (alts::rest) as all_alts ->
-	match inner_loop all_alts prev_ecount prev_dcount alts with
-	  Common.Left(prev_ecount, prev_dcount) ->
-	    outer_loop prev_ecount prev_dcount rest
+	match inner_loop all_alts prev_ecount prev_icount prev_dcount alts with
+	  Common.Left(prev_ecount, prev_icount, prev_dcount) ->
+	    outer_loop prev_ecount prev_icount prev_dcount rest
 	| Common.Right res -> disj_maker res in
-  outer_loop 0 0 alts
+  outer_loop 0 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
 let disj_starter =
@@ -939,6 +989,7 @@ let transform_expr alts e =
 	     (function
 		 Ast0.ExprTag(p) ->
 		   (p,count_edots.V0.combiner_expression p,
+		    count_idots.V0.combiner_expression p,
 		    count_dots.V0.combiner_expression p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
@@ -960,6 +1011,7 @@ let transform_decl alts e =
 	     (function
 		 Ast0.DeclTag(p) ->
 		   (p,count_edots.V0.combiner_declaration p,
+		    count_idots.V0.combiner_declaration p,
 		    count_dots.V0.combiner_declaration p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
@@ -981,6 +1033,7 @@ let transform_stmt alts e =
 	     (function
 		 Ast0.StmtTag(p) ->
 		   (p,count_edots.V0.combiner_statement p,
+		    count_idots.V0.combiner_statement p,
 		    count_dots.V0.combiner_statement p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
@@ -995,22 +1048,16 @@ let transform_stmt alts e =
 
 let transform (alts : isomorphism) =
   let mcode x = x in
-  let exprdotsfn r k e = k e in
-  let paramdotsfn r k e = k e in
-  let stmtdotsfn r k e = k e in
-  let identfn r k e = k e in
+  let donothing r k e = k e in
   let exprfn r k e = transform_expr alts (k e) in
-  let tyfn r k e = k e in
-  let paramfn r k e = k e in
   let declfn r k e = transform_decl alts (k e) in
   let stmtfn r k e = transform_stmt alts (k e) in
-  let topfn r k e = k e in
   
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      exprdotsfn paramdotsfn stmtdotsfn
-      identfn exprfn tyfn paramfn declfn stmtfn topfn in
+      donothing donothing donothing donothing
+      donothing exprfn donothing donothing donothing declfn stmtfn donothing in
   res.V0.rebuilder_top_level
 
 (* --------------------------------------------------------------------- *)
@@ -1021,12 +1068,15 @@ let rewrap =
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
       Ast0.DotsExprTag(rewrap.V0.rebuilder_expression_dots d)
+  | Ast0.DotsInitTag(d) ->
+      Ast0.DotsInitTag(rewrap.V0.rebuilder_initialiser_list d)
   | Ast0.DotsParamTag(d) ->
       Ast0.DotsParamTag(rewrap.V0.rebuilder_parameter_list d)
   | Ast0.DotsStmtTag(d) ->
@@ -1034,6 +1084,7 @@ let rewrap_anything = function
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)
+  | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.V0.rebuilder_initialiser d)
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.V0.rebuilder_declaration d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.V0.rebuilder_statement d)

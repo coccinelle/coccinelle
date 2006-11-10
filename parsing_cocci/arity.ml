@@ -484,10 +484,11 @@ and initialiser tgt i =
       let arity = init_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
       make_init i tgt arity (Ast0.IComma(cm))
-  | Ast0.IDots(dots) ->
+  | Ast0.Idots(dots,whencode) ->
       let arity = init_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      make_init i tgt arity (Ast0.IDots(dots))
+      let whencode = get_option (initialiser Ast0.NONE) whencode in
+      make_init i tgt arity (Ast0.Idots(dots,whencode))
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.MultiIni(_) ->
       failwith "unexpected code"
 

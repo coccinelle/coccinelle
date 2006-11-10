@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 109 *)
+(* current max is 115 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -16,6 +16,13 @@ let expression_dots d =
     Ast0.DOTS(l) -> 1::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 2::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 3::(if l = [] then [ln] else [0])
+	
+let initialiser_dots d =
+  let ln = (Ast0.get_info d).Ast0.line_start in
+  match Ast0.unwrap d with
+    Ast0.DOTS(l) -> 113::(if l = [] then [ln] else [0])
+  | Ast0.CIRCLES(l) -> 114::(if l = [] then [ln] else [0])
+  | Ast0.STARS(l) -> 115::(if l = [] then [ln] else [0])
 	
 let parameter_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
@@ -104,7 +111,7 @@ let initialiser i =
   | Ast0.InitGccIndex(lb,exp,rb,eq,ini) -> [106]
   | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) -> [107]
   | Ast0.IComma(cm) -> [108]
-  | Ast0.IDots(d) -> [109]
+  | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
   | Ast0.UniqueIni(id) -> [111]
   | Ast0.MultiIni(id) -> [112]
