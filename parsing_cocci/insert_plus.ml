@@ -582,9 +582,6 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
 let merge minus_list plus_list =
   List.iter
     (function (index,minus_info) ->
-      Printf.printf "index %d, plus indices " index;
-      List.iter (function (x,_) -> Printf.printf "%d " x) plus_list;
-      Printf.printf "\n";
       let plus_info = List.assoc index plus_list in
       merge_one (minus_info,plus_info))
     minus_list

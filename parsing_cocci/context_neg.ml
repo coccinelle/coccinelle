@@ -527,13 +527,67 @@ let iscode t =
   | Ast0.CODE(_) -> true
   | Ast0.OTHER(_) -> failwith "unexpected top level code"
 
+(* ------------------------------------------------------------------- *)
+(* alignment of minus and plus *)
+
+let concat = function
+    [] -> []
+  | [s] -> [s]
+  | l ->
+      let rec loop = function
+	  [] -> []
+	| x::rest ->
+	    (match Ast0.unwrap x with
+	      Ast0.FUNCTION(s) ->
+		let stms = loop rest in s::stms
+	    | Ast0.DECL(s) ->
+		let stms = loop rest in (Ast0.rewrap s (Ast0.Decl(s)))::stms
+	    | Ast0.CODE(ss) ->
+		let stms = loop rest in
+		(match Ast0.unwrap ss with
+		  Ast0.DOTS(d) -> d@stms
+		| _ -> failwith "no dots allowed in pure plus code")
+	    | _ -> failwith "plus code is being discarded") in
+      let res =
+	Compute_lines.statement_dots
+	  (Ast0.rewrap (List.hd l) (Ast0.DOTS (loop l))) in
+      [Ast0.rewrap res (Ast0.CODE res)]
+
+let collect_up_to m plus =
+  let minfo = Ast0.get_info m in
+  let mend = minfo.Ast0.logical_end in
+  let rec loop = function
+      [] -> ([],[])
+    | p::plus -> 
+	let pinfo = Ast0.get_info p in
+	let pstart = pinfo.Ast0.logical_start in
+	if pstart > mend
+	then ([],p::plus)
+	else let (plus,rest) = loop plus in (p::plus,rest) in
+  let (plus,rest) = loop plus in
+  (concat plus,rest)
+
+let realign minus plus =
+  let rec loop = function
+      ([],_) -> failwith "not possible, some context required"
+    | ([m],p) -> ([m],concat p)
+    | (m::minus,plus) ->
+	let (p,plus) = collect_up_to m plus in
+	let (minus,plus) = loop (minus,plus) in
+	(m::minus,p@plus) in
+  loop (minus,plus)
+
+(* ------------------------------------------------------------------- *)
+
 (* returns a list of corresponding minus and plus trees *)
 let context_neg minus plus =
   Hashtbl.clear minus_table;
   Hashtbl.clear plus_table;
+  let (minus,plus) = realign minus plus in
   let rec loop = function
       ([],[]) -> []
-    | ([],l) -> failwith (Printf.sprintf "%d plus things remaining" (List.length l))
+    | ([],l) ->
+	failwith (Printf.sprintf "%d plus things remaining" (List.length l))
     | (minus,[]) ->
 	let _ =
 	  List.map
