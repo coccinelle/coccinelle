@@ -873,14 +873,18 @@ let satLabel label required p =
     else setify(label p) in
   if !pREQUIRED_ENV_OPT
   then
-    foldl
+    (let res = foldl
       (function rest ->
 	function ((s,th,_) as t) ->
 	  if List.exists (function th' -> not(conj_subst th th' = None))
 	      required
 	  then t::rest
 	  else rest)
-      [] triples
+      [] triples in
+    let olen = List.length triples in
+    let nlen = List.length res in
+    if olen > nlen then Printf.printf "dropping %d triples\n" (olen - nlen);
+    res)
   else triples
 
 let get_required_states l =
@@ -1454,7 +1458,8 @@ let perms =
     (function (opt,x) ->
       (opt,x,ref 0.0,ref 0,
        List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
-    (all@baseline@conjneg@path@required)
+    [(*List.hd baseline;*)List.hd required]
+  (*(all@baseline@conjneg@path@required)*)
 
 let drop_negwits s =
   let rec contains_negwits l =
