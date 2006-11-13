@@ -240,7 +240,7 @@ and parameter_list = parameterTypeDef dots
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-and storage = Static
+and storage = Static | Auto | Register | Extern
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

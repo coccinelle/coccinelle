@@ -259,7 +259,11 @@ in
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let storage Ast.Static = print_string "static "
+let storage = function
+    Ast.Static -> print_string "static "
+  | Ast.Auto -> print_string "auto "
+  | Ast.Register -> print_string "register "
+  | Ast.Extern -> print_string "extern "
 in
 
 (* --------------------------------------------------------------------- *)

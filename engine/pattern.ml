@@ -289,12 +289,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       match_ident LocalFunction ida idb >&&>
 
       (* "iso-by-absence" for storage, and return type. *)
-      (match stoa with 
-       | None -> return true
-       | Some x -> 
-           assert (term x = A.Static);
-           return (stob = B.Sto B.Static)
-      ) >&&> 
+      (match_storage stoa stob) >&&> 
       (match tya with 
        | None -> return true
        | Some tya -> match_ft_ft tya retb
@@ -362,6 +357,19 @@ and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
    xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
      (return false)
 
+and match_storage stoa stob =
+  (* "iso-by-absence" for storage. *)
+  match stoa with 
+  | None -> return true
+  | Some x -> 
+      return
+	(match (term x,stob) with
+	  (A.Static, B.Sto B.Static)
+	| (A.Auto, B.Sto B.Auto)
+	| (A.Register, B.Sto B.Register)
+	| (A.Extern, B.Sto B.Extern) -> true
+	| _ -> false)
+
 and match_re_onedecl = fun decla declb -> 
   match A.unwrap decla, declb with
   | A.MetaDecl(ida,_inherited), _ -> 
@@ -369,21 +377,11 @@ and match_re_onedecl = fun decla declb ->
 
     (* could handle iso here but handled in standard.iso *)
   | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
-      (match stoa with 
-       | None -> return true
-       | Some x -> 
-           assert (term x = A.Static);
-           return (stob = B.Sto B.Static)
-      ) >&&>       match_ft_ft typa typb >&&>
+      match_storage stoa stob >&&> match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb
   | A.Init (stoa, typa, sa, _, inia, _),
       ((Some ((sb, Some inib),_), typb, stob), _) ->
-      (match stoa with 
-       | None -> return true
-       | Some x -> 
-           assert (term x = A.Static);
-           return (stob = B.Sto B.Static)
-      ) >&&> 
+      match_storage stoa stob >&&> 
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb >&&>
       (match (A.unwrap inia,inib) with

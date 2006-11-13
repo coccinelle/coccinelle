@@ -151,7 +151,8 @@ let iso_adjust fn first rest =
 %token<Data.line_type * int * int * int> Tvoid Tstruct Tunion
 %token<Data.line_type * int * int * int> Tunsigned Tsigned
 
-%token<Data.line_type * int * int * int> Tstatic Tconst Tvolatile
+%token<Data.line_type * int * int * int> Tstatic Tauto Tregister Textern
+%token<Data.line_type * int * int * int> Tconst Tvolatile
 
 %token <Data.line_type * int * int * int> TIf TElse TWhile TFor TDo TReturn
 %token <Data.line_type * int * int * int> TBreak TContinue
@@ -416,6 +417,9 @@ fundecl:
 
 storage:
          s=Tstatic      { clt2mcode Ast.Static s }
+       | s=Tauto        { clt2mcode Ast.Auto s }
+       | s=Tregister    { clt2mcode Ast.Register s }
+       | s=Textern      { clt2mcode Ast.Extern s }
 
 decl: param_ctype ident
 	{ Ast0.wrap(Ast0.Param($2, $1)) }

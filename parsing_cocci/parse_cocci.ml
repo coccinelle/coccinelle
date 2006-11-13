@@ -17,7 +17,7 @@ let line_type2c (d,_,_,_) =
   | D.CONTEXT | D.UNIQUE | D.OPT | D.MULTI -> ""
 
 let token2c (tok,_) =
-  match tok with
+ match tok with
     PC.TIdentifier -> "identifier"
   | PC.TType -> "type"
   | PC.TParameter -> "parameter"
@@ -43,6 +43,9 @@ let token2c (tok,_) =
   | PC.Tunsigned(clt) -> "unsigned"^(line_type2c clt)
   | PC.Tsigned(clt) -> "signed"^(line_type2c clt)
   | PC.Tstatic(clt) -> "static"^(line_type2c clt)
+  | PC.Tauto(clt) -> "auto"^(line_type2c clt)
+  | PC.Tregister(clt) -> "register"^(line_type2c clt)
+  | PC.Textern(clt) -> "extern"^(line_type2c clt)
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
@@ -199,7 +202,8 @@ let split_token ((tok,_) as t) =
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
-  | PC.Tstatic(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
+  | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
+  | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
       split t clt
@@ -301,7 +305,8 @@ let token2line (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt) 
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt) 
-  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt) 
+  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt) 
   | PC.Tconst(clt) | PC.Tvolatile(clt) 
 
   | PC.TInc(clt) | PC.TDec(clt) 

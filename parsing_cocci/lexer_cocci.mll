@@ -108,7 +108,11 @@ let id_tokens lexbuf =
   | "unsigned" ->   Tunsigned (get_current_line_type lexbuf)
   | "signed" ->     Tsigned (get_current_line_type lexbuf)
 	
+  | "auto"  ->      Tauto   (get_current_line_type lexbuf)
+  | "register" ->   Tregister (get_current_line_type lexbuf)
+  | "extern" ->     Textern (get_current_line_type lexbuf)
   | "static" ->     Tstatic (get_current_line_type lexbuf)
+
   | "const" ->      Tconst  (get_current_line_type lexbuf)
   | "volatile" ->   Tvolatile (get_current_line_type lexbuf)
 

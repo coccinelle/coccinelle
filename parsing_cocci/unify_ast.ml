@@ -218,12 +218,15 @@ and unify_typeC t1 t2 =
 let rec unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
     (Ast.Init(stg1,ft1,id1,eq1,i1,s1),Ast.Init(stg2,ft2,id2,eq2,i2,s2)) ->
-      (* don't bother with stg - if static is not present, then we assume that
-	 it might be present, so the result is always true *)
-      conjunct_bindings (unify_fullType ft1 ft2)
-	(conjunct_bindings (unify_ident id1 id2) (unify_initialiser i1 i2))
+      if bool_unify_option unify_mcode stg1 stg2
+      then
+	conjunct_bindings (unify_fullType ft1 ft2)
+	  (conjunct_bindings (unify_ident id1 id2) (unify_initialiser i1 i2))
+      else return false
   | (Ast.UnInit(stg1,ft1,id1,s1),Ast.UnInit(stg2,ft2,id2,s2)) ->
-      conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
+      if bool_unify_option unify_mcode stg1 stg2
+      then conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
+      else return false
   | (Ast.DisjDecl(d1),_) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration x d2) d1)
@@ -309,9 +312,12 @@ let rec unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
     (Ast.FunHeader(_,stg1,ty1,nm1,lp1,params1,rp1),
      Ast.FunHeader(_,stg2,ty2,nm2,lp2,params2,rp2)) ->
-       conjunct_bindings (unify_true_option unify_fullType ty1 ty2)
-	 (conjunct_bindings (unify_ident nm1 nm2)
-	    (unify_dots unify_parameterTypeDef pdots params1 params2))
+      if bool_unify_option unify_mcode stg1 stg2
+      then
+	conjunct_bindings (unify_true_option unify_fullType ty1 ty2)
+	  (conjunct_bindings (unify_ident nm1 nm2)
+	     (unify_dots unify_parameterTypeDef pdots params1 params2))
+      else return false
   | (Ast.Decl(d1),Ast.Decl(d2)) -> unify_declaration d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
