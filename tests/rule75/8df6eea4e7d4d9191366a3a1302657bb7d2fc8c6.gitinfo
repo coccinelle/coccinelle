@@ -1,0 +1,283 @@
+commit 8df6eea4e7d4d9191366a3a1302657bb7d2fc8c6
+Author: Jaroslav Kysela <perex@suse.cz>
+Date:   Tue Jan 20 19:00:23 2004 +0100
+
+    ALSA CVS update - Takashi Iwai <tiwai@suse.de>
+    Documentation,Memalloc module,ALS4000 driver,AZT3328 driver
+    ES1938 driver,ES1968 driver,Maestro3 driver,SonicVibes driver
+    ALI5451 driver,EMU10K1/EMU10K2 driver,ICE1712 driver,ICE1724 driver
+    Trident driver
+    - fixed the DMA allocation.
+      pci_set_dma_mask() is called together with pci_set_consistent_dma_mask().
+      also clean up the double check of mask.
+
+diff --git a/Documentation/sound/alsa/DocBook/writing-an-alsa-driver.tmpl b/Documentation/sound/alsa/DocBook/writing-an-alsa-driver.tmpl
+index 3444206..6ad6096 100644
+--- a/Documentation/sound/alsa/DocBook/writing-an-alsa-driver.tmpl
++++ b/Documentation/sound/alsa/DocBook/writing-an-alsa-driver.tmpl
+@@ -1291,11 +1291,11 @@
+           // check PCI availability (28bit DMA)
+           if ((err = pci_enable_device(pci)) < 0)
+                   return err;
+-          if (!pci_dma_supported(pci, 0x0fffffff)) {
++          if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
++              pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
+                   printk(KERN_ERR "error to set 28bit mask DMA\n");
+                   return -ENXIO;
+           }
+-          pci_set_consistent_dma_mask(pci, 0x0fffffff);
+ 
+           chip = snd_magic_kcalloc(mychip_t, 0, GFP_KERNEL);
+           if (chip == NULL)
+@@ -1409,11 +1409,12 @@
+ <![CDATA[
+   if ((err = pci_enable_device(pci)) < 0)
+           return err;
+-  if (!pci_dma_supported(pci, 0x0fffffff)) {
++  if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
++      pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
+           printk(KERN_ERR "error to set 28bit mask DMA\n");
+           return -ENXIO;
+   }
+-  pci_set_consistent_dma_mask(pci, 0x0fffffff);
++  
+ ]]>
+           </programlisting>
+         </informalexample>
+diff --git a/sound/core/memalloc.c b/sound/core/memalloc.c
+index 008fad4..aeb3dd1 100644
+--- a/sound/core/memalloc.c
++++ b/sound/core/memalloc.c
+@@ -94,16 +94,19 @@ static void *snd_pci_hack_alloc_consiste
+ 				    dma_addr_t *dma_handle)
+ {
+ 	void *ret;
+-	u64 dma_mask;
++	u64 dma_mask, cdma_mask;
+ 	unsigned long mask;
+ 
+ 	if (hwdev == NULL)
+ 		return pci_alloc_consistent(hwdev, size, dma_handle);
+-	dma_mask = hwdev->consistent_dma_mask;
+-	mask = (unsigned long)dma_mask;
++	dma_mask = hwdev->dma_mask;
++	cdma_mask = hwdev->consistent_dma_mask;
++	mask = (unsigned long)dma_mask && (unsigned long)cdma_mask;
++	hwdev->dma_mask = 0xffffffff; /* do without masking */
+ 	hwdev->consistent_dma_mask = 0xffffffff; /* do without masking */
+ 	ret = pci_alloc_consistent(hwdev, size, dma_handle);
+-	hwdev->consistent_dma_mask = dma_mask; /* restore */
++	hwdev->dma_mask = dma_mask; /* restore */
++	hwdev->consistent_dma_mask = cdma_mask; /* restore */
+ 	if (ret) {
+ 		/* obtained address is out of range? */
+ 		if (((unsigned long)*dma_handle + size - 1) & ~mask) {
+@@ -841,7 +844,8 @@ static void __init preallocate_cards(voi
+ 			continue;
+ 		}
+ 			
+-		if (pci_set_consistent_dma_mask(pci, dev->dma_mask) < 0) {
++		if (pci_set_dma_mask(pci, dev->dma_mask) < 0 ||
++		    pci_set_consistent_dma_mask(pci, dev->dma_mask) < 0) {
+ 			printk(KERN_ERR "snd-page-alloc: cannot set DMA mask %lx for pci %04x:%04x\n", dev->dma_mask, dev->vendor, dev->device);
+ 			continue;
+ 		}
+diff --git a/sound/pci/ali5451/ali5451.c b/sound/pci/ali5451/ali5451.c
+index eab7dab..bb304db 100644
+--- a/sound/pci/ali5451/ali5451.c
++++ b/sound/pci/ali5451/ali5451.c
+@@ -2106,11 +2106,11 @@ static int __devinit snd_ali_create(snd_
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 	/* check, if we can restrict PCI DMA transfers to 31 bits */
+-	if (!pci_dma_supported(pci, 0x7fffffff)) {
++	if (pci_set_dma_mask(pci, 0x7fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x7fffffff) < 0) {
+ 		snd_printk("architecture does not support 31bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x7fffffff);
+ 
+ 	if ((codec = snd_magic_kcalloc(ali_t, 0, GFP_KERNEL)) == NULL)
+ 		return -ENOMEM;
+diff --git a/sound/pci/als4000.c b/sound/pci/als4000.c
+index 97910b1..612ec08 100644
+--- a/sound/pci/als4000.c
++++ b/sound/pci/als4000.c
+@@ -621,11 +621,11 @@ static int __devinit snd_card_als4000_pr
+ 		return err;
+ 	}
+ 	/* check, if we can restrict PCI DMA transfers to 24 bits */
+-	if (!pci_dma_supported(pci, 0x00ffffff)) {
++	if (pci_set_dma_mask(pci, 0x00ffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x00ffffff) < 0) {
+ 		snd_printk("architecture does not support 24bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x00ffffff);
+ 
+ 	gcr = pci_resource_start(pci, 0);
+ 	if ((res_gcr_port = request_region(gcr, 0x40, "ALS4000")) == NULL) {
+diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
+index c676c2b..dc43d9b 100644
+--- a/sound/pci/azt3328.c
++++ b/sound/pci/azt3328.c
+@@ -1361,11 +1361,11 @@ static int __devinit snd_azf3328_create(
+ 	chip->irq = -1;
+ 
+ 	/* check if we can restrict PCI DMA transfers to 24 bits */
+-	if (!pci_dma_supported(pci, 0x00ffffff)) {
++	if (pci_set_dma_mask(pci, 0x00ffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x00ffffff) < 0) {
+ 		snd_printk("architecture does not support 24bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x00ffffff);
+ 
+ 	chip->codec_port = pci_resource_start(pci, 0);
+ 	if ((chip->res_codec_port = request_region(chip->codec_port, 0x80, "Aztech AZF3328 I/O")) == NULL) {
+diff --git a/sound/pci/emu10k1/emu10k1_main.c b/sound/pci/emu10k1/emu10k1_main.c
+index 43a013c..153f0dc 100644
+--- a/sound/pci/emu10k1/emu10k1_main.c
++++ b/sound/pci/emu10k1/emu10k1_main.c
+@@ -599,7 +599,8 @@ int __devinit snd_emu10k1_create(snd_car
+ 		return -ENOMEM;
+ 	/* set the DMA transfer mask */
+ 	emu->dma_mask = is_audigy ? AUDIGY_DMA_MASK : EMU10K1_DMA_MASK;
+-	if (pci_set_consistent_dma_mask(pci, emu->dma_mask) < 0) {
++	if (pci_set_dma_mask(pci, emu->dma_mask) < 0 ||
++	    pci_set_consistent_dma_mask(pci, emu->dma_mask) < 0) {
+ 		snd_printk(KERN_ERR "architecture does not support PCI busmaster DMA with mask 0x%lx\n", emu->dma_mask);
+ 		snd_magic_kfree(emu);
+ 		return -ENXIO;
+diff --git a/sound/pci/es1938.c b/sound/pci/es1938.c
+index 4033b46..60f1bbe 100644
+--- a/sound/pci/es1938.c
++++ b/sound/pci/es1938.c
+@@ -1398,11 +1398,11 @@ static int __devinit snd_es1938_create(s
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+         /* check, if we can restrict PCI DMA transfers to 24 bits */
+-        if (!pci_dma_supported(pci, 0x00ffffff)) {
++	if (pci_set_dma_mask(pci, 0x00ffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x00ffffff) < 0) {
+                 snd_printk("architecture does not support 24bit PCI busmaster DMA\n");
+                 return -ENXIO;
+         }
+-	pci_set_consistent_dma_mask(pci, 0x00ffffff);
+ 
+ 	chip = snd_magic_kcalloc(es1938_t, 0, GFP_KERNEL);
+ 	if (chip == NULL)
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index dd3b432..8aa910e 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -2563,11 +2563,11 @@ static int __devinit snd_es1968_create(s
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 	/* check, if we can restrict PCI DMA transfers to 28 bits */
+-	if (!pci_dma_supported(pci, 0x0fffffff)) {
++	if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
+ 		snd_printk("architecture does not support 28bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x0fffffff);
+ 
+ 	chip = (es1968_t *) snd_magic_kcalloc(es1968_t, 0, GFP_KERNEL);
+ 	if (! chip)
+diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
+index 3cf3a30..799354e 100644
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -2363,11 +2363,11 @@ static int __devinit snd_ice1712_create(
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 	/* check, if we can restrict PCI DMA transfers to 28 bits */
+-	if (!pci_dma_supported(pci, 0x0fffffff)) {
++	if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
+ 		snd_printk("architecture does not support 28bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x0fffffff);
+ 
+ 	ice = snd_magic_kcalloc(ice1712_t, 0, GFP_KERNEL);
+ 	if (ice == NULL)
+diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+index 30f4db4..03a9b6a 100644
+--- a/sound/pci/ice1712/ice1724.c
++++ b/sound/pci/ice1712/ice1724.c
+@@ -1801,7 +1801,6 @@ static int __devinit snd_vt1724_create(s
+         /* enable PCI device */
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+-	pci_set_consistent_dma_mask(pci, 0xffffffff); 
+ 
+ 	ice = snd_magic_kcalloc(ice1712_t, 0, GFP_KERNEL);
+ 	if (ice == NULL)
+diff --git a/sound/pci/maestro3.c b/sound/pci/maestro3.c
+index b96b11b..5c121a6 100644
+--- a/sound/pci/maestro3.c
++++ b/sound/pci/maestro3.c
+@@ -2547,11 +2547,11 @@ snd_m3_create(snd_card_t *card, struct p
+ 		return -EIO;
+ 
+ 	/* check, if we can restrict PCI DMA transfers to 28 bits */
+-	if (!pci_dma_supported(pci, 0x0fffffff)) {
++	if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
+ 		snd_printk("architecture does not support 28bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x0fffffff);
+ 
+ 	chip = snd_magic_kcalloc(m3_t, 0, GFP_KERNEL);
+ 	if (chip == NULL)
+diff --git a/sound/pci/sonicvibes.c b/sound/pci/sonicvibes.c
+index 21e0e6c..bf5de1e 100644
+--- a/sound/pci/sonicvibes.c
++++ b/sound/pci/sonicvibes.c
+@@ -1249,11 +1249,11 @@ static int __devinit snd_sonicvibes_crea
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 	/* check, if we can restrict PCI DMA transfers to 24 bits */
+-        if (!pci_dma_supported(pci, 0x00ffffff)) {
++        if (pci_set_dma_mask(pci, 0x00ffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x00ffffff) < 0) {
+                 snd_printk("architecture does not support 24bit PCI busmaster DMA\n");
+                 return -ENXIO;
+         }
+-	pci_set_consistent_dma_mask(pci, 0x00ffffff);
+ 
+ 	sonic = snd_magic_kcalloc(sonicvibes_t, 0, GFP_KERNEL);
+ 	if (sonic == NULL)
+diff --git a/sound/pci/trident/trident_main.c b/sound/pci/trident/trident_main.c
+index 63e86c1..d152763 100644
+--- a/sound/pci/trident/trident_main.c
++++ b/sound/pci/trident/trident_main.c
+@@ -3523,11 +3523,11 @@ int __devinit snd_trident_create(snd_car
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 	/* check, if we can restrict PCI DMA transfers to 30 bits */
+-	if (!pci_dma_supported(pci, 0x3fffffff)) {
++	if (pci_set_dma_massk(pci, 0x3fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(pci, 0x3fffffff) < 0) {
+ 		snd_printk("architecture does not support 30bit PCI busmaster DMA\n");
+ 		return -ENXIO;
+ 	}
+-	pci_set_consistent_dma_mask(pci, 0x3fffffff);
+ 	
+ 	trident = snd_magic_kcalloc(trident_t, 0, GFP_KERNEL);
+ 	if (trident == NULL)
+@@ -3952,7 +3952,9 @@ void snd_trident_resume(trident_t *tride
+ 		return;
+ 
+ 	pci_enable_device(trident->pci);
+-	pci_set_consistent_dma_mask(trident->pci, 0x3fffffff); /* FIXME: correct? */
++	if (pci_set_dma_mask(trident->pci, 0x3fffffff) < 0 ||
++	    pci_set_consistent_dma_mask(trident->pci, 0x3fffffff) < 0)
++		snd_printk(KERN_WARNING "trident: can't set the proper DMA mask\n");
+ 	pci_set_master(trident->pci); /* to be sure */
+ 
+ 	switch (trident->device) {
