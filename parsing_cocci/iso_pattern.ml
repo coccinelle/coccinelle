@@ -264,9 +264,14 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_expr sizea sizeb)
-	  | (Ast0.StructUnionName(namea,kinda),
-	     Ast0.StructUnionName(nameb,kindb)) ->
-	       return (mcode_equal namea nameb && mcode_equal kinda kindb)
+	  | (Ast0.StructUnionName(kinda,namea),
+	     Ast0.StructUnionName(kindb,nameb)) ->
+	       return (mcode_equal kinda kindb && mcode_equal namea nameb)
+	  | (Ast0.StructUnionDef(namea,kinda,_,declsa,_),
+	     Ast0.StructUnionDef(nameb,kindb,_,declsb,_)) ->
+	       if mcode_equal kinda kindb && mcode_equal namea nameb
+	       then match_list match_decl declsa declsb
+	       else return false
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      return (mcode_equal namea nameb)
 	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
@@ -292,6 +297,7 @@ let match_maker context_required whencode_allowed =
 	  if bool_match_option mcode_equal stga stgb
 	  then conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
 	  else return false
+      | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) -> match_typeC tya tyb
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))

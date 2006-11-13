@@ -149,15 +149,15 @@ and base_typeC =
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of tagged_string * structUnion mcode
+  | StructUnionName of structUnion mcode * string mcode (* name *)
+  | StructUnionDef  of structUnion mcode * string mcode (* name *) *
+	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of string mcode * inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
-
-and tagged_string = string mcode
      
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 | FloatType | LongType
@@ -176,8 +176,8 @@ and const_vol = Const | Volatile
 and base_declaration =
     Init of storage mcode option * fullType * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * ident *
-	string mcode (* ; *)
+  | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
+  | TyDecl of fullType * string mcode (* ; *)
   | DisjDecl   of declaration list
 
   | MetaDecl of string mcode * inherited

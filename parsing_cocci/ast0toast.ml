@@ -319,8 +319,13 @@ and typeC t =
 		 rewrap t
 		   (Ast.Array(typeC ty,mcode lb,get_option expression size,
 			      mcode rb)))
-    | Ast0.StructUnionName(name,kind) ->
-	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode name,mcode kind)))
+    | Ast0.StructUnionName(kind,name) ->
+	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode kind,mcode name)))
+    | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+	Ast.Type(None,
+		 rewrap t
+		   (Ast.StructUnionDef(mcode kind,mcode name,mcode lb,
+				       List.map declaration decls,mcode rb)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
     | Ast0.MetaType(name) ->
 	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,false)))
@@ -347,7 +352,7 @@ and base_typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
     
-let rec declaration d =
+and declaration d =
   rewrap d
     (match Ast0.unwrap d with
       Ast0.Init(stg,ty,id,eq,ini,sem) ->
@@ -361,6 +366,7 @@ let rec declaration d =
     | Ast0.UnInit(stg,ty,id,sem) ->
 	let stg = get_option mcode stg in
 	Ast.UnInit(stg,typeC ty,ident id,mcode sem)
+    | Ast0.TyDecl(ty,sem) -> Ast.TyDecl(typeC ty,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)

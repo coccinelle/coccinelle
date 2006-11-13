@@ -161,8 +161,13 @@ let combiner bind option_default
 	  multibind
 	    [typeC ty; string_mcode lb; get_option expression size;
 	      string_mcode rb]
-      | Ast0.StructUnionName(name,kind) ->
+      | Ast0.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (string_mcode name)
+      | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+	  multibind
+	    [struct_mcode kind; string_mcode name; string_mcode lb;
+	      multibind (List.map declaration decls);
+	      string_mcode rb]
       | Ast0.TypeName(name) -> string_mcode name
       | Ast0.MetaType(name) -> string_mcode name
       | Ast0.OptType(ty) -> typeC ty
@@ -179,6 +184,7 @@ let combiner bind option_default
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  multibind [get_option storage_mcode stg;
 		      typeC ty; ident id; string_mcode sem]
+      | Ast0.TyDecl(ty,sem) -> bind (typeC ty) (string_mcode sem)
       |	Ast0.DisjDecl(starter,decls,mids,ender) ->
 	  (match decls with
 	    [] -> failwith "bad disjunction"
@@ -502,8 +508,12 @@ let rebuilder = fun
 	| Ast0.Array(ty,lb,size,rb) ->
 	    Ast0.Array(typeC ty, string_mcode lb,
 		       get_option expression size, string_mcode rb)
-	| Ast0.StructUnionName(name,kind) ->
-	    Ast0.StructUnionName(string_mcode name, struct_mcode kind)
+	| Ast0.StructUnionName(kind,name) ->
+	    Ast0.StructUnionName (struct_mcode kind, string_mcode name)
+	| Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+	    Ast0.StructUnionDef (struct_mcode kind, string_mcode name,
+				 string_mcode lb, List.map declaration decls,
+				 string_mcode rb)
 	| Ast0.TypeName(name) -> Ast0.TypeName(string_mcode name)
 	| Ast0.MetaType(name) ->
 	    Ast0.MetaType(string_mcode name)
@@ -522,6 +532,7 @@ let rebuilder = fun
 	| Ast0.UnInit(stg,ty,id,sem) ->
 	    Ast0.UnInit(get_option storage_mcode stg,
 			typeC ty, ident id, string_mcode sem)
+	| Ast0.TyDecl(ty,sem) -> Ast0.TyDecl(typeC ty, string_mcode sem)
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,
 			  List.map string_mcode mids,string_mcode ender)

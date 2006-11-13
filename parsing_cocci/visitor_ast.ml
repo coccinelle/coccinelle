@@ -171,8 +171,13 @@ let combiner bind option_default
       | Ast.Array(ty,lb,size,rb) ->
 	  multibind [fullType ty; string_mcode lb;
 		      get_option expression size; string_mcode rb]
-      | Ast.StructUnionName(name,kind) ->
+      | Ast.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (string_mcode name)
+      | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
+	  multibind
+	    [struct_mcode kind; string_mcode name; string_mcode lb;
+	      multibind (List.map declaration decls);
+	      string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_) -> string_mcode name in
     tyfn all_functions k ty
@@ -188,6 +193,7 @@ let combiner bind option_default
 	  multibind
 	    [get_option storage_mcode stg; fullType ty; ident id;
 	      string_mcode sem]
+      | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.MetaDecl(name,_) -> string_mcode name
       | Ast.OptDecl(decl) -> declaration decl
@@ -543,8 +549,12 @@ let rebuilder
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
-	| Ast.StructUnionName(name,kind) ->
-	    Ast.StructUnionName (string_mcode name, struct_mcode kind)
+	| Ast.StructUnionName(kind,name) ->
+	    Ast.StructUnionName (struct_mcode kind, string_mcode name)
+	| Ast.StructUnionDef(kind,name,lb,decls,rb) ->
+	    Ast.StructUnionDef (struct_mcode kind, string_mcode name,
+				string_mcode lb, List.map declaration decls,
+				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,inherited) ->
 	    Ast.MetaType(string_mcode name,inherited)) in
@@ -560,6 +570,7 @@ let rebuilder
 	| Ast.UnInit(stg,ty,id,sem) ->
 	    Ast.UnInit(get_option storage_mcode stg, fullType ty, ident id,
 		       string_mcode sem)
+	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
 	| Ast.MetaDecl(name,inherited) ->
 	    Ast.MetaDecl(string_mcode name,inherited)

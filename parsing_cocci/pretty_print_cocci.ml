@@ -264,8 +264,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.StructUnionName(name,kind) ->
+  | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; mcode print_string name; print_string " "
+  | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
+      mcode structUnion kind; mcode print_string name; print_string " ";
+      mcode print_string lb;
+      print_between force_newline declaration decls;
+      mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_) -> mcode print_string name; print_string " "
 
@@ -293,7 +298,7 @@ and const_vol = function
 (* --------------------------------------------------------------------- *)
 (* Declarations *)
 
-let storage = function
+and storage = function
     Ast.Static -> print_string "static "
   | Ast.Auto -> print_string "auto "
   | Ast.Register -> print_string "register "
@@ -304,7 +309,7 @@ let storage = function
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration d =
+and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
@@ -313,6 +318,7 @@ let rec declaration d =
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
       fullType ty; ident id; mcode print_string sem
+  | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
   | Ast.MetaDecl(name,_) -> mcode print_string name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl

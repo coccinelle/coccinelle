@@ -3,7 +3,7 @@ type typeC =
   | BaseType        of baseType * sign option
   | Pointer         of typeC
   | Array           of typeC (* drop size info *)
-  | StructUnionName of string * structUnion
+  | StructUnionName of structUnion * string
   | TypeName        of string
   | MetaType        of string
   | Unknown (* for metavariables of type expression *^* *)
@@ -28,7 +28,7 @@ let rec typeC = function
   | BaseType(ty,Some sgn) -> sign sgn; baseType ty
   | Pointer(ty) -> typeC ty; print_string "*"
   | Array(ty) -> typeC ty; print_string "[] "
-  | StructUnionName(name,kind) ->
+  | StructUnionName(kind,name) ->
       structUnion kind; print_string name; print_string " "
   | TypeName(name) -> print_string name; print_string " "
   | MetaType(name) -> print_string name; print_string " "

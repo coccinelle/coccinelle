@@ -202,8 +202,13 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
-  | (Ast.StructUnionName(ts1,s1),Ast.StructUnionName(ts2,s2)) ->
-      return (unify_mcode ts1 ts2 && unify_mcode s1 s2)
+  | (Ast.StructUnionName(s1,ts1),Ast.StructUnionName(s2,ts2)) ->
+      return (unify_mcode s1 s2 && unify_mcode ts1 ts2)
+  | (Ast.StructUnionDef(s1,ts1,lb1,decls1,rb1),
+     Ast.StructUnionDef(s2,ts2,lb2,decls2,rb2)) ->
+       if unify_mcode s1 s2 && unify_mcode ts1 ts2
+       then unify_lists unify_declaration (function _ -> false) decls1 decls2
+       else return false
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 
   | (Ast.MetaType(_,_),_)
@@ -215,7 +220,7 @@ and unify_typeC t1 t2 =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec unify_declaration d1 d2 =
+and unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
     (Ast.Init(stg1,ft1,id1,eq1,i1,s1),Ast.Init(stg2,ft2,id2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2
@@ -227,6 +232,7 @@ let rec unify_declaration d1 d2 =
       if bool_unify_option unify_mcode stg1 stg2
       then conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
       else return false
+  | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.DisjDecl(d1),_) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration x d2) d1)

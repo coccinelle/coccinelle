@@ -523,8 +523,9 @@ colon_option: TString {}
 /*------------------------------------------------------------------------------*/
 decl: decl2  { et "decl" (); $1 }
 
-decl2: decl_spec TPtVirg                   { let (returnType,storage) = fixDeclSpecForDecl $1 
-                                             in DeclList ([(None, returnType, fst storage),[]],  ($2::snd storage))} 
+decl2: decl_spec TPtVirg
+     { let (returnType,storage) = fixDeclSpecForDecl $1 
+       in DeclList ([(None, returnType, fst storage),[]],  ($2::snd storage))} 
      | decl_spec init_declarator_list TPtVirg 
 	{ let (returnType,storage) = fixDeclSpecForDecl $1 in
           DeclList (
@@ -558,7 +559,7 @@ decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [
           | storage_class_spec decl_spec2 { addStorageD ($1, $2) }
 	  | type_spec          decl_spec2 { addTypeD    ($1, $2) }
 	  | type_qualif        decl_spec2 { addQualifD  ($1, $2) }
-/* can simplity by putting all in _opt ? must have at least one otherwise decl_list is ambiguous ? (no cos have ';' between decl) */
+/* can simplify by putting all in _opt ? must have at least one otherwise decl_list is ambiguous ? (no cos have ';' between decl) */
 
 
 storage_class_spec: Tstatic      { Sto Static,  $1 }

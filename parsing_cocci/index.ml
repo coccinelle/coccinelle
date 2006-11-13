@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 115 *)
+(* current max is 117 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -86,7 +86,8 @@ let typeC t =
   | Ast0.BaseType(ty,sign) -> [48]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.Array(ty,lb,size,rb) -> [50]
-  | Ast0.StructUnionName(name,kind) -> [51]
+  | Ast0.StructUnionName(kind,name) -> [51]
+  | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
   | Ast0.MetaType(name) -> [53]
   | Ast0.OptType(ty) -> [45]
@@ -97,6 +98,7 @@ let declaration d =
   match Ast0.unwrap d with
     Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
+  | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]

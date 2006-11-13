@@ -183,8 +183,13 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
-      | Ast0.StructUnionName(name,kind) ->
+      | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind; mcode print_string name; print_string " "
+      | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+	  mcode U.structUnion kind; mcode print_string name; print_string " ";
+	  mcode print_string lb;
+	  print_between force_newline declaration decls;
+	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name)-> mcode print_string name; print_string " "
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
@@ -196,7 +201,7 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration d =
+and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
@@ -208,6 +213,7 @@ let rec declaration d =
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg;
 	  typeC ty; ident id; mcode print_string sem
+      | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();
 	  print_between

@@ -3,7 +3,7 @@ type typeC =
   | BaseType        of baseType * sign option
   | Pointer         of typeC
   | Array           of typeC (* drop size info *)
-  | StructUnionName of string * structUnion
+  | StructUnionName of structUnion * string
   | TypeName        of string
   | MetaType        of string
   | Unknown (* for metavariables of type expression *^* *)

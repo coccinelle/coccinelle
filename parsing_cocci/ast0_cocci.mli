@@ -105,14 +105,14 @@ and base_typeC =
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of tagged_string * Ast_cocci.structUnion mcode
+  | StructUnionName of Ast_cocci.structUnion mcode * string mcode (* name *)
+  | StructUnionDef  of Ast_cocci.structUnion mcode * string mcode (* name *) *
+	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
-
-and tagged_string = string mcode
 
 and typeC = base_typeC wrap
 
@@ -126,6 +126,7 @@ and base_declaration =
 	string mcode (*=*) * initialiser * string mcode (*;*)
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (* ; *)
+  | TyDecl of typeC * string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
   | OptDecl    of declaration

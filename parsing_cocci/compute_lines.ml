@@ -282,8 +282,12 @@ and typeC t =
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
-  | Ast0.StructUnionName(name,kind) as ut ->
+  | Ast0.StructUnionName(kind,name) as ut ->
       mkres t ut (promote_mcode kind) (promote_mcode name)
+  | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+      let decls = List.map declaration decls in
+      mkres t (Ast0.StructUnionDef(kind,name,lb,decls,rb))
+	(promote_mcode kind) (promote_mcode rb)
   | Ast0.TypeName(name) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.MetaType(name) as ut ->
@@ -300,7 +304,7 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 	
-let rec declaration d =
+and declaration d =
   match Ast0.unwrap d with
     Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
@@ -321,6 +325,9 @@ let rec declaration d =
       | Some x ->
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.TyDecl(ty,sem) ->
+      let ty = typeC ty in
+      mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let starter = bad_mcode starter in
       let decls = List.map declaration decls in

@@ -162,6 +162,7 @@ let rec declaration context table minus d =
 	     ident context table minus id; initialiser table minus ini))
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC table minus ty; ident context table minus id
+  | Ast0.TyDecl(ty,sem) -> typeC table minus ty
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID table minus) decls
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->

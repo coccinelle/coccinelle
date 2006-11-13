@@ -351,7 +351,10 @@ let rec equal_typeC t1 t2 =
       equal_mcode star1 star2
   | (Ast0.Array(_,lb1,_,rb1),Ast0.Array(_,lb2,_,rb2)) ->
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
-  | (Ast0.StructUnionName(name1,kind1),Ast0.StructUnionName(name2,kind2)) ->
+  | (Ast0.StructUnionName(kind1,name1),Ast0.StructUnionName(kind2,name2)) ->
+      equal_mcode name1 name2 && equal_mcode kind1 kind2
+  | (Ast0.StructUnionDef(kind1,name1,lb1,_,rb1),
+     Ast0.StructUnionDef(kind2,name2,lb2,_,rb2)) ->
       equal_mcode name1 name2 && equal_mcode kind1 kind2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaType(name1),Ast0.MetaType(name2)) -> equal_mcode name1 name2
@@ -366,6 +369,7 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
+  | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.MultiDecl(_),Ast0.MultiDecl(_)) -> true

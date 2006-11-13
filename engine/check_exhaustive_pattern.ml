@@ -41,6 +41,7 @@ let dumb_astcocci_rule_elem = function
 let dumb_astcocci_decl = function
  | A.UnInit (stg, typa, sa, _)     -> ()
  | A.Init (stg, typa, sa, _, expa, _) -> ()
+ | A.TyDecl (typa, _)     -> ()
  | A.MetaDecl _ -> ()
  | A.DisjDecl xs -> ()
  | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> ()
@@ -48,6 +49,7 @@ let dumb_astcocci_decl = function
 let dumb_astcocci_initialiser = function
     A.Init(stg,ty,id,eq,ini,sem) -> ()
   | A.UnInit(stg,ty,id,sem) -> ()
+  | A.TyDecl(ty,sem) -> ()
   | A.DisjDecl(decls) -> ()
   | A.MetaDecl(name,_) -> ()
   | A.OptDecl(decl) -> ()
@@ -97,6 +99,7 @@ let dumb_astcocci_type = function
  | A.Pointer (typa, _) -> ()
  | A.Array (typa, _, eaopt, _) -> ()
  | A.StructUnionName(sa, sua) -> ()
+ | A.StructUnionDef(sa, sua, lb, decls, rb) -> ()
  | A.TypeName sa -> ()
 
 

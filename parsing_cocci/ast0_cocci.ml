@@ -108,14 +108,14 @@ and base_typeC =
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of tagged_string * Ast.structUnion mcode
+  | StructUnionName of Ast.structUnion mcode * string mcode (* name *)
+  | StructUnionDef  of Ast.structUnion mcode * string mcode (* name *) *
+	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
-
-and tagged_string = string mcode
 
 and typeC = base_typeC wrap
 
@@ -128,6 +128,7 @@ and base_declaration =
     Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
+  | TyDecl of typeC * string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list *
                   string mcode list (* the |s *)  * string mcode
   | OptDecl    of declaration
@@ -352,8 +353,10 @@ let rec ast0_type_to_type ty =
       Type_cocci.BaseType(baseType bty,Some (sign sgn))
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
-  | StructUnionName(tag,su) ->
-      Type_cocci.StructUnionName(unwrap_mcode tag,structUnion su)
+  | StructUnionName(su,tag) ->
+      Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
+  | StructUnionDef(su,tag,_,_,_) ->
+      Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name) -> Type_cocci.MetaType(unwrap_mcode name)
   | OptType(ty) | UniqueType(ty) | MultiType(ty) ->

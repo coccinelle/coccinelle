@@ -390,6 +390,8 @@ and match_re_onedecl = fun decla declb ->
           pr2 "warning: complex initializer, cocci does not handle that";
           return false
       )
+  | A.TyDecl (typa, _), _ ->
+      failwith "fill something in for a declaration that is just a type"
 
   | _, ((None, typb, sto), _) -> 
       failwith "no variable in this declaration, wierd"
@@ -804,9 +806,12 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
         match_opt match_e_e  eaopt ebopt
        (* todo: handle the iso on optionnal size specifification ? *)
 	  
-    | A.StructUnionName (sa, sua), (qu, (B.StructUnionName (sb, sub), _)) -> 
+    | A.StructUnionName (sua, sa), (qu, (B.StructUnionName (sb, sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
+
+    | A.StructUnionDef (sua, sa, lb, decls, rb), _ -> 
+	failwith "to be filled in"
 
    (* todo? handle isomorphisms ? because Unsigned Int can be match on a 
       uint in the C code. But some CEs consists in renaming some types,

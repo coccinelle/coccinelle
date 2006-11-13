@@ -221,8 +221,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.StructUnionName(name,kind) ->
+  | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; mcode print_string name; print_string " "
+  | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
+      mcode structUnion kind; mcode print_string name; print_string " ";
+      mcode print_string lb;
+      print_between force_newline declaration decls;
+      mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name; print_string " "
   | Ast.MetaType(name,_)-> 
       handle_metavar name  (function
@@ -254,22 +259,20 @@ and sign = function
 and const_vol = function
     Ast.Const -> print_string "const"
   | Ast.Volatile -> print_string "volatile"
-in          
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let storage = function
+and storage = function
     Ast.Static -> print_string "static "
   | Ast.Auto -> print_string "auto "
   | Ast.Register -> print_string "register "
   | Ast.Extern -> print_string "extern "
-in
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
-let rec declaration d =
+and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
@@ -278,6 +281,7 @@ let rec declaration d =
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
       fullType ty; ident id; mcode print_string sem
+  | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus

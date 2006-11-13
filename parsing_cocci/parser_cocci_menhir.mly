@@ -328,12 +328,24 @@ generic_ctype:
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType t, None)) }
      | q=ioption(ctype_qualif) ty=Tlong
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType ty, q)) }
-     | s=Tstruct i=pure_ident
-	 { Ast0.wrap(Ast0.StructUnionName(id2mcode i,
-					  clt2mcode Ast.Struct s)) }
-     | u=Tunion i=pure_ident
-	 { Ast0.wrap(Ast0.StructUnionName(id2mcode i,
-					  clt2mcode Ast.Union u)) }
+     | s=struct_or_union i=pure_ident
+	 { Ast0.wrap(Ast0.StructUnionName(s, id2mcode i)) }
+     | s=struct_or_union i=pure_ident l=TOBrace d=list(struct_decl) r=TCBrace
+	 { Ast0.wrap(Ast0.StructUnionDef(s, id2mcode i, clt2mcode "{" l,
+					 d, clt2mcode "}" r)) }
+
+struct_or_union:
+       s=Tstruct { clt2mcode Ast.Struct s }
+     | u=Tunion  { clt2mcode Ast.Union u }
+
+struct_decl:
+       t=ctype d=d_ident pv=TPtVirg
+	 { let (id,fn) = d in
+	 Ast0.wrap(Ast0.UnInit(None,fn t,id,clt2mcode ";" pv)) }
+     | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
+	 { let (id,fn) = d in
+	 let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
+	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,clt2mcode ";" pv)) }
 
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
@@ -560,25 +572,27 @@ the language is ambiguous: what is foo * bar; */
 /* The AST DisjDecl cannot be generated because it would be ambiguous with
 a disjunction on a statement with a declaration in each branch */
 decl_var:
-    s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
+    t=ctype pv=TPtVirg
+      { [Ast0.wrap(Ast0.TyDecl(t,clt2mcode ";" pv))] }
+  | s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
 	    Ast0.wrap(Ast0.UnInit(s,fn t,id,clt2mcode ";" pv)))
 	  d }
   | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
-      [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,
-			   clt2mcode ";" pv))] }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
-      { let (id,fn) = d in
-      let idtype =
-	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
-      [Ast0.wrap(Ast0.UnInit(s,fn idtype,id,clt2mcode ";" pv))] }
+      [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,clt2mcode ";" pv))] }
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
+      d=comma_list(d_ident) pv=TPtVirg
+      { List.map
+	  (function (id,fn) ->
+	    let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
+	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,clt2mcode ";" pv)))
+	  d }
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
       e=initialize pv=TPtVirg
       { let (id,fn) = d in
-      let idtype =
-	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
+      let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
       [Ast0.wrap(Ast0.Init(s,fn idtype,id,clt2mcode "=" q,e,
 			   clt2mcode ";" pv))] }
 

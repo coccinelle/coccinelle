@@ -327,7 +327,9 @@ and transform_onedecl = fun decla declb ->
        in
        ((Some ((idb', Some ini'), iidb'++iieqb'), typb', stob), iivirg), 
         List.hd iiptvirgb'
-       
+
+   | A.TyDecl (typa, _), _ ->
+       failwith "fill something in for a declaration that is just a type"
        
    | _, (((None, typb, sto), _),_) -> 
        failwith "no variable in this declaration, wierd"
@@ -866,13 +868,16 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
         
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
-    | A.StructUnionName(sa, sua), (qu, (B.StructUnionName (sb, sub), ii)) -> 
+    | A.StructUnionName(sua, sa), (qu, (B.StructUnionName (sb, sub), ii)) -> 
         if Pattern.equal_structUnion  (term sua) sub && (term sa) =$= sb
         then
           let ii' = tag_symbols [wrap_mcode sua; sa] ii  binding in
           (qu, (B.StructUnionName (sb, sub), ii'))
         else raise NoMatch
         
+
+    | A.StructUnionDef(sua, sa, lb, decls, rb), _ -> 
+	failwith "to be filled in"
 
     | A.TypeName sa,  (qu, (B.TypeName sb, ii)) ->
         if (term sa) =$= sb

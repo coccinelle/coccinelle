@@ -359,13 +359,23 @@ and top_typeC tgt opt_allowed typ =
       let size = get_option (expression false arity) size in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.Array(ty,lb,size,rb))
-  | Ast0.StructUnionName(name,kind) ->
+  | Ast0.StructUnionName(kind,name) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line name)
-	  [mcode2arity name;mcode2arity kind] in
-      let name = mcode name in
+	all_same false opt_allowed tgt (mcode2line kind)
+	  [mcode2arity kind; mcode2arity name] in
       let kind = mcode kind in
-      make_typeC typ tgt arity (Ast0.StructUnionName(name,kind))
+      let name = mcode name in
+      make_typeC typ tgt arity (Ast0.StructUnionName(kind,name))
+  | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+      let arity =
+	all_same false opt_allowed tgt (mcode2line kind)
+	  ((mcode2arity kind) :: (List.map mcode2arity [name;lb;rb])) in
+      let kind = mcode kind in
+      let name = mcode name in
+      let lb = mcode lb in
+      let decls = List.map (declaration false tgt) decls in
+      let rb = mcode rb in
+      make_typeC typ tgt arity (Ast0.StructUnionDef(kind,name,lb,decls,rb))
   | Ast0.TypeName(name) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
@@ -386,19 +396,20 @@ and typeC tgt ty = top_typeC tgt false ty
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let make_decl =
+and make_decl =
   make_opt_unique
     (function x -> Ast0.OptDecl x)
     (function x -> Ast0.UniqueDecl x)
     (function x -> Ast0.MultiDecl x)
 
-let rec declaration in_nest tgt decl =
+and declaration in_nest tgt decl =
   match Ast0.unwrap decl with
     Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same in_nest true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [eq;sem])) in
+      let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false false arity id in
       let eq = mcode eq in
@@ -410,10 +421,17 @@ let rec declaration in_nest tgt decl =
 	all_same in_nest true tgt (mcode2line sem)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   [mcode2arity sem]) in
+      let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
+  | Ast0.TyDecl(ty,sem) ->
+      let arity =
+	all_same in_nest true tgt (mcode2line sem) [mcode2arity sem] in
+      let ty = typeC arity ty in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.TyDecl(ty,sem))
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let decls = List.map (declaration in_nest tgt) decls in
       (match List.rev decls with
