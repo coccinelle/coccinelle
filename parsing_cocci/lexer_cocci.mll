@@ -110,7 +110,7 @@ let id_tokens lexbuf =
 	
   | "static" ->     Tstatic (get_current_line_type lexbuf)
   | "const" ->      Tconst  (get_current_line_type lexbuf)
-  | "volatile" ->   Tstatic (get_current_line_type lexbuf)
+  | "volatile" ->   Tvolatile (get_current_line_type lexbuf)
 
   | "if" ->         TIf     (get_current_line_type lexbuf)
   | "else" ->       TElse   (get_current_line_type lexbuf)
