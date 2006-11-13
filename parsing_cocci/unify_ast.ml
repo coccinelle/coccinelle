@@ -217,10 +217,12 @@ and unify_typeC t1 t2 =
 
 let rec unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
-    (Ast.Init(ft1,id1,eq1,i1,s1),Ast.Init(ft2,id2,eq2,i2,s2)) ->
+    (Ast.Init(stg1,ft1,id1,eq1,i1,s1),Ast.Init(stg2,ft2,id2,eq2,i2,s2)) ->
+      (* don't bother with stg - if static is not present, then we assume that
+	 it might be present, so the result is always true *)
       conjunct_bindings (unify_fullType ft1 ft2)
 	(conjunct_bindings (unify_ident id1 id2) (unify_initialiser i1 i2))
-  | (Ast.UnInit(ft1,id1,s1),Ast.UnInit(ft2,id2,s2)) ->
+  | (Ast.UnInit(stg1,ft1,id1,s1),Ast.UnInit(stg2,ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
   | (Ast.DisjDecl(d1),_) ->
       disjunct_all_bindings

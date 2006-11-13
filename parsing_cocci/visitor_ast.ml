@@ -180,11 +180,14 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast.unwrap d with
-	Ast.Init(ty,id,eq,ini,sem) ->
-	  multibind [fullType ty; ident id; string_mcode eq; initialiser ini;
-		      string_mcode sem]
-      | Ast.UnInit(ty,id,sem) ->
-	  multibind [fullType ty; ident id; string_mcode sem]
+	Ast.Init(stg,ty,id,eq,ini,sem) ->
+	  multibind
+	    [get_option storage_mcode stg; fullType ty; ident id;
+	      string_mcode eq; initialiser ini; string_mcode sem]
+      | Ast.UnInit(stg,ty,id,sem) ->
+	  multibind
+	    [get_option storage_mcode stg; fullType ty; ident id;
+	      string_mcode sem]
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.MetaDecl(name,_) -> string_mcode name
       | Ast.OptDecl(decl) -> declaration decl
@@ -551,11 +554,12 @@ let rebuilder
     let k d =
       Ast.rewrap d
 	(match Ast.unwrap d with
-	  Ast.Init(ty,id,eq,ini,sem) ->
-	    Ast.Init(fullType ty, ident id, string_mcode eq, initialiser ini,
-		     string_mcode sem)
-	| Ast.UnInit(ty,id,sem) ->
-	    Ast.UnInit(fullType ty, ident id, string_mcode sem)
+	  Ast.Init(stg,ty,id,eq,ini,sem) ->
+	    Ast.Init(get_option storage_mcode stg, fullType ty, ident id,
+		     string_mcode eq, initialiser ini, string_mcode sem)
+	| Ast.UnInit(stg,ty,id,sem) ->
+	    Ast.UnInit(get_option storage_mcode stg, fullType ty, ident id,
+		       string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
 	| Ast.MetaDecl(name,inherited) ->
 	    Ast.MetaDecl(string_mcode name,inherited)

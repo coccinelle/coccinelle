@@ -200,11 +200,14 @@ let rec declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.Init(ty,id,eq,ini,sem) ->
+	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	  print_option (mcode U.storage) stg;
 	  typeC ty; ident id; print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
-      | Ast0.UnInit(ty,id,sem) -> typeC ty; ident id; mcode print_string sem
+      | Ast0.UnInit(stg,ty,id,sem) ->
+	  print_option (mcode U.storage) stg;
+	  typeC ty; ident id; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();
 	  print_between

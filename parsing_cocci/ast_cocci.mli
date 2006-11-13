@@ -174,9 +174,10 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of fullType * ident * string mcode (*=*) * initialiser *
-	string mcode (*;*)
-  | UnInit of fullType * ident * string mcode (* ; *)
+    Init of storage mcode option * fullType * ident * string mcode (*=*) *
+	initialiser * string mcode (*;*)
+  | UnInit of storage mcode option * fullType * ident *
+	string mcode (* ; *)
   | DisjDecl   of declaration list
 
   | MetaDecl of string mcode * inherited

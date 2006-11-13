@@ -148,7 +148,7 @@ and typeC table minus t =
 
 let rec declaration context table minus d =
   match Ast0.unwrap d with
-    Ast0.Init(ty,id,eq,ini,sem) ->
+    Ast0.Init(stg,ty,id,eq,ini,sem) ->
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
 	  typeC table minus ty;
@@ -160,7 +160,7 @@ let rec declaration context table minus d =
 	  else
 	    (typeC table minus ty;
 	     ident context table minus id; initialiser table minus ini))
-  | Ast0.UnInit(ty,id,sem) ->
+  | Ast0.UnInit(stg,ty,id,sem) ->
       typeC table minus ty; ident context table minus id
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID table minus) decls

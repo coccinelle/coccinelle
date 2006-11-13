@@ -282,11 +282,16 @@ let match_maker context_required whencode_allowed =
     if not(context_required) or is_context d
     then
       match (Ast0.unwrap pattern,Ast0.unwrap d) with
-	(Ast0.Init(tya,ida,_,inia,_),Ast0.Init(tyb,idb,_,inib,_)) ->
-	  conjunct_bindings (match_typeC tya tyb)
-	    (conjunct_bindings (match_ident ida idb) (match_init inia inib))
-      | (Ast0.UnInit(tya,ida,_),Ast0.UnInit(tyb,idb,_)) ->
-	  conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
+	(Ast0.Init(stga,tya,ida,_,inia,_),Ast0.Init(stgb,tyb,idb,_,inib,_)) ->
+	  if bool_match_option mcode_equal stga stgb
+	  then
+	    conjunct_bindings (match_typeC tya tyb)
+	      (conjunct_bindings (match_ident ida idb) (match_init inia inib))
+	  else return false
+      | (Ast0.UnInit(stga,tya,ida,_),Ast0.UnInit(stgb,tyb,idb,_)) ->
+	  if bool_match_option mcode_equal stga stgb
+	  then conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
+	  else return false
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))

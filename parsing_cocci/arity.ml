@@ -394,23 +394,26 @@ let make_decl =
 
 let rec declaration in_nest tgt decl =
   match Ast0.unwrap decl with
-    Ast0.Init(ty,id,eq,exp,sem) ->
+    Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same in_nest true tgt (mcode2line eq)
-	  [mcode2arity eq;mcode2arity sem] in
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   (List.map mcode2arity [eq;sem])) in
       let ty = typeC arity ty in
       let id = ident false false arity id in
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.Init(ty,id,eq,exp,sem))
-  | Ast0.UnInit(ty,id,sem) ->
+      make_decl decl tgt arity (Ast0.Init(stg,ty,id,eq,exp,sem))
+  | Ast0.UnInit(stg,ty,id,sem) ->
       let arity =
-	all_same in_nest true tgt (mcode2line sem) [mcode2arity sem] in
+	all_same in_nest true tgt (mcode2line sem)
+	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	   [mcode2arity sem]) in
       let ty = typeC arity ty in
       let id = ident false false arity id in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.UnInit(ty,id,sem))
+      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let decls = List.map (declaration in_nest tgt) decls in
       (match List.rev decls with

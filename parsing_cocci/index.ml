@@ -95,8 +95,8 @@ let typeC t =
 	
 let declaration d =
   match Ast0.unwrap d with
-    Ast0.Init(ty,id,eq,exp,sem) -> [54]
-  | Ast0.UnInit(ty,id,sem) -> [55]
+    Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
+  | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]

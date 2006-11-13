@@ -172,11 +172,13 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast0.unwrap d with
-	Ast0.Init(ty,id,eq,ini,sem) ->
-	  multibind [typeC ty; ident id; string_mcode eq; initialiser ini;
+	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	  multibind [get_option storage_mcode stg;
+		      typeC ty; ident id; string_mcode eq; initialiser ini;
 		      string_mcode sem]
-      | Ast0.UnInit(ty,id,sem) ->
-	  multibind [typeC ty; ident id; string_mcode sem]
+      | Ast0.UnInit(stg,ty,id,sem) ->
+	  multibind [get_option storage_mcode stg;
+		      typeC ty; ident id; string_mcode sem]
       |	Ast0.DisjDecl(starter,decls,mids,ender) ->
 	  (match decls with
 	    [] -> failwith "bad disjunction"
@@ -513,11 +515,13 @@ let rebuilder = fun
     let k d =
       Ast0.rewrap d
 	(match Ast0.unwrap d with
-	  Ast0.Init(ty,id,eq,ini,sem) ->
-	    Ast0.Init(typeC ty, ident id, string_mcode eq, initialiser ini,
+	  Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	    Ast0.Init(get_option storage_mcode stg,
+		      typeC ty, ident id, string_mcode eq, initialiser ini,
 		      string_mcode sem)
-	| Ast0.UnInit(ty,id,sem) ->
-	    Ast0.UnInit(typeC ty, ident id, string_mcode sem)
+	| Ast0.UnInit(stg,ty,id,sem) ->
+	    Ast0.UnInit(get_option storage_mcode stg,
+			typeC ty, ident id, string_mcode sem)
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,
 			  List.map string_mcode mids,string_mcode ender)

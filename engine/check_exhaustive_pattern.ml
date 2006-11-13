@@ -39,11 +39,20 @@ let dumb_astcocci_rule_elem = function
 
 
 let dumb_astcocci_decl = function
- | A.UnInit (typa, sa, _)     -> ()
- | A.Init (typa, sa, _, expa, _) -> ()
+ | A.UnInit (stg, typa, sa, _)     -> ()
+ | A.Init (stg, typa, sa, _, expa, _) -> ()
  | A.MetaDecl _ -> ()
  | A.DisjDecl xs -> ()
  | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> ()
+
+let dumb_astcocci_initialiser = function
+    A.Init(stg,ty,id,eq,ini,sem) -> ()
+  | A.UnInit(stg,ty,id,sem) -> ()
+  | A.DisjDecl(decls) -> ()
+  | A.MetaDecl(name,_) -> ()
+  | A.OptDecl(decl) -> ()
+  | A.UniqueDecl(decl) -> ()
+  | A.MultiDecl(decl) -> ()
 
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida, opttypa, _) -> ()

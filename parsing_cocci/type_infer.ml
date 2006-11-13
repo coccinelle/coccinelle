@@ -153,10 +153,11 @@ let rec propagate_types env =
 	  Ast0.Decl(decl) ->
 	    let rec process_decl decl =
 	      match Ast0.unwrap decl with
-		Ast0.Init(ty,id,_,exp,_) ->
+		Ast0.Init(_,ty,id,_,exp,_) ->
 		  (propagate_types (acc@env)).V0.combiner_initialiser exp;
 		  [(strip id,Ast0.ast0_type_to_type ty)]
-	      | Ast0.UnInit(ty,id,_) -> [(strip id,Ast0.ast0_type_to_type ty)]
+	      | Ast0.UnInit(_,ty,id,_) ->
+		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)
 	      | Ast0.OptDecl(decl) -> process_decl decl

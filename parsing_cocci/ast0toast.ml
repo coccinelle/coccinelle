@@ -350,14 +350,17 @@ and base_typeC t =
 let rec declaration d =
   rewrap d
     (match Ast0.unwrap d with
-      Ast0.Init(ty,id,eq,ini,sem) ->
+      Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	let stg = get_option mcode stg in
 	let ty = typeC ty in
 	let id = ident id in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(ty,id,eq,ini,sem)
-    | Ast0.UnInit(ty,id,sem) -> Ast.UnInit(typeC ty,ident id,mcode sem)
+	Ast.Init(stg,ty,id,eq,ini,sem)
+    | Ast0.UnInit(stg,ty,id,sem) ->
+	let stg = get_option mcode stg in
+	Ast.UnInit(stg,typeC ty,ident id,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)

@@ -291,16 +291,24 @@ and const_vol = function
   | Ast.Volatile -> print_string "volatile"
 
 (* --------------------------------------------------------------------- *)
+(* Declarations *)
+
+let storage Ast.Static = print_string "static "
+
+(* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
 let rec declaration d =
   match Ast.unwrap d with
-    Ast.Init(ty,id,eq,ini,sem) ->
+    Ast.Init(stg,ty,id,eq,ini,sem) ->
+      print_option (mcode storage) stg;
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
+  | Ast.UnInit(stg,ty,id,sem) ->
+      print_option (mcode storage) stg;
+      fullType ty; ident id; mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
   | Ast.MetaDecl(name,_) -> mcode print_string name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
@@ -356,11 +364,6 @@ let rec parameterTypeDef p =
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
 
 let parameter_list = dots (function _ -> ()) parameterTypeDef
-
-(* --------------------------------------------------------------------- *)
-(* Function declaration *)
-
-let storage Ast.Static = print_string "static "
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

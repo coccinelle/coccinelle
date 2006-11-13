@@ -294,7 +294,7 @@ and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
 and transform_onedecl = fun decla declb -> 
  fun binding -> 
    match A.unwrap decla, declb with
-   | A.UnInit (typa, ida, ptvirga), 
+   | A.UnInit (stoa, typa, ida, ptvirga), 
      (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
        assert (null iini);
 
@@ -307,7 +307,7 @@ and transform_onedecl = fun decla declb ->
        ((Some ((idb', None), iidb'++iini), typb', stob), iivirg), 
        List.hd iiptvirgb'
 
-   | A.Init (typa, ida, eqa, inia, ptvirga), 
+   | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
      (((Some ((idb, Some ini),[iidb;iieqb]), typb, stob), iivirg),iiptvirgb) ->
 
        let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in

@@ -302,15 +302,25 @@ and typeC t =
 	
 let rec declaration d =
   match Ast0.unwrap d with
-    Ast0.Init(ty,id,eq,exp,sem) ->
+    Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
       let exp = initialiser exp in
-      mkres d (Ast0.Init(ty,id,eq,exp,sem)) ty (promote_mcode sem)
-  | Ast0.UnInit(ty,id,sem) ->
+      (match stg with
+	None ->
+	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem)) ty (promote_mcode sem)
+      | Some x -> 
+	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem))
+	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.UnInit(stg,ty,id,sem) ->
       let ty = typeC ty in
       let id = ident id in
-      mkres d (Ast0.UnInit(ty,id,sem)) ty (promote_mcode sem)
+      (match stg with
+	None ->
+	  mkres d (Ast0.UnInit(stg,ty,id,sem)) ty (promote_mcode sem)
+      | Some x ->
+	  mkres d (Ast0.UnInit(stg,ty,id,sem))
+	    (promote_mcode x) (promote_mcode sem))
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let starter = bad_mcode starter in
       let decls = List.map declaration decls in

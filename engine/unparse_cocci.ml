@@ -257,14 +257,23 @@ and const_vol = function
 in          
 
 (* --------------------------------------------------------------------- *)
+(* Function declaration *)
+
+let storage Ast.Static = print_string "static "
+in
+
+(* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
 let rec declaration d =
   match Ast.unwrap d with
-    Ast.Init(ty,id,eq,ini,sem) ->
+    Ast.Init(stg,ty,id,eq,ini,sem) ->
+      print_option (mcode storage) stg;
       fullType ty; ident id; print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(ty,id,sem) -> fullType ty; ident id; mcode print_string sem
+  | Ast.UnInit(stg,ty,id,sem) ->
+      print_option (mcode storage) stg;
+      fullType ty; ident id; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus
@@ -324,12 +333,6 @@ in
 let parameter_list = dots (function _ -> ()) parameterTypeDef
 in
 
-
-(* --------------------------------------------------------------------- *)
-(* Function declaration *)
-
-let storage Ast.Static = print_string "static "
-in
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

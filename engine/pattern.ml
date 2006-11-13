@@ -368,11 +368,22 @@ and match_re_onedecl = fun decla declb ->
       return true (* todo? add in env ? *)
 
     (* could handle iso here but handled in standard.iso *)
-    (* todo, use sto? lack of sto in Ast_cocci *)
-  | A.UnInit (typa, sa, _), ((Some ((sb, None),_), typb, sto), _) ->
-      match_ft_ft typa typb >&&>
+  | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
+      (match stoa with 
+       | None -> return true
+       | Some x -> 
+           assert (term x = A.Static);
+           return (stob = B.Sto B.Static)
+      ) >&&>       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb
-  | A.Init (typa, sa, _, inia, _),((Some ((sb, Some inib),_), typb, sto), _) ->
+  | A.Init (stoa, typa, sa, _, inia, _),
+      ((Some ((sb, Some inib),_), typb, stob), _) ->
+      (match stoa with 
+       | None -> return true
+       | Some x -> 
+           assert (term x = A.Static);
+           return (stob = B.Sto B.Static)
+      ) >&&> 
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb >&&>
       (match (A.unwrap inia,inib) with

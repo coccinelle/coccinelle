@@ -405,7 +405,7 @@ includes:
 /*****************************************************************************/
 
 fundecl:
-  s=storage t=option(fn_ctype)
+  s=ioption(storage) t=option(fn_ctype)
   TFunDecl i=func_ident lp=TOPar d=decl_list rp=TCPar
   lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
       { Ast0.wrap(Ast0.FunDecl(s, t, i,
@@ -414,9 +414,8 @@ fundecl:
 			       clt2mcode "{" lb, b,
 			       clt2mcode "}" rb)) }
 
-%inline storage:
-         s=Tstatic      { Some (clt2mcode Ast.Static s) }
-       | /* empty */  { None }
+storage:
+         s=Tstatic      { clt2mcode Ast.Static s }
 
 decl: param_ctype ident
 	{ Ast0.wrap(Ast0.Param($2, $1)) }
@@ -557,25 +556,26 @@ the language is ambiguous: what is foo * bar; */
 /* The AST DisjDecl cannot be generated because it would be ambiguous with
 a disjunction on a statement with a declaration in each branch */
 decl_var:
-    ctype comma_list(d_ident) TPtVirg
+    s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
-	    Ast0.wrap(Ast0.UnInit(fn $1,id,clt2mcode ";" $3)))
-	  $2 }
-  | ctype d_ident TEq initialize TPtVirg
-      { let (id,fn) = $2 in
-      [Ast0.wrap(Ast0.Init(fn $1,id,clt2mcode "=" $3,$4,
-			   clt2mcode ";" $5))] }
-  | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
+	    Ast0.wrap(Ast0.UnInit(s,fn t,id,clt2mcode ";" pv)))
+	  d }
+  | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
+      { let (id,fn) = d in
+      [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,
+			   clt2mcode ";" pv))] }
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
       { let (id,fn) = d in
       let idtype =
 	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
-      [Ast0.wrap(Ast0.UnInit(fn idtype,id,clt2mcode ";" pv))] }
-  | cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq e=initialize pv=TPtVirg
+      [Ast0.wrap(Ast0.UnInit(s,fn idtype,id,clt2mcode ";" pv))] }
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
+      e=initialize pv=TPtVirg
       { let (id,fn) = d in
       let idtype =
 	make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
-      [Ast0.wrap(Ast0.Init(fn idtype,id,clt2mcode "=" q,e,
+      [Ast0.wrap(Ast0.Init(s,fn idtype,id,clt2mcode "=" q,e,
 			   clt2mcode ";" pv))] }
 
 d_ident:

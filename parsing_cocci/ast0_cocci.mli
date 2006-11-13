@@ -122,9 +122,10 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of typeC * ident * string mcode (*=*) * initialiser *
-	string mcode (*;*)
-  | UnInit of typeC * ident * string mcode (* ; *)
+    Init       of Ast_cocci.storage mcode option * typeC * ident *
+	string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
+	string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
   | OptDecl    of declaration
