@@ -103,6 +103,30 @@ let dumb_astcocci_type = function
  | A.TypeName sa -> ()
 
 
+(* ------------------------------------------------------------------------- *)
+(* for C *)
+(*
+  | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
+    | Sequence (_,_)
+    | Assignment (_,_,_) 
+    | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
+    | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
+    | StatementExpr (_) | Constructor 
+    | ParenExpr (_) | MacroCall (_) | MacroCall2 (_)
+    ),_ -> 
+
+  | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+    | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
+    | Compound _ | ExprStatement _ 
+    | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
+    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
+    | Iteration  (For ((_,_), (_,_), (_, _), _))
+    | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+    | Decl _ | Asm | Selection (IfCpp (_,_))
+    ), _ -> 
+*)
+
 
 
 

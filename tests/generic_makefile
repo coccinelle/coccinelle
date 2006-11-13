@@ -42,6 +42,11 @@ all: $(OBJS)
 clean::
 	rm -f *.ok *.failed
 
+clean2::
+	find -name "*.ok" | xargs rm -f
+	find -name "*.failed" | xargs rm -f
+
+
 %.ok2: %.c $(SPATCH) $(SP)
 	$(SPATCH) -iso_file ../../standard.iso -cocci_file $(SP) \
 	-compare_with_expected -debug_cpp \

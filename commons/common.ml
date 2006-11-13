@@ -588,6 +588,17 @@ let ($)     f g x = g (f x)
 (* dont work :( let ( ° ) f g x = f(g(x)) *)
 let compose f g x = f (g x)
 
+(* trick to have something similar to the   1 `max` 4   haskell infix notation.
+   by Keisuke Nakano on the caml mailing list.
+>    let ( /* ) x y = y x
+>    and ( */ ) x y = x y
+or 
+  let ( <| ) x y = y x
+  and ( |> ) x y = x y
+
+> Then we can make an infix operator <| f |> for a binary function f.
+*)
+
 let flip f = fun a b -> f b a
 
 let curry f x y = f (x,y)

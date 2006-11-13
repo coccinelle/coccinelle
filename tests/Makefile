@@ -13,6 +13,9 @@ all:
 clean:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
+clean2::
+	find -name "*.ok" | xargs rm -f
+	find -name "*.failed" | xargs rm -f
 
 score:
 	find -name "*.ok" | wc -l

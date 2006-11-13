@@ -145,17 +145,17 @@ rule token = parse
   | "#" [' ' '\t']* "ifdef"  [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
      { TIfdef (tokinfo lexbuf) }
   | "#" [' ' '\t']* "ifndef" [' ' '\t']+ (letter|digit) ((letter |digit)*) [' ' '\t']* 
-     { TCommentCpp (tokinfo lexbuf) }
+     { TIfdef (tokinfo lexbuf) }
   | "#" [' ' '\t']* "endif"  [' ' '\t' '\n']                                   
       { TEndif (tokinfo lexbuf) }
   | "#" [' ' '\t']* "if" [' ' '\t']+                                           
       { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
+        TIfdef (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
   | "#" [' ' '\t']* "if" '('                
       { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
+        TIfdef (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
   | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+  '\n'                          
-      { TCommentCpp (tokinfo lexbuf) }
+      { (* TODO *) TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     
       { TIfdefelse (tokinfo lexbuf) }
 
@@ -282,13 +282,13 @@ rule token = parse
   | "%=" { TAssign (OpAssign Mod, (tokinfo lexbuf))} 
   | "&=" { TAssign (OpAssign And, (tokinfo lexbuf))}  
   | "|=" { TAssign (OpAssign Or, (tokinfo lexbuf)) } 
-  | "^=" {TAssign(OpAssign Xor, (tokinfo lexbuf))} 
+  | "^=" { TAssign(OpAssign Xor, (tokinfo lexbuf))} 
   | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) } 
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
 
-  | "==" { TEqEq(tokinfo lexbuf) }   | "!=" { TNotEq(tokinfo lexbuf) } 
+  | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) } 
   | ">=" { TInfEq(tokinfo lexbuf) } | "<=" { TSupEq(tokinfo lexbuf) } 
-  | "<" { TInf(tokinfo lexbuf) } | ">" {TSup(tokinfo lexbuf) }
+  | "<"  { TInf(tokinfo lexbuf) }   | ">"  { TSup(tokinfo lexbuf) }
 
   | "&&" { TAndLog(tokinfo lexbuf) } | "||" { TOrLog(tokinfo lexbuf) }
   | ">>" { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }

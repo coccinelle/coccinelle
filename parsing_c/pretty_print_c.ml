@@ -128,8 +128,16 @@ let rec pp_expression_gen pr_elem =
 
       );
       pr_elem i3;
+  | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
+    | Sequence (_,_)
+    | Assignment (_,_,_) 
+    | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
+    | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
+    | StatementExpr (_) | Constructor 
+    | ParenExpr (_) | MacroCall (_) | MacroCall2 (_)
+    ),_ -> raise Impossible
 
-  | x  -> raise Impossible
   in
   pp_expression
 
@@ -142,7 +150,9 @@ and pp_statement_gen pr_elem =
   | Labeled (Label (s, st)), [i1;i2] -> pr_elem i1; pr_elem i2; pp_statement st
   | Labeled (Case  (e, st)), [i1;i2] -> 
       pr_elem i1; pp_expression e; pr_elem i2; pp_statement st
-  | Labeled (CaseRange  (e, e2, st)), _ -> pr "<<label>>\n";
+  | Labeled (CaseRange  (e, e2, st)), [i1;i2;i3] -> 
+      pr_elem i1; pp_expression e; pr_elem i2; pp_expression e2; pr_elem i3;
+      pp_statement st
   | Labeled (Default st), [i1;i2] -> pr_elem i1; pr_elem i2; pp_statement st
   | Compound statxs, [i1;i2] -> 
       pr_elem i1; 
@@ -204,8 +214,16 @@ and pp_statement_gen pr_elem =
           
       | _ -> raise Impossible
       )
+  | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+    | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
+    | Compound _ | ExprStatement _ 
+    | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
+    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
+    | Iteration  (For ((_,_), (_,_), (_, _), _))
+    | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+    | Decl _ | Asm | Selection (IfCpp (_,_))
+    ), _ -> raise Impossible
 
-  | x -> raise Impossible
  in
  pp_statement
 

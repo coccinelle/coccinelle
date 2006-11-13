@@ -159,7 +159,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                   *  DuplicatedLabel *)
                  assert (not (!h#haskey s)); 
                  h := !h#add (s, newi);
-                 k st;
+                 (* not k st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
+                 k statement; 
                end
            | e -> k e
          )
@@ -170,7 +171,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   in
 
   let labels_assoc = compute_labels topstatement in
-
 
   (* ctl_braces: *)
   let insert_all_braces xs starti = 
