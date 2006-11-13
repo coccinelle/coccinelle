@@ -222,9 +222,9 @@ and typeC ty =
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
-      mcode structUnion kind; mcode print_string name; print_string " "
+      mcode structUnion kind; ident name; print_string " "
   | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
-      mcode structUnion kind; mcode print_string name; print_string " ";
+      mcode structUnion kind; ident name; print_string " ";
       mcode print_string lb;
       print_between force_newline declaration decls;
       mcode print_string rb

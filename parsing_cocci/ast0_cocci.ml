@@ -108,8 +108,8 @@ and base_typeC =
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of Ast.structUnion mcode * string mcode (* name *)
-  | StructUnionDef  of Ast.structUnion mcode * string mcode (* name *) *
+  | StructUnionName of Ast.structUnion mcode * ident (* name *)
+  | StructUnionDef  of Ast.structUnion mcode * ident (* name *) *
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode
@@ -353,9 +353,18 @@ let rec ast0_type_to_type ty =
       Type_cocci.BaseType(baseType bty,Some (sign sgn))
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
-  | StructUnionName(su,tag) ->
-      Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
+  | StructUnionName(su,tag)
   | StructUnionDef(su,tag,_,_,_) ->
+      let tag =
+	match unwrap tag with
+	  Id(tag) -> tag
+	| MetaId(tag) ->
+	    (Printf.printf
+	       "warning: struct/union with a metavariable name detected.\n";
+	     Printf.printf
+	       "For type checking assuming the name of the metavariable is the name of the type\n";
+	     tag)
+	| _ -> failwith "unexpected struct/union type name" in
       Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name) -> Type_cocci.MetaType(unwrap_mcode name)

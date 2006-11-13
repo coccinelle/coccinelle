@@ -105,8 +105,8 @@ and base_typeC =
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of Ast_cocci.structUnion mcode * string mcode (* name *)
-  | StructUnionDef  of Ast_cocci.structUnion mcode * string mcode (* name *) *
+  | StructUnionName of Ast_cocci.structUnion mcode * ident (* name *)
+  | StructUnionDef  of Ast_cocci.structUnion mcode * ident (* name *) *
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode

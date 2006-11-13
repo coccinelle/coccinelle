@@ -283,8 +283,10 @@ and typeC t =
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,name) as ut ->
-      mkres t ut (promote_mcode kind) (promote_mcode name)
+      let name = ident name in
+      mkres t ut (promote_mcode kind) name
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+      let name = ident name in
       let decls = List.map declaration decls in
       mkres t (Ast0.StructUnionDef(kind,name,lb,decls,rb))
 	(promote_mcode kind) (promote_mcode rb)

@@ -172,10 +172,10 @@ let combiner bind option_default
 	  multibind [fullType ty; string_mcode lb;
 		      get_option expression size; string_mcode rb]
       | Ast.StructUnionName(kind,name) ->
-	  bind (struct_mcode kind) (string_mcode name)
+	  bind (struct_mcode kind) (ident name)
       | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
 	  multibind
-	    [struct_mcode kind; string_mcode name; string_mcode lb;
+	    [struct_mcode kind; ident name; string_mcode lb;
 	      multibind (List.map declaration decls);
 	      string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
@@ -550,9 +550,9 @@ let rebuilder
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
 	| Ast.StructUnionName(kind,name) ->
-	    Ast.StructUnionName (struct_mcode kind, string_mcode name)
+	    Ast.StructUnionName (struct_mcode kind, ident name)
 	| Ast.StructUnionDef(kind,name,lb,decls,rb) ->
-	    Ast.StructUnionDef (struct_mcode kind, string_mcode name,
+	    Ast.StructUnionDef (struct_mcode kind, ident name,
 				string_mcode lb, List.map declaration decls,
 				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)

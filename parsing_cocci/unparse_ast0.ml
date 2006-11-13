@@ -184,9 +184,9 @@ and typeC t =
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
-	  mcode U.structUnion kind; mcode print_string name; print_string " "
+	  mcode U.structUnion kind; ident name; print_string " "
       | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
-	  mcode U.structUnion kind; mcode print_string name; print_string " ";
+	  mcode U.structUnion kind; ident name; print_string " ";
 	  mcode print_string lb;
 	  print_between force_newline declaration decls;
 	  mcode print_string rb

@@ -362,16 +362,16 @@ and top_typeC tgt opt_allowed typ =
   | Ast0.StructUnionName(kind,name) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line kind)
-	  [mcode2arity kind; mcode2arity name] in
+	  [mcode2arity kind] in
       let kind = mcode kind in
-      let name = mcode name in
+      let name = ident false false arity name in
       make_typeC typ tgt arity (Ast0.StructUnionName(kind,name))
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line kind)
-	  ((mcode2arity kind) :: (List.map mcode2arity [name;lb;rb])) in
+	  ((mcode2arity kind) :: (List.map mcode2arity [lb;rb])) in
       let kind = mcode kind in
-      let name = mcode name in
+      let name = ident false false arity name in
       let lb = mcode lb in
       let decls = List.map (declaration false tgt) decls in
       let rb = mcode rb in

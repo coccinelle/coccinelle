@@ -328,10 +328,10 @@ generic_ctype:
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.FloatType t, None)) }
      | q=ioption(ctype_qualif) ty=Tlong
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType ty, q)) }
-     | s=struct_or_union i=pure_ident
-	 { Ast0.wrap(Ast0.StructUnionName(s, id2mcode i)) }
-     | s=struct_or_union i=pure_ident l=TOBrace d=list(struct_decl) r=TCBrace
-	 { Ast0.wrap(Ast0.StructUnionDef(s, id2mcode i, clt2mcode "{" l,
+     | s=struct_or_union i=ident
+	 { Ast0.wrap(Ast0.StructUnionName(s, i)) }
+     | s=struct_or_union i=ident l=TOBrace d=list(struct_decl) r=TCBrace
+	 { Ast0.wrap(Ast0.StructUnionDef(s, i, clt2mcode "{" l,
 					 d, clt2mcode "}" r)) }
 
 struct_or_union:

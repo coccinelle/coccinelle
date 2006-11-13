@@ -203,11 +203,13 @@ and unify_typeC t1 t2 =
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
   | (Ast.StructUnionName(s1,ts1),Ast.StructUnionName(s2,ts2)) ->
-      return (unify_mcode s1 s2 && unify_mcode ts1 ts2)
+      if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionDef(s1,ts1,lb1,decls1,rb1),
      Ast.StructUnionDef(s2,ts2,lb2,decls2,rb2)) ->
-       if unify_mcode s1 s2 && unify_mcode ts1 ts2
-       then unify_lists unify_declaration (function _ -> false) decls1 decls2
+       if unify_mcode s1 s2
+       then
+	 conjunct_bindings (unify_ident ts1 ts2)
+	   (unify_lists unify_declaration (function _ -> false) decls1 decls2)
        else return false
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 

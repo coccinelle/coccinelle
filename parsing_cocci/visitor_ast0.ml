@@ -162,10 +162,10 @@ let combiner bind option_default
 	    [typeC ty; string_mcode lb; get_option expression size;
 	      string_mcode rb]
       | Ast0.StructUnionName(kind,name) ->
-	  bind (struct_mcode kind) (string_mcode name)
+	  bind (struct_mcode kind) (ident name)
       | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
 	  multibind
-	    [struct_mcode kind; string_mcode name; string_mcode lb;
+	    [struct_mcode kind; ident name; string_mcode lb;
 	      multibind (List.map declaration decls);
 	      string_mcode rb]
       | Ast0.TypeName(name) -> string_mcode name
@@ -509,9 +509,9 @@ let rebuilder = fun
 	    Ast0.Array(typeC ty, string_mcode lb,
 		       get_option expression size, string_mcode rb)
 	| Ast0.StructUnionName(kind,name) ->
-	    Ast0.StructUnionName (struct_mcode kind, string_mcode name)
+	    Ast0.StructUnionName (struct_mcode kind, ident name)
 	| Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
-	    Ast0.StructUnionDef (struct_mcode kind, string_mcode name,
+	    Ast0.StructUnionDef (struct_mcode kind, ident name,
 				 string_mcode lb, List.map declaration decls,
 				 string_mcode rb)
 	| Ast0.TypeName(name) -> Ast0.TypeName(string_mcode name)

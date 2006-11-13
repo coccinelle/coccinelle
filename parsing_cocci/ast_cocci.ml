@@ -148,8 +148,8 @@ and base_typeC =
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of structUnion mcode * string mcode (* name *)
-  | StructUnionDef  of structUnion mcode * string mcode (* name *) *
+  | StructUnionName of structUnion mcode * ident (* name *)
+  | StructUnionDef  of structUnion mcode * ident (* name *) *
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
 

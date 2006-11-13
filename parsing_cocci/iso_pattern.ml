@@ -266,11 +266,15 @@ let match_maker context_required whencode_allowed =
 		(match_option match_expr sizea sizeb)
 	  | (Ast0.StructUnionName(kinda,namea),
 	     Ast0.StructUnionName(kindb,nameb)) ->
-	       return (mcode_equal kinda kindb && mcode_equal namea nameb)
-	  | (Ast0.StructUnionDef(namea,kinda,_,declsa,_),
-	     Ast0.StructUnionDef(nameb,kindb,_,declsb,_)) ->
-	       if mcode_equal kinda kindb && mcode_equal namea nameb
-	       then match_list match_decl declsa declsb
+	       if mcode_equal kinda kindb
+	       then match_ident namea nameb
+	       else return false
+	  | (Ast0.StructUnionDef(kinda,namea,_,declsa,_),
+	     Ast0.StructUnionDef(kindb,nameb,_,declsb,_)) ->
+	       if mcode_equal kinda kindb
+	       then
+		 conjunct_bindings (match_ident namea nameb)
+		   (match_list match_decl declsa declsb)
 	       else return false
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      return (mcode_equal namea nameb)

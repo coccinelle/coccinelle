@@ -808,7 +808,9 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	  
     | A.StructUnionName (sua, sa), (qu, (B.StructUnionName (sb, sub), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
-	return (equal_structUnion (term sua) sub && (term sa) =$= sb)
+	if equal_structUnion (term sua) sub
+	then match_ident DontKnow sa sb
+	else return false
 
     | A.StructUnionDef (sua, sa, lb, decls, rb), _ -> 
 	failwith "to be filled in"

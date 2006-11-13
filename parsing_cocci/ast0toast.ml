@@ -320,11 +320,11 @@ and typeC t =
 		   (Ast.Array(typeC ty,mcode lb,get_option expression size,
 			      mcode rb)))
     | Ast0.StructUnionName(kind,name) ->
-	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode kind,mcode name)))
+	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode kind,ident name)))
     | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
 	Ast.Type(None,
 		 rewrap t
-		   (Ast.StructUnionDef(mcode kind,mcode name,mcode lb,
+		   (Ast.StructUnionDef(mcode kind,ident name,mcode lb,
 				       List.map declaration decls,mcode rb)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
     | Ast0.MetaType(name) ->
@@ -341,8 +341,11 @@ and base_typeC t =
     | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
-    | Ast0.StructUnionName(name,kind) ->
-	Ast.StructUnionName(mcode name,mcode kind)
+    | Ast0.StructUnionName(kind,name) ->
+	Ast.StructUnionName(mcode kind,ident name)
+    | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+	Ast.StructUnionDef(mcode kind,ident name,
+			   mcode lb,List.map declaration decls,mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
     | Ast0.MetaType(name) -> Ast.MetaType(mcode name,false)
     | _ -> failwith "unexpected type")
