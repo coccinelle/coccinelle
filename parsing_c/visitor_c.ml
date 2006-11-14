@@ -116,8 +116,38 @@ let rec visitor_expr_k = fun bigf expr ->
 
           
     | ParenExpr (e), is -> f (k, bigf) e
-    | MacroCall _,_ -> raise Todo
-    | MacroCall2 _,_ -> raise Todo
+    | MacroCall es,_ -> 
+        
+      let rec do_action = function 
+        | (ActMisc ii) -> ()
+        | (ActJump jump) -> 
+            (match jump with
+            | (Goto s), is               -> ()
+            | ((Continue|Break|Return)), is -> ()
+            | (ReturnExpr e), is ->  f (k, bigf) e; 
+            )
+        | (ActExpr e) -> f (k,bigf) e
+        | (ActExpr2 (e, iptvirg, action)) -> 
+            f (k, bigf) e; do_action action
+        | (ActTodo) -> ()
+      in
+
+      es +> List.iter (fun (e, opt) -> 
+        (match e with
+        | Left3 e -> f (k, bigf) e
+        | Middle3 (returnType, (sto, iisto)) -> 
+            visitor_type_k bigf returnType
+        | Right3  action -> do_action action
+        );
+        );
+
+    | MacroCall2 arg,_ -> 
+        (match arg with
+        | Left e -> f (k, bigf) e
+        | Right xs -> xs +> List.iter (visitor_statement_k bigf)
+        )
+
+        
 
   in f (k, bigf) expr
 
@@ -270,6 +300,7 @@ let default_visitor_c_s =
   } 
 
 let rec visitor_expr_k_s = fun bigf expr ->
+  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
   let rec exprf e = bigf.kexpr_s  (k, bigf) e
   and k e = 
     let ((unwrap_e, typ), ii) = e in
@@ -313,8 +344,38 @@ let rec visitor_expr_k_s = fun bigf expr ->
           is +> List.map (visitor_info_k_s bigf))
     | Constructor -> Constructor
     | ParenExpr (e) -> ParenExpr (exprf e)
-    | MacroCall _ -> failwith "macrocall"
-    | MacroCall2 _ -> failwith "macrocall2"
+    | MacroCall (es) -> 
+      let rec do_action = function 
+        | (ActMisc ii) -> ActMisc (infolistf ii)
+        | (ActJump jump) -> 
+            ActJump
+            (match jump with
+            | (Goto s), is               -> (Goto s), infolistf is
+            | ((Continue|Break|Return) as x), is -> x, infolistf is
+            | (ReturnExpr e), is ->  ReturnExpr (exprf e), infolistf is
+            )
+        | (ActExpr e) -> ActExpr (exprf e)
+        | (ActExpr2 (e, iptvirg, action)) -> 
+            ActExpr2 (exprf e, visitor_info_k_s bigf iptvirg, do_action action)
+        | (ActTodo) -> ActTodo
+      in
+      MacroCall (
+      es +> List.map (fun (e, opt) -> 
+        (match e with
+        | Left3 e -> Left3 (exprf e)
+        | Middle3 (returnType, (sto, iisto)) -> 
+            Middle3 (visitor_type_k_s bigf returnType, (sto, infolistf iisto))
+        | Right3  action -> Right3 (do_action action)
+        ), infolistf opt
+        )
+      )
+
+    | MacroCall2 arg -> 
+        MacroCall2
+        (match arg with
+        | Left e -> Left (exprf e)
+        | Right xs -> Right (xs +> List.map (visitor_statement_k_s bigf))
+        )
     in
     (e', typ), (List.map (visitor_info_k_s bigf) ii)
   in exprf expr

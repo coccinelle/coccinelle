@@ -6,8 +6,8 @@ int main() {
   char * const t2;
 
   t1 = malloc(10);
-  t2 = malloc(10);
-  *t1 = 'a';
+  t2 = malloc(10); // interdit
+  *t1 = 'a'; // interdit
   *t2 = 'a';
 
   
