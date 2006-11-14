@@ -586,7 +586,7 @@ let forwhile header body aft after quantified n label recurse make_match
   let body =
     make_seq n
       [truepred n label; recurse body Tail new_quantified label guard] in
-  let after_pred = aftpred n label in
+  let after_pred = fallpred n label in
   let or_cases after_branch = wrapOr n (body,after_branch) in
   end_control_structure bfvs header or_cases after_pred
     (Some(wrapEX n after_pred)) None aft after n label guard
@@ -642,14 +642,16 @@ let svar_context_with_add_after s n label quantified d ast
 
   let rest_nodes = wrapAnd n (middle_metamatch,prelabel_pred) in  
   let left_or = (* the whole statement is one node *)
-    make_seq n [full_metamatch; and_after n (wrapNot n prelabel_pred) after] in
+    make_seq n [full_metamatch;
+		 and_after n (wrapNot n prelabel_pred) after] in
   let right_or = (* the statement covers multiple nodes *)
     make_seq n
       [first_metamatch;
 	wrapAU n (rest_nodes,
 		  make_seq n
 		    [wrapAnd n (last_metamatch,label_pred);
-		      and_after n (wrapNot n prelabel_pred) after])] in
+		      and_after n
+			(wrapNot n prelabel_pred) after])] in
   let body f =
     wrapAnd n
       (label_pred,

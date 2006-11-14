@@ -697,15 +697,14 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
-    (*let ctr = ref 0 in*)
+    let ctr = ref 0 in
     if !pNEW_INFO_OPT
     then
       let rec f y new_info =
 	match new_info with
 	  [] -> y
 	| new_info ->
-	    (*ctr := !ctr + 1;
-	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	    ctr := !ctr + 1;
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	    let new_info = setdiff first y in
 	    let res = new_info @ y in
@@ -1071,13 +1070,13 @@ let rec satloop unchecked required required_states
 				       (A.Not
 					  (wrap
 					     (A.And
-						(phi1,
-						 wrap
+						(wrap
 						   (A.EF
 						      (dir,
 						       wrap
 							 (A.Uncheck
-							    (phi2ref)))))))),
+							    (phi2ref)))),
+						 phi1)))),
 				     wrap(A.Not phi2ref))))))))))
 
 	else
@@ -1256,12 +1255,12 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 				       (A.Not
 					  (wrap
 					     (A.And
-						(phi1,
-						 wrap
+						(wrap
 						   (A.EF
 						      (dir,
 						       wrap
-							 (A.Uncheck(phi2ref)))))))),
+							 (A.Uncheck(phi2ref)))),
+						 phi1)))),
 				     wrap(A.Not phi2ref))))))))))
 	    env
 	else
@@ -1306,7 +1305,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	anno res []
     | A.Dots _ -> failwith "should not occur" in
     let res1 = drop_wits required_states res in
-    if not(res1 = res) then print_state "after drop_wits" res;
+    if not(res1 = res) then print_state "after drop_wits" res1;
     (child,res1)
 	
 ;;
