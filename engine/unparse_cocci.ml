@@ -2,7 +2,7 @@ open Common open Commonop
 
 (*****************************************************************************)
 (* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml 
- * tood?: try to factorize ?
+ * todo?: try to factorize ?
  *)
 (*****************************************************************************)
 
