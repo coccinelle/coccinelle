@@ -1006,6 +1006,7 @@ let rec letify x =
     | CTL.EX(dir,phi1)       -> CTL.EX(dir,letify phi1)
     | CTL.EG(dir,phi1)       -> CTL.EG(dir,letify phi1)
     | CTL.AU(dir,phi1,phi2)  -> CTL.AU(dir,letify phi1,letify phi2)
+    | CTL.AW(dir,phi1,phi2)  -> CTL.AW(dir,letify phi1,letify phi2)
     | CTL.EU(dir,phi1,phi2)  -> CTL.EU(dir,letify phi1,letify phi2)
     | CTL.Let (x,phi1,phi2)  -> CTL.Let (x,letify phi1,letify phi2)
     | CTL.LetR (d,x,phi1,phi2)  -> CTL.LetR (d,x,letify phi1,letify phi2)

@@ -96,6 +96,12 @@ let rec ctl2c ct pp pv x =
       let (diamond,ct) = print_diamond (ct+2) dir in
       let (res,ct) = pathwrap ct pp pv f
       in ("\\AG"^diamond^res,ct)
+  | CTL.AW(dir,f1,f2) ->
+      let (diamond,ct) = print_diamond (ct+1) dir in
+      let (res1,ct) = existswrap (ct+1) pp pv f1 in
+      let (res1,ct) = check_ct ct res1 in
+      let (res2,ct) = existswrap (ct+3) pp pv f2 in
+      ("\\"^diamond^"A["^res1^" W "^res2^"]\n",ct)
   | CTL.AU(dir,f1,f2) ->
       let (diamond,ct) = print_diamond (ct+1) dir in
       let (res1,ct) = existswrap (ct+1) pp pv f1 in

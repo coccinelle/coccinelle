@@ -19,6 +19,7 @@ identifier proc_info_func;
     ...
   }
 
+
 @@ @@
   proc_info_func(...) {
     <...

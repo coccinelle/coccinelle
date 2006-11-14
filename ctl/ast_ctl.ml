@@ -21,6 +21,9 @@ type ('pred,'mvar,'anno) generic_ctl =
   | AF of direction * (('pred,'mvar,'anno) generic_ctl)
   | AX of direction * (('pred,'mvar,'anno) generic_ctl)
   | AG of direction * (('pred,'mvar,'anno) generic_ctl)
+  | AW of direction *
+	(* versions with exists v *)
+	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
   | AU of direction *
 	(* versions with exists v *)
 	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
