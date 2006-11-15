@@ -1,5 +1,5 @@
 (*external c_counter : unit -> int = "c_counter"*)
-let timeout = 800
+let timeout = 100
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
 let pTRIPLES_CONJ_OPT = ref true
@@ -25,6 +25,7 @@ let pUNCHECK_OPT = ref true
 let inc cell = cell := !cell + 1
 
 let satEU_calls = ref 0
+let satAW_calls = ref 0
 let satAU_calls = ref 0
 let satEF_calls = ref 0
 let satAF_calls = ref 0
@@ -781,11 +782,11 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 ;;
 
 let satAW dir ((_,_,states) as m) s1 s2 reqst =
-  inc satAU_calls;
+  inc satAW_calls;
   if s1 = []
   then s2
   else
-    if true
+    if !pNEW_INFO_OPT
     then
       (* reqst could be the states of s1 *)
       let lstates = mkstates states reqst in
@@ -797,13 +798,12 @@ let satAW dir ((_,_,states) as m) s1 s2 reqst =
 	  triples_conj base (pre_exist dir m removed reqst) in
 	let new_base =
 	  triples_conj base (triples_complement lstates new_removed) in
-	if supseteq base new_base
+	if supseteq new_base base
 	then triples_union base s2
 	else loop new_base new_removed in
       loop initial_base initial_removed
     else
       let f y =
-	print_state "iter" y;
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setgfix f (triples_union s1 s2)
@@ -1554,20 +1554,27 @@ let all_options =
 let all =
   [("all                     ",all_options)]
 
+let all_options_but_path =
+  [options.label;options.unch;options.conj;options.compl1;options.compl2;
+    options.reqenv;options.reqstates]
+
+let all_but_path = ("all                     ",all_options_but_path)
+
 let counters =
-  [(satEU_calls, "satEU", ref 0);
+  [(satAW_calls, "satAW", ref 0);
     (satAU_calls, "satAU", ref 0);
     (satEF_calls, "satEF", ref 0);
     (satAF_calls, "satAF", ref 0);
     (satEG_calls, "satEG", ref 0);
-    (satAG_calls, "satAG", ref 0)]
+    (satAG_calls, "satAG", ref 0);
+  (satEU_calls, "satEU", ref 0)]
 
 let perms =
   map
     (function (opt,x) ->
       (opt,x,ref 0.0,ref 0,
        List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
-    [List.hd baseline;List.hd conjneg]
+    [List.hd baseline;List.hd all;List.hd path;all_but_path]
   (*(all@baseline@conjneg@path@required)*)
 
 let drop_negwits s =

@@ -1,20 +1,11 @@
 @@
-identifier buffer, start, offset, length, inout, hostno;
+identifier buffer;
 identifier hostptr;
-identifier proc_info_func;
 @@
-  proc_info_func (
+  arxescsi_proc_info (
 +      struct Scsi_Host *hostptr,
-       char *buffer, char **start, off_t offset, int length, 
--      int hostno, 
-       int inout) {
-    ...
--   struct Scsi_Host *hostptr;
+       char *buffer) {
     ...
 -   hostptr = scsi_host_hn_get(hostno);
-    ...
-?-  if (!hostptr) { ... return ...; }
-    ...
-?-  scsi_host_put(hostptr);
     ...
   }

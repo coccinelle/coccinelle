@@ -1,10 +1,7 @@
 static int
-arxescsi_proc_info(char *buffer, char **start, off_t offset, int length,
-		   int host_no, int inout)
+arxescsi_proc_info(char *buffer)
 {
-	struct Scsi_Host *host;
-
-	host = scsi_host_hn_get(host_no);
+	host = scsi_host_hn_get(hostno);
 	if (!host)
 		return 0;
 
