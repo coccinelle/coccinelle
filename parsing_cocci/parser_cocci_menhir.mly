@@ -462,8 +462,8 @@ statement:
 				clt2mcode ")" $4,$5,
 				clt2mcode "else" $6,$7,
 				(Ast0.default_info(),Ast0.context_befaft()))) }
-| fr=TFor lp=TOPar e1=ioption(eexpr) sc1=TPtVirg e2=ioption(eexpr) sc2=TPtVirg
-    e3=ioption(eexpr) rp=TCPar s=single_statement
+| fr=TFor lp=TOPar e1=option(eexpr) sc1=TPtVirg e2=option(eexpr) sc2=TPtVirg
+    e3=option(eexpr) rp=TCPar s=single_statement
     { Ast0.wrap(Ast0.For(clt2mcode "for" fr,
 			 clt2mcode "(" lp,e1,
 			 clt2mcode ";" sc1,e2,
@@ -599,7 +599,7 @@ decl_var:
 d_ident:
     ident
       { ($1,function x -> x) }
-  | a=ident l=TOCro i=ioption(eexpr) r=TCCro
+  | a=ident l=TOCro i=option(eexpr) r=TCCro
       { (a,function x ->
 	Ast0.wrap(Ast0.Array(x,clt2mcode "[" l,i,
 			     clt2mcode "]" r))) }
@@ -743,7 +743,7 @@ assign_expr(r,pe):
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
-  | l=arith_expr(r,pe) w=TWhy t=ioption(eexpr) dd=TDotDot r=cond_expr(r,pe)
+  | l=arith_expr(r,pe) w=TWhy t=option(eexpr) dd=TDotDot r=cond_expr(r,pe)
       { Ast0.wrap(Ast0.CondExpr (l, clt2mcode "?" w, t,
 				 clt2mcode ":" dd, r)) }
 
@@ -1283,6 +1283,6 @@ iso_main:
 	dl in
     iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
 
-%inline iso(term):
+iso(term):
     TIso t=term { Common.Left t }
   | TRightIso t=term { Common.Right t }

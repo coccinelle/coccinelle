@@ -26,7 +26,6 @@ let collect_context e =
       Ast0.CONTEXT(_) -> (builder e) :: (k e)
     | _ -> k e in
 
-
   let topfn r k e = Ast0.TopTag(e) :: (k e) in
 
   let res =
