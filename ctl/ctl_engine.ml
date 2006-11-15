@@ -792,19 +792,18 @@ let satAW dir ((_,_,states) as m) s1 s2 reqst =
       let initial_removed =
 	triples_complement lstates (triples_union s1 s2) in
       let initial_base = triples_conj s1 (triples_complement lstates s2) in
-      let rec loop base = function
-	  [] -> triples_union base s2
-	| removed ->
-	    print_state "base" base;
-	    print_state "removed" removed;
-	    let new_removed =
-	      triples_conj base (pre_exist dir m removed reqst) in
-	    let new_base =
-	      triples_conj base (triples_complement lstates new_removed) in
-	    loop new_base new_removed in
+      let rec loop base removed =
+	let new_removed =
+	  triples_conj base (pre_exist dir m removed reqst) in
+	let new_base =
+	  triples_conj base (triples_complement lstates new_removed) in
+	if supseteq base new_base
+	then triples_union base s2
+	else loop new_base new_removed in
       loop initial_base initial_removed
     else
       let f y =
+	print_state "iter" y;
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setgfix f (triples_union s1 s2)
