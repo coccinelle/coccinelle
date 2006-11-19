@@ -1,5 +1,5 @@
 (*external c_counter : unit -> int = "c_counter"*)
-let timeout = 100
+let timeout = 800
 (* Optimize triples_conj by first extracting the intersection of the two sets,
 which can certainly be in the intersection *)
 let pTRIPLES_CONJ_OPT = ref true
@@ -214,8 +214,8 @@ let rec fix eq f x =
 ;;
 
 (* Fix point calculation on set-valued functions *)
-let setfix f x = setify (fix subseteq f x) (*if new is a subset of old, stop*)
-let setgfix f x = setify (fix supseteq f x) (*if new is a supset of old, stop*)
+let setfix f x = (fix subseteq f x) (*if new is a subset of old, stop*)
+let setgfix f x = (fix supseteq f x) (*if new is a supset of old, stop*)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -238,7 +238,6 @@ type ('pred,'anno) witness =
 
 type ('pred,'anno) triples =
     (G.node * substitution * ('pred,'anno) witness list) list
-
 
 (* ---------------------------------------------------------------------- *)
 (* Pretty printing functions *)
@@ -482,20 +481,21 @@ let triples_conj trips trips' =
 	List.filter (function t -> not(List.mem t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
-  setify (
-    foldl
-      (function rest ->
-	 function (s1,th1,wit1) ->
-	   foldl
-	     (function rest ->
-		function (s2,th2,wit2) ->
-		  if (s1 = s2) then
-		    (match (conj_subst th1 th2) with
-		      | Some th -> (s1,th,union_wit wit1 wit2)::rest
-		      | _       -> rest)
-		  else rest)
-	     rest trips')
-      shared trips)
+  foldl (* returns a set - setify inlined *)
+    (function rest ->
+      function (s1,th1,wit1) ->
+	foldl
+	  (function rest ->
+	    function (s2,th2,wit2) ->
+	      if (s1 = s2) then
+		(match (conj_subst th1 th2) with
+		  Some th ->
+		    let t = (s1,th,union_wit wit1 wit2) in
+		    if List.mem t rest then rest else t::rest
+		| _       -> rest)
+	      else rest)
+	  rest trips')
+    shared trips
 ;;
 
 
@@ -530,7 +530,6 @@ let triples_state_conj trips trips' =
 	List.filter (function t -> not(List.mem t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
-  setify (
   foldl
     (function rest ->
       function (s1,th1,wit1) ->
@@ -540,11 +539,13 @@ let triples_state_conj trips trips' =
 	      match compatible_states(s1,s2) with
 		Some s ->
 		  (match (conj_subst th1 th2) with
-		    Some th -> (s,th,union_wit wit1 wit2)::rest
+		    Some th ->
+		      let t = (s,th,union_wit wit1 wit2) in
+		      if List.mem t rest then rest else t::rest
 		  | _ -> rest)
 	      | _ -> rest)
 	  rest trips')
-    shared trips)
+    shared trips
 ;;
 
 let triple_negate (s,th,wits) = 
@@ -619,8 +620,8 @@ let triples_witness x unchecked trips =
 	else (s,newth,[A.Wit(s,th_x,[],wit)]) in	(* [] = annotation *)
   (* not sure that nub is needed here.  would require empty witness case to
      make a duplicate. *)
-  (* setify not needed - will be called by dropwits *)
-    map mkwit trips
+  (* setify not needed in checked case - set before implies set after *)
+    if unchecked then setify(map mkwit trips) else map mkwit trips
 ;;
 
 
@@ -663,9 +664,17 @@ let pre_forall dir (grp,_,states) y all reqst =
   let neighbors =
     List.map
       (function p -> (p,succ grp p))
-      (inner_setify
+      (setify
 	 (concatmap
 	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
+  let all = List.sort state_compare all in
+  let rec up_nodes child s = function
+      [] -> []
+    | (s1,th,wit)::xs ->
+	(match compare s1 child with
+	  -1 -> up_nodes child s xs
+	| 0 -> (s,th,wit)::(up_nodes child s xs)
+	| _ -> []) in
   let neighbor_triples =
     List.fold_left
       (function rest ->
@@ -673,21 +682,13 @@ let pre_forall dir (grp,_,states) y all reqst =
 	  try
 	    (List.map
 	       (function child ->
-		 let child_triples =
-		   List.map
-		     (function (_,th,wit) -> (s,th,wit))
-		     (List.filter
-			(function (s1,th,wit) -> s1 = child) all) in
-		 match child_triples with
-		   [] -> raise Empty
-		 | l -> l)
+		 match up_nodes child s all with [] -> raise Empty | l -> l)
 	       children) :: rest
 	  with Empty -> rest)
       [] neighbors in
   match neighbor_triples with
     [] -> []
-  | _ ->
-      foldl1 triples_union (List.map (foldl1 triples_conj) neighbor_triples)
+  | _ -> foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples)
 	
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
@@ -781,14 +782,12 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
       setfix f s2
 ;;
 
-let satAW dir ((_,_,states) as m) s1 s2 reqst =
-  inc satAW_calls;
-  if s1 = []
-  then s2
-  else
-    if !pNEW_INFO_OPT
-    then
-      (* reqst could be the states of s1 *)
+let all_table =
+  (Hashtbl.create(50) : (G.node,('a,'b) triples ref) Hashtbl.t)
+
+
+(* reqst could be the states of s1 *)
+      (*
       let lstates = mkstates states reqst in
       let initial_removed =
 	triples_complement lstates (triples_union s1 s2) in
@@ -801,12 +800,18 @@ let satAW dir ((_,_,states) as m) s1 s2 reqst =
 	if supseteq new_base base
 	then triples_union base s2
 	else loop new_base new_removed in
-      loop initial_base initial_removed
-    else
-      let f y =
-	let pre = pre_forall dir m y y reqst in
-	triples_union s2 (triples_conj s1 pre) in
-      setgfix f (triples_union s1 s2)
+      loop initial_base initial_removed *)
+
+let satAW dir ((_,_,states) as m) s1 s2 reqst =
+  inc satAW_calls;
+  if s1 = []
+  then s2
+  else
+    let f y =
+      let pre = pre_forall dir m y y reqst in
+      let conj = triples_conj s1 pre in
+      triples_union s2 conj in
+    setgfix f (triples_union s1 s2)
 ;;
 
 let satAF dir m s reqst = 
@@ -847,8 +852,7 @@ info other than the witness *)
 let drop_wits required_states s phi =
   match required_states with
     None -> s
-  | Some states ->
-      setify (List.filter (function (s,_,_) -> List.mem s states) s)
+  | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
 
 
 (* ********************* *)
@@ -1083,44 +1087,6 @@ let rec satloop unchecked required required_states
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
 	    satEU dir m s1 s2 new_required_states)
-(*  | A.AU(dir,phi1,phi2) ->
-	if !Flag_ctl.loop_in_src_code
-	then
-	  let wrap x = A.rewrap phi x in
-	  let v = new_let () in
-	  let phi2ref = wrap(A.Ref v) in
-	  loop unchecked required required_states
-	    (wrap
-	       (A.Not
-		  (wrap
-		     (A.LetR
-			(dir,v,phi2,
-			 wrap
-			   (A.EU
-			      (dir,wrap(A.Not(wrap(A.Uncheck(phi2ref)))),
-			       wrap
-				 (A.Not
-                                 (wrap
-				 (A.Or
-				    (wrap
-				       (A.And
-						(wrap
-						   (A.EF
-						      (dir,
-						       wrap
-							 (A.Uncheck(phi2ref)))),
-						 phi1)),
-				     phi2ref)))))))))))
-
-	else
-	  let new_required_states = get_reachable dir m required_states in
-	  (match loop unchecked required new_required_states phi2 with
-	    [] -> []
-	  | s2 ->
-	      let new_required = extend_required s2 required in
-	      satAU dir m
-		(loop unchecked new_required new_required_states phi1)
-		s2 new_required_states) *)
     | A.AW(dir,phi1,phi2) ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
@@ -1574,7 +1540,7 @@ let perms =
     (function (opt,x) ->
       (opt,x,ref 0.0,ref 0,
        List.map (function _ -> (ref 0, ref 0, ref 0)) counters))
-    [List.hd baseline;List.hd all;List.hd path;all_but_path]
+    [List.hd all;all_but_path]
   (*(all@baseline@conjneg@path@required)*)
 
 let drop_negwits s =
