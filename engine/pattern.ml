@@ -363,7 +363,7 @@ and match_storage stoa stob =
   | None -> return true
   | Some x -> 
       return
-	(match (term x,stob) with
+	(match (term x,fst stob) with
 	  (A.Static, B.Sto B.Static)
 	| (A.Auto, B.Sto B.Auto)
 	| (A.Register, B.Sto B.Register)
@@ -417,14 +417,12 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
       (match opttypa, opttypb with
       | None, _ -> return true
       | Some (tas : Type_cocci.typeC list), Some tb -> 
-	  failwith "type matching not supported"
-	  (*
-          tas +> List.fold_left (fun acc ta -> acc >||>  match_ft_ft ta tb) 
+          tas +> List.fold_left (fun acc ta -> acc >||>  return (Types.compatible_type ta tb)) 
             (return false)
-	     *)
       | Some _, None -> 
-          failwith ("I have not the type information. Certainly a pb in " ^
-                    "annotate_typer.ml")
+          pr2 ("I have not the type information. Certainly a pb in " ^
+                    "type_annoter_c.ml");
+          return false
       ) >&&>
       check_add_metavars_binding inherited (term ida, Ast_c.MetaExprVal (expb))
 

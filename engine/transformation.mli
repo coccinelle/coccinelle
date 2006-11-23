@@ -11,3 +11,6 @@ val transform_proto :
   Ast_c.programElement
 
 exception NoMatch 
+
+val tag_symbols: 
+  ('a Ast_cocci.mcode) list -> Ast_c.il -> Ast_c.metavars_binding -> Ast_c.il

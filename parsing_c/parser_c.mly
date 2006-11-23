@@ -23,18 +23,36 @@ let warning s v =
 (* parse auxillary function *)
 type shortLong      = Short  | Long | LongLong
 
-type decl = {storageD: storage                                               * Ast_c.info list
-	    ;typeD: ((sign option) * (shortLong option) * (typeCbis option)) * Ast_c.info list
-	    ;qualifD: typeQualifierbis                                       * Ast_c.info list
-            (*todo: full_info: parse_info list;  to remember ordering between storage, qualifier, type *)
-	    } 
-let nullDecl = {storageD = NoSto, [];typeD = (None, None, None), [];qualifD = nullQualif}
+type decl = { storageD: storagebis wrap;
+	      typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
+	      qualifD: typeQualifierbis wrap;
+              inlineD: bool             wrap;
+              (* note: have a full_info: parse_info list; to remember ordering
+                 between storage, qualifier, type ? well this info is already
+                 in the Ast_c.info, just have to sort them to get good order
+               *)
+	     } 
+
+let nullDecl = {
+  storageD = NoSto, [];
+  typeD = (None, None, None), [];
+  qualifD = nullQualif;
+  inlineD = false, [];
+  }
 
 let addStorageD  = function 
   | ((x,ii), ({storageD = (NoSto,[])} as v))     -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->  
       if x = y then warning "duplicate storage classes" v
       else raise (Semantic ("multiple storage classes", fake_parse_info))
+
+let addInlineD  = function 
+  | ((true,ii), ({inlineD = (false,[])} as v))     -> 
+        { v with inlineD = (true, [ii]) }
+  | ((true,ii), ({inlineD = (true, ii2)} as v)) ->  
+      warning "duplicate inline" v
+  | _ -> raise Impossible
+
 
 let addTypeD     = function 
   | ((Left3 Signed,ii)   ,({typeD = ((Some Signed,  b,c),ii2)} as v)) -> warning "duplicate 'signed'"   v
@@ -74,9 +92,14 @@ let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
 (* stdC: type section, basic integer types (and ritchie)
    to understand the code, just look at the result (right part of the PM) and go back
 *)
-let (fixDeclSpecForDecl: decl -> (fullType * (storage * info list)))  = function
- {storageD = (st,iist); qualifD = (qu,iiq); typeD = (ty,iit)} -> 
-  (((qu, iiq),
+let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
+ {storageD = (st,iist); 
+  qualifD = (qu,iiq); 
+  typeD = (ty,iit); 
+  inlineD = (inline,iinl);
+  } -> 
+  (
+   ((qu, iiq),
    (match ty with 
  | (None,None,None)       -> warning "type defaults to 'int'" (defaultInt, [])
  | (None, None, Some t)   -> (t, iit)
@@ -105,7 +128,7 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage * info list)))  = function
 	(cos after first short i pass in dt() mode)
      *)
    ))
-     ,(st,iist)
+     ,((st, inline),iist++iinl)
   )
 
 let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) -> 
@@ -117,9 +140,9 @@ let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
 
 let fixDeclSpecForFuncDef x =
   let (returnType,storage) = fixDeclSpecForDecl x in
-  (match storage with
-  | (StoTypedef,ii) -> raise (Semantic ("function definition declared 'typedef'", fake_parse_info))
-  | x -> (returnType, x)
+  (match fst (unwrap storage) with
+  | StoTypedef -> raise (Semantic ("function definition declared 'typedef'", fake_parse_info))
+  | x -> (returnType, storage)
   )
 
 (* parameter: (this is the context where we give parameter only when in func DEFINITION not in funct DECLARATION)
@@ -227,6 +250,7 @@ let fix_add_params_ident = function
        Tsizeof  
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
+%token <Ast_c.info> Tinline
 
 %token <Ast_c.info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
 
@@ -428,7 +452,7 @@ compound: tobrace compound2 tcbrace { $2, [$1; $3]  }
 tobrace: TOBrace                     {  new_scope (); $1(* to do scoped typedef *) }
 tcbrace: TCBrace                     {  del_scope (); $1 }
 
-/*
+/* old:
 compound2:                           { ([],[]) }
         |  statement_list            { ([], $1) }
         |  decl_list                 { ($1, []) }
@@ -441,6 +465,7 @@ statement_list: statement { [$1] }
 	      | statement_list statement { $1 ++ [$2] }
 
 */
+
 /* cppext: (because of cpp),  mix decl/statement */
 statement_list: statement { [$1] }
 	      | statement_list statement { $1 ++ [$2] }
@@ -454,6 +479,7 @@ stat_or_decl_list:
 
 stat_or_decl: decl      { Decl $1, [] }
             | statement { $1 }
+            /* cppext: */
             | TIfdef stat_or_decl_list TIfdefelse stat_or_decl_list TEndif 
                 { Selection (IfCpp ($2, $4)), [$1;$3;$5] }
             | TIfdef stat_or_decl_list TEndif 
@@ -524,8 +550,10 @@ colon_option: TString {}
 decl: decl2  { et "decl" (); $1 }
 
 decl2: decl_spec TPtVirg
-     { let (returnType,storage) = fixDeclSpecForDecl $1 
-       in DeclList ([(None, returnType, fst storage),[]],  ($2::snd storage))} 
+        { let (returnType,storage) = fixDeclSpecForDecl $1 
+          in DeclList ([(None, returnType, unwrap storage),[]],  
+                       ($2::snd storage))
+        } 
      | decl_spec init_declarator_list TPtVirg 
 	{ let (returnType,storage) = fixDeclSpecForDecl $1 in
           DeclList (
@@ -535,14 +563,14 @@ decl2: decl_spec TPtVirg
                    | None -> None, []
                    | Some (ini, iini) -> Some ini, [iini]
                  in
-		 if fst storage = StoTypedef 
+		 if fst (unwrap storage) = StoTypedef 
 		 then begin 
                    Lexer_parser.add_typedef s;
-                   (Some ((s, ini), iis::iini), f returnType, StoTypedef),
+                   (Some ((s, ini), iis::iini), f returnType, unwrap storage),
                    iivirg 
                  end
 		 else 
-                   (Some ((s, ini), iis::iini), f returnType, fst storage),
+                   (Some ((s, ini), iis::iini), f returnType, unwrap storage),
                    iivirg
   	         )
 	       ),  ($3::snd storage))
@@ -559,6 +587,7 @@ decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [
           | storage_class_spec decl_spec2 { addStorageD ($1, $2) }
 	  | type_spec          decl_spec2 { addTypeD    ($1, $2) }
 	  | type_qualif        decl_spec2 { addQualifD  ($1, $2) }
+          | Tinline            decl_spec2 { addInlineD ((true, $1), $2) }
 /* can simplify by putting all in _opt ? must have at least one otherwise decl_list is ambiguous ? (no cos have ';' between decl) */
 
 
@@ -627,7 +656,7 @@ struct_decl: struct_decl2  { et "struct" (); $1 }
 
 struct_decl2: spec_qualif_list struct_declarator_list TPtVirg 
                 { let (returnType,storage) = fixDeclSpecForDecl $1 in
-                  (if fst storage <> NoSto then internal_error "parsing dont allow this";
+                  (if fst (unwrap storage) <> NoSto then internal_error "parsing dont allow this";
 
                    FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->     f returnType, iivirg))),    [$3] )
                   (* dont need to check if typedef or func initialised cos grammar dont allow typedef nor 
@@ -639,10 +668,9 @@ struct_decl2: spec_qualif_list struct_declarator_list TPtVirg
                 { 
                   (* gccext: allow empty elements if it is a structdef or enumdef *)
                   let (returnType,storage) = fixDeclSpecForDecl $1 in
-                  (if fst storage <> NoSto then internal_error "parsing dont allow this";
-                   FieldDeclList [(Simple (None, returnType), []) , []], [$2]
-                )
-               
+                  if fst (unwrap storage) <> NoSto 
+                  then internal_error "parsing dont allow this";
+                  FieldDeclList [(Simple (None, returnType), []) , []], [$2]
                 }
 
 
@@ -819,8 +847,11 @@ external_declaration2:
          /* can have asm declaration at toplevel */
          | Tasm TOPar asmbody TCPar TPtVirg             { EmptyDef [] } 
          
-         /* in ~/kernels/src/linux-2.5.2/drivers/isdn/hisax/isdnl3.c sometimes the function ends with }; instead of just } */
+         /* in ~/kernels/src/linux-2.5.2/drivers/isdn/hisax/isdnl3.c sometimes
+            the function ends with }; instead of just } 
+         */
          | TPtVirg    { EmptyDef [$1] } 
+
          | TInclude   { CPPInclude [$1] }
          | TDefine    { CPPDefine [$1] }
 

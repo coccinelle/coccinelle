@@ -35,7 +35,6 @@ all: $(OBJS)
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
 	true)) || true
 
-
 #-----------------------------------------------------------------------------
 # Pad stuff
 #-----------------------------------------------------------------------------
@@ -71,3 +70,6 @@ info_ok:
 info_failed:
 	../../scripts/extract_info_ok_failed.pl *.failed
 
+
+opt: $(OBJS)
+	$(MAKE) SPATCH=../../spatch.opt

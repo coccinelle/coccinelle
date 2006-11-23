@@ -3,85 +3,43 @@
 //----------------------------------------------------------------------
 
 @@
-//struct BCState *bcs;
-identifier bcs;
+struct BCState *bcs;
 @@
 
-    struct BCState *bcs; // feeble form of type checking
-    <...
-(
 -   bcs->tqueue
 +   bcs->work
-|
+
+@@
+struct BCState bcs;
+@@
+
 -   bcs.tqueue
 +   bcs.work
-)
-    ...>
+
 
 //----------------------------------------------------------------------
-
 @@
-identifier bcs;
-identifier fn;
-@@
-
-  fn(...,struct BCState *bcs,...) { // feeble form of type checking
-    <...
-(
--   bcs->tqueue
-+   bcs->work
-|
--   bcs.tqueue
-+   bcs.work
-)
-    ...>
-  }
-
-//----------------------------------------------------------------------
-
-@@
-//struct IsdnCardState *cs;
-identifier cs;
+struct IsdnCardState *cs;
 identifier i;
+identifier bcs; // needed, was reused in rule17old.cocci
 @@
 
-    struct IsdnCardState *cs; // feeble form of type checking
-    <...
 (
 -   cs->tqueue
 +   cs->work
 |
--   cs.tqueue
-+   cs.work
-|
 -   cs->bcs[i].tqueue
 +   cs->bcs[i].work
 )
-    ...>
 
-//----------------------------------------------------------------------
 
 @@
-//struct IsdnCardState *cs;
-//int ev;
-identifier cs;
-identifier fn;
-identifier i;
+struct IsdnCardState cs;
 @@
 
-  fn(...,struct IsdnCardState *cs,...) { // feeble form of type checking
-    <...
-(
--   cs->tqueue
-+   cs->work
-|
 -   cs.tqueue
 +   cs.work
-|
--   cs->bcs[i].tqueue
-+   cs->bcs[i].work
-)
-    ...>
-  }
+
+
 
 

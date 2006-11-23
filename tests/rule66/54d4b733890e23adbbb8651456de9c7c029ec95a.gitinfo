@@ -1,0 +1,5558 @@
+commit 54d4b733890e23adbbb8651456de9c7c029ec95a
+Author: Jaroslav Kysela <perex@suse.cz>
+Date:   Thu Jul 1 23:32:29 2004 +0200
+
+    ALSA CVS update
+    ALS4000 driver,ATIIXP driver,AZT3328 driver,BT87x driver,CMIPCI driver
+    CS4281 driver,ENS1370/1+ driver,ES1938 driver,ES1968 driver
+    FM801 driver,Intel8x0 driver,Intel8x0-modem driver,Maestro3 driver
+    RME32 driver,RME96 driver,SonicVibes driver,VIA82xx driver
+    AC97 Codec Core,AK4531 codec,ALI5451 driver,au88x0 driver,CS46xx driver
+    EMU10K1/EMU10K2 driver,ICE1712 driver,ICE1724 driver,KORG1212 driver
+    MIXART driver,NM256 driver,RME HDSP driver,RME9652 driver
+    Trident driver,Digigram VX222 driver,YMFPCI driver
+    Removal and replacement of magic memory allocators and casts (pci part)
+    
+    This patch replaces snd_magic_kmalloc(), snd_magic_kcallc() and snd_magic_kfree()
+    with kmalloc(), kcalloc() and kfree(), respectively.
+    The cast via snd_magic_cast() is replaced with the standard cast, too.
+    
+    Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+    Signed-off-by: Takashi Iwai <tiwai@suse.de>
+
+diff --git a/sound/pci/ac97/ac97_codec.c b/sound/pci/ac97/ac97_codec.c
+index 54a4fda..e61c994 100644
+--- a/sound/pci/ac97/ac97_codec.c
++++ b/sound/pci/ac97/ac97_codec.c
+@@ -47,8 +47,6 @@ module_param(enable_loopback, bool, 0444
+ MODULE_PARM_DESC(enable_loopback, "Enable AC97 ADC/DAC Loopback Control");
+ MODULE_PARM_SYNTAX(enable_loopback, SNDRV_BOOLEAN_FALSE_DESC);
+ 
+-#define chip_t ac97_t
+-
+ /*
+ 
+  */
+@@ -1044,14 +1042,14 @@ static int snd_ac97_bus_free(ac97_bus_t 
+ 			kfree(bus->pcms);
+ 		if (bus->private_free)
+ 			bus->private_free(bus);
+-		snd_magic_kfree(bus);
++		kfree(bus);
+ 	}
+ 	return 0;
+ }
+ 
+ static int snd_ac97_bus_dev_free(snd_device_t *device)
+ {
+-	ac97_bus_t *bus = snd_magic_cast(ac97_bus_t, device->device_data, return -ENXIO);
++	ac97_bus_t *bus = device->device_data;
+ 	return snd_ac97_bus_free(bus);
+ }
+ 
+@@ -1063,14 +1061,14 @@ static int snd_ac97_free(ac97_t *ac97)
+ 			ac97->bus->codec[ac97->num] = NULL;
+ 		if (ac97->private_free)
+ 			ac97->private_free(ac97);
+-		snd_magic_kfree(ac97);
++		kfree(ac97);
+ 	}
+ 	return 0;
+ }
+ 
+ static int snd_ac97_dev_free(snd_device_t *device)
+ {
+-	ac97_t *ac97 = snd_magic_cast(ac97_t, device->device_data, return -ENXIO);
++	ac97_t *ac97 = device->device_data;
+ 	snd_ac97_powerdown(ac97); /* for avoiding click noises during shut down */
+ 	return snd_ac97_free(ac97);
+ }
+@@ -1771,7 +1769,7 @@ int snd_ac97_bus(snd_card_t * card, ac97
+ 
+ 	snd_assert(card != NULL, return -EINVAL);
+ 	snd_assert(_bus != NULL && rbus != NULL, return -EINVAL);
+-	bus = snd_magic_kmalloc(ac97_bus_t, 0, GFP_KERNEL);
++	bus = kmalloc(sizeof(*bus), GFP_KERNEL);
+ 	if (bus == NULL)
+ 		return -ENOMEM;
+ 	*bus = *_bus;
+@@ -1826,7 +1824,7 @@ int snd_ac97_mixer(ac97_bus_t * bus, ac9
+ 	snd_assert(bus != NULL && _ac97 != NULL, return -EINVAL);
+ 	snd_assert(_ac97->num < 4 && bus->codec[_ac97->num] == NULL, return -EINVAL);
+ 	card = bus->card;
+-	ac97 = snd_magic_kmalloc(ac97_t, 0, GFP_KERNEL);
++	ac97 = kmalloc(sizeof(*ac97), GFP_KERNEL);
+ 	if (ac97 == NULL)
+ 		return -ENOMEM;
+ 	*ac97 = *_ac97;
+diff --git a/sound/pci/ac97/ac97_patch.c b/sound/pci/ac97/ac97_patch.c
+index 08cee1a..13d9292 100644
+--- a/sound/pci/ac97/ac97_patch.c
++++ b/sound/pci/ac97/ac97_patch.c
+@@ -35,8 +35,6 @@ #include "ac97_patch.h"
+ #include "ac97_id.h"
+ #include "ac97_local.h"
+ 
+-#define chip_t ac97_t
+-
+ /*
+  *  Chip specific initialization
+  */
+diff --git a/sound/pci/ac97/ac97_pcm.c b/sound/pci/ac97/ac97_pcm.c
+index f7a829e..a53eeda 100644
+--- a/sound/pci/ac97/ac97_pcm.c
++++ b/sound/pci/ac97/ac97_pcm.c
+@@ -36,8 +36,6 @@ #include "ac97_patch.h"
+ #include "ac97_id.h"
+ #include "ac97_local.h"
+ 
+-#define chip_t ac97_t
+-
+ /*
+  *  PCM support
+  */
+diff --git a/sound/pci/ac97/ac97_proc.c b/sound/pci/ac97/ac97_proc.c
+index 0a58650..966de77 100644
+--- a/sound/pci/ac97/ac97_proc.c
++++ b/sound/pci/ac97/ac97_proc.c
+@@ -290,7 +290,7 @@ static void snd_ac97_proc_read_main(ac97
+ 
+ static void snd_ac97_proc_read(snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	ac97_t *ac97 = snd_magic_cast(ac97_t, entry->private_data, return);
++	ac97_t *ac97 = entry->private_data;
+ 	
+ 	down(&ac97->mutex);
+ 	if ((ac97->id & 0xffffff40) == AC97_ID_AD1881) {	// Analog Devices AD1881/85/86
+@@ -325,7 +325,7 @@ #ifdef CONFIG_SND_DEBUG
+ /* direct register write for debugging */
+ static void snd_ac97_proc_regs_write(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+ {
+-	ac97_t *ac97 = snd_magic_cast(ac97_t, entry->private_data, return);
++	ac97_t *ac97 = entry->private_data;
+ 	char line[64];
+ 	unsigned int reg, val;
+ 	down(&ac97->mutex);
+@@ -353,7 +353,7 @@ static void snd_ac97_proc_regs_read_main
+ static void snd_ac97_proc_regs_read(snd_info_entry_t *entry, 
+ 				    snd_info_buffer_t * buffer)
+ {
+-	ac97_t *ac97 = snd_magic_cast(ac97_t, entry->private_data, return);
++	ac97_t *ac97 = entry->private_data;
+ 
+ 	down(&ac97->mutex);
+ 	if ((ac97->id & 0xffffff40) == AC97_ID_AD1881) {	// Analog Devices AD1881/85/86
+diff --git a/sound/pci/ac97/ak4531_codec.c b/sound/pci/ac97/ak4531_codec.c
+index b0c6214..a5d7eb8 100644
+--- a/sound/pci/ac97/ak4531_codec.c
++++ b/sound/pci/ac97/ak4531_codec.c
+@@ -30,8 +30,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Universal routines for AK4531 codec");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t ak4531_t
+-
+ static void snd_ak4531_proc_init(snd_card_t * card, ak4531_t * ak4531);
+ 
+ /*
+@@ -315,14 +313,14 @@ static int snd_ak4531_free(ak4531_t *ak4
+ 	if (ak4531) {
+ 		if (ak4531->private_free)
+ 			ak4531->private_free(ak4531);
+-		snd_magic_kfree(ak4531);
++		kfree(ak4531);
+ 	}
+ 	return 0;
+ }
+ 
+ static int snd_ak4531_dev_free(snd_device_t *device)
+ {
+-	ak4531_t *ak4531 = snd_magic_cast(ak4531_t, device->device_data, return -ENXIO);
++	ak4531_t *ak4531 = device->device_data;
+ 	return snd_ak4531_free(ak4531);
+ }
+ 
+@@ -367,7 +365,7 @@ int snd_ak4531_mixer(snd_card_t * card, 
+ 	snd_assert(rak4531 != NULL, return -EINVAL);
+ 	*rak4531 = NULL;
+ 	snd_assert(card != NULL && _ak4531 != NULL, return -EINVAL);
+-	ak4531 = snd_magic_kcalloc(ak4531_t, 0, GFP_KERNEL);
++	ak4531 = kcalloc(1, sizeof(*ak4531), GFP_KERNEL);
+ 	if (ak4531 == NULL)
+ 		return -ENOMEM;
+ 	*ak4531 = *_ak4531;
+@@ -411,7 +409,7 @@ #endif
+ static void snd_ak4531_proc_read(snd_info_entry_t *entry, 
+ 				 snd_info_buffer_t * buffer)
+ {
+-	ak4531_t *ak4531 = snd_magic_cast(ak4531_t, entry->private_data, return);
++	ak4531_t *ak4531 = entry->private_data;
+ 
+ 	snd_iprintf(buffer, "Asahi Kasei AK4531\n\n");
+ 	snd_iprintf(buffer, "Recording source   : %s\n"
+diff --git a/sound/pci/ali5451/ali5451.c b/sound/pci/ali5451/ali5451.c
+index 670b106..85676a1 100644
+--- a/sound/pci/ali5451/ali5451.c
++++ b/sound/pci/ali5451/ali5451.c
+@@ -171,7 +171,6 @@ #define ALI_REG(codec, x) ((codec)->port
+ 
+ typedef struct snd_stru_ali ali_t;
+ typedef struct snd_ali_stru_voice snd_ali_voice_t;
+-#define chip_t ali_t
+ 
+ typedef struct snd_ali_channel_control {
+ 	// register data
+@@ -495,7 +494,7 @@ static void snd_ali_codec_write(ac97_t *
+ 				unsigned short reg,
+ 				unsigned short val )
+ {
+-	ali_t *codec = snd_magic_cast(ali_t, ac97->private_data, return);
++	ali_t *codec = ac97->private_data;
+ 
+ 	snd_ali_printk("codec_write: reg=%xh data=%xh.\n", reg, val);
+ 	snd_ali_codec_poke(codec, 0, reg, val);
+@@ -505,7 +504,7 @@ static void snd_ali_codec_write(ac97_t *
+ 
+ static unsigned short snd_ali_codec_read(ac97_t *ac97, unsigned short reg)
+ {
+-	ali_t *codec = snd_magic_cast(ali_t, ac97->private_data, return -ENXIO);
++	ali_t *codec = ac97->private_data;
+ 
+ 	snd_ali_printk("codec_read reg=%xh.\n", reg);
+ 	return (snd_ali_codec_peek(codec, 0, reg));
+@@ -1051,7 +1050,7 @@ static irqreturn_t snd_ali_card_interrup
+ 				   void *dev_id,
+ 				   struct pt_regs *regs)
+ {
+-	ali_t 	*codec = snd_magic_cast(ali_t, dev_id, return IRQ_NONE);
++	ali_t 	*codec = dev_id;
+ 
+ 	if (codec == NULL)
+ 		return IRQ_NONE;
+@@ -1247,7 +1246,7 @@ static int snd_ali_trigger(snd_pcm_subst
+ 	what = whati = capture_flag = 0;
+ 	snd_pcm_group_for_each(pos, substream) {
+ 		s = snd_pcm_group_substream_entry(pos);
+-		if ((ali_t *) _snd_pcm_chip(s->pcm) == codec) {
++		if ((ali_t *) snd_pcm_substream_chip(s) == codec) {
+ 			pvoice = (snd_ali_voice_t *) s->runtime->private_data;
+ 			evoice = pvoice->extra;
+ 			what |= 1 << (pvoice->number & 0x1f);
+@@ -1720,7 +1719,7 @@ static snd_pcm_ops_t snd_ali_capture_ops
+ 
+ static void snd_ali_pcm_free(snd_pcm_t *pcm)
+ {
+-	ali_t *codec = snd_magic_cast(ali_t, pcm->private_data, return);
++	ali_t *codec = pcm->private_data;
+ 	codec->pcm = NULL;
+ }
+ 
+@@ -1769,7 +1768,7 @@ static int snd_ali5451_spdif_info(snd_kc
+ static int snd_ali5451_spdif_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+ 	unsigned long flags;
+-	ali_t *codec = snd_magic_cast(ali_t, kcontrol->private_data, -ENXIO);
++	ali_t *codec = kcontrol->private_data;
+ 	unsigned int enable;
+ 
+ 	enable = ucontrol->value.integer.value[0] ? 1 : 0;
+@@ -1796,7 +1795,7 @@ static int snd_ali5451_spdif_get(snd_kco
+ static int snd_ali5451_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+ 	unsigned long flags;
+-	ali_t *codec = snd_magic_cast(ali_t, kcontrol->private_data, -ENXIO);
++	ali_t *codec = kcontrol->private_data;
+ 	unsigned int change = 0, enable = 0;
+ 
+ 	enable = ucontrol->value.integer.value[0] ? 1 : 0;
+@@ -1863,13 +1862,13 @@ static snd_kcontrol_new_t snd_ali5451_mi
+ 
+ static void snd_ali_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	ali_t *codec = snd_magic_cast(ali_t, bus->private_data, return);
++	ali_t *codec = bus->private_data;
+ 	codec->ac97_bus = NULL;
+ }
+ 
+ static void snd_ali_mixer_free_ac97(ac97_t *ac97)
+ {
+-	ali_t *codec = snd_magic_cast(ali_t, ac97->private_data, return);
++	ali_t *codec = ac97->private_data;
+ 	codec->ac97 = NULL;
+ }
+ 
+@@ -1907,7 +1906,7 @@ static int __devinit snd_ali_mixer(ali_t
+ #ifdef CONFIG_PM
+ static int ali_suspend(snd_card_t *card, unsigned int state)
+ {
+-	ali_t *chip = snd_magic_cast(ali_t, card->pm_private_data, return -EINVAL);
++	ali_t *chip = card->pm_private_data;
+ 	ali_image_t *im;
+ 	int i, j;
+ 
+@@ -1948,7 +1947,7 @@ static int ali_suspend(snd_card_t *card,
+ 
+ static int ali_resume(snd_card_t *card, unsigned int state)
+ {
+-	ali_t *chip = snd_magic_cast(ali_t, card->pm_private_data, return -EINVAL);
++	ali_t *chip = card->pm_private_data;
+ 	ali_image_t *im;
+ 	int i, j;
+ 
+@@ -2001,7 +2000,7 @@ #ifdef CONFIG_PM
+ 	if (codec->image)
+ 		kfree(codec->image);
+ #endif
+-	snd_magic_kfree(codec);
++	kfree(codec);
+ 	return 0;
+ }
+ 
+@@ -2071,7 +2070,7 @@ static int __devinit snd_ali_resources(a
+ }
+ static int snd_ali_dev_free(snd_device_t *device) 
+ {
+-	ali_t *codec=snd_magic_cast(ali_t, device->device_data, return -ENXIO);
++	ali_t *codec=device->device_data;
+ 	snd_ali_free(codec);
+ 	return 0;
+ }
+@@ -2106,7 +2105,7 @@ static int __devinit snd_ali_create(snd_
+ 		return -ENXIO;
+ 	}
+ 
+-	if ((codec = snd_magic_kcalloc(ali_t, 0, GFP_KERNEL)) == NULL)
++	if ((codec = kcalloc(1, sizeof(*codec), GFP_KERNEL)) == NULL)
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&codec->reg_lock);
+diff --git a/sound/pci/als4000.c b/sound/pci/als4000.c
+index 73b1d3a..b24fc2a 100644
+--- a/sound/pci/als4000.c
++++ b/sound/pci/als4000.c
+@@ -106,8 +106,6 @@ MODULE_PARM_DESC(joystick_port, "Joystic
+ MODULE_PARM_SYNTAX(joystick_port, SNDRV_ENABLED);
+ #endif
+ 
+-#define chip_t sb_t
+-
+ typedef struct {
+ 	unsigned long gcr;
+ 	struct resource *res_gcr;
+@@ -368,7 +366,7 @@ static snd_pcm_uframes_t snd_als4000_pla
+ 
+ static irqreturn_t snd_als4000_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, dev_id, return IRQ_NONE);
++	sb_t *chip = dev_id;
+ 	unsigned long flags;
+ 	unsigned gcr_status;
+ 	unsigned sb_status;
+@@ -506,7 +504,7 @@ static snd_pcm_ops_t snd_als4000_capture
+ 
+ static void snd_als4000_pcm_free(snd_pcm_t *pcm)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, pcm->private_data, return);
++	sb_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+diff --git a/sound/pci/atiixp.c b/sound/pci/atiixp.c
+index d9fddbe..24b812e 100644
+--- a/sound/pci/atiixp.c
++++ b/sound/pci/atiixp.c
+@@ -207,7 +207,6 @@ #define ATI_MAX_DESCRIPTORS	256	/* max n
+ typedef struct snd_atiixp atiixp_t;
+ typedef struct snd_atiixp_dma atiixp_dma_t;
+ typedef struct snd_atiixp_dma_ops atiixp_dma_ops_t;
+-#define chip_t atiixp_t
+ 
+ 
+ /*
+@@ -491,7 +490,7 @@ static void snd_atiixp_codec_write(atiix
+ 
+ static unsigned short snd_atiixp_ac97_read(ac97_t *ac97, unsigned short reg)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, ac97->private_data, return 0xffff);
++	atiixp_t *chip = ac97->private_data;
+ 	unsigned short data;
+ 	spin_lock(&chip->ac97_lock);
+ 	data = snd_atiixp_codec_read(chip, ac97->num, reg);
+@@ -502,7 +501,7 @@ static unsigned short snd_atiixp_ac97_re
+ 
+ static void snd_atiixp_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short val)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, ac97->private_data, return);
++	atiixp_t *chip = ac97->private_data;
+ 	spin_lock(&chip->ac97_lock);
+ 	snd_atiixp_codec_write(chip, ac97->num, reg, val);
+ 	spin_unlock(&chip->ac97_lock);
+@@ -1309,7 +1308,7 @@ static int __devinit snd_atiixp_pcm_new(
+  */
+ static irqreturn_t snd_atiixp_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, dev_id, return IRQ_NONE);
++	atiixp_t *chip = dev_id;
+ 	unsigned int status;
+ 
+ 	status = atiixp_read(chip, ISR);
+@@ -1412,7 +1411,7 @@ #ifdef CONFIG_PM
+  */
+ static int snd_atiixp_suspend(snd_card_t *card, unsigned int state)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, card->pm_private_data, return -EINVAL);
++	atiixp_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	for (i = 0; i < NUM_ATI_PCMDEVS; i++)
+@@ -1433,7 +1432,7 @@ static int snd_atiixp_suspend(snd_card_t
+ 
+ static int snd_atiixp_resume(snd_card_t *card, unsigned int state)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, card->pm_private_data, return -EINVAL);
++	atiixp_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	pci_enable_device(chip->pci);
+@@ -1459,7 +1458,7 @@ #endif /* CONFIG_PM */
+ 
+ static void snd_atiixp_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, entry->private_data, return);
++	atiixp_t *chip = entry->private_data;
+ 	int i;
+ 
+ 	for (i = 0; i < 256; i += 4)
+@@ -1495,13 +1494,13 @@ static int snd_atiixp_free(atiixp_t *chi
+ 	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_atiixp_dev_free(snd_device_t *device)
+ {
+-	atiixp_t *chip = snd_magic_cast(atiixp_t, device->device_data, return -ENXIO);
++	atiixp_t *chip = device->device_data;
+ 	return snd_atiixp_free(chip);
+ }
+ 
+@@ -1521,7 +1520,7 @@ static int __devinit snd_atiixp_create(s
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(atiixp_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/au88x0/au88x0.c b/sound/pci/au88x0/au88x0.c
+index 5c6a78b..33bd1d3 100644
+--- a/sound/pci/au88x0/au88x0.c
++++ b/sound/pci/au88x0/au88x0.c
+@@ -122,8 +122,7 @@ static void __devinit snd_vortex_workaro
+ // (see "Management of Cards and Components")
+ static int snd_vortex_dev_free(snd_device_t * device)
+ {
+-	vortex_t *vortex = snd_magic_cast(vortex_t, device->device_data,
+-					  return -ENXIO);
++	vortex_t *vortex = device->device_data;
+ 
+ 	vortex_gameport_unregister(vortex);
+ 	vortex_core_shutdown(vortex);
+@@ -132,7 +131,7 @@ static int snd_vortex_dev_free(snd_devic
+ 	free_irq(vortex->irq, vortex);
+ 	pci_release_regions(vortex->pci_dev);
+ 	pci_disable_device(vortex->pci_dev);
+-	snd_magic_kfree(vortex);
++	kfree(vortex);
+ 
+ 	return 0;
+ }
+@@ -159,7 +158,7 @@ snd_vortex_create(snd_card_t * card, str
+ 	}
+ 	pci_set_dma_mask(pci, VORTEX_DMA_MASK);
+ 
+-	chip = snd_magic_kcalloc(vortex_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/au88x0/au88x0.h b/sound/pci/au88x0/au88x0.h
+index 815de18..96bcc16 100644
+--- a/sound/pci/au88x0/au88x0.h
++++ b/sound/pci/au88x0/au88x0.h
+@@ -180,8 +180,6 @@ #endif
+ 	u8 rev;
+ };
+ 
+-#define chip_t vortex_t
+-
+ /* Functions. */
+ 
+ /* SRC */
+diff --git a/sound/pci/au88x0/au88x0_core.c b/sound/pci/au88x0/au88x0_core.c
+index d8fccff..684f639 100644
+--- a/sound/pci/au88x0/au88x0_core.c
++++ b/sound/pci/au88x0/au88x0_core.c
+@@ -2362,7 +2362,7 @@ static void vortex_disable_int(vortex_t 
+ 
+ static irqreturn_t vortex_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	vortex_t *vortex = snd_magic_cast(vortex_t, dev_id, return IRQ_NONE);
++	vortex_t *vortex = dev_id;
+ 	int i, handled;
+ 	u32 source;
+ 
+diff --git a/sound/pci/au88x0/au88x0_mpu401.c b/sound/pci/au88x0/au88x0_mpu401.c
+index 3027c35..c0c2346 100644
+--- a/sound/pci/au88x0/au88x0_mpu401.c
++++ b/sound/pci/au88x0/au88x0_mpu401.c
+@@ -104,7 +104,7 @@ #else
+ 			 ~CTRL_MIDI_PORT) & ~CTRL_MIDI_EN);
+ 		return temp;
+ 	}
+-	mpu = snd_magic_cast(mpu401_t, rmidi->private_data, return -ENOMEM);
++	mpu = rmidi->private_data;
+ 	mpu->cport = (unsigned long)(vortex->mmio + (VORTEX_MIDI_CMD >> 2));
+ #endif
+ 	vortex->rmidi = rmidi;
+diff --git a/sound/pci/au88x0/au88x0_pcm.c b/sound/pci/au88x0/au88x0_pcm.c
+index 6df634e..8e63221 100644
+--- a/sound/pci/au88x0/au88x0_pcm.c
++++ b/sound/pci/au88x0/au88x0_pcm.c
+@@ -28,7 +28,6 @@ #include <sound/pcm.h>
+ #include <sound/pcm_params.h>
+ #include "au88x0.h"
+ 
+-#define chip_t vortex_t
+ #define VORTEX_PCM_TYPE(x) (x->name[40])
+ 
+ /* hardware definition */
+@@ -189,7 +188,7 @@ static int
+ snd_vortex_pcm_hw_params(snd_pcm_substream_t * substream,
+ 			 snd_pcm_hw_params_t * hw_params)
+ {
+-	chip_t *chip = snd_pcm_substream_chip(substream);
++	vortex_t *chip = snd_pcm_substream_chip(substream);
+ 	stream_t *stream = (stream_t *) (substream->runtime->private_data);
+ 	snd_pcm_sgbuf_t *sgbuf;
+ 	int err;
+@@ -250,7 +249,7 @@ #endif
+ /* hw_free callback */
+ static int snd_vortex_pcm_hw_free(snd_pcm_substream_t * substream)
+ {
+-	chip_t *chip = snd_pcm_substream_chip(substream);
++	vortex_t *chip = snd_pcm_substream_chip(substream);
+ 	stream_t *stream = (stream_t *) (substream->runtime->private_data);
+ 
+ 	// Delete audio routes.
+@@ -305,7 +304,7 @@ #endif
+ /* trigger callback */
+ static int snd_vortex_pcm_trigger(snd_pcm_substream_t * substream, int cmd)
+ {
+-	chip_t *chip = snd_pcm_substream_chip(substream);
++	vortex_t *chip = snd_pcm_substream_chip(substream);
+ 	stream_t *stream = (stream_t *) substream->runtime->private_data;
+ 	int dma = stream->dma;
+ 
+diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
+index 9dc7de8..46025ad 100644
+--- a/sound/pci/azt3328.c
++++ b/sound/pci/azt3328.c
+@@ -184,7 +184,6 @@ MODULE_PARM_SYNTAX(joystick, SNDRV_BOOLE
+ #endif
+ 
+ typedef struct _snd_azf3328 azf3328_t;
+-#define chip_t azf3328_t
+ 
+ struct _snd_azf3328 {
+ 	int irq;
+@@ -1032,7 +1031,7 @@ #endif
+ 
+ static irqreturn_t snd_azf3328_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	azf3328_t *chip = snd_magic_cast(azf3328_t, dev_id, return IRQ_NONE);
++	azf3328_t *chip = dev_id;
+ 	unsigned int status, which;
+ 	static unsigned long count;
+ 
+@@ -1232,7 +1231,7 @@ static snd_pcm_ops_t snd_azf3328_capture
+ 
+ static void snd_azf3328_pcm_free(snd_pcm_t *pcm)
+ {
+-	azf3328_t *chip = snd_magic_cast(azf3328_t, pcm->private_data, return);
++	azf3328_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1310,13 +1309,13 @@ #endif
+         if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+ 
+-        snd_magic_kfree(chip);
++        kfree(chip);
+         return 0;
+ }
+ 
+ static int snd_azf3328_dev_free(snd_device_t *device)
+ {
+-	azf3328_t *chip = snd_magic_cast(azf3328_t, device->device_data, return -ENXIO);
++	azf3328_t *chip = device->device_data;
+ 	return snd_azf3328_free(chip);
+ }
+ 
+@@ -1358,7 +1357,7 @@ static int __devinit snd_azf3328_create(
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(azf3328_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/pci/bt87x.c b/sound/pci/bt87x.c
+index 3c23266..b19bcde 100644
+--- a/sound/pci/bt87x.c
++++ b/sound/pci/bt87x.c
+@@ -152,7 +152,6 @@ #define MY_INTERRUPTS (INT_RISCI | ERROR
+ /* SYNC, one WRITE per line, one extra WRITE per page boundary, SYNC, JUMP */
+ #define MAX_RISC_SIZE ((1 + 255 + (PAGE_ALIGN(255 * 4092) / PAGE_SIZE - 1) + 1 + 1) * 8)
+ 
+-#define chip_t bt87x_t
+ typedef struct snd_bt87x bt87x_t;
+ struct snd_bt87x {
+ 	snd_card_t *card;
+@@ -251,7 +250,7 @@ static void snd_bt87x_free_risc(bt87x_t 
+ 
+ static irqreturn_t snd_bt87x_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	bt87x_t *chip = snd_magic_cast(bt87x_t, dev_id, return IRQ_NONE);
++	bt87x_t *chip = dev_id;
+ 	unsigned int status;
+ 
+ 	status = snd_bt87x_readl(chip, REG_INT_STAT);
+@@ -661,13 +660,13 @@ static int snd_bt87x_free(bt87x_t *chip)
+ 	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, chip);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_bt87x_dev_free(snd_device_t *device)
+ {
+-	bt87x_t *chip = snd_magic_cast(bt87x_t, device->device_data, return -ENXIO);
++	bt87x_t *chip = device->device_data;
+ 	return snd_bt87x_free(chip);
+ }
+ 
+@@ -705,7 +704,7 @@ static int __devinit snd_bt87x_create(sn
+ 	if (err < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(bt87x_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (!chip)
+ 		return -ENOMEM;
+ 	chip->card = card;
+diff --git a/sound/pci/cmipci.c b/sound/pci/cmipci.c
+index 75aa64a..412c15f 100644
+--- a/sound/pci/cmipci.c
++++ b/sound/pci/cmipci.c
+@@ -405,8 +405,6 @@ #endif
+ typedef struct snd_stru_cmipci cmipci_t;
+ typedef struct snd_stru_cmipci_pcm cmipci_pcm_t;
+ 
+-#define chip_t cmipci_t
+-
+ struct snd_stru_cmipci_pcm {
+ 	snd_pcm_substream_t *substream;
+ 	int running;		/* dac/adc running? */
+@@ -1306,7 +1304,7 @@ static int snd_cmipci_capture_spdif_hw_f
+  */
+ static irqreturn_t snd_cmipci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	cmipci_t *cm = snd_magic_cast(cmipci_t, dev_id, return IRQ_NONE);
++	cmipci_t *cm = dev_id;
+ 	unsigned int status, mask = 0;
+ 	
+ 	/* fastpath out, to ease interrupt sharing */
+@@ -2463,7 +2461,7 @@ #ifdef CONFIG_PROC_FS
+ static void snd_cmipci_proc_read(snd_info_entry_t *entry, 
+ 				 snd_info_buffer_t *buffer)
+ {
+-	cmipci_t *cm = snd_magic_cast(cmipci_t, entry->private_data, return);
++	cmipci_t *cm = entry->private_data;
+ 	int i;
+ 	
+ 	snd_iprintf(buffer, "%s\n\n", cm->card->longname);
+@@ -2587,13 +2585,13 @@ #endif
+ 		release_resource(cm->res_iobase);
+ 		kfree_nocheck(cm->res_iobase);
+ 	}
+-	snd_magic_kfree(cm);
++	kfree(cm);
+ 	return 0;
+ }
+ 
+ static int snd_cmipci_dev_free(snd_device_t *device)
+ {
+-	cmipci_t *cm = snd_magic_cast(cmipci_t, device->device_data, return -ENXIO);
++	cmipci_t *cm = device->device_data;
+ 	return snd_cmipci_free(cm);
+ }
+ 
+@@ -2615,7 +2613,7 @@ static int __devinit snd_cmipci_create(s
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	cm = snd_magic_kcalloc(cmipci_t, 0, GFP_KERNEL);
++	cm = kcalloc(1, sizeof(*cm), GFP_KERNEL);
+ 	if (cm == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/cs4281.c b/sound/pci/cs4281.c
+index 91a6041..d354533 100644
+--- a/sound/pci/cs4281.c
++++ b/sound/pci/cs4281.c
+@@ -441,8 +441,6 @@ #define JSIO_BYOE                       
+  *
+  */
+ 
+-#define chip_t cs4281_t
+-
+ typedef struct snd_cs4281 cs4281_t;
+ typedef struct snd_cs4281_dma cs4281_dma_t;
+ 
+@@ -575,7 +573,7 @@ static void snd_cs4281_ac97_write(ac97_t
+ 	 *  4. Read ACCTL = 460h, DCV should be reset by now and 460h = 07h
+ 	 *  5. if DCV not cleared, break and return error
+ 	 */
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, ac97->private_data, return);
++	cs4281_t *chip = ac97->private_data;
+ 	int count;
+ 
+ 	/*
+@@ -613,7 +611,7 @@ static void snd_cs4281_ac97_write(ac97_t
+ static unsigned short snd_cs4281_ac97_read(ac97_t *ac97,
+ 					   unsigned short reg)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, ac97->private_data, return -ENXIO);
++	cs4281_t *chip = ac97->private_data;
+ 	int count;
+ 	unsigned short result;
+ 	// FIXME: volatile is necessary in the following due to a bug of
+@@ -1015,7 +1013,7 @@ static snd_pcm_ops_t snd_cs4281_capture_
+ 
+ static void snd_cs4281_pcm_free(snd_pcm_t *pcm)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, pcm->private_data, return);
++	cs4281_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1124,13 +1122,13 @@ static snd_kcontrol_new_t snd_cs4281_pcm
+ 
+ static void snd_cs4281_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, bus->private_data, return);
++	cs4281_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_cs4281_mixer_free_ac97(ac97_t *ac97)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, ac97->private_data, return);
++	cs4281_t *chip = ac97->private_data;
+ 	if (ac97->num)
+ 		chip->ac97_secondary = NULL;
+ 	else
+@@ -1177,7 +1175,7 @@ static int __devinit snd_cs4281_mixer(cs
+ static void snd_cs4281_proc_read(snd_info_entry_t *entry, 
+ 				  snd_info_buffer_t * buffer)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, entry->private_data, return);
++	cs4281_t *chip = entry->private_data;
+ 
+ 	snd_iprintf(buffer, "Cirrus Logic CS4281\n\n");
+ 	snd_iprintf(buffer, "Spurious half IRQs   : %u\n", chip->spurious_dhtc_irq);
+@@ -1188,7 +1186,7 @@ static long snd_cs4281_BA0_read(snd_info
+ 				struct file *file, char __user *buf, long count)
+ {
+ 	long size;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, entry->private_data, return -ENXIO);
++	cs4281_t *chip = entry->private_data;
+ 	
+ 	size = count;
+ 	if (file->f_pos + size > CS4281_BA0_SIZE)
+@@ -1205,7 +1203,7 @@ static long snd_cs4281_BA1_read(snd_info
+ 				struct file *file, char __user *buf, long count)
+ {
+ 	long size;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, entry->private_data, return -ENXIO);
++	cs4281_t *chip = entry->private_data;
+ 	
+ 	size = count;
+ 	if (file->f_pos + size > CS4281_BA1_SIZE)
+@@ -1262,7 +1260,7 @@ static void snd_cs4281_gameport_trigger(
+ 	cs4281_gameport_t *gp = (cs4281_gameport_t *)gameport;
+ 	cs4281_t *chip;
+ 	snd_assert(gp, return);
+-	chip = snd_magic_cast(cs4281_t, gp->chip, return);
++	chip = gp->chip;
+ 	snd_cs4281_pokeBA0(chip, BA0_JSPT, 0xff);
+ }
+ 
+@@ -1271,7 +1269,7 @@ static unsigned char snd_cs4281_gameport
+ 	cs4281_gameport_t *gp = (cs4281_gameport_t *)gameport;
+ 	cs4281_t *chip;
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(cs4281_t, gp->chip, return 0);
++	chip = gp->chip;
+ 	return snd_cs4281_peekBA0(chip, BA0_JSPT);
+ }
+ 
+@@ -1283,7 +1281,7 @@ static int snd_cs4281_gameport_cooked_re
+ 	unsigned js1, js2, jst;
+ 	
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(cs4281_t, gp->chip, return 0);
++	chip = gp->chip;
+ 
+ 	js1 = snd_cs4281_peekBA0(chip, BA0_JSC1);
+ 	js2 = snd_cs4281_peekBA0(chip, BA0_JSC2);
+@@ -1384,13 +1382,13 @@ #endif
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+ 
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_cs4281_dev_free(snd_device_t *device)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, device->device_data, return -ENXIO);
++	cs4281_t *chip = device->device_data;
+ 	return snd_cs4281_free(chip);
+ }
+ 
+@@ -1415,7 +1413,7 @@ static int __devinit snd_cs4281_create(s
+ 	*rchip = NULL;
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+-	chip = snd_magic_kcalloc(cs4281_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+@@ -1714,7 +1712,7 @@ static void snd_cs4281_midi_reset(cs4281
+ static int snd_cs4281_midi_input_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return -ENXIO);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+  	chip->midcr |= BA0_MIDCR_RXE;
+@@ -1731,7 +1729,7 @@ static int snd_cs4281_midi_input_open(sn
+ static int snd_cs4281_midi_input_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return -ENXIO);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	chip->midcr &= ~(BA0_MIDCR_RXE | BA0_MIDCR_RIE);
+@@ -1749,7 +1747,7 @@ static int snd_cs4281_midi_input_close(s
+ static int snd_cs4281_midi_output_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return -ENXIO);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	chip->uartm |= CS4281_MODE_OUTPUT;
+@@ -1767,7 +1765,7 @@ static int snd_cs4281_midi_output_open(s
+ static int snd_cs4281_midi_output_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return -ENXIO);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	chip->midcr &= ~(BA0_MIDCR_TXE | BA0_MIDCR_TIE);
+@@ -1785,7 +1783,7 @@ static int snd_cs4281_midi_output_close(
+ static void snd_cs4281_midi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	if (up) {
+@@ -1805,7 +1803,7 @@ static void snd_cs4281_midi_input_trigge
+ static void snd_cs4281_midi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, substream->rmidi->private_data, return);
++	cs4281_t *chip = substream->rmidi->private_data;
+ 	unsigned char byte;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -1872,7 +1870,7 @@ static int __devinit snd_cs4281_midi(cs4
+ 
+ static irqreturn_t snd_cs4281_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, dev_id, return IRQ_NONE);
++	cs4281_t *chip = dev_id;
+ 	unsigned int status, dma, val;
+ 	cs4281_dma_t *cdma;
+ 
+@@ -2040,7 +2038,7 @@ #define CLKCR1_CKRA                     
+ 
+ static int cs4281_suspend(snd_card_t *card, unsigned int state)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, card->pm_private_data, return -EINVAL);
++	cs4281_t *chip = card->pm_private_data;
+ 	u32 ulCLK;
+ 	unsigned int i;
+ 
+@@ -2085,7 +2083,7 @@ static int cs4281_suspend(snd_card_t *ca
+ 
+ static int cs4281_resume(snd_card_t *card, unsigned int state)
+ {
+-	cs4281_t *chip = snd_magic_cast(cs4281_t, card->pm_private_data, return -EINVAL);
++	cs4281_t *chip = card->pm_private_data;
+ 	unsigned int i;
+ 	u32 ulCLK;
+ 
+diff --git a/sound/pci/cs46xx/cs46xx_lib.c b/sound/pci/cs46xx/cs46xx_lib.c
+index 9a17583..689f368 100644
+--- a/sound/pci/cs46xx/cs46xx_lib.c
++++ b/sound/pci/cs46xx/cs46xx_lib.c
+@@ -190,7 +190,7 @@ #endif
+ static unsigned short snd_cs46xx_ac97_read(ac97_t * ac97,
+ 					    unsigned short reg)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, ac97->private_data, return -ENXIO);
++	cs46xx_t *chip = ac97->private_data;
+ 	unsigned short val;
+ 	int codec_index = -1;
+ 
+@@ -281,7 +281,7 @@ static void snd_cs46xx_ac97_write(ac97_t
+ 				   unsigned short reg,
+ 				   unsigned short val)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, ac97->private_data, return);
++	cs46xx_t *chip = ac97->private_data;
+ 	int codec_index = -1;
+ 
+ 	/* UGGLY: nr_ac97_codecs == 0 primery codec detection is in progress */
+@@ -692,7 +692,7 @@ static int snd_cs46xx_playback_transfer(
+ {
+ 	/* cs46xx_t *chip = snd_pcm_substream_chip(substream); */
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	cs46xx_pcm_t * cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
++	cs46xx_pcm_t * cpcm = runtime->private_data;
+ 	snd_pcm_uframes_t appl_ptr = runtime->control->appl_ptr;
+ 	snd_pcm_sframes_t diff = appl_ptr - cpcm->appl_ptr;
+ 	int buffer_size = runtime->period_size * CS46XX_FRAGS << cpcm->shift;
+@@ -773,7 +773,7 @@ static snd_pcm_uframes_t snd_cs46xx_play
+ {
+ 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
+ 	size_t ptr;
+-	cs46xx_pcm_t *cpcm = snd_magic_cast(cs46xx_pcm_t, substream->runtime->private_data, return -ENXIO);
++	cs46xx_pcm_t *cpcm = substream->runtime->private_data;
+ 	snd_assert (cpcm->pcm_channel,return -ENXIO);
+ 
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+@@ -789,7 +789,7 @@ static snd_pcm_uframes_t snd_cs46xx_play
+ {
+ 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
+ 	size_t ptr;
+-	cs46xx_pcm_t *cpcm = snd_magic_cast(cs46xx_pcm_t, substream->runtime->private_data, return -ENXIO);
++	cs46xx_pcm_t *cpcm = substream->runtime->private_data;
+ 	ssize_t bytes;
+ 	int buffer_size = substream->runtime->period_size * CS46XX_FRAGS << cpcm->shift;
+ 
+@@ -847,7 +847,7 @@ static int snd_cs46xx_playback_trigger(s
+ 	int result = 0;
+ 
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+-	cs46xx_pcm_t *cpcm = snd_magic_cast(cs46xx_pcm_t, substream->runtime->private_data, return -ENXIO);
++	cs46xx_pcm_t *cpcm = substream->runtime->private_data;
+ #else
+ 	spin_lock(&chip->reg_lock);
+ #endif
+@@ -987,7 +987,7 @@ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 	int sample_rate = params_rate(hw_params);
+ 	int period_size = params_period_bytes(hw_params);
+ #endif
+-	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
++	cpcm = runtime->private_data;
+ 
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 	snd_assert (sample_rate != 0, return -ENXIO);
+@@ -1084,7 +1084,7 @@ static int snd_cs46xx_playback_hw_free(s
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	cs46xx_pcm_t *cpcm;
+ 
+-	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
++	cpcm = runtime->private_data;
+ 
+ 	/* if play_back open fails, then this function
+ 	   is called and cpcm can actually be NULL here */
+@@ -1108,7 +1108,7 @@ static int snd_cs46xx_playback_prepare(s
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	cs46xx_pcm_t *cpcm;
+ 
+-	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
++	cpcm = runtime->private_data;
+ 
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+     snd_assert (cpcm->pcm_channel != NULL, return -ENXIO);
+@@ -1234,7 +1234,7 @@ static int snd_cs46xx_capture_prepare(sn
+ 
+ static irqreturn_t snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, dev_id, return IRQ_NONE);
++	cs46xx_t *chip = dev_id;
+ 	u32 status1;
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+@@ -1265,7 +1265,7 @@ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 					if (ins->pcm_channels[i].active &&
+ 					    ins->pcm_channels[i].private_data &&
+ 					    !ins->pcm_channels[i].unlinked) {
+-						cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, continue);
++						cpcm = ins->pcm_channels[i].private_data;
+ 						snd_pcm_period_elapsed(cpcm->substream);
+ 					}
+ 				}
+@@ -1275,7 +1275,7 @@ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 				if (ins->pcm_channels[i].active && 
+ 				    ins->pcm_channels[i].private_data &&
+ 				    !ins->pcm_channels[i].unlinked) {
+-					cpcm = snd_magic_cast(cs46xx_pcm_t, ins->pcm_channels[i].private_data, continue);
++					cpcm = ins->pcm_channels[i].private_data;
+ 					snd_pcm_period_elapsed(cpcm->substream);
+ 				}
+ 			}
+@@ -1382,10 +1382,8 @@ #endif
+ 
+ static void snd_cs46xx_pcm_free_substream(snd_pcm_runtime_t *runtime)
+ {
+-	cs46xx_pcm_t * cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return);
+-	
+-	if (cpcm)
+-		snd_magic_kfree(cpcm);
++	cs46xx_pcm_t * cpcm = runtime->private_data;
++	kfree(cpcm);
+ }
+ 
+ static int _cs46xx_playback_open_channel (snd_pcm_substream_t * substream,int pcm_channel_id)
+@@ -1394,11 +1392,11 @@ static int _cs46xx_playback_open_channel
+ 	cs46xx_pcm_t * cpcm;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+-	cpcm = snd_magic_kcalloc(cs46xx_pcm_t, 0, GFP_KERNEL);
++	cpcm = kcalloc(1, sizeof(*cpcm), GFP_KERNEL);
+ 	if (cpcm == NULL)
+ 		return -ENOMEM;
+ 	if (snd_dma_alloc_pages(&chip->dma_dev, PAGE_SIZE, &cpcm->hw_buf) < 0) {
+-		snd_magic_kfree(cpcm);
++		kfree(cpcm);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1510,7 +1508,7 @@ static int snd_cs46xx_playback_close(snd
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	cs46xx_pcm_t * cpcm;
+ 
+-	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
++	cpcm = runtime->private_data;
+ 
+ 	/* when playback_open fails, then cpcm can be NULL */
+ 	if (!cpcm) return -ENXIO;
+@@ -1664,7 +1662,7 @@ snd_pcm_ops_t snd_cs46xx_capture_indirec
+ 
+ static void snd_cs46xx_pcm_free(snd_pcm_t *pcm)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pcm->private_data, return);
++	cs46xx_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1672,21 +1670,21 @@ static void snd_cs46xx_pcm_free(snd_pcm_
+ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ static void snd_cs46xx_pcm_rear_free(snd_pcm_t *pcm)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pcm->private_data, return);
++	cs46xx_t *chip = pcm->private_data;
+ 	chip->pcm_rear = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+ 
+ static void snd_cs46xx_pcm_center_lfe_free(snd_pcm_t *pcm)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pcm->private_data, return);
++	cs46xx_t *chip = pcm->private_data;
+ 	chip->pcm_center_lfe = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+ 
+ static void snd_cs46xx_pcm_iec958_free(snd_pcm_t *pcm)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pcm->private_data, return);
++	cs46xx_t *chip = pcm->private_data;
+ 	chip->pcm_iec958 = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1824,14 +1822,14 @@ #endif
+  */
+ static void snd_cs46xx_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, bus->private_data, return);
++	cs46xx_t *chip = bus->private_data;
+ 
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_cs46xx_mixer_free_ac97(ac97_t *ac97)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, ac97->private_data, return);
++	cs46xx_t *chip = ac97->private_data;
+ 
+ 	snd_assert ((ac97 == chip->ac97[CS46XX_PRIMARY_CODEC_INDEX]) ||
+ 		    (ac97 == chip->ac97[CS46XX_SECONDARY_CODEC_INDEX]),
+@@ -2420,7 +2418,7 @@ static void snd_cs46xx_codec_reset (ac97
+ {
+ 	unsigned long end_time;
+ 	int err;
+-	cs46xx_t * chip = snd_magic_cast(cs46xx_t,ac97->private_data,return /* -ENXIO */);
++	cs46xx_t * chip = ac97->private_data;
+ 
+ 	/* reset to defaults */
+ 	snd_ac97_write(ac97, AC97_RESET, 0);	
+@@ -2606,7 +2604,7 @@ static void snd_cs46xx_midi_reset(cs46xx
+ static int snd_cs46xx_midi_input_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return -ENXIO);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 
+ 	chip->active_ctrl(chip, 1);
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -2625,7 +2623,7 @@ static int snd_cs46xx_midi_input_open(sn
+ static int snd_cs46xx_midi_input_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return -ENXIO);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	chip->midcr &= ~(MIDCR_RXE | MIDCR_RIE);
+@@ -2644,7 +2642,7 @@ static int snd_cs46xx_midi_input_close(s
+ static int snd_cs46xx_midi_output_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return -ENXIO);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 
+ 	chip->active_ctrl(chip, 1);
+ 
+@@ -2664,7 +2662,7 @@ static int snd_cs46xx_midi_output_open(s
+ static int snd_cs46xx_midi_output_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return -ENXIO);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	chip->midcr &= ~(MIDCR_TXE | MIDCR_TIE);
+@@ -2683,7 +2681,7 @@ static int snd_cs46xx_midi_output_close(
+ static void snd_cs46xx_midi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+ 	if (up) {
+@@ -2703,7 +2701,7 @@ static void snd_cs46xx_midi_input_trigge
+ static void snd_cs46xx_midi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, substream->rmidi->private_data, return);
++	cs46xx_t *chip = substream->rmidi->private_data;
+ 	unsigned char byte;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -2781,7 +2779,7 @@ static void snd_cs46xx_gameport_trigger(
+ 	cs46xx_gameport_t *gp = (cs46xx_gameport_t *)gameport;
+ 	cs46xx_t *chip;
+ 	snd_assert(gp, return);
+-	chip = snd_magic_cast(cs46xx_t, gp->chip, return);
++	chip = gp->chip;
+ 	snd_cs46xx_pokeBA0(chip, BA0_JSPT, 0xFF);  //outb(gameport->io, 0xFF);
+ }
+ 
+@@ -2790,7 +2788,7 @@ static unsigned char snd_cs46xx_gameport
+ 	cs46xx_gameport_t *gp = (cs46xx_gameport_t *)gameport;
+ 	cs46xx_t *chip;
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(cs46xx_t, gp->chip, return 0);
++	chip = gp->chip;
+ 	return snd_cs46xx_peekBA0(chip, BA0_JSPT); //inb(gameport->io);
+ }
+ 
+@@ -2801,7 +2799,7 @@ static int snd_cs46xx_gameport_cooked_re
+ 	unsigned js1, js2, jst;
+ 	
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(cs46xx_t, gp->chip, return 0);
++	chip = gp->chip;
+ 
+ 	js1 = snd_cs46xx_peekBA0(chip, BA0_JSC1);
+ 	js2 = snd_cs46xx_peekBA0(chip, BA0_JSC2);
+@@ -3011,13 +3009,13 @@ #ifdef CONFIG_SND_CS46XX_NEW_DSP
+ 	}
+ #endif
+ 	
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_cs46xx_dev_free(snd_device_t *device)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, device->device_data, return -ENXIO);
++	cs46xx_t *chip = device->device_data;
+ 	return snd_cs46xx_free(chip);
+ }
+ 
+@@ -3786,7 +3784,7 @@ static struct cs_card_type __devinitdata
+ #ifdef CONFIG_PM
+ static int snd_cs46xx_suspend(snd_card_t *card, unsigned int state)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, card->pm_private_data, return -EINVAL);
++	cs46xx_t *chip = card->pm_private_data;
+ 	int amp_saved;
+ 
+ 	snd_pcm_suspend_all(chip->pcm);
+@@ -3810,7 +3808,7 @@ static int snd_cs46xx_suspend(snd_card_t
+ 
+ static int snd_cs46xx_resume(snd_card_t *card, unsigned int state)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, card->pm_private_data, return -EINVAL);
++	cs46xx_t *chip = card->pm_private_data;
+ 	int amp_saved;
+ 
+ 	pci_enable_device(chip->pci);
+@@ -3869,7 +3867,7 @@ int __devinit snd_cs46xx_create(snd_card
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(cs46xx_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/pci/cs46xx/cs46xx_lib.h b/sound/pci/cs46xx/cs46xx_lib.h
+index 3eae4f2..52575f9 100644
+--- a/sound/pci/cs46xx/cs46xx_lib.h
++++ b/sound/pci/cs46xx/cs46xx_lib.h
+@@ -22,8 +22,6 @@
+ #ifndef __CS46XX_LIB_H__
+ #define __CS46XX_LIB_H__
+ 
+-#define chip_t cs46xx_t
+-
+ /*
+  *  constants
+  */
+diff --git a/sound/pci/cs46xx/dsp_spos.c b/sound/pci/cs46xx/dsp_spos.c
+index f3b66e9..5266319 100644
+--- a/sound/pci/cs46xx/dsp_spos.c
++++ b/sound/pci/cs46xx/dsp_spos.c
+@@ -462,7 +462,7 @@ symbol_entry_t * cs46xx_dsp_lookup_symbo
+ 
+ static void cs46xx_dsp_proc_symbol_table_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+ 	int i;
+ 
+@@ -489,7 +489,7 @@ static void cs46xx_dsp_proc_symbol_table
+ 
+ static void cs46xx_dsp_proc_modules_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+ 	int i,j;
+ 
+@@ -511,7 +511,7 @@ static void cs46xx_dsp_proc_modules_read
+ 
+ static void cs46xx_dsp_proc_task_tree_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+ 	int i,j,col;
+ 	unsigned long dst = chip->region.idx[1].remap_addr + DSP_PARAMETER_BYTE_OFFSET;
+@@ -538,7 +538,7 @@ static void cs46xx_dsp_proc_task_tree_re
+ 
+ static void cs46xx_dsp_proc_scb_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+ 	int i;
+ 
+@@ -570,7 +570,7 @@ static void cs46xx_dsp_proc_scb_read (sn
+ 
+ static void cs46xx_dsp_proc_parameter_dump_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	/*dsp_spos_instance_t * ins = chip->dsp_spos_instance; */
+ 	unsigned int i,col = 0;
+ 	unsigned long dst = chip->region.idx[1].remap_addr + DSP_PARAMETER_BYTE_OFFSET;
+@@ -597,7 +597,7 @@ static void cs46xx_dsp_proc_parameter_du
+ 
+ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, entry->private_data, return);
++	cs46xx_t *chip = entry->private_data;
+ 	int i,col = 0;
+ 	unsigned long dst = chip->region.idx[2].remap_addr;
+ 
+diff --git a/sound/pci/cs46xx/dsp_spos_scb_lib.c b/sound/pci/cs46xx/dsp_spos_scb_lib.c
+index c02a949..4bf170b 100644
+--- a/sound/pci/cs46xx/dsp_spos_scb_lib.c
++++ b/sound/pci/cs46xx/dsp_spos_scb_lib.c
+@@ -69,7 +69,7 @@ static void cs46xx_dsp_proc_scb_info_rea
+ 	proc_scb_info_t * scb_info  = (proc_scb_info_t *)entry->private_data;
+ 	dsp_scb_descriptor_t * scb = scb_info->scb_desc;
+ 	dsp_spos_instance_t * ins;
+-	cs46xx_t *chip = snd_magic_cast(cs46xx_t, scb_info->chip, return);
++	cs46xx_t *chip = scb_info->chip;
+ 	int j,col;
+ 	unsigned long dst = chip->region.idx[1].remap_addr + DSP_PARAMETER_BYTE_OFFSET;
+ 
+diff --git a/sound/pci/emu10k1/emu10k1_callback.c b/sound/pci/emu10k1/emu10k1_callback.c
+index c3975fb..580701e 100644
+--- a/sound/pci/emu10k1/emu10k1_callback.c
++++ b/sound/pci/emu10k1/emu10k1_callback.c
+@@ -93,7 +93,7 @@ snd_emu10k1_synth_get_voice(emu10k1_t *h
+ 	unsigned long flags;
+ 	int i;
+ 
+-	emu = snd_magic_cast(snd_emux_t, hw->synth, return -EINVAL);
++	emu = hw->synth;
+ 
+ 	spin_lock_irqsave(&emu->voice_lock, flags);
+ 	lookup_voices(emu, hw, best, 1); /* no OFF voices */
+@@ -128,7 +128,7 @@ release_voice(snd_emux_voice_t *vp)
+ 	int dcysusv;
+ 	emu10k1_t *hw;
+ 	
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return);
++	hw = vp->hw;
+ 	dcysusv = 0x8000 | (unsigned char)vp->reg.parm.modrelease;
+ 	snd_emu10k1_ptr_write(hw, DCYSUSM, vp->ch, dcysusv);
+ 	dcysusv = 0x8000 | (unsigned char)vp->reg.parm.volrelease | DCYSUSV_CHANNELENABLE_MASK;
+@@ -145,7 +145,7 @@ terminate_voice(snd_emux_voice_t *vp)
+ 	emu10k1_t *hw;
+ 	
+ 	snd_assert(vp, return);
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return);
++	hw = vp->hw;
+ 	snd_emu10k1_ptr_write(hw, DCYSUSV, vp->ch, 0x807f | DCYSUSV_CHANNELENABLE_MASK);
+ 	if (vp->block) {
+ 		emu10k1_memblk_t *emem;
+@@ -163,7 +163,7 @@ free_voice(snd_emux_voice_t *vp)
+ {
+ 	emu10k1_t *hw;
+ 	
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return);
++	hw = vp->hw;
+ 	if (vp->ch >= 0) {
+ 		snd_emu10k1_ptr_write(hw, IFATN, vp->ch, 0xff00);
+ 		snd_emu10k1_ptr_write(hw, DCYSUSV, vp->ch, 0x807f | DCYSUSV_CHANNELENABLE_MASK);
+@@ -185,7 +185,7 @@ update_voice(snd_emux_voice_t *vp, int u
+ {
+ 	emu10k1_t *hw;
+ 	
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return);
++	hw = vp->hw;
+ 	if (update & SNDRV_EMUX_UPDATE_VOLUME)
+ 		snd_emu10k1_ptr_write(hw, IFATN_ATTENUATION, vp->ch, vp->avol);
+ 	if (update & SNDRV_EMUX_UPDATE_PITCH)
+@@ -282,7 +282,7 @@ get_voice(snd_emux_t *emu, snd_emux_port
+ 	best_voice_t best[V_END];
+ 	int i;
+ 
+-	hw = snd_magic_cast(emu10k1_t, emu->hw, return NULL);
++	hw = emu->hw;
+ 
+ 	lookup_voices(emu, hw, best, 0);
+ 	for (i = 0; i < V_END; i++) {
+@@ -317,7 +317,7 @@ start_voice(snd_emux_voice_t *vp)
+ 	emu10k1_t *hw;
+ 	emu10k1_memblk_t *emem;
+ 	
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return -EINVAL);
++	hw = vp->hw;
+ 	ch = vp->ch;
+ 	snd_assert(ch >= 0, return -EINVAL);
+ 	chan = vp->chan;
+@@ -469,7 +469,7 @@ trigger_voice(snd_emux_voice_t *vp)
+ 	emu10k1_t *hw;
+ 	emu10k1_memblk_t *emem;
+ 	
+-	hw = snd_magic_cast(emu10k1_t, vp->hw, return);
++	hw = vp->hw;
+ 
+ 	emem = (emu10k1_memblk_t *)vp->block;
+ 	if (! emem || emem->mapped_page < 0)
+diff --git a/sound/pci/emu10k1/emu10k1_main.c b/sound/pci/emu10k1/emu10k1_main.c
+index 0a2f4b1..b1cbce1 100644
+--- a/sound/pci/emu10k1/emu10k1_main.c
++++ b/sound/pci/emu10k1/emu10k1_main.c
+@@ -561,13 +561,13 @@ static int snd_emu10k1_free(emu10k1_t *e
+ 	}
+ 	if (emu->irq >= 0)
+ 		free_irq(emu->irq, (void *)emu);
+-	snd_magic_kfree(emu);
++	kfree(emu);
+ 	return 0;
+ }
+ 
+ static int snd_emu10k1_dev_free(snd_device_t *device)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, device->device_data, return -ENXIO);
++	emu10k1_t *emu = device->device_data;
+ 	return snd_emu10k1_free(emu);
+ }
+ 
+@@ -595,7 +595,7 @@ int __devinit snd_emu10k1_create(snd_car
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	emu = snd_magic_kcalloc(emu10k1_t, 0, GFP_KERNEL);
++	emu = kcalloc(1, sizeof(*emu), GFP_KERNEL);
+ 	if (emu == NULL)
+ 		return -ENOMEM;
+ 	/* set the DMA transfer mask */
+@@ -603,7 +603,7 @@ int __devinit snd_emu10k1_create(snd_car
+ 	if (pci_set_dma_mask(pci, emu->dma_mask) < 0 ||
+ 	    pci_set_consistent_dma_mask(pci, emu->dma_mask) < 0) {
+ 		snd_printk(KERN_ERR "architecture does not support PCI busmaster DMA with mask 0x%lx\n", emu->dma_mask);
+-		snd_magic_kfree(emu);
++		kfree(emu);
+ 		return -ENXIO;
+ 	}
+ 	emu->card = card;
+diff --git a/sound/pci/emu10k1/emu10k1_patch.c b/sound/pci/emu10k1/emu10k1_patch.c
+index 14bf206..4df668e 100644
+--- a/sound/pci/emu10k1/emu10k1_patch.c
++++ b/sound/pci/emu10k1/emu10k1_patch.c
+@@ -44,7 +44,7 @@ snd_emu10k1_sample_new(snd_emux_t *rec, 
+ 	unsigned int start_addr;
+ 	emu10k1_t *emu;
+ 
+-	emu = snd_magic_cast(emu10k1_t, rec->hw, return -ENXIO);
++	emu = rec->hw;
+ 	snd_assert(sp != NULL, return -EINVAL);
+ 	snd_assert(hdr != NULL, return -EINVAL);
+ 
+@@ -210,7 +210,7 @@ snd_emu10k1_sample_free(snd_emux_t *rec,
+ {
+ 	emu10k1_t *emu;
+ 
+-	emu = snd_magic_cast(emu10k1_t, rec->hw, return -ENXIO);
++	emu = rec->hw;
+ 	snd_assert(sp != NULL, return -EINVAL);
+ 	snd_assert(hdr != NULL, return -EINVAL);
+ 
+diff --git a/sound/pci/emu10k1/emu10k1_synth.c b/sound/pci/emu10k1/emu10k1_synth.c
+index 9e562ae..2af8ffa 100644
+--- a/sound/pci/emu10k1/emu10k1_synth.c
++++ b/sound/pci/emu10k1/emu10k1_synth.c
+@@ -85,9 +85,9 @@ int snd_emu10k1_synth_delete_device(snd_
+ 	if (dev->driver_data == NULL)
+ 		return 0; /* not registered actually */
+ 
+-	emu = snd_magic_cast(snd_emux_t, dev->driver_data, return -EINVAL);
++	emu = dev->driver_data;
+ 
+-	hw = snd_magic_cast(emu10k1_t, emu->hw, return -EINVAL);
++	hw = emu->hw;
+ 	spin_lock_irqsave(&hw->voice_lock, flags);
+ 	hw->synth = NULL;
+ 	hw->get_synth_voice = NULL;
+diff --git a/sound/pci/emu10k1/emufx.c b/sound/pci/emu10k1/emufx.c
+index a1b6308..adebfda 100644
+--- a/sound/pci/emu10k1/emufx.c
++++ b/sound/pci/emu10k1/emufx.c
+@@ -33,8 +33,6 @@ #include <linux/init.h>
+ #include <sound/core.h>
+ #include <sound/emu10k1.h>
+ 
+-#define chip_t emu10k1_t
+-
+ #if 0		/* for testing purposes - digital out -> capture */
+ #define EMU10K1_CAPTURE_DIGITAL_OUT
+ #endif
+@@ -2016,7 +2014,7 @@ static int snd_emu10k1_fx8010_info(emu10
+ 
+ static int snd_emu10k1_fx8010_ioctl(snd_hwdep_t * hw, struct file *file, unsigned int cmd, unsigned long arg)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, hw->private_data, return -ENXIO);
++	emu10k1_t *emu = hw->private_data;
+ 	emu10k1_fx8010_info_t *info;
+ 	emu10k1_fx8010_code_t *icode;
+ 	emu10k1_fx8010_pcm_t *ipcm;
+diff --git a/sound/pci/emu10k1/emumixer.c b/sound/pci/emu10k1/emumixer.c
+index 45692f5..8897128 100644
+--- a/sound/pci/emu10k1/emumixer.c
++++ b/sound/pci/emu10k1/emumixer.c
+@@ -32,8 +32,6 @@ #include <linux/init.h>
+ #include <sound/core.h>
+ #include <sound/emu10k1.h>
+ 
+-#define chip_t emu10k1_t
+-
+ #define AC97_ID_STAC9758	0x83847658
+ 
+ static int snd_emu10k1_spdif_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+@@ -421,7 +419,7 @@ static snd_kcontrol_new_t snd_audigy_sha
+  */
+ static void snd_emu10k1_mixer_free_ac97(ac97_t *ac97)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, ac97->private_data, return);
++	emu10k1_t *emu = ac97->private_data;
+ 	emu->ac97 = NULL;
+ }
+ 
+diff --git a/sound/pci/emu10k1/emupcm.c b/sound/pci/emu10k1/emupcm.c
+index 08907cd..6ac7c84 100644
+--- a/sound/pci/emu10k1/emupcm.c
++++ b/sound/pci/emu10k1/emupcm.c
+@@ -34,8 +34,6 @@ #include <linux/init.h>
+ #include <sound/core.h>
+ #include <sound/emu10k1.h>
+ 
+-#define chip_t emu10k1_t
+-
+ static void snd_emu10k1_pcm_interrupt(emu10k1_t *emu, emu10k1_voice_t *voice)
+ {
+ 	emu10k1_pcm_t *epcm;
+@@ -354,7 +352,7 @@ static int snd_emu10k1_playback_hw_param
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	int err;
+ 
+ 	if ((err = snd_emu10k1_pcm_channel_alloc(epcm, params_channels(hw_params))) < 0)
+@@ -383,7 +381,7 @@ static int snd_emu10k1_playback_hw_free(
+ 
+ 	if (runtime->private_data == NULL)
+ 		return 0;
+-	epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	epcm = runtime->private_data;
+ 	if (epcm->extra) {
+ 		snd_emu10k1_voice_free(epcm->emu, epcm->extra);
+ 		epcm->extra = NULL;
+@@ -409,7 +407,7 @@ static int snd_emu10k1_playback_prepare(
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	unsigned int start_addr, end_addr;
+ 
+ 	start_addr = epcm->start_addr;
+@@ -443,7 +441,7 @@ static int snd_emu10k1_capture_prepare(s
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	int idx;
+ 
+ 	snd_emu10k1_ptr_write(emu, epcm->capture_bs_reg, 0, 0);
+@@ -569,7 +567,7 @@ static int snd_emu10k1_playback_trigger(
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	unsigned long flags;
+ 	int result = 0;
+ 
+@@ -606,7 +604,7 @@ static int snd_emu10k1_capture_trigger(s
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	unsigned long flags;
+ 	int result = 0;
+ 
+@@ -666,7 +664,7 @@ static snd_pcm_uframes_t snd_emu10k1_pla
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	unsigned int ptr;
+ 
+ 	if (!epcm->running)
+@@ -693,7 +691,7 @@ static snd_pcm_uframes_t snd_emu10k1_cap
+ {
+ 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return -ENXIO);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 	unsigned int ptr;
+ 
+ 	if (!epcm->running)
+@@ -779,10 +777,10 @@ static void snd_emu10k1_pcm_mixer_notify
+ 
+ static void snd_emu10k1_pcm_free_substream(snd_pcm_runtime_t *runtime)
+ {
+-	emu10k1_pcm_t *epcm = snd_magic_cast(emu10k1_pcm_t, runtime->private_data, return);
++	emu10k1_pcm_t *epcm = runtime->private_data;
+ 
+ 	if (epcm)
+-		snd_magic_kfree(epcm);
++		kfree(epcm);
+ }
+ 
+ static int snd_emu10k1_playback_open(snd_pcm_substream_t * substream)
+@@ -793,7 +791,7 @@ static int snd_emu10k1_playback_open(snd
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	int i, err;
+ 
+-	epcm = snd_magic_kcalloc(emu10k1_pcm_t, 0, GFP_KERNEL);
++	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
+ 	if (epcm == NULL)
+ 		return -ENOMEM;
+ 	epcm->emu = emu;
+@@ -803,11 +801,11 @@ static int snd_emu10k1_playback_open(snd
+ 	runtime->private_free = snd_emu10k1_pcm_free_substream;
+ 	runtime->hw = snd_emu10k1_playback;
+ 	if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0) {
+-		snd_magic_kfree(epcm);
++		kfree(epcm);
+ 		return err;
+ 	}
+ 	if ((err = snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 256, UINT_MAX)) < 0) {
+-		snd_magic_kfree(epcm);
++		kfree(epcm);
+ 		return err;
+ 	}
+ 	mix = &emu->pcm_mixer[substream->number];
+@@ -838,7 +836,7 @@ static int snd_emu10k1_capture_open(snd_
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	emu10k1_pcm_t *epcm;
+ 
+-	epcm = snd_magic_kcalloc(emu10k1_pcm_t, 0, GFP_KERNEL);
++	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
+ 	if (epcm == NULL)
+ 		return -ENOMEM;
+ 	epcm->emu = emu;
+@@ -874,7 +872,7 @@ static int snd_emu10k1_capture_mic_open(
+ 	emu10k1_pcm_t *epcm;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+-	epcm = snd_magic_kcalloc(emu10k1_pcm_t, 0, GFP_KERNEL);
++	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
+ 	if (epcm == NULL)
+ 		return -ENOMEM;
+ 	epcm->emu = emu;
+@@ -915,7 +913,7 @@ static int snd_emu10k1_capture_efx_open(
+ 	int nefx = emu->audigy ? 64 : 32;
+ 	int idx;
+ 
+-	epcm = snd_magic_kcalloc(emu10k1_pcm_t, 0, GFP_KERNEL);
++	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
+ 	if (epcm == NULL)
+ 		return -ENOMEM;
+ 	epcm->emu = emu;
+@@ -982,7 +980,7 @@ static snd_pcm_ops_t snd_emu10k1_capture
+ 
+ static void snd_emu10k1_pcm_free(snd_pcm_t *pcm)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, pcm->private_data, return);
++	emu10k1_t *emu = pcm->private_data;
+ 	emu->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1036,7 +1034,7 @@ static snd_pcm_ops_t snd_emu10k1_capture
+ 
+ static void snd_emu10k1_pcm_mic_free(snd_pcm_t *pcm)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, pcm->private_data, return);
++	emu10k1_t *emu = pcm->private_data;
+ 	emu->pcm_mic = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1145,7 +1143,7 @@ #define INITIAL_TRAM_POS(size) ((((size)
+ 
+ static void snd_emu10k1_fx8010_playback_irq(emu10k1_t *emu, void *private_data)
+ {
+-	snd_pcm_substream_t *substream = snd_magic_cast(snd_pcm_substream_t, private_data, return);
++	snd_pcm_substream_t *substream = private_data;
+ 	snd_pcm_period_elapsed(substream);
+ }
+ 
+@@ -1409,7 +1407,7 @@ static snd_pcm_ops_t snd_emu10k1_fx8010_
+ 
+ static void snd_emu10k1_pcm_efx_free(snd_pcm_t *pcm)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, pcm->private_data, return);
++	emu10k1_t *emu = pcm->private_data;
+ 	emu->pcm_efx = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+diff --git a/sound/pci/emu10k1/emuproc.c b/sound/pci/emu10k1/emuproc.c
+index c75d730..72bd33c 100644
+--- a/sound/pci/emu10k1/emuproc.c
++++ b/sound/pci/emu10k1/emuproc.c
+@@ -174,7 +174,7 @@ static void snd_emu10k1_proc_read(snd_in
+ 		/* 33 */ "???"
+ 	};
+ 
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, entry->private_data, return);
++	emu10k1_t *emu = entry->private_data;
+ 	unsigned int val;
+ 	int nefx = emu->audigy ? 64 : 32;
+ 	char **outputs = emu->audigy ? audigy_outs : creative_outs;
+@@ -225,7 +225,7 @@ static void snd_emu10k1_proc_acode_read(
+ 				        snd_info_buffer_t * buffer)
+ {
+ 	u32 pc;
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, entry->private_data, return);
++	emu10k1_t *emu = entry->private_data;
+ 
+ 	snd_iprintf(buffer, "FX8010 Instruction List '%s'\n", emu->fx8010.name);
+ 	snd_iprintf(buffer, "  Code dump      :\n");
+@@ -264,7 +264,7 @@ static long snd_emu10k1_fx8010_read(snd_
+ 				    struct file *file, char __user *buf, long count)
+ {
+ 	long size;
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, entry->private_data, return -ENXIO);
++	emu10k1_t *emu = entry->private_data;
+ 	unsigned int offset;
+ 	
+ 	if (!strcmp(entry->name, "fx8010_tram_addr")) {
+diff --git a/sound/pci/emu10k1/io.c b/sound/pci/emu10k1/io.c
+index 95f85d7..22d8e3d 100644
+--- a/sound/pci/emu10k1/io.c
++++ b/sound/pci/emu10k1/io.c
+@@ -231,7 +231,7 @@ void snd_emu10k1_wait(emu10k1_t *emu, un
+ 
+ unsigned short snd_emu10k1_ac97_read(ac97_t *ac97, unsigned short reg)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, ac97->private_data, return -ENXIO);
++	emu10k1_t *emu = ac97->private_data;
+ 	unsigned long flags;
+ 	unsigned short val;
+ 
+@@ -244,7 +244,7 @@ unsigned short snd_emu10k1_ac97_read(ac9
+ 
+ void snd_emu10k1_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short data)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, ac97->private_data, return);
++	emu10k1_t *emu = ac97->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&emu->emu_lock, flags);
+diff --git a/sound/pci/emu10k1/irq.c b/sound/pci/emu10k1/irq.c
+index 17595a4..e960828 100644
+--- a/sound/pci/emu10k1/irq.c
++++ b/sound/pci/emu10k1/irq.c
+@@ -32,7 +32,7 @@ #include <sound/emu10k1.h>
+ 
+ irqreturn_t snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	emu10k1_t *emu = snd_magic_cast(emu10k1_t, dev_id, return IRQ_NONE);
++	emu10k1_t *emu = dev_id;
+ 	unsigned int status, orig_status;
+ 	int handled = 0;
+ 
+diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
+index 43e23d1..84d7a2d 100644
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -40,8 +40,6 @@ #endif
+ #include <sound/initval.h>
+ #include <sound/asoundef.h>
+ 
+-#define chip_t ensoniq_t
+-
+ #ifndef CHIP1371
+ #undef CHIP1370
+ #define CHIP1370
+@@ -581,7 +579,7 @@ #ifdef CHIP1370
+ static void snd_es1370_codec_write(ak4531_t *ak4531,
+ 				   unsigned short reg, unsigned short val)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, ak4531->private_data, return);
++	ensoniq_t *ensoniq = ak4531->private_data;
+ 	unsigned long flags;
+ 	unsigned long end_time = jiffies + HZ / 10;
+ 
+@@ -611,7 +609,7 @@ #ifdef CHIP1371
+ static void snd_es1371_codec_write(ac97_t *ac97,
+ 				   unsigned short reg, unsigned short val)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, ac97->private_data, return);
++	ensoniq_t *ensoniq = ac97->private_data;
+ 	unsigned long flags;
+ 	unsigned int t, x;
+ 
+@@ -649,7 +647,7 @@ static void snd_es1371_codec_write(ac97_
+ static unsigned short snd_es1371_codec_read(ac97_t *ac97,
+ 					    unsigned short reg)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, ac97->private_data, return -ENXIO);
++	ensoniq_t *ensoniq = ac97->private_data;
+ 	unsigned long flags;
+ 	unsigned int t, x, fail = 0;
+ 
+@@ -1214,7 +1212,7 @@ static snd_pcm_ops_t snd_ensoniq_capture
+ 
+ static void snd_ensoniq_pcm_free(snd_pcm_t *pcm)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, pcm->private_data, return);
++	ensoniq_t *ensoniq = pcm->private_data;
+ 	ensoniq->pcm1 = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1261,7 +1259,7 @@ #endif
+ 
+ static void snd_ensoniq_pcm_free2(snd_pcm_t *pcm)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, pcm->private_data, return);
++	ensoniq_t *ensoniq = pcm->private_data;
+ 	ensoniq->pcm2 = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1565,7 +1563,7 @@ static snd_kcontrol_new_t snd_ens1373_li
+ 
+ static void snd_ensoniq_mixer_free_ac97(ac97_t *ac97)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, ac97->private_data, return);
++	ensoniq_t *ensoniq = ac97->private_data;
+ 	ensoniq->u.es1371.ac97 = NULL;
+ }
+ 
+@@ -1703,7 +1701,7 @@ #define ES1370_CONTROLS ARRAY_SIZE(snd_e
+ 
+ static void snd_ensoniq_mixer_free_ak4531(ak4531_t *ak4531)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, ak4531->private_data, return);
++	ensoniq_t *ensoniq = ak4531->private_data;
+ 	ensoniq->u.es1370.ak4531 = NULL;
+ }
+ 
+@@ -1785,7 +1783,7 @@ #endif /* SUPPORT_JOYSTICK */
+ static void snd_ensoniq_proc_read(snd_info_entry_t *entry, 
+ 				  snd_info_buffer_t * buffer)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, entry->private_data, return);
++	ensoniq_t *ensoniq = entry->private_data;
+ 
+ #ifdef CHIP1370
+ 	snd_iprintf(buffer, "Ensoniq AudioPCI ES1370\n\n");
+@@ -1841,13 +1839,13 @@ #endif
+ 	}
+ 	if (ensoniq->irq >= 0)
+ 		free_irq(ensoniq->irq, (void *)ensoniq);
+-	snd_magic_kfree(ensoniq);
++	kfree(ensoniq);
+ 	return 0;
+ }
+ 
+ static int snd_ensoniq_dev_free(snd_device_t *device)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, device->device_data, return -ENXIO);
++	ensoniq_t *ensoniq = device->device_data;
+ 	return snd_ensoniq_free(ensoniq);
+ }
+ 
+@@ -1894,7 +1892,7 @@ #endif
+ 	*rensoniq = NULL;
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+-	ensoniq = snd_magic_kcalloc(ensoniq_t, 0, GFP_KERNEL);
++	ensoniq = kcalloc(1, sizeof(*ensoniq), GFP_KERNEL);
+ 	if (ensoniq == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&ensoniq->reg_lock);
+@@ -2075,7 +2073,7 @@ static void snd_ensoniq_midi_interrupt(e
+ static int snd_ensoniq_midi_input_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return -ENXIO);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+ 	ensoniq->uartm |= ES_MODE_INPUT;
+@@ -2092,7 +2090,7 @@ static int snd_ensoniq_midi_input_open(s
+ static int snd_ensoniq_midi_input_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return -ENXIO);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+ 	if (!(ensoniq->uartm & ES_MODE_OUTPUT)) {
+@@ -2110,7 +2108,7 @@ static int snd_ensoniq_midi_input_close(
+ static int snd_ensoniq_midi_output_open(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return -ENXIO);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+ 	ensoniq->uartm |= ES_MODE_OUTPUT;
+@@ -2127,7 +2125,7 @@ static int snd_ensoniq_midi_output_open(
+ static int snd_ensoniq_midi_output_close(snd_rawmidi_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return -ENXIO);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+ 	if (!(ensoniq->uartm & ES_MODE_INPUT)) {
+@@ -2145,7 +2143,7 @@ static int snd_ensoniq_midi_output_close
+ static void snd_ensoniq_midi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 	int idx;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+@@ -2169,7 +2167,7 @@ static void snd_ensoniq_midi_input_trigg
+ static void snd_ensoniq_midi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+ 	unsigned long flags;
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, substream->rmidi->private_data, return);
++	ensoniq_t *ensoniq = substream->rmidi->private_data;
+ 	unsigned char byte;
+ 
+ 	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+@@ -2240,7 +2238,7 @@ #endif
+ 
+ static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, dev_id, return IRQ_NONE);
++	ensoniq_t *ensoniq = dev_id;
+ 	unsigned int status, sctrl;
+ 
+ 	if (ensoniq == NULL)
+diff --git a/sound/pci/es1938.c b/sound/pci/es1938.c
+index 87afa49..c5770b0 100644
+--- a/sound/pci/es1938.c
++++ b/sound/pci/es1938.c
+@@ -63,8 +63,6 @@ #include <sound/initval.h>
+ 
+ #include <asm/io.h>
+ 
+-#define chip_t es1938_t
+-
+ MODULE_AUTHOR("Jaromir Koutek <miri@punknet.cz>");
+ MODULE_DESCRIPTION("ESS Solo-1");
+ MODULE_LICENSE("GPL");
+@@ -1129,7 +1127,7 @@ static int snd_es1938_get_hw_switch(snd_
+ 
+ static void snd_es1938_hwv_free(snd_kcontrol_t *kcontrol)
+ {
+-	es1938_t *chip = snd_magic_cast(es1938_t, _snd_kcontrol_chip(kcontrol), return);
++	es1938_t *chip = snd_kcontrol_chip(kcontrol);
+ 	chip->master_volume = NULL;
+ 	chip->master_switch = NULL;
+ 	chip->hw_volume = NULL;
+@@ -1370,13 +1368,13 @@ #endif
+ 	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_es1938_dev_free(snd_device_t *device)
+ {
+-	es1938_t *chip = snd_magic_cast(es1938_t, device->device_data, return -ENXIO);
++	es1938_t *chip = device->device_data;
+ 	return snd_es1938_free(chip);
+ }
+ 
+@@ -1402,7 +1400,7 @@ static int __devinit snd_es1938_create(s
+                 return -ENXIO;
+         }
+ 
+-	chip = snd_magic_kcalloc(es1938_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+@@ -1492,7 +1490,7 @@ #endif
+  * -------------------------------------------------------------------- */
+ static irqreturn_t snd_es1938_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	es1938_t *chip = snd_magic_cast(es1938_t, dev_id, return IRQ_NONE);
++	es1938_t *chip = dev_id;
+ 	unsigned char status, audiostatus;
+ 	int handled = 0;
+ 
+diff --git a/sound/pci/es1968.c b/sound/pci/es1968.c
+index b1124a0..389a386 100644
+--- a/sound/pci/es1968.c
++++ b/sound/pci/es1968.c
+@@ -109,8 +109,6 @@ #include <sound/mpu401.h>
+ #include <sound/ac97_codec.h>
+ #include <sound/initval.h>
+ 
+-#define chip_t es1968_t
+-
+ #define CARD_NAME "ESS Maestro1/2"
+ #define DRIVER_NAME "ES1968"
+ 
+@@ -694,7 +692,7 @@ static int snd_es1968_ac97_wait(es1968_t
+ 
+ static void snd_es1968_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short val)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, ac97->private_data, return);
++	es1968_t *chip = ac97->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -713,7 +711,7 @@ static void snd_es1968_ac97_write(ac97_t
+ static unsigned short snd_es1968_ac97_read(ac97_t *ac97, unsigned short reg)
+ {
+ 	u16 data = 0;
+-	es1968_t *chip = snd_magic_cast(es1968_t, ac97->private_data, return 0);
++	es1968_t *chip = ac97->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -1279,7 +1277,7 @@ static int snd_es1968_pcm_prepare(snd_pc
+ {
+ 	es1968_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	esschan_t *es = snd_magic_cast(esschan_t, runtime->private_data, return -ENXIO);
++	esschan_t *es = runtime->private_data;
+ 
+ 	es->dma_size = snd_pcm_lib_buffer_bytes(substream);
+ 	es->frag_size = snd_pcm_lib_period_bytes(substream);
+@@ -1310,7 +1308,7 @@ static int snd_es1968_pcm_prepare(snd_pc
+ static int snd_es1968_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
+ {
+ 	es1968_t *chip = snd_pcm_substream_chip(substream);
+-	esschan_t *es = snd_magic_cast(esschan_t, substream->runtime->private_data, return -ENXIO);
++	esschan_t *es = substream->runtime->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->substream_lock, flags);
+@@ -1341,7 +1339,7 @@ static int snd_es1968_pcm_trigger(snd_pc
+ static snd_pcm_uframes_t snd_es1968_pcm_pointer(snd_pcm_substream_t *substream)
+ {
+ 	es1968_t *chip = snd_pcm_substream_chip(substream);
+-	esschan_t *es = snd_magic_cast(esschan_t, substream->runtime->private_data, return -ENXIO);
++	esschan_t *es = substream->runtime->private_data;
+ 	unsigned int ptr;
+ 
+ 	ptr = snd_es1968_get_dma_ptr(chip, es) << es->wav_shift;
+@@ -1541,7 +1539,7 @@ static int snd_es1968_hw_params(snd_pcm_
+ {
+ 	es1968_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	esschan_t *chan = snd_magic_cast(esschan_t, runtime->private_data, return -ENXIO);
++	esschan_t *chan = runtime->private_data;
+ 	int size = params_buffer_bytes(hw_params);
+ 
+ 	if (chan->memory) {
+@@ -1569,7 +1567,7 @@ static int snd_es1968_hw_free(snd_pcm_su
+ 	
+ 	if (runtime->private_data == NULL)
+ 		return 0;
+-	chan = snd_magic_cast(esschan_t, runtime->private_data, return -ENXIO);
++	chan = runtime->private_data;
+ 	if (chan->memory) {
+ 		snd_es1968_free_memory(chip, chan->memory);
+ 		chan->memory = NULL;
+@@ -1621,7 +1619,7 @@ static int snd_es1968_playback_open(snd_
+ 	if (apu1 < 0)
+ 		return apu1;
+ 
+-	es = snd_magic_kcalloc(esschan_t, 0, GFP_KERNEL);
++	es = kcalloc(1, sizeof(*es), GFP_KERNEL);
+ 	if (!es) {
+ 		snd_es1968_free_apu_pair(chip, apu1);
+ 		return -ENOMEM;
+@@ -1669,7 +1667,7 @@ static int snd_es1968_capture_open(snd_p
+ 		return apu2;
+ 	}
+ 	
+-	es = snd_magic_kcalloc(esschan_t, 0, GFP_KERNEL);
++	es = kcalloc(1, sizeof(*es), GFP_KERNEL);
+ 	if (!es) {
+ 		snd_es1968_free_apu_pair(chip, apu1);
+ 		snd_es1968_free_apu_pair(chip, apu2);
+@@ -1692,7 +1690,7 @@ static int snd_es1968_capture_open(snd_p
+ 	if ((es->mixbuf = snd_es1968_new_memory(chip, ESM_MIXBUF_SIZE)) == NULL) {
+ 		snd_es1968_free_apu_pair(chip, apu1);
+ 		snd_es1968_free_apu_pair(chip, apu2);
+-		snd_magic_kfree(es);
++		kfree(es);
+                 return -ENOMEM;
+         }
+ 	memset(es->mixbuf->buf.area, 0, ESM_MIXBUF_SIZE);
+@@ -1722,12 +1720,12 @@ static int snd_es1968_playback_close(snd
+ 
+ 	if (substream->runtime->private_data == NULL)
+ 		return 0;
+-	es = snd_magic_cast(esschan_t, substream->runtime->private_data, return -ENXIO);
++	es = substream->runtime->private_data;
+ 	spin_lock_irqsave(&chip->substream_lock, flags);
+ 	list_del(&es->list);
+ 	spin_unlock_irqrestore(&chip->substream_lock, flags);
+ 	snd_es1968_free_apu_pair(chip, es->apu[0]);
+-	snd_magic_kfree(es);
++	kfree(es);
+ 
+ 	return 0;
+ }
+@@ -1740,14 +1738,14 @@ static int snd_es1968_capture_close(snd_
+ 
+ 	if (substream->runtime->private_data == NULL)
+ 		return 0;
+-	es = snd_magic_cast(esschan_t, substream->runtime->private_data, return -ENXIO);
++	es = substream->runtime->private_data;
+ 	spin_lock_irqsave(&chip->substream_lock, flags);
+ 	list_del(&es->list);
+ 	spin_unlock_irqrestore(&chip->substream_lock, flags);
+ 	snd_es1968_free_memory(chip, es->mixbuf);
+ 	snd_es1968_free_apu_pair(chip, es->apu[0]);
+ 	snd_es1968_free_apu_pair(chip, es->apu[2]);
+-	snd_magic_kfree(es);
++	kfree(es);
+ 
+ 	return 0;
+ }
+@@ -1881,7 +1879,7 @@ #endif
+ 
+ static void snd_es1968_pcm_free(snd_pcm_t *pcm)
+ {
+-	es1968_t *esm = snd_magic_cast(es1968_t, pcm->private_data, return);
++	es1968_t *esm = pcm->private_data;
+ 	snd_es1968_free_dmabuf(esm);
+ 	esm->pcm = NULL;
+ }
+@@ -1954,7 +1952,7 @@ static void snd_es1968_update_pcm(es1968
+  */
+ static void es1968_update_hw_volume(unsigned long private_data)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, (void*)private_data, return);
++	es1968_t *chip = (es1968_t *) private_data;
+ 	int x, val;
+ 
+ 	/* Figure out which volume control button was pushed,
+@@ -2003,7 +2001,7 @@ static void es1968_update_hw_volume(unsi
+  */
+ static irqreturn_t snd_es1968_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, dev_id, return IRQ_NONE);
++	es1968_t *chip = dev_id;
+ 	u32 event;
+ 
+ 	if (!(event = inb(chip->io_port + 0x1A)))
+@@ -2420,7 +2418,7 @@ #ifdef CONFIG_PM
+  */
+ static int es1968_suspend(snd_card_t *card, unsigned int state)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, card->pm_private_data, return -EINVAL);
++	es1968_t *chip = card->pm_private_data;
+ 
+ 	if (! chip->do_pm)
+ 		return 0;
+@@ -2435,7 +2433,7 @@ static int es1968_suspend(snd_card_t *ca
+ 
+ static int es1968_resume(snd_card_t *card, unsigned int state)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, card->pm_private_data, return -EINVAL);
++	es1968_t *chip = card->pm_private_data;
+ 
+ 	if (! chip->do_pm)
+ 		return 0;
+@@ -2488,13 +2486,13 @@ #endif
+ 		release_resource(chip->res_io_port);
+ 		kfree_nocheck(chip->res_io_port);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_es1968_dev_free(snd_device_t *device)
+ {
+-	es1968_t *chip = snd_magic_cast(es1968_t, device->device_data, return -ENXIO);
++	es1968_t *chip = device->device_data;
+ 	return snd_es1968_free(chip);
+ }
+ 
+@@ -2542,7 +2540,7 @@ static int __devinit snd_es1968_create(s
+ 		return -ENXIO;
+ 	}
+ 
+-	chip = (es1968_t *) snd_magic_kcalloc(es1968_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (! chip)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/fm801.c b/sound/pci/fm801.c
+index f21a17d..cb579d1 100644
+--- a/sound/pci/fm801.c
++++ b/sound/pci/fm801.c
+@@ -40,8 +40,6 @@ #include <sound/tea575x-tuner.h>
+ #define TEA575X_RADIO 1
+ #endif
+ 
+-#define chip_t fm801_t
+-
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("ForteMedia FM801");
+ MODULE_LICENSE("GPL");
+@@ -233,7 +231,7 @@ static void snd_fm801_codec_write(ac97_t
+ 				  unsigned short reg,
+ 				  unsigned short val)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, ac97->private_data, return);
++	fm801_t *chip = ac97->private_data;
+ 	int idx;
+ 
+ 	/*
+@@ -264,7 +262,7 @@ static void snd_fm801_codec_write(ac97_t
+ 
+ static unsigned short snd_fm801_codec_read(ac97_t *ac97, unsigned short reg)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, ac97->private_data, return -ENXIO);
++	fm801_t *chip = ac97->private_data;
+ 	int idx;
+ 
+ 	/*
+@@ -522,7 +520,7 @@ static snd_pcm_uframes_t snd_fm801_captu
+ 
+ static irqreturn_t snd_fm801_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, dev_id, return IRQ_NONE);
++	fm801_t *chip = dev_id;
+ 	unsigned short status;
+ 	unsigned int tmp;
+ 
+@@ -680,7 +678,7 @@ static snd_pcm_ops_t snd_fm801_capture_o
+ 
+ static void snd_fm801_pcm_free(snd_pcm_t *pcm)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, pcm->private_data, return);
++	fm801_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1176,13 +1174,13 @@ FM801_SINGLE("IEC958 Playback Switch", F
+ 
+ static void snd_fm801_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, bus->private_data, return);
++	fm801_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_fm801_mixer_free_ac97(ac97_t *ac97)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, ac97->private_data, return);
++	fm801_t *chip = ac97->private_data;
+ 	if (ac97->num == 0) {
+ 		chip->ac97 = NULL;
+ 	} else {
+@@ -1252,13 +1250,13 @@ #endif
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+ 
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_fm801_dev_free(snd_device_t *device)
+ {
+-	fm801_t *chip = snd_magic_cast(fm801_t, device->device_data, return -ENXIO);
++	fm801_t *chip = device->device_data;
+ 	return snd_fm801_free(chip);
+ }
+ 
+@@ -1279,7 +1277,7 @@ static int __devinit snd_fm801_create(sn
+ 	*rchip = NULL;
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+-	chip = snd_magic_kcalloc(fm801_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/pci/ice1712/delta.c b/sound/pci/ice1712/delta.c
+index 85fc5e4..9eb245b 100644
+--- a/sound/pci/ice1712/delta.c
++++ b/sound/pci/ice1712/delta.c
+@@ -126,7 +126,7 @@ static void ap_cs8427_codec_deassert(ice
+ /* sequential write */
+ static int ap_cs8427_sendbytes(snd_i2c_device_t *device, unsigned char *bytes, int count)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, device->bus->private_data, return -EIO);
++	ice1712_t *ice = device->bus->private_data;
+ 	int res = count;
+ 	unsigned char tmp;
+ 
+@@ -143,7 +143,7 @@ static int ap_cs8427_sendbytes(snd_i2c_d
+ /* sequential read */
+ static int ap_cs8427_readbytes(snd_i2c_device_t *device, unsigned char *bytes, int count)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, device->bus->private_data, return -EIO);
++	ice1712_t *ice = device->bus->private_data;
+ 	int res = count;
+ 	unsigned char tmp;
+ 	
+diff --git a/sound/pci/ice1712/ews.c b/sound/pci/ice1712/ews.c
+index 9509e48..936bbb5 100644
+--- a/sound/pci/ice1712/ews.c
++++ b/sound/pci/ice1712/ews.c
+@@ -45,7 +45,7 @@ #include <sound/cs8403.h>
+ /* send SDA and SCL */
+ static void ewx_i2c_setlines(snd_i2c_bus_t *bus, int clk, int data)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return);
++	ice1712_t *ice = bus->private_data;
+ 	unsigned char tmp = 0;
+ 	if (clk)
+ 		tmp |= ICE1712_EWX2496_SERIAL_CLOCK;
+@@ -57,13 +57,13 @@ static void ewx_i2c_setlines(snd_i2c_bus
+ 
+ static int ewx_i2c_getclock(snd_i2c_bus_t *bus)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return -EIO);
++	ice1712_t *ice = bus->private_data;
+ 	return snd_ice1712_read(ice, ICE1712_IREG_GPIO_DATA) & ICE1712_EWX2496_SERIAL_CLOCK ? 1 : 0;
+ }
+ 
+ static int ewx_i2c_getdata(snd_i2c_bus_t *bus, int ack)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return -EIO);
++	ice1712_t *ice = bus->private_data;
+ 	int bit;
+ 	/* set RW pin to low */
+ 	snd_ice1712_write(ice, ICE1712_IREG_GPIO_WRITE_MASK, ~ICE1712_EWX2496_RW);
+@@ -80,7 +80,7 @@ static int ewx_i2c_getdata(snd_i2c_bus_t
+ 
+ static void ewx_i2c_start(snd_i2c_bus_t *bus)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return);
++	ice1712_t *ice = bus->private_data;
+ 	unsigned char mask;
+ 
+ 	snd_ice1712_save_gpio_status(ice);
+@@ -99,13 +99,13 @@ static void ewx_i2c_start(snd_i2c_bus_t 
+ 
+ static void ewx_i2c_stop(snd_i2c_bus_t *bus)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return);
++	ice1712_t *ice = bus->private_data;
+ 	snd_ice1712_restore_gpio_status(ice);
+ }
+ 
+ static void ewx_i2c_direction(snd_i2c_bus_t *bus, int clock, int data)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, bus->private_data, return);
++	ice1712_t *ice = bus->private_data;
+ 	unsigned char mask = 0;
+ 
+ 	if (clock)
+diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
+index 08b94db..82c9e97 100644
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -416,7 +416,7 @@ int __devinit snd_ice1712_init_cs8427(ic
+ 
+ static irqreturn_t snd_ice1712_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, dev_id, return IRQ_NONE);
++	ice1712_t *ice = dev_id;
+ 	unsigned char status;
+ 	int handled = 0;
+ 
+@@ -874,7 +874,7 @@ static snd_pcm_ops_t snd_ice1712_capture
+ 
+ static void snd_ice1712_pcm_free(snd_pcm_t *pcm)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
++	ice1712_t *ice = pcm->private_data;
+ 	ice->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -912,7 +912,7 @@ static int __devinit snd_ice1712_pcm(ice
+ 
+ static void snd_ice1712_pcm_free_ds(snd_pcm_t *pcm)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
++	ice1712_t *ice = pcm->private_data;
+ 	ice->pcm_ds = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1238,7 +1238,7 @@ static int snd_ice1712_capture_pro_close
+ 
+ static void snd_ice1712_pcm_profi_free(snd_pcm_t *pcm)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
++	ice1712_t *ice = pcm->private_data;
+ 	ice->pcm_pro = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1511,7 +1511,7 @@ static int __devinit snd_ice1712_build_p
+ 
+ static void snd_ice1712_mixer_free_ac97(ac97_t *ac97)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, ac97->private_data, return);
++	ice1712_t *ice = ac97->private_data;
+ 	ice->ac97 = NULL;
+ }
+ 
+@@ -1570,7 +1570,7 @@ static inline unsigned int eeprom_double
+ static void snd_ice1712_proc_read(snd_info_entry_t *entry, 
+ 				  snd_info_buffer_t * buffer)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, entry->private_data, return);
++	ice1712_t *ice = entry->private_data;
+ 	unsigned int idx;
+ 
+ 	snd_iprintf(buffer, "%s\n\n", ice->card->longname);
+@@ -2496,13 +2496,13 @@ static int snd_ice1712_free(ice1712_t *i
+ 		kfree_nocheck(ice->res_profi_port);
+ 	}
+ 	snd_ice1712_akm4xxx_free(ice);
+-	snd_magic_kfree(ice);
++	kfree(ice);
+ 	return 0;
+ }
+ 
+ static int snd_ice1712_dev_free(snd_device_t *device)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, device->device_data, return -ENXIO);
++	ice1712_t *ice = device->device_data;
+ 	return snd_ice1712_free(ice);
+ }
+ 
+@@ -2531,7 +2531,7 @@ static int __devinit snd_ice1712_create(
+ 		return -ENXIO;
+ 	}
+ 
+-	ice = snd_magic_kcalloc(ice1712_t, 0, GFP_KERNEL);
++	ice = kcalloc(1, sizeof(*ice), GFP_KERNEL);
+ 	if (ice == NULL)
+ 		return -ENOMEM;
+ 	ice->omni = omni ? 1 : 0;
+diff --git a/sound/pci/ice1712/ice1712.h b/sound/pci/ice1712/ice1712.h
+index f8233bf..473f922 100644
+--- a/sound/pci/ice1712/ice1712.h
++++ b/sound/pci/ice1712/ice1712.h
+@@ -368,8 +368,6 @@ struct _snd_ice1712 {
+ 	struct semaphore gpio_mutex;
+ };
+ 
+-#define chip_t ice1712_t
+-
+ 
+ /*
+  * gpio access functions
+diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+index 3570568..6ac5240 100644
+--- a/sound/pci/ice1712/ice1724.c
++++ b/sound/pci/ice1712/ice1724.c
+@@ -222,7 +222,7 @@ static unsigned int snd_vt1724_get_gpio_
+ 
+ static irqreturn_t snd_vt1724_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, dev_id, return IRQ_NONE);
++	ice1712_t *ice = dev_id;
+ 	unsigned char status;
+ 	int handled = 0;
+ 
+@@ -1212,7 +1212,7 @@ static inline unsigned int eeprom_triple
+ static void snd_vt1724_proc_read(snd_info_entry_t *entry, 
+ 				 snd_info_buffer_t * buffer)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, entry->private_data, return);
++	ice1712_t *ice = entry->private_data;
+ 	unsigned int idx;
+ 
+ 	snd_iprintf(buffer, "%s\n\n", ice->card->longname);
+@@ -2060,13 +2060,13 @@ static int snd_vt1724_free(ice1712_t *ic
+ 		kfree_nocheck(ice->res_profi_port);
+ 	}
+ 	snd_ice1712_akm4xxx_free(ice);
+-	snd_magic_kfree(ice);
++	kfree(ice);
+ 	return 0;
+ }
+ 
+ static int snd_vt1724_dev_free(snd_device_t *device)
+ {
+-	ice1712_t *ice = snd_magic_cast(ice1712_t, device->device_data, return -ENXIO);
++	ice1712_t *ice = device->device_data;
+ 	return snd_vt1724_free(ice);
+ }
+ 
+@@ -2088,7 +2088,7 @@ static int __devinit snd_vt1724_create(s
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	ice = snd_magic_kcalloc(ice1712_t, 0, GFP_KERNEL);
++	ice = kcalloc(1, sizeof(*ice), GFP_KERNEL);
+ 	if (ice == NULL)
+ 		return -ENOMEM;
+ 	ice->vt1724 = 1;
+diff --git a/sound/pci/intel8x0.c b/sound/pci/intel8x0.c
+index 896b3cf..5dc49c9 100644
+--- a/sound/pci/intel8x0.c
++++ b/sound/pci/intel8x0.c
+@@ -400,7 +400,6 @@ typedef struct {
+ } ichdev_t;
+ 
+ typedef struct _snd_intel8x0 intel8x0_t;
+-#define chip_t intel8x0_t
+ 
+ struct _snd_intel8x0 {
+ 	unsigned int device_type;
+@@ -609,7 +608,7 @@ static void snd_intel8x0_codec_write(ac9
+ 				     unsigned short reg,
+ 				     unsigned short val)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
++	intel8x0_t *chip = ac97->private_data;
+ 	
+ 	spin_lock(&chip->ac97_lock);
+ 	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0) {
+@@ -623,7 +622,7 @@ static void snd_intel8x0_codec_write(ac9
+ static unsigned short snd_intel8x0_codec_read(ac97_t *ac97,
+ 					      unsigned short reg)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return ~0);
++	intel8x0_t *chip = ac97->private_data;
+ 	unsigned short res;
+ 	unsigned int tmp;
+ 
+@@ -673,7 +672,7 @@ static int snd_intel8x0_ali_codec_semaph
+ 
+ static unsigned short snd_intel8x0_ali_codec_read(ac97_t *ac97, unsigned short reg)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return ~0);
++	intel8x0_t *chip = ac97->private_data;
+ 	unsigned short data = 0xffff;
+ 
+ 	spin_lock(&chip->ac97_lock);
+@@ -693,7 +692,7 @@ static unsigned short snd_intel8x0_ali_c
+ 
+ static void snd_intel8x0_ali_codec_write(ac97_t *ac97, unsigned short reg, unsigned short val)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
++	intel8x0_t *chip = ac97->private_data;
+ 
+ 	spin_lock(&chip->ac97_lock);
+ 	if (snd_intel8x0_ali_codec_semaphore(chip)) {
+@@ -826,7 +825,7 @@ static inline void snd_intel8x0_update(i
+ 
+ static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, dev_id, return IRQ_NONE);
++	intel8x0_t *chip = dev_id;
+ 	ichdev_t *ichdev;
+ 	unsigned int status;
+ 	unsigned int i;
+@@ -1637,13 +1636,13 @@ static int __devinit snd_intel8x0_pcm(in
+ 
+ static void snd_intel8x0_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, bus->private_data, return);
++	intel8x0_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_intel8x0_mixer_free_ac97(ac97_t *ac97)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
++	intel8x0_t *chip = ac97->private_data;
+ 	chip->ac97[ac97->num] = NULL;
+ }
+ 
+@@ -2208,7 +2207,7 @@ static int snd_intel8x0_free(intel8x0_t 
+ 	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+@@ -2218,7 +2217,7 @@ #ifdef CONFIG_PM
+  */
+ static int intel8x0_suspend(snd_card_t *card, unsigned int state)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, card->pm_private_data, return -EINVAL);
++	intel8x0_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	for (i = 0; i < chip->pcm_devs; i++)
+@@ -2233,7 +2232,7 @@ static int intel8x0_suspend(snd_card_t *
+ 
+ static int intel8x0_resume(snd_card_t *card, unsigned int state)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, card->pm_private_data, return -EINVAL);
++	intel8x0_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	pci_restore_state(chip->pci, chip->pci_state);
+@@ -2356,7 +2355,7 @@ #endif
+ static void snd_intel8x0_proc_read(snd_info_entry_t * entry,
+ 				   snd_info_buffer_t * buffer)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, entry->private_data, return);
++	intel8x0_t *chip = entry->private_data;
+ 	unsigned int tmp;
+ 
+ 	snd_iprintf(buffer, "Intel8x0\n\n");
+@@ -2389,7 +2388,7 @@ static void __devinit snd_intel8x0_proc_
+ 
+ static int snd_intel8x0_dev_free(snd_device_t *device)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, device->device_data, return -ENXIO);
++	intel8x0_t *chip = device->device_data;
+ 	return snd_intel8x0_free(chip);
+ }
+ 
+@@ -2448,7 +2447,7 @@ static int __devinit snd_intel8x0_create
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(intel8x0_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/pci/intel8x0m.c b/sound/pci/intel8x0m.c
+index 6046ac1..f830ce0 100644
+--- a/sound/pci/intel8x0m.c
++++ b/sound/pci/intel8x0m.c
+@@ -228,7 +228,6 @@ typedef struct {
+ } ichdev_t;
+ 
+ typedef struct _snd_intel8x0m intel8x0_t;
+-#define chip_t intel8x0_t
+ 
+ struct _snd_intel8x0m {
+ 	unsigned int device_type;
+@@ -408,7 +407,7 @@ static void snd_intel8x0_codec_write(ac9
+ 				     unsigned short reg,
+ 				     unsigned short val)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
++	intel8x0_t *chip = ac97->private_data;
+ 	
+ 	spin_lock(&chip->ac97_lock);
+ 	if (snd_intel8x0m_codec_semaphore(chip, ac97->num) < 0) {
+@@ -422,7 +421,7 @@ static void snd_intel8x0_codec_write(ac9
+ static unsigned short snd_intel8x0_codec_read(ac97_t *ac97,
+ 					      unsigned short reg)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return ~0);
++	intel8x0_t *chip = ac97->private_data;
+ 	unsigned short res;
+ 	unsigned int tmp;
+ 
+@@ -542,7 +541,7 @@ static inline void snd_intel8x0_update(i
+ 
+ static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, dev_id, return IRQ_NONE);
++	intel8x0_t *chip = dev_id;
+ 	ichdev_t *ichdev;
+ 	unsigned int status;
+ 	unsigned int i;
+@@ -872,13 +871,13 @@ #endif
+ 
+ static void snd_intel8x0_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, bus->private_data, return);
++	intel8x0_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_intel8x0_mixer_free_ac97(ac97_t *ac97)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
++	intel8x0_t *chip = ac97->private_data;
+ 	chip->ac97 = NULL;
+ }
+ 
+@@ -1071,7 +1070,7 @@ static int snd_intel8x0_free(intel8x0_t 
+ 	}
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+@@ -1081,7 +1080,7 @@ #ifdef CONFIG_PM
+  */
+ static int intel8x0m_suspend(snd_card_t *card, unsigned int state)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, card->pm_private_data, return -EINVAL);
++	intel8x0_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	for (i = 0; i < chip->pcm_devs; i++)
+@@ -1094,7 +1093,7 @@ static int intel8x0m_suspend(snd_card_t 
+ 
+ static int intel8x0m_resume(snd_card_t *card, unsigned int state)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, card->pm_private_data, return -EINVAL);
++	intel8x0_t *chip = card->pm_private_data;
+ 	pci_enable_device(chip->pci);
+ 	pci_set_master(chip->pci);
+ 	snd_intel8x0_chip_init(chip, 0);
+@@ -1109,7 +1108,7 @@ #endif /* CONFIG_PM */
+ static void snd_intel8x0m_proc_read(snd_info_entry_t * entry,
+ 				   snd_info_buffer_t * buffer)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, entry->private_data, return);
++	intel8x0_t *chip = entry->private_data;
+ 	unsigned int tmp;
+ 
+ 	snd_iprintf(buffer, "Intel8x0m\n\n");
+@@ -1135,7 +1134,7 @@ static void __devinit snd_intel8x0m_proc
+ 
+ static int snd_intel8x0_dev_free(snd_device_t *device)
+ {
+-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, device->device_data, return -ENXIO);
++	intel8x0_t *chip = device->device_data;
+ 	return snd_intel8x0_free(chip);
+ }
+ 
+@@ -1168,7 +1167,7 @@ static int __devinit snd_intel8x0m_creat
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(intel8x0_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/pci/korg1212/korg1212.c b/sound/pci/korg1212/korg1212.c
+index 3587351..1fe0571 100644
+--- a/sound/pci/korg1212/korg1212.c
++++ b/sound/pci/korg1212/korg1212.c
+@@ -637,7 +637,7 @@ static void snd_korg1212_SendStopAndWait
+ /* timer callback for checking the ack of stop request */
+ static void snd_korg1212_timer_func(unsigned long data)
+ {
+-        korg1212_t *korg1212 = snd_magic_cast(korg1212_t, (void*)data, return);
++        korg1212_t *korg1212 = (korg1212_t *) data;
+ 	
+ 	spin_lock(&korg1212->lock);
+ 	if (readl(&korg1212->sharedBufferPtr->cardCommand) == 0) {
+@@ -1143,7 +1143,7 @@ #endif
+ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+         u32 doorbellValue;
+-        korg1212_t *korg1212 = snd_magic_cast(korg1212_t, dev_id, return IRQ_NONE);
++        korg1212_t *korg1212 = dev_id;
+ 
+ 	if(irq != korg1212->irq)
+ 		return IRQ_NONE;
+@@ -1407,7 +1407,7 @@ #endif
+ static int snd_korg1212_playback_open(snd_pcm_substream_t *substream)
+ {
+         unsigned long flags;
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+         snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ #if K1212_DEBUG_LEVEL > 0
+@@ -1439,7 +1439,7 @@ #endif
+ static int snd_korg1212_capture_open(snd_pcm_substream_t *substream)
+ {
+         unsigned long flags;
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+         snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ #if K1212_DEBUG_LEVEL > 0
+@@ -1470,7 +1470,7 @@ #endif
+ static int snd_korg1212_playback_close(snd_pcm_substream_t *substream)
+ {
+         unsigned long flags;
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 
+ #if K1212_DEBUG_LEVEL > 0
+ 		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_playback_close [%s]\n", stateName[korg1212->cardState]);
+@@ -1492,7 +1492,7 @@ #endif
+ static int snd_korg1212_capture_close(snd_pcm_substream_t *substream)
+ {
+         unsigned long flags;
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 
+ #if K1212_DEBUG_LEVEL > 0
+ 		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_capture_close [%s]\n", stateName[korg1212->cardState]);
+@@ -1534,7 +1534,7 @@ static int snd_korg1212_hw_params(snd_pc
+                              snd_pcm_hw_params_t *params)
+ {
+         unsigned long flags;
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+         int err;
+ 
+ #if K1212_DEBUG_LEVEL > 0
+@@ -1562,7 +1562,7 @@ #endif
+ 
+ static int snd_korg1212_prepare(snd_pcm_substream_t *substream)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 	int rc;
+ 
+ #if K1212_DEBUG_LEVEL > 0
+@@ -1597,7 +1597,7 @@ #endif
+ static int snd_korg1212_trigger(snd_pcm_substream_t *substream,
+                            int cmd)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 	int rc;
+ 
+ #if K1212_DEBUG_LEVEL > 0
+@@ -1642,7 +1642,7 @@ #endif
+ 
+ static snd_pcm_uframes_t snd_korg1212_playback_pointer(snd_pcm_substream_t *substream)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+         snd_pcm_uframes_t pos;
+ 
+ 	pos = korg1212->currentBuffer * kPlayBufferFrames;
+@@ -1657,7 +1657,7 @@ #endif
+ 
+ static snd_pcm_uframes_t snd_korg1212_capture_pointer(snd_pcm_substream_t *substream)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+         snd_pcm_uframes_t pos;
+ 
+ 	pos = korg1212->currentBuffer * kPlayBufferFrames;
+@@ -1676,7 +1676,7 @@ static int snd_korg1212_playback_copy(sn
+                         void __user *src,
+                         snd_pcm_uframes_t count)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 
+ #if K1212_DEBUG_LEVEL > 2
+ 		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_playback_copy [%s] %ld %ld\n", stateName[korg1212->cardState], pos, count);
+@@ -1691,7 +1691,7 @@ static int snd_korg1212_playback_silence
+                            snd_pcm_uframes_t pos,
+                            snd_pcm_uframes_t count)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 
+ #if K1212_DEBUG_LEVEL > 0
+ 		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_playback_silence [%s]\n", stateName[korg1212->cardState]);
+@@ -1706,7 +1706,7 @@ static int snd_korg1212_capture_copy(snd
+                         void __user *dst,
+                         snd_pcm_uframes_t count)
+ {
+-        korg1212_t *korg1212 = _snd_pcm_substream_chip(substream);
++        korg1212_t *korg1212 = snd_pcm_substream_chip(substream);
+ 
+ #if K1212_DEBUG_LEVEL > 2
+ 		K1212_DEBUG_PRINTK("K1212_DEBUG: snd_korg1212_capture_copy [%s] %ld %ld\n", stateName[korg1212->cardState], pos, count);
+@@ -1751,7 +1751,7 @@ static int snd_korg1212_control_phase_in
+ 
+ static int snd_korg1212_control_phase_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int i = kcontrol->private_value;
+ 
+@@ -1769,7 +1769,7 @@ static int snd_korg1212_control_phase_ge
+ 
+ static int snd_korg1212_control_phase_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int change = 0;
+         int i, val;
+@@ -1816,7 +1816,7 @@ static int snd_korg1212_control_volume_i
+ 
+ static int snd_korg1212_control_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int i;
+ 
+@@ -1835,7 +1835,7 @@ static int snd_korg1212_control_volume_g
+ 
+ static int snd_korg1212_control_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int change = 0;
+         int i;
+@@ -1880,7 +1880,7 @@ static int snd_korg1212_control_route_in
+ 
+ static int snd_korg1212_control_route_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int i;
+ 
+@@ -1899,7 +1899,7 @@ static int snd_korg1212_control_route_ge
+ 
+ static int snd_korg1212_control_route_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int change = 0, i;
+ 
+@@ -1935,7 +1935,7 @@ static int snd_korg1212_control_info(snd
+ 
+ static int snd_korg1212_control_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&korg1212->lock, flags);
+@@ -1950,7 +1950,7 @@ static int snd_korg1212_control_get(snd_
+ 
+ static int snd_korg1212_control_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int change = 0;
+ 
+@@ -1987,7 +1987,7 @@ static int snd_korg1212_control_sync_inf
+ 
+ static int snd_korg1212_control_sync_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&korg1212->lock, flags);
+@@ -2000,7 +2000,7 @@ static int snd_korg1212_control_sync_get
+ 
+ static int snd_korg1212_control_sync_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	korg1212_t *korg1212 = _snd_kcontrol_chip(kcontrol);
++	korg1212_t *korg1212 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -2173,13 +2173,13 @@ #endif
+ 		korg1212->dma_shared.area = NULL;
+         }
+         
+-        snd_magic_kfree(korg1212);
++        kfree(korg1212);
+         return 0;
+ }
+ 
+ static int snd_korg1212_dev_free(snd_device_t *device)
+ {
+-        korg1212_t *korg1212 = snd_magic_cast(korg1212_t, device->device_data, return -ENXIO);
++        korg1212_t *korg1212 = device->device_data;
+ #if K1212_DEBUG_LEVEL > 0
+         K1212_DEBUG_PRINTK("K1212_DEBUG: Freeing device\n");
+ #endif
+@@ -2203,7 +2203,7 @@ static int __devinit snd_korg1212_create
+         if ((err = pci_enable_device(pci)) < 0)
+                 return err;
+ 
+-        korg1212 = snd_magic_kcalloc(korg1212_t, 0, GFP_KERNEL);
++        korg1212 = kcalloc(1, sizeof(*korg1212), GFP_KERNEL);
+         if (korg1212 == NULL)
+                 return -ENOMEM;
+ 
+diff --git a/sound/pci/maestro3.c b/sound/pci/maestro3.c
+index 8c0bc76..d8d0339 100644
+--- a/sound/pci/maestro3.c
++++ b/sound/pci/maestro3.c
+@@ -776,8 +776,6 @@ #define ARB_VOLUME ( 0x6800 )
+ 
+ typedef struct snd_m3_dma m3_dma_t;
+ typedef struct snd_m3 m3_t;
+-#define chip_t m3_t
+-
+ 
+ /* quirk lists */
+ struct m3_quirk {
+@@ -1573,7 +1571,7 @@ static void snd_m3_update_ptr(m3_t *chip
+ static irqreturn_t
+ snd_m3_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, dev_id, );
++	m3_t *chip = dev_id;
+ 	u8 status;
+ 	int i;
+ 
+@@ -1848,7 +1846,7 @@ static int snd_m3_ac97_wait(m3_t *chip)
+ static unsigned short
+ snd_m3_ac97_read(ac97_t *ac97, unsigned short reg)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, ac97->private_data, return -ENXIO);
++	m3_t *chip = ac97->private_data;
+ 	unsigned short ret = 0;
+ 	unsigned long flags;
+ 
+@@ -1867,7 +1865,7 @@ __error:
+ static void
+ snd_m3_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short val)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, ac97->private_data, return);
++	m3_t *chip = ac97->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -2402,7 +2400,7 @@ #endif
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void *)chip);
+ 
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+@@ -2413,7 +2411,7 @@ #endif
+ #ifdef CONFIG_PM
+ static int m3_suspend(snd_card_t *card, unsigned int state)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, card->pm_private_data, return -EINVAL);
++	m3_t *chip = card->pm_private_data;
+ 	int i, index;
+ 
+ 	if (chip->suspend_mem == NULL)
+@@ -2444,7 +2442,7 @@ static int m3_suspend(snd_card_t *card, 
+ 
+ static int m3_resume(snd_card_t *card, unsigned int state)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, card->pm_private_data, return -EINVAL);
++	m3_t *chip = card->pm_private_data;
+ 	int i, index;
+ 
+ 	if (chip->suspend_mem == NULL)
+@@ -2489,7 +2487,7 @@ #endif /* CONFIG_PM */
+ 
+ static int snd_m3_dev_free(snd_device_t *device)
+ {
+-	m3_t *chip = snd_magic_cast(m3_t, device->device_data, return -ENXIO);
++	m3_t *chip = device->device_data;
+ 	return snd_m3_free(chip);
+ }
+ 
+@@ -2519,7 +2517,7 @@ snd_m3_create(snd_card_t *card, struct p
+ 		return -ENXIO;
+ 	}
+ 
+-	chip = snd_magic_kcalloc(m3_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 
+@@ -2562,7 +2560,7 @@ snd_m3_create(snd_card_t *card, struct p
+ 	chip->num_substreams = NR_DSPS;
+ 	chip->substreams = kmalloc(sizeof(m3_dma_t) * chip->num_substreams, GFP_KERNEL);
+ 	if (chip->substreams == NULL) {
+-		snd_magic_kfree(chip);
++		kfree(chip);
+ 		return -ENOMEM;
+ 	}
+ 	memset(chip->substreams, 0, sizeof(m3_dma_t) * chip->num_substreams);
+diff --git a/sound/pci/mixart/mixart.c b/sound/pci/mixart/mixart.c
+index 28df5e3..13edb2b 100644
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -50,8 +50,6 @@ static char *id[SNDRV_CARDS] = SNDRV_DEF
+ static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;     /* Enable this card */
+ static int boot_devs;
+ 
+-#define chip_t mixart_t
+-
+ module_param_array(index, int, boot_devs, 0444);
+ MODULE_PARM_DESC(index, "Index value for Digigram " CARD_NAME " soundcard.");
+ MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
+@@ -987,13 +985,13 @@ static int snd_mixart_pcm_digital(mixart
+ 
+ static int snd_mixart_chip_free(mixart_t *chip)
+ {
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_mixart_chip_dev_free(snd_device_t *device)
+ {
+-	mixart_t *chip = snd_magic_cast(mixart_t, device->device_data, return -ENXIO);
++	mixart_t *chip = device->device_data;
+ 	return snd_mixart_chip_free(chip);
+ }
+ 
+@@ -1008,7 +1006,7 @@ static int __devinit snd_mixart_create(m
+ 		.dev_free = snd_mixart_chip_dev_free,
+ 	};
+ 
+-	mgr->chip[idx] = chip = snd_magic_kcalloc(mixart_t, 0, GFP_KERNEL);
++	mgr->chip[idx] = chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (! chip) {
+ 		snd_printk(KERN_ERR "cannot allocate chip\n");
+ 		return -ENOMEM;
+@@ -1099,7 +1097,7 @@ static int snd_mixart_free(mixart_mgr_t 
+ 		mgr->bufferinfo.area = NULL;
+ 	}
+ 
+-	snd_magic_kfree(mgr);
++	kfree(mgr);
+ 	return 0;
+ }
+ 
+@@ -1164,7 +1162,7 @@ static long long snd_mixart_BA1_llseek(s
+ static long snd_mixart_BA0_read(snd_info_entry_t *entry, void *file_private_data,
+ 				struct file *file, char __user *buf, long count)
+ {
+-	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, entry->private_data, return -ENXIO);
++	mixart_mgr_t *mgr = entry->private_data;
+ 
+ 	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+ 	if(count <= 0)
+@@ -1183,7 +1181,7 @@ static long snd_mixart_BA0_read(snd_info
+ static long snd_mixart_BA1_read(snd_info_entry_t *entry, void *file_private_data,
+ 				struct file *file, char __user *buf, long count)
+ {
+-	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, entry->private_data, return -ENXIO);
++	mixart_mgr_t *mgr = entry->private_data;
+ 
+ 	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+ 	if(count <= 0)
+@@ -1210,7 +1208,7 @@ static struct snd_info_entry_ops snd_mix
+ static void snd_mixart_proc_read(snd_info_entry_t *entry, 
+                                  snd_info_buffer_t * buffer)
+ {
+-	mixart_t *chip = snd_magic_cast(mixart_t, entry->private_data, return);        
++	mixart_t *chip = entry->private_data;        
+ 	u32 ref; 
+ 
+ 	snd_iprintf(buffer, "Digigram miXart (alsa card %d)\n\n", chip->chip_idx);
+@@ -1305,7 +1303,7 @@ static int __devinit snd_mixart_probe(st
+ 
+ 	/*
+ 	 */
+-	mgr = snd_magic_kcalloc(mixart_mgr_t, 0, GFP_KERNEL);
++	mgr = kcalloc(1, sizeof(*mgr), GFP_KERNEL);
+ 	if (! mgr)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/mixart/mixart_core.c b/sound/pci/mixart/mixart_core.c
+index fab3211..ce92a14 100644
+--- a/sound/pci/mixart/mixart_core.c
++++ b/sound/pci/mixart/mixart_core.c
+@@ -403,7 +403,7 @@ void snd_mixart_msg_tasklet( unsigned lo
+ 
+ irqreturn_t snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, dev_id, return IRQ_NONE);
++	mixart_mgr_t *mgr = dev_id;
+ 	int err;
+ 	mixart_msg_t resp;
+ 
+diff --git a/sound/pci/mixart/mixart_hwdep.c b/sound/pci/mixart/mixart_hwdep.c
+index 0c0215d..b6724c7 100644
+--- a/sound/pci/mixart/mixart_hwdep.c
++++ b/sound/pci/mixart/mixart_hwdep.c
+@@ -146,7 +146,7 @@ static int mixart_load_elf(mixart_mgr_t 
+ 
+ static int mixart_hwdep_dsp_status(snd_hwdep_t *hw, snd_hwdep_dsp_status_t *info)
+ {
+-	mixart_mgr_t *mgr = snd_magic_cast(mixart_mgr_t, hw->private_data, return -ENXIO);
++	mixart_mgr_t *mgr = hw->private_data;
+ 
+ 	strcpy(info->id, "miXart");
+         info->num_dsps = MIXART_HARDW_FILES_MAX_INDEX;
+@@ -346,7 +346,7 @@ #define MIXART_MOTHERBOARD_XLX_BASE_ADDR
+ 
+ static int mixart_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
+ {
+-	mixart_mgr_t* mgr = snd_magic_cast(mixart_mgr_t, hw->private_data, return -ENXIO);
++	mixart_mgr_t* mgr = hw->private_data;
+ 	int           err, card_index;
+ 	u32           status_xilinx, status_elf, status_daught;
+ 	u32           val;
+diff --git a/sound/pci/mixart/mixart_mixer.c b/sound/pci/mixart/mixart_mixer.c
+index 592b979..39c1541 100644
+--- a/sound/pci/mixart/mixart_mixer.c
++++ b/sound/pci/mixart/mixart_mixer.c
+@@ -31,8 +31,6 @@ #include "mixart_hwdep.h"
+ #include <sound/control.h>
+ #include "mixart_mixer.h"
+ 
+-#define chip_t mixart_t
+-
+ static u32 mixart_analog_level[256] = {
+ 	0xc2c00000,		/* [000] -96.0 dB */
+ 	0xc2bf0000,		/* [001] -95.5 dB */
+diff --git a/sound/pci/nm256/nm256.c b/sound/pci/nm256/nm256.c
+index e79e79f..7169b61 100644
+--- a/sound/pci/nm256/nm256.c
++++ b/sound/pci/nm256/nm256.c
+@@ -191,7 +191,6 @@ #define NM_PBUFFER_CURRP (NM_PLAYBACK_RE
+ 
+ typedef struct snd_nm256 nm256_t;
+ typedef struct snd_nm256_stream nm256_stream_t;
+-#define chip_t nm256_t
+ 
+ struct snd_nm256_stream {
+ 
+@@ -977,7 +976,7 @@ snd_nm256_intr_check(nm256_t *chip)
+ static irqreturn_t
+ snd_nm256_interrupt(int irq, void *dev_id, struct pt_regs *dummy)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, dev_id, return IRQ_NONE);
++	nm256_t *chip = dev_id;
+ 	u16 status;
+ 	u8 cbyte;
+ 
+@@ -1044,7 +1043,7 @@ snd_nm256_interrupt(int irq, void *dev_i
+ static irqreturn_t
+ snd_nm256_interrupt_zx(int irq, void *dev_id, struct pt_regs *dummy)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, dev_id, return IRQ_NONE);
++	nm256_t *chip = dev_id;
+ 	u32 status;
+ 	u8 cbyte;
+ 
+@@ -1135,7 +1134,7 @@ snd_nm256_ac97_ready(nm256_t *chip)
+ static unsigned short
+ snd_nm256_ac97_read(ac97_t *ac97, unsigned short reg)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, ac97->private_data, return -ENXIO);
++	nm256_t *chip = ac97->private_data;
+ 	int res;
+ 
+ 	if (reg >= 128)
+@@ -1155,7 +1154,7 @@ static void
+ snd_nm256_ac97_write(ac97_t *ac97,
+ 		     unsigned short reg, unsigned short val)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, ac97->private_data, return);
++	nm256_t *chip = ac97->private_data;
+ 	int tries = 2;
+ 	u32 base;
+ 
+@@ -1177,7 +1176,7 @@ snd_nm256_ac97_write(ac97_t *ac97,
+ static void
+ snd_nm256_ac97_reset(ac97_t *ac97)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, ac97->private_data, return);
++	nm256_t *chip = ac97->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -1286,7 +1285,7 @@ #ifdef CONFIG_PM
+  */
+ static int nm256_suspend(snd_card_t *card, unsigned int state)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, card->pm_private_data, return -EINVAL);
++	nm256_t *chip = card->pm_private_data;
+ 
+ 	snd_pcm_suspend_all(chip->pcm);
+ 	snd_ac97_suspend(chip->ac97);
+@@ -1297,7 +1296,7 @@ static int nm256_suspend(snd_card_t *car
+ 
+ static int nm256_resume(snd_card_t *card, unsigned int state)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, card->pm_private_data, return -EINVAL);
++	nm256_t *chip = card->pm_private_data;
+ 
+ 	/* Perform a full reset on the hardware */
+ 	pci_enable_device(chip->pci);
+@@ -1336,13 +1335,13 @@ static int snd_nm256_free(nm256_t *chip)
+ 	if (chip->irq >= 0)
+ 		free_irq(chip->irq, (void*)chip);
+ 
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_nm256_dev_free(snd_device_t *device)
+ {
+-	nm256_t *chip = snd_magic_cast(nm256_t, device->device_data, return -ENXIO);
++	nm256_t *chip = device->device_data;
+ 	return snd_nm256_free(chip);
+ }
+ 
+@@ -1364,7 +1363,7 @@ snd_nm256_create(snd_card_t *card, struc
+ 
+ 	*chip_ret = NULL;
+ 
+-	chip = snd_magic_kcalloc(nm256_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/sound/pci/rme32.c b/sound/pci/rme32.c
+index d96717c..c0f06e7 100644
+--- a/sound/pci/rme32.c
++++ b/sound/pci/rme32.c
+@@ -285,7 +285,7 @@ static int snd_rme32_playback_silence(sn
+ 				      snd_pcm_uframes_t pos,
+ 				      snd_pcm_uframes_t count)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	count <<= rme32->playback_frlog;
+ 	pos <<= rme32->playback_frlog;
+ 	memset_io(rme32->iobase + RME32_IO_DATA_BUFFER + pos, 0, count);
+@@ -296,7 +296,7 @@ static int snd_rme32_playback_copy(snd_p
+ 				   snd_pcm_uframes_t pos,
+ 				   void __user *src, snd_pcm_uframes_t count)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	count <<= rme32->playback_frlog;
+ 	pos <<= rme32->playback_frlog;
+ 	if (copy_from_user_toio(rme32->iobase + RME32_IO_DATA_BUFFER + pos,
+@@ -309,7 +309,7 @@ static int snd_rme32_capture_copy(snd_pc
+ 				  snd_pcm_uframes_t pos,
+ 				  void __user *dst, snd_pcm_uframes_t count)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	count <<= rme32->capture_frlog;
+ 	pos <<= rme32->capture_frlog;
+ 	if (copy_to_user_fromio(dst,
+@@ -677,7 +677,7 @@ snd_rme32_playback_hw_params(snd_pcm_sub
+ 			     snd_pcm_hw_params_t * params)
+ {
+ 	int err, rate, dummy;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	runtime->dma_area = (void *)(rme32->iobase + RME32_IO_DATA_BUFFER);
+@@ -727,7 +727,7 @@ snd_rme32_capture_hw_params(snd_pcm_subs
+ {
+ 	unsigned long flags;
+ 	int err, isadat, rate;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	runtime->dma_area = (void *)(rme32->iobase + RME32_IO_DATA_BUFFER);
+@@ -858,7 +858,7 @@ static int snd_rme32_playback_spdif_open
+ {
+ 	unsigned long flags;
+ 	int rate, dummy;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	snd_pcm_set_sync(substream);
+@@ -903,7 +903,7 @@ static int snd_rme32_capture_spdif_open(
+ {
+ 	unsigned long flags;
+ 	int isadat, rate;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	snd_pcm_set_sync(substream);
+@@ -945,7 +945,7 @@ snd_rme32_playback_adat_open(snd_pcm_sub
+ {
+ 	unsigned long flags;
+ 	int rate, dummy;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	
+ 	snd_pcm_set_sync(substream);
+@@ -980,7 +980,7 @@ snd_rme32_capture_adat_open(snd_pcm_subs
+ {
+ 	unsigned long flags;
+ 	int isadat, rate;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	runtime->hw = snd_rme32_capture_adat_info;
+@@ -1013,7 +1013,7 @@ snd_rme32_capture_adat_open(snd_pcm_subs
+ static int snd_rme32_playback_close(snd_pcm_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	int spdif = 0;
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+@@ -1033,7 +1033,7 @@ static int snd_rme32_playback_close(snd_
+ static int snd_rme32_capture_close(snd_pcm_substream_t * substream)
+ {
+ 	unsigned long flags;
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+ 	rme32->capture_substream = NULL;
+@@ -1044,7 +1044,7 @@ static int snd_rme32_capture_close(snd_p
+ 
+ static int snd_rme32_playback_prepare(snd_pcm_substream_t * substream)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+@@ -1061,7 +1061,7 @@ static int snd_rme32_playback_prepare(sn
+ 
+ static int snd_rme32_capture_prepare(snd_pcm_substream_t * substream)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+@@ -1076,7 +1076,7 @@ static int snd_rme32_capture_prepare(snd
+ static int
+ snd_rme32_playback_trigger(snd_pcm_substream_t * substream, int cmd)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 		if (!RME32_ISWORKING(rme32)) {
+@@ -1117,7 +1117,7 @@ snd_rme32_playback_trigger(snd_pcm_subst
+ static int
+ snd_rme32_capture_trigger(snd_pcm_substream_t * substream, int cmd)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+@@ -1160,14 +1160,14 @@ snd_rme32_capture_trigger(snd_pcm_substr
+ static snd_pcm_uframes_t
+ snd_rme32_playback_pointer(snd_pcm_substream_t * substream)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	return snd_rme32_playback_ptr(rme32);
+ }
+ 
+ static snd_pcm_uframes_t
+ snd_rme32_capture_pointer(snd_pcm_substream_t * substream)
+ {
+-	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
++	rme32_t *rme32 = snd_pcm_substream_chip(substream);
+ 	return snd_rme32_capture_ptr(rme32);
+ }
+ 
+@@ -1480,7 +1480,7 @@ static int
+ snd_rme32_get_loopback_control(snd_kcontrol_t * kcontrol,
+ 			       snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+@@ -1493,7 +1493,7 @@ static int
+ snd_rme32_put_loopback_control(snd_kcontrol_t * kcontrol,
+ 			       snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -1516,7 +1516,7 @@ static int
+ snd_rme32_info_inputtype_control(snd_kcontrol_t * kcontrol,
+ 				 snd_ctl_elem_info_t * uinfo)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	static char *texts[4] = { "Optical", "Coaxial", "Internal", "XLR" };
+ 
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+@@ -1546,7 +1546,7 @@ static int
+ snd_rme32_get_inputtype_control(snd_kcontrol_t * kcontrol,
+ 				snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int items = 3;
+ 
+@@ -1576,7 +1576,7 @@ static int
+ snd_rme32_put_inputtype_control(snd_kcontrol_t * kcontrol,
+ 				snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change, items = 3;
+@@ -1625,7 +1625,7 @@ static int
+ snd_rme32_get_clockmode_control(snd_kcontrol_t * kcontrol,
+ 				snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme32->lock, flags);
+@@ -1637,7 +1637,7 @@ static int
+ snd_rme32_put_clockmode_control(snd_kcontrol_t * kcontrol,
+ 				snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -1681,7 +1681,7 @@ static int snd_rme32_control_spdif_info(
+ static int snd_rme32_control_spdif_get(snd_kcontrol_t * kcontrol,
+ 				       snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 
+ 	snd_rme32_convert_to_aes(&ucontrol->value.iec958,
+ 				 rme32->wcreg_spdif);
+@@ -1691,7 +1691,7 @@ static int snd_rme32_control_spdif_get(s
+ static int snd_rme32_control_spdif_put(snd_kcontrol_t * kcontrol,
+ 				       snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -1716,7 +1716,7 @@ static int snd_rme32_control_spdif_strea
+ 					      snd_ctl_elem_value_t *
+ 					      ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 
+ 	snd_rme32_convert_to_aes(&ucontrol->value.iec958,
+ 				 rme32->wcreg_spdif_stream);
+@@ -1727,7 +1727,7 @@ static int snd_rme32_control_spdif_strea
+ 					      snd_ctl_elem_value_t *
+ 					      ucontrol)
+ {
+-	rme32_t *rme32 = _snd_kcontrol_chip(kcontrol);
++	rme32_t *rme32 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+diff --git a/sound/pci/rme96.c b/sound/pci/rme96.c
+index 883fc65..885d756 100644
+--- a/sound/pci/rme96.c
++++ b/sound/pci/rme96.c
+@@ -345,7 +345,7 @@ snd_rme96_playback_silence(snd_pcm_subst
+ 			   snd_pcm_uframes_t pos,
+ 			   snd_pcm_uframes_t count)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	count <<= rme96->playback_frlog;
+ 	pos <<= rme96->playback_frlog;
+ 	memset_io(rme96->iobase + RME96_IO_PLAY_BUFFER + pos,
+@@ -360,7 +360,7 @@ snd_rme96_playback_copy(snd_pcm_substrea
+ 			void __user *src,
+ 			snd_pcm_uframes_t count)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	count <<= rme96->playback_frlog;
+ 	pos <<= rme96->playback_frlog;
+ 	copy_from_user_toio(rme96->iobase + RME96_IO_PLAY_BUFFER + pos, src,
+@@ -375,7 +375,7 @@ snd_rme96_capture_copy(snd_pcm_substream
+ 		       void __user *dst,
+ 		       snd_pcm_uframes_t count)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	count <<= rme96->capture_frlog;
+ 	pos <<= rme96->capture_frlog;
+ 	copy_to_user_fromio(dst, rme96->iobase + RME96_IO_REC_BUFFER + pos,
+@@ -992,7 +992,7 @@ snd_rme96_playback_hw_params(snd_pcm_sub
+ 			     snd_pcm_hw_params_t *params)
+ {
+ 	unsigned long flags;        
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	int err, rate, dummy;
+ 
+@@ -1045,7 +1045,7 @@ snd_rme96_capture_hw_params(snd_pcm_subs
+ 			    snd_pcm_hw_params_t *params)
+ {
+ 	unsigned long flags;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	int err, isadat, rate;
+ 	
+@@ -1187,7 +1187,7 @@ snd_rme96_playback_spdif_open(snd_pcm_su
+ {
+ 	unsigned long flags;
+         int rate, dummy;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	snd_pcm_set_sync(substream);
+@@ -1227,7 +1227,7 @@ snd_rme96_capture_spdif_open(snd_pcm_sub
+ {
+ 	unsigned long flags;
+         int isadat, rate;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	snd_pcm_set_sync(substream);
+@@ -1263,7 +1263,7 @@ snd_rme96_playback_adat_open(snd_pcm_sub
+ {
+ 	unsigned long flags;
+         int rate, dummy;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;        
+ 	
+ 	snd_pcm_set_sync(substream);
+@@ -1298,7 +1298,7 @@ snd_rme96_capture_adat_open(snd_pcm_subs
+ {
+ 	unsigned long flags;
+         int isadat, rate;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+ 	snd_pcm_set_sync(substream);
+@@ -1335,7 +1335,7 @@ static int
+ snd_rme96_playback_close(snd_pcm_substream_t *substream)
+ {
+ 	unsigned long flags;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	int spdif = 0;
+ 
+ 	spin_lock_irqsave(&rme96->lock, flags);	
+@@ -1358,7 +1358,7 @@ static int
+ snd_rme96_capture_close(snd_pcm_substream_t *substream)
+ {
+ 	unsigned long flags;
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);	
+ 	if (RME96_ISRECORDING(rme96)) {
+@@ -1373,7 +1373,7 @@ snd_rme96_capture_close(snd_pcm_substrea
+ static int
+ snd_rme96_playback_prepare(snd_pcm_substream_t *substream)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);	
+@@ -1388,7 +1388,7 @@ snd_rme96_playback_prepare(snd_pcm_subst
+ static int
+ snd_rme96_capture_prepare(snd_pcm_substream_t *substream)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);	
+@@ -1404,7 +1404,7 @@ static int
+ snd_rme96_playback_trigger(snd_pcm_substream_t *substream, 
+ 			   int cmd)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+@@ -1447,7 +1447,7 @@ static int
+ snd_rme96_capture_trigger(snd_pcm_substream_t *substream, 
+ 			  int cmd)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+@@ -1490,14 +1490,14 @@ snd_rme96_capture_trigger(snd_pcm_substr
+ static snd_pcm_uframes_t
+ snd_rme96_playback_pointer(snd_pcm_substream_t *substream)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	return snd_rme96_playback_ptr(rme96);
+ }
+ 
+ static snd_pcm_uframes_t
+ snd_rme96_capture_pointer(snd_pcm_substream_t *substream)
+ {
+-	rme96_t *rme96 = _snd_pcm_substream_chip(substream);
++	rme96_t *rme96 = snd_pcm_substream_chip(substream);
+ 	return snd_rme96_capture_ptr(rme96);
+ }
+ 
+@@ -1862,7 +1862,7 @@ snd_rme96_info_loopback_control(snd_kcon
+ static int
+ snd_rme96_get_loopback_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);
+@@ -1873,7 +1873,7 @@ snd_rme96_get_loopback_control(snd_kcont
+ static int
+ snd_rme96_put_loopback_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -1891,7 +1891,7 @@ static int
+ snd_rme96_info_inputtype_control(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *_texts[5] = { "Optical", "Coaxial", "Internal", "XLR", "Analog" };
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	char *texts[5] = { _texts[0], _texts[1], _texts[2], _texts[3], _texts[4] };
+ 	
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+@@ -1927,7 +1927,7 @@ snd_rme96_info_inputtype_control(snd_kco
+ static int
+ snd_rme96_get_inputtype_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int items = 3;
+ 	
+@@ -1967,7 +1967,7 @@ snd_rme96_get_inputtype_control(snd_kcon
+ static int
+ snd_rme96_put_inputtype_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change, items = 3;
+@@ -2024,7 +2024,7 @@ snd_rme96_info_clockmode_control(snd_kco
+ static int
+ snd_rme96_get_clockmode_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);
+@@ -2035,7 +2035,7 @@ snd_rme96_get_clockmode_control(snd_kcon
+ static int
+ snd_rme96_put_clockmode_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -2065,7 +2065,7 @@ snd_rme96_info_attenuation_control(snd_k
+ static int
+ snd_rme96_get_attenuation_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);
+@@ -2076,7 +2076,7 @@ snd_rme96_get_attenuation_control(snd_kc
+ static int
+ snd_rme96_put_attenuation_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -2107,7 +2107,7 @@ snd_rme96_info_montracks_control(snd_kco
+ static int
+ snd_rme96_get_montracks_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme96->lock, flags);
+@@ -2118,7 +2118,7 @@ snd_rme96_get_montracks_control(snd_kcon
+ static int
+ snd_rme96_put_montracks_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	unsigned int val;
+ 	int change;
+@@ -2162,7 +2162,7 @@ static int snd_rme96_control_spdif_info(
+ 
+ static int snd_rme96_control_spdif_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_rme96_convert_to_aes(&ucontrol->value.iec958, rme96->wcreg_spdif);
+ 	return 0;
+@@ -2170,7 +2170,7 @@ static int snd_rme96_control_spdif_get(s
+ 
+ static int snd_rme96_control_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -2192,7 +2192,7 @@ static int snd_rme96_control_spdif_strea
+ 
+ static int snd_rme96_control_spdif_stream_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_rme96_convert_to_aes(&ucontrol->value.iec958, rme96->wcreg_spdif_stream);
+ 	return 0;
+@@ -2200,7 +2200,7 @@ static int snd_rme96_control_spdif_strea
+ 
+ static int snd_rme96_control_spdif_stream_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -2231,7 +2231,7 @@ static int snd_rme96_control_spdif_mask_
+ static int
+ snd_rme96_dac_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	
+         uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+         uinfo->count = 2;
+@@ -2243,7 +2243,7 @@ snd_rme96_dac_volume_info(snd_kcontrol_t
+ static int
+ snd_rme96_dac_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme96->lock, flags);
+@@ -2257,7 +2257,7 @@ snd_rme96_dac_volume_get(snd_kcontrol_t 
+ static int
+ snd_rme96_dac_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u)
+ {
+-	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
++	rme96_t *rme96 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+         int change = 0;
+ 
+diff --git a/sound/pci/rme9652/hdsp.c b/sound/pci/rme9652/hdsp.c
+index c91602c..76ad73b 100644
+--- a/sound/pci/rme9652/hdsp.c
++++ b/sound/pci/rme9652/hdsp.c
+@@ -1563,7 +1563,7 @@ static int snd_hdsp_control_spdif_info(s
+ 
+ static int snd_hdsp_control_spdif_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_hdsp_convert_to_aes(&ucontrol->value.iec958, hdsp->creg_spdif);
+ 	return 0;
+@@ -1571,7 +1571,7 @@ static int snd_hdsp_control_spdif_get(sn
+ 
+ static int snd_hdsp_control_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -1593,7 +1593,7 @@ static int snd_hdsp_control_spdif_stream
+ 
+ static int snd_hdsp_control_spdif_stream_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_hdsp_convert_to_aes(&ucontrol->value.iec958, hdsp->creg_spdif_stream);
+ 	return 0;
+@@ -1601,7 +1601,7 @@ static int snd_hdsp_control_spdif_stream
+ 
+ static int snd_hdsp_control_spdif_stream_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -1653,7 +1653,7 @@ static int hdsp_set_spdif_input(hdsp_t *
+ static int snd_hdsp_info_spdif_in(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *texts[4] = {"Optical", "Coaxial", "Internal", "AES"};
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -1666,7 +1666,7 @@ static int snd_hdsp_info_spdif_in(snd_kc
+ 
+ static int snd_hdsp_get_spdif_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_spdif_in(hdsp);
+ 	return 0;
+@@ -1674,7 +1674,7 @@ static int snd_hdsp_get_spdif_in(snd_kco
+ 
+ static int snd_hdsp_put_spdif_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1722,7 +1722,7 @@ static int snd_hdsp_info_spdif_bits(snd_
+ 
+ static int snd_hdsp_get_spdif_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.integer.value[0] = hdsp_spdif_out(hdsp);
+ 	return 0;
+@@ -1730,7 +1730,7 @@ static int snd_hdsp_get_spdif_out(snd_kc
+ 
+ static int snd_hdsp_put_spdif_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1768,7 +1768,7 @@ static int hdsp_set_spdif_professional(h
+ 
+ static int snd_hdsp_get_spdif_professional(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.integer.value[0] = hdsp_spdif_professional(hdsp);
+ 	return 0;
+@@ -1776,7 +1776,7 @@ static int snd_hdsp_get_spdif_profession
+ 
+ static int snd_hdsp_put_spdif_professional(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1814,7 +1814,7 @@ static int hdsp_set_spdif_emphasis(hdsp_
+ 
+ static int snd_hdsp_get_spdif_emphasis(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.integer.value[0] = hdsp_spdif_emphasis(hdsp);
+ 	return 0;
+@@ -1822,7 +1822,7 @@ static int snd_hdsp_get_spdif_emphasis(s
+ 
+ static int snd_hdsp_put_spdif_emphasis(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1860,7 +1860,7 @@ static int hdsp_set_spdif_nonaudio(hdsp_
+ 
+ static int snd_hdsp_get_spdif_nonaudio(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.integer.value[0] = hdsp_spdif_nonaudio(hdsp);
+ 	return 0;
+@@ -1868,7 +1868,7 @@ static int snd_hdsp_get_spdif_nonaudio(s
+ 
+ static int snd_hdsp_put_spdif_nonaudio(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1895,7 +1895,7 @@ #define HDSP_SPDIF_SAMPLE_RATE(xname, xi
+ static int snd_hdsp_info_spdif_sample_rate(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *texts[] = {"32000", "44100", "48000", "64000", "88200", "96000", "None", "128000", "176400", "192000"};
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -1908,7 +1908,7 @@ static int snd_hdsp_info_spdif_sample_ra
+ 
+ static int snd_hdsp_get_spdif_sample_rate(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	switch (hdsp_spdif_sample_rate(hdsp)) {
+ 	case 32000:
+@@ -1962,7 +1962,7 @@ static int snd_hdsp_info_system_sample_r
+ 
+ static int snd_hdsp_get_system_sample_rate(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp->system_sample_rate;
+ 	return 0;
+@@ -1979,7 +1979,7 @@ #define HDSP_AUTOSYNC_SAMPLE_RATE(xname,
+ 
+ static int snd_hdsp_info_autosync_sample_rate(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	static char *texts[] = {"32000", "44100", "48000", "64000", "88200", "96000", "None", "128000", "176400", "192000"};	
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -1992,7 +1992,7 @@ static int snd_hdsp_info_autosync_sample
+ 
+ static int snd_hdsp_get_autosync_sample_rate(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	switch (hdsp_external_sample_rate(hdsp)) {
+ 	case 32000:
+@@ -2062,7 +2062,7 @@ static int snd_hdsp_info_system_clock_mo
+ 
+ static int snd_hdsp_get_system_clock_mode(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_system_clock_mode(hdsp);
+ 	return 0;
+@@ -2159,7 +2159,7 @@ static int hdsp_set_clock_source(hdsp_t 
+ static int snd_hdsp_info_clock_source(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *texts[] = {"AutoSync", "Internal 32.0 kHz", "Internal 44.1 kHz", "Internal 48.0 kHz", "Internal 64.0 kHz", "Internal 88.2 kHz", "Internal 96.0 kHz", "Internal 128 kHz", "Internal 176.4 kHz", "Internal 192.0 KHz" };
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -2175,7 +2175,7 @@ static int snd_hdsp_info_clock_source(sn
+ 
+ static int snd_hdsp_get_clock_source(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_clock_source(hdsp);
+ 	return 0;
+@@ -2183,7 +2183,7 @@ static int snd_hdsp_get_clock_source(snd
+ 
+ static int snd_hdsp_put_clock_source(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2266,7 +2266,7 @@ static int snd_hdsp_info_da_gain(snd_kco
+ 
+ static int snd_hdsp_get_da_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_da_gain(hdsp);
+ 	return 0;
+@@ -2274,7 +2274,7 @@ static int snd_hdsp_get_da_gain(snd_kcon
+ 
+ static int snd_hdsp_put_da_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2353,7 +2353,7 @@ static int snd_hdsp_info_ad_gain(snd_kco
+ 
+ static int snd_hdsp_get_ad_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_ad_gain(hdsp);
+ 	return 0;
+@@ -2361,7 +2361,7 @@ static int snd_hdsp_get_ad_gain(snd_kcon
+ 
+ static int snd_hdsp_put_ad_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2440,7 +2440,7 @@ static int snd_hdsp_info_phone_gain(snd_
+ 
+ static int snd_hdsp_get_phone_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_phone_gain(hdsp);
+ 	return 0;
+@@ -2448,7 +2448,7 @@ static int snd_hdsp_get_phone_gain(snd_k
+ 
+ static int snd_hdsp_put_phone_gain(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2507,7 +2507,7 @@ static int snd_hdsp_info_xlr_breakout_ca
+ 
+ static int snd_hdsp_get_xlr_breakout_cable(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_xlr_breakout_cable(hdsp);
+ 	return 0;
+@@ -2515,7 +2515,7 @@ static int snd_hdsp_get_xlr_breakout_cab
+ 
+ static int snd_hdsp_put_xlr_breakout_cable(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2573,7 +2573,7 @@ static int snd_hdsp_info_aeb(snd_kcontro
+ 
+ static int snd_hdsp_get_aeb(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_aeb(hdsp);
+ 	return 0;
+@@ -2581,7 +2581,7 @@ static int snd_hdsp_get_aeb(snd_kcontrol
+ 
+ static int snd_hdsp_put_aeb(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int val;
+@@ -2662,7 +2662,7 @@ static int hdsp_set_pref_sync_ref(hdsp_t
+ static int snd_hdsp_info_pref_sync_ref(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *texts[] = {"Word", "IEC958", "ADAT1", "ADAT Sync", "ADAT2", "ADAT3" };
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -2691,7 +2691,7 @@ static int snd_hdsp_info_pref_sync_ref(s
+ 
+ static int snd_hdsp_get_pref_sync_ref(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_pref_sync_ref(hdsp);
+ 	return 0;
+@@ -2699,7 +2699,7 @@ static int snd_hdsp_get_pref_sync_ref(sn
+ 
+ static int snd_hdsp_put_pref_sync_ref(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change, max;
+ 	unsigned int val;
+@@ -2780,7 +2780,7 @@ static int snd_hdsp_info_autosync_ref(sn
+ 
+ static int snd_hdsp_get_autosync_ref(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.enumerated.item[0] = hdsp_pref_sync_ref(hdsp);
+ 	return 0;
+@@ -2806,7 +2806,7 @@ static int snd_hdsp_info_passthru(snd_kc
+ 
+ static int snd_hdsp_get_passthru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&hdsp->lock, flags);
+@@ -2817,7 +2817,7 @@ static int snd_hdsp_get_passthru(snd_kco
+ 
+ static int snd_hdsp_put_passthru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -2871,7 +2871,7 @@ static int snd_hdsp_info_line_out(snd_kc
+ 
+ static int snd_hdsp_get_line_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&hdsp->lock, flags);
+@@ -2882,7 +2882,7 @@ static int snd_hdsp_get_line_out(snd_kco
+ 
+ static int snd_hdsp_put_line_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -2920,7 +2920,7 @@ static int snd_hdsp_info_mixer(snd_kcont
+ 
+ static int snd_hdsp_get_mixer(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int source;
+ 	int destination;
+@@ -2943,7 +2943,7 @@ static int snd_hdsp_get_mixer(snd_kcontr
+ 
+ static int snd_hdsp_put_mixer(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	int source;
+@@ -3011,7 +3011,7 @@ static int hdsp_wc_sync_check(hdsp_t *hd
+ 
+ static int snd_hdsp_get_wc_sync_check(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	ucontrol->value.enumerated.item[0] = hdsp_wc_sync_check(hdsp);
+ 	return 0;
+@@ -3043,7 +3043,7 @@ static int hdsp_spdif_sync_check(hdsp_t 
+ 
+ static int snd_hdsp_get_spdif_sync_check(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	ucontrol->value.enumerated.item[0] = hdsp_spdif_sync_check(hdsp);
+ 	return 0;
+@@ -3074,7 +3074,7 @@ static int hdsp_adatsync_sync_check(hdsp
+ 
+ static int snd_hdsp_get_adatsync_sync_check(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	ucontrol->value.enumerated.item[0] = hdsp_adatsync_sync_check(hdsp);
+ 	return 0;
+@@ -3105,7 +3105,7 @@ static int hdsp_adat_sync_check(hdsp_t *
+ static int snd_hdsp_get_adat_sync_check(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+ 	int offset;
+-	hdsp_t *hdsp = _snd_kcontrol_chip(kcontrol);
++	hdsp_t *hdsp = snd_kcontrol_chip(kcontrol);
+ 
+ 	offset = ucontrol->id.index - 1;
+ 	snd_assert(offset >= 0);
+@@ -3809,7 +3809,7 @@ static irqreturn_t snd_hdsp_interrupt(in
+ 
+ static snd_pcm_uframes_t snd_hdsp_hw_pointer(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	return hdsp_hw_pointer(hdsp);
+ }
+ 
+@@ -3836,7 +3836,7 @@ static char *hdsp_channel_buffer_locatio
+ static int snd_hdsp_playback_copy(snd_pcm_substream_t *substream, int channel,
+ 				  snd_pcm_uframes_t pos, void __user *src, snd_pcm_uframes_t count)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	snd_assert(pos + count <= HDSP_CHANNEL_BUFFER_BYTES / 4, return -EINVAL);
+@@ -3851,7 +3851,7 @@ static int snd_hdsp_playback_copy(snd_pc
+ static int snd_hdsp_capture_copy(snd_pcm_substream_t *substream, int channel,
+ 				 snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	snd_assert(pos + count <= HDSP_CHANNEL_BUFFER_BYTES / 4, return -EINVAL);
+@@ -3866,7 +3866,7 @@ static int snd_hdsp_capture_copy(snd_pcm
+ static int snd_hdsp_hw_silence(snd_pcm_substream_t *substream, int channel,
+ 				  snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	channel_buf = hdsp_channel_buffer_location (hdsp, substream->pstr->stream, channel);
+@@ -3878,7 +3878,7 @@ static int snd_hdsp_hw_silence(snd_pcm_s
+ static int snd_hdsp_reset(snd_pcm_substream_t *substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	snd_pcm_substream_t *other;
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+ 		other = hdsp->capture_substream;
+@@ -3906,7 +3906,7 @@ static int snd_hdsp_reset(snd_pcm_substr
+ static int snd_hdsp_hw_params(snd_pcm_substream_t *substream,
+ 				 snd_pcm_hw_params_t *params)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	int err;
+ 	pid_t this_pid;
+ 	pid_t other_pid;
+@@ -3989,7 +3989,7 @@ static int snd_hdsp_hw_params(snd_pcm_su
+ static int snd_hdsp_channel_info(snd_pcm_substream_t *substream,
+ 				    snd_pcm_channel_info_t *info)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	int mapped_channel;
+ 
+ 	snd_assert(info->channel < hdsp->max_channels, return -EINVAL);
+@@ -4026,7 +4026,7 @@ static int snd_hdsp_ioctl(snd_pcm_substr
+ 
+ static int snd_hdsp_trigger(snd_pcm_substream_t *substream, int cmd)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	snd_pcm_substream_t *other;
+ 	int running;
+ 	
+@@ -4105,7 +4105,7 @@ static int snd_hdsp_trigger(snd_pcm_subs
+ 
+ static int snd_hdsp_prepare(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	int result = 0;
+ 
+ 	if (hdsp_check_for_iobox (hdsp)) {
+@@ -4364,7 +4364,7 @@ static int snd_hdsp_hw_rule_rate_in_chan
+ 
+ static int snd_hdsp_playback_open(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+@@ -4430,7 +4430,7 @@ static int snd_hdsp_playback_open(snd_pc
+ 
+ static int snd_hdsp_playback_release(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&hdsp->lock, flags);
+@@ -4449,7 +4449,7 @@ static int snd_hdsp_playback_release(snd
+ 
+ static int snd_hdsp_capture_open(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+@@ -4509,7 +4509,7 @@ static int snd_hdsp_capture_open(snd_pcm
+ 
+ static int snd_hdsp_capture_release(snd_pcm_substream_t *substream)
+ {
+-	hdsp_t *hdsp = _snd_pcm_substream_chip(substream);
++	hdsp_t *hdsp = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&hdsp->lock, flags);
+diff --git a/sound/pci/rme9652/rme9652.c b/sound/pci/rme9652/rme9652.c
+index e1abd98..8c1b4da 100644
+--- a/sound/pci/rme9652/rme9652.c
++++ b/sound/pci/rme9652/rme9652.c
+@@ -858,7 +858,7 @@ static int snd_rme9652_control_spdif_inf
+ 
+ static int snd_rme9652_control_spdif_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_rme9652_convert_to_aes(&ucontrol->value.iec958, rme9652->creg_spdif);
+ 	return 0;
+@@ -866,7 +866,7 @@ static int snd_rme9652_control_spdif_get
+ 
+ static int snd_rme9652_control_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -888,7 +888,7 @@ static int snd_rme9652_control_spdif_str
+ 
+ static int snd_rme9652_control_spdif_stream_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	
+ 	snd_rme9652_convert_to_aes(&ucontrol->value.iec958, rme9652->creg_spdif_stream);
+ 	return 0;
+@@ -896,7 +896,7 @@ static int snd_rme9652_control_spdif_str
+ 
+ static int snd_rme9652_control_spdif_stream_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	u32 val;
+@@ -977,7 +977,7 @@ static int snd_rme9652_info_adat1_in(snd
+ 
+ static int snd_rme9652_get_adat1_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -988,7 +988,7 @@ static int snd_rme9652_get_adat1_in(snd_
+ 
+ static int snd_rme9652_put_adat1_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1050,7 +1050,7 @@ static int snd_rme9652_info_spdif_in(snd
+ 
+ static int snd_rme9652_get_spdif_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1061,7 +1061,7 @@ static int snd_rme9652_get_spdif_in(snd_
+ 
+ static int snd_rme9652_put_spdif_in(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1121,7 +1121,7 @@ static int snd_rme9652_info_spdif_out(sn
+ 
+ static int snd_rme9652_get_spdif_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1132,7 +1132,7 @@ static int snd_rme9652_get_spdif_out(snd
+ 
+ static int snd_rme9652_put_spdif_out(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1210,7 +1210,7 @@ static int snd_rme9652_info_sync_mode(sn
+ 
+ static int snd_rme9652_get_sync_mode(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1221,7 +1221,7 @@ static int snd_rme9652_get_sync_mode(snd
+ 
+ static int snd_rme9652_put_sync_mode(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1291,7 +1291,7 @@ static int rme9652_set_sync_pref(rme9652
+ static int snd_rme9652_info_sync_pref(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+ 	static char *texts[4] = {"IEC958 In", "ADAT1 In", "ADAT2 In", "ADAT3 In"};
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+@@ -1304,7 +1304,7 @@ static int snd_rme9652_info_sync_pref(sn
+ 
+ static int snd_rme9652_get_sync_pref(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1315,7 +1315,7 @@ static int snd_rme9652_get_sync_pref(snd
+ 
+ static int snd_rme9652_put_sync_pref(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change, max;
+ 	unsigned int val;
+@@ -1333,7 +1333,7 @@ static int snd_rme9652_put_sync_pref(snd
+ 
+ static int snd_rme9652_info_thru(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+ 	uinfo->count = rme9652->ss_channels;
+ 	uinfo->value.integer.min = 0;
+@@ -1343,7 +1343,7 @@ static int snd_rme9652_info_thru(snd_kco
+ 
+ static int snd_rme9652_get_thru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned int k;
+ 	u32 thru_bits = rme9652->thru_bits;
+ 
+@@ -1355,7 +1355,7 @@ static int snd_rme9652_get_thru(snd_kcon
+ 
+ static int snd_rme9652_put_thru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int chn;
+@@ -1399,7 +1399,7 @@ static int snd_rme9652_info_passthru(snd
+ 
+ static int snd_rme9652_get_passthru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1410,7 +1410,7 @@ static int snd_rme9652_get_passthru(snd_
+ 
+ static int snd_rme9652_put_passthru(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	int change;
+ 	unsigned int val;
+@@ -1447,7 +1447,7 @@ static int snd_rme9652_info_spdif_rate(s
+ 
+ static int snd_rme9652_get_spdif_rate(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -1477,7 +1477,7 @@ static int snd_rme9652_info_adat_sync(sn
+ 
+ static int snd_rme9652_get_adat_sync(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	unsigned int mask1, mask2, val;
+ 	
+ 	switch (kcontrol->private_value) {
+@@ -1509,7 +1509,7 @@ static int snd_rme9652_info_tc_valid(snd
+ 
+ static int snd_rme9652_get_tc_valid(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+ {
+-	rme9652_t *rme9652 = _snd_kcontrol_chip(kcontrol);
++	rme9652_t *rme9652 = snd_kcontrol_chip(kcontrol);
+ 	
+ 	ucontrol->value.integer.value[0] = 
+ 		(rme9652_read(rme9652, RME9652_status_register) & RME9652_tc_valid) ? 1 : 0;
+@@ -1984,7 +1984,7 @@ static irqreturn_t snd_rme9652_interrupt
+ 
+ static snd_pcm_uframes_t snd_rme9652_hw_pointer(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	return rme9652_hw_pointer(rme9652);
+ }
+ 
+@@ -2013,7 +2013,7 @@ static char *rme9652_channel_buffer_loca
+ static int snd_rme9652_playback_copy(snd_pcm_substream_t *substream, int channel,
+ 				     snd_pcm_uframes_t pos, void __user *src, snd_pcm_uframes_t count)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	snd_assert(pos + count <= RME9652_CHANNEL_BUFFER_BYTES / 4, return -EINVAL);
+@@ -2030,7 +2030,7 @@ static int snd_rme9652_playback_copy(snd
+ static int snd_rme9652_capture_copy(snd_pcm_substream_t *substream, int channel,
+ 				    snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	snd_assert(pos + count <= RME9652_CHANNEL_BUFFER_BYTES / 4, return -EINVAL);
+@@ -2047,7 +2047,7 @@ static int snd_rme9652_capture_copy(snd_
+ static int snd_rme9652_hw_silence(snd_pcm_substream_t *substream, int channel,
+ 				  snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	char *channel_buf;
+ 
+ 	channel_buf = rme9652_channel_buffer_location (rme9652,
+@@ -2061,7 +2061,7 @@ static int snd_rme9652_hw_silence(snd_pc
+ static int snd_rme9652_reset(snd_pcm_substream_t *substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_substream_t *other;
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+ 		other = rme9652->capture_substream;
+@@ -2089,7 +2089,7 @@ static int snd_rme9652_reset(snd_pcm_sub
+ static int snd_rme9652_hw_params(snd_pcm_substream_t *substream,
+ 				 snd_pcm_hw_params_t *params)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	int err;
+ 	pid_t this_pid;
+ 	pid_t other_pid;
+@@ -2154,7 +2154,7 @@ static int snd_rme9652_hw_params(snd_pcm
+ static int snd_rme9652_channel_info(snd_pcm_substream_t *substream,
+ 				    snd_pcm_channel_info_t *info)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	int chn;
+ 
+ 	snd_assert(info->channel < RME9652_NCHANNELS, return -EINVAL);
+@@ -2197,7 +2197,7 @@ static void rme9652_silence_playback(rme
+ static int snd_rme9652_trigger(snd_pcm_substream_t *substream,
+ 			       int cmd)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	snd_pcm_substream_t *other;
+ 	int running;
+ 	spin_lock(&rme9652->lock);
+@@ -2260,7 +2260,7 @@ static int snd_rme9652_trigger(snd_pcm_s
+ 
+ static int snd_rme9652_prepare(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	int result = 0;
+ 
+ 	spin_lock(&rme9652->lock);
+@@ -2386,7 +2386,7 @@ static int snd_rme9652_hw_rule_rate_chan
+ 
+ static int snd_rme9652_playback_open(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+@@ -2429,7 +2429,7 @@ static int snd_rme9652_playback_open(snd
+ 
+ static int snd_rme9652_playback_release(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+@@ -2448,7 +2448,7 @@ static int snd_rme9652_playback_release(
+ 
+ static int snd_rme9652_capture_open(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 
+@@ -2486,7 +2486,7 @@ static int snd_rme9652_capture_open(snd_
+ 
+ static int snd_rme9652_capture_release(snd_pcm_substream_t *substream)
+ {
+-	rme9652_t *rme9652 = _snd_pcm_substream_chip(substream);
++	rme9652_t *rme9652 = snd_pcm_substream_chip(substream);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&rme9652->lock, flags);
+diff --git a/sound/pci/sonicvibes.c b/sound/pci/sonicvibes.c
+index 5f9475d..c1fe488 100644
+--- a/sound/pci/sonicvibes.c
++++ b/sound/pci/sonicvibes.c
+@@ -207,7 +207,6 @@ #define SV_MODE_CAPTURE		2
+  */
+ 
+ typedef struct _snd_sonicvibes sonicvibes_t;
+-#define chip_t sonicvibes_t
+ 
+ struct _snd_sonicvibes {
+ 	unsigned long dma1size;
+@@ -599,7 +598,7 @@ static int snd_sonicvibes_trigger(sonicv
+ 
+ static irqreturn_t snd_sonicvibes_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, dev_id, return IRQ_NONE);
++	sonicvibes_t *sonic = dev_id;
+ 	unsigned char status;
+ 
+ 	status = inb(SV_REG(sonic, STATUS));
+@@ -864,7 +863,7 @@ static snd_pcm_ops_t snd_sonicvibes_capt
+ 
+ static void snd_sonicvibes_pcm_free(snd_pcm_t *pcm)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, pcm->private_data, return);
++	sonicvibes_t *sonic = pcm->private_data;
+ 	sonic->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1113,7 +1112,7 @@ SONICVIBES_MUX("Capture Source", 0)
+ 
+ static void snd_sonicvibes_master_free(snd_kcontrol_t *kcontrol)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, _snd_kcontrol_chip(kcontrol), return);
++	sonicvibes_t *sonic = snd_kcontrol_chip(kcontrol);
+ 	sonic->master_mute = NULL;
+ 	sonic->master_volume = NULL;
+ }
+@@ -1147,7 +1146,7 @@ static int __devinit snd_sonicvibes_mixe
+ static void snd_sonicvibes_proc_read(snd_info_entry_t *entry, 
+ 				     snd_info_buffer_t * buffer)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, entry->private_data, return);
++	sonicvibes_t *sonic = entry->private_data;
+ 	unsigned char tmp;
+ 
+ 	tmp = sonic->srs_space & 0x0f;
+@@ -1223,13 +1222,13 @@ #endif
+ 	}
+ 	if (sonic->irq >= 0)
+ 		free_irq(sonic->irq, (void *)sonic);
+-	snd_magic_kfree(sonic);
++	kfree(sonic);
+ 	return 0;
+ }
+ 
+ static int snd_sonicvibes_dev_free(snd_device_t *device)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, device->device_data, return -ENXIO);
++	sonicvibes_t *sonic = device->device_data;
+ 	return snd_sonicvibes_free(sonic);
+ }
+ 
+@@ -1257,7 +1256,7 @@ static int __devinit snd_sonicvibes_crea
+                 return -ENXIO;
+         }
+ 
+-	sonic = snd_magic_kcalloc(sonicvibes_t, 0, GFP_KERNEL);
++	sonic = kcalloc(1, sizeof(*sonic), GFP_KERNEL);
+ 	if (sonic == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&sonic->reg_lock);
+@@ -1408,20 +1407,20 @@ SONICVIBES_SINGLE("SonicVibes External T
+ 
+ static int snd_sonicvibes_midi_input_open(mpu401_t * mpu)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, mpu->private_data, return -EIO);
++	sonicvibes_t *sonic = mpu->private_data;
+ 	outb(sonic->irqmask &= ~SV_MIDI_MASK, SV_REG(sonic, IRQMASK));
+ 	return 0;
+ }
+ 
+ static void snd_sonicvibes_midi_input_close(mpu401_t * mpu)
+ {
+-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, mpu->private_data, return);
++	sonicvibes_t *sonic = mpu->private_data;
+ 	outb(sonic->irqmask |= SV_MIDI_MASK, SV_REG(sonic, IRQMASK));
+ }
+ 
+ static int __devinit snd_sonicvibes_midi(sonicvibes_t * sonic, snd_rawmidi_t * rmidi)
+ {
+-	mpu401_t * mpu = snd_magic_cast(mpu401_t, rmidi->private_data, return -ENXIO);
++	mpu401_t * mpu = rmidi->private_data;
+ 	snd_card_t *card = sonic->card;
+ 	snd_rawmidi_str_t *dir;
+ 	unsigned int idx;
+diff --git a/sound/pci/trident/trident_main.c b/sound/pci/trident/trident_main.c
+index 438faed..4e99636 100644
+--- a/sound/pci/trident/trident_main.c
++++ b/sound/pci/trident/trident_main.c
+@@ -44,8 +44,6 @@ #include <sound/asoundef.h>
+ 
+ #include <asm/io.h>
+ 
+-#define chip_t trident_t
+-
+ static int snd_trident_pcm_mixer_build(trident_t *trident, snd_trident_voice_t * voice, snd_pcm_substream_t *substream);
+ static int snd_trident_pcm_mixer_free(trident_t *trident, snd_trident_voice_t * voice, snd_pcm_substream_t *substream);
+ static irqreturn_t snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+@@ -119,7 +117,7 @@ static unsigned short snd_trident_codec_
+ 	unsigned int data = 0, treg;
+ 	unsigned short count = 0xffff;
+ 	unsigned long flags;
+-	trident_t *trident = snd_magic_cast(trident_t, ac97->private_data, return -ENXIO);
++	trident_t *trident = ac97->private_data;
+ 
+ 	spin_lock_irqsave(&trident->reg_lock, flags);
+ 	if (trident->device == TRIDENT_DEVICE_ID_DX) {
+@@ -178,7 +176,7 @@ static void snd_trident_codec_write(ac97
+ 	unsigned int address, data;
+ 	unsigned short count = 0xffff;
+ 	unsigned long flags;
+-	trident_t *trident = snd_magic_cast(trident_t, ac97->private_data, return);
++	trident_t *trident = ac97->private_data;
+ 
+ 	data = ((unsigned long) wdata) << 16;
+ 
+@@ -1526,7 +1524,7 @@ static int snd_trident_trigger(snd_pcm_s
+ 	val = inl(TRID_REG(trident, T4D_STIMER)) & 0x00ffffff;
+ 	snd_pcm_group_for_each(pos, substream) {
+ 		s = snd_pcm_group_substream_entry(pos);
+-		if ((trident_t *) _snd_pcm_chip(s->pcm) == trident) {
++		if ((trident_t *) snd_pcm_substream_chip(s) == trident) {
+ 			voice = (snd_trident_voice_t *) s->runtime->private_data;
+ 			evoice = voice->extra;
+ 			what |= 1 << (voice->number & 0x1f);
+@@ -2127,21 +2125,21 @@ static snd_pcm_ops_t snd_trident_spdif_7
+   ---------------------------------------------------------------------------*/
+ static void snd_trident_pcm_free(snd_pcm_t *pcm)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, pcm->private_data, return);
++	trident_t *trident = pcm->private_data;
+ 	trident->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+ 
+ static void snd_trident_foldback_pcm_free(snd_pcm_t *pcm)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, pcm->private_data, return);
++	trident_t *trident = pcm->private_data;
+ 	trident->foldback = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+ 
+ static void snd_trident_spdif_pcm_free(snd_pcm_t *pcm)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, pcm->private_data, return);
++	trident_t *trident = pcm->private_data;
+ 	trident->spdif = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -3132,7 +3130,7 @@ static unsigned char snd_trident_gamepor
+ 	trident_gameport_t *gp = (trident_gameport_t *)gameport;
+ 	trident_t *chip;
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(trident_t, gp->chip, return 0);
++	chip = gp->chip;
+ 	return inb(TRID_REG(chip, GAMEPORT_LEGACY));
+ }
+ 
+@@ -3141,7 +3139,7 @@ static void snd_trident_gameport_trigger
+ 	trident_gameport_t *gp = (trident_gameport_t *)gameport;
+ 	trident_t *chip;
+ 	snd_assert(gp, return);
+-	chip = snd_magic_cast(trident_t, gp->chip, return);
++	chip = gp->chip;
+ 	outb(0xff, TRID_REG(chip, GAMEPORT_LEGACY));
+ }
+ 
+@@ -3152,7 +3150,7 @@ static int snd_trident_gameport_cooked_r
+ 	int i;
+ 
+ 	snd_assert(gp, return 0);
+-	chip = snd_magic_cast(trident_t, gp->chip, return 0);
++	chip = gp->chip;
+ 
+ 	*buttons = (~inb(TRID_REG(chip, GAMEPORT_LEGACY)) >> 4) & 0xf;
+ 
+@@ -3169,7 +3167,7 @@ static int snd_trident_gameport_open(str
+ 	trident_gameport_t *gp = (trident_gameport_t *)gameport;
+ 	trident_t *chip;
+ 	snd_assert(gp, return -1);
+-	chip = snd_magic_cast(trident_t, gp->chip, return -1);
++	chip = gp->chip;
+ 
+ 	switch (mode) {
+ 		case GAMEPORT_MODE_COOKED:
+@@ -3280,7 +3278,7 @@ static int snd_trident_sis_reset(trident
+ static void snd_trident_proc_read(snd_info_entry_t *entry, 
+ 				  snd_info_buffer_t * buffer)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, entry->private_data, return);
++	trident_t *trident = entry->private_data;
+ 	char *s;
+ 
+ 	switch (trident->device) {
+@@ -3331,7 +3329,7 @@ static void __devinit snd_trident_proc_i
+ 
+ static int snd_trident_dev_free(snd_device_t *device)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, device->device_data, return -ENXIO);
++	trident_t *trident = device->device_data;
+ 	return snd_trident_free(trident);
+ }
+ 
+@@ -3553,7 +3551,7 @@ int __devinit snd_trident_create(snd_car
+ 		return -ENXIO;
+ 	}
+ 	
+-	trident = snd_magic_kcalloc(trident_t, 0, GFP_KERNEL);
++	trident = kcalloc(1, sizeof(*trident), GFP_KERNEL);
+ 	if (trident == NULL)
+ 		return -ENOMEM;
+ 	trident->device = (pci->vendor << 16) | pci->device;
+@@ -3703,7 +3701,7 @@ #endif
+ 		release_resource(trident->res_port);
+ 		kfree_nocheck(trident->res_port);
+ 	}
+-	snd_magic_kfree(trident);
++	kfree(trident);
+ 	return 0;
+ }
+ 
+@@ -3727,7 +3725,7 @@ #endif
+ 
+ static irqreturn_t snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, dev_id, return IRQ_NONE);
++	trident_t *trident = dev_id;
+ 	unsigned int audio_int, chn_int, stimer, channel, mask, tmp;
+ 	int delta;
+ 	snd_trident_voice_t *voice;
+@@ -3950,7 +3948,7 @@ void snd_trident_clear_voices(trident_t 
+ #ifdef CONFIG_PM
+ static int snd_trident_suspend(snd_card_t *card, unsigned int state)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, card->pm_private_data, return -EINVAL);
++	trident_t *trident = card->pm_private_data;
+ 
+ 	trident->in_suspend = 1;
+ 	snd_pcm_suspend_all(trident->pcm);
+@@ -3976,7 +3974,7 @@ static int snd_trident_suspend(snd_card_
+ 
+ static int snd_trident_resume(snd_card_t *card, unsigned int state)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, card->pm_private_data, return -EINVAL);
++	trident_t *trident = card->pm_private_data;
+ 
+ 	pci_enable_device(trident->pci);
+ 	if (pci_set_dma_mask(trident->pci, 0x3fffffff) < 0 ||
+diff --git a/sound/pci/trident/trident_synth.c b/sound/pci/trident/trident_synth.c
+index 8f9797d..7485119 100644
+--- a/sound/pci/trident/trident_synth.c
++++ b/sound/pci/trident/trident_synth.c
+@@ -506,7 +506,7 @@ static void sample_private1(trident_t * 
+ static int snd_trident_simple_put_sample(void *private_data, simple_instrument_t * instr,
+ 					 char __user *data, long len, int atomic)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, private_data, return -ENXIO);
++	trident_t *trident = private_data;
+ 	int size = instr->size;
+ 	int shift = 0;
+ 
+@@ -559,7 +559,7 @@ static int snd_trident_simple_put_sample
+ static int snd_trident_simple_get_sample(void *private_data, simple_instrument_t * instr,
+ 					 char __user *data, long len, int atomic)
+ {
+-	//trident_t *trident = snd_magic_cast(trident_t, private_data, return -ENXIO);
++	//trident_t *trident = private_data;
+ 	int size = instr->size;
+ 	int shift = 0;
+ 
+@@ -580,7 +580,7 @@ static int snd_trident_simple_get_sample
+ static int snd_trident_simple_remove_sample(void *private_data, simple_instrument_t * instr,
+ 					    int atomic)
+ {
+-	trident_t *trident = snd_magic_cast(trident_t, private_data, return -ENXIO);
++	trident_t *trident = private_data;
+ 	int size = instr->size;
+ 
+ 	if (trident->tlb.entries) {
+@@ -838,7 +838,7 @@ static void snd_trident_synth_instr_noti
+ 					   int what)
+ {
+ 	int idx;
+-	trident_t *trident = snd_magic_cast(trident_t, private_data, return);
++	trident_t *trident = private_data;
+ 	snd_trident_voice_t *pvoice;
+ 	unsigned long flags;
+ 
+diff --git a/sound/pci/via82xx.c b/sound/pci/via82xx.c
+index ba87aea..1fee467 100644
+--- a/sound/pci/via82xx.c
++++ b/sound/pci/via82xx.c
+@@ -318,7 +318,6 @@ #define VIA_DXS_NO_VRA	4
+ 
+ typedef struct _snd_via82xx via82xx_t;
+ typedef struct via_dev viadev_t;
+-#define chip_t via82xx_t
+ 
+ /*
+  * pcm stream
+@@ -556,7 +555,7 @@ static int snd_via82xx_codec_valid(via82
+  
+ static void snd_via82xx_codec_wait(ac97_t *ac97)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, ac97->private_data, return);
++	via82xx_t *chip = ac97->private_data;
+ 	int err;
+ 	err = snd_via82xx_codec_ready(chip, ac97->num);
+ 	/* here we need to wait fairly for long time.. */
+@@ -568,7 +567,7 @@ static void snd_via82xx_codec_write(ac97
+ 				    unsigned short reg,
+ 				    unsigned short val)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, ac97->private_data, return);
++	via82xx_t *chip = ac97->private_data;
+ 	unsigned int xval;
+ 	
+ 	xval = !ac97->num ? VIA_REG_AC97_CODEC_ID_PRIMARY : VIA_REG_AC97_CODEC_ID_SECONDARY;
+@@ -583,7 +582,7 @@ static void snd_via82xx_codec_write(ac97
+ 
+ static unsigned short snd_via82xx_codec_read(ac97_t *ac97, unsigned short reg)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, ac97->private_data, return ~0);
++	via82xx_t *chip = ac97->private_data;
+ 	unsigned int xval, val = 0xffff;
+ 	int again = 0;
+ 
+@@ -632,7 +631,7 @@ static void snd_via82xx_channel_reset(vi
+ 
+ static irqreturn_t snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, dev_id, return IRQ_NONE);
++	via82xx_t *chip = dev_id;
+ 	unsigned int status;
+ 	unsigned int i;
+ 
+@@ -1546,13 +1545,13 @@ static snd_kcontrol_new_t snd_via8233_dx
+ 
+ static void snd_via82xx_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, bus->private_data, return);
++	via82xx_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, ac97->private_data, return);
++	via82xx_t *chip = ac97->private_data;
+ 	chip->ac97 = NULL;
+ }
+ 
+@@ -1748,7 +1747,7 @@ #endif
+  */
+ static void snd_via82xx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, entry->private_data, return);
++	via82xx_t *chip = entry->private_data;
+ 	int i;
+ 	
+ 	snd_iprintf(buffer, "%s\n\n", chip->card->longname);
+@@ -1885,7 +1884,7 @@ #ifdef CONFIG_PM
+  */
+ static int snd_via82xx_suspend(snd_card_t *card, unsigned int state)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, card->pm_private_data, return -EINVAL);
++	via82xx_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	for (i = 0; i < 2; i++)
+@@ -1912,7 +1911,7 @@ static int snd_via82xx_suspend(snd_card_
+ 
+ static int snd_via82xx_resume(snd_card_t *card, unsigned int state)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, card->pm_private_data, return -EINVAL);
++	via82xx_t *chip = card->pm_private_data;
+ 	int idx, i;
+ 
+ 	pci_enable_device(chip->pci);
+@@ -1979,13 +1978,13 @@ #endif
+ 		pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, chip->old_legacy);
+ 		pci_write_config_byte(chip->pci, VIA_PNP_CONTROL, chip->old_legacy_cfg);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_via82xx_dev_free(snd_device_t *device)
+ {
+-	via82xx_t *chip = snd_magic_cast(via82xx_t, device->device_data, return -ENXIO);
++	via82xx_t *chip = device->device_data;
+ 	return snd_via82xx_free(chip);
+ }
+ 
+@@ -2005,7 +2004,7 @@ static int __devinit snd_via82xx_create(
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	if ((chip = snd_magic_kcalloc(via82xx_t, 0, GFP_KERNEL)) == NULL)
++	if ((chip = kcalloc(1, sizeof(*chip), GFP_KERNEL)) == NULL)
+ 		return -ENOMEM;
+ 
+ 	chip->chip_type = chip_type;
+diff --git a/sound/pci/vx222/vx222.c b/sound/pci/vx222/vx222.c
+index 9f4ef46..8adfa95 100644
+--- a/sound/pci/vx222/vx222.c
++++ b/sound/pci/vx222/vx222.c
+@@ -28,8 +28,6 @@ #include <sound/core.h>
+ #include <sound/initval.h>
+ #include "vx222.h"
+ 
+-#define chip_t vx_core_t
+-
+ #define CARD_NAME "VX222"
+ 
+ MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
+@@ -130,13 +128,13 @@ static int snd_vx222_free(vx_core_t *chi
+ 			kfree_nocheck(vx->port_res[i]);
+ 		}
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_vx222_dev_free(snd_device_t *device)
+ {
+-	vx_core_t *chip = snd_magic_cast(vx_core_t, device->device_data, return -ENXIO);
++	vx_core_t *chip = device->device_data;
+ 	return snd_vx222_free(chip);
+ }
+ 
+diff --git a/sound/pci/vx222/vx222_ops.c b/sound/pci/vx222/vx222_ops.c
+index c9dfb2b..4c669cf 100644
+--- a/sound/pci/vx222/vx222_ops.c
++++ b/sound/pci/vx222/vx222_ops.c
+@@ -27,8 +27,6 @@ #include <sound/control.h>
+ #include <asm/io.h>
+ #include "vx222.h"
+ 
+-#define chip_t vx_core_t
+-
+ 
+ static int vx2_reg_offset[VX_REG_MAX] = {
+ 	[VX_ICR]    = 0x00,
+diff --git a/sound/pci/ymfpci/ymfpci_main.c b/sound/pci/ymfpci/ymfpci_main.c
+index 9d0aa26..ea8ed51 100644
+--- a/sound/pci/ymfpci/ymfpci_main.c
++++ b/sound/pci/ymfpci/ymfpci_main.c
+@@ -42,8 +42,6 @@ #include <sound/mpu401.h>
+ 
+ #include <asm/io.h>
+ 
+-#define chip_t ymfpci_t
+-
+ /*
+  *  constants
+  */
+@@ -102,7 +100,7 @@ static int snd_ymfpci_codec_ready(ymfpci
+ 
+ static void snd_ymfpci_codec_write(ac97_t *ac97, u16 reg, u16 val)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, ac97->private_data, return);
++	ymfpci_t *chip = ac97->private_data;
+ 	u32 cmd;
+ 	
+ 	snd_ymfpci_codec_ready(chip, 0);
+@@ -112,7 +110,7 @@ static void snd_ymfpci_codec_write(ac97_
+ 
+ static u16 snd_ymfpci_codec_read(ac97_t *ac97, u16 reg)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, ac97->private_data, return -ENXIO);
++	ymfpci_t *chip = ac97->private_data;
+ 
+ 	if (snd_ymfpci_codec_ready(chip, 0))
+ 		return ~0;
+@@ -330,7 +328,7 @@ static void snd_ymfpci_pcm_interrupt(ymf
+ static void snd_ymfpci_pcm_capture_interrupt(snd_pcm_substream_t *substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	ymfpci_t *chip = ypcm->chip;
+ 	u32 pos, delta;
+ 	
+@@ -358,7 +356,7 @@ static int snd_ymfpci_playback_trigger(s
+ 				       int cmd)
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, substream->runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = substream->runtime->private_data;
+ 	int result = 0;
+ 
+ 	spin_lock(&chip->reg_lock);
+@@ -395,7 +393,7 @@ static int snd_ymfpci_capture_trigger(sn
+ 				      int cmd)
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, substream->runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = substream->runtime->private_data;
+ 	int result = 0;
+ 	u32 tmp;
+ 
+@@ -578,7 +576,7 @@ static int snd_ymfpci_playback_hw_params
+ 					 snd_pcm_hw_params_t * hw_params)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	int err;
+ 
+ 	if ((err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))) < 0)
+@@ -596,7 +594,7 @@ static int snd_ymfpci_playback_hw_free(s
+ 	
+ 	if (runtime->private_data == NULL)
+ 		return 0;
+-	ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ypcm = runtime->private_data;
+ 
+ 	/* wait, until the PCI operations are not finished */
+ 	snd_ymfpci_irq_wait(chip);
+@@ -616,7 +614,7 @@ static int snd_ymfpci_playback_prepare(s
+ {
+ 	// ymfpci_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	unsigned int nvoice;
+ 
+ 	ypcm->period_size = runtime->period_size;
+@@ -654,7 +652,7 @@ static int snd_ymfpci_capture_prepare(sn
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	snd_ymfpci_capture_bank_t * bank;
+ 	int nbank;
+ 	u32 rate, format;
+@@ -698,7 +696,7 @@ static snd_pcm_uframes_t snd_ymfpci_play
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	ymfpci_voice_t *voice = ypcm->voices[0];
+ 
+ 	if (!(ypcm->running && voice))
+@@ -710,7 +708,7 @@ static snd_pcm_uframes_t snd_ymfpci_capt
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 
+ 	if (!ypcm->running)
+ 		return 0;
+@@ -736,7 +734,7 @@ static void snd_ymfpci_irq_wait(ymfpci_t
+ 
+ static irqreturn_t snd_ymfpci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, dev_id, return IRQ_NONE);
++	ymfpci_t *chip = dev_id;
+ 	u32 status, nvoice, mode;
+ 	ymfpci_voice_t *voice;
+ 
+@@ -830,10 +828,10 @@ static snd_pcm_hardware_t snd_ymfpci_cap
+ 
+ static void snd_ymfpci_pcm_free_substream(snd_pcm_runtime_t *runtime)
+ {
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 	
+ 	if (ypcm)
+-		snd_magic_kfree(ypcm);
++		kfree(ypcm);
+ }
+ 
+ static int snd_ymfpci_playback_open_1(snd_pcm_substream_t * substream)
+@@ -842,7 +840,7 @@ static int snd_ymfpci_playback_open_1(sn
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	ymfpci_pcm_t *ypcm;
+ 
+-	ypcm = snd_magic_kcalloc(ymfpci_pcm_t, 0, GFP_KERNEL);
++	ypcm = kcalloc(1, sizeof(*ypcm), GFP_KERNEL);
+ 	if (ypcm == NULL)
+ 		return -ENOMEM;
+ 	ypcm->chip = chip;
+@@ -891,7 +889,7 @@ static int snd_ymfpci_playback_open(snd_
+ 	
+ 	if ((err = snd_ymfpci_playback_open_1(substream)) < 0)
+ 		return err;
+-	ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return 0);
++	ypcm = runtime->private_data;
+ 	ypcm->output_front = 1;
+ 	ypcm->output_rear = chip->mode_dup4ch ? 1 : 0;
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -913,7 +911,7 @@ static int snd_ymfpci_playback_spdif_ope
+ 	
+ 	if ((err = snd_ymfpci_playback_open_1(substream)) < 0)
+ 		return err;
+-	ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return 0);
++	ypcm = runtime->private_data;
+ 	ypcm->output_front = 0;
+ 	ypcm->output_rear = 1;
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -941,7 +939,7 @@ static int snd_ymfpci_playback_4ch_open(
+ 	
+ 	if ((err = snd_ymfpci_playback_open_1(substream)) < 0)
+ 		return err;
+-	ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return 0);
++	ypcm = runtime->private_data;
+ 	ypcm->output_front = 0;
+ 	ypcm->output_rear = 1;
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -958,7 +956,7 @@ static int snd_ymfpci_capture_open(snd_p
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	ymfpci_pcm_t *ypcm;
+ 
+-	ypcm = snd_magic_kcalloc(ymfpci_pcm_t, 0, GFP_KERNEL);
++	ypcm = kcalloc(1, sizeof(*ypcm), GFP_KERNEL);
+ 	if (ypcm == NULL)
+ 		return -ENOMEM;
+ 	ypcm->chip = chip;
+@@ -993,7 +991,7 @@ static int snd_ymfpci_playback_close_1(s
+ static int snd_ymfpci_playback_close(snd_pcm_substream_t * substream)
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, substream->runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = substream->runtime->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->reg_lock, flags);
+@@ -1041,7 +1039,7 @@ static int snd_ymfpci_capture_close(snd_
+ {
+ 	ymfpci_t *chip = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	ymfpci_pcm_t *ypcm = snd_magic_cast(ymfpci_pcm_t, runtime->private_data, return -ENXIO);
++	ymfpci_pcm_t *ypcm = runtime->private_data;
+ 
+ 	if (ypcm != NULL) {
+ 		chip->capture_substream[ypcm->capture_bank_number] = NULL;
+@@ -1074,7 +1072,7 @@ static snd_pcm_ops_t snd_ymfpci_capture_
+ 
+ static void snd_ymfpci_pcm_free(snd_pcm_t *pcm)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pcm->private_data, return);
++	ymfpci_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1120,7 +1118,7 @@ static snd_pcm_ops_t snd_ymfpci_capture_
+ 
+ static void snd_ymfpci_pcm2_free(snd_pcm_t *pcm)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pcm->private_data, return);
++	ymfpci_t *chip = pcm->private_data;
+ 	chip->pcm2 = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1166,7 +1164,7 @@ static snd_pcm_ops_t snd_ymfpci_playback
+ 
+ static void snd_ymfpci_pcm_spdif_free(snd_pcm_t *pcm)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pcm->private_data, return);
++	ymfpci_t *chip = pcm->private_data;
+ 	chip->pcm_spdif = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1211,7 +1209,7 @@ static snd_pcm_ops_t snd_ymfpci_playback
+ 
+ static void snd_ymfpci_pcm_4ch_free(snd_pcm_t *pcm)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pcm->private_data, return);
++	ymfpci_t *chip = pcm->private_data;
+ 	chip->pcm_4ch = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1709,13 +1707,13 @@ static snd_kcontrol_new_t snd_ymfpci_rea
+ 
+ static void snd_ymfpci_mixer_free_ac97_bus(ac97_bus_t *bus)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, bus->private_data, return);
++	ymfpci_t *chip = bus->private_data;
+ 	chip->ac97_bus = NULL;
+ }
+ 
+ static void snd_ymfpci_mixer_free_ac97(ac97_t *ac97)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, ac97->private_data, return);
++	ymfpci_t *chip = ac97->private_data;
+ 	chip->ac97 = NULL;
+ }
+ 
+@@ -1854,7 +1852,7 @@ int __devinit snd_ymfpci_timer(ymfpci_t 
+ static void snd_ymfpci_proc_read(snd_info_entry_t *entry, 
+ 				 snd_info_buffer_t * buffer)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, entry->private_data, return);
++	ymfpci_t *chip = entry->private_data;
+ 	int i;
+ 	
+ 	snd_iprintf(buffer, "YMFPCI\n\n");
+@@ -2117,13 +2115,13 @@ #endif
+ 
+ 	pci_write_config_word(chip->pci, 0x40, chip->old_legacy_ctrl);
+ 	
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_ymfpci_dev_free(snd_device_t *device)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, device->device_data, return -ENXIO);
++	ymfpci_t *chip = device->device_data;
+ 	return snd_ymfpci_free(chip);
+ }
+ 
+@@ -2159,7 +2157,7 @@ #define YDSXGR_NUM_SAVED_REGS	ARRAY_SIZE
+ 
+ static int snd_ymfpci_suspend(snd_card_t *card, unsigned int state)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, card->pm_private_data, return -EINVAL);
++	ymfpci_t *chip = card->pm_private_data;
+ 	unsigned int i;
+ 	
+ 	snd_pcm_suspend_all(chip->pcm);
+@@ -2178,7 +2176,7 @@ static int snd_ymfpci_suspend(snd_card_t
+ 
+ static int snd_ymfpci_resume(snd_card_t *card, unsigned int state)
+ {
+-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, card->pm_private_data, return -EINVAL);
++	ymfpci_t *chip = card->pm_private_data;
+ 	unsigned int i;
+ 
+ 	pci_enable_device(chip->pci);
+@@ -2223,7 +2221,7 @@ int __devinit snd_ymfpci_create(snd_card
+ 	if ((err = pci_enable_device(pci)) < 0)
+ 		return err;
+ 
+-	chip = snd_magic_kcalloc(ymfpci_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	chip->old_legacy_ctrl = old_legacy_ctrl;

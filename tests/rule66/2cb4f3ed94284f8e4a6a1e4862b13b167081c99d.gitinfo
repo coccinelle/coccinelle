@@ -1,0 +1,1814 @@
+commit 2cb4f3ed94284f8e4a6a1e4862b13b167081c99d
+Author: Jaroslav Kysela <perex@suse.cz>
+Date:   Thu Jul 1 23:31:59 2004 +0200
+
+    ALSA CVS update
+    Control Midlevel,ALSA Core,HWDEP Midlevel,PCM Midlevel,RawMidi Midlevel
+    Timer Midlevel,IOCTL32 emulation,ALSA<-OSS emulation,ALSA sequencer
+    Removal and replacement of magic memory allocators and casts (core part)
+    
+    This patch replaces snd_magic_kmalloc(), snd_magic_kcallc() and snd_magic_kfree()
+    with kmalloc(), kcalloc() and kfree(), respectively.
+    The cast via snd_magic_cast() is replaced with the standard cast, too.
+    
+    Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+    Signed-off-by: Takashi Iwai <tiwai@suse.de>
+
+diff --git a/include/sound/control.h b/include/sound/control.h
+index 9224ffe..ed809e5 100644
+--- a/include/sound/control.h
++++ b/include/sound/control.h
+@@ -35,8 +35,7 @@ typedef struct sndrv_ctl_elem_value snd_
+ typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
+ typedef struct sndrv_ctl_event snd_ctl_event_t;
+ 
+-#define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
+-#define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
++#define snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
+ 
+ typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_info_t * uinfo);
+ typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol);
+diff --git a/include/sound/driver.h b/include/sound/driver.h
+index adef8f9..948e9a1 100644
+--- a/include/sound/driver.h
++++ b/include/sound/driver.h
+@@ -61,6 +61,4 @@ void snd_wrapper_vfree(void *);
+ #undef vfree
+ #endif
+ 
+-#include "sndmagic.h"
+-
+ #endif /* __SOUND_DRIVER_H */
+diff --git a/include/sound/pcm.h b/include/sound/pcm.h
+index 284fc7f..60cfebc 100644
+--- a/include/sound/pcm.h
++++ b/include/sound/pcm.h
+@@ -52,10 +52,8 @@ typedef struct sndrv_pcm_mmap_control sn
+ typedef struct sndrv_mask snd_mask_t;
+ typedef struct snd_sg_buf snd_pcm_sgbuf_t;
+ 
+-#define _snd_pcm_substream_chip(substream) ((substream)->private_data)
+-#define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
+-#define _snd_pcm_chip(pcm) ((pcm)->private_data)
+-#define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
++#define snd_pcm_substream_chip(substream) ((substream)->private_data)
++#define snd_pcm_chip(pcm) ((pcm)->private_data)
+ 
+ typedef struct _snd_pcm_file snd_pcm_file_t;
+ typedef struct _snd_pcm_runtime snd_pcm_runtime_t;
+diff --git a/include/sound/sndmagic.h b/include/sound/sndmagic.h
+deleted file mode 100644
+index bf1a62f..0000000
+--- a/include/sound/sndmagic.h
++++ /dev/null
+@@ -1,218 +0,0 @@
+-#ifndef __SOUND_SNDMAGIC_H
+-#define __SOUND_SNDMAGIC_H
+-
+-/*
+- *  Magic allocation, deallocation, check
+- *  Copyright (c) 2000 by Abramo Bagnara <abramo@alsa-project.org>
+- *
+- *
+- *   This program is free software; you can redistribute it and/or modify
+- *   it under the terms of the GNU General Public License as published by
+- *   the Free Software Foundation; either version 2 of the License, or
+- *   (at your option) any later version.
+- *
+- *   This program is distributed in the hope that it will be useful,
+- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- *   GNU General Public License for more details.
+- *
+- *   You should have received a copy of the GNU General Public License
+- *   along with this program; if not, write to the Free Software
+- *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+- *
+- */
+-
+-
+-#ifdef CONFIG_SND_DEBUG_MEMORY
+-
+-void *_snd_magic_kcalloc(unsigned long magic, size_t size, int flags);
+-void *_snd_magic_kmalloc(unsigned long magic, size_t size, int flags);
+-
+-/**
+- * snd_magic_kmalloc - allocate a record with a magic-prefix
+- * @type: the type to allocate a record (like xxx_t)
+- * @extra: the extra size to allocate in bytes
+- * @flags: the allocation condition (GFP_XXX)
+- *
+- * Allocates a record of the given type with the extra space and
+- * returns its pointer.  The allocated record has a secret magic-key
+- * to be checked via snd_magic_cast() for safe casts.
+- *
+- * The allocated pointer must be released via snd_magic_kfree().
+- *
+- * The "struct xxx" style cannot be used as the type argument
+- * because the magic-key constant is generated from the type-name
+- * string.
+- */
+-#define snd_magic_kmalloc(type, extra, flags) \
+-	(type *) _snd_magic_kmalloc(type##_magic, sizeof(type) + extra, flags)
+-/**
+- * snd_magic_kcalloc - allocate a record with a magic-prefix and initialize
+- * @type: the type to allocate a record (like xxx_t)
+- * @extra: the extra size to allocate in bytes
+- * @flags: the allocation condition (GFP_XXX)
+- *
+- * Works like snd_magic_kmalloc() but this clears the area with zero
+- * automatically.
+- */
+-#define snd_magic_kcalloc(type, extra, flags) \
+-	(type *) _snd_magic_kcalloc(type##_magic, sizeof(type) + extra, flags)
+-
+-/**
+- * snd_magic_kfree - release the allocated area
+- * @ptr: the pointer allocated via snd_magic_kmalloc() or snd_magic_kcalloc()
+- *
+- * Releases the memory area allocated via snd_magic_kmalloc() or
+- * snd_magic_kcalloc() function.
+- */
+-void snd_magic_kfree(void *ptr);
+-
+-static inline unsigned long _snd_magic_value(void *obj)
+-{
+-	return obj == NULL ? (unsigned long)-1 : *(((unsigned long *)obj) - 1);
+-}
+-
+-static inline int _snd_magic_bad(void *obj, unsigned long magic)
+-{
+-	return _snd_magic_value(obj) != magic;
+-}
+-
+-#define snd_magic_cast1(t, expr, cmd) snd_magic_cast(t, expr, cmd)
+-
+-/**
+- * snd_magic_cast - check and cast the magic-allocated pointer
+- * @type: the type of record to cast
+- * @ptr: the magic-allocated pointer
+- * @action...: the action to do if failed
+- *
+- * This macro provides a safe cast for the given type, which was
+- * allocated via snd_magic_kmalloc() or snd_magic_kcallc().
+- * If the pointer is invalid, i.e. the cast-type doesn't match,
+- * the action arguments are called with a debug message.
+- */
+-#define snd_magic_cast(type, ptr, action...) \
+-	(type *) ({\
+-	void *__ptr = ptr;\
+-	unsigned long __magic = _snd_magic_value(__ptr);\
+-	if (__magic != type##_magic) {\
+-		snd_printk("bad MAGIC (0x%lx)\n", __magic);\
+-		action;\
+-	}\
+-	__ptr;\
+-})
+-
+-#define snd_device_t_magic			0xa15a00ff
+-#define snd_pcm_t_magic				0xa15a0101
+-#define snd_pcm_file_t_magic			0xa15a0102
+-#define snd_pcm_substream_t_magic		0xa15a0103
+-#define snd_pcm_proc_private_t_magic		0xa15a0104
+-#define snd_pcm_oss_file_t_magic		0xa15a0105
+-#define snd_mixer_oss_t_magic			0xa15a0106
+-// #define snd_pcm_sgbuf_t_magic			0xa15a0107
+-
+-#define snd_info_private_data_t_magic		0xa15a0201
+-#define snd_info_entry_t_magic			0xa15a0202
+-#define snd_ctl_file_t_magic			0xa15a0301
+-#define snd_kcontrol_t_magic			0xa15a0302
+-#define snd_rawmidi_t_magic			0xa15a0401
+-#define snd_rawmidi_file_t_magic		0xa15a0402
+-#define snd_virmidi_t_magic			0xa15a0403
+-#define snd_virmidi_dev_t_magic			0xa15a0404
+-#define snd_timer_t_magic			0xa15a0501
+-#define snd_timer_user_t_magic			0xa15a0502
+-#define snd_hwdep_t_magic			0xa15a0601
+-#define snd_seq_device_t_magic			0xa15a0701
+-
+-#define es18xx_t_magic				0xa15a1101
+-#define trident_t_magic				0xa15a1201
+-#define es1938_t_magic				0xa15a1301
+-#define cs46xx_t_magic				0xa15a1401
+-#define cs46xx_pcm_t_magic			0xa15a1402
+-#define ensoniq_t_magic				0xa15a1501
+-#define sonicvibes_t_magic			0xa15a1601
+-#define mpu401_t_magic				0xa15a1701
+-#define fm801_t_magic				0xa15a1801
+-#define ac97_t_magic				0xa15a1901
+-#define ac97_bus_t_magic			0xa15a1902
+-#define ak4531_t_magic				0xa15a1a01
+-#define snd_uart16550_t_magic			0xa15a1b01
+-#define emu10k1_t_magic				0xa15a1c01
+-#define emu10k1_pcm_t_magic			0xa15a1c02
+-#define emu10k1_midi_t_magic			0xa15a1c03
+-#define snd_gus_card_t_magic			0xa15a1d01
+-#define gus_pcm_private_t_magic			0xa15a1d02
+-#define gus_proc_private_t_magic		0xa15a1d03
+-#define tea6330t_t_magic			0xa15a1e01
+-#define ad1848_t_magic				0xa15a1f01
+-#define cs4231_t_magic				0xa15a2001
+-#define es1688_t_magic				0xa15a2101
+-#define opti93x_t_magic				0xa15a2201
+-#define emu8000_t_magic				0xa15a2301
+-#define emu8000_proc_private_t_magic		0xa15a2302
+-#define snd_emux_t_magic			0xa15a2303
+-#define snd_emux_port_t_magic			0xa15a2304
+-#define sb_t_magic				0xa15a2401
+-#define snd_sb_csp_t_magic			0xa15a2402
+-#define snd_card_dummy_t_magic			0xa15a2501
+-#define snd_card_dummy_pcm_t_magic		0xa15a2502
+-#define opl3_t_magic				0xa15a2601
+-#define opl4_t_magic				0xa15a2602
+-#define snd_seq_dummy_port_t_magic		0xa15a2701
+-#define ice1712_t_magic				0xa15a2801
+-#define ad1816a_t_magic				0xa15a2901
+-#define intel8x0_t_magic			0xa15a2a01
+-#define es1968_t_magic				0xa15a2b01
+-#define esschan_t_magic				0xa15a2b02
+-#define via82xx_t_magic				0xa15a2c01
+-#define pdplus_t_magic				0xa15a2d01
+-#define cmipci_t_magic				0xa15a2e01
+-#define ymfpci_t_magic				0xa15a2f01
+-#define ymfpci_pcm_t_magic			0xa15a2f02
+-#define cs4281_t_magic				0xa15a3001
+-#define snd_i2c_bus_t_magic			0xa15a3101
+-#define snd_i2c_device_t_magic			0xa15a3102
+-#define cs8427_t_magic				0xa15a3111
+-#define m3_t_magic				0xa15a3201
+-#define m3_dma_t_magic				0xa15a3202
+-#define nm256_t_magic				0xa15a3301
+-#define nm256_dma_t_magic			0xa15a3302
+-#define sam9407_t_magic				0xa15a3401
+-#define pmac_t_magic				0xa15a3501
+-#define ali_t_magic				0xa15a3601
+-#define mtpav_t_magic				0xa15a3701
+-#define mtpav_port_t_magic			0xa15a3702
+-#define korg1212_t_magic			0xa15a3800
+-#define opl3sa2_t_magic				0xa15a3900
+-#define serialmidi_t_magic			0xa15a3a00
+-#define sa11xx_uda1341_t_magic			0xa15a3b00
+-#define uda1341_t_magic                         0xa15a3c00
+-#define l3_client_t_magic                       0xa15a3d00
+-#define snd_usb_audio_t_magic			0xa15a3e01
+-#define usb_mixer_elem_info_t_magic		0xa15a3e02
+-#define snd_usb_stream_t_magic			0xa15a3e03
+-#define snd_usb_midi_t_magic			0xa15a3f01
+-#define snd_usb_midi_out_endpoint_t_magic	0xa15a3f02
+-#define snd_usb_midi_in_endpoint_t_magic	0xa15a3f03
+-#define ak4117_t_magic				0xa15a4000
+-#define psic_t_magic				0xa15a4100
+-#define vx_core_t_magic				0xa15a4110
+-#define vx_pipe_t_magic				0xa15a4112
+-#define azf3328_t_magic				0xa15a4200
+-#define snd_card_harmony_t_magic		0xa15a4300
+-#define bt87x_t_magic				0xa15a4400
+-#define pdacf_t_magic				0xa15a4500
+-#define vortex_t_magic				0xa15a4601
+-#define atiixp_t_magic				0xa15a4701
+-#define amd7930_t_magic				0xa15a4801
+-
+-#else
+-
+-#define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
+-#define snd_magic_kmalloc(type, extra, flags) (type *) kmalloc(sizeof(type) + extra, flags)
+-#define snd_magic_cast(type, ptr, retval) (type *) ptr
+-#define snd_magic_cast1(type, ptr, retval) snd_magic_cast(type, ptr, retval)
+-#define snd_magic_kfree kfree
+-
+-#endif
+-
+-#endif /* __SOUND_SNDMAGIC_H */
+diff --git a/include/sound/timer.h b/include/sound/timer.h
+index fd33b80..57fde99 100644
+--- a/include/sound/timer.h
++++ b/include/sound/timer.h
+@@ -40,8 +40,7 @@ typedef struct sndrv_timer_status snd_ti
+ typedef struct sndrv_timer_read snd_timer_read_t;
+ typedef struct sndrv_timer_tread snd_timer_tread_t;
+ 
+-#define _snd_timer_chip(timer) ((timer)->private_data)
+-#define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
++#define snd_timer_chip(timer) ((timer)->private_data)
+ 
+ #define SNDRV_TIMER_DEVICES	16
+ 
+diff --git a/sound/core/control.c b/sound/core/control.c
+index bdee242..861e630 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -62,7 +62,7 @@ static int snd_ctl_open(struct inode *in
+ 		err = -EFAULT;
+ 		goto __error2;
+ 	}
+-	ctl = snd_magic_kcalloc(snd_ctl_file_t, 0, GFP_KERNEL);
++	ctl = kcalloc(1, sizeof(*ctl), GFP_KERNEL);
+ 	if (ctl == NULL) {
+ 		err = -ENOMEM;
+ 		goto __error;
+@@ -108,7 +108,7 @@ static int snd_ctl_release(struct inode 
+ 	snd_kcontrol_t *control;
+ 	unsigned int idx;
+ 
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
++	ctl = file->private_data;
+ 	fasync_helper(-1, file, 0, &ctl->fasync);
+ 	file->private_data = NULL;
+ 	card = ctl->card;
+@@ -124,7 +124,7 @@ static int snd_ctl_release(struct inode 
+ 	}
+ 	up_write(&card->controls_rwsem);
+ 	snd_ctl_empty_read_queue(ctl);
+-	snd_magic_kfree(ctl);
++	kfree(ctl);
+ 	module_put(card->module);
+ 	snd_card_file_remove(card, file);
+ 	return 0;
+@@ -188,9 +188,7 @@ snd_kcontrol_t *snd_ctl_new(snd_kcontrol
+ 	
+ 	snd_runtime_check(control != NULL, return NULL);
+ 	snd_runtime_check(control->count > 0, return NULL);
+-	kctl = (snd_kcontrol_t *)snd_magic_kcalloc(snd_kcontrol_t,
+-						   sizeof(snd_kcontrol_volatile_t) * control->count,
+-						   GFP_KERNEL);
++	kctl = kcalloc(1, sizeof(*kctl) + sizeof(snd_kcontrol_volatile_t) * control->count, GFP_KERNEL);
+ 	if (kctl == NULL)
+ 		return NULL;
+ 	*kctl = *control;
+@@ -249,7 +247,7 @@ void snd_ctl_free_one(snd_kcontrol_t * k
+ 	if (kcontrol) {
+ 		if (kcontrol->private_free)
+ 			kcontrol->private_free(kcontrol);
+-		snd_magic_kfree(kcontrol);
++		kfree(kcontrol);
+ 	}
+ }
+ 
+@@ -1033,7 +1031,7 @@ static int snd_ctl_ioctl(struct inode *i
+ 	int __user *ip = argp;
+ 	int err;
+ 
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
++	ctl = file->private_data;
+ 	card = ctl->card;
+ 	snd_assert(card != NULL, return -ENXIO);
+ 	switch (cmd) {
+@@ -1102,7 +1100,7 @@ static ssize_t snd_ctl_read(struct file 
+ 	int err = 0;
+ 	ssize_t result = 0;
+ 
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
++	ctl = file->private_data;
+ 	snd_assert(ctl != NULL && ctl->card != NULL, return -ENXIO);
+ 	if (!ctl->subscribed)
+ 		return -EBADFD;
+@@ -1154,7 +1152,7 @@ static unsigned int snd_ctl_poll(struct 
+ 	unsigned int mask;
+ 	snd_ctl_file_t *ctl;
+ 
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return 0);
++	ctl = file->private_data;
+ 	if (!ctl->subscribed)
+ 		return 0;
+ 	poll_wait(file, &ctl->change_sleep, wait);
+@@ -1212,7 +1210,7 @@ static int snd_ctl_fasync(int fd, struct
+ {
+ 	snd_ctl_file_t *ctl;
+ 	int err;
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
++	ctl = file->private_data;
+ 	err = fasync_helper(fd, file, on, &ctl->fasync);
+ 	if (err < 0)
+ 		return err;
+diff --git a/sound/core/device.c b/sound/core/device.c
+index ab57ca6..18c71f9 100644
+--- a/sound/core/device.c
++++ b/sound/core/device.c
+@@ -47,7 +47,7 @@ int snd_device_new(snd_card_t *card, snd
+ 	snd_device_t *dev;
+ 
+ 	snd_assert(card != NULL && device_data != NULL && ops != NULL, return -ENXIO);
+-	dev = (snd_device_t *) snd_magic_kcalloc(snd_device_t, 0, GFP_KERNEL);
++	dev = kcalloc(1, sizeof(*dev), GFP_KERNEL);
+ 	if (dev == NULL)
+ 		return -ENOMEM;
+ 	dev->card = card;
+@@ -94,7 +94,7 @@ int snd_device_free(snd_card_t *card, vo
+ 					snd_printk(KERN_ERR "device free failure\n");
+ 			}
+ 		}
+-		snd_magic_kfree(dev);
++		kfree(dev);
+ 		return 0;
+ 	}
+ 	snd_printd("device free %p (from %p), not found\n", device_data, __builtin_return_address(0));
+diff --git a/sound/core/hwdep.c b/sound/core/hwdep.c
+index d18e476..066f4e7 100644
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -49,7 +49,7 @@ static int snd_hwdep_dev_unregister(snd_
+ 
+ static loff_t snd_hwdep_llseek(struct file * file, loff_t offset, int orig)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	if (hw->ops.llseek)
+ 		return hw->ops.llseek(hw, file, offset, orig);
+ 	return -ENXIO;
+@@ -57,7 +57,7 @@ static loff_t snd_hwdep_llseek(struct fi
+ 
+ static ssize_t snd_hwdep_read(struct file * file, char __user *buf, size_t count, loff_t *offset)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	if (hw->ops.read)
+ 		return hw->ops.read(hw, buf, count, offset);
+ 	return -ENXIO;	
+@@ -65,7 +65,7 @@ static ssize_t snd_hwdep_read(struct fil
+ 
+ static ssize_t snd_hwdep_write(struct file * file, const char __user *buf, size_t count, loff_t *offset)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	if (hw->ops.write)
+ 		return hw->ops.write(hw, buf, count, offset);
+ 	return -ENXIO;	
+@@ -157,7 +157,7 @@ #endif
+ static int snd_hwdep_release(struct inode *inode, struct file * file)
+ {
+ 	int err = -ENXIO;
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	down(&hw->open_mutex);
+ 	if (hw->ops.release) {
+ 		err = hw->ops.release(hw, file);
+@@ -173,7 +173,7 @@ static int snd_hwdep_release(struct inod
+ 
+ static unsigned int snd_hwdep_poll(struct file * file, poll_table * wait)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return 0);
++	snd_hwdep_t *hw = file->private_data;
+ 	if (hw->ops.poll)
+ 		return hw->ops.poll(hw, file, wait);
+ 	return 0;
+@@ -234,7 +234,7 @@ static int snd_hwdep_dsp_load(snd_hwdep_
+ static int snd_hwdep_ioctl(struct inode *inode, struct file * file,
+ 			   unsigned int cmd, unsigned long arg)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	void __user *argp = (void __user *)arg;
+ 	switch (cmd) {
+ 	case SNDRV_HWDEP_IOCTL_PVERSION:
+@@ -253,7 +253,7 @@ static int snd_hwdep_ioctl(struct inode 
+ 
+ static int snd_hwdep_mmap(struct file * file, struct vm_area_struct * vma)
+ {
+-	snd_hwdep_t *hw = snd_magic_cast(snd_hwdep_t, file->private_data, return -ENXIO);
++	snd_hwdep_t *hw = file->private_data;
+ 	if (hw->ops.mmap)
+ 		return hw->ops.mmap(hw, file, vma);
+ 	return -ENXIO;
+@@ -352,7 +352,7 @@ int snd_hwdep_new(snd_card_t * card, cha
+ 	snd_assert(rhwdep != NULL, return -EINVAL);
+ 	*rhwdep = NULL;
+ 	snd_assert(card != NULL, return -ENXIO);
+-	hwdep = snd_magic_kcalloc(snd_hwdep_t, 0, GFP_KERNEL);
++	hwdep = kcalloc(1, sizeof(*hwdep), GFP_KERNEL);
+ 	if (hwdep == NULL)
+ 		return -ENOMEM;
+ 	hwdep->card = card;
+@@ -378,19 +378,19 @@ static int snd_hwdep_free(snd_hwdep_t *h
+ 	snd_assert(hwdep != NULL, return -ENXIO);
+ 	if (hwdep->private_free)
+ 		hwdep->private_free(hwdep);
+-	snd_magic_kfree(hwdep);
++	kfree(hwdep);
+ 	return 0;
+ }
+ 
+ static int snd_hwdep_dev_free(snd_device_t *device)
+ {
+-	snd_hwdep_t *hwdep = snd_magic_cast(snd_hwdep_t, device->device_data, return -ENXIO);
++	snd_hwdep_t *hwdep = device->device_data;
+ 	return snd_hwdep_free(hwdep);
+ }
+ 
+ static int snd_hwdep_dev_register(snd_device_t *device)
+ {
+-	snd_hwdep_t *hwdep = snd_magic_cast(snd_hwdep_t, device->device_data, return -ENXIO);
++	snd_hwdep_t *hwdep = device->device_data;
+ 	int idx, err;
+ 	char name[32];
+ 
+@@ -433,7 +433,7 @@ #endif
+ 
+ static int snd_hwdep_dev_unregister(snd_device_t *device)
+ {
+-	snd_hwdep_t *hwdep = snd_magic_cast(snd_hwdep_t, device->device_data, return -ENXIO);
++	snd_hwdep_t *hwdep = device->device_data;
+ 	int idx;
+ 
+ 	snd_assert(hwdep != NULL, return -ENXIO);
+diff --git a/sound/core/info.c b/sound/core/info.c
+index e9dee42..e7afad4 100644
+--- a/sound/core/info.c
++++ b/sound/core/info.c
+@@ -139,7 +139,7 @@ static loff_t snd_info_entry_llseek(stru
+ 	struct snd_info_entry *entry;
+ 	loff_t ret;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	entry = data->entry;
+ 	lock_kernel();
+ 	switch (entry->content) {
+@@ -182,7 +182,7 @@ static ssize_t snd_info_entry_read(struc
+ 	snd_info_buffer_t *buf;
+ 	size_t size = 0;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	snd_assert(data != NULL, return -ENXIO);
+ 	entry = data->entry;
+ 	switch (entry->content) {
+@@ -216,7 +216,7 @@ static ssize_t snd_info_entry_write(stru
+ 	snd_info_buffer_t *buf;
+ 	size_t size = 0;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	snd_assert(data != NULL, return -ENXIO);
+ 	entry = data->entry;
+ 	switch (entry->content) {
+@@ -284,7 +284,7 @@ static int snd_info_entry_open(struct in
+ 		    	goto __error;
+ 		}
+ 	}
+-	data = snd_magic_kcalloc(snd_info_private_data_t, 0, GFP_KERNEL);
++	data = kcalloc(1, sizeof(*data), GFP_KERNEL);
+ 	if (data == NULL) {
+ 		err = -ENOMEM;
+ 		goto __error;
+@@ -295,7 +295,7 @@ static int snd_info_entry_open(struct in
+ 		if (mode == O_RDONLY || mode == O_RDWR) {
+ 			buffer = kcalloc(1, sizeof(*buffer), GFP_KERNEL);
+ 			if (buffer == NULL) {
+-				snd_magic_kfree(data);
++				kfree(data);
+ 				err = -ENOMEM;
+ 				goto __error;
+ 			}
+@@ -304,7 +304,7 @@ static int snd_info_entry_open(struct in
+ 			buffer->buffer = vmalloc(buffer->len);
+ 			if (buffer->buffer == NULL) {
+ 				kfree(buffer);
+-				snd_magic_kfree(data);
++				kfree(data);
+ 				err = -ENOMEM;
+ 				goto __error;
+ 			}
+@@ -318,7 +318,7 @@ static int snd_info_entry_open(struct in
+ 					vfree(data->rbuffer->buffer);
+ 					kfree(data->rbuffer);
+ 				}
+-				snd_magic_kfree(data);
++				kfree(data);
+ 				err = -ENOMEM;
+ 				goto __error;
+ 			}
+@@ -331,7 +331,7 @@ static int snd_info_entry_open(struct in
+ 					kfree(data->rbuffer);
+ 				}
+ 				kfree(buffer);
+-				snd_magic_kfree(data);
++				kfree(data);
+ 				err = -ENOMEM;
+ 				goto __error;
+ 			}
+@@ -343,7 +343,7 @@ static int snd_info_entry_open(struct in
+ 		if (entry->c.ops->open) {
+ 			if ((err = entry->c.ops->open(entry, mode,
+ 						      &data->file_private_data)) < 0) {
+-				snd_magic_kfree(data);
++				kfree(data);
+ 				goto __error;
+ 			}
+ 		}
+@@ -375,7 +375,7 @@ static int snd_info_entry_release(struct
+ 	int mode;
+ 
+ 	mode = file->f_flags & O_ACCMODE;
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	entry = data->entry;
+ 	switch (entry->content) {
+ 	case SNDRV_INFO_CONTENT_TEXT:
+@@ -403,7 +403,7 @@ static int snd_info_entry_release(struct
+ 		break;
+ 	}
+ 	module_put(entry->module);
+-	snd_magic_kfree(data);
++	kfree(data);
+ 	return 0;
+ }
+ 
+@@ -413,7 +413,7 @@ static unsigned int snd_info_entry_poll(
+ 	struct snd_info_entry *entry;
+ 	unsigned int mask;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	if (data == NULL)
+ 		return 0;
+ 	entry = data->entry;
+@@ -439,7 +439,7 @@ static int snd_info_entry_ioctl(struct i
+ 	snd_info_private_data_t *data;
+ 	struct snd_info_entry *entry;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	if (data == NULL)
+ 		return 0;
+ 	entry = data->entry;
+@@ -460,7 +460,7 @@ static int snd_info_entry_mmap(struct fi
+ 	snd_info_private_data_t *data;
+ 	struct snd_info_entry *entry;
+ 
+-	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
++	data = file->private_data;
+ 	if (data == NULL)
+ 		return 0;
+ 	entry = data->entry;
+@@ -730,12 +730,12 @@ char *snd_info_get_str(char *dest, char 
+ static snd_info_entry_t *snd_info_create_entry(const char *name)
+ {
+ 	snd_info_entry_t *entry;
+-	entry = snd_magic_kcalloc(snd_info_entry_t, 0, GFP_KERNEL);
++	entry = kcalloc(1, sizeof(*entry), GFP_KERNEL);
+ 	if (entry == NULL)
+ 		return NULL;
+ 	entry->name = snd_kmalloc_strdup(name, GFP_KERNEL);
+ 	if (entry->name == NULL) {
+-		snd_magic_kfree(entry);
++		kfree(entry);
+ 		return NULL;
+ 	}
+ 	entry->mode = S_IFREG | S_IRUGO;
+@@ -791,27 +791,27 @@ snd_info_entry_t *snd_info_create_card_e
+ 
+ static int snd_info_dev_free_entry(snd_device_t *device)
+ {
+-	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
++	snd_info_entry_t *entry = device->device_data;
+ 	snd_info_free_entry(entry);
+ 	return 0;
+ }
+ 
+ static int snd_info_dev_register_entry(snd_device_t *device)
+ {
+-	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
++	snd_info_entry_t *entry = device->device_data;
+ 	return snd_info_register(entry);
+ }
+ 
+ static int snd_info_dev_disconnect_entry(snd_device_t *device)
+ {
+-	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
++	snd_info_entry_t *entry = device->device_data;
+ 	entry->disconnected = 1;
+ 	return 0;
+ }
+ 
+ static int snd_info_dev_unregister_entry(snd_device_t *device)
+ {
+-	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
++	snd_info_entry_t *entry = device->device_data;
+ 	return snd_info_unregister(entry);
+ }
+ 
+@@ -873,7 +873,7 @@ void snd_info_free_entry(snd_info_entry_
+ 		kfree((char *)entry->name);
+ 	if (entry->private_free)
+ 		entry->private_free(entry);
+-	snd_magic_kfree(entry);
++	kfree(entry);
+ }
+ 
+ /**
+diff --git a/sound/core/ioctl32/ioctl32.c b/sound/core/ioctl32/ioctl32.c
+index b9e8a97..187dbb8 100644
+--- a/sound/core/ioctl32/ioctl32.c
++++ b/sound/core/ioctl32/ioctl32.c
+@@ -257,7 +257,7 @@ static int get_ctl_type(struct file *fil
+ 	snd_ctl_elem_info_t info;
+ 	int err;
+ 
+-	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
++	ctl = file->private_data;
+ 
+ 	down_read(&ctl->card->controls_rwsem);
+ 	kctl = snd_ctl_find_id(ctl->card, id);
+diff --git a/sound/core/ioctl32/pcm32.c b/sound/core/ioctl32/pcm32.c
+index c54236f..12a40e5 100644
+--- a/sound/core/ioctl32/pcm32.c
++++ b/sound/core/ioctl32/pcm32.c
+@@ -234,7 +234,7 @@ static int _snd_ioctl32_xfern(unsigned i
+ 
+ 	/* FIXME: need to check whether fop->ioctl is sane */
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL && substream->runtime, return -ENXIO);
+ 
+diff --git a/sound/core/memory.c b/sound/core/memory.c
+index 5a15fdc..1d05876 100644
+--- a/sound/core/memory.c
++++ b/sound/core/memory.c
+@@ -151,46 +151,6 @@ void snd_hidden_kfree(const void *obj)
+ 	snd_wrapper_kfree(obj);
+ }
+ 
+-void *_snd_magic_kcalloc(unsigned long magic, size_t size, int flags)
+-{
+-	unsigned long *ptr;
+-	ptr = _snd_kmalloc(size + sizeof(unsigned long), flags);
+-	if (ptr) {
+-		*ptr++ = magic;
+-		memset(ptr, 0, size);
+-	}
+-	return ptr;
+-}
+-
+-void *_snd_magic_kmalloc(unsigned long magic, size_t size, int flags)
+-{
+-	unsigned long *ptr;
+-	ptr = _snd_kmalloc(size + sizeof(unsigned long), flags);
+-	if (ptr)
+-		*ptr++ = magic;
+-	return ptr;
+-}
+-
+-void snd_magic_kfree(void *_ptr)
+-{
+-	unsigned long *ptr = _ptr;
+-	if (ptr == NULL) {
+-		snd_printk(KERN_WARNING "null snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
+-		return;
+-	}
+-	*--ptr = 0;
+-	{
+-		struct snd_alloc_track *t;
+-		t = snd_alloc_track_entry(ptr);
+-		if (t->magic != KMALLOC_MAGIC) {
+-			snd_printk(KERN_ERR "bad snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
+-			return;
+-		}
+-	}
+-	snd_hidden_kfree(ptr);
+-	return;
+-}
+-
+ void *snd_hidden_vmalloc(unsigned long size)
+ {
+ 	void *ptr;
+diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
+index 1198254..7cea14c 100644
+--- a/sound/core/oss/mixer_oss.c
++++ b/sound/core/oss/mixer_oss.c
+@@ -1060,7 +1060,7 @@ static char *oss_mixer_names[SNDRV_OSS_M
+ static void snd_mixer_oss_proc_read(snd_info_entry_t *entry,
+ 				    snd_info_buffer_t * buffer)
+ {
+-	snd_mixer_oss_t *mixer = snd_magic_cast(snd_mixer_oss_t, entry->private_data, return);
++	snd_mixer_oss_t *mixer = entry->private_data;
+ 	int i;
+ 
+ 	down(&mixer->reg_mutex);
+@@ -1084,7 +1084,7 @@ static void snd_mixer_oss_proc_read(snd_
+ static void snd_mixer_oss_proc_write(snd_info_entry_t *entry,
+ 				     snd_info_buffer_t * buffer)
+ {
+-	snd_mixer_oss_t *mixer = snd_magic_cast(snd_mixer_oss_t, entry->private_data, return);
++	snd_mixer_oss_t *mixer = entry->private_data;
+ 	char line[128], str[32], idxstr[16], *cptr;
+ 	int ch, idx;
+ 	struct snd_mixer_oss_assign_table *tbl;
+@@ -1224,7 +1224,7 @@ static void snd_mixer_oss_build(snd_mixe
+ 
+ static int snd_mixer_oss_free1(void *private)
+ {
+-	snd_mixer_oss_t *mixer = snd_magic_cast(snd_mixer_oss_t, private, return -ENXIO);
++	snd_mixer_oss_t *mixer = private;
+ 	snd_card_t * card;
+ 	int idx;
+  
+@@ -1237,7 +1237,7 @@ static int snd_mixer_oss_free1(void *pri
+ 		if (chn->private_free)
+ 			chn->private_free(chn);
+ 	}
+-	snd_magic_kfree(mixer);
++	kfree(mixer);
+ 	return 0;
+ }
+ 
+@@ -1249,7 +1249,7 @@ static int snd_mixer_oss_notify_handler(
+ 		char name[128];
+ 		int idx, err;
+ 
+-		mixer = snd_magic_kcalloc(snd_mixer_oss_t, sizeof(snd_mixer_oss_t), GFP_KERNEL);
++		mixer = kcalloc(2, sizeof(*mixer), GFP_KERNEL);
+ 		if (mixer == NULL)
+ 			return -ENOMEM;
+ 		init_MUTEX(&mixer->reg_mutex);
+@@ -1259,7 +1259,7 @@ static int snd_mixer_oss_notify_handler(
+ 						   &snd_mixer_oss_reg,
+ 						   name)) < 0) {
+ 			snd_printk("unable to register OSS mixer device %i:%i\n", card->number, 0);
+-			snd_magic_kfree(mixer);
++			kfree(mixer);
+ 			return err;
+ 		}
+ 		mixer->oss_dev_alloc = 1;
+diff --git a/sound/core/oss/pcm_oss.c b/sound/core/oss/pcm_oss.c
+index 3eb8de5..7f777b9 100644
+--- a/sound/core/oss/pcm_oss.c
++++ b/sound/core/oss/pcm_oss.c
+@@ -1698,7 +1698,7 @@ static int snd_pcm_oss_release_file(snd_
+ 		snd_pcm_oss_release_substream(substream);
+ 		snd_pcm_release_substream(substream);
+ 	}
+-	snd_magic_kfree(pcm_oss_file);
++	kfree(pcm_oss_file);
+ 	return 0;
+ }
+ 
+@@ -1717,7 +1717,7 @@ static int snd_pcm_oss_open_file(struct 
+ 	snd_assert(rpcm_oss_file != NULL, return -EINVAL);
+ 	*rpcm_oss_file = NULL;
+ 
+-	pcm_oss_file = snd_magic_kcalloc(snd_pcm_oss_file_t, 0, GFP_KERNEL);
++	pcm_oss_file = kcalloc(1, sizeof(*pcm_oss_file), GFP_KERNEL);
+ 	if (pcm_oss_file == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1897,7 +1897,7 @@ static int snd_pcm_oss_release(struct in
+ 	snd_pcm_substream_t *substream;
+ 	snd_pcm_oss_file_t *pcm_oss_file;
+ 
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
++	pcm_oss_file = file->private_data;
+ 	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+ 	if (substream == NULL)
+ 		substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
+@@ -1920,7 +1920,7 @@ static int snd_pcm_oss_ioctl(struct inod
+ 	int __user *p = (int __user *)arg;
+ 	int res;
+ 
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
++	pcm_oss_file = file->private_data;
+ 	if (cmd == OSS_GETVERSION)
+ 		return put_user(SNDRV_OSS_VERSION, p);
+ 	if (cmd == OSS_ALSAEMULVER)
+@@ -2078,7 +2078,7 @@ static ssize_t snd_pcm_oss_read(struct f
+ 	snd_pcm_oss_file_t *pcm_oss_file;
+ 	snd_pcm_substream_t *substream;
+ 
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
++	pcm_oss_file = file->private_data;
+ 	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
+ 	if (substream == NULL)
+ 		return -ENXIO;
+@@ -2099,7 +2099,7 @@ static ssize_t snd_pcm_oss_write(struct 
+ 	snd_pcm_substream_t *substream;
+ 	long result;
+ 
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
++	pcm_oss_file = file->private_data;
+ 	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+ 	if (substream == NULL)
+ 		return -ENXIO;
+@@ -2136,7 +2136,7 @@ static unsigned int snd_pcm_oss_poll(str
+ 	unsigned int mask;
+ 	snd_pcm_substream_t *psubstream = NULL, *csubstream = NULL;
+ 	
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return 0);
++	pcm_oss_file = file->private_data;
+ 
+ 	psubstream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+ 	csubstream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
+@@ -2183,7 +2183,7 @@ static int snd_pcm_oss_mmap(struct file 
+ #ifdef OSS_DEBUG
+ 	printk("pcm_oss: mmap begin\n");
+ #endif
+-	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
++	pcm_oss_file = file->private_data;
+ 	switch ((area->vm_flags & (VM_READ | VM_WRITE))) {
+ 	case VM_READ | VM_WRITE:
+ 		substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+index 2557a65..320ddf4 100644
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -585,7 +585,7 @@ #endif
+ 	}
+ 	prev = NULL;
+ 	for (idx = 0, prev = NULL; idx < substream_count; idx++) {
+-		substream = snd_magic_kcalloc(snd_pcm_substream_t, 0, GFP_KERNEL);
++		substream = kcalloc(1, sizeof(*substream), GFP_KERNEL);
+ 		if (substream == NULL)
+ 			return -ENOMEM;
+ 		substream->pcm = pcm;
+@@ -600,7 +600,7 @@ #endif
+ 			prev->next = substream;
+ 		err = snd_pcm_substream_proc_init(substream);
+ 		if (err < 0) {
+-			snd_magic_kfree(substream);
++			kfree(substream);
+ 			return err;
+ 		}
+ 		substream->group = &substream->self_group;
+@@ -645,7 +645,7 @@ int snd_pcm_new(snd_card_t * card, char 
+ 	snd_assert(rpcm != NULL, return -EINVAL);
+ 	*rpcm = NULL;
+ 	snd_assert(card != NULL, return -ENXIO);
+-	pcm = snd_magic_kcalloc(snd_pcm_t, 0, GFP_KERNEL);
++	pcm = kcalloc(1, sizeof(*pcm), GFP_KERNEL);
+ 	if (pcm == NULL)
+ 		return -ENOMEM;
+ 	pcm->card = card;
+@@ -681,7 +681,7 @@ #endif
+ 	while (substream) {
+ 		substream_next = substream->next;
+ 		snd_pcm_substream_proc_done(substream);
+-		snd_magic_kfree(substream);
++		kfree(substream);
+ 		substream = substream_next;
+ 	}
+ 	snd_pcm_stream_proc_done(pstr);
+@@ -702,13 +702,13 @@ static int snd_pcm_free(snd_pcm_t *pcm)
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ 	snd_pcm_free_stream(&pcm->streams[SNDRV_PCM_STREAM_PLAYBACK]);
+ 	snd_pcm_free_stream(&pcm->streams[SNDRV_PCM_STREAM_CAPTURE]);
+-	snd_magic_kfree(pcm);
++	kfree(pcm);
+ 	return 0;
+ }
+ 
+ static int snd_pcm_dev_free(snd_device_t *device)
+ {
+-	snd_pcm_t *pcm = snd_magic_cast(snd_pcm_t, device->device_data, return -ENXIO);
++	snd_pcm_t *pcm = device->device_data;
+ 	return snd_pcm_free(pcm);
+ }
+ 
+@@ -843,7 +843,7 @@ static int snd_pcm_dev_register(snd_devi
+ 	snd_pcm_substream_t *substream;
+ 	struct list_head *list;
+ 	char str[16];
+-	snd_pcm_t *pcm = snd_magic_cast(snd_pcm_t, device->device_data, return -ENXIO);
++	snd_pcm_t *pcm = device->device_data;
+ 
+ 	snd_assert(pcm != NULL && device != NULL, return -ENXIO);
+ 	down(&register_mutex);
+@@ -888,7 +888,7 @@ static int snd_pcm_dev_register(snd_devi
+ 
+ static int snd_pcm_dev_disconnect(snd_device_t *device)
+ {
+-	snd_pcm_t *pcm = snd_magic_cast(snd_pcm_t, device->device_data, return -ENXIO);
++	snd_pcm_t *pcm = device->device_data;
+ 	struct list_head *list;
+ 	snd_pcm_substream_t *substream;
+ 	int idx, cidx;
+@@ -914,7 +914,7 @@ static int snd_pcm_dev_unregister(snd_de
+ 	int idx, cidx, devtype;
+ 	snd_pcm_substream_t *substream;
+ 	struct list_head *list;
+-	snd_pcm_t *pcm = snd_magic_cast(snd_pcm_t, device->device_data, return -ENXIO);
++	snd_pcm_t *pcm = device->device_data;
+ 
+ 	snd_assert(pcm != NULL, return -ENXIO);
+ 	down(&register_mutex);
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index 7970a68..c642a67 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -1527,7 +1527,7 @@ static int snd_pcm_link(snd_pcm_substrea
+ 	file = snd_pcm_file_fd(fd);
+ 	if (!file)
+ 		return -EBADFD;
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream1 = pcm_file->substream;
+ 	write_lock_irq(&snd_pcm_link_rwlock);
+ 	if (substream->runtime->status->state != substream1->runtime->status->state) {
+@@ -1947,7 +1947,7 @@ static int snd_pcm_release_file(snd_pcm_
+ 	substream->ffile = NULL;
+ 	snd_pcm_remove_file(str, pcm_file);
+ 	snd_pcm_release_substream(substream);
+-	snd_magic_kfree(pcm_file);
++	kfree(pcm_file);
+ 	return 0;
+ }
+ 
+@@ -1964,13 +1964,13 @@ static int snd_pcm_open_file(struct file
+ 	snd_assert(rpcm_file != NULL, return -EINVAL);
+ 	*rpcm_file = NULL;
+ 
+-	pcm_file = snd_magic_kcalloc(snd_pcm_file_t, 0, GFP_KERNEL);
++	pcm_file = kcalloc(1, sizeof(*pcm_file), GFP_KERNEL);
+ 	if (pcm_file == NULL) {
+ 		return -ENOMEM;
+ 	}
+ 
+ 	if ((err = snd_pcm_open_substream(pcm, stream, &substream)) < 0) {
+-		snd_magic_kfree(pcm_file);
++		kfree(pcm_file);
+ 		return err;
+ 	}
+ 
+@@ -2074,7 +2074,7 @@ int snd_pcm_release(struct inode *inode,
+ 	snd_pcm_substream_t *substream;
+ 	snd_pcm_file_t *pcm_file;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 	snd_assert(!atomic_read(&substream->runtime->mmap_count), );
+@@ -2641,7 +2641,7 @@ static int snd_pcm_playback_ioctl(struct
+ {
+ 	snd_pcm_file_t *pcm_file;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 
+ 	if (((cmd >> 8) & 0xff) != 'A')
+ 		return -ENOTTY;
+@@ -2654,7 +2654,7 @@ static int snd_pcm_capture_ioctl(struct 
+ {
+ 	snd_pcm_file_t *pcm_file;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 
+ 	if (((cmd >> 8) & 0xff) != 'A')
+ 		return -ENOTTY;
+@@ -2706,7 +2706,7 @@ static ssize_t snd_pcm_read(struct file 
+ 	snd_pcm_runtime_t *runtime;
+ 	snd_pcm_sframes_t result;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 	runtime = substream->runtime;
+@@ -2728,7 +2728,7 @@ static ssize_t snd_pcm_write(struct file
+ 	snd_pcm_runtime_t *runtime;
+ 	snd_pcm_sframes_t result;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, result = -ENXIO; goto end);
+ 	runtime = substream->runtime;
+@@ -2760,7 +2760,7 @@ static ssize_t snd_pcm_readv(struct file
+ 	void __user **bufs;
+ 	snd_pcm_uframes_t frames;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 	runtime = substream->runtime;
+@@ -2794,7 +2794,7 @@ static ssize_t snd_pcm_writev(struct fil
+ 	void __user **bufs;
+ 	snd_pcm_uframes_t frames;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, result = -ENXIO; goto end);
+ 	runtime = substream->runtime;
+@@ -2829,7 +2829,7 @@ unsigned int snd_pcm_playback_poll(struc
+         unsigned int mask;
+ 	snd_pcm_uframes_t avail;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return 0);
++	pcm_file = file->private_data;
+ 
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+@@ -2867,7 +2867,7 @@ unsigned int snd_pcm_capture_poll(struct
+         unsigned int mask;
+ 	snd_pcm_uframes_t avail;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return 0);
++	pcm_file = file->private_data;
+ 
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+@@ -3092,7 +3092,7 @@ static int snd_pcm_mmap(struct file *fil
+ 	snd_pcm_substream_t *substream;	
+ 	unsigned long offset;
+ 	
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 
+@@ -3115,7 +3115,7 @@ static int snd_pcm_fasync(int fd, struct
+ 	snd_pcm_runtime_t *runtime;
+ 	int err;
+ 
+-	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
++	pcm_file = file->private_data;
+ 	substream = pcm_file->substream;
+ 	snd_assert(substream != NULL, return -ENXIO);
+ 	runtime = substream->runtime;
+diff --git a/sound/core/pcm_timer.c b/sound/core/pcm_timer.c
+index 4012197..e20d6c5 100644
+--- a/sound/core/pcm_timer.c
++++ b/sound/core/pcm_timer.c
+@@ -25,8 +25,6 @@ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/timer.h>
+ 
+-#define chip_t snd_pcm_substream_t
+-
+ /*
+  *  Timer functions
+  */
+@@ -79,7 +77,7 @@ static unsigned long snd_pcm_timer_resol
+ {
+ 	snd_pcm_substream_t * substream;
+ 	
+-	substream = snd_magic_cast(snd_pcm_substream_t, timer->private_data, return -ENXIO);
++	substream = timer->private_data;
+ 	return substream->runtime ? substream->runtime->timer_resolution : 0;
+ }
+ 
+@@ -123,7 +121,7 @@ static struct _snd_timer_hardware snd_pc
+ 
+ static void snd_pcm_timer_free(snd_timer_t *timer)
+ {
+-	snd_pcm_substream_t *substream = snd_magic_cast(snd_pcm_substream_t, timer->private_data, return);
++	snd_pcm_substream_t *substream = timer->private_data;
+ 	substream->timer = NULL;
+ }
+ 
+diff --git a/sound/core/rawmidi.c b/sound/core/rawmidi.c
+index d7cc283..02b21ae 100644
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -398,7 +398,7 @@ #endif
+ 	if ((file->f_flags & O_APPEND) || maj != CONFIG_SND_MAJOR) /* OSS emul? */
+ 		fflags |= SNDRV_RAWMIDI_LFLG_APPEND;
+ 	fflags |= SNDRV_RAWMIDI_LFLG_NOOPENLOCK;
+-	rawmidi_file = snd_magic_kmalloc(snd_rawmidi_file_t, 0, GFP_KERNEL);
++	rawmidi_file = kmalloc(sizeof(*rawmidi_file), GFP_KERNEL);
+ 	if (rawmidi_file == NULL) {
+ 		snd_card_file_remove(card, file);
+ 		return -ENOMEM;
+@@ -447,7 +447,7 @@ #endif
+ 		file->private_data = rawmidi_file;
+ 	} else {
+ 		snd_card_file_remove(card, file);
+-		snd_magic_kfree(rawmidi_file);
++		kfree(rawmidi_file);
+ 	}
+ 	up(&rmidi->open_mutex);
+ 	return err;
+@@ -512,11 +512,11 @@ static int snd_rawmidi_release(struct in
+ 	snd_rawmidi_t *rmidi;
+ 	int err;
+ 
+-	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return -ENXIO);
++	rfile = file->private_data;
+ 	err = snd_rawmidi_kernel_release(rfile);
+ 	rmidi = rfile->rmidi;
+ 	wake_up(&rmidi->open_wait);
+-	snd_magic_kfree(rfile);
++	kfree(rfile);
+ 	snd_card_file_remove(rmidi->card, file);
+ 	return err;
+ }
+@@ -681,7 +681,7 @@ static int snd_rawmidi_ioctl(struct inod
+ 	snd_rawmidi_file_t *rfile;
+ 	void __user *argp = (void __user *)arg;
+ 
+-	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return -ENXIO);
++	rfile = file->private_data;
+ 	if (((cmd >> 8) & 0xff) != 'W')
+ 		return -ENOTTY;
+ 	switch (cmd) {
+@@ -944,7 +944,7 @@ static ssize_t snd_rawmidi_read(struct f
+ 	snd_rawmidi_substream_t *substream;
+ 	snd_rawmidi_runtime_t *runtime;
+ 
+-	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return -ENXIO);
++	rfile = file->private_data;
+ 	substream = rfile->input;
+ 	if (substream == NULL)
+ 		return -EIO;
+@@ -1176,7 +1176,7 @@ static ssize_t snd_rawmidi_write(struct 
+ 	snd_rawmidi_runtime_t *runtime;
+ 	snd_rawmidi_substream_t *substream;
+ 
+-	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return -ENXIO);
++	rfile = file->private_data;
+ 	substream = rfile->output;
+ 	runtime = substream->runtime;
+ 	/* we cannot put an atomic message to our buffer */
+@@ -1241,7 +1241,7 @@ static unsigned int snd_rawmidi_poll(str
+ 	snd_rawmidi_runtime_t *runtime;
+ 	unsigned int mask;
+ 
+-	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return 0);
++	rfile = file->private_data;
+ 	if (rfile->input != NULL) {
+ 		runtime = rfile->input->runtime;
+ 		runtime->trigger = 1;
+@@ -1276,7 +1276,7 @@ static void snd_rawmidi_proc_info_read(s
+ 	snd_rawmidi_runtime_t *runtime;
+ 	struct list_head *list;
+ 
+-	rmidi = snd_magic_cast(snd_rawmidi_t, entry->private_data, return);
++	rmidi = entry->private_data;
+ 	snd_iprintf(buffer, "%s\n\n", rmidi->name);
+ 	down(&rmidi->open_mutex);
+ 	if (rmidi->info_flags & SNDRV_RAWMIDI_INFO_OUTPUT) {
+@@ -1396,7 +1396,7 @@ int snd_rawmidi_new(snd_card_t * card, c
+ 	snd_assert(rrawmidi != NULL, return -EINVAL);
+ 	*rrawmidi = NULL;
+ 	snd_assert(card != NULL, return -ENXIO);
+-	rmidi = snd_magic_kcalloc(snd_rawmidi_t, 0, GFP_KERNEL);
++	rmidi = kcalloc(1, sizeof(*rmidi), GFP_KERNEL);
+ 	if (rmidi == NULL)
+ 		return -ENOMEM;
+ 	rmidi->card = card;
+@@ -1439,20 +1439,20 @@ static int snd_rawmidi_free(snd_rawmidi_
+ 	snd_rawmidi_free_substreams(&rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT]);
+ 	if (rmidi->private_free)
+ 		rmidi->private_free(rmidi);
+-	snd_magic_kfree(rmidi);
++	kfree(rmidi);
+ 	return 0;
+ }
+ 
+ static int snd_rawmidi_dev_free(snd_device_t *device)
+ {
+-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
++	snd_rawmidi_t *rmidi = device->device_data;
+ 	return snd_rawmidi_free(rmidi);
+ }
+ 
+ #if defined(CONFIG_SND_SEQUENCER) || (defined(MODULE) && defined(CONFIG_SND_SEQUENCER_MODULE))
+ static void snd_rawmidi_dev_seq_free(snd_seq_device_t *device)
+ {
+-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->private_data, return);
++	snd_rawmidi_t *rmidi = device->private_data;
+ 	rmidi->seq_dev = NULL;
+ }
+ #endif
+@@ -1462,7 +1462,7 @@ static int snd_rawmidi_dev_register(snd_
+ 	int idx, err;
+ 	snd_info_entry_t *entry;
+ 	char name[16];
+-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
++	snd_rawmidi_t *rmidi = device->device_data;
+ 
+ 	if (rmidi->device >= SNDRV_RAWMIDI_DEVICES)
+ 		return -ENOMEM;
+@@ -1539,7 +1539,7 @@ #endif
+ 
+ static int snd_rawmidi_dev_disconnect(snd_device_t *device)
+ {
+-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
++	snd_rawmidi_t *rmidi = device->device_data;
+ 	int idx;
+ 
+ 	down(&register_mutex);
+@@ -1552,7 +1552,7 @@ static int snd_rawmidi_dev_disconnect(sn
+ static int snd_rawmidi_dev_unregister(snd_device_t *device)
+ {
+ 	int idx;
+-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
++	snd_rawmidi_t *rmidi = device->device_data;
+ 
+ 	snd_assert(rmidi != NULL, return -ENXIO);
+ 	down(&register_mutex);
+diff --git a/sound/core/seq/seq_device.c b/sound/core/seq/seq_device.c
+index 398b620..741485c 100644
+--- a/sound/core/seq/seq_device.c
++++ b/sound/core/seq/seq_device.c
+@@ -181,7 +181,7 @@ int snd_seq_device_new(snd_card_t *card,
+ 	if (ops == NULL)
+ 		return -ENOMEM;
+ 
+-	dev = snd_magic_kcalloc(snd_seq_device_t, sizeof(*dev) + argsize, GFP_KERNEL);
++	dev = kcalloc(1, sizeof(*dev)*2 + argsize, GFP_KERNEL);
+ 	if (dev == NULL) {
+ 		unlock_driver(ops);
+ 		return -ENOMEM;
+@@ -235,7 +235,7 @@ static int snd_seq_device_free(snd_seq_d
+ 	free_device(dev, ops);
+ 	if (dev->private_free)
+ 		dev->private_free(dev);
+-	snd_magic_kfree(dev);
++	kfree(dev);
+ 
+ 	unlock_driver(ops);
+ 
+@@ -244,7 +244,7 @@ static int snd_seq_device_free(snd_seq_d
+ 
+ static int snd_seq_device_dev_free(snd_device_t *device)
+ {
+-	snd_seq_device_t *dev = snd_magic_cast(snd_seq_device_t, device->device_data, return -ENXIO);
++	snd_seq_device_t *dev = device->device_data;
+ 	return snd_seq_device_free(dev);
+ }
+ 
+@@ -253,7 +253,7 @@ static int snd_seq_device_dev_free(snd_d
+  */
+ static int snd_seq_device_dev_register(snd_device_t *device)
+ {
+-	snd_seq_device_t *dev = snd_magic_cast(snd_seq_device_t, device->device_data, return -ENXIO);
++	snd_seq_device_t *dev = device->device_data;
+ 	ops_list_t *ops;
+ 
+ 	ops = find_driver(dev->id, 0);
+@@ -275,7 +275,7 @@ static int snd_seq_device_dev_register(s
+  */
+ static int snd_seq_device_dev_disconnect(snd_device_t *device)
+ {
+-	snd_seq_device_t *dev = snd_magic_cast(snd_seq_device_t, device->device_data, return -ENXIO);
++	snd_seq_device_t *dev = device->device_data;
+ 	ops_list_t *ops;
+ 
+ 	ops = find_driver(dev->id, 0);
+@@ -293,7 +293,7 @@ static int snd_seq_device_dev_disconnect
+  */
+ static int snd_seq_device_dev_unregister(snd_device_t *device)
+ {
+-	snd_seq_device_t *dev = snd_magic_cast(snd_seq_device_t, device->device_data, return -ENXIO);
++	snd_seq_device_t *dev = device->device_data;
+ 	return snd_seq_device_free(dev);
+ }
+ 
+diff --git a/sound/core/seq/seq_dummy.c b/sound/core/seq/seq_dummy.c
+index eb7f13b..66fc5e1 100644
+--- a/sound/core/seq/seq_dummy.c
++++ b/sound/core/seq/seq_dummy.c
+@@ -95,7 +95,7 @@ dummy_unuse(void *private_data, snd_seq_
+ 	int i;
+ 	snd_seq_event_t ev;
+ 
+-	p = snd_magic_cast(snd_seq_dummy_port_t, private_data, return -EINVAL);
++	p = private_data;
+ 	memset(&ev, 0, sizeof(ev));
+ 	if (p->duplex)
+ 		ev.source.port = p->connect;
+@@ -122,7 +122,7 @@ dummy_input(snd_seq_event_t *ev, int dir
+ 	snd_seq_dummy_port_t *p;
+ 	snd_seq_event_t tmpev;
+ 
+-	p = snd_magic_cast(snd_seq_dummy_port_t, private_data, return -EINVAL);
++	p = private_data;
+ 	if (ev->source.client == SNDRV_SEQ_CLIENT_SYSTEM ||
+ 	    ev->type == SNDRV_SEQ_EVENT_KERNEL_ERROR)
+ 		return 0; /* ignore system messages */
+@@ -150,8 +150,8 @@ dummy_free(void *private_data)
+ {
+ 	snd_seq_dummy_port_t *p;
+ 
+-	p = snd_magic_cast(snd_seq_dummy_port_t, private_data, return);
+-	snd_magic_kfree(p);
++	p = private_data;
++	kfree(p);
+ }
+ 
+ /*
+@@ -164,7 +164,7 @@ create_port(int idx, int type)
+ 	snd_seq_port_callback_t pcb;
+ 	snd_seq_dummy_port_t *rec;
+ 
+-	if ((rec = snd_magic_kcalloc(snd_seq_dummy_port_t, 0, GFP_KERNEL)) == NULL)
++	if ((rec = kcalloc(1, sizeof(*rec), GFP_KERNEL)) == NULL)
+ 		return NULL;
+ 
+ 	rec->client = my_client;
+@@ -190,7 +190,7 @@ create_port(int idx, int type)
+ 	pcb.private_data = rec;
+ 	pinfo.kernel = &pcb;
+ 	if (snd_seq_kernel_client_ctl(my_client, SNDRV_SEQ_IOCTL_CREATE_PORT, &pinfo) < 0) {
+-		snd_magic_kfree(rec);
++		kfree(rec);
+ 		return NULL;
+ 	}
+ 	rec->port = pinfo.addr.port;
+diff --git a/sound/core/seq/seq_virmidi.c b/sound/core/seq/seq_virmidi.c
+index c493a65..2785486 100644
+--- a/sound/core/seq/seq_virmidi.c
++++ b/sound/core/seq/seq_virmidi.c
+@@ -115,7 +115,7 @@ int snd_virmidi_receive(snd_rawmidi_t *r
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, return -EINVAL);
++	rdev = rmidi->private_data;
+ 	return snd_virmidi_dev_receive_event(rdev, ev);
+ }
+ 
+@@ -127,7 +127,7 @@ static int snd_virmidi_event_input(snd_s
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, private_data, return -EINVAL);
++	rdev = private_data;
+ 	if (!(rdev->flags & SNDRV_VIRMIDI_USE))
+ 		return 0; /* ignored */
+ 	return snd_virmidi_dev_receive_event(rdev, ev);
+@@ -138,7 +138,7 @@ static int snd_virmidi_event_input(snd_s
+  */
+ static void snd_virmidi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+-	snd_virmidi_t *vmidi = snd_magic_cast(snd_virmidi_t, substream->runtime->private_data, return);
++	snd_virmidi_t *vmidi = substream->runtime->private_data;
+ 
+ 	if (up) {
+ 		vmidi->trigger = 1;
+@@ -152,7 +152,7 @@ static void snd_virmidi_input_trigger(sn
+  */
+ static void snd_virmidi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+ {
+-	snd_virmidi_t *vmidi = snd_magic_cast(snd_virmidi_t, substream->runtime->private_data, return);
++	snd_virmidi_t *vmidi = substream->runtime->private_data;
+ 	int count, res;
+ 	unsigned char buf[32], *pbuf;
+ 
+@@ -199,17 +199,17 @@ static void snd_virmidi_output_trigger(s
+  */
+ static int snd_virmidi_input_open(snd_rawmidi_substream_t * substream)
+ {
+-	snd_virmidi_dev_t *rdev = snd_magic_cast(snd_virmidi_dev_t, substream->rmidi->private_data, return -EINVAL);
++	snd_virmidi_dev_t *rdev = substream->rmidi->private_data;
+ 	snd_rawmidi_runtime_t *runtime = substream->runtime;
+ 	snd_virmidi_t *vmidi;
+ 	unsigned long flags;
+ 
+-	vmidi = snd_magic_kcalloc(snd_virmidi_t, 0, GFP_KERNEL);
++	vmidi = kcalloc(1, sizeof(*vmidi), GFP_KERNEL);
+ 	if (vmidi == NULL)
+ 		return -ENOMEM;
+ 	vmidi->substream = substream;
+ 	if (snd_midi_event_new(0, &vmidi->parser) < 0) {
+-		snd_magic_kfree(vmidi);
++		kfree(vmidi);
+ 		return -ENOMEM;
+ 	}
+ 	vmidi->seq_mode = rdev->seq_mode;
+@@ -228,16 +228,16 @@ static int snd_virmidi_input_open(snd_ra
+  */
+ static int snd_virmidi_output_open(snd_rawmidi_substream_t * substream)
+ {
+-	snd_virmidi_dev_t *rdev = snd_magic_cast(snd_virmidi_dev_t, substream->rmidi->private_data, return -EINVAL);
++	snd_virmidi_dev_t *rdev = substream->rmidi->private_data;
+ 	snd_rawmidi_runtime_t *runtime = substream->runtime;
+ 	snd_virmidi_t *vmidi;
+ 
+-	vmidi = snd_magic_kcalloc(snd_virmidi_t, 0, GFP_KERNEL);
++	vmidi = kcalloc(1, sizeof(*vmidi), GFP_KERNEL);
+ 	if (vmidi == NULL)
+ 		return -ENOMEM;
+ 	vmidi->substream = substream;
+ 	if (snd_midi_event_new(MAX_MIDI_EVENT_BUF, &vmidi->parser) < 0) {
+-		snd_magic_kfree(vmidi);
++		kfree(vmidi);
+ 		return -ENOMEM;
+ 	}
+ 	vmidi->seq_mode = rdev->seq_mode;
+@@ -254,11 +254,11 @@ static int snd_virmidi_output_open(snd_r
+  */
+ static int snd_virmidi_input_close(snd_rawmidi_substream_t * substream)
+ {
+-	snd_virmidi_t *vmidi = snd_magic_cast(snd_virmidi_t, substream->runtime->private_data, return -EINVAL);
++	snd_virmidi_t *vmidi = substream->runtime->private_data;
+ 	snd_midi_event_free(vmidi->parser);
+ 	list_del(&vmidi->list);
+ 	substream->runtime->private_data = NULL;
+-	snd_magic_kfree(vmidi);
++	kfree(vmidi);
+ 	return 0;
+ }
+ 
+@@ -267,10 +267,10 @@ static int snd_virmidi_input_close(snd_r
+  */
+ static int snd_virmidi_output_close(snd_rawmidi_substream_t * substream)
+ {
+-	snd_virmidi_t *vmidi = snd_magic_cast(snd_virmidi_t, substream->runtime->private_data, return -EINVAL);
++	snd_virmidi_t *vmidi = substream->runtime->private_data;
+ 	snd_midi_event_free(vmidi->parser);
+ 	substream->runtime->private_data = NULL;
+-	snd_magic_kfree(vmidi);
++	kfree(vmidi);
+ 	return 0;
+ }
+ 
+@@ -281,7 +281,7 @@ static int snd_virmidi_subscribe(void *p
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, private_data, return -EINVAL);
++	rdev = private_data;
+ 	if (!try_module_get(rdev->card->module))
+ 		return -EFAULT;
+ 	rdev->flags |= SNDRV_VIRMIDI_SUBSCRIBE;
+@@ -295,7 +295,7 @@ static int snd_virmidi_unsubscribe(void 
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, private_data, return -EINVAL);
++	rdev = private_data;
+ 	rdev->flags &= ~SNDRV_VIRMIDI_SUBSCRIBE;
+ 	module_put(rdev->card->module);
+ 	return 0;
+@@ -309,7 +309,7 @@ static int snd_virmidi_use(void *private
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, private_data, return -EINVAL);
++	rdev = private_data;
+ 	if (!try_module_get(rdev->card->module))
+ 		return -EFAULT;
+ 	rdev->flags |= SNDRV_VIRMIDI_USE;
+@@ -323,7 +323,7 @@ static int snd_virmidi_unuse(void *priva
+ {
+ 	snd_virmidi_dev_t *rdev;
+ 
+-	rdev = snd_magic_cast(snd_virmidi_dev_t, private_data, return -EINVAL);
++	rdev = private_data;
+ 	rdev->flags &= ~SNDRV_VIRMIDI_USE;
+ 	module_put(rdev->card->module);
+ 	return 0;
+@@ -424,7 +424,7 @@ static void snd_virmidi_dev_detach_seq(s
+  */
+ static int snd_virmidi_dev_register(snd_rawmidi_t *rmidi)
+ {
+-	snd_virmidi_dev_t *rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, return -ENXIO);
++	snd_virmidi_dev_t *rdev = rmidi->private_data;
+ 	int err;
+ 
+ 	switch (rdev->seq_mode) {
+@@ -451,7 +451,7 @@ static int snd_virmidi_dev_register(snd_
+  */
+ static int snd_virmidi_dev_unregister(snd_rawmidi_t *rmidi)
+ {
+-	snd_virmidi_dev_t *rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, return -ENXIO);
++	snd_virmidi_dev_t *rdev = rmidi->private_data;
+ 
+ 	if (rdev->seq_mode == SNDRV_VIRMIDI_SEQ_DISPATCH)
+ 		snd_virmidi_dev_detach_seq(rdev);
+@@ -471,8 +471,8 @@ static snd_rawmidi_global_ops_t snd_virm
+  */
+ static void snd_virmidi_free(snd_rawmidi_t *rmidi)
+ {
+-	snd_virmidi_dev_t *rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, return);
+-	snd_magic_kfree(rdev);
++	snd_virmidi_dev_t *rdev = rmidi->private_data;
++	kfree(rdev);
+ }
+ 
+ /*
+@@ -493,7 +493,7 @@ int snd_virmidi_new(snd_card_t *card, in
+ 				   &rmidi)) < 0)
+ 		return err;
+ 	strcpy(rmidi->name, rmidi->id);
+-	rdev = snd_magic_kcalloc(snd_virmidi_dev_t, 0, GFP_KERNEL);
++	rdev = kcalloc(1, sizeof(*rdev), GFP_KERNEL);
+ 	if (rdev == NULL) {
+ 		snd_device_free(card, rmidi);
+ 		return -ENOMEM;
+diff --git a/sound/core/sound.c b/sound/core/sound.c
+index fee381a..2a5c7f3 100644
+--- a/sound/core/sound.c
++++ b/sound/core/sound.c
+@@ -443,9 +443,6 @@ EXPORT_SYMBOL(snd_hidden_kcalloc);
+ EXPORT_SYMBOL(snd_hidden_kfree);
+ EXPORT_SYMBOL(snd_hidden_vmalloc);
+ EXPORT_SYMBOL(snd_hidden_vfree);
+-EXPORT_SYMBOL(_snd_magic_kmalloc);
+-EXPORT_SYMBOL(_snd_magic_kcalloc);
+-EXPORT_SYMBOL(snd_magic_kfree);
+ #endif
+ EXPORT_SYMBOL(snd_kmalloc_strdup);
+ EXPORT_SYMBOL(copy_to_user_fromio);
+diff --git a/sound/core/timer.c b/sound/core/timer.c
+index ad89aab..85dfd4e 100644
+--- a/sound/core/timer.c
++++ b/sound/core/timer.c
+@@ -761,7 +761,7 @@ int snd_timer_new(snd_card_t *card, char
+ 	snd_assert(tid != NULL, return -EINVAL);
+ 	snd_assert(rtimer != NULL, return -EINVAL);
+ 	*rtimer = NULL;
+-	timer = snd_magic_kcalloc(snd_timer_t, 0, GFP_KERNEL);
++	timer = kcalloc(1, sizeof(*timer), GFP_KERNEL);
+ 	if (timer == NULL)
+ 		return -ENOMEM;
+ 	timer->tmr_class = tid->dev_class;
+@@ -792,19 +792,19 @@ static int snd_timer_free(snd_timer_t *t
+ 	snd_assert(timer != NULL, return -ENXIO);
+ 	if (timer->private_free)
+ 		timer->private_free(timer);
+-	snd_magic_kfree(timer);
++	kfree(timer);
+ 	return 0;
+ }
+ 
+ int snd_timer_dev_free(snd_device_t *device)
+ {
+-	snd_timer_t *timer = snd_magic_cast(snd_timer_t, device->device_data, return -ENXIO);
++	snd_timer_t *timer = device->device_data;
+ 	return snd_timer_free(timer);
+ }
+ 
+ int snd_timer_dev_register(snd_device_t *dev)
+ {
+-	snd_timer_t *timer = snd_magic_cast(snd_timer_t, dev->device_data, return -ENXIO);
++	snd_timer_t *timer = dev->device_data;
+ 	snd_timer_t *timer1;
+ 	struct list_head *p;
+ 
+@@ -865,7 +865,7 @@ int snd_timer_unregister(snd_timer_t *ti
+ 
+ static int snd_timer_dev_unregister(snd_device_t *device)
+ {
+-	snd_timer_t *timer = snd_magic_cast(snd_timer_t, device->device_data, return -ENXIO);
++	snd_timer_t *timer = device->device_data;
+ 	return snd_timer_unregister(timer);
+ }
+ 
+@@ -1086,7 +1086,7 @@ static void snd_timer_user_interrupt(snd
+ 				     unsigned long resolution,
+ 				     unsigned long ticks)
+ {
+-	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
++	snd_timer_user_t *tu = timeri->callback_data;
+ 	snd_timer_read_t *r;
+ 	int prev;
+ 	
+@@ -1129,7 +1129,7 @@ static void snd_timer_user_ccallback(snd
+ 				     struct timespec *tstamp,
+ 				     unsigned long resolution)
+ {
+-	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
++	snd_timer_user_t *tu = timeri->callback_data;
+ 	snd_timer_tread_t r1;
+ 
+ 	if (event >= SNDRV_TIMER_EVENT_START && event <= SNDRV_TIMER_EVENT_PAUSE)
+@@ -1148,7 +1148,7 @@ static void snd_timer_user_tinterrupt(sn
+ 				      unsigned long resolution,
+ 				      unsigned long ticks)
+ {
+-	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
++	snd_timer_user_t *tu = timeri->callback_data;
+ 	snd_timer_tread_t *r, r1;
+ 	struct timespec tstamp;
+ 	int prev, append = 0;
+@@ -1200,7 +1200,7 @@ static int snd_timer_user_open(struct in
+ {
+ 	snd_timer_user_t *tu;
+ 	
+-	tu = snd_magic_kcalloc(snd_timer_user_t, 0, GFP_KERNEL);
++	tu = kcalloc(1, sizeof(*tu), GFP_KERNEL);
+ 	if (tu == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&tu->qlock);
+@@ -1209,7 +1209,7 @@ static int snd_timer_user_open(struct in
+ 	tu->queue_size = 128;
+ 	tu->queue = (snd_timer_read_t *)kmalloc(tu->queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
+ 	if (tu->queue == NULL) {
+-		snd_magic_kfree(tu);
++		kfree(tu);
+ 		return -ENOMEM;
+ 	}
+ 	file->private_data = tu;
+@@ -1221,7 +1221,7 @@ static int snd_timer_user_release(struct
+ 	snd_timer_user_t *tu;
+ 
+ 	if (file->private_data) {
+-		tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++		tu = file->private_data;
+ 		file->private_data = NULL;
+ 		fasync_helper(-1, file, 0, &tu->fasync);
+ 		if (tu->timeri)
+@@ -1230,7 +1230,7 @@ static int snd_timer_user_release(struct
+ 			kfree(tu->queue);
+ 		if (tu->tqueue)
+ 			kfree(tu->tqueue);
+-		snd_magic_kfree(tu);
++		kfree(tu);
+ 	}
+ 	return 0;
+ }
+@@ -1449,7 +1449,7 @@ static int snd_timer_user_tselect(struct
+ 	char str[32];
+ 	int err;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	if (tu->timeri)
+ 		snd_timer_close(tu->timeri);
+ 	if (copy_from_user(&tselect, _tselect, sizeof(tselect)))
+@@ -1495,7 +1495,7 @@ static int snd_timer_user_info(struct fi
+ 	snd_timer_info_t info;
+ 	snd_timer_t *t;
+ 
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	t = tu->timeri->timer;
+ 	snd_assert(t != NULL, return -ENXIO);
+@@ -1520,7 +1520,7 @@ static int snd_timer_user_params(struct 
+ 	snd_timer_tread_t *ttr;
+ 	int err;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	t = tu->timeri->timer;
+ 	snd_assert(t != NULL, return -ENXIO);
+@@ -1608,7 +1608,7 @@ static int snd_timer_user_status(struct 
+ 	snd_timer_user_t *tu;
+ 	snd_timer_status_t status;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	memset(&status, 0, sizeof(status));
+ 	status.tstamp = tu->tstamp;
+@@ -1628,7 +1628,7 @@ static int snd_timer_user_start(struct f
+ 	int err;
+ 	snd_timer_user_t *tu;
+ 		
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	snd_timer_stop(tu->timeri);
+ 	tu->timeri->lost = 0;
+@@ -1641,7 +1641,7 @@ static int snd_timer_user_stop(struct fi
+ 	int err;
+ 	snd_timer_user_t *tu;
+ 		
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	return (err = snd_timer_stop(tu->timeri)) < 0 ? err : 0;
+ }
+@@ -1651,7 +1651,7 @@ static int snd_timer_user_continue(struc
+ 	int err;
+ 	snd_timer_user_t *tu;
+ 		
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	snd_assert(tu->timeri != NULL, return -ENXIO);
+ 	tu->timeri->lost = 0;
+ 	return (err = snd_timer_continue(tu->timeri)) < 0 ? err : 0;
+@@ -1664,7 +1664,7 @@ static int snd_timer_user_ioctl(struct i
+ 	void __user *argp = (void __user *)arg;
+ 	int __user *p = argp;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	switch (cmd) {
+ 	case SNDRV_TIMER_IOCTL_PVERSION:
+ 		return put_user(SNDRV_TIMER_VERSION, p) ? -EFAULT : 0;
+@@ -1710,7 +1710,7 @@ static int snd_timer_user_fasync(int fd,
+ 	snd_timer_user_t *tu;
+ 	int err;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	err = fasync_helper(fd, file, on, &tu->fasync);
+         if (err < 0)
+ 		return err;
+@@ -1723,7 +1723,7 @@ static ssize_t snd_timer_user_read(struc
+ 	long result = 0, unit;
+ 	int err = 0;
+ 	
+-	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
++	tu = file->private_data;
+ 	unit = tu->tread ? sizeof(snd_timer_tread_t) : sizeof(snd_timer_read_t);
+ 	spin_lock_irq(&tu->qlock);
+ 	while ((long)count - result >= unit) {
+@@ -1785,7 +1785,7 @@ static unsigned int snd_timer_user_poll(
+         unsigned int mask;
+         snd_timer_user_t *tu;
+ 
+-        tu = snd_magic_cast(snd_timer_user_t, file->private_data, return 0);
++        tu = file->private_data;
+ 
+         poll_wait(file, &tu->qchange_sleep, wait);
+ 	

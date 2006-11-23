@@ -1376,6 +1376,10 @@ let rec zip_safe xs ys =
   | (_,[]) -> []
   | (x::xs,y::ys) -> (x,y)::zip_safe xs ys
 
+let rec unzip zs = 
+  List.fold_right (fun e (xs, ys)    -> 
+    (fst e::xs), (snd e::ys)) zs ([],[])
+
 
 let rec take n xs = 
   match (n,xs) with

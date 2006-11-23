@@ -304,6 +304,7 @@ let rec visitor_expr_k_s = fun bigf expr ->
   let rec exprf e = bigf.kexpr_s  (k, bigf) e
   and k e = 
     let ((unwrap_e, typ), ii) = e in
+    let typ' = typ +> map_option (visitor_type_k_s bigf) in
     let e' = 
     match unwrap_e with
     | Ident (s) -> Ident (s)
@@ -377,7 +378,7 @@ let rec visitor_expr_k_s = fun bigf expr ->
         | Right xs -> Right (xs +> List.map (visitor_statement_k_s bigf))
         )
     in
-    (e', typ), (List.map (visitor_info_k_s bigf) ii)
+    (e', typ'), (List.map (visitor_info_k_s bigf) ii)
   in exprf expr
 
 and visitor_statement_k_s = fun bigf st -> 

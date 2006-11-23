@@ -31,7 +31,7 @@ exception Lexical of string
 let tok     lexbuf  = Lexing.lexeme lexbuf
 let tokinfo lexbuf  = { 
     charpos = Lexing.lexeme_start lexbuf; 
-    str     = tok lexbuf  
+    str     = Lexing.lexeme lexbuf  
   }, Ast_c.emptyAnnot
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
@@ -93,7 +93,7 @@ rule token = parse
   *)
 
   (* C++ comment, allowed in gccext,  but normally they are deleted by cpp.
-   * So need this here only when dont call cpp before/  *)
+   * So need this here only when dont call cpp before.  *)
   | "//" [^'\r''\n' '\011']*    { TComment (tokinfo lexbuf) } 
 
 
@@ -134,7 +134,8 @@ rule token = parse
 
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'                           
-      { (*TOFIX*) TCommentCpp (tokinfo lexbuf) }
+      { TInclude (tokinfo lexbuf) }
+
 
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
@@ -158,6 +159,7 @@ rule token = parse
       { (* TODO *) TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']                                     
       { TIfdefelse (tokinfo lexbuf) }
+
 
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TCommentCpp (tokinfo lexbuf) }
@@ -345,6 +347,10 @@ rule token = parse
        (* gccext: *)
        | "asm" -> Tasm info
        | "__asm__" -> Tasm info
+
+       | "inline"     -> Tinline (tokinfo lexbuf) 
+       | "__inline__" -> Tinline (tokinfo lexbuf) 
+
        (* TODO  typeof, __typeof__  *)
 
        (* gccext: *)
@@ -389,8 +395,6 @@ rule token = parse
 
   | "__ALIGNED__"                       -> TCommentAttrOrMacro (tokinfo lexbuf)  
 
-  | "inline"                       -> TCommentAttrOrMacro (tokinfo lexbuf) 
-  | "__inline__"                   -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "__volatile__"                 -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "__volatile"                 -> TCommentAttrOrMacro (tokinfo lexbuf) 
   | "asmlinkage"                   -> TCommentAttrOrMacro (tokinfo lexbuf) 
@@ -628,24 +632,29 @@ and cpp_eat_until_nl = parse
 
 
 and cpp_comment_if_0 = parse
-  | "#" [' ' '\t']* "else"     { tok lexbuf   }
-  | "#" [' ' '\t']* "endif"    { tok lexbuf }
+  | "#" [' ' '\t']* "endif" [' ' '\t' '\n']  { tok lexbuf }
+
+  | "#" [' ' '\t']* "else" [' ' '\t' '\n']    
+  | "#" [' ' '\t']* "elif" [' ' '\t']+
+   { pr2 "GRAVE: #else with #if 0 badly handled, because final #endif will be alone" ;
+     tok lexbuf
+   }
 
  (* introduced cos sometimes there is some ifdef in comments inside stuff
   * inside a #if 0 
   *)
-  | "//" [^'\r''\n' '\011']*   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
+  | "//" [^'\r' '\n' '\011']*   
+    { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
 
- (* todo: could do a recursive call ? to allow ifdef inside if 0 *)
-  | "#" [' ' '\t']* "ifdef"      
-  | "#" [' ' '\t']* "ifndef"     
-  | "#" [' ' '\t']* "if"         
-  | "#" [' ' '\t']* "elif"       { 
-    pr2 "GRAVE: a cpp instruction inside a #if 0";
-    pr2 "GRAVE: j'arrete la, tant pis pour toi";
-    tok lexbuf 
-     (* raise (Lexical "GRAVE: a cpp instruction inside a #if 0")  *)
-     }
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']+   
+  | "#" [' ' '\t']* "ifndef"  [' ' '\t']+    
+  | "#" [' ' '\t']* "if"  [' ' '\t']+       
+    { 
+      let s = tok lexbuf in 
+      let s2 = cpp_until_endif lexbuf in
+      let s3 = cpp_comment_if_0 lexbuf in
+      s ^ s2 ^ s3
+    }
 
  (* if you introduce new rule, dont forget to add the first symbol here,
   * otherwise the preceding rule will never fire, hidden by this gigantic
@@ -655,3 +664,22 @@ and cpp_comment_if_0 = parse
   | [ '#']   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
   | [ '/']   { let s = tok lexbuf in s ^ cpp_comment_if_0 lexbuf }
   | _        { raise (Lexical ("unrecognised symbol:"^tok lexbuf)) }
+
+
+and cpp_until_endif = parse
+  | "#" [' ' '\t']* "endif" [' ' '\t' '\n']  { tok lexbuf }
+
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']+   
+  | "#" [' ' '\t']* "ifndef"  [' ' '\t']+    
+  | "#" [' ' '\t']* "if"  [' ' '\t']+     
+    {
+     let s = tok lexbuf in 
+     let s2 = cpp_until_endif lexbuf in
+     let s3 = cpp_until_endif lexbuf in
+     s ^ s2 ^ s3
+     }
+  | [^ '#' ]+ { let s = tok lexbuf in s ^ cpp_until_endif lexbuf (* noteopti: *) }
+  | [ '#']   { let s = tok lexbuf in s ^ cpp_until_endif lexbuf }
+  | _        { raise (Lexical ("unrecognised symbol:"^tok lexbuf)) }
+    
+

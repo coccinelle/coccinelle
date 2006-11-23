@@ -16,9 +16,8 @@ type parsing_stat = {
 let default_stat file =  { 
     filename = file;
     passing_through_lines = 0;
-    bad = 0;
-    correct = 0;
     have_timeout          = false;
+    correct = 0; bad = 0;
   }
 
 (* 
@@ -225,6 +224,8 @@ let info_from_token = function
   | Parser_c.THigherOrderExprExprStatement (i) -> i
   | Parser_c.THigherOrderExprExprExprStatement (i) -> i
 
+  | Parser_c.Tinline (i) -> i
+
 
 (*****************************************************************************)
 (* parsing *)
@@ -306,6 +307,8 @@ open Lexer_parser
 
 let _LookAhead = 10
 
+
+
 (* note: as now go in 2 pass,  there is first all the error message of 
  * the lexer, and then the error of the parser. It is no more interwinded.
  *)
@@ -317,7 +320,7 @@ let parse_print_error_heuristic file =
   (* pr2 ("1" ^ timenow()); *)
 
   (* bugfix: the lexer too do some conversion (ok, he does need anymore, 
-     but still ...)so have to reste lexer here too !!!  *)
+     but still) so have to keep lexer here too !!!  *)
   Lexer_parser.lexer_reset_typedef(); 
   let toks = tokens file in 
   let toks = toks +> List.filter (function 
@@ -689,8 +692,16 @@ let parse_print_error_heuristic file =
                     then pr2 ("DEFINE inside function, I treat it as comment");
                     TCommentCpp ii
                   end
-               (* do same for Include ? (often found #include inside structdef)
-                *)
+
+               (* do same for include often found inside structdef *)
+              | TInclude ii::_, _ -> 
+                  if !Lexer_parser._lexer_hint.toplevel
+                  then TInclude ii
+                  else begin
+                    if !Flag_parsing_c.debug_cpp
+                    then pr2 ("INCLUDE inside function, I treat it as comment");
+                    TCommentCpp ii
+                  end
 
               | ((TIfdef ii | TIfdefelse ii | TEndif ii) as x)::_, _ -> 
                  if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
@@ -900,11 +911,6 @@ let parse_print_error_heuristic file =
   (* still? Lexer_parser.lexer_reset_typedef (); *)
   let v = loop() in
   (v, stat)
-
-
-
-
-
 
 
 

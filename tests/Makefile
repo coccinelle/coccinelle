@@ -21,3 +21,5 @@ score:
 	find -name "*.ok" | wc -l
 	find -name "*.failed" | wc -l
 
+opt:	
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) SPATCH=../../spatch.opt -C $$i; done 

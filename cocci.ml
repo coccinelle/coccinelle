@@ -13,7 +13,7 @@ module CCI = Ctlcocci_integration
   - astcocci
 
   - flow (contain nodes)
-  - ctl  (contain rule_elem)
+  - ctl  (contain rule_elems)
 
   There are functions to transform one in another.
 
@@ -22,7 +22,12 @@ module CCI = Ctlcocci_integration
 (* --------------------------------------------------------------------- *)
 let mktmp s = if !Flag.windows then ("/cygwin"^s) else s
 
-let cprogram_from_file  file = Parse_c.parse_print_error_heuristic file
+(* --------------------------------------------------------------------- *)
+let cprogram_from_file  file = 
+  let (program2, stat) = Parse_c.parse_print_error_heuristic file in
+  let (program, infos) = Common.unzip program2  in
+  let program' = Type_annoter_c.annotate_program program in
+  (zip program' infos, stat)
 
 let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
   begin
@@ -105,8 +110,163 @@ let ctls ast ua  =
 let one_ctl ctls = List.hd (List.hd ctls)
 
 (* --------------------------------------------------------------------- *)
+let program_elem_vs_ctl = fun cinfo cocciinfo binding -> 
+  let (elem, selem, filename, il) = cinfo in
+  let (ctl, used_after_list, error_words) = cocciinfo in
+
+  match elem, ctl  with
+
+  (* In cocci we have 2 elements for include, in C we have only 1. 
+     For the moment I use only the header element (ex "<devfs.h>"), and
+     not the kwd element ("#include"). 
+     It would be complicated to put 2 elements in C because sometime the lexer
+     consider an include as a comment, and the algo currently treats tokens
+     separately.
+   *)
+  | Ast_c.CPPInclude ii, 
+    ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
+      (match ii with
+      | [(iinclude, mcodebinding)] -> 
+          let sheader = Ast_cocci.unwrap_mcode header in
+          if iinclude.str =~ ("#[ \t]*include[ \t]*" ^ sheader)
+          then
+            (Ast_c.CPPInclude 
+              (Transformation.tag_symbols [header] ii  binding), 
+             Unparse_c.PPnormal),
+            None, []
+          else 
+            (Ast_c.CPPInclude ii, Unparse_c.PPnormal),
+            None, []
+      | _ -> raise Impossible
+      )
+      
+
+  | celem, 
+    ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
+      (celem, Unparse_c.PPviatok il),
+      None, []
+
+  | Ast_c.Definition (((funcs, _, _, c),_) as def), ctl -> 
+      if !Flag.show_misc then pr2 ("starting function " ^ funcs);
+            
+      (* Cos caml regexp dont like \n ... *)
+      let str = Str.global_replace (Str.regexp "\n") " " selem in 
+
+      (* Call the engine algorithms only if have found a flag word. *)
+      if not (!Flag.process_only_when_error_words) ||
+         error_words +> List.exists (fun errw -> str =~ (".*" ^ errw))
+      then
+        begin
+          let flow = 
+            try Ast_to_flow.ast_to_control_flow def 
+            with Ast_to_flow.DeadCode Some info -> 
+              pr2 "PBBBBBBBBBBBBBBBBBB";
+              pr2 (Common.error_message filename ("", info.charpos));
+              failwith 
+                ("At least 1 DEADCODE detected (there may be more)," ^
+                 "but I can't continue." ^ 
+                 "Maybe because of cpp #ifdef side effects."
+                );
+          in
+                
+          begin
+            try Ast_to_flow.deadcode_detection flow
+            with Ast_to_flow.DeadCode Some info -> 
+              pr2 "PBBBBBBBBBBBBBBBBBB";
+              pr2 (Common.error_message filename ("", info.charpos));
+              pr2 ("At least 1 DEADCODE detected (there may be more)," ^
+                   "but I continue.");
+              pr2 "Maybe because of cpp #ifdef side effects.";
+              
+          end;
+                  
+          (* remove some fake nodes *)
+          let fixed_flow = CCI.fix_flow_ctl flow in
+                
+          if !Flag.show_flow              then print_flow fixed_flow;
+          if !Flag.show_before_fixed_flow then print_flow flow;
+
+	  let old_loop_in_src_code = !Flag_ctl.loop_in_src_code in
+	  if not old_loop_in_src_code
+	  then
+            (Flag_ctl.loop_in_src_code := false;
+             def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
+                    with Visitor_c.kstatement = (fun (k, bigf) stat -> 
+                      match stat with 
+                       | Ast_c.Iteration _, ii
+                       | Ast_c.Jump (Ast_c.Goto _), ii
+                           -> Flag_ctl.loop_in_src_code := true
+                       | st -> k st
+                             )
+                     });
+
+          let binding2 = CCI.metavars_binding_to_binding2 binding in
+
+          let model_ctl  = CCI.model_for_ctl flow binding in
+
+	  (* change this!!! *)
+	  let used_after_list =
+	    List.fold_left Common.union_set [] used_after_list in
+
+	  let satres = CCI.mysat model_ctl ctl (used_after_list, binding2) in
+
+	  Flag_ctl.loop_in_src_code := old_loop_in_src_code;
+
+	  match satres with
+	  | Left (trans_info2, returned_any_states, used_after_env) ->
+              let trans_info = CCI.satbis_to_trans_info trans_info2 in
+
+              if !Flag.show_transinfo then begin
+                print_xxxxxxxxxxxxxxxxx();
+                pr2 "transformation info returned:";
+                print_xxxxxxxxxxxxxxxxx();
+                Pretty_print_engine.pp_transformation_info trans_info;
+                Format.print_newline();
+              end;
+
+              let newbinding = CCI.metavars_binding2_to_binding used_after_env 
+              in
+
+              (* modify also the proto. *)
+              let hack_funheaders = 
+               trans_info +> map_filter (fun (_nodei, binding, re) -> 
+                match re with
+                | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
+                    Some  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
+                | _ -> None
+                )  
+              in
+                    
+              if trans_info <> []
+              then 
+                (* I do the transformation on flow, not fixed_flow, 
+                   because the flow_to_ast need my extra information. *)
+                let flow' = Transformation.transform trans_info flow in
+                let def' = Flow_to_ast.control_flow_to_ast flow' in
+                (Ast_c.Definition def', Unparse_c.PPnormal), 
+                Some newbinding, hack_funheaders
+              else 
+                (Ast_c.Definition def, Unparse_c.PPviatok il), 
+                Some newbinding, hack_funheaders
+	  | Right x -> 
+              pr2 ("Unable to find a value for " ^ x);
+              (Ast_c.Definition def, Unparse_c.PPviatok il), 
+              None, []
+        end
+      else 
+        (Ast_c.Definition def, Unparse_c.PPviatok il),
+        None, []
+  | x, ctl -> 
+      (x, Unparse_c.PPviatok il),
+      None, []
+
+
+
+
+
 
 exception NotWorthTrying
+
 
 let full_engine cfile coccifile_and_iso_or_ctl = 
 
@@ -139,13 +299,14 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
 	if not !Flag.windows
 	then
-	  (match
-	    Sys.command
-	      (Printf.sprintf "egrep -q '(%s)' %s"
-		 (String.concat "|" tokens) cfile) with
+	  (match 
+            Sys.command (sprintf "egrep -q '(%s)' %s" (join "|" tokens) cfile) 
+           with
 	  | 0 -> (* success*) ()
 	  | _ -> (* failure *)
-	      pr2 "raised NotWorthTrying"; raise NotWorthTrying);
+	      pr2 "raised NotWorthTrying"; 
+              raise NotWorthTrying
+          );
 
         (* extract_all_error_words *)
         let (all_error_words: string list) = 
@@ -197,6 +358,16 @@ let full_engine cfile coccifile_and_iso_or_ctl =
    then begin
     
     let ctl = List.hd ctl_toplevel_list in
+
+    if !Flag.show_ctl_text then begin
+      print_xxxxxxxxxxxxxxxxx();
+      pr2 "ctl";
+      print_xxxxxxxxxxxxxxxxx();
+      let (ctl,_) = ctl in
+      Pretty_print_engine.pp_ctlcocci 
+        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+      Format.print_newline();
+    end;
     
     (* 2: iter binding *)
     let lastround_bindings = !_current_bindings in
@@ -221,145 +392,38 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         _current_bindings := [Ast_c.emptyMetavarsBinding];
       end;
 
-    if !Flag.show_ctl_text then begin
-      print_xxxxxxxxxxxxxxxxx();
-      pr2 "ctl";
-      print_xxxxxxxxxxxxxxxxx();
-      let (ctl,_) = ctl in
-      Pretty_print_engine.pp_ctlcocci 
-        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-      Format.print_newline();
-    end;
     
     lastround_bindings +> List.iter (fun binding -> 
-
       let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
      
       (* 3: iter function *)
-      cprogram +> List.map (fun (e, (filename, pos, s, il)) -> 
-        match e with
-        | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-	    if !Flag.show_misc then pr2 ("starting function " ^ funcs);
-            
-            (* Cos caml regexp dont like \n ... *)
-            let str = Str.global_replace (Str.regexp "\n") " " s in 
+      cprogram +> List.map (fun (elem, (filename, pos, s, il)) -> 
 
-            (* Call the engine algorithms only if have found a flag word. *)
-            if not (!Flag.process_only_when_error_words) ||
-               error_words +> List.exists (fun errw -> str =~ (".*" ^ errw))
-            then
-              begin
-                let flow = 
-                  try Ast_to_flow.ast_to_control_flow def 
-                  with Ast_to_flow.DeadCode Some info -> 
-                    pr2 "PBBBBBBBBBBBBBBBBBB";
-                    pr2 (Common.error_message filename ("", info.charpos));
-                    failwith 
-                      ("At least 1 DEADCODE detected (there may be more)," ^
-                       "but I can't continue." ^ 
-                       "Maybe because of cpp #ifdef side effects."
-                      );
-                    
-                in
-                
-                begin
-                  try Ast_to_flow.deadcode_detection flow
-                  with Ast_to_flow.DeadCode Some info -> 
-                    pr2 "PBBBBBBBBBBBBBBBBBB";
-                    pr2 (Common.error_message filename ("", info.charpos));
-                    pr2 ("At least 1 DEADCODE detected (there may be more)," ^
-                         "but I continue.");
-                    pr2 "Maybe because of cpp #ifdef side effects.";
-                      
-                end;
-                  
-                (* remove some fake nodes *)
-                let fixed_flow = CCI.fix_flow_ctl flow in
-                
-                if !Flag.show_flow              then print_flow fixed_flow;
-                if !Flag.show_before_fixed_flow then print_flow flow;
+        (* call the ctl engine and all the machinery *)
+        let elem', newbinding, hack_funheaders = 
+          program_elem_vs_ctl 
+            (elem, s, filename, il) 
+            (ctl, used_after_list, error_words) 
+            binding 
+        in
 
-		let old_loop_in_src_code = !Flag_ctl.loop_in_src_code in
-		if not old_loop_in_src_code
-		then
-                  (Flag_ctl.loop_in_src_code := false;
-                   def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c
-                    with Visitor_c.kstatement = (fun (k, bigf) stat -> 
-                      match stat with 
-                       | Ast_c.Iteration _, ii
-                       | Ast_c.Jump (Ast_c.Goto _), ii
-                           -> Flag_ctl.loop_in_src_code := true
-                       | st -> k st
-                             )
-                     });
+        hack_funheaders +> List.iter (fun hack -> 
+          push2 hack _hack_funheader;
+          );
 
-                let current_binding = binding in
-                let current_binding2 = CCI.metavars_binding_to_binding2 binding
-                in
-
-
-                let model_ctl  = CCI.model_for_ctl flow current_binding in
-		(* change this!!! *)
-		let used_after_list =
-		  List.fold_left Common.union_set [] used_after_list in
-		let satres = 
-                  CCI.mysat model_ctl ctl (used_after_list, current_binding2) 
-                in
-
-		Flag_ctl.loop_in_src_code := old_loop_in_src_code;
-		match satres with
-		| Left (trans_info2, returned_any_states, used_after_env) ->
-                    let trans_info = CCI.satbis_to_trans_info trans_info2 in
-                    if !Flag.show_transinfo then begin
-                      print_xxxxxxxxxxxxxxxxx();
-                      pr2 "transformation info returned:";
-                      print_xxxxxxxxxxxxxxxxx();
-                      Pretty_print_engine.pp_transformation_info trans_info;
-                      Format.print_newline();
-                    end;
-
-                    (* Some union. julia say that because the binding is
-                     * determined by the used_after_list, the items
-                     * in the list are kind of sorted, so could
-                     * optimise the union.
-                     *)
-                    _current_bindings := 
-                      Common.insert_set 
-                        (CCI.metavars_binding2_to_binding used_after_env)
-                        !_current_bindings;
-
-                    (* modify also the proto. *)
-                    trans_info +> List.iter (fun (_nodei, binding, re) -> 
-                      match re with
-                      | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
-                          push2  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
-                            _hack_funheader
-                      | _ -> ()
-                      );
-                    
-                    if trans_info <> []
-                    then 
-                      (* I do the transformation on flow, not fixed_flow, 
-                         because the flow_to_ast need my extra information. *)
-                      let flow' = Transformation.transform trans_info flow in
-                      let def' = Flow_to_ast.control_flow_to_ast flow' in
-                      (Ast_c.Definition def', Unparse_c.PPnormal)
-                    else 
-                      (Ast_c.Definition def, Unparse_c.PPviatok il)
-		| Right x -> 
-                    pr2 ("Unable to find a value for " ^ x);
-                    (Ast_c.Definition def, Unparse_c.PPviatok il)
-              end
-            else 
-              (Ast_c.Definition def, Unparse_c.PPviatok il)
-
-
-        | x -> 
-            (x, Unparse_c.PPviatok il)
+        (* Some union. julia say that because the binding is
+         * determined by the used_after_list, the items
+         * in the list are kind of sorted, so could
+         * optimise the union.
+         *)
+        newbinding +> do_option (fun newbinding -> 
+          _current_bindings := Common.insert_set newbinding !_current_bindings;
+        );
+        
+        elem'
         ) (* end 3: iter function *)
         +> Unparse_c.pp_program (mktmp "/tmp/input.c") (mktmp "/tmp/output.c");
       command2("cp /tmp/output.c /tmp/input.c");    
-
       ) (* end 2: iter bindings *)
    end
    else begin
@@ -389,19 +453,20 @@ let full_engine cfile coccifile_and_iso_or_ctl =
      let used_after_list2 = 
        (*union_after [] *) used_after_list  (* no more need the fix *)
      in
-
+     
+     (* iter regions *)
      zip ctl_toplevel_list used_after_list2 +> List.iter 
       (fun (ctl, used_after_one_ctl) -> 
 
-    if !Flag.show_ctl_text then begin
-      print_xxxxxxxxxxxxxxxxx();
-      pr2 "ctl";
-      print_xxxxxxxxxxxxxxxxx();
-      let (ctl,_) = ctl in
-      Pretty_print_engine.pp_ctlcocci 
-        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-      Format.print_newline();
-    end;
+        if !Flag.show_ctl_text then begin
+          print_xxxxxxxxxxxxxxxxx();
+          pr2 "ctl";
+          print_xxxxxxxxxxxxxxxxx();
+          let (ctl,_) = ctl in
+          Pretty_print_engine.pp_ctlcocci 
+            !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+          Format.print_newline();
+        end;
 
 
        let lastround_bindings_multi = List.rev !_current_bindings_multictl in
@@ -514,6 +579,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
           )
          )
        );
+
      (* assert no conflict. can concern different function ? *)
      (match (List.length !_current_bindings_multictl) with
      | 0 ->  command2("cp /tmp/input.c /tmp/output.c");    
@@ -541,11 +607,11 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
 
 
-  !_hack_funheader +>
-  List.iter (fun ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
+  !_hack_funheader +> List.iter (fun 
+    ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
    
-      let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
-      cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
+    let (cprogram, _stat)  = cprogram_from_file (mktmp "/tmp/input.c") in
+    cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
         match ebis with
         | Ast_c.Declaration 
             (Ast_c.DeclList 
@@ -564,7 +630,6 @@ let full_engine cfile coccifile_and_iso_or_ctl =
              with Transformation.NoMatch -> 
                (ebis, Unparse_c.PPviatok il)
              )
-             
         | x -> 
             (x, Unparse_c.PPviatok il)
         ) 
@@ -576,3 +641,5 @@ let full_engine cfile coccifile_and_iso_or_ctl =
   ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
 
   with NotWorthTrying -> command2("cp " ^ cfile ^ " /tmp/output.c");    
+
+

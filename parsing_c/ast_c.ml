@@ -164,7 +164,7 @@ and expressionbis =
   | Cast           of fullType * expression                     
 
   (* gccext: *)        
-  | StatementExpr of compound wrap (* ( ) *) 
+  | StatementExpr of compound wrap (* ( )     new scope *) 
   | Constructor 
 
   (* forunparser: *)
@@ -283,13 +283,17 @@ and statementbis =
  * requires more work in parsing. Better to separate concern.
  * 
  * Before the need for unparser, I didn't have a DeclList but just a Decl.
+ *
+ * I am not sure what it means to declare a prototype inline, but gcc
+ * accepts it. 
  *)
 
 and declaration = 
    DeclList of (((string * initialiser option) wrap (* s = *) option) * 
                  fullType * storage)
                 wrap2 (* , *) list wrap (* ; sto *)
-     and storage       = NoSto | StoTypedef | Sto of storageClass
+     and storage       = storagebis * bool (* inline or not *)
+     and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
 
      and initialiser = initialiserbis wrap
@@ -355,6 +359,9 @@ let noInstr = (ExprStatement (None), [])
 
 let emptyMetavarsBinding = ([]: metavars_binding)
 let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
+
+(*****************************************************************************)
+let unwrap = fst
 
 (*****************************************************************************)
 (* abstract line *)

@@ -5,6 +5,7 @@ CTLTARGET=engine
 
 SOURCES = flag_engine.ml lib_engine.ml check_exhaustive_pattern.ml \
 	  unparse_cocci.ml unparse_c.ml \
+	  types.ml \
 	  pretty_print_engine.ml isomorphisms_c_c.ml pattern.ml \
 	  distribute_mcodekind.ml transformation.ml asttomember.ml \
 	  asttoctl2.ml ctltotex.ml \

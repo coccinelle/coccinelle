@@ -157,7 +157,7 @@ let rec
 
       let stob' = stob in
       let (iistob') = 
-        match stoa, stob, iistob with
+        match stoa, fst stob, iistob with
         | None, _, _ -> 
             if allminus 
             then 
@@ -166,9 +166,9 @@ let rec
                 ) in
               tag_symbols minusizer iistob binding
             else iistob
-        | Some x, B.Sto B.Static, [stostatic] -> 
+        | Some x, B.Sto B.Static, stostatic::stoinline -> 
            assert (term x = A.Static);
-            tag_symbols [wrap_mcode x] [stostatic] binding
+            tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
            
         | _ -> raise NoMatch
 
@@ -364,13 +364,8 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       (match opttypa, opttypb with
       | None, _ -> ()
       | Some tas, Some tb -> 
-	  failwith "transformation on types not supported"
-	  (*
-          if (not 
-                (tas +> 
-                 List.exists (fun ta -> 
-                   List.length (Pattern.match_ft_ft ta tb binding) >= 1)))
-          then raise NoMatch *)
+         if (not (tas +> List.exists (fun ta ->  Types.compatible_type ta tb)))
+         then raise NoMatch
       | Some _, None -> 
           failwith ("I have not the type information. Certainly a pb in " ^
                     "annotate_typer.ml")
@@ -877,7 +872,6 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
               let (sb', i2') = 
                 transform_ident Pattern.DontKnow sa (sb, [i2])   binding 
               in
-
               let i1' = tag_symbols [wrap_mcode sua] [i1]  binding in
               (qu, (B.StructUnionName (sb', sub), i1' ++ i2'))
             else raise NoMatch

@@ -35,5 +35,4 @@ type label_ctlcocci =
 
 
 type transformation_info = 
- (Ograph_extended.nodei * metavars_binding * Ast_cocci.rule_elem) 
- list
+ (Ograph_extended.nodei * metavars_binding * Ast_cocci.rule_elem) list

@@ -492,6 +492,7 @@ val safe_tl : 'a list -> 'a list
 
 val zip : 'a list -> 'b list -> ('a * 'b) list
 val zip_safe : 'a list -> 'b list -> ('a * 'b) list
+val unzip : ('a * 'b) list -> 'a list * 'b list
 
 val take : int -> 'a list -> 'a list
 val take_safe : int -> 'a list -> 'a list

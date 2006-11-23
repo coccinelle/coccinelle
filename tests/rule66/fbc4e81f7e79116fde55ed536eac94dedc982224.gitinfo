@@ -1,0 +1,1675 @@
+commit fbc4e81f7e79116fde55ed536eac94dedc982224
+Author: Jaroslav Kysela <perex@suse.cz>
+Date:   Thu Jul 1 23:33:00 2004 +0200
+
+    ALSA CVS update
+    ES1688 driver,ALS100 driver,AZT2320 driver,CMI8330 driver,DT019x driver
+    ES18xx driver,OPL3SA2 driver,Sound Scape driver,AD1816A driver
+    AD1848 driver,CS4231 driver,CS4236+ driver,GUS Library,Opti9xx drivers
+    EMU8000 driver,ES968 driver,SB16/AWE driver,SB8 driver,SB drivers
+    Wavefront drivers
+    Removal and replacement of magic memory allocators and casts (isa part)
+    
+    This patch replaces snd_magic_kmalloc(), snd_magic_kcallc() and snd_magic_kfree()
+    with kmalloc(), kcalloc() and kfree(), respectively.
+    The cast via snd_magic_cast() is replaced with the standard cast, too.
+    
+    Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+    Signed-off-by: Takashi Iwai <tiwai@suse.de>
+
+diff --git a/include/sound/es1688.h b/include/sound/es1688.h
+index d390c64..104bb9b 100644
+--- a/include/sound/es1688.h
++++ b/include/sound/es1688.h
+@@ -55,8 +55,6 @@ struct _snd_es1688 {
+ 
+ typedef struct _snd_es1688 es1688_t;
+ 
+-#define chip_t es1688_t
+-
+ /* I/O ports */
+ 
+ #define ES1688P(codec, x) ((codec)->port + e_s_s_ESS1688##x)
+diff --git a/sound/isa/ad1816a/ad1816a.c b/sound/isa/ad1816a/ad1816a.c
+index 3a56718..92f70ba 100644
+--- a/sound/isa/ad1816a/ad1816a.c
++++ b/sound/isa/ad1816a/ad1816a.c
+@@ -30,8 +30,6 @@ #include <sound/ad1816a.h>
+ #include <sound/mpu401.h>
+ #include <sound/opl3.h>
+ 
+-#define chip_t ad1816a_t
+-
+ #define PFX "ad1816a: "
+ 
+ MODULE_AUTHOR("Massimo Piccioni <dafastidio@libero.it>");
+diff --git a/sound/isa/ad1816a/ad1816a_lib.c b/sound/isa/ad1816a/ad1816a_lib.c
+index 4415a9f..1d14864 100644
+--- a/sound/isa/ad1816a/ad1816a_lib.c
++++ b/sound/isa/ad1816a/ad1816a_lib.c
+@@ -34,8 +34,6 @@ MODULE_AUTHOR("Massimo Piccioni <dafasti
+ MODULE_DESCRIPTION("lowlevel code for Analog Devices AD1816A chip");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t ad1816a_t
+-
+ static inline int snd_ad1816a_busy_wait(ad1816a_t *chip)
+ {
+ 	int timeout;
+@@ -313,7 +311,7 @@ static snd_pcm_uframes_t snd_ad1816a_cap
+ 
+ static irqreturn_t snd_ad1816a_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ad1816a_t *chip = snd_magic_cast(ad1816a_t, dev_id, return IRQ_NONE);
++	ad1816a_t *chip = dev_id;
+ 	unsigned char status;
+ 
+ 	spin_lock(&chip->lock);
+@@ -550,13 +548,13 @@ static int snd_ad1816a_free(ad1816a_t *c
+ 		snd_dma_disable(chip->dma2);
+ 		free_dma(chip->dma2);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_ad1816a_dev_free(snd_device_t *device)
+ {
+-	ad1816a_t *chip = snd_magic_cast(ad1816a_t, device->device_data, return -ENXIO);
++	ad1816a_t *chip = device->device_data;
+ 	return snd_ad1816a_free(chip);
+ }
+ 
+@@ -585,7 +583,7 @@ int snd_ad1816a_create(snd_card_t *card,
+ 
+ 	*rchip = NULL;
+ 
+-	chip = snd_magic_kcalloc(ad1816a_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	chip->irq = -1;
+@@ -661,7 +659,7 @@ static snd_pcm_ops_t snd_ad1816a_capture
+ 
+ static void snd_ad1816a_pcm_free(snd_pcm_t *pcm)
+ {
+-	ad1816a_t *chip = snd_magic_cast(ad1816a_t, pcm->private_data, return);
++	ad1816a_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -696,7 +694,7 @@ int snd_ad1816a_pcm(ad1816a_t *chip, int
+ 
+ static void snd_ad1816a_timer_free(snd_timer_t *timer)
+ {
+-	ad1816a_t *chip = snd_magic_cast(ad1816a_t, timer->private_data, return);
++	ad1816a_t *chip = timer->private_data;
+ 	chip->timer = NULL;
+ }
+ 
+diff --git a/sound/isa/ad1848/ad1848.c b/sound/isa/ad1848/ad1848.c
+index afd232f..bf33309 100644
+--- a/sound/isa/ad1848/ad1848.c
++++ b/sound/isa/ad1848/ad1848.c
+@@ -30,8 +30,6 @@ #include <sound/core.h>
+ #include <sound/ad1848.h>
+ #include <sound/initval.h>
+ 
+-#define chip_t ad1848_t
+-
+ MODULE_AUTHOR("Tugrul Galatali <galatalt@stuy.edu>, Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("AD1848/AD1847/CS4248");
+ MODULE_LICENSE("GPL");
+diff --git a/sound/isa/ad1848/ad1848_lib.c b/sound/isa/ad1848/ad1848_lib.c
+index fe913bf..d0a62f7 100644
+--- a/sound/isa/ad1848/ad1848_lib.c
++++ b/sound/isa/ad1848/ad1848_lib.c
+@@ -39,8 +39,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for control of AD1848/AD1847/CS4248");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t ad1848_t
+-
+ #if 0
+ #define SNDRV_DEBUG_MCE
+ #endif
+@@ -588,7 +586,7 @@ static int snd_ad1848_capture_prepare(sn
+ 
+ irqreturn_t snd_ad1848_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	ad1848_t *chip = snd_magic_cast(ad1848_t, dev_id, return IRQ_NONE);
++	ad1848_t *chip = dev_id;
+ 
+ 	if ((chip->mode & AD1848_MODE_PLAY) && chip->playback_substream &&
+ 	    (chip->mode & AD1848_MODE_RUNNING))
+@@ -649,7 +647,7 @@ static void snd_ad1848_thinkpad_twiddle(
+ #ifdef CONFIG_PM
+ static int snd_ad1848_suspend(snd_card_t *card, unsigned int state)
+ {
+-	ad1848_t *chip = snd_magic_cast(ad1848_t, card->pm_private_data, return -EINVAL);
++	ad1848_t *chip = card->pm_private_data;
+ 
+ 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
+ 		return 0;
+@@ -666,7 +664,7 @@ static int snd_ad1848_suspend(snd_card_t
+ 
+ static int snd_ad1848_resume(snd_card_t *card, unsigned int state)
+ {
+-	ad1848_t *chip = snd_magic_cast(ad1848_t, card->pm_private_data, return -EINVAL);
++	ad1848_t *chip = card->pm_private_data;
+ 
+ 	if (card->power_state == SNDRV_CTL_POWER_D0)
+ 		return 0;
+@@ -867,13 +865,13 @@ static int snd_ad1848_free(ad1848_t *chi
+ 		snd_dma_disable(chip->dma);
+ 		free_dma(chip->dma);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_ad1848_dev_free(snd_device_t *device)
+ {
+-	ad1848_t *chip = snd_magic_cast(ad1848_t, device->device_data, return -ENXIO);
++	ad1848_t *chip = device->device_data;
+ 	return snd_ad1848_free(chip);
+ }
+ 
+@@ -901,7 +899,7 @@ int snd_ad1848_create(snd_card_t * card,
+ 	int err;
+ 
+ 	*rchip = NULL;
+-	chip = snd_magic_kcalloc(ad1848_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+@@ -977,7 +975,7 @@ static snd_pcm_ops_t snd_ad1848_capture_
+ 
+ static void snd_ad1848_pcm_free(snd_pcm_t *pcm)
+ {
+-	ad1848_t *chip = snd_magic_cast(ad1848_t, pcm->private_data, return);
++	ad1848_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+diff --git a/sound/isa/als100.c b/sound/isa/als100.c
+index 6babe7c..c8819bc 100644
+--- a/sound/isa/als100.c
++++ b/sound/isa/als100.c
+@@ -32,8 +32,6 @@ #include <sound/mpu401.h>
+ #include <sound/opl3.h>
+ #include <sound/sb.h>
+ 
+-#define chip_t sb_t
+-
+ #define PFX "als100: "
+ 
+ MODULE_AUTHOR("Massimo Piccioni <dafastidio@libero.it>");
+diff --git a/sound/isa/azt2320.c b/sound/isa/azt2320.c
+index 4c71d4c..18df0b8 100644
+--- a/sound/isa/azt2320.c
++++ b/sound/isa/azt2320.c
+@@ -43,8 +43,6 @@ #include <sound/cs4231.h>
+ #include <sound/mpu401.h>
+ #include <sound/opl3.h>
+ 
+-#define chip_t cs4231_t
+-
+ #define PFX "azt2320: "
+ 
+ MODULE_AUTHOR("Massimo Piccioni <dafastidio@libero.it>");
+diff --git a/sound/isa/cmi8330.c b/sound/isa/cmi8330.c
+index 60a6f4f..b5d970e 100644
+--- a/sound/isa/cmi8330.c
++++ b/sound/isa/cmi8330.c
+@@ -385,7 +385,7 @@ #endif
+ 
+ static int snd_cmi8330_playback_open(snd_pcm_substream_t * substream)
+ {
+-	struct snd_cmi8330 *chip = (struct snd_cmi8330 *)_snd_pcm_substream_chip(substream);
++	struct snd_cmi8330 *chip = snd_pcm_substream_chip(substream);
+ 
+ 	/* replace the private_data and call the original open callback */
+ 	substream->private_data = chip->streams[SNDRV_PCM_STREAM_PLAYBACK].private_data;
+@@ -394,7 +394,7 @@ static int snd_cmi8330_playback_open(snd
+ 
+ static int snd_cmi8330_capture_open(snd_pcm_substream_t * substream)
+ {
+-	struct snd_cmi8330 *chip = (struct snd_cmi8330 *)_snd_pcm_substream_chip(substream);
++	struct snd_cmi8330 *chip = snd_pcm_substream_chip(substream);
+ 
+ 	/* replace the private_data and call the original open callback */
+ 	substream->private_data = chip->streams[SNDRV_PCM_STREAM_CAPTURE].private_data;
+diff --git a/sound/isa/cs423x/cs4231.c b/sound/isa/cs423x/cs4231.c
+index 205638d..eefcce5 100644
+--- a/sound/isa/cs423x/cs4231.c
++++ b/sound/isa/cs423x/cs4231.c
+@@ -30,8 +30,6 @@ #include <sound/cs4231.h>
+ #include <sound/mpu401.h>
+ #include <sound/initval.h>
+ 
+-#define chip_t cs4231_t
+-
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("Generic CS4231");
+ MODULE_LICENSE("GPL");
+diff --git a/sound/isa/cs423x/cs4231_lib.c b/sound/isa/cs423x/cs4231_lib.c
+index 741ea0d..fff3fb2 100644
+--- a/sound/isa/cs423x/cs4231_lib.c
++++ b/sound/isa/cs423x/cs4231_lib.c
+@@ -43,8 +43,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for control of CS4231(A)/CS4232/InterWave & compatible chips");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t cs4231_t
+-
+ #if 0
+ #define SNDRV_DEBUG_MCE
+ #endif
+@@ -969,7 +967,7 @@ static void snd_cs4231_overrange(cs4231_
+ 
+ irqreturn_t snd_cs4231_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, dev_id, return IRQ_NONE);
++	cs4231_t *chip = dev_id;
+ 	unsigned char status;
+ 
+ 	status = snd_cs4231_in(chip, CS4231_IRQ_STATUS);
+@@ -1407,7 +1405,7 @@ #endif
+ 
+ static int snd_cs4231_pm_suspend(snd_card_t *card, unsigned int state)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, card->pm_private_data, return -EINVAL);
++	cs4231_t *chip = card->pm_private_data;
+ 	if (chip->suspend) {
+ 		chip->suspend(chip);
+ 		snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+@@ -1417,7 +1415,7 @@ static int snd_cs4231_pm_suspend(snd_car
+ 
+ static int snd_cs4231_pm_resume(snd_card_t *card, unsigned int state)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, card->pm_private_data, return -EINVAL);
++	cs4231_t *chip = card->pm_private_data;
+ 	if (chip->resume) {
+ 		chip->resume(chip);
+ 		snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+@@ -1453,13 +1451,13 @@ static int snd_cs4231_free(cs4231_t *chi
+ 	}
+ 	if (chip->timer)
+ 		snd_device_free(chip->card, chip->timer);
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_cs4231_dev_free(snd_device_t *device)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, device->device_data, return -ENXIO);
++	cs4231_t *chip = device->device_data;
+ 	return snd_cs4231_free(chip);	
+ }
+ 
+@@ -1493,7 +1491,7 @@ static int snd_cs4231_new(snd_card_t * c
+ 	cs4231_t *chip;
+ 
+ 	*rchip = NULL;
+-	chip = snd_magic_kcalloc(cs4231_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	chip->hardware = hardware;
+@@ -1626,7 +1624,7 @@ static snd_pcm_ops_t snd_cs4231_capture_
+ 
+ static void snd_cs4231_pcm_free(snd_pcm_t *pcm)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, pcm->private_data, return);
++	cs4231_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1686,7 +1684,7 @@ #endif
+ 
+ static void snd_cs4231_timer_free(snd_timer_t *timer)
+ {
+-	cs4231_t *chip = snd_magic_cast(cs4231_t, timer->private_data, return);
++	cs4231_t *chip = timer->private_data;
+ 	chip->timer = NULL;
+ }
+ 
+diff --git a/sound/isa/cs423x/cs4236.c b/sound/isa/cs423x/cs4236.c
+index b2fa15a..97fe640 100644
+--- a/sound/isa/cs423x/cs4236.c
++++ b/sound/isa/cs423x/cs4236.c
+@@ -30,8 +30,6 @@ #include <sound/mpu401.h>
+ #include <sound/opl3.h>
+ #include <sound/initval.h>
+ 
+-#define chip_t cs4231_t
+-
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_LICENSE("GPL");
+ MODULE_CLASSES("{sound}");
+diff --git a/sound/isa/cs423x/cs4236_lib.c b/sound/isa/cs423x/cs4236_lib.c
+index 788fac6..5ec9f60 100644
+--- a/sound/isa/cs423x/cs4236_lib.c
++++ b/sound/isa/cs423x/cs4236_lib.c
+@@ -93,8 +93,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for control of CS4235/4236B/4237B/4238B/4239 chips");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t cs4231_t
+-
+ /*
+  *
+  */
+diff --git a/sound/isa/dt019x.c b/sound/isa/dt019x.c
+index 4013264..a843c67 100644
+--- a/sound/isa/dt019x.c
++++ b/sound/isa/dt019x.c
+@@ -33,8 +33,6 @@ #include <sound/mpu401.h>
+ #include <sound/opl3.h>
+ #include <sound/sb.h>
+ 
+-#define chip_t sb_t
+-
+ #define PFX "dt019x: "
+ 
+ MODULE_AUTHOR("Massimo Piccioni <dafastidio@libero.it>");
+diff --git a/sound/isa/es1688/es1688_lib.c b/sound/isa/es1688/es1688_lib.c
+index 66d08b8..e02a347 100644
+--- a/sound/isa/es1688/es1688_lib.c
++++ b/sound/isa/es1688/es1688_lib.c
+@@ -482,7 +482,7 @@ static int snd_es1688_capture_trigger(sn
+ 
+ irqreturn_t snd_es1688_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	es1688_t *chip = snd_magic_cast(es1688_t, dev_id, return IRQ_NONE);
++	es1688_t *chip = dev_id;
+ 
+ 	if (chip->trigger_value == 0x05)	/* ok.. playback is active */
+ 		snd_pcm_period_elapsed(chip->playback_substream);
+@@ -616,13 +616,13 @@ static int snd_es1688_free(es1688_t *chi
+ 		disable_dma(chip->dma8);
+ 		free_dma(chip->dma8);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_es1688_dev_free(snd_device_t *device)
+ {
+-	es1688_t *chip = snd_magic_cast(es1688_t, device->device_data, return -ENXIO);
++	es1688_t *chip = device->device_data;
+ 	return snd_es1688_free(chip);
+ }
+ 
+@@ -650,7 +650,7 @@ int snd_es1688_create(snd_card_t * card,
+ 	int err;
+ 
+ 	*rchip = NULL;
+-	chip = snd_magic_kcalloc(es1688_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	chip->irq = -1;
+@@ -728,7 +728,7 @@ static snd_pcm_ops_t snd_es1688_capture_
+ 
+ static void snd_es1688_pcm_free(snd_pcm_t *pcm)
+ {
+-	es1688_t *chip = snd_magic_cast(es1688_t, pcm->private_data, return);
++	es1688_t *chip = pcm->private_data;
+ 	chip->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+diff --git a/sound/isa/es18xx.c b/sound/isa/es18xx.c
+index 202eab4..21af1eb 100644
+--- a/sound/isa/es18xx.c
++++ b/sound/isa/es18xx.c
+@@ -157,8 +157,6 @@ #define ES18XX_PM_SUS	0x080
+ 
+ typedef struct _snd_es18xx es18xx_t;
+ 
+-#define chip_t es18xx_t
+-
+ /* Lowlevel */
+ 
+ #define DAC1 0x01
+@@ -728,7 +726,7 @@ static int snd_es18xx_playback_trigger(s
+ 
+ static irqreturn_t snd_es18xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	es18xx_t *chip = snd_magic_cast(es18xx_t, dev_id, return IRQ_NONE);
++	es18xx_t *chip = dev_id;
+ 	unsigned char status;
+ 
+ 	if (chip->caps & ES18XX_CONTROL) {
+@@ -1027,7 +1025,7 @@ static int snd_es18xx_get_hw_switch(snd_
+ 
+ static void snd_es18xx_hwv_free(snd_kcontrol_t *kcontrol)
+ {
+-	es18xx_t *chip = snd_magic_cast(es18xx_t, _snd_kcontrol_chip(kcontrol), return);
++	es18xx_t *chip = snd_kcontrol_chip(kcontrol);
+ 	chip->master_volume = NULL;
+ 	chip->master_switch = NULL;
+ 	chip->hw_volume = NULL;
+@@ -1561,7 +1559,7 @@ static snd_pcm_ops_t snd_es18xx_capture_
+ 
+ static void snd_es18xx_pcm_free(snd_pcm_t *pcm)
+ {
+-	es18xx_t *codec = snd_magic_cast(es18xx_t, pcm->private_data, return);
++	es18xx_t *codec = pcm->private_data;
+ 	codec->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -1611,7 +1609,7 @@ int __devinit snd_es18xx_pcm(es18xx_t *c
+ #ifdef CONFIG_PM
+ static int snd_es18xx_suspend(snd_card_t *card, unsigned int state)
+ {
+-	es18xx_t *chip = snd_magic_cast(es18xx_t, card->pm_private_data, return -EINVAL);
++	es18xx_t *chip = card->pm_private_data;
+ 
+ 	snd_pcm_suspend_all(chip->pcm);
+ 
+@@ -1627,7 +1625,7 @@ static int snd_es18xx_suspend(snd_card_t
+ 
+ static int snd_es18xx_resume(snd_card_t *card, unsigned int state)
+ {
+-	es18xx_t *chip = snd_magic_cast(es18xx_t, card->pm_private_data, return -EINVAL);
++	es18xx_t *chip = card->pm_private_data;
+ 
+ 	/* restore PM register, we won't wake till (not 0x07) i/o activity though */
+ 	snd_es18xx_write(chip, ES18XX_PM, chip->pm_reg ^= ES18XX_PM_FM);
+@@ -1661,13 +1659,13 @@ static int snd_es18xx_free(es18xx_t *chi
+ 		disable_dma(chip->dma2);
+ 		free_dma(chip->dma2);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_es18xx_dev_free(snd_device_t *device)
+ {
+-	es18xx_t *chip = snd_magic_cast(es18xx_t, device->device_data, return -ENXIO);
++	es18xx_t *chip = device->device_data;
+ 	return snd_es18xx_free(chip);
+ }
+ 
+@@ -1685,7 +1683,7 @@ static int __devinit snd_es18xx_new_devi
+ 	int err;
+ 
+ 	*rchip = NULL;
+-        chip = snd_magic_kcalloc(es18xx_t, 0, GFP_KERNEL);
++        chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/isa/gus/gus_instr.c b/sound/isa/gus/gus_instr.c
+index e819e90..591a9a1 100644
+--- a/sound/isa/gus/gus_instr.c
++++ b/sound/isa/gus/gus_instr.c
+@@ -31,7 +31,7 @@ #include <sound/gus.h>
+ int snd_gus_iwffff_put_sample(void *private_data, iwffff_wave_t *wave,
+ 			      char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 	snd_gf1_mem_block_t *block;
+ 	int err;
+ 
+@@ -61,7 +61,7 @@ int snd_gus_iwffff_put_sample(void *priv
+ int snd_gus_iwffff_get_sample(void *private_data, iwffff_wave_t *wave,
+ 			      char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	return snd_gus_dram_read(gus, data, wave->address.memory, wave->size,
+ 				 wave->format & IWFFFF_WAVE_ROM ? 1 : 0);
+@@ -70,7 +70,7 @@ int snd_gus_iwffff_get_sample(void *priv
+ int snd_gus_iwffff_remove_sample(void *private_data, iwffff_wave_t *wave,
+ 				 int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	if (wave->format & IWFFFF_WAVE_ROM)
+ 		return 0;	/* it's probably ok - verify the address? */	
+@@ -84,7 +84,7 @@ int snd_gus_iwffff_remove_sample(void *p
+ int snd_gus_gf1_put_sample(void *private_data, gf1_wave_t *wave,
+ 			   char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 	snd_gf1_mem_block_t *block;
+ 	int err;
+ 
+@@ -112,7 +112,7 @@ int snd_gus_gf1_put_sample(void *private
+ int snd_gus_gf1_get_sample(void *private_data, gf1_wave_t *wave,
+ 			   char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	return snd_gus_dram_read(gus, data, wave->address.memory, wave->size, 0);
+ }
+@@ -120,7 +120,7 @@ int snd_gus_gf1_get_sample(void *private
+ int snd_gus_gf1_remove_sample(void *private_data, gf1_wave_t *wave,
+ 			      int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	return snd_gf1_mem_free(&gus->gf1.mem_alloc, wave->address.memory);
+ }
+@@ -132,7 +132,7 @@ int snd_gus_gf1_remove_sample(void *priv
+ int snd_gus_simple_put_sample(void *private_data, simple_instrument_t *instr,
+ 			      char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 	snd_gf1_mem_block_t *block;
+ 	int err;
+ 
+@@ -159,7 +159,7 @@ int snd_gus_simple_put_sample(void *priv
+ int snd_gus_simple_get_sample(void *private_data, simple_instrument_t *instr,
+ 			      char __user *data, long len, int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	return snd_gus_dram_read(gus, data, instr->address.memory, instr->size, 0);
+ }
+@@ -167,7 +167,7 @@ int snd_gus_simple_get_sample(void *priv
+ int snd_gus_simple_remove_sample(void *private_data, simple_instrument_t *instr,
+ 			         int atomic)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return -ENXIO);
++	snd_gus_card_t *gus = private_data;
+ 
+ 	return snd_gf1_mem_free(&gus->gf1.mem_alloc, instr->address.memory);
+ }
+diff --git a/sound/isa/gus/gus_irq.c b/sound/isa/gus/gus_irq.c
+index 4aeabe8..1e2a15e 100644
+--- a/sound/isa/gus/gus_irq.c
++++ b/sound/isa/gus/gus_irq.c
+@@ -32,7 +32,7 @@ #endif
+ 
+ irqreturn_t snd_gus_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	snd_gus_card_t * gus = snd_magic_cast(snd_gus_card_t, dev_id, return IRQ_NONE);
++	snd_gus_card_t * gus = dev_id;
+ 	unsigned char status;
+ 	int loop = 100;
+ 	int handled = 0;
+@@ -114,7 +114,7 @@ static void snd_gus_irq_info_read(snd_in
+ 	snd_gus_voice_t *pvoice;
+ 	int idx;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, entry->private_data, return);
++	gus = entry->private_data;
+ 	snd_iprintf(buffer, "midi out = %u\n", gus->gf1.interrupt_stat_midi_out);
+ 	snd_iprintf(buffer, "midi in = %u\n", gus->gf1.interrupt_stat_midi_in);
+ 	snd_iprintf(buffer, "timer1 = %u\n", gus->gf1.interrupt_stat_timer1);
+diff --git a/sound/isa/gus/gus_main.c b/sound/isa/gus/gus_main.c
+index 64558c2..73f81c1 100644
+--- a/sound/isa/gus/gus_main.c
++++ b/sound/isa/gus/gus_main.c
+@@ -35,8 +35,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for Gravis UltraSound soundcards");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t snd_gus_card_t
+-
+ static int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
+ 
+ int snd_gus_use_inc(snd_gus_card_t * gus)
+@@ -133,13 +131,13 @@ #endif
+ 		disable_dma(gus->gf1.dma2);
+ 		free_dma(gus->gf1.dma2);
+ 	}
+-	snd_magic_kfree(gus);
++	kfree(gus);
+ 	return 0;
+ }
+ 
+ static int snd_gus_dev_free(snd_device_t *device)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, device->device_data, return -ENXIO);
++	snd_gus_card_t *gus = device->device_data;
+ 	return snd_gus_free(gus);
+ }
+ 
+@@ -159,7 +157,7 @@ int snd_gus_create(snd_card_t * card,
+ 	};
+ 
+ 	*rgus = NULL;
+-	gus = snd_magic_kcalloc(snd_gus_card_t, 0, GFP_KERNEL);
++	gus = kcalloc(1, sizeof(*gus), GFP_KERNEL);
+ 	if (gus == NULL)
+ 		return -ENOMEM;
+ 	gus->gf1.irq = -1;
+@@ -421,7 +419,7 @@ static int snd_gus_check_version(snd_gus
+ 
+ static void snd_gus_seq_dev_free(snd_seq_device_t *seq_dev)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, seq_dev->private_data, return);
++	snd_gus_card_t *gus = seq_dev->private_data;
+ 	gus->seq_dev = NULL;
+ }
+ 
+diff --git a/sound/isa/gus/gus_mem.c b/sound/isa/gus/gus_mem.c
+index b1f6487..cd45fe1 100644
+--- a/sound/isa/gus/gus_mem.c
++++ b/sound/isa/gus/gus_mem.c
+@@ -297,7 +297,7 @@ static void snd_gf1_mem_info_read(snd_in
+ 	unsigned int total, used;
+ 	int i;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, entry->private_data, return);
++	gus = entry->private_data;
+ 	alloc = &gus->gf1.mem_alloc;
+ 	down(&alloc->memory_mutex);
+ 	snd_iprintf(buffer, "8-bit banks       : \n    ");
+diff --git a/sound/isa/gus/gus_mem_proc.c b/sound/isa/gus/gus_mem_proc.c
+index 95071a0..50d9bda 100644
+--- a/sound/isa/gus/gus_mem_proc.c
++++ b/sound/isa/gus/gus_mem_proc.c
+@@ -36,7 +36,7 @@ static long snd_gf1_mem_proc_dump(snd_in
+ 			          struct file *file, char __user *buf, long count)
+ {
+ 	long size;
+-	gus_proc_private_t *priv = snd_magic_cast(gus_proc_private_t, entry->private_data, return -ENXIO);
++	gus_proc_private_t *priv = entry->private_data;
+ 	snd_gus_card_t *gus = priv->gus;
+ 	int err;
+ 
+@@ -58,7 +58,7 @@ static long long snd_gf1_mem_proc_llseek
+ 					long long offset,
+ 					int orig)
+ {
+-	gus_proc_private_t *priv = snd_magic_cast(gus_proc_private_t, entry->private_data, return -ENXIO);
++	gus_proc_private_t *priv = entry->private_data;
+ 
+ 	switch (orig) {
+ 	case 0:	/* SEEK_SET */
+@@ -80,8 +80,8 @@ static long long snd_gf1_mem_proc_llseek
+ 
+ static void snd_gf1_mem_proc_free(snd_info_entry_t *entry)
+ {
+-	gus_proc_private_t *priv = snd_magic_cast(gus_proc_private_t, entry->private_data, return);
+-	snd_magic_kfree(priv);
++	gus_proc_private_t *priv = entry->private_data;
++	kfree(priv);
+ }
+ 
+ static struct snd_info_entry_ops snd_gf1_mem_proc_ops = {
+@@ -98,7 +98,7 @@ int snd_gf1_mem_proc_init(snd_gus_card_t
+ 
+ 	for (idx = 0; idx < 4; idx++) {
+ 		if (gus->gf1.mem_alloc.banks_8[idx].size > 0) {
+-			priv = snd_magic_kcalloc(gus_proc_private_t, 0, GFP_KERNEL);
++			priv = kcalloc(1, sizeof(*priv), GFP_KERNEL);
+ 			if (priv == NULL)
+ 				return -ENOMEM;
+ 			priv->gus = gus;
+@@ -115,7 +115,7 @@ int snd_gf1_mem_proc_init(snd_gus_card_t
+ 	}
+ 	for (idx = 0; idx < 4; idx++) {
+ 		if (gus->gf1.rom_present & (1 << idx)) {
+-			priv = snd_magic_kcalloc(gus_proc_private_t, 0, GFP_KERNEL);
++			priv = kcalloc(1, sizeof(*priv), GFP_KERNEL);
+ 			if (priv == NULL)
+ 				return -ENOMEM;
+ 			priv->rom = 1;
+diff --git a/sound/isa/gus/gus_mixer.c b/sound/isa/gus/gus_mixer.c
+index 651071a..6d3d8e3 100644
+--- a/sound/isa/gus/gus_mixer.c
++++ b/sound/isa/gus/gus_mixer.c
+@@ -26,8 +26,6 @@ #include <sound/core.h>
+ #include <sound/control.h>
+ #include <sound/gus.h>
+ 
+-#define chip_t snd_gus_card_t
+-
+ /*
+  *
+  */
+diff --git a/sound/isa/gus/gus_pcm.c b/sound/isa/gus/gus_pcm.c
+index 040804c..aca7f3a 100644
+--- a/sound/isa/gus/gus_pcm.c
++++ b/sound/isa/gus/gus_pcm.c
+@@ -34,8 +34,6 @@ #include <sound/gus.h>
+ #include <sound/pcm_params.h>
+ #include "gus_tables.h"
+ 
+-#define chip_t snd_gus_card_t
+-
+ /* maximum rate */
+ 
+ #define SNDRV_GF1_PCM_RATE		48000
+@@ -66,7 +64,7 @@ static int snd_gf1_pcm_use_dma = 1;
+ 
+ static void snd_gf1_pcm_block_change_ack(snd_gus_card_t * gus, void *private_data)
+ {
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, private_data, return);
++	gus_pcm_private_t *pcmp = private_data;
+ 
+ 	if (pcmp) {
+ 		atomic_dec(&pcmp->dma_count);
+@@ -81,7 +79,7 @@ static int snd_gf1_pcm_block_change(snd_
+ {
+ 	snd_gf1_dma_block_t block;
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 
+ 	count += offset & 31;
+ 	offset &= ~31;
+@@ -106,7 +104,7 @@ static int snd_gf1_pcm_block_change(snd_
+ static void snd_gf1_pcm_trigger_up(snd_pcm_substream_t * substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	snd_gus_card_t * gus = pcmp->gus;
+ 	unsigned long flags;
+ 	unsigned char voice_ctrl, ramp_ctrl;
+@@ -194,7 +192,7 @@ static void snd_gf1_pcm_interrupt_wave(s
+ 		snd_gf1_smart_stop_voice(gus, pvoice->number);
+ 		return;
+ 	}
+-	pcmp = snd_magic_cast(gus_pcm_private_t, pvoice->private_data, return);
++	pcmp = pvoice->private_data;
+ 	if (pcmp == NULL) {
+ 		snd_printd("snd_gf1_pcm: unknown wave irq?\n");
+ 		snd_gf1_smart_stop_voice(gus, pvoice->number);
+@@ -267,7 +265,7 @@ static void snd_gf1_pcm_interrupt_volume
+ {
+ 	unsigned short vol;
+ 	int cvoice;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, pvoice->private_data, return);
++	gus_pcm_private_t *pcmp = pvoice->private_data;
+ 
+ 	/* stop ramp, but leave rollover bit untouched */
+ 	spin_lock(&gus->reg_lock);
+@@ -350,7 +348,7 @@ static int snd_gf1_pcm_playback_copy(snd
+ 				     snd_pcm_uframes_t count)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	unsigned int bpos, len;
+ 	
+ 	bpos = samples_to_bytes(runtime, pos) + (voice * (pcmp->dma_size / 2));
+@@ -379,7 +377,7 @@ static int snd_gf1_pcm_playback_silence(
+ 					snd_pcm_uframes_t count)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	unsigned int bpos, len;
+ 	
+ 	bpos = samples_to_bytes(runtime, pos) + (voice * (pcmp->dma_size / 2));
+@@ -406,7 +404,7 @@ static int snd_gf1_pcm_playback_hw_param
+ {
+ 	snd_gus_card_t *gus = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	int err;
+ 	
+ 	if ((err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))) < 0)
+@@ -453,7 +451,7 @@ static int snd_gf1_pcm_playback_hw_param
+ static int snd_gf1_pcm_playback_hw_free(snd_pcm_substream_t * substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 
+ 	snd_pcm_lib_free_pages(substream);
+ 	if (pcmp->pvoices[0]) {
+@@ -474,7 +472,7 @@ static int snd_gf1_pcm_playback_hw_free(
+ static int snd_gf1_pcm_playback_prepare(snd_pcm_substream_t * substream)
+ {
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 
+ 	pcmp->bpos = 0;
+ 	pcmp->dma_size = snd_pcm_lib_buffer_bytes(substream);
+@@ -488,7 +486,7 @@ static int snd_gf1_pcm_playback_trigger(
+ {
+ 	snd_gus_card_t *gus = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	int voice;
+ 
+ 	if (cmd == SNDRV_PCM_TRIGGER_START) {
+@@ -513,7 +511,7 @@ static snd_pcm_uframes_t snd_gf1_pcm_pla
+ {
+ 	snd_gus_card_t *gus = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	unsigned int pos;
+ 	unsigned char voice_ctrl;
+ 
+@@ -657,8 +655,8 @@ static snd_pcm_hardware_t snd_gf1_pcm_ca
+ 
+ static void snd_gf1_pcm_playback_free(snd_pcm_runtime_t *runtime)
+ {
+-	gus_pcm_private_t * pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return);
+-	snd_magic_kfree(pcmp);
++	gus_pcm_private_t * pcmp = runtime->private_data;
++	kfree(pcmp);
+ }
+ 
+ static int snd_gf1_pcm_playback_open(snd_pcm_substream_t *substream)
+@@ -668,7 +666,7 @@ static int snd_gf1_pcm_playback_open(snd
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+ 	int err;
+ 
+-	pcmp = snd_magic_kcalloc(gus_pcm_private_t, 0, GFP_KERNEL);
++	pcmp = kcalloc(1, sizeof(*pcmp), GFP_KERNEL);
+ 	if (pcmp == NULL)
+ 		return -ENOMEM;
+ 	pcmp->gus = gus;
+@@ -697,7 +695,7 @@ static int snd_gf1_pcm_playback_close(sn
+ {
+ 	snd_gus_card_t *gus = snd_pcm_substream_chip(substream);
+ 	snd_pcm_runtime_t *runtime = substream->runtime;
+-	gus_pcm_private_t *pcmp = snd_magic_cast(gus_pcm_private_t, runtime->private_data, return -ENXIO);
++	gus_pcm_private_t *pcmp = runtime->private_data;
+ 	unsigned long jiffies_old;
+ 
+ 	jiffies_old = jiffies;
+@@ -738,7 +736,7 @@ static int snd_gf1_pcm_capture_close(snd
+ 
+ static void snd_gf1_pcm_free(snd_pcm_t *pcm)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, pcm->private_data, return);
++	snd_gus_card_t *gus = pcm->private_data;
+ 	gus->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+@@ -790,7 +788,7 @@ static int snd_gf1_pcm_volume_put(snd_kc
+ 		pvoice = &gus->gf1.voices[idx];
+ 		if (!pvoice->pcm)
+ 			continue;
+-		pcmp = snd_magic_cast(gus_pcm_private_t, pvoice->private_data, return -ENXIO);
++		pcmp = pvoice->private_data;
+ 		if (!(pcmp->flags & SNDRV_GF1_PCM_PFLG_ACTIVE))
+ 			continue;
+ 		/* load real volume - better precision */
+diff --git a/sound/isa/gus/gus_synth.c b/sound/isa/gus/gus_synth.c
+index 47f88a2..c7ff304 100644
+--- a/sound/isa/gus/gus_synth.c
++++ b/sound/isa/gus/gus_synth.c
+@@ -134,7 +134,7 @@ static void snd_gus_synth_instr_notify(v
+ 				       int what)
+ {
+ 	unsigned int idx;
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, private_data, return);
++	snd_gus_card_t *gus = private_data;
+ 	snd_gus_voice_t *pvoice;
+ 	unsigned long flags;
+ 	
+diff --git a/sound/isa/gus/gus_timer.c b/sound/isa/gus/gus_timer.c
+index 854b35d..9876603 100644
+--- a/sound/isa/gus/gus_timer.c
++++ b/sound/isa/gus/gus_timer.c
+@@ -26,8 +26,6 @@ #include <linux/time.h>
+ #include <sound/core.h>
+ #include <sound/gus.h>
+ 
+-#define chip_t snd_gus_card_t
+-
+ /*
+  *  Timer 1 - 80us
+  */
+@@ -146,13 +144,13 @@ static struct _snd_timer_hardware snd_gf
+ 
+ static void snd_gf1_timer1_free(snd_timer_t *timer)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, timer->private_data, return);
++	snd_gus_card_t *gus = timer->private_data;
+ 	gus->gf1.timer1 = NULL;
+ }
+ 
+ static void snd_gf1_timer2_free(snd_timer_t *timer)
+ {
+-	snd_gus_card_t *gus = snd_magic_cast(snd_gus_card_t, timer->private_data, return);
++	snd_gus_card_t *gus = timer->private_data;
+ 	gus->gf1.timer2 = NULL;
+ }
+ 
+diff --git a/sound/isa/gus/gus_uart.c b/sound/isa/gus/gus_uart.c
+index 8b09be2..1bc2da8 100644
+--- a/sound/isa/gus/gus_uart.c
++++ b/sound/isa/gus/gus_uart.c
+@@ -95,7 +95,7 @@ static int snd_gf1_uart_output_open(snd_
+ 	unsigned long flags;
+ 	snd_gus_card_t *gus;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return -ENXIO);
++	gus = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (!(gus->gf1.uart_cmd & 0x80)) {	/* input active? */
+ 		snd_gf1_uart_reset(gus, 0);
+@@ -115,7 +115,7 @@ static int snd_gf1_uart_input_open(snd_r
+ 	snd_gus_card_t *gus;
+ 	int i;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return -ENXIO);
++	gus = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (gus->gf1.interrupt_handler_midi_out != snd_gf1_interrupt_midi_out) {
+ 		snd_gf1_uart_reset(gus, 0);
+@@ -141,7 +141,7 @@ static int snd_gf1_uart_output_close(snd
+ 	unsigned long flags;
+ 	snd_gus_card_t *gus;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return -ENXIO);
++	gus = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (gus->gf1.interrupt_handler_midi_in != snd_gf1_interrupt_midi_in)
+ 		snd_gf1_uart_reset(gus, 1);
+@@ -156,7 +156,7 @@ static int snd_gf1_uart_input_close(snd_
+ 	unsigned long flags;
+ 	snd_gus_card_t *gus;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return -ENXIO);
++	gus = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (gus->gf1.interrupt_handler_midi_out != snd_gf1_interrupt_midi_out)
+ 		snd_gf1_uart_reset(gus, 1);
+@@ -171,7 +171,7 @@ static void snd_gf1_uart_input_trigger(s
+ 	snd_gus_card_t *gus;
+ 	unsigned long flags;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return);
++	gus = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (up) {
+@@ -191,7 +191,7 @@ static void snd_gf1_uart_output_trigger(
+ 	char byte;
+ 	int timeout;
+ 
+-	gus = snd_magic_cast(snd_gus_card_t, substream->rmidi->private_data, return);
++	gus = substream->rmidi->private_data;
+ 
+ 	spin_lock_irqsave(&gus->uart_cmd_lock, flags);
+ 	if (up) {
+diff --git a/sound/isa/opl3sa2.c b/sound/isa/opl3sa2.c
+index 2bea92f..91c926b 100644
+--- a/sound/isa/opl3sa2.c
++++ b/sound/isa/opl3sa2.c
+@@ -131,7 +131,6 @@ #define OPL3SA2_PM_D0	0x00
+ #define OPL3SA2_PM_D3	(OPL3SA2_PM_ADOWN|OPL3SA2_PM_PSV|OPL3SA2_PM_PDN|OPL3SA2_PM_PDX)
+ 
+ typedef struct snd_opl3sa2 opl3sa2_t;
+-#define chip_t opl3sa2_t
+ 
+ struct snd_opl3sa2 {
+ 	snd_card_t *card;
+@@ -304,7 +303,7 @@ static int __init snd_opl3sa2_detect(opl
+ static irqreturn_t snd_opl3sa2_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+ 	unsigned short status;
+-	opl3sa2_t *chip = snd_magic_cast(opl3sa2_t, dev_id, return IRQ_NONE);
++	opl3sa2_t *chip = dev_id;
+ 	int handled = 0;
+ 
+ 	if (chip == NULL || chip->card == NULL)
+@@ -496,7 +495,7 @@ OPL3SA2_DOUBLE("Tone Control - Treble", 
+ 
+ static void snd_opl3sa2_master_free(snd_kcontrol_t *kcontrol)
+ {
+-	opl3sa2_t *chip = snd_magic_cast(opl3sa2_t, _snd_kcontrol_chip(kcontrol), return);
++	opl3sa2_t *chip = snd_kcontrol_chip(kcontrol);
+ 	chip->master_switch = NULL;
+ 	chip->master_volume = NULL;
+ }
+@@ -551,7 +550,7 @@ static int __init snd_opl3sa2_mixer(opl3
+ #ifdef CONFIG_PM
+ static int snd_opl3sa2_suspend(snd_card_t *card, unsigned int state)
+ {
+-	opl3sa2_t *chip = snd_magic_cast(opl3sa2_t, card->pm_private_data, return -EINVAL);
++	opl3sa2_t *chip = card->pm_private_data;
+ 
+ 	snd_pcm_suspend_all(chip->cs4231->pcm); /* stop before saving regs */
+ 	chip->cs4231_suspend(chip->cs4231);
+@@ -565,7 +564,7 @@ static int snd_opl3sa2_suspend(snd_card_
+ 
+ static int snd_opl3sa2_resume(snd_card_t *card, unsigned int state)
+ {
+-	opl3sa2_t *chip = snd_magic_cast(opl3sa2_t, card->pm_private_data, return -EINVAL);
++	opl3sa2_t *chip = card->pm_private_data;
+ 	int i;
+ 
+ 	/* power up */
+@@ -656,13 +655,13 @@ static int snd_opl3sa2_free(opl3sa2_t *c
+ 		release_resource(chip->res_port);
+ 		kfree_nocheck(chip->res_port);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_opl3sa2_dev_free(snd_device_t *device)
+ {
+-	opl3sa2_t *chip = snd_magic_cast(opl3sa2_t, device->device_data, return -ENXIO);
++	opl3sa2_t *chip = device->device_data;
+ 	return snd_opl3sa2_free(chip);
+ }
+ 
+@@ -707,7 +706,7 @@ #endif
+ 		return -ENOMEM;
+ 	strcpy(card->driver, "OPL3SA2");
+ 	strcpy(card->shortname, "Yamaha OPL3-SA2");
+-	chip = snd_magic_kcalloc(opl3sa2_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL) {
+ 		err = -ENOMEM;
+ 		goto __error;
+diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
+index 4b84ca0..717ca13 100644
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -661,8 +661,6 @@ __skip_mpu:
+ 
+ #ifdef OPTi93X
+ 
+-#define chip_t opti93x_t
+-
+ static unsigned char snd_opti93x_default_image[32] =
+ {
+ 	0x00,		/* 00/00 - l_mixout_outctrl */
+@@ -1111,7 +1109,7 @@ static void snd_opti93x_overrange(opti93
+ 
+ irqreturn_t snd_opti93x_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	opti93x_t *codec = snd_magic_cast(opti93x_t, dev_id, return IRQ_NONE);
++	opti93x_t *codec = dev_id;
+ 	unsigned char status;
+ 
+ 	status = snd_opti9xx_read(codec->chip, OPTi9XX_MC_REG(11));
+@@ -1257,13 +1255,13 @@ static int snd_opti93x_free(opti93x_t *c
+ 	if (chip->irq >= 0) {
+ 	  free_irq(chip->irq, chip);
+ 	}
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_opti93x_dev_free(snd_device_t *device)
+ {
+-	opti93x_t *chip = snd_magic_cast(opti93x_t, device->device_data, return -ENXIO);
++	opti93x_t *chip = device->device_data;
+ 	return snd_opti93x_free(chip);
+ }
+ 
+@@ -1288,7 +1286,7 @@ int snd_opti93x_create(snd_card_t *card,
+ 	opti93x_t *codec;
+ 
+ 	*rcodec = NULL;
+-	codec = snd_magic_kcalloc(opti93x_t, 0, GFP_KERNEL);
++	codec = kcalloc(1, sizeof(*codec), GFP_KERNEL);
+ 	if (codec == NULL)
+ 		return -ENOMEM;
+ 	codec->irq = -1;
+@@ -1368,7 +1366,7 @@ static snd_pcm_ops_t snd_opti93x_capture
+ 
+ static void snd_opti93x_pcm_free(snd_pcm_t *pcm)
+ {
+-	opti93x_t *codec = snd_magic_cast(opti93x_t, pcm->private_data, return);
++	opti93x_t *codec = pcm->private_data;
+ 	codec->pcm = NULL;
+ 	snd_pcm_lib_preallocate_free_for_all(pcm);
+ }
+diff --git a/sound/isa/sb/emu8000.c b/sound/isa/sb/emu8000.c
+index 78e7156..aa01711 100644
+--- a/sound/isa/sb/emu8000.c
++++ b/sound/isa/sb/emu8000.c
+@@ -821,8 +821,6 @@ snd_emu8000_update_reverb_mode(emu8000_t
+  * mixer interface
+  *----------------------------------------------------------------*/
+ 
+-#define chip_t	emu8000_t
+-
+ /*
+  * bass/treble
+  */
+@@ -1070,7 +1068,7 @@ static int snd_emu8000_free(emu8000_t *h
+ 		release_resource(hw->res_port3);
+ 		kfree_nocheck(hw->res_port3);
+ 	}
+-	snd_magic_kfree(hw);
++	kfree(hw);
+ 	return 0;
+ }
+ 
+@@ -1078,7 +1076,7 @@ static int snd_emu8000_free(emu8000_t *h
+  */
+ static int snd_emu8000_dev_free(snd_device_t *device)
+ {
+-	emu8000_t *hw = snd_magic_cast(emu8000_t, device->device_data, return -ENXIO);
++	emu8000_t *hw = device->device_data;
+ 	return snd_emu8000_free(hw);
+ }
+ 
+@@ -1101,7 +1099,7 @@ snd_emu8000_new(snd_card_t *card, int in
+ 	if (seq_ports <= 0)
+ 		return 0;
+ 
+-	hw = snd_magic_kcalloc(emu8000_t, 0, GFP_KERNEL);
++	hw = kcalloc(1, sizeof(*hw), GFP_KERNEL);
+ 	if (hw == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&hw->reg_lock);
+diff --git a/sound/isa/sb/emu8000_callback.c b/sound/isa/sb/emu8000_callback.c
+index 868474a..05565f3 100644
+--- a/sound/isa/sb/emu8000_callback.c
++++ b/sound/isa/sb/emu8000_callback.c
+@@ -94,7 +94,7 @@ release_voice(snd_emux_voice_t *vp)
+ 	int dcysusv;
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, vp->hw, return);
++	hw = vp->hw;
+ 	dcysusv = 0x8000 | (unsigned char)vp->reg.parm.modrelease;
+ 	EMU8000_DCYSUS_WRITE(hw, vp->ch, dcysusv);
+ 	dcysusv = 0x8000 | (unsigned char)vp->reg.parm.volrelease;
+@@ -109,7 +109,7 @@ terminate_voice(snd_emux_voice_t *vp)
+ {
+ 	emu8000_t *hw; 
+ 
+-	hw = snd_magic_cast(emu8000_t, vp->hw, return);
++	hw = vp->hw;
+ 	EMU8000_DCYSUSV_WRITE(hw, vp->ch, 0x807F);
+ }
+ 
+@@ -121,7 +121,7 @@ update_voice(snd_emux_voice_t *vp, int u
+ {
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, vp->hw, return);
++	hw = vp->hw;
+ 	if (update & SNDRV_EMUX_UPDATE_VOLUME)
+ 		set_volume(hw, vp);
+ 	if (update & SNDRV_EMUX_UPDATE_PITCH)
+@@ -168,7 +168,7 @@ get_voice(snd_emux_t *emu, snd_emux_port
+ 	} best[END];
+ 	struct best *bp;
+ 
+-	hw = snd_magic_cast(emu8000_t, emu->hw, return NULL);
++	hw = emu->hw;
+ 
+ 	for (i = 0; i < END; i++) {
+ 		best[i].time = (unsigned int)(-1); /* XXX MAX_?INT really */;
+@@ -235,7 +235,7 @@ start_voice(snd_emux_voice_t *vp)
+ 	snd_midi_channel_t *chan;
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, vp->hw, return -EINVAL);
++	hw = vp->hw;
+ 	ch = vp->ch;
+ 	chan = vp->chan;
+ 
+@@ -313,7 +313,7 @@ trigger_voice(snd_emux_voice_t *vp)
+ 	unsigned int temp;
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, vp->hw, return);
++	hw = vp->hw;
+ 
+ 	/* set reverb and pitch target */
+ 	temp = vp->reg.parm.reverb;
+@@ -333,7 +333,7 @@ reset_voice(snd_emux_t *emu, int ch)
+ {
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, emu->hw, return);
++	hw = emu->hw;
+ 	EMU8000_DCYSUSV_WRITE(hw, ch, 0x807F);
+ 	snd_emu8000_tweak_voice(hw, ch);
+ }
+@@ -457,7 +457,7 @@ sysex(snd_emux_t *emu, char *buf, int le
+ {
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, emu->hw, return);
++	hw = emu->hw;
+ 
+ 	switch (parsed) {
+ 	case SNDRV_MIDI_SYSEX_GS_CHORUS_MODE:
+@@ -482,7 +482,7 @@ oss_ioctl(snd_emux_t *emu, int cmd, int 
+ {
+ 	emu8000_t *hw;
+ 
+-	hw = snd_magic_cast(emu8000_t, emu->hw, return -EINVAL);
++	hw = emu->hw;
+ 
+ 	switch (cmd) {
+ 	case _EMUX_OSS_REVERB_MODE:
+@@ -526,7 +526,7 @@ static int
+ load_fx(snd_emux_t *emu, int type, int mode, const void __user *buf, long len)
+ {
+ 	emu8000_t *hw;
+-	hw = snd_magic_cast(emu8000_t, emu->hw, return -EINVAL);
++	hw = emu->hw;
+ 
+ 	switch (type) {
+ 	case SNDRV_EMU8000_LOAD_CHORUS_FX:
+diff --git a/sound/isa/sb/emu8000_patch.c b/sound/isa/sb/emu8000_patch.c
+index 9ecd53c..cea56e0 100644
+--- a/sound/isa/sb/emu8000_patch.c
++++ b/sound/isa/sb/emu8000_patch.c
+@@ -155,7 +155,7 @@ snd_emu8000_sample_new(snd_emux_t *rec, 
+ 	int  dram_offset, dram_start;
+ 	emu8000_t *emu;
+ 
+-	emu = snd_magic_cast(emu8000_t, rec->hw, return -EINVAL);
++	emu = rec->hw;
+ 	snd_assert(sp != NULL, return -EINVAL);
+ 
+ 	if (sp->v.size == 0)
+diff --git a/sound/isa/sb/emu8000_pcm.c b/sound/isa/sb/emu8000_pcm.c
+index 8226ec8..5d4980d 100644
+--- a/sound/isa/sb/emu8000_pcm.c
++++ b/sound/isa/sb/emu8000_pcm.c
+@@ -23,8 +23,6 @@ #include <linux/init.h>
+ #include <sound/initval.h>
+ #include <sound/pcm.h>
+ 
+-#define chip_t emu8000_t
+-
+ /*
+  * define the following if you want to use this pcm with non-interleaved mode
+  */
+diff --git a/sound/isa/sb/es968.c b/sound/isa/sb/es968.c
+index c44efdb..3073c35 100644
+--- a/sound/isa/sb/es968.c
++++ b/sound/isa/sb/es968.c
+@@ -29,8 +29,6 @@ #include <sound/core.h>
+ #include <sound/initval.h>
+ #include <sound/sb.h>
+ 
+-#define chip_t sb_t
+-
+ #define PFX "es968: "
+ 
+ MODULE_AUTHOR("Massimo Piccioni <dafastidio@libero.it>");
+@@ -82,7 +80,7 @@ #define	DRIVER_NAME	"snd-card-es968"
+ static irqreturn_t snd_card_es968_interrupt(int irq, void *dev_id,
+ 					    struct pt_regs *regs)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, dev_id, return IRQ_NONE);
++	sb_t *chip = dev_id;
+ 
+ 	if (chip->open & SB_OPEN_PCM) {
+ 		return snd_sb8dsp_interrupt(chip);
+diff --git a/sound/isa/sb/sb16.c b/sound/isa/sb/sb16.c
+index cdf00d3..8e412a0 100644
+--- a/sound/isa/sb/sb16.c
++++ b/sound/isa/sb/sb16.c
+@@ -37,8 +37,6 @@ #define SNDRV_LEGACY_FIND_FREE_IRQ
+ #define SNDRV_LEGACY_FIND_FREE_DMA
+ #include <sound/initval.h>
+ 
+-#define chip_t sb_t
+-
+ #ifdef SNDRV_SBAWE
+ #define PFX "sbawe: "
+ #else
+diff --git a/sound/isa/sb/sb16_csp.c b/sound/isa/sb/sb16_csp.c
+index 6cbef46..1adeeee 100644
+--- a/sound/isa/sb/sb16_csp.c
++++ b/sound/isa/sb/sb16_csp.c
+@@ -33,8 +33,6 @@ #include <sound/info.h>
+ #include <sound/sb16_csp.h>
+ #include <sound/initval.h>
+ 
+-#define chip_t snd_sb_csp_t
+-
+ MODULE_AUTHOR("Uros Bizjak <uros@kss-loka.si>");
+ MODULE_DESCRIPTION("ALSA driver for SB16 Creative Signal Processor");
+ MODULE_LICENSE("GPL");
+@@ -127,7 +125,7 @@ int snd_sb_csp_new(sb_t *chip, int devic
+ 	if ((err = snd_hwdep_new(chip->card, "SB16-CSP", device, &hw)) < 0)
+ 		return err;
+ 
+-	if ((p = snd_magic_kcalloc(snd_sb_csp_t, 0, GFP_KERNEL)) == NULL) {
++	if ((p = kcalloc(1, sizeof(*p), GFP_KERNEL)) == NULL) {
+ 		snd_device_free(chip->card, hw);
+ 		return -ENOMEM;
+ 	}
+@@ -165,11 +163,11 @@ int snd_sb_csp_new(sb_t *chip, int devic
+  */
+ static void snd_sb_csp_free(snd_hwdep_t *hwdep)
+ {
+-	snd_sb_csp_t *p = snd_magic_cast(snd_sb_csp_t, hwdep->private_data, return);
++	snd_sb_csp_t *p = hwdep->private_data;
+ 	if (p) {
+ 		if (p->running & SNDRV_SB_CSP_ST_RUNNING)
+ 			snd_sb_csp_stop(p);
+-		snd_magic_kfree(p);
++		kfree(p);
+ 	}
+ }
+ 
+@@ -180,7 +178,7 @@ static void snd_sb_csp_free(snd_hwdep_t 
+  */
+ static int snd_sb_csp_open(snd_hwdep_t * hw, struct file *file)
+ {
+-	snd_sb_csp_t *p = snd_magic_cast(snd_sb_csp_t, hw->private_data, return -ENXIO);
++	snd_sb_csp_t *p = hw->private_data;
+ 	return (snd_sb_csp_use(p));
+ }
+ 
+@@ -189,7 +187,7 @@ static int snd_sb_csp_open(snd_hwdep_t *
+  */
+ static int snd_sb_csp_ioctl(snd_hwdep_t * hw, struct file *file, unsigned int cmd, unsigned long arg)
+ {
+-	snd_sb_csp_t *p = snd_magic_cast(snd_sb_csp_t, hw->private_data, return -ENXIO);
++	snd_sb_csp_t *p = hw->private_data;
+ 	snd_sb_csp_info_t info;
+ 	snd_sb_csp_start_t start_info;
+ 	int err;
+@@ -258,7 +256,7 @@ static int snd_sb_csp_ioctl(snd_hwdep_t 
+  */
+ static int snd_sb_csp_release(snd_hwdep_t * hw, struct file *file)
+ {
+-	snd_sb_csp_t *p = snd_magic_cast(snd_sb_csp_t, hw->private_data, return -ENXIO);
++	snd_sb_csp_t *p = hw->private_data;
+ 	return (snd_sb_csp_unuse(p));
+ }
+ 
+@@ -1110,7 +1108,7 @@ static int init_proc_entry(snd_sb_csp_t 
+ 
+ static void info_read(snd_info_entry_t *entry, snd_info_buffer_t * buffer)
+ {
+-	snd_sb_csp_t *p = snd_magic_cast(snd_sb_csp_t, entry->private_data, return);
++	snd_sb_csp_t *p = entry->private_data;
+ 
+ 	snd_iprintf(buffer, "Creative Signal Processor [v%d.%d]\n", (p->version >> 4), (p->version & 0x0f));
+ 	snd_iprintf(buffer, "State: %cx%c%c%c\n", ((p->running & SNDRV_SB_CSP_ST_QSOUND) ? 'Q' : '-'),
+diff --git a/sound/isa/sb/sb16_main.c b/sound/isa/sb/sb16_main.c
+index f67e368..e58f486 100644
+--- a/sound/isa/sb/sb16_main.c
++++ b/sound/isa/sb/sb16_main.c
+@@ -49,13 +49,11 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for control of 16-bit SoundBlaster cards and clones");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t sb_t
+-
+ #ifdef CONFIG_SND_SB16_CSP
+ static void snd_sb16_csp_playback_prepare(sb_t *chip, snd_pcm_runtime_t *runtime)
+ {
+ 	if (chip->hardware == SB_HW_16CSP) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
+ 			/* manually loaded codec */
+@@ -103,7 +101,7 @@ static void snd_sb16_csp_playback_prepar
+ static void snd_sb16_csp_capture_prepare(sb_t *chip, snd_pcm_runtime_t *runtime)
+ {
+ 	if (chip->hardware == SB_HW_16CSP) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
+ 			/* manually loaded codec */
+@@ -141,7 +139,7 @@ static void snd_sb16_csp_capture_prepare
+ static void snd_sb16_csp_update(sb_t *chip)
+ {
+ 	if (chip->hardware == SB_HW_16CSP) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->qpos_changed) {
+ 			spin_lock(&chip->reg_lock);
+@@ -155,7 +153,7 @@ static void snd_sb16_csp_playback_open(s
+ {
+ 	/* CSP decoders (QSound excluded) support only 16bit transfers */
+ 	if (chip->hardware == SB_HW_16CSP) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
+ 			/* manually loaded codec */
+@@ -173,7 +171,7 @@ static void snd_sb16_csp_playback_open(s
+ static void snd_sb16_csp_playback_close(sb_t *chip)
+ {
+ 	if ((chip->hardware == SB_HW_16CSP) && (chip->open == SNDRV_SB_CSP_MODE_DSP_WRITE)) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->ops.csp_stop(csp) == 0) {
+ 			csp->ops.csp_unuse(csp);
+@@ -186,7 +184,7 @@ static void snd_sb16_csp_capture_open(sb
+ {
+ 	/* CSP coders support only 16bit transfers */
+ 	if (chip->hardware == SB_HW_16CSP) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
+ 			/* manually loaded codec */
+@@ -204,7 +202,7 @@ static void snd_sb16_csp_capture_open(sb
+ static void snd_sb16_csp_capture_close(sb_t *chip)
+ {
+ 	if ((chip->hardware == SB_HW_16CSP) && (chip->open == SNDRV_SB_CSP_MODE_DSP_READ)) {
+-		snd_sb_csp_t *csp = snd_magic_cast(snd_sb_csp_t, chip->csp, return);
++		snd_sb_csp_t *csp = chip->csp;
+ 
+ 		if (csp->ops.csp_stop(csp) == 0) {
+ 			csp->ops.csp_unuse(csp);
+@@ -395,7 +393,7 @@ static int snd_sb16_capture_trigger(snd_
+ 
+ irqreturn_t snd_sb16dsp_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, dev_id, return IRQ_NONE);
++	sb_t *chip = dev_id;
+ 	unsigned char status;
+ 	int ok;
+ 
+diff --git a/sound/isa/sb/sb8.c b/sound/isa/sb/sb8.c
+index feac3ef..8ef0473 100644
+--- a/sound/isa/sb/sb8.c
++++ b/sound/isa/sb/sb8.c
+@@ -30,8 +30,6 @@ #include <sound/opl3.h>
+ #define SNDRV_LEGACY_AUTO_PROBE
+ #include <sound/initval.h>
+ 
+-#define chip_t sb_t
+-
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("Sound Blaster 1.0/2.0/Pro");
+ MODULE_LICENSE("GPL");
+@@ -73,7 +71,7 @@ static snd_card_t *snd_sb8_cards[SNDRV_C
+ 
+ static irqreturn_t snd_sb8_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, dev_id, return IRQ_NONE);
++	sb_t *chip = dev_id;
+ 
+ 	if (chip->open & SB_OPEN_PCM) {
+ 		return snd_sb8dsp_interrupt(chip);
+diff --git a/sound/isa/sb/sb8_main.c b/sound/isa/sb/sb8_main.c
+index 25cdd02..44acac2 100644
+--- a/sound/isa/sb/sb8_main.c
++++ b/sound/isa/sb/sb8_main.c
+@@ -42,8 +42,6 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@su
+ MODULE_DESCRIPTION("Routines for control of 8-bit SoundBlaster cards and clones");
+ MODULE_LICENSE("GPL");
+ 
+-#define chip_t sb_t
+-
+ #define SB8_CLOCK	1000000
+ #define SB8_DEN(v)	((SB8_CLOCK + (v) / 2) / (v))
+ #define SB8_RATE(v)	(SB8_CLOCK / SB8_DEN(v))
+diff --git a/sound/isa/sb/sb8_midi.c b/sound/isa/sb/sb8_midi.c
+index 17e0f4d..90b01e7 100644
+--- a/sound/isa/sb/sb8_midi.c
++++ b/sound/isa/sb/sb8_midi.c
+@@ -73,7 +73,7 @@ static int snd_sb8dsp_midi_input_open(sn
+ 	sb_t *chip;
+ 	unsigned int valid_open_flags;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return -ENXIO);
++	chip = substream->rmidi->private_data;
+ 	valid_open_flags = chip->hardware >= SB_HW_20
+ 		? SB_OPEN_MIDI_OUTPUT | SB_OPEN_MIDI_OUTPUT_TRIGGER : 0;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+@@ -100,7 +100,7 @@ static int snd_sb8dsp_midi_output_open(s
+ 	sb_t *chip;
+ 	unsigned int valid_open_flags;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return -ENXIO);
++	chip = substream->rmidi->private_data;
+ 	valid_open_flags = chip->hardware >= SB_HW_20
+ 		? SB_OPEN_MIDI_INPUT | SB_OPEN_MIDI_INPUT_TRIGGER : 0;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+@@ -126,7 +126,7 @@ static int snd_sb8dsp_midi_input_close(s
+ 	unsigned long flags;
+ 	sb_t *chip;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return -ENXIO);
++	chip = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+ 	chip->open &= ~(SB_OPEN_MIDI_INPUT | SB_OPEN_MIDI_INPUT_TRIGGER);
+ 	chip->midi_substream_input = NULL;
+@@ -144,7 +144,7 @@ static int snd_sb8dsp_midi_output_close(
+ 	unsigned long flags;
+ 	sb_t *chip;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return -ENXIO);
++	chip = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+ 	chip->open &= ~(SB_OPEN_MIDI_OUTPUT | SB_OPEN_MIDI_OUTPUT_TRIGGER);
+ 	chip->midi_substream_output = NULL;
+@@ -162,7 +162,7 @@ static void snd_sb8dsp_midi_input_trigge
+ 	unsigned long flags;
+ 	sb_t *chip;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return);
++	chip = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+ 	if (up) {
+ 		if (!(chip->open & SB_OPEN_MIDI_INPUT_TRIGGER)) {
+@@ -188,7 +188,7 @@ static void snd_sb8dsp_midi_output_write
+ 	int max = 32;
+ 
+ 	/* how big is Tx FIFO? */
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return);
++	chip = substream->rmidi->private_data;
+ 	while (max-- > 0) {
+ 		spin_lock_irqsave(&chip->open_lock, flags);
+ 		if (snd_rawmidi_transmit_peek(substream, &byte, 1) != 1) {
+@@ -219,7 +219,7 @@ static void snd_sb8dsp_midi_output_write
+ static void snd_sb8dsp_midi_output_timer(unsigned long data)
+ {
+ 	snd_rawmidi_substream_t * substream = (snd_rawmidi_substream_t *) data;
+-	sb_t * chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return);
++	sb_t * chip = substream->rmidi->private_data;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+@@ -234,7 +234,7 @@ static void snd_sb8dsp_midi_output_trigg
+ 	unsigned long flags;
+ 	sb_t *chip;
+ 
+-	chip = snd_magic_cast(sb_t, substream->rmidi->private_data, return);
++	chip = substream->rmidi->private_data;
+ 	spin_lock_irqsave(&chip->open_lock, flags);
+ 	if (up) {
+ 		if (!(chip->open & SB_OPEN_MIDI_OUTPUT_TRIGGER)) {
+diff --git a/sound/isa/sb/sb_common.c b/sound/isa/sb/sb_common.c
+index f36383a..17a3e42 100644
+--- a/sound/isa/sb/sb_common.c
++++ b/sound/isa/sb/sb_common.c
+@@ -33,8 +33,6 @@ #include <sound/initval.h>
+ #include <asm/io.h>
+ #include <asm/dma.h>
+ 
+-#define chip_t sb_t
+-
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("ALSA lowlevel driver for Sound Blaster cards");
+ MODULE_LICENSE("GPL");
+@@ -197,13 +195,13 @@ #ifdef CONFIG_ISA
+ 		free_dma(chip->dma16);
+ 	}
+ #endif
+-	snd_magic_kfree(chip);
++	kfree(chip);
+ 	return 0;
+ }
+ 
+ static int snd_sbdsp_dev_free(snd_device_t *device)
+ {
+-	sb_t *chip = snd_magic_cast(sb_t, device->device_data, return -ENXIO);
++	sb_t *chip = device->device_data;
+ 	return snd_sbdsp_free(chip);
+ }
+ 
+@@ -224,7 +222,7 @@ int snd_sbdsp_create(snd_card_t *card,
+ 
+ 	snd_assert(r_chip != NULL, return -EINVAL);
+ 	*r_chip = NULL;
+-	chip = snd_magic_kcalloc(sb_t, 0, GFP_KERNEL);
++	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL)
+ 		return -ENOMEM;
+ 	spin_lock_init(&chip->reg_lock);
+diff --git a/sound/isa/sb/sb_mixer.c b/sound/isa/sb/sb_mixer.c
+index 31baf20..cc5a2c6 100644
+--- a/sound/isa/sb/sb_mixer.c
++++ b/sound/isa/sb/sb_mixer.c
+@@ -27,8 +27,6 @@ #include <sound/core.h>
+ #include <sound/sb.h>
+ #include <sound/control.h>
+ 
+-#define chip_t sb_t
+-
+ #undef IO_DEBUG
+ 
+ void snd_sbmixer_write(sb_t *chip, unsigned char reg, unsigned char data)
+diff --git a/sound/isa/sscape.c b/sound/isa/sscape.c
+index c450613..d1bd553 100644
+--- a/sound/isa/sscape.c
++++ b/sound/isa/sscape.c
+@@ -36,8 +36,6 @@ #include <sound/initval.h>
+ 
+ #include <sound/sscape_ioctl.h>
+ 
+-#define chip_t cs4231_t
+-
+ 
+ MODULE_AUTHOR("Chris Rankin");
+ MODULE_DESCRIPTION("ENSONIQ SoundScape PnP driver");
+diff --git a/sound/isa/wavefront/wavefront.c b/sound/isa/wavefront/wavefront.c
+index e0c8e14..f7eb8fa 100644
+--- a/sound/isa/wavefront/wavefront.c
++++ b/sound/isa/wavefront/wavefront.c
+@@ -30,8 +30,6 @@ #include <sound/initval.h>
+ #include <sound/opl3.h>
+ #include <sound/snd_wavefront.h>
+ 
+-#define chip_t cs4231_t
+-
+ MODULE_AUTHOR("Paul Barton-Davis <pbd@op.net>");
+ MODULE_DESCRIPTION("Turtle Beach Wavefront");
+ MODULE_LICENSE("GPL");

@@ -124,7 +124,7 @@ let testall () =
     add_diagnose (sprintf "%s:\t" fullbase);
     incr _total;
 
-    let timeout_value = 3 in
+    let _timeout_value = 3 in
     (* benchmarking *)
     let timeout_value = 30 in
     (* end benchmarking *)
@@ -227,6 +227,7 @@ let main () =
       "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
       "-debug_lexer",        Arg.Set        Flag_parsing_c.debug_lexer , " ";
       "-debug_etdt",         Arg.Set        Flag_parsing_c.debug_etdt , "  ";
+      "-debug_typedef",      Arg.Set        Flag_parsing_c.debug_typedef, "  ";
       "-debug_cfg",          Arg.Set        Flag_parsing_c.debug_cfg , "  ";
       
 
