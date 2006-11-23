@@ -158,7 +158,7 @@ let iso_adjust fn first rest =
 %token <Data.line_type * int * int * int> TBreak TContinue
 %token <Data.line_type * int * int * int> TSizeof
 %token <Data.line_type * int * int * int> TFunDecl
-%token <string * (Data.line_type * int * int * int)> TIdent
+%token <string * (Data.line_type * int * int * int)> TIdent TTypeId
 %token <string * (Data.line_type * int * int * int)> TMetaId TMetaType TMetaErr
 %token <string * (Data.line_type * int * int * int)> TMetaParam TMetaParamList
 %token <string * (Data.line_type * int * int * int)> TMetaStm TMetaStmList
@@ -297,15 +297,15 @@ metadec:
         !Data.add_const_meta ty name; Ast.MetaConstDecl(arity,name)) }
 
 meta_exp_type:
-  param_ctype
+  ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
-| TOBrace comma_list(param_ctype) TCBrace
+| TOBrace comma_list(ctype) TCBrace
     { List.map Ast0_cocci.ast0_type_to_type $2 }
 
 const_meta_exp_type:
   mtype
     { [Ast0_cocci.ast0_type_to_type $1] }
-| TOBrace comma_list(param_ctype) TCBrace
+| TOBrace comma_list(ctype) TCBrace
     { List.map Ast0_cocci.ast0_type_to_type $2 }
 
 arity: TBang0 { Ast.UNIQUE }
@@ -333,6 +333,7 @@ generic_ctype:
      | s=struct_or_union i=ident l=TOBrace d=list(struct_decl) r=TCBrace
 	 { Ast0.wrap(Ast0.StructUnionDef(s, i, clt2mcode "{" l,
 					 d, clt2mcode "}" r)) }
+     | p=TTypeId { Ast0.wrap(Ast0.TypeName(id2mcode p)) }
 
 struct_or_union:
        s=Tstruct { clt2mcode Ast.Struct s }
@@ -350,29 +351,14 @@ struct_decl:
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
 	 { make_cv cv (pointerify ty m) }
-     | cv=ioption(const_vol) p=pure_ident m=list(TMul)
-	 { let nm = Ast0.wrap(Ast0.TypeName(id2mcode p)) in
-           make_cv cv (pointerify nm m) }
 
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { make_cv cv (pointerify ty m) }
-     | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
-	 { let (nm,clt) = ty in
-	 let ty =
-	   Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
-	 make_cv cv (pointerify ty m) }
-
-param_ctype: // the most general - allows metavariables and type names
-       cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { make_cv cv (pointerify ty m) }
-     | cv=ioption(const_vol) p=pure_ident m=list(TMul)
-	 { let nm = Ast0.wrap(Ast0.TypeName(id2mcode p)) in
-           make_cv cv (pointerify nm m) }
+	 { pointerify (make_cv cv ty) m }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
 	 { let (nm,clt) = ty in
 	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
-	 make_cv cv (pointerify ty m) }
+	 pointerify (make_cv cv ty) m }
 
 fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul)
@@ -433,7 +419,7 @@ storage:
        | s=Tregister    { clt2mcode Ast.Register s }
        | s=Textern      { clt2mcode Ast.Extern s }
 
-decl: param_ctype ident
+decl: ctype ident
 	{ Ast0.wrap(Ast0.Param($2, $1)) }
     | TMetaParam
 	{ let (nm,clt) = $1 in

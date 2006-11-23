@@ -65,6 +65,7 @@ let token2c (tok,_) =
   | PC.TBreak(clt) -> "break"^(line_type2c clt)
   | PC.TContinue(clt) -> "continue"^(line_type2c clt)
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
+  | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
 
   | PC.TSizeof(clt) -> "sizeof"^(line_type2c clt)
 
@@ -211,6 +212,7 @@ let split_token ((tok,_) as t) =
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TTypeId(_,clt)
   | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt)
   | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt)
   | PC.TMetaId(_,clt) | PC.TMetaType(_,clt)
@@ -314,6 +316,7 @@ let token2line (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSizeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TTypeId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 
@@ -360,6 +363,29 @@ and find_line_end line clt q = function
     [] -> [(PC.TLineEnd(clt),q)]
   | x::xs when token2line x = line -> x :: (find_line_end line clt q xs)
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
+
+(* ----------------------------------------------------------------------- *)
+(* Look for variable declarations where the name is a typedef name.
+We assume that C code does not contain a multiplication as a top-level
+statement. *)
+
+let detect_types l =
+  let is_delim = function
+      (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
+    | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
+    | (PC.TComma(_),_) -> true
+    | _ -> false in
+  let rec loop start = function
+      [] -> []
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
+      when is_delim delim ->
+	delim::(PC.TTypeId(ident,clt),v)::x::(loop false rest)
+    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
+    | (PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
+      when start -> (PC.TTypeId(ident,clt),v)::x::(loop false rest)
+    | x::rest -> x::(loop false rest) in
+  loop true l
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -468,7 +494,8 @@ let parse_one parsefn file toks =
 
   | e -> raise e
 
-let prepare_tokens tokens = insert_line_end (find_function_names tokens)
+let prepare_tokens tokens =
+  insert_line_end (find_function_names (detect_types tokens))
 
 let parse file =
   Lexer_cocci.init ();
