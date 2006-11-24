@@ -6,6 +6,7 @@ open Lexer_parser
 open Ast_c
 open Semantic_c
 
+(*****************************************************************************)
 (* 
  * todo: good error message when parse error caused by typedef 
  *    (see token, see if ident that is a typedef, ...)
@@ -13,25 +14,27 @@ open Semantic_c
  * todo: inspire by spatch. look at all the commit in spare git
  *  to know all the problems they had.
  *)
+(*****************************************************************************)
 
 let warning s v = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.warning s v
   else v
 
-(**************************************)
+(*****************************************************************************)
 (* parse auxillary function *)
 type shortLong      = Short  | Long | LongLong
 
-type decl = { storageD: storagebis wrap;
-	      typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
-	      qualifD: typeQualifierbis wrap;
-              inlineD: bool             wrap;
-              (* note: have a full_info: parse_info list; to remember ordering
-                 between storage, qualifier, type ? well this info is already
-                 in the Ast_c.info, just have to sort them to get good order
-               *)
-	     } 
+type decl = { 
+    storageD: storagebis wrap;
+    typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
+    qualifD: typeQualifierbis wrap;
+    inlineD: bool             wrap;
+    (* note: have a full_info: parse_info list; to remember ordering
+       between storage, qualifier, type ? well this info is already
+       in the Ast_c.info, just have to sort them to get good order
+     *)
+  } 
 
 let nullDecl = {
   storageD = NoSto, [];
@@ -41,16 +44,14 @@ let nullDecl = {
   }
 
 let addStorageD  = function 
-  | ((x,ii), ({storageD = (NoSto,[])} as v))     -> { v with storageD = (x, [ii]) }
+  | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->  
       if x = y then warning "duplicate storage classes" v
       else raise (Semantic ("multiple storage classes", fake_parse_info))
 
 let addInlineD  = function 
-  | ((true,ii), ({inlineD = (false,[])} as v))     -> 
-        { v with inlineD = (true, [ii]) }
-  | ((true,ii), ({inlineD = (true, ii2)} as v)) ->  
-      warning "duplicate inline" v
+  | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
+  | ((true,ii), ({inlineD = (true, ii2)} as v)) -> warning "duplicate inline" v
   | _ -> raise Impossible
 
 
@@ -90,7 +91,8 @@ let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
 
 (**************************************)
 (* stdC: type section, basic integer types (and ritchie)
-   to understand the code, just look at the result (right part of the PM) and go back
+   to understand the code, just look at the result (right part of the PM) 
+   and go back
 *)
 let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
  {storageD = (st,iist); 
@@ -104,7 +106,8 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
  | (None,None,None)       -> warning "type defaults to 'int'" (defaultInt, [])
  | (None, None, Some t)   -> (t, iit)
 	 
- | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  -> BaseType(IntType (Si (sign, CInt))), iit
+ | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  -> 
+     BaseType(IntType (Si (sign, CInt))), iit
  | ((None|Some Signed),Some x,(None|Some(BaseType(IntType (Si (_,CInt)))))) -> 
      BaseType(IntType (Si (Signed, [Short,CShort; Long, CLong; LongLong, CLongLong] +> List.assoc x))), iit
  | (Some UnSigned, Some x, (None| Some (BaseType (IntType (Si (_,CInt))))))-> 
@@ -215,6 +218,8 @@ let fix_add_params_ident = function
     
 %}
 
+/*****************************************************************************/
+
 %token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
 %token <Ast_c.info> TDefine TInclude
 %token <Ast_c.info> TIfdef TIfdefelse TEndif
@@ -276,18 +281,20 @@ let fix_add_params_ident = function
 %type <Ast_c.statement> statement
 %type <Ast_c.expression> expr
 %%
+/*****************************************************************************/
 
 main:  translation_unit EOF     { $1 }
 
-/********************************************************************************/
+/*****************************************************************************/
 /*
- expression
- statement
- declaration
- main
+ TOC:
+  expression
+  statement
+  declaration
+  main
 */
 
-/********************************************************************************/
+/*****************************************************************************/
 
 expr: assign_expr             { $1 }
     | expr TComma assign_expr { (Sequence ($1,$3), noType),       [$2] }
@@ -299,9 +306,6 @@ assign_expr: cond_expr                      { $1 }
 
 cond_expr: arith_expr                             { $1 }
 	 | arith_expr TWhy gcc_opt_expr TDotDot cond_expr { (CondExpr ($1, $3, $5),      noType), [$2;$4] } /* gccext: allow optional then part */
-
-gcc_opt_expr: expr { Some $1 }
-            | /* empty */ { None  }
 
 arith_expr: cast_expr                     { $1 }
 	  | arith_expr TMul    arith_expr { (Binary ($1, Arith Mul,      $3),        noType), [$2] }
@@ -325,9 +329,6 @@ arith_expr: cast_expr                     { $1 }
 
 cast_expr: unary_expr                        { $1 }
 	 | topar2 type_name tcpar2 cast_expr { (Cast ($2, $4),       noType), [$1;$3] }
-
-topar2: TOPar { et "topar2" (); $1  }
-tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) } 
 
 unary_expr: postfix_expr                   { $1 }
 	  | TInc unary_expr                { (Infix ($2, Inc),       noType),[$1] }
@@ -362,20 +363,11 @@ postfix_expr: primary_expr                                 { $1 }
             | THigherOrderMacro TOPar statement_list TCPar { (MacroCall2 (Right $3),  noType),[$1;$2;$4] }
             | THigherOrderMacro TOPar expr TCPar           { (MacroCall2 (Left $3),  noType),[$1;$2;$4] }
 
-            | THigherOrderExprStatement TOPar expr TComma action_higherordermacro TCPar  
-                { 
-                  (MacroCall [(Left3 $3, []);(Right3 ($5), [$4])], noType), [$1;$2;$6]
-                }
-            | THigherOrderExprExprStatement TOPar assign_expr TComma assign_expr TComma action_higherordermacro TCPar 
-                { 
-                  (MacroCall [(Left3 $3, []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8]
-                }
-            | THigherOrderExprExprStatement TOPar decl_spec3 TComma assign_expr TComma action_higherordermacro TCPar 
-                { 
-                  let (returnType,storage) = fixDeclSpecForDecl $3 in
-                  (MacroCall [(Middle3 (returnType, storage), []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8]
-                }
-
+            | THigherOrderExprStatement TOPar expr TComma action_higherordermacro TCPar                                 { (MacroCall [(Left3 $3, []);(Right3 ($5), [$4])],                  noType), [$1;$2;$6] }
+            | THigherOrderExprExprStatement TOPar assign_expr TComma assign_expr TComma action_higherordermacro TCPar   { (MacroCall [(Left3 $3, []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8] }
+            | THigherOrderExprExprStatement TOPar decl_spec3  TComma assign_expr TComma action_higherordermacro TCPar   {  let (returnType,storage) = fixDeclSpecForDecl $3 in
+                                                                                                                           (MacroCall [(Middle3 (returnType, storage), []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8]
+                                                                                                                         }
             | THigherOrderExprExprExprStatement TOPar assign_expr TComma assign_expr TComma assign_expr TComma action_higherordermacro TCPar { (Constructor, noType), [] }
 
 action_higherordermacro: jump        { ActJump $1 }
@@ -385,15 +377,14 @@ action_higherordermacro: jump        { ActJump $1 }
                        | assign_expr { ActExpr $1 }
                        | assign_expr TPtVirg action_higherordermacro { ActExpr2 ($1, $2, $3)  }
 
-argument_expr_list: assign_expr { [Left $1, []] }
+
+argument_expr_list: assign_expr                           { [Left $1, []] }
 	          | argument_expr_list TComma assign_expr { $1 ++ [Left $3,    [$2]] }
 
-                   /* decl_spec and not juste type_spec cos can have  unsigned short for instance => type_spec_list */
+                   /* decl_spec and not just type_spec cos can have  unsigned short for instance => type_spec_list */
                   | decl_spec3 { let (returnType,storage) = fixDeclSpecForDecl $1 in [Right (returnType, storage),  []]  }  /* cppext: */
 	          | argument_expr_list TComma decl_spec3  { let (returnType,storage) = fixDeclSpecForDecl $3 in $1 ++ [Right (returnType, storage), [$2]] }  /* cppext: */
 
-
-decl_spec3: decl_spec { et "decl_spec3" (); $1 }
 
 primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
             | TInt    { (Constant (Int    (fst $1)), noType), [snd $1] }
@@ -411,16 +402,32 @@ primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
 
 
 
-const_expr: cond_expr { $1 (* would like evalInt $1 but require too much info *) }
 
-/* why this ? why not s/ident/TIdent ?  cos there is multiple namespace in C, 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+
+/* Why this ? why not s/ident/TIdent ?  cos there is multiple namespace in C, 
    so a label can have the same name that a typedef, same for field and tags
    hence sometimes the use of ident  insteat of TIdent
  */
 ident: TIdent       { $1 }
      | TypedefIdent { $1 }
 
-/********************************************************************************/
+const_expr: cond_expr { $1 (* would like evalInt $1 but require too much info *) }
+
+
+gcc_opt_expr: expr { Some $1 }
+            | /* empty */ { None  }
+
+topar2: TOPar { et "topar2" (); $1  }
+tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) } 
+
+decl_spec3: decl_spec { et "decl_spec3" (); $1 }
+
+
+/*****************************************************************************/
 
 statement: labeled         { Labeled        (fst $1),      snd $1 }
 	 | compound        { Compound       (fst $1),      snd $1 }
@@ -438,7 +445,7 @@ labeled: ident            TDotDot statement                      { Label (fst $1
 
        /* note that case 1: case 2: i++;    would be correctly parsed, but with a Case  (1, (Case (2, i++)))  :(  */
 
-       /* generate conflict 31 shift/Reduce conflict each ,  mais ca va, ca fait ce qu'il faut */
+       /* generate each 31 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il faut */
        /* gccext:  allow toto: } */
        | ident            TDotDot { Label (fst $1, (ExprStatement None, [])), [snd $1; $2] }
        | Tcase const_expr TDotDot { Case ($2, (ExprStatement None, [])),      [$1;$3] }   
@@ -449,7 +456,7 @@ labeled: ident            TDotDot statement                      { Label (fst $1
 
 compound: tobrace compound2 tcbrace { $2, [$1; $3]  }
 
-tobrace: TOBrace                     {  new_scope (); $1(* to do scoped typedef *) }
+tobrace: TOBrace                     {  new_scope (); $1 }
 tcbrace: TCBrace                     {  del_scope (); $1 }
 
 /* old:
@@ -466,10 +473,12 @@ statement_list: statement { [$1] }
 
 */
 
-/* cppext: (because of cpp),  mix decl/statement */
-statement_list: statement { [$1] }
-	      | statement_list statement { $1 ++ [$2] }
-
+/* cppext: because of cpp, some stuff look like declaration but are in fact
+   statement but too hard to figure out, and if parse them as expression, then
+   we force to have first decls and then exprs, then will have a parse error.
+   So easier to let mix decl/statement. Morover it helps to not make such
+   a difference between decl and statement for further coccinelle phases. 
+*/
 compound2:  { ([]) }
         | stat_or_decl_list { ($1) }
 
@@ -485,7 +494,7 @@ stat_or_decl: decl      { Decl $1, [] }
             | TIfdef stat_or_decl_list TEndif 
                 { Selection (IfCpp ($2, [])), [$1;$3] }
 
-
+statement_list: stat_or_decl_list { $1 }
 
 
 
@@ -511,14 +520,11 @@ jump: Tgoto ident  { Goto (fst $2),  [$1;snd $2] }
 
 
 
-
-
-
-
+/*----------------------------*/
 /* gccext: */
+/*----------------------------*/
 asmbody: string_list colon_asm_list  { }
        | string_list { } /* in old kernel */
-
 
 string_list: string_elem { [$1] }
            | string_list string_elem { $1 ++ [$2] } 
@@ -543,12 +549,9 @@ colon_option: TString {}
             | /* empty */ {}
 
 
+/*****************************************************************************/
 
-/********************************************************************************/
-
-/*------------------------------------------------------------------------------*/
-decl: decl2  { et "decl" (); $1 }
-
+/*---------------------------------------------------------------------------*/
 decl2: decl_spec TPtVirg
         { let (returnType,storage) = fixDeclSpecForDecl $1 
           in DeclList ([(None, returnType, unwrap storage),[]],  
@@ -564,22 +567,12 @@ decl2: decl_spec TPtVirg
                    | Some (ini, iini) -> Some ini, [iini]
                  in
 		 if fst (unwrap storage) = StoTypedef 
-		 then begin 
-                   Lexer_parser.add_typedef s;
-                   (Some ((s, ini), iis::iini), f returnType, unwrap storage),
-                   iivirg 
-                 end
-		 else 
-                   (Some ((s, ini), iis::iini), f returnType, unwrap storage),
-                   iivirg
+		 then Lexer_parser.add_typedef s;
+                 (Some ((s, ini), iis::iini), f returnType, unwrap storage),
+                 iivirg 
   	         )
 	       ),  ($3::snd storage))
 	} 
-     /* | init_declarator_list TPtVirg { failwith "todo" } */
-
-/*------------------------------------------------------------------------------*/
-decl_spec: decl_spec2                   { dt "declspec" (); $1  }
-
 
 decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [snd $1]) } }
 	  | type_spec                     { addTypeD ($1,nullDecl) }
@@ -588,7 +581,9 @@ decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [
 	  | type_spec          decl_spec2 { addTypeD    ($1, $2) }
 	  | type_qualif        decl_spec2 { addQualifD  ($1, $2) }
           | Tinline            decl_spec2 { addInlineD ((true, $1), $2) }
-/* can simplify by putting all in _opt ? must have at least one otherwise decl_list is ambiguous ? (no cos have ';' between decl) */
+/* can simplify by putting all in _opt ? must have at least one otherwise
+   decl_list is ambiguous ? (no cos have ';' between decl) 
+*/
 
 
 storage_class_spec: Tstatic      { Sto Static,  $1 }
@@ -596,8 +591,6 @@ storage_class_spec: Tstatic      { Sto Static,  $1 }
 		  | Tauto        { Sto Auto,    $1 }
 		  | Tregister    { Sto Register,$1 }
 		  | Ttypedef     { StoTypedef,  $1 }
-
-type_spec: type_spec2            { dt "type" (); $1   }
 
 type_spec2: 
 	 | Tvoid                { Right3 (BaseType Void),            [$1] }
@@ -621,46 +614,37 @@ type_spec2:
 type_qualif: Tconst    { {const=true  ; volatile=false}, $1 }
 	   | Tvolatile { {const=false ; volatile=true},  $1 }
 
-/*------------------------------------------------------------------------------*/
-struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+
+decl: decl2  { et "decl" (); $1 }
+decl_spec: decl_spec2                   { dt "declspec" (); $1  }
+type_spec: type_spec2            { dt "type" (); $1   }
+
+/*---------------------------------------------------------------------------*/
 s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
             | struct_or_union       tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
-	    | struct_or_union ident                                  
-		{ StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
-
-tobrace_struct: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
-
-struct_or_union: struct_or_union2 { et "su" (); $1 }
+	    | struct_or_union ident       { StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
 
 struct_or_union2: Tstruct { Struct, $1 }
     	        | Tunion  { Union, $1 }
-
-struct_decl_list_gcc: struct_decl_list gcc_opt_virg        { $1 } /* gccext: allow double ;; at end too */
-                    | /* empty */       { [] } /* gccext: allow empty struct */
-
-
-gcc_opt_virg: TPtVirg { }
-            |  { }
-
-gcc_attr_opt: /* empty */ { }
-            | Tattribute TOPar TOPar argument_expr_list TCPar TCPar { }
-
 
 struct_decl_list: struct_decl                   { [$1] }
 	        | struct_decl_list struct_decl  { $1 ++ [$2] }
 	        | struct_decl_list TPtVirg struct_decl  { $1 ++ [$3] } /* gccext: allow double ;; */
 
 
-struct_decl: struct_decl2  { et "struct" (); $1 }
-
 struct_decl2: spec_qualif_list struct_declarator_list TPtVirg 
                 { let (returnType,storage) = fixDeclSpecForDecl $1 in
-                  (if fst (unwrap storage) <> NoSto then internal_error "parsing dont allow this";
+                  if fst (unwrap storage) <> NoSto 
+                  then internal_error "parsing dont allow this";
 
-                   FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->     f returnType, iivirg))),    [$3] )
-                  (* dont need to check if typedef or func initialised cos grammar dont allow typedef nor 
-                  initialiser in struct 
+                  FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->     f returnType, iivirg))),    [$3]
+                  (* dont need to check if typedef or func initialised cos
+                     grammar dont allow typedef nor initialiser in struct 
                   *)
                 }
 
@@ -670,6 +654,7 @@ struct_decl2: spec_qualif_list struct_declarator_list TPtVirg
                   let (returnType,storage) = fixDeclSpecForDecl $1 in
                   if fst (unwrap storage) <> NoSto 
                   then internal_error "parsing dont allow this";
+
                   FieldDeclList [(Simple (None, returnType), []) , []], [$2]
                 }
 
@@ -681,10 +666,31 @@ struct_declarator: declarator                    { (fun x -> Simple   (Some (fst
 		 | dotdot const_expr2            { (fun x -> BitField (None, x, $2),              [$1]) }
 		 | declarator dotdot const_expr2 { (fun x -> BitField (Some (fst (fst $1)), ((snd $1) x), $3),      [snd (fst $1);$2]) }
 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+tobrace_struct: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
+
+
+struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
+struct_or_union: struct_or_union2 { et "su" (); $1 }
+struct_decl: struct_decl2  { et "struct" (); $1 }
+
 dotdot: TDotDot  { et "dotdot" (); $1 }
 const_expr2: const_expr { dt "const_expr2" (); $1 }
 
-/*------------------------------------------------------------------------------*/
+struct_decl_list_gcc: struct_decl_list gcc_opt_virg  { $1 } /* gccext: allow double ;; at end too */
+                    | /* empty */                    { [] } /* gccext: allow empty struct */
+
+gcc_opt_virg: TPtVirg { }
+            |  { }
+
+gcc_attr_opt: /* empty */ { }
+            | Tattribute TOPar TOPar argument_expr_list TCPar TCPar { }
+
+
+/*---------------------------------------------------------------------------*/
 enum_spec: Tenum        TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
          | Tenum ident  TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
          | Tenum ident                                                { EnumName (fst $2),       [$1; snd $2] }
@@ -692,26 +698,30 @@ enum_spec: Tenum        TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (No
 enumerator_list: enumerator                        { [$1,          []]   }
 	       | enumerator_list TComma enumerator { $1 ++ [$3,    [$2]] }
 
-gcc_comma_opt: TComma {  [$1] } /* gccext:  which allow a trailing ',' in enum (as in perl) */
-             | /* */  {  []  }
-
 enumerator: idente                 { (fst $1, None),      [snd $1]    }
           | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
 
 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+gcc_comma_opt: TComma {  [$1] } /* gccext:  which allow a trailing ',' in enum (as in perl) */
+             | /* */  {  []  }
+
 idente: ident { Lexer_parser.add_ident (fst $1); $1 }
-/*------------------------------------------------------------------------------*/
 
-spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }		    
-
+/*---------------------------------------------------------------------------*/
+/* for struct and also typename */
 /* cant put decl_spec cos no storage is allowed for field struct */
 spec_qualif_list2: type_spec                    { addTypeD ($1, nullDecl) }
 		 | type_qualif                  { {nullDecl with qualifD  = (fst $1, [snd $1]) } }
 		 | type_spec   spec_qualif_list { addTypeD ($1,$2)   }
 		 | type_qualif spec_qualif_list { addQualifD ($1,$2) }
 
+spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }		    
  	     
-/*------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 init_declarator_list: init_declarator                             { [$1,   []] }
 	            | init_declarator_list TComma init_declarator { $1 ++ [$3,     [$2]] }
 
@@ -720,13 +730,19 @@ init_declarator: init_declarator2 gcc_attr_opt  { dt "init" (); $1 }
 init_declarator2:  declaratori                  { ($1, None) }
 	        |  declaratori teq initialize   { ($1, Some ($3, $2)) }
 
+
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
 declaratori: declarator  { Lexer_parser.add_ident (fst (fst $1)); $1 }
+
 teq: TEq  { et "teq" (); $1 }
 
 
-/*------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 /* declarator return a couple: (name, partial type (a function to be applied to return type)) */
-/*-----------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 declarator: pointer direct_d { (fst $2, fun x -> x +> $1 +> (snd $2)  ) 
            (* when int* f(int) we must return Func(Pointer int,int) and not Pointer (Func(int,int) *)
 			     }
@@ -749,22 +765,12 @@ direct_d:
  | direct_d topar            tcpar         { (fst $1,fun x->(snd $1) (nQ,(FunctionType (x,(([],(false, [])))),[$2;$3])))}
  | direct_d topar parameter_type_list tcpar{ (fst $1,fun x->(snd $1) (nQ,(FunctionType (x, $3),            [$2;$4]))) }
 
-tocro: TOCro { et "tocro" ();$1 }
-tccro: TCCro { dt "tccro" ();$1 }
-
-topar: TOPar { new_scope ();et "topar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- true; $1  }
-tcpar: TCPar { del_scope ();dt "tcpar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- false; $1  }
-
-
-
 
 parameter_type_list: parameter_list                  { ($1, (false, []))}
 		   | parameter_list TComma TEllipsis { ($1, (true,  [$2;$3])) }
 
 parameter_list: parameter_decl                       { [$1, []] }
 	      | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
-
-parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
 parameter_decl2: decl_spec declaratorp          { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 
                                                  in (hasreg, Some (fst (fst $2)), ((snd $2) returnType)),     (iihasreg ++ [snd (fst $2)]) }
@@ -773,10 +779,22 @@ parameter_decl2: decl_spec declaratorp          { let ((returnType,hasreg),iihas
 	      |	 decl_spec                      { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
 		                                 in (hasreg, None, returnType),           (iihasreg ++ []) }
 
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+
+tocro: TOCro { et "tocro" ();$1 }
+tccro: TCCro { dt "tccro" ();$1 }
+
+topar: TOPar { new_scope ();et "topar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- true; $1  }
+tcpar: TCPar { del_scope ();dt "tcpar" (); !Lexer_parser._lexer_hint.parameterDeclaration <- false; $1  }
+
+parameter_decl: parameter_decl2 { et "param" ();  $1 }
+
 declaratorp: declarator { Lexer_parser.add_ident (fst (fst $1)); $1 }
 
 
-/*------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 type_name: spec_qualif_list                     
 	     { let (returnType, _) = fixDeclSpecForDecl $1 in  returnType }
 	 | spec_qualif_list abstract_declarator 
@@ -798,12 +816,16 @@ direct_abstract_declarator:
  | direct_abstract_declarator TOPar TCPar            { fun x ->$1 (nQ, (FunctionType (x, (([], (false, [])))),[$2;$3])) }
  | direct_abstract_declarator TOPar parameter_type_list TCPar { fun x -> $1 (nQ, (FunctionType (x, $3), [$2;$4])) }
 			  
-/*------------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 initialize: assign_expr                                           { InitExpr $1,                [] }
           | TOBrace initialize_list gcc_comma_opt  TCBrace        { InitList (List.rev $2),     [$1]++$3++[$4] }
           | TOBrace TCBrace                                       { InitList [],       [$1;$2] } /* gccext: */
 
-/*opti: this time use the List.rev tricks cos quite critical */
+/* opti: This time we use the weird order of non-terminal which requires in 
+   the "caller" to do a List.rev cos quite critical. With this wierd order it
+   allows yacc to use a constant stack space instead of exploding if we do a 
+   initialize2 Tcomma initialize_list.
+ */
 initialize_list: initialize2                        { [$1,   []] }
 	       | initialize_list TComma initialize2 { ($3,  [$2])::$1 }
 
@@ -817,29 +839,36 @@ initialize2: arith_expr                                         { InitExpr $1,  
           | TOCro const_expr TCCro TEq initialize2              { InitGccIndex ($2, $5),    [$1;$3;$4] }
           | TOCro const_expr TEllipsis const_expr TCCro TEq initialize2   { InitGccRange ($2, $4, $7),  [$1;$3;$5;$6] }
 
-/********************************************************************************/
+/*****************************************************************************/
 
-translation_unit: 
-                | external_declaration                  { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
+translation_unit: external_declaration                  { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
 	        | translation_unit external_declaration { !Lexer_parser._lexer_hint.toplevel <- true; $1 ++ [$2] }
 
-external_declaration: 
-                    | function_definition               { Definition (fixFunc $1) }
+external_declaration: function_definition               { Definition (fixFunc $1) }
 		    | decl                              { Declaration $1 }
                     | TIdent TOPar argument_expr_list TCPar TPtVirg  { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } /* cppext: */
-                    | TIdent TOPar argument_expr_list TCPar  { EmptyDef [] } /* seems dont work */
+                    | TIdent TOPar argument_expr_list TCPar          { EmptyDef [] } /* seems dont work */
 
 function_definition: start_fun compound      { del_scope(); ($1, $2) }
 
-start_fun: start_fun2                        { new_scope(); fix_add_params_ident $1; !Lexer_parser._lexer_hint.toplevel <- false;  $1 }
-start_fun2: decl_spec declaratorfd           { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
-                                               (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
+start_fun2: decl_spec declaratorfd  { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
+                                      (fst $2, fixOldCDecl ((snd $2) returnType) , storage) }
 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+start_fun: start_fun2                        
+  { new_scope(); 
+    fix_add_params_ident $1; 
+    !Lexer_parser._lexer_hint.toplevel <- false;  
+    $1 
+  }
 
 declaratorfd: declarator { et "declaratorfd" (); $1 }
 
 
-/********************************************************************************/
+/*****************************************************************************/
 
 external_declaration2: 
          | external_declaration                         { $1 }
