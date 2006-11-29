@@ -76,6 +76,7 @@ let (labels_for_ctl:
       | Lib_engine.ErrorExit, _  -> []
 
       | Lib_engine.Include _, _  -> failwith "include should not be checked"
+      | Lib_engine.Define _, _  -> failwith "define should not be checked"
 
       | Lib_engine.Return, node -> 
           (match node with

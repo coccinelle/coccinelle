@@ -146,6 +146,8 @@ let rec statement recursor k = function
   | Ast.Stars(_,_,_)   -> [Closed []]
   | s -> test (Ast.StatementTag s) (k s)
 
+let rec meta recursor k m = test (Ast.MetaTag m) (k m)
+
 let top_level recursor k = function
     Ast.FILEINFO(_,_) -> [Closed []]
   | Ast.ERRORWORDS(exps) -> [Closed []]
@@ -161,7 +163,7 @@ let collect_tokens =
       (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)
       (mcode mk_storage) dots dots dots
       ident expression fullType typeC parameterTypeDef declaration
-      rule_elem statement top_level anything in
+      rule_elem statement meta top_level anything in
   recursor.V.combiner_top_level
 
 let rule code = List.concat(List.map collect_tokens code)

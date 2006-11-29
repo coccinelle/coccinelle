@@ -349,7 +349,7 @@ and initialiser i =
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
-  | Ast.IComma(cm) -> mcode print_string cm
+  | Ast.IComma(cm) -> mcode print_string cm; print_space()
   | Ast.Idots(d,Some whencode) ->
       mcode print_string d; print_string "   WHEN != ";
       initialiser whencode
@@ -510,11 +510,26 @@ and whencode notfn alwaysfn = function
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l
 
+let define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name) -> mcode print_string name
+  | Ast.Ddots(dots) -> mcode print_string dots
+
+let rec meta m =
+  match Ast.unwrap m with
+    Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; print_string " ";
+      define_body body
+  | Ast.OptMeta(m) -> print_string "?"; meta m
+  | Ast.UniqueMeta(m) -> print_string "!"; meta m
+  | Ast.MultiMeta(m) -> print_string "\\+"; meta m
+
 let top_level t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> declaration decl
-  | Ast.INCLUDE(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.META(m) -> meta m
   | Ast.FILEINFO(old_file,new_file) ->
       print_string "--- "; mcode print_string old_file; force_newline();
       print_string "+++ "; mcode print_string new_file
@@ -552,6 +567,7 @@ let _ =
     | Ast.StatementTag(x) -> statement "" x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x) -> print_string x
+    | Ast.Meta(x) -> meta x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x
@@ -571,6 +587,14 @@ let unparse x =
 let rule_elem_to_string x =
   print_newlines_disj := true;
   Common.format_to_string (function _ -> rule_elem "" x)
+
+let ident_to_string x =
+  print_newlines_disj := true;
+  Common.format_to_string (function _ -> ident x)
+
+let define_body_to_string x =
+  print_newlines_disj := true;
+  Common.format_to_string (function _ -> define_body x)
 
 let unparse_to_string x =
   print_newlines_disj := true;

@@ -35,7 +35,7 @@ let collect_context e =
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.ident) (donothing Ast0.expr) (donothing Ast0.typeC)
       (donothing Ast0.ini) (donothing Ast0.param) (donothing Ast0.decl)
-      (donothing Ast0.stmt)
+      (donothing Ast0.stmt) (donothing Ast0.meta)
       topfn in
   res.V0.combiner_top_level e
 
@@ -69,6 +69,7 @@ let create_root_token_table minus =
 	  | Ast0.InitTag(d) -> Ast0.get_index d
 	  | Ast0.DeclTag(d) -> Ast0.get_index d
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
+	  | Ast0.MetaTag(d) -> Ast0.get_index d 
 	  | Ast0.TopTag(d) -> Ast0.get_index d in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
@@ -170,7 +171,7 @@ let collect_minus_join_points root =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing
     do_nothing expression do_nothing initialiser do_nothing do_nothing
-    statement do_top
+    statement do_nothing do_top
 
 
 let call_collect_minus context_nodes :
@@ -210,6 +211,9 @@ let call_collect_minus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_statement e)
+      | Ast0.MetaTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).V0.combiner_meta e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e))
@@ -278,6 +282,7 @@ let mk_storage x          = Ast.StorageTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x            = Ast.Token x
+let mk_meta x             = Ast.Meta (Ast0toast.meta x)
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
@@ -313,7 +318,7 @@ let collect_plus_nodes root =
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
-    (do_nothing mk_statement) (do_nothing mk_code)
+    (do_nothing mk_statement) (do_nothing mk_meta) (do_nothing mk_code)
 
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.anything) list) list =
@@ -352,6 +357,9 @@ let call_collect_plus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_statement e)
+      | Ast0.MetaTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).V0.combiner_meta e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e))
@@ -611,7 +619,7 @@ let reevaluate_contextness =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing in
   res.V0.combiner_top_level
 
 (* --------------------------------------------------------------------- *)

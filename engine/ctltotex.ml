@@ -237,6 +237,12 @@ let pred2c = function
   | Lib_engine.Include(_,s) ->
       let (s,len) = texify (Ast_cocci.unwrap_mcode s) in
       ("\\msf{#include}("^s^")",8+len)
+  | Lib_engine.Define(_,i,b) ->
+      let i = Pretty_print_cocci.ident_to_string i in
+      let (i,len1) = texify i in
+      let b = Pretty_print_cocci.define_body_to_string b in
+      let (b,len2) = texify b in
+      ("\\msf{#define}("^i^","^b^")",8+len1+len2)
 
 let totex out_file rules ctls =
   let o = open_out out_file in

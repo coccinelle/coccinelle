@@ -11,6 +11,7 @@ type 'a combiner =
 	    combiner_parameter : Ast0_cocci.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast0_cocci.parameter_list -> 'a;
 		combiner_statement : Ast0_cocci.statement -> 'a;
+		  combiner_meta : Ast0_cocci.meta -> 'a;
 		  combiner_top_level : Ast0_cocci.top_level -> 'a;
 		    combiner_expression_dots :
 		      Ast0_cocci.expression Ast0_cocci.dots -> 'a;
@@ -44,6 +45,7 @@ val combiner :
 					((Ast0_cocci.parameterTypeDef,'a) ccode) ->
 					  ((Ast0_cocci.declaration,'a) ccode) ->
 					    ((Ast0_cocci.statement,'a) ccode) ->
+					      ((Ast0_cocci.meta,'a) ccode) ->
 					      ((Ast0_cocci.top_level,'a) ccode) ->
 						'a combiner
 
@@ -59,6 +61,7 @@ type rebuilder =
       rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;
+      rebuilder_meta : Ast0_cocci.meta inout;
       rebuilder_top_level : Ast0_cocci.top_level inout;
       rebuilder_expression_dots :
 	Ast0_cocci.expression Ast0_cocci.dots ->
@@ -93,5 +96,6 @@ val rebuilder :
 				      (Ast0_cocci.parameterTypeDef rcode) ->
 					(Ast0_cocci.declaration rcode) ->
 					  (Ast0_cocci.statement rcode) ->
+					    (Ast0_cocci.meta rcode) ->
 					    (Ast0_cocci.top_level rcode) ->
 					      rebuilder

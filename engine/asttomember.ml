@@ -25,7 +25,7 @@ let contains_modif x used_after =
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	  do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing in
+	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
     else true
 
@@ -114,8 +114,8 @@ and statement stmt used_after optional =
 let top_level ua t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> failwith "not supported decl"
-  | Ast.INCLUDE(inc,s) ->
-      Printf.fprintf stderr "warning! ignoring include.  not a rule_elem";
+  | Ast.META(m) ->
+      Printf.fprintf stderr "warning! ignoring cpp code.  not a rule_elem";
       Opt []
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->

@@ -133,7 +133,7 @@ let inline_mcodes =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
+    do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -146,6 +146,7 @@ let check_allminus s =
   let option_default = true in
   let mcode (_,_,_,mc) = match mc with Ast0.MINUS(_) -> true | _ -> false in
 
+  (* special case for disj *)
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -169,7 +170,7 @@ let check_allminus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing in
+      statement donothing donothing in
   combiner.V0.combiner_statement s
     
 (* --------------------------------------------------------------------- *)
@@ -633,14 +634,32 @@ and option_to_list = function
 let statement_dots = dots statement
     
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body m =
+  rewrap m
+    (match Ast0.unwrap m with
+      Ast0.DMetaId(name) -> Ast.DMetaId(mcode name)
+    | Ast0.Ddots(dots) -> Ast.Ddots(mcode dots))
+
+let rec meta m =
+  rewrap m
+    (match Ast0.unwrap m with
+      Ast0.Include(inc,s) -> Ast.Include(mcode inc,mcode s)
+    | Ast0.Define(def,id,body) ->
+	Ast.Define(mcode def,ident id,define_body body)
+    | Ast0.OptMeta(m) -> Ast.OptMeta(meta m)
+    | Ast0.UniqueMeta(m) -> Ast.UniqueMeta(meta m)
+    | Ast0.MultiMeta(m) -> Ast.MultiMeta(meta m))
+    
+(* --------------------------------------------------------------------- *)
 (* Function declaration *)
-(* Haven't thought much about arity here... *)
     
 let top_level t =
   rewrap t
     (match Ast0.unwrap t with
       Ast0.DECL(decl) -> Ast.DECL(declaration decl)
-    | Ast0.INCLUDE(inc,s) -> Ast.INCLUDE(mcode inc,mcode s)
+    | Ast0.META(m) -> Ast.META(meta m)
     | Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)
     | Ast0.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)

@@ -242,12 +242,30 @@ and ('a,'b) whencode =
 and statement = base_statement wrap
 
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+and base_meta =
+    Include of string mcode (* #include *) * string mcode (* file *)
+  | Define of string mcode (* #define *) * ident (* name *) * define_body
+  | OptMeta        of meta
+  | UniqueMeta     of meta
+  | MultiMeta      of meta
+
+and meta = base_meta wrap
+
+and base_define_body =
+    DMetaId of string mcode
+  | Ddots   of string mcode (* ... *)
+
+and define_body = base_define_body wrap
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 type base_top_level =
     FUNCTION of statement
   | DECL of declaration
-  | INCLUDE of string mcode (* #include *) * string mcode (* file *)
+  | META of meta
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
   | CODE of statement dots
@@ -270,6 +288,7 @@ type anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
+  | MetaTag of meta
   | TopTag of top_level
 
 val dotsExpr : expression dots -> anything
@@ -283,6 +302,7 @@ val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
 val stmt : statement -> anything
+val meta : meta -> anything
 val top : top_level -> anything
 
 (* --------------------------------------------------------------------- *)

@@ -568,14 +568,36 @@ let rec statement s =
 let statement_dots x = dots is_stm_dots None statement x
 	
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body s =
+  match Ast0.unwrap s with
+    Ast0.DMetaId(name) as us -> let nm = promote_mcode name in mkres s us nm nm
+  | Ast0.Ddots(dots) as us -> let dt = promote_mcode dots in mkres s us dt dt
+
+let rec meta s =
+  match Ast0.unwrap s with
+    Ast0.Include(inc,stm) ->
+      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+  | Ast0.Define(def,id,body) ->
+      let id = ident id in
+      let body = define_body body in
+      mkres s (Ast0.Define(def,id,body)) (promote_mcode def) body
+  | Ast0.OptMeta(m) ->
+      let m = meta m in mkres s (Ast0.OptMeta(m)) m m
+  | Ast0.UniqueMeta(m) ->
+      let m = meta m in mkres s (Ast0.UniqueMeta(m)) m m
+  | Ast0.MultiMeta(m) ->
+      let m = meta m in mkres s (Ast0.MultiMeta(m)) m m
+	
+(* --------------------------------------------------------------------- *)
 (* Function declaration *)
-(* Haven't thought much about arity here... *)
 	
 let top_level t =
   match Ast0.unwrap t with
     Ast0.DECL(decl) ->
       let decl = declaration decl in mkres t (Ast0.DECL(decl)) decl decl
-  | Ast0.INCLUDE(inc,s) -> t
+  | Ast0.META(m) -> let m = meta m in mkres t (Ast0.META(m)) m m
   | Ast0.FILEINFO(old_file,new_file) -> t
   | Ast0.FUNCTION(stmt) ->
       let stmt = statement stmt in mkres t (Ast0.FUNCTION(stmt)) stmt stmt

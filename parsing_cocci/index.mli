@@ -9,4 +9,5 @@ val declaration : Ast0_cocci.declaration -> int list
 val initialiser : Ast0_cocci.initialiser -> int list
 val parameterTypeDef : Ast0_cocci.parameterTypeDef -> int list
 val statement : Ast0_cocci.statement -> int list
+val meta : Ast0_cocci.meta -> int list
 val top_level : Ast0_cocci.top_level -> int list

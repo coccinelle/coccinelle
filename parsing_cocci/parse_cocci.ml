@@ -26,6 +26,7 @@ let token2c (tok,_) =
   | PC.TStatement -> "statement"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
+  | PC.TText -> "text"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
   | PC.TError -> "error"
@@ -50,6 +51,7 @@ let token2c (tok,_) =
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
   | PC.TInclude(s,clt) -> (pr "#include %s" s)^(line_type2c clt)
+  | PC.TDefine(clt) -> "#define"^(line_type2c clt)
   | PC.TMinusFile(s,clt) -> (pr "--- %s" s)^(line_type2c clt)
   | PC.TPlusFile(s,clt) -> (pr "+++ %s" s)^(line_type2c clt)
 
@@ -100,6 +102,7 @@ let token2c (tok,_) =
   | PC.TMetaExp(_,_,clt) -> "expmeta"^(line_type2c clt)
   | PC.TMetaExpList(_,clt) -> "explistmeta"^(line_type2c clt)
   | PC.TMetaId(_,clt)    -> "idmeta"^(line_type2c clt)
+  | PC.TMetaText(_,clt)    -> "textmeta"^(line_type2c clt)
   | PC.TMetaType(_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaStm(_,clt)   -> "stmmeta"^(line_type2c clt)
   | PC.TMetaStmList(_,clt)   -> "stmlistmeta"^(line_type2c clt)
@@ -196,7 +199,7 @@ let split t = function
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
-  | PC.TFunction
+  | PC.TFunction | PC.TText
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TError | PC.TWords -> ([t],[t])
 
@@ -208,6 +211,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
       split t clt
+  | PC.TDefine(clt) -> split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSizeof(clt)
@@ -215,7 +219,7 @@ let split_token ((tok,_) as t) =
   | PC.TTypeId(_,clt)
   | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt)
   | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt)
-  | PC.TMetaId(_,clt) | PC.TMetaType(_,clt)
+  | PC.TMetaId(_,clt) | PC.TMetaText(_,clt) | PC.TMetaType(_,clt)
   | PC.TMetaStm(_,clt) | PC.TMetaStmList(_,clt) | PC.TMetaErr(_,clt)
   | PC.TMetaFunc(_,clt) | PC.TMetaLocalFunc(_,clt) -> split t clt
   | PC.TArobArob -> ([t],[t])
@@ -328,7 +332,8 @@ let token2line (tok,_) =
 
   | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt) 
   | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt) 
-  | PC.TMetaId(_,clt) | PC.TMetaType(_,clt)  | PC.TMetaStm(_,clt)   
+  | PC.TMetaId(_,clt) | PC.TMetaText(_,clt) | PC.TMetaType(_,clt)
+  | PC.TMetaStm(_,clt)   
   | PC.TMetaStmList(_,clt) | PC.TMetaFunc(_,clt) | PC.TMetaLocalFunc(_,clt) 
 
   | PC.TFunDecl(clt)

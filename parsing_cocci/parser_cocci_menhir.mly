@@ -145,6 +145,7 @@ let iso_adjust fn first rest =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
+%token TText
 %token TWhy0 TPlus0 TBang0 Tlist TFresh TConstant TError TWords
 
 %token<Data.line_type * int * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -163,7 +164,7 @@ let iso_adjust fn first rest =
 %token <string * (Data.line_type * int * int * int)> TMetaParam TMetaParamList
 %token <string * (Data.line_type * int * int * int)> TMetaStm TMetaStmList
 %token <string * (Data.line_type * int * int * int)> TMetaFunc TMetaLocalFunc
-%token <string * (Data.line_type * int * int * int)> TMetaExpList
+%token <string * (Data.line_type * int * int * int)> TMetaExpList TMetaText
 %token <string * Type_cocci.typeC list option *
         (Data.line_type*int*int*int)> TMetaExp TMetaConst
 %token TArobArob
@@ -177,6 +178,7 @@ let iso_adjust fn first rest =
 %token <Data.line_type * int * int * int> TMid0 TCPar TCPar0
 
 %token <string * (Data.line_type * int * int * int)> TInclude
+%token <Data.line_type * int * int * int> TDefine
 %token <string * (Data.line_type * int * int * int)> TMinusFile TPlusFile
 
 %token <Data.line_type * int * int * int> TInc TDec
@@ -295,6 +297,9 @@ metadec:
 | TConstant ty=ioption(const_meta_exp_type)
     { (function arity -> function name ->
         !Data.add_const_meta ty name; Ast.MetaConstDecl(arity,name)) }
+| TText
+    { (function arity -> function name ->
+        !Data.add_text_meta name; Ast.MetaTextDecl(arity,name)) }
 
 meta_exp_type:
   ctype
@@ -398,8 +403,21 @@ filespec:
 includes:
   TInclude
     { Ast0.wrap
-	(Ast0.INCLUDE(clt2mcode "#include" (id2clt $1),
-		      id2mcode $1)) }
+	(Ast0.META
+	   (Ast0.wrap
+	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
+			    id2mcode $1)))) }
+| TDefine ident TEllipsis
+    { Ast0.wrap
+	(Ast0.META
+	   (Ast0.wrap
+	      (Ast0.Define(clt2mcode "#define" $1, $2,
+			   Ast0.wrap(Ast0.Ddots(clt2mcode "..." $3)))))) }
+| TDefine ident TMetaText
+    { Ast0.wrap
+	(Ast0.META
+	   (Ast0.wrap(Ast0.Define(clt2mcode "#define" $1, $2,
+				  Ast0.wrap(Ast0.DMetaId(id2mcode $3)))))) }
 
 /*****************************************************************************/
 

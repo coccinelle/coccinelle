@@ -384,13 +384,35 @@ and whencode notfn alwaysfn = function
 
 let statement_dots = dots (function _ -> ()) (statement "")
 
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body s =
+  print_context s
+    (function _ ->
+      match Ast0.unwrap s with
+	Ast0.DMetaId(name) -> mcode print_string name
+      | Ast0.Ddots(dots) -> mcode print_string dots)
+
+let rec meta s =
+  print_context s
+    (function _ ->
+      match Ast0.unwrap s with
+	Ast0.Include(inc,s) ->
+	  mcode print_string inc; print_string " "; mcode print_string s
+      | Ast0.Define(def,id,body) ->
+	  mcode print_string def; print_string " "; ident id;
+	  print_string " "; define_body body
+      | Ast0.OptMeta(m) -> print_string "?"; meta m
+      | Ast0.UniqueMeta(m) -> print_string "!"; meta m
+      | Ast0.MultiMeta(m) -> print_string "\\+"; meta m)
+
 let top_level t =
   print_context t
     (function _ ->
       match Ast0.unwrap t with
 	Ast0.DECL(decl) -> declaration decl
-      | Ast0.INCLUDE(inc,s) ->
-	  mcode print_string inc; print_string " "; mcode print_string s
+      | Ast0.META(m) -> meta m
       | Ast0.FILEINFO(old_file,new_file) ->
 	  print_string "--- "; mcode print_string old_file; force_newline();
 	  print_string "+++ "; mcode print_string new_file
@@ -422,6 +444,7 @@ let unparse_anything x =
   | Ast0.InitTag(d) -> initialiser d
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
+  | Ast0.MetaTag(d) -> meta d
   | Ast0.TopTag(d) -> top_level d);
   quiet := q;
   print_newline()

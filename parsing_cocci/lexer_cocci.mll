@@ -84,6 +84,7 @@ let id_tokens lexbuf =
   let s = tok lexbuf in
   match s with
     "identifier" -> check_arity_context_linetype s; TIdentifier
+  | "text" ->       check_arity_context_linetype s; TText
   | "type" ->       check_arity_context_linetype s; TType
   | "parameter" ->  check_arity_context_linetype s; TParameter
   | "constant"  ->  check_arity_context_linetype s; TConstant
@@ -145,6 +146,9 @@ let init _ =
   Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
   Data.add_id_meta :=
     (let fn name clt = TMetaId(name,clt) in
+    (function name -> Hashtbl.replace metavariables name (fn name)));
+  Data.add_text_meta :=
+    (let fn name clt = TMetaText(name,clt) in
     (function name -> Hashtbl.replace metavariables name (fn name)));
   Data.add_type_meta :=
     (let fn name clt = TMetaType(name,clt) in
@@ -349,6 +353,8 @@ rule token = parse
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor    (get_current_line_type lexbuf) }
 
+  | "#" [' ' '\t']* "define"
+      { start_line true; TDefine (get_current_line_type lexbuf) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude
 	  (let str = tok lexbuf in

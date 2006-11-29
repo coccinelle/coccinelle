@@ -452,15 +452,27 @@ let rec statement arity s =
       raise CantBeInPlus
 
   | Ast.OptStm(s) | Ast.UniqueStm(s) | Ast.MultiStm(s) -> 
-      raise CantBeInPlus
+      raise CantBeInPlus in
 
-in
+let define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name) -> mcode print_string name
+  | Ast.Ddots(dots) -> mcode print_string dots in
+
+let rec meta m =
+  match Ast.unwrap m with
+    Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; define_body body
+  | Ast.OptMeta(m) -> print_string "?"; meta m
+  | Ast.UniqueMeta(m) -> print_string "!"; meta m
+  | Ast.MultiMeta(m) -> print_string "\\+"; meta m in
 
 let top_level t =
   match Ast.unwrap t with
     Ast.DECL(decl) -> declaration decl
-  | Ast.INCLUDE(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.META(m) -> meta m
   | Ast.FILEINFO(old_file,new_file) ->
       raise CantBeInPlus
   | Ast.FUNCTION(stmt) -> statement "" stmt
@@ -507,6 +519,7 @@ let rec pp_any = function
 
   | Ast.ConstVolTag(x) -> const_vol x
   | Ast.Token(x) -> print_string x
+  | Ast.Meta(x) -> meta x
   | Ast.Code(x) -> let _ = top_level x in ()
 
   (* this is not '...', but a list of expr/statement/params, and 

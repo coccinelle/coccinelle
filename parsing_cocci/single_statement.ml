@@ -22,6 +22,7 @@ let rec adding_something s =
   | Ast0.MIXED(_) -> not(contains_only_minus s)
   | _ -> failwith "unexpected plus code"
 
+(* needs a special case when there is a Disj *)
 and contains_only_minus s =
   let donothing r k e = k e in
   let bind x y = x && y in
@@ -57,7 +58,7 @@ and contains_only_minus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing in
+      statement donothing donothing in
   combiner.V0.combiner_statement s
 
 (* ---------------------------------------------------------------------- *)

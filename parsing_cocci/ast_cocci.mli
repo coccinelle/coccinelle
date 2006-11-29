@@ -38,6 +38,7 @@ and metavar =
   | MetaStmListDecl of arity * string (* name *)
   | MetaFuncDecl of arity * string (* name *)
   | MetaLocalFuncDecl of arity * string (* name *)
+  | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool
 
@@ -327,10 +328,25 @@ and dots_whencode =
 
 and statement = base_statement wrap
 
+and base_meta =
+    Include of string mcode (* #include *) * string mcode (* file *)
+  | Define of string mcode (* #define *) * ident (* name *) * define_body
+  | OptMeta        of meta
+  | UniqueMeta     of meta
+  | MultiMeta      of meta
+
+and meta = base_meta wrap
+
+and base_define_body =
+    DMetaId of string mcode
+  | Ddots   of string mcode (* ... *)
+
+and define_body = base_define_body wrap
+
 and base_top_level =
     FUNCTION of statement
   | DECL of declaration
-  | INCLUDE of string mcode (* #include *) * string mcode (* file *)
+  | META of meta
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
   | CODE of statement dots
@@ -363,6 +379,7 @@ and anything =
   | StatementTag        of statement
   | ConstVolTag         of const_vol
   | Token               of string
+  | Meta                of meta
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots

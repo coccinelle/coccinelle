@@ -7,6 +7,8 @@ val clear_meta: (unit -> unit) ref
 
 val add_id_meta: (string -> unit) ref
 
+val add_text_meta: (string -> unit) ref
+
 val add_type_meta: (string -> unit) ref
 
 val add_param_meta: (string -> unit) ref

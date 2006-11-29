@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 117 *)
+(* current max is 122 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -157,11 +157,19 @@ let statement s =
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]
   | Ast0.MultiStm(re) -> [89]
+
+let meta m =
+  match Ast0.unwrap m with
+    Ast0.Include(inc,name) -> [118]
+  | Ast0.Define(def,id,body) -> [119]
+  | Ast0.OptMeta(re) -> [120]
+  | Ast0.UniqueMeta(re) -> [121]
+  | Ast0.MultiMeta(re) -> [122]
 	
 let top_level t =
   match Ast0.unwrap t with
     Ast0.DECL(decl) -> [90]
-  | Ast0.INCLUDE(inc,name) -> [91]
+  | Ast0.META(m) -> [91]
   | Ast0.FILEINFO(old_file,new_file) -> [92]
   | Ast0.FUNCTION(stmt_dots) -> [93]
   | Ast0.CODE(stmt_dots) -> [94]

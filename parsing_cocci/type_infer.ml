@@ -199,7 +199,7 @@ let rec propagate_types env =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing statement_dots
     ident expression donothing donothing donothing donothing statement
-    donothing
+    donothing donothing
 
 let type_infer code =
   let fn = (propagate_types []).V0.combiner_top_level in

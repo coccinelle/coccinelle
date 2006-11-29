@@ -60,10 +60,9 @@ let expression recursor k e =
 	 whencode)
   | _ -> k e
 
-let fullType recursor k ft = k ft
-let typeC recursor k t = k t
-let declaration recursor k d = k d
+let donothing recursor k ft = k ft
 
+(* needs a case for things to which new code cannot be attached *)
 let parameterTypeDef recursor k p =
   match Ast0.unwrap p with
     Ast0.Pdots(dots) -> [bad_mcode dots]
@@ -89,14 +88,12 @@ let top_level recursor k t =
       make_bad (List.concat (List.map recursor.V0.combiner_expression exps))
   | _ -> k t
 
-let dots recursor k d = k d
-
 let recursor =
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    dots dots dots
-    ident expression fullType typeC parameterTypeDef declaration
-    statement top_level
+    donothing donothing donothing
+    ident expression donothing donothing parameterTypeDef donothing
+    statement donothing top_level
 
 let rule code = List.concat (List.map recursor.V0.combiner_top_level code)
 

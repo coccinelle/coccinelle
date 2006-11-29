@@ -20,6 +20,7 @@ type 'a combiner =
 	      combiner_parameter_list : Ast.parameter_list -> 'a;
 		combiner_rule_elem : Ast.rule_elem -> 'a;
 		  combiner_statement : Ast.statement -> 'a;
+		    combiner_meta : Ast.meta -> 'a;
 		    combiner_top_level : Ast.top_level -> 'a;
 		      combiner_anything : Ast.anything  -> 'a;
 			combiner_expression_dots :
@@ -36,7 +37,8 @@ let combiner bind option_default
     binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     expdotsfn initdotsfn paramdotsfn stmtdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn topfn anyfn =
+    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn metafn
+    topfn anyfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -319,12 +321,26 @@ let combiner bind option_default
       Ast.NoWhen -> option_default
     | Ast.WhenNot a -> notfn a
     | Ast.WhenAlways a -> alwaysfn a
-    
+ 
+  and define_body b =
+    match Ast.unwrap b with
+      Ast.DMetaId(name) -> string_mcode name
+    | Ast.Ddots(d) -> string_mcode d
+
+  and meta t =
+    let k t =
+      match Ast.unwrap t with
+	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      | Ast.Define(def,id,body) ->
+	  multibind [string_mcode def; ident id; define_body body]
+      | Ast.OptMeta(m) | Ast.UniqueMeta(m) | Ast.MultiMeta(m) -> meta m in
+    metafn all_functions k t
+
   and top_level t =
     let k t =
       match Ast.unwrap t with
 	Ast.DECL(decl) -> declaration decl
-      | Ast.INCLUDE(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      | Ast.META(m) -> meta m
       | Ast.FILEINFO(old_file,new_file) ->
 	  bind (string_mcode old_file) (string_mcode new_file)
       | Ast.FUNCTION(stmt) -> statement stmt
@@ -356,6 +372,7 @@ let combiner bind option_default
       | Ast.StatementTag(rule) -> statement rule
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok) -> option_default
+      | Ast.Meta(m) -> meta m
       | Ast.Code(cd) -> top_level cd
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
@@ -377,6 +394,7 @@ let combiner bind option_default
       combiner_parameter_list = parameter_dots;
       combiner_rule_elem = rule_elem;
       combiner_statement = statement;
+      combiner_meta = meta;
       combiner_top_level = top_level;
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
@@ -398,6 +416,7 @@ type rebuilder =
       rebuilder_parameter_list : Ast.parameter_list inout;
       rebuilder_statement : Ast.statement inout;
       rebuilder_rule_elem : Ast.rule_elem inout;
+      rebuilder_meta : Ast.meta inout;
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
@@ -411,7 +430,8 @@ let rebuilder
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     expdotsfn initdotsfn paramdotsfn stmtdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn topfn anyfn =
+    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn metafn
+    topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -716,14 +736,32 @@ let rebuilder
       Ast.NoWhen -> Ast.NoWhen
     | Ast.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
+
+  and define_body b =
+    Ast.rewrap b
+      (match Ast.unwrap b with
+	Ast.DMetaId(name) -> Ast.DMetaId(string_mcode name)
+      | Ast.Ddots(d) -> Ast.Ddots(string_mcode d))
     
+  and meta t =
+    let k t =
+      Ast.rewrap t
+	(match Ast.unwrap t with
+	  Ast.Include(inc,name) ->
+	    Ast.Include(string_mcode inc,string_mcode name)
+	| Ast.Define(def,id,body) ->
+	    Ast.Define(string_mcode def,ident id,define_body body)
+	| Ast.OptMeta(m) -> Ast.OptMeta(meta m)
+	| Ast.UniqueMeta(m) -> Ast.UniqueMeta(meta m)
+	| Ast.MultiMeta(m) -> Ast.MultiMeta(meta m)) in
+    metafn all_functions k t
+
   and top_level t =
     let k t =
       Ast.rewrap t
 	(match Ast.unwrap t with
 	  Ast.DECL(decl) -> Ast.DECL(declaration decl)
-	| Ast.INCLUDE(inc,name) ->
-	    Ast.INCLUDE(string_mcode inc, string_mcode name)
+	| Ast.META(m) -> Ast.META(meta m)
 	| Ast.FILEINFO(old_file,new_file) ->
 	    Ast.FILEINFO (string_mcode old_file, string_mcode new_file)
 	| Ast.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)
@@ -756,6 +794,7 @@ let rebuilder
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok) as x -> x
+      | Ast.Meta(m) -> Ast.Meta(meta m)
       | Ast.Code(cd) -> Ast.Code(top_level cd)
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.InitDotsTag(pd) -> Ast.InitDotsTag(initialiser_dots pd)
@@ -776,8 +815,10 @@ let rebuilder
       rebuilder_parameter_list = parameter_dots;
       rebuilder_rule_elem = rule_elem;
       rebuilder_statement = statement;
+      rebuilder_meta = meta;
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
       rebuilder_anything = anything} in
   all_functions
+

@@ -13,6 +13,9 @@ let clear_meta: (unit -> unit) ref =
 let add_id_meta: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
+let add_text_meta: (string -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_meta") 
+
 let add_type_meta: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 

@@ -5,7 +5,6 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-module V0 = Visitor_ast0
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : (string, unit) Hashtbl.t)
@@ -251,11 +250,28 @@ and whencode notfn alwaysfn = function
   | Ast0.WhenAlways a -> alwaysfn a
 
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body table minus s =
+  match Ast0.unwrap s with
+    Ast0.DMetaId(name) -> check_table table minus name
+  | Ast0.Ddots(dots) -> ()
+
+let meta table minus m =
+  match Ast0.unwrap m with
+    Ast0.Include(inc,s) -> () (* no metavariables possible *)
+  | Ast0.Define(def,id,body) ->
+      ident GLOBAL table minus id; define_body table minus body
+  | Ast0.OptMeta(_) | Ast0.UniqueMeta(_) | Ast0.MultiMeta(_) ->
+      failwith "unexpected code"
+
+(* --------------------------------------------------------------------- *)
 (* Rules *)
 
 let top_level table minus t =
   match Ast0.unwrap t with
     Ast0.DECL(decl) -> declaration GLOBAL table minus decl
+  | Ast0.META(m) -> meta table minus m
   | Ast0.FUNCTION(stmt) -> statement table minus stmt
   | Ast0.CODE(stmt_dots) -> dots (statement table minus) stmt_dots
   | Ast0.ERRORWORDS(exps) -> List.iter (expression FN table minus) exps
@@ -279,6 +295,7 @@ let metavar2name = function
   | Ast.MetaStmListDecl(arity,name) -> name
   | Ast.MetaFuncDecl(arity,name) -> name
   | Ast.MetaLocalFuncDecl(arity,name) -> name
+  | Ast.MetaTextDecl(arity,name) -> name
 
 let make_table l =
   let table = (Hashtbl.create(List.length l) : (string, bool ref) Hashtbl.t) in

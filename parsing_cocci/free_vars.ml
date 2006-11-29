@@ -124,7 +124,7 @@ let astfvs bound =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing astfvstatement_dots
       astfvident astfvexpr donothing astfvtypeC donothing astfvparam donothing
-      astfvrule_elem astfvstatement donothing donothing in
+      astfvrule_elem astfvstatement donothing donothing donothing in
 
   let rule l =
     let all = List.map recursor.V.combiner_top_level l in
@@ -146,6 +146,7 @@ let get_names = function
   | Ast.MetaStmListDecl(ar,nm) -> nm
   | Ast.MetaFuncDecl(ar,nm) -> nm
   | Ast.MetaLocalFuncDecl(ar,nm) -> nm
+  | Ast.MetaTextDecl(ar,nm) -> nm
 
 let update table =
   let statement r k s =
@@ -170,7 +171,7 @@ let update table =
      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
      donothing donothing donothing statement_dots
      donothing donothing donothing donothing donothing donothing donothing
-     rule_elem statement donothing donothing).V.rebuilder_top_level
+     rule_elem statement donothing donothing donothing).V.rebuilder_top_level
 
 let inner_non_locally_used l =
   let rec loop bound = function
@@ -202,6 +203,7 @@ let rec loop defined = function
 (* determine for each metavar whether it is declared in the current rule or
 previously *)
 
+(* special case for metavars *)
 let update_metavars previous_metavars =
   let donothing r k e = k e in
   let mcode x = x in
@@ -255,7 +257,7 @@ let update_metavars previous_metavars =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   fn.V.rebuilder_top_level
 

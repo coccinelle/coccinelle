@@ -25,7 +25,7 @@ let strip_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -56,6 +56,9 @@ let anything_equal = function
   | (Ast0.StmtTag(d1),Ast0.StmtTag(d2)) ->
       (strip_info.V0.rebuilder_statement d1) =
       (strip_info.V0.rebuilder_statement d2)
+  | (Ast0.MetaTag(d1),Ast0.MetaTag(d2)) ->
+      (strip_info.V0.rebuilder_meta d1) =
+      (strip_info.V0.rebuilder_meta d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.V0.rebuilder_top_level d1) =
       (strip_info.V0.rebuilder_top_level d2)
@@ -540,6 +543,7 @@ let make_minus =
 
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
+  (* cases for dots and nests *)
   let expression r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -614,7 +618,7 @@ let make_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots
     donothing expression donothing initialiser donothing donothing
-    statement donothing
+    statement donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -646,6 +650,7 @@ let rebuild_mcode start_line =
 
   let donothing r k e = copy_one (k e) in
 
+  (* case for control operators (if, etc) *)
   let statement r k e =
     let s = k e in
     copy_one
@@ -667,7 +672,7 @@ let rebuild_mcode start_line =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
-    donothing statement donothing
+    donothing statement donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -689,7 +694,7 @@ let count_edots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let count_idots =
   let mcode x = 0 in
@@ -703,7 +708,7 @@ let count_idots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
-    donothing
+    donothing donothing
 
 let count_dots =
   let mcode x = 0 in
@@ -719,7 +724,7 @@ let count_dots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
-    donothing
+    donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -849,6 +854,7 @@ let instantiate bindings =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     identfn exprfn tyfn donothing paramfn donothing stmtfn donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -1072,7 +1078,8 @@ let transform (alts : isomorphism) =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      donothing exprfn donothing donothing donothing declfn stmtfn donothing in
+      donothing exprfn donothing donothing donothing declfn stmtfn
+      donothing donothing in
   res.V0.rebuilder_top_level
 
 (* --------------------------------------------------------------------- *)
@@ -1085,7 +1092,7 @@ let rewrap =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -1103,6 +1110,7 @@ let rewrap_anything = function
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.V0.rebuilder_declaration d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.V0.rebuilder_statement d)
+  | Ast0.MetaTag(d) -> Ast0.MetaTag(rewrap.V0.rebuilder_meta d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.V0.rebuilder_top_level d)
 
 (* --------------------------------------------------------------------- *)

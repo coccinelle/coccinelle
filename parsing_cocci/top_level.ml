@@ -63,7 +63,7 @@ let l2c l =
   match Ast0.unwrap l with
     Ast0.FUNCTION(_) -> "function"
   | Ast0.DECL(_) -> "decl"
-  | Ast0.INCLUDE(_,_) -> "include"
+  | Ast0.META(_) -> "meta"
   | Ast0.FILEINFO(_,_) -> "fileinfo"
   | Ast0.ERRORWORDS(_) -> "errorwords"
   | Ast0.CODE(_) -> "code"
