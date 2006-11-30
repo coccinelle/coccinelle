@@ -272,7 +272,7 @@ let parse_gen parsefunc s =
 
 
 
-(* let _ = parse_gen Parser_c.statement "(struct us_data*)psh->hostdata = NULL;" *)
+(* parse_gen Parser_c.statement "(struct us_data*)psh->hostdata = NULL;" *)
 
 
 (*---------------------------------------------------------------------------*)
@@ -387,8 +387,8 @@ let parse_print_error_heuristic file =
             let v = match v with
             | TIdent (s, ii) -> 
                 if Lexer_parser.is_typedef s 
-                then TypedefIdent (s, ii)  (* +> (fun v -> pr2 ("TYPEDEF:" ^ s); v)   *)
-                else TIdent (s, ii)       (* +> (fun v -> pr2 ("IDENT:" ^ s); v) *)
+                then TypedefIdent (s, ii) (* +> (fun v -> pr2 ("TYPEDEF:" ^ s); v)   *)
+                else TIdent (s, ii)      (* +> (fun v -> pr2 ("IDENT:" ^ s); v) *)
             | x -> x
             in
 
@@ -517,7 +517,7 @@ let parse_print_error_heuristic file =
                   TypedefIdent (s, i1)
 
                (*------------------------------------------------------------*)
-               (* if  'x*y' maybe an expr, maybe just a classic multiplication *)
+               (* if 'x*y' maybe an expr, maybe just a classic multiplication *)
                (* but if have a '=', or ','   I think not *)
                (*------------------------------------------------------------*)
 
@@ -620,6 +620,16 @@ let parse_print_error_heuristic file =
                   msg_typedef s; 
                   Lexer_parser.add_typedef s;
                   TypedefIdent (s, i1)
+
+
+                (*  xx * yy,  and ';' before xx *) (* wrong ? *)
+              | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , (TOBrace _| TPtVirg _)::_)
+                    ->
+                  msg_typedef s; 
+                  Lexer_parser.add_typedef s;
+                  TypedefIdent (s, i1)
+
+
 
 
                 (*  xx ** yy *)  (* wrong ? *)

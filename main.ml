@@ -94,6 +94,8 @@ let testall () =
     let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) 
     in
 
+    pr2 ("Test: " ^ x);
+
     add_diagnose (sprintf "%s:\t" x);
     incr _total;
 
@@ -111,7 +113,7 @@ let testall () =
             (Cocci.cprogram_from_file generated, generated)
             (Cocci.cprogram_from_file expected, expected)
         in
-	Printf.printf "%s\n" res;
+	pr2 res;
 	Ctlcocci_integration.print_bench();
 
         (match correct with

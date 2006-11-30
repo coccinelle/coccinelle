@@ -43,7 +43,14 @@ let rec (annotate_program: program -> program) = fun prog ->
       res
     end
   in
-  let add_binding s typ = 
+  (* the warning argument is here to allow some binding to overwrite an 
+   * existing one. With function, we first have the protype and then the def
+   * and the def binding the same string is not an error.
+   * todo?: but if we define two times the same function, then we will not
+   * detect it :( would require to make a diff between adding a binding 
+   * from a prototype and from a definition.
+   *)
+  let add_binding s typ warning = 
       let (current, older) = Common.uncons !scoped_env in
 
       if Hashtbl.mem !notyped_var s
@@ -51,7 +58,7 @@ let rec (annotate_program: program -> program) = fun prog ->
                 "previously unknown:" ^ s);
               
 
-      if List.mem s current 
+      if List.mem s current && warning
       then begin 
         pr2 ("Type_annoter: warning, " ^ s ^ 
              " is already in current binding" ^ "\n" ^
@@ -112,7 +119,7 @@ let rec (annotate_program: program -> program) = fun prog ->
        let (DeclList (xs, ii)) = d in
        xs +> List.iter (fun ((var, t, sto), iicomma) -> 
          var +> do_option (fun ((s, ini), ii_s_ini) -> 
-           add_binding s t
+           add_binding s t true
              );
          );
        d'
@@ -122,15 +129,21 @@ let rec (annotate_program: program -> program) = fun prog ->
        notyped_var := Hashtbl.create 100;
        match elem with
        | Definition def -> 
+           let (funcs, ((returnt, (paramst, b)) as ftyp), sto, statxs), _ = def
+           in
+           let iitodo = [] in
+           add_binding 
+            funcs (Ast_c.nullQualif, (FunctionType ftyp, iitodo)) false;
            do_in_new_scope (fun () -> 
-             let (s, (returnt, (paramst, b)), sto, statxs), _ = def in
              paramst +> List.iter (fun (((b, s, t), _),_) -> 
                match s with 
-               | Some s -> add_binding s t
+               | Some s -> add_binding s t true
                | None -> pr2 "no type, certainly because Void type ?"
              );
              k elem
              );
+
+
        | _ -> k elem
              );
              } 
