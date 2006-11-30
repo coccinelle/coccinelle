@@ -22,7 +22,7 @@ open Ast_c
  * because I reparse it to be able later to synchrnize, get the comments,
  * that are not in the Ast.
  *)
-let pp_program infile outfile x = 
+let pp_program x infile outfile  = 
   
  with_open_outfile outfile (fun (pr,chan) -> 
    let pr s = pr s; flush chan in
@@ -180,7 +180,7 @@ let pp_program infile outfile x =
                
          | Ast_cocci.BEFORE xxs -> 
              Unparse_cocci.pp_list_list_any 
-               (env,!_current_tabbing,pr, pr_elem)xxs;
+               (env,!_current_tabbing,pr, pr_elem) xxs;
              pr s;
          | Ast_cocci.AFTER xxs -> 
              pr s;

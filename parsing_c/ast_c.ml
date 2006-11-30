@@ -133,7 +133,8 @@ and expression = (expressionbis * fullType option (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
-   * todo? put more semantic info on this ident, such as: is it a local func?
+   * With cpp, Ident can also be the name of a macro.
+   * todo? put more semantic info on this ident, such as 'is it a local func?'
    *)
   | Ident          of string   
   | Constant       of constant                                  
@@ -233,7 +234,8 @@ and statementbis =
   | Iteration     of iteration
   | Jump          of jump
 
-  | Decl  of declaration (* simplify cocci: only start of compound normally *)
+  (* simplify cocci: only at the beginning of a compound normally *)
+  | Decl  of declaration 
   | Asm  (* gccext: *)
 
 
@@ -246,7 +248,7 @@ and statementbis =
   (* cppext: 
    * old: compound = (declaration list * statement list) 
    * old: (declaration, statement) either list 
-   * simplify cocci to just have statement list, by integrating Decl in stmt.
+   * Simplify cocci to just have statement list, by integrating Decl in stmt.
    *)
   and compound = statement list 
 
@@ -254,10 +256,11 @@ and statementbis =
 
   and selection     = 
    | If     of expression * statement * statement        
-   | Switch of expression * statement 
    (* need check that all elements in the compound start with a case: 
       (otherwise unreachable code)  *)
-   | IfCpp of statement list * statement list
+   | Switch of expression * statement 
+   | IfCpp of statement list * statement list    (* cppext: *)
+
 
 
   and iteration     = 
@@ -278,8 +281,8 @@ and statementbis =
  * declaration.
  *   
  * Before I had Typedef constructor, but why make this special case and not 
- * have StructDef, EnumDef, ... so that struc t {...} v will generate 2 
- * declaration ? So I try to generalise and not have not Typedef too. This
+ * have StructDef, EnumDef, ... so that 'struct t {...} v' will generate 2 
+ * declarations ? So I try to generalise and not have not Typedef too. This
  * requires more work in parsing. Better to separate concern.
  * 
  * Before the need for unparser, I didn't have a DeclList but just a Decl.
@@ -304,6 +307,13 @@ and declaration =
           | InitGccIndex of expression * initialiser
           | InitGccRange of expression * expression * initialiser
 
+(* Normally we should define another type functionType2 because there 
+ * are more restrictions on what can define a function than a pointer 
+ * function. For instance a function declaration can omit the name of the
+ * parameter wheras a function definition can not. But, in some cases such
+ * as 'f(void) {', there is no name too, so I simplified and reused the 
+ * same functionType type for both declaration and function definition.
+ *)
 and definition = (string * functionType * storage * compound) 
                  wrap (* s ( ) { } sto *)
 

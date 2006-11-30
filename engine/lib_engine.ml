@@ -1,3 +1,8 @@
+open Ograph_extended
+
+(*****************************************************************************)
+(* the different ctl formula related types *)
+(*****************************************************************************)
 type mvar = string
 
 type predicate =
@@ -17,6 +22,9 @@ type predicate =
 type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
 
 
+(*****************************************************************************)
+(* the different binding types *)
+(*****************************************************************************)
 type metavars_binding = Ast_c.metavars_binding
 
 (* used in ctlcocci_integration *)
@@ -28,12 +36,18 @@ type metavar_binding_kind2 =
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 
 
+
+(*****************************************************************************)
+(* the CTL model related types *)
+(*****************************************************************************)
 type label_ctlcocci = 
  predicate -> 
-   (Ograph_extended.nodei * 
-    (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution)
-   list
+ (nodei * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution) list
+
+type model = Control_flow_c.cflow * label_ctlcocci * nodei list
+
+
 
 
 type transformation_info = 
- (Ograph_extended.nodei * metavars_binding * Ast_cocci.rule_elem) list
+ (nodei * metavars_binding * Ast_cocci.rule_elem) list

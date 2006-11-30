@@ -1,15 +1,15 @@
 open Common
 open Commonop
-(************************************************************************************)
+(*****************************************************************************)
 (* collection: *)
-(************************************************************************************)
+(*****************************************************************************)
 (*
   sequence(nth): array, list, stack, queue, mixed (fast cons, snoc, append, cf okasaki)
   set(union): setl, setb, seti, seth 
-  assoc(find): assocl, mapb, hash, btree, multimap(bof can do with map to set) 
+  assoc(find): assocl, mapb, hash, btree, multimap (bof can do with map to set)
   graph: graph1way, graph2way, graphref
 
- views a la wadler to make it cool (i hate get/set))
+ views a la wadler to make it cool (I hate get/set))
  pb binary methods => tosetb tricks, or via (not safe) Obj.magic
  as in Set.pmi, the core method and default method (via virtual class)
   better to use virtual than typeclass, virtual play both roles (an interface and
@@ -43,7 +43,7 @@ open Commonop
 (* i define those class cos their name are cool, say what is intended to do with *)
 (* TODO: make ostack (FIFO), oqueue (LIFO)  *)
 
-(*----------------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 type ('a, 'b) view = Empty | Cons of 'a * 'b
 
 class virtual ['a] ocollection = 
@@ -93,7 +93,6 @@ class virtual ['a] ocollection =
       raise Todo
     method misc_op_hook: unit -> 'o = 
       raise Todo
-      
 
   end
 

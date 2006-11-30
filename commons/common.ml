@@ -6,45 +6,25 @@ open Commonop
 
 (* 
 
- Try extract all the quite generic function from lfs
- le execute_and_show_progress, timeout_func, ...
- Make a generic timeout function in caml (or call timeout(1))
-
- A tracer/logger/profiler, (sux to put let _ = pr Here in, ou les Timing) 
- en + kan ca boucle ocamldebug c bof.
- Aimerait voir la valeur des arguments aux fonc kan le truc a crashé, comme en
- perl quoi.
+ A tracer/logger/profiler. An assert/raise/... that print the backtrace.
+ Would also like to see the value of the arguments as in Perl.
+ Ocamldebug is not enough. When the program loops, ocamldebug loop, 
+ and only some tracing information can help. Tracing often helps
+ me to find the error faster than ocamldebug.
  
- CIL (from necula) seems to have good trace, profiling  utilities function
- (in ocamlutil dir).
- unison has also good function (in ubase).
-
  debug, tywith, fix_caml tracing, 
  try and printexn and camlp4 => better trace of exception
  fix_caml  (use camlp4 ?)
-
- An assert/raise/... that print the backtrace.
- Or learn replay, I have pb with it to find fastly where was the error.
+ Sux to put let _ = pr Here in, ou les Timing.
  
-
- Lourd les
- when (((match take_safe 1 !passed_tok with [Tstruct _] -> false| _ -> true)) &&
-       ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true))) 
-  des que ajoute des infos au token.
- De meme quand veut extraire les infos, obliger de faire une fonction qui 
- traite chacun des cas (If _,info -> info | While _,_,_,info > info ...)
-
  How avoid to put all those ugly printf in my code
- let action = Assisted_trajectory.assisted state t_state trajectory oracle in
-     let _ = Printf.printf "\n XXX action = %s\n" (string_of_action action) in 
-   can do a trace (but will not have the "action =") => with a fix_caml tricks
-   how infer good func to call (we have not a generic show)
+  let action = Assisted_trajectory.assisted state t_state trajectory oracle in
+  let _ = Printf.printf "\n XXX action = %s\n" (string_of_action action) in 
+ Can do a trace (but will not have the "action =") => with a fix_caml tricks
+ how infer good func to call (we have not a generic show)
 
- Take common.ml2
- Y, memo, ... cf dir hack and fun
-
- less: y'a des binary methods now in ocaml (cf manual caml) so perhaps can 
- do inter/union/... of seti/set/.. cleanly
+ CIL seems to have good trace, profiling  utilities functions (in ocamlutil/).
+ Unison has also good functions (in ubase/).
 
 
  Advanced invariant weaving.
@@ -54,8 +34,28 @@ open Commonop
  better pre/post/... sugar
   (ca sux c explicit inv_fixed, et c let sinx_aux, ...
 
- Fix comment diezedieze cos fout en l'air l'indentation, color => need 
- emacs mode fix.
+
+
+ Try extract all the quite generic function from LFS
+ execute_and_show_progress, timeout_func, ...
+ Make a generic timeout function in caml (or call timeout(1))
+
+ let _ = if _Update then try Trajectory.doit map_name with _ -> () in
+ Do via sandbox (either special form of secure(fun() -> ...).
+ Sandbox time fcts check_better.
+
+ Take common.ml2
+ Y, memo, ... cf dir hack and fun
+
+
+
+
+ Lourd les
+ when (((match take_safe 1 !passed_tok with [Tstruct _] -> false| _ -> true)) &&
+       ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true))) 
+  des que ajoute des infos au token.
+ De meme quand veut extraire les infos, obliger de faire une fonction qui 
+ traite chacun des cas (If _,info -> info | While _,_,_,info > info ...)
 
  return/when/unless/ a la Perl ... sux those ifthenelse
         if depth <= 0 then (print_string "fail but run"; [])
@@ -67,26 +67,11 @@ open Commonop
   For me if then else mean an algorithm whereas raise when ... mean handle 
   the fucking special case (that could be filtered after by pof).
 
+
  Special form via macro (as the || die that just do a try around the call).
- pof:
-  what is algo, error handling (cf below, need a raise ... when ...)
-  what is debugging (either printf, or Graphics, ...)
 
 
-
-visual:
- As in perl, map, fold, ...
- look at all the open, then assign a color per module, then
- parse the file to extract the func, then print good color when func
- OR simply put each time explicit name
- Ref in a special color
- Type in lib.ml, put them in color (or special symbol) => easier to understand i think
- Use inference info to colorify more (=> give feedback, as for indentation)
- related: automatically infer code (use inference feedback).
-
-
-
-let  (run_to_states_run: state -> run -> states_run) = 
+ let  (run_to_states_run: state -> run -> states_run) = 
   let rec aux here = function
     | [] -> []
     | act::xs -> 
@@ -94,21 +79,39 @@ let  (run_to_states_run: state -> run -> states_run) =
         next::(run_to_states_run next xs)
                 in
   aux
-Peut faire mieux, combinator general.
+ => Peut faire mieux, combinator general.
 
-read_bool.
 
-let _ = if _Update then try Trajectory.doit map_name with _ -> () in
-Do via sandbox (either special form of secure(fun() -> ...).
-Sandbox time fcts check_better.
+ less: y'a des binary methods now in ocaml (cf manual caml) so perhaps can 
+ do inter/union/... of seti/set/.. cleanly
 
-On lisp: graham   
-complement 
-!
-fif?
 
-Apply fcts in turn while having the time
+ read_bool.
 
+ On lisp: graham   
+ complement 
+ !
+ fif?
+
+ Apply fcts in turn while having the time
+
+
+pof:
+  what is algo, error handling (cf below, need a raise ... when ...)
+  what is debugging (either printf, or Graphics, ...)
+
+visual:
+ - as in perl, map, fold, ... in special color
+ - look at all the open, then assign a color per module, then
+   parse the file to extract the func, then print good color when func
+ - or simply put each time explicit name
+ - ref and := and {contents = } and mutable in a special color,  they are
+   dangerous !!
+ - the types in lib.ml should be in a special color (or special symbol)
+ - use inference info to colorify more (=> give feedback, as for indentation)
+   related: automatically infer code (use inference feedback).
+ - fix comment diezedieze cos fout en l'air l'indentation, color => need 
+   emacs mode fix.
 
 *)
 
@@ -119,40 +122,41 @@ Apply fcts in turn while having the time
   let v = ((fix_to_i fixed) / (power 2 16)) in
   let _ = Printf.printf "coord xy = %d\n" v in
   v
- The need for printf make me force to name stuff => :(( how avoid ? use 'it' 
- special keyword ?).
+ The need for printf make me force to name stuff => :(
+ How avoid ? use 'it' special keyword ?
  update: in fact dont have to name it, use +> (fun v -> ...)  so when want
   erase debug just have to erase one line.
 
  Un fichier option.ml qui contient toutes les constantes/... qui peuvent etre
-  modifier a runtime et un main.ml avec un getopt qui les modifie.
- update: just need call the Arg. module ?
+ modifier a runtime et un main.ml avec un getopt qui les modifie.
+ update: just need call the Arg. module and have a flag.ml file
 
 *)
 
 (*****************************************************************************)
 (* We use *)
 (*****************************************************************************)
-(* functions  
-    List.rev, List.mem, List.partition, List.fold*, ... max min, =, <=, ... 
-    List.concat
+(* functions:
+    =, <=, max min,  ... 
+    List.rev, List.mem, List.partition, List.fold*, List.concat, ...
 *)
 
 (* let gsubst = global_replace *)
 
-
-(* Format lib can be useful, allow to hide passing an indent_level variable.
+(* 
+   Format can be useful. Allow to hide passing an indent_level variable.
    You use as usual the print_string function except that there is this
-   automatic indent_level variable handled for you (and certainly more services)
+   automatic indent_level variable handled for you (and maybe more services).
    src: julia in coccinelle unparse_cocci
 
-   ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
-   continuation visitor (src: douence),
-   aspect-like fonction via add-hook with continuation (src: pad)
-   forbid polymorphic  =  by redefining it.
-   functor like function by using nested function.
-   use better Set/Map (binary tree or hashtbl).
-   hashsons, memoize (cache), lazyize.
+   Other useful techniques:
+    - ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
+    - continuation visitor (src: douence),
+    - aspect-like fonction via add-hook with continuation (src: pad)
+    - forbid polymorphic  '='  by redefining it.
+    - functor like function by using nested function.
+    - use better Set/Map (binary tree or hashtbl).
+    - hashsons, memoize (cache), lazyize.
 *)
 
 (*****************************************************************************)
@@ -163,8 +167,8 @@ Apply fcts in turn while having the time
    (adjustable by ulimit -s) *)
 let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
 
-(*
--let (+>) o f = f o
+(* now in Commonop
+let (+>) o f = f o
 *)
 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
@@ -183,7 +187,7 @@ let fold_left_with_index f acc =
 
 (* let rec enum x n = if x = n then [n] else x::enum (x+1)  n *)
 let rec enum x n = 
-  let _ = assert (x <= n) in
+  assert (x <= n);
   let rec aux acc x n = 
     if x = n then n::acc else aux (x::acc) (x+1) n 
   in
@@ -195,6 +199,8 @@ let (list_of_string: string -> char list) = fun s ->
 let push2 v l =
   l := v :: !l
 
+let command2 s = ignore(Sys.command s)
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -205,13 +211,14 @@ let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr)
 include Printf
 
 let _chan = ref stderr
-let verbose_level = ref 1
 let start_log_file () = 
-  _chan := open_out ("/tmp/debugml" ^ 
-                     (string_of_int (Unix.getuid ())) ^ 
-                     ":" ^ (string_of_int (Unix.getpid())))
+  _chan := open_out ( "/tmp/debugml" ^  
+    (string_of_int (Unix.getuid ())) ^  ":" ^ (string_of_int (Unix.getpid()))
+   )
 
 let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
+
+let verbose_level = ref 1
 let log s =  if !verbose_level >= 1 then dolog s
 let log2 s = if !verbose_level >= 2 then dolog s
 let log3 s = if !verbose_level >= 3 then dolog s
@@ -241,9 +248,7 @@ let debug f = if !_debug then f () else ()
 (*****************************************************************************)
 
 let get_mem() =
-  ignore(Sys.command("grep VmData /proc/" ^ 
-                     string_of_int (Unix.getpid()) ^ 
-                     "/status"))
+  command2("grep VmData /proc/" ^ string_of_int (Unix.getpid()) ^ "/status")
 
 let memory_stat () =
   let stat = Gc.stat() in
@@ -251,14 +256,14 @@ let memory_stat () =
   Printf.sprintf "maximal = %d Mo\n" (conv_mo stat.Gc.top_heap_words) ^
   Printf.sprintf "current = %d Mo\n" (conv_mo stat.Gc.heap_words) ^
   Printf.sprintf "lives   = %d Mo\n" (conv_mo stat.Gc.live_words)
-(*           Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
+(*         Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
 
 let timenow () = 
   "sys:" ^ (string_of_float (Sys.time ())) ^ " seconds" ^
   ":real:" ^ 
     (let tm = Unix.time () +> Unix.gmtime in
      tm.Unix.tm_min +> string_of_int ^ " min:" ^ 
-       tm.Unix.tm_sec  +> string_of_int ^ ".00 seconds")
+     tm.Unix.tm_sec +> string_of_int ^ ".00 seconds")
 
 let _count1 = ref 0  
 let _count2 = ref 0  
@@ -288,14 +293,13 @@ let time_func f =
 (*****************************************************************************)
 let example b = assert b
 
-(* let _ = Example (enum 1 4 = [1;2;3;4]) *)
+let _ = example (enum 1 4 = [1;2;3;4])
 
 open Dumper
 let assert_equal a b = 
   if not (a = b) 
-  then 
-    failwith ("assert_equal: those 2 values are not equal:\n\t" ^ (dump a) ^ "\n\t" ^ (dump b) ^ "\n")
-  else ()
+  then failwith ("assert_equal: those 2 values are not equal:\n\t" ^ 
+                 (dump a) ^ "\n\t" ^ (dump b) ^ "\n")
 
 (*-------------------------------------------------------------------*)
 let _list_bool = ref []
@@ -323,32 +327,42 @@ let (test: string -> unit) = fun s ->
 (*****************************************************************************)
 (* Quickcheck like (sfl) *)
 (*****************************************************************************)
-(* better than quickcheck, cos cant do a test_all_prop in haskell cos
-    prop were function, whereas here we have not prop_Unix x = ... but laws "unit" ...
-   how do without overloading ? objet ? can pass a generator as a parameter, mais
-    lourd,  prefer automatic inferring of the generator?, but in the same time
-    quickcheck does not do better cos we must explictly type the property => 
-    between a prop_unit:: [Int] -> [Int] -> bool ... prop_unit x = reverse [x] == [x]
-    and     a let _ = laws "unit" (fun x -> reverse [x] = [x]) (listg intg)
-    no real differences, yes i define typeg generator but quickcheck too, he must define
-    class instance, i emulate the context Gen a => Gen [a] by making listg take as a param a
-    type generator
-   morover i have not pb of monad, i can do random independently, so my code is more simple to
-    understand
-*)
 
-(*----------------------------------------------------------------------------*)
+(* Better than quickcheck, cos cant do a test_all_prop in haskell cos
+ * prop were function, whereas here we have not prop_Unix x = ... but
+ * laws "unit" ... 
+ *
+ * How do without overloading ? objet ? can pass a generator as a
+ * parameter, mais lourd, prefer automatic inferring of the
+ * generator? But at the same time quickcheck does not do better cos
+ * we must explictly type the property. So between a 
+ *    prop_unit:: [Int] -> [Int] -> bool ... 
+ *    prop_unit x = reverse [x] == [x] 
+ * and 
+ *    let _ = laws "unit" (fun x -> reverse [x] = [x]) (listg intg) 
+ * no real differences.  
+ *
+ * Yes I define typeg generator but quickcheck too, he must define
+ * class instance. I emulate the context Gen a => Gen [a] by making
+ * listg take as a param a type generator. Morover I have not the pb of
+ * monad. I can do random independently, so my code is more simple 
+ * I think than the haskell code of quickcheck.
+ *)
+
+(*---------------------------------------------------------------------------*)
 (* generator *)
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 type 'a gen = unit -> 'a
 
-let (ig: int gen) = fun () -> Random.int 10
+let (ig: int gen) = fun () ->
+  Random.int 10
 let (lg: ('a gen) -> ('a list) gen) = fun gen () -> 
   foldn (fun acc i -> (gen ())::acc) [] (Random.int 10)
 let (pg: ('a gen) -> ('b gen) -> ('a * 'b) gen) = fun gen1 gen2 () -> 
   (gen1 (), gen2 ())
 let polyg = ig
-let (ng: (string gen)) = fun () -> "a" ^ (string_of_int (ig ()))
+let (ng: (string gen)) = fun () -> 
+  "a" ^ (string_of_int (ig ()))
 
 let (oneofl: ('a list) -> 'a gen) = fun xs () -> 
   List.nth xs (Random.int (List.length xs)) 
@@ -390,9 +404,9 @@ let rec (bintreeg: ('a gen) -> ('a bintree) gen) = fun gen () ->
 *)
 
 
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 (* property *)
-(*----------------------------------------------------------------------------*)
+(*---------------------------------------------------------------------------*)
 
 (* todo, a test_all_laws, better syntax (done already a little with ig in place of intg *)
 (* en cas d'erreur, print the arg that not respect *)
@@ -488,7 +502,8 @@ type timestamp = int
 (*****************************************************************************)
 (* String_of *)
 (*****************************************************************************)
-(* to work with the macro system autogenerated string_of and print_ function (kind of deriving) *)
+(* To work with the macro system autogenerated string_of and print_ function
+   (kind of deriving a la haskell) *)
 
 (* int, bool, char, float, ref ?, string *) 
 
@@ -503,18 +518,22 @@ let string_of_array f xs =
   "[|" ^ (xs +> Array.to_list +> List.map f +> String.concat ";") ^ "|]"
 
 let string_of_option f = function
-  | None -> "None "
+  | None   -> "None "
   | Some x -> "Some " ^ (f x)
 
 
 let print_bool x = print_string (if x then  "True" else "False")
 
 let print_option pr = function
-  | None -> print_string "None"
+  | None   -> print_string "None"
   | Some x -> print_string "Some ("; pr x; print_string ")"
 
 let print_list pr xs = 
-  begin print_string "["; List.iter (fun x -> pr x; print_string ",") xs; print_string "]" end
+  begin
+    print_string "["; 
+    List.iter (fun x -> pr x; print_string ",") xs; 
+    print_string "]";
+  end
 
 (* specialised 
 let (string_of_list: char list -> string) = 
@@ -523,11 +542,11 @@ let (string_of_list: char list -> string) =
 
 
 let rec print_between between fn = function
-    [] -> ()
+  | [] -> ()
   | [x] -> fn x
   | x::xs -> fn x; between(); print_between between fn xs
 
-let pp_do_in_box f = Format.open_box 1; f(); Format.close_box ()
+let pp_do_in_box f      = Format.open_box 1; f(); Format.close_box ()
 let pp_do_in_zero_box f = Format.open_box 0; f(); Format.close_box ()
 
 
@@ -543,6 +562,23 @@ let pp_init f =
 
 let pp s = Format.print_string s
 
+(* convert something printed using format to print into a string *)
+let format_to_string f =
+  let o = open_out "/tmp/out" in
+  Format.set_formatter_out_channel o;
+  let _ = f() in
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in "/tmp/out" in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  String.concat "\n" (List.rev !lines)
+
 
 let print_xxxxxxxxxxxxxxxxx () = 
   pr2 "-----------------------------------------------------------------------"
@@ -555,12 +591,14 @@ let print_xxxxxxxxxxxxxxxxx () =
 (* put your macro in macro.ml4, and you can test it interactivly as in lisp *)
 let macro_expand s = 
   let c = open_out "ttttt.ml" in
-  (output_string c s; close_out c;
-   let _ = Unix.system "ocamlc -c -pp 'camlp4o pa_extend.cmo q_MLast.cmo -impl' -I +camlp4 -impl macro.ml4" in
-   let _ = Unix.system "camlp4o ./macro.cmo pr_o.cmo ttttt.ml" in
-   let _ = Unix.system "rm -f ttttt.ml" in
-   ()
-  )
+  begin
+    output_string c s; close_out c;
+    command2 ("ocamlc -c -pp 'camlp4o pa_extend.cmo q_MLast.cmo -impl' " ^
+             "-I +camlp4 -impl macro.ml4");
+    command2 "camlp4o ./macro.cmo pr_o.cmo ttttt.ml";
+    command2 "rm -f ttttt.ml";
+  end
+
 (*
 let t = macro_expand "{ x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x > 2 and y < 3}"
 let x = { x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x > 2 and y < 3}
@@ -578,8 +616,8 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (* Composition/Control *)
 (*****************************************************************************)
 
-(* i like the list@func notation, object reminescence *)
-(* let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a*)
+(* I like the list@func notation, object reminescence *)
+(* let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a *)
 (* let o f g x = f (g x) *)
 let (+>) o f = f o
 let (+!>) refo f = refo := f !refo 
@@ -608,8 +646,10 @@ let id = fun x -> x
 
 let rec applyn n f o = if n = 0 then o else applyn (n-1) f (f o)
 
+(* now in prelude 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
   if i = 0 then () else (f(); do_n (i-1) f)
+*)
 
 
 class ['a] shared_variable_hook (x:'a) = 
@@ -641,18 +681,28 @@ let rec ptFixForObjetct trans elem =
   if (image#equal elem) then elem (* point fixe *)
   else ptFixForObjetct trans image
 
-let (add_hook: ('a -> ('a -> 'b) -> 'b) ref  -> ('a -> ('a -> 'b) -> 'b) -> unit) = fun var f ->
+let (add_hook: ('a -> ('a -> 'b) -> 'b) ref  -> ('a -> ('a -> 'b) -> 'b) -> unit) = 
+ fun var f ->
   let oldvar = !var in 
   var := fun arg k -> f arg (fun x -> oldvar x k)
 
-let (add_hook_action: ('a -> unit) ->   ('a -> unit) list ref -> unit) = fun f hooks -> 
+let (add_hook_action: ('a -> unit) ->   ('a -> unit) list ref -> unit) = 
+ fun f hooks -> 
   push2 f hooks
 
-let (run_hooks_action: 'a -> ('a -> unit) list ref -> unit) = fun obj hooks -> 
+let (run_hooks_action: 'a -> ('a -> unit) list ref -> unit) = 
+ fun obj hooks -> 
   !hooks +> List.iter (fun f -> try f obj with _ -> ())
 
 
 type 'a mylazy = (unit -> 'a)
+
+let save_excursion reference f = 
+  let old = !reference in
+  let res = f() in
+  reference := old;
+  res
+
 (*****************************************************************************)
 (* Error managment *)
 (*****************************************************************************)
@@ -664,7 +714,10 @@ exception ReturnExn
 
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
+open Dumper
 let internal_error s = failwith ("internal error: "^s)
+let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
+
 let myassert cond = if cond then () else failwith "assert error"
 
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
@@ -677,24 +730,21 @@ let unwind_protect f cleanup =
 (* want or of merd, but cant cos cant put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
-open Dumper
-let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
 
-exception Timeout
 
 (*****************************************************************************)
 (* Equality *)
 (*****************************************************************************)
 
 (* Using the generic (=) is tempting, but it backfires, so better avoid it *)
-(* To infer all the code that use an equal, and that should be transformed, is not
-   that easy, because (=) is used by many functions, such as List.find, List.mem, and so on,
-   so the strategy is to turn what you were previously using into a function, because
-   (=) return an exception when applied to a function, then you simply use ocamldebug
-   to infer where the code has to be transformed 
-*)
 
-
+(* To infer all the code that use an equal, and that should be
+ * transformed, is not that easy, because (=) is used by many
+ * functions, such as List.find, List.mem, and so on, so the strategy
+ * is to turn what you were previously using into a function, because
+ * (=) return an exception when applied to a function, then you simply
+ * use ocamldebug to infer where the code has to be transformed 
+ *)
 
 (* src: caml list ? *)
 let (=|=) : int    -> int    -> bool = (=)
@@ -702,12 +752,13 @@ let (=<=) : char   -> char   -> bool = (=)
 let (=$=) : string -> string -> bool = (=)
 let (=:=) : bool   -> bool   -> bool = (=)
 
-(* the evil generic (=). I define another symbol to more easily detect it, cos
-   the '=' sign is syntaxically overloaded in caml. It is also used to define function.
-*)
+(* the evil generic (=). I define another symbol to more easily detect
+ * it, cos the '=' sign is syntaxically overloaded in caml. It is also
+ * used to define function. 
+ *)
 let (=*=) = (=)
 
-(* If want forbid
+(* If really want to forbid to use '='
 let (=) = (=|=)
 *)
 
@@ -730,7 +781,9 @@ let string_of_char c = String.make 1 c
 let is_single  = String.contains ",;()[]{}_`"
 let is_symbol  = String.contains "!@#$%&*+./<=>?\\^|:-~"
 let is_space   = String.contains "\n\t "
-let cbetween min max c = (int_of_char c) <= (int_of_char max) && (int_of_char c) >= (int_of_char min)
+let cbetween min max c = 
+  (int_of_char c) <= (int_of_char max) && 
+  (int_of_char c) >= (int_of_char min)
 let is_upper = cbetween 'A' 'Z'
 let is_lower = cbetween 'a' 'z'
 let is_alpha c = is_upper c || is_lower c
@@ -740,14 +793,16 @@ let is_digit = cbetween '0' '9'
 (* Num *)
 (*****************************************************************************)
 
-(*  normally in 3.08 div by zero raise Div_by_rezo, and not anymore a hardware trap :) *)
+(* since 3.08, div by 0 raise Div_by_rezo, and not anymore a hardware trap :)*)
 let (/!) x y = if y = 0 then (log "common.ml: div by 0"; 0) else x / y
 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
   if i = 0 then () else (f(); do_n (i-1) f)
 
+(* now in prelude
 let rec (foldn: ('a -> int -> 'a) -> 'a -> int -> 'a) = fun f acc i ->
   if i = 0 then acc else foldn f (f acc i) (i-1)
+*)
 
 let sum_float = List.fold_left (+.) 0.0
 let sum_int   = List.fold_left (+) 0
@@ -773,7 +828,6 @@ let between i min max = i > min && i < max
 
 let (between_strict: int -> int -> int -> bool) = fun a b c -> 
   a < b && b < c
-
 
 
 let bitrange x p = let v = power 2 p in between x (-v) v
@@ -831,10 +885,10 @@ let int_of_base s base =
     0  (List.rev (list_of_string s))
 
 let int_of_stringbits s = int_of_base s 2
-(* let _ = Example (int_of_stringbits "1011" = 1*8 + 1*2 + 1*1) *)
+let _ = example (int_of_stringbits "1011" = 1*8 + 1*2 + 1*1)
 
 let int_of_octal s = int_of_base s 8
-(* let _ = Example (int_of_octal "017" = 15) *)
+let _ = example (int_of_octal "017" = 15)
 
 (* let int_of_hex s = int_of_base s 16, NONONONO cos 'A' - '0' does not give 10 !! *)
 
@@ -899,10 +953,9 @@ let swap (x,y) = (y,x)
 (* Maybe *)
 (*****************************************************************************)
 
-(* type 'a      maybe  = Just of 'a | None *)
+(* type 'a maybe  = Just of 'a | None *)
 
 type ('a,'b) either = Left of 'a | Right of 'b
-
 type ('a, 'b, 'c) either3 = Left3 of 'a | Middle3 of 'b | Right3 of 'c
 
 let just = function
@@ -920,7 +973,6 @@ let map_option = fmap
 let do_option f = function
   | None -> ()
   | Some x -> f x
-
 
 let optionise f = 
   try Some (f ()) with _ -> None
@@ -957,6 +1009,7 @@ let rec find_some p = function
       match p x with
       |	Some v -> v
       |	None -> find_some p l
+
 (* same
 let map_find f xs = 
   xs +> List.map f +> List.find (function Some x -> true | None -> false)
@@ -976,7 +1029,8 @@ let i_to_s = string_of_int
 let s_to_i = int_of_string
 
 
-(* strings take space in memory, better when can share the space used by similar strings *)
+(* strings take space in memory. Better when can share the space used by
+   similar strings *)
 let _shareds = Hashtbl.create 100
 let (shared_string: string -> string) = fun s -> 
   try Hashtbl.find _shareds s 
@@ -986,13 +1040,9 @@ let chop = function
   | "" -> ""
   | s -> String.sub s 0 (String.length s - 1)
 
-let concat2 = fun x y -> x ^ y (* je savais pas que y'avait un operateur ^    *)
 
-let concat2 s1 s2 = 
-  String.concat "" [s1;s2]
-
-
-let (<!!>) s (i,j) = String.sub s i (if j < 0 then String.length s - i + j + 1 else j - i)
+let (<!!>) s (i,j) = 
+  String.sub s i (if j < 0 then String.length s - i + j + 1 else j - i)
 (* let _ = example  ( "tototati"<!!>(3,-2) = "otat" ) *)
 
 let (<!>) s i = String.get s i 
@@ -1001,7 +1051,8 @@ let (<!>) s i = String.get s i
 let rec split_on_char c s =
   try
     let sp = String.index s c in
-    String.sub s 0 sp :: split_on_char c (String.sub s (sp+1) (String.length s - sp - 1))
+    String.sub s 0 sp :: 
+    split_on_char c (String.sub s (sp+1) (String.length s - sp - 1))
   with Not_found -> [s]
 
 
@@ -1011,9 +1062,10 @@ let lowercase = String.lowercase
 (* Regexp *)
 (*****************************************************************************)
 
-(* different from perl a little, must match the entire way  "testBee" =~ "Bee" is wrong
-    but "testBee" ".*Bee" is right
-*)
+(* Different from Perl a little. Must match the entire way. 
+ *  So  "testBee" =~ "Bee" is wrong  
+ *  but "testBee" =~ ".*Bee" is right
+ *)
 
 (*
 -let (=~) s re = Str.string_match (Str.regexp re) s 0 
@@ -1039,16 +1091,17 @@ let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, mat
 
 let split sep s = Str.split (Str.regexp sep) s
 let join  sep xs = String.concat sep xs
-
+let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
 let rec join str = function
   | [] -> ""
   | [x] -> x
   | x::xs -> x ^ str ^ (join str xs)
 *)
-(* join "/" ["toto"; "titi"; "tata"] *)
 
-let (split_list_regexp: string -> string list -> (string * string list) list) = fun  re xs ->
+
+let (split_list_regexp: string -> string list -> (string * string list) list) =
+ fun re xs ->
   let rec aux (heading, accu) = function
     | [] -> [(heading, List.rev accu)]
     | x::xs -> 
@@ -1057,7 +1110,7 @@ let (split_list_regexp: string -> string list -> (string * string list) list) = 
         else aux (heading, x::accu) xs
   in
   aux ("__noheading__", []) xs 
-    +> (fun xs -> if (List.hd xs) = ("__noheading__", []) then List.tl xs else xs)
+  +> (fun xs -> if (List.hd xs) = ("__noheading__",[]) then List.tl xs else xs)
 
 
 (*****************************************************************************)
@@ -1152,16 +1205,16 @@ let (lines: string -> string list) = fun s ->
 
 (*  CHECK: unlines (lines x) = x *)
 let (unlines: string list -> string) = fun s -> 
-(*   let _ = Timing () in *)
   (String.concat "\n" s) ^ "\n"
-let (words: string -> string list)   = fun s -> Str.split (Str.regexp "[ \t()\";]+") s
-let (unwords: string list -> string) = fun s -> String.concat "" s
+let (words: string -> string list)   = fun s -> 
+  Str.split (Str.regexp "[ \t()\";]+") s
+let (unwords: string list -> string) = fun s -> 
+  String.concat "" s
 
 (*****************************************************************************)
 (* Process/Files *)
 (*****************************************************************************)
 let cat_orig file = 
-  (*let _ = Timing () in*)
   let chan = open_in file in
   let rec aux ()  = 
     try 
@@ -1173,7 +1226,6 @@ let cat_orig file =
 
 (* tail recursive efficient version *)
 let cat file = 
-  (*let _ = Timing () in*)
   let chan = open_in file in
   let rec aux acc ()  = 
       (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
@@ -1186,7 +1238,7 @@ let cat file =
 
 let interpolate str = 
   begin
-    ignore(Unix.system ("printf \"%s\\n\" " ^ str ^ ">/tmp/caml"));
+    command2 ("printf \"%s\\n\" " ^ str ^ ">/tmp/caml");
     cat "/tmp/caml"
   end
 (* could do a print_string but printf dont like print_string *)
@@ -1194,7 +1246,9 @@ let echo s = printf "%s" s; flush stdout; s
 
 let usleep s = for i = 1 to s do () done
 
+(* now in prelude 
 let command2 s = ignore(Sys.command s)
+*)
 
 let do_in_fork f = 
   let pid = Unix.fork () in
@@ -1205,7 +1259,7 @@ let do_in_fork f =
       Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
         pr2 "being killed";
         Unix.kill 0 Sys.sigkill;
-                                                     ));
+        ));
       f(); 
       exit 0;
     end
@@ -1247,7 +1301,8 @@ let capsule_unix f args =
     log (Printf.sprintf "exn Unix_error: %s %s %s\n" (Unix.error_message e) fm argm)
 
 
-let (readdir_to_kind_list: string -> Unix.file_kind -> string list) = fun path kind -> 
+let (readdir_to_kind_list: string -> Unix.file_kind -> string list) = 
+ fun path kind -> 
   Sys.readdir path 
   +> Array.to_list 
   +> List.filter (fun s -> 
@@ -1281,8 +1336,8 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
   
 (* taken from mlfuse, the predecessor of ocamlfuse *)
 type rwx = [`R|`W|`X] list
-let file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
-= fun ~u ~g ~o ->
+let file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm = 
+ fun ~u ~g ~o ->
   let to_oct l = 
     List.fold_left (fun acc p -> acc lor ((function `R -> 4 | `W -> 2 | `X -> 1) p)) 0 l in
   let perm = 
@@ -1300,7 +1355,8 @@ let has_env var =
   with Not_found -> false
 
 (* emacs/lisp inspiration (eric cooper and yaron minsky use that too) *)
-let (with_open_outfile: filename -> (((string -> unit) * out_channel) -> 'a) -> 'a) = fun file f ->
+let (with_open_outfile: filename -> (((string -> unit) * out_channel) -> 'a) -> 'a) = 
+ fun file f ->
   let chan = open_out file in
   let pr s = output_string chan s in
   unwind_protect (fun () -> 
@@ -1318,18 +1374,22 @@ let (with_open_infile: filename -> ((in_channel) -> 'a) -> 'a) = fun file f ->
     (fun e -> close_in chan)
 
 
+exception Timeout
 
-(* it seems that the toplevel block such signals, even with this explicit command :( 
+(* it seems that the toplevel block such signals, even with this explicit
+   command :( 
 let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigalrm]
 *)
 
-(* subtil: have to make sure that timeout is not intercepted before here, so *)
-(*   avoid exn handle such as try (...) with _ ->    cos timeout will not bubble up enough *)
-(*   in such case, add a case before such as  with Timeout -> raise Timeout | _ -> ... *)
+(* subtil: have to make sure that timeout is not intercepted before here, so 
+ * avoid exn handle such as try (...) with _ -> cos timeout will not bubble up
+ * enough. In such case, add a case before such as  
+ * with Timeout -> raise Timeout | _ -> ... 
+ *)
 let timeout_function timeoutval = fun f -> 
   try 
     begin
-      Sys.set_signal Sys.sigalrm (Sys.Signal_handle   (fun _ -> raise Timeout ));
+      Sys.set_signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise Timeout ));
       ignore(Unix.alarm timeoutval);
       let x = f() in
       ignore(Unix.alarm 0);
@@ -1341,8 +1401,10 @@ let timeout_function timeoutval = fun f ->
       raise Timeout;
     end
   | e -> 
-          (* subtil: important to disable the alarm before relaunching the exn, otherwise the alarm is still running *)
-          (* robust?: and if alarm launch after the log (...) ? *)
+     (* subtil: important to disable the alarm before relaunching the exn,
+      * otherwise the alarm is still running.
+      * robust?: and if alarm launch after the log (...) ? 
+      *)
       begin 
         log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e);
         ignore(Unix.alarm 0);
@@ -1406,7 +1468,7 @@ let rec drop n xs =
   | (_,[]) -> failwith "drop: not enough"
   | (n,x::xs) -> drop (n-1) xs
 
-(* let _ = Example (drop 3 [1;2;3;4] = [4]) *)
+let _ = example (drop 3 [1;2;3;4] = [4])
 
 let rec drop_while p = function
   | [] -> []
@@ -1415,19 +1477,20 @@ let rec drop_while p = function
 let span p xs = (take_while p xs, drop_while p xs)
 
 
-let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) = fun p -> function
+let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) = 
+ fun p -> function
   | []    -> ([], [])
   | x::xs -> 
       if p x then 
 	let (l1, l2) = span p xs in
 	(x::l1, l2)
       else ([], x::xs)
-(* let _ = Example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2]))) *)
+let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
 (* generate exception (Failure "tl") if there is no element satisfying p *)
 let rec (skip_until: ('a list -> bool) -> 'a list -> 'a list) = fun p xs ->
   if p xs then xs else skip_until p (List.tl xs)
-(* let _ = Example (skip_until (function 1::2::xs -> true | _ -> false) [1;3;4;1;2;4;5] = [1;2;4;5]) *)
+let _ = example (skip_until (function 1::2::xs -> true | _ -> false) [1;3;4;1;2;4;5] = [1;2;4;5])
 
 let rec skipfirst e = function
   | [] -> []
@@ -1435,7 +1498,7 @@ let rec skipfirst e = function
   | l -> l
 
 
-(* now at top 
+(* now in prelude 
 let rec enum x n = if x = n then [n] else x::enum (x+1)  n
 let rec enum x n = 
   let _ = Assert (x <= n) in
@@ -1702,7 +1765,7 @@ let rec (get_pair: ('a list) -> (('a * 'a) list)) = function
   | x::xs -> (List.map (fun y -> (x,y)) xs) ++ (get_pair xs)
 
 
-(* retourne le rang dans une liste d'un element                               *)
+(* retourne le rang dans une liste d'un element *)
 let rang elem liste =
   let rec rang_rec elem accu = function
     | []   -> raise Not_found
@@ -1710,7 +1773,7 @@ let rang elem liste =
     else rang_rec elem (accu+1) l in
   rang_rec elem 1 liste
 
-(* retourne vrai si une liste contient des doubles                            *)
+(* retourne vrai si une liste contient des doubles *)
 let rec doublon = function
   | []   -> false
   | a::l -> if List.mem a l then true
@@ -1806,8 +1869,8 @@ let _ = assert_equal
 
 (*----------------------------------*)
 
-(* sur surEnsemble [p1;p2] [[p1;p2;p3] [p1;p2] ....] -> [[p1;p2;p3] ...       *)
-(* mais pas p2;p3                                                             *)
+(* sur surEnsemble [p1;p2] [[p1;p2;p3] [p1;p2] ....] -> [[p1;p2;p3] ...      *)
+(* mais pas p2;p3                                                            *)
 (* (aop) *)
 let surEnsemble  liste_el liste_liste_el = 
   List.filter
@@ -1840,8 +1903,8 @@ let rec combinaison = function
 (*----------------------------------*)
 
 (* list of list(aop) *)
-(* insere elem dans la liste de liste (si elem est deja present dans une de   *)
-(* ces listes, on ne fait rien                                                *)
+(* insere elem dans la liste de liste (si elem est deja present dans une de  *)
+(* ces listes, on ne fait rien                                               *)
 let rec insere elem = function
   | []   -> [[elem]]
   | a::l -> 
@@ -1895,7 +1958,7 @@ let bigarray_string_of_int16_unsigned_elt a = "<>"
 let bigarray_string_of_c_layout a = "<>"
 
 (*****************************************************************************)
-(* Set *)
+(* Set. Have a look too at set*.mli  *)
 (*****************************************************************************)
 type 'a set = 'a list
 
@@ -1907,7 +1970,8 @@ let (insert_set: 'a -> 'a set -> 'a set) = fun x xs ->
   else x::xs
 
 let (single_set: 'a -> 'a set) = fun x -> insert_set x empty_set
-let (set: 'a list -> 'a set) = fun xs -> xs +> List.fold_left (flip insert_set) empty_set 
+let (set: 'a list -> 'a set) = fun xs -> 
+  xs +> List.fold_left (flip insert_set) empty_set 
 
 let (exists_set: ('a -> bool) -> 'a set -> bool) = List.exists
 let (forall_set: ('a -> bool) -> 'a set -> bool) = List.for_all
@@ -1949,7 +2013,8 @@ let ($<$) = include_set_strict
 let ($<=$) = include_set
 let ($=$) = equal_set
 
-let ($@$) = fun a b -> a @ b (* as $+$ but do not check for memberness, allow to have set of func *)
+(* as $+$ but do not check for memberness, allow to have set of func *)
+let ($@$) = fun a b -> a @ b 
 
 (*****************************************************************************)
 (* Set as normal list *)
@@ -1987,7 +2052,7 @@ let equivalent lis1 lis2 =
 (*****************************************************************************)
 (* Set as sorted list *)
 (*****************************************************************************)
-(* liste trie, cos we need to do intersection, and insertien (it is a set
+(* liste trie, cos we need to do intersection, and insertion (it is a set
    cos when introduce has, if we create a new has => must do a recurse_rep
    and another categ can have to this has => must do an union
  *)
@@ -2055,7 +2120,8 @@ let big_union_assoc f xs = xs +> map_assoc f +> fold_assoc union_set empty_set
 let (assoc_reverse: (('a * 'b) list) -> (('b * 'a) list)) = fun l -> 
   List.map (fun(x,y) -> (y,x)) l
 
-let (assoc_map: (('a * 'b) list) -> (('a * 'b) list) -> (('a * 'a) list)) = fun l1 l2 ->
+let (assoc_map: (('a * 'b) list) -> (('a * 'b) list) -> (('a * 'a) list)) = 
+ fun l1 l2 ->
   let (l1bis, l2bis) = (assoc_reverse l1, assoc_reverse l2) in
   List.map (fun (x,y) -> (y, List.assoc x l2bis )) l1bis
 
@@ -2066,15 +2132,17 @@ let rec (lookup_list: 'a -> ('a , 'b) assoc list -> 'b) = fun el -> function
 let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs -> 
   let rec aux i = function
   | [] -> raise Not_found
-  | (xs::xxs) -> try let res = List.assoc el xs in (res,i) with Not_found -> aux (i+1) xxs
+  | (xs::xxs) -> 
+      try let res = List.assoc el xs in (res,i) with Not_found -> aux (i+1) xxs
   in aux 0 xxs
 
 let _ = example (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
 (*****************************************************************************)
-(* Assoc int -> xxx with binary tree *)
+(* Assoc int -> xxx with binary tree.  Have a look too at Mapb.mli *)
 (*****************************************************************************)
-(* type robot_list = robot_info IntMap.t *)
+
+(* ex: type robot_list = robot_info IntMap.t *)
 module IntMap = Map.Make
     (struct
       type t = int
@@ -2112,7 +2180,9 @@ let find_hash_set key value_if_not_found h =
     (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
 
 
-let hash_to_list h = Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] +> List.sort compare 
+let hash_to_list h = 
+  Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
+  +> List.sort compare 
 
 
 
@@ -2132,7 +2202,8 @@ let hash_hashset_add k e h =
         Hashtbl.replace hset e true;
       end
 
-let hashset_to_set baseset h = h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs) 
+let hashset_to_set baseset h = 
+ h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs) 
 
 
 (*****************************************************************************)
@@ -2146,7 +2217,7 @@ let (top: 'a stack -> 'a) = List.hd
 let (pop: 'a stack -> 'a stack) = List.tl
 
 
-(* now at top 
+(* now in prelude 
 let push2 v l =
   l := v :: !l
 *)
@@ -2163,14 +2234,13 @@ let pop2 l =
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 
 (*****************************************************************************)
-(* Graph *)
+(* Graph. Have a look too at Ograph_*.mli  *)
 (*****************************************************************************)
-(* todo: generalise to put in common (need 'edge (and 'c ?) , 
-  and take in param a display func, cos caml suck
-   no overloading of show :( 
-  simple impelemntation, can do also matrix; or adjacent list, or pointer (ref)
-  todo: do some check (dont exist already, ...)
-*)
+(* todo: generalise to put in common (need 'edge (and 'c ?), 
+ * and take in param a display func, cos caml sux, no overloading of show :( 
+ * Simple impelemntation. Can do also matrix, or adjacent list, or pointer (ref)
+ * todo: do some check (dont exist already, ...)
+ *)
 
 type 'node graph = ('node set) * (('node * 'node) set)
 
@@ -2197,7 +2267,8 @@ let (predecessors: 'a -> 'a graph -> 'a set) = fun x (nodes, arcs) ->
 let (nodes: 'a graph -> 'a set) = fun (nodes, arcs) -> nodes
 
 (* pre: no cycle *)
-let rec (fold_upward: ('b -> 'a -> 'b) -> 'a set -> 'b -> 'a graph  -> 'b) = fun f xs acc graph -> 
+let rec (fold_upward: ('b -> 'a -> 'b) -> 'a set -> 'b -> 'a graph  -> 'b) = 
+ fun f xs acc graph -> 
   match xs with
   | [] -> acc
   | x::xs -> (f acc x) 
@@ -2329,13 +2400,15 @@ type color = vector (* color(0-1) *)
 (* todo: factorise *)
 let (dotproduct: vector * vector -> float) = 
   fun ((x1,y1,z1),(x2,y2,z2)) -> (x1*.x2 +. y1*.y2 +. z1*.z2)
-let (vector_length: vector -> float) = fun (x,y,z) -> sqrt (square x +. square y +. square z)
+let (vector_length: vector -> float) = 
+  fun (x,y,z) -> sqrt (square x +. square y +. square z)
 let (minus_point: point * point -> vector) = 
   fun ((x1,y1,z1),(x2,y2,z2)) -> ((x1 -. x2),(y1 -. y2),(z1 -. z2))
 let (distance: point * point -> float) = 
   fun (x1, x2) -> vector_length (minus_point (x2,x1))
 let (normalise: vector -> vector) = 
-  fun (x,y,z) -> let len = vector_length (x,y,z) in (x /. len, y /. len, z /. len)
+  fun (x,y,z) -> 
+    let len = vector_length (x,y,z) in (x /. len, y /. len, z /. len)
 let (mult_coeff: vector -> float -> vector) = 
   fun (x,y,z) c -> (x *. c, y *. c, z *. c)
 let (add_vector: vector -> vector -> vector) = 
@@ -2356,7 +2429,7 @@ type pixel = (int * int * int) (* RGB *)
 let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
   width height xs filename ->
     let chan = open_out filename in
-    (
+    begin
      output_string chan "P6\n";
      output_string chan ((string_of_int width)  ^ "\n");
      output_string chan ((string_of_int height) ^ "\n");
@@ -2365,7 +2438,7 @@ let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
        List.iter (fun byt -> output_byte chan byt) [r;g;b]
 	       ) xs;
      close_out chan
-    )
+    end
     
 let test1 () = write_ppm 100 100 
     ((generate (50*100) (1,45,100)) ++ (generate (50*100) (1,1,100)))
@@ -2376,13 +2449,15 @@ let test1 () = write_ppm 100 100
 (*****************************************************************************)
 type diff = Match | BnotinA | AnotinB
 
-let (diff: (int -> int -> diff -> unit) -> (string list * string list) -> unit) = fun f (xs,ys) -> 
+let (diff: (int -> int -> diff -> unit)-> (string list * string list) -> unit)=
+  fun f (xs,ys) -> 
     let file1 = "/tmp/diff1-" ^ (string_of_int (Unix.getuid ())) in
     let file2 = "/tmp/diff2-" ^ (string_of_int (Unix.getuid ())) in
     let fileresult = "/tmp/diffresult-" ^ (string_of_int (Unix.getuid ())) in
-    let _ = write_file file1 (unwords xs) in
-    let _ = write_file file2 (unwords ys) in
-    let _ = Unix.system("diff --side-by-side -W 1 " ^ file1 ^ " " ^ file2 ^ " > " ^ fileresult) in
+    write_file file1 (unwords xs);
+    write_file file2 (unwords ys);
+    command2 
+      ("diff --side-by-side -W 1 " ^ file1 ^ " " ^ file2 ^ " > " ^ fileresult);
     let res = cat fileresult in
     let a = ref 0 in
     let b = ref 0 in
@@ -2390,7 +2465,8 @@ let (diff: (int -> int -> diff -> unit) -> (string list * string list) -> unit) 
       match s with
       | ("" | " ") -> f !a !b Match; incr a; incr b;
       | ">" -> f !a !b BnotinA; incr b;
-      | ("|" | "/" | "\\" ) -> f !a !b BnotinA; f !a !b AnotinB; incr a; incr b;
+      | ("|" | "/" | "\\" ) -> 
+          f !a !b BnotinA; f !a !b AnotinB; incr a; incr b;
       | "<" -> f !a !b AnotinB; incr a;
       | _ -> raise Impossible
     )
@@ -2402,10 +2478,13 @@ let _ =
    (fun x y -> pr "match") (fun x y -> pr "a_not_in_b") (fun x y -> pr "b_not_in_a") 
 *)
 
-let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) = fun f (xs,ys) -> 
-    let _ = write_file "/tmp/diff1" xs in
-    let _ = write_file "/tmp/diff2" ys in
-    let _ = Unix.system("diff --side-by-side --left-column -W 1 /tmp/diff1 /tmp/diff2 > /tmp/diffresult") in
+let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) = 
+ fun f (xs,ys) -> 
+    write_file "/tmp/diff1" xs;
+    write_file "/tmp/diff2" ys;
+    command2 
+     ("diff --side-by-side --left-column -W 1 " ^ 
+      "/tmp/diff1 /tmp/diff2 > /tmp/diffresult");
     let res = cat "/tmp/diffresult" in
     let a = ref 0 in
     let b = ref 0 in
@@ -2461,6 +2540,7 @@ let getDoubleParser parserer lexer =
 (*****************************************************************************)
 (* parser related (cocci) *)
 (*****************************************************************************)
+
 type pos_file = ((int * int) * int) (* (line * column), charpos) *)
 
 type parse_info = {
@@ -2469,32 +2549,36 @@ type parse_info = {
   } 
 let fake_parse_info = { charpos = -1; str = "" }
 
-let (charpos_to_pos: int -> filename -> (filename * int * int * string)) = fun charpos filename ->
-    (* currently lexing.ml does not handle the line number position,  *)
-    (*  even if there is some fields in the lexing structure, they are not maintained by the lexing engine :( *)
-    (* so the following code does not work *)
-    (*   let pos = Lexing.lexeme_end_p lexbuf in *)
-    (*   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol) in *)
-    (* hence this function to overcome the previous limitation *)
-    let chan = open_in filename in
-    let linen  = ref 0 in
-    let posl   = ref 0 in
-    let rec aux () =
-      let s = (input_line chan) in
-      let _ = incr linen in
-      let s = s ^ "\n" in
-      if (!posl + slength s > charpos)
-      then
-        let _ = close_in chan in
-        (filename, !linen, charpos - !posl, s)
-      else 
-        begin
-          posl := !posl + slength s;
-          aux ();
-        end
-    in aux ()
+let (charpos_to_pos: int -> filename -> (filename * int * int * string)) = 
+ fun charpos filename ->
 
-(*----------------------------------------------------------------------------*)
+  (* Currently lexing.ml does not handle the line number position,  
+   * even if there is some fields in the lexing structure, they are not 
+   * maintained by the lexing engine :( So the following code does not work:
+   *   let pos = Lexing.lexeme_end_p lexbuf in 
+   *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
+   *      (pos.pos_cnum - pos.pos_bol) in 
+   * Hence this function to overcome the previous limitation.
+   *)
+  let chan = open_in filename in
+  let linen  = ref 0 in
+  let posl   = ref 0 in
+  let rec aux () =
+    let s = (input_line chan) in
+    let _ = incr linen in
+    let s = s ^ "\n" in
+    if (!posl + slength s > charpos)
+    then
+      let _ = close_in chan in
+      (filename, !linen, charpos - !posl, s)
+    else 
+      begin
+        posl := !posl + slength s;
+        aux ();
+      end
+  in aux ()
+
+(*---------------------------------------------------------------------------*)
 let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
 
     let arr = Array.create (filesize filename + 2) (0,0) in
@@ -2502,7 +2586,6 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
     let chan = open_in filename in
 
     let charpos   = ref 0 in
-
     let line  = ref 0 in
 
     let rec aux () =
@@ -2531,18 +2614,20 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
 let test_charpos file = 
   full_charpos_to_pos file +> Dumper.dump +> pr2
 
-(*----------------------------------------------------------------------------*)
-(* decalage is here to handle stuff such as cpp which include file and who can make decalage *)
-let (error_messagebis: filename -> (string * int (* * int *)) -> int -> string)    = fun filename (lexeme, lexstart(*, lexend*)) decalage ->
+(*---------------------------------------------------------------------------*)
+(* decalage is here to handle stuff such as cpp which include file and who 
+   can make decalage *)
+let (error_messagebis: filename -> (string * int (* *int *)) -> int -> string)=
+ fun filename (lexeme, lexstart(*, lexend*)) decalage ->
+
+  (* let posdiff = lexend   - lexstart in *)
   let charpos = lexstart      + decalage in
-(*  let posdiff = lexend   - lexstart in *)
   let tok = lexeme in 
   let (file, line, pos, linecontent) =  charpos_to_pos charpos filename in
   sprintf "File \"%s\", line %d, characters %d
     around = '%s', whole content = %s charpos = %d"
     filename line pos (* (pos+posdiff) *) tok linecontent charpos
  (* characters %d-%d *)
-(* let error_message filename lexbuf decalage = "" *)
 
 let error_message = fun filename (lexeme, lexstart) -> 
   try 
@@ -2563,7 +2648,10 @@ let size_mo_ko i =
   else sprintf "%dKo" ko
   )
 
-let plural i s = if i=1 then Printf.sprintf "%d %s" i s else Printf.sprintf "%d %ss" i s
+let plural i s = 
+  if i=1 
+  then Printf.sprintf "%d %s" i s 
+  else Printf.sprintf "%d %ss" i s
 
 let sec_to_days sec = 
   let minfactor = 60 in
@@ -2604,15 +2692,20 @@ let randomize_list xs =
 
 (*------------------------*)
 let (generic_print: 'a -> string -> string) = fun v typ -> 
-  (write_value v "/tmp/generic_print";
-   ignore(Unix.system("printf 'let (v:" ^ typ ^ ") = Common.get_value \"/tmp/generic_print\" in v;;' | calc.top > /tmp/result_generic_print")); 
+  write_value v "/tmp/generic_print";
+  command2 
+   ("printf 'let (v:" ^ typ ^ ")= Common.get_value \"/tmp/generic_print\" " ^
+     " in v;;' " ^
+     " | calc.top > /tmp/result_generic_print"); 
    cat "/tmp/result_generic_print" 
    +> drop_while (fun e -> not (e =~ "^#.*")) +> tail
    +> unlines
-   +> (fun s -> if (s =~ ".*= \\(.+\\)") then matched1 s else "error in generic_print, not good format:" ^ s)
-   )
+   +> (fun s -> 
+       if (s =~ ".*= \\(.+\\)") 
+       then matched1 s 
+       else "error in generic_print, not good format:" ^ s)
+   
 (* let main () = pr (generic_print [1;2;3;4] "int list") *)
-(* let _ = if not !Sys.interactive then (main ()) *)
 
 class ['a] olist (ys: 'a list) =
   object(o)
@@ -2631,22 +2724,5 @@ let typing_sux_test () =
    let f2 xs = List.iter print_string xs in
    (f1 x; f2 x)
 
-(*------------------------*)
-(* convert something printed using format to print into a string *)
-
-let format_to_string f =
-  let o = open_out "/tmp/out" in
-  Format.set_formatter_out_channel o;
-  let _ = f() in
-  Format.print_flush();
-  Format.set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in "/tmp/out" in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  String.concat "\n" (List.rev !lines)
+(* let _ = if not !Sys.interactive then (main ()) *)
 

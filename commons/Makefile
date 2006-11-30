@@ -3,14 +3,14 @@
 TARGET = commons
 
 SRC = dumper.ml suffix_tree.ml \
-	commonop.ml common.ml \
-	setb.ml mapb.ml  setPt.ml seti.ml \
-	ocollection.ml \
-	oset.ml oassoc.ml osequence.ml oarray.ml ograph.ml \
-	oseti.ml oseth.ml osetb.ml osetpt.ml \
-	oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml \
-	ograph2way.ml ograph_extended.ml \
-	fullcommon.ml 
+      commonop.ml common.ml \
+      setb.ml mapb.ml  setPt.ml seti.ml \
+      ocollection.ml \
+      oset.ml oassoc.ml osequence.ml oarray.ml ograph.ml \
+      oseti.ml oseth.ml osetb.ml osetpt.ml \
+      oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml \
+      ograph2way.ml ograph_extended.ml \
+      fullcommon.ml 
 
 SYSLIBS=str.cma unix.cma
 
@@ -43,13 +43,11 @@ $(TARGET).top: $(LIB)
 $(LIB):  $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)
 
-clean::
-	rm -f $(LIB)
-
-
-
 $(OPTLIB): $(OPTOBJS)
 	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+
+clean::
+	rm -f $(LIB)
 
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
@@ -77,8 +75,5 @@ depend:
 
 #clean::
 #	rm -f .depend
-
-.depend:
-	$(CAMLDEP) *.mli *.ml > .depend
 
 -include .depend

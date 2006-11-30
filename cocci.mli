@@ -1,5 +1,6 @@
 open Common
 
+(* full_engine cfile (coccifile, isofile) -> output in "/tmp/output.c" *)
 val full_engine : 
   filename -> (filename * filename option, Lib_engine.ctlcocci) either ->  
   unit
@@ -9,13 +10,13 @@ val full_engine :
 (* Here for testing purpose. Can be called from a toplevel for example.  *)
 (* --------------------------------------------------------------------- *)
 
-val cprogram_from_file : filename -> Ast_c.program2 * Parse_c.parsing_stat
+val cprogram_from_file : filename -> Ast_c.program2
 val cstatement_from_string  : string -> Ast_c.statement
 val cexpression_from_string : string -> Ast_c.expression
 
-
+(* sp_from_file coccifile isofile *)
 val sp_from_file :
-  string -> string option ->
+    filename  -> filename option ->
     Ast_cocci.rule list * string list list list * string list
 val rule_elem_from_string : string -> filename option -> Ast_cocci.rule_elem
 
@@ -34,4 +35,3 @@ val ctls :
 	  list list
 val one_ctl : Lib_engine.ctlcocci list list -> Lib_engine.ctlcocci
 
-val mktmp : string -> string

@@ -20,15 +20,14 @@ type compare_result =
  * todo?: do astdiff, tokendiff, linediff ? 
  * I have the info for tokendiff, because c1 and c2 are programElement2.
  *)
-let compare (c1,stat1) (c2, stat2)  =
+let compare (c1,filename1) (c2, filename2)  =
 
     let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
     let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
     
     let xs =
-      process_output_to_list ("diff -u -b -B " ^ 
-                              stat1.Parse_c.filename ^ " "  ^ 
-                              stat2.Parse_c.filename) 
+      process_output_to_list 
+        ("diff -u -b -B " ^  filename1 ^ " "  ^ filename2) 
     in
     let error = ref 0 in
     let pb_notparsed = ref 0 in

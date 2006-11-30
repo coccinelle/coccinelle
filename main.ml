@@ -1,16 +1,18 @@
 open Common open Commonop
 
 (*****************************************************************************)
-(* 
- * This module handle the IO, the special name of files, ... 
- * The pure algorithmic stuff is in other modules.
- *)
+(* This module handle the IO, the special name of files, ... The pure
+ * algorithmic stuff is in other modules. *)
 (*****************************************************************************)
 
 let dir = ref false
 
+(* can't put "standard.iso" for iso_file because the user may want to
+ * launch spatch from any directory and so to be more consistent,
+ * better to not put a default value for iso_file.
+ *)
 let cocci_file = ref ""
-let iso_file   = ref ""
+let iso_file   = ref "" 
 
 let test_mode = ref false
 let testall_mode = ref false
@@ -19,69 +21,52 @@ let test_ctl_foo = ref false
 let compare_with_expected = ref false
 let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 
-
 let action = ref "" 
-
-
-let mktmp = Cocci.mktmp
 
 (*****************************************************************************)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
-  if Common.lfile_exists expected_res
-  then 
-    let (correct, diffxs) = 
-      Compare_c.compare 
-        (Cocci.cprogram_from_file generated_file)
-        (Cocci.cprogram_from_file expected_res)
-    in
-    (match correct with
-    | Compare_c.Correct -> 
+  if not (Common.lfile_exists expected_res)
+  then failwith ("no such .res file: " ^ expected_res);
+
+  let (correct, diffxs) = 
+    Compare_c.compare 
+        (Cocci.cprogram_from_file generated_file, generated_file)
+        (Cocci.cprogram_from_file expected_res, expected_res)
+  in
+  (match correct with
+  | Compare_c.Correct -> 
       pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
       if doexit then exit 0;
-    | Compare_c.Incorrect s -> 
-        pr2 ("seems incorrect: " ^ s);
-        pr2 "diff (result(-) vs expected_result(+)) = ";
-        diffxs +> List.iter pr2;
-        if doexit then exit (-1);
-    | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
-        pr2 "seems incorrect, but only because of code that was not parsable";
-        if doexit then exit (-1);
-    )
-  else failwith ("no such .res file: " ^ expected_res)
+  | Compare_c.Incorrect s -> 
+      pr2 ("seems incorrect: " ^ s);
+      pr2 "diff (result(-) vs expected_result(+)) = ";
+      diffxs +> List.iter pr2;
+      if doexit then exit (-1);
+  | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
+      pr2 "seems incorrect, but only because of code that was not parsable";
+      if doexit then exit (-1);
+  )
+
 
 (*****************************************************************************)
+
+(* There can have multiple .c for the same cocci file. The convention
+ * is to have one base.cocci and a base.c and optional multiple
+ * base_vernn.c and base_vernn.res 
+ *)
 let testone x = 
-  let base = if x =~ "\\(.*\\)_ver[0-9]+.*" then matched1 x else x in
-  let x'   = if x =~ "\\(.*\\)_ver0" then matched1 x else x in
-  let x' = 
-    if not(lfile_exists ("tests/" ^ x' ^ ".c"))
-    then
-      let candidates = 
-        readdir_to_file_list "tests/" 
-          +> filter (fun s -> s =~ (x' ^ "_.*\\.c$"))
-          +> List.map (Str.global_replace (Str.regexp "\\.c$") "")
-      in
-      if (List.length candidates <> 1)
-      then failwith ("cannot find a good match file for: " ^ x);
-      List.hd candidates
-
-    else x'
-  in
-  let cfile      = "tests/" ^ x'   ^ ".c" in 
+  let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
+  let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
+  let cfile      = "tests/" ^ x ^ ".c" in 
   let cocci_file = "tests/" ^ base ^ ".cocci" in
-
-  if !iso_file <> "" && not (!iso_file =~ ".*\\.iso")
-  then pr2 "warning: seems not a .iso file";
-  let iso_file = if !iso_file = "" then Some "standard.iso" else Some !iso_file
-  in
-
+  let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) in
   begin
     Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
-    let expected_res = "tests/" ^ x ^ ".res" in
-    let generated_file = (mktmp "/tmp/output.c") in
-    if !compare_with_expected then 
-      print_diff_expected_res_and_exit generated_file expected_res true;
+    let expected_res   = "tests/" ^ base ^ ".res" in
+    let generated_file = ("/tmp/output.c") in
+    if !compare_with_expected 
+    then print_diff_expected_res_and_exit generated_file expected_res true;
   end
           
 
@@ -101,48 +86,34 @@ let testall () =
   let add_diagnose s = push2 s diagnose in
 
   begin
-   expected_result_files +> List.iter (fun expected_res -> 
-    let fullbase = 
-      if expected_res =~ "\\(.*\\).res" 
-      then matched1 expected_res
-      else raise Impossible
-    in
-    let base   = 
-      if fullbase =~ "\\(.*\\)_ver[0-9]+" 
-      then matched1 fullbase 
-      else fullbase
-    in
-    
-    let cfile      = "tests/" ^ fullbase ^ ".c" in
+   expected_result_files +> List.iter (fun res -> 
+    let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
+    let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
+    let cfile      = "tests/" ^ x ^ ".c" in
     let cocci_file = "tests/" ^ base ^ ".cocci" in
-
-    if !iso_file <> "" && not (!iso_file =~ ".*\\.iso")
-    then pr2 "warning: seems not a .iso file";
     let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) 
     in
 
-    add_diagnose (sprintf "%s:\t" fullbase);
+    add_diagnose (sprintf "%s:\t" x);
     incr _total;
 
-    let _timeout_value = 3 in
-    (* benchmarking *)
     let timeout_value = 30 in
-    (* end benchmarking *)
 
     try (
       Common.timeout_function timeout_value (fun () -> 
         
         Cocci.full_engine cfile (Left (cocci_file, iso_file));
+        let generated = "/tmp/output.c" in
+        let expected = "tests/" ^ res in
 
         let (correct, diffxs) = 
           Compare_c.compare 
-            (Cocci.cprogram_from_file (mktmp "/tmp/output.c"))
-            (Cocci.cprogram_from_file ("tests/" ^ expected_res))
+            (Cocci.cprogram_from_file generated, generated)
+            (Cocci.cprogram_from_file expected, expected)
         in
-	(* benchmarking *)
-	Printf.printf "%s\n" expected_res;
+	Printf.printf "%s\n" res;
 	Ctlcocci_integration.print_bench();
-	(* end benchmarking *)
+
         (match correct with
         | Compare_c.Correct -> 
             incr _good; 
@@ -208,6 +179,7 @@ let main () =
       "-show_flow"              , Arg.Set Flag.show_flow,        " ";
       "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
       "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
+
       "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
       "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
       "-no_show_misc",   Arg.Unit (fun () -> 
@@ -215,20 +187,20 @@ let main () =
         Flag_engine.show_misc := false;
         ), " ";
 
-      (* works in conjunction with -show_ctl* *)
-      "-inline_let_ctl", Arg.Set Flag.inline_let_ctl, " ";
+      (* works in conjunction with -show_ctl *)
+      "-inline_let_ctl",        Arg.Set Flag.inline_let_ctl, " ";
       "-show_mcodekind_in_ctl", Arg.Set Flag.show_mcodekind_in_ctl, " ";
 
-      "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
 
+      "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
 
-      "-debug_cpp", Arg.Set Flag_parsing_c.debug_cpp, " ";
-      "-debug_lexer",        Arg.Set        Flag_parsing_c.debug_lexer , " ";
-      "-debug_etdt",         Arg.Set        Flag_parsing_c.debug_etdt , "  ";
-      "-debug_typedef",      Arg.Set        Flag_parsing_c.debug_typedef, "  ";
-      "-debug_cfg",          Arg.Set        Flag_parsing_c.debug_cfg , "  ";
+      "-debug_cpp",          Arg.Set  Flag_parsing_c.debug_cpp, " ";
+      "-debug_lexer",        Arg.Set  Flag_parsing_c.debug_lexer , " ";
+      "-debug_etdt",         Arg.Set  Flag_parsing_c.debug_etdt , "  ";
+      "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
+      "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
       
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
@@ -272,8 +244,7 @@ let main () =
         | "parse_c", x::xs -> 
             let fullxs = 
               if !dir
-              then (assert (xs = []); 
-                    process_output_to_list ("find " ^ x ^" -name \"*.c\"")) 
+              then process_output_to_list ("find " ^ x ^" -name \"*.c\"") 
               else x::xs 
             in
             
@@ -292,6 +263,7 @@ let main () =
              );
             if not (null !_stat_list) 
             then Parse_c.print_parsing_stat_list !_stat_list;
+
         | "parse_cocci", [file] -> 
             if not (file =~ ".*\\.cocci") 
             then pr2 "warning: seems not a .cocci file";
@@ -339,16 +311,10 @@ let main () =
         if !iso_file <> "" && not (!iso_file =~ ".*\\.iso") 
         then pr2 "warning: seems not a .iso file";
 
+        (* todo?: for iso could try to go back the parent dir recursively to
+           find the standard.iso *)
         let cocci_file = !cocci_file in
-
-        let iso_file = 
-          (* todo: try to go back the parent dir recursively 
-           * to find a standard.iso 
-           *)
-          if !iso_file = "" 
-          then None 
-          else Some !iso_file
-        in
+        let iso_file = if !iso_file = "" then None else Some !iso_file in
 
         let fullxs = 
           if !dir 
@@ -360,24 +326,22 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-          (try Cocci.full_engine cfile (Left (cocci_file, iso_file))
-          with
-            e -> 
-              if !dir 
-              then pr2 ("EXN:" ^ Printexc.to_string e)
-              else raise e
+         (try Cocci.full_engine cfile (Left (cocci_file, iso_file))
+          with e -> 
+            if !dir 
+            then pr2 ("EXN:" ^ Printexc.to_string e)
+            else raise e
           );
 
-          let expected_res = 
-            Str.global_replace (Str.regexp "\\.c$") ".res" cfile 
-          in
-          let generated_file = (mktmp "/tmp/output.c") in
+          let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
+          in 
+          let generated_file = ("/tmp/output.c") in
+          let expected_res = base ^ ".res" in
+          let saved = cfile ^ ".cocci_res" in
 
 	  Ctlcocci_integration.print_bench();
 
-	  if !save_output_file
-	  then command2 ("cp /tmp/output.c "^cfile^".cocci_res");
-
+	  if !save_output_file then command2 ("cp /tmp/output.c " ^ saved);
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
               (if List.length fullxs = 1 then true else false)

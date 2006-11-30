@@ -1,3 +1,5 @@
+open Common
+
 type compare_result = 
   | Correct 
   | Incorrect of string
@@ -5,6 +7,5 @@ type compare_result =
 
 
 val compare : 
- Ast_c.program2 * Parse_c.parsing_stat -> 
- Ast_c.program2 * Parse_c.parsing_stat ->
+ (Ast_c.program2 * filename) -> (Ast_c.program2 * filename) ->
  compare_result * string list (* the output of diff *)

@@ -139,6 +139,9 @@ val pp_do_in_zero_box : (unit -> unit) -> unit
 val pp_init : (unit -> unit) -> unit
 val pp : string -> unit
 
+(* convert something printed using format to print into a string *)
+val format_to_string : (unit -> unit) (* printer *) -> string
+
 val print_xxxxxxxxxxxxxxxxx : unit -> unit
 
 
@@ -186,6 +189,9 @@ val run_hooks_action: 'a -> ('a -> unit) list ref -> unit
 
 type 'a mylazy = (unit -> 'a)
 
+val save_excursion : 'a ref -> (unit -> 'b) -> 'b
+
+(* unwind_protect, cf below *)
 
 (*****************************************************************************)
 (* Error managment *)
@@ -194,7 +200,6 @@ exception Todo
 exception Impossible
 exception Here
 exception ReturnExn
-exception Timeout
 
 val internal_error : string -> 'a
 val myassert : bool -> unit
@@ -369,7 +374,6 @@ val _shareds : (string, string) Hashtbl.t
 val shared_string : string -> string
 
 val chop : string -> string
-val concat2 : string -> string -> string
 
 val ( <!!> ) : string -> int * int -> string
 val ( <!> ) : string -> int -> char
@@ -479,6 +483,8 @@ val with_open_outfile :
      filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 val with_open_infile : 
       filename -> (in_channel -> 'a) -> 'a
+
+exception Timeout
 
 val timeout_function : int -> (unit -> 'a) -> 'a
 
@@ -707,13 +713,9 @@ type ('a, 'b) assoc = ('a * 'b) list
 val assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)
 
 val empty_assoc : ('a, 'b) assoc
-
 val fold_assoc : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-
 val insert_assoc : 'a -> 'a list -> 'a list
-
 val map_assoc : ('a -> 'b) -> 'a list -> 'b list
-
 val filter_assoc : ('a -> bool) -> 'a list -> 'a list
 
 val assoc : 'a -> ('a * 'b) list -> 'b
@@ -728,7 +730,6 @@ val apply_assoc : 'a -> ('b -> 'b) -> ('a * 'b) list -> ('a * 'b) list
 val big_union_assoc : ('a -> 'b set) -> 'a list -> 'b set
 
 val assoc_reverse : ('a * 'b) list -> ('b * 'a) list
-
 val assoc_map : ('a * 'b) list -> ('a * 'b) list -> ('a * 'a) list
 
 val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
@@ -784,19 +785,12 @@ val intintmap_string_of_t : 'a -> 'b -> string
 (*****************************************************************************)
 
 val hcreate : unit -> ('a, 'b) Hashtbl.t
-
 val hadd : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
-
 val hmem : 'a -> ('a, 'b) Hashtbl.t -> bool
-
 val hfind : 'a -> ('a, 'b) Hashtbl.t -> 'b
-
 val hreplace : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
-
 val hiter : ('a -> 'b -> unit) -> ('a, 'b) Hashtbl.t -> unit
-
 val hfold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) Hashtbl.t -> 'c -> 'c
-
 val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
@@ -975,7 +969,3 @@ class ['a] olist :
   end
 val typing_sux_test : unit -> unit
 
-(*------------------------*)
-(* convert something printed using format to print into a string *)
-
-val format_to_string : (unit -> unit) (* printer *) -> string

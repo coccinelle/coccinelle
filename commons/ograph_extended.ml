@@ -9,15 +9,16 @@ open Oassocb
 open Osetb
 
 (* 
- graph: 
-  node: index -> nodevalue
-  arc: (index * index) * edgevalue
+ graph structure: 
+    node: index -> nodevalue
+    arc: (index * index) * edgevalue
+
  How ? matrix ? but no growing array, so :(
  When need index ? 
   Must have an index when can't just use nodevalue as a key,  cos sometimes 
   may have 2 times the same key, but it must be 2 different nodes
-  (for instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
-  the index). 
+  for instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
+  the index. 
   If each node is different, then no problem, can omit index.
 
  todo?: prend en parametre le type de finitemap et set a prendre
@@ -103,8 +104,6 @@ class ['a,'b] ograph_extended =
     method allsuccessors = succ
 
 (*
-
-
     method ancestors xs = 
       let rec aux xs acc = 
         match xs#view with (* could be done with an iter *)
@@ -123,7 +122,6 @@ class ['a,'b] ograph_extended =
               +> (fun newacc -> aux xs newacc)
       in aux xs (f2()) (* (new osetb []) *)
 
-
     method brothers  x = 
       let parents = o#predecessors x in
       (parents#fold (fun acc e -> acc $++$ o#successors e) (f2()))#del x
@@ -133,7 +131,7 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit) =
+let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit)=
  fun g ->
   with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
     pr "digraph misc {\n" ;

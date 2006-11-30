@@ -10,10 +10,6 @@ LIBS=../commons/commons.cma
 ADDONSPATH = -I ../commons
 
 
-
-OCAMLRUNPARAM = 'b'
-export OCAMLRUNPARAM
-
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT

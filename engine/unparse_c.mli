@@ -8,5 +8,5 @@ type ppmethod = PPviatok of Ast_c.info list | PPnormal
 *) 
 
 val pp_program : 
- filename -> filename ->  (Ast_c.programElement * ppmethod) list -> unit
+ (Ast_c.programElement * ppmethod) list -> filename -> filename -> unit
 

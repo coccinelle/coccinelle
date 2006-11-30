@@ -2,14 +2,16 @@
 // Standard C isomorphisms
 // ****************************************************************************
 
-// Note: the order of the rule have an importance. As we do not do a fixpoint,
+// Note: the order of the rule has some importance. As we do not do a fixpoint,
 // changing the order may impact the result. For instance, if we have
-// iso1 =  x+y <=> y+x  and iso2 = i++ <=> i=i+1; 
-// if in SP we have i++; and in C code we have i=1+i;
+//  iso1 = x+y <=> y+x   
+//  iso2 = i++ <=> i=i+1; 
+// if 
+//   in SP we have i++; 
+//   in C  we have i=1+i;
 // Does the SP match the C ? 
 //  - Yes if iso2 precede iso1 in this file, 
 //  - No otherwise.
-
 
 
 // ---------------------------------------------------------------------------
@@ -265,3 +267,23 @@ return ...; => return;
 //Expression
 //@@ expression E; identifier field; @@
 //E->field => E.field
+
+
+
+// ****************************************************************************
+// Put here all the Linux specific isomorphisms 
+// ****************************************************************************
+
+// Examples: many functions are equivalent/related, and one SP modifying
+// such a function should also modify the equivalent/related one.
+
+
+// ---------------------------------------------------------------------------
+// in rule18, needed ? 
+// ---------------------------------------------------------------------------
+// (
+// -   test_and_set_bit(ev, &bcs->event);
+// |
+// -   set_bit(ev, &bcs->event);
+// |
+// -   bcs->event |= 1 << ev; // the only case that is used

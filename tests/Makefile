@@ -1,11 +1,17 @@
 MAKESUBDIRS=devfs video_usercopy usb_submit_urb \
  rule10 rule17 rule18 rule18a rule19 rule30 rule31 rule33 rule36 rule38 \
- rule42   rule6 rule74 rule82 rule83  rule9 
+ rule42   rule6 rule74 rule82 rule83  rule9 \
+ rule21 rule62 rule35 rule66 rule75   
 
-# no .cocci nor makefile for this: rule53 rule57 rule85   check_region
-# 
+#todo, get .c and .res for:
+# rule64 rule65 
 
-#MAKESUBDIRS=usb_submit_urb
+#no .c and .res because difficult to get them because ugly micro-patches in git
+# rule37  rule48   
+#no .cocci or makefile for this: 
+# check_region  rule53 rule57 rule85   
+
+
 
 all:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i; done 

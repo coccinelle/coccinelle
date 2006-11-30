@@ -2,13 +2,45 @@ open Common open Commonop
 
 open Ograph_extended
 
+
+(*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 
-(*****************************************************************************)
+let show_or_not_predicate pred = 
+  if !Flag_engine.debug_engine then begin 
+    pp_init (fun () -> 
+      pp "labeling: pred =";
+      Format.print_space ();
+      Pretty_print_engine.pp_predicate pred;
+            );
+  end
 
-(* Take list of pred  and for each pred return where in control flow
- * it matches (and the set of subsitutions for this match). 
+let show_or_not_nodes nodes =
+  if !Flag_engine.debug_engine  then begin 
+    pp_init (fun () -> 
+      pp "labeling: result =";
+      Format.print_space ();
+         
+      pp_do_in_box (fun () -> 
+        pp "{";
+        Common.print_between 
+          (fun () -> pp ";"; Format.print_cut())
+          (fun (nodei, subst) -> 
+            Format.print_int nodei;
+            pp_do_in_box (fun () -> 
+              Pretty_print_engine.pp_binding2_ctlsubst subst
+                         )
+          ) nodes;
+        pp "}";
+                   );
+            )
+  end
+
+
+
+(* Take list of predicate and for each predicate returns where in the
+ * control flow it matches, and the set of subsitutions for this match. 
  *)
 let (labels_for_ctl: 
  (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
@@ -16,15 +48,7 @@ let (labels_for_ctl:
   fun nodes binding ->
 
    (fun pred -> 
-
-     if !Flag_engine.debug_engine
-     then begin 
-       pp_init (fun () -> 
-         pp "labeling: pred =";
-         Format.print_space ();
-         Pretty_print_engine.pp_predicate pred;
-         );
-     end;
+     show_or_not_predicate pred;
 
      let nodes' = nodes +> map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
@@ -47,19 +71,14 @@ let (labels_for_ctl:
           
 
       | Lib_engine.Match (re), _unwrapnode -> 
-          let substs = Pattern.match_re_node re node binding
-              (* old: Ast_c.emptyMetavarsBinding *)
-          in
-          if substs <> []
-          then
-            substs +> List.map (fun subst -> 
-              (nodei, 
-               subst +> List.map (fun (s, meta) -> 
-                 s --> Lib_engine.NormalMetaVal meta
-                 )
+          let substs = Pattern.match_re_node re node binding in
+          substs +> List.map (fun subst -> 
+            (nodei, 
+             subst +> List.map (fun (s, meta) -> 
+               s --> Lib_engine.NormalMetaVal meta
+                               )
               )
              )
-          else []
 
       | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
       | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
@@ -91,36 +110,17 @@ let (labels_for_ctl:
       )
                                ) +> List.concat
      in
-     if !Flag_engine.debug_engine
-     then begin 
-       pp_init (fun () -> 
-         pp "labeling: result =";
-         Format.print_space ();
-         
-         pp_do_in_box (fun () -> 
-           pp "{";
-           Common.print_between 
-             (fun () -> pp ";"; Format.print_cut())
-             (fun (nodei, subst) -> 
-               Format.print_int nodei;
-               pp_do_in_box (fun () -> 
-                 Pretty_print_engine.pp_binding2_ctlsubst subst
-                 )
-             ) nodes';
-           pp "}";
-                      );
-               )
-     end;
+
+     show_or_not_nodes nodes';
      nodes'
    ) 
 
 
 
 
+(* could erase info on nodes, and edge, because they are not used by rene *)
 let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) = 
- fun cflow ->
- (* could erase info on nodes, and edge,  because they are not used by rene *)
-  cflow
+ fun cflow -> cflow
 
 
 
@@ -222,9 +222,9 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
 
 
 
+(* subtil: the label must operate on newflow, not (old) cflow *)
 let model_for_ctl  cflow binding = 
  let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
- (* subtil: the label must operate on newflow, not (old) cflow. *)
  let labels = labels_for_ctl (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
@@ -274,25 +274,8 @@ let print_bench _ = WRAPPED_ENGINE.print_bench()
 
 type pred = Lib_engine.predicate * string Ast_ctl.modif
 
-let (mysat:
-       (Control_flow_c.cflow *
-        Lib_engine.label_ctlcocci *
-        nodei list) -> 
-       (Lib_engine.ctlcocci * (pred list * pred list)) -> 
-       (Lib_engine.mvar list * Lib_engine.metavars_binding2) ->
-	 ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
-	    bool *
-	    Lib_engine.metavars_binding2,
-	  string) either) = 
-  fun (flow, label, states) ctl (used_after, binding2) -> 
-    WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
-
-
 let (satbis_to_trans_info: 
-  (nodei * 
-   (Lib_engine.mvar * Lib_engine.metavar_binding_kind2) list *  
-   Lib_engine.predicate) 
-  list -> 
+  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
   (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
   fun xs -> 
     xs +> List.map (fun (nodei, binding, pred) -> 
@@ -325,3 +308,24 @@ let metavars_binding2_to_binding   binding2 =
 let metavars_binding_to_binding2 binding = 
   binding +> List.map (fun (s, kind) -> s, Lib_engine.NormalMetaVal kind)
 
+
+
+let (mysat:
+  Lib_engine.model ->
+  (Lib_engine.ctlcocci * (pred list * pred list)) -> 
+  (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
+  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding,
+   string) 
+  either) = 
+  fun (flow, label, states) ctl (used_after, binding) -> 
+
+    let binding2 = metavars_binding_to_binding2 binding in
+    let res = 
+      WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
+    in
+    match res with
+    | Left (trans_info2, returned_any_states, used_after_env) ->
+        let trans_info = satbis_to_trans_info trans_info2 in
+        let newbinding = metavars_binding2_to_binding used_after_env in
+        Left (trans_info, returned_any_states, newbinding)
+    | Right var -> Right var

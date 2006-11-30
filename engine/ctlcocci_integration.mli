@@ -10,30 +10,18 @@ val labels_for_ctl :
 val fix_flow_ctl : Control_flow_c.cflow -> Control_flow_c.cflow
 
 val model_for_ctl :
-  Control_flow_c.cflow -> Lib_engine.metavars_binding ->
-  Control_flow_c.cflow * Lib_engine.label_ctlcocci * nodei list
+  Control_flow_c.cflow -> Lib_engine.metavars_binding -> Lib_engine.model
+
 
 type pred = Lib_engine.predicate * string Ast_ctl.modif
 
 val mysat :
-  (Control_flow_c.cflow * Lib_engine.label_ctlcocci * nodei list) -> 
+  Lib_engine.model -> 
   (Lib_engine.ctlcocci * (pred list * pred list)) -> 
-  (Lib_engine.mvar list * Lib_engine.metavars_binding2) -> 
-  ((nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list *
-     bool *
-     Lib_engine.metavars_binding2,
-   string) either
+  (Lib_engine.mvar list * Lib_engine.metavars_binding) -> 
+  (Lib_engine.transformation_info *  bool * Lib_engine.metavars_binding,
+   string) 
+  either
 
-
-
-val satbis_to_trans_info :  
-  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
-  (nodei * Lib_engine.metavars_binding  * Ast_cocci.rule_elem)  list 
-
-val metavars_binding2_to_binding : 
-    Lib_engine.metavars_binding2 -> Lib_engine.metavars_binding
-
-val metavars_binding_to_binding2 : 
-    Lib_engine.metavars_binding -> Lib_engine.metavars_binding2
 
 val print_bench : unit -> unit

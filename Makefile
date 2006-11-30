@@ -12,12 +12,14 @@ MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
 ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
 
 
-OCAMLRUNPARAM = 'b'
-export OCAMLRUNPARAM
-
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
 #pad: 'make forprofiling' below does that for you.
+
+#the OPTBIN variable is here to allow to use ocamlc.opt instead of 
+#ocaml, when it is available, which speeds up compilation. So
+#if you want the fast version of the ocaml chain tools, setenv OPTBIN
+#to ".opt" in your startup script.
 
 #OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom      -- for C code
 OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom
@@ -38,12 +40,15 @@ OPTOBJS = $(SRC:.ml=.cmx)
 all: rec $(EXEC)
 opt: rec.opt $(OPTEXEC)
 
+
 test: $(TARGET)
 	./$(TARGET) -testall
 
 #can add -inline 0  to see all the functions in the profile.
 forprofiling:
 	$(MAKE) OPTFLAGS="-p " opt
+
+
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
@@ -103,15 +108,12 @@ clean::
 	rm -f *.cm[iox] *.o
 
 clean::
-	rm -f misc/*.cm[iox] *.o
-
-clean::
 	rm -f *~ .*~ gmon.out *.exe #*#
 
 beforedepend::
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml misc/*.mli misc/*.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
 -include .depend
