@@ -40,7 +40,8 @@ open Commonop
  => TODO better put a clean sequence (inherit collection) and make array a special class
 *)
 
-(* i define those class cos their name are cool, say what is intended to do with *)
+(* I define those classes cos their name are cool, say what is intended to
+   do with *)
 (* TODO: make ostack (FIFO), oqueue (LIFO)  *)
 
 (*---------------------------------------------------------------------------*)
@@ -79,7 +80,8 @@ class virtual ['a] ocollection =
       (* iter and call add from empty, or del *)
       fun f -> o#tolist +> List.filter f +> o#fromlist
 
-        (* forall, fold, map *)
+    (* forall, fold, map *)
+
     method getone: 'a = 
       match o#view with Cons (e,tl) -> e  | _ -> failwith "no head"
     method others: 'o = 

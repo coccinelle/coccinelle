@@ -32,6 +32,7 @@ open Osetb
 (* end    *)
 
 (* TODO another cache that behave as in lfs1, every 100 operation do a flush *)
+
 (* can not make it pure, cos the assoc have side effect on the cache *)
 class ['a,'b] oassoc_buffer max cached = 
   object(o)
@@ -43,11 +44,11 @@ class ['a,'b] oassoc_buffer max cached =
     val wrapped = ref cached
 
     method private myflush = 
-      (!dirty#iter (fun k -> wrapped := !wrapped#add (k, !cache#assoc k));
+      !dirty#iter (fun k -> wrapped := !wrapped#add (k, !cache#assoc k));
        dirty := (new osetb Setb.empty);
        cache := (new oassocb []);
        counter := 0;
-      )
+      
     method generic = o#myflush
         
     method empty = raise Todo

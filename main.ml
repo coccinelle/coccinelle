@@ -295,6 +295,11 @@ let main () =
                   | _ -> ()
                  );
                  )
+        | "typeur", [file] -> 
+            if not (file =~ ".*\\.c") 
+            then pr2 "warning: seems not a .c file";
+            ignore(Cocci.cprogram_from_file file);
+
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
         | _ -> failwith "no action for this"
         )

@@ -26,6 +26,8 @@ let rec (annotate_program: program -> program) = fun prog ->
   
   let env = ref (Hashtbl.create 100) in
   let scoped_env = ref [[]] in
+  let notyped_var = ref (Hashtbl.create 100) in
+
   let new_scope() = scoped_env := []::!scoped_env in
   let del_scope() = 
     begin
@@ -43,6 +45,12 @@ let rec (annotate_program: program -> program) = fun prog ->
   in
   let add_binding s typ = 
       let (current, older) = Common.uncons !scoped_env in
+
+      if Hashtbl.mem !notyped_var s
+      then pr2 ("warning: found typing information for a variable that was" ^
+                "previously unknown:" ^ s);
+              
+
       if List.mem s current 
       then begin 
         pr2 ("Type_annoter: warning, " ^ s ^ 
@@ -62,6 +70,7 @@ let rec (annotate_program: program -> program) = fun prog ->
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       let ((unwrap_e, oldtyp), iie) = e in
       match unwrap_e with
+      (* don't want a warning on the Ident that are a FunCall *)
       | FunCall (((Ident f, typ), ii), args) -> 
          (FunCall (((Ident f, typ), ii), 
                  args +> List.map (fun (e,ii) -> 
@@ -82,13 +91,21 @@ let rec (annotate_program: program -> program) = fun prog ->
           | Some typ -> (unwrap_e, Some typ), iie
           | None -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
-              then pr2 ("Type_annoter: not finding type for " ^ s);
+              then 
+                if not (Hashtbl.mem !notyped_var s)
+                then begin 
+                  pr2 ("Type_annoter: not finding type for " ^ s);
+                  Hashtbl.add !notyped_var s true;
+                end;
               e 
           )
       | _ -> k e
                         );
      Visitor_c.kstatement_s = (fun (k, bigf) st -> 
-       k st
+       match st with 
+       | Compound statxs, ii -> do_in_new_scope (fun () -> k st);
+       | _ -> k st
+
        );
      Visitor_c.kdecl_s = (fun (k, bigf) d -> 
        let d' = k d in
@@ -102,6 +119,7 @@ let rec (annotate_program: program -> program) = fun prog ->
        
                          );
      Visitor_c.kprogram_s = (fun (k, bigf) elem -> 
+       notyped_var := Hashtbl.create 100;
        match elem with
        | Definition def -> 
            do_in_new_scope (fun () -> 

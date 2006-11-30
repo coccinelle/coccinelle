@@ -13,13 +13,12 @@ open Osetb
     node: index -> nodevalue
     arc: (index * index) * edgevalue
 
- How ? matrix ? but no growing array, so :(
+ How ? matrix ? but no growing array :(
  When need index ? 
   Must have an index when can't just use nodevalue as a key,  cos sometimes 
-  may have 2 times the same key, but it must be 2 different nodes
-  for instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
-  the index. 
-  If each node is different, then no problem, can omit index.
+  may have 2 times the same key, but it must be 2 different nodes.
+  For instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
+  the index. If each node is different, then no problem, can omit index.
 
  todo?: prend en parametre le type de finitemap et set a prendre
  todo?: add_arc doit ramer, car del la key, puis add => better to 
@@ -72,7 +71,7 @@ class ['a,'b] ograph_extended =
         (* check: e is effectively the index associated with e, 
            and check that already in *)
 
-        (* TODO assert that have no pred and succ, otherwise
+        (* todo: assert that have no pred and succ, otherwise
          * will have some dangling pointers 
          *)
         nods = nods#delkey i; 

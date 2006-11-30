@@ -183,9 +183,9 @@ class ['a] shared_variable_hook :
 val ptFix : ('a -> 'a) -> 'a -> 'a
 val ptFixForObjetct : ((< equal : 'a -> bool; .. > as 'a) -> 'a) -> 'a -> 'a
 
-val add_hook: ('a -> ('a -> 'b) -> 'b) ref  -> ('a -> ('a -> 'b) -> 'b) -> unit
-val add_hook_action: ('a -> unit) ->   ('a -> unit) list ref -> unit
-val run_hooks_action: 'a -> ('a -> unit) list ref -> unit
+val add_hook : ('a -> ('a -> 'b) -> 'b) ref -> ('a -> ('a -> 'b) -> 'b) -> unit
+val add_hook_action : ('a -> unit) ->   ('a -> unit) list ref -> unit
+val run_hooks_action : 'a -> ('a -> unit) list ref -> unit
 
 type 'a mylazy = (unit -> 'a)
 
@@ -407,7 +407,7 @@ val split : string -> string -> string list
 
 val join : string -> string list -> string
 
-val split_list_regexp: string -> string list -> (string * string list) list
+val split_list_regexp : string -> string list -> (string * string list) list
 
 (*****************************************************************************)
 (* Filenames *)
@@ -458,7 +458,7 @@ val process_output_to_list : string -> string list
 
 val command2 : string -> unit
 
-val do_in_fork: (unit -> unit) -> int
+val do_in_fork : (unit -> unit) -> int
 
 val read_file : string -> string
 val write_file : string -> string -> unit
@@ -620,7 +620,7 @@ val uniq2 : 'a list -> 'a list
 val keep_best : ('a * 'a -> 'a option) -> 'a list -> 'a list
 val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 
-val cartesian_product: 'a list -> 'b list -> ('a * 'b) list
+val cartesian_product : 'a list -> 'b list -> ('a * 'b) list
 
 val surEnsemble : 'a list -> 'a list list -> 'a list list
 val realCombinaison : 'a list -> 'a list list
@@ -710,7 +710,7 @@ val ( $@$ ) : 'a list -> 'a list -> 'a list
 
 type ('a, 'b) assoc = ('a * 'b) list
 
-val assoc_to_function: ('a, 'b) assoc -> ('a -> 'b)
+val assoc_to_function : ('a, 'b) assoc -> ('a -> 'b)
 
 val empty_assoc : ('a, 'b) assoc
 val fold_assoc : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
@@ -794,7 +794,7 @@ val hfold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) Hashtbl.t -> 'c -> 'c
 val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
-val hash_to_list: ('a, 'b) Hashtbl.t -> ('a * 'b) list
+val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 
 (*****************************************************************************)
 (* Hash sets *)
@@ -940,14 +940,14 @@ type parse_info = {
     charpos: int;
   } 
 
-val fake_parse_info: parse_info
+val fake_parse_info : parse_info
 
-val full_charpos_to_pos: filename -> (int * int) array
+val full_charpos_to_pos : filename -> (int * int) array
 
-val charpos_to_pos: int -> filename -> (filename * int * int * string)
+val charpos_to_pos : int -> filename -> (filename * int * int * string)
 
-val error_messagebis: filename -> (string * int (* * int*)) -> int -> string
-val error_message: filename -> (string * int (* * int*)) -> string
+val error_messagebis : filename -> (string * int (* * int*)) -> int -> string
+val error_message : filename -> (string * int (* * int*)) -> string
 
 
 (*****************************************************************************)

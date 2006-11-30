@@ -7,7 +7,9 @@ class ['a] oseth xs   =
     inherit ['a] oset
 
     val data = Hashtbl.create 100
-    method toset = Obj.magic data (* if put [] then no segfault, if [11] then segfault *)
+
+   (* if put [] then no segfault, if [11] then segfault *)
+    method toset = Obj.magic data 
 
     method empty = {< data = Hashtbl.create 100 >}
     method add k = (Hashtbl.add data k true; o)

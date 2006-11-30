@@ -1,8 +1,9 @@
-(* TODO growing array ? initialise with None, and generate exception when not defined
-   or have an arraydefault *)
 open Common
 
 open Osequence
+
+(* TODO growing array ? initialise with None, and generate exception when not
+   defined or have an arraydefault *)
 
 (* !!take care!!, this is not a pure data structure *)
 class ['a] oarray n el = 

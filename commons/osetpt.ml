@@ -8,7 +8,8 @@ class ['a] osetpt xs   =
 
     val data = SetPt.empty
     method tosetpt = data
-    method toset = Obj.magic data (* if put [] then no segfault, if [11] then segfault *)
+    (* if put [] then no segfault, if [11] then segfault *)
+    method toset = Obj.magic data 
 
     method empty = {< data = SetPt.empty >}
     method add e = {< data = SetPt.add e data >}

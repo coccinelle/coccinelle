@@ -1,5 +1,6 @@
 open Common
 open Ocollection
+
 class virtual ['a] oset =
   object(o: 'o)
     inherit ['a] ocollection
@@ -15,7 +16,7 @@ class virtual ['a] oset =
     method  toseti: Seti.seti    = raise Impossible
     method virtual toset: 'b. 'b (* generic (not safe) tricks *)
 
-        (* is_intersect, equal, subset *)
+    (* is_intersect, equal, subset *)
     method is_subset_of: 'o -> bool = fun o2 -> 
       ((o2#minus o)#cardinal >= 0) && ((o#minus o2)#cardinal = 0)
 
@@ -27,7 +28,9 @@ class virtual ['a] oset =
       o#length = 1
     method cardinal: int = (* just to keep naming conventions *)
       o#length 
-    (*dont work: method big_union: 'b. ('a -> 'b oset) -> 'b oset = fun f -> todo() *)
+    (* dont work: 
+      method big_union: 'b. ('a -> 'b oset) -> 'b oset = fun f -> todo() 
+     *)
         
   end
 
@@ -39,8 +42,9 @@ let ($--$) xs ys = xs#minus ys
 let ($<<=$) xs ys = xs#is_subset_of ys
 let ($==$) xs ys = xs#is_equal ys
 
-(*  TODO pas bo le seed,  i dont put the type otherwise have to put explicit :> *)
+(* todo: pas beau le seed.  I dont put the type otherwise have to 
+ * put explicit :> 
+ *)
 let (mapo: ('a -> 'b) -> 'b oset -> 'a oset -> 'b oset) = fun f seed xs -> 
-(* let mapo = fun f xs seed -> *)
   xs#fold (fun acc x -> acc#add (f x)) seed
 

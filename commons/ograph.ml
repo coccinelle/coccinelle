@@ -1,5 +1,8 @@
-(* TODO invariant succesors/predecessors *)
-(*  TODO see c++ library, GTL ... (cf paper from ASTL, cf paper from jfla05 on ocamlgraph) *)
+(* TODO 
+ *  invariant succesors/predecessors
+ *  see c++ library, GTL ... 
+ *  (cf paper from ASTL, cf paper from jfla05 on ocamlgraph) 
+ *)
 open Common
 open Commonop
 open Oset

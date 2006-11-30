@@ -7,7 +7,9 @@ class ['a] osetb xs   =
 
     val data = xs (*  Setb.empty *)
     method tosetb = data
-    method toset = Obj.magic data (* if put [] then no segfault, if [11] then segfault *)
+
+    (* if put [] then no segfault, if [11] then segfault *)
+    method toset = Obj.magic data 
 
     method empty = {< data = Setb.empty >}
     method add e = {< data = Setb.add e data >}
