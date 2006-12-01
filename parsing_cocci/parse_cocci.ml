@@ -384,10 +384,16 @@ let detect_types l =
       [] -> []
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
     | delim::(PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaId(_,_),_) as x)::rest
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaFunc(_,_),_) as x)::rest
+    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaLocalFunc(_,_),_) as x)::rest
       when is_delim delim ->
 	delim::(PC.TTypeId(ident,clt),v)::x::(loop false rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
     | (PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
+    | (PC.TIdent(ident,clt),v)::((PC.TMetaId(_,_),_) as x)::rest
+    | (PC.TIdent(ident,clt),v)::((PC.TMetaFunc(_,_),_) as x)::rest
+    | (PC.TIdent(ident,clt),v)::((PC.TMetaLocalFunc(_,_),_) as x)::rest
       when start -> (PC.TTypeId(ident,clt),v)::x::(loop false rest)
     | x::rest -> x::(loop false rest) in
   loop true l
