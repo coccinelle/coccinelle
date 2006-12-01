@@ -5,6 +5,7 @@ identifier x,y;
   int xxx_info(int x
 +              ,scsi *y 
                      ) {
+   ...
 -  scsi *y;
    ...
 -  y = scsi_get();

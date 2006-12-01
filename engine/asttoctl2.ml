@@ -804,7 +804,6 @@ and statement stmt after quantified label guard =
 	      | Ast.NoDots -> term in
 	  make_seq_after (quantify fvs term) after)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
-      Printf.printf "doing seq %b\n" dots;
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
 	match
 	  seq_fvs quantified

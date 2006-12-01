@@ -377,24 +377,27 @@ statement. *)
 let detect_types l =
   let is_delim = function
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
+    | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TComma(_),_) -> true
+    | _ -> false in
+  let is_id = function
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_),_) | (PC.TMetaFunc(_,_),_)
+    | (PC.TMetaLocalFunc(_,_),_) -> true
     | _ -> false in
   let rec loop start = function
       [] -> []
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaId(_,_),_) as x)::rest
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaFunc(_,_),_) as x)::rest
-    | delim::(PC.TIdent(ident,clt),v)::((PC.TMetaLocalFunc(_,_),_) as x)::rest
       when is_delim delim ->
 	delim::(PC.TTypeId(ident,clt),v)::x::(loop false rest)
+    | delim::(PC.TIdent(ident,clt),v)::id::rest
+      when is_delim delim && is_id id ->
+	delim::(PC.TTypeId(ident,clt),v)::id::(loop false rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-    | (PC.TIdent(ident,clt),v)::((PC.TIdent(_,_),_) as x)::rest
-    | (PC.TIdent(ident,clt),v)::((PC.TMetaId(_,_),_) as x)::rest
-    | (PC.TIdent(ident,clt),v)::((PC.TMetaFunc(_,_),_) as x)::rest
-    | (PC.TIdent(ident,clt),v)::((PC.TMetaLocalFunc(_,_),_) as x)::rest
       when start -> (PC.TTypeId(ident,clt),v)::x::(loop false rest)
+    | (PC.TIdent(ident,clt),v)::id::rest
+      when start && is_id id ->
+	(PC.TTypeId(ident,clt),v)::id::(loop false rest)
     | x::rest -> x::(loop false rest) in
   loop true l
 
