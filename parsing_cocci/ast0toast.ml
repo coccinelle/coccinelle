@@ -273,6 +273,7 @@ let rec expression e =
 	Ast.SizeOfExpr(mcode szf,expression exp)
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
+    | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
     | Ast0.MetaConst(name,ty) ->
 	Ast.MetaConst(mcode name,ty,false)
     | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name,false)

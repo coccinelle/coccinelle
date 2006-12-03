@@ -520,6 +520,10 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       (B.SizeOfType (transform_ft_ft typa typb  binding),typ),
       tag_symbols [i1;i2;i3]  ii binding
 
+  | A.TypeExp(ty),_ ->
+      failwith
+	"transformation.ml: need to fill in something for the case of a type as an expression"
+
 
   | A.Paren (i1, ea, i2), ((B.ParenExpr (eb), typ),ii) -> 
       (B.ParenExpr (transform_e_e ea eb  binding), typ),

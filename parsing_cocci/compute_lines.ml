@@ -220,6 +220,8 @@ let rec expression e =
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
       mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp)) 
         (promote_mcode szf)  (promote_mcode rp)
+  | Ast0.TypeExp(ty) ->
+      let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.MetaConst(name,_) | Ast0.MetaErr(name) | Ast0.MetaExpr(name,_)
   | Ast0.MetaExprList(name) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln

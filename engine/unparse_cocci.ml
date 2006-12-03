@@ -122,7 +122,8 @@ let rec expression e =
   | Ast.SizeOfType(sizeof,lp,ty,rp) ->
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
-      mcode print_string rp; 
+      mcode print_string rp
+  | Ast.TypeExp(ty) -> fullType ty
 
   | Ast.MetaConst(name,None,_) -> 
       failwith "metaConst not handled"

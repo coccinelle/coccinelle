@@ -125,7 +125,8 @@ let rec expression e =
       | Ast0.SizeOfType(szf,lp,ty,rp) ->
           mcode print_string szf;
 	  mcode print_string_box lp; typeC ty; close_box();
-	  mcode print_string rp; 
+	  mcode print_string rp
+      | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.MetaConst(name,None) -> mcode print_string name
       | Ast0.MetaConst(name,Some ty) ->
 	  mcode print_string name; print_string "/* ";

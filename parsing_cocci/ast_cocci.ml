@@ -93,6 +93,7 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       fullType * string mcode (* ) *)
+  | TypeExp        of fullType (*type name used as an expression, only in arg*)
 
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 122 *)
+(* current max is 123 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -66,6 +66,7 @@ let expression e =
   | Ast0.Cast(lp,ty,rp,exp) -> [30]
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
+  | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.MetaConst(name,ty) -> [31]
   | Ast0.MetaErr(name) -> [32]
   | Ast0.MetaExpr(name,ty) -> [33]

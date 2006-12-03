@@ -100,6 +100,7 @@ let rec propagate_types env =
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
+      | Ast0.TypeExp(ty) -> None
       | Ast0.MetaConst(name,Some [ty]) -> Some ty
       | Ast0.MetaConst(name,_) -> None
       | Ast0.MetaErr(name) -> None

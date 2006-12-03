@@ -94,6 +94,7 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       fullType * string mcode (* ) *)
+  | TypeExp        of fullType
 
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)

@@ -558,6 +558,10 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   | A.SizeOfType (_, _, typa, _), ((B.SizeOfType (typb), typ),ii) ->
       match_ft_ft typa typb
 
+  | A.TypeExp(ty),_ ->
+      failwith
+	"pattern.ml: need to fill in something for the case of a type as an expression"
+
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (_, ea, _), ((B.ParenExpr (eb), typ),ii) -> 
       match_e_e ea eb

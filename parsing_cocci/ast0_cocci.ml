@@ -81,6 +81,7 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
+  | TypeExp        of typeC (* type name used as an expression, only in args *)
   | MetaConst      of string mcode * Type_cocci.typeC list option
   | MetaErr        of string mcode
   | MetaExpr       of string mcode * Type_cocci.typeC list option

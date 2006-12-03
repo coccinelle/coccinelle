@@ -219,6 +219,8 @@ let match_maker context_required whencode_allowed =
 	      match_expr expa expb
 	  | (Ast0.SizeOfType(_,_,tya,_),Ast0.SizeOfType(szf,lp,tyb,rp)) ->
 	      match_typeC tya tyb
+	  | (Ast0.TypeExp(tya),Ast0.TypeExp(tyb)) ->
+	      match_typeC tya tyb
 	  | (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
 	  | (Ast0.DisjExpr(_,expsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"

@@ -143,6 +143,7 @@ let rec unify_expression e1 e2 =
       unify_expression e1 e2
   | (Ast.SizeOfType(szf1,lp1,ty1,rp1),Ast.SizeOfType(szf2,lp2,ty2,rp2)) ->
       unify_fullType ty1 ty2
+  | (Ast.TypeExp(ty1),Ast.TypeExp(ty2)) -> unify_fullType ty1 ty2
   | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
       unify_expression e1 e2
 

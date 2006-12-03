@@ -1095,18 +1095,23 @@ eexpr_list:
        then Ast0.wrap(Ast0.STARS($1))
        else Ast0.wrap(Ast0.DOTS($1)) }
 
-eexpr_list_start:
+/* arg expr.  may contain a type or a explist metavariable */
+aexpr:
     dexpr
-      { [$1] }
+      { $1 }
   | TMetaExpList
       { let (nm,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt))] }
-  | dexpr TComma eexpr_list_start
-      { $1::Ast0.wrap(Ast0.EComma(clt2mcode "," $2))::$3 }
-  | TMetaExpList TComma eexpr_list_start
+      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt)) }
+  | generic_ctype
+      { Ast0.wrap(Ast0.TypeExp($1)) }
+  | TMetaType				(**)
       { let (nm,clt) = $1 in
-      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt))::
-      Ast0.wrap(Ast0.EComma(clt2mcode "," $2))::$3 }
+      Ast0.wrap(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)))) }
+
+eexpr_list_start:
+    aexpr { [$1] }
+  | aexpr TComma eexpr_list_start
+      { $1::Ast0.wrap(Ast0.EComma(clt2mcode "," $2))::$3 }
   | d=edots_when(TEllipsis,eexpr)
 	r=list(comma_args(edots_when(TEllipsis,eexpr)))
       { (mkedots "..." d)::
@@ -1124,14 +1129,9 @@ comma_args(dotter):
   c=TComma d=dotter
     { function dot_builder ->
       [Ast0.wrap(Ast0.EComma(clt2mcode "," c)); dot_builder d] }
-| TComma dexpr
+| TComma aexpr
     { function dot_builder ->
       [Ast0.wrap(Ast0.EComma(clt2mcode "," $1)); $2] }
-| TComma TMetaExpList
-    { function dot_builder ->
-      let (nm,clt) = $2 in
-      [Ast0.wrap(Ast0.EComma(clt2mcode "," $1));
-	Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt))] }
 
 eexpr_list_option: eexpr_list { $1 }
          | /* empty */     { Ast0.wrap(Ast0.DOTS([])) }
