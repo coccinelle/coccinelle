@@ -554,9 +554,57 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
 
 (* ------------------------------------------------------------------------- *)
 and distribute_mck_arge = fun (op, lop, rop) -> 
+  let rec trans_action (op, lop, rop) = function
+    | (ActMisc ii) -> 
+        ActMisc
+        (match ii with
+        | [] -> []
+        | [x] -> [x +> op +> lop +> rop]
+        | _ -> raise Todo
+        )
+    | (ActJump jump) -> 
+        ActJump
+        (match jump with
+        | (Goto s), [i1;i2]               -> 
+            (Goto s),
+            [i1 +> op +> lop; i2 +> op +> rop]
+        | ((Continue|Break|Return) as x), [i1] -> 
+            x, 
+            [i1 +> op +> lop +> rop]
+        | (ReturnExpr e), [i1] -> 
+            (ReturnExpr (distribute_mck_e (op, nothing_left, rop) e)),
+            [i1 +> op +> lop]
+        | x -> raise Impossible
+        )
+    | (ActSeq ((e,ii), action)) -> 
+        let rop' = 
+          match action with 
+          | ActMisc [] -> rop
+          | _ -> nothing_right
+        in
+        ActSeq (
+         (match distribute_mck_stat (op, lop, rop') (ExprStatement e, ii) with
+         | ExprStatement e', ii' -> e', ii'
+         | _ -> raise Impossible
+         ), trans_action (op, nothing_left, rop) action
+        )
+  in
+  
   let trans_arg (op, lop, rop) = function
     | Left e -> Left (distribute_mck_e (op, lop, rop) e)
-    | Right _ -> raise Todo
+    | Right (ArgType (tya, (sto, iisto))) -> 
+        assert (List.length iisto <= 1);
+        let (iisto', lop') = 
+          match iisto with
+          | [] -> [], lop
+          | [ii] -> [ii +> op +> lop], nothing_left
+          | x::xs -> raise Impossible
+        in
+        Right (ArgType (distribute_mck_type (op, lop', rop) tya,
+                          (sto, iisto')))
+        
+    | Right (ArgAction action) -> 
+        Right (ArgAction (trans_action (op, lop, rop) action))
   in 
   function
   | [] -> raise Todo (* Impossible ? *)

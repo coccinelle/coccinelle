@@ -465,12 +465,6 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
       * allow type in parameter, and morover ast_cocci allow f(...) and
       * those ... could match type. 
       *)
-     if (ebs +> List.map fst +> List.exists (function
-        | Left e -> false
-        | Right typ -> true
-        ))
-     then return false
-     else
       match_e_e ea1 eb1  >&&> (
 
       (* for the pattern phase, no need the EComma *)
@@ -656,13 +650,15 @@ and (match_arguments: sequence_processing_style ->
 
 and match_argument = fun arga argb -> 
   match A.unwrap arga, argb with
-  | A.TypeExp tya,  (Right (B.ArgType (tyb, (sto, iisto))),ii) ->
+  | A.TypeExp tya,  (Right (B.ArgType (tyb, sto_iisto)),ii) ->
       match_ft_ft tya tyb
+
+  | A.TypeExp tya,  _ -> return false
+  | _, (Right (B.ArgType (tyb, sto_iisto)),ii) -> return false
 
   | unwrapx, (Left y,ii) ->  match_e_e arga y
   | unwrapx, (Right (B.ArgAction y),ii) -> return false
 
-  | _, _ -> return false
 
 
 
