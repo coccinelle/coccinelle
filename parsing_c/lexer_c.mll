@@ -118,7 +118,7 @@ rule token = parse
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)           
   | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' 
       { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
+        TDefine (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
       { TCommentCpp (tokinfo lexbuf) }
