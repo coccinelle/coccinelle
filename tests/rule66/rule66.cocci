@@ -14,10 +14,11 @@ expression X;
 + kfree(X)
 
 @@
-expression X, A, C;
+expression X, C;
+type T;
 @@
 
-- X = snd_magic_kcalloc(A, 0, C)
+- X = snd_magic_kcalloc(T, 0, C)
 + X = kcalloc(1, sizeof(*X), C)
 
 @@
@@ -40,3 +41,15 @@ expression X, A, B, C;
 
 - X = snd_magic_kmalloc(A, B, C)
 + X = kmalloc(sizeof(*X)+B, C)
+
+//---------------------------------------------------------------------------
+// extra CE
+//---------------------------------------------------------------------------
+
+@@ expression X; @@
+- _snd_kcontrol_chip(X)
++ snd_kcontrol_chip(X)
+
+@@ expression X; @@
+- _snd_pcm_substream_chip(X)
++ snd_pcm_substream_chip(X)
