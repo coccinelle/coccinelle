@@ -1,5 +1,7 @@
 SP=rule66.cocci
 
+# the E:          memory.c sound.c
+
 SOURCES = 1_cs4231.c \
           ac97_codec.c \
           ac97_patch.c \
@@ -94,7 +96,6 @@ SOURCES = 1_cs4231.c \
           irq.c \
           korg1212.c \
           maestro3.c \
-          memory.c \
           mixart.c \
           mixart_core.c \
           mixart_hwdep.c \
@@ -143,7 +144,6 @@ SOURCES = 1_cs4231.c \
           seq_virmidi.c \
           serial-u16550.c \
           sonicvibes.c \
-          sound.c \
           sscape.c \
           tea6330t.c \
           timer.c \
