@@ -2,6 +2,8 @@ module Ast0 = Ast0_cocci
 
 (* Things that need to be seen by the lexer and parser. *)
 
+let in_meta = ref false
+
 type line_type =
     MINUS | OPTMINUS | UNIQUEMINUS | MULTIMINUS
   | PLUS

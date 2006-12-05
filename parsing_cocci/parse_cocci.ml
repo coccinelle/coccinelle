@@ -530,8 +530,10 @@ let parse file =
     (true,[(PC.TArobArob,_)]) -> (* read over initial @@ *)
       let rec loop _ =
 	(* get metavariable declarations *)
+	Data.in_meta := true;
 	let (more,tokens) =
 	  tokens_all table file true lexbuf [PC.TArobArob] in
+	Data.in_meta := false;
 	let metavars = parse_one PC.meta_main file tokens in
 	(* get transformation rules *)
 	let (more,tokens) =
@@ -586,8 +588,10 @@ let parse_iso = function
 	  let rec loop start =
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
+	    Data.in_meta := true;
 	    let (more,tokens) =
 	      tokens_all table file true lexbuf [PC.TArobArob] in
+	    Data.in_meta := false;
 	    let _ = parse_one PC.meta_main file tokens in
 	    (* get the rule *)
 	    let (more,tokens) =

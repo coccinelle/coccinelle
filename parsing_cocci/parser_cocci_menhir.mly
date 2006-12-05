@@ -145,8 +145,7 @@ let iso_adjust fn first rest =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TText
-%token TWhy0 TPlus0 TBang0 Tlist TFresh TConstant TError TWords
+%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 
 %token<Data.line_type * int * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong
 %token<Data.line_type * int * int * int> Tvoid Tstruct Tunion
@@ -879,7 +878,7 @@ pure_ident: TIdent { $1 }
 
 /* allows redeclaring metavariables.  used in @@ @@ */
 pure_ident_or_meta_ident:
-       x=TIdent           { x }
+       x=pure_ident       { x }
      | x=TMetaId          { x }
      | x=TMetaType        { x }
      | x=TMetaParam       { x }
@@ -893,7 +892,7 @@ pure_ident_or_meta_ident:
      | x=TMetaExp         { let (name,_,info) = x in (name,info) }
      | x=TMetaErr         { x }
 
-func_ident: TIdent
+func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
          { Ast0.wrap(Ast0.MetaId(id2mcode $1)) }
@@ -902,7 +901,7 @@ func_ident: TIdent
      | TMetaLocalFunc
 	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode $1)) }
 
-ident: TIdent
+ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
          { Ast0.wrap(Ast0.MetaId(id2mcode $1)) }

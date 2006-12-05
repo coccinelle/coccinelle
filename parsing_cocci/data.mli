@@ -3,6 +3,8 @@ type line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT | MULTI
 
+val in_meta : bool ref (* true if parsing the metavariable decls *)
+
 val clear_meta: (unit -> unit) ref
 
 val add_id_meta: (string -> unit) ref

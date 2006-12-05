@@ -86,63 +86,64 @@ let type_names =
 
 let id_tokens lexbuf =
   let s = tok lexbuf in
+  let linetype = get_current_line_type lexbuf in
+  let in_meta = !Data.in_meta in
   match s with
-    "identifier" -> check_arity_context_linetype s; TIdentifier
-  | "text" ->       check_arity_context_linetype s; TText
-  | "type" ->       check_arity_context_linetype s; TType
-  | "parameter" ->  check_arity_context_linetype s; TParameter
-  | "constant"  ->  check_arity_context_linetype s; TConstant
-  | "expression" -> check_arity_context_linetype s; TExpression
-  | "statement" ->  check_arity_context_linetype s; TStatement
-  | "function"  ->  check_arity_context_linetype s; TFunction
-  | "local" ->      check_arity_context_linetype s; TLocal
-  | "list" ->       check_arity_context_linetype s; Tlist
-  | "fresh" ->      check_arity_context_linetype s; TFresh
-  | "error" ->      check_arity_context_linetype s; TError
-  | "words" ->      check_context_linetype s; TWords
+    "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
+  | "text" when in_meta ->       check_arity_context_linetype s; TText
+  | "type" when in_meta ->       check_arity_context_linetype s; TType
+  | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
+  | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
+  | "expression" when in_meta -> check_arity_context_linetype s; TExpression
+  | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
+  | "function"  when in_meta ->  check_arity_context_linetype s; TFunction
+  | "local" when in_meta ->      check_arity_context_linetype s; TLocal
+  | "list" when in_meta ->       check_arity_context_linetype s; Tlist
+  | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
+  | "error" when in_meta ->      check_arity_context_linetype s; TError
+  | "words" when in_meta ->      check_context_linetype s; TWords
 
-  | "char" ->       Tchar   (get_current_line_type lexbuf)
-  | "short" ->      Tshort  (get_current_line_type lexbuf)
-  | "int" ->        Tint    (get_current_line_type lexbuf)
-  | "double" ->     Tdouble (get_current_line_type lexbuf)
-  | "float" ->      Tfloat  (get_current_line_type lexbuf)
-  | "long" ->       Tlong   (get_current_line_type lexbuf)
-  | "void" ->       Tvoid   (get_current_line_type lexbuf)
-  | "struct" ->     Tstruct (get_current_line_type lexbuf)
-  | "union" ->      Tunion  (get_current_line_type lexbuf)
-  | "unsigned" ->   Tunsigned (get_current_line_type lexbuf)
-  | "signed" ->     Tsigned (get_current_line_type lexbuf)
+  | "char" ->       Tchar     linetype
+  | "short" ->      Tshort    linetype
+  | "int" ->        Tint      linetype
+  | "double" ->     Tdouble   linetype
+  | "float" ->      Tfloat    linetype
+  | "long" ->       Tlong     linetype
+  | "void" ->       Tvoid     linetype
+  | "struct" ->     Tstruct   linetype
+  | "union" ->      Tunion    linetype
+  | "unsigned" ->   Tunsigned linetype
+  | "signed" ->     Tsigned   linetype
 	
-  | "auto"  ->      Tauto   (get_current_line_type lexbuf)
-  | "register" ->   Tregister (get_current_line_type lexbuf)
-  | "extern" ->     Textern (get_current_line_type lexbuf)
-  | "static" ->     Tstatic (get_current_line_type lexbuf)
+  | "auto"  ->      Tauto     linetype
+  | "register" ->   Tregister linetype
+  | "extern" ->     Textern   linetype
+  | "static" ->     Tstatic   linetype
 
-  | "const" ->      Tconst  (get_current_line_type lexbuf)
-  | "volatile" ->   Tvolatile (get_current_line_type lexbuf)
+  | "const" ->      Tconst    linetype
+  | "volatile" ->   Tvolatile linetype
 
-  | "if" ->         TIf     (get_current_line_type lexbuf)
-  | "else" ->       TElse   (get_current_line_type lexbuf)
-  | "while" ->      TWhile  (get_current_line_type lexbuf)
-  | "do" ->         TDo     (get_current_line_type lexbuf)
-  | "for" ->        TFor    (get_current_line_type lexbuf)
-  | "return" ->     TReturn (get_current_line_type lexbuf)
-  | "break" ->      TBreak  (get_current_line_type lexbuf)
-  | "continue" ->   TContinue (get_current_line_type lexbuf)
+  | "if" ->         TIf       linetype
+  | "else" ->       TElse     linetype
+  | "while" ->      TWhile    linetype
+  | "do" ->         TDo       linetype
+  | "for" ->        TFor      linetype
+  | "return" ->     TReturn   linetype
+  | "break" ->      TBreak    linetype
+  | "continue" ->   TContinue linetype
 
-  | "sizeof" ->     TSizeof (get_current_line_type lexbuf)
+  | "sizeof" ->     TSizeof   linetype
 
   | "Expression"     -> TIsoExpression
   | "Statement"      -> TIsoStatement
   | "Declaration"    -> TIsoDeclaration
 
   | s ->
-      let line_type = get_current_line_type lexbuf in
-      (try (Hashtbl.find metavariables s) line_type
+      (try (Hashtbl.find metavariables s) linetype
       with
 	Not_found ->
-	  (try (Hashtbl.find type_names s) line_type
-	  with Not_found -> TIdent (s,line_type)))
+	  (try (Hashtbl.find type_names s) linetype
+	  with Not_found -> TIdent (s,linetype)))
 
 let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
