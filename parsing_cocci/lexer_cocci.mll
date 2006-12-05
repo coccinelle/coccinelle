@@ -80,6 +80,10 @@ let metavariables =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
+let type_names =
+  (Hashtbl.create(100) :
+     (string, D.line_type * int * int * int -> token) Hashtbl.t)
+
 let id_tokens lexbuf =
   let s = tok lexbuf in
   match s with
@@ -133,8 +137,12 @@ let id_tokens lexbuf =
   | "Declaration"    -> TIsoDeclaration
 
   | s ->
-      try (Hashtbl.find metavariables s) (get_current_line_type lexbuf)
-      with Not_found -> TIdent (s,(get_current_line_type lexbuf))
+      let line_type = get_current_line_type lexbuf in
+      (try (Hashtbl.find metavariables s) line_type
+      with
+	Not_found ->
+	  (try (Hashtbl.find type_names s) line_type
+	  with Not_found -> TIdent (s,line_type)))
 
 let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
@@ -184,7 +192,10 @@ let init _ =
     (function name -> Hashtbl.replace metavariables name (fn name)));
   Data.add_local_func_meta :=
     (let fn name clt = TMetaLocalFunc(name,clt) in
-    (function name -> Hashtbl.replace metavariables name (fn name)))
+    (function name -> Hashtbl.replace metavariables name (fn name)));
+  Data.add_type_name :=
+    (let fn name clt = TTypeId(name,clt) in
+    (function name -> Hashtbl.replace type_names name (fn name)))
 
 let drop_spaces s =
   let len = String.length s in

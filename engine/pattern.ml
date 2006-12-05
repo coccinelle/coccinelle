@@ -474,7 +474,7 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
         | Right typ -> true
         ))
      then return false
-     else    
+     else
       match_e_e ea1 eb1  >&&> (
 
       (* for the pattern phase, no need the EComma *)

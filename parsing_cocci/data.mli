@@ -30,3 +30,5 @@ val add_stmlist_meta: (string -> unit) ref
 val add_func_meta: (string -> unit) ref
 
 val add_local_func_meta: (string -> unit) ref
+
+val add_type_name: (string -> unit) ref

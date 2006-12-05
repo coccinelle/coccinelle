@@ -1262,7 +1262,6 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     anno (satloop unchecked required required_states m phi env check_conj) []
   else
     let (child,res) =
-      Printf.printf "starting\n"; flush stdout;
       match A.unwrap phi with
       A.False              -> anno [] []
     | A.True               -> anno (triples_top states) []

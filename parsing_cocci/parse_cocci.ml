@@ -374,6 +374,8 @@ and find_line_end line clt q = function
 We assume that C code does not contain a multiplication as a top-level
 statement. *)
 
+(* bug: once a type, always a type, even if the same name is later intended
+   to be used as a real identifier *)
 let detect_types l =
   let is_delim = function
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
@@ -385,21 +387,30 @@ let detect_types l =
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_),_) | (PC.TMetaFunc(_,_),_)
     | (PC.TMetaLocalFunc(_,_),_) -> true
     | _ -> false in
-  let rec loop start = function
+  let rec loop start type_names = function
       [] -> []
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
       when is_delim delim ->
-	delim::(PC.TTypeId(ident,clt),v)::x::(loop false rest)
+	!Data.add_type_name ident;
+	delim::(PC.TTypeId(ident,clt),v)::x::
+	(loop false (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
       when is_delim delim && is_id id ->
-	delim::(PC.TTypeId(ident,clt),v)::id::(loop false rest)
+	!Data.add_type_name ident;
+	delim::(PC.TTypeId(ident,clt),v)::id::
+	(loop false (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when start -> (PC.TTypeId(ident,clt),v)::x::(loop false rest)
+      when start ->
+	!Data.add_type_name ident;
+	(PC.TTypeId(ident,clt),v)::x::(loop false (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::id::rest
       when start && is_id id ->
-	(PC.TTypeId(ident,clt),v)::id::(loop false rest)
-    | x::rest -> x::(loop false rest) in
-  loop true l
+	!Data.add_type_name ident;
+	(PC.TTypeId(ident,clt),v)::id::(loop false (ident::type_names) rest)
+    | (PC.TIdent(ident,clt),v)::rest when List.mem ident type_names ->
+	(PC.TTypeId(ident,clt),v)::(loop false type_names rest)
+    | x::rest -> x::(loop false type_names rest) in
+  loop true [] l
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is

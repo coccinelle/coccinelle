@@ -48,3 +48,6 @@ let add_func_meta: (string -> unit) ref =
 
 let add_local_func_meta: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
+
+let add_type_name: (string -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_type") 
