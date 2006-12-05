@@ -248,8 +248,16 @@ let ast_to_flow_with_error_messages2 def filename =
   end;
   flow
 
+let flow_to_ast2 flow = 
+  Flow_to_ast.control_flow_to_ast flow 
+
+
+
 let ast_to_flow_with_error_messages a b = 
   profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
+
+let flow_to_ast a = 
+  profile_code "flow" (fun () -> flow_to_ast2 a)
                   
   
 (*****************************************************************************)
@@ -341,7 +349,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
             (* I do the transformation on flow, not fixed_flow, 
                because the flow_to_ast need my extra information. *)
             let flow' = Transformation.transform trans_info flow in
-            let def' = Flow_to_ast.control_flow_to_ast flow' in
+            let def' = flow_to_ast flow' in
 
             (Ast_c.Definition def', Unparse_c.PPnormal), 
             Some newbinding, hack_funheaders
