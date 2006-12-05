@@ -32,6 +32,13 @@
 // Some of them are handled in pattern.ml and transformation.ml.
 // Some of them handled here.
 
+
+//TODO optional cast so that 
+// chip = (ak4117_t *)snd_magic_kcalloc(ak4117_t, 0, GFP_KERNEL);
+//  also match 
+// - X = snd_magic_kcalloc(T, 0, C)
+
+
 Declaration
 @@ identifier Z; @@
 int Z; => signed int Z;
@@ -235,6 +242,12 @@ return ...; => return;
  
 
 // ---------------------------------------------------------------------------
+// Affectation/initialisation isomorphism
+// ---------------------------------------------------------------------------
+// TODO 'X = Y'  should also match  'type X = Y';
+
+// ---------------------------------------------------------------------------
+// 
 // ---------------------------------------------------------------------------
 //Expression
 //@@ expression E; @@
