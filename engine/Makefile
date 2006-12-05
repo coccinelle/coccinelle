@@ -1,22 +1,19 @@
-# Don't forget to first do a 'make links' to be able to compile the standalone cocci parser
-
 TARGET=cocciengine
 CTLTARGET=engine
 
-SOURCES = flag_engine.ml lib_engine.ml check_exhaustive_pattern.ml \
+SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
+	  check_exhaustive_pattern.ml \
+	  types.ml isomorphisms_c_c.ml \
+          pattern.ml distribute_mcodekind.ml transformation.ml \
 	  unparse_cocci.ml unparse_c.ml \
-	  types.ml \
-	  pretty_print_engine.ml isomorphisms_c_c.ml pattern.ml \
-	  distribute_mcodekind.ml transformation.ml asttomember.ml \
-	  asttoctl2.ml ctltotex.ml \
+	  asttomember.ml asttoctl2.ml ctltotex.ml \
 	  ctlcocci_integration.ml
 
 # just to test asttoctl
 #CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
-INCLUDE_PATH = -I ../commons -I ../ctl -I .. -I ../parsing_c \
-	       -I ../parsing_cocci -I ../ctl
+INCLUDE_PATH = -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci
 
 SYSLIBS = str.cma unix.cma
 LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma \

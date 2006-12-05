@@ -342,8 +342,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                   (* todo: it can contain some goto, return, so should 
                      modify the CFG *)
                    "<macrocall>"
-              | MacroCall2 _ -> 
-                   "<macrocall2>"
                      
               | _ -> "statement"
           )

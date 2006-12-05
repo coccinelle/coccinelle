@@ -63,6 +63,10 @@ val profiling_diagnostic : unit -> string
 
 val time_func : (unit -> 'a) -> 'a
 
+val profile : bool ref
+val profile_code : string -> (unit -> 'a) -> 'a
+
+val profile_diagnostic : unit -> unit
 
 (*****************************************************************************)
 (* Test *)

@@ -174,7 +174,6 @@ let main () =
       "-save_output_file", Arg.Set save_output_file, " ";
       "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
-      "-error_words_only", Arg.Set Flag.process_only_when_error_words, " ";
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";
       "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
@@ -204,6 +203,7 @@ let main () =
       "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
       "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
       
+      "-profile",          Arg.Set  Common.profile , "  ";
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
@@ -228,14 +228,12 @@ let main () =
                      " [options] <path-to-c-dir>\nOptions are:") 
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
-
+    profile_code "total" (fun () -> 
     (match (!args) with
 
     | [x] when !test_mode    -> testone x 
     | []  when !testall_mode -> testall ()
-    | [x] when !test_ctl_foo -> 
-        let cfile = x in 
-        Cocci.full_engine cfile (Right (Test.foo_ctl ()));
+    | [x] when !test_ctl_foo -> Cocci.full_engine x (Right (Test.foo_ctl ()))
 
     | x::xs when !action <> "" -> 
         (match !action, x::xs with
@@ -259,8 +257,8 @@ let main () =
               then pr2 "warning: seems not a .c file";
 
               file +> Parse_c.parse_print_error_heuristic +> (fun (x, stat) -> 
-                push2 stat _stat_list)
-                ;
+                push2 stat _stat_list
+                );
              (* file +> Parse_c.parse_print_error +> (fun (x) -> ()); *)
              );
             if not (null !_stat_list) 
@@ -271,9 +269,7 @@ let main () =
             then pr2 "warning: seems not a .cocci file";
             (try 
               let (xs,_,_) = Cocci.sp_from_file file None in
-              xs +> List.iter (fun rule -> 
-                Pretty_print_cocci.unparse rule
-                              )
+              xs +> List.iter Pretty_print_cocci.unparse
             with x -> pr2 "BAD" 
             )
         | "control_flow", [file] -> 
@@ -355,10 +351,14 @@ let main () =
           );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
-   (* pr2 (profiling_diagnostic ()); *)
    )
+  );
+  profile_diagnostic ();
   end
 
 
 let _ =
-  if not (!Sys.interactive) then (main ();Ctlcocci_integration.print_bench())
+  if not (!Sys.interactive) then begin
+    main ();
+    Ctlcocci_integration.print_bench()
+  end

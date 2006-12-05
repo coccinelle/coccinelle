@@ -220,9 +220,6 @@ let info_from_token = function
   | Parser_c.EOF (i) -> i
 
   | Parser_c.THigherOrderMacro (i) -> i
-  | Parser_c.THigherOrderExprStatement (i) -> i
-  | Parser_c.THigherOrderExprExprStatement (i) -> i
-  | Parser_c.THigherOrderExprExprExprStatement (i) -> i
 
   | Parser_c.Tinline (i) -> i
 
@@ -630,6 +627,15 @@ let parse_print_error_heuristic file =
                   TypedefIdent (s, i1)
 
 
+                (* xx_t * yy *)
+              | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _) 
+                  when s =~ ".*_t$"
+                    ->
+                  msg_typedef s; 
+                  Lexer_parser.add_typedef s;
+                  TypedefIdent (s, i1)
+
+
 
 
                 (*  xx ** yy *)  (* wrong ? *)
@@ -665,6 +671,12 @@ let parse_print_error_heuristic file =
                   Lexer_parser.add_typedef s;
                   TOPar info
 
+              (* (xx){ ... }  constructor *)
+              | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::_) 
+                  when s =~ ".*_t$"->
+                    msg_typedef s; 
+                    Lexer_parser.add_typedef s;
+                    TypedefIdent (s, i1)
 
 
              (* can have sizeof on expression

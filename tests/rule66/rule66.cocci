@@ -1,8 +1,9 @@
 @@
-expression A, B, C;
+expression B;
+type T;
 @@
 
-- snd_magic_cast(A,B,C)
+- snd_magic_cast(T,B,...)
 + B
 
 @@

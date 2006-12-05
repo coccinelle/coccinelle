@@ -26,7 +26,8 @@ let rec (annotate_program: program -> program) = fun prog ->
   
   let env = ref (Hashtbl.create 100) in
   let scoped_env = ref [[]] in
-  let notyped_var = ref (Hashtbl.create 100) in
+  (* memoise unnanoted var, to avoid too much warning messages *)
+  let notyped_var = ref (Hashtbl.create 100) in 
 
   let new_scope() = scoped_env := []::!scoped_env in
   let del_scope() = 
@@ -72,26 +73,20 @@ let rec (annotate_program: program -> program) = fun prog ->
       end
   in
 
-  
+
   let bigf = { Visitor_c.default_visitor_c_s with 
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
+      let infolistf ii = List.map (Visitor_c.visitor_info_k_s bigf) ii in
       let ((unwrap_e, oldtyp), iie) = e in
       match unwrap_e with
+
       (* don't want a warning on the Ident that are a FunCall *)
       | FunCall (((Ident f, typ), ii), args) -> 
          (FunCall (((Ident f, typ), ii), 
                  args +> List.map (fun (e,ii) -> 
-                   (match e with
-                   | Left e -> Left (Visitor_c.visitor_expr_k_s bigf e)
-                   | Right (t, stoil) -> 
-                       let (unwrap_st, ii) = stoil in
-                       Right (Visitor_c.visitor_type_k_s bigf t, 
-                              (unwrap_st, 
-                               List.map (Visitor_c.visitor_info_k_s bigf) ii
-                                 ))
-                   ), List.map (Visitor_c.visitor_info_k_s bigf) ii
-                   )
-                  ), oldtyp), iie
+                   Visitor_c.visitor_argument_k_s bigf e, infolistf ii
+                  )), oldtyp), iie
+          
           
       | Ident (s) -> 
           (match (Common.optionise (fun () -> Hashtbl.find !env s)) with

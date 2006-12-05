@@ -133,15 +133,13 @@ and expression = (expressionbis * fullType option (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
-   * With cpp, Ident can also be the name of a macro.
+   * With CPP, Ident can also be the name of a macro.
    * todo? put more semantic info on this ident, such as 'is it a local func?'
    *)
   | Ident          of string   
   | Constant       of constant                                  
 
-  (* cppext: normmally just   expression * expression list. *)
-  | FunCall of expression * 
-              (expression, fullType * storage wrap) either wrap2 (* , *) list
+  | FunCall of expression * argument wrap2 (* , *) list
 
   (* gccext: x ? /* empty */ : y <=> x ? x : y; *)
   | CondExpr       of expression * expression option * expression
@@ -164,6 +162,7 @@ and expressionbis =
   | SizeOfType     of fullType                                  
   | Cast           of fullType * expression                     
 
+
   (* gccext: *)        
   | StatementExpr of compound wrap (* ( )     new scope *) 
   | Constructor 
@@ -172,16 +171,17 @@ and expressionbis =
   | ParenExpr of expression 
 
   (* cppext: *)
-  | MacroCall of (expression, fullType * storage wrap, action_macro) either3
-                 wrap2 list
-  | MacroCall2 of (expression, statement list) either
- 
-  and action_macro = 
-    | ActJump of (jump * il) 
-    | ActMisc of il 
-    | ActTodo
-    | ActExpr of expression 
-    | ActExpr2 of (expression * info * action_macro)
+  | MacroCall of (expression, statement list) either
+
+  (* cppext: normmally just expression *)
+  and argument = (expression, wierd_argument) either
+   and wierd_argument = 
+       | ArgType of fullType * storage wrap
+       | ArgAction of action_macro
+      and action_macro = 
+         | ActJump of (jump * il) 
+         | ActSeq of (exprStatement wrap * action_macro)
+         | ActMisc of il 
 
 
   (* I put string for Int and Float cos int would not be enough cos Caml Int 
@@ -325,9 +325,7 @@ and program = programElement list
           | Definition of definition
           | EmptyDef of il      (* gccext: allow redundant ';' *)
           | SpecialDeclMacro of (* cppext: *)
-             string * 
-             (expression, fullType * storage wrap) either wrap2 list *
-             il 
+             string * argument wrap2 list * il 
           | CPPInclude of il
           | CPPDefine of il
           | NotParsedCorrectly of il
@@ -374,7 +372,12 @@ let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
 let unwrap = fst
 
 (*****************************************************************************)
-(* abstract line *)
+(* Abstract line. When we have extended the C Ast, to add some info to the
+ * tokens, such as its line number in the file, we can not use anymore the
+ * ocaml '=' to compare Ast elements. To overcome this problem, to be
+ * able to use again '=', we just have to get rid of all those extra 
+ * information
+*)
 
 let _Magic_info_number = -10
 

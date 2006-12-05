@@ -18,12 +18,22 @@ module CCI = Ctlcocci_integration
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_from_file  file = 
+let cprogram_from_file2  file = 
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
     +> Common.unzip 
     +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
     +> uncurry Common.zip
+
+let cfile_from_program2 program inf outf = 
+  Unparse_c.pp_program program inf outf
+
+let cprogram_from_file file = 
+  profile_code "C parsing" (fun () -> cprogram_from_file2 file)
+
+let cfile_from_program a b c = 
+  profile_code "C unparsing" (fun () -> cfile_from_program2 a b c)
+  
 
 let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
   begin
@@ -181,29 +191,6 @@ let show_or_not_binding binding =
 (* Some  helpers functions *)
 (*****************************************************************************)
 
-
-let extract_all_error_words astcocci = 
-  astcocci +> List.hd +> (fun xs -> 
-    let res = ref [] in
-    xs +> List.iter (fun x ->
-      match Ast_cocci.unwrap x with
-      | Ast_cocci.ERRORWORDS es -> 
-          es +> List.iter (fun e -> 
-            (match Ast_cocci.unwrap e with
-            | Ast_cocci.Ident id ->
-		(match Ast_cocci.unwrap id with 
-		| Ast_cocci.Id (s,_,_) -> push2 s res
-		| _ -> pr2 "warning: does not support complex error words"
-                )
-            | _ -> pr2 "warning: does not support complex error words"
-            )
-                          );
-      | _ -> ()
-    );
-    List.rev !res
-    ) 
-
-
 let worth_trying cfile tokens = 
   if not !Flag.windows && not (null tokens)
   then
@@ -232,7 +219,7 @@ let contain_loop def =
 
 
 
-let ast_to_flow_with_error_messages def filename =
+let ast_to_flow_with_error_messages2 def filename =
   let flow = 
     try Ast_to_flow.ast_to_control_flow def 
     with Ast_to_flow.DeadCode Some info -> 
@@ -255,11 +242,14 @@ let ast_to_flow_with_error_messages def filename =
       pr2 (Common.error_message filename ("", info.charpos));
       pr2 ("At least 1 DEADCODE detected (there may be more)," ^
            "but I continue.");
-      pr2 "Maybe because of cpp #ifdef side effects.";
+     (* not a failwith this time *)
+      pr2 "Maybe because of cpp #ifdef side effects."; 
               
   end;
   flow
 
+let ast_to_flow_with_error_messages a b = 
+  profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
                   
   
 (*****************************************************************************)
@@ -270,9 +260,9 @@ let ast_to_flow_with_error_messages def filename =
  * then a binding option if there is new info brought by the matching,
  * and finally a hack_funheaders list. 
  *)
-let program_elem_vs_ctl = fun cinfo cocciinfo binding -> 
-  let (elem, (filename, _pos, str_elem, il)) = cinfo in
-  let (ctl, used_after_list, error_words) = cocciinfo in
+let program_elem_vs_ctl2 = fun cinfo cocciinfo binding -> 
+  let (elem, (filename, _pos, il)) = cinfo in
+  let (ctl, used_after_list) = cocciinfo in
 
   match elem, ctl  with
 
@@ -308,74 +298,68 @@ let program_elem_vs_ctl = fun cinfo cocciinfo binding ->
   | Ast_c.Definition (((funcs, _, _, c),_) as def),   ctl -> 
       if !Flag.show_misc then pr2 ("starting function " ^ funcs);
 
-      (* cos caml regexp dont like \n ... *)
-      let str = Str.global_replace (Str.regexp "\n") " " str_elem in 
-      (* call the engine algorithms only if have found a flag word *)
-      if not (!Flag.process_only_when_error_words) ||
-         error_words +> List.exists (fun errw -> str =~ (".*" ^ errw))
-      then
-        begin
-          let flow = ast_to_flow_with_error_messages def filename in
+      let flow = ast_to_flow_with_error_messages def filename in
 
-          (* remove the fake nodes for julia *)
-          let fixed_flow = CCI.fix_flow_ctl flow in
+      (* remove the fake nodes for julia *)
+      let fixed_flow = CCI.fix_flow_ctl flow in
                 
-          if !Flag.show_flow              then print_flow fixed_flow;
-          if !Flag.show_before_fixed_flow then print_flow flow;
+      if !Flag.show_flow              then print_flow fixed_flow;
+      if !Flag.show_before_fixed_flow then print_flow flow;
 
 
-          let satres = 
-            Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
-              Flag_ctl.loop_in_src_code := 
-                !Flag_ctl.loop_in_src_code || contain_loop def;
+      let satres = 
+        Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
+          Flag_ctl.loop_in_src_code := 
+            !Flag_ctl.loop_in_src_code || contain_loop def;
               
-              (***************************************)
-              (* !Main point! The call to the engine *)
-              (***************************************)
-              let model_ctl  = CCI.model_for_ctl flow binding in
+            (***************************************)
+            (* !Main point! The call to the engine *)
+            (***************************************)
+            let model_ctl  = CCI.model_for_ctl flow binding in
+            profile_code "mysat" (fun () -> 
 	      CCI.mysat model_ctl ctl (used_after_list, binding)
+            )
 
           ) in
 
-	  match satres with
-	  | Left (trans_info, returned_any_states, newbinding) ->
-              show_or_not_trans_info trans_info;
+      (match satres with
+      | Left (trans_info, returned_any_states, newbinding) ->
+          show_or_not_trans_info trans_info;
 
-              (* modify also the proto if FunHeader was touched *)
-              let hack_funheaders = 
-               trans_info +> map_filter (fun (_nodei, binding, rule_elem) -> 
-                match rule_elem with
-                | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
-                    Some  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
-                | _ -> None
-                )  
-              in
+          (* modify also the proto if FunHeader was touched *)
+          let hack_funheaders = 
+            trans_info +> map_filter (fun (_nodei, binding, rule_elem) -> 
+              match rule_elem with
+              | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
+                  Some  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
+              | _ -> None
+                                     )  
+          in
                     
-              if not (null trans_info) (* TODOOOOO returned_any_states *)
-              then 
-                (* I do the transformation on flow, not fixed_flow, 
-                   because the flow_to_ast need my extra information. *)
-                let flow' = Transformation.transform trans_info flow in
-                let def' = Flow_to_ast.control_flow_to_ast flow' in
+          if not (null trans_info) (* TODOOOOO returned_any_states *)
+          then 
+            (* I do the transformation on flow, not fixed_flow, 
+               because the flow_to_ast need my extra information. *)
+            let flow' = Transformation.transform trans_info flow in
+            let def' = Flow_to_ast.control_flow_to_ast flow' in
 
-                (Ast_c.Definition def', Unparse_c.PPnormal), 
-                Some newbinding, hack_funheaders
-              else 
-                (Ast_c.Definition def, Unparse_c.PPviatok il), 
-                Some newbinding, hack_funheaders
-	  | Right x -> 
-              pr2 ("Unable to find a value for " ^ x);
-              (Ast_c.Definition def, Unparse_c.PPviatok il), 
-              None, []
-        end
-      else 
-        (Ast_c.Definition def, Unparse_c.PPviatok il),
-        None, []
+            (Ast_c.Definition def', Unparse_c.PPnormal), 
+            Some newbinding, hack_funheaders
+          else 
+            (Ast_c.Definition def, Unparse_c.PPviatok il), 
+            Some newbinding, hack_funheaders
+      | Right x -> 
+          pr2 ("Unable to find a value for " ^ x);
+          (Ast_c.Definition def, Unparse_c.PPviatok il), 
+          None, []
+      )
   | x, ctl -> 
       (x, Unparse_c.PPviatok il),
       None, []
 
 
+let program_elem_vs_ctl a b c = 
+  profile_code "program_elem_vs_ctl" (fun () -> program_elem_vs_ctl2 a b c)
 
 
 
@@ -383,22 +367,21 @@ let program_elem_vs_ctl = fun cinfo cocciinfo binding ->
 (* --------------------------------------------------------------------- *)
 
 (* Returns nothing. The output is in the file "/tmp/output.c". *)
-let full_engine cfile coccifile_and_iso_or_ctl = 
+let full_engine2 cfile coccifile_and_iso_or_ctl = 
   assert (lfile_exists cfile);
 
   (* preparing the inputs (c, cocci, ctl) *)
-  let (ctls, error_words, error_words_julia) = 
+  let (ctls, error_words_julia) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
         let (astcocci,used_after_lists,toks)= sp_from_file coccifile isofile in
-        let all_error_words = extract_all_error_words astcocci in
         let ctls = ctls astcocci used_after_lists in
 
         show_or_not_cfile  cfile;
         show_or_not_cocci coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
-        (zip ctls used_after_lists, all_error_words, toks)
-    | Right ctl ->([[(ctl,([],[]))], []]), [], []
+        (zip ctls used_after_lists, toks)
+    | Right ctl ->([[(ctl,([],[]))], []]), []
     )
   in
 
@@ -474,7 +457,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
       (* 3: iter function *)
       (* ------------------ *)
       let cprogram = cprogram_from_file ("/tmp/input.c") in
-      let cprogram' = cprogram +> List.map (fun (elem,(filename, pos, s,il)) ->
+      let cprogram' = cprogram +> List.map (fun (elem,(filename, pos, _s,il)) ->
 
         (************************************************************)
         (* !Main point! The call to the function that will call the
@@ -486,8 +469,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
 
         let elem', newbinding, hack_funheaders = 
           program_elem_vs_ctl 
-            (elem, (filename, pos, s, il))
-            (ctl, full_used_after_list, error_words) 
+            (elem, (filename, pos, il))
+            (ctl, full_used_after_list) 
             binding 
         in
 
@@ -504,8 +487,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
         elem'
         ) (* end 3: iter function *)
       in
-
-      Unparse_c.pp_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+      cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
       command2("cp /tmp/output.c /tmp/input.c");    
       ) (* end 2: iter bindings *)
    end
@@ -533,14 +515,14 @@ let full_engine cfile coccifile_and_iso_or_ctl =
          lastround_bindings_multi +> List.iter (fun (binding, already) -> 
 
            (* iter program *)
-           cprogram +> List.iter (fun (elem, (filename, pos, s, il)) -> 
+           cprogram +> List.iter (fun (elem, (filename, pos, _s, il)) -> 
 
              if (not (List.mem pos (Common.keys already)))
              then begin
              let elem', newbinding, hack_funheaders = 
                program_elem_vs_ctl 
-                 (elem, (filename, pos, s, il))
-                 (ctl, used_after_one_ctl, error_words) 
+                 (elem, (filename, pos, il))
+                 (ctl, used_after_one_ctl) 
                  binding 
              in
 
@@ -572,7 +554,7 @@ let full_engine cfile coccifile_and_iso_or_ctl =
          else e, Unparse_c.PPviatok il
          )
        in
-       Unparse_c.pp_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+       cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
        command2("cp /tmp/output.c /tmp/input.c");    
        _current_bindings := [binding]
        
@@ -589,7 +571,8 @@ let full_engine cfile coccifile_and_iso_or_ctl =
    * modify the prototype as soon as possible, not wait until the end
    * of all the ctl rules 
    *)
- 
+
+  profile_code "hack_headers" (fun () -> 
   !_hack_funheader +> List.iter (fun 
     ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
    
@@ -618,14 +601,18 @@ let full_engine cfile coccifile_and_iso_or_ctl =
             (x, Unparse_c.PPviatok il)
         )
     in
-    Unparse_c.pp_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+    cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
     command2("cp /tmp/output.c /tmp/input.c");    
+   );
    );
 
   (* ----------------------------------------- *)
 
   (* may need --strip-trailing-cr under windows *)
-  ignore(Sys.command ("diff -u -b -B " ^ cfile ^ " /tmp/output.c"))
+  pr2 "diff = ";
+  command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
  end
 
 
+let full_engine a b = 
+  profile_code "full_engine" (fun () -> full_engine2 a b)

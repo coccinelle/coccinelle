@@ -258,8 +258,7 @@ let fix_add_params_ident = function
 %token <Ast_c.info> Tattribute
 %token <Ast_c.info> Tinline
 
-%token <Ast_c.info> THigherOrderMacro THigherOrderExprExprStatement THigherOrderExprStatement THigherOrderExprExprExprStatement
-
+%token <Ast_c.info> THigherOrderMacro
 
 %token <Ast_c.info> EOF
 
@@ -356,36 +355,24 @@ postfix_expr: primary_expr                                 { $1 }
 	    | postfix_expr TInc                            { (Postfix ($1, Inc),      noType),[$2] }
 	    | postfix_expr TDec                            { (Postfix ($1, Dec),      noType),[$2] }
 
-            /* gccext: */
+            /* gccext: also called compound literals */
             | topar2 type_name tcpar2 TOBrace TCBrace                                    { (Constructor, noType),[] }
             | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace      { (Constructor, noType),[] }
 
             /* cppext: */
-            | THigherOrderMacro TOPar statement_list TCPar { (MacroCall2 (Right $3),  noType),[$1;$2;$4] }
-            | THigherOrderMacro TOPar expr TCPar           { (MacroCall2 (Left $3),  noType),[$1;$2;$4] }
-
-            | THigherOrderExprStatement TOPar expr TComma action_higherordermacro TCPar                                 { (MacroCall [(Left3 $3, []);(Right3 ($5), [$4])],                  noType), [$1;$2;$6] }
-            | THigherOrderExprExprStatement TOPar assign_expr TComma assign_expr TComma action_higherordermacro TCPar   { (MacroCall [(Left3 $3, []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8] }
-            | THigherOrderExprExprStatement TOPar decl_spec3  TComma assign_expr TComma action_higherordermacro TCPar   {  let (returnType,storage) = fixDeclSpecForDecl $3 in
-                                                                                                                           (MacroCall [(Middle3 (returnType, storage), []);(Left3 $5, [$4]);(Right3 ($7), [$6])], noType), [$1;$2;$8]
-                                                                                                                         }
-            | THigherOrderExprExprExprStatement TOPar assign_expr TComma assign_expr TComma assign_expr TComma action_higherordermacro TCPar { (Constructor, noType), [] }
-
-action_higherordermacro: jump        { ActJump $1 }
-                       | Tdo         { ActMisc [$1] }
-                       | Textern     { ActMisc [$1] }
-                       | /* empty */ { ActMisc [] }
-                       | assign_expr { ActExpr $1 }
-                       | assign_expr TPtVirg action_higherordermacro { ActExpr2 ($1, $2, $3)  }
+            | THigherOrderMacro TOPar statement_list TCPar { (MacroCall (Right $3),  noType),[$1;$2;$4] }
+            | THigherOrderMacro TOPar expr TCPar           { (MacroCall (Left $3),  noType),[$1;$2;$4] }
 
 
-argument_expr_list: assign_expr                           { [Left $1, []] }
-	          | argument_expr_list TComma assign_expr { $1 ++ [Left $3,    [$2]] }
-
-                   /* decl_spec and not just type_spec cos can have  unsigned short for instance => type_spec_list */
-                  | decl_spec3 { let (returnType,storage) = fixDeclSpecForDecl $1 in [Right (returnType, storage),  []]  }  /* cppext: */
-	          | argument_expr_list TComma decl_spec3  { let (returnType,storage) = fixDeclSpecForDecl $3 in $1 ++ [Right (returnType, storage), [$2]] }  /* cppext: */
-
+/* decl_spec and not just type_spec cos can have  unsigned short for 
+ *  instance => type_spec_list 
+ */
+argument: assign_expr { Left $1 }
+        /* cppext: */
+        | decl_spec3  { let (returnType,storage) = fixDeclSpecForDecl $1 in 
+                        Right (ArgType (returnType, storage) )
+                      }
+        | action_higherordermacro { Right (ArgAction $1) }
 
 primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
             | TInt    { (Constant (Int    (fst $1)), noType), [snd $1] }
@@ -404,6 +391,21 @@ primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
 
 
 
+action_higherordermacro: jump        { ActJump $1 }
+                       | assign_expr_statement action_higherordermacro { ActSeq ($1, $2)  }
+                       | /* empty */ { ActMisc [] }
+/*                     | Tdo         { ActMisc [$1] }
+                       | Textern     { ActMisc [$1] }
+*/
+
+
+/* We cannot reuse expr_statement because expr_statement allows ',' and 
+ * we are in an argument of a macro, and it would not be parsed by CPP as
+ * a single expr_statement but as another argument.
+ */
+assign_expr_statement: TPtVirg { None,    [$1] }
+                     | assign_expr TPtVirg { Some $1, [$2] }
+
 
 /*----------------------------*/
 /* workarounds */
@@ -418,9 +420,6 @@ ident: TIdent       { $1 }
 
 const_expr: cond_expr { $1 (* would like evalInt $1 but require too much info *) }
 
-
-gcc_opt_expr: expr { Some $1 }
-            | /* empty */ { None  }
 
 topar2: TOPar { et "topar2" (); $1  }
 tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) } 
@@ -465,13 +464,6 @@ compound2:                           { ([],[]) }
         |  statement_list            { ([], $1) }
         |  decl_list                 { ($1, []) }
         |  decl_list statement_list  { ($1,$2) }
-
-decl_list: decl           { [$1]   }
-	 | decl_list decl { $1 ++ [$2] }
-
-statement_list: statement { [$1] }
-	      | statement_list statement { $1 ++ [$2] }
-
 */
 
 /* cppext: because of cpp, some stuff look like declaration but are in fact
@@ -482,10 +474,6 @@ statement_list: statement { [$1] }
 */
 compound2:  { ([]) }
         | stat_or_decl_list { ($1) }
-
-stat_or_decl_list: 
-        | stat_or_decl { [$1] }                          
-        | stat_or_decl_list stat_or_decl { $1 ++ [$2] }
 
 stat_or_decl: decl      { Decl $1, [] }
             | statement { $1 }
@@ -527,9 +515,6 @@ jump: Tgoto ident  { Goto (fst $2),  [$1;snd $2] }
 asmbody: string_list colon_asm_list  { }
        | string_list { } /* in old kernel */
 
-string_list: string_elem { [$1] }
-           | string_list string_elem { $1 ++ [$2] } 
-
 string_elem: TString { snd $1 }
            /* cppext: */
            /* can cause some strange behaviour ... */
@@ -537,13 +522,7 @@ string_elem: TString { snd $1 }
            | TIdent TOPar TIdent TCPar { snd $1 } 
 
 
-colon_asm_list: colon_asm {}
-              | colon_asm_list colon_asm  {}
-
 colon_asm: TDotDot colon_option_list {}
-
-colon_option_list: colon_option {} 
-                 | colon_option_list TComma colon_option {}
 
 colon_option: TString {}
             | TString TOPar assign_expr TCPar {} 
@@ -578,10 +557,12 @@ decl2: decl_spec TPtVirg
 decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [snd $1]) } }
 	  | type_spec                     { addTypeD ($1,nullDecl) }
 	  | type_qualif                   { {nullDecl with qualifD  = (fst $1, [snd $1]) } }
+          | Tinline                       { {nullDecl with inlineD = (true, [$1]) } }
           | storage_class_spec decl_spec2 { addStorageD ($1, $2) }
 	  | type_spec          decl_spec2 { addTypeD    ($1, $2) }
 	  | type_qualif        decl_spec2 { addQualifD  ($1, $2) }
           | Tinline            decl_spec2 { addInlineD ((true, $1), $2) }
+
 /* can simplify by putting all in _opt ? must have at least one otherwise
    decl_list is ambiguous ? (no cos have ';' between decl) 
 */
@@ -633,10 +614,6 @@ s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace 
 struct_or_union2: Tstruct { Struct, $1 }
     	        | Tunion  { Union, $1 }
 
-struct_decl_list: struct_decl                   { [$1] }
-	        | struct_decl_list struct_decl  { $1 ++ [$2] }
-	        | struct_decl_list TPtVirg struct_decl  { $1 ++ [$3] } /* gccext: allow double ;; */
-
 
 struct_decl2: spec_qualif_list struct_declarator_list TPtVirg 
                 { let (returnType,storage) = fixDeclSpecForDecl $1 in
@@ -660,8 +637,6 @@ struct_decl2: spec_qualif_list struct_declarator_list TPtVirg
                 }
 
 
-struct_declarator_list: struct_declarator                               { [$1,           []] }
-		      | struct_declarator_list TComma struct_declarator { $1 ++ [$3,     [$2]] }
 
 struct_declarator: declarator                    { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x),   [snd (fst $1)]) }
 		 | dotdot const_expr2            { (fun x -> BitField (None, x, $2),              [$1]) }
@@ -684,9 +659,6 @@ const_expr2: const_expr { dt "const_expr2" (); $1 }
 struct_decl_list_gcc: struct_decl_list gcc_opt_virg  { $1 } /* gccext: allow double ;; at end too */
                     | /* empty */                    { [] } /* gccext: allow empty struct */
 
-gcc_opt_virg: TPtVirg { }
-            |  { }
-
 gcc_attr_opt: /* empty */ { }
             | Tattribute TOPar TOPar argument_expr_list TCPar TCPar { }
 
@@ -696,9 +668,6 @@ enum_spec: Tenum        TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (No
          | Tenum ident  TOBrace enumerator_list gcc_comma_opt TCBrace { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
          | Tenum ident                                                { EnumName (fst $2),       [$1; snd $2] }
 
-enumerator_list: enumerator                        { [$1,          []]   }
-	       | enumerator_list TComma enumerator { $1 ++ [$3,    [$2]] }
-
 enumerator: idente                 { (fst $1, None),      [snd $1]    }
           | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
 
@@ -707,8 +676,6 @@ enumerator: idente                 { (fst $1, None),      [snd $1]    }
 /*----------------------------*/
 /* workarounds */
 /*----------------------------*/
-gcc_comma_opt: TComma {  [$1] } /* gccext:  which allow a trailing ',' in enum (as in perl) */
-             | /* */  {  []  }
 
 idente: ident { Lexer_parser.add_ident (fst $1); $1 }
 
@@ -723,9 +690,6 @@ spec_qualif_list2: type_spec                    { addTypeD ($1, nullDecl) }
 spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }		    
  	     
 /*---------------------------------------------------------------------------*/
-init_declarator_list: init_declarator                             { [$1,   []] }
-	            | init_declarator_list TComma init_declarator { $1 ++ [$3,     [$2]] }
-
 init_declarator: init_declarator2 gcc_attr_opt  { dt "init" (); $1 }
 
 init_declarator2:  declaratori                  { ($1, None) }
@@ -770,8 +734,6 @@ direct_d:
 parameter_type_list: parameter_list                  { ($1, (false, []))}
 		   | parameter_list TComma TEllipsis { ($1, (true,  [$2;$3])) }
 
-parameter_list: parameter_decl                       { [$1, []] }
-	      | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
 
 parameter_decl2: decl_spec declaratorp          { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 
                                                  in (hasreg, Some (fst (fst $2)), ((snd $2) returnType)),     (iihasreg ++ [snd (fst $2)]) }
@@ -867,6 +829,70 @@ start_fun: start_fun2
   }
 
 declaratorfd: declarator { et "declaratorfd" (); $1 }
+
+
+/*****************************************************************************/
+
+/*
+decl_list: decl           { [$1]   }
+	 | decl_list decl { $1 ++ [$2] }
+
+statement_list: statement { [$1] }
+	      | statement_list statement { $1 ++ [$2] }
+*/
+
+stat_or_decl_list: 
+        | stat_or_decl { [$1] }                          
+        | stat_or_decl_list stat_or_decl { $1 ++ [$2] }
+
+
+
+
+string_list: string_elem { [$1] }
+           | string_list string_elem { $1 ++ [$2] } 
+
+colon_asm_list: colon_asm {}
+              | colon_asm_list colon_asm  {}
+
+colon_option_list: colon_option {} 
+                 | colon_option_list TComma colon_option {}
+
+
+
+argument_expr_list: argument                           { [$1, []] }
+	          | argument_expr_list TComma argument { $1 ++ [$3,    [$2]] }
+
+
+struct_decl_list: struct_decl                   { [$1] }
+	        | struct_decl_list struct_decl  { $1 ++ [$2] }
+	        | struct_decl_list TPtVirg struct_decl  { $1 ++ [$3] } /* gccext: allow double ;; */
+
+
+struct_declarator_list: struct_declarator                               { [$1,           []] }
+		      | struct_declarator_list TComma struct_declarator { $1 ++ [$3,     [$2]] }
+
+
+enumerator_list: enumerator                        { [$1,          []]   }
+	       | enumerator_list TComma enumerator { $1 ++ [$3,    [$2]] }
+
+
+init_declarator_list: init_declarator                             { [$1,   []] }
+	            | init_declarator_list TComma init_declarator { $1 ++ [$3,     [$2]] }
+
+
+parameter_list: parameter_decl                       { [$1, []] }
+	      | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
+
+
+
+gcc_comma_opt: TComma {  [$1] } /* gccext:  which allow a trailing ',' in enum (as in perl) */
+             | /* */  {  []  }
+
+gcc_opt_virg: TPtVirg { }
+            |  { }
+
+gcc_opt_expr: expr { Some $1 }
+            | /* empty */ { None  }
 
 
 /*****************************************************************************/

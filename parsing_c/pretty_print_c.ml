@@ -25,23 +25,14 @@ let rec pp_expression_gen pr_elem =
   (* only a String can have multiple ii *)
   | Constant (c),         [i]     -> pr_elem i 
   | FunCall  (e, es),     [i1;i2] -> 
+
       pp_expression e; pr_elem i1; 
       es +> List.iter (fun (e, opt) -> 
-        (match opt with
-        | [] -> ()
-        | [i] -> pr_elem i
-        | x -> raise Impossible
-        );
-        (match e with
-        | Left e -> pp_expression e
-        | Right (returnType, (sto, iisto)) -> 
-            assert (List.length iisto <= 1);
-            iisto +> List.iter pr_elem;
-            pp_type_gen pr_elem  returnType
-        );
-                      );
-      
-      pr_elem i2;
+        assert (List.length opt <= 1);
+        opt +> List.iter pr_elem;
+        pp_argument_gen pr_elem e;
+      );
+       pr_elem i2;
       
   | CondExpr (e1, e2, e3),    [i1;i2]    -> 
       pp_expression e1; pr_elem i1; do_option pp_expression e2; pr_elem i2; 
@@ -84,41 +75,7 @@ let rec pp_expression_gen pr_elem =
 
   | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-  | MacroCall  (es),     [i1;i2;i3] -> 
-
-      let rec pp_action = function 
-        | (ActMisc ii) -> ii +> List.iter pr_elem
-        | (ActJump jump) -> 
-            (match jump with
-            | (Goto s), [i1;i2]               -> pr_elem i1; pr_elem i2; 
-            | ((Continue|Break|Return)), [i1] -> pr_elem i1; 
-            | (ReturnExpr e), [i1] -> pr_elem i1; pp_expression e; 
-            | x -> raise Impossible
-            )
-        | (ActExpr e) -> pp_expression e
-        | (ActExpr2 (e, iptvirg, action)) -> 
-            pp_expression e; pr_elem iptvirg; pp_action action
-        | (ActTodo) -> pr "<<actiontodo>>"
-      in
-
-      pr_elem i1;
-      pr_elem i2;
-      es +> List.iter (fun (e, opt) -> 
-        assert (List.length opt <= 1);
-        opt +> List.iter pr_elem;
-        (match e with
-        | Left3 e -> pp_expression e
-        | Middle3 (returnType, (sto, iisto)) -> 
-            assert (List.length iisto <= 1);
-            iisto +> List.iter pr_elem;
-            pp_type_gen pr_elem returnType
-        | Right3  action -> pp_action action
-        );
-                      );
-      
-      pr_elem i3;
-
-  | MacroCall2  (arg),     [i1;i2;i3] -> 
+  | MacroCall  (arg),     [i1;i2;i3] -> 
       pr_elem i1;
       pr_elem i2;
       (match arg with
@@ -135,11 +92,40 @@ let rec pp_expression_gen pr_elem =
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
     | StatementExpr (_) | Constructor 
-    | ParenExpr (_) | MacroCall (_) | MacroCall2 (_)
+    | ParenExpr (_) | MacroCall (_)
     ),_ -> raise Impossible
 
   in
   pp_expression
+
+
+and pp_argument_gen pr_elem argument = 
+      let rec pp_action = function 
+        | (ActMisc ii) -> ii +> List.iter pr_elem
+        | (ActJump jump) -> 
+            (match jump with
+            | (Goto s), [i1;i2]               -> pr_elem i1; pr_elem i2; 
+            | ((Continue|Break|Return)), [i1] -> pr_elem i1; 
+            | (ReturnExpr e), [i1] -> pr_elem i1; pp_expression_gen pr_elem e; 
+            | x -> raise Impossible
+            )
+        | (ActSeq ((e,ii), action)) -> 
+            pp_statement_gen pr_elem (ExprStatement e, ii);
+            pp_action action
+      in
+      match argument with
+      | Left e -> pp_expression_gen pr_elem e
+      | Right wierd -> 
+          (match wierd with
+          | ArgType (returnType, (sto, iisto)) -> 
+              assert (List.length iisto <= 1);
+              iisto +> List.iter pr_elem;
+              pp_type_gen pr_elem  returnType
+          | ArgAction action -> 
+              pp_action action
+          )
+
+
 
 
 
@@ -639,6 +625,84 @@ and pp_init_gen = fun pr_elem ->
   | x -> raise Impossible
  in
  pp_init
+
+
+
+let pp_program_gen pr_elem progelem =
+  match progelem with
+  | Declaration decl -> pp_decl_gen pr_elem decl
+  | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
+                     is::iifunc1::iifunc2::i1::i2::isto) -> 
+                       
+         pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
+                         returnt;
+         pr_elem is;
+         pr_elem iifunc1;
+         
+         (match paramst with
+         | [(((bool, None, t), ii_b_s), iicomma)] -> 
+             assert 
+               (match t with 
+               | qu, (BaseType Void, ii) -> true
+               | _ -> false
+               );
+             assert (null iicomma);
+             assert (null ii_b_s);
+             pp_type_with_ident_gen pr_elem  None None t
+             
+         | paramst -> 
+           paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
+            iicomma +> List.iter pr_elem;
+           
+            (match b, s, ii_b_s with
+            | false, Some s, [i1] -> 
+                pp_type_with_ident_gen 
+                  pr_elem (Some (s, i1)) None t;
+            | true, Some s, [i1;i2] -> 
+                pr_elem i1;
+                pp_type_with_ident_gen 
+                  pr_elem (Some (s, i2)) None t;
+
+            (* in definition we have name for params, except when f(void) *)
+            | _, None, _ -> raise Impossible 
+            | _ -> raise Impossible
+            )
+         );
+         );
+            
+
+         (* normally ii represent the ",..."  but it is also abused with the f(void) case *)
+         (* assert (List.length iib <= 2);*)
+         iib +> List.iter pr_elem;
+
+         pr_elem iifunc2;
+         pr_elem i1; 
+         statxs +> List.iter (pp_statement_gen pr_elem);
+         pr_elem i2;
+
+     | EmptyDef ii -> ii +> List.iter pr_elem
+     | CPPDefine ii -> ii +> List.iter pr_elem
+     | CPPInclude ii -> ii +> List.iter pr_elem
+
+     | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
+         pr_elem i1;
+         pr_elem i2;
+         es +> List.iter (fun (e, opt) -> 
+           assert (List.length opt <= 1);
+           opt +> List.iter pr_elem;
+           pp_argument_gen pr_elem e;
+           );
+         pr_elem i3;
+         pr_elem i4;
+
+
+     | NotParsedCorrectly ii -> 
+         assert (List.length ii >= 1);
+         ii +> List.iter pr_elem 
+
+     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.emptyAnnot)
+     | _ -> raise Impossible
+     
 
 
 

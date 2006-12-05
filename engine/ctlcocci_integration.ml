@@ -274,39 +274,33 @@ let print_bench _ = WRAPPED_ENGINE.print_bench()
 
 type pred = Lib_engine.predicate * string Ast_ctl.modif
 
-let (satbis_to_trans_info: 
-  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
-  (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
-  fun xs -> 
-    xs +> List.map (fun (nodei, binding, pred) -> 
-         let binding' = binding +> map_filter (fun (s, kind2) -> 
-             (match kind2 with
-             | Lib_engine.NormalMetaVal kind -> Some (s, kind)
-             (* I thought it was Impossible, but it does not seems so *)
-             | Lib_engine.ParenVal _ -> None
-             | Lib_engine.LabelVal _ -> None
-             )
-           ) in
-         let pred' = 
-           (match pred with
-           | Lib_engine.Match rule_elem -> rule_elem
-           | _ -> raise Impossible
-           ) in
-         
-         nodei, binding', pred'
-         )
-
-
 let metavars_binding2_to_binding   binding2 = 
   binding2 +> map_filter (fun (s, kind2) -> 
     match kind2 with
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
+    (* I thought it was Impossible to have this when called from
+       satbis_to_trans_info but it does not seems so *)
     | Lib_engine.ParenVal _ -> None
     | Lib_engine.LabelVal _ -> None
    )
 
 let metavars_binding_to_binding2 binding = 
   binding +> List.map (fun (s, kind) -> s, Lib_engine.NormalMetaVal kind)
+
+
+let (satbis_to_trans_info: 
+  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
+  (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
+  fun xs -> 
+    xs +> List.map (fun (nodei, binding2, pred) -> 
+         let rule_elem = 
+           (match pred with
+           | Lib_engine.Match rule_elem -> rule_elem
+           | _ -> raise Impossible
+           ) in
+         nodei, metavars_binding2_to_binding binding2, rule_elem
+         )
+
 
 
 

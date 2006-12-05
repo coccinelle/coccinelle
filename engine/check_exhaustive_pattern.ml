@@ -128,9 +128,17 @@ let dumb_astcocci_type = function
     ), _ -> 
 *)
 
+(* for control flow nodes 
 
+  | ( F.ExprStatement (_, _) 
+    | F.IfHeader  (_, _) | F.SwitchHeader (_, _)
+    | F.WhileHeader (_, _) | (* F.DoHeader (_, _) | *) F.DoWhileTail (_, _) 
+    | F.ForHeader (_, _)
+    | F.Return     (_, _)  | F.ReturnExpr (_, _)
+        (* no counter part in cocci *)
+    | F.Label (_, _) 
+    | F.Case  (_,_) | (* F.CaseRange (_, _) | *) F.Default   (_, _)
+    | F.Goto (_, _) | F.Continue (_, _) | F.Break    (_, _)
+    ) -> raise Impossible
 
-
-
-
-
+*)

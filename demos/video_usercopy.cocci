@@ -1,4 +1,8 @@
-@@ type T; identifier x, fld; @@
+@@ 
+type T; 
+identifier x, fld; 
+function ioctl; // should be caracterised by another rule
+@@
 
 
  ioctl(..., void *arg, ...) {

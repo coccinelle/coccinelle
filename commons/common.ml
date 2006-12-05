@@ -288,6 +288,45 @@ let time_func f =
 (*   let _ = Timing () in *)
   x
 
+let profile = ref false
+
+let _profile_table = ref (Hashtbl.create 100)
+let profile_start category = failwith "todo"
+let profile_end category = failwith "todo"
+  
+let profile_code category f = 
+  if not !profile then f() else begin
+  let t = Unix.gettimeofday () in
+  let res = f () in
+  let t' = Unix.gettimeofday () in
+  let (xtime, xcount) = 
+    (try Hashtbl.find !_profile_table category
+    with Not_found -> 
+      let xtime = ref 0.0 in
+      let xcount = ref 0 in
+      Hashtbl.add !_profile_table category (xtime, xcount);
+      (xtime, xcount)
+    ) in
+  xtime := !xtime +. (t' -. t);
+  xcount := !xcount + 1;
+  res
+  end
+
+let profile_diagnostic () = 
+  if not !profile then () else begin
+  let xs = 
+    Hashtbl.fold (fun k v acc -> (k,v)::acc) !_profile_table [] 
+      +> List.sort (fun (k1, (t1,n1)) (k2, (t2,n2)) -> compare t2 t1)
+  in
+  pr2 "---------------------";
+  pr2 "profiling result";
+  pr2 "---------------------";
+  xs +> List.iter (fun (k, (t,n)) -> 
+    pr2 (sprintf "%-20s : %10.3f time %10d count" k !t !n)
+    )
+  end
+
+
 (*****************************************************************************)
 (* Test *)
 (*****************************************************************************)

@@ -3,10 +3,23 @@ open Common open Commonop
 open Ast_c
 module F = Control_flow_c
 
+(*****************************************************************************)
+(*
+ * When in the SP we attach something to a metavariable, or delete it, as in
+ * - S
+ * + foo();
+ * we have to minusize all the token that compose S in the C code, and 
+ * attach the foo();  to the right token, the one at the very right. 
+ * This is the goal of this module.
+ *)
+(*****************************************************************************)
+
+
+(* ------------------------------------------------------------------------- *)
 type 'a distributer = 
-    (Ast_c.info -> Ast_c.info) * 
-    (Ast_c.info -> Ast_c.info) * 
-    (Ast_c.info -> Ast_c.info) -> 
+    (Ast_c.info -> Ast_c.info) *  (* what to do on the token itself *)
+    (Ast_c.info -> Ast_c.info) *  (* what to do on his left *)
+    (Ast_c.info -> Ast_c.info) -> (* what to do on his right *)
     'a -> 'a
 
 
@@ -67,6 +80,7 @@ let (distribute_mck:
  = fun mcodekind distributef expr binding ->
   match mcodekind with
   | Ast_cocci.MINUS (any_xxs) -> 
+      (* could also instead add on right, it doesn't matter *)
       distributef 
         (minusize_token, add_left (any_xxs, binding), nothing_right)
         expr
@@ -90,10 +104,11 @@ let (distribute_mck:
   | Ast_cocci.PLUS -> raise Impossible
 
 (* ------------------------------------------------------------------------- *)
-(* Could do the minus more easily by extending visitor_c.ml and adding a 
- * function applied to every mcode. But as I also need to do the add_left and 
- * add_right, which requires to do a different thing for each case, I have not
- * defined this not-so-useful visitor.
+(* Could do the minus more easily by extending visitor_c.ml and adding
+ * a function applied to every mcode. But as I also need to do the
+ * add_left and add_right, which requires to do a different thing for
+ * each case, I have not defined this not-so-useful visitor. 
+ *
  * op = minusize operator.
  * lop = stuff to do on the left.
  * rop = stuff to do on the right.
@@ -209,10 +224,16 @@ let rec (distribute_mck_e: Ast_c.expression distributer)= fun (op,lop,rop) e ->
   | MacroCall  (es),     [i1;i2;i3] -> 
       failwith "MacroCall"
 
-  | MacroCall2  (arg),   [i1;i2;i3] -> 
-      failwith "MacroCall2"
 
-  | x -> raise Impossible
+  | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
+    | Sequence (_,_)
+    | Assignment (_,_,_) 
+    | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
+    | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
+    | StatementExpr (_) | Constructor 
+    | ParenExpr (_) | MacroCall (_)
+    ),_ -> raise Impossible
  in
  (e', typ), ii'
 
@@ -329,7 +350,19 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op,lop,rop) ->
       Decl (distribute_mck_decl (op, nothing_left, nothing_right) decl), []
           
   | (Asm, []) -> failwith "Asm, what to do ? not enough info"
-  | x -> raise Impossible
+
+  | Selection  (IfCpp (st1s, st2s)), i1::i2::is -> 
+      raise Todo
+
+  | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+    | (* Labeled (CaseRange  (_,_,_)) | *) Labeled (Default _)
+    | Compound _ | ExprStatement _ 
+    | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
+    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
+    | Iteration  (For ((_,_), (_,_), (_, _), _))
+    | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+    | Decl _ | Asm | Selection (IfCpp (_,_))
+    ), _ -> raise Impossible
 
 
 
@@ -400,6 +433,7 @@ and (distribute_mck_type: Ast_c.fullType distributer) = fun (op, lop, rop) ->
 (* ------------------------------------------------------------------------- *)
 and (distribute_mck_node: Control_flow_c.node2 distributer) = 
  fun (op,lop,rop) -> function
+  | F.Fake
   | F.Enter | F.Exit | F.ErrorExit
   | F.CaseNode _
   | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
@@ -504,7 +538,18 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
 
   | F.Asm -> F.Asm
 
-  | _ -> raise Impossible
+  | F.IfCpp (_,_) -> raise Todo
+
+  | ( F.ExprStatement (_, _) 
+    | F.IfHeader  (_, _) | F.SwitchHeader (_, _)
+    | F.WhileHeader (_, _) | (* F.DoHeader (_, _) | *) F.DoWhileTail (_, _) 
+    | F.ForHeader (_, _)
+    | F.Return     (_, _)  | F.ReturnExpr (_, _)
+        (* no counter part in cocci *)
+    | F.Label (_, _) 
+    | F.Case  (_,_) | (* F.CaseRange (_, _) | *) F.Default   (_, _)
+    | F.Goto (_, _) | F.Continue (_, _) | F.Break    (_, _)
+    ) -> raise Impossible
 
 
 (* ------------------------------------------------------------------------- *)

@@ -334,6 +334,8 @@ rule token = parse
         (* gccext: *)
         | "__attribute__" -> Tattribute info
 
+        | "__const__" -> Tconst info
+
 
 (* ------------------------------------------------------------------------- *)
 (* cpp part 2 *)
@@ -385,6 +387,8 @@ rule token = parse
         | "for_each_process"             -> Twhile (tokinfo lexbuf) 
         | "gadget_for_each_ep"           -> Twhile (tokinfo lexbuf) 
         | "pci_for_each_dev"             -> Twhile (tokinfo lexbuf) 
+        | "for_each_ebus"                -> Twhile (tokinfo lexbuf) 
+        | "for_each_ebusdev"             -> Twhile (tokinfo lexbuf) 
         | "for_each_sbus"                -> Twhile (tokinfo lexbuf) 
         | "for_each_sbusdev"             -> Twhile (tokinfo lexbuf) 
         | "for_each_rx"                  -> Twhile (tokinfo lexbuf) 
@@ -410,16 +414,6 @@ rule token = parse
        (*  | "DBG" { THigherOrderMacro (tokinfo lexbuf) } *)
        (* old: | "DBG" [' ' '\t']* "(" '"' [^')' '"' ]+ '"' ')'       { TCommentAttrOrMacro (tokinfo lexbuf) } *)
 
-        (* special higher order, debug like macro *)
-        | "snd_magic_cast" -> THigherOrderExprExprStatement (tokinfo lexbuf) 
-        | "IO_STATE" -> THigherOrderExprExprStatement (tokinfo lexbuf) 
-
-        (* fait plus de dommage:  | "wait_event_lock_irq" { THigherOrderExprExprExprStatement (tokinfo lexbuf) } *)
-        (* ASSERT,  same,  pas forcement une macro *)
-
-        | "snd_assert"     -> THigherOrderExprStatement (tokinfo lexbuf) 
-        | "snd_runtime_check"     -> THigherOrderExprStatement (tokinfo lexbuf)
-
         (* control-flow extended macro *)
         | "TRACE_EXIT" -> Treturn (tokinfo lexbuf) 
 
@@ -433,11 +427,12 @@ rule token = parse
         | "KERN_INFO" | "KERN_ERR"   | "KERN_CRIT"  | "KERN_DEBUG"  -> 
             TString ((tok lexbuf, IsChar), tokinfo lexbuf) 
 
+        | s when s =~ "__.*__" -> TCommentAttrOrMacro (tokinfo lexbuf)
 
         | s -> 
-            ((if (s<!>0) = '_' then 
-              ()(* warning "_ is often reserved for internal use by the compiler and libc\n" () *)
-             );
+            (* if s =~ "_.*" then 
+               warning "_ is often reserved for internal use by the compiler and libc\n" ()
+             *)
             (* parse_typedef_fix*)
             (* note: now this is no more useful, cos as we use tokens_all, it first parse all as an ident 
                and later transform an indent in a typedef. so this job is now done in parse_c.ml
@@ -445,7 +440,7 @@ rule token = parse
 	      if Lexer_parser.is_typedef s 
               then TypedefIdent (s, info) (*pr2 ("TYPEDEF:" ^ s);*) 
               else TIdent (s, info)       (*pr2 ("IDENT:" ^ s);*)  
-             )
+             
    }	
 
 (* ------------------------------------------------------------------------- *)

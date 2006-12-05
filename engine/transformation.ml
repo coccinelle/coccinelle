@@ -24,6 +24,12 @@ exception NoMatch
 
 type sequence_processing_style = Ordered | Unordered
 
+let find_env x env = 
+  try List.assoc x env 
+  with Not_found -> 
+    pr2 ("Don't find value for metavariable " ^ x ^ " in the environment");
+    raise NoMatch
+
 (* ------------------------------------------------------------------------- *)
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 let mcodekind (_,i,mc) = mc
@@ -373,7 +379,7 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
      (* get binding, assert =*=,  distribute info in ida *)
-      let v = binding +> List.assoc (term ida) in
+      let v = binding +> find_env (term ida) in
       (match v with
       | B.MetaExprVal expa -> 
           if (Abstract_line_c.al_expr expa =*= Abstract_line_c.al_expr expb)
@@ -563,7 +569,6 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | _, ((B.StatementExpr _,_),_) 
   | _, ((B.Constructor,_),_) 
   | _, ((B.MacroCall _,_),_) 
-  | _, ((B.MacroCall2 _,_),_)
     -> raise NoMatch
 
   | _, _ -> raise NoMatch
@@ -575,13 +580,8 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 (* ------------------------------------------------------------------------- *)
 
-and (transform_arguments: 
-   sequence_processing_style -> 
-   (Ast_cocci.expression list, 
-    ((Ast_c.expression, Ast_c.fullType * (Ast_c.storage * Ast_c.il)) either * 
-     Ast_c.il) 
-    list) 
-   transformer) = 
+and (transform_arguments: sequence_processing_style -> 
+  (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) transformer) = 
  fun seqstyle eas ebs ->
   fun binding -> 
     let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
@@ -601,39 +601,53 @@ and (transform_arguments:
         D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
 
 
-    | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (Left eb, ii)::ebs -> 
+    | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (eb, ii)::ebs -> 
         let ii' = tag_symbols [i1] ii   binding in
         (match 
         D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
-          ((Left eb, [](*subtil*))::ebs)
+          ((eb, [](*subtil*))::ebs)
            binding
         with
-        | (Left eb, [])::ebs -> (Left eb, ii')::ebs
+        | (eb, [])::ebs -> (eb, ii')::ebs
         | _ -> raise Impossible
         )
         
 
-    | (A.EComma i1, _)::(una,ea)::eas, (Left eb, ii)::ebs -> 
+    | (A.EComma i1, _)::(una,ea)::eas, (eb, ii)::ebs -> 
         let ii' = tag_symbols [i1] ii   binding in
-        (Left (transform_e_e  ea eb binding), ii')::
+        (transform_argument  ea eb binding, ii')::
 	transform_arguments seqstyle (rewrapper eas) ebs   binding
 
    (* The first argument is handled here. Then cocci will always contain
     * some EComma and a following expression, so the previous case will
     * handle that.
     *)
-    | (una, ea)::eas, (Left eb, ii)::ebs -> 
+    | (una, ea)::eas, (eb, ii)::ebs -> 
         assert (null ii);
-        (Left (transform_e_e  ea eb binding), [])::
+        (transform_argument  ea eb binding, [])::
 	transform_arguments seqstyle (rewrapper eas) ebs   binding
 
-    | _ -> raise Todo
+
+and transform_argument arga argb = 
+ fun binding -> 
+
+   match A.unwrap arga, argb with
+
+  | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
+      if sto <> (B.NoSto, false)
+      then failwith "the argument have a storage and ast_cocci does not have"
+      else 
+        Right (B.ArgType (transform_ft_ft tya tyb binding, (sto, iisto)))
+
+  | unwrapx, Left y ->  Left (transform_e_e arga y binding)
+  | unwrapx, Right (B.ArgAction y) -> raise NoMatch
+
+  | _, _ -> raise NoMatch
 
 
-and (transform_params: 
-   sequence_processing_style -> 
-   (Ast_cocci.parameterTypeDef list, 
-    ((Ast_c.parameterType * Ast_c.il) list)) 
+
+and (transform_params: sequence_processing_style -> 
+   (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
    transformer) = 
  fun seqstyle pas pbs ->
   fun binding -> 
@@ -726,7 +740,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
      (* cas general *)
     | A.MetaType(ida,_inherited),  typb -> 
         (* get binding, assert =*=,  distribute info in ida *)
-        (match binding +> List.assoc (term ida) with
+        (match binding +> find_env (term ida) with
         | B.MetaTypeVal typa -> 
           if (Abstract_line_c.al_type typa =*= Abstract_line_c.al_type typb)
           then 
@@ -917,7 +931,7 @@ and (transform_ident:
 
     | A.MetaId(ida,_inherited) -> 
       (* get binding, assert =*=,  distribute info in i1 *)
-      let v = binding +> List.assoc ((term ida) : string) in
+      let v = binding +> find_env ((term ida) : string) in
       (match v with
       | B.MetaIdVal sa -> 
           if(sa =$= idb) 
@@ -928,7 +942,7 @@ and (transform_ident:
  | A.MetaFunc(ida,_inherited) -> 
      (match seminfo_idb with 
      | Pattern.LocalFunction | Pattern.Function -> 
-         let v = binding +> List.assoc ((term ida) : string) in
+         let v = binding +> find_env ((term ida) : string) in
          (match v with
          | B.MetaFuncVal sa -> 
              if(sa =$= idb) 
@@ -943,7 +957,7 @@ and (transform_ident:
  | A.MetaLocalFunc(ida,_inherited) -> 
      (match seminfo_idb with
      | Pattern.LocalFunction -> 
-         let v = binding +> List.assoc ((term ida) : string) in
+         let v = binding +> find_env ((term ida) : string) in
          (match v with
          | B.MetaLocalFuncVal sa -> 
              if(sa =$= idb) 

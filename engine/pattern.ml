@@ -62,11 +62,13 @@ let (>||>) m1 m2 = fun binding ->
   m1 binding ++  m2 binding
 
 (* An exclusive or (xor). *)
+(*
 let (>|+|>) m1 m2 = fun binding -> 
   let xs = m1 binding in
   if null xs
   then m2 binding
   else xs
+*)
 
 let return res = fun binding -> 
   match res with
@@ -221,6 +223,7 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       *)
 
       (* julia's code *)
+      (*
       (function binding ->
         let globals = ref [] in
         let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
@@ -230,14 +233,14 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 	      |	b -> globals := b @ !globals);
               }
         in
+       *)
 
-      (* let all_exprs =  
-          ...
+        let globals = ref [] in
         let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
               (fun (k, bigf) expr -> push2 expr globals;  k expr );
            } 
         in
-       *)
+       
         let visitor_e = Visitor_c.visitor_expr_k bigf in
 
         (match nodeb with 
@@ -272,14 +275,9 @@ let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
         );
         !globals
-      )
-     (*
-      in
-      all_exprs +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
-        (return false)
-       *)
-  
-
+         +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+           (return false)
+       
 
 
   | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
@@ -399,7 +397,7 @@ and match_re_onedecl = fun decla declb ->
       
   | A.DisjDecl xs, _ -> 
       xs +> List.fold_left (fun acc decla -> 
-        acc >|+|> match_re_onedecl decla declb
+        acc >||> match_re_onedecl decla declb
         ) (return false)
   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
       failwith "not handling Opt/Unique/Multi Decl"
@@ -461,13 +459,11 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
         will be too late, match_ident will not have the info whether it  was a 
         function.
         todo: but how detect when do x.field = f;  how know that f is a Func ?
-        by having computed some information before the matching *)
+        By having computed some information before the matching! *)
       
-     (* todo? 
-      * could allow match with FunCall containing types. Even if ast_cocci
-      * does not allow type in parameter, ast_cocci allow f(...) and
-      * those ... could match type. But for the moment I do it a simpler way,
-      * I dont match at all when there is a type in the arguments
+     (* Allow match with FunCall containing types. Now ast_cocci
+      * allow type in parameter, and morover ast_cocci allow f(...) and
+      * those ... could match type. 
       *)
      if (ebs +> List.map fst +> List.exists (function
         | Left e -> false
@@ -483,17 +479,13 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
 	List.filter (function x -> 
           match A.unwrap x with A.EComma _ -> false | _ -> true) 
       in
-      let ebs' = ebs +> List.map fst +> List.map (function
-        | Left e -> e
-        | Right typ -> failwith "not handling type in funcall"
-        ) in
       match_arguments 
         (match A.unwrap eas with 
         | A.DOTS _ -> Ordered 
         | A.CIRCLES _ -> Unordered 
         | A.STARS _ -> failwith "not handling stars"
         )
-        eas' ebs'
+        eas' ebs
      )
 
   | A.Assignment (ea1, opa, ea2),   ((B.Assignment (eb1, opb, eb2), typ),ii) ->
@@ -558,10 +550,6 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   | A.SizeOfType (_, _, typa, _), ((B.SizeOfType (typb), typ),ii) ->
       match_ft_ft typa typb
 
-  | A.TypeExp(ty),_ ->
-      failwith
-	"pattern.ml: need to fill in something for the case of a type as an expression"
-
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (_, ea, _), ((B.ParenExpr (eb), typ),ii) -> 
       match_e_e ea eb
@@ -571,14 +559,16 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
 
   | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
 
-  | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
-
-  | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
+  (* only in arg lists *)
+  | A.TypeExp _, _ 
+  | A.EComma _, _  
+  | A.Ecircles _, _
+  | A.Estars _, _   -> 
+      raise Impossible
 
 
   | A.DisjExpr eas, eb -> 
-      eas +> List.fold_left (fun acc ea -> acc >|+|>  match_e_e ea eb) 
+      eas +> List.fold_left (fun acc ea -> acc >||>  match_e_e ea eb) 
         (return false)
 
 
@@ -592,7 +582,6 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   | _, ((B.StatementExpr _,_),_) 
   | _, ((B.Constructor,_),_) 
   | _, ((B.MacroCall _,_),_) 
-  | _, ((B.MacroCall2 _,_),_)
     -> return false
 
   | _, _ -> return false
@@ -600,19 +589,19 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
   
 (*-------------------------------------------------------------------------- *)
 
-and (match_arguments: 
-       sequence_processing_style -> 
-         (Ast_cocci.expression list, Ast_c.expression list) matcher) = 
+and (match_arguments: sequence_processing_style -> 
+     (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
  (* old:
-    if List.length eas = List.length ebs
-    then
-      (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> 
-           acc >&&> match_e_e ea eb) (return true))
-    else return false
- *)
+  *  if List.length eas = List.length ebs
+  *  then
+  *    (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> 
+  *         acc >&&> match_e_e ea eb) (return true))
+  *  else return false
+  *)
   match seqstyle with
   | Ordered -> 
+
       (match eas, ebs with
       | [], [] -> return true
       | [], y::ys -> return false
@@ -626,33 +615,57 @@ and (match_arguments:
                 acc >||>  match_arguments seqstyle xs ys
                   ) (return false)
 
+          | A.MetaExprList(ida,inherited), ys -> 
+              let startendxs = Common.zip (Common.inits ys) (Common.tails ys)
+              in
+              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+
+                if (startxs +> List.map fst +> List.exists (function
+                  | Left e -> false
+                  | Right typ -> true
+                  ))
+                then return false
+                else
+                  let startxs' = startxs +> List.map (fun (arg, i) -> 
+                    match arg with
+                    | Left e -> e
+                    | Right _ -> raise Impossible
+                    )
+                  in
+
+                acc >||> (
+                 check_add_metavars_binding inherited
+                  (term ida, Ast_c.MetaExprListVal (startxs')) >&&>
+                 match_arguments seqstyle xs endxs
+             )) (return false)
+
+
           | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
           | A.Estars (_,_), ys   -> raise Impossible (* in Ordered mode *)
-
            (* filtered by the caller, in the case for FunCall *)
           | A.EComma (_), ys -> raise Impossible 
 
-          | A.MetaExprList(ida,inherited), ys -> 
-              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
-              in
-              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-                acc >||> (
-                check_add_metavars_binding inherited
-                  (term ida, Ast_c.MetaExprListVal (startxs)) >&&>
-                match_arguments seqstyle xs endxs
-             )) (return false)
-
-          | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
-              failwith "not handling Opt/Unique/Multi on expr"
-              
-
-          | _x, y::ys -> 
-              match_e_e x y >&&> 
+          | unwrapx, y::ys -> 
+              match_argument x y >&&> 
               match_arguments seqstyle xs ys
+              
           | x, [] -> return false
           )
       )
   | Unordered -> failwith "not handling ooo"
+
+and match_argument = fun arga argb -> 
+  match A.unwrap arga, argb with
+  | A.TypeExp tya,  (Right (B.ArgType (tyb, (sto, iisto))),ii) ->
+      match_ft_ft tya tyb
+
+  | unwrapx, (Left y,ii) ->  match_e_e arga y
+  | unwrapx, (Right (B.ArgAction y),ii) -> return false
+
+  | _, _ -> return false
+
+
+
 
 (* ------------------------------------------------------------------------- *)
 
