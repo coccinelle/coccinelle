@@ -2,32 +2,32 @@ open Common open Commonop
 
 type ppmethod = PPviatok of Ast_c.info list | PPnormal
 
-
 (******************************************************************************)
-(*
- todo: take care of priority. because of the transformations, for instance
- A => A+A, and  if had B*A, we dont want to generate  B*A+A, we must insert
-  some extra  () (but not always, only if necessary)
- src: rene
+(* todo: take care of priority. For instance A => A+A, and if had B*A,
+ * we dont want to generate B*A+A, we must insert some extra () (but
+ * not always, only if necessary) src: rene
 
- note: if add instruction, then try keep same indentation. So need introduce
-  some spacings. Done via the semi global _current_tabbing variable. *)
+ * note: if add instruction, then try keep same indentation. So need introduce
+ * some spacings. Done via the semi global _current_tabbing variable. *)
 (******************************************************************************)
 
 open Ast_c
 
 
 
+(******************************************************************************)
+
+
+(******************************************************************************)
+
 (* In addition to the Ast in x, I also take the name of the input file,
  * because I reparse it to be able later to synchrnize, get the comments,
  * that are not in the Ast.
  *)
-let pp_program x infile outfile  = 
+let pp_program2 x infile outfile  = 
   
- with_open_outfile outfile (fun (pr,chan) -> 
+ Common.with_open_outfile outfile (fun (pr,chan) -> 
    let pr s = pr s; flush chan in
-
-   let _table = Common.full_charpos_to_pos infile in
 
    (* note: that not exactly same tokens as in parsing, cos in parsing there is
     * some transformation of tokens such as TIdent in Typedef,TIdent in TString
@@ -216,3 +216,6 @@ let pp_program x infile outfile  =
        Pretty_print_c.pp_program_gen pr_elem e
    );
  )
+
+let pp_program a b c = 
+  Common.profile_code "C unparsing" (fun () -> pp_program2 a b c)

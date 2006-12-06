@@ -15,6 +15,7 @@ ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
 #pad: 'make forprofiling' below does that for you.
+#for better understand the lexer, ocamllex -ml (but slightly slower)
 
 #the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 #ocaml, when it is available, which speeds up compilation. So
@@ -24,7 +25,7 @@ ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
 #OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom      -- for C code
 OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
-OCAMLLEX=ocamllex$(OPTBIN) -ml
+OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
@@ -46,7 +47,7 @@ test: $(TARGET)
 
 #can add -inline 0  to see all the functions in the profile.
 forprofiling:
-	$(MAKE) OPTFLAGS="-p " opt
+	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 
 
 

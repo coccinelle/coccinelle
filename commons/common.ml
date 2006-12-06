@@ -208,6 +208,8 @@ let command2 s = ignore(Sys.command s)
 let pr s = (print_string s; print_string "\n"; flush stdout)
 let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr)
 
+let pr2gen x = pr2 (Dumper.dump x)
+
 include Printf
 
 let _chan = ref stderr
@@ -322,7 +324,7 @@ let profile_diagnostic () =
   pr2 "profiling result";
   pr2 "---------------------";
   xs +> List.iter (fun (k, (t,n)) -> 
-    pr2 (sprintf "%-20s : %10.3f time %10d count" k !t !n)
+    pr2 (sprintf "%-40s : %10.3f sec %10d count" k !t !n)
     )
   end
 
@@ -761,6 +763,8 @@ let myassert cond = if cond then () else failwith "assert error"
 
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
+
+
 (* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
 let unwind_protect f cleanup =
   try f ()
@@ -1014,7 +1018,7 @@ let do_option f = function
   | Some x -> f x
 
 let optionise f = 
-  try Some (f ()) with _ -> None
+  try Some (f ()) with Not_found -> None
 
 
 
@@ -2223,7 +2227,12 @@ let hash_to_list h =
   Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
   +> List.sort compare 
 
-
+let hash_of_list xs = 
+  let h = Hashtbl.create 101 in
+  begin
+    xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
+    h
+  end
 
 (*****************************************************************************)
 (* Hash sets *)
@@ -2588,7 +2597,7 @@ type parse_info = {
   } 
 let fake_parse_info = { charpos = -1; str = "" }
 
-let (charpos_to_pos: int -> filename -> (filename * int * int * string)) = 
+let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) = 
  fun charpos filename ->
 
   (* Currently lexing.ml does not handle the line number position,  
@@ -2616,6 +2625,9 @@ let (charpos_to_pos: int -> filename -> (filename * int * int * string)) =
         aux ();
       end
   in aux ()
+
+let charpos_to_pos a b = 
+  profile_code "Common.charpos_to_pos" (fun () -> charpos_to_pos2 a b)
 
 (*---------------------------------------------------------------------------*)
 let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->

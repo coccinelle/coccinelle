@@ -2,41 +2,40 @@ open Common open Commonop
 
 open Ograph_extended
 
-
 (*****************************************************************************)
-let (-->) x v = Ast_ctl.Subst (x,v);;
-
-
 let show_or_not_predicate pred = 
   if !Flag_engine.debug_engine then begin 
-    pp_init (fun () -> 
+    Common.pp_init (fun () -> 
       pp "labeling: pred =";
       Format.print_space ();
       Pretty_print_engine.pp_predicate pred;
-            );
+    );
   end
 
 let show_or_not_nodes nodes =
   if !Flag_engine.debug_engine  then begin 
-    pp_init (fun () -> 
+    Common.pp_init (fun () -> 
       pp "labeling: result =";
       Format.print_space ();
-         
-      pp_do_in_box (fun () -> 
+      
+      Common.pp_do_in_box (fun () -> 
         pp "{";
         Common.print_between 
           (fun () -> pp ";"; Format.print_cut())
           (fun (nodei, subst) -> 
             Format.print_int nodei;
-            pp_do_in_box (fun () -> 
+            Common.pp_do_in_box (fun () -> 
               Pretty_print_engine.pp_binding2_ctlsubst subst
-                         )
+            )
           ) nodes;
         pp "}";
-                   );
-            )
+      );
+    )
   end
 
+
+(*****************************************************************************)
+let (-->) x v = Ast_ctl.Subst (x,v);;
 
 
 (* Take list of predicate and for each predicate returns where in the
@@ -108,7 +107,7 @@ let (labels_for_ctl:
           | _ -> []
           )
       )
-                               ) +> List.concat
+     ) +> List.concat
      in
 
      show_or_not_nodes nodes';
@@ -117,7 +116,7 @@ let (labels_for_ctl:
 
 
 
-
+(*****************************************************************************)
 (* could erase info on nodes, and edge, because they are not used by rene *)
 let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) = 
  fun cflow -> cflow
@@ -221,7 +220,7 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
   !g
 
 
-
+(*****************************************************************************)
 (* subtil: the label must operate on newflow, not (old) cflow *)
 let model_for_ctl  cflow binding = 
  let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
@@ -267,15 +266,13 @@ module CFG =
 
 module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
 
-
-(*****************************************************************************)
-
 let print_bench _ = WRAPPED_ENGINE.print_bench()
 
 type pred = Lib_engine.predicate * string Ast_ctl.modif
 
+(*****************************************************************************)
 let metavars_binding2_to_binding   binding2 = 
-  binding2 +> map_filter (fun (s, kind2) -> 
+  binding2 +> Common.map_filter (fun (s, kind2) -> 
     match kind2 with
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
     (* I thought it was Impossible to have this when called from
@@ -301,10 +298,10 @@ let (satbis_to_trans_info:
          nodei, metavars_binding2_to_binding binding2, rule_elem
          )
 
-
-
-
-let (mysat:
+(*****************************************************************************)
+(* Call ctl engine *)
+(*****************************************************************************)
+let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list * pred list)) -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
@@ -323,3 +320,6 @@ let (mysat:
         let newbinding = metavars_binding2_to_binding used_after_env in
         Left (trans_info, returned_any_states, newbinding)
     | Right var -> Right var
+
+let mysat a b c = 
+  Common.profile_code "mysat" (fun () -> mysat2 a b c)

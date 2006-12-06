@@ -1,6 +1,7 @@
 open Common
 
-val tokens: filename -> Parser_c.token list
+val tokens:      filename -> Parser_c.token list
+val tokens_string: string -> Parser_c.token list
 
 val parse:                        filename -> Ast_c.program
 val parse_print_error:            filename -> Ast_c.program
@@ -15,7 +16,7 @@ type parsing_stat = {
     mutable correct: int;
     mutable bad: int;
   } 
-
+(* this is the main function *)
 val parse_print_error_heuristic:  filename -> (Ast_c.program2 * parsing_stat)
 
 

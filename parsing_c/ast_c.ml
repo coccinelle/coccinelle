@@ -1,45 +1,42 @@
 open Common open Commonop
 
 (*****************************************************************************)
-(* 
- * Could have more precise type in fullType, in expression, etc,
- * but it requires to do too much things in parsing (checking no conflicting 
- * structname, computing value, ...).
- * Better to separate concern, so I put '=>' to mean what we would really like
- * (in fact what we really like is a defining another fullType from scratch,
+(* Could have more precise type in fullType, in expression, etc, but
+ * it requires to do too much things in parsing (checking no
+ * conflicting structname, computing value, ...). Better to separate
+ * concern, so I put '=>' to mean what we would really like (in fact
+ * what we really like is a defining another fullType from scratch,
  * because many stuff are just sugar).
  * 
- * inv: 
- *  Array and FunctionType have also typeQualifier but they dont have sense.
- *  I put this to factorise some code. If you look in grammar, you see that 
- *  we can never specify const for the array himself (but we can do it for 
- *  pointer).
- *
- *
- * Because of ExprStatement, can have more 'new scope', but rare I think.
- * For instance array of constExpression => possibly an exprStatement and 
- * a new (local) struct defined. Same for Constructor.
- *
- * Some stuff are tagged semantic: which means that they are computed after
- * parsing.
- *)
+ * inv: Array and FunctionType have also typeQualifier but they dont
+ * have sense. I put this to factorise some code. If you look in
+ * grammar, you see that we can never specify const for the array
+ * himself (but we can do it for pointer).
+ * 
+ * 
+ * Because of ExprStatement, can have more 'new scope', but rare I
+ * think. For instance array of constExpression => possibly an
+ * exprStatement and a new (local) struct defined. Same for
+ * Constructor.
+ * 
+ * Some stuff are tagged semantic: which means that they are computed
+ * after parsing. *)
 
 (*****************************************************************************)
-(* 
- * Cocci: Each token will be decorated in the futur by the mcodekind of cocci.
- * It is the job of the pretty printer to look at this information and decide
- * to print or not the token (and also the pending '+' associated sometimes 
- * with the token).
- *
- * The first time that we parse the original C file, the mcodekind is empty, 
- * or more precisely all is tagged as a CONTEXT with NOTHING associated.
- * This is what I call a "clean" expr/statement/....
+(* Cocci: Each token will be decorated in the futur by the mcodekind
+ * of cocci. It is the job of the pretty printer to look at this
+ * information and decide to print or not the token (and also the
+ * pending '+' associated sometimes with the token).
  * 
- * Each token will also be decorated in the futur with an environment, because
- * the pending '+' may contain metavariables that refer to some C code.
+ * The first time that we parse the original C file, the mcodekind is
+ * empty, or more precisely all is tagged as a CONTEXT with NOTHING
+ * associated. This is what I call a "clean" expr/statement/....
  * 
- * convention: I often use 'ii' for the name of a list of info.
- *)
+ * Each token will also be decorated in the futur with an environment,
+ * because the pending '+' may contain metavariables that refer to some
+ * C code.
+ * 
+ * convention: I often use 'ii' for the name of a list of info. *)
 
 (* forunparser: *)
 type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding) 
@@ -47,10 +44,9 @@ and il = info list
 
 and 'a wrap  = 'a * il   
 
-(* wrap2 is like wrap, except that I use it often for separator such as ','.
- * In that case the info is associated to the argument that follows, so in
- * 'a,b'  I will have in the list [(a,[]); (b,[','])].
- *)
+(* wrap2 is like wrap, except that I use it often for separator such
+ * as ','. In that case the info is associated to the argument that
+ * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
 and 'a wrap2 = 'a * il
 
 (*****************************************************************************)

@@ -36,14 +36,14 @@ let rec (pp_ctl:
      | True               -> pp "True"
      | Pred(p)            -> pp_pred p
      | Not(phi)           ->
-	 pp char_not; pp_do_in_box (fun () -> pp_aux env phi)
+	 pp char_not; Common.pp_do_in_box (fun () -> pp_aux env phi)
      | Exists(v,phi)      ->  
 	 pp "(";
 	 pp ("Ex ");
 	 pp_mvar v;
 	 pp " . "; 
 	 print_cut();
-	 pp_do_in_box (fun () -> pp_aux env phi); 
+	 Common.pp_do_in_box (fun () -> pp_aux env phi); 
 	 pp ")"
      | And(phi1,phi2)     -> pp_2args env char_and phi1 phi2; 
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
@@ -69,7 +69,7 @@ let rec (pp_ctl:
            begin
              pp ("Let"^" "^x);
 	     pp " = ";
-             pp_do_in_box (fun () -> pp_aux env phi1);
+             Common.pp_do_in_box (fun () -> pp_aux env phi1);
              print_space ();
              pp "in"; 
              print_space ();
@@ -83,7 +83,7 @@ let rec (pp_ctl:
            begin
              pp ("LetR"^" "^x); pp_dir dir;
 	     pp " = ";
-             pp_do_in_box (fun () -> pp_aux env phi1);
+             Common.pp_do_in_box (fun () -> pp_aux env phi1);
              print_space ();
              pp "in"; 
              print_space ();
@@ -109,22 +109,22 @@ let rec (pp_ctl:
    and pp_2args env sym phi1 phi2 = 
      begin
        pp "(";
-       pp_do_in_box (fun () -> pp_aux env phi1); 
+       Common.pp_do_in_box (fun () -> pp_aux env phi1); 
        print_space();
        pp sym;
        print_space ();
-       pp_do_in_box (fun () -> pp_aux env phi2);
+       Common.pp_do_in_box (fun () -> pp_aux env phi2);
        pp ")";
      end
    and pp_2args_bis env sym phi1 phi2 = 
      begin
-       pp_do_in_box (fun () -> pp_aux env phi1); 
+       Common.pp_do_in_box (fun () -> pp_aux env phi1); 
        print_space();
        pp sym;
        print_space();
-       pp_do_in_box (fun () -> pp_aux env phi2);
+       Common.pp_do_in_box (fun () -> pp_aux env phi2);
      end
        
-   and pp_arg env phi =  pp_do_in_box (fun () -> pp_aux env phi)      
+   and pp_arg env phi =  Common.pp_do_in_box (fun () -> pp_aux env phi)      
    in
-   pp_init (fun () ->  pp_aux [] ctl;)
+   Common.pp_init (fun () ->  pp_aux [] ctl;)

@@ -7,7 +7,7 @@ module F = Control_flow_c
 (*****************************************************************************)
 type sequence_processing_style = Ordered | Unordered
 
-(* put in semantic_c.ml ? *)
+(* todo? put in semantic_c.ml *)
 type semantic_info_ident = 
   | Function 
   | LocalFunction (* entails Function *)
@@ -15,6 +15,99 @@ type semantic_info_ident =
 
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
+
+(*****************************************************************************)
+(* Normally Ast_cocci should reuse some types of Ast_c, so those
+ * functions should not exist.
+ * 
+ * update: but now Ast_c depends on Ast_cocci, so can't make too
+ * Ast_cocci depends on Ast_c, so have to stay with those equal_xxx
+ * functions. *)
+(*****************************************************************************)
+let equal_unaryOp a b = 
+  match a, b with
+  | A.GetRef   , B.GetRef  -> true
+  | A.DeRef    , B.DeRef   -> true
+  | A.UnPlus   , B.UnPlus  -> true
+  | A.UnMinus  , B.UnMinus -> true
+  | A.Tilde    , B.Tilde   -> true
+  | A.Not      , B.Not     -> true
+  | _, _ -> false
+
+
+let equal_arithOp a b = 
+  match a, b with
+  | A.Plus     , B.Plus     -> true
+  | A.Minus    , B.Minus    -> true
+  | A.Mul      , B.Mul      -> true
+  | A.Div      , B.Div      -> true
+  | A.Mod      , B.Mod      -> true
+  | A.DecLeft  , B.DecLeft  -> true
+  | A.DecRight , B.DecRight -> true
+  | A.And      , B.And      -> true
+  | A.Or       , B.Or       -> true
+  | A.Xor      , B.Xor      -> true
+  | _          , _          -> false
+
+let equal_logicalOp a b = 
+  match a, b with
+  | A.Inf    , B.Inf    -> true
+  | A.Sup    , B.Sup    -> true
+  | A.InfEq  , B.InfEq  -> true
+  | A.SupEq  , B.SupEq  -> true
+  | A.Eq     , B.Eq     -> true
+  | A.NotEq  , B.NotEq  -> true
+  | A.AndLog , B.AndLog -> true
+  | A.OrLog  , B.OrLog  -> true
+  | _          , _          -> false
+  
+
+
+let equal_assignOp a b = 
+  match a, b with
+  | A.SimpleAssign, B.SimpleAssign -> true
+  | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
+  | _ -> false
+
+
+let equal_fixOp a b = 
+  match a, b with
+  | A.Dec, B.Dec -> true
+  | A.Inc, B.Inc -> true
+  | _ -> false
+
+let equal_binaryOp a b = 
+  match a, b with
+  | A.Arith a,    B.Arith b ->   equal_arithOp a b
+  | A.Logical a,  B.Logical b -> equal_logicalOp a b
+  | _ -> false
+
+
+let equal_structUnion a b = 
+  match a, b with
+  | A.Struct, B.Struct -> true
+  | A.Union,  B.Union -> true
+  | _, _ -> false
+
+
+let equal_sign a b = 
+  match a, b with
+  | A.Signed,    B.Signed   -> true
+  | A.Unsigned,  B.UnSigned -> true
+  | _, _ -> false
+
+let equal_storage a b = 
+  match a, b with
+  | A.Static   , B.Sto B.Static
+  | A.Auto     , B.Sto B.Auto
+  | A.Register , B.Sto B.Register
+  | A.Extern   , B.Sto B.Extern 
+      -> true
+  | _ -> false
+
+
+(*****************************************************************************)
+(* Binding combinators *)
 (*****************************************************************************)
 (*
  * version0: 
@@ -75,52 +168,25 @@ let return res = fun binding ->
   | false -> []
   | true -> [binding]
 
+
+
+let match_opt f eaopt ebopt =
+  match eaopt, ebopt with
+  | None, None -> return true
+  | Some ea, Some eb -> f ea eb
+  | _, _ -> return false
+
+
 (*****************************************************************************)
-
-(* old: semiglobal for metavar binding (logic vars) *)
-(* old:
-let _sg_metavars_binding = ref empty_metavar_binding
-
-let check_add_metavars_binding  = function
-  | MetaId (s1, s2) -> 
-      let (good, binding) = check_add (!_sg_metavars_binding.metaId) s1 s2 in
-      !_sg_metavars_binding.metaId <- binding;
-      good
-          
-  | MetaFunc (s1, s2) -> 
-      let (good, binding) = check_add (!_sg_metavars_binding.metaFunc) s1 s2 in
-      !_sg_metavars_binding.metaFunc <- binding;
-      good
-
-let with_metaalvars_binding binding f = 
-  let oldbinding = !_sg_metavars_binding in
-  _sg_metavars_binding := binding;
-  let res = f _sg_metavars_binding in
-  _sg_metavars_binding := oldbinding;
-  res
-
-*)
-
-(* old:
-let check_add k valu (===) anassoc = 
-  (match optionise (fun () -> 
-   (anassoc +> List.find (function (k', _) -> k' = k))) with
-      | Some (k', valu') ->
-          assert (k = k');
-          (valu === valu',  anassoc)
-      | None -> 
-          (true, anassoc +> insert_assoc (k, valu))
-  )
-
-*)
-
+(* Metavariable handling *)
+(*****************************************************************************)
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
 
 (* pre: if have declared a new metavar that hide another one, then must be 
    passed with a binding that deleted this metavar *)
 let check_add_metavars_binding inherited = fun (k, valu) binding -> 
-  (match optionise (fun () -> binding +> List.assoc k) with
+  (match Common.optionise (fun () -> binding +> List.assoc k) with
   | Some (valu') ->
       if
         (match valu, valu' with
@@ -130,11 +196,11 @@ let check_add_metavars_binding inherited = fun (k, valu) binding ->
             (* do something more ? *)
             a =$= b
 
-          (* al_expr  before comparing !!! and accept when they match.
-             Note that here we have Astc._expression, so it is a match modulo 
-             isomorphism (there is no metavariable involved here, just 
-             isomorphisms).
-             => TODO call isomorphism_c_c instead of =*= *)
+        (* al_expr before comparing !!! and accept when they match.
+         * Note that here we have Astc._expression, so it is a match
+         * modulo isomorphism (there is no metavariable involved here,
+         * just isomorphisms). => TODO call isomorphism_c_c instead of
+         * =*= *)
         | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
             Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
         | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
@@ -154,203 +220,29 @@ let check_add_metavars_binding inherited = fun (k, valu) binding ->
       else _MatchFailure
 
   | None -> 
-     if inherited then _MatchFailure
-     else 
-     let valu' = 
-      (match valu with
-      | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
-      | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
-      | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
-      | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
-      | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
-      | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
-      | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
-      | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
-      | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
-
-      ) 
+      if inherited then _MatchFailure
+      else 
+        let valu' = 
+          (match valu with
+          | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
+          | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
+          | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
+          | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
+          | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
+          | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
+          | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
+          | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
+          | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
+          ) 
      in
-     _GoodMatch   (binding +> insert_assoc (k, valu'))
+     _GoodMatch   (binding +> Common.insert_assoc (k, valu'))
   )
   
 (*****************************************************************************)
-let rec (match_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
- fun re node -> 
-  match A.unwrap re, F.unwrap node with
+(* The pattern functions, Cocci vs C *) 
+(*****************************************************************************)
 
-  (* note: the order of the clauses is important. *)
-
-  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> return false
-
-  (* the metaRuleElem contains just '-' information. We dont need to add
-   * stuff in the environment. If we need stuff in environment, because
-   * there is a + S somewhere, then this will be done via MetaStatement, not
-   * via MetaRuleElem. 
-   * Can match TrueNode/FalseNode/... so must be placed before those cases.
-   *)
-  | A.MetaRuleElem _, _ -> return true
-
-  | _, F.Fake
-  | _, F.EndStatement _
-  | _, F.CaseNode _ 
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
-    -> return false
-
-  (* cas general: a Meta can match everything *)
-  | A.MetaStmt (ida,_,inherited),  _unwrap_node -> 
-     (* match only "header"-statement *)
-     (match Control_flow_c.extract_fullstatement node with
-     | Some stb -> 
-         check_add_metavars_binding inherited (term ida, Ast_c.MetaStmtVal stb)
-     | None -> return false
-     )
-
-  (* not me?: *)
-  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
-
-  | A.Exp expr, nodeb -> 
-     (* Now keep fullstatement inside the control flow node, 
-      * so that can then get in a MetaStmtVar the fullstatement to later
-      * pp back when the S is in a +. But that means that 
-      * Exp will match an Ifnode even if there is no such exp
-      * inside the condition of the Ifnode (because the exp may
-      * be deeper, in the then branch). So have to not visit
-      * all inside a node anymore.
-      * 
-      * update: j'ai choisi d'accrocher au noeud du CFG à la
-      * fois le fullstatement et le partialstatement et appeler le 
-      * visiteur que sur le partialstatement.
-      *)
-
-      (* julia's code *)
-      (*
-      (function binding ->
-        let globals = ref [] in
-        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
-            (fun (k, bigf) e ->
-	      match match_e_e expr e binding with
-		[] -> (* failed *) k e
-	      |	b -> globals := b @ !globals);
-              }
-        in
-       *)
-
-        let globals = ref [] in
-        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
-              (fun (k, bigf) expr -> push2 expr globals;  k expr );
-           } 
-        in
-       
-        let visitor_e = Visitor_c.visitor_expr_k bigf in
-
-        (match nodeb with 
-
-        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
-        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
-
-        | F.IfHeader (_, (e,_)) 
-        | F.SwitchHeader (_, (e,_))
-        | F.WhileHeader (_, (e,_))
-        | F.DoWhileTail (e,_) 
-          -> visitor_e e
-
-        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
-            e1opt +> do_option visitor_e;
-            e2opt +> do_option visitor_e;
-            e3opt +> do_option visitor_e;
-            
-        | F.ReturnExpr (_, (e,_)) -> visitor_e e
-
-        | F.Case  (_, (e,_)) -> visitor_e e
-        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
-
-        | (
-          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
-          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
-          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
-          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
-          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
-          F.IfCpp _
-          ) -> ()
-
-        );
-        !globals
-         +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
-           (return false)
-       
-
-
-  | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
-    F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
-      (* todo: isvaargs ? retb ? *)
-
-      match_ident LocalFunction ida idb >&&>
-
-      (* "iso-by-absence" for storage, and return type. *)
-      (match_storage stoa stob) >&&> 
-      (match tya with 
-       | None -> return true
-       | Some tya -> match_ft_ft tya retb
-      ) >&&>
-      (
-       (* for the pattern phase, no need the EComma *)
-       let paramsa' = A.undots paramsa +> List.filter(function x -> 
-         match A.unwrap x with A.PComma _ -> false | _ -> true)
-       in
-       match_params
-        (match A.unwrap paramsa with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
-        )
-         paramsa' paramsb
-      )
-
-  | A.Decl decla, F.Decl declb -> match_re_decl decla declb
-
-  | A.SeqStart _, F.SeqStart _ -> return true
-  | A.SeqEnd _,   F.SeqEnd   _ -> return true
-
-  | A.ExprStatement (ea, _), F.ExprStatement (_, (Some eb, ii)) -> 
-      match_e_e ea eb
-
-  | A.IfHeader (_,_, ea, _), F.IfHeader (_, (eb,ii)) -> match_e_e ea eb
-  | A.Else _,                F.Else _                -> return true
-  | A.WhileHeader (_, _, ea, _), F.WhileHeader (_, (eb,ii)) -> match_e_e ea eb
-  | A.DoHeader _,             F.DoHeader _          -> return true
-  | A.WhileTail (_,_,ea,_,_), F.DoWhileTail (eb,ii) -> match_e_e ea eb
-
-  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), 
-    F.ForHeader (_, (((eb1opt,_), (eb2opt,_), (eb3opt,_)), ii)) -> 
-      match_opt match_e_e ea1opt eb1opt >&&>
-      match_opt match_e_e ea2opt eb2opt >&&>
-      match_opt match_e_e ea3opt eb3opt >&&>
-      return true
-      
-
-  | A.Break _,               F.Break (_, ((),ii))      -> return true
-  | A.Continue _,            F.Continue (_, ((),ii))   -> return true
-  | A.Return _,              F.Return (_, ((),ii))     -> return true
-  | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
-
-  | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
-
-  (* have not a counter part in coccinelle, for the moment *)
-  (* todo?: print a warning at least ? *)
-  | _, F.SwitchHeader _ 
-  | _, F.Label _
-  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ 
-  | _, F.Asm
-  | _, F.IfCpp _
-    -> return false
-
-  | _, _ -> return false
-
-
-(*-------------------------------------------------------------------------- *)
-
-and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
+let rec (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
  fun decla (B.DeclList (xs, _)) -> 
    xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
      (return false)
@@ -359,14 +251,7 @@ and match_storage stoa stob =
   (* "iso-by-absence" for storage. *)
   match stoa with 
   | None -> return true
-  | Some x -> 
-      return
-	(match (term x,fst stob) with
-	  (A.Static, B.Sto B.Static)
-	| (A.Auto, B.Sto B.Auto)
-	| (A.Register, B.Sto B.Register)
-	| (A.Extern, B.Sto B.Extern) -> true
-	| _ -> false)
+  | Some x -> return (equal_storage (term x) (fst stob))
 
 and match_re_onedecl = fun decla declb -> 
   match A.unwrap decla, declb with
@@ -586,13 +471,6 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
 and (match_arguments: sequence_processing_style -> 
      (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
- (* old:
-  *  if List.length eas = List.length ebs
-  *  then
-  *    (zip eas ebs +> List.fold_left (fun acc (ea, eb) -> 
-  *         acc >&&> match_e_e ea eb) (return true))
-  *  else return false
-  *)
   match seqstyle with
   | Ordered -> 
 
@@ -842,22 +720,6 @@ and (match_params:
            matcher) = 
  fun seqstyle pas pbs ->
  (* todo: if contain metavar ? => recurse on two list and consomme *)
- (* old:
-  let pas' = pas +> List.filter (function A.Param (x,y,z) -> true | _ -> false)
-   in
-  if (List.length pas' = List.length pbs) 
-  then
-  (zip pas' pbs +> List.fold_left (fun acc param -> 
-   match param with
-    | A.Param (ida, qua, typa), ((hasreg, idb, typb, _), ii) -> 
-        acc >&&>
-        match_ft_ft typa typb >&&>
-        match_ident ida idb  
-    | x -> error_cant_have x
-    ) (return true)
-  )
-  else return false
-  *)
 
   match seqstyle with
   | Ordered -> 
@@ -931,7 +793,7 @@ and (match_params:
 (* ------------------------------------------------------------------------- *)
 
 and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
-fun seminfo_idb ida idb -> 
+ fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
  | A.MetaId(ida,inherited) ->
@@ -959,88 +821,186 @@ fun seminfo_idb ida idb ->
  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
      failwith "not handling Opt/Unique/Multi for ident"
 
-(* ------------------------------------------------------------------------- *)
-and match_opt f eaopt ebopt =
-  match eaopt, ebopt with
-  | None, None -> return true
-  | Some ea, Some eb -> f ea eb
+
+
+(*****************************************************************************)
+(* Entry points *)
+(*****************************************************************************)
+
+let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
+ fun re node -> 
+  match A.unwrap re, F.unwrap node with
+
+  (* note: the order of the clauses is important. *)
+
+  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> return false
+
+  (* the metaRuleElem contains just '-' information. We dont need to add
+   * stuff in the environment. If we need stuff in environment, because
+   * there is a + S somewhere, then this will be done via MetaStatement, not
+   * via MetaRuleElem. 
+   * Can match TrueNode/FalseNode/... so must be placed before those cases.
+   *)
+  | A.MetaRuleElem _, _ -> return true
+
+  | _, F.Fake
+  | _, F.EndStatement _
+  | _, F.CaseNode _ 
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode 
+    -> return false
+
+  (* cas general: a Meta can match everything *)
+  | A.MetaStmt (ida,_,inherited),  _unwrap_node -> 
+     (* match only "header"-statement *)
+     (match Control_flow_c.extract_fullstatement node with
+     | Some stb -> 
+         check_add_metavars_binding inherited (term ida, Ast_c.MetaStmtVal stb)
+     | None -> return false
+     )
+
+  (* not me?: *)
+  | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
+
+  | A.Exp expr, nodeb -> 
+     (* Now keep fullstatement inside the control flow node, 
+      * so that can then get in a MetaStmtVar the fullstatement to later
+      * pp back when the S is in a +. But that means that 
+      * Exp will match an Ifnode even if there is no such exp
+      * inside the condition of the Ifnode (because the exp may
+      * be deeper, in the then branch). So have to not visit
+      * all inside a node anymore.
+      * 
+      * update: j'ai choisi d'accrocher au noeud du CFG à la
+      * fois le fullstatement et le partialstatement et appeler le 
+      * visiteur que sur le partialstatement.
+      *)
+
+      (* julia's code *)
+      (*
+      (function binding ->
+        let globals = ref [] in
+        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
+            (fun (k, bigf) e ->
+	      match match_e_e expr e binding with
+		[] -> (* failed *) k e
+	      |	b -> globals := b @ !globals);
+              }
+        in
+       *)
+
+        let globals = ref [] in
+        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
+              (fun (k, bigf) expr -> push2 expr globals;  k expr );
+           } 
+        in
+       
+        let visitor_e = Visitor_c.visitor_expr_k bigf in
+
+        (match nodeb with 
+
+        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
+        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
+
+        | F.IfHeader (_, (e,_)) 
+        | F.SwitchHeader (_, (e,_))
+        | F.WhileHeader (_, (e,_))
+        | F.DoWhileTail (e,_) 
+          -> visitor_e e
+
+        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
+            e1opt +> do_option visitor_e;
+            e2opt +> do_option visitor_e;
+            e3opt +> do_option visitor_e;
+            
+        | F.ReturnExpr (_, (e,_)) -> visitor_e e
+
+        | F.Case  (_, (e,_)) -> visitor_e e
+        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
+
+        | (
+          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
+          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
+          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
+          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
+          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
+          F.IfCpp _
+          ) -> ()
+
+        );
+        !globals
+         +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+           (return false)
+       
+
+
+  | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
+    F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
+      (* todo: isvaargs ? retb ? *)
+
+      match_ident LocalFunction ida idb >&&>
+
+      (* "iso-by-absence" for storage, and return type. *)
+      (match_storage stoa stob) >&&> 
+      (match tya with 
+       | None -> return true
+       | Some tya -> match_ft_ft tya retb
+      ) >&&>
+      (
+       (* for the pattern phase, no need the EComma *)
+       let paramsa' = A.undots paramsa +> List.filter(function x -> 
+         match A.unwrap x with A.PComma _ -> false | _ -> true)
+       in
+       match_params
+        (match A.unwrap paramsa with 
+        | A.DOTS _ -> Ordered 
+        | A.CIRCLES _ -> Unordered 
+        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
+        )
+         paramsa' paramsb
+      )
+
+  | A.Decl decla, F.Decl declb -> match_re_decl decla declb
+
+  | A.SeqStart _, F.SeqStart _ -> return true
+  | A.SeqEnd _,   F.SeqEnd   _ -> return true
+
+  | A.ExprStatement (ea, _), F.ExprStatement (_, (Some eb, ii)) -> 
+      match_e_e ea eb
+
+  | A.IfHeader (_,_, ea, _), F.IfHeader (_, (eb,ii)) -> match_e_e ea eb
+  | A.Else _,                F.Else _                -> return true
+  | A.WhileHeader (_, _, ea, _), F.WhileHeader (_, (eb,ii)) -> match_e_e ea eb
+  | A.DoHeader _,             F.DoHeader _          -> return true
+  | A.WhileTail (_,_,ea,_,_), F.DoWhileTail (eb,ii) -> match_e_e ea eb
+
+  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _), 
+    F.ForHeader (_, (((eb1opt,_), (eb2opt,_), (eb3opt,_)), ii)) -> 
+      match_opt match_e_e ea1opt eb1opt >&&>
+      match_opt match_e_e ea2opt eb2opt >&&>
+      match_opt match_e_e ea3opt eb3opt >&&>
+      return true
+      
+
+  | A.Break _,               F.Break (_, ((),ii))      -> return true
+  | A.Continue _,            F.Continue (_, ((),ii))   -> return true
+  | A.Return _,              F.Return (_, ((),ii))     -> return true
+  | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
+
+  | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
+
+  (* have not a counter part in coccinelle, for the moment *)
+  (* todo?: print a warning at least ? *)
+  | _, F.SwitchHeader _ 
+  | _, F.Label _
+  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
+  | _, F.Goto _ 
+  | _, F.Asm
+  | _, F.IfCpp _
+    -> return false
+
   | _, _ -> return false
 
 
-(*****************************************************************************)
-(* Normally Ast_cocci  should reuse some types of Ast_c, so those functions
- * should not exist.
- * update: but now Ast_c depends on Ast_cocci, so can't make too Ast_cocci
- * depends on Ast_c, so have to stay with those equal_xxx functions. *)
-(*****************************************************************************)
 
-and equal_unaryOp a b = 
-  match a, b with
-  | A.GetRef   , B.GetRef  -> true
-  | A.DeRef    , B.DeRef   -> true
-  | A.UnPlus   , B.UnPlus  -> true
-  | A.UnMinus  , B.UnMinus -> true
-  | A.Tilde    , B.Tilde   -> true
-  | A.Not      , B.Not     -> true
-  | _, _ -> false
-
-
-and equal_assignOp a b = 
-  match a, b with
-  | A.SimpleAssign, B.SimpleAssign -> true
-  | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
-  | _ -> false
-
-
-and equal_fixOp a b = 
-  match a, b with
-  | A.Dec, B.Dec -> true
-  | A.Inc, B.Inc -> true
-  | _ -> false
-
-and equal_binaryOp a b = 
-  match a, b with
-  | A.Arith a,    B.Arith b ->   equal_arithOp a b
-  | A.Logical a,  B.Logical b -> equal_logicalOp a b
-  | _ -> false
-
-and equal_arithOp a b = 
-  match a, b with
-  | A.Plus     , B.Plus     -> true
-  | A.Minus    , B.Minus    -> true
-  | A.Mul      , B.Mul      -> true
-  | A.Div      , B.Div      -> true
-  | A.Mod      , B.Mod      -> true
-  | A.DecLeft  , B.DecLeft  -> true
-  | A.DecRight , B.DecRight -> true
-  | A.And      , B.And      -> true
-  | A.Or       , B.Or       -> true
-  | A.Xor      , B.Xor      -> true
-  | _          , _          -> false
-
-and equal_logicalOp a b = 
-  match a, b with
-  | A.Inf    , B.Inf    -> true
-  | A.Sup    , B.Sup    -> true
-  | A.InfEq  , B.InfEq  -> true
-  | A.SupEq  , B.SupEq  -> true
-  | A.Eq     , B.Eq     -> true
-  | A.NotEq  , B.NotEq  -> true
-  | A.AndLog , B.AndLog -> true
-  | A.OrLog  , B.OrLog  -> true
-  | _          , _          -> false
-  
-
-
-and equal_structUnion a b = 
-  match a, b with
-  | A.Struct, B.Struct -> true
-  | A.Union,  B.Union -> true
-  | _, _ -> false
-
-
-and equal_sign a b = 
-  match a, b with
-  | A.Signed,    B.Signed   -> true
-  | A.Unsigned,  B.UnSigned -> true
-  | _, _ -> false
+let match_re_node a b c = 
+  Common.profile_code "Pattern.match_re_node" (fun () -> match_re_node2 a b c)

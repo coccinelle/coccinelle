@@ -1,8 +1,8 @@
-open Common open Commonop
+open Commonop
 
-(* todo?: al_expr doit enlever les infos de type ? 
-   et doit remettre en emptyAnnot ? 
-*)
+(* todo?: al_expr doit enlever les infos de type ? et doit remettre en
+ *  emptyAnnot ? 
+ *)
 
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with
@@ -15,5 +15,5 @@ let al_type      = Visitor_c.visitor_type_k_s      strip_info_visitor
 
 let al_program xs = xs +> List.map (fun p -> 
   Visitor_c.visitor_program_k_s  strip_info_visitor p
-  )
+)
 

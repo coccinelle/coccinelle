@@ -4,8 +4,7 @@ open Ast_c
 module F = Control_flow_c
 
 (*****************************************************************************)
-(*
- * When in the SP we attach something to a metavariable, or delete it, as in
+(* When in the SP we attach something to a metavariable, or delete it, as in
  * - S
  * + foo();
  * we have to minusize all the token that compose S in the C code, and 

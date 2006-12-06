@@ -8,15 +8,14 @@ module F = Control_flow_c
 module D = Distribute_mcodekind
 
 (*****************************************************************************)
-(* todo: Must do some try, for instance when f(...,X,Y,...) have to test the 
- * transfo for all the combinaitions (and if multiple transfo possible ? pb ? 
- * => the type is to return a   expression option ? use some combinators to 
- *  help ?
- *
- * For some nodes I dont have all the info, for instance for } I need to modify
- * the node of the start, it is where the info is.
- * Same for Else. 
- *)
+(* todo: Must do some try, for instance when f(...,X,Y,...) have to
+ * test the transfo for all the combinaitions (and if multiple transfo
+ * possible ? pb ? => the type is to return a expression option ? use
+ * some combinators to help ?
+ * 
+ * For some nodes I dont have all the info, for instance for } I need
+ * to modify the node of the start, it is where the info is. Same for
+ * Else. *)
 (*****************************************************************************)
 type ('a, 'b) transformer = 'a -> 'b -> Lib_engine.metavars_binding -> 'b
 
@@ -24,13 +23,13 @@ exception NoMatch
 
 type sequence_processing_style = Ordered | Unordered
 
+(* ------------------------------------------------------------------------- *)
 let find_env x env = 
   try List.assoc x env 
   with Not_found -> 
     pr2 ("Don't find value for metavariable " ^ x ^ " in the environment");
     raise NoMatch
 
-(* ------------------------------------------------------------------------- *)
 let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 let mcodekind (_,i,mc) = mc
 let wrap_mcode (_,i,mc) = ("fake", i, mc)
@@ -46,11 +45,21 @@ let mcode_simple_minus = function
   | Ast_cocci.MINUS ([]) -> true
   | _ -> false
 
+
+let transform_option f t1 t2 =
+  match (t1,t2) with
+  | (Some t1, Some t2) -> Some (f t1 t2)
+  | (None, None) -> None
+  | _ -> raise NoMatch
+
+
+
+
 (* ------------------------------------------------------------------------- *)
-let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il)
-  = fun xs ys binding ->
+let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
+ fun xs ys binding ->
   assert (List.length xs = List.length ys);
-  zip xs ys +> List.map (fun ((s1,_,x),   (s2, (oldmcode, oldenv))) -> 
+  Common.zip xs ys +> List.map (fun ((s1,_,x),   (s2, (oldmcode, oldenv))) -> 
     (* assert s1 = s2 ? no more cos now have some "fake" string,
      * and also because now s1:'a, no more s1:string
      *)
@@ -60,7 +69,6 @@ let tag_one_symbol = fun ia ib  binding ->
   let (s1,_,x) = ia in
   let (s2, (oldmcode, oldenv)) = ib in
   (s2, (x, binding))
-
 
 
 (*****************************************************************************)
@@ -975,18 +983,6 @@ and (transform_ident:
  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
      failwith "not handling Opt/Unique/Multi for ident"
         
-
-
-(* ------------------------------------------------------------------------- *)
-and transform_option f t1 t2 =
-  match (t1,t2) with
-  | (Some t1, Some t2) -> Some (f t1 t2)
-  | (None, None) -> None
-  | _ -> raise NoMatch
-
-
-
-
 (*****************************************************************************)
 let transform_proto a b binding (qu, iiptvirg, storage) infolastparen = 
   let node' = transform_re_node a b binding in
@@ -1020,8 +1016,9 @@ let transform_proto a b binding (qu, iiptvirg, storage) infolastparen =
 
 (*****************************************************************************)
 (* Entry points *)
+(*****************************************************************************)
 
-let rec (transform: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
+let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
  fun xs cflow -> 
   (* find the node, transform, update the node,  and iter for all elements *)
 
@@ -1046,3 +1043,5 @@ let rec (transform: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       acc#replace_node (nodei, node')
      ) cflow
 
+let transform a b = 
+  Common.profile_code "Transformation.transform" (fun () -> transform2 a b)

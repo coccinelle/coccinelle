@@ -33,23 +33,22 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
         (Cocci.cprogram_from_file generated_file, generated_file)
         (Cocci.cprogram_from_file expected_res, expected_res)
   in
-  (match correct with
+  match correct with
   | Compare_c.Correct -> 
       pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
-      if doexit then exit 0;
+      if doexit then exit 0
   | Compare_c.Incorrect s -> 
       pr2 ("seems incorrect: " ^ s);
       pr2 "diff (result(-) vs expected_result(+)) = ";
       diffxs +> List.iter pr2;
-      if doexit then exit (-1);
+      if doexit then exit (-1)
   | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
       pr2 "seems incorrect, but only because of code that was not parsable";
-      if doexit then exit (-1);
-  )
+      if doexit then exit (-1)
+  
 
 
 (*****************************************************************************)
-
 (* There can have multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and optional multiple
  * base_vernn.c and base_vernn.res 
@@ -70,20 +69,20 @@ let testone x =
   end
           
 
-(******************************************************************************)
+(*****************************************************************************)
 let testall () =
 
   let _total = ref 0 in
   let _good  = ref 0 in
 
   let expected_result_files = 
-    readdir_to_file_list "tests/" +> filter (fun s -> 
-      s =~ ".*\\.res$" && filesize ("tests/" ^ s) > 0
-    ) +> sort compare
+    Common.readdir_to_file_list "tests/" +> List.filter (fun s -> 
+      s =~ ".*\\.res$" && Common.filesize ("tests/" ^ s) > 0
+    ) +> List.sort compare
   in
 
   let diagnose = ref [] in
-  let add_diagnose s = push2 s diagnose in
+  let add_diagnose s = Common.push2 s diagnose in
 
   begin
    expected_result_files +> List.iter (fun res -> 
@@ -148,7 +147,7 @@ let testall () =
   end
 
 
-(******************************************************************************)
+(*****************************************************************************)
 let main () = 
   begin
     let args = ref [] in
@@ -228,23 +227,28 @@ let main () =
                      " [options] <path-to-c-dir>\nOptions are:") 
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
-    profile_code "total" (fun () -> 
+
+    (* must be done after Arg.parse, because Common.profile is set by it *)
+    Common.profile_code "Main total" (fun () -> 
     (match (!args) with
 
+    (* the test framework. Works with tests/  *)
     | [x] when !test_mode    -> testone x 
     | []  when !testall_mode -> testall ()
+
     | [x] when !test_ctl_foo -> Cocci.full_engine x (Right (Test.foo_ctl ()))
 
+    (* useful to debug *)
     | x::xs when !action <> "" -> 
         (match !action, x::xs with
         | "tokens_c", [file] -> 
             Flag_parsing_c.debug_lexer := true; 
             Flag_parsing_c.verbose_parsing := true;
-            Parse_c.tokens file +> List.iter (fun x -> pr2 (Dumper.dump x))
+            Parse_c.tokens file +> pr2gen
         | "parse_c", x::xs -> 
             let fullxs = 
               if !dir
-              then process_output_to_list ("find " ^ x ^" -name \"*.c\"") 
+              then Common.process_output_to_list ("find " ^x^" -name \"*.c\"") 
               else x::xs 
             in
             
@@ -252,15 +256,13 @@ let main () =
 
             fullxs +> List.iter (fun file -> 
               pr2 ("HANDLING: " ^ file);
-
+              
               if not (file =~ ".*\\.c") 
               then pr2 "warning: seems not a .c file";
-
-              file +> Parse_c.parse_print_error_heuristic +> (fun (x, stat) -> 
-                push2 stat _stat_list
-                );
-             (* file +> Parse_c.parse_print_error +> (fun (x) -> ()); *)
-             );
+              
+              file +> Parse_c.parse_print_error_heuristic 
+                   +> (fun (x, stat) -> Common.push2 stat _stat_list);
+            );
             if not (null !_stat_list) 
             then Parse_c.print_parsing_stat_list !_stat_list;
 
@@ -301,8 +303,8 @@ let main () =
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
         | _ -> failwith "no action for this"
         )
-        
-        
+
+    (* This is the main entry *)
     | x::xs -> 
 
         if (!cocci_file = "") 
@@ -323,7 +325,7 @@ let main () =
           if !dir 
           then begin
             assert (xs = []); 
-            process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
+            Common.process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
           end 
           else x::xs 
         in
@@ -344,16 +346,18 @@ let main () =
 
 	  Ctlcocci_integration.print_bench();
 
-	  if !save_output_file then command2 ("cp /tmp/output.c " ^ saved);
+	  if !save_output_file 
+          then Common.command2 ("cp /tmp/output.c "^ saved);
+
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
-              (if List.length fullxs = 1 then true else false)
+              (List.length fullxs = 1)
           );
 
     | [] -> Arg.usage options usage_msg; failwith "too few arguments"
    )
   );
-  profile_diagnostic ();
+  Common.profile_diagnostic ();
   end
 
 

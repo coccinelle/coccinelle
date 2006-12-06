@@ -1,4 +1,3 @@
-open Common
 open Ograph_extended 
 
 
@@ -21,7 +20,7 @@ val mysat :
   (Lib_engine.mvar list * Lib_engine.metavars_binding) -> 
   (Lib_engine.transformation_info *  bool * Lib_engine.metavars_binding,
    string) 
-  either
+  Common.either
 
 
 val print_bench : unit -> unit

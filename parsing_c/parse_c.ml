@@ -1,4 +1,4 @@
-open Fullcommon
+open Common open Commonop
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -11,10 +11,10 @@ let pr2 s =
 let wrap_lexbuf_info lexbuf     = 
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 
-let wrap_parse_info  parse_info = 
-  (parse_info.str, parse_info.charpos)
+let parse_info_to_pair  parse_info = 
+  (parse_info.Common.str, parse_info.Common.charpos)
 
-
+    
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
@@ -34,20 +34,8 @@ let not_struct_enum = function
 
 
 
-(* opti ? *)
-let get_slice_file filename (line1, line2) = 
-  if not !Flag_parsing_c.opti_parsing then
-    cat filename 
-      +> drop (line1 - 1)
-      +> take (line2 - line1 + 1)
-      +> unlines
-  else "TODO remove opti_parsing flag"
-
-
-
-(* Because ocamllex force us to do it that way :( cant return a pair to 
-   ocamlyacc :( 
-*)
+(* Because ocamllex force us to do it that way. Cant return a pair to
+ * ocamlyacc :( *)
 let info_from_token = function
   | Parser_c.TComment  (i) -> i
   | Parser_c.TCommentSpace  (i) -> i
@@ -142,14 +130,25 @@ let info_from_token = function
   | Parser_c.Tinline (i) -> i
 
 
+(* opti ? *)
+let get_slice_file filename (line1, line2) = 
+  if not !Flag_parsing_c.opti_parsing then
+    Common.cat filename 
+      +> Common.drop (line1 - 1)
+      +> Common.take (line2 - line1 + 1)
+      +> Common.unlines
+  else "TODO remove opti_parsing flag"
+
+
+
 
 (*****************************************************************************)
 (* Lexing only *)
 (*****************************************************************************)
 
 (* called by parse_print_error_heuristic *)
-let tokens file = 
- with_open_infile file (fun chan -> 
+let tokens2 file = 
+ Common.with_open_infile file (fun chan -> 
   let lexbuf = Lexing.from_channel chan in
   try 
     let rec aux () = 
@@ -162,9 +161,12 @@ let tokens file =
   with
     | Lexer_c.Lexical s -> 
         failwith ("lexical error " ^ s ^ "\n =" ^  
-                  (error_message file (wrap_lexbuf_info lexbuf)  ))
+                  (Common.error_message file (wrap_lexbuf_info lexbuf)))
     | e -> raise e
  )
+
+let tokens a = 
+  Common.profile_code "C parsing.tokens" (fun () -> tokens2 a)
 
 
 let tokens_string string = 
@@ -195,7 +197,7 @@ let parse_print_error file =
   let chan = (open_in file) in
   let lexbuf = Lexing.from_channel chan in
 
-  let error_msg () = error_message file (wrap_lexbuf_info lexbuf) in
+  let error_msg () = Common.error_message file (wrap_lexbuf_info lexbuf) in
   try 
     lexbuf +> Parser_c.main Lexer_c.token
   with 
@@ -232,7 +234,7 @@ let parse_gen parsefunc s =
       if is_eof !cur_tok
       then (pr2 "ALREADY AT END"; !cur_tok)
       else
-        let v = pop2 all_tokens in
+        let v = Common.pop2 all_tokens in
         cur_tok := v;
         !cur_tok
     ) 
@@ -313,31 +315,44 @@ let print_parsing_stat_list = fun statxs ->
    )
 
 
-
-
-
-
-
-
-
 (*****************************************************************************)
 (* Lexing with lookahead *)
 (*****************************************************************************)
 open Parser_c
 open Lexer_parser
 
-(*
- * LALR(k) trick. We can do stuff by adding cases in lexer_c.mll, but
- * it is more general to do it via my LALR(k) tech. Because here we
- * can transform some token give some context information. So sometimes
- * it makes sense to transform a token in one context, sometimes not, 
- * and lex can not provide us this context information.
- * Note that the order in the pattern matching is important. Do not 
- * cut/paste.
+(* LALR(k) trick. We can do stuff by adding cases in lexer_c.mll, but
+ * it is more general to do it via my LALR(k) tech. Because here we can
+ * transform some token give some context information. So sometimes it
+ * makes sense to transform a token in one context, sometimes not, and
+ * lex can not provide us this context information. Note that the order
+ * in the pattern matching is important. Do not cut/paste. *)
+
+
+
+let forLOOKAHEAD = 20
+
+(* opti: was better to built it once and for all *)
+let regexp_foreach = Str.regexp_case_fold 
+  ".*for_?each\\|for_?all\\|iterate"
+  
+(* look if there is a '}' just after the closing ')', and handling the
+ * possibility to have nested expressions inside nested parenthesis 
  *)
+let rec is_really_foreach xs = 
+  let rec aux = function
+    | [] -> false, []
+    | TCPar _::TOBrace _::xs -> true, xs
+    | TCPar _::xs -> false, xs
+    | TOPar _::xs -> 
+        let (_, xs') = aux xs in
+        aux xs'
+    | x::xs -> aux xs
+  in
+  aux xs +> fst
 
 
-let lookahead next before = 
+let lookahead2 next before = 
 
   let msg_typedef s = 
     match s with
@@ -345,25 +360,25 @@ let lookahead next before =
     | "u8" | "u16" | "u32" | "u64" 
     | "s8"  | "s16" | "s32" | "s64" 
     | "__u8" | "__u16" | "__u32"  | "__u64"  -> () 
-
+        
     | "acpi_handle" -> ()
     | "acpi_status" -> ()
-
+        
     | s when s =~ ".*_t$" -> ()
     | _ ->  
         if !Flag_parsing_c.debug_typedef
         then pr2 ("CERTAINLY TYPEDEF, promoting: " ^ s)
   in
-
+  
   match (next, before) with
 
   (* special cases scsi/g_NCR5380 *)
   | (TIdent ("ANDP",i1)::TIdent (_,_)::_,   _) ->  TComma i1
   | (TIdent ("ANDP",i1)::TOPar _::_,   _)       ->  TComma i1
 
-   (*-------------------------------------------------------------*)
-   (* stringification of ident *)
-   (*-------------------------------------------------------------*)
+  (*-------------------------------------------------------------*)
+  (* stringification of ident *)
+  (*-------------------------------------------------------------*)
   | (TIdent (s,i1)::_, TOPar _::TIdent ("printk", _)::_) -> 
       TString ((s, Ast_c.IsChar), i1)
 
@@ -372,10 +387,10 @@ let lookahead next before =
 
 
                   
-   (*-------------------------------------------------------------*)
-   (* typedef inference *)
-   (*-------------------------------------------------------------*)
-   (*  xx xx *)
+  (*-------------------------------------------------------------*)
+  (* typedef inference *)
+  (*-------------------------------------------------------------*)
+  (*  xx xx *)
   | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
     -> 
@@ -388,12 +403,13 @@ let lookahead next before =
        *)
       if !Flag_parsing_c.debug_typedef 
       then pr2 ("DISABLE typedef cos special case: " ^ s); 
+
       Lexer_parser.disable_typedef();
 
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
-    (* xx yy *)
+  (* xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before -> 
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
       
@@ -401,7 +417,7 @@ let lookahead next before =
       TypedefIdent (s, i1)
 
 
-   (* [,(] xx [,)] AND param decl *)
+  (* [,(] xx [,)] AND param decl *)
   | (TIdent (s, i1)::(TComma _|TCPar _)::_ , (TComma _ |TOPar _)::_ )
     when not_struct_enum before && 
          !Lexer_parser._lexer_hint.parameterDeclaration
@@ -409,8 +425,8 @@ let lookahead next before =
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
-   (* xx* [,)] *)
-   (* specialcase:  [,(] xx* [,)] *)
+  (* xx* [,)] *)
+  (* specialcase:  [,(] xx* [,)] *)
   | (TIdent (s, i1)::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
         (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
@@ -419,8 +435,8 @@ let lookahead next before =
       TypedefIdent (s, i1)
 
 
-   (* xx** [,)] *)
-   (* specialcase:  [,(] xx** [,)] *)
+  (* xx** [,)] *)
+  (* specialcase:  [,(] xx** [,)] *)
   | (TIdent (s, i1)::TMul _::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
         (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
@@ -428,12 +444,12 @@ let lookahead next before =
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
         
-   (*------------------------------------------------------------*)
-   (* if 'x*y' maybe an expr, maybe just a classic multiplication *)
-   (* but if have a '=', or ','   I think not *)
-   (*------------------------------------------------------------*)
+  (*------------------------------------------------------------*)
+  (* if 'x*y' maybe an expr, maybe just a classic multiplication *)
+  (* but if have a '=', or ','   I think not *)
+  (*------------------------------------------------------------*)
 
-   (* static xx * yy  *)
+  (* static xx * yy  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , 
      (Tregister _|Tstatic _  |Tvolatile _|Tconst _)::_) -> 
       msg_typedef s; Lexer_parser.add_typedef s;
@@ -442,7 +458,7 @@ let lookahead next before =
   (*  TODO  xx * yy ; AND in start of compound element  *)
 
 
-   (*  xx * yy,      AND  in paramdecl *)
+  (*  xx * yy,      AND  in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
     when not_struct_enum before &&
          !Lexer_parser._lexer_hint.parameterDeclaration -> 
@@ -450,19 +466,19 @@ let lookahead next before =
       TypedefIdent (s, i1)
 
 
-   (*  xx * yy ;     AND in Toplevel  *)
+  (*  xx * yy ;     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , _)
     when not_struct_enum before && !Lexer_parser._lexer_hint.toplevel  -> 
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
-    (*  xx * yy (     AND in Toplevel  *)
+  (*  xx * yy (     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOPar _::_ , _)
     when not_struct_enum before  && !Lexer_parser._lexer_hint.toplevel -> 
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
         
-    (* xx * yy [ *)
+  (* xx * yy [ *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOCro _::_ , _)
     when not_struct_enum before && !Lexer_parser._lexer_hint.toplevel -> 
       msg_typedef s;  Lexer_parser.add_typedef s;
@@ -483,14 +499,14 @@ let lookahead next before =
       TypedefIdent s
      *)
 
-    (*  xx * yy =  *)
+  (*  xx * yy =  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TEq _::_ , _)
     when not_struct_enum before -> 
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
 
-    (*  xx * yy)      AND in paramdecl *)
+  (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TCPar _::_ , _)
       when not_struct_enum before &&
            !Lexer_parser._lexer_hint.parameterDeclaration -> 
@@ -498,33 +514,33 @@ let lookahead next before =
       TypedefIdent (s, i1)
           
 
-   (*  xx * yy; *) (* wrong ? *)
+  (*  xx * yy; *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , 
      (TOBrace _| TPtVirg _)::_)  when not_struct_enum before ->
       msg_typedef s;  Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
 
-    (*  xx * yy,  and ';' before xx *) (* wrong ? *)
+  (*  xx * yy,  and ';' before xx *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , 
      (TOBrace _| TPtVirg _)::_) ->
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
 
-   (* xx_t * yy *)
+  (* xx_t * yy *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  when s =~ ".*_t$" ->
       msg_typedef s;  Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
-   (*  xx ** yy *)  (* wrong ? *)
+  (*  xx ** yy *)  (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
     when not_struct_enum before -> 
         (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
 
-   (*  xx ** ) *)
+  (*  xx ** ) *)
   | (TIdent (s, i1)::TMul _::TMul _::TCPar _::_ , _)
     when not_struct_enum before -> 
         (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
@@ -532,18 +548,18 @@ let lookahead next before =
       TypedefIdent (s, i1)
 
 
-   (*  (xx) yy *)
+  (*  (xx) yy *)
   | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
     when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
       msg_typedef s; Lexer_parser.add_typedef s;
       TOPar info
 
-   (*  (xx * ) yy *)
+  (*  (xx * ) yy *)
   | (TOPar info::TIdent (s, i1)::TMul _::TCPar _::TIdent (s2, i2)::_ , _) -> 
       msg_typedef s; Lexer_parser.add_typedef s;
       TOPar info
 
-   (* (xx){ ... }  constructor *)
+  (* (xx){ ... }  constructor *)
   | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::_)  when s =~ ".*_t$"->
       msg_typedef s; Lexer_parser.add_typedef s;
       TypedefIdent (s, i1)
@@ -559,41 +575,43 @@ let lookahead next before =
    (*-------------------------------------------------------------*)
    (* higher order macro, iterator macro, debug macro *)
    (*-------------------------------------------------------------*)
-   (* todo: if ident contain a  for_each,  then certainly a macro.
-    * but to be sure should look if there is a { after the (, but
-    * it requires to count the '('. Because this can be expensive,
-    * maybe can do that only when the token contain "for_each".
-    * less: do a pr2 when encounter a for_each ?
-    *)
-
   | (TIdent (s, i1)::TOPar _::Tif _::_ ,     _)
       (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
     -> 
       if !Flag_parsing_c.debug_cpp 
       then pr2 ("CERTAINLY HIGHER ORDER MACRO, transforming: " ^ s);
       THigherOrderMacro i1
-                  
+
+   (* If ident contain a for_each, then certainly a macro. But to be
+    * sure should look if there is a '{' after the ')', but it requires
+    * to count the '('. Because this can be expensive, we do that only
+    * when the token contain "for_each". *)
+
+  | (TIdent (s, i1)::TOPar _::rest, _) -> 
+      if s ==~ regexp_foreach && 
+        is_really_foreach (Common.take_safe forLOOKAHEAD rest)
+      then begin
+        if !Flag_parsing_c.debug_cpp 
+        then pr2 ("CERTAINLY FOREACH, transforming: " ^ s);
+        Twhile i1
+      end
+      else TIdent (s, i1)
+
+        
+        
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | TDefine ii::_, _ -> 
-      if !Lexer_parser._lexer_hint.toplevel
-      then TDefine ii
-      else begin
-        if !Flag_parsing_c.debug_cpp
-        then pr2 ("DEFINE inside function, I treat it as comment");
-        TCommentCpp ii
-      end
+  | TDefine ii::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
+      if !Flag_parsing_c.debug_cpp
+      then pr2 ("DEFINE inside function, I treat it as comment");
+      TCommentCpp ii
 
   (* do same for include often found inside structdef *)
-  | TInclude ii::_, _ -> 
-      if !Lexer_parser._lexer_hint.toplevel
-      then TInclude ii
-      else begin
-        if !Flag_parsing_c.debug_cpp
-        then pr2 ("INCLUDE inside function, I treat it as comment");
-        TCommentCpp ii
-      end
+  | TInclude ii::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
+      if !Flag_parsing_c.debug_cpp
+      then pr2 ("INCLUDE inside function, I treat it as comment");
+      TCommentCpp ii
 
   | ((TIfdef ii | TIfdefelse ii | TEndif ii) as x)::_, _ -> 
       if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
@@ -611,19 +629,18 @@ let lookahead next before =
  | v::xs, _ -> v
  | _ -> raise Impossible
 
-
-
-
+let lookahead a b = 
+ Common.profile_code "C parsing.lookahead" (fun () -> lookahead2 a b)
 
 
 (*****************************************************************************)
 (* Main entry point *)
 (*****************************************************************************)
 
-(* note: as now go in 2 pass, there is first all the error message of 
- * the lexer, and then the error of the parser. It is no more interwinded.
- *)
-let parse_print_error_heuristic file = 
+(* note: as now go in 2 pass, there is first all the error message of
+ * the lexer, and then the error of the parser. It is no more
+ * interwinded. *)
+let parse_print_error_heuristic2 file = 
 
   let table     = Common.full_charpos_to_pos file in
   let filelines = (""::Common.cat file) +> Array.of_list in
@@ -707,7 +724,7 @@ let parse_print_error_heuristic file =
 
   let error_msg () = 
     if not !Flag_parsing_c.opti_parsing 
-    then error_message file (wrap_parse_info (info_from_token !cur_tok +> fst))
+    then error_message file (parse_info_to_pair (info_from_token !cur_tok +> fst))
     else "TODO remove opti_parsing flag"
   in
 
@@ -839,6 +856,12 @@ let parse_print_error_heuristic file =
 
   let v = loop() in
   (v, stat)
+
+
+let parse_print_error_heuristic a  = 
+ Common.profile_code "C parsing" (fun () -> parse_print_error_heuristic2 a)
+
+
 
 
 

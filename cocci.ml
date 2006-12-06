@@ -18,28 +18,24 @@ module CCI = Ctlcocci_integration
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_from_file2  file = 
+let cprogram_from_file  file = 
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
     +> Common.unzip 
     +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
-    +> uncurry Common.zip
+    +> Common.uncurry Common.zip
 
-let cfile_from_program2 program inf outf = 
+let cfile_from_program program inf outf = 
   Unparse_c.pp_program program inf outf
 
-let cprogram_from_file file = 
-  profile_code "C parsing" (fun () -> cprogram_from_file2 file)
 
-let cfile_from_program a b c = 
-  profile_code "C unparsing" (fun () -> cfile_from_program2 a b c)
   
 
 let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
   begin
-    write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
+    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
     let program = cprogram_from_file ("/tmp/__cocci.c") in
-    program +> find_some (fun (e,_) -> 
+    program +> Common.find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
       | _ -> None
@@ -48,9 +44,9 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
 
 let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
   begin
-    write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
+    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
     let program = cprogram_from_file ("/tmp/__cocci.c") in
-    program +> find_some (fun (e,_) -> 
+    program +> Common.find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
           (match compound with
@@ -70,7 +66,7 @@ let sp_from_file file iso    = Parse_cocci.process file iso false
 let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
-    write_file ("/tmp/__cocci.cocci") (s);
+    Common.write_file ("/tmp/__cocci.cocci") (s);
     let (astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +> List.hd +> List.hd +> (function x ->
@@ -89,7 +85,7 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
 (* --------------------------------------------------------------------- *)
 let flows astc = 
   let (program, stat) = astc in
-  program +> map_filter (fun (e,_) -> 
+  program +> Common.map_filter (fun (e,_) -> 
     match e with
     | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
         let flow = Ast_to_flow.ast_to_control_flow def in
@@ -140,11 +136,11 @@ let show_or_not_cfile cfile =
 
 let show_or_not_cocci coccifile isofile = 
   if !Flag.show_cocci then begin
-    print_xxxxxxxxxxxxxxxxx ();
+    Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing semantic patch file: " ^ coccifile);
-    isofile +> do_option (fun s -> pr2 ("with isos from: " ^ s));
-    print_xxxxxxxxxxxxxxxxx ();
-    command2 ("cat " ^ coccifile);
+    isofile +> Common.do_option (fun s -> pr2 ("with isos from: " ^ s));
+    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.command2 ("cat " ^ coccifile);
     pr2 "";
   end
 
@@ -152,16 +148,16 @@ let show_or_not_cocci coccifile isofile =
 let show_or_not_ctl_tex astcocci ctls =
   if !Flag.show_ctl_tex then begin
     Ctltotex.totex ("/tmp/__cocci_ctl.tex") astcocci ctls;
-    command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
+    Common.command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
               "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
               "gv __cocci_ctl.ps &");
   end
 
 let show_or_not_ctl_text ctl =
   if !Flag.show_ctl_text then begin
-    print_xxxxxxxxxxxxxxxxx();
+    Common.print_xxxxxxxxxxxxxxxxx();
     pr2 "ctl";
-    print_xxxxxxxxxxxxxxxxx();
+    Common.print_xxxxxxxxxxxxxxxxx();
     let (ctl,_) = ctl in
     Pretty_print_engine.pp_ctlcocci 
       !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
@@ -171,9 +167,9 @@ let show_or_not_ctl_text ctl =
 
 let show_or_not_trans_info trans_info = 
   if !Flag.show_transinfo then begin
-    print_xxxxxxxxxxxxxxxxx();
+    Common.print_xxxxxxxxxxxxxxxxx();
     pr2 "transformation info returned:";
-    print_xxxxxxxxxxxxxxxxx();
+    Common.print_xxxxxxxxxxxxxxxxx();
     Pretty_print_engine.pp_transformation_info trans_info;
     Format.print_newline();
   end
@@ -254,10 +250,10 @@ let flow_to_ast2 flow =
 
 
 let ast_to_flow_with_error_messages a b = 
-  profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
+  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
 
 let flow_to_ast a = 
-  profile_code "flow" (fun () -> flow_to_ast2 a)
+  Common.profile_code "flow" (fun () -> flow_to_ast2 a)
                   
   
 (*****************************************************************************)
@@ -324,9 +320,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
             (* !Main point! The call to the engine *)
             (***************************************)
             let model_ctl  = CCI.model_for_ctl flow binding in
-            profile_code "mysat" (fun () -> 
-	      CCI.mysat model_ctl ctl (used_after_list, binding)
-            )
+	    CCI.mysat model_ctl ctl (used_after_list, binding)
 
           ) in
 
@@ -336,7 +330,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
           (* modify also the proto if FunHeader was touched *)
           let hack_funheaders = 
-            trans_info +> map_filter (fun (_nodei, binding, rule_elem) -> 
+            trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
               match rule_elem with
               | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
                   Some  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
@@ -367,7 +361,8 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
 
 let program_elem_vs_ctl a b c = 
-  profile_code "program_elem_vs_ctl" (fun () -> program_elem_vs_ctl2 a b c)
+  Common.profile_code "program_elem_vs_ctl" 
+    (fun () -> program_elem_vs_ctl2 a b c)
 
 
 
@@ -376,7 +371,7 @@ let program_elem_vs_ctl a b c =
 
 (* Returns nothing. The output is in the file "/tmp/output.c". *)
 let full_engine2 cfile coccifile_and_iso_or_ctl = 
-  assert (lfile_exists cfile);
+  assert (Common.lfile_exists cfile);
 
   (* preparing the inputs (c, cocci, ctl) *)
   let (ctls, error_words_julia) = 
@@ -395,7 +390,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if not (worth_trying cfile error_words_julia)
-  then command2("cp " ^ cfile ^ " /tmp/output.c")
+  then Common.command2("cp " ^ cfile ^ " /tmp/output.c")
   else begin
 
 
@@ -403,7 +398,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
   (* And now the main algorithm *)
   (* ----------------------------------------- *)
 
-  command2("cp " ^ cfile ^ " /tmp/input.c");
+  Common.command2("cp " ^ cfile ^ " /tmp/input.c");
 
   (* The algorithm is roughly: 
    *  for_all ctl rules in SP
@@ -465,16 +460,16 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
       (* 3: iter function *)
       (* ------------------ *)
       let cprogram = cprogram_from_file ("/tmp/input.c") in
-      let cprogram' = cprogram +> List.map (fun (elem,(filename, pos, _s,il)) ->
+      let cprogram' = cprogram +> List.map (fun (elem,(filename, pos,_s,il)) ->
+
+        let full_used_after_list = 
+	  List.fold_left Common.union_set [] used_after_list 
+        in
 
         (************************************************************)
         (* !Main point! The call to the function that will call the
          * ctl engine and all the machinery *)
         (************************************************************)
-        let full_used_after_list = 
-	  List.fold_left Common.union_set [] used_after_list 
-        in
-
         let elem', newbinding, hack_funheaders = 
           program_elem_vs_ctl 
             (elem, (filename, pos, il))
@@ -482,13 +477,14 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
             binding 
         in
 
-        hack_funheaders +> List.iter (fun hack -> push2 hack _hack_funheader);
+        hack_funheaders +> List.iter 
+          (fun hack -> Common.push2 hack _hack_funheader);
 
         (* opti: julia says that because the binding is
          * determined by the used_after_list, the items in the list
          * are kind of sorted, so could optimise the union.
          *)
-        newbinding +> do_option (fun newbinding -> 
+        newbinding +> Common.do_option (fun newbinding -> 
           _current_bindings := Common.insert_set newbinding !_current_bindings;
         );
         
@@ -496,7 +492,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
         ) (* end 3: iter function *)
       in
       cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
-      command2("cp /tmp/output.c /tmp/input.c");    
+      Common.command2("cp /tmp/output.c /tmp/input.c");    
       ) (* end 2: iter bindings *)
    end
    else begin
@@ -509,7 +505,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
      let cprogram = cprogram_from_file ("/tmp/input.c") in
      
      (* iter regions *)
-     zip ctl_toplevel_list used_after_list +> List.iter 
+     Common.zip ctl_toplevel_list used_after_list +> List.iter 
        (fun (ctl, used_after_one_ctl) -> 
 
          show_or_not_ctl_text ctl;
@@ -540,8 +536,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
               * determined by the used_after_list, the items in the list
               * are kind of sorted, so could optimise the union.
               *)
-             newbinding +> do_option (fun newbinding -> 
-               push2 (newbinding, (pos, fst elem')::already)
+             newbinding +> Common.do_option (fun newbinding -> 
+               Common.push2 (newbinding, (pos, fst elem')::already)
                        _current_bindings_multictl;
                );
              end
@@ -553,7 +549,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
 
      (* assert no conflict. can concern different function ? *)
      (match (List.length !_current_bindings_multictl) with
-     | 0 ->  command2("cp /tmp/input.c /tmp/output.c");    
+     | 0 ->  Common.command2("cp /tmp/input.c /tmp/output.c");    
      | 1 -> 
        let (binding, list_func) = List.hd !_current_bindings_multictl in
        let cprogram' = cprogram +> List.map (fun (e, (filename, pos, s, il)) ->
@@ -563,7 +559,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
          )
        in
        cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
-       command2("cp /tmp/output.c /tmp/input.c");    
+       Common.command2("cp /tmp/output.c /tmp/input.c");    
        _current_bindings := [binding]
        
      | n -> failwith "multiple candidates for multi mini-rules, TODO"
@@ -580,7 +576,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
    * of all the ctl rules 
    *)
 
-  profile_code "hack_headers" (fun () -> 
+  Common.profile_code "hack_headers" (fun () -> 
   !_hack_funheader +> List.iter (fun 
     ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
    
@@ -610,7 +606,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
         )
     in
     cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
-    command2("cp /tmp/output.c /tmp/input.c");    
+    Common.command2("cp /tmp/output.c /tmp/input.c");    
    );
    );
 
@@ -618,9 +614,9 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
 
   (* may need --strip-trailing-cr under windows *)
   pr2 "diff = ";
-  command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
+  Common.command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
  end
 
 
 let full_engine a b = 
-  profile_code "full_engine" (fun () -> full_engine2 a b)
+  Common.profile_code "full_engine" (fun () -> full_engine2 a b)

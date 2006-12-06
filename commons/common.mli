@@ -4,6 +4,7 @@
 
 val pr : string -> unit
 val pr2 : string -> unit
+val pr2gen: 'a -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -799,6 +800,7 @@ val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
+val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
 
 (*****************************************************************************)
 (* Hash sets *)
