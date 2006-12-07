@@ -151,13 +151,13 @@ let tokens2 file =
  Common.with_open_infile file (fun chan -> 
   let lexbuf = Lexing.from_channel chan in
   try 
-    let rec aux () = 
+    let rec tokens_aux () = 
       let result = Lexer_c.token lexbuf in
       if is_eof result
       then [result]
-      else result::(aux ())
+      else result::(tokens_aux ())
     in
-    aux ()
+    tokens_aux ()
   with
     | Lexer_c.Lexical s -> 
         failwith ("lexical error " ^ s ^ "\n =" ^  
@@ -172,13 +172,13 @@ let tokens a =
 let tokens_string string = 
   let lexbuf = Lexing.from_string string in
   try 
-    let rec aux () = 
+    let rec tokens_s_aux () = 
       let result = Lexer_c.token lexbuf in
       if is_eof result
       then [result]
-      else result::(aux ())
+      else result::(tokens_s_aux ())
     in
-    aux ()
+    tokens_s_aux ()
   with
     | Lexer_c.Lexical s -> failwith ("lexical error " ^ s ^ "\n =" )
     | e -> raise e
@@ -340,16 +340,16 @@ let regexp_foreach = Str.regexp_case_fold
  * possibility to have nested expressions inside nested parenthesis 
  *)
 let rec is_really_foreach xs = 
-  let rec aux = function
+  let rec is_foreach_aux = function
     | [] -> false, []
     | TCPar _::TOBrace _::xs -> true, xs
     | TCPar _::xs -> false, xs
     | TOPar _::xs -> 
-        let (_, xs') = aux xs in
-        aux xs'
-    | x::xs -> aux xs
+        let (_, xs') = is_foreach_aux xs in
+        is_foreach_aux xs'
+    | x::xs -> is_foreach_aux xs
   in
-  aux xs +> fst
+  is_foreach_aux xs +> fst
 
 
 let lookahead2 next before = 

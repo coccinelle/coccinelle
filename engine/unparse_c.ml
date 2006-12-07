@@ -37,7 +37,7 @@ let new_tabbing2 space =
     )
   else None
 let new_tabbing a = 
-  Common.profile_code "C Unparsing.new_tabbing" (fun () -> new_tabbing2 a)
+  Common.profile_code "C unparsing.new_tabbing" (fun () -> new_tabbing2 a)
 
 
 
@@ -52,7 +52,7 @@ let new_tabbing a =
  * 'token1'. But, we normally cant delete a token. A token is marked as
  * minus, but not deleted, so normally passed should always be empty.
  *)
-let passed_commentsbefore_notbefore elem toks = 
+let passed_commentsbefore_notbefore2 elem toks = 
 
   let (before, notbefore) = toks +> Common.span (fun (_tok, (info,_annot)) -> 
     info.charpos < elem.charpos)   
@@ -82,7 +82,9 @@ let passed_commentsbefore_notbefore elem toks =
   let (commentsbefore, passed) = (List.rev commentsbefore, List.rev passed) 
   in
   (passed, commentsbefore, notbefore)
-
+let passed_commentsbefore_notbefore a b = 
+  Common.profile_code "C unparsing.passed_comments" 
+    (fun () -> passed_commentsbefore_notbefore2 a b)
 
 
 (*****************************************************************************)

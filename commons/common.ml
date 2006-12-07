@@ -179,19 +179,19 @@ let rec (foldn: ('a -> int -> 'a) -> 'a -> int -> 'a) = fun f acc i ->
 let sum_int   = List.fold_left (+) 0
 
 let fold_left_with_index f acc =
-  let rec aux acc n = function
+  let rec fold_lwi_aux acc n = function
     | [] -> acc
-    | x::xs -> aux (f acc x n) (n+1) xs 
-  in aux acc 0
+    | x::xs -> fold_lwi_aux (f acc x n) (n+1) xs 
+  in fold_lwi_aux acc 0
 
 
 (* let rec enum x n = if x = n then [n] else x::enum (x+1)  n *)
 let rec enum x n = 
   assert (x <= n);
-  let rec aux acc x n = 
-    if x = n then n::acc else aux (x::acc) (x+1) n 
+  let rec enum_aux acc x n = 
+    if x = n then n::acc else enum_aux (x::acc) (x+1) n 
   in
-  List.rev (aux [] x n)
+  List.rev (enum_aux [] x n)
 
 let (list_of_string: string -> char list) = fun s -> 
   (enum 0 ((String.length s) - 1) +> List.map (String.get s))
@@ -417,8 +417,8 @@ let (always: 'a -> 'a gen) = fun e () -> e
 let (frequency: ((int * ('a gen)) list) -> 'a gen) = fun xs -> 
   let sums = sum_int (List.map fst xs) in
   let i = Random.int sums in
-  let rec aux acc = function ((x,g)::xs) -> if i < acc+x then g else aux (acc+x) xs | _ -> failwith "frequency" in
-  aux 0 xs
+  let rec freq_aux acc = function ((x,g)::xs) -> if i < acc+x then g else freq_aux (acc+x) xs | _ -> failwith "frequency" in
+  freq_aux 0 xs
 let frequencyl l = frequency (List.map (fun (i,e) -> (i,always e)) l)
 
 
@@ -744,6 +744,17 @@ let save_excursion reference f =
   reference := old;
   res
 
+
+
+let memoized h k f = 
+  try Hashtbl.find h k 
+  with Not_found -> 
+    let v = f () in
+    begin
+      Hashtbl.add h k v;
+      v
+    end
+    
 (*****************************************************************************)
 (* Error managment *)
 (*****************************************************************************)
@@ -877,19 +888,19 @@ let bitrange x p = let v = power 2 p in between x (-v) v
 
 (* descendant *)
 let (prime1: int -> int option)  = fun x -> 
-  let rec aux n = 
+  let rec prime1_aux n = 
     if n = 1 then None
     else 
-      if (x / n) * n = x then Some n else aux (n-1)
-  in if x = 1 then None else if x < 0 then failwith "negative" else aux (x-1)
+      if (x / n) * n = x then Some n else prime1_aux (n-1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime1_aux (x-1)
 
 (* montant, better *)
 let (prime: int -> int option)  = fun x -> 
-  let rec aux n = 
+  let rec prime_aux n = 
     if n = x then None
     else 
-      if (x / n) * n = x then Some n else aux (n+1)
-  in if x = 1 then None else if x < 0 then failwith "negative" else aux 2
+      if (x / n) * n = x then Some n else prime_aux (n+1)
+  in if x = 1 then None else if x < 0 then failwith "negative" else prime_aux 2
 
 let sum xs = List.fold_left (+) 0 xs
 let product = List.fold_left ( * ) 1
@@ -1115,6 +1126,21 @@ let lowercase = String.lowercase
 -let (==~) s re = Str.string_match re s 0 
 *)
 
+let _memo_compiled_regexp = Hashtbl.create 101
+let candidate_match_func s re = 
+  (* old: Str.string_match (Str.regexp re) s 0 *)
+  let compile_re = 
+    memoized _memo_compiled_regexp re (fun () -> Str.regexp re) 
+  in
+  Str.string_match compile_re s 0
+
+let match_func s re = 
+  profile_code "Common.=~" (fun () -> candidate_match_func s re)
+
+let _ = Commonop._match_func := match_func
+
+
+
 let (regexp_match: string -> string -> string) = fun s re -> 
   let _ = assert(s =~ re) in
   Str.matched_group 1 s
@@ -1145,14 +1171,14 @@ let rec join str = function
 
 let (split_list_regexp: string -> string list -> (string * string list) list) =
  fun re xs ->
-  let rec aux (heading, accu) = function
+  let rec split_lr_aux (heading, accu) = function
     | [] -> [(heading, List.rev accu)]
     | x::xs -> 
         if x =~ re 
-        then (heading, List.rev accu)::aux (x, []) xs
-        else aux (heading, x::accu) xs
+        then (heading, List.rev accu)::split_lr_aux (x, []) xs
+        else split_lr_aux (heading, x::accu) xs
   in
-  aux ("__noheading__", []) xs 
+  split_lr_aux ("__noheading__", []) xs 
   +> (fun xs -> if (List.hd xs) = ("__noheading__",[]) then List.tl xs else xs)
 
 
@@ -1259,25 +1285,25 @@ let (unwords: string list -> string) = fun s ->
 (*****************************************************************************)
 let cat_orig file = 
   let chan = open_in file in
-  let rec aux ()  = 
+  let rec cat_orig_aux ()  = 
     try 
       (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
       let l = input_line chan in
-      l :: aux ()
+      l :: cat_orig_aux ()
     with End_of_file -> [] in
-  aux()
+  cat_orig_aux()
 
 (* tail recursive efficient version *)
 let cat file = 
   let chan = open_in file in
-  let rec aux acc ()  = 
+  let rec cat_aux acc ()  = 
       (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
     let (b, l) = try (true, input_line chan) with End_of_file -> (false, "") in
     if b 
-    then aux (l::acc) ()
+    then cat_aux (l::acc) ()
     else acc 
   in
-  aux [] () +> List.rev +> (fun x -> close_in chan; x)
+  cat_aux [] () +> List.rev +> (fun x -> close_in chan; x)
 
 let interpolate str = 
   begin
@@ -1311,12 +1337,12 @@ let do_in_fork f =
 
 let process_output_to_list = fun command -> 
   let chan = Unix.open_process_in command in
-  let rec aux () =  
+  let rec process_otl_aux () =  
     try 
       let e = input_line chan in
-      e::aux()
+      e::process_otl_aux()
     with End_of_file -> begin ignore(Unix.close_process_in chan); [] end
-  in aux ()
+  in process_otl_aux ()
 
 let read_file file = cat file +> unlines
 
@@ -1585,12 +1611,12 @@ let remove x xs =
 let foldl1 p = function x::xs -> List.fold_left p x xs | _ -> failwith "foldl1"
 
 let fold_k f lastk acc xs = 
-  let rec aux acc = function
+  let rec fold_k_aux acc = function
     | [] -> lastk acc
     | x::xs -> 
-        f acc x (fun acc -> aux acc xs)
+        f acc x (fun acc -> fold_k_aux acc xs)
   in
-  aux acc xs
+  fold_k_aux acc xs
 
 
 let rec list_init = function
@@ -1646,12 +1672,14 @@ let do_withenv doit f env l =
   ) l in
   l', !r_env
 
-(* could call it for *)
+(* now in prelude. could call it for *)
+(*
 let fold_left_with_index f acc =
   let rec aux acc n = function
     | [] -> acc
     | x::xs -> aux (f acc x n) (n+1) xs 
   in aux acc 0
+*)
   
 let map_withenv      f env e = do_withenv List.map f env e
 
@@ -1708,12 +1736,12 @@ let minimum l = foldl1 min l
 
 (* do a map tail recursive, and result is reversed, it is a tail recursive map => efficient *)
 let map_eff_rev = fun f l ->
-  let rec aux acc = 
+  let rec map_eff_aux acc = 
     function 
       |	[]    -> acc
-      |	x::xs -> aux ((f x)::acc) xs
+      |	x::xs -> map_eff_aux ((f x)::acc) xs
   in
-  aux [] l
+  map_eff_aux [] l
 
 let rec (generate: int -> 'a -> 'a list) = fun i el ->
   if i = 0 then []
@@ -1749,11 +1777,15 @@ let rec splitAt n xs =
     )
 
 let pack n xs = 
-  let rec aux l i = function
+  let rec pack_aux l i = function
     | [] -> failwith "not on a boundary"
     | [x] -> if i = n then [l++[x]] else failwith "not on a boundary"
-    | x::xs -> if i = n then (l++[x])::(aux [] 1 xs) else aux (l++[x]) (i+1) xs in
-  aux [] 1 xs
+    | x::xs -> 
+        if i = n 
+        then (l++[x])::(pack_aux [] 1 xs) 
+        else pack_aux (l++[x]) (i+1) xs 
+  in
+  pack_aux [] 1 xs
 
 let min_with f = function
   | [] -> raise Not_found
@@ -1835,28 +1867,28 @@ let rec (permutation: 'a list -> 'a list list) = function
 
 (* pix *)
 let rec map_flatten f l =
-  let rec aux accu = function    
+  let rec map_flatten_aux accu = function    
     | [] -> accu
-    | e :: l -> aux (List.rev (f e) ++ accu) l
-  in List.rev (aux [] l)
+    | e :: l -> map_flatten_aux (List.rev (f e) ++ accu) l
+  in List.rev (map_flatten_aux [] l)
 
 
 let rec repeat e n = 
-    let rec aux acc = function
+    let rec repeat_aux acc = function
       | 0 -> acc
       | n when n < 0 -> failwith "repeat"
-      | n -> aux (e::acc) (n-1) in
-    aux [] n
+      | n -> repeat_aux (e::acc) (n-1) in
+    repeat_aux [] n
 
 let rec map2 f = function 
   | [] -> []
   | x::xs -> let r = f x in r::map2 f xs
 
 let rec map3 f l = 
-  let rec aux acc = function
+  let rec map3_aux acc = function
     | [] -> acc 
-    | x::xs -> aux (f x::acc) xs in
-  aux [] l
+    | x::xs -> map3_aux (f x::acc) xs in
+  map3_aux [] l
 
 (*
 let tails2 xs = map rev (inits (rev xs))
@@ -1866,13 +1898,13 @@ let id x = x
 *)
 
 let pack_sorted same xs = 
-    let rec aux acc xs = 
+    let rec pack_s_aux acc xs = 
       match (acc,xs) with
       |	((cur,rest),[]) -> cur::rest
       |	((cur,rest), y::ys) -> 
-	  if same (List.hd cur) y then aux (y::cur, rest) ys
-	  else aux ([y], cur::rest) ys
-    in aux ([List.hd xs],[]) (List.tl xs) +> List.rev
+	  if same (List.hd cur) y then pack_s_aux (y::cur, rest) ys
+	  else pack_s_aux ([y], cur::rest) ys
+    in pack_s_aux ([List.hd xs],[]) (List.tl xs) +> List.rev
 let test = pack_sorted (=) [1;1;1;2;2;3;4]
 
 let rec uniq2 = function
@@ -2173,11 +2205,12 @@ let rec (lookup_list: 'a -> ('a , 'b) assoc list -> 'b) = fun el -> function
   | (xs::xxs) -> try List.assoc el xs with Not_found -> lookup_list el xxs
 
 let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs -> 
-  let rec aux i = function
+  let rec lookup_l_aux i = function
   | [] -> raise Not_found
   | (xs::xxs) -> 
-      try let res = List.assoc el xs in (res,i) with Not_found -> aux (i+1) xxs
-  in aux 0 xxs
+      try let res = List.assoc el xs in (res,i) 
+      with Not_found -> lookup_l_aux (i+1) xxs
+  in lookup_l_aux 0 xxs
 
 let _ = example (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
@@ -2611,7 +2644,7 @@ let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) =
   let chan = open_in filename in
   let linen  = ref 0 in
   let posl   = ref 0 in
-  let rec aux () =
+  let rec charpos_to_pos_aux () =
     let s = (input_line chan) in
     let _ = incr linen in
     let s = s ^ "\n" in
@@ -2622,15 +2655,15 @@ let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) =
     else 
       begin
         posl := !posl + slength s;
-        aux ();
+        charpos_to_pos_aux ();
       end
-  in aux ()
+  in charpos_to_pos_aux ()
 
 let charpos_to_pos a b = 
   profile_code "Common.charpos_to_pos" (fun () -> charpos_to_pos2 a b)
 
 (*---------------------------------------------------------------------------*)
-let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
+let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
 
     let arr = Array.create (filesize filename + 2) (0,0) in
 
@@ -2639,7 +2672,7 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
     let charpos   = ref 0 in
     let line  = ref 0 in
 
-    let rec aux () =
+    let rec full_charpos_to_pos_aux () =
      try
        let s = (input_line chan) in
        let _ = incr line in
@@ -2648,7 +2681,7 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
          arr.(!charpos + i) <- (!line, i);
        done;
        charpos := !charpos + slength s + 1;
-       aux();
+       full_charpos_to_pos_aux();
        
      with End_of_file -> 
        for i = !charpos to Array.length arr - 1 do
@@ -2657,10 +2690,12 @@ let (full_charpos_to_pos: filename -> (int * int) array ) = fun filename ->
        ();
     in 
     begin 
-      aux ();
+      full_charpos_to_pos_aux ();
       close_in chan;
       arr
     end
+let full_charpos_to_pos a =
+  profile_code "Common.full_charpos_to_pos" (fun () -> full_charpos_to_pos2 a)
     
 let test_charpos file = 
   full_charpos_to_pos file +> Dumper.dump +> pr2

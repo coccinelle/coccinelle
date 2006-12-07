@@ -125,7 +125,7 @@ val counter3 : unit -> int
 type timestamp = int
 
 (*****************************************************************************)
-(* String_of *)
+(* String_of and (pretty) printing *)
 (*****************************************************************************)
 
 val string_of_string : (string -> string) -> string
@@ -196,7 +196,9 @@ type 'a mylazy = (unit -> 'a)
 
 val save_excursion : 'a ref -> (unit -> 'b) -> 'b
 
-(* unwind_protect, cf below *)
+val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
+
+val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
 (*****************************************************************************)
 (* Error managment *)
@@ -211,7 +213,6 @@ val myassert : bool -> unit
 val warning : string -> 'a -> 'a
 val error_cant_have : 'a -> 'b
 
-val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
 
 (*****************************************************************************)
 (* Equality *)
@@ -651,7 +652,7 @@ val bigarray_string_of_c_layout : 'a -> string
 
 
 (*****************************************************************************)
-(* Set *)
+(* Set. Have a look too at set*.mli *)
 (*****************************************************************************)
 
 type 'a set = 'a list
@@ -741,7 +742,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 (*****************************************************************************)
-(* Assoc int -> xxx with binary tree *)
+(* Assoc. Have a look too at Mapb.mli *)
 (*****************************************************************************)
 
 module IntMap :
@@ -832,7 +833,7 @@ val pop2 : 'a stack ref -> 'a
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 
 (*****************************************************************************)
-(* Graph *)
+(* Graph. Have a look too at Ograph_*.mli *)
 (*****************************************************************************)
 
 type 'a graph = 'a set * ('a * 'a) set
