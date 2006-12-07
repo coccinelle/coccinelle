@@ -263,6 +263,9 @@ rule token = parse
   | "#" [' ' '\t']* "endif"  [' ' '\t' '\n'] { TEndif     (tokinfo lexbuf) }
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']   { TIfdefelse (tokinfo lexbuf) }
 
+  (* special_for_no_exn: in tests/check_region/drivers/scsi/osst.c *)
+  | "#" [' ' '\t']* "endif"  { TEndif     (tokinfo lexbuf) }
+
 
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TCommentCpp (tokinfo lexbuf) }

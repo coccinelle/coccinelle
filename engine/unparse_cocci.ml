@@ -549,9 +549,7 @@ in
       xxs +> List.iter (fun xs -> 
         pr "\n"; 
         pr current_tabbing;
-        xs +> List.iter (fun any -> 
-          pp_any any
-          ); 
+        xs +> List.iter pp_any
       )
   | [] -> ()
 

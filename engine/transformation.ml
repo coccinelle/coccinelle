@@ -17,22 +17,25 @@ module D = Distribute_mcodekind
  * to modify the node of the start, it is where the info is. Same for
  * Else. *)
 (*****************************************************************************)
+
+type sequence_processing_style = Ordered | Unordered
+
+let term ((s,_,_) : 'a Ast_cocci.mcode) = s
+let mcodekind (_,i,mc) = mc
+let wrap_mcode (_,i,mc) = ("fake", i, mc)
+
+(*****************************************************************************)
 type ('a, 'b) transformer = 'a -> 'b -> Lib_engine.metavars_binding -> 'b
 
 exception NoMatch 
 
-type sequence_processing_style = Ordered | Unordered
-
-(* ------------------------------------------------------------------------- *)
+(*****************************************************************************)
 let find_env x env = 
   try List.assoc x env 
   with Not_found -> 
     pr2 ("Don't find value for metavariable " ^ x ^ " in the environment");
     raise NoMatch
 
-let term ((s,_,_) : 'a Ast_cocci.mcode) = s
-let mcodekind (_,i,mc) = mc
-let wrap_mcode (_,i,mc) = ("fake", i, mc)
 
 let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> false
@@ -72,302 +75,10 @@ let tag_one_symbol = fun ia ib  binding ->
 
 
 (*****************************************************************************)
+(* The transform functions, "Cocci vs C" *) 
+(*****************************************************************************)
 
-let rec 
-  (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer) =
- fun re node -> 
-  fun binding -> 
-
-  F.rewrap node (
-  match A.unwrap re, F.unwrap node with
-
-  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> raise Impossible
-
-  | A.MetaRuleElem(mcode,_inherited), unwrap_node -> 
-     (match unwrap_node with
-     | F.CaseNode _
-     | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
-       -> 
-         if mcode_contain_plus (mcodekind mcode)
-         then failwith "try add stuff on fake node";
-
-         (* minusize or contextize a fake node is ok *)
-         unwrap_node
-     | F.EndStatement None -> 
-         if mcode_contain_plus (mcodekind mcode)
-         then
-           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
-           let fake_info = Ast_c.al_info fake_info in
-           D.distribute_mck (mcodekind mcode) D.distribute_mck_node 
-             (F.EndStatement (Some fake_info)) binding
-         else unwrap_node
-         
-     | F.EndStatement (Some _) -> raise Impossible (* really ? *)
-
-     | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
-     | n -> D.distribute_mck (mcodekind mcode) D.distribute_mck_node n binding
-     )
-
-
-  (* rene cant have found that a state containing a fake/exit/... should be 
-   * transformed 
-   *)
-  | _, F.EndStatement _ | _, F.CaseNode _
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
-    -> raise Impossible
- 
-
-  | A.MetaStmt _,  _ -> 
-      failwith "I cant have been called. I can only transform MetaRuleElem."
-  | A.MetaStmtList _, _ -> 
-      failwith "not handling MetaStmtList"
-
-  (* It is important to put this case before the one that follows, cos
-     want to transform a switch, even if cocci does not have a switch
-     statement, because we may have put an Exp, and so have to
-     transform the expressions inside the switch. *)
-
-  | A.Exp exp, nodeb -> 
-      let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.kexpr_s = 
-             (fun (k,_) e -> 
-               try transform_e_e exp e   binding 
-               with NoMatch -> k e
-             )
-          }
-      in
-      let visitor_e = Visitor_c.visitor_expr_k_s bigf in
-
-      (match nodeb with
-      | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
-      | F.ExprStatement (st, (eopt, ii)) ->  
-          F.ExprStatement (st, (eopt +> map_option visitor_e, ii))
-
-      | F.IfHeader (st, (e,ii))     -> F.IfHeader     (st, (visitor_e e, ii))
-      | F.SwitchHeader (st, (e,ii)) -> F.SwitchHeader (st, (visitor_e e, ii))
-      | F.WhileHeader (st, (e,ii))  -> F.WhileHeader  (st, (visitor_e e, ii))
-      | F.DoWhileTail (e,ii)  -> F.DoWhileTail (visitor_e e, ii)
-
-      | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
-          F.ForHeader (st,
-                       (((e1opt +> map_option visitor_e, i1),
-                         (e2opt +> map_option visitor_e, i2),
-                         (e3opt +> map_option visitor_e, i3)),
-                        ii))
-            
-      | F.ReturnExpr (st, (e,ii)) -> F.ReturnExpr (st, (visitor_e e, ii))
-            
-      | F.Case  (st, (e,ii)) -> F.Case (st, (visitor_e e, ii))
-      | F.CaseRange (st, ((e1, e2),ii)) -> 
-          F.CaseRange (st, ((visitor_e e1, visitor_e e2), ii))
-
-      (* called on transforming a node that does not contain any expr *)
-      | _ -> raise Impossible 
-      )
-
-  | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
-    F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
-      (match ii with
-      | iidb::ioparenb::icparenb::iistob -> 
-
-      let stob' = stob in
-      let (iistob') = 
-        match stoa, fst stob, iistob with
-        | None, _, _ -> 
-            if allminus 
-            then 
-              let minusizer = iistob +> List.map (fun _ -> 
-                "fake", {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
-                ) in
-              tag_symbols minusizer iistob binding
-            else iistob
-        | Some x, B.Sto B.Static, stostatic::stoinline -> 
-           assert (term x = A.Static);
-            tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
-           
-        | _ -> raise NoMatch
-
-      in
-      let retb' = 
-        match tya with
-        | None -> 
-            if allminus 
-            then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
-                     retb binding       
-            else retb
-        | Some tya -> transform_ft_ft tya retb binding
-      in
-
-      let (idb', iidb') = 
-        transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
-      in
-      
-      let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
-      in
-
-      let seqstyle = 
-        (match A.unwrap paramsa with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
-        ) 
-      in
-      let paramsb' = 
-        transform_params seqstyle (A.undots paramsa) paramsb    binding 
-      in
-
-      if isvaargs then failwith "not handling variable length arguments func";
-      let iidotsb' = iidotsb in (* todo *)
-
-      F.FunHeader 
-        ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
-         (iidb'++iiparensb'++iistob'))
-      | _ -> raise Impossible
-      )
-      
-
-  | A.Decl decla, F.Decl declb -> 
-      F.Decl (transform_de_de decla declb  binding) 
-
-  | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 
-      F.SeqStart (st, level, tag_one_symbol mcode i1 binding)
-
-  | A.SeqEnd mcode, F.SeqEnd (level, i2) -> 
-      F.SeqEnd (level, tag_one_symbol mcode i2 binding)
-
-
-  | A.ExprStatement (ea, i1), F.ExprStatement (st, (Some eb, ii)) -> 
-      F.ExprStatement (st, (Some (transform_e_e ea eb  binding), 
-                            tag_symbols [i1] ii  binding ))
-
-  | A.IfHeader (i1,i2, ea, i3), F.IfHeader (st, (eb,ii)) -> 
-      F.IfHeader (st, (transform_e_e ea eb  binding,
-                       tag_symbols [i1;i2;i3] ii binding))
-  | A.Else ia, F.Else ib -> F.Else (tag_one_symbol ia ib binding)
-  | A.WhileHeader (i1, i2, ea, i3), F.WhileHeader (st, (eb, ii)) -> 
-      F.WhileHeader (st, (transform_e_e ea eb  binding, 
-                          tag_symbols [i1;i2;i3] ii  binding))
-  | A.DoHeader ia, F.DoHeader (st, ib) -> 
-      F.DoHeader (st, tag_one_symbol ia ib  binding)
-  | A.WhileTail (i1,i2,ea,i3,i4), F.DoWhileTail (eb, ii) -> 
-      F.DoWhileTail (transform_e_e ea eb binding, 
-                     tag_symbols [i1;i2;i3;i4] ii  binding)
-  | A.ForHeader (i1, i2, ea1opt, i3, ea2opt, i4, ea3opt, i5), 
-    F.ForHeader (st, (((eb1opt,ib1), (eb2opt,ib2), (eb3opt,ib3)), ii))
-    -> 
-      let transform (ea, ia) (eb, ib) = 
-        transform_option (fun ea eb -> transform_e_e ea eb binding) ea eb, 
-        tag_symbols ia ib   binding
-      in
-      F.ForHeader (st,
-            ((transform (ea1opt, [i3]) (eb1opt, ib1),
-              transform (ea2opt, [i4]) (eb2opt, ib2),
-              transform (ea3opt, []) (eb3opt, ib3)),
-            tag_symbols [i1;i2;i5] ii  binding))
-
-
-  | A.Break (i1, i2), F.Break (st, ((),ii)) -> 
-      F.Break (st, ((), tag_symbols [i1;i2] ii   binding))
-  | A.Continue (i1, i2), F.Continue (st, ((),ii)) -> 
-      F.Continue (st, ((), tag_symbols [i1;i2] ii   binding))
-  | A.Return (i1, i2), F.Return (st, ((),ii)) -> 
-      F.Return (st, ((), tag_symbols [i1;i2] ii   binding))
-  | A.ReturnExpr (i1, ea, i2), F.ReturnExpr (st, (eb, ii)) -> 
-      F.ReturnExpr (st, (transform_e_e ea eb binding, 
-                         tag_symbols [i1;i2] ii   binding))
-
-  | _, F.ExprStatement (_, (None, ii)) -> raise NoMatch (* happen ? *)
-
-  (* have not a counter part in coccinelle, for the moment *)
-  | _, F.SwitchHeader _ 
-  | _, F.Label _
-  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ 
-  | _, F.Asm
-  | _, F.IfCpp _
-    -> raise Impossible
-
-  | _, _ -> raise NoMatch
-  )
-
-(* ------------------------------------------------------------------------- *)
-
-and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
- fun decla declb -> 
-  fun binding -> 
-  match declb with
-  | (B.DeclList ([var], iiptvirgb::iisto)) -> 
-      let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
-      in
-      B.DeclList ([var'], iiptvirgb'::iisto)
-
-  | (B.DeclList (x::y::xs, iiptvirgb::iisto)) -> 
-      failwith "More that one variable in decl. Have to split to transform."
-  
-  | _ -> raise Impossible                
-
-and transform_onedecl = fun decla declb -> 
- fun binding -> 
-   match A.unwrap decla, declb with
-   | A.UnInit (stoa, typa, ida, ptvirga), 
-     (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
-       assert (null iini);
-
-       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
-
-       let typb' = transform_ft_ft typa typb  binding in
-       let (idb', iidb') = 
-         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
-       in
-       ((Some ((idb', None), iidb'++iini), typb', stob), iivirg), 
-       List.hd iiptvirgb'
-
-   | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     (((Some ((idb, Some ini),[iidb;iieqb]), typb, stob), iivirg),iiptvirgb) ->
-
-       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
-       let iieqb' = tag_symbols [eqa] [iieqb] binding in
-       let typb' = transform_ft_ft typa typb  binding in
-       let (idb', iidb') = 
-         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
-       in
-       let ini' = 
-         match (A.unwrap inia,ini) with
-         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-             assert (null ii);
-             B.InitExpr (transform_e_e expa  expb binding), ii
-         | _ -> 
-             pr2 "warning: complex initializer, cocci does not handle that";
-             raise NoMatch
-       in
-       ((Some ((idb', Some ini'), iidb'++iieqb'), typb', stob), iivirg), 
-        List.hd iiptvirgb'
-
-   | A.TyDecl (typa, _), _ ->
-       failwith "fill something in for a declaration that is just a type"
-       
-   | _, (((None, typb, sto), _),_) -> 
-       failwith "no variable in this declaration, wierd"
-
-   | A.MetaDecl(ida,_inherited), _ -> 
-       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
-
-   | A.DisjDecl xs, declb -> 
-       xs +> Common.fold_k (fun acc decla k -> 
-         try transform_onedecl decla acc  binding
-         with NoMatch -> k acc
-        )
-        (fun _ -> raise NoMatch)
-        declb
-
-            
-   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
-       failwith "not handling Opt/Unique/Multi Decl"
-   | _, _ -> raise NoMatch
-
-  
-(* ------------------------------------------------------------------------- *)
-
-and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) = 
+let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
  fun ep ec -> 
   fun binding -> 
   
@@ -582,9 +293,64 @@ and (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   | _, _ -> raise NoMatch
 
 
+(* ------------------------------------------------------------------------- *)
+and (transform_ident: 
+      Pattern.semantic_info_ident -> 
+      (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
+ fun seminfo_idb ida (idb, ii) -> 
+  fun binding -> 
+    match A.unwrap ida with
+    | A.Id sa -> 
+        if (term sa) =$= idb
+        then idb, tag_symbols [sa] ii binding
+        else raise NoMatch
+
+    | A.MetaId(ida,_inherited) -> 
+      (* get binding, assert =*=,  distribute info in i1 *)
+      let v = binding +> find_env ((term ida) : string) in
+      (match v with
+      | B.MetaIdVal sa -> 
+          if(sa =$= idb) 
+          then idb, tag_symbols [ida] ii binding
+          else raise NoMatch
+      | _ -> raise Impossible
+      )
+ | A.MetaFunc(ida,_inherited) -> 
+     (match seminfo_idb with 
+     | Pattern.LocalFunction | Pattern.Function -> 
+         let v = binding +> find_env ((term ida) : string) in
+         (match v with
+         | B.MetaFuncVal sa -> 
+             if(sa =$= idb) 
+             then idb, tag_symbols [ida] ii binding
+             else raise NoMatch
+         | _ -> raise Impossible
+         )
+     | Pattern.DontKnow -> 
+        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
+      
+ | A.MetaLocalFunc(ida,_inherited) -> 
+     (match seminfo_idb with
+     | Pattern.LocalFunction -> 
+         let v = binding +> find_env ((term ida) : string) in
+         (match v with
+         | B.MetaLocalFuncVal sa -> 
+             if(sa =$= idb) 
+             then idb, tag_symbols [ida] ii binding
+             else raise NoMatch
+         | _ -> raise Impossible
+         )
 
 
+     | Pattern.Function -> raise NoMatch
+     | Pattern.DontKnow -> 
+        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
+     )
 
+ | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
+     failwith "not handling Opt/Unique/Multi for ident"
+        
 
 (* ------------------------------------------------------------------------- *)
 
@@ -653,6 +419,7 @@ and transform_argument arga argb =
   | _, _ -> raise NoMatch
 
 
+(* ------------------------------------------------------------------------- *)
 
 and (transform_params: sequence_processing_style -> 
    (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
@@ -721,6 +488,80 @@ and (transform_param:
         
     | A.PComma _, _ -> raise Impossible
     | _ -> raise Todo
+
+(* ------------------------------------------------------------------------- *)
+and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
+ fun decla declb -> 
+  fun binding -> 
+  match declb with
+  | (B.DeclList ([var], iiptvirgb::iisto)) -> 
+      let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
+      in
+      B.DeclList ([var'], iiptvirgb'::iisto)
+
+  | (B.DeclList (x::y::xs, iiptvirgb::iisto)) -> 
+      failwith "More that one variable in decl. Have to split to transform."
+  
+  | _ -> raise Impossible                
+
+and transform_onedecl = fun decla declb -> 
+ fun binding -> 
+   match A.unwrap decla, declb with
+   | A.UnInit (stoa, typa, ida, ptvirga), 
+     (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
+       assert (null iini);
+
+       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+
+       let typb' = transform_ft_ft typa typb  binding in
+       let (idb', iidb') = 
+         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+       in
+       ((Some ((idb', None), iidb'++iini), typb', stob), iivirg), 
+       List.hd iiptvirgb'
+
+   | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
+     (((Some ((idb, Some ini),[iidb;iieqb]), typb, stob), iivirg),iiptvirgb) ->
+
+       let iiptvirgb' = tag_symbols [ptvirga] [iiptvirgb] binding  in
+       let iieqb' = tag_symbols [eqa] [iieqb] binding in
+       let typb' = transform_ft_ft typa typb  binding in
+       let (idb', iidb') = 
+         transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+       in
+       let ini' = 
+         match (A.unwrap inia,ini) with
+         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
+             assert (null ii);
+             B.InitExpr (transform_e_e expa  expb binding), ii
+         | _ -> 
+             pr2 "warning: complex initializer, cocci does not handle that";
+             raise NoMatch
+       in
+       ((Some ((idb', Some ini'), iidb'++iieqb'), typb', stob), iivirg), 
+        List.hd iiptvirgb'
+
+   | A.TyDecl (typa, _), _ ->
+       failwith "fill something in for a declaration that is just a type"
+       
+   | _, (((None, typb, sto), _),_) -> 
+       failwith "no variable in this declaration, wierd"
+
+   | A.MetaDecl(ida,_inherited), _ -> 
+       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
+
+   | A.DisjDecl xs, declb -> 
+       xs +> Common.fold_k (fun acc decla k -> 
+         try transform_onedecl decla acc  binding
+         with NoMatch -> k acc
+        )
+        (fun _ -> raise NoMatch)
+        declb
+
+            
+   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
+       failwith "not handling Opt/Unique/Multi Decl"
+   | _, _ -> raise NoMatch
 
 (* ------------------------------------------------------------------------- *)
 and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = 
@@ -921,69 +762,225 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
 
     | _ -> raise NoMatch
 
-        
 
-
-(* ------------------------------------------------------------------------- *)
-
-and (transform_ident: 
-      Pattern.semantic_info_ident -> 
-      (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
- fun seminfo_idb ida (idb, ii) -> 
+(*****************************************************************************)
+let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
+= fun re node -> 
   fun binding -> 
-    match A.unwrap ida with
-    | A.Id sa -> 
-        if (term sa) =$= idb
-        then idb, tag_symbols [sa] ii binding
-        else raise NoMatch
 
-    | A.MetaId(ida,_inherited) -> 
-      (* get binding, assert =*=,  distribute info in i1 *)
-      let v = binding +> find_env ((term ida) : string) in
-      (match v with
-      | B.MetaIdVal sa -> 
-          if(sa =$= idb) 
-          then idb, tag_symbols [ida] ii binding
-          else raise NoMatch
+  F.rewrap node (
+  match A.unwrap re, F.unwrap node with
+
+  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> raise Impossible
+
+  | A.MetaRuleElem(mcode,_inherited), unwrap_node -> 
+     (match unwrap_node with
+     | F.CaseNode _
+     | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
+       -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then failwith "try add stuff on fake node";
+
+         (* minusize or contextize a fake node is ok *)
+         unwrap_node
+     | F.EndStatement None -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then
+           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
+           let fake_info = Ast_c.al_info fake_info in
+           D.distribute_mck (mcodekind mcode) D.distribute_mck_node 
+             (F.EndStatement (Some fake_info)) binding
+         else unwrap_node
+         
+     | F.EndStatement (Some _) -> raise Impossible (* really ? *)
+
+     | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
+     | n -> D.distribute_mck (mcodekind mcode) D.distribute_mck_node n binding
+     )
+
+
+  (* rene cant have found that a state containing a fake/exit/... should be 
+   * transformed 
+   *)
+  | _, F.EndStatement _ | _, F.CaseNode _
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
+    -> raise Impossible
+ 
+
+  | A.MetaStmt _,  _ -> 
+      failwith "I cant have been called. I can only transform MetaRuleElem."
+  | A.MetaStmtList _, _ -> 
+      failwith "not handling MetaStmtList"
+
+  (* It is important to put this case before the one that follows, cos
+     want to transform a switch, even if cocci does not have a switch
+     statement, because we may have put an Exp, and so have to
+     transform the expressions inside the switch. *)
+
+  | A.Exp exp, nodeb -> 
+      let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.kexpr_s = 
+             (fun (k,_) e -> 
+               try transform_e_e exp e   binding 
+               with NoMatch -> k e
+             )
+          }
+      in
+      let visitor_e = Visitor_c.visitor_expr_k_s bigf in
+
+      (match nodeb with
+      | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
+      | F.ExprStatement (st, (eopt, ii)) ->  
+          F.ExprStatement (st, (eopt +> map_option visitor_e, ii))
+
+      | F.IfHeader (st, (e,ii))     -> F.IfHeader     (st, (visitor_e e, ii))
+      | F.SwitchHeader (st, (e,ii)) -> F.SwitchHeader (st, (visitor_e e, ii))
+      | F.WhileHeader (st, (e,ii))  -> F.WhileHeader  (st, (visitor_e e, ii))
+      | F.DoWhileTail (e,ii)  -> F.DoWhileTail (visitor_e e, ii)
+
+      | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
+          F.ForHeader (st,
+                       (((e1opt +> Common.map_option visitor_e, i1),
+                         (e2opt +> Common.map_option visitor_e, i2),
+                         (e3opt +> Common.map_option visitor_e, i3)),
+                        ii))
+            
+      | F.ReturnExpr (st, (e,ii)) -> F.ReturnExpr (st, (visitor_e e, ii))
+            
+      | F.Case  (st, (e,ii)) -> F.Case (st, (visitor_e e, ii))
+      | F.CaseRange (st, ((e1, e2),ii)) -> 
+          F.CaseRange (st, ((visitor_e e1, visitor_e e2), ii))
+
+      (* called on transforming a node that does not contain any expr *)
+      | _ -> raise Impossible 
+      )
+
+  | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
+    F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
+      (match ii with
+      | iidb::ioparenb::icparenb::iistob -> 
+
+      let stob' = stob in
+      let (iistob') = 
+        match stoa, fst stob, iistob with
+        | None, _, _ -> 
+            if allminus 
+            then 
+              let minusizer = iistob +> List.map (fun _ -> 
+                "fake", {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
+                ) in
+              tag_symbols minusizer iistob binding
+            else iistob
+        | Some x, B.Sto B.Static, stostatic::stoinline -> 
+           assert (term x = A.Static);
+            tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
+           
+        | _ -> raise NoMatch
+
+      in
+      let retb' = 
+        match tya with
+        | None -> 
+            if allminus 
+            then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
+                     retb binding       
+            else retb
+        | Some tya -> transform_ft_ft tya retb binding
+      in
+
+      let (idb', iidb') = 
+        transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
+      in
+      
+      let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
+      in
+
+      let seqstyle = 
+        (match A.unwrap paramsa with 
+        | A.DOTS _ -> Ordered 
+        | A.CIRCLES _ -> Unordered 
+        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
+        ) 
+      in
+      let paramsb' = 
+        transform_params seqstyle (A.undots paramsa) paramsb    binding 
+      in
+
+      if isvaargs then failwith "not handling variable length arguments func";
+      let iidotsb' = iidotsb in (* todo *)
+
+      F.FunHeader 
+        ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
+         (iidb'++iiparensb'++iistob'))
       | _ -> raise Impossible
       )
- | A.MetaFunc(ida,_inherited) -> 
-     (match seminfo_idb with 
-     | Pattern.LocalFunction | Pattern.Function -> 
-         let v = binding +> find_env ((term ida) : string) in
-         (match v with
-         | B.MetaFuncVal sa -> 
-             if(sa =$= idb) 
-             then idb, tag_symbols [ida] ii binding
-             else raise NoMatch
-         | _ -> raise Impossible
-         )
-     | Pattern.DontKnow -> 
-        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-     )
       
- | A.MetaLocalFunc(ida,_inherited) -> 
-     (match seminfo_idb with
-     | Pattern.LocalFunction -> 
-         let v = binding +> find_env ((term ida) : string) in
-         (match v with
-         | B.MetaLocalFuncVal sa -> 
-             if(sa =$= idb) 
-             then idb, tag_symbols [ida] ii binding
-             else raise NoMatch
-         | _ -> raise Impossible
-         )
+
+  | A.Decl decla, F.Decl declb -> 
+      F.Decl (transform_de_de decla declb  binding) 
+
+  | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 
+      F.SeqStart (st, level, tag_one_symbol mcode i1 binding)
+
+  | A.SeqEnd mcode, F.SeqEnd (level, i2) -> 
+      F.SeqEnd (level, tag_one_symbol mcode i2 binding)
 
 
-     | Pattern.Function -> raise NoMatch
-     | Pattern.DontKnow -> 
-        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-     )
+  | A.ExprStatement (ea, i1), F.ExprStatement (st, (Some eb, ii)) -> 
+      F.ExprStatement (st, (Some (transform_e_e ea eb  binding), 
+                            tag_symbols [i1] ii  binding ))
 
- | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
-     failwith "not handling Opt/Unique/Multi for ident"
-        
-(*****************************************************************************)
+  | A.IfHeader (i1,i2, ea, i3), F.IfHeader (st, (eb,ii)) -> 
+      F.IfHeader (st, (transform_e_e ea eb  binding,
+                       tag_symbols [i1;i2;i3] ii binding))
+  | A.Else ia, F.Else ib -> F.Else (tag_one_symbol ia ib binding)
+  | A.WhileHeader (i1, i2, ea, i3), F.WhileHeader (st, (eb, ii)) -> 
+      F.WhileHeader (st, (transform_e_e ea eb  binding, 
+                          tag_symbols [i1;i2;i3] ii  binding))
+  | A.DoHeader ia, F.DoHeader (st, ib) -> 
+      F.DoHeader (st, tag_one_symbol ia ib  binding)
+  | A.WhileTail (i1,i2,ea,i3,i4), F.DoWhileTail (eb, ii) -> 
+      F.DoWhileTail (transform_e_e ea eb binding, 
+                     tag_symbols [i1;i2;i3;i4] ii  binding)
+  | A.ForHeader (i1, i2, ea1opt, i3, ea2opt, i4, ea3opt, i5), 
+    F.ForHeader (st, (((eb1opt,ib1), (eb2opt,ib2), (eb3opt,ib3)), ii))
+    -> 
+      let transform (ea, ia) (eb, ib) = 
+        transform_option (fun ea eb -> transform_e_e ea eb binding) ea eb, 
+        tag_symbols ia ib   binding
+      in
+      F.ForHeader (st,
+            ((transform (ea1opt, [i3]) (eb1opt, ib1),
+              transform (ea2opt, [i4]) (eb2opt, ib2),
+              transform (ea3opt, []) (eb3opt, ib3)),
+            tag_symbols [i1;i2;i5] ii  binding))
+
+
+  | A.Break (i1, i2), F.Break (st, ((),ii)) -> 
+      F.Break (st, ((), tag_symbols [i1;i2] ii   binding))
+  | A.Continue (i1, i2), F.Continue (st, ((),ii)) -> 
+      F.Continue (st, ((), tag_symbols [i1;i2] ii   binding))
+  | A.Return (i1, i2), F.Return (st, ((),ii)) -> 
+      F.Return (st, ((), tag_symbols [i1;i2] ii   binding))
+  | A.ReturnExpr (i1, ea, i2), F.ReturnExpr (st, (eb, ii)) -> 
+      F.ReturnExpr (st, (transform_e_e ea eb binding, 
+                         tag_symbols [i1;i2] ii   binding))
+
+  | _, F.ExprStatement (_, (None, ii)) -> raise NoMatch (* happen ? *)
+
+  (* have not a counter part in coccinelle, for the moment *)
+  | _, F.SwitchHeader _ 
+  | _, F.Label _
+  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
+  | _, F.Goto _ 
+  | _, F.Asm
+  | _, F.IfCpp _
+    -> raise Impossible
+
+  | _, _ -> raise NoMatch
+  )
+
+  
+(* ------------------------------------------------------------------------- *)
 let transform_proto a b binding (qu, iiptvirg, storage) infolastparen = 
   let node' = transform_re_node a b binding in
   match F.unwrap node' with

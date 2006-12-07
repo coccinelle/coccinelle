@@ -1,4 +1,4 @@
-open Common open Commonop
+open Commonop
 
 open Lib_engine
 
@@ -94,7 +94,7 @@ let pp_transformation_info trans_info =
     List.sort (function (i1,_,_) -> function (i2,_,_) -> compare i1 i2)
       trans_info in
   trans_info +> List.iter (fun (i, subst, re) -> 
-    pp ("transform state:" ^ (i_to_s i));
+    pp ("transform state:" ^ (Common.i_to_s i));
     pp "  with rule_elem:";
     Pretty_print_cocci.rule_elem "" re;
     Format.force_newline();

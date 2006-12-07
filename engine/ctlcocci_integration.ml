@@ -33,7 +33,6 @@ let show_or_not_nodes nodes =
     )
   end
 
-
 (*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
@@ -155,6 +154,30 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
      +> fst
   in
 
+  (* remove an intermediate node and redirect the connexion  *)
+  let remove_one_node nodei = 
+    let preds = (!g#predecessors nodei)#tolist in
+    let succs = (!g#successors nodei)#tolist in
+    assert (not (null preds));
+
+    preds +> List.iter (fun (predi, Control_flow_c.Direct) -> 
+      !g#del_arc ((predi, nodei), Control_flow_c.Direct) +> adjust_g;
+      );
+    succs +> List.iter (fun (succi, Control_flow_c.Direct) -> 
+      !g#del_arc ((nodei, succi), Control_flow_c.Direct) +> adjust_g;
+      );
+    
+    !g#del_node nodei +> adjust_g;
+
+    (* connect in-nodes to out-nodes *)
+    preds +> List.iter (fun (pred, Control_flow_c.Direct) -> 
+      succs +> List.iter (fun (succ, Control_flow_c.Direct) -> 
+        !g#add_arc ((pred, succ), Control_flow_c.Direct) +> adjust_g;
+        );
+      );
+  in
+
+
   (* note that must choose a kind that will not be deleted after *)
   let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
   in
@@ -176,29 +199,7 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
   else 
     !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
 
-  let remove_one_node nodei = 
-    let preds = (!g#predecessors nodei)#tolist in
-    let succs = (!g#successors nodei)#tolist in
 
-    assert (not (null preds));
-
-    preds +> List.iter (fun (predi, Control_flow_c.Direct) -> 
-      !g#del_arc ((predi, nodei), Control_flow_c.Direct) +> adjust_g;
-      );
-
-    succs +> List.iter (fun (succi, Control_flow_c.Direct) -> 
-      !g#del_arc ((nodei, succi), Control_flow_c.Direct) +> adjust_g;
-      );
-    
-    !g#del_node nodei +> adjust_g;
-
-    preds +> List.iter (fun (pred, Control_flow_c.Direct) -> 
-      succs +> List.iter (fun (succ, Control_flow_c.Direct) -> 
-        !g#add_arc ((pred, succ), Control_flow_c.Direct) +> adjust_g;
-        );
-      );
-    
-  in
   let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) -> 
     match Control_flow_c.unwrap node with
     | Control_flow_c.CaseNode _ 

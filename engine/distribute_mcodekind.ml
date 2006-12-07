@@ -13,8 +13,6 @@ module F = Control_flow_c
  *)
 (*****************************************************************************)
 
-
-(* ------------------------------------------------------------------------- *)
 type 'a distributer = 
     (Ast_c.info -> Ast_c.info) *  (* what to do on the token itself *)
     (Ast_c.info -> Ast_c.info) *  (* what to do on his left *)
@@ -71,9 +69,7 @@ let no_minusize x = x
 let nothing_right x = x
 let nothing_left  x = x
 
-
 (* ------------------------------------------------------------------------- *)
-
 let (distribute_mck: 
    Ast_cocci.mcodekind -> 'a distributer -> 'a -> Ast_c.metavars_binding -> 'a)
  = fun mcodekind distributef expr binding ->
@@ -102,7 +98,7 @@ let (distribute_mck:
         )
   | Ast_cocci.PLUS -> raise Impossible
 
-(* ------------------------------------------------------------------------- *)
+(*****************************************************************************)
 (* Could do the minus more easily by extending visitor_c.ml and adding
  * a function applied to every mcode. But as I also need to do the
  * add_left and add_right, which requires to do a different thing for
@@ -126,7 +122,7 @@ let rec (distribute_mck_e: Ast_c.expression distributer)= fun (op,lop,rop) e ->
       | [] -> raise Impossible
       | [i] -> [i +> op +> lop +> rop]
       | x::y::xs -> 
-          let (head, middle, tail) = head_middle_tail (x::y::xs) in
+          let (head, middle, tail) = Common.head_middle_tail (x::y::xs) in
           [head +> op +> lop] @ List.map op middle @ [tail +> op +> rop]
       )
   (* only a String can have multiple ii *)
@@ -148,9 +144,9 @@ let rec (distribute_mck_e: Ast_c.expression distributer)= fun (op,lop,rop) e ->
 
   | CondExpr (e1, e2, e3),    [i1;i2]    -> 
       CondExpr 
-        (distribute_mck_e (op, lop, nothing_right) e1,
-         map_option (distribute_mck_e (op, nothing_left, nothing_left)) e2,
-         distribute_mck_e (op, nothing_left, rop) e3),
+       (distribute_mck_e (op, lop, nothing_right) e1,
+       Common.map_option (distribute_mck_e (op,nothing_left,nothing_left)) e2,
+       distribute_mck_e (op, nothing_left, rop) e3),
       [i1 +> op; i2 +> op]
   | Sequence (e1, e2),          [i]  -> 
       Sequence
@@ -325,12 +321,15 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (op,lop,rop) ->
       assert (null il3);
       Iteration
         (For 
-           ((map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e1opt, il1 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e2opt, il2 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e3opt, il3 +> List.map op),
+           ((Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e1opt, 
+            il1 +> List.map op),
+            (Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e2opt, 
+            il2 +> List.map op),
+            (Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e3opt, 
+            il3 +> List.map op),
             distribute_mck_stat (op, nothing_left, rop) st)),
       [i1 +> op +> lop; i2 +> op; i3 +> op]
             
@@ -408,7 +407,7 @@ and (distribute_mck_type: Ast_c.fullType distributer) = fun (op, lop, rop) ->
         | [] -> raise Impossible
         | [i] -> [i +> op +> lop +> rop]
         | x::y::xs -> 
-            let (head, middle, tail) = head_middle_tail (x::y::xs) in
+            let (head, middle, tail) = Common.head_middle_tail (x::y::xs) in
             [head +> op +> lop] @ List.map op middle @ [tail +> op +> rop]
         )
           
@@ -488,12 +487,15 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
   | F.ForHeader (st, (((e1opt,il1),(e2opt,il2),(e3opt, il3)), [i1;i2;i3])) -> 
       assert (null il3);
       F.ForHeader (st, 
-          (((map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e1opt, il1 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e2opt, il2 +> List.map op),
-            (map_option (distribute_mck_e (op, nothing_left, nothing_right)) 
-               e3opt, il3 +> List.map op)),
+          (((Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e1opt, 
+            il1 +> List.map op),
+            (Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e2opt, 
+            il2 +> List.map op),
+            (Common.map_option 
+                (distribute_mck_e (op, nothing_left, nothing_right)) e3opt, 
+            il3 +> List.map op)),
            [i1 +> op +> lop; i2 +> op; i3 +> op +> rop]))
 
 
@@ -559,7 +561,7 @@ and distribute_mck_arge = fun (op, lop, rop) ->
         (match ii with
         | [] -> []
         | [x] -> [x +> op +> lop +> rop]
-        | _ -> raise Todo
+        | _ -> raise Todo (* Impossible ? *)
         )
     | (ActJump jump) -> 
         ActJump

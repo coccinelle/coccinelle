@@ -1,13 +1,11 @@
 
-(* 
- * Just to warn me when there is some news in the types in ast_cocci.ml or 
- * even ast_c.ml, so that I can then adjust my code in pattern.ml or
- * transformation.ml.
- *
- * For the moment I do it only for myself (pad), that is I check only for news
- * in ast_cocci.ml, because I already know when I add stuff in my code
- * in ast_c.ml or control_flow_c.ml.
- *)
+(* Just to warn me when there is some news in the types in
+ * ast_cocci.ml or even ast_c.ml, so that I can then adjust my code in
+ * pattern.ml or transformation.ml.
+ * 
+ * For the moment I do it only for myself (pad), that is I check only
+ * for news in ast_cocci.ml, because I already know when I add stuff in
+ * my code in ast_c.ml or control_flow_c.ml. *)
 
 module A = Ast_cocci
 module B = Ast_c

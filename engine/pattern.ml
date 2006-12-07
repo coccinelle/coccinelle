@@ -23,7 +23,7 @@ let term ((s,_,_) : 'a Ast_cocci.mcode) = s
  * update: but now Ast_c depends on Ast_cocci, so can't make too
  * Ast_cocci depends on Ast_c, so have to stay with those equal_xxx
  * functions. *)
-(*****************************************************************************)
+
 let equal_unaryOp a b = 
   match a, b with
   | A.GetRef   , B.GetRef  -> true
@@ -178,7 +178,7 @@ let match_opt f eaopt ebopt =
 
 
 (*****************************************************************************)
-(* Metavariable handling *)
+(* Metavariable and environments handling *)
 (*****************************************************************************)
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
@@ -239,60 +239,11 @@ let check_add_metavars_binding inherited = fun (k, valu) binding ->
   )
   
 (*****************************************************************************)
-(* The pattern functions, Cocci vs C *) 
+(* The pattern functions, "Cocci vs C" *) 
 (*****************************************************************************)
 
-let rec (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
- fun decla (B.DeclList (xs, _)) -> 
-   xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
-     (return false)
-
-and match_storage stoa stob =
-  (* "iso-by-absence" for storage. *)
-  match stoa with 
-  | None -> return true
-  | Some x -> return (equal_storage (term x) (fst stob))
-
-and match_re_onedecl = fun decla declb -> 
-  match A.unwrap decla, declb with
-  | A.MetaDecl(ida,_inherited), _ -> 
-      return true (* todo? add in env ? *)
-
-    (* could handle iso here but handled in standard.iso *)
-  | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
-      match_storage stoa stob >&&> match_ft_ft typa typb >&&>
-      match_ident DontKnow sa sb
-  | A.Init (stoa, typa, sa, _, inia, _),
-      ((Some ((sb, Some inib),_), typb, stob), _) ->
-      match_storage stoa stob >&&> 
-      match_ft_ft typa typb >&&>
-      match_ident DontKnow sa sb >&&>
-      (match (A.unwrap inia,inib) with
-      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
-      | _ -> 
-          pr2 "warning: complex initializer, cocci does not handle that";
-          return false
-      )
-  | A.TyDecl (typa, _), _ ->
-      failwith "fill something in for a declaration that is just a type"
-
-  | _, ((None, typb, sto), _) -> 
-      failwith "no variable in this declaration, wierd"
-
-      
-  | A.DisjDecl xs, _ -> 
-      xs +> List.fold_left (fun acc decla -> 
-        acc >||> match_re_onedecl decla declb
-        ) (return false)
-  | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
-      failwith "not handling Opt/Unique/Multi Decl"
-  | _, _ -> return false
-
-
-
-(* ------------------------------------------------------------------------- *)
-
-and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
+let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = 
+ fun ep ec ->
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
@@ -465,9 +416,39 @@ and (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = fun ep ec ->
 
   | _, _ -> return false
 
+(* ------------------------------------------------------------------------- *)
+and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
+ fun seminfo_idb ida idb -> 
+ match A.unwrap ida with
+ | A.Id ida -> return ((term ida) =$= idb)
+ | A.MetaId(ida,inherited) ->
+     check_add_metavars_binding inherited (term ida, Ast_c.MetaIdVal (idb))
+
+ | A.MetaFunc (ida,inherited) -> 
+     (match seminfo_idb with
+     | LocalFunction | Function -> 
+         check_add_metavars_binding inherited 
+           (term ida,(Ast_c.MetaFuncVal idb))
+     | DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
+     )
+
+ | A.MetaLocalFunc (ida,inherited) -> 
+     (match seminfo_idb with
+     | LocalFunction -> 
+	  check_add_metavars_binding inherited
+           (term ida, (Ast_c.MetaLocalFuncVal idb))
+     | Function -> return false
+     | DontKnow -> 
+         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
+     )
+
+ | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
+     failwith "not handling Opt/Unique/Multi for ident"
+
+
   
 (*-------------------------------------------------------------------------- *)
-
 and (match_arguments: sequence_processing_style -> 
      (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
@@ -538,7 +519,131 @@ and match_argument = fun arga argb ->
   | unwrapx, (Right (B.ArgAction y),ii) -> return false
 
 
+(*-------------------------------------------------------------------------- *)
+and (match_params: 
+       sequence_processing_style -> 
+         (Ast_cocci.parameterTypeDef list, 
+          ((Ast_c.parameterType * Ast_c.il) list)) 
+           matcher) = 
+ fun seqstyle pas pbs ->
+ (* todo: if contain metavar ? => recurse on two list and consomme *)
 
+  match seqstyle with
+  | Ordered -> 
+      (match pas, pbs with
+      | [], [] -> return true
+      | [], y::ys -> return false
+      | x::xs, ys -> 
+          (match A.unwrap x, ys with
+          | A.Pdots (_), ys -> 
+
+              (* '...' can take more or less the beginnings of the arguments *)
+              let yys = Common.tails ys in 
+              yys +> List.fold_left (fun acc ys -> 
+                acc >||>  match_params seqstyle xs ys
+                  ) (return false)
+
+
+          | A.MetaParamList(ida,inherited), ys -> 
+              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
+              in
+              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+                acc >||> (
+                check_add_metavars_binding inherited
+		  (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
+                match_params seqstyle xs endxs
+             )) (return false)
+
+
+          | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
+
+          (* filtered by the caller, in the case for FunDecl *)
+          | A.PComma (_), ys -> raise Impossible 
+
+          | A.MetaParam (ida,inherited), y::ys -> 
+             (* todo: use quaopt, hasreg ? *)
+             check_add_metavars_binding inherited
+                (term ida, Ast_c.MetaParamVal (y)) >&&>
+             match_params seqstyle xs ys
+
+          | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
+              (match idb with
+              | Some idb -> 
+                  (* todo: use quaopt, hasreg ? *)
+                  (match_ft_ft typa typb >&&>
+                   match_ident DontKnow ida idb
+                  ) >&&> 
+                  match_params seqstyle xs ys
+              | None -> 
+                  assert (null ys);
+                  assert (
+                    match typb with 
+                    | (_qua, (B.BaseType B.Void,_)) -> true
+                    | _ -> false
+                          );
+   
+                  return false
+              )
+
+          | x, [] -> return false
+
+          | A.VoidParam _, _ -> failwith "handling VoidParam"
+          | (A.OptParam _ | A.UniqueParam _), _ -> 
+              failwith "handling Opt/Unique/Multi for Param"
+                                
+          )
+      )
+
+  | Unordered -> failwith "handling ooo"
+
+
+
+(* ------------------------------------------------------------------------- *)
+and (match_re_decl: (Ast_cocci.declaration, Ast_c.declaration) matcher) = 
+ fun decla (B.DeclList (xs, _)) -> 
+   xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
+     (return false)
+
+and match_storage stoa stob =
+  (* "iso-by-absence" for storage. *)
+  match stoa with 
+  | None -> return true
+  | Some x -> return (equal_storage (term x) (fst stob))
+
+and match_re_onedecl = fun decla declb -> 
+  match A.unwrap decla, declb with
+  | A.MetaDecl(ida,_inherited), _ -> 
+      return true (* todo? add in env ? *)
+
+    (* could handle iso here but handled in standard.iso *)
+  | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
+      match_storage stoa stob >&&> match_ft_ft typa typb >&&>
+      match_ident DontKnow sa sb
+  | A.Init (stoa, typa, sa, _, inia, _),
+      ((Some ((sb, Some inib),_), typb, stob), _) ->
+      match_storage stoa stob >&&> 
+      match_ft_ft typa typb >&&>
+      match_ident DontKnow sa sb >&&>
+      (match (A.unwrap inia,inib) with
+      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
+      | _ -> 
+          pr2 "warning: complex initializer, cocci does not handle that";
+          return false
+      )
+  | A.TyDecl (typa, _), _ ->
+      failwith "fill something in for a declaration that is just a type"
+
+  | _, ((None, typb, sto), _) -> 
+      failwith "no variable in this declaration, wierd"
+
+      
+  | A.DisjDecl xs, _ -> 
+      xs +> List.fold_left (fun acc decla -> 
+        acc >||> match_re_onedecl decla declb
+        ) (return false)
+  | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
+      failwith "not handling Opt/Unique/Multi Decl"
+  | _, _ -> return false
 
 
 (* ------------------------------------------------------------------------- *)
@@ -711,115 +816,6 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 	return ((term sa) =$= sb)
     | (_,_) -> return false (* incompatible constructors *)
 
-(*-------------------------------------------------------------------------- *)
-
-and (match_params: 
-       sequence_processing_style -> 
-         (Ast_cocci.parameterTypeDef list, 
-          ((Ast_c.parameterType * Ast_c.il) list)) 
-           matcher) = 
- fun seqstyle pas pbs ->
- (* todo: if contain metavar ? => recurse on two list and consomme *)
-
-  match seqstyle with
-  | Ordered -> 
-      (match pas, pbs with
-      | [], [] -> return true
-      | [], y::ys -> return false
-      | x::xs, ys -> 
-          (match A.unwrap x, ys with
-          | A.Pdots (_), ys -> 
-
-              (* '...' can take more or less the beginnings of the arguments *)
-              let yys = Common.tails ys in 
-              yys +> List.fold_left (fun acc ys -> 
-                acc >||>  match_params seqstyle xs ys
-                  ) (return false)
-
-
-          | A.MetaParamList(ida,inherited), ys -> 
-              let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
-              in
-              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-                acc >||> (
-                check_add_metavars_binding inherited
-		  (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
-                match_params seqstyle xs endxs
-             )) (return false)
-
-
-          | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
-
-          (* filtered by the caller, in the case for FunDecl *)
-          | A.PComma (_), ys -> raise Impossible 
-
-          | A.MetaParam (ida,inherited), y::ys -> 
-             (* todo: use quaopt, hasreg ? *)
-             check_add_metavars_binding inherited
-                (term ida, Ast_c.MetaParamVal (y)) >&&>
-             match_params seqstyle xs ys
-
-          | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
-              (match idb with
-              | Some idb -> 
-                  (* todo: use quaopt, hasreg ? *)
-                  (match_ft_ft typa typb >&&>
-                   match_ident DontKnow ida idb
-                  ) >&&> 
-                  match_params seqstyle xs ys
-              | None -> 
-                  assert (null ys);
-                  assert (
-                    match typb with 
-                    | (_qua, (B.BaseType B.Void,_)) -> true
-                    | _ -> false
-                          );
-   
-                  return false
-              )
-
-          | x, [] -> return false
-
-          | A.VoidParam _, _ -> failwith "handling VoidParam"
-          | (A.OptParam _ | A.UniqueParam _), _ -> 
-              failwith "handling Opt/Unique/Multi for Param"
-                                
-          )
-      )
-
-  | Unordered -> failwith "handling ooo"
-
-
-(* ------------------------------------------------------------------------- *)
-
-and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
- fun seminfo_idb ida idb -> 
- match A.unwrap ida with
- | A.Id ida -> return ((term ida) =$= idb)
- | A.MetaId(ida,inherited) ->
-     check_add_metavars_binding inherited (term ida, Ast_c.MetaIdVal (idb))
-
- | A.MetaFunc (ida,inherited) -> 
-     (match seminfo_idb with
-     | LocalFunction | Function -> 
-         check_add_metavars_binding inherited 
-           (term ida,(Ast_c.MetaFuncVal idb))
-     | DontKnow -> 
-         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
-     )
-
- | A.MetaLocalFunc (ida,inherited) -> 
-     (match seminfo_idb with
-     | LocalFunction -> 
-	  check_add_metavars_binding inherited
-           (term ida, (Ast_c.MetaLocalFuncVal idb))
-     | Function -> return false
-     | DontKnow -> 
-         failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
-     )
-
- | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
-     failwith "not handling Opt/Unique/Multi for ident"
 
 
 
