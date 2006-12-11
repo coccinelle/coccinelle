@@ -20,6 +20,8 @@ let is_not_comment = function
   | Parser_c.TCommentCpp _ | Parser_c.TCommentAttrOrMacro _ -> false 
   | _ -> true 
 
+let is_comment x = not (is_not_comment x)
+
 let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
@@ -27,7 +29,8 @@ let not_struct_enum = function
 
 
 (* Because ocamllex force us to do it that way. Cant return a pair to
- * ocamlyacc :( *)
+ * ocamlyacc :( 
+ *)
 let info_from_token = function
   | Parser_c.TComment  (i) -> i
   | Parser_c.TCommentSpace  (i) -> i
@@ -38,6 +41,7 @@ let info_from_token = function
   | Parser_c.TIfdef  (i) -> i
   | Parser_c.TIfdefelse  (i) -> i
   | Parser_c.TEndif  (i) -> i
+  | Parser_c.THigherOrderMacro (i) -> i
   | Parser_c.TString ((string, isWchar), i) -> i
   | Parser_c.TChar  ((string, isWchar), i) -> i
   | Parser_c.TIdent  (s, i) -> i
@@ -115,11 +119,8 @@ let info_from_token = function
   | Parser_c.Tsizeof  (i) -> i
   | Parser_c.Tasm  (i) -> i
   | Parser_c.Tattribute  (i) -> i
-  | Parser_c.EOF (i) -> i
-
-  | Parser_c.THigherOrderMacro (i) -> i
-
   | Parser_c.Tinline (i) -> i
+  | Parser_c.EOF (i) -> i
 
 
 let lexbuf_to_strpos lexbuf     = 
@@ -722,31 +723,22 @@ let parse_print_error_heuristic2 file =
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
   Lexer_parser.lexer_reset_typedef(); 
-  let toks = tokens file +> List.filter is_not_comment in
+  let toks = tokens file in
 
   let table     = Common.full_charpos_to_pos file in
   let filelines = (""::Common.cat file) +> Array.of_list in
 
   let stat = default_stat file in
 
-  (* The variable that follows allow for error recovery.
-   *
+  (* The variable that follows makes possible error recovery.
    * They are now also used for my lalr(k) technique. Indeed They store 
    * the futur and previous tokens that were parsed, and so provide enough
    * context information for powerful lex trick.
    *
-   * normally we have:
-   * toks = (reverse passed_tok) ++ cur_tok ++ remaining_tokens   
-   *    after the call to pop2.
-   * toks = (reverse passed_tok) ++ remaining_tokens   
-   *     at the and of the lexer_function call.
-   * At the very beginning, cur_tok and remaining_tokens overlap, but not after.
-   * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
-   * It is complicated because we cant modify ocamllex and ocamlyacc. 
+   * It is ugly code because we cant modify ocamllex and ocamlyacc. 
    * As we want some extended lexing tricks, we have to use such globals. 
    *)
   let remaining_tokens = ref toks in
-  let passed_tokens    = ref [] in
   let cur_tok    = ref (List.hd !remaining_tokens) in
 
   (* Passed tokens since last checkpoint. Used for NotParsedCorrectly
@@ -754,38 +746,75 @@ let parse_print_error_heuristic2 file =
    *)
   let passed_tokens_last_ckp = ref [] in 
 
+  (* used for lookahead, in fact for lookback *)
+  let passed_tokens    = ref [] in
+
+  (* Normally we have:
+   * toks = (reverse passed_tok) ++ cur_tok ++ remaining_tokens   
+   *    after the call to pop2.
+   * toks = (reverse passed_tok) ++ remaining_tokens   
+   *     at the and of the lexer_function call.
+   * At the very beginning, cur_tok and remaining_tokens overlap, but not after.
+   * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
+   *)
+
+  (* used for lookahead. Now remaining_tokens contain some comments and
+   * so would make pattern matching difficult in lookahead. Hence this
+   * variable. 
+   * 
+   * remaining_tokens, passed_tokens_last_ckp contain comment-tokens.
+   * passed_tokens and remaining_tokens_clean does not contain comment-tokens.
+   *)
+  let remaining_tokens_clean = ref (toks +> List.filter is_not_comment) in
+
 
   (* hacked_lex *)
   let rec lexer_function = 
     (fun lexbuf -> 
       if is_eof !cur_tok
-      then (pr2 "ALREADY AT END"; !cur_tok)
-      else
+      then begin pr2 "ALREADY AT END"; !cur_tok end
+      else begin
         let v = pop2 remaining_tokens in
         cur_tok := v;
 
-        (* typedef_fix1 *)
-        let v = match v with
-        | TIdent (s, ii) -> 
-            if Lexer_parser.is_typedef s 
-            then TypedefIdent (s, ii)
-            else TIdent (s, ii)
-        | x -> x
-        in
-        let v = lookahead (v::!remaining_tokens) !passed_tokens in
+        if is_comment v
+        then begin
+          passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
+          lexer_function lexbuf
+        end
+        else begin
+          (* with error recovery, remaining_tokens and
+           * remaining_tokens_clean may not be in sync *)
+          remaining_tokens_clean := !remaining_tokens_clean +>
+            Common.drop_while (fun p -> p <> v);
+          let x = pop2 remaining_tokens_clean  in
+          assert (x = v);
 
-        passed_tokens := v::!passed_tokens;
-        passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
+          (* typedef_fix1 *)
+          let v = match v with
+            | TIdent (s, ii) -> 
+                if Lexer_parser.is_typedef s 
+                then TypedefIdent (s, ii)
+                else TIdent (s, ii)
+            | x -> x
+          in
+          let v = lookahead (v::!remaining_tokens_clean) !passed_tokens in
 
-        if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
+          passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
 
-        (* the lookahead may have change the status of the token and consider
-         * it as a comment, for instance some #include are turned into comments
-         * hence this code.
-         *)
-        match v with
-        | TCommentCpp _ -> lexer_function lexbuf
-        | v -> v
+          if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
+
+          (* the lookahead may have change the status of the token and consider
+           * it as a comment, for instance some #include are turned into comments
+           * hence this code.
+           *)
+          match v with
+          | TCommentCpp _ -> lexer_function lexbuf
+          | v -> 
+              passed_tokens := v::!passed_tokens;
+              v
+        end
+      end
     )
   in
   let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
@@ -805,8 +834,6 @@ let parse_print_error_heuristic2 file =
     Lexer_parser._handle_typedef := true;  
     Lexer_parser._lexer_hint := {(default_hint ()) with toplevel = true; };
 
-    passed_tokens_last_ckp := [];
-
     (* todo?: I am not sure that it represents current_line, cos maybe
      * cur_tok partipated in the previous parsing phase, so maybe cur_tok
      * is not the first token of the next parsing phase. Same with checkpoint2.
@@ -815,40 +842,43 @@ let parse_print_error_heuristic2 file =
      *)
     let checkpoint = line_of_tok !cur_tok table in
 
+    passed_tokens_last_ckp := [];
+
     let elem = 
       (try 
-        (* -------------------------------------------------- *)
-        (* Call parser *)
-        (* -------------------------------------------------- *)
-        Parser_c.external_declaration2 lexer_function lexbuf_fake
-      with e -> 
-       begin
-        (match e with
-         | Lexer_c.Lexical s -> 
-             pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok file !cur_tok)
-         | Parsing.Parse_error -> 
-             pr2 ("parse error \n = " ^ error_msg_tok file !cur_tok)
-         | Semantic_c.Semantic (s, i) -> 
-             pr2 ("semantic error " ^ s ^ "\n =" ^ error_msg_tok file !cur_tok)
-         | e -> raise e
-        );
-        (*  error recovery, go to next synchro point *)
-        let line_error = line_of_tok !cur_tok table in
-        let (passed_tokens', remaining_tokens') =
-            find_next_synchro !remaining_tokens !passed_tokens_last_ckp table
-        in
-        remaining_tokens := remaining_tokens';
-        passed_tokens := [];           (* enough ? *)
-        passed_tokens_last_ckp := passed_tokens';
-        cur_tok := List.hd !passed_tokens_last_ckp;
+          (* -------------------------------------------------- *)
+          (* Call parser *)
+          (* -------------------------------------------------- *)
+          Parser_c.external_declaration2 lexer_function lexbuf_fake
+        with e -> 
+          begin
+            (match e with
+            | Lexer_c.Lexical s -> 
+                pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok file !cur_tok)
+            | Parsing.Parse_error -> 
+                pr2 ("parse error \n = " ^ error_msg_tok file !cur_tok)
+            | Semantic_c.Semantic (s, i) -> 
+                pr2 ("semantic error " ^ s ^ "\n =" ^ error_msg_tok file !cur_tok)
+            | e -> raise e
+            );
+            let line_error = line_of_tok !cur_tok table in
 
-        let checkpoint2 = line_of_tok !cur_tok table in
-        print_bad line_error (checkpoint, checkpoint2) filelines;
+            (*  error recovery, go to next synchro point *)
+            let (passed_tokens', remaining_tokens') =
+              find_next_synchro !remaining_tokens !passed_tokens_last_ckp table
+            in
+            remaining_tokens := remaining_tokens';
+            passed_tokens_last_ckp := passed_tokens';
+            cur_tok := List.hd !passed_tokens_last_ckp;
+            passed_tokens := [];           (* enough ? *)
 
-        let info_of_bads = 
-          Common.map_eff_rev info_from_token !passed_tokens_last_ckp 
-        in Ast_c.NotParsedCorrectly info_of_bads
-       end
+            let checkpoint2 = line_of_tok !cur_tok table in
+            print_bad line_error (checkpoint, checkpoint2) filelines;
+
+            let info_of_bads = 
+              Common.map_eff_rev info_from_token !passed_tokens_last_ckp 
+            in Ast_c.NotParsedCorrectly info_of_bads
+          end
       ) 
     in
 
