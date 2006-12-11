@@ -22,7 +22,7 @@ export OCAMLRUNPARAM
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) 
+OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) 
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
 OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLYACC=ocamlyacc -v
@@ -91,7 +91,7 @@ beforedepend:: parser_c.ml parser_c.mli
 	$(OCAMLC) -i $<
 
 clean::
-	rm -f *.cm[ioxa] *.o *.a *.cmxa
+	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 
 clean::
 	rm -f *~ .*~ gmon.out #*#

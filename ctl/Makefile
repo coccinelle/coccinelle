@@ -66,7 +66,7 @@ clean::
 
 # clean rule for others files
 clean::
-	rm -f *.cm[iox] *.o 
+	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*# 
 
 depend: 

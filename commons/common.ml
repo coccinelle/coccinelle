@@ -245,6 +245,11 @@ let debugon  () = _debug := true
 let debugoff () = _debug := false
 let debug f = if !_debug then f () else ()
 
+(* log4j: 
+ trace, debug, info, warn, error, fatal,    and  "all" and "off"
+ hierarchy of loggers, config file,  different target (console, file, ...)
+ also show the function you are in.
+*)
 (*****************************************************************************)
 (* Profiling *)
 (*****************************************************************************)

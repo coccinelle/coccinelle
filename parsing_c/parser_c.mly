@@ -1,20 +1,17 @@
 %{
-open Common
-open Commonop
+open Common open Commonop
 open Lexer_parser
 
 open Ast_c
 open Semantic_c
 
-
 (*****************************************************************************)
-(* 
- * todo: good error message when parse error caused by typedef 
- *    (see token, see if ident that is a typedef, ...)
- *      special parse error treatment for missing ; (gcc)
- * todo: inspire by spatch. look at all the commit in spare git
- *  to know all the problems they had.
- *)
+(* todo: good error message when parse error caused by typedef (see
+ * token, see if ident that is a typedef, ...) special parse error
+ * treatment for missing ; (gcc)
+ * 
+ * todo: look at all the commit in sparse git to see all the problems
+ * they had. *)
 (*****************************************************************************)
 
 let warning s v = 
@@ -197,11 +194,11 @@ let fixFunc = function
 
 let dt s () = 
   if !Flag_parsing_c.debug_etdt then pr2 ("<" ^ s); 
-  disable_typedef ()
+  Lexer_parser.disable_typedef ()
 
 let et s () = 
   if !Flag_parsing_c.debug_etdt then pr2 (">" ^ s);  
-  enable_typedef ()
+  Lexer_parser.enable_typedef ()
 
 
 let fix_add_params_ident = function
@@ -299,8 +296,10 @@ main:  translation_unit EOF     { $1 }
 expr: assign_expr             { $1 }
     | expr TComma assign_expr { (Sequence ($1,$3), noType),       [$2] }
 
+/* bugfix: in C grammar they put unary_expr, but in fact it must be 
+ * cast_expr, otherwise (int *) xxx = &yy; is not allowed
+ */
 assign_expr: cond_expr                      { $1 }
-           /* bugfix: in C grammar they put unary_expr, but in fact it must be cast_expr, otherwise (int *) xxx = &yy; is not allowed */
            | cast_expr TAssign assign_expr { (Assignment ($1, fst $2, $3),           noType), [snd $2] }
            | cast_expr TEq     assign_expr { (Assignment ($1, SimpleAssign, $3),     noType), [$2] }
 
@@ -365,7 +364,7 @@ postfix_expr: primary_expr                                 { $1 }
 
 
 /* decl_spec and not just type_spec cos can have  unsigned short for 
- *  instance => type_spec_list 
+ * instance => type_spec_list 
  */
 argument: assign_expr { Left $1 }
         /* cppext: */
@@ -379,13 +378,17 @@ primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
 	    | TFloat  { (Constant (Float  (fst $1)), noType), [snd $1] }
 	    | TString { (Constant (String (fst $1)), noType), [snd $1] }
 	    | TChar   { (Constant (Char   (fst $1)), noType), [snd $1] }
-	    | TOPar expr TCPar { (ParenExpr ($2),  noType), [$1;$3] } /* forunparser: */
+            /* forunparser: */
+	    | TOPar expr TCPar { (ParenExpr ($2),  noType), [$1;$3] } 
 
-            | TString string_list { (Constant (String (fst $1)),  noType), snd $1::$2 } /* gccext: */
-/*          | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */  /*  cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
-               /* note that can make a bug cos if not good parsing of typedef,  ucharv toto;  is not parsed as a declaration */
+            /* gccext: */
+            | TString string_list { (Constant (String (fst $1)),  noType), snd $1::$2 } 
             /* gccext: allow statement as expressions via ({ statement }) */
             | TOPar compound TCPar  { (StatementExpr ($2),   noType), [$1;$3] } 
+
+            /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
+            /* | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */  
+            /* note that can make a bug cos if not good parsing of typedef,  ucharv toto;  is not parsed as a declaration */
 
 
 
@@ -438,12 +441,13 @@ statement: labeled         { Labeled        (fst $1),      snd $1 }
          /* gccext: */
          | Tasm TOPar asmbody TCPar TPtVirg             { Asm, [] }
 
+/* note that case 1: case 2: i++;    would be correctly parsed, but with 
+ * a Case  (1, (Case (2, i++)))  :(  
+ */
 labeled: ident            TDotDot statement                      { Label (fst $1, $3),     [snd $1; $2] }
        | Tcase const_expr TDotDot statement                      { Case ($2, $4),          [$1; $3] }
        | Tcase const_expr TEllipsis const_expr TDotDot statement { CaseRange ($2, $4, $6), [$1;$3;$5] } /* gccext: allow range */
        | Tdefault         TDotDot statement                      { Default $3,             [$1; $2] } 
-
-       /* note that case 1: case 2: i++;    would be correctly parsed, but with a Case  (1, (Case (2, i++)))  :(  */
 
        /* generate each 31 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il faut */
        /* gccext:  allow toto: } */

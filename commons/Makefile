@@ -19,7 +19,7 @@ SYSLIBS=str.cma unix.cma
 OPTFLAGS=
 
 # The Caml compilers.
-CAMLC =ocamlc$(OPTBIN) -g $(PP)
+CAMLC =ocamlc$(OPTBIN) -g -dtypes $(PP)
 CAMLOPT=ocamlopt$(OPTBIN)  $(PP) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc
@@ -67,7 +67,7 @@ clean::
 
 # clean rule for others files
 clean::
-	rm -f *.cm[iox] *.o 
+	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*# 
 
 depend: 

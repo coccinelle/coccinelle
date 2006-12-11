@@ -23,7 +23,7 @@ ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
 #to ".opt" in your startup script.
 
 #OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom      -- for C code
-OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom
+OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) -custom
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
@@ -106,7 +106,7 @@ beforedepend:: test.ml
 
 
 clean::
-	rm -f *.cm[iox] *.o
+	rm -f *.cm[iox] *.o *.annot
 
 clean::
 	rm -f *~ .*~ gmon.out *.exe #*#
