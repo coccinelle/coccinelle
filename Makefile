@@ -49,6 +49,8 @@ test: $(TARGET)
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 
+tags:
+	otags -no-mli-tags -r  .
 
 
 rec:

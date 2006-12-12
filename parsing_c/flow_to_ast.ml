@@ -144,7 +144,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
     match get_next_node_old g nodei with
     | (nexti, EndStatement None) -> 
         get_next_node g nodei
-    | (nexti, EndStatement Some x) -> 
+    | (nexti, EndStatement (Some x)) -> 
         nodei, unwrap (nodes#find nodei)
     | _ -> raise Impossible
     

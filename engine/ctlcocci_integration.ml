@@ -142,7 +142,7 @@ let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) =
  * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
  * une fonction qui passe a travers les Fake, mais bof.
  *)
-let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
+let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
   let g = ref flow in
 
   let adjust_g (newg)        = begin  g := newg;    end in
@@ -219,6 +219,8 @@ let (fix_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = fun  flow ->
     );
 
   !g
+let fix_flow_ctl a = 
+  Common.profile_code "fix_flow" (fun () -> fix_flow_ctl2 a)
 
 
 (*****************************************************************************)

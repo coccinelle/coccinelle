@@ -680,6 +680,7 @@ let lookahead a b =
 (* Error recovery *)
 (*****************************************************************************)
 
+(* todo: do something if find Parser_c.Eof ? *)
 let rec find_next_synchro next already_passed table =
   match next with
   | [] ->  
