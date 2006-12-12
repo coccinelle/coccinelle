@@ -175,19 +175,19 @@ and expressionbis =
        | ArgType of fullType * storage wrap
        | ArgAction of action_macro
       and action_macro = 
-         | ActJump of (jump * il) 
+         | ActJump of jump wrap 
          | ActSeq of (exprStatement wrap * action_macro)
          | ActMisc of il 
 
 
-  (* I put string for Int and Float cos int would not be enough cos Caml Int 
-   * are 31 bits. So simpler to do string.
-   * Same reason to have string instead of int list, for String.
-   *
-   * note: that -2 is not a constant, it is the unary operator - applied to 
-   * constant 2. So the string must represent a positive integer only.
-   *)
-  and constant = 
+  (* I put string for Int and Float cos int would not be enough cos
+   * Caml int are 31 bits. So simpler to do string. Same reason to have
+   * string instead of int list, for String.
+   * 
+   * note: that -2 is not a constant, it is the unary operator -
+   * applied to constant 2. So the string must represent a positive
+   * integer only. *)
+and constant = 
   | String of (string * isWchar) 
   | Char   of (string * isWchar) (* normally it is equivalent to Int *)
   | Int    of (string  (* * intType*)) 
@@ -232,7 +232,8 @@ and statementbis =
 
   (* simplify cocci: only at the beginning of a compound normally *)
   | Decl  of declaration 
-  | Asm  (* gccext: *)
+  (* gccext: *)
+  | Asm  
 
 
 
@@ -250,14 +251,13 @@ and statementbis =
 
   and exprStatement = expression option
 
+ (* for Switch, need check that all elements in the compound start 
+  * with a case:, otherwise unreachable code 
+  *)
   and selection     = 
    | If     of expression * statement * statement        
-   (* need check that all elements in the compound start with a case: 
-      (otherwise unreachable code)  *)
    | Switch of expression * statement 
    | IfCpp of statement list * statement list    (* cppext: *)
-
-
 
   and iteration     = 
     | While   of expression * statement
@@ -347,13 +347,6 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaParamListVal of (parameterType wrap) list
 
 (*****************************************************************************)
-type info_item = (filename * (pos_file * pos_file) * string * il)
-
-type program2 = programElement2 list
-     and programElement2 = programElement * info_item
-
-
-(*****************************************************************************)
 let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
@@ -372,8 +365,8 @@ let unwrap = fst
  * tokens, such as its line number in the file, we can not use anymore the
  * ocaml '=' to compare Ast elements. To overcome this problem, to be
  * able to use again '=', we just have to get rid of all those extra 
- * information
-*)
+ * information.
+ *)
 
 let _Magic_info_number = -10
 

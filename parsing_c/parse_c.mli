@@ -16,13 +16,21 @@ type parsing_stat = {
     mutable correct: int;
     mutable bad: int;
   } 
+
+type info_item = 
+ (filename * Common.pos_file Common.pair * string * Parser_c.token list)
+
+type program2 = programElement2 list
+     and programElement2 = Ast_c.programElement * info_item
+
+
 (* this is the main function *)
-val parse_print_error_heuristic:  filename -> (Ast_c.program2 * parsing_stat)
+val parse_print_error_heuristic:  filename -> (program2 * parsing_stat)
 
 
+val print_parsing_stat_list: parsing_stat list -> unit
 
 (* also used in unparser *)
 val info_from_token: Parser_c.token -> Ast_c.info
 
-val print_parsing_stat_list: parsing_stat list -> unit
 

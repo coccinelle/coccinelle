@@ -991,6 +991,9 @@ let testd dict n =
 (* Tuples *)
 (*****************************************************************************)
 
+type 'a pair = 'a * 'a
+type 'a triple = 'a * 'a * 'a
+
 let fst3 (x,_,_) = x
 let snd3 (_,y,_) = y
 let thd3 (_,_,z) = z

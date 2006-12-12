@@ -326,6 +326,9 @@ val testd : 'a numdict -> 'a -> 'a
 (* Tuples *)
 (*****************************************************************************)
 
+type 'a pair = 'a * 'a
+type 'a triple = 'a * 'a * 'a
+
 val fst3 : 'a * 'b * 'c -> 'a
 val snd3 : 'a * 'b * 'c -> 'b
 val thd3 : 'a * 'b * 'c -> 'c

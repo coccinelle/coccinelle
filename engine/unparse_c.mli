@@ -1,12 +1,7 @@
 open Common
 
-type ppmethod = PPviatok of Ast_c.info list | PPnormal
+type ppmethod = PPviatok | PPnormal
 
-(* I need the filename because my algorithm need to redo a lexical analysis.
- * We work on a list of programElement, a list of translation_unit.
- * First arg is infile, second arg is outfile (often "/tmp/output.c").
-*) 
-
-val pp_program : 
- (Ast_c.programElement * ppmethod) list -> filename -> filename -> unit
+(* program -> output filename (often "/tmp/output.c") -> unit *) 
+val pp_program : (Parse_c.programElement2 * ppmethod) list -> filename -> unit
 

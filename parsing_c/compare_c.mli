@@ -7,5 +7,5 @@ type compare_result =
 
 
 val compare : 
- (Ast_c.program2 * filename) -> (Ast_c.program2 * filename) ->
+ (Ast_c.program * filename) -> (Ast_c.program * filename) ->
  compare_result * string list (* the output of diff *)

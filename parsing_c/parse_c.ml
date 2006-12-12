@@ -173,11 +173,10 @@ let get_slice_file filename (line1, line2) =
  * todo: give correct column, and charpos (for the moment not needed)
  * opti ? 
  *)
-let build_info_item filename line1 line2 toks = 
-  let info_of_toks = Common.map_eff_rev info_from_token toks in
+let mk_info_item filename line1 line2 toks = 
   (filename, 
   (((line1, 0), 0), ((line2, 0), 0)),  
-  get_slice_file filename (line1, line2), info_of_toks
+  get_slice_file filename (line1, line2), List.rev toks
   ) 
 
 
@@ -201,8 +200,7 @@ let default_stat file =  {
     correct = 0; bad = 0;
   }
 
-(* 
- * todo: stat per dir ?  give in terms of func_or_decl numbers:   
+(* todo: stat per dir ?  give in terms of func_or_decl numbers:   
  * nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
  *
  * note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les 
@@ -714,9 +712,49 @@ let rec find_next_synchro next already_passed table =
 (* Main entry point *)
 (*****************************************************************************)
 
+type info_item = 
+  (filename * Common.pos_file Common.pair * string * Parser_c.token list)
+
+type program2 = programElement2 list
+     and programElement2 = Ast_c.programElement * info_item
+
+
 (* note: as now go in 2 pass, there is first all the error message of
  * the lexer, and then the error of the parser. It is no more
- * interwinded. *)
+ * interwinded.
+ * 
+ * The use of local refs (remaining_tokens, passed_tokens, ...) makes
+ * possible error recovery. Indeed, they allow to skip some tokens and
+ * still be able to call again the ocamlyacc parser. It is ugly code
+ * because we cant modify ocamllex and ocamlyacc. As we want some
+ * extended lexing tricks, we have to use such refs.
+
+ * Those refs are now also used for my lalr(k) technique. Indeed They
+ * store the futur and previous tokens that were parsed, and so
+ * provide enough context information for powerful lex trick.
+
+ * - passed_tokens_last_ckp stores the passed tokens since last
+ *   checkpoint. Used for NotParsedCorrectly and also for build the
+ *   info_item attached to each program_element.
+ * - passed_tokens is used for lookahead, in fact for lookback.
+ * - remaining_tokens_clean is used for lookahead. Now remaining_tokens
+ *   contain some comments and so would make pattern matching difficult
+ *   in lookahead. Hence this variable. 
+
+ * So remaining_tokens, passed_tokens_last_ckp contain comment-tokens.
+ * passed_tokens and remaining_tokens_clean does not contain
+ * comment-tokens.
+
+ * Normally we have:
+ * toks = (reverse passed_tok) ++ cur_tok ++ remaining_tokens   
+ *    after the call to pop2.
+ * toks = (reverse passed_tok) ++ remaining_tokens   
+ *     at the and of the lexer_function call.
+ * At the very beginning, cur_tok and remaining_tokens overlap, but not after.
+ * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
+ *)
+
+
 let parse_print_error_heuristic2 file = 
 
   (* -------------------------------------------------- *)
@@ -730,43 +768,11 @@ let parse_print_error_heuristic2 file =
 
   let stat = default_stat file in
 
-  (* The variable that follows makes possible error recovery.
-   * They are now also used for my lalr(k) technique. Indeed They store 
-   * the futur and previous tokens that were parsed, and so provide enough
-   * context information for powerful lex trick.
-   *
-   * It is ugly code because we cant modify ocamllex and ocamlyacc. 
-   * As we want some extended lexing tricks, we have to use such globals. 
-   *)
-  let remaining_tokens = ref toks in
-  let cur_tok    = ref (List.hd !remaining_tokens) in
-
-  (* Passed tokens since last checkpoint. Used for NotParsedCorrectly
-   * and also for build the info_item attached to each program_element.
-   *)
-  let passed_tokens_last_ckp = ref [] in 
-
-  (* used for lookahead, in fact for lookback *)
-  let passed_tokens    = ref [] in
-
-  (* Normally we have:
-   * toks = (reverse passed_tok) ++ cur_tok ++ remaining_tokens   
-   *    after the call to pop2.
-   * toks = (reverse passed_tok) ++ remaining_tokens   
-   *     at the and of the lexer_function call.
-   * At the very beginning, cur_tok and remaining_tokens overlap, but not after.
-   * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
-   *)
-
-  (* used for lookahead. Now remaining_tokens contain some comments and
-   * so would make pattern matching difficult in lookahead. Hence this
-   * variable. 
-   * 
-   * remaining_tokens, passed_tokens_last_ckp contain comment-tokens.
-   * passed_tokens and remaining_tokens_clean does not contain comment-tokens.
-   *)
+  let remaining_tokens       = ref toks in
   let remaining_tokens_clean = ref (toks +> List.filter is_not_comment) in
-
+  let cur_tok                = ref (List.hd !remaining_tokens) in
+  let passed_tokens_last_ckp = ref [] in 
+  let passed_tokens          = ref [] in
 
   (* hacked_lex *)
   let rec lexer_function = 
@@ -804,10 +810,9 @@ let parse_print_error_heuristic2 file =
 
           if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
 
-          (* the lookahead may have change the status of the token and consider
-           * it as a comment, for instance some #include are turned into comments
-           * hence this code.
-           *)
+          (* the lookahead may have change the status of the token and
+           * consider it as a comment, for instance some #include are
+           * turned into comments hence this code. *)
           match v with
           | TCommentCpp _ -> lexer_function lexbuf
           | v -> 
@@ -858,7 +863,7 @@ let parse_print_error_heuristic2 file =
             | Parsing.Parse_error -> 
                 pr2 ("parse error \n = " ^ error_msg_tok file !cur_tok)
             | Semantic_c.Semantic (s, i) -> 
-                pr2 ("semantic error " ^ s ^ "\n =" ^ error_msg_tok file !cur_tok)
+                pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok file !cur_tok)
             | e -> raise e
             );
             let line_error = line_of_tok !cur_tok table in
@@ -885,12 +890,11 @@ let parse_print_error_heuristic2 file =
     (* again not sure if checkpoint2 corresponds to end of bad region *)
     let checkpoint2 = line_of_tok !cur_tok table in
     let diffline = (checkpoint2 - checkpoint) in
-    let info = 
-      build_info_item file checkpoint checkpoint2 !passed_tokens_last_ckp 
+    let info = mk_info_item file checkpoint checkpoint2 !passed_tokens_last_ckp
     in 
 
     (match elem with
-    | Ast_c.NotParsedCorrectly _ -> stat.bad <- stat.bad + diffline
+    | Ast_c.NotParsedCorrectly _ -> stat.bad     <- stat.bad     + diffline
     | _ ->                          stat.correct <- stat.correct + diffline;
     );
     (match elem with

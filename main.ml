@@ -27,11 +27,11 @@ let action = ref ""
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if not (Common.lfile_exists expected_res)
   then failwith ("no such .res file: " ^ expected_res);
+  let a = Cocci.cprogram_from_file generated_file +> List.map fst in
+  let b = Cocci.cprogram_from_file expected_res   +> List.map fst in
 
-  let (correct, diffxs) = 
-    Compare_c.compare 
-        (Cocci.cprogram_from_file generated_file, generated_file)
-        (Cocci.cprogram_from_file expected_res, expected_res)
+  let (correct, diffxs) =  
+    Compare_c.compare  (a, generated_file)  (b, expected_res)
   in
   match correct with
   | Compare_c.Correct -> 
@@ -107,10 +107,10 @@ let testall () =
         let generated = "/tmp/output.c" in
         let expected = "tests/" ^ res in
 
-        let (correct, diffxs) = 
-          Compare_c.compare 
-            (Cocci.cprogram_from_file generated, generated)
-            (Cocci.cprogram_from_file expected, expected)
+        let a = Cocci.cprogram_from_file generated +> List.map fst in
+        let b = Cocci.cprogram_from_file expected  +> List.map fst in
+
+        let (correct, diffxs) = Compare_c.compare (a, generated) (b, expected)
         in
 	pr2 res;
 	Ctlcocci_integration.print_bench();

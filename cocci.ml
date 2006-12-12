@@ -25,8 +25,8 @@ let cprogram_from_file  file =
     +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
     +> Common.uncurry Common.zip
 
-let cfile_from_program program inf outf = 
-  Unparse_c.pp_program program inf outf
+let cfile_from_program program2_with_method outf = 
+  Unparse_c.pp_program program2_with_method outf
 
 
   
@@ -265,7 +265,7 @@ let flow_to_ast a =
  * and finally a hack_funheaders list. 
  *)
 let program_elem_vs_ctl2 = fun cinfo cocciinfo binding -> 
-  let (elem, (filename, _pos, il)) = cinfo in
+  let (elem, (filename)) = cinfo in
   let (ctl, used_after_list) = cocciinfo in
 
   match elem, ctl  with
@@ -296,7 +296,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
       
 
   | celem, ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _m), _i), _p) -> 
-      (celem, Unparse_c.PPviatok il),
+      (celem, Unparse_c.PPviatok),
       None, []
 
   | Ast_c.Definition (((funcs, _, _, c),_) as def),   ctl -> 
@@ -348,15 +348,15 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
             (Ast_c.Definition def', Unparse_c.PPnormal), 
             Some newbinding, hack_funheaders
           else 
-            (Ast_c.Definition def, Unparse_c.PPviatok il), 
+            (Ast_c.Definition def, Unparse_c.PPviatok), 
             Some newbinding, hack_funheaders
       | Right x -> 
           pr2 ("Unable to find a value for " ^ x);
-          (Ast_c.Definition def, Unparse_c.PPviatok il), 
+          (Ast_c.Definition def, Unparse_c.PPviatok), 
           None, []
       )
   | x, ctl -> 
-      (x, Unparse_c.PPviatok il),
+      (x, Unparse_c.PPviatok),
       None, []
 
 
@@ -460,8 +460,9 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
       (* 3: iter function *)
       (* ------------------ *)
       let cprogram = cprogram_from_file ("/tmp/input.c") in
-      let cprogram' = cprogram +> List.map (fun (elem,(filename, pos,_s,il)) ->
+      let cprogram' = cprogram +> List.map (fun (elem, info_item) ->
 
+        let (filename, _, _, _) = info_item in
         let full_used_after_list = 
 	  List.fold_left Common.union_set [] used_after_list 
         in
@@ -470,9 +471,9 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
         (* !Main point! The call to the function that will call the
          * ctl engine and all the machinery *)
         (************************************************************)
-        let elem', newbinding, hack_funheaders = 
+        let (elem',method'), newbinding, hack_funheaders = 
           program_elem_vs_ctl 
-            (elem, (filename, pos, il))
+            (elem, (filename))
             (ctl, full_used_after_list) 
             binding 
         in
@@ -488,10 +489,10 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
           _current_bindings := Common.insert_set newbinding !_current_bindings;
         );
         
-        elem'
+        (elem', info_item), method'
         ) (* end 3: iter function *)
       in
-      cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+      cfile_from_program cprogram' ("/tmp/output.c");
       Common.command2("cp /tmp/output.c /tmp/input.c");    
       ) (* end 2: iter bindings *)
    end
@@ -519,13 +520,14 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
          lastround_bindings_multi +> List.iter (fun (binding, already) -> 
 
            (* iter program *)
-           cprogram +> List.iter (fun (elem, (filename, pos, _s, il)) -> 
+           cprogram +> List.iter (fun (elem, info_item) -> 
+             let (filename, pos, _s, _tok) = info_item in
 
              if (not (List.mem pos (Common.keys already)))
              then begin
-             let elem', newbinding, hack_funheaders = 
+             let (elem', method'), newbinding, hack_funheaders = 
                program_elem_vs_ctl 
-                 (elem, (filename, pos, il))
+                 (elem, (filename))
                  (ctl, used_after_one_ctl) 
                  binding 
              in
@@ -537,7 +539,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
               * are kind of sorted, so could optimise the union.
               *)
              newbinding +> Common.do_option (fun newbinding -> 
-               Common.push2 (newbinding, (pos, fst elem')::already)
+               Common.push2 (newbinding, (pos, elem')::already)
                        _current_bindings_multictl;
                );
              end
@@ -552,13 +554,14 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
      | 0 ->  Common.command2("cp /tmp/input.c /tmp/output.c");    
      | 1 -> 
        let (binding, list_func) = List.hd !_current_bindings_multictl in
-       let cprogram' = cprogram +> List.map (fun (e, (filename, pos, s, il)) ->
+       let cprogram' = cprogram +> List.map (fun (e, info_item) ->
+         let (filename, pos, s, tok) = info_item in
          if List.mem pos (Common.keys list_func)
-         then List.assoc pos list_func, Unparse_c.PPnormal
-         else e, Unparse_c.PPviatok il
+         then (List.assoc pos list_func, info_item), Unparse_c.PPnormal
+         else (e, info_item), Unparse_c.PPviatok
          )
        in
-       cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+       cfile_from_program cprogram' ("/tmp/output.c");
        Common.command2("cp /tmp/output.c /tmp/input.c");    
        _current_bindings := [binding]
        
@@ -582,15 +585,16 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
    
     let cprogram = cprogram_from_file ("/tmp/input.c") in
     let cprogram' = 
-      cprogram +> List.map (fun (ebis, (filename, pos, s, il)) -> 
-        match ebis with
-        | Ast_c.Declaration 
-            (Ast_c.DeclList 
-               ([((Some ((s, None), iisini)), 
-                  (qu, (Ast_c.FunctionType ft, iity)), 
+      cprogram +> List.map (fun (ebis, info_item) -> 
+        let ebis', method' = 
+          match ebis with
+          | Ast_c.Declaration 
+              (Ast_c.DeclList 
+                  ([((Some ((s, None), iisini)), 
+                    (qu, (Ast_c.FunctionType ft, iity)), 
                   storage),
                  []
-               ], iiptvirg::iisto))  -> 
+                  ], iiptvirg::iisto))  -> 
              (try 
                Transformation.transform_proto
                    (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv, dots)
@@ -598,14 +602,15 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
                                                 iisini++iity++iisto)), []),"")
                    binding (qu, iiptvirg, storage) g
                  +> (fun x -> x,  Unparse_c.PPnormal)
-             with Transformation.NoMatch -> 
-               (ebis, Unparse_c.PPviatok il)
+             with Transformation.NoMatch -> (ebis, Unparse_c.PPviatok)
              )
-        | x -> 
-            (x, Unparse_c.PPviatok il)
-        )
+        | x -> (x, Unparse_c.PPviatok)
+        in
+        (ebis', info_item), method'
+        ) 
+    
     in
-    cfile_from_program cprogram' ("/tmp/input.c") ("/tmp/output.c");
+    cfile_from_program cprogram' ("/tmp/output.c");
     Common.command2("cp /tmp/output.c /tmp/input.c");    
    );
    );

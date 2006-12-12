@@ -22,8 +22,8 @@ type compare_result =
  *)
 let compare (c1,filename1) (c2, filename2)  =
 
-    let c1' = Abstract_line_c.al_program (c1 +> List.map fst) in
-    let c2' = Abstract_line_c.al_program (c2 +> List.map fst) in
+    let c1' = Abstract_line_c.al_program c1 in
+    let c2' = Abstract_line_c.al_program c2 in
     
     let xs =
       process_output_to_list 
