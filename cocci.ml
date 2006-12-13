@@ -250,7 +250,7 @@ let ast_to_flow_with_error_messages a b =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
 
 let flow_to_ast a = 
-  Common.profile_code "flow" (fun () -> flow_to_ast2 a)
+  Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
                   
 (*****************************************************************************)
 (*  *)
@@ -267,10 +267,16 @@ let flow_to_ast a =
 
 *)
 
-type celem_with_flow = (Parse_c.programElement2 * Control_flow_c.cflow option)
+type celem_info = { 
+  flow: Control_flow_c.cflow;
+  fixed_flow: Control_flow_c.cflow;
+  contain_loop: bool;
+}
+
+type celem_with_info = (Parse_c.programElement2 * celem_info option)
 
 
-let build_maybe_flow e cfile = 
+let build_maybe_info e cfile = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
       if !Flag.show_misc then pr2 ("build info function " ^ funcs);
@@ -282,20 +288,23 @@ let build_maybe_flow e cfile =
       
       if !Flag.show_flow              then print_flow fixed_flow;
       if !Flag.show_before_fixed_flow then print_flow flow;
-      
-      Some flow
+      Some
+        { flow = flow; 
+          fixed_flow = fixed_flow; 
+          contain_loop = contain_loop def 
+        }
   | _ -> None
 
-let (build_info_program: filename -> celem_with_flow list) = fun cfile -> 
+let (build_info_program: filename -> celem_with_info list) = fun cfile -> 
   let cprogram = cprogram_from_file cfile in
   cprogram +> List.map (fun (e, info_item) -> 
-    (e, info_item), build_maybe_flow e cfile)
+    (e, info_item), build_maybe_info e cfile)
     
         
 
 (* bool is wether or not have to unparse and reparse the c element *)
 let (rebuild_info_program : 
-  (celem_with_flow * bool) list -> celem_with_flow list) = fun xs ->
+  (celem_with_info * bool) list -> celem_with_info list) = fun xs ->
   let xxs = xs +> List.map (fun (((elem, info_item), flow), modified) -> 
     if modified 
     then begin
@@ -322,7 +331,7 @@ let (rebuild_info_program :
  * and finally a hack_funheaders list. 
  *)
 let program_elem_vs_ctl2 = fun cinfo cocciinfo binding -> 
-  let (elem, flow_maybe) = cinfo in
+  let (elem, info) = cinfo in
   let (ctl, used_after_list) = cocciinfo in
 
   match elem, ctl  with
@@ -358,18 +367,18 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
   | Ast_c.Definition (((funcs, _, _, c),_) as def),   ctl -> 
       if !Flag.show_misc then pr2 ("starting function " ^ funcs);
 
-      let flow = some flow_maybe in
+      let info = some info in
 
       let satres = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
           Flag_ctl.loop_in_src_code := 
-            !Flag_ctl.loop_in_src_code || contain_loop def;
+            !Flag_ctl.loop_in_src_code || info.contain_loop;
               
             (***************************************)
             (* !Main point! The call to the engine *)
             (***************************************)
             (* model_ctl internally build a fixed_flow *)
-            let model_ctl  = CCI.model_for_ctl flow binding in
+            let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
 	    CCI.mysat model_ctl ctl (used_after_list, binding)
 
           ) in
@@ -392,7 +401,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
           then 
             (* I do the transformation on flow, not fixed_flow, 
                because the flow_to_ast need my extra information. *)
-            let flow' = Transformation.transform trans_info flow in
+            let flow' = Transformation.transform trans_info info.flow in
             let def' = flow_to_ast flow' in
 
             (Ast_c.Definition def', true), 
@@ -444,21 +453,19 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
   else begin
 
 
-    (* ----------------------------------------- *)
-    (* And now the main algorithm *)
-    (* ----------------------------------------- *)
+    (* parsing and build CFG *)
     let cprogram = ref (build_info_program cfile) in
 
+    (* And now the main algorithm *)
     (* The algorithm is roughly: 
      *  for_all ctl rules in SP
      *   for_all minirule in rule
      *    for_all binding (computed during previous phase)
-     *      for_all C elements in "input.c"
+     *      for_all C elements
      *         match control flow of function vs minirule 
      *         with the binding and update the set of possible 
      *         bindings, and returned the possibly modified function.
-     *      pretty print modified C elements in "output.c"
-     *      copy "output.c" to "input.c"
+     *      pretty print modified C elements and reparse it.
      *)
 
     let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
@@ -508,7 +515,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
           (* ------------------ *)
           (* 3: iter function *)
           (* ------------------ *)
-          let cprogram' = !cprogram +> List.map (fun ((elem, info_item), flow) ->
+          let cprogram' = !cprogram +> List.map (fun ((elem, info_item), info) ->
 
             let full_used_after_list = 
 	      List.fold_left Common.union_set [] used_after_list 
@@ -520,7 +527,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
             (************************************************************)
             let (elem',modified), newbinding, hack_funheaders = 
               program_elem_vs_ctl 
-                (elem, flow)
+                (elem, info)
                 (ctl, full_used_after_list) 
                 binding 
             in
@@ -537,7 +544,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
                 Common.insert_set newbinding !_current_bindings;
             );
             
-            ((elem', info_item), flow), modified 
+            ((elem', info_item), info), modified 
           ) (* end 3: iter function *)
           in
           cprogram := rebuild_info_program cprogram';
@@ -590,15 +597,17 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
       );
     );
 
-    (* ----------------------------------------- *)
-    let cprogram' = !cprogram +> List.map (fun ((ebis, info_item), flow) -> 
+    (* and now unparse everythinh *)
+    let cprogram' = !cprogram +> List.map (fun ((ebis, info_item), _flow) -> 
       (ebis, info_item), Unparse_c.PPviatok) 
     in
     cfile_from_program cprogram' "/tmp/output.c";
 
-    (* may need --strip-trailing-cr under windows *)
-    pr2 "diff = ";
-    Common.command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
+    if !Flag.show_diff then begin
+      (* may need --strip-trailing-cr under windows *)
+      pr2 "diff = ";
+      Common.command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
+    end
   end
 
 

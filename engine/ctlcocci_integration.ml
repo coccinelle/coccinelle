@@ -224,9 +224,11 @@ let fix_flow_ctl a =
 
 
 (*****************************************************************************)
-(* subtil: the label must operate on newflow, not (old) cflow *)
+(* subtil: the label must operate on newflow, not (old) cflow 
+ * update: now I supposed that we give me a fixed_flow
+ *)
 let model_for_ctl  cflow binding = 
- let newflow = fix_flow_ctl (control_flow_for_ctl cflow) in
+ let newflow = cflow (* old: fix_flow_ctl (control_flow_for_ctl cflow) *) in
  let labels = labels_for_ctl (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states

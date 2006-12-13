@@ -182,6 +182,7 @@ let main () =
 
       "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
       "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
+      "-no_show_diff"           , Arg.Clear Flag.show_diff, " ";
       "-no_show_misc",   Arg.Unit (fun () -> 
         Flag.show_misc := false;
         Flag_engine.show_misc := false;

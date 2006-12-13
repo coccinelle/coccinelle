@@ -319,6 +319,7 @@ let profile_code category f =
   res
   end
 
+(* todo: also put  % ? also add % to see if coherent numbers *)
 let profile_diagnostic () = 
   if not !profile then () else begin
   let xs = 
