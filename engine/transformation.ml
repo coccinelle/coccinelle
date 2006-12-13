@@ -981,7 +981,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
 
   
 (* ------------------------------------------------------------------------- *)
-let transform_proto a b binding (qu, iiptvirg, storage) infolastparen = 
+let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen = 
   let node' = transform_re_node a b binding in
   match F.unwrap node' with
   | F.FunHeader 
@@ -1009,6 +1009,9 @@ let transform_proto a b binding (qu, iiptvirg, storage) infolastparen =
           
   | _ -> 
       raise Impossible
+let transform_proto a b c d e = 
+  Common.profile_code "Transformation.transform(proto)?" 
+   (fun () -> transform_proto2 a b c d e)
 
 
 (*****************************************************************************)
@@ -1041,4 +1044,5 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
      ) cflow
 
 let transform a b = 
-  Common.profile_code "Transformation.transform" (fun () -> transform2 a b)
+  Common.profile_code "Transformation.transform(proto)?" 
+    (fun () -> transform2 a b)

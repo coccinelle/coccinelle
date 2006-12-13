@@ -24,7 +24,8 @@ export OCAMLRUNPARAM
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) 
 OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
-OCAMLLEX=ocamllex$(OPTBIN) -ml
+#OCAMLLEX=ocamllex$(OPTBIN) -ml
+OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
 OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)

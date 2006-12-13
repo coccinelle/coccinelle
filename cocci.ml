@@ -164,11 +164,14 @@ let show_or_not_ctl_text ctl =
 
 let show_or_not_trans_info trans_info = 
   if !Flag.show_transinfo then begin
-    Common.print_xxxxxxxxxxxxxxxxx();
-    pr2 "transformation info returned:";
-    Common.print_xxxxxxxxxxxxxxxxx();
-    Pretty_print_engine.pp_transformation_info trans_info;
-    Format.print_newline();
+    if null trans_info then pr2 "transformation info is empty"
+    else begin
+      Common.print_xxxxxxxxxxxxxxxxx();
+      pr2 "transformation info returned:";
+      Common.print_xxxxxxxxxxxxxxxxx();
+      Pretty_print_engine.pp_transformation_info trans_info;
+      Format.print_newline();
+    end
   end
 
 
@@ -257,14 +260,9 @@ let flow_to_ast a =
 (*****************************************************************************)
 
 (*  
-
-
-
-
     +> Common.unzip 
     +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
     +> Common.uncurry Common.zip
-
 *)
 
 type celem_info = { 
