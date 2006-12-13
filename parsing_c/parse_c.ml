@@ -160,24 +160,26 @@ let print_bad line_error (start_line, end_line) filelines  =
 
 
 
-(* opti ? *)
-let get_slice_file filename (line1, line2) = 
-  if not !Flag_parsing_c.opti_parsing then
-    Common.cat filename 
-      +> Common.drop (line1 - 1)
-      +> Common.take (line2 - line1 + 1)
-      +> Common.unlines
-  else "TODO remove opti_parsing flag"
-
 (* info_item is defined in ast_c.ml .
  * todo: give correct column, and charpos (for the moment not needed)
- * opti ? 
  *)
-let mk_info_item filename line1 line2 toks = 
-  (filename, 
-  (((line1, 0), 0), ((line2, 0), 0)),  
-  get_slice_file filename (line1, line2), List.rev toks
-  ) 
+let mk_info_item2 filename line1 line2 toks = 
+  let toks' = List.rev toks in
+  let buf = Buffer.create 100 in
+  let s = 
+    (* old: get_slice_file filename (line1, line2) *)
+    begin
+      toks' +> List.iter (fun tok -> 
+        Buffer.add_string buf (fst (token_to_strpos tok));
+      );
+      Buffer.contents buf
+    end
+  in
+  (filename, (((line1, 0), 0), ((line2, 0), 0)),  s, toks') 
+
+let mk_info_item a b c d = 
+  Common.profile_code "C parsing.mk_info_item" 
+    (fun () -> mk_info_item2 a b c d)
 
 
 

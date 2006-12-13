@@ -478,7 +478,7 @@ rule token = parse
 
 
   (*------------------------------------------------------------------------ *)
-  | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = "EOF"},an) }
+  | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = ""},an) }
 
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 

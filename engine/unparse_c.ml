@@ -98,9 +98,12 @@ let passed_commentsbefore_notbefore a b =
  * fancy stuff when a function was not modified at all. Just need to
  * print the list of token as-is. But now pretty_print_c.ml handles
  * almost everything so maybe less useful. Maybe PPviatok allows to
- * optimize a little the pretty printing. *)
+ * optimize a little the pretty printing. 
+ * update: now have PPviastr which goes even faster than PPviatok, so
+ * PPviatok has disappeared.
+ *)
 
-type ppmethod = PPviatok | PPnormal
+type ppmethod = PPnormal | PPviastr
 
 
 (* The pp_program function will call pretty_print_c.ml with a special
@@ -252,19 +255,13 @@ let pp_program2 xs outfile  =
     (* start point *)
     (* ---------------------- *)
 
-    xs +> List.iter (fun ((e,(_filename, _pos, _s, toks_e)), ppmethod) -> 
+    xs +> List.iter (fun ((e,(_filename, _pos, str, toks_e)), ppmethod) -> 
       toks := toks_e;
       _last_synced_token := (Common.fake_parse_info, Ast_c.emptyAnnot);
 
       match ppmethod with
-      | PPviatok -> 
-          (match e with
-          | FinalDef (ii,_ANNOT) -> 
-              (* less: assert that FinalDef is the last one in the list *)
-              pr_elem ({ii with str = ""},Ast_c.emptyAnnot) 
-          | e -> !toks +> List.map Parse_c.info_from_token +> List.iter pr_elem
-          )
       | PPnormal -> Pretty_print_c.pp_program_gen pr_elem e
+      | PPviastr -> pr str
     );
   )
 
