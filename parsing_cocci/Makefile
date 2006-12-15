@@ -2,7 +2,7 @@ TARGET=cocci_parser
 
 LEXER_SOURCES = lexer_cocci.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
-SOURCES = type_cocci.ml ast_cocci.ml ast0_cocci.ml \
+SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
 visitor_ast.ml visitor_ast0.ml \
 ast0toast.ml check_meta.ml pretty_print_cocci.ml unparse_ast0.ml top_level.ml \
 type_infer.ml \

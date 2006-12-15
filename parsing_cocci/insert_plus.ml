@@ -624,9 +624,95 @@ let reevaluate_contextness =
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
+(* add markers for sgrep_mode *)
+(* undesirable to add + markers in token stream because then have to parse them
+can't merge with the above, because since there is no +, there will be just
+one big bind node
+in ast, lose easy access to left and rightmost tokens *)
+
+(* first collect mcodes *)
+let collect_context e =
+  let bind x y = x @ y in
+  let option_default = [] in
+  let mcode (_,_,_,mc) = [(false,mc)] in
+
+  let donothing r k e = k e in
+
+  (* Don't want to collect whencode.  If it matches, then the whole
+     pattern doesn't match, so we aren't interested in marking it *)
+  let statement r k e =
+    match Ast0.unwrap e with
+      Ast0.Nest((_,_,_,starter),stmt_dots,(_,_,_,ender),whencode) ->
+	let statement_dots = r.V0.combiner_statement_dots in
+	(true, starter) ::
+	(bind (statement_dots stmt_dots) [(true, ender)])
+    | Ast0.Dots((_,_,_,d),whn) | Ast0.Circles((_,_,_,d),whn)
+    | Ast0.Stars((_,_,_,d),whn) ->
+	(* not very nice, but too lazy to export the whencode function *)
+	(match k e with
+	  _::whencode -> [(true,d)]
+	| _ -> failwith "not possible")
+    | _ -> k e in
+
+  let res =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing statement donothing donothing in
+  res.V0.combiner_top_level e
+
+(* then put start_marker/end_marker at the beginning/end (unless they are dots)
+and before/after any statement dots *)
+
+let start_marker = Ast.Token "/*<*/"
+let end_marker = Ast.Token "/*>*/"
+
+let add_start_marker = function
+    Ast0.CONTEXT(info) ->
+      let (ba,before_info,after_info) = !info in
+      let new_ba =
+	match ba with
+	  Ast.NOTHING -> Ast.BEFORE([[start_marker]])
+	| _ -> failwith "non-nothing is not possible" in
+      info := (new_ba,before_info,after_info)
+  | _ -> failwith "non-context is not possible"
+
+let add_end_marker = function
+    Ast0.CONTEXT(info) ->
+      let (ba,before_info,after_info) = !info in
+      let new_ba =
+	match ba with
+	  Ast.NOTHING -> Ast.AFTER([[end_marker]])
+	| Ast.BEFORE(bef) -> Ast.BEFOREAFTER(bef,[[end_marker]])
+	| _ -> failwith "non-nothing is not possible" in
+      info := (new_ba,before_info,after_info)
+  | _ -> failwith "non-context is not possible"
+
+let insert_markers l =
+  let do_start = function
+      [] -> ()
+    | (true,_)::_ -> ()
+    | (false,x)::_ -> add_start_marker x in
+  let rec loop dots = function
+      [] -> ()
+    | (is_dots,x)::xs ->
+	(if dots then add_start_marker x);
+	(match xs with
+	  [] -> if not is_dots then add_end_marker x
+	| (true,y)::rest -> add_end_marker x; loop true rest
+	| _ -> loop is_dots xs) in
+  do_start l;
+  loop false l
+
+(* --------------------------------------------------------------------- *)
+(* --------------------------------------------------------------------- *)
 
 let insert_plus minus plus =
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;
+  if !Flag_parsing_cocci.sgrep_mode
+  then
+    List.iter (function minus -> insert_markers (collect_context minus))
+      minus;
   List.iter (function x -> let _ =  reevaluate_contextness x in ()) minus

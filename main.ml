@@ -208,7 +208,7 @@ let main () =
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
 
-      "-sgrepmode", Arg.Set Flag_engine.sgrep_mode, " ";
+      "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 

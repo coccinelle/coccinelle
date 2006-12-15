@@ -56,9 +56,16 @@ let wrapExists  n (x,y) = wrap n (CTL.Exists(x,y))
 let wrapAnd     n (x,y) = wrap n (CTL.And(x,y))
 let wrapOr      n (x,y) = wrap n (CTL.Or(x,y))
 let wrapSeqOr   n (x,y) = wrap n (CTL.SeqOr(x,y))
-let wrapAU      n (x,y) = wrap n (CTL.AU(CTL.FORWARD,x,y))
-let wrapEU      n (x,y) = wrap n (CTL.EU(CTL.FORWARD,x,y))
-let wrapAX      n (x)   = wrap n (CTL.AX(CTL.FORWARD,x))
+let wrapAU      n (x,y) =
+  if !Flag_parsing_cocci.sgrep_mode
+  then wrap n (CTL.EU(CTL.FORWARD,x,y))
+  else wrap n (CTL.AU(CTL.FORWARD,x,y))
+let wrapAX      n (x)   =
+  if !Flag_parsing_cocci.sgrep_mode
+  then wrap n (CTL.EX(CTL.FORWARD,x))
+  else wrap n (CTL.AX(CTL.FORWARD,x))
+(* This stays being AX even for sgrep_mode, because it is used to identify
+the structure of the term, not matching the pattern. *)
 let wrapBackAX  n (x)   = wrap n (CTL.AX(CTL.BACKWARD,x))
 let wrapEX      n (x)   = wrap n (CTL.EX(CTL.FORWARD,x))
 let wrapBackEX  n (x)   = wrap n (CTL.EX(CTL.BACKWARD,x))

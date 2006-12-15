@@ -215,4 +215,4 @@ let top_level t =
     | t -> t)
 
 let single_statement l =
-  List.map top_level l
+  if !Flag_parsing_cocci.sgrep_mode then l else List.map top_level l

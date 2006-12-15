@@ -39,22 +39,22 @@ let start_line seen_char =
     end
 
 let add_current_line_type x =
-  match (x,!current_line_type) with
-    (D.MINUS,(D.CONTEXT,ln,lln))  ->
+  match (x,!current_line_type,!Flag_parsing_cocci.sgrep_mode) with
+    (D.MINUS,(D.CONTEXT,ln,lln),false)  ->
       current_line_type := (D.MINUS,ln,lln)
-  | (D.MINUS,(D.UNIQUE,ln,lln))   ->
+  | (D.MINUS,(D.UNIQUE,ln,lln),false)   ->
       current_line_type := (D.UNIQUEMINUS,ln,lln)
-  | (D.MINUS,(D.OPT,ln,lln))      ->
+  | (D.MINUS,(D.OPT,ln,lln),false)      ->
       current_line_type := (D.OPTMINUS,ln,lln)
-  | (D.MINUS,(D.MULTI,ln,lln))      ->
+  | (D.MINUS,(D.MULTI,ln,lln),false)      ->
       current_line_type := (D.MULTIMINUS,ln,lln)
-  | (D.PLUS,(D.CONTEXT,ln,lln))   ->
+  | (D.PLUS,(D.CONTEXT,ln,lln),false)   ->
       current_line_type := (D.PLUS,ln,lln)
-  | (D.UNIQUE,(D.CONTEXT,ln,lln)) ->
+  | (D.UNIQUE,(D.CONTEXT,ln,lln),_) ->
       current_line_type := (D.UNIQUE,ln,lln)
-  | (D.OPT,(D.CONTEXT,ln,lln))    ->
+  | (D.OPT,(D.CONTEXT,ln,lln),_)    ->
       current_line_type := (D.OPT,ln,lln)
-  | (D.MULTI,(D.CONTEXT,ln,lln))    ->
+  | (D.MULTI,(D.CONTEXT,ln,lln),_)    ->
       current_line_type := (D.MULTI,ln,lln)
   | _ -> raise (Lexical "invalid control character combination")
 
