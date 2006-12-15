@@ -200,7 +200,9 @@ let check_add_metavars_binding inherited = fun (k, valu) binding ->
          * Note that here we have Astc._expression, so it is a match
          * modulo isomorphism (there is no metavariable involved here,
          * just isomorphisms). => TODO call isomorphism_c_c instead of
-         * =*= *)
+         * =*=. Maybe would be easier to transform ast_c in ast_cocci
+         * and call the iso engine of julia.
+         *)
         | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
             Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
         | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 

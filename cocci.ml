@@ -260,9 +260,6 @@ let flow_to_ast a =
 (*****************************************************************************)
 
 (*  
-    +> Common.unzip 
-    +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
-    +> Common.uncurry Common.zip
 *)
 
 type celem_info = { 
@@ -295,7 +292,12 @@ let build_maybe_info e cfile =
 
 let (build_info_program: filename -> celem_with_info list) = fun cfile -> 
   let cprogram = cprogram_from_file cfile in
-  cprogram +> List.map (fun (e, info_item) -> 
+  let cprogram' = cprogram
+    +> Common.unzip 
+    +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
+    +> Common.uncurry Common.zip
+  in
+  cprogram' +> List.map (fun (e, info_item) -> 
     (e, info_item), build_maybe_info e cfile)
     
         
@@ -559,7 +561,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
      * modify the prototype as soon as possible, not wait until the end
      * of all the ctl rules 
      *)
-
     if !Flag.show_misc then pr2 ("hack headers");
     Common.profile_code "hack_headers" (fun () -> 
       !_hack_funheader +> List.iter (fun 
