@@ -880,6 +880,10 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
+    (*
+       This works extremely badly when the region is small and the end of the
+       region is very ambiguous, eg free(x) ... x
+       see free.c
     if !pNEW_INFO_OPT
     then
       let get_states l = setify(List.map (function (s,_,_) -> s) l) in
@@ -895,6 +899,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
       triples_complement ostates
 	(satEU dir m negpsi (triples_conj negphi negpsi) (Some ostates))
     else
+       *)
       let f y =
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)

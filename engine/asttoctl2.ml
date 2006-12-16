@@ -71,7 +71,6 @@ let wrapEX      n (x)   = wrap n (CTL.EX(CTL.FORWARD,x))
 let wrapBackEX  n (x)   = wrap n (CTL.EX(CTL.BACKWARD,x))
 let wrapAG      n (x)   = wrap n (CTL.AG(CTL.FORWARD,x))
 let wrapEG      n (x)   = wrap n (CTL.EG(CTL.FORWARD,x))
-let wrapAF      n (x)   = wrap n (CTL.AF(CTL.FORWARD,x))
 let wrapEF      n (x)   = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot     n (x)   = wrap n (CTL.Not(x))
 let wrapPred    n (x)   = wrap n (CTL.Pred(x))
@@ -714,7 +713,9 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     | Tail -> exit in
   wrapDots n
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,
-     wrapOr n (ender,aftret n label))
+     if !Flag_parsing_cocci.sgrep_mode
+     then ender (* for EX, have to find what we want *)
+     else wrapOr n (ender,aftret n label))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1050,15 +1051,23 @@ and drop_dots x (dir,before_after,nest,notwhens,whens,dotcode,rest) =
   let whens = get_option uncheck whens in
   let all =
     (lst dotcode) @ (lst nest) @ (lst notwhens) @ (lst whens) @ before_after in
+  let af_builder (dir,data) =
+    if !Flag_parsing_cocci.sgrep_mode
+    then CTL.EF(dir,data)
+    else CTL.AF(dir,data) in
+  let au_builder (dir,data1,data2) =
+    if !Flag_parsing_cocci.sgrep_mode
+    then CTL.EU(dir,data1,data2)
+    else CTL.AU(dir,data1,data2) in
   match all with
-    [] -> CTL.AF(dir,rest)
+    [] -> af_builder(dir,rest)
   | l ->
-      CTL.AU(dir,
-	     foldr1
-	       (function rest ->
-		 function cur -> CTL.rewrap x (CTL.And(cur,rest)))
-	       l,
-	     rest)
+      au_builder
+	(dir,
+	 foldr1
+	   (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
+	   l,
+	 rest)
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
