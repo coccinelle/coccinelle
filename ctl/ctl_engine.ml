@@ -1719,7 +1719,6 @@ let print_bench _ =
 (* preprocssing: ignore irrelevant functions *)
 
 let preprocess label (req,opt) =
-  Printf.printf "req %d\n" (List.length req);
   let get_any x =
     try not([] = Hashtbl.find memo_label x)
     with
