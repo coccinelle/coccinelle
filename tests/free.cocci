@@ -1,6 +1,7 @@
 @@
 identifier x;
 expression E;
+type T;
 @@
 
 (
@@ -8,7 +9,7 @@ free(x);
 |
 kfree(x);
 )
-... WHEN != x = E;
+... WHEN != T x = E;
 x
 
 @@
