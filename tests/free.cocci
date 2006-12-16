@@ -9,15 +9,5 @@ free(x);
 |
 kfree(x);
 )
-... WHEN != T x = E;
-x
-
-@@
-identifier x;
-expression E;
-@@
-
-
-xfree(x);
-... WHEN != x = E;
+... WHEN != \(T x = E; \| x = E;\)
 x
