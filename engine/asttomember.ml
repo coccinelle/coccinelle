@@ -131,7 +131,17 @@ let asttomember l used_after =
   List.map
     (function
 	Req x ->
+	  List.iter
+	    (function x ->
+	      Printf.printf "required %s\n"
+		(Pretty_print_cocci.rule_elem_to_string x))
+	    x;
 	  (List.map (function x -> (Lib_engine.Match(x),CTL.Control)) x,[])
       |	Opt x ->
+	  List.iter
+	    (function x ->
+	      Printf.printf "optional %s\n"
+		(Pretty_print_cocci.rule_elem_to_string x))
+	    x;
 	  ([],List.map (function x -> (Lib_engine.Match(x),CTL.Control)) x))
   (List.map2 top_level used_after l)

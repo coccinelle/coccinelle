@@ -15,5 +15,5 @@ dev_kfree_skb(y);
 |
 dev_kfree_skb_any(y);
 )
-... WHEN != y = E;
+... WHEN != y = E
 y
