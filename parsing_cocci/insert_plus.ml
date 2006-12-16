@@ -642,7 +642,6 @@ let insert_markers e =
   let end_marker = Ast.Token "/*>*/" in
 
   let add_start_marker e =
-    Printf.printf "adding a start marker\n";
     match Ast0.get_mcodekind e with
       Ast0.CONTEXT(info) ->
 	let (ba,before_info,after_info) = !info in
@@ -654,7 +653,6 @@ let insert_markers e =
     | _ -> failwith "non-context is not possible" in
   
   let add_end_marker e =
-    Printf.printf "adding an end marker\n";
     match Ast0.get_mcodekind e with
       Ast0.CONTEXT(info) ->
 	let (ba,before_info,after_info) = !info in
