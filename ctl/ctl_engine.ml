@@ -1719,6 +1719,7 @@ let print_bench _ =
 (* preprocssing: ignore irrelevant functions *)
 
 let preprocess label (req,opt) =
+  Printf.printf "req %d\n" (List.length req);
   let get_any x =
     try not([] = Hashtbl.find memo_label x)
     with
@@ -1754,7 +1755,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
 (* print_state "final result" res;*)
     res
-  else []
+  else (Printf.printf "missing something required\n"; [])
 ;;
 
 (* ********************************************************************** *)
