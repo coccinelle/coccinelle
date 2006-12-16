@@ -1,17 +1,19 @@
 @@
-identifier x;
+expression y;
 expression E;
 type T;
 @@
 
 (
-free(x);
+free(y);
 |
-kfree(x);
+kfree(y);
 |
-kfree_skb(x);
+kfree_skb(y);
 |
-dev_kfree_skb_any(x);
+dev_kfree_skb(y);
+|
+dev_kfree_skb_any(y);
 )
-... WHEN != \(T x = E; \| x = E;\)
-x
+... WHEN != y = E;
+y
