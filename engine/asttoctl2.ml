@@ -64,6 +64,7 @@ let wrapAX      n (x)   =
   if !Flag_parsing_cocci.sgrep_mode
   then wrap n (CTL.EX(CTL.FORWARD,x))
   else wrap n (CTL.AX(CTL.FORWARD,x))
+let wrapAX_absolute      n (x)   = wrap n (CTL.AX(CTL.FORWARD,x))
 (* This stays being AX even for sgrep_mode, because it is used to identify
 the structure of the term, not matching the pattern. *)
 let wrapBackAX  n (x)   = wrap n (CTL.AX(CTL.BACKWARD,x))
@@ -505,7 +506,7 @@ let end_control_structure fvs header body after_pred
   (* the code *)
   quantify n fvs
     (wrapAnd n
-       (header, and_opt n (wrapAX n body) 
+       (header, and_opt n (wrapAX_absolute n body) 
 	  (match (after,aft_needed) with
 	    (After _,_) (* pattern doesn't end here *)
 	  | (_,true) (* + code added after *) -> after_checks
