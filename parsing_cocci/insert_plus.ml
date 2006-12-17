@@ -650,7 +650,7 @@ let insert_markers e =
 	    Ast.NOTHING -> Ast.BEFORE([[start_marker]])
 	  | _ -> failwith "non-nothing is not possible" in
 	info := (new_ba,before_info,after_info)
-    | _ -> failwith "non-context is not possible" in
+    | _ -> failwith "start: non-context is not possible" in
   
   let add_end_marker e =
     match Ast0.get_mcodekind e with
@@ -662,7 +662,7 @@ let insert_markers e =
 	  | Ast.BEFORE(bef) -> Ast.BEFOREAFTER(bef,[[end_marker]])
 	  | _ -> failwith "non-nothing is not possible" in
 	info := (new_ba,before_info,after_info)
-    | _ -> failwith "non-context is not possible" in
+    | _ -> failwith "end: non-context is not possible" in
 
   let rec get_start_statements e =
     match Ast0.unwrap e with
@@ -675,9 +675,11 @@ let insert_markers e =
 	       | Ast0.STARS(x::_) -> get_start_statements x
 	       | _ -> [])
 	     s)
+    | Ast0.OptStm(s) | Ast0.UniqueStm(s) | Ast0.MultiStm(s) ->
+	get_start_statements s
     | _ -> [e] in
   
-  let get_end_statements e =
+  let rec get_end_statements e =
     let last l = List.hd(List.rev l) in
     match Ast0.unwrap e with
       Ast0.Disj(_,s,_,_) ->
@@ -686,9 +688,11 @@ let insert_markers e =
 	     (function sd ->
 	       match Ast0.unwrap sd with
 		 Ast0.DOTS((_::_) as l) | Ast0.CIRCLES((_::_) as l)
-	       | Ast0.STARS((_::_) as l) -> get_start_statements (last l)
+	       | Ast0.STARS((_::_) as l) -> get_end_statements (last l)
 	       | _ -> [])
 	     s)
+    | Ast0.OptStm(s) | Ast0.UniqueStm(s) | Ast0.MultiStm(s) ->
+	get_end_statements s
     | _ -> [e] in
   
   let statement_dots r k e =
