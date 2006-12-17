@@ -1,6 +1,6 @@
 @@
 expression x;
-type T1, T2;
+type T1, T2, T3;
 expression e1, e2;
 expression f;
 identifier fld;
@@ -21,6 +21,8 @@ identifier fld;
     x->fld // want this to apply even as an LValue, because no iso for *x
 |
     f(...,x,...)
+|
+    f(...,(T3)x,...)
 )
     ...
   }
@@ -28,7 +30,7 @@ identifier fld;
 // for some "good" reason, isomorphisms don't apply to whencode
 @@
 expression x;
-type T1, T2;
+type T1, T2, T3;
 expression e;
 expression f;
 identifier fld;
@@ -47,4 +49,6 @@ identifier fld;
   x->fld
 |
   f(...,x,...)
+|
+  f(...,(T3)x,...)
 )
