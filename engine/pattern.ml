@@ -933,7 +933,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
-      (* todo: isvaargs ? retb ? *)
+      (* todo: isvaargs ? *)
 
       match_ident LocalFunction ida idb >&&>
 

@@ -69,20 +69,25 @@ let transform_option f t1 t2 =
 (* Token decoration *)
 (*****************************************************************************)
 
-(* todo: check not already tagged ? *)
-let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
- fun xs ys binding ->
-  assert (List.length xs = List.length ys);
-  Common.zip xs ys +> List.map (fun ((s1,_,x),   (s2, (oldmcode, oldenv))) -> 
-    (* assert s1 = s2 ? no more cos now have some "fake" string,
-     * and also because now s1:'a, no more s1:string
-     *)
-    (s2, (x, binding)))
-
+(* todo: check not already tagged ? assert s1 = s2 ? no more cos now
+ * have some "fake" string, and also because now s1:'a, no more
+ * s1:string *)
 let tag_one_symbol = fun ia ib  binding -> 
   let (s1,_,x) = ia in
   let (s2, (oldmcode, oldenv)) = ib in
-  (s2, (x, binding))
+
+  if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
+     x <>        Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+  then failwith (Common.sprintf "already tagged token in C:  %s" s2.str)
+  else 
+    (s2, (x, binding))
+
+
+let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
+  fun xs ys binding ->
+    assert (List.length xs = List.length ys);
+    Common.zip xs ys +> List.map (fun (a, b) -> tag_one_symbol a b binding)
+
 
 
 (*****************************************************************************)

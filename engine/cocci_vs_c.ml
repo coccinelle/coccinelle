@@ -33,6 +33,13 @@ let mcode_simple_minus = function
   | _ -> false
 
 
+let seqstyle eas =      
+   match A.unwrap eas with 
+   | A.DOTS _ -> Ordered 
+   | A.CIRCLES _ -> Unordered 
+   | A.STARS _ -> failwith "not handling stars"
+   
+
 
 (* Normally Ast_cocci should reuse some types of Ast_c, so those
  * functions should not exist.
@@ -176,11 +183,10 @@ let equal_storage a b =
  * src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP)
  *)
 
-type tin = unit
+type tin = Lib_engine.metavars_binding
 type 'b tout = 'b option
 
 type ('a, 'b) matcher = 'a -> 'b  -> tin -> 'b tout
-
 
 let ((>>=): (tin -> 'c tout)  -> ('c -> (tin -> 'b tout)) -> (tin -> 'b tout))
  = fun  m f -> fun tin -> 
@@ -203,6 +209,7 @@ let (>||>) m1 m2 = fun tin ->
   | Some x -> Some x
 
 
+
 let (option: 
      ('a, 'b) matcher -> 'a option -> 'b option -> tin -> 'b option tout) = 
  fun f t1 t2 ->
@@ -220,15 +227,36 @@ let (option:
 (* Environment *) 
 (*****************************************************************************)
 
-let envf inherited (s, value) = raise Todo
+let envf _inherited (s, value) = fun env -> 
+  try Some (List.assoc s env)
+  with Not_found -> 
+    pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
+    None
 
 (*****************************************************************************)
 (* Tokens *) 
 (*****************************************************************************)
 
-let tokenf xs ys = raise Todo
+(* todo: check not already tagged ? *)
+let tokenf_one ia ib = fun binding -> 
+  let (s1,_,x) = ia in
+  let (s2, (oldmcode, oldenv)) = ib in
+  Some (s2, (x, binding))
 
-let tokenf_one xs ys = raise Todo
+
+
+let tokenf xs ys = 
+  assert (List.length xs = List.length ys);
+  Common.zip xs ys +> List.fold_left (fun acc (ia, ib) -> 
+    (* assert s1 = s2 ? no more cos now have some "fake" string,
+     * and also because now s1:'a, no more s1:string
+     *)
+    acc >>= (fun xs -> 
+    tokenf_one ia ib >>= (fun i' -> 
+        return (i'::xs)
+      ))) (return [])
+
+    
 
 let tokenf_wrap xs ys e = 
   tokenf xs ys >>= (fun ii' ->  return (e, ii'))
@@ -237,11 +265,16 @@ let tokenf_wrap xs ys e =
 (* Misc *)
 (*****************************************************************************)
 
-let distrf distrop mck x   = raise Todo
+module D = Distribute_mcodekind
 
-let distrf_e x = raise Todo
+let distrf distrop mck x   = fun binding -> 
+  Some (D.distribute_mck mck distrop x binding)
 
-let distrf_node x = raise Todo
+let distrf_e = D.distribute_mck_e
+
+let distrf_node = D.distribute_mck_node
+
+let distrf_type = D.distribute_mck_type
 
 (*****************************************************************************)
 (* "Cocci vs C" *) 
@@ -323,15 +356,8 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
       * type in parameter, and morover ast_cocci allow f(...) and those
       * ... could match type. *)
 
-      let seqstyle = 
-        (match A.unwrap eas with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not handling stars"
-        )  
-      in
       expression ea eb >>= (fun e' -> 
-      arguments seqstyle (A.undots eas) ebs >>= (fun arg' -> 
+      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun arg' -> 
           (B.FunCall (e', arg'),typ) +> tokenf_wrap [i2;i3] ii
         ))
 
@@ -565,6 +591,7 @@ and (declaration: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
  fun decla declb -> 
    raise Todo
 
+(* facto with code for FunHeader ? *)
 and storage stoa stob =
   raise Todo
 
@@ -720,66 +747,35 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
-      raise Todo
-(*
-      (match ii with
-      | iidb::ioparenb::icparenb::iistob -> 
+     (match ii with
+     | iidb::ioparenb::icparenb::iistob -> 
+        if isvaargs 
+        then failwith "not handling variable length arguments func";
+        let iidotsb' = iidotsb in (* todo *)
 
-      let stob' = stob in
-      let (iistob') = 
-        match stoa, fst stob, iistob with
-        | None, _, _ -> 
-            if allminus 
-            then 
-              let minusizer = iistob +> List.map (fun _ -> 
-                "fake", {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
-                ) in
-              tag_symbols minusizer iistob binding
-            else iistob
-        | Some x, B.Sto B.Static, stostatic::stoinline -> 
-           assert (term x = A.Static);
-            tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
-           
-        | _ -> raise NoMatch
-
-      in
-      let retb' = 
-        match tya with
+        ident LocalFunction ida (idb, [iidb])        >>= (fun (idb', iidb') -> 
+        tokenf [oparen;cparen] [ioparenb;icparenb]   >>= (fun iiparensb' -> 
+        (* "iso-by-absence" for storage, and return type. *)
+        (match tya with
         | None -> 
             if allminus 
-            then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
-                     retb binding       
-            else retb
-        | Some tya -> transform_ft_ft tya retb binding
-      in
-
-      let (idb', iidb') = 
-        transform_ident LocalFunction ida (idb, [iidb])   binding 
-      in
-      
-      let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
-      in
-
-      let seqstyle = 
-        (match A.unwrap paramsa with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
-        ) 
-      in
-      let paramsb' = 
-        transform_params seqstyle (A.undots paramsa) paramsb    binding 
-      in
-
-      if isvaargs then failwith "not handling variable length arguments func";
-      let iidotsb' = iidotsb in (* todo *)
-
-      F.FunHeader 
-        ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
-         (iidb'++iiparensb'++iistob'))
-      | _ -> raise Impossible
-      )
-*)
+            then distrf distrf_type (Ast_cocci.MINUS []) retb       
+            else return retb
+        | Some tya -> fullType tya retb
+        ) >>= (fun retb' -> 
+        parameters (seqstyle paramsa) (A.undots paramsa) paramsb 
+          >>= (fun paramsb' -> 
+        (let stob' = stob in
+        let (iistob') = iistob in
+        return 
+          (F.FunHeader 
+              ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
+              (iidb'++iiparensb'++iistob'))
+          )
+        )
+          ))))
+     | _ -> raise Impossible
+     )
       
 
   | A.Decl decla, F.Decl declb -> 
@@ -876,4 +872,44 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | _, _ -> fail
   )
+
+
+
+(*****************************************************************************)
+(* Aux *)
+(*****************************************************************************)
+
+
+
+let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
+ fun xs cflow -> 
+  (* find the node, transform, update the node,  and iter for all elements *)
+
+   xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
+      (* subtil: not cflow#nodes but acc#nodes *)
+      let node  = acc#nodes#assoc nodei in 
+
+      if !Flag_engine.show_misc then pr2 "transform one node";
+      let node' = rule_elem_node rule_elem node binding in
+      match node' with
+      | None -> raise Impossible
+      | Some node' -> 
+
+          (* assert that have done something. But with metaruleElem sometimes 
+             dont modify fake nodes. So special case before on Fake nodes. *)
+          (match F.unwrap node with
+          | F.Enter | F.Exit | F.ErrorExit
+          | F.EndStatement _ | F.CaseNode _        
+          | F.Fake
+          | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
+              -> ()
+          | _ -> () (* assert (not (node =*= node')); *)
+          );
+          
+          acc#replace_node (nodei, node')
+     ) cflow
+
+let transform a b = 
+  Common.profile_code "Cocci_vs_c.transform(proto)?" 
+    (fun () -> transform2 a b)
 
