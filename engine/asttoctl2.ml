@@ -824,7 +824,24 @@ and statement stmt after quantified label guard =
 			 wrapOr(case1,case2))
 		  | _ -> failwith "not possible")
 	      | Ast.NoDots -> term in
-	  make_seq_after (quantify fvs term) after)
+	  let normal_res = make_seq_after (quantify fvs term) after in
+	  (* the following allows a ... return; to fall through to exit.
+	     it is very limited, in that return E is not allowed, there
+	     can be no modif on the return, and what comes before the return,
+	     eg in an if branch, must still be in the normal position.
+	     furthermore, there is no guarantee that what comes before the
+	     ... does not appear in the path between the end of the if branch
+	     and the exit.  it would be useful to have a better
+	     implementation... *)
+	  match (Ast.unwrap ast,contains_modif ast) with
+	    (Ast.Return(_,_),false) ->
+	      if guard
+	      then wrap n CTL.False (* return is never in the way *)
+	      else
+		wrapOr(endpred n None,
+		       wrapOr(aftpred n None,
+			      wrapOr(exitpred n None, normal_res)))
+	  | _ -> normal_res)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
 	match
