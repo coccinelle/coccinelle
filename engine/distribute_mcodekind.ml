@@ -93,7 +93,7 @@ let (distribute_mck:
               expr
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
             distributef
-              (no_minusize, add_left (xxs, binding) , add_right (xxs, binding))
+              (no_minusize, add_left (xxs, binding) , add_right (yys, binding))
               expr
         )
   | Ast_cocci.PLUS -> raise Impossible
