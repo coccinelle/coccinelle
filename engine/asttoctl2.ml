@@ -835,12 +835,9 @@ and statement stmt after quantified label guard =
 	     implementation... *)
 	  match (Ast.unwrap ast,contains_modif ast) with
 	    (Ast.Return(_,_),false) ->
-	      if guard
-	      then wrap n CTL.False (* return is never in the way *)
-	      else
-		wrapOr(endpred n None,
-		       wrapOr(aftpred n None,
-			      wrapOr(exitpred n None, normal_res)))
+	      wrapOr(endpred n None,
+		     wrapOr(aftpred n None,
+			    wrapOr(exitpred n None, normal_res)))
 	  | _ -> normal_res)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
