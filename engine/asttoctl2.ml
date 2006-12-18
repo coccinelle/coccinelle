@@ -707,11 +707,15 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     | Ast.WhenNot whencodes -> (Some (statement_list whencodes),None)
     | Ast.WhenAlways s -> (None,Some(statement s)) in
   let exit = endpred n label in
+  let errorexit = exitpred n label in
   let ender =
     match after with
       After f -> f
     | Guard f -> CTL.rewrap f (CTL.Uncheck f)
-    | Tail -> exit in
+    | Tail ->
+	if !Flag_parsing_cocci.sgrep_mode
+	then wrapOr n (exit,errorexit)
+	else exit in
   wrapDots n
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,
      if !Flag_parsing_cocci.sgrep_mode
