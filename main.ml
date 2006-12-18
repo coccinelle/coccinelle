@@ -270,11 +270,8 @@ let main () =
         | "parse_cocci", [file] -> 
             if not (file =~ ".*\\.cocci") 
             then pr2 "warning: seems not a .cocci file";
-            (try 
-              let (xs,_,_) = Cocci.sp_from_file file None in
-              xs +> List.iter Pretty_print_cocci.unparse
-            with x -> pr2 "BAD" 
-            )
+            let (xs,_,_) = Cocci.sp_from_file file None in
+            xs +> List.iter Pretty_print_cocci.unparse
         | "control_flow", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";

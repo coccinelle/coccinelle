@@ -1,19 +1,13 @@
 open Common open Commonop
 
-open Ograph_extended
-
 module A = Ast_cocci
 module B = Ast_c
 module F = Control_flow_c
+
 module D = Distribute_mcodekind
 
 (*****************************************************************************)
-(* todo: Must do some try, for instance when f(...,X,Y,...) have to
- * test the transfo for all the combinaitions (and if multiple transfo
- * possible ? pb ? => the type is to return a expression option ? use
- * some combinators to help ?
- * 
- * For some nodes I dont have all the info, for instance for } I need
+(* For some nodes I dont have all the info, for instance for } I need
  * to modify the node of the start, it is where the info is. Same for
  * Else. *)
 (*****************************************************************************)
@@ -25,10 +19,21 @@ let mcodekind (_,i,mc) = mc
 let wrap_mcode (_,i,mc) = ("fake", i, mc)
 
 (*****************************************************************************)
+(* Binding combinators *)
+(*****************************************************************************)
+
+(* todo: Must do some try, for instance when f(...,X,Y,...) have to
+ * test the transfo for all the combinaitions (and if multiple transfo
+ * possible ? pb ? => the type is to return a expression option ? use
+ * some combinators to help ?
+ *)
+
 type ('a, 'b) transformer = 'a -> 'b -> Lib_engine.metavars_binding -> 'b
 
 exception NoMatch 
 
+(*****************************************************************************)
+(* Metavariable and environments handling *)
 (*****************************************************************************)
 let find_env x env = 
   try List.assoc x env 
@@ -36,6 +41,9 @@ let find_env x env =
     pr2 ("Don't find value for metavariable " ^ x ^ " in the environment");
     raise NoMatch
 
+(*****************************************************************************)
+(* Helpers *)
+(*****************************************************************************)
 
 let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> false
@@ -57,8 +65,11 @@ let transform_option f t1 t2 =
 
 
 
+(*****************************************************************************)
+(* Token decoration *)
+(*****************************************************************************)
 
-(* ------------------------------------------------------------------------- *)
+(* todo: check not already tagged ? *)
 let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
  fun xs ys binding ->
   assert (List.length xs = List.length ys);
