@@ -183,35 +183,66 @@ let equal_storage a b =
  * src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP)
  *)
 
-type tin = Lib_engine.metavars_binding
-type 'b tout = 'b option
+module type PARAM = 
+  sig 
+    type tin
+    type 'a tout
+    val (>>=): 
+            (tin -> 'c tout)  -> ('c -> (tin -> 'b tout)) -> (tin -> 'b tout)
+    val return : 'b -> tin -> 'b tout
+    val fail : tin -> 'b tout
 
-type ('a, 'b) matcher = 'a -> 'b  -> tin -> 'b tout
+    val (>||>) : 
+      (tin -> 'a tout) ->
+      (tin -> 'a tout) -> 
+      (tin -> 'a tout)
 
-let ((>>=): (tin -> 'c tout)  -> ('c -> (tin -> 'b tout)) -> (tin -> 'b tout))
- = fun  m f -> fun tin -> 
-  match m tin with
-  | None -> None
-  | Some x -> f x tin
+    val tokenf_one : 'a A.mcode -> Ast_c.info -> tin -> Ast_c.info tout
 
-let (return: 'b -> tin -> 'b tout) = fun x -> fun tin -> 
-  Some x
+    val envf : 
+      A.inherited -> string * Ast_c.metavar_binding_kind ->
+      tin -> Ast_c.metavar_binding_kind tout
 
-let (fail: tin -> 'b tout) = fun tin -> 
-  None
+    type 'b tdistr
+    val distrf : 
+      'a tdistr ->  A.mcodekind -> 'a -> tin -> 'a tout
+    val distrf_e : Ast_c.expression tdistr
+    val distrf_type : Ast_c.fullType tdistr
+    val distrf_node : Control_flow_c.node2 tdistr
+  end
+
+
+
+
+module COCCI_VS_C =
+  functor (X : PARAM) -> 
+struct
+
+type ('a, 'b) matcher = 'a -> 'b  -> X.tin -> 'b X.tout
 
 (* should be raise Impossible when transformation.ml *)
+let (>>=) = X.(>>=)
+let return = X.return
+let fail = X.fail
+
+let (>||>) = X.(>||>)
+
+let tokenf_one = X.tokenf_one
+let envf = X.envf
+
+let distrf = X.distrf
+let distrf_e = X.distrf_e
+let distrf_node = X.distrf_node
+let distrf_type = X.distrf_type
+
+
+
+
+
 let fail2 = fail
 
-let (>||>) m1 m2 = fun tin -> 
-  match m1 tin with
-  | None -> m2 tin
-  | Some x -> Some x
-
-
-
 let (option: 
-     ('a, 'b) matcher -> 'a option -> 'b option -> tin -> 'b option tout) = 
+     ('a, 'b) matcher -> 'a option -> 'b option -> X.tin -> 'b option X.tout) =
  fun f t1 t2 ->
   match (t1,t2) with
   | (Some t1, Some t2) -> 
@@ -223,28 +254,11 @@ let (option:
 
 
 
-(*****************************************************************************)
-(* Environment *) 
-(*****************************************************************************)
 
-let envf _inherited (s, value) = fun env -> 
-  try Some (List.assoc s env)
-  with Not_found -> 
-    pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
-    None
 
 (*****************************************************************************)
 (* Tokens *) 
 (*****************************************************************************)
-
-(* todo: check not already tagged ? *)
-let tokenf_one ia ib = fun binding -> 
-  let (s1,_,x) = ia in
-  let (s2, (oldmcode, oldenv)) = ib in
-  Some (s2, (x, binding))
-
-
-
 let tokenf xs ys = 
   assert (List.length xs = List.length ys);
   Common.zip xs ys +> List.fold_left (fun acc (ia, ib) -> 
@@ -256,25 +270,10 @@ let tokenf xs ys =
         return (i'::xs)
       ))) (return [])
 
-    
-
+   
 let tokenf_wrap xs ys e = 
   tokenf xs ys >>= (fun ii' ->  return (e, ii'))
 
-(*****************************************************************************)
-(* Misc *)
-(*****************************************************************************)
-
-module D = Distribute_mcodekind
-
-let distrf distrop mck x   = fun binding -> 
-  Some (D.distribute_mck mck distrop x binding)
-
-let distrf_e = D.distribute_mck_e
-
-let distrf_node = D.distribute_mck_node
-
-let distrf_type = D.distribute_mck_type
 
 (*****************************************************************************)
 (* "Cocci vs C" *) 
@@ -872,44 +871,6 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | _, _ -> fail
   )
+end
 
-
-
-(*****************************************************************************)
-(* Aux *)
-(*****************************************************************************)
-
-
-
-let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
- fun xs cflow -> 
-  (* find the node, transform, update the node,  and iter for all elements *)
-
-   xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
-      (* subtil: not cflow#nodes but acc#nodes *)
-      let node  = acc#nodes#assoc nodei in 
-
-      if !Flag_engine.show_misc then pr2 "transform one node";
-      let node' = rule_elem_node rule_elem node binding in
-      match node' with
-      | None -> raise Impossible
-      | Some node' -> 
-
-          (* assert that have done something. But with metaruleElem sometimes 
-             dont modify fake nodes. So special case before on Fake nodes. *)
-          (match F.unwrap node with
-          | F.Enter | F.Exit | F.ErrorExit
-          | F.EndStatement _ | F.CaseNode _        
-          | F.Fake
-          | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
-              -> ()
-          | _ -> () (* assert (not (node =*= node')); *)
-          );
-          
-          acc#replace_node (nodei, node')
-     ) cflow
-
-let transform a b = 
-  Common.profile_code "Cocci_vs_c.transform(proto)?" 
-    (fun () -> transform2 a b)
 

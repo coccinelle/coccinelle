@@ -5,7 +5,7 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 	  check_exhaustive_pattern.ml \
 	  types.ml isomorphisms_c_c.ml \
           pattern.ml distribute_mcodekind.ml transformation.ml \
-          cocci_vs_c.ml \
+          cocci_vs_c.ml pattern2.ml transformation2.ml  \
 	  unparse_cocci.ml unparse_c.ml \
 	  asttomember.ml asttoctl2.ml ctltotex.ml \
 	  ctlcocci_integration.ml
