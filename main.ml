@@ -196,6 +196,7 @@ let main () =
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
 
       "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
+      "-no_type_error_msg", Arg.Clear Flag_parsing_c.verbose_type, " ";
 
       "-debug_cpp",          Arg.Set  Flag_parsing_c.debug_cpp, " ";
       "-debug_lexer",        Arg.Set  Flag_parsing_c.debug_lexer , " ";

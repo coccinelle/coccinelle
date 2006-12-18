@@ -1,4 +1,5 @@
 open Common open Commonop
+
 (* 
  can either:
   - do a kind of inferer
@@ -17,6 +18,11 @@ type context = fullType option
 let boolType = Ast_c.nullQualif, Ast_c.defaultInt
 let mktyp x = Ast_c.nullQualif, x
 *)
+
+let pr2 s = 
+  if !Flag_parsing_c.verbose_type
+  then Common.pr2 s
+
 
 open Ast_c
 

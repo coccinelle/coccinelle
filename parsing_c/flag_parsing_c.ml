@@ -1,4 +1,5 @@
 let verbose_parsing = ref true
+let verbose_type = ref true
 
 let debug_lexer = ref false
 let debug_etdt = ref false
