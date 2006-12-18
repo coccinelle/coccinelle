@@ -639,7 +639,7 @@ let insert_markers e =
   let donothing r k e = k e in
 
   let start_marker = Ast.Token "/*<*/" in
-  let end_marker = Ast.Token "/*>*/" in
+  let end_marker ln = Ast.Token (Printf.sprintf "/*>%d*/" ln) in
 
   let add_start_marker e =
     match Ast0.get_mcodekind e with
@@ -653,6 +653,7 @@ let insert_markers e =
     | _ -> failwith "start: non-context is not possible" in
   
   let add_end_marker e =
+    let end_marker = end_marker ((Ast0.get_info e).Ast0.line_end) in
     match Ast0.get_mcodekind e with
       Ast0.CONTEXT(info) ->
 	let (ba,before_info,after_info) = !info in

@@ -706,6 +706,15 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
       Ast.NoWhen -> (None,None)
     | Ast.WhenNot whencodes -> (Some (statement_list whencodes),None)
     | Ast.WhenAlways s -> (None,Some(statement s)) in
+  let notwhencodes =
+    (* add in after, because it's not part of the program *)
+    if !Flag_parsing_cocci.sgrep_mode
+    then
+      let after = aftpred n label in
+      match notwhencodes with
+	None -> Some after
+      |	Some x -> Some (wrapOr n (after,x))(*can use v because disjoint w/ x*)
+    else notwhencodes in
   let exit = endpred n label in
   let errorexit = exitpred n label in
   let ender =
