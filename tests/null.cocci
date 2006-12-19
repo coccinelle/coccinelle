@@ -20,6 +20,8 @@ identifier fld;
 |
     x->fld // want this to apply even as an LValue, because no iso for *x
 |
+    (x)->fld // want this to apply even as an LValue, because no iso for *x
+|
     f(...,x,...)
 |
     f(...,(T3)x,...)
@@ -47,6 +49,8 @@ identifier fld;
   *((T2)x)
 |
   x->fld
+|
+  (x)->fld
 |
   f(...,x,...)
 |
