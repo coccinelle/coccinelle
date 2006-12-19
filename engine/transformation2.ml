@@ -1,15 +1,23 @@
 open Common open Commonop
 
-module A = Ast_cocci
-module B = Ast_c
 module F = Control_flow_c
-
 
 module XTRANS = struct
 
   (***************************************************************************)
   (* Combinators *) 
   (***************************************************************************)
+  (*
+   * version0: 
+   *  type ('a, 'b) transformer = 
+   *    'a -> 'b -> Lib_engine.metavars_binding -> 'b
+   *  exception NoMatch 
+   * 
+   * version1:
+   *   type ('a, 'b) transformer = 
+   *    'a -> 'b -> Lib_engine.metavars_binding -> 'b option
+   * use an exception monad 
+   *)
 
   type tin = Lib_engine.metavars_binding
   type 'b tout = 'b option
@@ -105,6 +113,6 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
      ) cflow
 
 let transform a b = 
-  Common.profile_code "Cocci_vs_c.transform(proto)?" 
+  Common.profile_code "Transformation2.transform(proto)?" 
     (fun () -> transform2 a b)
 

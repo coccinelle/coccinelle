@@ -401,7 +401,11 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
           then 
             (* I do the transformation on flow, not fixed_flow, 
                because the flow_to_ast need my extra information. *)
-            let flow' = Transformation.transform trans_info info.flow in
+            let flow' = 
+              if !Flag_engine.use_cocci_vs_c
+              then Transformation2.transform trans_info info.flow 
+              else Transformation.transform trans_info info.flow 
+            in
             let def' = flow_to_ast flow' in
 
             (Ast_c.Definition def', true), 

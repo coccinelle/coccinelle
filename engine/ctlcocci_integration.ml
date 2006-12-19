@@ -69,7 +69,11 @@ let (labels_for_ctl:
           
 
       | Lib_engine.Match (re), _unwrapnode -> 
-          let substs = Pattern.match_re_node re node binding in
+          let substs = 
+            if !Flag_engine.use_cocci_vs_c
+            then Pattern2.match_re_node re node binding 
+            else Pattern.match_re_node re node binding 
+          in
           substs +> List.map (fun subst -> 
             (nodei, 
              subst +> List.map (fun (s, meta) -> 

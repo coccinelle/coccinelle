@@ -208,6 +208,7 @@ let main () =
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
+      "-cocci_vs_c",          Arg.Set Flag_engine.use_cocci_vs_c,    " ";
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 

@@ -4,3 +4,5 @@ let debug_engine = ref false
 let useEU = ref true
 
 let show_misc = ref true
+
+let use_cocci_vs_c = ref false

@@ -135,47 +135,6 @@ let equal_storage a b =
 (* combinators *)
 (*****************************************************************************)
 (*
- * version0: 
- *   type ('a, 'b) matcher = 'a -> 'b -> bool
- *
- * version1: same but with a global variable holding the current binding
- *  BUT bug
- *   - can have multiple possibilities
- *   - globals sux
- *   - sometimes have to undo, cos if start match, then it binds, and if later
- *     it does not match, then must undo the first binds.
- *     ex: when match parameters, can  try to match, but then we found far 
- *     later that the last argument of a function does not match
- *      => have to undo the binding !!!
- *      (can handle that too with a global, by saving the global, ... but sux)
- *   => better not use global
- * 
- * version2: 
- *    type ('a, 'b) matcher = binding -> 'a -> 'b -> binding list
- *
- *  Empty list mean failure (let matchfailure = []).
- *  To be able to have pretty code, have to use partial application powa, and 
- *  so the type is in fact
- *
- * version3:
- *    type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
- *
- *  Then by defining the correct combinators, can have quite pretty code (that 
- *  looks like the clean code of version0).
- * 
- * opti: return a lazy list of possible matchs ?
- *
- * 
- * 
- * 
- * version0: 
- *  type ('a, 'b) transformer = 
- *    'a -> 'b -> Lib_engine.metavars_binding -> 'b
- *  exception NoMatch 
- * 
- * version1:
- *   type ('a, 'b) transformer = 
- *    'a -> 'b -> Lib_engine.metavars_binding -> 'b option
  * 
  *)
 
