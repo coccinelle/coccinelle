@@ -189,6 +189,55 @@ let fixFunc = function
   | _ -> raise (Semantic ("you are trying to do a function definition but you dont give any parameter", fake_parse_info))
 
 
+
+let casse_initialisation xs = 
+  if !Flag_parsing_c.casse_initialisation 
+  then 
+    xs +> List.map (fun x -> 
+      match x with
+      | Decl 
+          (DeclList 
+              ((((var, returnType, storage),[])::xs), 
+              iivirg::iisto)), ii_empty        -> 
+          (match var with
+          | Some ((s, ini),  iis::iini) -> 
+              (match ini with
+              | Some (InitExpr e, ii_empty2) -> 
+                  (* do the desugaring *)
+                  let var' = Some ((s, None), [iis]) in
+
+                  let iis' = Ast_c.al_info iis in
+                  let iivirg' = Ast_c.al_info iivirg in
+
+                  [Decl (DeclList                             
+                            ((((var', returnType, storage),[])::xs), 
+                            iivirg'::iisto)), ii_empty;
+                   ExprStatement 
+                     (Some (
+                       (Assignment (
+                         ((Ident s, Ast_c.noType), [iis']),
+                         SimpleAssign,
+                         e
+                       ), 
+                       Ast_c.noType),  iini
+                     )
+                     ), [iivirg]
+                  ]
+
+
+              | _ -> [x]
+              )
+          | None -> [x]
+          | _ -> raise Impossible
+
+          )
+      | x -> [x]
+
+    ) +> List.concat
+  else xs
+
+
+
 (**************************************)
 (* parse_typedef_fix2 *)
 
@@ -213,6 +262,7 @@ let fix_add_params_ident = function
 	 | _ -> failwith "internal errror: fixOldCDecl not good"
       )) 
   | _ -> ()
+
     
 %}
 
@@ -477,7 +527,7 @@ compound2:                           { ([],[]) }
    a difference between decl and statement for further coccinelle phases. 
 */
 compound2:  { ([]) }
-        | stat_or_decl_list { ($1) }
+        | stat_or_decl_list { casse_initialisation ($1) }
 
 stat_or_decl: decl      { Decl $1, [] }
             | statement { $1 }

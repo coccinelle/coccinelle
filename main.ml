@@ -146,6 +146,22 @@ let testall () =
 
   end
 
+(*****************************************************************************)
+let casse_initialisation prog = 
+  let bigf = { Visitor_c.default_visitor_c_s with 
+     Visitor_c.kstatement_s = (fun (k, bigf) st -> 
+       match st with 
+       | Ast_c.Compound statxs, ii -> 
+           Ast_c.Compound [], ii
+       | _ -> k st
+       );
+  }
+  in
+  prog +> List.map (fun (elem, x) -> 
+    elem +> Visitor_c.visitor_program_k_s bigf,
+    x
+  )
+
 
 (*****************************************************************************)
 let main () = 
@@ -209,6 +225,7 @@ let main () =
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-cocci_vs_c",          Arg.Set Flag_engine.use_cocci_vs_c,    " ";
+      "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
@@ -295,6 +312,17 @@ let main () =
                   | _ -> ()
                  );
                  )
+        | "parse_unparse", [file] -> 
+            let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
+            let program2_with_method = 
+              program2 
+              (* +> casse_initialisation *) (* done in parser_c.mly now *)
+              +> List.map (fun x -> x, Unparse_c.PPnormal)
+            in
+            Unparse_c.pp_program program2_with_method "/tmp/output.c";
+            Common.command2 "cat /tmp/output.c";
+
+
         | "typeur", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
