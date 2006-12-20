@@ -1,19 +1,63 @@
 @@
-expression y;
+expression x;
 expression E;
-type T;
+expression f;
+identifier fld;
 @@
 
 (
-free(y);
+  free(x);
 |
-kfree(y);
+  kfree(x);
 |
-kfree_skb(y);
+  kfree_skb(x);
 |
-dev_kfree_skb(y);
+  dev_kfree_skb(x);
 |
-dev_kfree_skb_any(y);
+  dev_kfree_skb_anx(x);
 )
-... WHEN != y = E
-y
+  ... WHEN != x = E
+  f(...,x,...)
+
+@@
+expression x;
+expression E;
+expression f;
+identifier fld;
+@@
+
+(
+  free(x);
+|
+  kfree(x);
+|
+  kfree_skb(x);
+|
+  dev_kfree_skb(x);
+|
+  dev_kfree_skb_anx(x);
+)
+  ... WHEN != x = E
+  *x
+
+@@
+expression x;
+expression E;
+expression f;
+identifier fld;
+@@
+
+(
+  free(x);
+|
+  kfree(x);
+|
+  kfree_skb(x);
+|
+  dev_kfree_skb(x);
+|
+  dev_kfree_skb_anx(x);
+)
+  ... WHEN != x = E
+  x->fld
+

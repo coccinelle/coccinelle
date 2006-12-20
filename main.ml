@@ -228,6 +228,7 @@ let main () =
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
+      "-ifdef", Arg.Set Flag_parsing.ifdef_to_if,"convert ifdef to if, buggy!";
 
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
