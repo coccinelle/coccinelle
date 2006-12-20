@@ -134,10 +134,6 @@ let equal_storage a b =
 (*****************************************************************************)
 (* combinators *)
 (*****************************************************************************)
-(*
- * 
- *)
-
 (* monad like stuff
  * src: papers on parser combinators in haskell (cf a pearl by meijer in ICFP)
  *)
@@ -527,10 +523,38 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
 and (arguments: sequence -> 
       (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
-   raise Todo
+  (* in fact it gives the  unwrapped and the wrapped version *)
+  let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
+  let rewrapper xs = xs +> List.map snd in
+  match seqstyle with
+  | Unordered -> failwith "not handling ooo"
+  | Ordered -> 
+      match unwrapper eas, ebs with
+      | [], [] -> return []
+      
+      
+
+
+
+
 
 and argument arga argb = 
-   raise Todo
+   match A.unwrap arga, argb with
+  | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
+      if sto <> (B.NoSto, false)
+      then failwith "the argument have a storage and ast_cocci does not have"
+      else 
+        fullType tya tyb >>= (fun t' -> 
+          return (Right (B.ArgType (t', (sto, iisto))))
+        )
+  | A.TypeExp tya,  _                                  -> fail
+  | _,              Right (B.ArgType (tyb, sto_iisto)) -> fail
+  | _, Left y -> 
+      expression arga y >>= (fun e' -> 
+        return (Left e')
+      )
+  | _, Right (B.ArgAction y) -> fail
+
 
 (* ------------------------------------------------------------------------- *)
 and (parameters: sequence -> 

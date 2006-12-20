@@ -190,47 +190,53 @@ let fixFunc = function
 
 
 
+          
+
+let split_init_assign xs iivirg' = 
+  xs +> List.fold_left (fun (inits, assigns) x -> 
+    match x with 
+    | ((var, returnType, storage),iisep) -> 
+        (match var with
+        | Some ((s, ini),  iis::iini) -> 
+            (match ini with
+            | Some (InitExpr e, ii_empty2) -> 
+                (* do the desugaring *)
+                let var' = Some ((s, None), [iis]) in
+                let iis' = Ast_c.al_info iis in
+                let iini' = List.map Ast_c.al_info iini in
+                
+                ((var', returnType, storage),iisep)::inits,
+                (ExprStatement 
+                    (Some (
+                      (Assignment (
+                        ((Ident s, Ast_c.noType), [iis']),
+                        SimpleAssign,
+                        Abstract_line_c.al_expr e
+                      ), 
+                      Ast_c.noType),  iini'
+                     )
+                    ), [iivirg']
+                )::assigns
+
+            | _ -> x::inits, assigns
+            )
+        | None -> x::inits, assigns
+        | _ -> raise Impossible
+        )
+  ) ([], [])
+ +> (fun (xs, ys) -> List.rev xs, List.rev ys)
+
+
 let casse_initialisation xs = 
   if !Flag_parsing_c.casse_initialisation 
   then 
     xs +> List.map (fun x -> 
       match x with
-      | Decl 
-          (DeclList 
-              ((((var, returnType, storage),[])::xs), 
-              iivirg::iisto)), ii_empty        -> 
-          (match var with
-          | Some ((s, ini),  iis::iini) -> 
-              (match ini with
-              | Some (InitExpr e, ii_empty2) -> 
-                  (* do the desugaring *)
-                  let var' = Some ((s, None), [iis]) in
-
-                  let iis' = Ast_c.al_info iis in
-                  let iivirg' = Ast_c.al_info iivirg in
-
-                  [Decl (DeclList                             
-                            ((((var', returnType, storage),[])::xs), 
-                            iivirg'::iisto)), ii_empty;
-                   ExprStatement 
-                     (Some (
-                       (Assignment (
-                         ((Ident s, Ast_c.noType), [iis']),
-                         SimpleAssign,
-                         e
-                       ), 
-                       Ast_c.noType),  iini
-                     )
-                     ), [iivirg]
-                  ]
-
-
-              | _ -> [x]
-              )
-          | None -> [x]
-          | _ -> raise Impossible
-
-          )
+      | Decl (DeclList ((xs),  iivirg::iisto)), ii_empty -> 
+          let iivirg' = Ast_c.al_info iivirg in
+          let (inits, assigns) = split_init_assign (xs) iivirg' in
+          (Decl (DeclList ((inits), iivirg::iisto)), ii_empty)::assigns
+          
       | x -> [x]
 
     ) +> List.concat
