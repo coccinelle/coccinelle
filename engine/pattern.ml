@@ -475,22 +475,9 @@ and (match_arguments: sequence_processing_style ->
               in
               startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
 
-                if (startxs +> List.map fst +> List.exists (function
-                  | Left e -> false
-                  | Right typ -> true
-                  ))
-                then return false
-                else
-                  let startxs' = startxs +> List.map (fun (arg, i) -> 
-                    match arg with
-                    | Left e -> e
-                    | Right _ -> raise Impossible
-                    )
-                  in
-
                 acc >||> (
                  check_add_metavars_binding inherited
-                  (term ida, Ast_c.MetaExprListVal (startxs')) >&&>
+                  (term ida, Ast_c.MetaExprListVal (startxs)) >&&>
                  match_arguments seqstyle xs endxs
              )) (return false)
 

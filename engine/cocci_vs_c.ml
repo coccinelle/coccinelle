@@ -38,8 +38,8 @@ let seqstyle eas =
    | A.DOTS _ -> Ordered 
    | A.CIRCLES _ -> Unordered 
    | A.STARS _ -> failwith "not handling stars"
-   
-
+         
+  
 
 (* Normally Ast_cocci should reuse some types of Ast_c, so those
  * functions should not exist.
@@ -164,6 +164,7 @@ module type PARAM =
     val distrf_e : Ast_c.expression tdistr
     val distrf_type : Ast_c.fullType tdistr
     val distrf_node : Control_flow_c.node2 tdistr
+    val distrf_args : (Ast_c.argument, Ast_c.il) either list tdistr
   end
 
 
@@ -175,7 +176,6 @@ struct
 
 type ('a, 'b) matcher = 'a -> 'b  -> X.tin -> 'b X.tout
 
-(* should be raise Impossible when transformation.ml *)
 let (>>=) = X.(>>=)
 let return = X.return
 let fail = X.fail
@@ -189,16 +189,14 @@ let distrf = X.distrf
 let distrf_e = X.distrf_e
 let distrf_node = X.distrf_node
 let distrf_type = X.distrf_type
+let distrf_args = X.distrf_args
 
 
 
-
-
+(* should be raise Impossible when called from transformation.ml *)
 let fail2 = fail
 
-let (option: 
-     ('a, 'b) matcher -> 'a option -> 'b option -> X.tin -> 'b option X.tout) =
- fun f t1 t2 ->
+let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
   match (t1,t2) with
   | (Some t1, Some t2) -> 
       f t1 t2 >>= (fun (x : 'b) -> 
@@ -210,20 +208,19 @@ let (option:
 
 
 
-
 (*****************************************************************************)
 (* Tokens *) 
 (*****************************************************************************)
 let tokenf xs ys = 
   assert (List.length xs = List.length ys);
-  Common.zip xs ys +> List.fold_left (fun acc (ia, ib) -> 
+  List.fold_right (fun  (ia, ib) acc -> 
     (* assert s1 = s2 ? no more cos now have some "fake" string,
      * and also because now s1:'a, no more s1:string
      *)
     acc >>= (fun xs -> 
     tokenf_one ia ib >>= (fun i' -> 
         return (i'::xs)
-      ))) (return [])
+      ))) (Common.zip xs ys) (return [])
 
    
 let tokenf_wrap xs ys e = 
@@ -233,6 +230,17 @@ let tokenf_wrap xs ys e =
 (*****************************************************************************)
 (* "Cocci vs C" *) 
 (*****************************************************************************)
+
+(* toc: 
+ *  - expression
+ *  - ident
+ *  - arguments
+ *  - parameters
+ *  - declaration
+ *  - type       
+ *  - node
+ *)
+       
 
 let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
@@ -279,9 +287,11 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
       )
 
 
- (* todo: handle some isomorphisms in int/float ? can have different
-  * format : 1l can match a 1. TODO: normally string can contain some
-  * metavar too, so should recurse on the string *)
+ (* todo?: handle some isomorphisms in int/float ? can have different
+  * format : 1l can match a 1.
+  * 
+  * todo: normally string can contain some metavar too, so should
+  * recurse on the string *)
   | A.Constant ((A.Int ia,_,_) as i1), ((B.Constant (B.Int ib) , typ),ii)
       when ia =$= ib ->  
       (B.Constant (B.Int ib), typ) +> tokenf_wrap [i1] ii 
@@ -300,15 +310,15 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 
 
   | A.FunCall (ea, i2, eas, i3),  ((B.FunCall (eb, ebs), typ),ii) -> 
-     (* todo: do special case to allow IdMetaFunc, cos doing the
-      * recursive call will be too late, match_ident will not have the
-      * info whether it was a function. todo: but how detect when do
-      * x.field = f; how know that f is a Func ? By having computed
-      * some information before the matching!
-      * 
-      * Allow match with FunCall containing types. Now ast_cocci allow
-      * type in parameter, and morover ast_cocci allow f(...) and those
-      * ... could match type. *)
+      (* todo: do special case to allow IdMetaFunc, cos doing the
+       * recursive call will be too late, match_ident will not have the
+       * info whether it was a function. todo: but how detect when do
+       * x.field = f; how know that f is a Func ? By having computed
+       * some information before the matching!
+       * 
+       * Allow match with FunCall containing types. Now ast_cocci allow
+       * type in parameter, and morover ast_cocci allow f(...) and those
+       * ... could match type. *)
 
       expression ea eb >>= (fun e' -> 
       arguments (seqstyle eas) (A.undots eas) ebs >>= (fun arg' -> 
@@ -524,14 +534,76 @@ and (arguments: sequence ->
       (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
   (* in fact it gives the  unwrapped and the wrapped version *)
-  let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
-  let rewrapper xs = xs +> List.map snd in
   match seqstyle with
   | Unordered -> failwith "not handling ooo"
   | Ordered -> 
-      match unwrapper eas, ebs with
-      | [], [] -> return []
+      arguments_bis eas (Ast_c.split_comma ebs) >>= (fun ebs' -> 
+        return (Ast_c.unsplit_comma ebs')
+      )
       
+and arguments_bis = fun eas ebs -> 
+  match eas, ebs with
+  | [], [] -> return []
+  | [], y::ys -> fail
+  | x::xs, ys -> 
+      (match A.unwrap x, ys with
+      | A.Edots (mcode, optexpr), ys -> 
+          if null ys 
+          then 
+            if mcode_contain_plus (mcodekind mcode)
+            then failwith "I have not found a token where I can add stuff"
+            else arguments_bis xs []
+          else begin
+            if optexpr <> None then failwith "not handling when in argument";
+            let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+            startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+              acc >||> (
+                distrf distrf_args (mcodekind mcode) startxs >>=(fun startxs'->
+                  arguments_bis xs endxs >>= (fun endxs' -> 
+                    return (startxs' ++ endxs')
+                  ))
+              )
+            ) fail 
+          end
+      | A.EComma i1, Right ii::ys -> 
+          tokenf [i1] ii >>= (fun ii' -> 
+          arguments_bis xs ys >>= (fun ys' -> 
+            return (Right ii'::ys')
+          ))
+      | A.EComma i1, _ -> fail
+      | A.MetaExprList (ida, inherited), ys -> 
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            let startxs' = Ast_c.unsplit_comma startxs in
+            acc >||> (
+              envf inherited (term ida, Ast_c.MetaExprListVal startxs') >>= 
+                (fun v -> 
+                  match v with
+                  | Ast_c.MetaExprListVal startxs'' -> 
+                      (* TODO
+                      if (Abstract_line_c.al_expr expa =*= 
+                          Abstract_line_c.al_expr expb)
+                      *)
+                     distrf distrf_args (mcodekind ida) startxs
+                  | _ -> raise Impossible
+                ) >>= (fun startxs' -> 
+                  arguments_bis xs endxs >>= (fun endxs' -> 
+                    return (startxs' ++ endxs')
+                  )
+                )
+            )
+          ) fail 
+      | unwrapx, (Left y)::ys -> 
+          argument x y >>= (fun y' -> 
+          arguments_bis xs ys >>= (fun ys' -> 
+            return (Left y'::ys')
+          ))
+      | unwrapx, (Right y)::ys -> 
+          raise Impossible
+      | unwrapx, [] -> fail
+
+      )
+            
       
 
 

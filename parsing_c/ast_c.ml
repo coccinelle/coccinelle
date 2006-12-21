@@ -340,7 +340,7 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
   | MetaExprVal      of expression (* a "clean expr" *)
-  | MetaExprListVal  of expression list
+  | MetaExprListVal  of argument wrap2 list
   | MetaTypeVal      of fullType
   | MetaStmtVal      of statement
   | MetaParamVal     of parameterType wrap
@@ -377,4 +377,22 @@ let al_info x =
   emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
 
+(*****************************************************************************)
+let rec (split_comma: 'a wrap2 list -> ('a, il) either list) = 
+  function
+  | [] -> []
+  | (e, ii)::xs -> 
+      if null ii 
+      then (Left e)::split_comma xs
+      else Right ii::Left e::split_comma xs
 
+let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) = 
+  function
+  | [] -> []
+  | Right ii::Left e::xs -> 
+      (e, ii)::unsplit_comma xs
+  | Left e::xs -> 
+      let empty_ii = [] in
+      (e, empty_ii)::unsplit_comma xs
+  | Right ii::_ -> 
+      raise Impossible

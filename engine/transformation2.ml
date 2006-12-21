@@ -38,7 +38,7 @@ module XTRANS = struct
   let (>||>) m1 m2 = fun tin -> 
     match m1 tin with
     | None -> m2 tin
-    | Some x -> Some x
+    | Some x -> Some x (* stop as soon as have found something *)
 
 
   (***************************************************************************)
@@ -77,6 +77,9 @@ module XTRANS = struct
   let distrf_node = D.distribute_mck_node
     
   let distrf_type = D.distribute_mck_type
+
+  let distrf_args = D.distribute_mck_split D.trans_arg
+    
 
 end
 

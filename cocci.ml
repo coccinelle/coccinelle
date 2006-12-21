@@ -600,7 +600,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
       );
     );
 
-    (* and now unparse everythinh *)
+    (* and now unparse everything *)
     let cprogram' = !cprogram +> List.map (fun ((ebis, info_item), _flow) -> 
       (ebis, info_item), Unparse_c.PPviastr) 
     in

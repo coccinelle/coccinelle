@@ -191,6 +191,9 @@ let fixFunc = function
 
 
           
+(* pour ne pas avoir les pp_passing_token message, au lieu de deplacer
+ * les initialiseurs, je pourrais tagger les tokens avec es MINUS.
+ *)
 
 let split_init_assign xs iivirg' = 
   xs +> List.fold_left (fun (inits, assigns) x -> 

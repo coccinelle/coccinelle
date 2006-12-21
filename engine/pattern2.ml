@@ -149,6 +149,7 @@ module XMATCH = struct
   let distrf_e x = x
   let distrf_type x = x
   let distrf_node x = x
+  let distrf_args x = x
 
 end
 
