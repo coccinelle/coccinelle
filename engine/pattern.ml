@@ -152,7 +152,7 @@ let (>&&>) m1 m2 = fun binding ->
   List.flatten xxs
 
 let (>||>) m1 m2 = fun binding ->
-  m1 binding ++  m2 binding
+  m1 binding ++ m2 binding
 
 (* An exclusive or (xor). *)
 (*
@@ -185,82 +185,91 @@ let _GoodMatch binding = [binding]
 
 (* pre: if have declared a new metavar that hide another one, then must be 
    passed with a binding that deleted this metavar *)
-let check_add_metavars_binding inherited = fun (k, valu) binding -> 
-  (match Common.optionise (fun () -> binding +> List.assoc k) with
-  | Some (valu') ->
-      if
-        (match valu, valu' with
-        | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
-        | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
-        | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
+let check_add_metavars_binding keep inherited = fun (k, valu) binding -> 
+  if keep
+  then
+    (match Common.optionise (fun () -> binding +> List.assoc k) with
+    | Some (valu') ->
+	if
+          (match valu, valu' with
+          | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+          | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+          | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
             (* do something more ? *)
-            a =$= b
-
+              a =$= b
+		
         (* al_expr before comparing !!! and accept when they match.
-         * Note that here we have Astc._expression, so it is a match
-         * modulo isomorphism (there is no metavariable involved here,
-         * just isomorphisms). => TODO call isomorphism_c_c instead of
-         * =*=. Maybe would be easier to transform ast_c in ast_cocci
-         * and call the iso engine of julia.
-         *)
-        | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
-            Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
-        | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
-            Abstract_line_c.al_statement a =*= Abstract_line_c.al_statement b
-        | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
-            Abstract_line_c.al_type a =*= Abstract_line_c.al_type b
-
-        | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
-            failwith "not handling MetaExprListVal"
-        | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
-            failwith "not handling MetaParamVal"
-        | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
-            failwith "not handling MetaParamListVal"
-        | _ -> raise Impossible
-        ) 
-      then _GoodMatch binding
-      else _MatchFailure
-
-  | None -> 
-      if inherited then _MatchFailure
-      else 
-        let valu' = 
-          (match valu with
-          | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
-          | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
-          | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
-          | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
-          | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
-          | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
-          | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
-          | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
-          | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
-          ) 
-     in
-     _GoodMatch   (binding +> Common.insert_assoc (k, valu'))
-  )
-  
+           * Note that here we have Astc._expression, so it is a match
+           * modulo isomorphism (there is no metavariable involved here,
+           * just isomorphisms). => TODO call isomorphism_c_c instead of
+           * =*=. Maybe would be easier to transform ast_c in ast_cocci
+           * and call the iso engine of julia.
+        *)
+          | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
+              Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
+          | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
+              Abstract_line_c.al_statement a =*= Abstract_line_c.al_statement b
+          | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
+              Abstract_line_c.al_type a =*= Abstract_line_c.al_type b
+		
+          | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
+              failwith "not handling MetaExprListVal"
+          | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
+              failwith "not handling MetaParamVal"
+          | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
+              failwith "not handling MetaParamListVal"
+          | _ -> raise Impossible
+		) 
+	then _GoodMatch binding
+	else _MatchFailure
+	    
+    | None -> 
+	if inherited then _MatchFailure
+	else 
+          let valu' = 
+            (match valu with
+            | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
+            | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
+            | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
+            | Ast_c.MetaExprVal a ->
+		Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
+            | Ast_c.MetaStmtVal a ->
+		Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
+            | Ast_c.MetaTypeVal a ->
+		Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
+            | Ast_c.MetaExprListVal a ->
+		failwith "not handling MetaExprListVal"
+            | Ast_c.MetaParamVal a ->
+		failwith "not handling MetaParamVal"
+            | Ast_c.MetaParamListVal a ->
+		failwith "not handling MetaParamListVal")
+	  in _GoodMatch (binding +> Common.insert_assoc (k, valu')))
+  else _GoodMatch binding
+      
 (*****************************************************************************)
 (* The pattern functions, "Cocci vs C" *) 
 (*****************************************************************************)
-
+      
 let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = 
- fun ep ec ->
+  fun ep ec ->
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
-  | A.MetaExpr (ida, opttypa, inherited),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr (ida,keep,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
       (match opttypa, opttypb with
       | None, _ -> return true
       | Some (tas : Type_cocci.typeC list), Some tb -> 
-          tas +> List.fold_left (fun acc ta -> acc >||>  return (Types.compatible_type ta tb)) 
+          tas +>
+	  List.fold_left
+	    (fun acc ta -> acc >||>  return (Types.compatible_type ta tb)) 
             (return false)
       | Some _, None -> 
-          pr2 ("I have not the type information. Certainly a pb in " ^
+          pr2 ("I don't have any type information. Certainly a pb in " ^
                     "type_annoter_c.ml");
           return false
       ) >&&>
-      check_add_metavars_binding inherited (term ida, Ast_c.MetaExprVal (expb))
+      check_add_metavars_binding keep inherited
+	(term ida,Ast_c.MetaExprVal(expb))
 
 
   (* old: | A.Edots _, _ -> raise Impossible
@@ -423,22 +432,23 @@ and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) =
  fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
- | A.MetaId(ida,inherited) ->
-     check_add_metavars_binding inherited (term ida, Ast_c.MetaIdVal (idb))
+ | A.MetaId(ida,keep,inherited) ->
+     check_add_metavars_binding keep inherited
+       (term ida, Ast_c.MetaIdVal (idb))
 
- | A.MetaFunc (ida,inherited) -> 
+ | A.MetaFunc (ida,keep,inherited) -> 
      (match seminfo_idb with
      | LocalFunction | Function -> 
-         check_add_metavars_binding inherited 
-           (term ida,(Ast_c.MetaFuncVal idb))
+	 check_add_metavars_binding keep inherited
+	   (term ida,(Ast_c.MetaFuncVal idb))
      | DontKnow -> 
          failwith "MetaFunc and MetaLocalFunc, need semantic info about id"
      )
 
- | A.MetaLocalFunc (ida,inherited) -> 
+ | A.MetaLocalFunc (ida,keep,inherited) -> 
      (match seminfo_idb with
      | LocalFunction -> 
-	  check_add_metavars_binding inherited
+	 check_add_metavars_binding keep inherited
            (term ida, (Ast_c.MetaLocalFuncVal idb))
      | Function -> return false
      | DontKnow -> 
@@ -470,16 +480,18 @@ and (match_arguments: sequence_processing_style ->
                 acc >||>  match_arguments seqstyle xs ys
                   ) (return false)
 
-          | A.MetaExprList(ida,inherited), ys -> 
+          | A.MetaExprList(ida,keep,inherited), ys -> 
               let startendxs = Common.zip (Common.inits ys) (Common.tails ys)
               in
-              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-
-                acc >||> (
-                 check_add_metavars_binding inherited
-                  (term ida, Ast_c.MetaExprListVal (startxs)) >&&>
-                 match_arguments seqstyle xs endxs
-             )) (return false)
+              startendxs +>
+	      List.fold_left
+		(fun acc (startxs, endxs) -> 
+                  acc >||>
+		  (check_add_metavars_binding keep inherited
+                     (term ida, Ast_c.MetaExprListVal (startxs))
+		     >&&>
+                   match_arguments seqstyle xs endxs))
+		(return false)
 
 
           | A.Ecircles (_,_), ys -> raise Impossible (* in Ordered mode *)
@@ -533,15 +545,17 @@ and (match_params:
                   ) (return false)
 
 
-          | A.MetaParamList(ida,inherited), ys -> 
+          | A.MetaParamList(ida,keep,inherited), ys -> 
               let startendxs = (Common.zip (Common.inits ys) (Common.tails ys))
               in
-              startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-                acc >||> (
-                check_add_metavars_binding inherited
-		  (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
-                match_params seqstyle xs endxs
-             )) (return false)
+              startendxs +>
+	      List.fold_left
+		(fun acc (startxs, endxs) -> 
+                  acc >||> (
+                  check_add_metavars_binding keep inherited
+		    (term ida, Ast_c.MetaParamListVal (startxs)) >&&>
+                  match_params seqstyle xs endxs))
+		(return false)
 
 
           | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
@@ -549,11 +563,11 @@ and (match_params:
           (* filtered by the caller, in the case for FunDecl *)
           | A.PComma (_), ys -> raise Impossible 
 
-          | A.MetaParam (ida,inherited), y::ys -> 
+          | A.MetaParam (ida,keep,inherited), y::ys -> 
              (* todo: use quaopt, hasreg ? *)
-             check_add_metavars_binding inherited
+	      check_add_metavars_binding keep inherited
                 (term ida, Ast_c.MetaParamVal (y)) >&&>
-             match_params seqstyle xs ys
+              match_params seqstyle xs ys
 
           | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
               (match idb with
@@ -601,7 +615,7 @@ and match_storage stoa stob =
 
 and match_re_onedecl = fun decla declb -> 
   match A.unwrap decla, declb with
-  | A.MetaDecl(ida,_inherited), _ -> 
+  | A.MetaDecl(ida,keep,_inherited), _ -> 
       return true (* todo? add in env ? *)
 
     (* could handle iso here but handled in standard.iso *)
@@ -689,8 +703,9 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
     match A.unwrap typa, typb with
 
       (* cas general *)
-    | A.MetaType(ida,inherited),  typb -> 
-	check_add_metavars_binding inherited (term ida, B.MetaTypeVal typb)
+    | A.MetaType(ida,keep,inherited),  typb -> 
+	check_add_metavars_binding keep inherited
+	  (term ida, B.MetaTypeVal typb)
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, iib)) -> 
 
@@ -835,11 +850,12 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
     -> return false
 
   (* cas general: a Meta can match everything *)
-  | A.MetaStmt (ida,_,inherited),  _unwrap_node -> 
+  | A.MetaStmt (ida,keep,_,inherited),  _unwrap_node -> 
      (* match only "header"-statement *)
      (match Control_flow_c.extract_fullstatement node with
      | Some stb -> 
-         check_add_metavars_binding inherited (term ida, Ast_c.MetaStmtVal stb)
+         check_add_metavars_binding keep inherited
+	   (term ida, Ast_c.MetaStmtVal stb)
      | None -> return false
      )
 

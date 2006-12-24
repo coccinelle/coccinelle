@@ -101,9 +101,9 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_) -> mcode print_string name
-  | Ast.MetaFunc(name,_) -> mcode print_string name
-  | Ast.MetaLocalFunc(name,_) -> mcode print_string name
+  | Ast.MetaId(name,_,_) -> mcode print_string name
+  | Ast.MetaFunc(name,_,_) -> mcode print_string name
+  | Ast.MetaLocalFunc(name,_,_) -> mcode print_string name
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
   | Ast.MultiIdent(id) -> print_string "\\+"; ident id
@@ -167,18 +167,18 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaConst(name,None,_) -> mcode print_string name
-  | Ast.MetaConst(name,Some ty,_) ->
+  | Ast.MetaConst(name,_,None,_) -> mcode print_string name
+  | Ast.MetaConst(name,_,Some ty,_) ->
       mcode print_string name; print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string "*/"
-  | Ast.MetaErr(name,_) -> mcode print_string name
-  | Ast.MetaExpr(name,None,_) -> mcode print_string name
-  | Ast.MetaExpr(name,Some ty,_) ->
+  | Ast.MetaErr(name,_,_) -> mcode print_string name
+  | Ast.MetaExpr(name,_,None,_) -> mcode print_string name
+  | Ast.MetaExpr(name,_,Some ty,_) ->
       mcode print_string name; print_string "/*";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string "*/"
-  | Ast.MetaExprList(name,_) -> mcode print_string name
+  | Ast.MetaExprList(name,_,_) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(expr_dots,Some whencode) ->
@@ -273,7 +273,7 @@ and typeC ty =
       print_between force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
-  | Ast.MetaType(name,_) -> mcode print_string name; print_string " "
+  | Ast.MetaType(name,_,_) -> mcode print_string name; print_string " "
 
 and baseType = function
     Ast.VoidType -> print_string "void "
@@ -321,7 +321,7 @@ and declaration d =
       fullType ty; ident id; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
-  | Ast.MetaDecl(name,_) -> mcode print_string name
+  | Ast.MetaDecl(name,_,_) -> mcode print_string name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
@@ -366,8 +366,8 @@ let rec parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(id,ty) -> fullType ty; ident id
-  | Ast.MetaParam(name,_) -> mcode print_string name
-  | Ast.MetaParamList(name,_) -> mcode print_string name
+  | Ast.MetaParam(name,_,_) -> mcode print_string name
+  | Ast.MetaParamList(name,_,_) -> mcode print_string name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.Pcircles(dots) -> mcode print_string dots
@@ -430,11 +430,11 @@ let rule_elem arity re =
   | Ast.ReturnExpr(ret,exp,sem) ->
       print_string arity; mcode print_string ret; print_string " ";
       expression exp; mcode print_string sem
-  | Ast.MetaRuleElem(name,_) ->
+  | Ast.MetaRuleElem(name,_,_) ->
       print_string arity; mcode print_string name
-  | Ast.MetaStmt(name,_,_) ->
+  | Ast.MetaStmt(name,_,_,_) ->
       print_string arity; mcode print_string name
-  | Ast.MetaStmtList(name,_) ->
+  | Ast.MetaStmtList(name,_,_) ->
       print_string arity;  mcode print_string name
   | Ast.Exp(exp) -> print_string arity; expression exp
 
@@ -513,7 +513,7 @@ let statement_dots l = dots force_newline (statement "") l
 
 let define_body m =
   match Ast.unwrap m with
-    Ast.DMetaId(name) -> mcode print_string name
+    Ast.DMetaId(name,_) -> mcode print_string name
   | Ast.Ddots(dots) -> mcode print_string dots
 
 let rec meta m =

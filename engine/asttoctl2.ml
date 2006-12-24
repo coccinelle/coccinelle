@@ -342,7 +342,7 @@ and get_before_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_,_,_) -> (s,[])
+	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -421,7 +421,7 @@ and get_after_e s a =
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(nm,Ast.SequencibleAfterDots _,i) ->
+	Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots _,i) ->
 	  (* check "after" information for metavar optimization *)
 	  (* if the error is not desired, could just return [], then
 	     the optimization (check for EF) won't take place *)
@@ -448,8 +448,8 @@ and get_after_e s a =
 	  (Ast.rewrap s
 	     (Ast.Atomic
 		(Ast.rewrap s
-		   (Ast.MetaStmt(nm,Ast.SequencibleAfterDots a,i)))),[])
-      |	Ast.MetaStmt(_,_,_) -> (s,[])
+		   (Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots a,i)))),[])
+      |	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
@@ -792,12 +792,13 @@ and statement stmt after quantified label guard =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),seqible,_)
-      | Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.AFTER(_)) as d)),seqible,_) ->
+	Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),
+		     keep,seqible,_)
+      | Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.AFTER(_)) as d)),keep,seqible,_) ->
 	  svar_context_with_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
 
-      |	Ast.MetaStmt((s,_,d),seqible,_) ->
+      |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
 	  svar_minus_or_no_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
 

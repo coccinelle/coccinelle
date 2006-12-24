@@ -574,8 +574,10 @@ let statement_dots x = dots is_stm_dots None statement x
 
 let define_body s =
   match Ast0.unwrap s with
-    Ast0.DMetaId(name) as us -> let nm = promote_mcode name in mkres s us nm nm
-  | Ast0.Ddots(dots) as us -> let dt = promote_mcode dots in mkres s us dt dt
+    Ast0.DMetaId(name) as us ->
+      let nm = promote_mcode name in mkres s us nm nm
+  | Ast0.Ddots(dots) as us ->
+      let dt = promote_mcode dots in mkres s us dt dt
 
 let rec meta s =
   match Ast0.unwrap s with

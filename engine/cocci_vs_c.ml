@@ -247,7 +247,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
   
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,opttypa,inherited),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr (ida,true,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
       let match_type = 
         match opttypa, opttypb with
         | None, _ -> true
@@ -268,6 +268,9 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
             else fail
         | _ -> raise Impossible
       )
+
+  | A.MetaExpr (ida,false,opttypa,inherited), _ ->
+      failwith "should not appear in transformed code"
 
   (* old: | A.Edots _, _ -> raise Impossible. In fact now can also have
    * the Edots inside normal expression, not just in arg lists. in
@@ -482,7 +485,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
       then idb +> tokenf_wrap [sa] ii
       else fail
 
-  | A.MetaId(ida,inherited) -> 
+  | A.MetaId(ida,true,inherited) -> 
       (* get binding, assert =*=,  distribute info in i1 *)
       envf inherited (term ida, Ast_c.MetaIdVal (idb)) >>= (fun v -> 
         match v with
@@ -492,7 +495,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
             else fail
         | _ -> raise Impossible
       )
-  | A.MetaFunc(ida,inherited) -> 
+  | A.MetaFunc(ida,true,inherited) -> 
       (match infoidb with 
       | LocalFunction | Function -> 
           envf inherited (term ida, Ast_c.MetaFuncVal idb) >>= (fun v -> 
@@ -504,10 +507,10 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
             | _ -> raise Impossible
           )
       | DontKnow -> 
-          failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-      )
+          failwith
+	    "MetaFunc and MetaLocalFunc, need more semantic info about id")
       
-  | A.MetaLocalFunc(ida,inherited) -> 
+  | A.MetaLocalFunc(ida,true,inherited) -> 
       (match infoidb with
       | LocalFunction -> 
           envf inherited (term ida, Ast_c.MetaLocalFuncVal idb) >>= (fun v -> 
@@ -522,9 +525,13 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
            
       | Function -> fail
       | DontKnow -> 
-          failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-      )
-        
+          failwith
+	    "MetaFunc and MetaLocalFunc, need more semantic info about id")
+       
+  | A.MetaId(ida,false,inherited) | A.MetaFunc(ida,false,inherited)
+  | A.MetaLocalFunc(ida,false,inherited) ->
+      failwith "should not appear in transformed code"
+ 
   | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
       failwith "not handling Opt/Unique/Multi for ident"
 
@@ -571,7 +578,7 @@ and arguments_bis = fun eas ebs ->
             return (Right ii'::ys')
           ))
       | A.EComma i1, _ -> fail
-      | A.MetaExprList (ida, inherited), ys -> 
+      | A.MetaExprList (ida, true, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             let startxs' = Ast_c.unsplit_comma startxs in
@@ -593,6 +600,10 @@ and arguments_bis = fun eas ebs ->
                 )
             )
           ) fail 
+
+      | A.MetaExprList (ida, false, inherited), ys -> 
+	  failwith "should not appear in transformed code"
+
       | unwrapx, (Left y)::ys -> 
           argument x y >>= (fun y' -> 
           arguments_bis xs ys >>= (fun ys' -> 
@@ -683,7 +694,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
    * via MetaRuleElem. 
    * Can match TrueNode/FalseNode/... so must be placed before those cases.
    *)
-  | A.MetaRuleElem(mcode,inherited), unwrap_node -> 
+  | A.MetaRuleElem(mcode,true,inherited), unwrap_node -> 
      (match unwrap_node with
      | F.CaseNode _
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
@@ -708,6 +719,9 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
      | n -> distrf distrf_node (mcodekind mcode) n
      )
 
+  | A.MetaRuleElem(mcode,false,inherited), unwrap_node -> 
+      failwith "shouldn't appear in transformed code"
+
 
   (* rene cant have found that a state containing a fake/exit/... should be 
    * transformed 
@@ -722,7 +736,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   (* cas general: a Meta can match everything *)
   (* really ? diff between pattern.ml and transformation.ml *)
   (* failwith "I cant have been called. I can only transform MetaRuleElem." *)
-  | A.MetaStmt (ida,_metainfo,inherited),  unwrap_node -> 
+  | A.MetaStmt (ida,true,_metainfo,inherited),  unwrap_node -> 
      (* match only "header"-statement *)
      (match Control_flow_c.extract_fullstatement node with
      | Some stb -> 
@@ -732,6 +746,9 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
          )
      | None -> fail
      )
+
+  | A.MetaStmt (ida,false,_metainfo,inherited),  unwrap_node -> 
+      failwith "shouldn't appear in transformed code"
 
 
 

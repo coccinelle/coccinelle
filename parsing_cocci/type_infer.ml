@@ -136,13 +136,13 @@ let rec propagate_types env =
 
   let rec strip id =
     match Ast0.unwrap id with
-      Ast0.Id(name) -> Ast0.unwrap_mcode name
-    | Ast0.MetaId(name) -> Ast0.unwrap_mcode name
-    | Ast0.MetaFunc(name) -> Ast0.unwrap_mcode name
+      Ast0.Id(name)              -> Ast0.unwrap_mcode name
+    | Ast0.MetaId(name)        -> Ast0.unwrap_mcode name
+    | Ast0.MetaFunc(name)      -> Ast0.unwrap_mcode name
     | Ast0.MetaLocalFunc(name) -> Ast0.unwrap_mcode name
-    | Ast0.OptIdent(id) -> strip id
+    | Ast0.OptIdent(id)    -> strip id
     | Ast0.UniqueIdent(id) -> strip id
-    | Ast0.MultiIdent(id) -> strip id in
+    | Ast0.MultiIdent(id)  -> strip id in
 
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci

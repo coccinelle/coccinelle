@@ -40,7 +40,11 @@ and metavar =
   | MetaLocalFuncDecl of arity * string (* name *)
   | MetaTextDecl of arity * string (* name *)
 
-and inherited = bool (* true if inherited *)
+and inherited = bool (* true if inherited from a previous rule *)
+
+(* true if a metavariable occurs more than once, and thus we need to keep
+track of its binding.  false otherwise *)
+and keep_binding = bool
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -59,9 +63,9 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId of string mcode * inherited (* true if inherited *)
-  | MetaFunc of string mcode * inherited
-  | MetaLocalFunc of string mcode * inherited
+  | MetaId        of string mcode * keep_binding * inherited
+  | MetaFunc      of string mcode * keep_binding * inherited
+  | MetaLocalFunc of string mcode * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -98,10 +102,13 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of string mcode * Type_cocci.typeC list option * inherited
-  | MetaErr        of string mcode * inherited
-  | MetaExpr       of string mcode * Type_cocci.typeC list option * inherited
-  | MetaExprList   of string mcode * inherited (* only in arg lists *)
+  | MetaConst      of string mcode * keep_binding *
+	              Type_cocci.typeC list option * inherited
+  | MetaErr        of string mcode * keep_binding * inherited
+  | MetaExpr       of string mcode * keep_binding *
+	              Type_cocci.typeC list option * inherited
+  | MetaExprList   of string mcode * keep_binding *
+	              inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -155,7 +162,7 @@ and base_typeC =
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
 
-  | MetaType        of string mcode * inherited
+  | MetaType        of string mcode * keep_binding * inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -181,7 +188,7 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | DisjDecl of declaration list
 
-  | MetaDecl of string mcode * inherited
+  | MetaDecl of string mcode * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -223,8 +230,8 @@ and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of ident * fullType
 
-  | MetaParam     of string mcode * inherited
-  | MetaParamList of string mcode * inherited
+  | MetaParam     of string mcode * keep_binding * inherited
+  | MetaParamList of string mcode * keep_binding * inherited
 
   | PComma        of string mcode
 
@@ -277,9 +284,9 @@ and base_rule_elem =
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
 
-  | MetaRuleElem  of string mcode * inherited
-  | MetaStmt      of string mcode * metaStmtInfo * inherited
-  | MetaStmtList  of string mcode * inherited
+  | MetaRuleElem  of string mcode * keep_binding * inherited
+  | MetaStmt      of string mcode * keep_binding * metaStmtInfo * inherited
+  | MetaStmtList  of string mcode * keep_binding * inherited
 
   | Exp           of expression
 
@@ -339,7 +346,7 @@ and base_meta =
 and meta = base_meta wrap
 
 and base_define_body =
-    DMetaId of string mcode
+    DMetaId of string mcode * keep_binding
   | Ddots   of string mcode (* ... *)
 
 and define_body = base_define_body wrap
@@ -401,10 +408,12 @@ let get_dots_bef_aft (_,_,_,d) = d
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d =
-  (MetaRuleElem((s,{ line = 0; column = 0 },d),false), 0, [s], NoDots)
+  let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false), 0, [], NoDots)
 
 let make_meta_decl s d =
-  (MetaDecl((s,{ line = 0; column = 0 },d),false), 0, [s], NoDots)
+  let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
+  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, [], NoDots)
 
 (* --------------------------------------------------------------------- *)
 

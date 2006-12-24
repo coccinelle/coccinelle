@@ -63,7 +63,8 @@ let astfvs bound =
 
   let astfvident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name,_) | Ast.MetaFunc(name,_) | Ast.MetaLocalFunc(name,_) ->
+      Ast.MetaId(name,true,_) | Ast.MetaFunc(name,true,_)
+    | Ast.MetaLocalFunc(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -72,8 +73,8 @@ let astfvs bound =
 
   let astfvexpr recursor k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,_,_) | Ast.MetaErr(name,_) | Ast.MetaExpr(name,_,_)
-    | Ast.MetaExprList(name,_) ->
+      Ast.MetaConst(name,true,_,_) | Ast.MetaErr(name,true,_)
+    | Ast.MetaExpr(name,true,_,_) | Ast.MetaExprList(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -82,7 +83,7 @@ let astfvs bound =
 
   let astfvtypeC recursor k ty =
     match Ast.unwrap ty with
-      Ast.MetaType(name,_) ->
+      Ast.MetaType(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -91,7 +92,7 @@ let astfvs bound =
 
   let astfvparam recursor k p =
     match Ast.unwrap p with
-      Ast.MetaParam(name,_) | Ast.MetaParamList(name,_) ->
+      Ast.MetaParam(name,true,_) | Ast.MetaParamList(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
 	then bind ([],[id]) (mcode recursor name)
@@ -101,8 +102,8 @@ let astfvs bound =
   let astfvrule_elem recursor k re =
     let (unbound,_) as res =
       match Ast.unwrap re with
-	Ast.MetaRuleElem(name,_) | Ast.MetaStmt(name,_,_)
-      | Ast.MetaStmtList(name,_) ->
+	Ast.MetaRuleElem(name,true,_) | Ast.MetaStmt(name,true,_,_)
+      | Ast.MetaStmtList(name,true,_) ->
 	  let id = metaid name in
 	  if List.mem id bound
 	  then bind ([],[id]) (mcode recursor name)
@@ -211,46 +212,46 @@ let update_metavars previous_metavars =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,_) ->
-	Ast.rewrap e (Ast.MetaId(name,free_mv name))
-    | Ast.MetaFunc(name,_) ->
-	Ast.rewrap e (Ast.MetaFunc(name,free_mv name))
-    | Ast.MetaLocalFunc(name,_) ->
-	Ast.rewrap e (Ast.MetaLocalFunc(name,free_mv name))
+      Ast.MetaId(name,true,_) ->
+	Ast.rewrap e (Ast.MetaId(name,true,free_mv name))
+    | Ast.MetaFunc(name,true,_) ->
+	Ast.rewrap e (Ast.MetaFunc(name,true,free_mv name))
+    | Ast.MetaLocalFunc(name,true,_) ->
+	Ast.rewrap e (Ast.MetaLocalFunc(name,true,free_mv name))
     | _ -> k e in
 
   let expression r k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,ty,_) ->
-	Ast.rewrap e (Ast.MetaConst(name,ty,free_mv name))
-    | Ast.MetaErr(name,_) ->
-	Ast.rewrap e (Ast.MetaErr(name,free_mv name))
-    | Ast.MetaExpr(name,ty,_) ->
-	Ast.rewrap e (Ast.MetaExpr(name,ty,free_mv name))
-    | Ast.MetaExprList(name,_) ->
-	Ast.rewrap e (Ast.MetaExprList(name,free_mv name))
+      Ast.MetaConst(name,true,ty,_) ->
+	Ast.rewrap e (Ast.MetaConst(name,true,ty,free_mv name))
+    | Ast.MetaErr(name,true,_) ->
+	Ast.rewrap e (Ast.MetaErr(name,true,free_mv name))
+    | Ast.MetaExpr(name,true,ty,_) ->
+	Ast.rewrap e (Ast.MetaExpr(name,true,ty,free_mv name))
+    | Ast.MetaExprList(name,true,_) ->
+	Ast.rewrap e (Ast.MetaExprList(name,true,free_mv name))
     | _ -> k e in
 
   let typeC r k e =
     match Ast.unwrap e with
-      Ast.MetaType(name,_) ->
-	Ast.rewrap e (Ast.MetaType(name,free_mv name))
+      Ast.MetaType(name,true,_) ->
+	Ast.rewrap e (Ast.MetaType(name,true,free_mv name))
     | _ -> k e in
 
   let param r k e =
     match Ast.unwrap e with
-      Ast.MetaParam(name,_) ->
-	Ast.rewrap e (Ast.MetaParam(name,free_mv name))
-    | Ast.MetaParamList(name,_) ->
-	Ast.rewrap e (Ast.MetaParamList(name,free_mv name))
+      Ast.MetaParam(name,true,_) ->
+	Ast.rewrap e (Ast.MetaParam(name,true,free_mv name))
+    | Ast.MetaParamList(name,true,_) ->
+	Ast.rewrap e (Ast.MetaParamList(name,true,free_mv name))
     | _ -> k e in
 
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.MetaStmt(name,msi,_) ->
-	Ast.rewrap e (Ast.MetaStmt(name,msi,free_mv name))
-    | Ast.MetaStmtList(name,_) ->
-	Ast.rewrap e (Ast.MetaStmtList(name,free_mv name))
+      Ast.MetaStmt(name,true,msi,_) ->
+	Ast.rewrap e (Ast.MetaStmt(name,true,msi,free_mv name))
+    | Ast.MetaStmtList(name,true,_) ->
+	Ast.rewrap e (Ast.MetaStmtList(name,true,free_mv name))
     | _ -> k e in
 
   let fn = V.rebuilder

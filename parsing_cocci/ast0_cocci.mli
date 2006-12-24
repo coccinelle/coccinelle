@@ -43,8 +43,8 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId of string mcode
-  | MetaFunc of string mcode
+  | MetaId        of string mcode
+  | MetaFunc      of string mcode
   | MetaLocalFunc of string mcode
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -79,11 +79,13 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
-  | MetaConst      of string mcode * Type_cocci.typeC list option
+  | MetaConst      of string mcode *
+	              Type_cocci.typeC list option
   | MetaErr        of string mcode
-  | MetaExpr       of string mcode * Type_cocci.typeC list option
-  | MetaExprList   of string mcode (* only in arg lists *)
-  | EComma         of string mcode (* only in arg lists *)
+  | MetaExpr       of string mcode *
+	              Type_cocci.typeC list option
+  | MetaExprList   of string mcode(*only in arglists*)
+  | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
   | NestExpr       of string mcode * expression dots * string mcode *

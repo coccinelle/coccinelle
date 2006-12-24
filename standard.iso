@@ -43,6 +43,14 @@
 //@@ expression E; type T; @@
 //(T)E => E
 
+Expression
+@@
+expression E1, E2;
+type T;
+@@
+
+E1 = (T) E2(...) => E1 = E2(...)
+
 Declaration
 @@ identifier Z; @@
 int Z; => signed int Z;

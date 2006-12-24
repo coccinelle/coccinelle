@@ -415,8 +415,9 @@ includes:
 | TDefine ident TMetaText
     { Ast0.wrap
 	(Ast0.META
-	   (Ast0.wrap(Ast0.Define(clt2mcode "#define" $1, $2,
-				  Ast0.wrap(Ast0.DMetaId(id2mcode $3)))))) }
+	   (Ast0.wrap
+	      (Ast0.Define(clt2mcode "#define" $1, $2,
+			   Ast0.wrap(Ast0.DMetaId(id2mcode $3)))))) }
 
 /*****************************************************************************/
 
@@ -1105,7 +1106,8 @@ aexpr:
       { Ast0.wrap(Ast0.TypeExp($1)) }
   | TMetaType				(**)
       { let (nm,clt) = $1 in
-      Ast0.wrap(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)))) }
+      Ast0.wrap
+	(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)))) }
 
 eexpr_list_start:
     aexpr { [$1] }

@@ -101,7 +101,7 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
   match A.unwrap ep, ec with
 
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,opttypa,_inherited),  (((expr, opttypb), ii) as expb) -> 
+  | A.MetaExpr(ida,true,opttypa,_inherited), (((expr, opttypb), ii) as expb) ->
       (match opttypa, opttypb with
       | None, _ -> ()
       | Some tas, Some tb -> 
@@ -307,109 +307,114 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 and (transform_ident: 
       Pattern.semantic_info_ident -> 
       (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
- fun seminfo_idb ida (idb, ii) -> 
-  fun binding -> 
-    match A.unwrap ida with
-    | A.Id sa -> 
-        if (term sa) =$= idb
-        then idb, tag_symbols [sa] ii binding
-        else raise NoMatch
-
-    | A.MetaId(ida,_inherited) -> 
-      (* get binding, assert =*=,  distribute info in i1 *)
-      let v = binding +> find_env ((term ida) : string) in
-      (match v with
-      | B.MetaIdVal sa -> 
-          if(sa =$= idb) 
-          then idb, tag_symbols [ida] ii binding
+  fun seminfo_idb ida (idb, ii) -> 
+    fun binding -> 
+      match A.unwrap ida with
+      | A.Id sa -> 
+          if (term sa) =$= idb
+          then idb, tag_symbols [sa] ii binding
           else raise NoMatch
-      | _ -> raise Impossible
-      )
- | A.MetaFunc(ida,_inherited) -> 
-     (match seminfo_idb with 
-     | Pattern.LocalFunction | Pattern.Function -> 
-         let v = binding +> find_env ((term ida) : string) in
-         (match v with
-         | B.MetaFuncVal sa -> 
-             if(sa =$= idb) 
-             then idb, tag_symbols [ida] ii binding
-             else raise NoMatch
-         | _ -> raise Impossible
-         )
-     | Pattern.DontKnow -> 
-        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-     )
-      
- | A.MetaLocalFunc(ida,_inherited) -> 
-     (match seminfo_idb with
-     | Pattern.LocalFunction -> 
-         let v = binding +> find_env ((term ida) : string) in
-         (match v with
-         | B.MetaLocalFuncVal sa -> 
-             if(sa =$= idb) 
-             then idb, tag_symbols [ida] ii binding
-             else raise NoMatch
-         | _ -> raise Impossible
-         )
+	      
+      | A.MetaId(ida,true,_inherited) -> 
+      (* get binding, assert =*=,  distribute info in i1 *)
+	  let v = binding +> find_env ((term ida) : string) in
+	  (match v with
+	  | B.MetaIdVal sa -> 
+              if(sa =$= idb) 
+              then idb, tag_symbols [ida] ii binding
+              else raise NoMatch
+	  | _ -> raise Impossible
+		)
 
+      | A.MetaFunc(ida,true,_inherited) -> 
+	  (match seminfo_idb with 
+	  | Pattern.LocalFunction | Pattern.Function -> 
+              let v = binding +> find_env ((term ida) : string) in
+              (match v with
+              | B.MetaFuncVal sa -> 
+		  if(sa =$= idb) 
+		  then idb, tag_symbols [ida] ii binding
+		  else raise NoMatch
+              | _ -> raise Impossible
+		    )
+	  | Pattern.DontKnow -> 
+              failwith
+		"MetaFunc and MetaLocalFunc, need more semantic info about id")
 
-     | Pattern.Function -> raise NoMatch
-     | Pattern.DontKnow -> 
-        failwith "MetaFunc and MetaLocalFunc, need more semantic info about id"
-     )
-
- | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
-     failwith "not handling Opt/Unique/Multi for ident"
-        
-
+      | A.MetaLocalFunc(ida,true,_inherited) -> 
+	  (match seminfo_idb with
+	  | Pattern.LocalFunction -> 
+              let v = binding +> find_env ((term ida) : string) in
+              (match v with
+              | B.MetaLocalFuncVal sa -> 
+		  if(sa =$= idb) 
+		  then idb, tag_symbols [ida] ii binding
+		  else raise NoMatch
+              | _ -> raise Impossible
+		    )
+		
+		
+	  | Pattern.Function -> raise NoMatch
+	  | Pattern.DontKnow -> 
+              failwith
+		"MetaFunc and MetaLocalFunc, need more semantic info about id")
+	    
+      | A.MetaId(ida,false,_inherited)
+      | A.MetaFunc(ida,false,_inherited)
+      | A.MetaLocalFunc(ida,false,_inherited) ->
+	  failwith "should not be in transformed code"
+	    
+      | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
+	  failwith "not handling Opt/Unique/Multi for ident"
+            
+	    
 (* ------------------------------------------------------------------------- *)
-
+	    
 and (transform_arguments: sequence_processing_style -> 
   (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) transformer) = 
- fun seqstyle eas ebs ->
-  fun binding -> 
-    let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
-    let rewrapper xs = xs +> List.map snd in
-
-    match unwrapper eas, ebs with
-    | [],   [] -> []
-    | [A.Edots (mcode, None), ea], [] -> 
-        if mcode_contain_plus (mcodekind mcode)
-        then failwith "todo:I have no token that I could accroche myself on"
-        else []
-    | _, [] -> raise NoMatch
-    | [], eb::ebs -> raise NoMatch
-
+  fun seqstyle eas ebs ->
+    fun binding -> 
+      let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
+      let rewrapper xs = xs +> List.map snd in
+      
+      match unwrapper eas, ebs with
+      | [],   [] -> []
+      | [A.Edots (mcode, None), ea], [] -> 
+          if mcode_contain_plus (mcodekind mcode)
+          then failwith "todo:I have no token that I could accroche myself on"
+          else []
+      | _, [] -> raise NoMatch
+      | [], eb::ebs -> raise NoMatch
+	    
     (* special case. todo: generalize *)
-    | [A.Edots (mcode, None), ea], ebs -> 
-        D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
-
-
-    | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (eb, ii)::ebs -> 
-        let ii' = tag_symbols [i1] ii   binding in
-        (match 
-        D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
-          ((eb, [](*subtil*))::ebs)
-           binding
-        with
-        | (eb, [])::ebs -> (eb, ii')::ebs
-        | _ -> raise Impossible
-        )
-        
-
-    | (A.EComma i1, _)::(una,ea)::eas, (eb, ii)::ebs -> 
-        let ii' = tag_symbols [i1] ii   binding in
-        (transform_argument  ea eb binding, ii')::
-	transform_arguments seqstyle (rewrapper eas) ebs   binding
+      | [A.Edots (mcode, None), ea], ebs -> 
+          D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
+	    
+	    
+      | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (eb, ii)::ebs -> 
+          let ii' = tag_symbols [i1] ii   binding in
+          (match 
+            D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
+              ((eb, [](*subtil*))::ebs)
+              binding
+          with
+          | (eb, [])::ebs -> (eb, ii')::ebs
+          | _ -> raise Impossible)
+            
+	    
+      | (A.EComma i1, _)::(una,ea)::eas, (eb, ii)::ebs -> 
+          let ii' = tag_symbols [i1] ii   binding in
+          (transform_argument  ea eb binding, ii')::
+	  transform_arguments seqstyle (rewrapper eas) ebs   binding
 
    (* The first argument is handled here. Then cocci will always contain
     * some EComma and a following expression, so the previous case will
     * handle that.
     *)
-    | (una, ea)::eas, (eb, ii)::ebs -> 
-        assert (null ii);
-        (transform_argument  ea eb binding, [])::
-	transform_arguments seqstyle (rewrapper eas) ebs   binding
+      | (una, ea)::eas, (eb, ii)::ebs -> 
+          assert (null ii);
+          (transform_argument  ea eb binding, [])::
+	  transform_arguments seqstyle (rewrapper eas) ebs   binding
 
 
 and transform_argument arga argb = 
@@ -557,7 +562,7 @@ and transform_onedecl = fun decla declb ->
    | _, (((None, typb, sto), _),_) -> 
        failwith "no variable in this declaration, wierd"
 
-   | A.MetaDecl(ida,_inherited), _ -> 
+   | A.MetaDecl(ida,true,_inherited), _ -> 
        failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
 
    | A.DisjDecl xs, declb -> 
@@ -597,7 +602,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
     match A.unwrap typa, typb with
 
      (* cas general *)
-    | A.MetaType(ida,_inherited),  typb -> 
+    | A.MetaType(ida,true,_inherited),  typb -> 
         (* get binding, assert =*=,  distribute info in ida *)
         (match binding +> find_env (term ida) with
         | B.MetaTypeVal typa -> 
@@ -783,7 +788,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
 
   | _, F.Enter | _, F.Exit | _, F.ErrorExit -> raise Impossible
 
-  | A.MetaRuleElem(mcode,_inherited), unwrap_node -> 
+  | A.MetaRuleElem(mcode,true,_inherited), unwrap_node -> 
      (match unwrap_node with
      | F.CaseNode _
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode

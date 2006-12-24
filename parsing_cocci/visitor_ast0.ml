@@ -490,7 +490,8 @@ let rebuilder = fun
 	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
-	| Ast0.MetaConst(name,ty) -> Ast0.MetaConst(string_mcode name,ty)
+	| Ast0.MetaConst(name,ty) ->
+	    Ast0.MetaConst(string_mcode name,ty)
 	| Ast0.MetaErr(name) ->
 	    Ast0.MetaErr(string_mcode name)
 	| Ast0.MetaExpr(name,ty) ->
