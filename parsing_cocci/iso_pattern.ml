@@ -14,7 +14,7 @@ module V0 = Visitor_ast0
 
 (* --------------------------------------------------------------------- *)
 
-type isomorphism = Ast0_cocci.anything list list
+type isomorphism = Ast_cocci.metavar list * Ast0_cocci.anything list list
 
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
@@ -626,7 +626,7 @@ let make_minus =
 (* rebuild mcode cells in an instantiated alt *)
 
 (* mcodes will be side effected later with plus code, so we have to copy
-then on instantiating an isomorphism.  One could wonder whether it would
+them on instantiating an isomorphism.  One could wonder whether it would
 be better not to use side-effects, but they are convenient for insert_plus
 where is it useful to manipulate a list of the mcodes but side-effect a tree *)
 let rebuild_mcode start_line =
@@ -730,38 +730,40 @@ let count_dots =
 
 (* --------------------------------------------------------------------- *)
 
-let instantiate bindings =
+let lookup name bindings mv_bindings =
+  try Common.Left (List.assoc (term name) bindings)
+  with
+    Not_found ->
+      (* failure is not possible anymore *)
+      Common.Right (List.assoc (term name) mv_bindings)
+
+let instantiate bindings mv_bindings =
   let mcode x = x in
   let donothing r k e = k e in
-
-  let line e = (Ast0.get_info e).Ast0.line_start in
 
   (* cases where metavariables can occur *)
   let identfn r k e =
     match Ast0.unwrap e with
       Ast0.MetaId(name) ->
-	(try
-	  (match List.assoc (term name) bindings with
-	    Ast0.IdentTag(id) -> (rebuild_mcode None).V0.rebuilder_ident id
-	  | _ -> failwith "not possible 1")
-	with
-	  Not_found ->
-	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
+	(rebuild_mcode None).V0.rebuilder_ident
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.IdentTag(id)) -> id
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e (Ast0.MetaId(Ast0.set_mcode_data new_mv name)))
     | Ast0.MetaFunc(name) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
   let exprfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,_) ->
-	(try
-	  (match List.assoc (term name) bindings with
-	    Ast0.ExprTag(exp) ->
-	      (rebuild_mcode None).V0.rebuilder_expression exp
-	  | _ -> failwith "not possible 2")
-	with
-	  Not_found ->
-	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
+      Ast0.MetaExpr(name,x) ->
+	(rebuild_mcode None).V0.rebuilder_expression
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.ExprTag(exp)) -> exp
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e (Ast0.MetaExpr(Ast0.set_mcode_data new_mv name,x)))
     | Ast0.MetaConst(namea,_) -> failwith "metaconst not supported"
     | Ast0.MetaErr(namea) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea) -> failwith "metaexprlist not supported"
@@ -788,40 +790,35 @@ let instantiate bindings =
   let tyfn r k e =
     match Ast0.unwrap e with
       Ast0.MetaType(name) ->
-	(try
-	  (match List.assoc (term name) bindings with
-	    Ast0.TypeCTag(ty) -> (rebuild_mcode None).V0.rebuilder_typeC ty
-	  | _ -> failwith "not possible 3")
-	with
-	  Not_found ->
-	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
+	(rebuild_mcode None).V0.rebuilder_typeC
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.TypeCTag(ty)) -> ty
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e (Ast0.MetaType(Ast0.set_mcode_data new_mv name)))
     | _ -> k e in
 
   let paramfn r k e =
     match Ast0.unwrap e with
       Ast0.MetaParam(name) ->
-	(try
-	  (match List.assoc (term name) bindings with
-	    Ast0.ParamTag(param) ->
-	      (rebuild_mcode None).V0.rebuilder_parameter param
-	  | _ -> failwith "not possible 4")
-	with
-	  Not_found ->
-	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
+	(rebuild_mcode None).V0.rebuilder_parameter
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.ParamTag(param)) -> param
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e (Ast0.MetaParam(Ast0.set_mcode_data new_mv name)))
     | Ast0.MetaParamList(name) -> failwith "metaparamlist not supported"
     | _ -> k e in
 
   let stmtfn r k e =
     match Ast0.unwrap e with
     Ast0.MetaStmt(name) ->
-	(try
-	  (match List.assoc (term name) bindings with
-	    Ast0.StmtTag(stmt) ->
-	      (rebuild_mcode None).V0.rebuilder_statement stmt
-	  | _ -> failwith "not possible 5")
-	with
-	  Not_found ->
-	    failwith (Printf.sprintf "bad variable on line %d\n" (line e)))
+	(rebuild_mcode None).V0.rebuilder_statement
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.StmtTag(stm)) -> stm
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e (Ast0.MetaStmt(Ast0.set_mcode_data new_mv name)))
     | Ast0.MetaStmtList(name) -> failwith "metastmtlist not supported"
     | Ast0.Dots(d,_) ->
 	(try
@@ -938,13 +935,68 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
   (ecount = 0 or other_ecount = 0, icount = 0 or other_icount = 0,
    dcount = 0 or other_dcount = 0)
 
-let mkdisj matcher alts instantiater e disj_maker minusify
+(* --------------------------------------------------------------------- *)
+
+let mv_count = ref 0
+let new_mv s =
+  let ct = !mv_count in
+  mv_count := !mv_count + 1;
+  "_"^s^"_"^(string_of_int ct)
+
+let get_name = function
+    Ast.MetaIdDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaIdDecl(ar,nm))
+  | Ast.MetaFreshIdDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaFreshIdDecl(ar,nm))
+  | Ast.MetaTypeDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaTypeDecl(ar,nm))
+  | Ast.MetaParamDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaParamDecl(ar,nm))
+  | Ast.MetaParamListDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaParamListDecl(ar,nm))
+  | Ast.MetaConstDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaConstDecl(ar,nm))
+  | Ast.MetaErrDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaErrDecl(ar,nm))
+  | Ast.MetaExpDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaExpDecl(ar,nm))
+  | Ast.MetaExpListDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaExpListDecl(ar,nm))
+  | Ast.MetaStmDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaStmDecl(ar,nm))
+  | Ast.MetaStmListDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaStmListDecl(ar,nm))
+  | Ast.MetaFuncDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaFuncDecl(ar,nm))
+  | Ast.MetaLocalFuncDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
+  | Ast.MetaTextDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaTextDecl(ar,nm))
+
+let make_new_metavars metavars bindings =
+  let new_metavars =
+    List.filter
+      (function mv ->
+	let (s,_) = get_name mv in
+	try let _ = List.assoc s bindings in false with Not_found -> true)
+      metavars in
+  List.split
+    (List.map
+       (function mv ->
+	 let (s,rebuild) = get_name mv in
+	 let new_s = new_mv s in
+	 (rebuild new_s, (s,new_s)))
+       new_metavars)
+
+(* --------------------------------------------------------------------- *)
+
+let mkdisj matcher metavars alts instantiater e disj_maker minusify
     rebuild_mcodes printer =
-  let call_instantiate bindings alts =
+  let call_instantiate bindings mv_bindings alts =
     List.map
       (function (a,_,_,_) ->
 	copy_plus printer minusify e
-	  (instantiater bindings (rebuild_mcodes a)))
+	  (instantiater bindings mv_bindings (rebuild_mcodes a)))
       alts in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
       [] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
@@ -960,14 +1012,18 @@ let mkdisj matcher alts instantiater e disj_maker minusify
 	    (match List.concat all_alts with
 	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
-		Common.Right (call_instantiate bindings all_alts))) in
+		let (new_metavars,mv_bindings) =
+		  make_new_metavars metavars bindings in
+		Common.Right
+		  (new_metavars,
+		   call_instantiate bindings mv_bindings all_alts))) in
   let rec outer_loop prev_ecount prev_icount prev_dcount = function
-      [] -> e (* nothing matched *)
+      [] -> ([],e) (* nothing matched *)
     | (alts::rest) as all_alts ->
 	match inner_loop all_alts prev_ecount prev_icount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_icount, prev_dcount) ->
 	    outer_loop prev_ecount prev_icount prev_dcount rest
-	| Common.Right res -> disj_maker res in
+	| Common.Right (new_metavars,res) -> (new_metavars,disj_maker res) in
   outer_loop 0 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
@@ -1001,7 +1057,7 @@ let make_disj_stmt sl =
   Ast0.context_wrap
     (Ast0.Disj(disj_starter,List.map dotify sl,mids,disj_ender))
 
-let transform_expr alts e =
+let transform_expr (metavars,alts) e =
   match alts with
     (Ast0.ExprTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1016,14 +1072,15 @@ let transform_expr alts e =
 		    count_dots.V0.combiner_expression p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_expr alts
-	(function b -> (instantiate b).V0.rebuilder_expression) e
+      mkdisj match_expr metavars alts
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_expression) e
 	make_disj_expr make_minus.V0.rebuilder_expression
 	(rebuild_mcode start_line).V0.rebuilder_expression
 	Unparse_ast0.expression
-  | _ -> e
+  | _ -> ([],e)
 
-let transform_decl alts e =
+let transform_decl (metavars,alts) e =
   match alts with
     (Ast0.DeclTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1038,14 +1095,15 @@ let transform_decl alts e =
 		    count_dots.V0.combiner_declaration p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_decl alts
-	(function b -> (instantiate b).V0.rebuilder_declaration) e
+      mkdisj match_decl metavars alts
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_declaration) e
 	make_disj_decl make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
 	Unparse_ast0.declaration
-  | _ -> e
+  | _ -> ([],e)
 
-let transform_stmt alts e =
+let transform_stmt (metavars,alts) e =
   match alts with
     (Ast0.StmtTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1060,21 +1118,35 @@ let transform_stmt alts e =
 		    count_dots.V0.combiner_statement p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_statement alts
-	(function b -> (instantiate b).V0.rebuilder_statement) e
+      mkdisj match_statement metavars alts
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_statement) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
 	(Unparse_ast0.statement "")
-  | _ -> e
+  | _ -> ([],e)
 
 (* --------------------------------------------------------------------- *)
 
-let transform (alts : isomorphism) =
+let transform (alts : isomorphism) t =
+  (* the following ugliness is because rebuilder only returns a new term *)
+  let extra_meta_decls = ref ([] : Ast_cocci.metavar list) in
   let mcode x = x in
   let donothing r k e = k e in
-  let exprfn r k e = transform_expr alts (k e) in
-  let declfn r k e = transform_decl alts (k e) in
-  let stmtfn r k e = transform_stmt alts (k e) in
+  let exprfn r k e =
+    let (extra_meta,exp) = transform_expr alts (k e) in
+    extra_meta_decls := extra_meta @ !extra_meta_decls;
+    exp in
+
+  let declfn r k e =
+    let (extra_meta,dec) = transform_decl alts (k e) in
+    extra_meta_decls := extra_meta @ !extra_meta_decls;
+    dec in
+
+  let stmtfn r k e =
+    let (extra_meta,stm) = transform_stmt alts (k e) in
+    extra_meta_decls := extra_meta @ !extra_meta_decls;
+    stm in
   
   let res =
     V0.rebuilder
@@ -1082,7 +1154,8 @@ let transform (alts : isomorphism) =
       donothing donothing donothing donothing
       donothing exprfn donothing donothing donothing declfn stmtfn
       donothing donothing in
-  res.V0.rebuilder_top_level
+  let res = res.V0.rebuilder_top_level t in
+  (!extra_meta_decls,res)
 
 (* --------------------------------------------------------------------- *)
 
@@ -1118,11 +1191,19 @@ let rewrap_anything = function
 (* --------------------------------------------------------------------- *)
 
 let apply_isos isos rule =
-  let isos = List.map (List.map (List.map rewrap_anything)) isos in
-  Compute_lines.compute_lines
-    (List.map
-       (function t ->
-	 List.fold_left
-	   (function t -> function iso -> transform iso t)
-	   t isos)
-       rule)
+  let isos =
+    List.map
+      (function (metavars,iso) ->
+	(metavars,List.map (List.map rewrap_anything) iso))
+      isos in
+  let (extra_meta,rule) =
+    List.split
+      (List.map
+	 (function t ->
+	   List.fold_left
+	     (function (extra_meta,t) -> function iso ->
+	       let (new_extra_meta,t) = transform iso t in
+	       (new_extra_meta@extra_meta,t))
+	     ([],t) isos)
+       rule) in
+  (List.concat extra_meta, Compute_lines.compute_lines rule)

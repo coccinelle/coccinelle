@@ -592,7 +592,7 @@ let parse_iso = function
 	    let (more,tokens) =
 	      tokens_all table file true lexbuf [PC.TArobArob] in
 	    Data.in_meta := false;
-	    let _ = parse_one PC.meta_main file tokens in
+	    let iso_metavars = parse_one PC.meta_main file tokens in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      tokens_all table file false lexbuf
@@ -607,9 +607,10 @@ let parse_iso = function
 		    which is more than one word.  We don't have that any more,
 		    but the code is left here in case it is put back. *)
 	      match tokens_all table file true lexbuf [PC.TArobArob] with
-		(true,start) -> entry :: (loop (next_start::start))
+		(true,start) ->
+		  (iso_metavars,entry) :: (loop (next_start::start))
 	      |	_ -> failwith "isomorphism ends early"
-	    else [entry] in
+	    else [(iso_metavars,entry)] in
 	  loop start
       | (false,_) -> [])
 
@@ -629,10 +630,10 @@ let process file isofile verbose =
 	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	  Insert_plus.insert_plus m p;
 	  Type_infer.type_infer minus;
-	  let minus = Iso_pattern.apply_isos isos minus in
+	  let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
 	  let minus = Single_statement.single_statement minus in
 	  let minus_ast = Ast0toast.ast0toast minus in
-	  (metavars, minus_ast))
+	  (extra_meta@metavars, minus_ast))
       minus plus in
   let (code,ua) = Free_vars.free_vars parsed in
   List.iter Pretty_print_cocci.unparse code;

@@ -607,7 +607,7 @@ let rec statement s =
 		  else
 		    begin
 		      Printf.printf
-			"warning: mixes stmts and decls, not skipping initial decls";
+			"warning: mixes stmts and decls, not skipping initial decls\n";
 		      ([],true,l)
 		    end
 	  | _ -> ([],false,l))

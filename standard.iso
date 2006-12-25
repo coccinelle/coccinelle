@@ -59,6 +59,34 @@ int Z; => signed int Z;
 // ---------------------------------------------------------------------------
 // Typedef isomorphisms
 // ---------------------------------------------------------------------------
+// Dereferences
+
+Expression
+@@
+expression E;
+identifier fld;
+@@
+
+*E => E->fld
+
+Expression
+@@
+expression E;
+identifier fld;
+@@
+
+*E => (E)->fld
+
+Expression
+@@
+expression E,E1;
+@@
+
+*E => E[E1]
+
+// ---------------------------------------------------------------------------
+// Typedef isomorphisms
+// ---------------------------------------------------------------------------
 // TODO should be handled in engine/
 
 

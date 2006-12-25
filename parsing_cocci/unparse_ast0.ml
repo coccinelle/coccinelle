@@ -11,8 +11,8 @@ let start_block str =
 let end_block str =
   close_box(); force_newline ()
 
-let print_option fn = Common.do_option fn
-let print_between between fn = Common.print_between between fn
+let print_option = Common.do_option
+let print_between = Common.print_between
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -130,14 +130,18 @@ let rec expression e =
       | Ast0.MetaConst(name,None) -> mcode print_string name
       | Ast0.MetaConst(name,Some ty) ->
 	  mcode print_string name; print_string "/* ";
+	  Format.print_flush(); (* no idea why this is needed *)
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-	  print_string "*/"
+	  Format.print_flush();
+	  print_string " */"
       | Ast0.MetaErr(name) -> mcode print_string name
       | Ast0.MetaExpr(name,None) -> mcode print_string name
       | Ast0.MetaExpr(name,Some ty) ->
-	  mcode print_string name; print_string "/*";
+	  mcode print_string name; print_string "/* ";
+	  Format.print_flush();
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-	  print_string "*/"
+	  Format.print_flush();
+	  print_string " */"
       | Ast0.MetaExprList(name) -> mcode print_string name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) ->

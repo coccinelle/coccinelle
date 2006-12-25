@@ -350,6 +350,7 @@ let set_type (_,_,_,_,ty,_) t = ty := t
 let get_type (_,_,_,_,ty,_) = !ty
 let get_dots_bef_aft (_,_,_,_,_,d) = d
 let set_dots_bef_aft (a,b,c,d,e,_) dots_bef_aft = (a,b,c,d,e,dots_bef_aft)
+let set_mcode_data data (_,ar,info,mc) = (data,ar,info,mc)
 
 (* --------------------------------------------------------------------- *)
 

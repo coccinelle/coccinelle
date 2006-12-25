@@ -157,6 +157,47 @@ let elim_opt =
     donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
+(* Eliminate MultiStm *)
+
+let elim_multi =
+  let mcode x = x in
+  let donothing r k e = k e in
+
+  let rec dots_list unwrapped wrapped =
+    match (unwrapped,wrapped) with
+      ([],_) -> []
+
+    | (Ast.Nest(stm_dots,whencode,info)::urest,d::rest) ->
+	(match Ast.unwrap stm_dots with
+	  Ast.DOTS([l]) ->
+	    (match Ast.unwrap l with
+	      Ast.MultiStm(stm) ->
+		let d =
+		  Ast.rewrap d
+		    (Ast.Nest(Ast.rewrap d (Ast.DOTS([stm])),whencode,info)) in
+		stm::d::(dots_list urest rest)
+	    | _ -> d::(dots_list urest rest))
+	| _ -> d::(dots_list urest rest))
+
+    | (_::urest,d::rest) -> d :: (dots_list urest rest)
+
+    | _ -> failwith "not possible" in
+
+  let stmtdotsfn r k d =
+    let d = k d in
+    Ast.rewrap d
+      (match Ast.unwrap d with
+	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
+      | Ast.CIRCLES(l) -> failwith "elimmulti not supported"
+      | Ast.STARS(l) -> failwith "elimmulti: not supported") in
+  
+  V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing stmtdotsfn
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
+
+(* --------------------------------------------------------------------- *)
 (* after management *)
 (* We need Guard for the following case:
 <...
@@ -368,7 +409,7 @@ and get_before_e s a =
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
-  | _ -> failwith "not supported"
+  | _ -> failwith "get_before_e: not supported"
 
 let rec get_after sl a =
   match Ast.unwrap sl with
@@ -475,7 +516,7 @@ and get_after_e s a =
       let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
-  | _ -> failwith "not supported"
+  | _ -> failwith "get_after_e: not supported"
 
 let preprocess_dots sl =
   let (sl,_) = get_before sl [] in
@@ -973,9 +1014,11 @@ and statement stmt after quantified label guard =
 					 new_quantified4 None true guard))))
 			     new_quantified3 None false guard)])))])
   | Ast.OptStm(stm) ->
-      failwith "OptStm should have been compiled away\n";
-  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
+      failwith "OptStm should have been compiled away\n"
+  | Ast.UniqueStm(stm) ->
       failwith "arities not yet supported"
+  | Ast.MultiStm(stm) ->
+      failwith "MultiStm should have been compiled away\n"
   | _ -> failwith "not supported"
 
 (* un_process_bef_aft is because we don't want to do transformation in this
@@ -1122,10 +1165,12 @@ let top_level ua t =
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
+      let unopt = elim_multi.V.rebuilder_statement unopt in
       let unopt = preprocess_dots_e unopt in
       letify (statement unopt Tail [] None false)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
+      let unopt = elim_multi.V.rebuilder_statement_dots unopt in
       let unopt = preprocess_dots unopt in
       letify (statement_list unopt Tail [] None false false)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"

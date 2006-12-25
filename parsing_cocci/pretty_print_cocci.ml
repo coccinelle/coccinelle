@@ -170,14 +170,18 @@ let rec expression e =
   | Ast.MetaConst(name,_,None,_) -> mcode print_string name
   | Ast.MetaConst(name,_,Some ty,_) ->
       mcode print_string name; print_string "/* ";
+      Format.print_flush(); (* no idea why this is needed *)
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-      print_string "*/"
+      Format.print_flush();
+      print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
   | Ast.MetaExpr(name,_,None,_) -> mcode print_string name
   | Ast.MetaExpr(name,_,Some ty,_) ->
-      mcode print_string name; print_string "/*";
+      mcode print_string name; print_string "/* ";
+      Format.print_flush();
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-      print_string "*/"
+      Format.print_flush();
+      print_string " */"
   | Ast.MetaExprList(name,_,_) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list

@@ -26,6 +26,37 @@ let collect_context e =
       Ast0.CONTEXT(_) -> (builder e) :: (k e)
     | _ -> k e in
 
+(* special case for everything that contains whencode, so that we skip over
+it *)
+  let expression r k e =
+    donothing Ast0.expr r k
+      (Ast0.rewrap e
+	 (match Ast0.unwrap e with
+	   Ast0.NestExpr(starter,exp,ender,whencode) ->
+	     Ast0.NestExpr(starter,exp,ender,None)
+	 | Ast0.Edots(dots,whencode) -> Ast0.Edots(dots,None)
+	 | Ast0.Ecircles(dots,whencode) -> Ast0.Ecircles(dots,None)
+	 | Ast0.Estars(dots,whencode) -> Ast0.Estars(dots,None)
+	 | e -> e)) in
+
+  let initialiser r k i =
+    donothing Ast0.ini r k
+      (Ast0.rewrap i
+	 (match Ast0.unwrap i with
+	   Ast0.Idots(dots,whencode) -> Ast0.Idots(dots,None)
+	 | i -> i)) in
+
+  let statement r k s =
+    donothing Ast0.stmt r k
+      (Ast0.rewrap s
+	 (match Ast0.unwrap s with
+	   Ast0.Nest(started,stm_dots,ender,whencode) ->
+	     Ast0.Nest(started,stm_dots,ender,None)
+	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,Ast0.NoWhen)
+	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,Ast0.NoWhen)
+	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,Ast0.NoWhen)
+	 | s -> s)) in
+
   let topfn r k e = Ast0.TopTag(e) :: (k e) in
 
   let res =
@@ -33,10 +64,9 @@ let collect_context e =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
-      (donothing Ast0.ident) (donothing Ast0.expr) (donothing Ast0.typeC)
-      (donothing Ast0.ini) (donothing Ast0.param) (donothing Ast0.decl)
-      (donothing Ast0.stmt) (donothing Ast0.meta)
-      topfn in
+      (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
+      (donothing Ast0.param) (donothing Ast0.decl) statement
+      (donothing Ast0.meta) topfn in
   res.V0.combiner_top_level e
 
 (* --------------------------------------------------------------------- *)

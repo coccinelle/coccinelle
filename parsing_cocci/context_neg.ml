@@ -529,6 +529,62 @@ let traverse minus_table plus_table =
     minus_table
 
 (* --------------------------------------------------------------------- *)
+(* contextify the whencode *)
+
+let contextify_all =
+  let bind x y = () in
+  let option_default = () in
+  let mcode x = () in
+  let do_nothing r k e = Ast0.set_mcodekind e (default_context()); k e in
+
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing
+
+let contextify_whencode =
+  let bind x y = () in
+  let option_default = () in
+  let mcode x = () in
+  let do_nothing r k e = k e in
+
+  let expression r k e =
+    match Ast0.unwrap e with
+      Ast0.NestExpr(_,_,_,Some whencode)
+    | Ast0.Edots(_,Some whencode)
+    | Ast0.Ecircles(_,Some whencode)
+    | Ast0.Estars(_,Some whencode) ->
+	contextify_all.V0.combiner_expression whencode
+    | _ -> k e in
+
+  let initialiser r k i =
+    match Ast0.unwrap i with
+      Ast0.Idots(dots,Some whencode) ->
+	contextify_all.V0.combiner_initialiser whencode
+    | _ -> k i in
+
+  let statement r k (s : Ast0.statement) =
+    match Ast0.unwrap s with
+      Ast0.Nest(_,_,_,Some whencode) ->
+	contextify_all.V0.combiner_statement_dots whencode
+    | Ast0.Dots(_,whencode)
+    | Ast0.Circles(_,whencode) | Ast0.Stars(_,whencode) ->
+	(match whencode with
+	  Ast0.WhenNot sd -> contextify_all.V0.combiner_statement_dots sd
+	| Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
+	| Ast0.NoWhen -> ())
+    | _ -> k s in
+
+  let combiner = 
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      do_nothing do_nothing do_nothing do_nothing do_nothing expression
+      do_nothing initialiser do_nothing do_nothing statement do_nothing
+      do_nothing in
+  combiner.V0.combiner_top_level
+
+(* --------------------------------------------------------------------- *)
 
 (* the first int list is the tokens in the node, the second is the tokens
 in the descendents *)
@@ -603,6 +659,7 @@ let realign minus plus =
 let context_neg minus plus =
   Hashtbl.clear minus_table;
   Hashtbl.clear plus_table;
+  List.iter contextify_whencode minus;
   let (minus,plus) = realign minus plus in
   let rec loop = function
       ([],[]) -> []

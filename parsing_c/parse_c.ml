@@ -23,7 +23,7 @@ let is_not_comment = function
 let is_comment x = not (is_not_comment x)
 
 let not_struct_enum = function
-  | (Parser_c.Tstruct _ | Parser_c.Tenum _)::_ -> false
+  | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
 
@@ -379,13 +379,21 @@ let forLOOKAHEAD = 20
 let regexp_foreach = Str.regexp_case_fold 
   ".*for_?each\\|for_?all\\|iterate"
   
-(* look if there is a '}' just after the closing ')', and handling the
+(* look if there is a '{' just after the closing ')', and handling the
  * possibility to have nested expressions inside nested parenthesis 
  *)
 let rec is_really_foreach xs = 
   let rec is_foreach_aux = function
     | [] -> false, []
     | TCPar _::TOBrace _::xs -> true, xs
+      (* the following attempts to handle the cases where there is a
+	 single statement in the body of the loop.  undoubtedly more
+	 cases are needed. *)
+    | TCPar _::TIdent _::xs -> true, xs
+    | TCPar _::Tif _::xs -> true, xs
+    | TCPar _::Twhile _::xs -> true, xs
+    | TCPar _::Tfor _::xs -> true, xs
+    | TCPar _::Tswitch _::xs -> true, xs
     | TCPar _::xs -> false, xs
     | TOPar _::xs -> 
         let (_, xs') = is_foreach_aux xs in
@@ -630,7 +638,7 @@ let lookahead2 next before =
    (* If ident contain a for_each, then certainly a macro. But to be
     * sure should look if there is a '{' after the ')', but it requires
     * to count the '('. Because this can be expensive, we do that only
-    * when the token contain "for_each". *)
+    * when the token contains "for_each". *)
 
   | (TIdent (s, i1)::TOPar _::rest, _) -> 
       if s ==~ regexp_foreach && 

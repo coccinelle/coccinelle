@@ -123,6 +123,8 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       | _ -> raise Impossible
       )
 
+  | A.MetaExpr(ida,false,opttypa,_inherited), expb -> expb
+
   (* todo: in fact can also have the Edots family inside nest, as in 
      if(<... x ... y ...>) or even in simple expr as in x[...] *)
   | A.Edots (mcode, None), expb    -> 
@@ -361,8 +363,7 @@ and (transform_ident:
 	    
       | A.MetaId(ida,false,_inherited)
       | A.MetaFunc(ida,false,_inherited)
-      | A.MetaLocalFunc(ida,false,_inherited) ->
-	  failwith "should not be in transformed code"
+      | A.MetaLocalFunc(ida,false,_inherited) -> idb,[] (* nothing to do *)
 	    
       | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
 	  failwith "not handling Opt/Unique/Multi for ident"
@@ -562,7 +563,7 @@ and transform_onedecl = fun decla declb ->
    | _, (((None, typb, sto), _),_) -> 
        failwith "no variable in this declaration, wierd"
 
-   | A.MetaDecl(ida,true,_inherited), _ -> 
+   | A.MetaDecl(ida,_,_inherited), _ -> 
        failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
 
    | A.DisjDecl xs, declb -> 
@@ -612,6 +613,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
           else raise NoMatch
         | _ -> raise Impossible
       )
+    | A.MetaType(ida,false,_inherited),  typb -> typb
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, ii)) -> 
        (* In ii there is a list, sometimes of length 1 or 2 or 3.
@@ -812,6 +814,8 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
      | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
      | n -> D.distribute_mck (mcodekind mcode) D.distribute_mck_node n binding
      )
+
+  | A.MetaRuleElem(mcode,false,_inherited), unwrap_node -> unwrap_node
 
 
   (* rene cant have found that a state containing a fake/exit/... should be 

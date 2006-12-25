@@ -46,6 +46,7 @@ let get_option fn = function
   | Some x -> Some (fn x)
 
 let anyopt l fn = List.exists (function w -> fn(Ast0.unwrap w)) l
+let allopt l fn = List.forall (function w -> fn(Ast0.unwrap w)) l
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -704,9 +705,9 @@ let rec statement in_nest tgt stm =
 	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,mids,ender))
       with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender)))
   | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->
-      Ast0.rewrap stm
-	(Ast0.Nest(starter,concat_dots (statement true tgt) rule_elem_dots,
-		   ender,whencode))
+      let new_rule_elem_dots =
+	concat_dots (statement true tgt) rule_elem_dots in
+      Ast0.rewrap stm (Ast0.Nest(starter,new_rule_elem_dots,ender,whencode))
   | Ast0.Dots(dots,whn)    ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

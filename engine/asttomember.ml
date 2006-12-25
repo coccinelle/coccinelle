@@ -104,8 +104,8 @@ and statement stmt used_after optional =
 
   | Ast.OptStm(stm) -> statement stm used_after (function x -> Opt x)
 
-  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
-      failwith "arities not yet supported"
+  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) -> statement stm used_after optional
+
   | _ -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)

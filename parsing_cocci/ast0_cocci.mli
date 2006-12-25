@@ -335,5 +335,6 @@ val get_type : 'a wrap -> Type_cocci.typeC option
 val set_dots_bef_aft : statement -> dots_bef_aft -> statement
 val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val fresh_index : unit -> int
+val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
