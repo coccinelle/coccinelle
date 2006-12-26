@@ -231,7 +231,6 @@ let get_names = function
   | Ast.MetaTextDecl(ar,nm) -> nm
 
 let update table unitary_variables =
-  Printf.printf "unitary variables %s\n" (String.concat " " unitary_variables);
   let statement r k s =
     let fvs = Hashtbl.find table (Statement s) in
     let fvs = set_minus fvs unitary_variables in

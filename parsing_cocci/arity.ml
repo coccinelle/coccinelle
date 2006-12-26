@@ -46,7 +46,6 @@ let get_option fn = function
   | Some x -> Some (fn x)
 
 let anyopt l fn = List.exists (function w -> fn(Ast0.unwrap w)) l
-let allopt l fn = List.forall (function w -> fn(Ast0.unwrap w)) l
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
