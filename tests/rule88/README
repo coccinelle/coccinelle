@@ -1,0 +1,47 @@
+Cocci file: rule88.cocci
+No bugs
+Two files suffer from cocci errors
+
+
+a800.c
+ * [status] ok
+
+cxusb.c
+ * [status] ok
+
+dibusb-mb.c
+ * [status] error
+ * three occurrences of the modified expression within the same rule_elem
+
+dibusb-mc.c
+ * [status] ok
+
+digitv.c
+ * [status] ok
+
+dtt200u.c
+ * [status] error
+ * two occurrences of the modified expression within the same rule_elem
+
+dvb-usb-init.c
+ * [status] wrong
+ * This file contains the definition of the modified function, and no call
+ to it.  It is thus part of the library, and not device-specific code.
+
+nova-t-usb2.c
+ * [status] ok
+
+umt-010.c
+ * [status] ok
+
+vp702x.c
+ * [status] ok
+
+vp7045.c
+ * [status] ok
+
+Key: ok means a .ok file is generated
+     spatch-ok means that the result is different in inessential ways
+     wrong means that the result is wrong
+     error means that coccinelle crashes
+     bugs refers to cases where the hand transformation is wrong.

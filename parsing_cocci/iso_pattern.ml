@@ -629,6 +629,7 @@ let make_minus =
 them on instantiating an isomorphism.  One could wonder whether it would
 be better not to use side-effects, but they are convenient for insert_plus
 where is it useful to manipulate a list of the mcodes but side-effect a tree *)
+(* hmm... Insert_plus is called before Iso_pattern... *)
 let rebuild_mcode start_line =
   let copy_mcodekind = function
       Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
@@ -760,7 +761,11 @@ let instantiate bindings mv_bindings =
       Ast0.MetaExpr(name,x) ->
 	(rebuild_mcode None).V0.rebuilder_expression
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) -> exp
+	    Common.Left(Ast0.ExprTag(exp)) ->
+	      Printf.printf "looked up %s and found: "
+		(Ast0.unwrap_mcode name);
+	      Unparse_ast0.expression exp; Format.print_newline();
+	      exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e (Ast0.MetaExpr(Ast0.set_mcode_data new_mv name,x)))

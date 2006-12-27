@@ -128,6 +128,27 @@ let collect_minus_join_points root =
 	[(Favored,info,mc)]
     | _ -> k e in
 
+(* don't want to attach to the outside of DOTS, because metavariables can't
+bind to that; not good for isomorphisms *)
+
+  let dots f k d =
+    let multibind l =
+      let rec loop = function
+	  [] -> option_default
+	| [x] -> x
+	| x::xs -> bind x (loop xs) in
+      loop l in
+
+    match Ast0.unwrap d with
+      Ast0.DOTS(l) -> multibind (List.map f l)
+    | Ast0.CIRCLES(l) -> multibind (List.map f l)
+    | Ast0.STARS(l) -> multibind (List.map f l) in
+
+  let edots r k d = dots r.V0.combiner_expression k d in
+  let idots r k d = dots r.V0.combiner_initialiser k d in
+  let pdots r k d = dots r.V0.combiner_parameter k d in
+  let sdots r k d = dots r.V0.combiner_statement k d in
+
   let statement r k s =
     let redo_branch branchres (ifinfo,aftmc) =
       match List.rev branchres with
@@ -199,7 +220,7 @@ let collect_minus_join_points root =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing
+    edots idots pdots sdots
     do_nothing expression do_nothing initialiser do_nothing do_nothing
     statement do_nothing do_top
 

@@ -338,8 +338,16 @@ and get_before_e s a =
 	  a in
       (Ast.rewrap s (Ast.Nest(sd,w,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
-      let (dsl,dsla) =
-	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
+      (* put the result of processing each branch in the whencode of the
+	 subsequent branches.  acc_dsl collects these extra whencodes *)
+      let (dsl,_,dsla) =
+	List.fold_left
+	  (function (dsl,acc_dsl,dsla) ->
+	    function cur ->
+	      let (cur_dsl,cur_dsla) = get_before cur (acc_dsl@a) in
+	      (cur_dsl::dsl,(Ast.Other_dots cur_dsl)::acc_dsl,cur_dsla::dsla))
+	  ([],[],[]) stmt_dots_list in
+      let dsl = List.rev dsl in
       (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with

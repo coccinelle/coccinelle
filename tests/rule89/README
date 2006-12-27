@@ -1,0 +1,38 @@
+Cocci file: rule89.cocci
+No bugs
+Two files suffer from cocci errors and one gives the wrong answer because
+the rule is not complete enough.
+
+
+bond_main.c
+ * [status] ok
+
+led.c
+ * [status] wrong
+ there is nothing in the rule to take care of inserting the require include
+ declaration.
+ this example requires the -ifdef option
+
+qeth_main.c
+ * [status] ok
+
+sdlamain.c
+ * [status] error
+ adds local and unlock at the beginning and end of the function, ie before
+ the initial declarations and after the return
+ there may also be a performance problem, with too many permutations of
+ witnesses in an AU that I don't understand
+
+strip.c
+ * [status] ok
+
+syncppp.c
+ * [status] error
+ flow_to_ast doesn't like a switch where "default" appears first
+
+
+Key: ok means a .ok file is generated
+     spatch-ok means that the result is different in inessential ways
+     wrong means that the result is wrong
+     error means that coccinelle crashes
+     bugs refers to cases where the hand transformation is wrong.

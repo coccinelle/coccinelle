@@ -263,6 +263,12 @@ Statement
 @@ @@
 return ...; => return;
 
+
+Expression
+@@ expression E; @@
+
+unlikely(E) => E
+
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
 
