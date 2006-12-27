@@ -101,6 +101,7 @@ let rec (pp_ctl:
      | Uncheck(phi1) ->
 	 pp "Uncheck"; pp "("; pp_arg env phi1; pp ")"
      | Dots _ -> failwith "should not occur"
+     | PDots _ -> failwith "should not occur"
 
    and pp_dir = function
        FORWARD -> ()

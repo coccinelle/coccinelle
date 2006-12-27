@@ -425,16 +425,16 @@ let rec unify_statement s1 s2 =
 	   (conjunct_bindings (unify_dots unify_statement sdots d1 d2)
 	      (conjunct_bindings (unify_dots unify_statement sdots s1 s2)
 		 (unify_rule_elem rb1 rb2))))
+  | (Ast.MultiStm(s1),_) -> unify_statement s1 s2 
+  | (_,Ast.MultiStm(s2)) -> unify_statement s1 s2 
   (* dots can match against anything.  return true to be safe. *)
   | (Ast.Dots(_,_,_),_) | (_,Ast.Dots(_,_,_))
   | (Ast.Circles(_,_,_),_) | (_,Ast.Circles(_,_,_))
   | (Ast.Stars(_,_,_),_) | (_,Ast.Stars(_,_,_)) -> return true
   | (Ast.OptStm(_),_)
   | (Ast.UniqueStm(_),_)
-  | (Ast.MultiStm(_),_)
   | (_,Ast.OptStm(_))
-  | (_,Ast.UniqueStm(_))
-  | (_,Ast.MultiStm(_)) -> failwith "unsupported statement"
+  | (_,Ast.UniqueStm(_)) -> failwith "unsupported statement"
   | _ -> return false
 
 let unify_statement_dots = unify_dots unify_statement sdots

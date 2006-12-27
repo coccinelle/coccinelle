@@ -32,6 +32,7 @@ let contains_modif x used_after =
 (* --------------------------------------------------------------------- *)
 (* reqopt type *)
 
+(* argument of Req is never empty *)
 type reqopt = Req of Ast.rule_elem list | Opt of Ast.rule_elem list
 
 let lub = function
@@ -62,10 +63,15 @@ and statement stmt used_after optional =
       if contains_modif ast used_after then optional [ast] else Opt []
 
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+      let body_info =
+	lub (statement_list decls used_after optional,
+	     statement_list body used_after optional) in
       if contains_modif lbrace used_after or contains_modif rbrace used_after
-      then optional []
-      else lub (statement_list decls used_after optional,
-		statement_list body used_after optional)
+      then
+	match body_info with
+	  Req(elems) -> body_info (* don't bother adding braces *)
+	| Opt(elems) -> lub (optional [lbrace;rbrace], body_info)
+      else body_info
 
   | Ast.IfThen(header,branch,aft)
   | Ast.While(header,branch,aft) | Ast.For(header,branch,aft) ->
@@ -89,18 +95,28 @@ and statement stmt used_after optional =
 	(Opt []) stmt_dots_list
 
   | Ast.Nest(stmt_dots,whencode,t) ->
-      statement_list stmt_dots used_after optional
+      (match Ast.unwrap stmt_dots with
+	Ast.DOTS([l]) ->
+	  (match Ast.unwrap l with
+	    Ast.MultiStm(stm) ->
+	      statement stm used_after optional
+	  | _ -> statement_list stmt_dots used_after (function x -> Opt x))
+      | _ -> statement_list stmt_dots used_after (function x -> Opt x))
 
   | Ast.Dots((_,i,d),whencodes,t) -> Opt []
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+      let body_info =
+	extend header (* only extends if the rest is required *)
+	  (lub (statement_list decls used_after optional,
+		statement_list body used_after optional)) in
       if contains_modif header used_after or
 	contains_modif lbrace used_after or contains_modif rbrace used_after
-      then optional [header]
-      else
-	extend header
-	  (lub (statement_list decls used_after optional,
-		statement_list body used_after optional))
+      then
+	match body_info with
+	  Req(elems) -> body_info (* don't bother adding braces *)
+	| Opt(elems) -> lub (optional [header], body_info)
+      else body_info
 
   | Ast.OptStm(stm) -> statement stm used_after (function x -> Opt x)
 

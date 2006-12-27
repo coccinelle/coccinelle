@@ -76,6 +76,7 @@ let wrapEF      n (x)   = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot     n (x)   = wrap n (CTL.Not(x))
 let wrapPred    n (x)   = wrap n (CTL.Pred(x))
 let wrapDots    n (x,y,z,a,b,c) = wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c))
+let wrapPDots   n (x,y,z,a,b,c) = wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c))
 let wrapLet     n (x,y,z) = wrap n (CTL.Let(x,y,z))
 let wrapRef     n (x)   = wrap n (CTL.Ref(x))
 
@@ -149,47 +150,6 @@ let elim_opt =
 	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
       | Ast.CIRCLES(l) -> failwith "elimopt: not supported"
       | Ast.STARS(l) -> failwith "elimopt: not supported") in
-  
-  V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing stmtdotsfn
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
-
-(* --------------------------------------------------------------------- *)
-(* Eliminate MultiStm *)
-
-let elim_multi =
-  let mcode x = x in
-  let donothing r k e = k e in
-
-  let rec dots_list unwrapped wrapped =
-    match (unwrapped,wrapped) with
-      ([],_) -> []
-
-    | (Ast.Nest(stm_dots,whencode,info)::urest,d::rest) ->
-	(match Ast.unwrap stm_dots with
-	  Ast.DOTS([l]) ->
-	    (match Ast.unwrap l with
-	      Ast.MultiStm(stm) ->
-		let d =
-		  Ast.rewrap d
-		    (Ast.Nest(Ast.rewrap d (Ast.DOTS([stm])),whencode,info)) in
-		stm::d::(dots_list urest rest)
-	    | _ -> d::(dots_list urest rest))
-	| _ -> d::(dots_list urest rest))
-
-    | (_::urest,d::rest) -> d :: (dots_list urest rest)
-
-    | _ -> failwith "not possible" in
-
-  let stmtdotsfn r k d =
-    let d = k d in
-    Ast.rewrap d
-      (match Ast.unwrap d with
-	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
-      | Ast.CIRCLES(l) -> failwith "elimmulti not supported"
-      | Ast.STARS(l) -> failwith "elimmulti: not supported") in
   
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -409,6 +369,9 @@ and get_before_e s a =
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
+  | Ast.MultiStm(stm) -> (* I have no idea ... *)
+      let (stm,res) = get_before_e stm a in
+      (Ast.rewrap s (Ast.MultiStm(stm)),res)
   | _ -> failwith "get_before_e: not supported"
 
 let rec get_after sl a =
@@ -516,6 +479,9 @@ and get_after_e s a =
       let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
+  | Ast.MultiStm(stm) -> (* I have no idea ... *)
+      let (stm,res) = get_after_e stm a in
+      (Ast.rewrap s (Ast.MultiStm(stm)),res)
   | _ -> failwith "get_after_e: not supported"
 
 let preprocess_dots sl =
@@ -739,7 +705,7 @@ let svar_minus_or_no_add_after s n label quantified d ast
 (* dots and nests *)
 
 let dots_and_nests nest whencodes befaftexps dot_code after n label
-    process_bef_aft statement_list statement guard =
+    process_bef_aft statement_list statement guard builder =
   let befaft = List.map (process_bef_aft guard) befaftexps in
   let befaftg = List.map (process_bef_aft true) befaftexps in
   let (notwhencodes,whencodes) =
@@ -766,7 +732,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	if !Flag_parsing_cocci.sgrep_mode
 	then wrapOr n (exit,errorexit)
 	else exit in
-  wrapDots n
+  builder n
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,
      if !Flag_parsing_cocci.sgrep_mode
      then ender (* for EX, have to find what we want *)
@@ -939,15 +905,24 @@ and statement stmt after quantified label guard =
 	(List.tl stmt_dots_list)
 
   | Ast.Nest(stmt_dots,whencode,t) ->
-      let dots_pattern =
-	statement_list stmt_dots (a2n after) quantified label true
-	  guard in
-      dots_and_nests (Some dots_pattern) whencode t None after n label
-	(process_bef_aft quantified n label)
-	(function x ->
-	  statement_list x Tail quantified label true true)
-	(function x -> statement x Tail quantified label true)
-	guard
+      let call builder stmt_dots =
+	let dots_pattern =
+	  statement_list stmt_dots (a2n after) quantified label true
+	    guard in
+	dots_and_nests (Some dots_pattern) whencode t None after n label
+	  (process_bef_aft quantified n label)
+	  (function x ->
+	    statement_list x Tail quantified label true true)
+	  (function x -> statement x Tail quantified label true)
+	  guard builder in
+
+      (match Ast.unwrap stmt_dots with
+	Ast.DOTS([l]) ->
+	  (match Ast.unwrap l with
+	    Ast.MultiStm(stm) ->
+	      call wrapPDots (Ast.rewrap stmt_dots (Ast.DOTS([stm])))
+	  | _ -> call wrapDots stmt_dots)
+      |	_  -> call wrapDots stmt_dots)
 
   | Ast.Dots((_,i,d),whencodes,t) ->
       let dot_code =
@@ -961,7 +936,7 @@ and statement stmt after quantified label guard =
 	(process_bef_aft quantified n label)
 	(function x -> statement_list x Tail quantified label true true)
 	(function x -> statement x Tail quantified label true)
-	guard
+	guard wrapDots
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
@@ -988,8 +963,9 @@ and statement stmt after quantified label guard =
 	let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
 	let errorexit = wrap n (CTL.Pred (Lib_engine.ErrorExit,CTL.Control)) in
 	wrapAnd(quantify rbfvs (make_match rbrace),
-		wrapAU(make_match stripped_rbrace,
-		       wrapOr(exit,errorexit))) in
+		wrapAnd(wrapBackEX(wrapNot(make_match stripped_rbrace)),
+			wrapAU(make_match stripped_rbrace,
+			       wrapOr(exit,errorexit)))) in
       let new_quantified3 =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
@@ -1080,7 +1056,17 @@ let rec letify x =
     | CTL.SeqOr(phi1,phi2)   -> CTL.SeqOr(letify phi1,letify phi2)
     | CTL.Implies(phi1,phi2) -> CTL.Implies(letify phi1,letify phi2)
     | CTL.AF(dir,phi1)       -> CTL.AF(dir,letify phi1)
-    | CTL.AX(dir,phi1)       -> CTL.AX(dir,letify phi1)
+    | CTL.AX(dir,phi1)       ->
+	(match CTL.unwrap phi1 with
+	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+	    drop_pdots phi1
+	      (dir,List.map (function (x,y) -> (x,letify y)) before_after,
+	       get_option letify nest,
+	       get_option letify notwhens,get_option letify whens,
+	       dotcode, letify rest)
+	      (function ax -> CTL.rewrap x (CTL.AX(dir,ax)))
+	      (function ex -> CTL.rewrap x (CTL.EX(dir,ex)))
+	| _ -> CTL.AX(dir,letify phi1))
     | CTL.AG(dir,phi1)       -> CTL.AG(dir,letify phi1)
     | CTL.EF(dir,phi1)       -> CTL.EF(dir,letify phi1)
     | CTL.EX(dir,phi1)       -> CTL.EX(dir,letify phi1)
@@ -1097,7 +1083,14 @@ let rec letify x =
 	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
-	   dotcode, letify rest))
+	   dotcode, letify rest)
+    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+	drop_pdots x
+	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
+	   get_option letify nest,
+	   get_option letify notwhens,get_option letify whens,
+	   dotcode, letify rest)
+	  (function ax -> ax) (function ex -> ex))
 
 and drop_dots x (dir,before_after,nest,notwhens,whens,dotcode,rest) =
   let lst = function None -> [] | Some x -> [x] in
@@ -1141,6 +1134,61 @@ and drop_dots x (dir,before_after,nest,notwhens,whens,dotcode,rest) =
 	   l,
 	 rest)
 
+(* f(); <... \+ g(); ...> h(); after 
+
+becomes:
+
+f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
+          E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
+
+Unfortunately, this is not really what we want.  We really want the outer
+AX to become an EX.  That could perhaps be done with some postprocessing.
+We have taken care of the AX(PDots ...) case, and hope nothing else can
+show up. *)
+
+and drop_pdots x (dir,before_after,nest,notwhens,whens,dotcode,rest) fA fE =
+  let rewrap e = CTL.rewrap x e in
+  let befaft_name = get_let_ctr() in
+  let nest_name = get_let_ctr() in
+  let rest_name = get_let_ctr() in
+  let befaft_maker body =
+    CTL.LetR(dir,befaft_name,
+	     List.fold_left (function x -> function y -> rewrap(CTL.Or(x,y)))
+	       (rewrap CTL.False)
+	       (List.map (function (_,x) -> x) before_after),
+	     body) in
+  let nest_maker body =
+    match nest with
+      None -> body
+    | Some n -> rewrap (CTL.LetR(dir,nest_name,n,body)) in
+  let rest_maker body = rewrap (CTL.LetR(dir,rest_name,rest,body)) in
+  let nest_pattern =
+    rewrap
+      (drop_dots x
+	 (dir,
+	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
+	  get_option (function _ -> rewrap(CTL.Ref nest_name)) nest,
+	  notwhens,whens,dotcode,rewrap (CTL.Ref rest_name))) in
+  let exists_pattern body =
+    rewrap(CTL.EU(dir,
+		  rewrap
+		    (CTL.Not
+		       (rewrap(CTL.Uncheck(rewrap(CTL.Ref befaft_name))))),
+	   rewrap(CTL.And(rewrap(CTL.Uncheck(rewrap(CTL.Ref nest_name))),
+			  body)))) in
+  let end_pattern =
+    rewrap
+      (drop_dots x
+	 (dir,
+	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
+	  None,notwhens,whens,dotcode,
+	  rewrap(CTL.Uncheck(rewrap(CTL.Ref rest_name))))) in
+  befaft_maker
+    (nest_maker
+       (rest_maker
+	  (* fA might add AX or do nothing, fE might add EX or do nothing *)
+	  (rewrap(CTL.And(fE(exists_pattern end_pattern),fA nest_pattern)))))
+
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
@@ -1165,12 +1213,10 @@ let top_level ua t =
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
-      let unopt = elim_multi.V.rebuilder_statement unopt in
       let unopt = preprocess_dots_e unopt in
       letify (statement unopt Tail [] None false)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
-      let unopt = elim_multi.V.rebuilder_statement_dots unopt in
       let unopt = preprocess_dots unopt in
       letify (statement_list unopt Tail [] None false false)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"

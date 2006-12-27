@@ -47,6 +47,16 @@ let get_option fn = function
 
 let anyopt l fn = List.exists (function w -> fn(Ast0.unwrap w)) l
 
+let allopt l fn =
+  let rec loop = function
+      [] -> []
+    | x::xs ->
+	match fn (Ast0.unwrap x) with
+	  Some x -> x :: (loop xs)
+	| None -> [] in
+  let res = loop l in
+  if List.length res = List.length l then Some res else None
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
@@ -167,7 +177,16 @@ let rec top_expression in_nest opt_allowed tgt expr =
   let exp_same = all_same in_nest opt_allowed tgt in
   match Ast0.unwrap expr with
     Ast0.Ident(id) ->
-      Ast0.rewrap expr (Ast0.Ident(ident in_nest opt_allowed tgt id))
+      let new_id = ident in_nest opt_allowed tgt id in
+      Ast0.rewrap expr
+	(match Ast0.unwrap new_id with
+	  Ast0.OptIdent(id) ->
+	    Ast0.OptExp(Ast0.rewrap expr (Ast0.Ident(id)))
+	| Ast0.UniqueIdent(id) ->
+	    Ast0.UniqueExp(Ast0.rewrap expr (Ast0.Ident(id)))
+	| Ast0.MultiIdent(id) ->
+	    Ast0.MultiExp(Ast0.rewrap expr (Ast0.Ident(id)))
+	| _ -> Ast0.Ident(new_id))
   | Ast0.Constant(const) ->
       let arity = exp_same (mcode2line const) [mcode2arity const] in
       let const = mcode const in
@@ -288,8 +307,13 @@ let rec top_expression in_nest opt_allowed tgt expr =
 	  if anyopt xs (function Ast0.OptExp(_) -> true | _ -> false)
 	  then fail expr "opt only allowed in the last disjunct"
       |	_ -> ());
-      let res = Ast0.DisjExpr(starter,exps,mids,ender) in
-      Ast0.rewrap expr res
+      Ast0.rewrap expr
+	(match allopt exps (function Ast0.MultiExp(e) -> Some e | _ -> None)
+	with
+	  Some stripped ->
+	    Ast0.MultiExp
+	      (Ast0.rewrap expr(Ast0.DisjExpr(starter,stripped,mids,ender)))
+	| None -> Ast0.DisjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
       let res =
 	Ast0.NestExpr(starter,dots (top_expression true true tgt) exp_dots,
@@ -680,7 +704,16 @@ let rec statement in_nest tgt stm =
       let name = mcode name in
       make_rule_elem stm tgt arity (Ast0.MetaStmtList(name))
   | Ast0.Exp(exp) ->
-      Ast0.rewrap stm (Ast0.Exp(top_expression in_nest true tgt exp))
+      let new_exp = top_expression in_nest true tgt exp in
+      Ast0.rewrap stm 
+	(match Ast0.unwrap new_exp with
+	  Ast0.OptExp(exp) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Exp(exp)))
+	| Ast0.UniqueExp(exp) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Exp(exp)))
+	| Ast0.MultiExp(exp) ->
+	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.Exp(exp)))
+	| _ -> Ast0.Exp(new_exp))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
 	List.map (function x -> concat_dots (statement in_nest tgt) x)

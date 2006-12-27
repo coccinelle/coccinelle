@@ -123,7 +123,8 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       | _ -> raise Impossible
       )
 
-  | A.MetaExpr(ida,false,opttypa,_inherited), expb -> expb
+  | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+      D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
 
   (* todo: in fact can also have the Edots family inside nest, as in 
      if(<... x ... y ...>) or even in simple expr as in x[...] *)
@@ -363,7 +364,8 @@ and (transform_ident:
 	    
       | A.MetaId(ida,false,_inherited)
       | A.MetaFunc(ida,false,_inherited)
-      | A.MetaLocalFunc(ida,false,_inherited) -> idb,[] (* nothing to do *)
+      | A.MetaLocalFunc(ida,false,_inherited) ->
+	  idb, tag_symbols [ida] ii binding
 	    
       | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
 	  failwith "not handling Opt/Unique/Multi for ident"
@@ -613,7 +615,8 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
           else raise NoMatch
         | _ -> raise Impossible
       )
-    | A.MetaType(ida,false,_inherited),  typb -> typb
+    | A.MetaType(ida,false,_inherited),  typb ->
+	D.distribute_mck (mcodekind ida) D.distribute_mck_type typb binding
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, ii)) -> 
        (* In ii there is a list, sometimes of length 1 or 2 or 3.
@@ -790,7 +793,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
 
   | _, F.Enter | _, F.Exit | _, F.ErrorExit -> raise Impossible
 
-  | A.MetaRuleElem(mcode,true,_inherited), unwrap_node -> 
+  | A.MetaRuleElem(mcode,_,_inherited), unwrap_node -> 
      (match unwrap_node with
      | F.CaseNode _
      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
@@ -814,8 +817,6 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
      | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
      | n -> D.distribute_mck (mcodekind mcode) D.distribute_mck_node n binding
      )
-
-  | A.MetaRuleElem(mcode,false,_inherited), unwrap_node -> unwrap_node
 
 
   (* rene cant have found that a state containing a fake/exit/... should be 

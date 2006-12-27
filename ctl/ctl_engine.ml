@@ -1248,7 +1248,8 @@ let rec satloop unchecked required required_states
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
 	else res
-    | A.Dots _ -> failwith "should not occur" in
+    | A.Dots _ -> failwith "should not occur"
+    | A.PDots _ -> failwith "should not occur" in
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     drop_wits required_states res phi in
   
@@ -1448,7 +1449,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  then List.map (function (s,th,_) -> (s,th,[])) res
 	  else res in
 	anno res []
-    | A.Dots _ -> failwith "should not occur" in
+    | A.Dots _ -> failwith "should not occur"
+    | A.PDots _ -> failwith "should not occur" in
     let res1 = drop_wits required_states res phi in
     if not(res1 = res) then print_state "after drop_wits" res1;
     (child,res1)
@@ -1503,6 +1505,7 @@ let simpleanno l phi res =
     | A.Ref(s)             -> pp ("Ref("^s^")")
     | A.Uncheck(s)         -> pp "Uncheck"
     | A.Dots _ -> failwith "should not occur"
+    | A.PDots _ -> failwith "should not occur"
 ;;
 
 
@@ -1754,7 +1757,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
 (* print_state "final result" res;*)
     res
-  else (Printf.printf "missing something required\n"; [])
+  else (Printf.printf "missing something required\n"; flush stdout; [])
 ;;
 
 (* ********************************************************************** *)
