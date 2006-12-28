@@ -83,3 +83,8 @@ zd1201.c
  * [status] 
 
 
+Key: ok means a .ok file is generated
+     spatch-ok means that the result is different in inessential ways
+     wrong means that the result is wrong
+     error means that coccinelle crashes
+     bugs refers to cases where the hand transformation is wrong.
