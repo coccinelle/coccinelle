@@ -1,29 +1,85 @@
 auerswald.c
+ * [status] 
+
 cp2101.c
+ * [status] ok
+
 cypress_m8.c
+ * [status] 
+
 ehci-mem.c
+ * [status] 
+
 ehci-sched.c
+ * [status] 
+
 ftdi_sio.c
+ * [status] 
+
 garmin_gps.c
+ * [status] ok
+
 hc_crisv10.c
+ * [status] ok
+
 io_edgeport.c
+ * [status] 
+
 io_ti.c
+ * [status] 
+
 ir-usb.c
-isd200.c
+ * [status] ok
+
 keyspan.c
+ * [status] ok
+
 kobil_sct.c
+ * [status] 
+
 mct_u232.c
+ * [status] ok
+
 mon_main.c
+ * [status] 
+
 mon_text.c
+ * [status] 
+
 option.c
+ * [status] 
+
 ov511.c
+ * [status] 
+
 pl2303.c
+ * [status] 
+
 pwc-if.c
+ * [status] 
+
 se401.c
+ * [status] ok
+
 stv680.c
+ * [status] 
+
 ti_usb_3410_5052.c
+ * [status] ok
+
 usblcd.c
+ * [status] 
+
 usb-serial.c
+ * [status] 
+
 usbtest.c
+ * [status] 
+
 visor.c
+ * [status] 
+
 zd1201.c
+ * [status] 
+
+

@@ -1,6 +1,6 @@
 @@
 type T;
-identifier x;
+expression x;
 expression E1,E2,E3;
 @@
 
@@ -11,7 +11,7 @@ expression E1,E2,E3;
 
 @@
 type T;
-identifier x;
+expression x;
 expression E1,E2;
 @@
 

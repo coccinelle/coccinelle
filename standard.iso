@@ -46,10 +46,11 @@
 Expression
 @@
 expression E1, E2;
+expression list args;
 type T;
 @@
 
-E1 = (T) E2(...) => E1 = E2(...)
+E1 = (T) E2(args) => E1 = E2(args)
 
 Declaration
 @@ identifier Z; @@

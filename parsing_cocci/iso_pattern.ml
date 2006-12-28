@@ -111,23 +111,60 @@ let bool_match_option f t1 t2 =
 let is_context e =
   match Ast0.get_mcodekind e with Ast0.CONTEXT(cell) -> true | _ -> false
 
-let match_list fn la lb =
-  if List.length la = List.length lb
-  then
-    List.fold_left2
-      (function rest -> function cura -> function curb ->
-	conjunct_bindings (fn cura curb) rest)
-      (return true) la lb
-  else return false
+let match_list matcher is_list_matcher do_list_match la lb =
+  let rec loop = function
+      ([],[]) -> return true
+    | ([x],lb) when is_list_matcher x -> do_list_match x lb
+    | (x::xs,y::ys) -> conjunct_bindings (matcher x y) (loop (xs,ys))
+    | _ -> return false in
+  loop (la,lb)
 
 let match_maker context_required whencode_allowed =
 
-  let match_dots fn d1 d2 =
+  let match_dots matcher is_list_matcher do_list_match d1 d2 =
     match (Ast0.unwrap d1, Ast0.unwrap d2) with
       (Ast0.DOTS(la),Ast0.DOTS(lb))
     | (Ast0.CIRCLES(la),Ast0.CIRCLES(lb))
-    | (Ast0.STARS(la),Ast0.STARS(lb)) -> match_list fn la lb
+    | (Ast0.STARS(la),Ast0.STARS(lb)) ->
+	match_list matcher is_list_matcher (do_list_match d2) la lb
     | _ -> return false in
+
+  let is_elist_matcher el =
+    match Ast0.unwrap el with Ast0.MetaExprList(_) -> true | _ -> false in
+
+  let is_plist_matcher pl =
+    match Ast0.unwrap pl with Ast0.MetaParamList(_) -> true | _ -> false in
+
+  let is_slist_matcher pl =
+    match Ast0.unwrap pl with Ast0.MetaStmtList(_) -> true | _ -> false in
+
+  let no_list _ = false in
+
+  let build_dots pattern data =
+    match Ast0.unwrap pattern with
+      Ast0.DOTS(_) -> Ast0.rewrap pattern (Ast0.DOTS(data))
+    | Ast0.CIRCLES(_) -> Ast0.rewrap pattern (Ast0.CIRCLES(data))
+    | Ast0.STARS(_) -> Ast0.rewrap pattern (Ast0.STARS(data)) in
+
+  let do_elist_match builder el lst =
+    match Ast0.unwrap el with
+      Ast0.MetaExprList(name) ->
+	add_binding name (Ast0.DotsExprTag(build_dots builder lst))
+    | _ -> failwith "not possible" in
+
+  let do_plist_match builder pl lst =
+    match Ast0.unwrap pl with
+      Ast0.MetaParamList(name) ->
+	add_binding name (Ast0.DotsParamTag(build_dots builder lst))
+    | _ -> failwith "not possible" in
+
+  let do_slist_match builder sl lst =
+    match Ast0.unwrap sl with
+      Ast0.MetaStmtList(name) ->
+	add_binding name (Ast0.DotsStmtTag(build_dots builder lst))
+    | _ -> failwith "not possible" in
+
+  let do_nolist_match _ _ = failwith "not possible" in
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
@@ -169,7 +206,8 @@ let match_maker context_required whencode_allowed =
 	      return (mcode_equal consta constb)
 	  | (Ast0.FunCall(fna,_,argsa,_),Ast0.FunCall(fnb,lp,argsb,rp)) ->
 	      conjunct_bindings (match_expr fna fnb)
-		(match_dots match_expr argsa argsb)
+		(match_dots match_expr is_elist_matcher do_elist_match
+		   argsa argsb)
 	  | (Ast0.Assignment(lefta,opa,righta),
 	     Ast0.Assignment(leftb,opb,rightb)) ->
 	       if mcode_equal opa opb
@@ -279,7 +317,8 @@ let match_maker context_required whencode_allowed =
 	       if mcode_equal kinda kindb
 	       then
 		 conjunct_bindings (match_ident namea nameb)
-		   (match_list match_decl declsa declsb)
+		   (match_list match_decl no_list do_nolist_match
+		      declsa declsb)
 	       else return false
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      return (mcode_equal namea nameb)
@@ -325,7 +364,7 @@ let match_maker context_required whencode_allowed =
 	(Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
 	  match_expr expa expb
       | (Ast0.InitList(_,initlista,_),Ast0.InitList(_,initlistb,_)) ->
-	  match_dots match_init initlista initlistb
+	  match_dots match_init no_list do_nolist_match initlista initlistb
       | (Ast0.InitGccDotName(_,namea,_,inia),
 	 Ast0.InitGccDotName(_,nameb,_,inib)) ->
 	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
@@ -399,12 +438,17 @@ let match_maker context_required whencode_allowed =
 		   (conjunct_bindings
 		      (match_ident namea nameb)
 		      (conjunct_bindings
-			 (match_dots match_param paramsa paramsb)
-			 (match_dots match_statement bodya bodyb)))
+			 (match_dots
+			    match_param is_plist_matcher do_plist_match
+			    paramsa paramsb)
+			 (match_dots
+			    match_statement is_slist_matcher do_slist_match
+			    bodya bodyb)))
 	       else return false
 	  | (Ast0.Decl(decla),Ast0.Decl(declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
-	      match_dots match_statement bodya bodyb
+	      match_dots match_statement is_slist_matcher do_slist_match
+		bodya bodyb
 	  | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
 	      match_expr expa expb
 	  | (Ast0.IfThen(_,_,expa,_,branch1a,_),
@@ -493,7 +537,8 @@ let match_maker context_required whencode_allowed =
       | (Ast0.FUNCTION(statementa),Ast0.FUNCTION(statementb)) ->
 	  match_statement statementa statementb
       | (Ast0.CODE(stmt_dotsa),Ast0.CODE(stmt_dotsb)) ->
-	  match_dots match_statement stmt_dotsa stmt_dotsb
+	  match_dots match_statement is_slist_matcher do_slist_match
+            stmt_dotsa stmt_dotsb
       | (Ast0.ERRORWORDS(expsa),_) ->
 	  failwith "error words not supported in patterns"
       | (Ast0.OTHER(_),_) -> failwith "unexpected code"
@@ -756,16 +801,74 @@ let instantiate bindings mv_bindings =
     | Ast0.MetaLocalFunc(name) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
+  let rec elist r same_dots = function
+      [] -> []
+    | [x] ->
+	(match Ast0.unwrap x with
+	  Ast0.MetaExprList(name) ->
+	    (match lookup name bindings mv_bindings with
+	      Common.Left(Ast0.DotsExprTag(exp)) ->
+		(match same_dots exp with
+		  Some l -> l
+		| None -> failwith "dots put in incompatible context")
+	    | Common.Left(_) -> failwith "not possible 1"
+	    | Common.Right(new_mv) ->
+		failwith "MetaExprList in SP not supported")
+	| _ -> [r.V0.rebuilder_expression x])
+    | x::xs -> (r.V0.rebuilder_expression x)::(elist r same_dots xs) in
+
+  let rec plist r same_dots = function
+      [] -> []
+    | [x] ->
+	(match Ast0.unwrap x with
+	  Ast0.MetaParamList(name) ->
+	    (match lookup name bindings mv_bindings with
+	      Common.Left(Ast0.DotsParamTag(exp)) ->
+		(match same_dots exp with
+		  Some l -> l
+		| None -> failwith "dots put in incompatible context")
+	    | Common.Left(_) -> failwith "not possible 1"
+	    | Common.Right(new_mv) ->
+		failwith "MetaExprList in SP not supported")
+	| _ -> [r.V0.rebuilder_parameter x])
+    | x::xs -> (r.V0.rebuilder_parameter x)::(plist r same_dots xs) in
+
+  let rec slist r same_dots = function
+      [] -> []
+    | [x] ->
+	(match Ast0.unwrap x with
+	  Ast0.MetaStmtList(name) ->
+	    (match lookup name bindings mv_bindings with
+	      Common.Left(Ast0.DotsStmtTag(exp)) ->
+		(match same_dots exp with
+		  Some l -> l
+		| None -> failwith "dots put in incompatible context")
+	    | Common.Left(_) -> failwith "not possible 1"
+	    | Common.Right(new_mv) ->
+		failwith "MetaExprList in SP not supported")
+	| _ -> [r.V0.rebuilder_statement x])
+    | x::xs -> (r.V0.rebuilder_statement x)::(slist r same_dots xs) in
+
+  let same_dots d =
+    match Ast0.unwrap d with Ast0.DOTS(l) -> Some l |_ -> None in
+  let same_circles d =
+    match Ast0.unwrap d with Ast0.CIRCLES(l) -> Some l |_ -> None in
+  let same_stars d =
+    match Ast0.unwrap d with Ast0.STARS(l) -> Some l |_ -> None in
+
+  let dots list_fn r k d =
+    Ast0.rewrap d
+      (match Ast0.unwrap d with
+	Ast0.DOTS(l) -> Ast0.DOTS(list_fn r same_dots l)
+      | Ast0.CIRCLES(l) -> Ast0.CIRCLES(list_fn r same_circles l)
+      | Ast0.STARS(l) -> Ast0.STARS(list_fn r same_stars l)) in
+
   let exprfn r k e =
     match Ast0.unwrap e with
       Ast0.MetaExpr(name,x) ->
 	(rebuild_mcode None).V0.rebuilder_expression
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) ->
-	      Printf.printf "looked up %s and found: "
-		(Ast0.unwrap_mcode name);
-	      Unparse_ast0.expression exp; Format.print_newline();
-	      exp
+	    Common.Left(Ast0.ExprTag(exp)) -> exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e (Ast0.MetaExpr(Ast0.set_mcode_data new_mv name,x)))
@@ -856,7 +959,7 @@ let instantiate bindings mv_bindings =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    (dots elist) donothing (dots plist) (dots slist)
     identfn exprfn tyfn donothing paramfn donothing stmtfn donothing
     donothing
 
