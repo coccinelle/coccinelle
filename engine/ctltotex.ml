@@ -151,6 +151,7 @@ let rec ctl2c ct pp pv x =
       let (res,ct) = pathwrap ct pp pv f
       in (res^"^u",ct+1)
   | CTL.Dots _ -> failwith "unexpected Dots"
+  | CTL.PDots _ -> failwith "unexpected PDots"
 
 and wrap ct pp pv x =
   match CTL.unwrap x with

@@ -43,7 +43,7 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | Dots of
       (* dir * (before_after * before_after_guard) * nest * whennots * when *
-	 rest *)
+	 rest * aftpred * truepred *)
       direction *
 	((('pred,'mvar,'anno) generic_ctl) *
 	   (('pred,'mvar,'anno) generic_ctl)) list *
@@ -51,10 +51,12 @@ type ('pred,'mvar,'anno) generic_ctl =
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl) *
+	(('pred,'mvar,'anno) generic_ctl) *
 	(('pred,'mvar,'anno) generic_ctl)
   | PDots of (* for \+ code *)
       (* dir * (before_after * before_after_guard) * nest * whennots * when *
-	 rest *)
+	 rest * aftpred * truepred *)
       direction *
 	((('pred,'mvar,'anno) generic_ctl) *
 	   (('pred,'mvar,'anno) generic_ctl)) list *
@@ -62,6 +64,8 @@ type ('pred,'mvar,'anno) generic_ctl =
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
+	(('pred,'mvar,'anno) generic_ctl) *
+	(('pred,'mvar,'anno) generic_ctl) *
 	(('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
 

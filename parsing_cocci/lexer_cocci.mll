@@ -409,7 +409,15 @@ rule token = parse
 	  TString(string lexbuf,(get_current_line_type lexbuf)) }
   | (real as x)    { start_line true;
 		     TFloat(x,(get_current_line_type lexbuf)) }
-  | (decimal as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
+  | ((( decimal | hexa | octal) 
+      ( ['u' 'U'] 
+      | ['l' 'L']  
+      | (['l' 'L'] ['u' 'U'])
+      | (['u' 'U'] ['l' 'L'])
+      | (['u' 'U'] ['l' 'L'] ['l' 'L'])
+      | (['l' 'L'] ['l' 'L'])
+      )?
+    ) as x) { start_line true; TInt(x,(get_current_line_type lexbuf)) }
 
   | "<=>"          { TIso }
   | "=>"           { TRightIso }

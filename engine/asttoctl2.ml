@@ -75,8 +75,10 @@ let wrapEG      n (x)   = wrap n (CTL.EG(CTL.FORWARD,x))
 let wrapEF      n (x)   = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot     n (x)   = wrap n (CTL.Not(x))
 let wrapPred    n (x)   = wrap n (CTL.Pred(x))
-let wrapDots    n (x,y,z,a,b,c) = wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c))
-let wrapPDots   n (x,y,z,a,b,c) = wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c))
+let wrapDots    n (x,y,z,a,b,c,d,e) =
+  wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c,d,e))
+let wrapPDots   n (x,y,z,a,b,c,d,e) =
+  wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c,d,e))
 let wrapLet     n (x,y,z) = wrap n (CTL.Let(x,y,z))
 let wrapRef     n (x)   = wrap n (CTL.Ref(x))
 
@@ -730,21 +732,19 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	None -> Some after
       |	Some x -> Some (wrapOr n (after,x))(*can use v because disjoint w/ x*)
     else notwhencodes in
-  let exit = endpred n label in
-  let errorexit = exitpred n label in
   let ender =
     match after with
       After f -> f
     | Guard f -> CTL.rewrap f (CTL.Uncheck f)
     | Tail ->
+	let exit = endpred n label in
+	let errorexit = exitpred n label in
 	if !Flag_parsing_cocci.sgrep_mode
 	then wrapOr n (exit,errorexit)
-	else exit in
+	else wrap n CTL.False in
   builder n
-    (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,
-     if !Flag_parsing_cocci.sgrep_mode
-     then ender (* for EX, have to find what we want *)
-     else wrapOr n (ender,aftret n label))
+    (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,ender,
+     aftpred n label, truepred n label)
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1034,15 +1034,16 @@ let rec letify x =
 	(match CTL.unwrap phi2 with
 	  CTL.AX(dir,ax) ->
 	    (match CTL.unwrap ax with
-	      CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+	      CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr)
+	      ->
 		let (same,different) =
 		  List.partition (function (x,_) -> x = phi1) before_after in
 		(match same with
 		  [] -> fail()
 		| [(same,_)] ->
 		    let v = get_let_ctr() in
-		    CTL.Let
-		      (v,letify phi1,
+		    CTL.LetR
+		      (dir,v,letify phi1,
 		       CTL.rewrap x
 			 (CTL.And
 			    (CTL.rewrap phi1 (CTL.Ref v),
@@ -1056,7 +1057,8 @@ let rec letify x =
 					    (same,
 					     CTL.rewrap same (CTL.Ref v))::
 					    different,nest,
-					    notwhens,whens,dotcode,rest))))))))
+					    notwhens,whens,dotcode,rest,
+					    af,tr))))))))
 		|	_ -> failwith "duplicated befores?")
 	    | _ -> fail())
 	| _ -> fail())
@@ -1066,12 +1068,12 @@ let rec letify x =
     | CTL.AF(dir,phi1)       -> CTL.AF(dir,letify phi1)
     | CTL.AX(dir,phi1)       ->
 	(match CTL.unwrap phi1 with
-	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
 	    drop_pdots phi1
 	      (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	       get_option letify nest,
 	       get_option letify notwhens,get_option letify whens,
-	       dotcode, letify rest)
+	       dotcode, letify rest, af, tr)
 	      (function ax -> CTL.rewrap x (CTL.AX(dir,ax)))
 	      (function ex -> CTL.rewrap x (CTL.EX(dir,ex)))
 	| _ -> CTL.AX(dir,letify phi1))
@@ -1086,21 +1088,22 @@ let rec letify x =
     | CTL.LetR (d,x,phi1,phi2)  -> CTL.LetR (d,x,letify phi1,letify phi2)
     | CTL.Ref(s)             -> CTL.Ref(s)
     | CTL.Uncheck(phi1)      -> CTL.Uncheck(letify phi1)
-    | CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+    | CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
 	drop_dots x
 	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
-	   dotcode, letify rest)
-    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest) ->
+	   dotcode, letify rest, af, tr)
+    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
 	drop_pdots x
 	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
-	   dotcode, letify rest)
+	   dotcode, letify rest, af, tr)
 	  (function ax -> ax) (function ex -> ex))
 
-and drop_dots x (dir,before_after,nest,notwhens,whens,dotcode,rest) =
+and drop_dots x
+    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftpred,truepred) =
   let lst = function None -> [] | Some x -> [x] in
   let uncheck nw = CTL.rewrap x (CTL.Uncheck nw) in
   let not_uncheck y = CTL.rewrap x (CTL.Not (CTL.rewrap x (CTL.Uncheck y))) in
@@ -1124,37 +1127,59 @@ and drop_dots x (dir,before_after,nest,notwhens,whens,dotcode,rest) =
   let whens = get_option uncheck whens in
   let all =
     (lst dotcode) @ (lst nest) @ (lst notwhens) @ (lst whens) @ before_after in
-  let af_builder (dir,data) =
-    if !Flag_parsing_cocci.sgrep_mode
-    then CTL.EF(dir,data)
-    else CTL.AF(dir,data) in
-  let au_builder (dir,data1,data2) =
-    if !Flag_parsing_cocci.sgrep_mode
-    then CTL.EU(dir,data1,data2)
-    else CTL.AU(dir,data1,data2) in
-  match all with
-    [] -> af_builder(dir,rest)
-  | l ->
-      au_builder
-	(dir,
-	 foldr1
-	   (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
-	   l,
-	 rest)
-
+  let wrap f = CTL.rewrap x f in
+  let build_big_rest bef_aft_builder =
+    let line = CTL.get_line x in
+        (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
+    wrap
+      (CTL.Or
+	 (rest,
+	  wrap
+	    (CTL.Or
+	       (aftpred,
+		wrap
+		  (CTL.And
+		     (truepred,
+		      bef_aft_builder
+			(wrap(CTL.Or(aftret line None,
+				     endpred line None))))))))) in
+  
+  match (all,!Flag_parsing_cocci.sgrep_mode) with
+    ([],true) -> CTL.EF(dir,rest)
+  | ([],false) ->
+      CTL.AF(dir,build_big_rest (function body -> wrap(CTL.AF(dir,body))))
+  | (l,true) ->
+      let flat_all =
+	foldr1
+	  (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
+	  l in
+      CTL.EU(dir,flat_all,rest)
+  | (l,false) ->
+      let v = get_let_ctr() in
+      let flat_all =
+	foldr1
+	  (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
+	  l in
+      let rest =
+	build_big_rest
+	  (function body -> wrap(CTL.AU(dir,wrap(CTL.Ref v),body))) in
+      CTL.LetR(dir,v,flat_all,wrap(CTL.AU(dir,wrap(CTL.Ref v),rest)))
+	
 (* f(); <... \+ g(); ...> h(); after 
-
-becomes:
-
-f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
-          E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
-
+   
+   becomes:
+   
+   f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
+   E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
+   
 Unfortunately, this is not really what we want.  We really want the outer
 AX to become an EX.  That could perhaps be done with some postprocessing.
 We have taken care of the AX(PDots ...) case, and hope nothing else can
 show up. *)
 
-and drop_pdots x (dir,before_after,nest,notwhens,whens,dotcode,rest) fA fE =
+and drop_pdots x
+    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftpred,truepred)
+    fA fE =
   let rewrap e = CTL.rewrap x e in
   let befaft_name = get_let_ctr() in
   let nest_name = get_let_ctr() in
@@ -1176,7 +1201,8 @@ and drop_pdots x (dir,before_after,nest,notwhens,whens,dotcode,rest) fA fE =
 	 (dir,
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  get_option (function _ -> rewrap(CTL.Ref nest_name)) nest,
-	  notwhens,whens,dotcode,rewrap (CTL.Ref rest_name))) in
+	  notwhens,whens,dotcode,rewrap (CTL.Ref rest_name),
+	  aftpred,truepred)) in
   let exists_pattern body =
     rewrap(CTL.EU(dir,
 		  rewrap
@@ -1190,7 +1216,8 @@ and drop_pdots x (dir,before_after,nest,notwhens,whens,dotcode,rest) fA fE =
 	 (dir,
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  None,notwhens,whens,dotcode,
-	  rewrap(CTL.Uncheck(rewrap(CTL.Ref rest_name))))) in
+	  rewrap(CTL.Uncheck(rewrap(CTL.Ref rest_name))),
+	  aftpred,truepred)) in
   befaft_maker
     (nest_maker
        (rest_maker
