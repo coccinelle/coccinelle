@@ -27,6 +27,12 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
 
 and dots_bef_aft = NoDots | BetweenDots of statement
 
+(* for iso metavariables, true if they can only match nonmodified, unitary
+   metavariables
+   for SP metavariables, true if the metavariable is unitary (valid up to
+   isomorphism phase only) *)
+and pure = bool
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -43,9 +49,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of string mcode
-  | MetaFunc      of string mcode
-  | MetaLocalFunc of string mcode
+  | MetaId        of string mcode * pure
+  | MetaFunc      of string mcode * pure
+  | MetaLocalFunc of string mcode * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -80,11 +86,11 @@ and base_expression =
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
   | MetaConst      of string mcode *
-	              Type_cocci.typeC list option
-  | MetaErr        of string mcode
+	              Type_cocci.typeC list option * pure
+  | MetaErr        of string mcode * pure
   | MetaExpr       of string mcode *
-	              Type_cocci.typeC list option
-  | MetaExprList   of string mcode(*only in arglists*)
+	              Type_cocci.typeC list option * pure
+  | MetaExprList   of string mcode(*only in arglists*) * pure
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
@@ -112,7 +118,7 @@ and base_typeC =
   | StructUnionDef  of Ast_cocci.structUnion mcode * ident (* name *) *
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of string mcode
+  | MetaType        of string mcode * pure
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
@@ -171,8 +177,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of ident * typeC
-  | MetaParam     of string mcode
-  | MetaParamList of string mcode
+  | MetaParam     of string mcode * pure
+  | MetaParamList of string mcode * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -215,8 +221,8 @@ and base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
-  | MetaStmt      of string mcode
-  | MetaStmtList  of string mcode (* only in statement lists *)
+  | MetaStmt      of string mcode * pure
+  | MetaStmtList  of string mcode (* only in statement lists *) * pure
   | Exp           of expression  (* only in dotted statement lists *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
@@ -257,7 +263,7 @@ and base_meta =
 and meta = base_meta wrap
 
 and base_define_body =
-    DMetaId of string mcode
+    DMetaId of string mcode * pure
   | Ddots   of string mcode (* ... *)
 
 and define_body = base_define_body wrap
@@ -328,6 +334,7 @@ val get_info : 'a wrap -> info
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_mcodekind : 'a wrap -> mcodekind
+val get_mcode_mcodekind : 'a mcode -> mcodekind
 val get_mcodekind_ref : 'a wrap -> mcodekind ref
 val set_mcodekind : 'a wrap -> mcodekind -> unit
 val set_type : 'a wrap -> Type_cocci.typeC option -> unit

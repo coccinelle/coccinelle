@@ -41,9 +41,9 @@ let statement_dots d =
 let ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) -> [10]
-  | Ast0.MetaId(name) -> [11]
-  | Ast0.MetaFunc(name) -> [12]
-  | Ast0.MetaLocalFunc(name) -> [13]
+  | Ast0.MetaId(name,_) -> [11]
+  | Ast0.MetaFunc(name,_) -> [12]
+  | Ast0.MetaLocalFunc(name,_) -> [13]
   | Ast0.OptIdent(id) -> [14]
   | Ast0.UniqueIdent(id) -> [15]
   | Ast0.MultiIdent(id) -> [16]
@@ -67,10 +67,10 @@ let expression e =
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
   | Ast0.TypeExp(ty) -> [123] (* added after *)
-  | Ast0.MetaConst(name,ty) -> [31]
-  | Ast0.MetaErr(name) -> [32]
-  | Ast0.MetaExpr(name,ty) -> [33]
-  | Ast0.MetaExprList(name) -> [34]
+  | Ast0.MetaConst(name,ty,_) -> [31]
+  | Ast0.MetaErr(name,_) -> [32]
+  | Ast0.MetaExpr(name,ty,_) -> [33]
+  | Ast0.MetaExprList(name,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
   | Ast0.NestExpr(_,expr_dots,_,_) -> [37]
@@ -90,7 +90,7 @@ let typeC t =
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
-  | Ast0.MetaType(name) -> [53]
+  | Ast0.MetaType(name,_) -> [53]
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
   | Ast0.MultiType(ty) -> [47]
@@ -123,8 +123,8 @@ let parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) -> [59]
   | Ast0.Param(id,ty) -> [60]
-  | Ast0.MetaParam(name) -> [61]
-  | Ast0.MetaParamList(name) -> [62]
+  | Ast0.MetaParam(name,_) -> [61]
+  | Ast0.MetaParamList(name,_) -> [62]
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
   | Ast0.Pcircles(dots) -> [65]
@@ -147,8 +147,8 @@ let statement s =
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Return(ret,sem) -> [77]
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
-  | Ast0.MetaStmt(name) -> [79]
-  | Ast0.MetaStmtList(name) -> [80]
+  | Ast0.MetaStmt(name,_) -> [79]
+  | Ast0.MetaStmtList(name,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
   | Ast0.Nest(_,stmt_dots,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]

@@ -145,63 +145,63 @@ let iso_adjust fn first rest =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
+%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0 TPure
 
-%token<Data.line_type * int * int * int> Tchar Tshort Tint Tdouble Tfloat Tlong
-%token<Data.line_type * int * int * int> Tvoid Tstruct Tunion
-%token<Data.line_type * int * int * int> Tunsigned Tsigned
+%token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
+%token<Data.clt> Tvoid Tstruct Tunion
+%token<Data.clt> Tunsigned Tsigned
 
-%token<Data.line_type * int * int * int> Tstatic Tauto Tregister Textern
-%token<Data.line_type * int * int * int> Tconst Tvolatile
+%token<Data.clt> Tstatic Tauto Tregister Textern
+%token<Data.clt> Tconst Tvolatile
 
-%token <Data.line_type * int * int * int> TIf TElse TWhile TFor TDo TReturn
-%token <Data.line_type * int * int * int> TBreak TContinue
-%token <Data.line_type * int * int * int> TSizeof
-%token <Data.line_type * int * int * int> TFunDecl
-%token <string * (Data.line_type * int * int * int)> TIdent TTypeId
-%token <string * (Data.line_type * int * int * int)> TMetaId TMetaType TMetaErr
-%token <string * (Data.line_type * int * int * int)> TMetaParam TMetaParamList
-%token <string * (Data.line_type * int * int * int)> TMetaStm TMetaStmList
-%token <string * (Data.line_type * int * int * int)> TMetaFunc TMetaLocalFunc
-%token <string * (Data.line_type * int * int * int)> TMetaExpList TMetaText
-%token <string * Type_cocci.typeC list option *
-        (Data.line_type*int*int*int)> TMetaExp TMetaConst
+%token <Data.clt> TIf TElse TWhile TFor TDo TReturn
+%token <Data.clt> TBreak TContinue
+%token <Data.clt> TSizeof
+%token <Data.clt> TFunDecl
+%token <string * Data.clt> TIdent TTypeId
+%token <string * Data.pure * Data.clt> TMetaId TMetaType TMetaErr
+%token <string * Data.pure * Data.clt> TMetaParam TMetaParamList
+%token <string * Data.pure * Data.clt> TMetaStm TMetaStmList
+%token <string * Data.pure * Data.clt> TMetaFunc TMetaLocalFunc
+%token <string * Data.pure * Data.clt> TMetaExpList TMetaText
+%token <string * Data.pure * Type_cocci.typeC list option *
+          Data.clt> TMetaExp TMetaConst
 %token TArobArob
 
-%token <Data.line_type * int * int * int> TEllipsis TOEllipsis TCEllipsis
-%token <Data.line_type * int * int * int> TWhen TLineEnd
-%token <Data.line_type * int * int * int> TCircles TOCircles TCCircles
-%token <Data.line_type * int * int * int> TStars TOStars TCStars
+%token <Data.clt> TEllipsis TOEllipsis TCEllipsis
+%token <Data.clt> TWhen TLineEnd
+%token <Data.clt> TCircles TOCircles TCCircles
+%token <Data.clt> TStars TOStars TCStars
 
-%token <Data.line_type * int * int * int> TWhy TDotDot TBang TOPar TOPar0
-%token <Data.line_type * int * int * int> TMid0 TCPar TCPar0
+%token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
+%token <Data.clt> TMid0 TCPar TCPar0
 
-%token <string * (Data.line_type * int * int * int)> TInclude
-%token <Data.line_type * int * int * int> TDefine
-%token <string * (Data.line_type * int * int * int)> TMinusFile TPlusFile
+%token <string * Data.clt> TInclude
+%token <Data.clt> TDefine
+%token <string * Data.clt> TMinusFile TPlusFile
 
-%token <Data.line_type * int * int * int> TInc TDec
+%token <Data.clt> TInc TDec
 
-%token <string * (Data.line_type * int * int * int)> TString TChar TFloat TInt
+%token <string * Data.clt> TString TChar TFloat TInt
 
-%token <Data.line_type * int * int * int> TOrLog
-%token <Data.line_type * int * int * int> TAndLog
-%token <Data.line_type * int * int * int> TOr
-%token <Data.line_type * int * int * int> TXor
-%token <Data.line_type * int * int * int> TAnd 
-%token <Data.line_type * int * int * int> TEqEq TNotEq
-%token <Data.line_type * int * int * int> TInf TSup TInfEq TSupEq 
-%token <Data.line_type * int * int * int> TShl TShr
-%token <Data.line_type * int * int * int> TPlus TMinus
-%token <Data.line_type * int * int * int> TMul TDiv TMod 
+%token <Data.clt> TOrLog
+%token <Data.clt> TAndLog
+%token <Data.clt> TOr
+%token <Data.clt> TXor
+%token <Data.clt> TAnd 
+%token <Data.clt> TEqEq TNotEq
+%token <Data.clt> TInf TSup TInfEq TSupEq 
+%token <Data.clt> TShl TShr
+%token <Data.clt> TPlus TMinus
+%token <Data.clt> TMul TDiv TMod 
 
-%token <Data.line_type * int * int * int> TOBrace TCBrace
-%token <Data.line_type * int * int * int> TOCro TCCro
+%token <Data.clt> TOBrace TCBrace
+%token <Data.clt> TOCro TCCro
 
-%token <Data.line_type * int * int * int> TPtrOp
+%token <Data.clt> TPtrOp
 
-%token <Data.line_type * int * int * int> TEq TDot TComma TPtVirg
-%token <Ast_cocci.assignOp * (Data.line_type * int * int * int)> TAssign
+%token <Data.clt> TEq TDot TComma TPtVirg
+%token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration
 
@@ -246,59 +246,63 @@ meta_main: metadec* TArobArob { List.concat($1) }
 *****************************************************************************/
 
 metadec:
-  ar=arity kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TPtVirg
-  { List.map (function x -> kindfn ar (id2name x)) ids }
+  ar=arity ispure=pure
+  kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TPtVirg
+  { List.map (function nm -> kindfn ar nm ispure) ids }
+
+pure: TPure { true } | /* empty */ { false }
 
 %inline metakind:
   TIdentifier
-    { (function arity -> function name ->
-        !Data.add_id_meta name; Ast.MetaIdDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_id_meta name pure; Ast.MetaIdDecl(arity,name)) }
 | TFresh TIdentifier
-    { (function arity -> function name ->
-        !Data.add_id_meta name; Ast.MetaFreshIdDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_id_meta name pure; Ast.MetaFreshIdDecl(arity,name)) }
 | TType
-    { (function arity -> function name ->
-        !Data.add_type_meta name; Ast.MetaTypeDecl(arity,name)) } 
+    { (function arity -> function name -> function pure ->
+      !Data.add_type_meta name pure; Ast.MetaTypeDecl(arity,name)) } 
 | TParameter
-    { (function arity -> function name ->
-        !Data.add_param_meta name; Ast.MetaParamDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_param_meta name pure; Ast.MetaParamDecl(arity,name)) }
 | TParameter Tlist
-    { (function arity -> function name ->
-        !Data.add_paramlist_meta name; Ast.MetaParamListDecl(arity,name)) } 
+    { (function arity -> function name -> function pure ->
+      !Data.add_paramlist_meta name pure; Ast.MetaParamListDecl(arity,name)) } 
 | TError
-    { (function arity -> function name ->
-        !Data.add_err_meta name; Ast.MetaErrDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_err_meta name pure; Ast.MetaErrDecl(arity,name)) }
 | TExpression
-    { (function arity -> function name ->
-        !Data.add_exp_meta None name; Ast.MetaExpDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_exp_meta None name pure; Ast.MetaExpDecl(arity,name)) }
 | TExpression Tlist
-    { (function arity -> function name ->
-        !Data.add_explist_meta name; Ast.MetaExpListDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_explist_meta name pure; Ast.MetaExpListDecl(arity,name)) }
 | TExpression m=nonempty_list(TMul)
-    { (function arity -> function name ->
-        !Data.add_exp_meta (Some [ty_pointerify Type_cocci.Unknown m]) name;
-        Ast.MetaExpDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_exp_meta (Some [ty_pointerify Type_cocci.Unknown m]) name pure;
+      Ast.MetaExpDecl(arity,name)) }
 | TStatement
-    { (function arity -> function name ->
-        !Data.add_stm_meta name; Ast.MetaStmDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_stm_meta name pure; Ast.MetaStmDecl(arity,name)) }
 | TStatement Tlist
-    { (function arity -> function name ->
-        !Data.add_stmlist_meta name; Ast.MetaStmListDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_stmlist_meta name pure; Ast.MetaStmListDecl(arity,name)) }
 | TFunction
-    { (function arity -> function name ->
-        !Data.add_func_meta name; Ast.MetaFuncDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_func_meta name pure; Ast.MetaFuncDecl(arity,name)) }
 | TLocal TFunction
-    { (function arity -> function name ->
-        !Data.add_local_func_meta name; Ast.MetaLocalFuncDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_local_func_meta name pure;
+      Ast.MetaLocalFuncDecl(arity,name)) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
-    { (function arity -> function name ->
-        !Data.add_exp_meta (Some vl) name; Ast.MetaExpDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_exp_meta (Some vl) name pure; Ast.MetaExpDecl(arity,name)) }
 | TConstant ty=ioption(const_meta_exp_type)
-    { (function arity -> function name ->
-        !Data.add_const_meta ty name; Ast.MetaConstDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_const_meta ty name pure; Ast.MetaConstDecl(arity,name)) }
 | TText
-    { (function arity -> function name ->
-        !Data.add_text_meta name; Ast.MetaTextDecl(arity,name)) }
+    { (function arity -> function name -> function pure ->
+      !Data.add_text_meta name pure; Ast.MetaTextDecl(arity,name)) }
 
 meta_exp_type:
   ctype
@@ -360,16 +364,16 @@ ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
 	 { pointerify (make_cv cv ty) m }
      | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
-	 { let (nm,clt) = ty in
-	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
+	 { let (nm,pure,clt) = ty in
+	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
 	 pointerify (make_cv cv ty) m }
 
 fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul)
 	 { pointerify ty m }
      | ty=TMetaType m=list(TMul)
-	 { let (nm,clt) = ty in
-	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)) in
+	 { let (nm,pure,clt) = ty in
+	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
 	 pointerify ty m }
 
 ctype_qualif:
@@ -413,11 +417,12 @@ includes:
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
 			   Ast0.wrap(Ast0.Ddots(clt2mcode "..." $3)))))) }
 | TDefine ident TMetaText
-    { Ast0.wrap
+    { let (nm,pure,clt) = $3 in
+      Ast0.wrap
 	(Ast0.META
 	   (Ast0.wrap
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
-			   Ast0.wrap(Ast0.DMetaId(id2mcode $3)))))) }
+			   Ast0.wrap(Ast0.DMetaId(clt2mcode nm clt,pure)))))) }
 
 /*****************************************************************************/
 
@@ -440,8 +445,8 @@ storage:
 decl: ctype ident
 	{ Ast0.wrap(Ast0.Param($2, $1)) }
     | TMetaParam
-	{ let (nm,clt) = $1 in
-	Ast0.wrap(Ast0.MetaParam(clt2mcode nm clt)) }
+	{ let (nm,pure,clt) = $1 in
+	Ast0.wrap(Ast0.MetaParam(clt2mcode nm clt,pure)) }
 
 const_vol:
       Tconst       { clt2mcode Ast.Const $1 }
@@ -451,8 +456,8 @@ const_vol:
 
 statement:
   TMetaStm
-    { let (nm,clt) = $1 in
-    Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt)) }
+    { let (nm,pure,clt) = $1 in
+    Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure)) }
 | expr TPtVirg
     { Ast0.wrap(Ast0.ExprStatement ($1, clt2mcode ";" $2)) }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
@@ -668,8 +673,8 @@ comma_initializers(dotter):
 /* a statement that is part of a list */
 decl_statement:
     TMetaStmList
-      { let (nm,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt))] }
+      { let (nm,pure,clt) = $1 in
+      [Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))] }
   | decl_var
       { List.map (function x -> Ast0.wrap(Ast0.Decl(x))) $1 }
   | statement { [$1] }
@@ -852,14 +857,14 @@ primary_expr(recurser,primary_extra):
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (clt2mcode (Ast.Char x) clt)) }
  | TMetaConst
-     { let (nm,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaConst(clt2mcode nm clt,ty)) }
+     { let (nm,pure,ty,clt) = $1 in
+     Ast0.wrap(Ast0.MetaConst(clt2mcode nm clt,ty,pure)) }
  | TMetaErr
-     { let (nm,clt) = $1 in
-     Ast0.wrap(Ast0.MetaErr(clt2mcode nm clt)) }
+     { let (nm,pure,clt) = $1 in
+     Ast0.wrap(Ast0.MetaErr(clt2mcode nm clt,pure)) }
  | TMetaExp
-     { let (nm,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(clt2mcode nm clt,ty)) }
+     { let (nm,pure,ty,clt) = $1 in
+     Ast0.wrap(Ast0.MetaExpr(clt2mcode nm clt,ty,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(clt2mcode "(" $1,$2,
 			    clt2mcode ")" $3)) }
@@ -879,33 +884,37 @@ pure_ident: TIdent { $1 }
 
 /* allows redeclaring metavariables.  used in @@ @@ */
 pure_ident_or_meta_ident:
-       x=pure_ident       { x }
-     | x=TMetaId          { x }
-     | x=TMetaType        { x }
-     | x=TMetaParam       { x }
-     | x=TMetaParamList   { x }
-     | x=TMetaStm         { x }
-     | x=TMetaStmList     { x }
-     | x=TMetaFunc        { x }
-     | x=TMetaLocalFunc   { x }
-     | x=TMetaExpList     { x }
-     | x=TMetaConst       { let (name,_,info) = x in (name,info) }
-     | x=TMetaExp         { let (name,_,info) = x in (name,info) }
-     | x=TMetaErr         { x }
+       x=pure_ident       { let (nm,clt) = x in nm }
+     | x=TMetaId          { let (nm,pure,clt) = x in nm }
+     | x=TMetaType        { let (nm,pure,clt) = x in nm }
+     | x=TMetaParam       { let (nm,pure,clt) = x in nm }
+     | x=TMetaParamList   { let (nm,pure,clt) = x in nm }
+     | x=TMetaStm         { let (nm,pure,clt) = x in nm }
+     | x=TMetaStmList     { let (nm,pure,clt) = x in nm }
+     | x=TMetaFunc        { let (nm,pure,clt) = x in nm }
+     | x=TMetaLocalFunc   { let (nm,pure,clt) = x in nm }
+     | x=TMetaExpList     { let (nm,pure,clt) = x in nm }
+     | x=TMetaConst       { let (name,_,pure,info) = x in name }
+     | x=TMetaExp         { let (name,_,pure,info) = x in name }
+     | x=TMetaErr         { let (nm,pure,clt) = x in nm }
 
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
-         { Ast0.wrap(Ast0.MetaId(id2mcode $1)) }
+         { let (nm,pure,clt) = $1 in
+           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure)) }
      | TMetaFunc
-         { Ast0.wrap(Ast0.MetaFunc(id2mcode $1)) }
+         { let (nm,pure,clt) = $1 in
+           Ast0.wrap(Ast0.MetaFunc(clt2mcode nm clt,pure)) }
      | TMetaLocalFunc
-	 { Ast0.wrap(Ast0.MetaLocalFunc(id2mcode $1)) }
+	 { let (nm,pure,clt) = $1 in
+           Ast0.wrap(Ast0.MetaLocalFunc(clt2mcode nm clt,pure)) }
 
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
-         { Ast0.wrap(Ast0.MetaId(id2mcode $1)) }
+         { let (nm,pure,clt) = $1 in
+           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure)) }
 
 /*****************************************************************************/
 
@@ -920,13 +929,13 @@ decl_list:
 decl_list_start:
   decl  { [$1] }
 | TMetaParamList
-    { let (nm,clt) = $1 in
-    [Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt))] }
+    { let (nm,pure,clt) = $1 in
+    [Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt,pure))] }
 | decl TComma decl_list_start
     { $1::Ast0.wrap(Ast0.PComma(clt2mcode "," $2))::$3 }
 | TMetaParamList TComma decl_list_start
-    { let (nm,clt) = $1 in
-    Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt))::
+    { let (nm,pure,clt) = $1 in
+    Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt,pure))::
     Ast0.wrap(Ast0.PComma(clt2mcode "," $2))::$3 }
 | TEllipsis list(comma_decls(TEllipsis))
     { Ast0.wrap(Ast0.Pdots(clt2mcode "..." $1))::
@@ -945,9 +954,9 @@ comma_decls(dotter):
       [Ast0.wrap(Ast0.PComma(clt2mcode "," $1)); $2] }
 | TComma TMetaParamList
     { function dot_builder ->
-      let (nm,clt) = $2 in
+      let (nm,pure,clt) = $2 in
       [Ast0.wrap(Ast0.PComma(clt2mcode "," $1));
-	Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt))] }
+	Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt,pure))] }
 
 /* must be a list of declarations or statements, with no ... or expressions
 for "and" case */
@@ -1100,14 +1109,14 @@ aexpr:
     dexpr
       { $1 }
   | TMetaExpList
-      { let (nm,clt) = $1 in
-      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt)) }
+      { let (nm,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt,pure)) }
   | generic_ctype
       { Ast0.wrap(Ast0.TypeExp($1)) }
   | TMetaType				(**)
-      { let (nm,clt) = $1 in
+      { let (nm,pure,clt) = $1 in
       Ast0.wrap
-	(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt)))) }
+	(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)))) }
 
 eexpr_list_start:
     aexpr { [$1] }

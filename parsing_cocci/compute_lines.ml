@@ -144,8 +144,8 @@ let dots is_dots prev fn d =
 	
 let rec ident i =
   match Ast0.unwrap i with
-    (Ast0.Id(name)) | (Ast0.MetaId(name))
-  | (Ast0.MetaFunc(name)) | (Ast0.MetaLocalFunc(name)) as ui ->
+    (Ast0.Id(name)) | (Ast0.MetaId(name,_))
+  | (Ast0.MetaFunc(name,_)) | (Ast0.MetaLocalFunc(name,_)) as ui ->
       let name = promote_mcode name in mkres i ui name name
   | Ast0.OptIdent(id) ->
       let id = ident id in mkres i (Ast0.OptIdent(id)) id id
@@ -222,8 +222,8 @@ let rec expression e =
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
-  | Ast0.MetaConst(name,_) | Ast0.MetaErr(name) | Ast0.MetaExpr(name,_)
-  | Ast0.MetaExprList(name) as ue ->
+  | Ast0.MetaConst(name,_,_) | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_)
+  | Ast0.MetaExprList(name,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) as ue ->
       let ln = promote_mcode cm in mkres e ue ln ln
@@ -294,7 +294,7 @@ and typeC t =
 	(promote_mcode kind) (promote_mcode rb)
   | Ast0.TypeName(name) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
-  | Ast0.MetaType(name) as ut ->
+  | Ast0.MetaType(name,_) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
@@ -422,9 +422,9 @@ let rec parameterTypeDef p =
   | Ast0.Param(id,ty) ->
       let id = ident id in
       let ty = typeC ty in mkres p (Ast0.Param(id,ty)) ty id
-  | Ast0.MetaParam(name) as up ->
+  | Ast0.MetaParam(name,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
-  | Ast0.MetaParamList(name) as up ->
+  | Ast0.MetaParamList(name,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.PComma(cm) as up -> let ln = promote_mcode cm in mkres p up ln ln
   | Ast0.Pdots(dots) ->
@@ -512,8 +512,8 @@ let rec statement s =
       let exp = expression exp in
       mkres s (Ast0.ReturnExpr(ret,exp,sem)) 
 	(promote_mcode ret) (promote_mcode sem)
-  | Ast0.MetaStmt(name)
-  | Ast0.MetaStmtList(name) as us ->
+  | Ast0.MetaStmt(name,_)
+  | Ast0.MetaStmtList(name,_) as us ->
       let ln = promote_mcode name in mkres s us ln ln
   | Ast0.Exp(exp) ->
       let exp = expression exp in
@@ -574,7 +574,7 @@ let statement_dots x = dots is_stm_dots None statement x
 
 let define_body s =
   match Ast0.unwrap s with
-    Ast0.DMetaId(name) as us ->
+    Ast0.DMetaId(name,_) as us ->
       let nm = promote_mcode name in mkres s us nm nm
   | Ast0.Ddots(dots) as us ->
       let dt = promote_mcode dots in mkres s us dt dt

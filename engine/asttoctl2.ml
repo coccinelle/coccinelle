@@ -175,7 +175,7 @@ Here the inner <... b ...> should not go past foo.  But foo is not the
 it in the case where the body of the outer nest ends in something other
 than dots or a nest. *)
 
-type after = After of formula | Guard of formula | Tail
+type after = After of formula | Guard of formula | Tail | End
 
 let a2n = function After x -> Guard x | a -> a
 
@@ -505,6 +505,24 @@ let preprocess_dots_e sl =
   sl
 
 (* --------------------------------------------------------------------- *)
+(* various return_related things *)
+
+let ends_in_return stmt_list =
+  match Ast.unwrap stmt_list with
+    Ast.DOTS(x) ->
+      (match List.rev x with
+	x::_ ->
+	  (match Ast.unwrap x with
+	    Ast.Atomic(x) ->
+	      (match Ast.unwrap x with
+		Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
+	      | _ -> false)
+	  | _ -> false)
+      |	_ -> false)
+  | Ast.CIRCLES(x) -> failwith "not supported"
+  | Ast.STARS(x) -> failwith "not supported"
+
+(* --------------------------------------------------------------------- *)
 (* control structures *)
 
 let end_control_structure fvs header body after_pred
@@ -736,6 +754,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     match after with
       After f -> f
     | Guard f -> CTL.rewrap f (CTL.Uncheck f)
+    | End -> wrap n CTL.True
     | Tail ->
 	let exit = endpred n label in
 	let errorexit = exitpred n label in
@@ -795,6 +814,7 @@ and statement stmt after quantified label guard =
   let wrapSeqOr  = wrapSeqOr n in
   let wrapAU     = wrapAU n in
   let wrapBackEX = wrapBackEX n in
+  let wrapBackAX = wrapBackAX n in
   let wrapNot    = wrapNot n in
   let wrapPred   = wrapPred n in
   let wrapLet    = wrapLet n in
@@ -840,21 +860,46 @@ and statement stmt after quantified label guard =
 			 wrapOr(case1,case2))
 		  | _ -> failwith "not possible")
 	      | Ast.NoDots -> term in
-	  let normal_res = make_seq_after (quantify fvs term) after in
-	  (* the following allows a ... return; to fall through to exit.
-	     it is very limited, in that return E is not allowed, there
-	     can be no modif on the return, and what comes before the return,
-	     eg in an if branch, must still be in the normal position.
-	     furthermore, there is no guarantee that what comes before the
-	     ... does not appear in the path between the end of the if branch
-	     and the exit.  it would be useful to have a better
-	     implementation... *)
-	  match (Ast.unwrap ast,contains_modif ast) with
-	    (Ast.Return(_,_),false) ->
-	      wrapOr(endpred n None,
-		     wrapOr(aftpred n None,
-			    wrapOr(exitpred n None, normal_res)))
-	  | _ -> normal_res)
+	  match Ast.unwrap ast with
+            Ast.Return((_,info,retmc),(_,_,semmc)) ->
+	      (* discard pattern that comes after return *)
+	      let normal_res = make_seq_after (quantify fvs term) End in
+	      let new_mc =
+		match (retmc,semmc) with
+		  (Ast.MINUS(l1),Ast.MINUS(l2))
+		| (Ast.CONTEXT(Ast.BEFORE(l1)),Ast.CONTEXT(Ast.AFTER(l2))) ->
+		    Some (Ast.CONTEXT(Ast.BEFORE(l1@l2)))
+		| (Ast.CONTEXT(Ast.BEFORE(_)),Ast.CONTEXT(Ast.NOTHING))
+		| (Ast.CONTEXT(Ast.NOTHING),Ast.CONTEXT(Ast.NOTHING)) ->
+		    Some retmc
+		| (Ast.CONTEXT(Ast.NOTHING),Ast.CONTEXT(Ast.AFTER(l))) ->
+		    Some (Ast.CONTEXT(Ast.BEFORE(l)))
+		| _ -> None in
+	      (match new_mc with
+		Some new_mc ->
+		  let exit = endpred n None in
+		  let errorexit = exitpred n None in
+		  let mod_rbrace =
+		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc))) in
+		  let stripped_rbrace =
+		    Ast.rewrap ast
+		      (Ast.SeqEnd (("}",info,Ast.CONTEXT(Ast.NOTHING)))) in
+		  wrapOr(normal_res,
+			 wrapAnd
+			   (make_match mod_rbrace,
+			    wrapAnd
+			      (wrapBackAX
+				 (wrapNot(wrap n (CTL.Uncheck(normal_res)))),
+			       wrapAU(make_match stripped_rbrace,
+				      wrapOr(exit,errorexit)))))
+	      |	_ ->
+		  (* some change in the middle of the return, so have to
+		     find an actual return *)
+		  normal_res)
+	  | Ast.ReturnExpr(_,_,_) ->
+	      (* have to have the return, if there is a return value *)
+	      make_seq_after (quantify fvs term) End
+          | _ -> make_seq_after (quantify fvs term) after)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
 	match
@@ -889,7 +934,11 @@ and statement stmt after quantified label guard =
 			      (quantify b3fvs
 				 (statement_list body
 				    (After (make_seq_after end_brace after))
-				    new_quantified3 (Some lv) true guard))))
+				    new_quantified3
+				    (if ends_in_return body
+				    then None
+				    else Some lv)
+				    true guard))))
 			new_quantified2 (Some lv) false guard)])))
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified n label statement

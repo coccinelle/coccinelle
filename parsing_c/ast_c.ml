@@ -32,7 +32,7 @@ open Common open Commonop
  * empty, or more precisely all is tagged as a CONTEXT with NOTHING
  * associated. This is what I call a "clean" expr/statement/....
  * 
- * Each token will also be decorated in the futur with an environment,
+ * Each token will also be decorated in the future with an environment,
  * because the pending '+' may contain metavariables that refer to some
  * C code.
  * 

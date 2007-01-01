@@ -219,9 +219,9 @@ let rec ident i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name) -> Ast.MetaId(mcode name,true,false)
-    | Ast0.MetaFunc(name) -> Ast.MetaFunc(mcode name,true,false)
-    | Ast0.MetaLocalFunc(name) ->
+    | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,true,false)
+    | Ast0.MetaFunc(name,_) -> Ast.MetaFunc(mcode name,true,false)
+    | Ast0.MetaLocalFunc(name,_) ->
 	Ast.MetaLocalFunc(mcode name,true,false)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
@@ -274,12 +274,12 @@ let rec expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
-    | Ast0.MetaConst(name,ty) ->
+    | Ast0.MetaConst(name,ty,_) ->
 	Ast.MetaConst(mcode name,true,ty,false)
-    | Ast0.MetaErr(name)  -> Ast.MetaErr(mcode name,true,false)
-    | Ast0.MetaExpr(name,ty)  ->
+    | Ast0.MetaErr(name,_)  -> Ast.MetaErr(mcode name,true,false)
+    | Ast0.MetaExpr(name,ty,_)  ->
 	Ast.MetaExpr(mcode name,true,ty,false)
-    | Ast0.MetaExprList(name) ->
+    | Ast0.MetaExprList(name,_) ->
 	Ast.MetaExprList(mcode name,true,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
@@ -329,7 +329,7 @@ and typeC t =
 		   (Ast.StructUnionDef(mcode kind,ident name,mcode lb,
 				       List.map declaration decls,mcode rb)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
-    | Ast0.MetaType(name) ->
+    | Ast0.MetaType(name,_) ->
 	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,true,false)))
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
@@ -349,7 +349,7 @@ and base_typeC t =
 	Ast.StructUnionDef(mcode kind,ident name,
 			   mcode lb,List.map declaration decls,mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-    | Ast0.MetaType(name) -> Ast.MetaType(mcode name,true,false)
+    | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,true,false)
     | _ -> failwith "unexpected type")
     
 (* --------------------------------------------------------------------- *)
@@ -415,8 +415,8 @@ let rec parameterTypeDef p =
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
     | Ast0.Param(id,ty) -> Ast.Param(ident id,typeC ty)
-    | Ast0.MetaParam(name) -> Ast.MetaParam(mcode name,true,false)
-    | Ast0.MetaParamList(name) -> Ast.MetaParamList(mcode name,true,false)
+    | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,true,false)
+    | Ast0.MetaParamList(name,_) -> Ast.MetaParamList(mcode name,true,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)
@@ -500,9 +500,9 @@ let rec statement s =
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  Ast.Atomic
 	    (rewrap s (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
-      | Ast0.MetaStmt(name) ->
+      | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(rewrap s (Ast.MetaStmt(mcode name,true,seqible,false)))
-      | Ast0.MetaStmtList(name) ->
+      | Ast0.MetaStmtList(name,_) ->
 	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name,true,false)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
@@ -640,7 +640,7 @@ let statement_dots = dots statement
 let define_body m =
   rewrap m
     (match Ast0.unwrap m with
-      Ast0.DMetaId(name) -> Ast.DMetaId(mcode name,true)
+      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,true)
     | Ast0.Ddots(dots) -> Ast.Ddots(mcode dots))
 
 let rec meta m =

@@ -5,7 +5,7 @@ PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
 visitor_ast.ml visitor_ast0.ml \
 ast0toast.ml check_meta.ml pretty_print_cocci.ml unparse_ast0.ml top_level.ml \
-type_infer.ml \
+type_infer.ml unitary_ast0.ml \
 arity.ml compute_lines.ml index.ml context_neg.ml insert_plus.ml \
 iso_pattern.ml unify_ast.ml semantic_cocci.ml data.ml free_vars.ml \
 single_statement.ml \

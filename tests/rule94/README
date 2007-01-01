@@ -8,6 +8,8 @@ Have an error in one case, because can't unparse the transformed function,
 although the unparsing problem has nothing to do with the collateral
 evolution.
 
+USB files
+
 auerswald.c
  * [status] bugs, spatch-ok
  by hand, two cases were updated and two were not.  all are update by
@@ -113,6 +115,50 @@ visor.c
 zd1201.c
  * [status] bugs, spatch-ok
  by hand, two cases was updated and one was not.  all are update by coccinelle 
+
+Bluetooth files
+
+All files are transformed as they were by the programmer.  Both coccinelle
+and the programmer miss one case where the transformation should be performed.
+
+bcm203x.c
+ * [status] ok
+
+bfusb.c
+ * [status] ok
+
+bluecard_cs.c
+ * [status] ok
+
+bpa10x.c
+ * [status] ok
+
+bt3c_cs.c
+ * [status] ok
+
+btuart_cs.c
+ * [status] ok
+
+dtl1_cs.c
+ * [status] ok
+
+hci_bcsp.c
+ * [status] ok
+
+hci_h4.c
+ * [status] ok
+
+hci_ldisc.c
+ * [status] ok
+
+hci_usb.c
+ * [status] wrong
+ both we and the person who did the collateral evolution missed a case
+ where the call to kmalloc is in a variable initialization and the memset
+ branch is in the then branch of a non-null testing if.
+
+hci_vhci.c
+ * [status] ok
 
 
 Key: ok means a .ok file is generated

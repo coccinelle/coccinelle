@@ -288,9 +288,9 @@ let dots fn d1 d2 =
 let rec equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.Id(name1),Ast0.Id(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaId(name1),Ast0.MetaId(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaFunc(name1),Ast0.MetaFunc(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaLocalFunc(name1),Ast0.MetaLocalFunc(name2)) ->
+  | (Ast0.MetaId(name1,_),Ast0.MetaId(name2,_)) -> equal_mcode name1 name2
+  | (Ast0.MetaFunc(name1,_),Ast0.MetaFunc(name2,_)) -> equal_mcode name1 name2
+  | (Ast0.MetaLocalFunc(name1,_),Ast0.MetaLocalFunc(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.OptIdent(_),Ast0.OptIdent(_)) -> true
   | (Ast0.UniqueIdent(_),Ast0.UniqueIdent(_)) -> true
@@ -326,10 +326,10 @@ let rec equal_expression e1 e2 =
   | (Ast0.SizeOfType(szf1,lp1,_,rp1),Ast0.SizeOfType(szf2,lp2,_,rp2)) ->
       equal_mcode szf1 szf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.TypeExp(_),Ast0.TypeExp(_)) -> true
-  | (Ast0.MetaConst(name1,_),Ast0.MetaConst(name2,_))
-  | (Ast0.MetaErr(name1),Ast0.MetaErr(name2))
-  | (Ast0.MetaExpr(name1,_),Ast0.MetaExpr(name2,_))
-  | (Ast0.MetaExprList(name1),Ast0.MetaExprList(name2)) ->
+  | (Ast0.MetaConst(name1,_,_),Ast0.MetaConst(name2,_,_))
+  | (Ast0.MetaErr(name1,_),Ast0.MetaErr(name2,_))
+  | (Ast0.MetaExpr(name1,_,_),Ast0.MetaExpr(name2,_,_))
+  | (Ast0.MetaExprList(name1,_),Ast0.MetaExprList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
@@ -362,7 +362,7 @@ let rec equal_typeC t1 t2 =
      Ast0.StructUnionDef(kind2,_,lb2,_,rb2)) ->
        equal_mcode kind1 kind2 && equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaType(name1),Ast0.MetaType(name2)) -> equal_mcode name1 name2
+  | (Ast0.MetaType(name1,_),Ast0.MetaType(name2,_)) -> equal_mcode name1 name2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | (Ast0.MultiType(_),Ast0.MultiType(_)) -> true
@@ -406,8 +406,8 @@ let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
-  | (Ast0.MetaParam(name1),Ast0.MetaParam(name2))
-  | (Ast0.MetaParamList(name1),Ast0.MetaParamList(name2)) ->
+  | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
+  | (Ast0.MetaParamList(name1,_),Ast0.MetaParamList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.PComma(cm1),Ast0.PComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Pdots(dots1),Ast0.Pdots(dots2))
@@ -451,8 +451,8 @@ let rec equal_statement s1 s2 =
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
   | (Ast0.ReturnExpr(ret1,_,sem1),Ast0.ReturnExpr(ret2,_,sem2)) ->
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
-  | (Ast0.MetaStmt(name1),Ast0.MetaStmt(name2))
-  | (Ast0.MetaStmtList(name1),Ast0.MetaStmtList(name2)) ->
+  | (Ast0.MetaStmt(name1,_),Ast0.MetaStmt(name2,_))
+  | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
       equal_mcode starter1 starter2 && 

@@ -30,6 +30,12 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
 
 and dots_bef_aft = NoDots | BetweenDots of statement
 
+(* for iso metavariables, true if they can only match nonmodified, unitary
+   metavariables
+   for SP metavariables, true if the metavariable is unitary (valid up to
+   isomorphism phase only) *)
+and pure = bool
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -46,9 +52,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of string mcode
-  | MetaFunc      of string mcode
-  | MetaLocalFunc of string mcode
+  | MetaId        of string mcode * pure
+  | MetaFunc      of string mcode * pure
+  | MetaLocalFunc of string mcode * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -83,11 +89,11 @@ and base_expression =
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
   | MetaConst      of string mcode *
-	              Type_cocci.typeC list option
-  | MetaErr        of string mcode
+	              Type_cocci.typeC list option * pure
+  | MetaErr        of string mcode * pure
   | MetaExpr       of string mcode *
-	              Type_cocci.typeC list option
-  | MetaExprList   of string mcode (* only in arg lists *)
+	              Type_cocci.typeC list option * pure
+  | MetaExprList   of string mcode (* only in arg lists *) * pure
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -115,7 +121,7 @@ and base_typeC =
   | StructUnionDef  of Ast.structUnion mcode * ident (* name *) *
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of string mcode
+  | MetaType        of string mcode * pure
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
@@ -173,8 +179,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of ident * typeC
-  | MetaParam     of string mcode
-  | MetaParamList of string mcode
+  | MetaParam     of string mcode * pure
+  | MetaParamList of string mcode * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -217,8 +223,8 @@ and base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
-  | MetaStmt      of string mcode
-  | MetaStmtList  of string mcode(*only in statement lists*)
+  | MetaStmt      of string mcode * pure
+  | MetaStmtList  of string mcode(*only in statement lists*) * pure
   | Exp           of expression  (* only in dotted statement lists *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
@@ -258,7 +264,7 @@ and base_meta =
 and meta = base_meta wrap
 
 and base_define_body =
-    DMetaId of string mcode
+    DMetaId of string mcode * pure
   | Ddots   of string mcode (* ... *)
 
 and define_body = base_define_body wrap
@@ -344,6 +350,7 @@ let get_info (_,info,_,_,_,_) = info
 let get_index (_,_,index,_,_,_) = !index
 let set_index (_,_,index,_,_,_) i = index := i
 let get_mcodekind (_,_,_,mcodekind,_,_) = !mcodekind
+let get_mcode_mcodekind (_,_,_,mcodekind) = mcodekind
 let get_mcodekind_ref (_,_,_,mcodekind,_,_) = mcodekind
 let set_mcodekind (_,_,_,mcodekind,_,_) mk = mcodekind := mk
 let set_type (_,_,_,_,ty,_) t = ty := t
@@ -382,7 +389,7 @@ let rec ast0_type_to_type ty =
       let tag =
 	match unwrap tag with
 	  Id(tag) -> tag
-	| MetaId(tag) ->
+	| MetaId(tag,_) ->
 	    (Printf.printf
 	       "warning: struct/union with a metavariable name detected.\n";
 	     Printf.printf
@@ -391,7 +398,7 @@ let rec ast0_type_to_type ty =
 	| _ -> failwith "unexpected struct/union type name" in
       Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
-  | MetaType(name) -> Type_cocci.MetaType(unwrap_mcode name)
+  | MetaType(name,_) -> Type_cocci.MetaType(unwrap_mcode name)
   | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
       ast0_type_to_type ty
 

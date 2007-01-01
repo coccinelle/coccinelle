@@ -162,8 +162,8 @@ let rec statement dots_before dots_after s =
   | Ast0.Continue(cont,sem) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
-  | Ast0.MetaStmt(name) -> do_one s
-  | Ast0.MetaStmtList(name) -> do_one s
+  | Ast0.MetaStmt(name,_) -> do_one s
+  | Ast0.MetaStmtList(name,_) -> do_one s
   | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
       Ast0.rewrap s
 	(Ast0.Disj(starter,

@@ -27,7 +27,21 @@ usblcd.c \
 usb-serial.c \
 usbtest.c \
 visor.c \
-zd1201.c
+zd1201.c \
+ \
+bcm203x.c \
+bfusb.c \
+bluecard_cs.c \
+bpa10x.c \
+bt3c_cs.c \
+btuart_cs.c \
+dtl1_cs.c \
+hci_bcsp.c \
+hci_h4.c \
+hci_ldisc.c \
+hci_usb.c \
+hci_vhci.c
+
 
 include ../generic_makefile
 

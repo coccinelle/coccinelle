@@ -29,6 +29,7 @@ let token2c (tok,_) =
   | PC.TText -> "text"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
+  | PC.TPure -> "pure"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -95,19 +96,19 @@ let token2c (tok,_) =
   | PC.TDiv(clt) -> "/"^(line_type2c clt)
   | PC.TMod (clt) -> "%"^(line_type2c clt)
 
-  | PC.TMetaParam(_,clt) -> "parammeta"^(line_type2c clt)
-  | PC.TMetaParamList(_,clt) -> "paramlistmeta"^(line_type2c clt)
-  | PC.TMetaConst(_,_,clt) -> "constmeta"^(line_type2c clt)
-  | PC.TMetaErr(_,clt) -> "errmeta"^(line_type2c clt)
-  | PC.TMetaExp(_,_,clt) -> "expmeta"^(line_type2c clt)
-  | PC.TMetaExpList(_,clt) -> "explistmeta"^(line_type2c clt)
-  | PC.TMetaId(_,clt)    -> "idmeta"^(line_type2c clt)
-  | PC.TMetaText(_,clt)    -> "textmeta"^(line_type2c clt)
-  | PC.TMetaType(_,clt)    -> "typemeta"^(line_type2c clt)
-  | PC.TMetaStm(_,clt)   -> "stmmeta"^(line_type2c clt)
-  | PC.TMetaStmList(_,clt)   -> "stmlistmeta"^(line_type2c clt)
-  | PC.TMetaFunc(_,clt)  -> "funcmeta"^(line_type2c clt)
-  | PC.TMetaLocalFunc(_,clt) -> "funcmeta"^(line_type2c clt)
+  | PC.TMetaParam(_,_,clt) -> "parammeta"^(line_type2c clt)
+  | PC.TMetaParamList(_,_,clt) -> "paramlistmeta"^(line_type2c clt)
+  | PC.TMetaConst(_,_,_,clt) -> "constmeta"^(line_type2c clt)
+  | PC.TMetaErr(_,_,clt) -> "errmeta"^(line_type2c clt)
+  | PC.TMetaExp(_,_,_,clt) -> "expmeta"^(line_type2c clt)
+  | PC.TMetaExpList(_,_,clt) -> "explistmeta"^(line_type2c clt)
+  | PC.TMetaId(_,_,clt)    -> "idmeta"^(line_type2c clt)
+  | PC.TMetaText(_,_,clt)    -> "textmeta"^(line_type2c clt)
+  | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
+  | PC.TMetaStm(_,_,clt)   -> "stmmeta"^(line_type2c clt)
+  | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
+  | PC.TMetaFunc(_,_,clt)  -> "funcmeta"^(line_type2c clt)
+  | PC.TMetaLocalFunc(_,_,clt) -> "funcmeta"^(line_type2c clt)
   | PC.TArobArob -> "@@"
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
@@ -200,7 +201,7 @@ let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction | PC.TText
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TError | PC.TWords -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -217,11 +218,12 @@ let split_token ((tok,_) as t) =
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt)
-  | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt)
-  | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt)
-  | PC.TMetaId(_,clt) | PC.TMetaText(_,clt) | PC.TMetaType(_,clt)
-  | PC.TMetaStm(_,clt) | PC.TMetaStmList(_,clt) | PC.TMetaErr(_,clt)
-  | PC.TMetaFunc(_,clt) | PC.TMetaLocalFunc(_,clt) -> split t clt
+  | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
+  | PC.TMetaExpList(_,_,clt)
+  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
+  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,clt)
+  | PC.TMetaFunc(_,_,clt) | PC.TMetaLocalFunc(_,_,clt) -> split t clt
   | PC.TArobArob -> ([t],[t])
 
   | PC.TFunDecl(clt)
@@ -282,9 +284,9 @@ seem very convenient to refactor the grammar to get around the problem. *)
 let rec find_function_names = function
     [] -> []
   | ((PC.TIdent(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaId(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaFunc(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaLocalFunc(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaId(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaLocalFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2)::rest
     ->
       let rec skip = function
 	  [] -> ([],false,[])
@@ -330,11 +332,13 @@ let token2line (tok,_) =
   | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt) 
   | PC.TDiv(clt) | PC.TMod (clt) 
 
-  | PC.TMetaParam(_,clt) | PC.TMetaParamList(_,clt) 
-  | PC.TMetaConst(_,_,clt) | PC.TMetaExp(_,_,clt) | PC.TMetaExpList(_,clt) 
-  | PC.TMetaId(_,clt) | PC.TMetaText(_,clt) | PC.TMetaType(_,clt)
-  | PC.TMetaStm(_,clt)   
-  | PC.TMetaStmList(_,clt) | PC.TMetaFunc(_,clt) | PC.TMetaLocalFunc(_,clt) 
+  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt) 
+  | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
+  | PC.TMetaExpList(_,_,clt) 
+  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaStm(_,_,clt)   
+  | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,clt)
+  | PC.TMetaLocalFunc(_,_,clt) 
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)    
@@ -384,8 +388,8 @@ let detect_types l =
     | (PC.TComma(_),_) -> true
     | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_),_) | (PC.TMetaFunc(_,_),_)
-    | (PC.TMetaLocalFunc(_,_),_) -> true
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
+    | (PC.TMetaLocalFunc(_,_,_),_) -> true
     | _ -> false in
   let rec loop start type_names = function
       [] -> []
@@ -618,8 +622,11 @@ let parse_iso = function
 let process file isofile verbose =
   let (minus,plus) = parse file in
   (!Data.clear_meta)();
+  Data.in_iso := true;
   let isos = parse_iso isofile in
+  Data.in_iso := false;
   (!Data.clear_meta)();
+  let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
     List.map2
       (function (minus, metavars) ->
@@ -630,6 +637,8 @@ let process file isofile verbose =
 	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	  Insert_plus.insert_plus m p;
 	  Type_infer.type_infer minus;
+	  Printf.printf "working on rule\n";
+	  Unparse_ast0.unparse minus;
 	  let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
 	  let minus = Single_statement.single_statement minus in
 	  let minus_ast = Ast0toast.ast0toast minus in

@@ -328,6 +328,17 @@ unlikely(E) => E
 //@@ expression E; identifier field; @@
 //E->field => E.field
 
+// pure means that either the whole field reference expression is dropped,
+// or E is context code and has no attached + code
+Expression
+@@
+type T;
+pure T E;
+pure T *E1;
+identifier fld;
+@@
+
+E.fld => E1->fld
 
 
 // ****************************************************************************
