@@ -9,6 +9,8 @@ val rule_elem_to_string : Ast_cocci.rule_elem -> string
 val define_body : Ast_cocci.define_body -> unit
 val define_body_to_string : Ast_cocci.define_body -> string
 
+val print_mcodekind : Ast_cocci.mcodekind -> unit
+
 val constant : Ast_cocci.constant -> unit
 val assignOp : Ast_cocci.assignOp -> unit
 val fixOp : Ast_cocci.fixOp -> unit

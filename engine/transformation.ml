@@ -78,7 +78,16 @@ let tag_one_symbol = fun ia ib  binding ->
 
   if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
      x <>        Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-  then failwith (Common.sprintf "already tagged token in C:  %s" s2.str)
+  then
+    begin
+      Printf.printf "SP mcode "; flush stdout;
+      Pretty_print_cocci.print_mcodekind oldmcode;
+      Format.print_newline();
+      Printf.printf "C code mcode "; flush stdout;
+      Pretty_print_cocci.print_mcodekind x;
+      Format.print_newline();
+      failwith (Common.sprintf "already tagged token in C:  %s" s2.str)
+    end
   else 
     (s2, (x, binding))
 

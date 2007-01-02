@@ -70,6 +70,14 @@ let mcode fn = function
       else fn x
   | (x, _, Ast.PLUS) -> fn x
 
+let print_mcodekind = function 
+    Ast.MINUS(plus_stream) ->
+      print_string "MINUS";
+      print_anything ">>> " plus_stream
+  | Ast.CONTEXT(plus_streams) ->
+      print_around (function _ -> print_string "CONTEXT") () plus_streams
+  | Ast.PLUS -> print_string "PLUS"
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
