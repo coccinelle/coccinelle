@@ -110,6 +110,8 @@ struct
 	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),[]) in
         List.map conv_trip (oldlabelfunc p)
 
+  (* ---------------------------------------------------------------- *)
+
   (* FIX ME: what about negative witnesses and negative substitutions *)
   exception NEGATIVE_WITNESS
   let unwrap_wits prev_env wits modifonly =
@@ -237,6 +239,8 @@ struct
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w false)
 		noclean)) in
+      Printf.printf "modified:\n";
+      List.iter (function x -> Printf.printf "%s\n" (Dumper.dump x)) res;
       try
 	Common.Left
 	  (res,not(noclean = []),
