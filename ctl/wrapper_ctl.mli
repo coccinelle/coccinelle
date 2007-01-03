@@ -53,11 +53,12 @@ module CTL_ENGINE_BIS :
          G.node list -> 
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
-	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
-               ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		  bool *
-		  (WRAPPER_ENV.mvar * SUB.value) list,
-		SUB.mvar) Common.either
+		(WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
+		  ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
+		     ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
+			bool *
+			(WRAPPER_ENV.mvar * SUB.value) list,
+		      SUB.mvar) Common.either)
 
     val print_bench : unit -> unit
 end

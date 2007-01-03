@@ -320,9 +320,10 @@ let (mysat2:
   fun (flow, label, states) ctl (used_after, binding) -> 
 
     let binding2 = metavars_binding_to_binding2 binding in
-    let res = 
+    let (triples,res) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in
+    Check_reachability.check_reachability triples flow;
     match res with
     | Left (trans_info2, returned_any_states, used_after_env) ->
         let trans_info = satbis_to_trans_info trans_info2 in

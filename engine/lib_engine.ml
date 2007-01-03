@@ -18,7 +18,6 @@ type predicate =
   | PrefixLabel of string
   | Include of string Ast_cocci.mcode * string Ast_cocci.mcode
   | Define of string Ast_cocci.mcode * Ast_cocci.ident * Ast_cocci.define_body
-  | Node of nodei
 
 type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
 

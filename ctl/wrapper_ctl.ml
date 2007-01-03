@@ -224,10 +224,11 @@ struct
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
-               ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
-		  bool *
-		  (WRAPPER_ENV.mvar * SUB.value) list,
-		SUB.mvar) Common.either) =
+	       ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
+		  ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
+		     bool *
+		     (WRAPPER_ENV.mvar * SUB.value) list,
+		   SUB.mvar) Common.either)) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
       let res =
@@ -241,17 +242,18 @@ struct
 		noclean)) in
       Printf.printf "modified:\n";
       List.iter (function x -> Printf.printf "%s\n" (Dumper.dump x)) res;
-      try
-	Common.Left
-	  (res,not(noclean = []),
+      (noclean,
+       try
+	 Common.Left
+	   (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs
 	   binding as an argument. *)
-	      collect_used_after used_after
-		(binding ::
-		 (List.map (function (_,env,_) -> env) unmodif_res)))
-      with INCOMPLETE_BINDINGS x -> Common.Right x
+	    collect_used_after used_after
+	      (binding ::
+	       (List.map (function (_,env,_) -> env) unmodif_res)))
+       with INCOMPLETE_BINDINGS x -> Common.Right x)
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()
 

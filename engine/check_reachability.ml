@@ -42,11 +42,11 @@ let build_modified (n,_,wits) =
     |	CTL.NegWit(st,_,anno,wit) -> List.iter loop wit in
   loop wits
     
-  (* Step 2: For each node in the hash table, create the error and warning
-     formulas *)
+(* Step 2: For each node in the hash table, create the error and warning
+   formulas *)
     
 let create_formulas _ =
-  let wrap x = (x,0) in
+  let wrap x = (x,()) in
   Hashtbl.fold
     (function node ->
       function roots ->
@@ -55,12 +55,9 @@ let create_formulas _ =
 	    wrap
 	      (Ast_ctl.EX
 		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in
-	  let match_node =
-	    wrap (Ast_ctl.Pred(Lib_engine.Node node,Ast_ctl.Control)) in
+	  let match_node = wrap (Ast_ctl.Pred(6)) in
 	  let match_roots =
-	    List.map
-	      (function n ->
-		wrap (Ast_ctl.Pred(Lib_engine.Node n,Ast_ctl.Control)))
+	    List.map (function n -> wrap (Ast_ctl.Pred(n)))
 	      (List.sort compare !roots) in
 	  let roots =
 	    List.fold_left
@@ -71,3 +68,92 @@ let create_formulas _ =
 	   exef(wrap(Ast_ctl.And(match_node,exef(roots)))))
 	  :: acc)
     modified []
+
+(* Step 3: check the formula on the control-flow graph *)
+
+module PRED = 
+  struct
+    type t = Ograph_extended.nodei
+    let print_predicate x = Printf.printf "%d\n" x
+  end
+
+module ENV =
+  struct
+    type value = unit
+    type mvar = unit
+    let eq_mvar x x'   = failwith "should not be invoked"
+    let eq_val v v'    = failwith "should not be invoked"
+    let merge_val v v' = failwith "should not be invoked"
+
+    let print_mvar s   = failwith "should not be invoked"
+    let print_value x  = failwith "should not be invoked"
+  end
+
+
+module CFG = 
+  struct
+    type node = Ograph_extended.nodei
+    type cfg = 
+        (Control_flow_c.node, Control_flow_c.edge) 
+          Ograph_extended.ograph_extended
+    let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
+    let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
+    let print_node i = Format.print_string (string_of_int i)
+  end
+
+module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)
+
+let tested =
+  (Hashtbl.create(25) :
+     ((int,unit,unit) Ast_ctl.generic_ctl, Ograph_extended.nodei list)
+     Hashtbl.t)
+
+let test_formula state formula cfg =
+  try
+    let seen_before = Hashtbl.find tested formula in
+    List.mem state seen_before
+  with Not_found ->
+    let label pred = [(pred,[],[])] in
+    let res =
+      ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist) formula ([state],[])
+	(function _ -> failwith "no longer used") in
+    let res = List.map (function (st,_,_) -> st) res in
+    Hashtbl.add tested formula res;
+    List.mem state res
+
+(* ---------------------------------------------------------------- *)
+(* Entry point *)
+
+(* The argument is a list of triples with a node name, an empty environment
+and a witness tree *)
+
+type witness =
+    (Ograph_extended.nodei, unit,
+     (Ograph_extended.nodei, unit, unit) Ast_ctl.generic_ctl list)
+      Ast_ctl.generic_witnesstree
+
+type ('a,'b,'c,'d,'e) triples =
+    (Ograph_extended.nodei * 'a *
+     (Ograph_extended.nodei,
+      ('b, ('c, 'd) Wrapper_ctl.wrapped_binding) CTL.generic_subst list, 'e)
+     CTL.generic_witnesstree) list
+
+let check_reachability triples cfg =
+  Hashtbl.clear modified;
+  Hashtbl.clear tested;
+  List.iter build_modified triples;
+  let formulas = create_formulas() in
+  List.iter
+    (function (node,af_formula,ef_formula) ->
+      if test_formula node af_formula cfg
+      then
+	if test_formula node ef_formula cfg
+	then
+	  Printf.printf "warning: node %d may be inconsistently modified\n"
+	    node
+	else ()
+      else
+	failwith
+	  (Printf.sprintf
+	     "node %d reachable by inconsistent control-flow paths" node))
+    formulas
