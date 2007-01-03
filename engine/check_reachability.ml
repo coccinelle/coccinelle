@@ -55,7 +55,7 @@ let create_formulas _ =
 	    wrap
 	      (Ast_ctl.EX
 		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in
-	  let match_node = wrap (Ast_ctl.Pred(6)) in
+	  let match_node = wrap (Ast_ctl.Pred(node)) in
 	  let match_roots =
 	    List.map (function n -> wrap (Ast_ctl.Pred(n)))
 	      (List.sort compare !roots) in
@@ -74,7 +74,7 @@ let create_formulas _ =
 module PRED = 
   struct
     type t = Ograph_extended.nodei
-    let print_predicate x = Printf.printf "%d\n" x
+    let print_predicate x = Format.print_string (string_of_int x)
   end
 
 module ENV =

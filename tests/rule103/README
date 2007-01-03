@@ -1,44 +1,147 @@
 3c574_cs.c
+ * [status] error
+ a goto is hidden in a locally-defined macro.  Without this goto, some code
+ looks like dead code
+
 3c589_cs.c
+ * [status] error
+ a goto is hidden in a locally-defined macro.  Without this goto, some code
+ looks like dead code
+
 aha152x_stub.c
+ * [status] wrong
+ a function is incorrectly identified as the attach function, because we
+ don't have matching on top-level structures
+
 airo_cs.c
+ * [status] error
+ goto whose destination is within a loop
+
 atmel_cs.c
+ * [status] error
+ goto whose destination is within a loop
+
 avma1_cs.c
+ * [status] error
+
 avm_cs.c
+ * [status] error
+
 axnet_cs.c
+ * [status] error
+ a goto is hidden in a locally-defined macro.  Without this goto, some code
+ looks like dead code
+
 bluecard_cs.c
+ * [status] error
+
 bt3c_cs.c
+ * [status] error
+
 btuart_cs.c
+ * [status] error
+
 cm4000_cs.c
+ * [status] error
+ not sure what causes the error, but the rule doesn't apply because the
+ config function has two arguments, while the semantic patch expects that
+ there is only one
+
 cm4040_cs.c
+ * [status] error
+
 com20020_cs.c
+ * [status] error
+
 dtl1_cs.c
+ * [status] error
+
 elsa_cs.c
+ * [status] error
+
 fdomain_stub.c
+ * [status] error
+
 fmvj18x_cs.c
+ * [status] error
+
 hostap_cs.c
+ * [status] error
+
 ibmtr_cs.c
+ * [status] error
+
 ide-cs.c
+ * [status] error
+
 ixj_pcmcia.c
+ * [status] error
+
 netwave_cs.c
+ * [status] error
+
 nmclan_cs.c
+ * [status] error
+
 nsp_cs.c
+ * [status] error
+
 orinoco_cs.c
+ * [status] error
+
 parport_cs.c
+ * [status] error
+
 pcmciamtd.c
+ * [status] error
+
 pcnet_cs.c
+ * [status] error
+
 pdaudiocf.c
+ * [status] error
+
 qlogic_stub.c
+ * [status] error
+
 ray_cs.c
+ * [status] error
+
 sedlbauer_cs.c
+ * [status] error
+ a goto is hidden in a locally-defined macro.  Without this goto, some code
+ looks like dead code
+
 serial_cs.c
+ * [status] error
+
 sl811_cs.c
+ * [status] error
+
 smc91c92_cs.c
+ * [status] error
+
 spectrum_cs.c
+ * [status] error
+
 sym53c500_cs.c
+ * [status] error
+
 synclink_cs.c
+ * [status] error
+
 teles_cs.c
+ * [status] error
+
 vxpocket.c
+ * [status] error
+
 wavelan_cs.c
+ * [status] error
+
 wl3501_cs.c
+ * [status] error
+
 xirc2ps_cs.c
+ * [status] error
+

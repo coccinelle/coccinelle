@@ -864,6 +864,9 @@ and statement stmt after quantified label guard =
             Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after (quantify fvs term) End in
+	      (* the following code tries to propagate the modifications on
+		 return; to a close brace, in the case where the final return
+		 is absent *)
 	      let new_mc =
 		match (retmc,semmc) with
 		  (Ast.MINUS(l1),Ast.MINUS(l2))
