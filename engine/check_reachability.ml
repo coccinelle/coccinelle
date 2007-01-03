@@ -40,7 +40,7 @@ let build_modified (n,_,wits) =
 	List.iter loop wit
     |	CTL.Wit(st,_,anno,wit) -> List.iter loop wit
     |	CTL.NegWit(st,_,anno,wit) -> List.iter loop wit in
-  loop wits
+  List.iter loop wits
     
 (* Step 2: For each node in the hash table, create the error and warning
    formulas *)
