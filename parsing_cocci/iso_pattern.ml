@@ -337,7 +337,7 @@ let match_maker context_required whencode_allowed =
 		 return false)
 	  | (Ast0.Edots(_,Some _),_) | (Ast0.Ecircles(_,Some _),_)
 	  | (Ast0.Estars(_,Some _),_) ->
-	      failwith "whencode not allowed in a pattern"
+	      failwith "whencode not allowed in a pattern1"
 	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
 	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb))
 	  | (Ast0.MultiExp(expa),Ast0.MultiExp(expb)) -> match_expr expa expb
@@ -450,7 +450,7 @@ let match_maker context_required whencode_allowed =
 	    (Printf.printf "warning: not applying iso because of whencode";
 	     return false)
       | (Ast0.Idots(_,Some _),_) ->
-	  failwith "whencode not allowed in a pattern"
+	  failwith "whencode not allowed in a pattern2"
       | (Ast0.OptIni(ia),Ast0.OptIni(ib))
       | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib))
       | (Ast0.MultiIni(ia),Ast0.MultiIni(ib)) -> match_init ia ib
@@ -580,8 +580,13 @@ let match_maker context_required whencode_allowed =
 	      else
 		(Printf.printf "warning: not applying iso because of whencode";
 		 return false)
-	  | (Ast0.Dots(_,_),_) | (Ast0.Circles(_,_),_) | (Ast0.Stars(_,_),_) ->
-	      failwith "whencode not allowed in a pattern"
+	  | (Ast0.Dots(_,Ast0.WhenNot _),_)
+	  | (Ast0.Circles(_,Ast0.WhenNot _),_)
+	  | (Ast0.Stars(_,Ast0.WhenNot _),_)
+	  | (Ast0.Dots(_,Ast0.WhenAlways _),_)
+	  | (Ast0.Circles(_,Ast0.WhenAlways _),_)
+	  | (Ast0.Stars(_,Ast0.WhenAlways _),_) ->
+	      failwith "whencode not allowed in a pattern3"
 	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
 	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
 	  | (Ast0.MultiStm(rea),Ast0.MultiStm(reb)) -> match_statement rea reb

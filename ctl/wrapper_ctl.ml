@@ -240,8 +240,6 @@ struct
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w false)
 		noclean)) in
-      Printf.printf "modified:\n";
-      List.iter (function x -> Printf.printf "%s\n" (Dumper.dump x)) res;
       (noclean,
        try
 	 Common.Left

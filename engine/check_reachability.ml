@@ -116,7 +116,7 @@ let test_formula state formula cfg =
     let label pred = [(pred,[],[])] in
     let res =
       ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist) formula ([state],[])
-	(function _ -> failwith "no longer used") in
+	(function _ -> function _ -> function _ -> function _ -> ()) in
     let res = List.map (function (st,_,_) -> st) res in
     Hashtbl.add tested formula res;
     List.mem state res
