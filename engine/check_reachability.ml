@@ -136,7 +136,7 @@ type ('a,'b,'c,'d,'e) triples =
     (Ograph_extended.nodei * 'a *
      (Ograph_extended.nodei,
       ('b, ('c, 'd) Wrapper_ctl.wrapped_binding) CTL.generic_subst list, 'e)
-     CTL.generic_witnesstree) list
+     CTL.generic_witnesstree list) list
 
 let check_reachability triples cfg =
   Hashtbl.clear modified;
