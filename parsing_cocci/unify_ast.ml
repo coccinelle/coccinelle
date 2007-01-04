@@ -351,6 +351,7 @@ let rec unify_rule_elem re1 re2 =
 	    (unify_option unify_expression e31 e32))
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
+  | (Ast.Goto,Ast.Goto) -> return true
   | (Ast.Return(r1,s1),Ast.Return(r2,s2)) -> return true
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2

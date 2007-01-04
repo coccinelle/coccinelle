@@ -1,3 +1,4 @@
+(*search for require*)
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
 
@@ -75,10 +76,10 @@ let wrapEG      n (x)   = wrap n (CTL.EG(CTL.FORWARD,x))
 let wrapEF      n (x)   = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot     n (x)   = wrap n (CTL.Not(x))
 let wrapPred    n (x)   = wrap n (CTL.Pred(x))
-let wrapDots    n (x,y,z,a,b,c,d,e) =
-  wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c,d,e))
-let wrapPDots   n (x,y,z,a,b,c,d,e) =
-  wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c,d,e))
+let wrapDots    n (x,y,z,a,b,c,d,e,f,g) =
+  wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c,d,e,f,g))
+let wrapPDots   n (x,y,z,a,b,c,d,e,f,g) =
+  wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c,d,e,f,g))
 let wrapLet     n (x,y,z) = wrap n (CTL.Let(x,y,z))
 let wrapRef     n (x)   = wrap n (CTL.Ref(x))
 
@@ -733,7 +734,7 @@ let svar_minus_or_no_add_after s n label quantified d ast
 (* dots and nests *)
 
 let dots_and_nests nest whencodes befaftexps dot_code after n label
-    process_bef_aft statement_list statement guard builder =
+    process_bef_aft statement_list statement guard builder wrapcode =
   let befaft = List.map (process_bef_aft guard) befaftexps in
   let befaftg = List.map (process_bef_aft true) befaftexps in
   let (notwhencodes,whencodes) =
@@ -763,7 +764,9 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	else wrap n CTL.False in
   builder n
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,ender,
-     aftpred n label, truepred n label)
+     aftret n label, truepred n label,
+     make_match n label false (wrapcode Ast.Goto),
+     make_match n None false (wrapcode Ast.Goto))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -938,6 +941,7 @@ and statement stmt after quantified label guard =
 				 (statement_list body
 				    (After (make_seq_after end_brace after))
 				    new_quantified3
+(*require goto with some and before } along all paths to allow none?*)
 				    (if ends_in_return body
 				    then None
 				    else Some lv)
@@ -974,7 +978,7 @@ and statement stmt after quantified label guard =
 	  (function x ->
 	    statement_list x Tail quantified label true true)
 	  (function x -> statement x Tail quantified label true)
-	  guard builder in
+	  guard builder (Ast.rewrap stmt) in
 
       (match Ast.unwrap stmt_dots with
 	Ast.DOTS([l]) ->
@@ -996,7 +1000,7 @@ and statement stmt after quantified label guard =
 	(process_bef_aft quantified n label)
 	(function x -> statement_list x Tail quantified label true true)
 	(function x -> statement x Tail quantified label true)
-	guard wrapDots
+	guard wrapDots (Ast.rewrap stmt)
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
@@ -1086,7 +1090,8 @@ let rec letify x =
 	(match CTL.unwrap phi2 with
 	  CTL.AX(dir,ax) ->
 	    (match CTL.unwrap ax with
-	      CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr)
+	      CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,
+		       ar,tr,goto,goto')
 	      ->
 		let (same,different) =
 		  List.partition (function (x,_) -> x = phi1) before_after in
@@ -1110,7 +1115,7 @@ let rec letify x =
 					     CTL.rewrap same (CTL.Ref v))::
 					    different,nest,
 					    notwhens,whens,dotcode,rest,
-					    af,tr))))))))
+					    ar,tr,goto,goto'))))))))
 		|	_ -> failwith "duplicated befores?")
 	    | _ -> fail())
 	| _ -> fail())
@@ -1120,12 +1125,13 @@ let rec letify x =
     | CTL.AF(dir,phi1)       -> CTL.AF(dir,letify phi1)
     | CTL.AX(dir,phi1)       ->
 	(match CTL.unwrap phi1 with
-	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
+	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,
+		    ar,tr,goto,goto') ->
 	    drop_pdots phi1
 	      (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	       get_option letify nest,
 	       get_option letify notwhens,get_option letify whens,
-	       dotcode, letify rest, af, tr)
+	       dotcode, letify rest, ar, tr, goto, goto')
 	      (function ax -> CTL.rewrap x (CTL.AX(dir,ax)))
 	      (function ex -> CTL.rewrap x (CTL.EX(dir,ex)))
 	| _ -> CTL.AX(dir,letify phi1))
@@ -1140,22 +1146,25 @@ let rec letify x =
     | CTL.LetR (d,x,phi1,phi2)  -> CTL.LetR (d,x,letify phi1,letify phi2)
     | CTL.Ref(s)             -> CTL.Ref(s)
     | CTL.Uncheck(phi1)      -> CTL.Uncheck(letify phi1)
-    | CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
+    | CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
+	       goto,goto') ->
 	drop_dots x
 	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
-	   dotcode, letify rest, af, tr)
-    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,af,tr) ->
+	   dotcode, letify rest, ar, tr, goto, goto')
+    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
+		goto,goto')->
 	drop_pdots x
 	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
-	   dotcode, letify rest, af, tr)
+	   dotcode, letify rest, ar, tr, goto, goto')
 	  (function ax -> ax) (function ex -> ex))
 
 and drop_dots x
-    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftpred,truepred) =
+    (dir,before_after,nest,notwhens,whens,dotcode,rest,
+     aftret,truepred,gotopred,gotomatch) =
   let lst = function None -> [] | Some x -> [x] in
   let uncheck nw = CTL.rewrap x (CTL.Uncheck nw) in
   let not_uncheck y = CTL.rewrap x (CTL.Not (CTL.rewrap x (CTL.Uncheck y))) in
@@ -1181,20 +1190,30 @@ and drop_dots x
     (lst dotcode) @ (lst nest) @ (lst notwhens) @ (lst whens) @ before_after in
   let wrap f = CTL.rewrap x f in
   let build_big_rest bef_aft_builder =
-    let line = CTL.get_line x in
-        (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
+    (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
     wrap
       (CTL.Or
 	 (rest,
 	  wrap
 	    (CTL.Or
-	       (aftpred,
+	       (aftret,
 		wrap
+		  (* encoding of an error exit *)
 		  (CTL.And
 		     (truepred,
 		      bef_aft_builder
-			(wrap(CTL.Or(aftret line None,
-				     endpred line None))))))))) in
+			(wrap
+			   (CTL.And
+			      (gotopred,
+			       wrap
+				 (CTL.Not
+				    (wrap
+				       (CTL.EX
+					  (dir,
+					   wrap
+					     (CTL.EF
+						(dir,
+						 gotomatch))))))))))))))) in
   
   match (all,!Flag_parsing_cocci.sgrep_mode) with
     ([],true) -> CTL.EF(dir,rest)
@@ -1230,7 +1249,8 @@ We have taken care of the AX(PDots ...) case, and hope nothing else can
 show up. *)
 
 and drop_pdots x
-    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftpred,truepred)
+    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftret,truepred,
+     goto,goto')
     fA fE =
   let rewrap e = CTL.rewrap x e in
   let befaft_name = get_let_ctr() in
@@ -1254,7 +1274,7 @@ and drop_pdots x
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  get_option (function _ -> rewrap(CTL.Ref nest_name)) nest,
 	  notwhens,whens,dotcode,rewrap (CTL.Ref rest_name),
-	  aftpred,truepred)) in
+	  aftret,truepred,goto,goto')) in
   let exists_pattern body =
     rewrap(CTL.EU(dir,
 		  rewrap
@@ -1269,7 +1289,7 @@ and drop_pdots x
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  None,notwhens,whens,dotcode,
 	  rewrap(CTL.Uncheck(rewrap(CTL.Ref rest_name))),
-	  aftpred,truepred)) in
+	  aftret,truepred,goto,goto')) in
   befaft_maker
     (nest_maker
        (rest_maker

@@ -409,6 +409,7 @@ let rule_elem arity re =
       print_string arity; mcode print_string br; mcode print_string sem
   | Ast.Continue(cont,sem) ->
       print_string arity; mcode print_string cont; mcode print_string sem
+  | Ast.Goto -> print_string "goto"
   | Ast.Return(ret,sem) ->
       print_string arity; mcode print_string ret; mcode print_string sem
   | Ast.ReturnExpr(ret,exp,sem) ->

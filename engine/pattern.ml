@@ -982,6 +982,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       return true
       
 
+  | A.Goto,                  F.Goto (_, (_,ii))       -> return true
   | A.Break _,               F.Break (_, ((),ii))      -> return true
   | A.Continue _,            F.Continue (_, ((),ii))   -> return true
   | A.Return _,              F.Return (_, ((),ii))     -> return true
@@ -994,7 +995,6 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.SwitchHeader _ 
   | _, F.Label _
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ 
   | _, F.Asm
   | _, F.IfCpp _
     -> return false

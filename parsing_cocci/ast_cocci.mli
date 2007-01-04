@@ -278,6 +278,7 @@ and base_rule_elem =
                      expression option * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
+  | Goto             (* not in the source language *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)

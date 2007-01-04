@@ -277,6 +277,7 @@ let combiner bind option_default
 		      get_option expression e3; string_mcode rp]
       | Ast.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
+      |	Ast.Goto -> option_default
       | Ast.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
@@ -682,6 +683,7 @@ let rebuilder
 	    Ast.Break(string_mcode br, string_mcode sem)
 	| Ast.Continue(cont,sem) ->
 	    Ast.Continue(string_mcode cont, string_mcode sem)
+	| Ast.Goto -> Ast.Goto
 	| Ast.Return(ret,sem) ->
 	    Ast.Return(string_mcode ret, string_mcode sem)
 	| Ast.ReturnExpr(ret,exp,sem) ->
