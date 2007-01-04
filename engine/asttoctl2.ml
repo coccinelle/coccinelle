@@ -825,6 +825,7 @@ and statement stmt after quantified label guard =
   let make_seq   = make_seq n in
   let make_seq_after = make_seq_after n in
   let quantify   = quantify n in
+  let real_make_match = make_match in
   let make_match = make_match n label guard in
 
   match Ast.unwrap stmt with
@@ -866,7 +867,7 @@ and statement stmt after quantified label guard =
 	  match Ast.unwrap ast with
             Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
-	      let normal_res = make_seq_after (quantify fvs term) End in
+	      let normal_res = make_seq_after (quantify fvs term) after in
 	      (* the following code tries to propagate the modifications on
 		 return; to a close brace, in the case where the final return
 		 is absent *)
@@ -904,7 +905,7 @@ and statement stmt after quantified label guard =
 		  normal_res)
 	  | Ast.ReturnExpr(_,_,_) ->
 	      (* have to have the return, if there is a return value *)
-	      make_seq_after (quantify fvs term) End
+	      make_seq_after (quantify fvs term) after
           | _ -> make_seq_after (quantify fvs term) after)
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
@@ -925,28 +926,82 @@ and statement stmt after quantified label guard =
 		wrapAnd(paren_pred,label_pred)) in
       let end_brace =
 	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
+      let nopv_start_brace =
+	wrapAnd(quantify lbfvs (make_match lbrace),label_pred) in
+      let nopv_end_brace = quantify rbfvs (make_match rbrace) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
-      wrapExists
-	(pv,wrapExists
-	   (lv,quantify b1fvs
-	      (make_seq
-		 [start_brace;
-		   quantify b2fvs
-		     (statement_list decls
-			(After
-			   (decl_to_not_decl n dots stmt make_match
-			      (quantify b3fvs
-				 (statement_list body
-				    (After (make_seq_after end_brace after))
-				    new_quantified3
-(*require goto with some and before } along all paths to allow none?*)
-				    (if ends_in_return body
-				    then None
-				    else Some lv)
-				    true guard))))
-			new_quantified2 (Some lv) false guard)])))
+      let pattern_as_given =
+	wrapExists
+	  (pv,wrapExists
+	     (lv,quantify b1fvs
+		(make_seq
+		   [start_brace;
+		     quantify b2fvs
+		       (statement_list decls
+			  (After
+			     (decl_to_not_decl n dots stmt make_match
+				(quantify b3fvs
+				   (statement_list body
+				      (After (make_seq_after end_brace after))
+				      new_quantified3 (Some lv) true guard))))
+			  new_quantified2 (Some lv) false guard)]))) in
+      if ends_in_return body
+      then
+	(* matching error handling code *)
+	(* Cases:
+	   1. The pattern as given
+	   2. A goto, and then some close braces, and then the pattern as
+	   given, but without the braces (only possible if there are no
+	   decls, and open and close braces are unmodified)
+	   3. Part of the pattern as given, then a goto, and then the rest
+	   of the pattern.  For this case, we just check that all paths have
+	   a goto within the current braces.  checking for a goto at every
+	   point in the pattern seems expensive and not worthwhile. *)
+	let pattern2 =
+	  let empty_rbrace =
+	    match Ast.unwrap rbrace with
+	      Ast.SeqEnd((data,info,_)) ->
+		Ast.rewrap rbrace
+		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NOTHING))))
+	    | _ -> failwith "unexpected close brace" in
+	  make_seq
+	    [make_match (Ast.rewrap stmt Ast.Goto);
+	      wrapAX n (* skip the destination label *)
+		(wrapAU
+		   (make_match empty_rbrace,
+		    quantify b3fvs
+		      (statement_list body End new_quantified3 None true
+			 guard)))] in
+	let pattern3 =
+	  wrapExists
+	    (lv,quantify b1fvs
+	       (make_seq
+		  [nopv_start_brace;
+		    wrapAnd
+		      (wrapAU
+			 (wrap n
+			    (CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control)),
+			  real_make_match n (Some lv) false
+			    (Ast.rewrap stmt Ast.Goto)),
+		       quantify b2fvs
+			 (statement_list decls
+			    (After
+			       (decl_to_not_decl n dots stmt make_match
+				  (quantify b3fvs
+				     (statement_list body
+					(After
+					   (make_seq_after
+					      nopv_end_brace after))
+					new_quantified3 None true guard))))
+			    new_quantified2 (Some lv) false guard))])) in
+	wrapOr(pattern_as_given,
+	       match Ast.unwrap decls with
+		 Ast.DOTS([]) -> wrapOr(pattern2,pattern3)
+	       | Ast.DOTS(l) -> pattern3
+	       | _ -> failwith "circles and stars not supported")
+      else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified n label statement
 	  make_match guard
