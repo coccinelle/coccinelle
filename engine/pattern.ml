@@ -946,6 +946,14 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         let visitor_e = Visitor_c.visitor_expr_k bigf in
 
         (match nodeb with 
+        (* propre a Ty. Exp ne l'a pas *)
+        | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
+            Visitor_c.visitor_type_k bigf rett;
+            paramst +> List.iter (fun (((b, s, t), iibs), iicomma) ->
+              Visitor_c.visitor_type_k bigf t;
+            );
+
+
 
         | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
         | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
@@ -969,7 +977,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         | (
           F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
           F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
-          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
+          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
           F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
           F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
           F.IfCpp _

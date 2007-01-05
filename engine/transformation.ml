@@ -897,6 +897,17 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       let visitor_e = Visitor_c.visitor_expr_k_s bigf in
 
       (match nodeb with
+        (* propre a Ty. Exp ne l'a pas *)
+        | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
+            F.FunHeader 
+              ((idb,
+               (Visitor_c.visitor_type_k_s bigf rett,
+               (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
+                 let t' = Visitor_c.visitor_type_k_s bigf t in
+                 (((b, s, t'), iibs), iicomma)
+               ), (isvaargs,iidotsb))), stob),ii)
+
+
       | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
       | F.ExprStatement (st, (eopt, ii)) ->  
           F.ExprStatement (st, (eopt +> map_option visitor_e, ii))

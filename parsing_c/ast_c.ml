@@ -1,6 +1,9 @@
 open Common open Commonop
 
 (*****************************************************************************)
+(* The AST C related types *)
+(*****************************************************************************)
+
 (* Could have more precise type in fullType, in expression, etc, but
  * it requires to do too much things in parsing (checking no
  * conflicting structname, computing value, ...). Better to separate
@@ -22,7 +25,8 @@ open Common open Commonop
  * Some stuff are tagged semantic: which means that they are computed
  * after parsing. *)
 
-(*****************************************************************************)
+(* ------------------------------------------------------------------------- *)
+
 (* Cocci: Each token will be decorated in the futur by the mcodekind
  * of cocci. It is the job of the pretty printer to look at this
  * information and decide to print or not the token (and also the
@@ -49,7 +53,8 @@ and 'a wrap  = 'a * il
  * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
 and 'a wrap2 = 'a * il
 
-(*****************************************************************************)
+(* ------------------------------------------------------------------------- *)
+
 and fullType = typeQualifier * typeC
 and  typeC = typeCbis wrap
 
@@ -135,7 +140,7 @@ and expressionbis =
   | Ident          of string   
   | Constant       of constant                                  
 
-  | FunCall of expression * argument wrap2 (* , *) list
+  | FunCall        of expression * argument wrap2 (* , *) list
 
   (* gccext: x ? /* empty */ : y <=> x ? x : y; *)
   | CondExpr       of expression * expression option * expression
@@ -187,30 +192,30 @@ and expressionbis =
    * note: that -2 is not a constant, it is the unary operator -
    * applied to constant 2. So the string must represent a positive
    * integer only. *)
-and constant = 
-  | String of (string * isWchar) 
-  | Char   of (string * isWchar) (* normally it is equivalent to Int *)
-  | Int    of (string  (* * intType*)) 
-  | Float  of (string * floatType)
+  and constant = 
+    | String of (string * isWchar) 
+    | Char   of (string * isWchar) (* normally it is equivalent to Int *)
+    | Int    of (string  (* * intType*)) 
+    | Float  of (string * floatType)
 
 
-  and isWchar = IsWchar | IsChar
+    and isWchar = IsWchar | IsChar
 
-  and  unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
-  and  assignOp = SimpleAssign | OpAssign of arithOp
-  and  fixOp    = Dec | Inc
+    and  unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+    and  assignOp = SimpleAssign | OpAssign of arithOp
+    and  fixOp    = Dec | Inc
 
-  and  binaryOp = Arith of arithOp | Logical of logicalOp
+    and  binaryOp = Arith of arithOp | Logical of logicalOp
 
-    and  arithOp   = 
-      | Plus | Minus | Mul | Div | Mod
-      | DecLeft | DecRight 
-      | And | Or | Xor
+       and  arithOp   = 
+         | Plus | Minus | Mul | Div | Mod
+         | DecLeft | DecRight 
+         | And | Or | Xor
 
-    and  logicalOp = 
-      | Inf | Sup | InfEq | SupEq 
-      | Eq | NotEq 
-      | AndLog | OrLog
+       and  logicalOp = 
+         | Inf | Sup | InfEq | SupEq 
+         | Eq | NotEq 
+         | AndLog | OrLog
 
  and constExpression = expression (* => int *)
 
@@ -314,7 +319,7 @@ and definition = (string * functionType * storage * compound)
                  wrap (* s ( ) { } sto *)
 
  
-
+(* ------------------------------------------------------------------------- *)
 and program = programElement list
      and programElement = 
           | Declaration of declaration
@@ -329,6 +334,8 @@ and program = programElement list
 
 
 
+(*****************************************************************************)
+(* Cocci Bindings *)
 (*****************************************************************************)
 (* Was previously in pattern.ml, but because of the transformer, 
  * we need to decorate each token with some cocci code AND the environment 
@@ -347,6 +354,8 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaParamListVal of (parameterType wrap) list
 
 (*****************************************************************************)
+(* Some constructors *)
+(*****************************************************************************)
 let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
@@ -358,8 +367,12 @@ let emptyMetavarsBinding = ([]: metavars_binding)
 let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
 let unwrap = fst
 
+(*****************************************************************************)
+(* Abstract line *)
 (*****************************************************************************)
 (* Abstract line. When we have extended the C Ast, to add some info to the
  * tokens, such as its line number in the file, we can not use anymore the
@@ -378,6 +391,15 @@ let al_info x =
 let is_al_info x = x.charpos = _Magic_info_number
 
 (*****************************************************************************)
+(* Views *)
+(*****************************************************************************)
+
+(* Transform a list of arguments (or parameters) where the comma are
+ * represented via the wrap2 and associated with an element, with
+ * a list where the comma are on their own. f(1,2,2) was
+ * [(1,[]); (2,[,]); (2,[,])] and become [1;',';2;',';2].
+ *)
+
 let rec (split_comma: 'a wrap2 list -> ('a, il) either list) = 
   function
   | [] -> []
@@ -396,3 +418,6 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
       (e, empty_ii)::unsplit_comma xs
   | Right ii::_ -> 
       raise Impossible
+
+
+

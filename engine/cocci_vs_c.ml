@@ -547,6 +547,10 @@ and (arguments: sequence ->
       arguments_bis eas (Ast_c.split_comma ebs) >>= (fun ebs' -> 
         return (Ast_c.unsplit_comma ebs')
       )
+(* because '...' can match nothing, need to take care when have 
+ * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
+ * f(1,2) for instance.
+ *)
       
 and arguments_bis = fun eas ebs -> 
   match eas, ebs with
@@ -555,23 +559,20 @@ and arguments_bis = fun eas ebs ->
   | x::xs, ys -> 
       (match A.unwrap x, ys with
       | A.Edots (mcode, optexpr), ys -> 
-          if null ys 
-          then 
-            if mcode_contain_plus (mcodekind mcode)
-            then failwith "I have not found a token where I can add stuff"
-            else arguments_bis xs []
-          else begin
-            if optexpr <> None then failwith "not handling when in argument";
-            let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-            startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-              acc >||> (
-                distrf distrf_args (mcodekind mcode) startxs >>=(fun startxs'->
+          (* todo: if optexpr, then a WHEN and so may have to filter yys *)
+          if optexpr <> None then failwith "not handling when in argument";
+
+          (* '...' can take more or less the beginnings of the arguments *)
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> (
+              distrf distrf_args (mcodekind mcode) startxs >>=(fun startxs'->
                   arguments_bis xs endxs >>= (fun endxs' -> 
                     return (startxs' ++ endxs')
                   ))
               )
             ) fail 
-          end
       | A.EComma i1, Right ii::ys -> 
           tokenf [i1] ii >>= (fun ii' -> 
           arguments_bis xs ys >>= (fun ys' -> 
@@ -611,6 +612,7 @@ and arguments_bis = fun eas ebs ->
           ))
       | unwrapx, (Right y)::ys -> 
           raise Impossible
+
       | unwrapx, [] -> fail
 
       )
@@ -668,9 +670,193 @@ and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
  fun typa typb -> 
    raise Todo
 
-and (typeC: (Ast_cocci.typeC, Ast_c.fullType) matcher) = 
+
+and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) = 
  fun typa typb -> 
-   raise Todo
+  match A.unwrap typa, typb with
+
+  (* cas general *)
+  | A.MetaType(ida,keep, inherited),  typb -> 
+      (* todo: keep ? pass to env *)
+      envf inherited (term ida, B.MetaTypeVal typb) >>= (fun v ->  
+        match v with
+        | B.MetaTypeVal typa  -> 
+          if (Abstract_line_c.al_type typa =*= Abstract_line_c.al_type typb)
+          then distrf distrf_type (mcodekind ida) typb
+          else fail
+        | _ -> raise Impossible
+      )
+  | unwrap, (qub, typb) -> 
+      typeC typa typb >>= (fun typ' -> 
+        return (qub, typ')
+      )
+      
+
+
+(* todo: toput in ast_c.ml
+let split_signb_baseb_ii (baseb, ii) = 
+  let iis = ii +> List.map (fun (ii,mc) -> ii.Common.str, (ii,mc)) in
+  match baseb, iis with
+  
+  | B.Void, ["void",i1] -> None, [i1]
+      
+  | B.FloatType (B.CFloat),["float",i1] -> None, [i1]
+  | B.FloatType (B.CDouble),["double",i1] -> None, [i1]
+  | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
+      
+  | B.IntType (B.CChar), ["char",i1] -> None, [i1]
+
+
+  | B.IntType (B.Si (sign, base)), xs -> 
+      (match sign, base, xs with
+      | B.Signed, B.CChar2,   ["signed",i1;"char",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CChar2,   ["unsigned",i1;"char",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CShort, ["short",i1] -> None, [i1]
+      | B.Signed, B.CShort, ["signed",i1;"short",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CInt, ["int",i1] -> None, [i1]
+      | B.Signed, B.CInt, ["signed",i1;"int",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
+          Some (B.UnSigned, i1), []
+
+      | B.Signed, B.CLong, ["long",i1] -> None, [i1]
+      | B.Signed, B.CLong, ["signed",i1;"long",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CLong, ["unsigned",i1;"long",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CLongLong, ["long",i1;"long",i2] -> None, [i1;i2]
+      | B.Signed, B.CLongLong, ["signed",i1;"long",i2;"long",i3] -> 
+          Some (B.Signed, i1), [i2;i3]
+      | B.UnSigned, B.CLongLong, ["unsigned",i1;"long",i2;"long",i3] -> 
+          Some (B.UnSigned, i1), [i2;i3]
+      | _ -> failwith "strange type1, maybe because of weird order"
+      )
+  | _ -> failwith "strange type2, maybe because of weird order"
+
+      *)
+and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) = 
+ fun typa typb -> 
+  match A.unwrap typa, typb with
+(*
+  | A.BaseType (basea, signaopt), (B.BaseType baseb, ii) -> 
+       (* In ii there is a list, sometimes of length 1 or 2 or 3.
+        * And even if in baseb we have a Signed Int, that does not mean
+        * that ii is of length 2, cos Signed is the default, so if in signa
+        * we have Signed explicitely ? we cant "accrocher" this mcode to 
+        * something :( So for the moment when there is signed in cocci,
+        * we force that there is a signed in c too (done in pattern.ml).
+        *)
+        let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
+
+        
+	(match term basea, baseb with
+        |  A.VoidType,  B.Void -> 
+            assert (signaopt = None); 
+            let ii' = tag_symbols [basea] ii binding in
+            (B.BaseType B.Void, ii')
+	| A.CharType,  B.IntType B.CChar when signaopt = None -> 
+            let ii' = tag_symbols [basea] ii binding in
+            (B.BaseType (B.IntType B.CChar), ii')
+
+
+        | A.CharType,  B.IntType (B.Si (sign, B.CChar2)) when signaopt <> None
+          -> 
+            let ii' = 
+              transform_sign signaopt signbopt ++ 
+              tag_symbols [basea] iibaseb  binding 
+            in
+            B.BaseType (B.IntType (B.Si (sign, B.CChar2))), ii'
+
+	| A.ShortType, B.IntType (B.Si (signb, B.CShort)) ->
+            let ii' = 
+              transform_sign signaopt signbopt ++ 
+              tag_symbols [basea] iibaseb  binding 
+            in
+            B.BaseType (B.IntType (B.Si (signb, B.CShort))), ii'
+	| A.IntType,   B.IntType (B.Si (signb, B.CInt))   ->
+            let ii' = 
+              transform_sign signaopt signbopt ++ 
+              tag_symbols [basea] iibaseb  binding 
+            in
+            B.BaseType (B.IntType (B.Si (signb, B.CInt))), ii'
+	| A.LongType,  B.IntType (B.Si (signb, B.CLong))  ->
+            let ii' = 
+              transform_sign signaopt signbopt ++ 
+              tag_symbols [basea] iibaseb  binding 
+            in
+            B.BaseType (B.IntType (B.Si (signb, B.CLong))), ii'
+
+	| A.FloatType, B.FloatType (B.CFloat) -> 
+            raise Todo
+	| A.DoubleType, B.FloatType (B.CDouble) -> 
+            raise Todo
+
+        | _, B.IntType (B.Si (_, B.CLongLong)) 
+        | _, B.FloatType B.CLongDouble 
+           -> raise NoMatch
+              
+
+        | _ -> raise NoMatch
+            
+
+        )
+*)
+
+    | A.Pointer (typa, imult),            (B.Pointer typb, ii) -> 
+        fullType typa typb >>= (fun typ' -> 
+          (B.Pointer typb) +> tokenf_wrap [imult] ii
+        )
+        
+    | A.Array (typa, _, eaopt, _), (B.Array (ebopt, typb), _) -> 
+        raise Todo
+
+    | A.StructUnionName(sua, sa), (B.StructUnionName (sb, sub), ii) -> 
+        (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
+        (match ii with
+        | [i1;i2] -> 
+            if equal_structUnion  (term sua) sub 
+            then
+              ident DontKnow sa (sb, [i2]) >>= (fun (sb', i2') -> 
+              tokenf [wrap_mcode sua] [i1] >>= (fun i1' -> 
+                return (B.StructUnionName (sb', sub), i1' ++ i2')
+              ))
+            else fail
+      | _ -> raise Impossible
+        )
+
+        
+
+    | A.StructUnionDef(sua, sa, lb, decls, rb), _ -> 
+	failwith "to be filled in"
+
+    | A.TypeName sa,  (B.TypeName sb, ii) ->
+        if (term sa) =$= sb
+        then (B.TypeName sb) +> tokenf_wrap  [sa] ii
+        else fail
+          
+    | _, _ -> fail
+
+
+and transform_sign signa signb = 
+  match signa, signb with
+  | None, None -> return []
+  | Some signa,  Some (signb, ib) -> 
+      if equal_sign (term signa) signb
+      then tokenf_one signa ib >>= (fun i' -> return [i'])
+      else fail
+  | _, _ -> fail
+
 
 (*****************************************************************************)
 (* Entry points *)
@@ -941,7 +1127,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.IfCpp _
     -> fail2
 
-  | _, _ -> fail
+  | _, _ -> fail 
   )
 end
 
