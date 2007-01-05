@@ -638,8 +638,6 @@ let process file isofile verbose =
 	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	  Insert_plus.insert_plus m p;
 	  Type_infer.type_infer minus;
-	  Printf.printf "working on rule\n";
-	  Unparse_ast0.unparse minus;
 	  let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
 	  let minus = Single_statement.single_statement minus in
 	  let minus_ast = Ast0toast.ast0toast minus in

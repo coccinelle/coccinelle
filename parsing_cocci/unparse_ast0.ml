@@ -40,7 +40,13 @@ let mcodekind brackets fn x = function
 	x plus_streams
   | Ast0.PLUS -> fn x
   | Ast0.MIXED(plus_streams) ->
-      let (lb,rb) =if !quiet then ("","") else  ("§","½") in
+      let (lb,rb) =
+	if !quiet
+	then ("","")
+	else
+	  let n = 
+	    match brackets with Some x -> "^"^(string_of_int x) | None -> "" in
+	  ("§","½"^n) in
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams

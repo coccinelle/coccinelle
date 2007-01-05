@@ -54,6 +54,16 @@ let promote_mcode (_,_,info,mcodekind) =
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
   ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
 
+let promote_mcode_plus_one (_,_,info,mcodekind) =
+  let new_info =
+    {info with
+      Ast0.line_start = info.Ast0.line_start + 1;
+      Ast0.logical_start = info.Ast0.logical_start + 1;
+      Ast0.line_end = info.Ast0.line_end + 1;
+      Ast0.logical_end = info.Ast0.logical_end + 1;
+      Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+
 let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
   let new_info =
@@ -525,9 +535,13 @@ let rec statement s =
       let starter = bad_mcode starter in
       let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
-      let elems =
-	List.map (function x -> dots is_stm_dots None statement x)
-	  rule_elem_dots_list in
+      let rec loop prevs = function
+	  [] -> []
+	| stm::stms ->
+	    (dots is_stm_dots (Some(promote_mcode_plus_one(List.hd prevs)))
+	       statement stm)::
+	    (loop (List.tl prevs) stms) in
+      let elems = loop (starter::mids) rule_elem_dots_list in
       mkmultires s (Ast0.Disj(starter,elems,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info elems) (get_all_end_info elems)
