@@ -518,6 +518,9 @@ let rec statement s =
   | Ast0.Exp(exp) ->
       let exp = expression exp in
       mkres s (Ast0.Exp(exp)) exp exp
+  | Ast0.Ty(ty) ->
+      let ty = typeC ty in
+      mkres s (Ast0.Ty(ty)) ty ty
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let starter = bad_mcode starter in
       let mids = List.map bad_mcode mids in

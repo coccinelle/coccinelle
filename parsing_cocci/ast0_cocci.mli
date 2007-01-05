@@ -224,6 +224,7 @@ and base_statement =
   | MetaStmt      of string mcode * pure
   | MetaStmtList  of string mcode (* only in statement lists *) * pure
   | Exp           of expression  (* only in dotted statement lists *)
+  | Ty            of typeC (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
   | Nest          of string mcode * statement dots * string mcode *

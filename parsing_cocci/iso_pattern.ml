@@ -556,6 +556,7 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
 	      failwith "nest not supported in patterns"
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
+	  | (Ast0.Ty(tya),Ast0.Ty(tyb)) -> match_typeC tya tyb
 	  | (Ast0.Dots(_,Ast0.NoWhen),Ast0.Dots(_,Ast0.NoWhen))
 	  | (Ast0.Circles(_,Ast0.NoWhen),Ast0.Circles(_,Ast0.NoWhen))
 	  | (Ast0.Stars(_,Ast0.NoWhen),Ast0.Stars(_,Ast0.NoWhen)) ->

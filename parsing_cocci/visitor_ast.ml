@@ -284,7 +284,8 @@ let combiner bind option_default
       | Ast.MetaStmt(name,_,_,_) -> string_mcode name
       | Ast.MetaStmtList(name,_,_) -> string_mcode name
       | Ast.MetaRuleElem(name,_,_) -> string_mcode name
-      | Ast.Exp(exp) -> expression exp in
+      | Ast.Exp(exp) -> expression exp
+      | Ast.Ty(ty) -> fullType ty in
     rulefn all_functions k re
 
   and statement s =
@@ -694,7 +695,8 @@ let rebuilder
 	    Ast.MetaStmtList(string_mcode name,keep,inherited)
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(string_mcode name,keep,inherited)
-	| Ast.Exp(exp) -> Ast.Exp(expression exp)) in
+	| Ast.Exp(exp) -> Ast.Exp(expression exp)
+	| Ast.Ty(ty) -> Ast.Ty(fullType ty)) in
     rulefn all_functions k re
 
   and statement s =

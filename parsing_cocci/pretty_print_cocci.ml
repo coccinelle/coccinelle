@@ -450,6 +450,7 @@ let rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       print_string arity;  mcode print_string name
   | Ast.Exp(exp) -> print_string arity; expression exp
+  | Ast.Ty(ty) -> print_string arity; fullType ty
 
 let rec statement arity s =
   match Ast.unwrap s with

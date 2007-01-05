@@ -367,6 +367,11 @@ let rec unify_rule_elem re1 re2 =
   | (Ast.Exp(e1),Ast.Exp(e2)) -> return true
   | (Ast.Exp(e1),_) -> subexp (unify_expression e1) re2
   | (_,Ast.Exp(e2)) -> subexp (unify_expression e2) re1
+
+    (* can match a rule_elem in different parts *)
+  | (Ast.Ty(t1),Ast.Ty(t2)) -> return true
+  | (Ast.Ty(t1),_) -> subtype (unify_fullType t1) re2
+  | (_,Ast.Ty(t2)) -> subtype (unify_fullType t2) re1
   | _ -> return false
 
 and subexp f =
@@ -379,6 +384,19 @@ and subexp f =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing in
+  recursor.V.combiner_rule_elem
+
+and subtype f =
+  let bind = conjunct_bindings in
+  let option_default = return false in
+  let mcode r e = option_default in
+  let fullType r k e = conjunct_bindings (f e) (k e) in
+  let donothing r k e = k e in
+  let recursor = V.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing
+      donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 

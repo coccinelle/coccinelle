@@ -506,6 +506,8 @@ let rec statement s =
 	  Ast.Atomic(rewrap s (Ast.MetaStmtList(mcode name,true,false)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
+      | Ast0.Ty(ty) ->
+	  Ast.Atomic(rewrap s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)

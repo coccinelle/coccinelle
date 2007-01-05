@@ -972,7 +972,6 @@ pure_decl_statement_list:
 /* as above, but allows a single expression - for "or" case */
 exp_decl_statement_list:
     expr                                    { [Ast0.wrap(Ast0.Exp($1))] }
-  | ctype          { [Ast0.wrap(Ast0.Exp(Ast0.wrap(Ast0.TypeExp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     exp_decl_statement_list
       /* HACK!!! */
@@ -991,7 +990,12 @@ exp_decl_statement_list:
   | pure_decl_statement_list                { $1 }
 
 fun_exp_decl_statement_list:
-    expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
+    ctype
+      /* This rule could be in exp_decl_statement_list, which would allow
+         it to be ain a... sequence.  But it is not clear whether that makes
+         sense, so for now it is here. */
+      { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+  | expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     fun_exp_decl_statement_list
       /* HACK!!! */

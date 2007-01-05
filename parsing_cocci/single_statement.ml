@@ -174,6 +174,7 @@ let rec statement dots_before dots_after s =
       Ast0.rewrap s
 	(Ast0.Nest(starter,statement_dots true true stmt_dots,ender,whencode))
   | Ast0.Exp(exp) -> s
+  | Ast0.Ty(ty) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.OptStm(re) -> 
       Ast0.rewrap s

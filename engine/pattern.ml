@@ -934,6 +934,54 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
        
 
 
+  | A.Ty ty, nodeb -> 
+     (* Maybe the above comments on the A.Exp case are relevant here*)
+
+        let globals = ref [] in
+        let bigf = { Visitor_c.default_visitor_c with Visitor_c.ktype = 
+              (fun (k, bigf) ty -> push2 ty globals;  k ty );
+           } 
+        in
+       
+        let visitor_e = Visitor_c.visitor_expr_k bigf in
+
+        (match nodeb with 
+
+        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
+        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
+
+        | F.IfHeader (_, (e,_)) 
+        | F.SwitchHeader (_, (e,_))
+        | F.WhileHeader (_, (e,_))
+        | F.DoWhileTail (e,_) 
+          -> visitor_e e
+
+        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
+            e1opt +> do_option visitor_e;
+            e2opt +> do_option visitor_e;
+            e3opt +> do_option visitor_e;
+            
+        | F.ReturnExpr (_, (e,_)) -> visitor_e e
+
+        | F.Case  (_, (e,_)) -> visitor_e e
+        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
+
+        | (
+          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
+          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
+          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
+          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
+          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
+          F.IfCpp _
+          ) -> ()
+
+        );
+        !globals
+         +> List.fold_left (fun acc t -> acc >||> match_ft_ft ty t) 
+           (return false)
+       
+
+
   | A.FunHeader (_,stoa, tya, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 
       (* todo: isvaargs ? *)

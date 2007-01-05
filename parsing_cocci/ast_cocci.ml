@@ -290,6 +290,7 @@ and base_rule_elem =
   | MetaStmtList  of string mcode * keep_binding * inherited
 
   | Exp           of expression
+  | Ty            of fullType (* only at top level *)
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible

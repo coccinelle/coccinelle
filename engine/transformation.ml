@@ -86,7 +86,9 @@ let tag_one_symbol = fun ia ib  binding ->
       Printf.printf "C code mcode "; flush stdout;
       Pretty_print_cocci.print_mcodekind x;
       Format.print_newline();
-      failwith (Common.sprintf "already tagged token in C:  %s" s2.str)
+      failwith
+	(Common.sprintf
+	   "already tagged token at offset %d in C:  %s" s2.charpos s2.str)
     end
   else 
     (s2, (x, binding))
@@ -884,6 +886,43 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       | _ -> raise Impossible 
       )
 
+  | A.Ty ty, nodeb -> 
+      let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.ktype_s = 
+             (fun (k,_) t -> 
+               try transform_ft_ft ty t   binding 
+               with NoMatch -> k t
+             )
+          }
+      in
+      let visitor_e = Visitor_c.visitor_expr_k_s bigf in
+
+      (match nodeb with
+      | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
+      | F.ExprStatement (st, (eopt, ii)) ->  
+          F.ExprStatement (st, (eopt +> map_option visitor_e, ii))
+
+      | F.IfHeader (st, (e,ii))     -> F.IfHeader     (st, (visitor_e e, ii))
+      | F.SwitchHeader (st, (e,ii)) -> F.SwitchHeader (st, (visitor_e e, ii))
+      | F.WhileHeader (st, (e,ii))  -> F.WhileHeader  (st, (visitor_e e, ii))
+      | F.DoWhileTail (e,ii)  -> F.DoWhileTail (visitor_e e, ii)
+
+      | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
+          F.ForHeader (st,
+                       (((e1opt +> Common.map_option visitor_e, i1),
+                         (e2opt +> Common.map_option visitor_e, i2),
+                         (e3opt +> Common.map_option visitor_e, i3)),
+                        ii))
+            
+      | F.ReturnExpr (st, (e,ii)) -> F.ReturnExpr (st, (visitor_e e, ii))
+            
+      | F.Case  (st, (e,ii)) -> F.Case (st, (visitor_e e, ii))
+      | F.CaseRange (st, ((e1, e2),ii)) -> 
+          F.CaseRange (st, ((visitor_e e1, visitor_e e2), ii))
+
+      (* called on transforming a node that does not contain any expr *)
+      | _ -> raise Impossible 
+      )
+
   | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
@@ -1001,7 +1040,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
   | _, F.SwitchHeader _ 
   | _, F.Label _
   | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ 
+  | _, F.Goto _ (* goto is just created by asttoctl2, with no +- info *)
   | _, F.Asm
   | _, F.IfCpp _
     -> raise Impossible

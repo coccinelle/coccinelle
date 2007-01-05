@@ -229,6 +229,7 @@ let rec statement table minus s =
   | Ast0.MetaStmtList(name,_) ->
       if minus then check_table table minus name
   | Ast0.Exp(exp) -> expression ID table minus exp
+  | Ast0.Ty(ty) -> typeC table minus ty
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement table minus)) rule_elem_dots_list
   | Ast0.Nest(_,rule_elem_dots,_,w) ->

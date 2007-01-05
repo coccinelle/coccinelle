@@ -714,6 +714,17 @@ let rec statement in_nest tgt stm =
 	| Ast0.MultiExp(exp) ->
 	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.Exp(exp)))
 	| _ -> Ast0.Exp(new_exp))
+  | Ast0.Ty(ty) ->
+      let new_ty = typeC tgt ty in (* opt makes no sense alone at top level *)
+      Ast0.rewrap stm 
+	(match Ast0.unwrap new_ty with
+	  Ast0.OptType(ty) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Ty(ty)))
+	| Ast0.UniqueType(ty) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
+	| Ast0.MultiType(ty) ->
+	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.Ty(ty)))
+	| _ -> Ast0.Ty(new_ty))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
 	List.map (function x -> concat_dots (statement in_nest tgt) x)

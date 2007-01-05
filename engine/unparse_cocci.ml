@@ -417,6 +417,7 @@ let rule_elem arity re =
       expression exp; mcode print_string sem
 
   | Ast.Exp(exp) -> print_string arity; expression exp
+  | Ast.Ty(ty) -> print_string arity; fullType ty
 
   | Ast.MetaRuleElem(name,true,_) ->
       raise Impossible
