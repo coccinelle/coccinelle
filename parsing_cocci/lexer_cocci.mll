@@ -101,6 +101,7 @@ let id_tokens lexbuf =
   | "local" when in_meta ->      check_arity_context_linetype s; TLocal
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
+  | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
   | "error" when in_meta ->      check_arity_context_linetype s; TError

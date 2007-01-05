@@ -146,6 +146,7 @@ let iso_adjust fn first rest =
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0 TPure
+%token TTypedef
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
 %token<Data.clt> Tvoid Tstruct Tunion
@@ -248,61 +249,66 @@ meta_main: metadec* TArobArob { List.concat($1) }
 metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TPtVirg
-  { List.map (function nm -> kindfn ar nm ispure) ids }
+  { List.concat (List.map (function nm -> kindfn ar nm ispure) ids) }
 
 pure: TPure { true } | /* empty */ { false }
 
 %inline metakind:
   TIdentifier
     { (function arity -> function name -> function pure ->
-      !Data.add_id_meta name pure; Ast.MetaIdDecl(arity,name)) }
+      !Data.add_id_meta name pure; [Ast.MetaIdDecl(arity,name)]) }
 | TFresh TIdentifier
     { (function arity -> function name -> function pure ->
-      !Data.add_id_meta name pure; Ast.MetaFreshIdDecl(arity,name)) }
+      !Data.add_id_meta name pure; [Ast.MetaFreshIdDecl(arity,name)]) }
 | TType
     { (function arity -> function name -> function pure ->
-      !Data.add_type_meta name pure; Ast.MetaTypeDecl(arity,name)) } 
+      !Data.add_type_meta name pure; [Ast.MetaTypeDecl(arity,name)]) } 
 | TParameter
     { (function arity -> function name -> function pure ->
-      !Data.add_param_meta name pure; Ast.MetaParamDecl(arity,name)) }
+      !Data.add_param_meta name pure; [Ast.MetaParamDecl(arity,name)]) }
 | TParameter Tlist
     { (function arity -> function name -> function pure ->
-      !Data.add_paramlist_meta name pure; Ast.MetaParamListDecl(arity,name)) } 
+      !Data.add_paramlist_meta name pure;[Ast.MetaParamListDecl(arity,name)])} 
 | TError
     { (function arity -> function name -> function pure ->
-      !Data.add_err_meta name pure; Ast.MetaErrDecl(arity,name)) }
+      !Data.add_err_meta name pure; [Ast.MetaErrDecl(arity,name)]) }
 | TExpression
     { (function arity -> function name -> function pure ->
-      !Data.add_exp_meta None name pure; Ast.MetaExpDecl(arity,name)) }
+      !Data.add_exp_meta None name pure; [Ast.MetaExpDecl(arity,name)]) }
 | TExpression Tlist
     { (function arity -> function name -> function pure ->
-      !Data.add_explist_meta name pure; Ast.MetaExpListDecl(arity,name)) }
+      !Data.add_explist_meta name pure; [Ast.MetaExpListDecl(arity,name)]) }
 | TExpression m=nonempty_list(TMul)
     { (function arity -> function name -> function pure ->
       !Data.add_exp_meta (Some [ty_pointerify Type_cocci.Unknown m]) name pure;
-      Ast.MetaExpDecl(arity,name)) }
+      [Ast.MetaExpDecl(arity,name)]) }
 | TStatement
     { (function arity -> function name -> function pure ->
-      !Data.add_stm_meta name pure; Ast.MetaStmDecl(arity,name)) }
+      !Data.add_stm_meta name pure; [Ast.MetaStmDecl(arity,name)]) }
 | TStatement Tlist
     { (function arity -> function name -> function pure ->
-      !Data.add_stmlist_meta name pure; Ast.MetaStmListDecl(arity,name)) }
+      !Data.add_stmlist_meta name pure; [Ast.MetaStmListDecl(arity,name)]) }
 | TFunction
     { (function arity -> function name -> function pure ->
-      !Data.add_func_meta name pure; Ast.MetaFuncDecl(arity,name)) }
+      !Data.add_func_meta name pure; [Ast.MetaFuncDecl(arity,name)]) }
 | TLocal TFunction
     { (function arity -> function name -> function pure ->
       !Data.add_local_func_meta name pure;
-      Ast.MetaLocalFuncDecl(arity,name)) }
+      [Ast.MetaLocalFuncDecl(arity,name)]) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (function arity -> function name -> function pure ->
-      !Data.add_exp_meta (Some vl) name pure; Ast.MetaExpDecl(arity,name)) }
+      !Data.add_exp_meta (Some vl) name pure; [Ast.MetaExpDecl(arity,name)]) }
 | TConstant ty=ioption(const_meta_exp_type)
     { (function arity -> function name -> function pure ->
-      !Data.add_const_meta ty name pure; Ast.MetaConstDecl(arity,name)) }
+      !Data.add_const_meta ty name pure; [Ast.MetaConstDecl(arity,name)]) }
 | TText
     { (function arity -> function name -> function pure ->
-      !Data.add_text_meta name pure; Ast.MetaTextDecl(arity,name)) }
+      !Data.add_text_meta name pure; [Ast.MetaTextDecl(arity,name)]) }
+| TTypedef
+    { (function arity -> function name -> function pure ->
+      if arity = Ast.NONE && pure = false
+      then (!Data.add_type_name name; [])
+      else failwith "bad typedef") }
 
 meta_exp_type:
   ctype
@@ -966,6 +972,7 @@ pure_decl_statement_list:
 /* as above, but allows a single expression - for "or" case */
 exp_decl_statement_list:
     expr                                    { [Ast0.wrap(Ast0.Exp($1))] }
+  | ctype          { [Ast0.wrap(Ast0.Exp(Ast0.wrap(Ast0.TypeExp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     exp_decl_statement_list
       /* HACK!!! */

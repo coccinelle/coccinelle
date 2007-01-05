@@ -30,6 +30,7 @@ let token2c (tok,_) =
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
   | PC.TPure -> "pure"
+  | PC.TTypedef -> "typedef"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -200,7 +201,7 @@ let split t = function
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
-  | PC.TFunction | PC.TText
+  | PC.TFunction | PC.TText | PC.TTypedef
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TError | PC.TWords -> ([t],[t])
 
