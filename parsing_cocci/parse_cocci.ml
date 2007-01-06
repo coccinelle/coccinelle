@@ -396,24 +396,32 @@ let detect_types l =
       [] -> []
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
       when is_delim delim ->
+	Printf.printf "adding1 %s\n" ident;
 	!Data.add_type_name ident;
 	delim::(PC.TTypeId(ident,clt),v)::x::
 	(loop false (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
       when is_delim delim && is_id id ->
+	Printf.printf "adding2 %s\n" ident;
 	!Data.add_type_name ident;
 	delim::(PC.TTypeId(ident,clt),v)::id::
 	(loop false (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
       when start ->
+	Printf.printf "adding3 %s\n" ident;
 	!Data.add_type_name ident;
 	(PC.TTypeId(ident,clt),v)::x::(loop false (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::id::rest
       when start && is_id id ->
+	Printf.printf "adding4 %s\n" ident;
 	!Data.add_type_name ident;
 	(PC.TTypeId(ident,clt),v)::id::(loop false (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::rest when List.mem ident type_names ->
+	Printf.printf "already a type name %s\n" ident;
 	(PC.TTypeId(ident,clt),v)::(loop false type_names rest)
+    | ((PC.TIdent(ident,clt),v) as x)::rest ->
+	Printf.printf "not a type name %s\n" ident;
+	x::(loop false type_names rest)
     | x::rest -> x::(loop false type_names rest) in
   loop true [] l
 

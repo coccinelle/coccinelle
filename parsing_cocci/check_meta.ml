@@ -152,10 +152,11 @@ let rec declaration context table minus d =
 	  typeC table minus ty;
 	  ident context table minus id; expression ID table minus exp
       |	_ ->
+	  (*
 	  if minus
 	  then
 	    failwith "complex initializer specification not allowed in - code"
-	  else
+	  else*)
 	    (typeC table minus ty;
 	     ident context table minus id; initialiser table minus ini))
   | Ast0.UnInit(stg,ty,id,sem) ->

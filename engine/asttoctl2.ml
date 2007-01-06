@@ -486,8 +486,7 @@ and get_after_e s a =
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
-      let index = count_nested_braces s in
-      let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
+      let (bd,bda) = get_after body [] in
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
   | Ast.MultiStm(stm) -> (* I have no idea ... *)
@@ -1068,10 +1067,7 @@ and statement stmt after quantified label guard =
 	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs)
 	| _ -> failwith "not possible" in
       let function_header = quantify hfvs (make_match header) in
-      let pv = count_nested_braces stmt in
-      let paren_pred = wrapPred(Lib_engine.Paren pv,CTL.Control) in
-      let start_brace =
-	wrapAnd(quantify lbfvs (make_match lbrace),paren_pred) in
+      let start_brace = quantify lbfvs (make_match lbrace) in
       let end_brace =
 	let stripped_rbrace =
 	  match Ast.unwrap rbrace with
@@ -1092,22 +1088,20 @@ and statement stmt after quantified label guard =
       quantify b1fvs
 	(make_seq
 	   [function_header;
-	     wrapExists
-	       (pv,
-		(quantify b2fvs
-		   (make_seq
-		      [start_brace;
-			quantify b3fvs
-			  (statement_list decls
-			     (After
-				(decl_to_not_decl n dots stmt make_match
-				   (quantify b4fvs
-				      (statement_list body
-					 (After
-					    (make_seq_after end_brace
-					       after))
-					 new_quantified4 None true guard))))
-			     new_quantified3 None false guard)])))])
+	     (quantify b2fvs
+		(make_seq
+		   [start_brace;
+		     quantify b3fvs
+		       (statement_list decls
+			  (After
+			     (decl_to_not_decl n dots stmt make_match
+				(quantify b4fvs
+				   (statement_list body
+				      (After
+					 (make_seq_after end_brace
+					    after))
+				      new_quantified4 None true guard))))
+			  new_quantified3 None false guard)]))])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->
@@ -1247,10 +1241,10 @@ and drop_dots x
   let build_big_rest bef_aft_builder =
     (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
     wrap
-      (CTL.Or
+      (CTL.SeqOr
 	 (rest,
 	  wrap
-	    (CTL.Or
+	    (CTL.SeqOr
 	       (aftret,
 		wrap
 		  (* encoding of an error exit *)
