@@ -661,7 +661,10 @@ let rec meta m =
 let top_level t =
   rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL(decl) -> Ast.DECL(declaration decl)
+      Ast0.DECL(decl) ->
+	let decl = declaration decl in
+	let rule_elem = Ast.rewrap decl (Ast.Decl decl) in
+	Ast.DECL(rule_elem)
     | Ast0.META(m) -> Ast.META(meta m)
     | Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)

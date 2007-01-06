@@ -543,7 +543,7 @@ let rec meta m =
 
 let top_level t =
   match Ast.unwrap t with
-    Ast.DECL(decl) -> declaration decl
+    Ast.DECL(decl) -> rule_elem "" decl
   | Ast.META(m) -> meta m
   | Ast.FILEINFO(old_file,new_file) ->
       print_string "--- "; mcode print_string old_file; force_newline();

@@ -352,7 +352,7 @@ and define_body = base_define_body wrap
 
 and base_top_level =
     FUNCTION of statement
-  | DECL of declaration
+  | DECL of rule_elem
   | META of meta
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list

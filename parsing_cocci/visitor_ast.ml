@@ -342,7 +342,7 @@ let combiner bind option_default
   and top_level t =
     let k t =
       match Ast.unwrap t with
-	Ast.DECL(decl) -> declaration decl
+	Ast.DECL(decl) -> rule_elem decl
       | Ast.META(m) -> meta m
       | Ast.FILEINFO(old_file,new_file) ->
 	  bind (string_mcode old_file) (string_mcode new_file)
@@ -766,7 +766,7 @@ let rebuilder
     let k t =
       Ast.rewrap t
 	(match Ast.unwrap t with
-	  Ast.DECL(decl) -> Ast.DECL(declaration decl)
+	  Ast.DECL(decl) -> Ast.DECL(rule_elem decl)
 	| Ast.META(m) -> Ast.META(meta m)
 	| Ast.FILEINFO(old_file,new_file) ->
 	    Ast.FILEINFO (string_mcode old_file, string_mcode new_file)
