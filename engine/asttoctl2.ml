@@ -1240,14 +1240,14 @@ and drop_dots x
   let wrap f = CTL.rewrap x f in
   let build_big_rest bef_aft_builder =
     (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
-    wrap
-      (CTL.SeqOr
-	 (rest,
+    let error_exiter =
+      match nest with
+	None -> (* sequence should stop at goto *)
 	  wrap
-	    (CTL.SeqOr
+	    (CTL.Or
 	       (aftret,
+	       (* encoding of a goto-generated error exit *)
 		wrap
-		  (* encoding of an error exit *)
 		  (CTL.And
 		     (truepred,
 		      bef_aft_builder
@@ -1260,9 +1260,9 @@ and drop_dots x
 				       (CTL.EX
 					  (dir,
 					   wrap
-					     (CTL.EF
-						(dir,
-						 gotomatch))))))))))))))) in
+					     (CTL.EF(dir,gotomatch)))))))))))))
+    | Some _ -> aftret (* nest should keep going to exit or error exit *) in
+    wrap(CTL.Or(rest,error_exiter)) in
   
   match (all,!Flag_parsing_cocci.sgrep_mode) with
     ([],true) -> CTL.EF(dir,rest)
