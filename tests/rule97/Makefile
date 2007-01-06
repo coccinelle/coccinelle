@@ -1,0 +1,19 @@
+SP=rule97.cocci
+
+SOURCES=airo.c \
+claw.c \
+ctctty.c \
+hci_vhci.c \
+icn.c \
+isdnl1.c \
+isdnl2.c \
+isdnl3.c \
+isdn_tty.c \
+ppp_async.c \
+ppp_generic.c \
+ppp_synctty.c \
+scc.c \
+tun.c \
+usbnet.c
+
+include ../generic_makefile
