@@ -24,13 +24,10 @@ ataflop.c
   * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 cdu31a.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
-  * PBBBB...
+  * [status] ok
 
 cm206.c
-  * [status] spatch-ok
-  * [compare] too many braces around transformed code
+  * [status] ok
 
 fd1772.c
   * [status] spatch-ok
@@ -42,9 +39,7 @@ ftl.c
   * [exc] Fatal error: exception Not_found
 
 gscd.c
-  * [status] spatch-ok
-  * PBBB...
-  * [compare] too many braces
+  * [status] ok
 
 hd.c
   * [status] spatch-ok (???)
@@ -54,8 +49,7 @@ hd.c
   * [rule] some CLEAR_INTR should be replaced by "do_hd = NULL"
 
 jsflash.c
-  * [status] spatch-ok
-  * [compare] too many braces
+  * [status] ok
 
 mcdx.c
   * [status] fail
@@ -81,21 +75,16 @@ nftlcore.c
   * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 pcd.c
-  * [status] spatch-ok
-  * [compare] too many braces
+  * [status] ok
 
 pd.c
-  * [status] spatch-ok
-  * [compare] too many braces
+  * [status] ok
 
 pf.c
-  * [status] spatch-ok
-  * [compare] too many braces
+  * [status] ok
 
 ps2esdi.c
-  * [status] spatch-ok
-  * GRAVE: a cpp instruction inside a #if 0
-  * [compare] too many braces
+  * [status] ok
 
 sbpcd.c
   * [status] fail
@@ -117,8 +106,7 @@ swim_iop.c
   * [independent] remove "#define DEVICE_INTR do_floppy"
 
 xd.c
-  * [status] spatch-ok
-  * [compare] too many braces
+  * [status] ok
 
 xpram.c
   * [status] fail
@@ -126,6 +114,4 @@ xpram.c
   * [exc] Fatal error: exception Not_found
 
 z2ram.c
-  * [status] spatch-ok
-  * PBBB...
-  * [compare] too many braces
+  * [status] ok

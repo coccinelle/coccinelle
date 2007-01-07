@@ -8,12 +8,9 @@ Bugs            :     3
 
 acsi.c
   * [status] ok
-  * PBB...
 
 amiflop.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
-  * control_flow: orphelin nodes, maybe something wierd happened
+  * [status] ok
 
 ataflop.c
   * [status] ok
@@ -25,8 +22,7 @@ aztcd.c
   * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
 
 cdu31a.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
   * PBB...
 
 cm206.c
@@ -40,7 +36,8 @@ fd1772.c
 
 ftl.c
   * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [exc] Fatal error: exception cant jump to leave: because we can't find
+  this label
 
 gscd.c
   * [status] ok
@@ -71,8 +68,7 @@ nftlcore.c
   * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 optcd.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 pcd.c
   * [status] ok
@@ -88,23 +84,19 @@ ps2esdi.c
   * GRAVE:...
 
 sbpcd.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
   * control_flow: orphelin nodes, maybe something wierd happened
   * GRAVE...
   * PBB...
 
 sjcd.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 sonycd535.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 swim3.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 swim_iop.c
   * [status] spatch-ok
@@ -114,8 +106,7 @@ xd.c
   * [status] ok
 
 xpram.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
   * PBB...
 
 z2ram.c
