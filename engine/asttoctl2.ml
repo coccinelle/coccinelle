@@ -220,12 +220,19 @@ let contains_modif =
     | Ast.PLUS -> failwith "not possible"
     | Ast.CONTEXT(info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
+  let rule_elem r k re =
+    let res = k re in
+    match Ast.unwrap re with
+      Ast.FunHeader(bef,_,stg,ty,name,lp,params,rp) ->
+	bind (mcode r ((),(),bef)) res
+    | Ast.Decl(bef,decl) -> bind (mcode r ((),(),bef)) res
+    | _ -> res in
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
+      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let make_match n label guard code =
