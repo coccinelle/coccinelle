@@ -57,8 +57,7 @@ cx88-video.c:
   * PBBB...
 
 e1000_main.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 e100.c
   * [status] fail
@@ -70,8 +69,7 @@ eepro100.c
     removing a field member (pm_state)
 
 hcd-pci.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 i810_audio.c
   * [status] spatch-ok
@@ -83,8 +81,7 @@ i810_main.c:
   * [status] ok
 
 init.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Todo
+  * [status] ok
 
 intel-agp.c:
   * [status] ok
@@ -95,15 +92,13 @@ intel-mch-agp.c:
   * PBBB...
 
 ipr.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 islpci_hotplug.c:
   * [status] ok
 
 ixgb_main.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 meye.c:
   * [status] ok
@@ -130,8 +125,7 @@ pci-skeleton.c
   * [compare] differs in whitespace
 
 s2io.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 sis900.c
   * [status] spatch-ok
