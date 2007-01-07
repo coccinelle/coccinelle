@@ -776,7 +776,7 @@ let decl_to_not_decl n dots stmt make_match f =
   else
     let de =
       let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) in
-      Ast.rewrap md (Ast.Decl md) in
+      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NOTHING),md)) in
     wrapAU n (make_match de,
 	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
 
@@ -1097,9 +1097,7 @@ and statement stmt after quantified label guard =
 			     (decl_to_not_decl n dots stmt make_match
 				(quantify b4fvs
 				   (statement_list body
-				      (After
-					 (make_seq_after end_brace
-					    after))
+				      (After (make_seq_after end_brace after))
 				      new_quantified4 None true guard))))
 			  new_quantified3 None false guard)]))])
   | Ast.OptStm(stm) ->

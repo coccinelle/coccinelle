@@ -193,7 +193,7 @@ and parameter_list = parameterTypeDef dots
 (* Statement*)
 
 and base_statement =
-    Decl          of declaration
+    Decl          of (info * mcodekind) (* before the decl *) * declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
   | ExprStatement of expression * string mcode (*;*)
@@ -235,8 +235,8 @@ and base_statement =
 	             (statement dots,statement) whencode
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode
-  | FunDecl of
-        Ast_cocci.storage mcode option * typeC option * ident (* name *) *
+  | FunDecl of (info * mcodekind) (* before the function decl *) *
+	Ast_cocci.storage mcode option * typeC option * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
@@ -274,7 +274,7 @@ and define_body = base_define_body wrap
 
 type base_top_level =
     FUNCTION of statement
-  | DECL of declaration
+  | DECL of (info * mcodekind) (* before the decl *) * declaration
   | META of meta
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list

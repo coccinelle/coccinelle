@@ -133,9 +133,8 @@ let parameterTypeDef p =
 	
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-      [68]
-  | Ast0.Decl(decl) -> [69]
+    Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace) -> [68]
+  | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]
   | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) -> [72]
@@ -170,7 +169,7 @@ let meta m =
 	
 let top_level t =
   match Ast0.unwrap t with
-    Ast0.DECL(decl) -> [90]
+    Ast0.DECL(bef,decl) -> [90]
   | Ast0.META(m) -> [91]
   | Ast0.FILEINFO(old_file,new_file) -> [92]
   | Ast0.FUNCTION(stmt_dots) -> [93]

@@ -46,7 +46,7 @@ let scan_code l =
 	(List.map
 	   (function d ->
 	     match Ast0.unwrap d with
-	       Ast0.Decl(x) -> Ast0.wrap (Ast0.DECL x)
+	       Ast0.Decl(bef,x) -> Ast0.wrap (Ast0.DECL(bef,x))
 	     | _ -> failwith "impossible")
 	   code,
 	 rest)
@@ -62,7 +62,7 @@ let rec scan_top_decl = function
 let l2c l =
   match Ast0.unwrap l with
     Ast0.FUNCTION(_) -> "function"
-  | Ast0.DECL(_) -> "decl"
+  | Ast0.DECL(_,_) -> "decl"
   | Ast0.META(_) -> "meta"
   | Ast0.FILEINFO(_,_) -> "fileinfo"
   | Ast0.ERRORWORDS(_) -> "errorwords"

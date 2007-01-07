@@ -255,12 +255,13 @@ and storage = Static | Auto | Register | Extern
 (* Top-level code *)
 
 and base_rule_elem =
-    FunHeader     of bool (* true if all minus *) *
+    FunHeader     of mcodekind (* before the function header *) *
+	             bool (* true if all minus *) *
 	             storage mcode option * fullType option *
 	             ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
-  | Decl          of declaration
+  | Decl          of mcodekind (* before the decl *) * declaration
 
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
@@ -301,12 +302,12 @@ and rule_elem = base_rule_elem wrap
 and base_statement =
     Seq           of rule_elem (* { *) * statement dots * bool *
 	             statement dots * rule_elem (* } *)
-  | IfThen        of rule_elem (* header *) * statement * mcodekind
+  | IfThen        of rule_elem (* header *) * statement * mcodekind (* endif *)
   | IfThenElse    of rule_elem (* header *) * statement *
-	             rule_elem (* else *) * statement * mcodekind
-  | While         of rule_elem (* header *) * statement * mcodekind
+	             rule_elem (* else *) * statement * mcodekind (* endif *)
+  | While         of rule_elem (* header *) * statement * mcodekind(*endwhile*)
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
-  | For           of rule_elem (* header *) * statement * mcodekind
+  | For           of rule_elem (* header *) * statement * mcodekind (*endfor*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of statement dots * (statement dots,statement) whencode *

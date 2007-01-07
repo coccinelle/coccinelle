@@ -120,12 +120,12 @@ let rec statement dots_before dots_after s =
     else s in
 
   match Ast0.unwrap s with
-    Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+    Ast0.FunDecl(x,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       Ast0.rewrap s
-	(Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,
+	(Ast0.FunDecl(x,stg,ty,name,lp,params,rp,lbrace,
 		      statement_dots false false body,
 		      rbrace))
-  | Ast0.Decl(_) -> s
+  | Ast0.Decl(_,_) -> s
   | Ast0.Seq(lbrace,body,rbrace) ->
       Ast0.rewrap s
 	(Ast0.Seq(lbrace,statement_dots false false body,rbrace))

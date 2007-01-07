@@ -391,8 +391,8 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
           let hack_funheaders = 
             trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
               match rule_elem with
-              | Ast_cocci.FunHeader (a,b,c,d,e,f,g),info,fv,dots -> 
-                  Some  (binding, ((a,b,c,d,e,f,g),info,fv,dots))
+              | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots -> 
+                  Some  (binding, ((a,b,c,d,e,f,g,h),info,fv,dots))
               | _ -> None
                                      )  
           in
@@ -568,7 +568,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
     if !Flag.show_misc then pr2 ("hack headers");
     Common.profile_code "hack_headers" (fun () -> 
       !_hack_funheader +> List.iter (fun 
-        ((binding, ((a,b,c,d,e,f,g),info,fv,dots))) -> 
+        ((binding, ((a,b,c,d,e,f,g,h),info,fv,dots))) -> 
           
           let cprogram' = 
             !cprogram +> List.map (fun ((ebis, info_item), flow) -> 
@@ -583,10 +583,10 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
                         ], iiptvirg::iisto))  -> 
                     (try 
                         Transformation.transform_proto
-                          (Ast_cocci.FunHeader (a,b,c,d,e,f,g), info, fv, dots)
+                          (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots)
                           (((Control_flow_c.FunHeader ((s, ft, storage), 
                                                       iisini++iity++iisto)), []),"")
-                          binding (qu, iiptvirg, storage) g
+                          binding (qu, iiptvirg, storage) h
                         +> (fun x -> x,  true)
                       with Transformation.NoMatch -> (ebis, false)
                     )

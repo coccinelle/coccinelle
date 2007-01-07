@@ -444,7 +444,9 @@ let rec statement s =
 	   Ast.BetweenDots (statement seqible s,get_ctr())) in
     rewrap s
       (match Ast0.unwrap s with
-	Ast0.Decl(decl) -> Ast.Atomic(rewrap s (Ast.Decl(declaration decl)))
+	Ast0.Decl((_,bef),decl) ->
+	  Ast.Atomic(rewrap s
+		       (Ast.Decl(convert_mcodekind bef,declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) -> 
 	  let lbrace = mcode lbrace in
 	  let (decls,dots,body) = separate_decls seqible body in
@@ -536,7 +538,7 @@ let rec statement s =
 	    whencode (statement_dots Ast.Sequencible)
 	      (statement Ast.NotSequencible) whn in
 	  Ast.Stars(d,whn,[])
-      | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+      | Ast0.FunDecl((_,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  let stg = get_option mcode stg in
 	  let ty = get_option typeC ty in
 	  let name = ident name in
@@ -548,7 +550,8 @@ let rec statement s =
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus s in
 	  Ast.FunDecl(rewrap s
-			(Ast.FunHeader(allminus,stg,ty,name,lp,params,rp)),
+			(Ast.FunHeader(convert_mcodekind bef,
+				       allminus,stg,ty,name,lp,params,rp)),
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		      decls,dots,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
@@ -661,9 +664,10 @@ let rec meta m =
 let top_level t =
   rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL(decl) ->
+      Ast0.DECL((_,bef),decl) ->
 	let decl = declaration decl in
-	let rule_elem = Ast.rewrap decl (Ast.Decl decl) in
+	let rule_elem =
+	  Ast.rewrap decl (Ast.Decl(convert_mcodekind bef,decl)) in
 	Ast.DECL(rule_elem)
     | Ast0.META(m) -> Ast.META(meta m)
     | Ast0.FILEINFO(old_file,new_file) ->

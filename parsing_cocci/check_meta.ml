@@ -208,7 +208,7 @@ let parameter_list table minus = dots (parameterTypeDef table minus)
 
 let rec statement table minus s =
   match Ast0.unwrap s with
-    Ast0.Decl(decl) -> declaration ID table minus decl
+    Ast0.Decl(_,decl) -> declaration ID table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement table minus) body
   | Ast0.ExprStatement(exp,sem) -> expression ID table minus exp
   | Ast0.IfThen(iff,lp,exp,rp,branch,_) ->
@@ -238,7 +238,7 @@ let rec statement table minus s =
       get_opt (dots (statement table minus)) w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
       whencode (dots (statement table minus)) (statement table minus) x
-  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN table minus name;
       get_opt (typeC table minus) ty;
       parameter_list table minus params;
@@ -271,7 +271,7 @@ let meta table minus m =
 
 let top_level table minus t =
   match Ast0.unwrap t with
-    Ast0.DECL(decl) -> declaration GLOBAL table minus decl
+    Ast0.DECL(_,decl) -> declaration GLOBAL table minus decl
   | Ast0.META(m) -> meta table minus m
   | Ast0.FUNCTION(stmt) -> statement table minus stmt
   | Ast0.CODE(stmt_dots) -> dots (statement table minus) stmt_dots

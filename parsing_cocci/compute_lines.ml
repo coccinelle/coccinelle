@@ -74,6 +74,16 @@ let promote_to_statement stm mcodekind =
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
   ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
 
+let promote_to_statement_start stm mcodekind =
+  let info = Ast0.get_info stm in
+  let new_info =
+    {info with
+      Ast0.logical_start = info.Ast0.logical_start;
+      Ast0.line_start = info.Ast0.line_start;
+      Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
+      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =
   let new_info =
@@ -467,8 +477,10 @@ let is_stm_dots s =
     
 let rec statement s =
   match Ast0.unwrap s with
-    Ast0.Decl(decl) ->
-      let decl = declaration decl in mkres s (Ast0.Decl(decl)) decl decl
+    Ast0.Decl((_,bef),decl) ->
+      let decl = declaration decl in
+      let left = promote_to_statement_start decl bef in
+      mkres s (Ast0.Decl((Ast0.get_info left,bef),decl)) decl decl
   | Ast0.Seq(lbrace,body,rbrace) -> 
       let body =
 	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
@@ -563,20 +575,38 @@ let rec statement s =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres s (Ast0.Stars(dots,whencode)) ln ln
-  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl((_,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       let ty = get_option typeC ty in
       let name = ident name in
       let params = parameter_list (Some(promote_mcode lp)) params in
       let body =
 	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
-      let res = Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) in
-      (* cases on what is leftmost *)
+      let left =
+	(* cases on what is leftmost *)
+	match stg with
+	  None ->
+	    (match ty with
+	      None -> promote_to_statement_start name bef
+	    | Some x -> promote_to_statement_start x bef)
+	| Some st -> promote_to_statement_start (promote_mcode st) bef in
+      (* pretend it is one line before the start of the function, so that it
+	 will catch things defined at top level.  We assume that these will not
+	 be defined on the same line as the function.  This is a HACK.
+	 A better approach would be to attach top_level things to this node,
+	 and other things to the node after, but that would complicate
+	 insert_plus, which doesn't distinguish between different mcodekinds *)
+      let res =
+	Ast0.FunDecl((Ast0.get_info left,bef),stg,ty,name,lp,params,rp,lbrace,
+		     body,rbrace) in
+      (* have to do this test again, because of typing problems - can't save
+	 the result, only use it *)
       (match stg with
 	None ->
 	  (match ty with
 	    None -> mkres s res name (promote_mcode rbrace)
 	  | Some x -> mkres s res x (promote_mcode rbrace))
       | Some st -> mkres s res (promote_mcode st) (promote_mcode rbrace))
+
   | Ast0.OptStm(stm) ->
       let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
   | Ast0.UniqueStm(stm) ->
@@ -616,8 +646,10 @@ let rec meta s =
 	
 let top_level t =
   match Ast0.unwrap t with
-    Ast0.DECL(decl) ->
-      let decl = declaration decl in mkres t (Ast0.DECL(decl)) decl decl
+    Ast0.DECL((_,bef),decl) ->
+      let decl = declaration decl in
+      let left = promote_to_statement_start decl bef in
+      mkres t (Ast0.DECL((Ast0.get_info left,bef),decl)) decl decl
   | Ast0.META(m) -> let m = meta m in mkres t (Ast0.META(m)) m m
   | Ast0.FILEINFO(old_file,new_file) -> t
   | Ast0.FUNCTION(stmt) ->

@@ -20,12 +20,20 @@ let contains_modif x used_after =
       let bind x y = x or y in
       let option_default = false in
       let do_nothing r k e = k e in
+      let rule_elem r k re =
+	let res = k re in
+	match Ast.unwrap re with
+	  Ast.FunHeader(bef,_,stg,ty,name,lp,params,rp) ->
+	    bind (mcode r ((),(),bef)) res
+	| Ast.Decl(bef,decl) ->
+	    bind (mcode r ((),(),bef)) res
+	| _ -> res in
       let recursor =
 	V.combiner bind option_default
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	  do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
+	  do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
     else true
 

@@ -298,7 +298,7 @@ let rec statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  print_string arity;
 	  print_option (mcode U.storage) stg;
 	  print_option typeC ty;
@@ -308,7 +308,7 @@ let rec statement arity s =
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
-      | Ast0.Decl(decl) -> print_string arity; declaration decl
+      | Ast0.Decl(_,decl) -> print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
@@ -423,7 +423,7 @@ let top_level t =
   print_context t
     (function _ ->
       match Ast0.unwrap t with
-	Ast0.DECL(decl) -> declaration decl
+	Ast0.DECL(_,decl) -> declaration decl
       | Ast0.META(m) -> meta m
       | Ast0.FILEINFO(old_file,new_file) ->
 	  print_string "--- "; mcode print_string old_file; force_newline();

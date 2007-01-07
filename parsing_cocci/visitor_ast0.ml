@@ -254,13 +254,13 @@ let combiner bind option_default
     wrapped s;
     let k s =
       match Ast0.unwrap s with
-	Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	  multibind
 	    [get_option storage_mcode stg; get_option typeC ty;
 	      ident name; string_mcode lp;
 	      parameter_dots params; string_mcode rp; string_mcode lbrace;
 	      statement_dots body; string_mcode rbrace]
-      | Ast0.Decl(decl) -> declaration decl
+      | Ast0.Decl(_,decl) -> declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  multibind
 	    [string_mcode lbrace; statement_dots body; string_mcode rbrace]
@@ -346,7 +346,7 @@ let combiner bind option_default
   and top_level t =
     let k t =
       match Ast0.unwrap t with
-	Ast0.DECL(decl) -> declaration decl
+	Ast0.DECL(_,decl) -> declaration decl
       | Ast0.META(m) -> meta m
       | Ast0.FILEINFO(old_file,new_file) ->
 	  bind (string_mcode old_file) (string_mcode new_file)
@@ -611,13 +611,13 @@ let rebuilder = fun
     let k s =
       Ast0.rewrap s
 	(match Ast0.unwrap s with
-	  Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-	    Ast0.FunDecl(get_option storage_mcode stg,
+	  Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	    Ast0.FunDecl(bef,get_option storage_mcode stg,
 			 get_option typeC ty, ident name,
 			 string_mcode lp, parameter_list params,
 			 string_mcode rp, string_mcode lbrace,
 			 statement_dots body, string_mcode rbrace)
-	| Ast0.Decl(decl) -> Ast0.Decl(declaration decl)
+	| Ast0.Decl(bef,decl) -> Ast0.Decl(bef,declaration decl)
 	| Ast0.Seq(lbrace,body,rbrace) ->
 	    Ast0.Seq(string_mcode lbrace, statement_dots body,
 		     string_mcode rbrace)
@@ -709,7 +709,7 @@ let rebuilder = fun
     let k t =
       Ast0.rewrap t
 	(match Ast0.unwrap t with
-	  Ast0.DECL(decl) -> Ast0.DECL(declaration decl)
+	  Ast0.DECL(bef,decl) -> Ast0.DECL(bef,declaration decl)
 	| Ast0.META(m) -> Ast0.META(meta m)
 	| Ast0.FILEINFO(old_file,new_file) ->
 	    Ast0.FILEINFO(string_mcode old_file, string_mcode new_file)

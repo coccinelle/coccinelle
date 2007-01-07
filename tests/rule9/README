@@ -18,7 +18,8 @@ cpqfcTSinit.c \
 
 acornscsi.c \
  * [status] wrong
- * can be made ok  if modify SP
+ * can be made ok  if modify SP.  the test on the hostptr value is in an ||
+ with another test
 
 arxescsi.c \
  * [status] spatch-ok
@@ -52,7 +53,7 @@ in2000.c \
 
 ncr53c8xx.c \
  * [status] wrong
- * can be made ok  by modifying SP
+ * can be made ok  by modifying SP.
 
 nsp32.c \
  * [status] spatch-ok
@@ -60,12 +61,11 @@ nsp32.c \
    whereas maintainer remove it (as for the other parameter)
 
 nsp_cs.c \
- * [status] wrong
+ * [status] spatch-ok
  * there is an loop over hostno, which was the old way to compute a hosptr, 
-   enclosed by an ifdef VERSION_xxx and we correctly remove the get in
-   the then of the ifdef,  but transform hostno in the else branch
-   which is wrong. Morover we don't delete the if (host == NULL) that
-   come after. WIERD
+   enclosed by an ifdef >= VERSION_xxx.  We transform the new version
+   correctly and leave the old code.  IN the version created by hand the
+   old code was left unchanged
 
 powertec.c \
  * [status] spatch-ok

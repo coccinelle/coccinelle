@@ -934,7 +934,8 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       | _ -> raise Impossible 
       )
 
-  | A.FunHeader (allminus, stoa, tya, ida, oparen, paramsa, cparen),
+  | A.FunHeader (need_to_do_something_with_this_mcodekind,
+		 allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
       | iidb::ioparenb::icparenb::iistob -> 
@@ -995,7 +996,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       )
       
 
-  | A.Decl decla, F.Decl declb -> 
+  | A.Decl (need_to_do_something_with_this_mcodekind,decla), F.Decl declb -> 
       F.Decl (transform_de_de decla declb  binding) 
 
   | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 

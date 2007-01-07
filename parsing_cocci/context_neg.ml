@@ -418,11 +418,11 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(stg1,_,_,lp1,_,rp1,lbrace1,_,rbrace1),
-     Ast0.FunDecl(stg2,_,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
+    (Ast0.FunDecl(_,stg1,_,_,lp1,_,rp1,lbrace1,_,rbrace1),
+     Ast0.FunDecl(_,stg2,_,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
        equal_option stg1 stg2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
        equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
-  | (Ast0.Decl(_),Ast0.Decl(_)) -> true
+  | (Ast0.Decl(_,_),Ast0.Decl(_,_)) -> true
   | (Ast0.Seq(lbrace1,_,rbrace1),Ast0.Seq(lbrace2,_,rbrace2)) ->
       equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
   | (Ast0.ExprStatement(_,sem1),Ast0.ExprStatement(_,sem2)) ->
@@ -482,7 +482,7 @@ let equal_meta m1 m2 =
 
 let rec equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
-    (Ast0.DECL(_),Ast0.DECL(_)) -> true
+    (Ast0.DECL(_,_),Ast0.DECL(_,_)) -> true
   | (Ast0.META(_),Ast0.META(_)) -> true
   | (Ast0.FILEINFO(old_file1,new_file1),Ast0.FILEINFO(old_file2,new_file2)) ->
       equal_mcode old_file1 old_file2 && equal_mcode new_file1 new_file2
@@ -597,7 +597,7 @@ let plus_table =
 let iscode t =
   match Ast0.unwrap t with
     Ast0.FUNCTION(_) -> true
-  | Ast0.DECL(_) -> true
+  | Ast0.DECL(_,_) -> true
   | Ast0.META(_) -> true
   | Ast0.FILEINFO(_) -> true
   | Ast0.ERRORWORDS(_) -> false
@@ -617,8 +617,9 @@ let concat = function
 	    (match Ast0.unwrap x with
 	      Ast0.FUNCTION(s) ->
 		let stms = loop rest in s::stms
-	    | Ast0.DECL(s) ->
-		let stms = loop rest in (Ast0.rewrap s (Ast0.Decl(s)))::stms
+	    | Ast0.DECL(bef,s) ->
+		let stms = loop rest in
+		(Ast0.rewrap s (Ast0.Decl(bef,s)))::stms
 	    | Ast0.CODE(ss) ->
 		let stms = loop rest in
 		(match Ast0.unwrap ss with

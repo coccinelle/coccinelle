@@ -151,7 +151,7 @@ let rec propagate_types env =
       [] -> ()
     | (s::ss) as all_s ->
 	(match Ast0.unwrap s with
-	  Ast0.Decl(decl) ->
+	  Ast0.Decl(_,decl) ->
 	    let rec process_decl decl =
 	      match Ast0.unwrap decl with
 		Ast0.Init(_,ty,id,_,exp,_) ->
@@ -178,7 +178,7 @@ let rec propagate_types env =
 
   let statement r k s =
     match Ast0.unwrap s with
-      Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+      Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(id,ty) -> [(strip id,Ast0.ast0_type_to_type ty)]

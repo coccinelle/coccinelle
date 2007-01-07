@@ -602,8 +602,8 @@ let make_rule_elem =
 let rec statement in_nest tgt stm =
   let stm_same = all_same in_nest true tgt in
   match Ast0.unwrap stm with
-    Ast0.Decl(decl) ->
-      Ast0.rewrap stm (Ast0.Decl(declaration in_nest tgt decl))
+    Ast0.Decl(bef,decl) ->
+      Ast0.rewrap stm (Ast0.Decl(bef,declaration in_nest tgt decl))
   | Ast0.Seq(lbrace,body,rbrace) -> 
       let arity =
 	stm_same (mcode2line lbrace)
@@ -772,7 +772,7 @@ let rec statement in_nest tgt stm =
 	whencode (concat_dots (statement false Ast0.NONE))
 	  (statement false Ast0.NONE) whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
 	all_same false true tgt (mcode2line lp)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
@@ -787,7 +787,7 @@ let rec statement in_nest tgt stm =
       let body = dots (statement false arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(stg,ty,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"	
 
@@ -847,7 +847,7 @@ let meta tgt m =
 let top_level tgt t =
   Ast0.rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL(decl) -> Ast0.DECL(declaration false Ast0.NONE decl)
+      Ast0.DECL(bef,decl) -> Ast0.DECL(bef,declaration false Ast0.NONE decl)
     | Ast0.META(m) -> Ast0.META(meta Ast0.NONE m)
     | Ast0.FILEINFO(old_file,new_file) -> 
 	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE

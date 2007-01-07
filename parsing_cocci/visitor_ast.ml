@@ -250,11 +250,11 @@ let combiner bind option_default
   and rule_elem re =
     let k re =
       match Ast.unwrap re with
-	Ast.FunHeader(_,stg,ty,name,lp,params,rp) ->
+	Ast.FunHeader(_,_,stg,ty,name,lp,params,rp) ->
 	  multibind [get_option storage_mcode stg; get_option fullType ty;
 		      ident name; string_mcode lp; parameter_dots params;
 		      string_mcode rp]
-      | Ast.Decl(decl) -> declaration decl
+      | Ast.Decl(_,decl) -> declaration decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
       | Ast.ExprStatement(exp,sem) ->
@@ -654,12 +654,12 @@ let rebuilder
     let k re =
       Ast.rewrap re
 	(match Ast.unwrap re with
-	  Ast.FunHeader(allminus,stg,ty,name,lp,params,rp) ->
-	    Ast.FunHeader(allminus,get_option storage_mcode stg,
+	  Ast.FunHeader(bef,allminus,stg,ty,name,lp,params,rp) ->
+	    Ast.FunHeader(bef,allminus,get_option storage_mcode stg,
 			  get_option fullType ty, ident name,
 			  string_mcode lp, parameter_dots params,
 			  string_mcode rp)
-	| Ast.Decl(decl) -> Ast.Decl(declaration decl)
+	| Ast.Decl(bef,decl) -> Ast.Decl(bef,declaration decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
 	| Ast.ExprStatement(exp,sem) ->

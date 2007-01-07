@@ -393,14 +393,17 @@ let parameter_list = dots (function _ -> ()) parameterTypeDef
 
 let rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(allminus,stg,ty,name,lp,params,rp) ->
+    Ast.FunHeader(bef,allminus,stg,ty,name,lp,params,rp) ->
+      mcode (function _ -> ()) ((),(),bef);
       print_string arity;
       print_option (mcode storage) stg;
       print_option fullType ty;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
-  | Ast.Decl(decl) -> print_string arity; declaration decl
+  | Ast.Decl(bef,decl) ->
+      mcode (function _ -> ()) ((),(),bef);
+      print_string arity; declaration decl
   | Ast.SeqStart(brace) ->
       print_string arity; mcode print_string brace;
       if !print_newlines_disj then start_block()

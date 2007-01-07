@@ -77,7 +77,10 @@ because their delimiters take up a line by themselves *)
 
 (* An Unfavored token is one that is in a BindContext node; using this causes
   the node to become Neither, meaning that isomorphisms can't be applied *)
-type minus_join_point = Favored | Unfavored
+(* Toplevel is for the bef token of a function declaration and is for
+attaching top-level definitions that should come before the complete
+declaration *)
+type minus_join_point = Favored | Unfavored | Toplevel | Decl
 
 (* Maps the index of a node to the indices of the mcodes it contains *)
 let root_token_table = (Hashtbl.create(50) : (int, int list) Hashtbl.t)
@@ -196,6 +199,9 @@ bind to that; not good for isomorphisms *)
 	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
 	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
 	@ bodyres
+    | Ast0.FunDecl((info,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	(Toplevel,info,bef)::(k s)
+    | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
 	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
     | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
@@ -273,14 +279,13 @@ let call_collect_minus context_nodes :
 (* result of collecting the join points should be sorted in nondecreasing
    order by line *)
 let verify l =
-  let token_start_line = function
-      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.logical_start in
-  let token_end_line = function
-      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.logical_end in
-  let token_real_start_line = function
-      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.line_start in
-  let token_real_end_line = function
-      (Favored,info,_) | (Unfavored,info,_) -> info.Ast0.line_end in
+  let get_info = function
+      (Favored,info,_) | (Unfavored,info,_) | (Toplevel,info,_)
+    | (Decl,info,_) -> info in
+  let token_start_line      x = (get_info x).Ast0.logical_start in
+  let token_end_line        x = (get_info x).Ast0.logical_end in
+  let token_real_start_line x = (get_info x).Ast0.line_start in
+  let token_real_end_line   x = (get_info x).Ast0.line_end in
   List.iter
     (function
 	(index,((_::_) as l1)) ->
@@ -329,6 +334,7 @@ let mk_binaryOp x         = Ast.BinaryOpTag x
 let mk_arithOp x          = Ast.ArithOpTag x
 let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
+let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_const_vol x        = Ast.ConstVolTag x
@@ -486,7 +492,12 @@ let less_than_end info1 info2 =
 let good_start info = info.Ast0.attachable_start
 let good_end info = info.Ast0.attachable_end
 
-let favored = function Favored -> true | Unfavored -> false
+let toplevel = function Toplevel -> true | Favored | Unfavored | Decl -> false
+let decl = function Decl -> true | Favored | Unfavored | Toplevel -> false
+let favored = function Favored -> true | Unfavored | Toplevel | Decl -> false
+
+let top_code =
+  List.for_all (List.for_all (function Ast.Code _ -> true | _ -> false))
 
 let pr = Printf.sprintf
 
@@ -588,10 +599,14 @@ let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 
 and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> let _ = flip_after m1 in ()
-  | (((infop,_) as p) :: ps) as all ->
+  | (((infop,pcode) as p) :: ps) as all ->
       if less_than_start infop infom2
       then
-	if good_end infom1 && favored f1
+	if top_code pcode && good_end infom1 && toplevel f1
+	then (attachafter p m1; after_m1 x1 x2 rest ps)
+	else if top_code pcode && good_start infom2 && toplevel f2
+	then (flip_after m1; before_m2 x2 rest all)
+	else if good_end infom1 && favored f1
 	then (attachafter p m1; after_m1 x1 x2 rest ps)
 	else if good_start infom2 && favored f2
 	then (flip_after m1; before_m2 x2 rest all)

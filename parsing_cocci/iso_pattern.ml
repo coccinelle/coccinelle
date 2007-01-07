@@ -498,8 +498,8 @@ let match_maker context_required whencode_allowed =
 	if not(context_required) or is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(stga,tya,namea,_,paramsa,_,_,bodya,_),
-	     Ast0.FunDecl(stgb,tyb,nameb,_,paramsb,_,_,bodyb,_)) ->
+	    (Ast0.FunDecl(_,stga,tya,namea,_,paramsa,_,_,bodya,_),
+	     Ast0.FunDecl(_,stgb,tyb,nameb,_,paramsb,_,_,bodyb,_)) ->
 	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_bindings
@@ -514,7 +514,7 @@ let match_maker context_required whencode_allowed =
 			    match_statement is_slist_matcher do_slist_match
 			    bodya bodyb)))
 	       else return false
-	  | (Ast0.Decl(decla),Ast0.Decl(declb)) -> match_decl decla declb
+	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
 	      match_dots match_statement is_slist_matcher do_slist_match
 		bodya bodyb

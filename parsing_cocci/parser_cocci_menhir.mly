@@ -436,7 +436,8 @@ fundecl:
   s=ioption(storage) t=option(fn_ctype)
   TFunDecl i=func_ident lp=TOPar d=decl_list rp=TCPar
   lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
-      { Ast0.wrap(Ast0.FunDecl(s, t, i,
+      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+			       s, t, i,
 			       clt2mcode "(" lp, d,
 			       clt2mcode ")" rp,
 			       clt2mcode "{" lb, b,
@@ -607,6 +608,7 @@ decl_var:
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
       e=initialize pv=TPtVirg
       { let (id,fn) = d in
+      !Data.add_type_name (id2name i);
       let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
       [Ast0.wrap(Ast0.Init(s,fn idtype,id,clt2mcode "=" q,e,
 			   clt2mcode ";" pv))] }
@@ -682,7 +684,11 @@ decl_statement:
       { let (nm,pure,clt) = $1 in
       [Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))] }
   | decl_var
-      { List.map (function x -> Ast0.wrap(Ast0.Decl(x))) $1 }
+      { List.map
+	  (function x ->
+	    Ast0.wrap
+	      (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),x)))
+	  $1 }
   | statement { [$1] }
   | TOPar0 pre_post_decl_statement_and_expression_opt_mid TCPar0
       { let (first,rest) = $2 in

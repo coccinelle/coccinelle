@@ -362,14 +362,14 @@ in
 
 let rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(_,stg,ty,name,lp,params,rp) ->
+    Ast.FunHeader(_,_,stg,ty,name,lp,params,rp) ->
       print_string arity;
       print_option (mcode storage) stg;
       print_option fullType ty;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
-  | Ast.Decl(decl) -> print_string arity; declaration decl
+  | Ast.Decl(_,decl) -> print_string arity; declaration decl
 
   | Ast.SeqStart(brace) ->
       print_string arity; mcode print_string brace; start_block()
