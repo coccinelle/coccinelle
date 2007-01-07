@@ -499,6 +499,27 @@ let favored = function Favored -> true | Unfavored | Toplevel | Decl -> false
 let top_code =
   List.for_all (List.for_all (function Ast.Code _ -> true | _ -> false))
 
+(* The following is probably not correct.  The idea is to detect what
+should be placed completely before the declaration.  So type/storage
+related things do not fall into this category, and complete statements do
+fall into this category.  But perhaps other things should be in this
+category as well, such as { or ;? *)
+let predecl_code =
+  let tester = function
+      (* the following should definitely be true *)
+      Ast.DeclarationTag _
+    | Ast.StatementTag _
+    | Ast.Rule_elemTag _
+    | Ast.StmtDotsTag _
+    | Ast.Code _ -> true
+      (* the following should definitely be false *)
+    | Ast.FullTypeTag _ | Ast.BaseTypeTag _ | Ast.StructUnionTag _
+    | Ast.SignTag _
+    | Ast.StorageTag _ | Ast.ConstVolTag _ | Ast.TypeCTag _ -> false
+      (* not sure about the rest *)
+    | _ -> false in
+  List.for_all (List.for_all tester)
+
 let pr = Printf.sprintf
 
 let attachbefore (infop,p) m =
@@ -602,7 +623,11 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
   | (((infop,pcode) as p) :: ps) as all ->
       if less_than_start infop infom2
       then
-	if top_code pcode && good_end infom1 && toplevel f1
+	if predecl_code pcode && good_end infom1 && decl f1
+	then (attachafter p m1; after_m1 x1 x2 rest ps)
+	else if predecl_code pcode && good_start infom2 && decl f2
+	then (flip_after m1; before_m2 x2 rest all)
+	else if top_code pcode && good_end infom1 && toplevel f1
 	then (attachafter p m1; after_m1 x1 x2 rest ps)
 	else if top_code pcode && good_start infom2 && toplevel f2
 	then (flip_after m1; before_m2 x2 rest all)
