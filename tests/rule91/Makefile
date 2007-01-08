@@ -1,0 +1,33 @@
+SP=rule91.cocci
+
+SOURCES = aircable.c \
+airprime.c \
+belkin_sa.c \
+cyberjack.c \
+cypress_m8.c \
+digi_acceleport.c \
+empeg.c \
+ftdi_sio.c \
+garmin_gps.c \
+generic.c \
+io_edgeport.c \
+io_ti.c \
+ipaq.c \
+ipw.c \
+ir-usb.c \
+keyspan.c \
+keyspan_pda.c \
+kl5kusb105.c \
+kobil_sct.c \
+mct_u232.c \
+mos7840.c \
+navman.c \
+omninet.c \
+option.c \
+pl2303.c \
+safe_serial.c \
+ti_usb_3410_5052.c \
+visor.c \
+whiteheat.c
+
+include ../generic_makefile
