@@ -155,7 +155,7 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
   | A.Constant ((A.Int ia,_,_) as i1), ((B.Constant (B.Int ib) , typ),ii)
-    when ia =$= ib ->  
+    when Pattern.equal_c_int ia ib ->  
       (B.Constant (B.Int ib), typ), 
       tag_symbols [i1] ii binding
 

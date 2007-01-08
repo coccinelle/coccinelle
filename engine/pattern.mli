@@ -38,3 +38,5 @@ val equal_arithOp     : Ast_cocci.arithOp     -> Ast_c.arithOp -> bool
 val equal_logicalOp   : Ast_cocci.logicalOp   -> Ast_c.logicalOp -> bool
 val equal_structUnion : Ast_cocci.structUnion -> Ast_c.structUnion -> bool
 val equal_sign        : Ast_cocci.sign        -> Ast_c.sign -> bool
+
+val equal_c_int : string -> string -> bool

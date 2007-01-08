@@ -17,6 +17,14 @@ let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
 
 (*****************************************************************************)
+
+let equal_c_int s1 s2 = 
+  try 
+    int_of_string s1 = int_of_string s2
+  with Failure("int_of_string") -> 
+    s1 = s2
+
+
 (* Normally Ast_cocci should reuse some types of Ast_c, so those
  * functions should not exist.
  * 
@@ -104,6 +112,8 @@ let equal_storage a b =
   | A.Extern   , B.Sto B.Extern 
       -> true
   | _ -> false
+
+
 
 
 (*****************************************************************************)
@@ -297,7 +307,7 @@ let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) =
   | A.Constant (A.Char sa,_,_),    ((B.Constant (B.Char   (sb, _)), typ),ii)
     when sa =$= sb -> return true
   | A.Constant (A.Int sa,_,_),     ((B.Constant (B.Int    (sb)), typ),ii)
-    when sa =$= sb -> return true
+    when equal_c_int sa sb -> return true
   | A.Constant (A.Float sa,_,_),   ((B.Constant (B.Float  (sb, ftyp)), typ),ii)
     when sa =$= sb -> return true
 

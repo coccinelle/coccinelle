@@ -947,6 +947,9 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
      statement, because we may have put an Exp, and so have to
      transform the expressions inside the switch. *)
 
+  (* todo: faire un visiteur pour les nodes, pourra factoriser le code
+     avec Ty comme ca. *)
+
   | A.Exp exp, nodeb -> 
      (* Now keep fullstatement inside the control flow node, 
       * so that can then get in a MetaStmtVar the fullstatement to later
