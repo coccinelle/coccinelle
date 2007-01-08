@@ -1,0 +1,89 @@
+14 ok or spatch-ok
+7 wrong because of parsing problems
+2 error because of flow graph problems
+
+3w-xxxx.c
+ * [status] spatch-ok
+ programmer adjusted a ifdef >= KERNEL_VERSION to maintain the old call
+
+advansys.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+aic79xx_osm.c
+ * [status] spatch-ok
+ programmer adjusted a ifdef >= KERNEL_VERSION to maintain the old call
+
+aic7xxx_old.c
+ * [status] ok
+
+aic7xxx_osm.c
+ * [status] spatch-ok
+ programmer adjusted a ifdef >= KERNEL_VERSION to maintain the old call
+
+AM53C974.c
+ * [status] error
+ There is code that appears to directly follow a return if an #ifdef is
+ ignored.  If the #ifdef flag is used, a lot of things don't parse.
+
+cciss_scsi.c
+ * [status] ok
+
+cpqfcTSinit.c
+ * [status] ok
+
+dmx3191d.c
+ * [status] ok
+
+fdomain.c
+ * [status] ok
+
+ips.c
+ * [status] ok
+
+linit.c
+ * [status] ok
+
+megaraid.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+mptscsih.c
+ * [status] ok
+
+nsp32.c
+ * [status] ok
+
+pci2000.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+pci2220i.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+qla1280.c
+ * [status] ok
+
+qlogicfc.c
+ * [status] ok
+
+qlogicisp.c
+ * [status] error
+ problem with goto that ends up within a while loop (see tests/gotobreak)
+
+sym53c8xx.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+sym_glue.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+tmscsim.c
+ * [status] wrong
+ problem in code that doesn't parse
+
+Key:
+error: coccinelle crashes
+wrong: coccinelle doesn't do some transformation that is required
