@@ -1,15 +1,57 @@
+12 oks
+1 where the SP doesn't do the right thing, because non-local information is
+needed
+2 where there are problems with the engine (parsing and expression matching)
+
+
 airo.c
+ * [status] error
+ parsing problem
+
 claw.c
+ * [status] ok
+
 ctctty.c
+ * [status] wrong
+ skb_queue_len stored in a variable to be the return value.  Not possible
+ to know whether the actual value is needed.
+
 hci_vhci.c
+ * [status] ok
+
 icn.c
+ * [status] ok
+
 isdnl1.c
+ * [status] ok
+
 isdnl2.c
+ * [status] ok
+
 isdnl3.c
+ * [status] ok
+
 isdn_tty.c
+ * [status] ok
+
 ppp_async.c
+ * [status] ok
+
 ppp_generic.c
+ * [status] ok
+
 ppp_synctty.c
+ * [status] ok
+
 scc.c
+ * [status] ok
+ makes a failed file because a comment comes out before a { while it was
+ after the { in the original file
+
 tun.c
+ * [status] ok
+
 usbnet.c
+ * [status] error
+ problem with not knowing where an expression has already applied
+
