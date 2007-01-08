@@ -1,45 +1,134 @@
 3c574_cs.c
+ * [status] 
+
 3c589_cs.c
+ * [status] 
+
 aha152x_stub.c
+ * [status] 
+
 airo_cs.c
+ * [status] 
+
 atmel_cs.c
+ * [status] 
+
 avma1_cs.c
+ * [status] 
+
 avm_cs.c
+ * [status] 
+
 axnet_cs.c
+ * [status] 
+
 bluecard_cs.c
+ * [status] 
+
 bt3c_cs.c
+ * [status] 
+
 btuart_cs.c
+ * [status] 
+
 cm4000_cs.c
+ * [status] 
+
 cm4040_cs.c
+ * [status] 
+
 com20020_cs.c
+ * [status] 
+
 ds.c
+ * [status] 
+
 dtl1_cs.c
+ * [status] 
+
 elsa_cs.c
+ * [status] 
+
 fdomain_stub.c
+ * [status] 
+
 fmvj18x_cs.c
+ * [status]
+
 hostap_cs.c
+ * [status] 
+
 ibmtr_cs.c
+ * [status] 
+
 ide-cs.c
+ * [status] 
+
 ixj_pcmcia.c
+ * [status] 
+
 netwave_cs.c
+ * [status] 
+
 nmclan_cs.c
+ * [status] 
+
 nsp_cs.c
+ * [status] 
+
 orinoco_cs.c
+ * [status] 
+
 parport_cs.c
+ * [status] 
+
 pcmciamtd.c
+ * [status] 
+
 pcnet_cs.c
+ * [status] 
+
 pdaudiocf.c
+ * [status] 
+
 qlogic_stub.c
+ * [status] 
+
 ray_cs.c
+ * [status] 
+
 sedlbauer_cs.c
+ * [status] 
+
 serial_cs.c
+ * [status] 
+
 sl811_cs.c
+ * [status] 
+
 smc91c92_cs.c
+ * [status] 
+
 spectrum_cs.c
+ * [status] 
+
 sym53c500_cs.c
+ * [status] 
+
 synclink_cs.c
+ * [status] 
+
 teles_cs.c
+ * [status] 
+
 vxpocket.c
+ * [status] 
+
 wavelan_cs.c
+ * [status] 
+
 wl3501_cs.c
+ * [status] 
+
 xirc2ps_cs.c
+ * [status] 

@@ -1,5 +1,11 @@
 con3215.c
+ * [status] ok
+
 con3270.c
+ * [status] ok
+
 smsgiucv.c
-vmcp.c
+ * [status] ok
+
 vmlogrdr.c
+ * [status] ok
