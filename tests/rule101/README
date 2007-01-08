@@ -1,0 +1,38 @@
+9 ok
+1 error: parsing problem
+1 spatch-ok: programmer added some code in addition to the SP
+
+bfusb.c
+ * [status] ok
+
+bluecard_cs.c
+ * [status] ok
+
+bpa10x.c
+ * [status] ok
+
+bt3c_cs.c
+ * [status] ok
+
+btuart_cs.c
+ * [status] ok
+
+dtl1_cs.c
+ * [status] ok
+
+hci_bcsp.c
+ * [status] error
+ parsing problem
+
+hci_h4.c
+ * [status] ok
+
+hci_ldisc.c
+ * [status] ok
+
+hci_usb.c
+ * [status] spatch-ok
+ programmer also added some new code
+
+hci_vhci.c
+ * [status] ok
