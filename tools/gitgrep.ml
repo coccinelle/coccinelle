@@ -6,7 +6,13 @@ type dir = Minus | Plus
 
 let space = Str.regexp " "
 
-let scan pattern dir i =
+let matches pattern line =
+  try let _ = Str.search_forward pattern line 0 in true
+  with Not_found -> false
+
+let res = ref []
+
+let scan dir pattern i =
   let rec loop skipping git =
     let line = input_line i in
     match Str.split space line with
@@ -14,13 +20,9 @@ let scan pattern dir i =
     | _ ->
 	if String.length line > 0 && not skipping &&
 	  ((String.get line 0 = '-' && dir = Minus) or
-	   (String.get line 0 = '+' && dir = Plus))
-	then
-	  (try
-	    let _ = Str.search_forward pattern line 0 in
-	    Printf.printf "%s\n" git;
-	    loop true git
-	  with Not_found -> loop skipping git)
+	   (String.get line 0 = '+' && dir = Plus)) &&
+	  matches pattern line
+	then (res := git::!res; loop true git)
 	else loop skipping git in
   loop false ""
 
@@ -46,15 +48,32 @@ let open_git file =
 	open_in tmp
     | _ -> open_in file
 
+let rec split_args = function
+    [] -> []
+  | "-"::pattern::rest -> (Minus,Str.regexp pattern) :: split_args rest
+  | "+"::pattern::rest -> (Plus,Str.regexp pattern) :: split_args rest
+  | _ -> failwith "bad argument list"
+
+let process_one (dir,pattern) version =
+  res := [];
+  let i = open_git version in
+  try scan dir pattern i
+  with End_of_file -> (close_in i; List.rev !res)
+
+let inter l1 l2 = List.filter (function x -> List.mem x l1) l2
+
 let _ =
-  if not(Array.length Sys.argv = 4)
-  then failwith "arguments: -/+ text version";
-  let dir =
-    match Array.get Sys.argv 1 with
-      "-" -> Minus
-    | "+" -> Plus
-    | _ -> failwith "bad direction" in
-  let pattern = Str.regexp (Array.get Sys.argv 2) in
-  let i = open_git (Array.get Sys.argv 3) in
-  try scan pattern dir i
-  with End_of_file -> close_in i
+  if Array.length Sys.argv < 4
+  then failwith "arguments: -/+ pattern -/+ pattern ... version";
+  let args = List.tl(Array.to_list Sys.argv) in
+  let version = List.hd(List.rev args) in
+  let pairs = List.rev(List.tl(List.rev args)) in
+  let requirements = split_args pairs in
+  let res =
+    List.fold_left
+      (function all ->
+	function pattern ->
+	  inter (process_one pattern version) all)
+      (process_one (List.hd requirements) version)
+      (List.tl requirements) in
+  List.iter (function name -> Printf.printf "%s\n" name) res
