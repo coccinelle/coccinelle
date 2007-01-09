@@ -6,3 +6,6 @@ void main(double z) {
 
 float main(float z) {
 }
+
+float main2(float z);
+

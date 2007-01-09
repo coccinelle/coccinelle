@@ -6,3 +6,7 @@ void main(double z) {
 
 int main(int z) {
 }
+
+
+int main2(int z);
+

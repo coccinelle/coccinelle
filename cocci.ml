@@ -246,11 +246,15 @@ let ast_to_flow_with_error_messages2 def filename =
 
 let flow_to_ast2 flow = 
   let nodes = flow#nodes#tolist in
-  if List.length nodes  = 1 
-  then
-    raise Todo
-  else 
-    Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
+  match nodes with
+  | [_, node] -> 
+      (match Control_flow_c.unwrap node with
+      | Control_flow_c.Decl decl -> 
+          Ast_c.Declaration decl
+      | _ -> raise Impossible
+      )
+  | _ -> 
+      Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
 
 
 
