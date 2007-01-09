@@ -382,7 +382,12 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
           (match celem with 
           | Ast_c.Definition ((funcs, _, _, _c),_) -> 
               if !Flag.show_misc then pr2 ("starting function " ^ funcs);
-          | _ -> ()
+
+          | Ast_c.Declaration 
+              (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> 
+              if !Flag.show_misc then pr2 ("starting variable " ^ s);
+          | _ -> 
+              if !Flag.show_misc then pr2 ("starting something else");
           );
 
           let satres = 
