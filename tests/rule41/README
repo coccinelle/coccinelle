@@ -1,0 +1,27 @@
+auerswald.c
+ * [status]
+
+brlvger.c
+ * [status]
+
+dabusb.c
+ * [status]
+
+hiddev.c
+ * [status]
+
+mdc800.c
+ * [status]
+
+printer.c
+ * [status]
+
+rio500.c
+ * [status]
+
+scanner.c
+ * [status]
+
+usb-skeleton.c
+ * [status]
+
