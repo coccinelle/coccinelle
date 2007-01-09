@@ -255,7 +255,7 @@ let pp_program2 xs outfile  =
     (* start point *)
     (* ---------------------- *)
 
-    xs +> List.iter (fun ((e,(_filename, _pos, str, toks_e)), ppmethod) -> 
+    xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
       toks := toks_e;
       _last_synced_token := (Common.fake_parse_info, Ast_c.emptyAnnot);
 

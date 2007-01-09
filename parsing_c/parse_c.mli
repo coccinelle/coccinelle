@@ -17,8 +17,7 @@ type parsing_stat = {
     mutable bad: int;
   } 
 
-type info_item = 
- (filename * Common.pos_file Common.pair * string * Parser_c.token list)
+type info_item = (string * Parser_c.token list)
 
 type program2 = programElement2 list
      and programElement2 = Ast_c.programElement * info_item

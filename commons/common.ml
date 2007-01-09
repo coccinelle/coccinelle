@@ -2628,8 +2628,6 @@ let getDoubleParser parserer lexer =
 (* parser related (cocci) *)
 (*****************************************************************************)
 
-type pos_file = ((int * int) * int) (* (line * column), charpos) *)
-
 type parse_info = {
     str: string;
     charpos: int;
@@ -2646,7 +2644,7 @@ let fake_parse_info = {
 
 
 
-let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) = 
+let (info_from_charpos2: int -> filename -> (int * int * string)) = 
  fun charpos filename ->
 
   (* Currently lexing.ml does not handle the line number position,  
@@ -2667,7 +2665,7 @@ let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) =
     if (!posl + slength s > charpos)
     then
       let _ = close_in chan in
-      (filename, !linen, charpos - !posl, s)
+      (!linen, charpos - !posl, s)
     else 
       begin
         posl := !posl + slength s;
@@ -2675,8 +2673,8 @@ let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) =
       end
   in charpos_to_pos_aux ()
 
-let charpos_to_pos a b = 
-  profile_code "Common.charpos_to_pos" (fun () -> charpos_to_pos2 a b)
+let info_from_charpos a b = 
+  profile_code "Common.info_from_charpos" (fun () -> info_from_charpos2 a b)
 
 
 
@@ -2735,7 +2733,7 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
 
   let charpos = lexstart      + decalage in
   let tok = lexeme in 
-  let (file, line, pos, linecontent) =  charpos_to_pos charpos filename in
+  let (line, pos, linecontent) =  info_from_charpos charpos filename in
   sprintf "File \"%s\", line %d, characters %d
     around = '%s', whole content = %s charpos = %d"
     filename line pos tok linecontent charpos

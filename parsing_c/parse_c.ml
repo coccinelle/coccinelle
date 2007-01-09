@@ -233,15 +233,15 @@ let token_to_strpos tok =
   (parse_info.Common.str, parse_info.Common.charpos)
 
 
-let linecol_of_tok tok table =
+let linecol_of_tok tok =
   let (parse_info,_cocci_info) = info_from_token tok in
-  table.(parse_info.Common.charpos)
+  parse_info.Common.line, parse_info.Common.column
 
-let line_of_tok tok table = 
-  fst (linecol_of_tok tok table)
+let line_of_tok tok = 
+  fst (linecol_of_tok tok)
 
-let col_of_tok tok table = 
-  snd (linecol_of_tok tok table)
+let col_of_tok tok = 
+  snd (linecol_of_tok tok)
 
 
 let error_msg_tok file tok = 
@@ -262,10 +262,7 @@ let print_bad line_error (start_line, end_line) filelines  =
 
 
 
-(* info_item is defined in ast_c.ml .
- * todo: give correct column, and charpos (for the moment not needed)
- *)
-let mk_info_item2 filename line1 line2 toks = 
+let mk_info_item2 filename toks = 
   let toks' = List.rev toks in
   let buf = Buffer.create 100 in
   let s = 
@@ -277,11 +274,11 @@ let mk_info_item2 filename line1 line2 toks =
       Buffer.contents buf
     end
   in
-  (filename, (((line1, 0), 0), ((line2, 0), 0)),  s, toks') 
+  (s, toks') 
 
-let mk_info_item a b c d = 
+let mk_info_item a b = 
   Common.profile_code "C parsing.mk_info_item" 
-    (fun () -> mk_info_item2 a b c d)
+    (fun () -> mk_info_item2 a b)
 
 
 
@@ -804,13 +801,13 @@ let lookahead a b =
 (*****************************************************************************)
 
 (* todo: do something if find Parser_c.Eof ? *)
-let rec find_next_synchro next already_passed table =
+let rec find_next_synchro next already_passed =
   match next with
   | [] ->  
       pr2 "END OF FILE WHILE IN RECOVERY MODE"; 
       already_passed, []
-  | (TCBrace i as v)::xs when col_of_tok v table = 0 -> 
-      pr2 ("FOUND SYNC at line "^ i_to_s (line_of_tok v table));
+  | (TCBrace i as v)::xs when col_of_tok v = 0 -> 
+      pr2 ("FOUND SYNC at line "^ i_to_s (line_of_tok v));
 
       (* perhaps a }; obsolete now, because parser.mly allow empty ';' *)
       (match xs with
@@ -827,7 +824,7 @@ let rec find_next_synchro next already_passed table =
       *)
       )
   | v::xs -> 
-      find_next_synchro xs (v::already_passed) table
+      find_next_synchro xs (v::already_passed)
       
 
 
@@ -836,8 +833,7 @@ let rec find_next_synchro next already_passed table =
 (* Main entry point *)
 (*****************************************************************************)
 
-type info_item = 
-  (filename * Common.pos_file Common.pair * string * Parser_c.token list)
+type info_item =  string * Parser_c.token list
 
 type program2 = programElement2 list
      and programElement2 = Ast_c.programElement * info_item
@@ -890,7 +886,6 @@ let parse_print_error_heuristic2 file =
   Lexer_parser.lexer_reset_typedef(); 
   let toks = tokens file in
 
-  let table     = Common.full_charpos_to_pos file in
   let filelines = (""::Common.cat file) +> Array.of_list in
 
   let stat = default_stat file in
@@ -972,7 +967,7 @@ let parse_print_error_heuristic2 file =
      * It would be better to record when we have a } or ; in parser.mly,
      *  cos we know that they are the last symbols of external_declaration2.
      *)
-    let checkpoint = line_of_tok !cur_tok table in
+    let checkpoint = line_of_tok !cur_tok in
 
     passed_tokens_last_ckp := [];
 
@@ -993,18 +988,18 @@ let parse_print_error_heuristic2 file =
                 pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok file !cur_tok)
             | e -> raise e
             );
-            let line_error = line_of_tok !cur_tok table in
+            let line_error = line_of_tok !cur_tok in
 
             (*  error recovery, go to next synchro point *)
             let (passed_tokens', remaining_tokens') =
-              find_next_synchro !remaining_tokens !passed_tokens_last_ckp table
+              find_next_synchro !remaining_tokens !passed_tokens_last_ckp
             in
             remaining_tokens := remaining_tokens';
             passed_tokens_last_ckp := passed_tokens';
             cur_tok := List.hd !passed_tokens_last_ckp;
             passed_tokens := [];           (* enough ? *)
 
-            let checkpoint2 = line_of_tok !cur_tok table in
+            let checkpoint2 = line_of_tok !cur_tok in
             print_bad line_error (checkpoint, checkpoint2) filelines;
 
             let info_of_bads = 
@@ -1015,9 +1010,9 @@ let parse_print_error_heuristic2 file =
     in
 
     (* again not sure if checkpoint2 corresponds to end of bad region *)
-    let checkpoint2 = line_of_tok !cur_tok table in
+    let checkpoint2 = line_of_tok !cur_tok in
     let diffline = (checkpoint2 - checkpoint) in
-    let info = mk_info_item file checkpoint checkpoint2 !passed_tokens_last_ckp
+    let info = mk_info_item file !passed_tokens_last_ckp
     in 
 
     (match elem with
