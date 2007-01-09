@@ -11,19 +11,17 @@ let scan pattern dir i =
     let line = input_line i in
     match Str.split space line with
       ["commit";git] -> loop false git
-    | "-"::_ | "---"::_ when not skipping && dir = Minus ->
-	(try
-	  let _ = Str.search_forward pattern line 0 in
-	  Printf.printf "%s\n" git;
-	  loop true git
-	with Not_found -> loop skipping git)
-    | "+"::_ | "+++"::_ when not skipping && dir = Plus ->
-	(try
-	  let _ = Str.search_forward pattern line 0 in
-	  Printf.printf "%s\n" git;
-	  loop true git
-	with Not_found -> loop skipping git)
-    | _ -> loop skipping git in
+    | _ ->
+	if String.length line > 0 && not skipping &&
+	  ((String.get line 0 = '-' && dir = Minus) or
+	   (String.get line 0 = '+' && dir = Plus))
+	then
+	  (try
+	    let _ = Str.search_forward pattern line 0 in
+	    Printf.printf "%s\n" git;
+	    loop true git
+	  with Not_found -> loop skipping git)
+	else loop skipping git in
   loop false ""
 
 let dot = Str.regexp "\\."
