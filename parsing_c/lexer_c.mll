@@ -32,7 +32,8 @@ exception Lexical of string
 let tok     lexbuf  = Lexing.lexeme lexbuf
 let tokinfo lexbuf  = { 
   Common.charpos = Lexing.lexeme_start lexbuf; 
-  Common.str     = Lexing.lexeme lexbuf  
+  Common.str     = Lexing.lexeme lexbuf;
+  line = -1; column = -1; file = "";
 }, Ast_c.emptyAnnot
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot

@@ -113,9 +113,6 @@ visual:
  - fix comment diezedieze cos fout en l'air l'indentation, color => need 
    emacs mode fix.
 
-*)
-
-(* 
  solved:  style
 
  let (fixed_int_to_posmap: fixed_int -> posmap) = fun fixed -> 
@@ -168,7 +165,7 @@ visual:
 let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
 
 (* now in Commonop
-let (+>) o f = f o
+  let (+>) o f = f o
 *)
 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
@@ -263,7 +260,7 @@ let memory_stat () =
   Printf.sprintf "maximal = %d Mo\n" (conv_mo stat.Gc.top_heap_words) ^
   Printf.sprintf "current = %d Mo\n" (conv_mo stat.Gc.heap_words) ^
   Printf.sprintf "lives   = %d Mo\n" (conv_mo stat.Gc.live_words)
-(*         Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
+  (* Printf.printf "fragments = %d Mo\n" (conv_mo stat.Gc.fragments); *)
 
 let timenow () = 
   "sys:" ^ (string_of_float (Sys.time ())) ^ " seconds" ^
@@ -290,9 +287,9 @@ let profiling_diagnostic () =
     !_count1 !_count2 !_count3 !_count4 !_count5
 
 let time_func f = 
-(*   let _ = Timing () in *)
+  (*   let _ = Timing () in *)
   let x = f () in
-(*   let _ = Timing () in *)
+  (*   let _ = Timing () in *)
   x
 
 let profile = ref false
@@ -2636,8 +2633,18 @@ type pos_file = ((int * int) * int) (* (line * column), charpos) *)
 type parse_info = {
     str: string;
     charpos: int;
+
+    line: int;
+    column: int;
+    file: filename;
   } 
-let fake_parse_info = { charpos = -1; str = "" }
+
+let fake_parse_info = { 
+  charpos = -1; str = "";
+  line = -1; column = -1; file = "";
+}
+
+
 
 let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) = 
  fun charpos filename ->
@@ -2671,7 +2678,8 @@ let (charpos_to_pos2: int -> filename -> (filename * int * int * string)) =
 let charpos_to_pos a b = 
   profile_code "Common.charpos_to_pos" (fun () -> charpos_to_pos2 a b)
 
-(*---------------------------------------------------------------------------*)
+
+
 let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
 
     let arr = Array.create (filesize filename + 2) (0,0) in
@@ -2709,20 +2717,28 @@ let full_charpos_to_pos a =
 let test_charpos file = 
   full_charpos_to_pos file +> Dumper.dump +> pr2
 
-(*---------------------------------------------------------------------------*)
-(* decalage is here to handle stuff such as cpp which include file and who 
-   can make decalage *)
-let (error_messagebis: filename -> (string * int (* *int *)) -> int -> string)=
- fun filename (lexeme, lexstart(*, lexend*)) decalage ->
 
-  (* let posdiff = lexend   - lexstart in *)
+
+let complete_parse_info filename table x = 
+  { x with 
+    file = filename;
+    line   = fst (table.(x.charpos));
+    column = snd (table.(x.charpos));
+  }
+
+(*---------------------------------------------------------------------------*)
+(* Decalage is here to handle stuff such as cpp which include file and who 
+ * can make shift.
+ *)
+let (error_messagebis: filename -> (string * int) -> int -> string)=
+ fun filename (lexeme, lexstart) decalage ->
+
   let charpos = lexstart      + decalage in
   let tok = lexeme in 
   let (file, line, pos, linecontent) =  charpos_to_pos charpos filename in
   sprintf "File \"%s\", line %d, characters %d
     around = '%s', whole content = %s charpos = %d"
-    filename line pos (* (pos+posdiff) *) tok linecontent charpos
- (* characters %d-%d *)
+    filename line pos tok linecontent charpos
 
 let error_message = fun filename (lexeme, lexstart) -> 
   try 

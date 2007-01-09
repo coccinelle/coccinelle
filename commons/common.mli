@@ -948,12 +948,17 @@ type pos_file = ((int * int) * int) (* (line * column), charpos) *)
 type parse_info = {
     str: string;
     charpos: int;
+
+    line: int; column: int;
+    file: filename;
   } 
 
 val fake_parse_info : parse_info
 
 val full_charpos_to_pos : filename -> (int * int) array
 
+val complete_parse_info : 
+  filename -> (int * int) array -> parse_info -> parse_info
 val charpos_to_pos : int -> filename -> (filename * int * int * string)
 
 val error_messagebis : filename -> (string * int (* * int*)) -> int -> string

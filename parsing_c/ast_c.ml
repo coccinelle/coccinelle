@@ -385,7 +385,8 @@ let _Magic_info_number = -10
 
 let al_info x = 
   { charpos = _Magic_info_number; 
-    str = (fst x).str 
+    str = (fst x).str;
+    line = -1; column = -1; file = "";
   }, 
   emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
