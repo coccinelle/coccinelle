@@ -767,7 +767,7 @@ With prefix arg READ-SWITCHES, specify a value to override
 (setq cocci-font-lock-keywords 
  `(
    ; blink possible errors, when - or + is not in first column
-   ("^[ \\t]+[-+]" . 'cocci-problem-face)
+   ("^[ \t]+[-+]" . 'cocci-problem-face)
 
    ; modifiers
    ;("^\\??\\+.*?//" . 'cocci-plus-face)
