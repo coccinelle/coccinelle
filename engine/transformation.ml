@@ -106,220 +106,220 @@ let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
 (*****************************************************************************)
 
 let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
- fun ep ec -> 
-  fun binding -> 
-  
-  match A.unwrap ep, ec with
+  fun ep ec -> 
+    fun binding -> 
+      
+      match A.unwrap ep, ec with
 
-  (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr(ida,true,opttypa,_inherited), (((expr, opttypb), ii) as expb) ->
-      (match opttypa, opttypb with
-      | None, _ -> ()
-      | Some tas, Some tb -> 
-         if (not (tas +> List.exists (fun ta ->  Types.compatible_type ta tb)))
-         then raise NoMatch
-      | Some _, None -> 
-          failwith ("I have not the type information. Certainly a pb in " ^
-                    "annotate_typer.ml")
-      );
+      (* general case: a MetaExpr can match everything *)
+      | A.MetaExpr(ida,true,opttypa,_inherited), (((expr, opttypb), ii) as expb) ->
+          (match opttypa, opttypb with
+          | None, _ -> ()
+          | Some tas, Some tb -> 
+              if (not (tas +> List.exists (fun ta ->  Types.compatible_type ta tb)))
+              then raise NoMatch
+          | Some _, None -> 
+              failwith ("I have not the type information. Certainly a pb in " ^
+                           "annotate_typer.ml")
+          );
 
 
-     (* get binding, assert =*=,  distribute info in ida *)
-      let v = binding +> find_env (term ida) in
-      (match v with
-      | B.MetaExprVal expa -> 
-          if (Abstract_line_c.al_expr expa =*= Abstract_line_c.al_expr expb)
-          then D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+          (* get binding, assert =*=,  distribute info in ida *)
+          let v = binding +> find_env (term ida) in
+          (match v with
+          | B.MetaExprVal expa -> 
+              if (Abstract_line_c.al_expr expa =*= Abstract_line_c.al_expr expb)
+              then D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+              else raise NoMatch
+          | _ -> raise Impossible
+          )
+
+      | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+          D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+
+      (* todo: in fact can also have the Edots family inside nest, as in 
+         if(<... x ... y ...>) or even in simple expr as in x[...] *)
+      | A.Edots (mcode, None), expb    -> 
+          D.distribute_mck (mcodekind mcode) D.distribute_mck_e expb   binding
+
+      | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
+
+
+      | A.MetaConst _, _ -> failwith "not handling MetaConst"
+      | A.MetaErr _, _ -> failwith "not handling MetaErr"
+          
+      | A.Ident ida,                ((B.Ident idb, typ),ii) ->
+          let (idb', ii') = transform_ident Pattern.DontKnow ida (idb, ii) binding 
+          in
+          (B.Ident idb', typ),ii'
+
+
+      | A.Constant ((A.Int ia,_,_) as i1), ((B.Constant (B.Int ib) , typ),ii)
+          when Pattern.equal_c_int ia ib ->  
+          (B.Constant (B.Int ib), typ), 
+            tag_symbols [i1] ii binding
+
+      | A.Constant ((A.Char ia,_,_) as i1), ((B.Constant (B.Char (ib,t)), typ),ii)
+          when ia =$= ib ->  
+          (B.Constant (B.Char (ib, t)), typ), 
+            tag_symbols [i1] ii binding
+
+      | A.Constant ((A.String ia,_,_)as i1),((B.Constant (B.String (ib,t)),typ),ii)
+          when ia =$= ib ->  
+          (B.Constant (B.String (ib, t)), typ),
+            tag_symbols [i1] ii binding
+
+      | A.Constant ((A.Float ia,_,_) as i1),((B.Constant (B.Float (ib,t)),typ),ii)
+          when ia =$= ib ->  
+          (B.Constant (B.Float (ib,t)), typ),
+            tag_symbols [i1] ii binding
+
+
+      | A.FunCall (ea, i2, eas, i3),  ((B.FunCall (eb, ebs), typ),ii) -> 
+          let seqstyle = 
+            (match A.unwrap eas with 
+            | A.DOTS _ -> Ordered 
+            | A.CIRCLES _ -> Unordered 
+            | A.STARS _ -> failwith "not handling stars"
+            )  
+          in
+          
+          (B.FunCall (transform_e_e ea eb binding,  
+                     transform_arguments seqstyle (A.undots eas) ebs binding),typ),
+          tag_symbols [i2;i3] ii  binding
+
+
+      | A.Assignment (ea1, opa, ea2), ((B.Assignment (eb1, opb, eb2), typ),ii) -> 
+          if Pattern.equal_assignOp (term opa) opb 
+          then
+            (B.Assignment (transform_e_e ea1 eb1 binding, 
+                          opb, 
+                          transform_e_e ea2 eb2 binding), typ),
+          tag_symbols [opa] ii  binding
           else raise NoMatch
-      | _ -> raise Impossible
-      )
 
-  | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
-      D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+      | A.CondExpr (ea1,i1,ea2opt,i2,ea3),((B.CondExpr (eb1,eb2opt,eb3),typ),ii) ->
+          (B.CondExpr (transform_e_e ea1 eb1  binding,
+                      transform_option (fun a b -> transform_e_e a b binding) 
+                        ea2opt eb2opt,
+                      transform_e_e ea3 eb3 binding),typ),
+          tag_symbols [i1;i2] ii   binding
 
-  (* todo: in fact can also have the Edots family inside nest, as in 
-     if(<... x ... y ...>) or even in simple expr as in x[...] *)
-  | A.Edots (mcode, None), expb    -> 
-      D.distribute_mck (mcodekind mcode) D.distribute_mck_e expb   binding
+      | A.Postfix (ea, opa), ((B.Postfix (eb, opb), typ),ii) -> 
+          if (Pattern.equal_fixOp (term opa) opb)
+          then (B.Postfix (transform_e_e ea eb binding, opb), typ),
+          tag_symbols [opa] ii  binding
+          else raise NoMatch
+            
+            
+      | A.Infix (ea, opa), ((B.Infix (eb, opb), typ),ii) -> 
+          if (Pattern.equal_fixOp (term opa) opb)
+          then (B.Infix (transform_e_e ea eb binding, opb), typ),
+          tag_symbols [opa] ii  binding
+          else raise NoMatch
 
-  | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
-
-
-  | A.MetaConst _, _ -> failwith "not handling MetaConst"
-  | A.MetaErr _, _ -> failwith "not handling MetaErr"
-      
-  | A.Ident ida,                ((B.Ident idb, typ),ii) ->
-      let (idb', ii') = transform_ident Pattern.DontKnow ida (idb, ii) binding 
-      in
-      (B.Ident idb', typ),ii'
-
-
-  | A.Constant ((A.Int ia,_,_) as i1), ((B.Constant (B.Int ib) , typ),ii)
-    when Pattern.equal_c_int ia ib ->  
-      (B.Constant (B.Int ib), typ), 
-      tag_symbols [i1] ii binding
-
-  | A.Constant ((A.Char ia,_,_) as i1), ((B.Constant (B.Char (ib,t)), typ),ii)
-    when ia =$= ib ->  
-      (B.Constant (B.Char (ib, t)), typ), 
-      tag_symbols [i1] ii binding
-
-  | A.Constant ((A.String ia,_,_)as i1),((B.Constant (B.String (ib,t)),typ),ii)
-    when ia =$= ib ->  
-      (B.Constant (B.String (ib, t)), typ),
-      tag_symbols [i1] ii binding
-
-  | A.Constant ((A.Float ia,_,_) as i1),((B.Constant (B.Float (ib,t)),typ),ii)
-    when ia =$= ib ->  
-      (B.Constant (B.Float (ib,t)), typ),
-      tag_symbols [i1] ii binding
+      | A.Unary (ea, opa), ((B.Unary (eb, opb), typ),ii) -> 
+          if (Pattern.equal_unaryOp (term opa) opb)
+          then (B.Unary (transform_e_e ea eb binding, opb), typ),
+          tag_symbols [opa] ii  binding
+          else raise NoMatch
 
 
-  | A.FunCall (ea, i2, eas, i3),  ((B.FunCall (eb, ebs), typ),ii) -> 
-      let seqstyle = 
-        (match A.unwrap eas with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not handling stars"
-        )  
-      in
-      
-      (B.FunCall (transform_e_e ea eb binding,  
-                 transform_arguments seqstyle (A.undots eas) ebs binding),typ),
-      tag_symbols [i2;i3] ii  binding
+      | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) -> 
+          if (Pattern.equal_binaryOp (term opa) opb)
+          then (B.Binary (transform_e_e ea1 eb1   binding, 
+                         opb,  
+                         transform_e_e ea2 eb2  binding), typ),
+          tag_symbols [opa] ii binding
+          else raise NoMatch
 
 
-  | A.Assignment (ea1, opa, ea2), ((B.Assignment (eb1, opb, eb2), typ),ii) -> 
-     if Pattern.equal_assignOp (term opa) opb 
-     then
-       (B.Assignment (transform_e_e ea1 eb1 binding, 
-                     opb, 
-                     transform_e_e ea2 eb2 binding), typ),
-       tag_symbols [opa] ii  binding
-     else raise NoMatch
-
-  | A.CondExpr (ea1,i1,ea2opt,i2,ea3),((B.CondExpr (eb1,eb2opt,eb3),typ),ii) ->
-      (B.CondExpr (transform_e_e ea1 eb1  binding,
-                  transform_option (fun a b -> transform_e_e a b binding) 
-                    ea2opt eb2opt,
-                  transform_e_e ea3 eb3 binding),typ),
-      tag_symbols [i1;i2] ii   binding
-
-  | A.Postfix (ea, opa), ((B.Postfix (eb, opb), typ),ii) -> 
-      if (Pattern.equal_fixOp (term opa) opb)
-      then (B.Postfix (transform_e_e ea eb binding, opb), typ),
-           tag_symbols [opa] ii  binding
-      else raise NoMatch
-                   
-                 
-  | A.Infix (ea, opa), ((B.Infix (eb, opb), typ),ii) -> 
-      if (Pattern.equal_fixOp (term opa) opb)
-      then (B.Infix (transform_e_e ea eb binding, opb), typ),
-           tag_symbols [opa] ii  binding
-      else raise NoMatch
-
-  | A.Unary (ea, opa), ((B.Unary (eb, opb), typ),ii) -> 
-      if (Pattern.equal_unaryOp (term opa) opb)
-      then (B.Unary (transform_e_e ea eb binding, opb), typ),
-           tag_symbols [opa] ii  binding
-      else raise NoMatch
+      | A.ArrayAccess (ea1, i1, ea2, i2), ((B.ArrayAccess (eb1, eb2), typ),ii) -> 
+          (B.ArrayAccess (transform_e_e ea1 eb1 binding,
+                         transform_e_e ea2 eb2 binding),typ),
+          tag_symbols [i1;i2] ii  binding
+            
+      | A.RecordAccess (ea, dot, ida), ((B.RecordAccess (eb, idb), typ),ii) ->
+          (match ii with
+          | [i1;i2] -> 
+              let (idb', i2') = 
+                transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
+              in
+              let i1' = tag_symbols [dot] [i1] binding in
+              (B.RecordAccess (transform_e_e ea eb binding, idb'), typ), i1' ++ i2'
+          | _ -> raise Impossible
+          )
 
 
-  | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) -> 
-      if (Pattern.equal_binaryOp (term opa) opb)
-      then (B.Binary (transform_e_e ea1 eb1   binding, 
-                     opb,  
-                     transform_e_e ea2 eb2  binding), typ),
-           tag_symbols [opa] ii binding
-      else raise NoMatch
+      | A.RecordPtAccess (ea,fleche,ida),((B.RecordPtAccess (eb, idb), typ), ii) ->
+          (match ii with
+          | [i1;i2] -> 
+              let (idb', i2') = 
+                transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
+              in
+              let i1' = tag_symbols [fleche] [i1] binding in
+              (B.RecordPtAccess (transform_e_e ea eb binding,idb'),typ), i1' ++ i2'
+          | _ -> raise Impossible
+          )
+
+      | A.Cast (i1, typa, i2, ea), ((B.Cast (typb, eb), typ),ii) -> 
+          (B.Cast (transform_ft_ft typa typb  binding,
+                  transform_e_e ea eb binding),typ),
+          tag_symbols [i1;i2]  ii binding
+
+      | A.SizeOfExpr (i1, ea), ((B.SizeOfExpr (eb), typ),ii) -> 
+          (B.SizeOfExpr (transform_e_e ea eb binding), typ),
+          tag_symbols [i1]  ii binding
+
+      | A.SizeOfType (i1, i2, typa, i3), ((B.SizeOfType typb, typ),ii) -> 
+          (B.SizeOfType (transform_ft_ft typa typb  binding),typ),
+          tag_symbols [i1;i2;i3]  ii binding
 
 
-  | A.ArrayAccess (ea1, i1, ea2, i2), ((B.ArrayAccess (eb1, eb2), typ),ii) -> 
-      (B.ArrayAccess (transform_e_e ea1 eb1 binding,
-                     transform_e_e ea2 eb2 binding),typ),
-      tag_symbols [i1;i2] ii  binding
-      
-  | A.RecordAccess (ea, dot, ida), ((B.RecordAccess (eb, idb), typ),ii) ->
-      (match ii with
-      | [i1;i2] -> 
-          let (idb', i2') = 
-            transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
-          in
-          let i1' = tag_symbols [dot] [i1] binding in
-          (B.RecordAccess (transform_e_e ea eb binding, idb'), typ), i1' ++ i2'
-      | _ -> raise Impossible
-      )
+      | A.Paren (i1, ea, i2), ((B.ParenExpr (eb), typ),ii) -> 
+          (B.ParenExpr (transform_e_e ea eb  binding), typ),
+          tag_symbols [i1;i2] ii  binding
 
 
-  | A.RecordPtAccess (ea,fleche,ida),((B.RecordPtAccess (eb, idb), typ), ii) ->
-      (match ii with
-      | [i1;i2] -> 
-          let (idb', i2') = 
-            transform_ident Pattern.DontKnow ida (idb, [i2])   binding 
-          in
-          let i1' = tag_symbols [fleche] [i1] binding in
-          (B.RecordPtAccess (transform_e_e ea eb binding,idb'),typ), i1' ++ i2'
-      | _ -> raise Impossible
-      )
-
-  | A.Cast (i1, typa, i2, ea), ((B.Cast (typb, eb), typ),ii) -> 
-      (B.Cast (transform_ft_ft typa typb  binding,
-              transform_e_e ea eb binding),typ),
-      tag_symbols [i1;i2]  ii binding
-
-  | A.SizeOfExpr (i1, ea), ((B.SizeOfExpr (eb), typ),ii) -> 
-      (B.SizeOfExpr (transform_e_e ea eb binding), typ),
-      tag_symbols [i1]  ii binding
-
-  | A.SizeOfType (i1, i2, typa, i3), ((B.SizeOfType typb, typ),ii) -> 
-      (B.SizeOfType (transform_ft_ft typa typb  binding),typ),
-      tag_symbols [i1;i2;i3]  ii binding
+      | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
 
 
-  | A.Paren (i1, ea, i2), ((B.ParenExpr (eb), typ),ii) -> 
-      (B.ParenExpr (transform_e_e ea eb  binding), typ),
-      tag_symbols [i1;i2] ii  binding
+      | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
+      | A.TypeExp _, _ -> raise Impossible
+      | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
+      | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
+      | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
 
 
-  | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
+      | A.DisjExpr eas, eb -> 
+          eas +> Common.fold_k (fun acc ea k -> 
+            try transform_e_e ea acc  binding
+            with NoMatch -> k acc
+          ) 
+            (fun _ -> raise NoMatch)
+            eb
 
-
-  | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
-  | A.TypeExp _, _ -> raise Impossible
-  | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
-  | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
-
-
-  | A.DisjExpr eas, eb -> 
-      eas +> Common.fold_k (fun acc ea k -> 
-        try transform_e_e ea acc  binding
-        with NoMatch -> k acc
-        ) 
-        (fun _ -> raise NoMatch)
-        eb
-
-  | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
-      failwith "not handling Opt/Unique/Multi on expr"
+      | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
+          failwith "not handling Opt/Unique/Multi on expr"
 
 
 
- (* Because of Exp cant put a raise Impossible; have to put a raise NoMatch; *)
+      (* Because of Exp cant put a raise Impossible; have to put a raise NoMatch; *)
 
- (* have not a counter part in coccinelle, for the moment *) 
-  | _, ((B.Sequence _,_),_) 
+      (* have not a counter part in coccinelle, for the moment *) 
+      | _, ((B.Sequence _,_),_) 
 
-  | _, ((B.StatementExpr _,_),_) 
-  | _, ((B.Constructor,_),_) 
-  | _, ((B.MacroCall _,_),_) 
-    -> raise NoMatch
+      | _, ((B.StatementExpr _,_),_) 
+      | _, ((B.Constructor,_),_) 
+      | _, ((B.MacroCall _,_),_) 
+          -> raise NoMatch
 
-  | _, _ -> raise NoMatch
+      | _, _ -> raise NoMatch
 
 
 (* ------------------------------------------------------------------------- *)
 and (transform_ident: 
-      Pattern.semantic_info_ident -> 
+        Pattern.semantic_info_ident -> 
       (Ast_cocci.ident, (string * Ast_c.il)) transformer) = 
   fun seminfo_idb ida (idb, ii) -> 
     fun binding -> 
@@ -328,9 +328,9 @@ and (transform_ident:
           if (term sa) =$= idb
           then idb, tag_symbols [sa] ii binding
           else raise NoMatch
-	      
+	    
       | A.MetaId(ida,true,_inherited) -> 
-      (* get binding, assert =*=,  distribute info in i1 *)
+          (* get binding, assert =*=,  distribute info in i1 *)
 	  let v = binding +> find_env ((term ida) : string) in
 	  (match v with
 	  | B.MetaIdVal sa -> 
@@ -338,7 +338,7 @@ and (transform_ident:
               then idb, tag_symbols [ida] ii binding
               else raise NoMatch
 	  | _ -> raise Impossible
-		)
+	  )
 
       | A.MetaFunc(ida,true,_inherited) -> 
 	  (match seminfo_idb with 
@@ -350,7 +350,7 @@ and (transform_ident:
 		  then idb, tag_symbols [ida] ii binding
 		  else raise NoMatch
               | _ -> raise Impossible
-		    )
+	      )
 	  | Pattern.DontKnow -> 
               failwith
 		"MetaFunc and MetaLocalFunc, need more semantic info about id")
@@ -365,7 +365,7 @@ and (transform_ident:
 		  then idb, tag_symbols [ida] ii binding
 		  else raise NoMatch
               | _ -> raise Impossible
-		    )
+	      )
 		
 		
 	  | Pattern.Function -> raise NoMatch
@@ -385,7 +385,7 @@ and (transform_ident:
 (* ------------------------------------------------------------------------- *)
 	    
 and (transform_arguments: sequence_processing_style -> 
-  (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) transformer) = 
+      (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) transformer) = 
   fun seqstyle eas ebs ->
     fun binding -> 
       let unwrapper xs = xs +> List.map (fun ea -> A.unwrap ea, ea) in
@@ -399,8 +399,8 @@ and (transform_arguments: sequence_processing_style ->
           else []
       | _, [] -> raise NoMatch
       | [], eb::ebs -> raise NoMatch
-	    
-    (* special case. todo: generalize *)
+	  
+      (* special case. todo: generalize *)
       | [A.Edots (mcode, None), ea], ebs -> 
           D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
 	    
@@ -408,51 +408,51 @@ and (transform_arguments: sequence_processing_style ->
       | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (eb, ii)::ebs -> 
           let ii' = tag_symbols [i1] ii   binding in
           (match 
-            D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
-              ((eb, [](*subtil*))::ebs)
-              binding
-          with
-          | (eb, [])::ebs -> (eb, ii')::ebs
-          | _ -> raise Impossible)
+              D.distribute_mck (mcodekind mcode) D.distribute_mck_arge 
+                ((eb, [](*subtil*))::ebs)
+                binding
+            with
+            | (eb, [])::ebs -> (eb, ii')::ebs
+            | _ -> raise Impossible)
             
 	    
       | (A.EComma i1, _)::(una,ea)::eas, (eb, ii)::ebs -> 
           let ii' = tag_symbols [i1] ii   binding in
           (transform_argument  ea eb binding, ii')::
-	  transform_arguments seqstyle (rewrapper eas) ebs   binding
+	    transform_arguments seqstyle (rewrapper eas) ebs   binding
 
-   (* The first argument is handled here. Then cocci will always contain
-    * some EComma and a following expression, so the previous case will
-    * handle that.
-    *)
+      (* The first argument is handled here. Then cocci will always contain
+       * some EComma and a following expression, so the previous case will
+       * handle that.
+       *)
       | (una, ea)::eas, (eb, ii)::ebs -> 
           assert (null ii);
           (transform_argument  ea eb binding, [])::
-	  transform_arguments seqstyle (rewrapper eas) ebs   binding
+	    transform_arguments seqstyle (rewrapper eas) ebs   binding
 
 
 and transform_argument arga argb = 
- fun binding -> 
+  fun binding -> 
 
-   match A.unwrap arga, argb with
+    match A.unwrap arga, argb with
 
-  | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
-      if sto <> (B.NoSto, false)
-      then failwith "the argument have a storage and ast_cocci does not have"
-      else 
-        Right (B.ArgType (transform_ft_ft tya tyb binding, (sto, iisto)))
+    | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
+        if sto <> (B.NoSto, false)
+        then failwith "the argument have a storage and ast_cocci does not have"
+        else 
+          Right (B.ArgType (transform_ft_ft tya tyb binding, (sto, iisto)))
 
-  | unwrapx, Left y ->  Left (transform_e_e arga y binding)
-  | unwrapx, Right (B.ArgAction y) -> raise NoMatch
+    | unwrapx, Left y ->  Left (transform_e_e arga y binding)
+    | unwrapx, Right (B.ArgAction y) -> raise NoMatch
 
-  | _, _ -> raise NoMatch
+    | _, _ -> raise NoMatch
 
 
 (* ------------------------------------------------------------------------- *)
 
 and (transform_params: sequence_processing_style -> 
-   (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
-   transformer) = 
+      (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
+        transformer) = 
  fun seqstyle pas pbs ->
   fun binding -> 
     let unwrapper xs = xs +> List.map (fun pa -> A.unwrap pa, pa) in
@@ -558,15 +558,7 @@ and transform_onedecl = fun decla declb ->
        let (idb', iidb') = 
          transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
        in
-       let ini' = 
-         match (A.unwrap inia,ini) with
-         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-             assert (null ii);
-             B.InitExpr (transform_e_e expa  expb binding), ii
-         | _ -> 
-             pr2 "warning: complex initializer, cocci does not handle that";
-             raise NoMatch
-       in
+       let ini' = transform_initialiser inia ini  binding in
        ((Some ((idb', Some ini'), iidb'++iieqb'), typb', stob), iivirg), 
         List.hd iiptvirgb'
 
@@ -591,6 +583,20 @@ and transform_onedecl = fun decla declb ->
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
        failwith "not handling Opt/Unique/Multi Decl"
    | _, _ -> raise NoMatch
+
+
+(* ------------------------------------------------------------------------- *)
+and (transform_initialiser: 
+        (Ast_cocci.initialiser, Ast_c.initialiser) transformer) = 
+fun inia ini -> 
+ fun binding -> 
+    match (A.unwrap inia,ini) with
+    | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
+        assert (null ii);
+        B.InitExpr (transform_e_e expa  expb binding), ii
+    | _ -> 
+        pr2 "TODO: complex initializer, transform does not handle yet that";
+        raise NoMatch
 
 (* ------------------------------------------------------------------------- *)
 and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = 

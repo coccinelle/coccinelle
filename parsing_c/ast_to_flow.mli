@@ -6,6 +6,8 @@ exception NoEnclosingLoop   of Common.parse_info
 
 val ast_to_control_flow : Ast_c.definition -> Control_flow_c.cflow
 
+val simple_cfg : Control_flow_c.node2 -> string -> Control_flow_c.cflow
+
 val deadcode_detection : Control_flow_c.cflow -> unit
 val check_control_flow : Control_flow_c.cflow -> unit
 

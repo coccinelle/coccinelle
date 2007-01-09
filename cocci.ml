@@ -245,7 +245,12 @@ let ast_to_flow_with_error_messages2 def filename =
   flow
 
 let flow_to_ast2 flow = 
-  Flow_to_ast.control_flow_to_ast flow 
+  let nodes = flow#nodes#tolist in
+  if List.length nodes  = 1 
+  then
+    raise Todo
+  else 
+    Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
 
 
 
@@ -256,11 +261,8 @@ let flow_to_ast a =
   Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
                   
 (*****************************************************************************)
-(*  *)
+(* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
 (*****************************************************************************)
-
-(*  
-*)
 
 type celem_info = { 
   flow: Control_flow_c.cflow;
@@ -288,6 +290,15 @@ let build_maybe_info e cfile =
           fixed_flow = fixed_flow; 
           contain_loop = contain_loop def 
         }
+  | Ast_c.Declaration decl -> 
+      let flow = Ast_to_flow.simple_cfg  (Control_flow_c.Decl decl) "decl" in
+      let fixed_flow = CCI.fix_simple_flow_ctl flow in
+      Some { 
+        flow = flow;
+        fixed_flow = fixed_flow;
+        contain_loop = false;
+      }
+
   | _ -> None
 
 let (build_info_program: filename -> celem_with_info list) = fun cfile -> 
@@ -344,83 +355,82 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
    * separately. 
    *)
   | Ast_c.CPPInclude ii, 
-    ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
+  ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
       (match ii with
       | [(iinclude, mcodebinding)] -> 
           let sheader = Ast_cocci.unwrap_mcode header in
           if iinclude.str =~ ("#[ \t]*include[ \t]*" ^ sheader)
           then
             (Ast_c.CPPInclude 
-              (Transformation.tag_symbols [header] ii  binding), true),
-            None, []
+                (Transformation.tag_symbols [header] ii  binding), true),
+          None, []
           else 
             (Ast_c.CPPInclude ii, true),
-            None, []
+          None, []
       | _ -> raise Impossible
       )
-      
+        
 
   | celem, ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _m), _i), _p) -> 
-      (celem, false),
-      None, []
+      (celem, false),   None, []
 
-  | Ast_c.Definition (((funcs, _, _, c),_) as def),   ctl -> 
-      if !Flag.show_misc then pr2 ("starting function " ^ funcs);
+  | celem, ctl -> 
+      (match info with
+      | None -> (celem, false), None, []
+      | Some info -> 
 
-      let info = some info in
+          (match celem with 
+          | Ast_c.Definition ((funcs, _, _, _c),_) -> 
+              if !Flag.show_misc then pr2 ("starting function " ^ funcs);
+          | _ -> ()
+          );
 
-      let satres = 
-        Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
-          Flag_ctl.loop_in_src_code := 
-            !Flag_ctl.loop_in_src_code || info.contain_loop;
+          let satres = 
+            Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
+              Flag_ctl.loop_in_src_code := 
+                !Flag_ctl.loop_in_src_code || info.contain_loop;
               
-            (***************************************)
-            (* !Main point! The call to the engine *)
-            (***************************************)
-            (* model_ctl internally build a fixed_flow *)
-            let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
-	    CCI.mysat model_ctl ctl (used_after_list, binding)
+              (***************************************)
+              (* !Main point! The call to the engine *)
+              (***************************************)
+              (* model_ctl internally build a fixed_flow *)
+              let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
+	      CCI.mysat model_ctl ctl (used_after_list, binding)
 
-          ) in
+            ) in
 
-      (match satres with
-      | Left (trans_info, returned_any_states, newbinding) ->
-          show_or_not_trans_info trans_info;
+          (match satres with
+          | Left (trans_info, returned_any_states, newbinding) ->
+              show_or_not_trans_info trans_info;
 
-          (* modify also the proto if FunHeader was touched *)
-          let hack_funheaders = 
-            trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
-              match rule_elem with
-              | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots -> 
-                  Some  (binding, ((a,b,c,d,e,f,g,h),info,fv,dots))
-              | _ -> None
-                                     )  
-          in
-                    
-          if not (null trans_info) (* TODOOOOO returned_any_states *)
-          then 
-            (* I do the transformation on flow, not fixed_flow, 
-               because the flow_to_ast need my extra information. *)
-            let flow' = 
-              if !Flag_engine.use_cocci_vs_c
-              then Transformation2.transform trans_info info.flow 
-              else Transformation.transform trans_info info.flow 
-            in
-            let def' = flow_to_ast flow' in
-
-            (Ast_c.Definition def', true), 
-            Some newbinding, hack_funheaders
-          else 
-            (Ast_c.Definition def, false), 
-            Some newbinding, hack_funheaders
-      | Right x -> 
-          pr2 ("Unable to find a value for " ^ x);
-          (Ast_c.Definition def, false), 
-          None, []
+              (* modify also the proto if FunHeader was touched *)
+              let hack_funheaders = 
+                trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
+                  match rule_elem with
+                  | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots -> 
+                      Some  (binding, ((a,b,c,d,e,f,g,h),info,fv,dots))
+                  | _ -> None
+                )  
+              in
+              
+              if not (null trans_info) (* TODOOOOO returned_any_states *)
+              then 
+                (* I do the transformation on flow, not fixed_flow, 
+                   because the flow_to_ast need my extra information. *)
+                let flow' = 
+                  if !Flag_engine.use_cocci_vs_c
+                  then Transformation2.transform trans_info info.flow 
+                  else Transformation.transform trans_info info.flow 
+                in
+                let celem' = flow_to_ast flow' in
+                (celem', true), Some newbinding, hack_funheaders
+              else 
+                (celem, false), Some newbinding, hack_funheaders
+          | Right x -> 
+              pr2 ("Unable to find a value for " ^ x);
+              (celem, false),   None, []
+          )
       )
-  | x, ctl -> 
-      (x, false),
-      None, []
 
 
 let program_elem_vs_ctl a b c = 

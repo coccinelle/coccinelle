@@ -3,6 +3,8 @@ open Common open Commonop
 open Ograph_extended
 
 (*****************************************************************************)
+(* Debugging functions *)
+(*****************************************************************************)
 let show_or_not_predicate pred = 
   if !Flag_engine.debug_engine then begin 
     Common.pp_init (fun () -> 
@@ -33,6 +35,8 @@ let show_or_not_nodes nodes =
     )
   end
 
+(*****************************************************************************)
+(* Labeling function *)
 (*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
@@ -119,6 +123,8 @@ let (labels_for_ctl:
 
 
 
+(*****************************************************************************)
+(* Some fix flow, for CTL, for unparse *)
 (*****************************************************************************)
 (* could erase info on nodes, and edge, because they are not used by rene *)
 let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) = 
@@ -226,6 +232,17 @@ let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
 let fix_flow_ctl a = 
   Common.profile_code "fix_flow" (fun () -> fix_flow_ctl2 a)
 
+
+
+
+
+let (fix_simple_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = 
+ fun flow -> 
+  let nodes = flow#nodes#tolist in
+  match nodes with 
+  | [(nodei, n)] -> 
+      flow#add_arc ((nodei, nodei), Control_flow_c.Direct)
+  | _ -> failwith "simple flow can contain only one node"
 
 (*****************************************************************************)
 (* subtil: the label must operate on newflow, not (old) cflow 

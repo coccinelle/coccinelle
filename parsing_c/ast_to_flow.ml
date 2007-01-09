@@ -39,7 +39,36 @@ open Ograph_extended
 open Oassoc
 open Oassocb
 
-(*---------------------------------------------------------------------------*)
+(*****************************************************************************)
+(* Helpers *)
+(*****************************************************************************)
+
+let build_node node labels nodestr =
+  let nodestr = 
+    if !Flag_parsing_c.show_flow_labels
+    then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
+    else nodestr
+  in
+  ((node, labels), nodestr)
+
+
+let lbl_empty = [] 
+
+(*****************************************************************************)
+(* Degenerated control flow graph *)
+(*****************************************************************************)
+
+(* Used to have mini-CFG containing just declaration *)
+let (simple_cfg : node2 -> string -> cflow) = fun node2 nodestr -> 
+  let g = (new ograph_extended) in
+  let (g, _) = g#add_node (build_node node2 lbl_empty nodestr) in
+  g
+
+
+(*****************************************************************************)
+(* Function definition to flow *)
+(*****************************************************************************)
+
 (* Information used internally in ast_to_flow and passed recursively. *) 
 type additionnal_info =  { 
 
@@ -74,20 +103,7 @@ type additionnal_info =  {
 
 
 
-(*---------------------------------------------------------------------------*)
-let build_node node labels nodestr =
-  let nodestr = 
-    if !Flag_parsing_c.show_flow_labels
-    then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
-    else nodestr
-  in
-  ((node, labels), nodestr)
 
-
-let lbl_empty = [] 
-
-
-(*---------------------------------------------------------------------------*)
 let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   let g = ref (new ograph_extended) in
 
@@ -855,6 +871,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
 
 (*****************************************************************************)
+(* CFG checks *)
+(*****************************************************************************)
 (*
  * note: deadCode detection
  * What is dead code ? when there is no starti  to start from ? => make starti
@@ -907,7 +925,6 @@ let deadcode_detection g =
       )
     )
 
-(*****************************************************************************)
 (*
  * special_cfg_braces: 
  * The check are really specific to the way we have build our control_flow, 

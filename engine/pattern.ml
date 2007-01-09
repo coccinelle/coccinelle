@@ -637,12 +637,8 @@ and match_re_onedecl = fun decla declb ->
       match_storage stoa stob >&&> 
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb >&&>
-      (match (A.unwrap inia,inib) with
-      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
-      | _ -> 
-          pr2 "warning: complex initializer, cocci does not handle that";
-          return false
-      )
+      match_initialiser inia inib
+
   | A.TyDecl (typa, _), _ ->
       failwith "fill something in for a declaration that is just a type"
 
@@ -659,6 +655,65 @@ and match_re_onedecl = fun decla declb ->
   | _, _ -> return false
 
 
+(* ------------------------------------------------------------------------- *)
+and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) = 
+  fun inia inib -> 
+    match (A.unwrap inia,inib) with
+    | (A.InitExpr expa, (B.InitExpr expb, _ii)) -> match_e_e expa expb
+    | (A.InitList (i1, ias, i2), (B.InitList ibs, _ii)) -> 
+        match_initialisers (A.undots ias) (Ast_c.split_comma ibs)
+    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), _ii)) -> 
+        match_ident DontKnow ida idb >&&> 
+        match_initialiser inia inib
+    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), _ii)) -> 
+        match_ident DontKnow ida idb >&&> 
+        match_initialiser inia inib
+
+    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
+        match_e_e ea eb >&&>
+        match_initialiser inia inib
+
+    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
+      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
+        match_e_e e1a e1b >&&>
+        match_e_e e2a e2b >&&>
+        match_initialiser inia inib
+
+    (* only in arg lists *)
+    | A.IComma _, _ | A.Idots _, _ -> raise Impossible
+
+    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
+      failwith "not handling Opt/Unique/Multi on initialisers"
+          
+    | _, _ -> return false
+
+
+and match_initialisers = fun ias ibs -> 
+  match ias, ibs with
+  | [], [] -> return true
+  | [], y::ys -> return false
+  | x::xs, ys -> 
+      (match A.unwrap x, ys with
+      | A.Idots (mcode, optexpr), ys -> 
+          if optexpr <> None then failwith "not handling when in argument";
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> match_initialisers xs endxs
+          ) (return false)
+            
+      | A.IComma i1, (Right ii)::ys -> 
+          match_initialisers xs ys
+      | A.IComma i1, _ -> return false
+      | unwrapx, (Left y)::ys -> 
+          match_initialiser x y
+      | unwrapx, (Right y)::ys -> 
+          raise Impossible
+      | unwrapx, [] -> return false
+      )
+
+
+
+  
 (* ------------------------------------------------------------------------- *)
 
 and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
