@@ -2,6 +2,7 @@ struct SHT usb_stor_host_template = {
 	/* basic userland interface stuff */
 	.name =				"usb-storage",
 	.proc_name =			"usb-storage",
+	.proc_info2 =			usb_storage_proc_info2,
 	.proc_info =			usb_storage_proc_info,
 	.proc_dir =			NULL,
 	.info =				usb_storage_info,
@@ -72,6 +73,10 @@ unsigned char usb_stor_sense_notready[18] = {
 
 void usb_storage_proc_info(int i) {
   f(1);
+}
+
+void usb_storage_proc_info2(int i) {
+  f(27);
 }
 
 

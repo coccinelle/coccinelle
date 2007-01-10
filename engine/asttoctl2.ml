@@ -1370,7 +1370,8 @@ let top_level ua t =
   used_after := ua;
   match Ast.unwrap t with
     Ast.DECL(decl) ->
-      let n = Ast.get_line decl in make_match n None false decl
+      let n = Ast.get_line decl in
+      quantify n (Ast.get_fvs decl) (make_match n None false decl)
   | Ast.META(m) -> meta m
   | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.FUNCTION(stmt) ->
