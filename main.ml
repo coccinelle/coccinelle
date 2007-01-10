@@ -38,15 +38,15 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
   match correct with
   | Compare_c.Correct -> 
       pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
-      if doexit then exit 0
+      if doexit then raise (Common.UnixExit 0)
   | Compare_c.Incorrect s -> 
       pr2 ("seems incorrect: " ^ s);
       pr2 "diff (result(-) vs expected_result(+)) = ";
       diffxs +> List.iter pr2;
-      if doexit then exit (-1)
+      if doexit then raise (Common.UnixExit (-1))
   | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
       pr2 "seems incorrect, but only because of code that was not parsable";
-      if doexit then exit (-1)
+      if doexit then raise (Common.UnixExit (-1))
   
 
 
@@ -384,10 +384,12 @@ let main () =
 
 
 let _ =
-  if not (!Sys.interactive) then begin
-    Common.finalize
-      (fun()-> 
-        main ();
-        Ctlcocci_integration.print_bench())
-      (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
-  end
+  if not (!Sys.interactive) then 
+    Common.exn_to_unixexit (fun () -> 
+      Common.finalize
+        (fun()-> 
+          main ();
+          Ctlcocci_integration.print_bench())
+        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+    )
+  

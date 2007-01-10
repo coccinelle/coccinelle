@@ -1516,6 +1516,11 @@ let erase_temp_files () =
     _temp_files_created := []
   end
 
+exception UnixExit of int 
+let exn_to_unixexit f = 
+  try f() 
+  with UnixExit x -> exit x
+
 (*****************************************************************************)
 (* List *)
 (*****************************************************************************)

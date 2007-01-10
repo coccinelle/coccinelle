@@ -201,6 +201,7 @@ val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
+
 (*****************************************************************************)
 (* Error managment *)
 (*****************************************************************************)
@@ -501,6 +502,9 @@ val timeout_function : int -> (unit -> 'a) -> 'a
 (* new_temp_file prefix suffix. *)
 val new_temp_file : string -> string -> string
 val erase_temp_files : unit -> unit
+
+exception UnixExit of int 
+val exn_to_unixexit : (unit -> 'a) -> 'a
 
 (*****************************************************************************)
 (* List *)
