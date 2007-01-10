@@ -23,8 +23,11 @@ let pr2 s =
   if !Flag_parsing_c.verbose_type
   then Common.pr2 s
 
-
 open Ast_c
+
+let type_of_string s = 
+  Parse_c.parse_gen Parser_c.type_name s
+
 
 
 let rec (annotate_program: program -> program) = fun prog ->
@@ -149,6 +152,8 @@ let rec (annotate_program: program -> program) = fun prog ->
              );
              } 
   in
+
+  add_binding "NULL" (type_of_string  "void *") true;
 
   prog +> List.map (fun elem -> elem +> Visitor_c.visitor_program_k_s bigf)
   

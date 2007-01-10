@@ -119,8 +119,9 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
               if (not (tas +> List.exists (fun ta ->  Types.compatible_type ta tb)))
               then raise NoMatch
           | Some _, None -> 
-              failwith ("I have not the type information. Certainly a pb in " ^
-                           "annotate_typer.ml")
+              (*pr2 ("I have not the type information. Certainly a pb in " ^
+                           "annotate_typer.ml") *)
+              raise NoMatch
           );
 
 

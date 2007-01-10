@@ -330,12 +330,14 @@ let fix_add_params_ident = function
 %left TPlus TMinus
 %left TMul TDiv TMod 
 
-%start main external_declaration2 statement expr
+%start main external_declaration2 statement expr type_name
 %type <Ast_c.program> main
 %type <Ast_c.programElement> external_declaration2
 
 %type <Ast_c.statement> statement
 %type <Ast_c.expression> expr
+%type <Ast_c.fullType> type_name
+
 %%
 /*****************************************************************************/
 
