@@ -86,28 +86,24 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.V0.combiner_declaration decls)
     | _ -> k d in
   
-  let statement r k s =
-    match Ast0.unwrap s with
-      Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
-    | Ast0.Disj(starter,stmt_list,mids,ender) ->
-	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
-    | _ -> k s in
-  
   let define_body b =
     match Ast0.unwrap b with
       Ast0.DMetaId(name,_) -> checker name
     | _ -> option_default in
   
-  let meta r k t =
-    match Ast0.unwrap t with
-      Ast0.Define(def,id,body) -> define_body body
-    | _ -> k t in
+  let statement r k s =
+    match Ast0.unwrap s with
+      Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
+    | Ast0.Disj(starter,stmt_list,mids,ender) ->
+	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
+    | Ast0.Define(def,id,body) -> define_body body
+    | _ -> k s in
   
   let res = V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression typeC donothing parameter declaration statement
-      meta donothing in
+      donothing in
   
   collect_unitary_nonunitary
     (List.concat (List.map res.V0.combiner_top_level t))
@@ -157,31 +153,27 @@ let update_unitary unitary =
 	Ast0.rewrap p (Ast0.MetaParamList(name,is_unitary name))
     | _ -> k p in
   
+  let define_body b =
+    match Ast0.unwrap b with
+      Ast0.DMetaId(name,_) ->
+	Ast0.rewrap b (Ast0.DMetaId(name,is_unitary name))
+    | _ -> b in
+  
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmt(name,is_unitary name))
     | Ast0.MetaStmtList(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmtList(name,is_unitary name))
+    | Ast0.Define(def,id,body) ->
+	Ast0.rewrap s (Ast0.Define(def,id,define_body body))
     | _ -> k s in
-  
-  let define_body b =
-    match Ast0.unwrap b with
-      Ast0.DMetaId(name,_) ->
-	Ast0.rewrap b (Ast0.DMetaId(name,is_unitary name))
-    | _ -> b in
-
-  let meta r k t =
-    match Ast0.unwrap t with
-      Ast0.Define(def,id,body) ->
-	Ast0.rewrap t (Ast0.Define(def,id,define_body body))
-    | _ -> k t in
   
   let res = V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression typeC donothing parameter donothing statement
-      meta donothing in
+      donothing in
 
   List.map res.V0.rebuilder_top_level
 

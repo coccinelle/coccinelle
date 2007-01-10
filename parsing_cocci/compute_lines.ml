@@ -466,6 +466,16 @@ let parameter_list prev = dots is_param_dots prev parameterTypeDef
 
 (* for export *)
 let parameter_dots x = dots is_param_dots None parameterTypeDef x
+	
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body s =
+  match Ast0.unwrap s with
+    Ast0.DMetaId(name,_) as us ->
+      let nm = promote_mcode name in mkres s us nm nm
+  | Ast0.Ddots(dots) as us ->
+      let dt = promote_mcode dots in mkres s us dt dt
     
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -607,6 +617,12 @@ let rec statement s =
 	  | Some x -> mkres s res x (promote_mcode rbrace))
       | Some st -> mkres s res (promote_mcode st) (promote_mcode rbrace))
 
+  | Ast0.Include(inc,stm) ->
+      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+  | Ast0.Define(def,id,body) ->
+      let id = ident id in
+      let body = define_body body in
+      mkres s (Ast0.Define(def,id,body)) (promote_mcode def) body
   | Ast0.OptStm(stm) ->
       let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
   | Ast0.UniqueStm(stm) ->
@@ -617,43 +633,13 @@ let rec statement s =
 let statement_dots x = dots is_stm_dots None statement x
 	
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,_) as us ->
-      let nm = promote_mcode name in mkres s us nm nm
-  | Ast0.Ddots(dots) as us ->
-      let dt = promote_mcode dots in mkres s us dt dt
-
-let rec meta s =
-  match Ast0.unwrap s with
-    Ast0.Include(inc,stm) ->
-      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
-  | Ast0.Define(def,id,body) ->
-      let id = ident id in
-      let body = define_body body in
-      mkres s (Ast0.Define(def,id,body)) (promote_mcode def) body
-  | Ast0.OptMeta(m) ->
-      let m = meta m in mkres s (Ast0.OptMeta(m)) m m
-  | Ast0.UniqueMeta(m) ->
-      let m = meta m in mkres s (Ast0.UniqueMeta(m)) m m
-  | Ast0.MultiMeta(m) ->
-      let m = meta m in mkres s (Ast0.MultiMeta(m)) m m
-	
-(* --------------------------------------------------------------------- *)
 (* Function declaration *)
 	
 let top_level t =
   match Ast0.unwrap t with
-    Ast0.DECL((_,bef),decl) ->
-      let decl = declaration decl in
-      let left = promote_to_statement_start decl bef in
-      mkres t (Ast0.DECL((Ast0.get_info left,bef),decl)) decl decl
-  | Ast0.META(m) -> let m = meta m in mkres t (Ast0.META(m)) m m
-  | Ast0.FILEINFO(old_file,new_file) -> t
-  | Ast0.FUNCTION(stmt) ->
-      let stmt = statement stmt in mkres t (Ast0.FUNCTION(stmt)) stmt stmt
+    Ast0.FILEINFO(old_file,new_file) -> t
+  | Ast0.DECL(stmt) ->
+      let stmt = statement stmt in mkres t (Ast0.DECL(stmt)) stmt stmt
   | Ast0.CODE(rule_elem_dots) ->
       let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
       mkres t (Ast0.CODE(rule_elem_dots)) rule_elem_dots rule_elem_dots

@@ -158,7 +158,7 @@ let elim_opt =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing stmtdotsfn
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* after management *)
@@ -232,7 +232,7 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
+      do_nothing rule_elem do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let make_match n label guard code =
@@ -290,7 +290,7 @@ let count_nested_braces s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing stmt_count donothing donothing donothing in
+      donothing donothing stmt_count donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
   "p"^res
 
@@ -1107,6 +1107,11 @@ and statement stmt after quantified label guard =
 				      (After (make_seq_after end_brace after))
 				      new_quantified4 None true guard))))
 			  new_quantified3 None false guard)]))])
+  | Ast.Include(inc,s) ->
+      (* no indication of whether inc or s is modified *)
+      wrap 0 (CTL.Pred((Lib_engine.Include(inc,s),CTL.Control)))
+  | Ast.Define(def,id,body) ->
+      wrap 0 (CTL.Pred((Lib_engine.Define(def,id,body),CTL.Control)))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->
@@ -1351,30 +1356,13 @@ and drop_pdots x
 	  (rewrap(CTL.And(fE(exists_pattern end_pattern),fA nest_pattern)))))
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let meta m =
-  match Ast.unwrap m with
-    Ast.Include(inc,s) ->
-      (* no indication of whether inc or s is modified *)
-      wrap 0 (CTL.Pred((Lib_engine.Include(inc,s),CTL.Control)))
-  | Ast.Define(def,id,body) ->
-      wrap 0 (CTL.Pred((Lib_engine.Define(def,id,body),CTL.Control)))
-  | Ast.OptMeta(m) | Ast.UniqueMeta(m) | Ast.MultiMeta(m) ->
-      failwith "arities not supported for CPP code"
-
-(* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
 let top_level ua t =
   used_after := ua;
   match Ast.unwrap t with
-    Ast.DECL(decl) ->
-      let n = Ast.get_line decl in
-      quantify n (Ast.get_fvs decl) (make_match n None false decl)
-  | Ast.META(m) -> meta m
-  | Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
-  | Ast.FUNCTION(stmt) ->
+    Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
+  | Ast.DECL(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let unopt = preprocess_dots_e unopt in
       letify (statement unopt Tail [] None false)

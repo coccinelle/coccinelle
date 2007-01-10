@@ -292,6 +292,16 @@ let rec parameterTypeDef p =
 let parameter_list = dots (function _ -> ()) parameterTypeDef
 
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body s =
+  print_context s
+    (function _ ->
+      match Ast0.unwrap s with
+	Ast0.DMetaId(name,_) -> mcode print_string name
+      | Ast0.Ddots(dots) -> mcode print_string dots)
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let rec statement arity s =
@@ -383,6 +393,11 @@ let rec statement arity s =
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;
 	  whencode (dots force_newline (statement "")) (statement "") whn
+      | Ast0.Include(inc,s) ->
+	  mcode print_string inc; print_string " "; mcode print_string s
+      | Ast0.Define(def,id,body) ->
+	  mcode print_string def; print_string " "; ident id;
+	  print_string " "; define_body body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.MultiStm(re) -> statement "\\+" re)
@@ -397,38 +412,16 @@ and whencode notfn alwaysfn = function
 let statement_dots = dots (function _ -> ()) (statement "")
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body s =
-  print_context s
-    (function _ ->
-      match Ast0.unwrap s with
-	Ast0.DMetaId(name,_) -> mcode print_string name
-      | Ast0.Ddots(dots) -> mcode print_string dots)
-
-let rec meta s =
-  print_context s
-    (function _ ->
-      match Ast0.unwrap s with
-	Ast0.Include(inc,s) ->
-	  mcode print_string inc; print_string " "; mcode print_string s
-      | Ast0.Define(def,id,body) ->
-	  mcode print_string def; print_string " "; ident id;
-	  print_string " "; define_body body
-      | Ast0.OptMeta(m) -> print_string "?"; meta m
-      | Ast0.UniqueMeta(m) -> print_string "!"; meta m
-      | Ast0.MultiMeta(m) -> print_string "\\+"; meta m)
+(* Top level code *)
 
 let top_level t =
   print_context t
     (function _ ->
       match Ast0.unwrap t with
-	Ast0.DECL(_,decl) -> declaration decl
-      | Ast0.META(m) -> meta m
-      | Ast0.FILEINFO(old_file,new_file) ->
+	Ast0.FILEINFO(old_file,new_file) ->
 	  print_string "--- "; mcode print_string old_file; force_newline();
 	  print_string "+++ "; mcode print_string new_file
-      | Ast0.FUNCTION(stmt) -> statement "" stmt
+      | Ast0.DECL(stmt) -> statement "" stmt
       | Ast0.CODE(stmt_dots) ->
 	  dots force_newline (statement "") stmt_dots
       | Ast0.ERRORWORDS(exps) ->
@@ -456,7 +449,6 @@ let unparse_anything x =
   | Ast0.InitTag(d) -> initialiser d
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
-  | Ast0.MetaTag(d) -> meta d
   | Ast0.TopTag(d) -> top_level d);
   quiet := q;
   print_newline()

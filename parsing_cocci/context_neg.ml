@@ -25,7 +25,6 @@ let set_mcodekind x mcodekind =
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
-  | Ast0.MetaTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
 
 let set_index x index =
@@ -41,7 +40,6 @@ let set_index x index =
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
-  | Ast0.MetaTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
 
 let get_index = function
@@ -56,7 +54,6 @@ let get_index = function
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.StmtTag(d) -> Index.statement d
-  | Ast0.MetaTag(d) -> Index.meta d
   | Ast0.TopTag(d) -> Index.top_level d
 
 (* --------------------------------------------------------------------- *)
@@ -260,7 +257,7 @@ let classify all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.ident) expression
       (do_nothing Ast0.typeC) initialiser (do_nothing Ast0.param) declaration
-      statement (do_nothing Ast0.meta) (do_top Ast0.top) in
+      statement (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -465,28 +462,19 @@ let rec equal_statement s1 s2 =
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))
   | (Ast0.Stars(d1,_),Ast0.Stars(d2,_)) -> equal_mcode d1 d2
+  | (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
+      equal_mcode inc1 inc2 && equal_mcode name1 name2
+  | (Ast0.Define(def1,_,_),Ast0.Define(def2,_,_)) -> equal_mcode def1 def2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | (Ast0.MultiStm(_),Ast0.MultiStm(_)) -> true
   | _ -> false
-	
-let equal_meta m1 m2 =
-  match (Ast0.unwrap m1,Ast0.unwrap m2) with
-    (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
-      equal_mcode inc1 inc2 && equal_mcode name1 name2
-  | (Ast0.Define(def1,_,_),Ast0.Define(def2,_,_)) -> equal_mcode def1 def2
-  | (Ast0.OptMeta(_),Ast0.OptMeta(_)) -> true
-  | (Ast0.UniqueMeta(_),Ast0.UniqueMeta(_)) -> true
-  | (Ast0.MultiMeta(_),Ast0.MultiMeta(_)) -> true
-  | _ -> false
 
 let rec equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
-    (Ast0.DECL(_,_),Ast0.DECL(_,_)) -> true
-  | (Ast0.META(_),Ast0.META(_)) -> true
+    (Ast0.DECL(_),Ast0.DECL(_)) -> true
   | (Ast0.FILEINFO(old_file1,new_file1),Ast0.FILEINFO(old_file2,new_file2)) ->
       equal_mcode old_file1 old_file2 && equal_mcode new_file1 new_file2
-  | (Ast0.FUNCTION(_),Ast0.FUNCTION(_)) -> true
   | (Ast0.CODE(_),Ast0.CODE(_)) -> true
   | (Ast0.ERRORWORDS(_),Ast0.ERRORWORDS(_)) -> true
   | _ -> false
@@ -504,7 +492,6 @@ let root_equal e1 e2 =
   | (Ast0.InitTag(d1),Ast0.InitTag(d2)) -> equal_initialiser d1 d2
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
-  | (Ast0.MetaTag(t1),Ast0.MetaTag(t2)) -> equal_meta t1 t2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
   | _ -> false
 
@@ -542,7 +529,6 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing
 
 let contextify_whencode =
   let bind x y = () in
@@ -581,8 +567,7 @@ let contextify_whencode =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing expression
-      do_nothing initialiser do_nothing do_nothing statement do_nothing
-      do_nothing in
+      do_nothing initialiser do_nothing do_nothing statement do_nothing in
   combiner.V0.combiner_top_level
 
 (* --------------------------------------------------------------------- *)
@@ -596,9 +581,7 @@ let plus_table =
 
 let iscode t =
   match Ast0.unwrap t with
-    Ast0.FUNCTION(_) -> true
-  | Ast0.DECL(_,_) -> true
-  | Ast0.META(_) -> true
+    Ast0.DECL(_) -> true
   | Ast0.FILEINFO(_) -> true
   | Ast0.ERRORWORDS(_) -> false
   | Ast0.CODE(_) -> true
@@ -615,11 +598,7 @@ let concat = function
 	  [] -> []
 	| x::rest ->
 	    (match Ast0.unwrap x with
-	      Ast0.FUNCTION(s) ->
-		let stms = loop rest in s::stms
-	    | Ast0.DECL(bef,s) ->
-		let stms = loop rest in
-		(Ast0.rewrap s (Ast0.Decl(bef,s)))::stms
+	      Ast0.DECL(s) -> let stms = loop rest in s::stms
 	    | Ast0.CODE(ss) ->
 		let stms = loop rest in
 		(match Ast0.unwrap ss with

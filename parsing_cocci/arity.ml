@@ -591,6 +591,26 @@ let parameterTypeDef tgt param =
 let parameter_list tgt = dots (parameterTypeDef tgt)
 
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let make_define_body =
+  let no_arity x = failwith "specific arity not allowed" in
+  make_opt_unique no_arity no_arity no_arity
+
+let define_body tgt s =
+  match Ast0.unwrap s with
+    Ast0.DMetaId(name,pure) ->
+      let arity =
+	all_same false false tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_define_body s tgt arity (Ast0.DMetaId(name,pure))
+  | Ast0.Ddots(dots) ->
+      let arity =
+	all_same false false tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_define_body s tgt arity (Ast0.Ddots(dots))
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let make_rule_elem =
@@ -788,6 +808,19 @@ let rec statement in_nest tgt stm =
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
 	(Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace))
+  | Ast0.Include(inc,s) -> 
+      let arity =
+	all_same true true tgt (mcode2line inc)
+	  (List.map mcode2arity [inc;s]) in
+      let inc = mcode inc in
+      let s = mcode s in
+      make_rule_elem stm tgt arity (Ast0.Include(inc,s))
+  | Ast0.Define(def,id,body) ->
+      let arity = all_same true true tgt (mcode2line def) [mcode2arity def] in
+      let def = mcode def in
+      let id = ident false false arity id in
+      let body = define_body arity body in
+      make_rule_elem stm tgt arity (Ast0.Define(def,id,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"	
 
@@ -797,64 +830,18 @@ and whencode notfn alwaysfn = function
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let make_define_body =
-  let no_arity x = failwith "specific arity not allowed" in
-  make_opt_unique no_arity no_arity no_arity
-
-let define_body tgt s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,pure) ->
-      let arity =
-	all_same false false tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_define_body s tgt arity (Ast0.DMetaId(name,pure))
-  | Ast0.Ddots(dots) ->
-      let arity =
-	all_same false false tgt (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      make_define_body s tgt arity (Ast0.Ddots(dots))
-
-let make_meta =
-  make_opt_unique
-    (function x -> Ast0.OptMeta x)
-    (function x -> Ast0.UniqueMeta x)
-    (function x -> Ast0.MultiMeta x)
-
-let meta tgt m =
-  match Ast0.unwrap m with
-    Ast0.Include(inc,s) -> 
-      let arity =
-	all_same true true tgt (mcode2line inc)
-	  (List.map mcode2arity [inc;s]) in
-      let inc = mcode inc in
-      let s = mcode s in
-      make_meta m tgt arity (Ast0.Include(inc,s))
-  | Ast0.Define(def,id,body) ->
-      let arity = all_same true true tgt (mcode2line def) [mcode2arity def] in
-      let def = mcode def in
-      let id = ident false false arity id in
-      let body = define_body arity body in
-      make_meta m tgt arity (Ast0.Define(def,id,body))
-  | Ast0.OptMeta(_) | Ast0.UniqueMeta(_) | Ast0.MultiMeta(_) ->
-      failwith "unexpected code"
-
-(* --------------------------------------------------------------------- *)
 (* Function declaration *)
 (* Haven't thought much about arity here... *)
 
 let top_level tgt t =
   Ast0.rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL(bef,decl) -> Ast0.DECL(bef,declaration false Ast0.NONE decl)
-    | Ast0.META(m) -> Ast0.META(meta Ast0.NONE m)
-    | Ast0.FILEINFO(old_file,new_file) -> 
+      Ast0.FILEINFO(old_file,new_file) -> 
 	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
 	then Ast0.FILEINFO(mcode old_file,mcode new_file)
 	else fail t "unexpected arity for file info"
-    | Ast0.FUNCTION(stmt) ->
-	Ast0.FUNCTION(statement false tgt stmt)
+    | Ast0.DECL(stmt) ->
+	Ast0.DECL(statement false tgt stmt)
     | Ast0.CODE(rule_elem_dots) ->
 	Ast0.CODE(concat_dots (statement false tgt) rule_elem_dots)
     | Ast0.ERRORWORDS(exps) ->

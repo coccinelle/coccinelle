@@ -240,6 +240,8 @@ and base_statement =
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
+  | Include of string mcode (* #include *) * string mcode (* file *)
+  | Define of string mcode (* #define *) * ident (* name *) * define_body
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
@@ -254,15 +256,6 @@ and statement = base_statement wrap
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-and base_meta =
-    Include of string mcode (* #include *) * string mcode (* file *)
-  | Define of string mcode (* #define *) * ident (* name *) * define_body
-  | OptMeta        of meta
-  | UniqueMeta     of meta
-  | MultiMeta      of meta
-
-and meta = base_meta wrap
-
 and base_define_body =
     DMetaId of string mcode * pure
   | Ddots   of string mcode (* ... *)
@@ -273,12 +266,10 @@ and define_body = base_define_body wrap
 (* Top-level code *)
 
 type base_top_level =
-    FUNCTION of statement
-  | DECL of (info * mcodekind) (* before the decl *) * declaration
-  | META of meta
+    DECL of statement
+  | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
-  | CODE of statement dots
   | OTHER of statement (* temporary, disappears after top_level.ml *)
 
 and top_level = base_top_level wrap
@@ -298,7 +289,6 @@ type anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
-  | MetaTag of meta
   | TopTag of top_level
 
 val dotsExpr : expression dots -> anything
@@ -312,7 +302,6 @@ val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
 val stmt : statement -> anything
-val meta : meta -> anything
 val top : top_level -> anything
 
 (* --------------------------------------------------------------------- *)

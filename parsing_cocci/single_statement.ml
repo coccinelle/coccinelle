@@ -58,7 +58,7 @@ and contains_only_minus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing donothing in
+      statement donothing in
   combiner.V0.combiner_statement s
 
 (* ---------------------------------------------------------------------- *)
@@ -176,6 +176,8 @@ let rec statement dots_before dots_after s =
   | Ast0.Exp(exp) -> s
   | Ast0.Ty(ty) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
+  | Ast0.Include(inc,string) -> do_one s
+  | Ast0.Define(def,id,body) -> do_one s
   | Ast0.OptStm(re) -> 
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))
@@ -211,7 +213,7 @@ and statement_dots dots_before dots_after d =
 let top_level t =
   Ast0.rewrap t
     (match Ast0.unwrap t with
-      Ast0.FUNCTION(stmt_dots) -> Ast0.FUNCTION(statement true true stmt_dots)
+      Ast0.DECL(stmt_dots) -> Ast0.DECL(statement true true stmt_dots)
     | Ast0.CODE(stmt_dots) -> Ast0.CODE(statement_dots true true stmt_dots)
     | t -> t)
 

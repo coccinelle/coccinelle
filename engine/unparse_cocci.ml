@@ -437,6 +437,11 @@ let rule_elem arity re =
       raise CantBeInPlus in
           
 
+let define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name,true) -> mcode print_string name
+  | Ast.DMetaId(name,false) -> raise CantBeInPlus
+  | Ast.Ddots(dots) -> mcode print_string dots in
 
 let rec statement arity s =
   match Ast.unwrap s with
@@ -467,41 +472,23 @@ let rec statement arity s =
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 
-  | Ast.Disj(_) 
-  | Ast.Nest(_) 
+  | Ast.Disj(_)| Ast.Nest(_) -> raise CantBeInPlus
+  | Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; define_body body
   | Ast.Dots(_) | Ast.Circles(_) | Ast.Stars(_) ->
       raise CantBeInPlus
 
   | Ast.OptStm(s) | Ast.UniqueStm(s) | Ast.MultiStm(s) -> 
       raise CantBeInPlus in
 
-let define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,true) -> mcode print_string name
-  | Ast.DMetaId(name,false) -> raise CantBeInPlus
-  | Ast.Ddots(dots) -> mcode print_string dots in
-
-let rec meta m =
-  match Ast.unwrap m with
-    Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
-  | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; define_body body
-  | Ast.OptMeta(m) -> print_string "?"; meta m
-  | Ast.UniqueMeta(m) -> print_string "!"; meta m
-  | Ast.MultiMeta(m) -> print_string "\\+"; meta m in
-
 let top_level t =
   match Ast.unwrap t with
-    Ast.DECL(decl) -> rule_elem "" decl
-  | Ast.META(m) -> meta m
-  | Ast.FILEINFO(old_file,new_file) ->
-      raise CantBeInPlus
-  | Ast.FUNCTION(stmt) -> statement "" stmt
-  | Ast.CODE(stmt_dots) ->
-      dots force_newline (statement "") stmt_dots
-  | Ast.ERRORWORDS(exps) ->
-      raise CantBeInPlus
+    Ast.FILEINFO(old_file,new_file) -> raise CantBeInPlus
+  | Ast.DECL(stmt) -> statement "" stmt
+  | Ast.CODE(stmt_dots) -> dots force_newline (statement "") stmt_dots
+  | Ast.ERRORWORDS(exps) -> raise CantBeInPlus
 in
 
 (*    
@@ -541,7 +528,6 @@ let rec pp_any = function
 
   | Ast.ConstVolTag(x) -> const_vol x
   | Ast.Token(x) -> print_string x
-  | Ast.Meta(x) -> meta x
   | Ast.Code(x) -> let _ = top_level x in ()
 
   (* this is not '...', but a list of expr/statement/params, and 

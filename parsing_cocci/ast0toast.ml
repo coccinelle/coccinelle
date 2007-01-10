@@ -133,7 +133,7 @@ let inline_mcodes =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing
+    do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -170,7 +170,7 @@ let check_allminus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing donothing in
+      statement donothing in
   combiner.V0.combiner_statement s
     
 (* --------------------------------------------------------------------- *)
@@ -426,6 +426,15 @@ let rec parameterTypeDef p =
 let parameter_list = dots parameterTypeDef
 
 (* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body m =
+  rewrap m
+    (match Ast0.unwrap m with
+      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,true)
+    | Ast0.Ddots(dots) -> Ast.Ddots(mcode dots))
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let ctr = ref 0
@@ -555,6 +564,9 @@ let rec statement s =
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		      decls,dots,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
+      |	Ast0.Include(inc,s) -> Ast.Include(mcode inc,mcode s)
+      | Ast0.Define(def,id,body) ->
+	  Ast.Define(mcode def,ident id,define_body body)
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
@@ -640,39 +652,14 @@ and option_to_list = function
 let statement_dots = dots statement
     
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body m =
-  rewrap m
-    (match Ast0.unwrap m with
-      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,true)
-    | Ast0.Ddots(dots) -> Ast.Ddots(mcode dots))
-
-let rec meta m =
-  rewrap m
-    (match Ast0.unwrap m with
-      Ast0.Include(inc,s) -> Ast.Include(mcode inc,mcode s)
-    | Ast0.Define(def,id,body) ->
-	Ast.Define(mcode def,ident id,define_body body)
-    | Ast0.OptMeta(m) -> Ast.OptMeta(meta m)
-    | Ast0.UniqueMeta(m) -> Ast.UniqueMeta(meta m)
-    | Ast0.MultiMeta(m) -> Ast.MultiMeta(meta m))
-    
-(* --------------------------------------------------------------------- *)
 (* Function declaration *)
     
 let top_level t =
   rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL((_,bef),decl) ->
-	let decl = declaration decl in
-	let rule_elem =
-	  Ast.rewrap decl (Ast.Decl(convert_mcodekind bef,decl)) in
-	Ast.DECL(rule_elem)
-    | Ast0.META(m) -> Ast.META(meta m)
-    | Ast0.FILEINFO(old_file,new_file) ->
+      Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)
-    | Ast0.FUNCTION(stmt) -> Ast.FUNCTION(statement stmt)
+    | Ast0.DECL(stmt) -> Ast.DECL(statement stmt)
     | Ast0.CODE(rule_elem_dots) ->
 	Ast.CODE(dots statement rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)

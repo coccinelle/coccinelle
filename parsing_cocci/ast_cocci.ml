@@ -323,6 +323,8 @@ and base_statement =
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode *
 	             dots_whencode list
+  | Include       of string mcode (*#include*) * string mcode (*file *)
+  | Define        of string mcode (*#define*) * ident (*name*) * define_body
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)
@@ -340,15 +342,6 @@ and dots_whencode =
 
 and statement = base_statement wrap
 
-and base_meta =
-    Include of string mcode (* #include *) * string mcode (* file *)
-  | Define of string mcode (* #define *) * ident (* name *) * define_body
-  | OptMeta        of meta
-  | UniqueMeta     of meta
-  | MultiMeta      of meta
-
-and meta = base_meta wrap
-
 and base_define_body =
     DMetaId of string mcode * keep_binding
   | Ddots   of string mcode (* ... *)
@@ -356,12 +349,10 @@ and base_define_body =
 and define_body = base_define_body wrap
 
 and base_top_level =
-    FUNCTION of statement
-  | DECL of rule_elem
-  | META of meta
+    DECL of statement
+  | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
-  | CODE of statement dots
 
 and top_level = base_top_level wrap
 
@@ -391,7 +382,6 @@ and anything =
   | StatementTag        of statement
   | ConstVolTag         of const_vol
   | Token               of string
-  | Meta                of meta
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots

@@ -505,6 +505,11 @@ let rec statement arity s =
   | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
       print_string arity; mcode print_string d;
       whencode (dots force_newline (statement "")) (statement "") whn
+  | Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; print_string " ";
+      define_body body
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
@@ -524,34 +529,21 @@ and whencode notfn alwaysfn = function
   | Ast.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
 
-
-(* for export only *)
-let statement_dots l = dots force_newline (statement "") l
-
-let define_body m =
+and define_body m =
   match Ast.unwrap m with
     Ast.DMetaId(name,_) -> mcode print_string name
   | Ast.Ddots(dots) -> mcode print_string dots
 
-let rec meta m =
-  match Ast.unwrap m with
-    Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
-  | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; print_string " ";
-      define_body body
-  | Ast.OptMeta(m) -> print_string "?"; meta m
-  | Ast.UniqueMeta(m) -> print_string "!"; meta m
-  | Ast.MultiMeta(m) -> print_string "\\+"; meta m
+
+(* for export only *)
+let statement_dots l = dots force_newline (statement "") l
 
 let top_level t =
   match Ast.unwrap t with
-    Ast.DECL(decl) -> rule_elem "" decl
-  | Ast.META(m) -> meta m
-  | Ast.FILEINFO(old_file,new_file) ->
+    Ast.FILEINFO(old_file,new_file) ->
       print_string "--- "; mcode print_string old_file; force_newline();
       print_string "+++ "; mcode print_string new_file
-  | Ast.FUNCTION(stmt) -> statement "" stmt
+  | Ast.DECL(stmt) -> statement "" stmt
   | Ast.CODE(stmt_dots) ->
       dots force_newline (statement "") stmt_dots
   | Ast.ERRORWORDS(exps) ->
@@ -585,7 +577,6 @@ let _ =
     | Ast.StatementTag(x) -> statement "" x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x) -> print_string x
-    | Ast.Meta(x) -> meta x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x

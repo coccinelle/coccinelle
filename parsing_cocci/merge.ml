@@ -93,7 +93,7 @@ let recursor =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing
     ident expression donothing donothing parameterTypeDef donothing
-    statement donothing top_level
+    statement top_level
 
 let rule code = List.concat (List.map recursor.V0.combiner_top_level code)
 

@@ -19,7 +19,6 @@ type 'a combiner =
 	    combiner_parameter : Ast0.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast0.parameter_list -> 'a;
 		combiner_statement : Ast0.statement -> 'a;
-		  combiner_meta : Ast0.meta -> 'a;
 		  combiner_top_level : Ast0.top_level -> 'a;
 		    combiner_expression_dots :
 		      Ast0.expression Ast0.dots -> 'a;
@@ -34,7 +33,7 @@ let combiner bind option_default
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn metafn topfn =
+    identfn exprfn tyfn initfn paramfn declfn stmtfn topfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -320,6 +319,9 @@ let combiner bind option_default
       | Ast0.Ty(ty) -> typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  bind (string_mcode d) (whencode statement_dots statement whn)
+      | Ast0.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      | Ast0.Define(def,id,body) ->
+	  multibind [string_mcode def; ident id; define_body body]
       | Ast0.OptStm(re) -> statement re
       | Ast0.UniqueStm(re) -> statement re
       | Ast0.MultiStm(re) -> statement re in
@@ -334,23 +336,12 @@ let combiner bind option_default
       Ast0.DMetaId(name,_) -> string_mcode name
     | Ast0.Ddots(d) -> string_mcode d
 
-  and meta t =
-    let k t =
-      match Ast0.unwrap t with
-	Ast0.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
-      | Ast0.Define(def,id,body) ->
-	  multibind [string_mcode def; ident id; define_body body]
-      | Ast0.OptMeta(m) | Ast0.UniqueMeta(m) | Ast0.MultiMeta(m) -> meta m in
-    metafn all_functions k t
-
   and top_level t =
     let k t =
       match Ast0.unwrap t with
-	Ast0.DECL(_,decl) -> declaration decl
-      | Ast0.META(m) -> meta m
-      | Ast0.FILEINFO(old_file,new_file) ->
+	Ast0.FILEINFO(old_file,new_file) ->
 	  bind (string_mcode old_file) (string_mcode new_file)
-      | Ast0.FUNCTION(stmt_dots) -> statement stmt_dots
+      | Ast0.DECL(stmt_dots) -> statement stmt_dots
       | Ast0.CODE(stmt_dots) -> statement_dots stmt_dots
       | Ast0.ERRORWORDS(exps) -> multibind (List.map expression exps)
       | Ast0.OTHER(_) -> failwith "unexpected code" in
@@ -365,7 +356,6 @@ let combiner bind option_default
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_statement = statement;
-      combiner_meta = meta;
       combiner_top_level = top_level;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots} in
@@ -386,7 +376,6 @@ type rebuilder =
       rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;
-      rebuilder_meta : Ast0_cocci.meta inout;
       rebuilder_top_level : Ast0_cocci.top_level inout;
       rebuilder_expression_dots :
 	Ast0_cocci.expression Ast0_cocci.dots ->
@@ -402,7 +391,7 @@ let rebuilder = fun
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn metafn topfn ->
+    identfn exprfn tyfn initfn paramfn declfn stmtfn topfn ->
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -671,6 +660,10 @@ let rebuilder = fun
 	    Ast0.Circles(string_mcode d, whencode statement_dots statement whn)
 	| Ast0.Stars(d,whn) ->
 	    Ast0.Stars(string_mcode d, whencode statement_dots statement whn)
+	| Ast0.Include(inc,name) ->
+	    Ast0.Include(string_mcode inc,string_mcode name)
+	| Ast0.Define(def,id,body) ->
+	    Ast0.Define(string_mcode def,ident id,define_body body)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
@@ -691,30 +684,15 @@ let rebuilder = fun
       (match Ast0.unwrap b with
 	Ast0.DMetaId(name,pure) -> Ast0.DMetaId(string_mcode name,pure)
       | Ast0.Ddots(d) -> Ast0.Ddots(string_mcode d))
-    
-  and meta t =
-    let k t =
-      Ast0.rewrap t
-	(match Ast0.unwrap t with
-	  Ast0.Include(inc,name) ->
-	    Ast0.Include(string_mcode inc,string_mcode name)
-	| Ast0.Define(def,id,body) ->
-	    Ast0.Define(string_mcode def,ident id,define_body body)
-	| Ast0.OptMeta(m) -> Ast0.OptMeta(meta m)
-	| Ast0.UniqueMeta(m) -> Ast0.UniqueMeta(meta m)
-	| Ast0.MultiMeta(m) -> Ast0.MultiMeta(meta m)) in
-    metafn all_functions k t
 
   and top_level t =
     let k t =
       Ast0.rewrap t
 	(match Ast0.unwrap t with
-	  Ast0.DECL(bef,decl) -> Ast0.DECL(bef,declaration decl)
-	| Ast0.META(m) -> Ast0.META(meta m)
-	| Ast0.FILEINFO(old_file,new_file) ->
+	  Ast0.FILEINFO(old_file,new_file) ->
 	    Ast0.FILEINFO(string_mcode old_file, string_mcode new_file)
-	| Ast0.FUNCTION(statement_dots) ->
-	    Ast0.FUNCTION(statement statement_dots)
+	| Ast0.DECL(statement_dots) ->
+	    Ast0.DECL(statement statement_dots)
 	| Ast0.CODE(stmt_dots) -> Ast0.CODE(statement_dots stmt_dots)
 	| Ast0.ERRORWORDS(exps) -> Ast0.ERRORWORDS(List.map expression exps)
 	| Ast0.OTHER(_) -> failwith "unexpected code") in
@@ -729,7 +707,6 @@ let rebuilder = fun
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_list;
       rebuilder_statement = statement;
-      rebuilder_meta = meta;
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots} in

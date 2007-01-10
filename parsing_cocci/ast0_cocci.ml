@@ -242,6 +242,8 @@ and base_statement =
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
+  | Include of string mcode (* #include *) * string mcode (* file *)
+  | Define of string mcode (* #define *) * ident (* name *) * define_body
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
@@ -275,12 +277,10 @@ and define_body = base_define_body wrap
 (* Top-level code *)
 
 type base_top_level =
-    FUNCTION of statement
-  | DECL of (info * mcodekind) (* before the decl *) * declaration
-  | META of meta
+    DECL of statement
+  | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
-  | CODE of statement dots
   | OTHER of statement (* temporary, disappears after top_level.ml *)
 
 and top_level = base_top_level wrap
@@ -300,7 +300,6 @@ type anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
-  | MetaTag of meta
   | TopTag of top_level
 
 let dotsExpr x = DotsExprTag x
@@ -314,7 +313,6 @@ let param x = ParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
 let stmt x = StmtTag x
-let meta x = MetaTag x
 let top x = TopTag x
 
 (* --------------------------------------------------------------------- *)

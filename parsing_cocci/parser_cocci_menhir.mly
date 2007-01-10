@@ -412,20 +412,20 @@ filespec:
 includes:
   TInclude
     { Ast0.wrap
-	(Ast0.META
+	(Ast0.DECL
 	   (Ast0.wrap
 	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
 			    id2mcode $1)))) }
 | TDefine ident TEllipsis
     { Ast0.wrap
-	(Ast0.META
+	(Ast0.DECL
 	   (Ast0.wrap
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
 			   Ast0.wrap(Ast0.Ddots(clt2mcode "..." $3)))))) }
 | TDefine ident TMetaText
     { let (nm,pure,clt) = $3 in
       Ast0.wrap
-	(Ast0.META
+	(Ast0.DECL
 	   (Ast0.wrap
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
 			   Ast0.wrap(Ast0.DMetaId(clt2mcode nm clt,pure)))))) }
@@ -1028,7 +1028,7 @@ fun_exp_decl_statement_list:
 
 fun_decl_statement:
     d=decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) d }
-  | f=fundecl        { [Ast0.wrap(Ast0.FUNCTION(f))] }
+  | f=fundecl        { [Ast0.wrap(Ast0.DECL(f))] }
 
 /* ---------------------------------------------------------------------- */
 
