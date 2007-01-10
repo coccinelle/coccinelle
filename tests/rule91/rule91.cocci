@@ -22,12 +22,12 @@
 //- void f (struct urb *p1, struct pt_regs *p2)
 //+ void f (struct urb *p1)
 //  {
-//    ... when != regs
+//    ... when != p1
 //  }
 
 @@
-expression E1, E2, E3, E4, E5, E6, E6, E7;
-local function f;
+expression E1, E2, E3, E4, E5, E6, E7;
+identifier f;
 struct urb u;
 struct urb *u1;
 @@
@@ -51,11 +51,11 @@ identifier p1, p2;
 - void f (struct urb *p1, struct pt_regs *p2)
 + void f (struct urb *p1)
   {
-    ... when != regs
+    ... when != p2
   }
 
 //@@
-//local function setup_urb;
+//identifier setup_urb;
 //identifier callback, regs;
 //expression E1, E2, E3, E4, E5, E6;
 //@@
@@ -70,7 +70,7 @@ identifier p1, p2;
 //}
 //
 //@@
-//local function f;
+//identifier f;
 //@@
 //
 //setup_urb(...,f,...)
@@ -82,12 +82,12 @@ identifier p1, p2;
 //- void f (struct urb *p1, struct pt_regs *p2)
 //+ void f (struct urb *p1)
 //  {
-//    ... when != regs
+//    ... when != p2
 //  }
 
 @@
 struct pcmcia_device *link;
-local function interrupt_fn;
+identifier interrupt_fn;
 @@
 
 link->irq.Handler = interrupt_fn;
@@ -97,6 +97,6 @@ identifier irq, dev_inst, regs;
 @@
 interrupt_fn(int irq, void *dev_inst
 -            , struct pt_regs *regs
-) {
+  ) {
     ... when != regs
   }
