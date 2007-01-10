@@ -1510,7 +1510,7 @@ let new_temp_file prefix suffix =
 let erase_temp_files () = 
   begin
     !_temp_files_created +> List.iter (fun s -> 
-      pr2 ("erasing: " ^ s);
+      (* pr2 ("erasing: " ^ s); *)
       command2 ("rm -f " ^ s)
     );
     _temp_files_created := []

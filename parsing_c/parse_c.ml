@@ -245,9 +245,9 @@ let col_of_tok tok =
 
 
 let error_msg_tok file tok = 
-  if not !Flag_parsing_c.opti_parsing 
+  if !Flag_parsing_c.verbose_parsing
   then Common.error_message file (token_to_strpos tok) 
-  else "TODO remove opti_parsing flag"
+  else ("error in " ^ file ^ "set verbose_parsing for more info")
 
 
 let print_bad line_error (start_line, end_line) filelines  = 

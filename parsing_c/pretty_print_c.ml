@@ -529,9 +529,13 @@ and pp_type_gen pr_elem t = pp_type_with_ident_gen pr_elem None None t
 
 (* ---------------------- *)
 and pp_decl_gen pr_elem = function
-  | DeclList ((((var, returnType, storage),[])::xs), iivirg::iisto) -> 
+  | DeclList ((((var, returnType, storage),[])::xs), 
+             iivirg::ifakestart::iisto) -> 
+
+      pr_elem ifakestart;
 
       (* old: iisto +> List.iter pr_elem; *)
+      
 
       (* handling the first var. Special case, we print the whole type *)
       (match var with
@@ -614,7 +618,9 @@ let pp_program_gen pr_elem progelem =
   match progelem with
   | Declaration decl -> pp_decl_gen pr_elem decl
   | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
-                     is::iifunc1::iifunc2::i1::i2::isto) -> 
+                     is::iifunc1::iifunc2::i1::i2::ifakestart::isto) -> 
+
+         pr_elem ifakestart;
                        
          pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
                          returnt;

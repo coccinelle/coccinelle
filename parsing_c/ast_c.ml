@@ -295,7 +295,7 @@ and statementbis =
 and declaration = 
    DeclList of (((string * initialiser option) wrap (* s = *) option) * 
                  fullType * storage)
-                wrap2 (* , *) list wrap (* ; sto *)
+                wrap2 (* , *) list wrap (* ; fake_start sto *)
      and storage       = storagebis * bool (* inline or not *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
@@ -316,7 +316,7 @@ and declaration =
  * same functionType type for both declaration and function definition.
  *)
 and definition = (string * functionType * storage * compound) 
-                 wrap (* s ( ) { } sto *)
+                 wrap (* s ( ) { } fake_start sto *)
 
  
 (* ------------------------------------------------------------------------- *)
@@ -390,6 +390,9 @@ let al_info x =
   }, 
   emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
+
+
+let fakeInfo = al_info (Common.fake_parse_info, emptyAnnot)
 
 (*****************************************************************************)
 (* Views *)

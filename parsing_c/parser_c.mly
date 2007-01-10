@@ -177,6 +177,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 
 let fixFunc = function
   | (((s,iis), (nQ, (FunctionType (fullt, (params,bool)),iifunc)), (st,iist)), (cp,iicp)) -> 
+      let iistart = Ast_c.fakeInfo in
       assert (nQ =*= nullQualif);
       (match params with
       | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
@@ -185,7 +186,9 @@ let fixFunc = function
             | (((bool, Some s, fullt), _), _) -> ()
 	    | _ -> failwith "internal errror: fixOldCDecl not good"
        ));
-      (s, (fullt, (params, bool)), st, cp), ([iis]++iifunc++iicp++iist) (* it must be nullQualif,cos parser construct only this*)
+      (* it must be nullQualif,cos parser construct only this*)
+      (s, (fullt, (params, bool)), st, cp), 
+      ([iis]++iifunc++iicp++[iistart]++iist) 
   | _ -> raise (Semantic ("you are trying to do a function definition but you dont give any parameter", fake_parse_info))
 
 
@@ -598,12 +601,14 @@ colon_option: TString {}
 
 /*---------------------------------------------------------------------------*/
 decl2: decl_spec TPtVirg
-        { let (returnType,storage) = fixDeclSpecForDecl $1 
-          in DeclList ([(None, returnType, unwrap storage),[]],  
-                       ($2::snd storage))
+        { let (returnType,storage) = fixDeclSpecForDecl $1 in 
+          let iistart = Ast_c.fakeInfo in
+          DeclList ([(None, returnType, unwrap storage),[]],  
+                       ($2::iistart::snd storage))
         } 
      | decl_spec init_declarator_list TPtVirg 
 	{ let (returnType,storage) = fixDeclSpecForDecl $1 in
+          let iistart = Ast_c.fakeInfo in
           DeclList (
 	       ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
                  let ini, iini = 
@@ -616,7 +621,7 @@ decl2: decl_spec TPtVirg
                  (Some ((s, ini), iis::iini), f returnType, unwrap storage),
                  iivirg 
   	         )
-	       ),  ($3::snd storage))
+	       ),  ($3::iistart::snd storage))
 	} 
 
 decl_spec2: storage_class_spec            { {nullDecl with storageD = (fst $1, [snd $1]) } }

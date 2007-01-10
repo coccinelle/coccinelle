@@ -72,26 +72,29 @@ let transform_option f t1 t2 =
 (* todo: check not already tagged ? assert s1 = s2 ? no more cos now
  * have some "fake" string, and also because now s1:'a, no more
  * s1:string *)
-let tag_one_symbol = fun ia ib  binding -> 
-  let (s1,_,x) = ia in
+let tag_with_mck = fun mck ib  binding -> 
   let (s2, (oldmcode, oldenv)) = ib in
 
   if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
-     x <>        Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+     mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
   then
     begin
       Printf.printf "SP mcode "; flush stdout;
       Pretty_print_cocci.print_mcodekind oldmcode;
       Format.print_newline();
       Printf.printf "C code mcode "; flush stdout;
-      Pretty_print_cocci.print_mcodekind x;
+      Pretty_print_cocci.print_mcodekind mck;
       Format.print_newline();
       failwith
 	(Common.sprintf
 	   "already tagged token at line %d in C:  %s" s2.line s2.str)
     end
   else 
-    (s2, (x, binding))
+    (s2, (mck, binding))
+
+let tag_one_symbol = fun ia ib  binding -> 
+  let (s1,_,x) = ia in
+  tag_with_mck x ib binding
 
 
 let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
@@ -520,14 +523,14 @@ and (transform_param:
     | _ -> raise Todo
 
 (* ------------------------------------------------------------------------- *)
-and (transform_de_de: (Ast_cocci.declaration, Ast_c.declaration) transformer) =
- fun decla declb -> 
+and transform_de_de = fun mckstart decla declb -> 
   fun binding -> 
   match declb with
-  | (B.DeclList ([var], iiptvirgb::iisto)) -> 
+  | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
       let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
       in
-      B.DeclList ([var'], iiptvirgb'::iisto)
+      let iifakestart' = tag_with_mck mckstart iifakestart binding in 
+      B.DeclList ([var'], iiptvirgb'::iifakestart'::iisto)
 
   | (B.DeclList (x::y::xs, iiptvirgb::iisto)) -> 
       failwith "More that one variable in decl. Have to split to transform."
@@ -824,8 +827,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
      | F.EndStatement None -> 
          if mcode_contain_plus (mcodekind mcode)
          then
-           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
-           let fake_info = Ast_c.al_info fake_info in
+           let fake_info = Ast_c.fakeInfo  in
            D.distribute_mck (mcodekind mcode) D.distribute_mck_node 
              (F.EndStatement (Some fake_info)) binding
          else unwrap_node
@@ -941,70 +943,71 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       | _ -> raise Impossible 
       )
 
-  | A.FunHeader (need_to_do_something_with_this_mcodekind,
-		 allminus, stoa, tya, ida, oparen, paramsa, cparen),
+  | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
-      | iidb::ioparenb::icparenb::iistob -> 
-
-      let stob' = stob in
-      let (iistob') = 
-        match stoa, fst stob, iistob with
-        | None, _, _ -> 
-            if allminus 
-            then 
-              let minusizer = iistob +> List.map (fun _ -> 
-                "fake", {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
-                ) in
-              tag_symbols minusizer iistob binding
-            else iistob
-        | Some x, B.Sto B.Static, stostatic::stoinline -> 
-           assert (term x = A.Static);
-            tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
-           
-        | _ -> raise NoMatch
-
-      in
-      let retb' = 
-        match tya with
-        | None -> 
-            if allminus 
-            then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
-                     retb binding       
-            else retb
-        | Some tya -> transform_ft_ft tya retb binding
-      in
-
-      let (idb', iidb') = 
-        transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
-      in
+      | iidb::ioparenb::icparenb::iifakestart::iistob -> 
+          let iifakestart' = tag_with_mck mckstart iifakestart binding in 
+          
+          let stob' = stob in
+          let (iistob') = 
+            match stoa, fst stob, iistob with
+            | None, _, _ -> 
+                if allminus 
+                then 
+                  let minusizer = iistob +> List.map (fun _ -> 
+                    "fake", 
+                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
+                  ) in
+                  tag_symbols minusizer iistob binding
+                else iistob
+            | Some x, B.Sto B.Static, stostatic::stoinline -> 
+                assert (term x = A.Static);
+                tag_symbols [wrap_mcode x] [stostatic] binding ++ stoinline
+                  
+            | _ -> raise NoMatch
+                
+          in
+          let retb' = 
+            match tya with
+            | None -> 
+                if allminus 
+                then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
+                  retb binding       
+                else retb
+            | Some tya -> transform_ft_ft tya retb binding
+          in
+          
+          let (idb', iidb') = 
+            transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
+          in
       
-      let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
-      in
+          let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
+          in
+          
+          let seqstyle = 
+            (match A.unwrap paramsa with 
+            | A.DOTS _ -> Ordered 
+            | A.CIRCLES _ -> Unordered 
+            | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
+            ) 
+          in
+          let paramsb' = 
+            transform_params seqstyle (A.undots paramsa) paramsb    binding 
+          in
+          
+          if isvaargs then failwith "not handling variable length arguments func";
+          let iidotsb' = iidotsb in (* todo *)
 
-      let seqstyle = 
-        (match A.unwrap paramsa with 
-        | A.DOTS _ -> Ordered 
-        | A.CIRCLES _ -> Unordered 
-        | A.STARS _ -> failwith "not yet handling stars (interprocedural stuff)"
-        ) 
-      in
-      let paramsb' = 
-        transform_params seqstyle (A.undots paramsa) paramsb    binding 
-      in
-
-      if isvaargs then failwith "not handling variable length arguments func";
-      let iidotsb' = iidotsb in (* todo *)
-
-      F.FunHeader 
-        ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
-         (iidb'++iiparensb'++iistob'))
+          F.FunHeader 
+            ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
+            (iidb'++iiparensb'++[iifakestart']++iistob'))
       | _ -> raise Impossible
       )
       
 
-  | A.Decl (need_to_do_something_with_this_mcodekind,decla), F.Decl declb -> 
-      F.Decl (transform_de_de decla declb  binding) 
+  | A.Decl (mck,decla), F.Decl declb -> 
+      F.Decl (transform_de_de mck decla declb  binding) 
 
   | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 
       F.SeqStart (st, level, tag_one_symbol mcode i1 binding)

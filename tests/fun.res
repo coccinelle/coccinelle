@@ -1,2 +1,2 @@
 struct a {int a;};
-f(int x) { return x; }
+int f(int x) { return x; }

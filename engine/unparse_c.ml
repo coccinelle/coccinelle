@@ -190,6 +190,11 @@ let pp_program2 xs outfile  =
        * We always have the good order for all the token, except for the
        * tokens that are well identified because they are abstract-lined.
        * 
+       * I also use those abstract-lined token for creating fake places in
+       * the ast where I can add mcode, as when want add stuff at the end
+       * of an if to EndStatement, or when want add something at the 
+       * beginning of a function, before the storage.
+       * 
        * todo: but that means we cant move huge chunk of code that contains
        * comments. During the move we will lose those space/comments/cpp.
        *)
