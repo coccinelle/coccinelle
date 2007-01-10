@@ -788,6 +788,15 @@ let unwind_protect f cleanup =
 let (|||) a b = try a with _ -> b
 
 
+let finalize f cleanup = 
+  try 
+    let res = f () in
+    cleanup ();
+    res
+  with e -> 
+    cleanup ();
+    raise e
+
 
 (*****************************************************************************)
 (* Equality *)
@@ -1486,6 +1495,26 @@ let timeout_function timeoutval = fun f ->
         raise e
       end
 
+
+(* creation of tmp files, a la gcc *)
+
+let _temp_files_created = ref [] 
+
+(* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
+let new_temp_file prefix suffix = 
+  let processid = i_to_s (Unix.getpid ()) in
+  let tmp_file = Filename.temp_file (prefix ^ "-" ^ processid ^ "-") suffix in
+  push2 tmp_file _temp_files_created;
+  tmp_file
+
+let erase_temp_files () = 
+  begin
+    !_temp_files_created +> List.iter (fun s -> 
+      pr2 ("erasing: " ^ s);
+      command2 ("rm -f " ^ s)
+    );
+    _temp_files_created := []
+  end
 
 (*****************************************************************************)
 (* List *)

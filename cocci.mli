@@ -1,9 +1,10 @@
 open Common
 
-(* full_engine cfile (coccifile, isofile) -> output in "/tmp/output.c" *)
+(* full_engine cfile (coccifile, isofile) -> output in outfile *)
 val full_engine : 
   filename -> (filename * filename option, Lib_engine.ctlcocci) either ->  
-  unit
+  filename -> unit
+  
 
 
 (* --------------------------------------------------------------------- *)

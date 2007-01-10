@@ -323,7 +323,7 @@ let (rebuild_info_program :
   let xxs = xs +> List.map (fun (((elem, info_item), flow), modified) -> 
     if modified 
     then begin
-      let file = "/tmp/small_output.c" in
+      let file = Common.new_temp_file "cocci_small_output" ".c" in
       cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
       (* Common.command2 ("cat " ^ file); *)
       let xs = build_info_program file  in
@@ -451,8 +451,8 @@ let program_elem_vs_ctl a b c =
 
 (* --------------------------------------------------------------------- *)
 
-(* Returns nothing. The output is in the file "/tmp/output.c". *)
-let full_engine2 cfile coccifile_and_iso_or_ctl = 
+(* Returns nothing. The output is in the file outfile *)
+let full_engine2 cfile coccifile_and_iso_or_ctl outfile = 
   assert (Common.lfile_exists cfile);
 
   (* preparing the inputs (c, cocci, ctl) *)
@@ -623,15 +623,15 @@ let full_engine2 cfile coccifile_and_iso_or_ctl =
     let cprogram' = !cprogram +> List.map (fun ((ebis, info_item), _flow) -> 
       (ebis, info_item), Unparse_c.PPviastr) 
     in
-    cfile_from_program cprogram' "/tmp/output.c";
+    cfile_from_program cprogram' outfile;
 
     if !Flag.show_diff then begin
       (* may need --strip-trailing-cr under windows *)
       pr2 "diff = ";
-      Common.command2 ("diff -u -b -B " ^ cfile ^ " /tmp/output.c");
+      Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
     end
   end
 
 
-let full_engine a b = 
-  Common.profile_code "full_engine" (fun () -> full_engine2 a b)
+let full_engine a b c = 
+  Common.profile_code "full_engine" (fun () -> full_engine2 a b c)

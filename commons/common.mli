@@ -197,6 +197,7 @@ type 'a mylazy = (unit -> 'a)
 val save_excursion : 'a ref -> (unit -> 'b) -> 'b
 
 val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
+val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
@@ -496,6 +497,10 @@ val with_open_infile :
 exception Timeout
 
 val timeout_function : int -> (unit -> 'a) -> 'a
+
+(* new_temp_file prefix suffix. *)
+val new_temp_file : string -> string -> string
+val erase_temp_files : unit -> unit
 
 (*****************************************************************************)
 (* List *)

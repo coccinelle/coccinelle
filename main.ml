@@ -21,6 +21,8 @@ let test_ctl_foo = ref false
 let compare_with_expected = ref false
 let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 
+let save_tmp_files = ref false
+
 let action = ref "" 
 
 (*****************************************************************************)
@@ -56,16 +58,18 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
 let testone x = 
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
+
   let cfile      = "tests/" ^ x ^ ".c" in 
   let cocci_file = "tests/" ^ base ^ ".cocci" in
   let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) in
-  begin
-    Cocci.full_engine cfile (Left (cocci_file, iso_file));
 
-    let expected_res   = "tests/" ^ base ^ ".res" in
-    let generated_file = ("/tmp/output.c") in
+  let outfile = "/tmp/output.c" in
+  let expected_res   = "tests/" ^ base ^ ".res" in
+  begin
+    Cocci.full_engine cfile (Left (cocci_file, iso_file)) outfile;
+
     if !compare_with_expected 
-    then print_diff_expected_res_and_exit generated_file expected_res true;
+    then print_diff_expected_res_and_exit outfile expected_res true;
   end
           
 
@@ -93,6 +97,9 @@ let testall () =
     let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) 
     in
 
+    let generated = "/tmp/output.c" in
+    let expected = "tests/" ^ res in
+
     pr2 ("Test: " ^ x);
 
     add_diagnose (sprintf "%s:\t" x);
@@ -103,9 +110,7 @@ let testall () =
     try (
       Common.timeout_function timeout_value (fun () -> 
         
-        Cocci.full_engine cfile (Left (cocci_file, iso_file));
-        let generated = "/tmp/output.c" in
-        let expected = "tests/" ^ res in
+        Cocci.full_engine cfile (Left (cocci_file, iso_file)) generated;
 
         let a = Cocci.cprogram_from_file generated +> List.map fst in
         let b = Cocci.cprogram_from_file expected  +> List.map fst in
@@ -147,23 +152,6 @@ let testall () =
   end
 
 (*****************************************************************************)
-let casse_initialisation prog = 
-  let bigf = { Visitor_c.default_visitor_c_s with 
-     Visitor_c.kstatement_s = (fun (k, bigf) st -> 
-       match st with 
-       | Ast_c.Compound statxs, ii -> 
-           Ast_c.Compound [], ii
-       | _ -> k st
-       );
-  }
-  in
-  prog +> List.map (fun (elem, x) -> 
-    elem +> Visitor_c.visitor_program_k_s bigf,
-    x
-  )
-
-
-(*****************************************************************************)
 let main () = 
   begin
     let args = ref [] in
@@ -186,7 +174,8 @@ let main () =
          " test the engine with the foo ctl in test.ml";
 
       "-compare_with_expected", Arg.Set compare_with_expected, " "; 
-      "-save_output_file", Arg.Set save_output_file, " ";
+      "-save_output_file",  Arg.Set save_output_file, " ";
+      "-save_tmp_files",    Arg.Set save_tmp_files,   " ";
       "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
       
@@ -257,7 +246,8 @@ let main () =
     | [x] when !test_mode    -> testone x 
     | []  when !testall_mode -> testall ()
 
-    | [x] when !test_ctl_foo -> Cocci.full_engine x (Right (Test.foo_ctl ()))
+    | [x] when !test_ctl_foo -> 
+        Cocci.full_engine x (Right (Test.foo_ctl ())) "/tmp/output.c"
 
     (* useful to debug *)
     | x::xs when !action <> "" -> 
@@ -316,9 +306,7 @@ let main () =
         | "parse_unparse", [file] -> 
             let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
             let program2_with_method = 
-              program2 
-              (* +> casse_initialisation *) (* done in parser_c.mly now *)
-              +> List.map (fun x -> x, Unparse_c.PPnormal)
+              program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
             in
             Unparse_c.pp_program program2_with_method "/tmp/output.c";
             Common.command2 "cat /tmp/output.c";
@@ -360,23 +348,28 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
-         (try Cocci.full_engine cfile (Left (cocci_file, iso_file))
+
+          let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
+          in 
+          let generated_file = Common.new_temp_file "cocci-output" ".c" in
+          let expected_res = base ^ ".res" in
+          let saved = cfile ^ ".cocci_res" in
+
+         (try 
+             Cocci.full_engine 
+               cfile 
+               (Left (cocci_file, iso_file)) 
+               generated_file
           with e -> 
             if !dir 
             then pr2 ("EXN:" ^ Printexc.to_string e)
             else raise e
           );
 
-          let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
-          in 
-          let generated_file = ("/tmp/output.c") in
-          let expected_res = base ^ ".res" in
-          let saved = cfile ^ ".cocci_res" in
-
 	  Ctlcocci_integration.print_bench();
 
 	  if !save_output_file 
-          then Common.command2 ("cp /tmp/output.c "^ saved);
+          then Common.command2 ("cp " ^ generated_file ^ saved);
 
           if !compare_with_expected then 
             print_diff_expected_res_and_exit generated_file expected_res 
@@ -392,6 +385,9 @@ let main () =
 
 let _ =
   if not (!Sys.interactive) then begin
-    main ();
-    Ctlcocci_integration.print_bench()
+    Common.finalize
+      (fun()-> 
+        main ();
+        Ctlcocci_integration.print_bench())
+      (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
   end
