@@ -88,7 +88,7 @@ let tag_one_symbol = fun ia ib  binding ->
       Format.print_newline();
       failwith
 	(Common.sprintf
-	   "already tagged token at offset %d in C:  %s" s2.charpos s2.str)
+	   "already tagged token at line %d in C:  %s" s2.line s2.str)
     end
   else 
     (s2, (x, binding))
