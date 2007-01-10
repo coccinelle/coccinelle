@@ -12,7 +12,7 @@ struct usb_driver I = {
 @@
 identifier retval;
 statement S;
-expression E1, E2
+expression E1, E2;
 @@
 
 	retval = usb_register_dev(
