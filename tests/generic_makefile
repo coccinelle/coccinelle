@@ -2,7 +2,7 @@ COCCIDIR=../..
 SPATCH=$(COCCIDIR)/spatch
 ISOFILE=-iso_file $(COCCIDIR)/standard.iso
 SPATCH=../../spatch
-#SPATCH=../../spatch.opt  # for the bench !!!
+#SPATCH=../../spatch.opt  # for the bench !!! can also use 'make opt'
 
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 -no_type_error_msg
@@ -15,14 +15,9 @@ OBJS = $(SOURCES:.c=.ok)
 all: $(OBJS)
 	ls *.ok || true
 	ls *.failed || true
-#	find . -name "*.ok" -print
-#	find . -name "*.failed" -print
 
-#pad: 
-#    .SUFFIXES: .c .ok
-#    .c.ok: $(SPATCH) $(SP)
-# does not work because the old suffix rule does not allow additionnal
-# dependencies (at the right of ':'). Cf make info manual.
+opt: $(OBJS)
+	$(MAKE) SPATCH=../../spatch.opt
 
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
@@ -39,6 +34,13 @@ all: $(OBJS)
 #-----------------------------------------------------------------------------
 # Pad stuff
 #-----------------------------------------------------------------------------
+#pad: 
+#    .SUFFIXES: .c .ok
+#    .c.ok: $(SPATCH) $(SP)
+# does not work because the old suffix rule does not allow additionnal
+# dependencies (at the right of ':'). Cf make info manual.
+
+
 clean::
 	rm -f *.ok *.failed
 
@@ -56,6 +58,10 @@ score:
 	-ls -l *.ok | wc -l
 	-ls -l *.failed | wc -l
 
+#	find . -name "*.ok" -print
+#	find . -name "*.failed" -print
+
+
 info_order:
 	set -e; for i in $(SOURCES); do ../../scripts/extract_info_ok_failed.pl $$i.ok $$i.failed; done 
 
@@ -72,5 +78,3 @@ info_failed:
 	../../scripts/extract_info_ok_failed.pl *.failed
 
 
-opt: $(OBJS)
-	$(MAKE) SPATCH=../../spatch.opt

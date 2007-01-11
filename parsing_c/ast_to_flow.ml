@@ -132,8 +132,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   let ((funcs, functype, sto, compound), ii) = funcdef in
   let iifunheader, iicompound = 
     (match ii with 
-    | is::ioparen::icparen::iobrace::icbrace::isto -> 
-        is::ioparen::icparen::isto,     [iobrace;icbrace]
+    | is::ioparen::icparen::iobrace::icbrace::iifake::isto -> 
+        is::ioparen::icparen::iifake::isto,     [iobrace;icbrace]
     | _ -> raise Impossible
     )
   in

@@ -238,10 +238,10 @@ let casse_initialisation xs =
   then 
     xs +> List.map (fun x -> 
       match x with
-      | Decl (DeclList ((xs),  iivirg::iisto)), ii_empty -> 
+      | Decl (DeclList ((xs),  iivirg::iifake::iisto)), ii_empty -> 
           let iivirg' = Ast_c.al_info iivirg in
           let (inits, assigns) = split_init_assign (xs) iivirg' in
-          (Decl (DeclList ((inits), iivirg::iisto)), ii_empty)::assigns
+          (Decl (DeclList ((inits), iivirg::iifake::iisto)), ii_empty)::assigns
           
       | x -> [x]
 

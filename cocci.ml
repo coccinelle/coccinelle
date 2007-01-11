@@ -583,17 +583,18 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
                 match ebis with
                 | Ast_c.Declaration 
                     (Ast_c.DeclList 
-                        ([((Some ((s, None), iisini)), 
+                        ([((Some ((s, None), iis)), 
                           (qu, (Ast_c.FunctionType ft, iity)), 
                           storage),
                          []
-                        ], iiptvirg::iisto))  -> 
+                        ], iiptvirg::iifake::iisto))  -> 
                     (try 
                         Transformation.transform_proto
                           (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots)
-                          (((Control_flow_c.FunHeader ((s, ft, storage), 
-                                                      iisini++iity++iisto)), []),"")
-                          binding (qu, iiptvirg, storage) h
+                          (((Control_flow_c.FunHeader 
+                                ((s, ft, storage), 
+                                iis++iity++[iifake]++iisto)), []),"")
+                          binding (qu, iiptvirg) h
                         +> (fun x -> x,  true)
                       with Transformation.NoMatch -> (ebis, false)
                     )

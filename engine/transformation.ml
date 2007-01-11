@@ -533,7 +533,7 @@ and transform_de_de = fun mckstart decla declb ->
       let iifakestart' = tag_with_mck mckstart iifakestart binding in 
       B.DeclList ([var'], iiptvirgb'::iifakestart'::iisto)
 
-  | (B.DeclList (x::y::xs, iiptvirgb::iisto)) -> 
+  | (B.DeclList (x::y::xs, iiptvirgb::iifake::iisto)) -> 
       failwith "More that one variable in decl. Have to split to transform."
   
   | _ -> raise Impossible                
@@ -1113,11 +1113,11 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
 
   
 (* ------------------------------------------------------------------------- *)
-let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen = 
+let transform_proto2 a b binding (qu, iiptvirg) infolastparen = 
   let node' = transform_re_node a b binding in
   match F.unwrap node' with
   | F.FunHeader 
-      ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
+      ((s, ft, storage), iis::iioparen::iicparen::iifake::iisto) -> 
 
         (* Also delete the ';' at the end of the proto.
          * The heuristic is to see if the ')' was deleted. Buggy but
@@ -1137,7 +1137,7 @@ let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen =
                 (qu, (B.FunctionType ft, [iioparen;iicparen])), 
                 storage),
                []
-             ], iiptvirg'::iisto)) 
+             ], iiptvirg'::iifake::iisto)) 
           
   | _ -> 
       raise Impossible

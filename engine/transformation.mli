@@ -6,7 +6,7 @@ val transform_proto :
   Ast_cocci.rule_elem ->
   Control_flow_c.node ->
   Lib_engine.metavars_binding ->
-  Ast_c.typeQualifier * Ast_c.info * Ast_c.storage -> 
+  Ast_c.typeQualifier * Ast_c.info -> 
   string Ast_cocci.mcode -> 
   Ast_c.programElement
 

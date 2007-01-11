@@ -679,8 +679,9 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
 
 
   match iifuncheader, iicp with
-  | iidb::ioparenb::icparenb::iistob, [i1;i2] -> 
-      (funcs, functype, sto, cpfunc), iidb::ioparenb::icparenb::i1::i2::iistob
+  | iidb::ioparenb::icparenb::iifake::iistob, [i1;i2] -> 
+      (funcs, functype, sto, cpfunc), 
+      iidb::ioparenb::icparenb::i1::i2::iifake::iistob
   | _ -> raise Impossible
  
 
