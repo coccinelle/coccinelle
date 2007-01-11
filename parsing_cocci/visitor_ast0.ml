@@ -225,7 +225,7 @@ let combiner bind option_default
 	    [string_mcode lb; expression exp1; string_mcode dots;
 	      expression exp2; string_mcode rb; string_mcode eq;
 	      initialiser ini]
-      | Ast0.IComma(cm) -> string_mcode cm
+(*    | Ast0.IComma(cm) -> string_mcode cm*)
       | Ast0.Idots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast0.OptIni(i) -> initialiser i
@@ -571,7 +571,7 @@ let rebuilder = fun
 	      (string_mcode lb, expression exp1, string_mcode dots,
 	       expression exp2, string_mcode rb, string_mcode eq,
 	       initialiser ini)
-	| Ast0.IComma(cm) -> Ast0.IComma(string_mcode cm)
+(*	| Ast0.IComma(cm) -> Ast0.IComma(string_mcode cm)*)
 	| Ast0.Idots(d,whencode) ->
 	    Ast0.Idots(string_mcode d, get_option initialiser whencode)
 	| Ast0.OptIni(i) -> Ast0.OptIni(initialiser i)

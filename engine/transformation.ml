@@ -1056,6 +1056,12 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       F.ReturnExpr (st, (transform_e_e ea eb binding, 
                          tag_symbols [i1;i2] ii   binding))
 
+  | A.Include(incl,path), nodeb ->
+      failwith "TODO"
+
+  | A.Define(define,name,body), nodeb ->
+      failwith "TODO"
+
   | _, F.ExprStatement (_, (None, ii)) -> raise NoMatch (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)

@@ -35,8 +35,8 @@ let dumb_astcocci_rule_elem = function
  | A.Continue _ -> ()
  | A.Return _ -> ()
  | A.ReturnExpr (_, ea, _) -> ()
-
-
+ | A.Define _ -> ()
+ | A.Include _ -> ()
 
 let dumb_astcocci_decl = function
  | A.UnInit (stg, typa, sa, _)     -> ()

@@ -358,6 +358,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
    * include as a comment, and the algo currently treats tokens
    * separately. 
    *)
+    (*
   | Ast_c.CPPInclude ii, 
   ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
       (match ii with
@@ -377,7 +378,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
   | celem, ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _m), _i), _p) -> 
       (celem, false),   None, []
-
+*)
   | celem, ctl -> 
       (match info with
       | None -> (celem, false), None, []

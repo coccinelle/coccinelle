@@ -29,10 +29,6 @@ let pp_predicate = function
   | Match re -> Pretty_print_cocci.print_rule_elem re
   | Label s -> pp "Label("; pp s; pp ")"
   | PrefixLabel s -> pp "PrefixLabel("; pp s; pp ")"
-  | Include(inc,(s,_,_)) -> pp "Include("; pp s; pp ")"
-  | Define(_,id,body) ->
-      pp "Define("; Pretty_print_cocci.ident id; pp ",";
-      Pretty_print_cocci.define_body body; pp ")"
 
 and pp_binding2 subst = 
   begin

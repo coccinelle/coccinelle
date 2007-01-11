@@ -224,7 +224,7 @@ let combiner bind option_default
 	    [string_mcode lb; expression exp1; string_mcode dots;
 	      expression exp2; string_mcode rb; string_mcode eq;
 	      initialiser ini]
-      | Ast.IComma(cm) -> string_mcode cm
+(*    | Ast.IComma(cm) -> string_mcode cm*)
       | Ast.Idots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast.OptIni(i) -> initialiser i
@@ -284,7 +284,10 @@ let combiner bind option_default
       | Ast.MetaStmtList(name,_,_) -> string_mcode name
       | Ast.MetaRuleElem(name,_,_) -> string_mcode name
       | Ast.Exp(exp) -> expression exp
-      | Ast.Ty(ty) -> fullType ty in
+      | Ast.Ty(ty) -> fullType ty
+      |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      | Ast.Define(def,id,body) ->
+	  multibind [string_mcode def; ident id; define_body body] in
     rulefn all_functions k re
 
   and statement s =
@@ -313,9 +316,6 @@ let combiner bind option_default
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
-      |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
-      | Ast.Define(def,id,body) ->
-	  multibind [string_mcode def; ident id; define_body body]
       | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
 	  bind (string_mcode d) (whencode statement_dots statement whn)
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
@@ -613,7 +613,7 @@ let rebuilder
 	      (string_mcode lb, expression exp1, string_mcode dots,
 	       expression exp2, string_mcode rb, string_mcode eq,
 	       initialiser ini)
-	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
+(*	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)*)
 	| Ast.Idots(d,whencode) ->
 	    Ast.Idots(string_mcode d, get_option initialiser whencode)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
@@ -684,7 +684,11 @@ let rebuilder
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(string_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
-	| Ast.Ty(ty) -> Ast.Ty(fullType ty)) in
+	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
+	| Ast.Include(inc,name) ->
+	    Ast.Include(string_mcode inc,string_mcode name)
+	| Ast.Define(def,id,body) ->
+	    Ast.Define(string_mcode def,ident id,define_body body)) in
     rulefn all_functions k re
 
   and statement s =
@@ -721,10 +725,6 @@ let rebuilder
 	    Ast.Circles(string_mcode d,whencode statement_dots statement whn,t)
 	| Ast.Stars(d,whn,t) ->
 	    Ast.Stars(string_mcode d, whencode statement_dots statement whn, t)
-	| Ast.Include(inc,name) ->
-	    Ast.Include(string_mcode inc,string_mcode name)
-	| Ast.Define(def,id,body) ->
-	    Ast.Define(string_mcode def,ident id,define_body body)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in

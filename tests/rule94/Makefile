@@ -42,6 +42,4 @@ hci_ldisc.c \
 hci_usb.c \
 hci_vhci.c
 
-
 include ../generic_makefile
-

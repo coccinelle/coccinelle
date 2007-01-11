@@ -275,7 +275,7 @@ and unify_initialiser i1 i2 =
        conjunct_bindings (unify_expression exp1a exp1b)
 	 (conjunct_bindings (unify_expression exp2a exp2b)
 	    (unify_initialiser inia inib))
-  | (Ast.IComma(_),Ast.IComma(_)) -> return true
+(*| (Ast.IComma(_),Ast.IComma(_)) -> return true*)
 
   (* dots can match against anything.  return true to be safe. *)
   | (Ast.Idots(_,_),_) | (_,Ast.Idots(_,_)) -> return true

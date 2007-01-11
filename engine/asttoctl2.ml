@@ -1107,11 +1107,6 @@ and statement stmt after quantified label guard =
 				      (After (make_seq_after end_brace after))
 				      new_quantified4 None true guard))))
 			  new_quantified3 None false guard)]))])
-  | Ast.Include(inc,s) ->
-      (* no indication of whether inc or s is modified *)
-      wrap 0 (CTL.Pred((Lib_engine.Include(inc,s),CTL.Control)))
-  | Ast.Define(def,id,body) ->
-      wrap 0 (CTL.Pred((Lib_engine.Define(def,id,body),CTL.Control)))
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->

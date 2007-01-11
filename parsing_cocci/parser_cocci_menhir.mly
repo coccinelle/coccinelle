@@ -658,9 +658,9 @@ initialize_list:
 
 initialize_list_start:
   initialize2        { [$1] }
-| initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))] }
+| initialize2 TComma { [$1(*;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))*)] }
 | initialize2 TComma initialize_list_start
-    { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
+    { $1(*::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))*)::$3 }
 | d=edots_when(TEllipsis,initialize)
       r=list(comma_initializers(edots_when(TEllipsis,initialize)))
     { (mkidots "..." d)::
@@ -669,13 +669,13 @@ initialize_list_start:
 comma_initializers(dotter):
   c=TComma
     { function dot_builder ->
-      [Ast0.wrap(Ast0.IComma(clt2mcode "," c))] }
+      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c))*)] }
 | c=TComma d=dotter
     { function dot_builder ->
-      [Ast0.wrap(Ast0.IComma(clt2mcode "," c)); dot_builder d] }
+      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) dot_builder d] }
 | c=TComma i=initialize2
     { function dot_builder ->
-      [Ast0.wrap(Ast0.IComma(clt2mcode "," c)); i] }
+      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) i] }
 
 
 /* a statement that is part of a list */

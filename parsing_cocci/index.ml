@@ -113,7 +113,7 @@ let initialiser i =
   | Ast0.InitGccName(name,eq,ini) -> [105]
   | Ast0.InitGccIndex(lb,exp,rb,eq,ini) -> [106]
   | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) -> [107]
-  | Ast0.IComma(cm) -> [108]
+(*| Ast0.IComma(cm) -> [108]*)
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
   | Ast0.UniqueIni(id) -> [111]

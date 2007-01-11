@@ -680,7 +680,8 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
         match_initialiser inia inib
 
     (* only in arg lists *)
-    | A.IComma _, _ | A.Idots _, _ -> raise Impossible
+    (*| A.IComma _, _*)
+    | A.Idots _, _ -> raise Impossible
 
     | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
       failwith "not handling Opt/Unique/Multi on initialisers"
@@ -701,9 +702,9 @@ and match_initialisers = fun ias ibs ->
             acc >||> match_initialisers xs endxs
           ) (return false)
             
-      | A.IComma i1, (Right ii)::ys -> 
+      (*| A.IComma i1, (Right ii)::ys -> 
           match_initialisers xs ys
-      | A.IComma i1, _ -> return false
+      | A.IComma i1, _ -> return false*)
       | unwrapx, (Left y)::ys -> 
           match_initialiser x y
       | unwrapx, (Right y)::ys -> 
@@ -1108,6 +1109,12 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.Continue _,            F.Continue (_, ((),ii))   -> return true
   | A.Return _,              F.Return (_, ((),ii))     -> return true
   | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
+
+  | A.Include(incl,path), nodeb ->
+      failwith "TODO"
+
+  | A.Define(define,name,body), nodeb ->
+      failwith "TODO"
 
   | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
 

@@ -406,8 +406,8 @@ and initialiser i =
       let ini = initialiser ini in
       mkres i (Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini))
 	(promote_mcode lb) ini
-  | Ast0.IComma(cm) as up ->
-      let ln = promote_mcode cm in mkres i up ln ln
+(*| Ast0.IComma(cm) as up ->
+      let ln = promote_mcode cm in mkres i up ln ln*)
   | Ast0.Idots(dots,whencode) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in

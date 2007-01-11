@@ -149,6 +149,9 @@ struct
   exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
+    List.iter
+      (function x -> Printf.printf "env %d\n" (List.length x))
+      envs;
     List.concat
       (List.map
 	 (function used_after_var ->
@@ -240,6 +243,7 @@ struct
 	  (List.concat
 	     (List.map (fun (_,_,w) -> unwrap_wits binding w false)
 		noclean)) in
+      Printf.printf "used after %d\n" (List.length used_after);
       (noclean,
        try
 	 Common.Left
@@ -248,9 +252,11 @@ struct
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs
 	   binding as an argument. *)
-	    collect_used_after used_after
+	    (let x = collect_used_after used_after
 	      (binding ::
-	       (List.map (function (_,env,_) -> env) unmodif_res)))
+	       (List.map (function (_,env,_) -> env) unmodif_res)) in
+	    Printf.printf "returning %d\n" (List.length x);
+	    x))
        with INCOMPLETE_BINDINGS x -> Common.Right x)
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()

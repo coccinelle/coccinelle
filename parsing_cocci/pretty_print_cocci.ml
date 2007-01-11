@@ -362,7 +362,7 @@ and initialiser i =
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
-  | Ast.IComma(cm) -> mcode print_string cm; print_space()
+(*| Ast.IComma(cm) -> mcode print_string cm; print_space()*)
   | Ast.Idots(d,Some whencode) ->
       mcode print_string d; print_string "   WHEN != ";
       initialiser whencode
@@ -387,6 +387,14 @@ let rec parameterTypeDef p =
   | Ast.UniqueParam(param) -> print_string "!"; parameterTypeDef param
 
 let parameter_list = dots (function _ -> ()) parameterTypeDef
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name,_) -> mcode print_string name
+  | Ast.Ddots(dots) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -454,6 +462,11 @@ let rule_elem arity re =
       print_string arity;  mcode print_string name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; print_string " ";
+      define_body body
 
 let rec statement arity s =
   match Ast.unwrap s with
@@ -505,11 +518,6 @@ let rec statement arity s =
   | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
       print_string arity; mcode print_string d;
       whencode (dots force_newline (statement "")) (statement "") whn
-  | Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
-  | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; print_string " ";
-      define_body body
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
@@ -528,12 +536,6 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
-
-and define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,_) -> mcode print_string name
-  | Ast.Ddots(dots) -> mcode print_string dots
-
 
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l

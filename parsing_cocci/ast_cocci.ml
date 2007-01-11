@@ -213,7 +213,6 @@ and base_initialiser =
   | InitGccRange of
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
-  | IComma of string mcode (* pad: only in initialiser lists ? *)
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
 
   | OptIni    of initialiser
@@ -293,6 +292,8 @@ and base_rule_elem =
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)
+  | Include       of string mcode (*#include*) * string mcode (*file *)
+  | Define        of string mcode (*#define*) * ident (*name*) * define_body
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
@@ -323,8 +324,6 @@ and base_statement =
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode *
 	             dots_whencode list
-  | Include       of string mcode (*#include*) * string mcode (*file *)
-  | Define        of string mcode (*#define*) * ident (*name*) * define_body
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)

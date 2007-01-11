@@ -396,7 +396,7 @@ and initialiser i =
     | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
 	Ast.InitGccRange(mcode lb,expression exp1,mcode dots,
 			  expression exp2,mcode rb,mcode eq,initialiser ini)
-    | Ast0.IComma(cm) -> Ast.IComma(mcode cm)
+(*  | Ast0.IComma(cm) -> Ast.IComma(mcode cm)*)
     | Ast0.Idots(dots,whencode) ->
 	let dots = mcode dots in
 	let whencode = get_option initialiser whencode in
@@ -564,9 +564,11 @@ let rec statement s =
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		      decls,dots,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
-      |	Ast0.Include(inc,s) -> Ast.Include(mcode inc,mcode s)
+      |	Ast0.Include(inc,str) ->
+	  Ast.Atomic(rewrap s (Ast.Include(mcode inc,mcode str)))
       | Ast0.Define(def,id,body) ->
-	  Ast.Define(mcode def,ident id,define_body body)
+	  Ast.Atomic
+	    (rewrap s (Ast.Define(mcode def,ident id,define_body body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))

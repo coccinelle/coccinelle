@@ -392,7 +392,7 @@ let equal_initialiser i1 i2 =
      Ast0.InitGccRange(lb2,_,dots2,_,rb2,eq2,_)) ->
       (equal_mcode lb1 lb2) && (equal_mcode dots1 dots2) &&
        (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
-  | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
+(* | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2*)
   | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true

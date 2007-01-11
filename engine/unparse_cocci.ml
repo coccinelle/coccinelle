@@ -321,7 +321,7 @@ and initialiser i =
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
-  | Ast.IComma(cm) -> mcode print_string cm
+(*| Ast.IComma(cm) -> mcode print_string cm*)
   | Ast.Idots(d,Some whencode) ->
       mcode print_string d; print_string "   WHEN != ";
       initialiser whencode
@@ -356,6 +356,15 @@ in
 let parameter_list = dots (function _ -> ()) parameterTypeDef
 in
 
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+let define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name,true) -> mcode print_string name
+  | Ast.DMetaId(name,false) -> raise CantBeInPlus
+  | Ast.Ddots(dots) -> mcode print_string dots in
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -418,6 +427,10 @@ let rule_elem arity re =
 
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode print_string s
+  | Ast.Define(def,id,body) ->
+      mcode print_string def; print_string " "; ident id; define_body body
 
   | Ast.MetaRuleElem(name,true,_) ->
       raise Impossible
@@ -435,13 +448,6 @@ let rule_elem arity re =
   | Ast.MetaRuleElem(name,false,_) | Ast.MetaStmt(name,false,_,_)
   | Ast.MetaStmtList(name,false,_) ->
       raise CantBeInPlus in
-          
-
-let define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,true) -> mcode print_string name
-  | Ast.DMetaId(name,false) -> raise CantBeInPlus
-  | Ast.Ddots(dots) -> mcode print_string dots in
 
 let rec statement arity s =
   match Ast.unwrap s with
@@ -472,11 +478,7 @@ let rec statement arity s =
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 
-  | Ast.Disj(_)| Ast.Nest(_) -> raise CantBeInPlus
-  | Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
-  | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; define_body body
+  | Ast.Disj(_)| Ast.Nest(_)
   | Ast.Dots(_) | Ast.Circles(_) | Ast.Stars(_) ->
       raise CantBeInPlus
 

@@ -261,7 +261,7 @@ and initialiser i =
 	  expression exp2; mcode print_string rb;
 	  print_string " "; mcode print_string eq; print_string " ";
 	  initialiser ini
-      | Ast0.IComma(cm) -> mcode print_string cm
+(*    | Ast0.IComma(cm) -> mcode print_string cm*)
       | Ast0.Idots(d,Some whencode) ->
 	  mcode print_string d; print_string "   WHEN != ";
 	  initialiser whencode
