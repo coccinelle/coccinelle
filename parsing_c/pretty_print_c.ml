@@ -668,9 +668,10 @@ let pp_program_gen pr_elem progelem =
          statxs +> List.iter (pp_statement_gen pr_elem);
          pr_elem i2;
 
-     | EmptyDef ii -> ii +> List.iter pr_elem
-     | CPPDefine ii -> ii +> List.iter pr_elem
-     | CPPInclude ii -> ii +> List.iter pr_elem
+     | CPPInclude (s, [i1;i2]) -> 
+         pr_elem i1; pr_elem i2
+     | CPPDefine ((s, body), [i1;i2;i3])  -> 
+         pr_elem i1; pr_elem i2; pr_elem i3
 
      | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
          pr_elem i1;
@@ -684,11 +685,12 @@ let pp_program_gen pr_elem progelem =
          pr_elem i4;
 
 
+     | EmptyDef ii -> ii +> List.iter pr_elem
      | NotParsedCorrectly ii -> 
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
-
      | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.emptyAnnot)
+
      | _ -> raise Impossible
      
 
@@ -716,6 +718,7 @@ let rec pp_binding_kind = function
   | MetaStmtVal      statement -> pp_statement_simple statement
   | MetaParamVal     params -> pp "<<param>>"
   | MetaParamListVal params -> pp "<<paramlist>>"
+  | MetaTextVal s -> pp "<<text>>"
 
 and pp_binding subst = 
   begin

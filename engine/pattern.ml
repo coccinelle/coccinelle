@@ -228,6 +228,10 @@ let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
               failwith "not handling MetaParamVal"
           | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
               failwith "not handling MetaParamListVal"
+
+
+          | Ast_c.MetaTextVal a, Ast_c.MetaTextVal b -> a =$= b
+
           | _ -> raise Impossible
 		) 
 	then _GoodMatch binding
@@ -252,7 +256,9 @@ let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
             | Ast_c.MetaParamVal a ->
 		failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a ->
-		failwith "not handling MetaParamListVal")
+		failwith "not handling MetaParamListVal"
+            | Ast_c.MetaTextVal s -> Ast_c.MetaTextVal s
+            )
 	  in _GoodMatch (binding +> Common.insert_assoc (k, valu')))
   else _GoodMatch binding
       
@@ -990,7 +996,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
           F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
           F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
-          F.IfCpp _
+          F.IfCpp _ | F.CPPInclude _ | F.CPPDefine _
           ) -> ()
 
         );
@@ -1046,7 +1052,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
           F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
           F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
-          F.IfCpp _
+          F.IfCpp _ | F.CPPInclude _ | F.CPPDefine _
           ) -> ()
 
         );
@@ -1110,11 +1116,19 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.Return _,              F.Return (_, ((),ii))     -> return true
   | A.ReturnExpr (_, ea, _), F.ReturnExpr (_, (eb,ii)) -> match_e_e ea eb
 
-  | A.Include(incl,path), nodeb ->
-      failwith "TODO"
+  | A.Include(incl,filea), F.CPPInclude (fileb, _) -> 
+      return ((term filea) =$= fileb)
 
-  | A.Define(define,name,body), nodeb ->
-      failwith "TODO"
+  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), _)  ->
+      match_ident DontKnow ida idb >&&> 
+      (match A.unwrap bodya with
+      | A.DMetaId (idbody, keep) -> 
+          let inherited = false (* TODO ? *) in
+          check_add_metavars_binding keep inherited
+            (term idbody, Ast_c.MetaTextVal (bodyb))
+
+      | A.Ddots (dots) -> return true
+      )
 
   | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
 

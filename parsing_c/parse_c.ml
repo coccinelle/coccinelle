@@ -40,12 +40,16 @@ let info_from_token = function
   | Parser_c.TypedefIdent  (s, i) -> i
   | Parser_c.TInt  (s, i) -> i
 
+  (* I take only the first info, the next one are fakeInfo *)
+  | Parser_c.TDefine (s, body, i1, i2, i3) -> 
+      i1
+  | Parser_c.TInclude (s, i1, i2) -> 
+      i1
+
   | Parser_c.TComment             (i) -> i
   | Parser_c.TCommentSpace        (i) -> i
   | Parser_c.TCommentCpp          (i) -> i
   | Parser_c.TCommentAttrOrMacro  (i) -> i
-  | Parser_c.TDefine              (i) -> i
-  | Parser_c.TInclude             (i) -> i
   | Parser_c.TIfdef               (i) -> i
   | Parser_c.TIfdefelse           (i) -> i
   | Parser_c.TEndif               (i) -> i
@@ -141,12 +145,16 @@ let visitor_info_from_token f = function
   | Parser_c.TInt  (s, i) -> 
       Parser_c.TInt  (s, f i) 
 
+
+  | Parser_c.TDefine (s, body, i1, i2, i3) -> 
+      Parser_c.TDefine (s, body, f i1, i2, i3)
+  | Parser_c.TInclude (s, i1, i2) -> 
+      Parser_c.TInclude (s, f i1, i2)
+
   | Parser_c.TComment             (i) -> Parser_c.TComment             (f i) 
   | Parser_c.TCommentSpace        (i) -> Parser_c.TCommentSpace        (f i) 
   | Parser_c.TCommentCpp          (i) -> Parser_c.TCommentCpp          (f i) 
   | Parser_c.TCommentAttrOrMacro  (i) -> Parser_c.TCommentAttrOrMacro  (f i) 
-  | Parser_c.TDefine              (i) -> Parser_c.TDefine              (f i) 
-  | Parser_c.TInclude             (i) -> Parser_c.TInclude             (f i) 
   | Parser_c.TIfdef               (i) -> Parser_c.TIfdef               (f i) 
   | Parser_c.TIfdefelse           (i) -> Parser_c.TIfdefelse           (f i) 
   | Parser_c.TEndif               (i) -> Parser_c.TEndif               (f i) 
@@ -225,6 +233,15 @@ let visitor_info_from_token f = function
   | Parser_c.EOF                  (i) -> Parser_c.EOF                  (f i) 
   
 
+let merge_info_str x xs = 
+  let (info, annot) = x in
+  { info with 
+    Common.str = 
+      (x::xs) +> List.map (fun (x,_annot) -> x.Common.str) +> Common.join ""
+  }, annot
+  
+
+
 let lexbuf_to_strpos lexbuf     = 
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 
@@ -269,7 +286,15 @@ let mk_info_item2 filename toks =
     (* old: get_slice_file filename (line1, line2) *)
     begin
       toks' +> List.iter (fun tok -> 
-        Buffer.add_string buf (fst (token_to_strpos tok));
+        let s = 
+        match tok with 
+        | Parser_c.TDefine (s, body, i1, i2, i3) -> 
+            (fst i1).str ^ (fst i2).str ^ (fst i3).str
+        | Parser_c.TInclude (s, i1, i2) -> 
+            (fst i1).str ^ (fst i2).str
+        | _ -> fst (token_to_strpos tok)
+        in
+        Buffer.add_string buf s;
       );
       Buffer.contents buf
     end
@@ -761,20 +786,20 @@ let lookahead2 next before =
       else TIdent (s, i1)
 
         
-        
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | TDefine ii::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
+  | TDefine (s, body, i1, i2, i3)::_, _ when 
+        not !Lexer_parser._lexer_hint.toplevel -> 
       if !Flag_parsing_c.debug_cpp
       then pr2 ("DEFINE inside function, I treat it as comment");
-      TCommentCpp ii
+      TCommentCpp (merge_info_str i1 [i2;i3])
 
   (* do same for include often found inside structdef *)
-  | TInclude ii::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
+  | TInclude (s, i1, i2)::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
       if !Flag_parsing_c.debug_cpp
       then pr2 ("INCLUDE inside function, I treat it as comment");
-      TCommentCpp ii
+      TCommentCpp (merge_info_str i1 [i2])
 
   | ((TIfdef ii | TIfdefelse ii | TEndif ii) as x)::_, _ -> 
       if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 

@@ -661,6 +661,9 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
 
   | F.IfCpp (_,_) -> raise Todo
 
+  | F.CPPDefine _ -> raise Todo
+  | F.CPPInclude _ -> raise Todo
+
   | ( F.ExprStatement (_, _) 
       | F.IfHeader  (_, _) | F.SwitchHeader (_, _)
       | F.WhileHeader (_, _) | (* F.DoHeader (_, _) | *) F.DoWhileTail (_, _) 

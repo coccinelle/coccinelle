@@ -557,8 +557,8 @@ and visitor_program_k_s = fun bigf p ->
             ),
            infolistf ii
           )
-    | CPPInclude ii -> CPPInclude (infolistf ii)
-    | CPPDefine ii -> CPPDefine (infolistf ii)
+    | CPPInclude (s, ii) -> CPPInclude (s, infolistf ii)
+    | CPPDefine (ss, ii) -> CPPDefine (ss, infolistf ii)
     | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
     | FinalDef info -> FinalDef (visitor_info_k_s bigf info)
   in f (k, bigf) p

@@ -281,7 +281,8 @@ let fix_add_params_ident = function
 /*****************************************************************************/
 
 %token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
-%token <Ast_c.info> TDefine TInclude
+%token <(string * Ast_c.info * Ast_c.info)> TInclude
+%token <(string * string * Ast_c.info * Ast_c.info * Ast_c.info)> TDefine 
 %token <Ast_c.info> TIfdef TIfdefelse TEndif
 
 %token <(string * Ast_c.isWchar) * Ast_c.info> TString
@@ -978,8 +979,10 @@ external_declaration2:
          */
          | TPtVirg    { EmptyDef [$1] } 
 
-         | TInclude   { CPPInclude [$1] }
-         | TDefine    { CPPDefine [$1] }
+         | TInclude   { let (s, i1, i2) = $1 in CPPInclude (s, [i1;i2]) }
+         | TDefine    { let (s, body, i1, i2, i3) = $1 in 
+                        CPPDefine ((s, body), [i1;i2;i3]) 
+                      }
 
          | EOF        { FinalDef $1 } 
 

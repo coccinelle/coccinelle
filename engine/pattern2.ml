@@ -109,6 +109,7 @@ module XMATCH = struct
               failwith "not handling MetaParamVal"
           | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
               failwith "not handling MetaParamListVal"
+          | Ast_c.MetaTextVal a, Ast_c.MetaTextVal b -> a =$= b
           | _ -> raise Impossible
           ) 
         then [binding]
@@ -128,6 +129,7 @@ module XMATCH = struct
             | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
             | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
+            | Ast_c.MetaTextVal s -> Ast_c.MetaTextVal s
             ) 
           in
           [binding +> Common.insert_assoc (k, valu')]

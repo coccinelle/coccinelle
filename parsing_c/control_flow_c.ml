@@ -131,6 +131,8 @@ type node = node1 * string
   | Asm
   | IfCpp of statement * unit wrap
 
+  | CPPInclude of string wrap
+  | CPPDefine of (string * string) wrap
 
   (* ------------------------ *)
   (* some control nodes *)
@@ -188,6 +190,7 @@ let extract_fullstatement node =
       None 
   | Asm -> Some (Ast_c.Asm, [])
   | IfCpp _ -> None (* other ? *)
+  | CPPInclude _ | CPPDefine _ -> None
 
   | SeqStart (st,_,_) 
   | ExprStatement (st, _)

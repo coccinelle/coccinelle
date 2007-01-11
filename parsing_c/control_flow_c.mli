@@ -37,6 +37,9 @@ type node = node1 * string
   | Asm
   | IfCpp of statement * unit wrap
 
+  | CPPInclude of string wrap
+  | CPPDefine of (string * string) wrap
+
   (* ------------------------ *)
   (* some control nodes *)
   | Enter 

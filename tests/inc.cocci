@@ -1,7 +1,9 @@
 @@
-text x;
+text X;
 @@
 
-- #define foo x
+- #define foo X
 
+@@
+@@
 - #define xxx ...

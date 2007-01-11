@@ -249,8 +249,9 @@ let flow_to_ast2 flow =
   match nodes with
   | [_, node] -> 
       (match Control_flow_c.unwrap node with
-      | Control_flow_c.Decl decl -> 
-          Ast_c.Declaration decl
+      | Control_flow_c.Decl decl -> Ast_c.Declaration decl
+      | Control_flow_c.CPPInclude x -> Ast_c.CPPInclude x
+      | Control_flow_c.CPPDefine x -> Ast_c.CPPDefine x
       | _ -> raise Impossible
       )
   | _ -> 
@@ -294,8 +295,15 @@ let build_maybe_info e cfile =
           fixed_flow = fixed_flow; 
           contain_loop = contain_loop def 
         }
-  | Ast_c.Declaration decl -> 
-      let flow = Ast_to_flow.simple_cfg  (Control_flow_c.Decl decl) "decl" in
+  | Ast_c.Declaration _ | Ast_c.CPPInclude _ | Ast_c.CPPDefine _  -> 
+      let (elem, str) = 
+        match e with 
+        | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
+        | Ast_c.CPPInclude x -> (Control_flow_c.CPPInclude x), "#include"
+        | Ast_c.CPPDefine x -> (Control_flow_c.CPPDefine x), "#define"
+        | _ -> raise Impossible
+      in
+      let flow = Ast_to_flow.simple_cfg elem str  in
       let fixed_flow = CCI.fix_simple_flow_ctl flow in
       Some { 
         flow = flow;
@@ -304,6 +312,13 @@ let build_maybe_info e cfile =
       }
 
   | _ -> None
+
+
+
+
+
+
+
 
 let (build_info_program: filename -> celem_with_info list) = fun cfile -> 
   let cprogram = cprogram_from_file cfile in
@@ -351,34 +366,6 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
   match elem, ctl  with
 
-  (* In cocci we have 2 elements for include, in C we have only 1. For
-   * the moment I use only the header element (ex "<devfs.h>"), and
-   * not the keywordd element ("#include"). It would be complicated to
-   * put 2 elements in C because sometime the lexer consider an
-   * include as a comment, and the algo currently treats tokens
-   * separately. 
-   *)
-    (*
-  | Ast_c.CPPInclude ii, 
-  ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _modif), _i), _preds) -> 
-      (match ii with
-      | [(iinclude, mcodebinding)] -> 
-          let sheader = Ast_cocci.unwrap_mcode header in
-          if iinclude.str =~ ("#[ \t]*include[ \t]*" ^ sheader)
-          then
-            (Ast_c.CPPInclude 
-                (Transformation.tag_symbols [header] ii  binding), true),
-          None, []
-          else 
-            (Ast_c.CPPInclude ii, true),
-          None, []
-      | _ -> raise Impossible
-      )
-        
-
-  | celem, ((Ast_ctl.Pred (Lib_engine.Include (kwd, header), _m), _i), _p) -> 
-      (celem, false),   None, []
-*)
   | celem, ctl -> 
       (match info with
       | None -> (celem, false), None, []

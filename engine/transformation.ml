@@ -1057,11 +1057,45 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       F.ReturnExpr (st, (transform_e_e ea eb binding, 
                          tag_symbols [i1;i2] ii   binding))
 
-  | A.Include(incl,path), nodeb ->
-      failwith "TODO"
+  | A.Include(incl,filea), F.CPPInclude (fileb, ii) ->
+      if ((term filea) =$= fileb)
+      then 
+        F.CPPInclude (fileb, tag_symbols [incl;filea] ii binding)
+      else raise NoMatch
+  
+  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), ii) ->
+      (match ii with 
+      | [iidefine;iidb;iibody] -> 
+          let (idb', iidb') = 
+            transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
+          in
+          let iidefine' = tag_symbols [define] [iidefine] binding in
+          let iibody' = 
+            (match A.unwrap bodya with
+            | A.DMetaId (idbodya, keep) -> 
+                if not keep 
+                then tag_symbols [idbodya] [iibody] binding
+                else 
+                  let v = binding +> find_env ((term idbodya) : string) in
+	          (match v with
+	          | B.MetaTextVal sa -> 
+                    if (sa =$= bodyb) 
+                    then tag_symbols [idbodya] [iibody] binding
+                    else raise NoMatch
+	        | _ -> raise Impossible
+	        )
 
-  | A.Define(define,name,body), nodeb ->
-      failwith "TODO"
+                
+            | A.Ddots (dots) -> 
+                tag_symbols [dots] [iibody] binding
+            )
+          in
+          F.CPPDefine ((idb, bodyb), iidefine'++iidb'++iibody')
+
+      | _ -> raise Impossible
+      )
+      
+      
 
   | _, F.ExprStatement (_, (None, ii)) -> raise NoMatch (* happen ? *)
 

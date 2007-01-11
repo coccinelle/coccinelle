@@ -37,7 +37,10 @@ let tokinfo lexbuf  = {
 }, Ast_c.emptyAnnot
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
-
+let tok_set s pos (info, annot) =  { info with 
+(*  Common.charpos = pos; *)
+  Common.str = s;
+  }, annot
 
 
 (* opti: less convenient, but using a hash is faster than using a match *)
@@ -220,10 +223,30 @@ rule token = parse
    *  y'a 1 ` (derriere un #ifndef linux)
    *)
 
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*)           
-  | "#" [' ' '\t']*  "define" [' ' '\t']+ (letter (letter |digit)*) '(' [^ ')']* ')' 
-      { let info = tokinfo lexbuf in 
-        TDefine (info +> tok_add_s (cpp_eat_until_nl lexbuf)) }
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as s1)
+    ( (letter (letter |digit)*) as ident) { 
+      let i1 = tokinfo lexbuf in 
+      let pos = (fst i1).charpos in
+      let bodys = cpp_eat_until_nl lexbuf in
+      TDefine (ident, bodys, 
+              tok_set s1 pos i1, 
+              tok_set ident (pos + String.length s1)          Ast_c.fakeInfo, 
+              tok_set bodys (pos + String.length (s1 ^ ident)) Ast_c.fakeInfo)
+    }
+
+  (* todo: consider differently macro with arguments ? *)
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as s1)
+    ( (letter (letter |digit)*) as ident) 
+    ( ('(' [^ ')']* ')' ) as startbody) { 
+      let i1 = tokinfo lexbuf in 
+      let pos = (fst i1).charpos in
+      let bodys = cpp_eat_until_nl lexbuf in
+      TDefine (ident, bodys, 
+              tok_set s1 pos i1, 
+              tok_set ident (pos + String.length s1) Ast_c.fakeInfo, 
+              tok_set (startbody ^ bodys) (pos + String.length (s1 ^ ident))
+                                                Ast_c.fakeInfo)
+    }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
       { TCommentCpp (tokinfo lexbuf) }
@@ -237,9 +260,25 @@ rule token = parse
   (* in drivers/char/tpqic02.c *)
   | "#" [' ' '\t']* "error"  { TCommentCpp (tokinfo lexbuf)} 
 
-  | "#" [' ' '\t']* "include" [' ' '\t']* '"' ([^ '"']+) '"'  
-  | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'
-      { TInclude (tokinfo lexbuf) }
+  | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
+    (('"' ([^ '"']+) '"' ) as filename)
+      {
+        let i1 = tokinfo lexbuf in 
+        let pos = (fst i1).charpos in
+        TInclude (filename, 
+                 tok_set s1 pos i1, 
+                 tok_set filename (pos + String.length s1) Ast_c.fakeInfo)
+      }
+                                                        
+  | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
+    (('<' [^ '>']+ '>') as filename)
+      { 
+        let i1 = tokinfo lexbuf in 
+        let pos = (fst i1).charpos in
+        TInclude (filename, 
+                 tok_set s1 pos i1, 
+                 tok_set filename (pos + String.length s1) Ast_c.fakeInfo)
+      }
 
 
 

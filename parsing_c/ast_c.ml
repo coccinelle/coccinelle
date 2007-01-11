@@ -324,11 +324,14 @@ and program = programElement list
      and programElement = 
           | Declaration of declaration
           | Definition of definition
-          | EmptyDef of il      (* gccext: allow redundant ';' *)
-          | SpecialDeclMacro of (* cppext: *)
+
+          (* cppext: *)
+          | CPPInclude of string wrap (* #include s *)
+          | CPPDefine of (string * string) wrap (* #define s body *)
+          | SpecialDeclMacro of 
              string * argument wrap2 list * il 
-          | CPPInclude of il
-          | CPPDefine of il
+
+          | EmptyDef of il      (* gccext: allow redundant ';' *)
           | NotParsedCorrectly of il
           | FinalDef of info
 
@@ -352,6 +355,7 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaStmtVal      of statement
   | MetaParamVal     of parameterType wrap
   | MetaParamListVal of (parameterType wrap) list
+  | MetaTextVal         of string
 
 (*****************************************************************************)
 (* Some constructors *)
@@ -391,7 +395,10 @@ let al_info x =
   emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
 
-
+(* When want add some info in ast that does not correspond to 
+ * an existing C element or when don't want 'synchronize' on it 
+ * in unparse_c.ml
+ *)
 let fakeInfo = al_info (Common.fake_parse_info, emptyAnnot)
 
 (*****************************************************************************)
