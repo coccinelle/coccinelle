@@ -1,0 +1,165 @@
+a3d.c
+ * [status]
+
+adbhid.c
+ * [status]
+
+adi.c
+ * [status]
+
+aiptek.c
+ * [status]
+
+amijoy.c
+ * [status]
+
+amikbd.c
+ * [status]
+
+amimouse.c
+ * [status]
+
+analog.c
+ * [status]
+
+atkbd.c
+ * [status]
+
+cobra.c
+ * [status]
+
+cs461x.c
+ * [status]
+
+db9.c
+ * [status]
+
+emu10k1-gp.c
+ * [status]
+
+evdev.c
+ * [status]
+
+fm801-gp.c
+ * [status]
+
+gamecon.c
+ * [status]
+
+gf2k.c
+ * [status]
+
+grip.c
+ * [status]
+
+guillemot.c
+ * [status]
+
+gunze.c
+ * [status]
+
+h3600_ts_input.c
+ * [status]
+
+hid-input.c
+ * [status]
+
+iforce-main.c
+ * [status]
+
+inport.c
+ * [status]
+
+input.c
+ * [status]
+
+interact.c
+ * [status]
+
+lightning.c
+ * [status]
+
+logibm.c
+ * [status]
+
+mac_hid.c
+ * [status]
+
+magellan.c
+ * [status]
+
+maple_keyb.c
+ * [status]
+
+newtonkbd.c
+ * [status]
+
+ns558.c
+ * [status]
+
+pc110pad.c
+ * [status]
+
+powermate.c
+ * [status]
+
+ps2serkbd.c
+ * [status]
+
+psmouse.c
+ * [status]
+
+rpcmouse.c
+ * [status]
+
+sermouse.c
+ * [status]
+
+sidewinder.c
+ * [status]
+
+spaceball.c
+ * [status]
+
+spaceorb.c
+ * [status]
+
+stinger.c
+ * [status]
+
+sunkbd.c
+ * [status]
+
+tmdc.c
+ * [status]
+
+turbografx.c
+ * [status]
+
+twidjoy.c
+ * [status]
+
+uinput.c
+ * [status]
+
+usbkbd.c
+ * [status]
+
+usbmouse.c
+ * [status]
+
+vortex.c
+ * [status]
+
+wacom.c
+ * [status]
+
+warrior.c
+ * [status]
+
+xpad.c
+ * [status]
+
+xtkbd.c
+ * [status]
+
