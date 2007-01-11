@@ -87,7 +87,8 @@ let tag_with_mck = fun mck ib  binding ->
       Format.print_newline();
       failwith
 	(Common.sprintf
-	   "already tagged token at line %d in C:  %s" s2.line s2.str)
+	   "already tagged token:\n%s"
+	   (Common.error_message s2.file (s2.str, s2.charpos)))
     end
   else 
     (s2, (mck, binding))

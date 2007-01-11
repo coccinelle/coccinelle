@@ -51,7 +51,7 @@ let mcodekind brackets fn x = function
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
 
-let mcode fn (x,_,_,mc) = mcodekind None fn x mc
+let mcode fn (x,_,info,mc) = mcodekind None fn x mc
 
 let print_context (_,info,i,mc,ty,_) fn =
   mcodekind (Some info.Ast0.line_start) fn () !mc
@@ -245,7 +245,8 @@ and initialiser i =
 	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb) ->
 	  mcode print_string lb;
-	  let _ = dots (function _ -> ()) initialiser initlist in
+	  let _ =
+	    dots (function _ -> print_string ", ") initialiser initlist in
 	  mcode print_string rb
       | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	  mcode print_string dot; ident name; print_string " ";

@@ -346,7 +346,7 @@ and initialiser i =
     Ast.InitExpr(exp) -> expression exp
   | Ast.InitList(lb,initlist,rb) ->
       mcode print_string lb;
-      let _ = dots (function _ -> ()) initialiser initlist in
+      let _ = dots (function _ -> print_string ", ") initialiser initlist in
       mcode print_string rb
   | Ast.InitGccDotName(dot,name,eq,ini) ->
       mcode print_string dot; ident name; print_string " ";
