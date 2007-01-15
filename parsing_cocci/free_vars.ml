@@ -180,6 +180,14 @@ let astfvs bound =
 	  if List.mem id bound
 	  then bind ([],[id],[]) (mcode recursor name)
 	  else bind ([id],[id],[id]) (mcode recursor name)
+      |	Ast.Define(_,_,db) ->
+	  (match Ast.unwrap db with
+	    Ast.DMetaId(name,true) ->
+	      let id = metaid name in
+	      if List.mem id bound
+	      then bind ([],[id],[]) (mcode recursor name)
+	      else bind ([id],[id],[id]) (mcode recursor name)
+	  | _ -> k re)
       | _ -> k re in
     Hashtbl.add free_table (Rule_elem re) unbound;
     res in
@@ -312,12 +320,20 @@ let drop_unitary_variables unitary_variables =
 	Ast.rewrap e (Ast.MetaParamList(name,not_unitary name,inherited))
     | _ -> k e in
 
+  let define_body b =
+    match Ast.unwrap b with
+      Ast.DMetaId(name,_) ->
+	Ast.rewrap b (Ast.DMetaId(name,not_unitary name))
+    | _ -> b in
+  
   let rule_elem r k e =
     match Ast.unwrap e with
       Ast.MetaStmt(name,_,msi,inherited) ->
 	Ast.rewrap e (Ast.MetaStmt(name,not_unitary name,msi,inherited))
     | Ast.MetaStmtList(name,_,inherited) ->
 	Ast.rewrap e (Ast.MetaStmtList(name,not_unitary name,inherited))
+    | Ast.Define(def,id,body) ->
+	Ast.rewrap e (Ast.Define(def,id,define_body body))
     | _ -> k e in
 
   let fn = V.rebuilder
