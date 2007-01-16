@@ -14,18 +14,29 @@ OBJS = $(SOURCES:.c=.ok)
 
 all: $(OBJS)
 	ls *.ok || true
+	ls *.spatch_ok || true
 	ls *.failed || true
 
 opt: $(OBJS)
 	$(MAKE) SPATCH=../../spatch.opt
 
 %.ok: %.c $(SPATCH) $(SP)
-	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) /tmp/output.c
+	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) $(<:.c=.spatch_ok) /tmp/output.c
 	(time $(SPATCHCMD) $<) 2> $(<:.c=.ok) || \
-	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.failed)) || \
+	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.spatch_ok) && \
+	test -e corrected_$(<:.c=.res) && \
+	cp $< corrected_$< && \
+		(time $(SPATCHCMD) corrected_$<) 2>> $(<:.c=.spatch_ok) && \
+	/bin/rm corrected_$<) || \
+	(/bin/rm -f corrected_$< && test -e $(<:.c=.spatch_ok) && \
+		mv $(<:.c=.spatch_ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
 	(test -e /tmp/output.c && test -e $(<:.c=.ok) && \
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.ok)) || \
+	true)) || true
+	(test -e /tmp/output.c && test -e $(<:.c=.spatch_ok) && \
+	((diff -b -B -w /tmp/output.c corrected_$(<:.c=.res) >> \
+		$(<:.c=.spatch_ok)) || \
 	true)) || true
 	(test -e /tmp/output.c && test -e $(<:.c=.failed) && \
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
@@ -42,7 +53,7 @@ opt: $(OBJS)
 
 
 clean::
-	rm -f *.ok *.failed
+	rm -f *.ok *.spatch_ok *.failed
 
 clean2::
 	find -name "*.ok" | xargs rm -f
