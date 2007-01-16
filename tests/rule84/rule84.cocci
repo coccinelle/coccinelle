@@ -3,7 +3,7 @@ identifier I;
 identifier f;
 @@
 
-struct file_operations I {
+struct file_operations I = {
   .ioctl = f
 };
 
@@ -12,7 +12,7 @@ expression A, B, C;
 identifier inodename, filename, cmd, arg;
 @@
 
-f(struct inode *inodename, struct file *filename, unsigned cmd,
+f(struct inode *inodename, struct file *filename, unsigned int cmd,
   unsigned long arg) {
    <...
 -  scsi_cmd_ioctl(A, B, C)
@@ -27,7 +27,7 @@ identifier I;
 identifier f;
 @@
 
-struct block_device_operations I {
+struct block_device_operations I = {
   .ioctl = f
 };
 
@@ -36,7 +36,7 @@ expression A, B, C;
 identifier inodename, filename, cmd, arg;
 @@
 
-f(struct inode *inodename, struct file *filename, unsigned cmd,
+f(struct inode *inodename, struct file *filename, unsigned int cmd,
   unsigned long arg) {
    <...
 (
