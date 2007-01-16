@@ -571,7 +571,7 @@ let _ =
     | Ast.BinaryOpTag(x) -> binaryOp x
     | Ast.ArithOpTag(x) -> arithOp x
     | Ast.LogicalOpTag(x) -> logicalOp x
-    | Ast.InitTag(x) -> print_string "Init: "; initialiser x
+    | Ast.InitTag(x) -> initialiser x
     | Ast.DeclarationTag(x) -> declaration x
     | Ast.ParameterTypeDefTag(x) -> parameterTypeDef x
     | Ast.StorageTag(x) -> storage x
@@ -581,7 +581,7 @@ let _ =
     | Ast.Token(x) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
-    | Ast.InitDotsTag(x) -> print_string "InitDots: "; dots (function _ -> ()) initialiser x
+    | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.TypeCTag(x) -> typeC x
