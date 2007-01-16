@@ -201,11 +201,11 @@ and expressionbis =
 
     and isWchar = IsWchar | IsChar
 
-    and  unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
-    and  assignOp = SimpleAssign | OpAssign of arithOp
-    and  fixOp    = Dec | Inc
+  and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+  and assignOp = SimpleAssign | OpAssign of arithOp
+  and fixOp    = Dec | Inc
 
-    and  binaryOp = Arith of arithOp | Logical of logicalOp
+  and binaryOp = Arith of arithOp | Logical of logicalOp
 
        and  arithOp   = 
          | Plus | Minus | Mul | Div | Mod

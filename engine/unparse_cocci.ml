@@ -362,7 +362,12 @@ in
 
 let define_body m =
   match Ast.unwrap m with
-    Ast.DMetaId(name,true) -> mcode print_string name
+    Ast.DMetaId(name,true) -> 
+      handle_metavar name (function
+      | (Ast_c.MetaTextVal text) -> pr text
+      | _ -> raise Impossible
+      ) 
+
   | Ast.DMetaId(name,false) -> raise CantBeInPlus
   | Ast.Ddots(dots) -> mcode print_string dots in
 
@@ -430,7 +435,8 @@ let rule_elem arity re =
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode print_string s
   | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; define_body body
+      mcode print_string def; print_string " "; ident id; 
+      define_body body
 
   | Ast.MetaRuleElem(name,true,_) ->
       raise Impossible

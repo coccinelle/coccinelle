@@ -599,6 +599,7 @@ and cpp_eat_until_nl = parse
   | "\n"                          { tok lexbuf } 
   | '\\' "\n"                     { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
   | [^ '\n' '\\'      '/' '*'  ]+ { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf } (* need fix too *)
+  | eof { raise (Lexical ("end of file in cpp_eat_until_nl" ^ tok lexbuf)) }
   | _                             { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }  
 
 
