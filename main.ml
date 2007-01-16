@@ -23,6 +23,8 @@ let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 
 let save_tmp_files = ref false
 
+let reentrant = ref false 
+
 let action = ref "" 
 
 (*****************************************************************************)
@@ -176,6 +178,7 @@ let main () =
       "-compare_with_expected", Arg.Set compare_with_expected, " "; 
       "-save_output_file",  Arg.Set save_output_file, " ";
       "-save_tmp_files",    Arg.Set save_tmp_files,   " ";
+      "-reentrant",         Arg.Set reentrant, " ";
       "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
       
@@ -351,7 +354,12 @@ let main () =
 
           let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
           in 
-          let generated_file = Common.new_temp_file "cocci-output" ".c" in
+          let generated_file = 
+            if !reentrant 
+            then Common.new_temp_file "cocci-output" ".c" 
+            else "/tmp/output.c"
+          in
+          
           let expected_res = base ^ ".res" in
           let saved = cfile ^ ".cocci_res" in
 

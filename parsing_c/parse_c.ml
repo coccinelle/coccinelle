@@ -523,7 +523,9 @@ let rec is_really_foreach xs =
     | TCPar _::TOBrace _::xs -> true, xs
       (* the following attempts to handle the cases where there is a
 	 single statement in the body of the loop.  undoubtedly more
-	 cases are needed. *)
+	 cases are needed. 
+         todo: premier(statement) - suivant(funcall)
+      *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
     | TCPar _::Twhile _::xs -> true, xs
