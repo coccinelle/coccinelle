@@ -581,11 +581,12 @@ let _ =
     | Ast.Token(x) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
-    | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
+    | Ast.SgrepStartTag(x) -> print_string x
+    | Ast.SgrepEndTag(x) -> print_string x
 
 let unparse x =
   print_string "\n@@\n@@";

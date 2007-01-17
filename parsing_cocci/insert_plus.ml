@@ -337,7 +337,6 @@ let mk_token x            = Ast.Token x
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
-let mk_initdots x  = Ast.InitDotsTag (Ast0toast.initialiser_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC x)
@@ -359,12 +358,14 @@ let collect_plus_nodes root =
     | Ast0.PLUS -> [(info,fn e)]
     | _ -> k e in
 
+  let initdots r k e = k e in
+
   V0.combiner bind option_default
     (mcode mk_token) (mcode mk_constant) (mcode mk_assignOp) (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
     (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)
     (mcode mk_storage)
-    (do_nothing mk_exprdots) (do_nothing mk_initdots)
+    (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) (do_nothing mk_stmtdots)
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
@@ -720,30 +721,44 @@ let insert_markers e =
 
   let donothing r k e = k e in
 
-  let start_marker = Ast.Token "/*<*/" in
-  let end_marker ln = Ast.Token (Printf.sprintf "/*>%d*/" ln) in
+  let start_marker ln = Ast.SgrepStartTag (Printf.sprintf "%d" ln) in
+  let end_marker ln = Ast.SgrepEndTag (Printf.sprintf "%d" ln) in
 
   let add_start_marker e =
+    let start_marker = start_marker ((Ast0.get_info e).Ast0.line_start) in
     match Ast0.get_mcodekind e with
-      Ast0.CONTEXT(info) ->
+      Ast0.MINUS(info) ->
+	let (repl,repl_info) = !info in
+	info := ([start_marker]::repl,repl_info)
+    | Ast0.CONTEXT(info)
+    | Ast0.MIXED(info) ->
 	let (ba,before_info,after_info) = !info in
 	let new_ba =
 	  match ba with
 	    Ast.NOTHING -> Ast.BEFORE([[start_marker]])
-	  | _ -> failwith "non-nothing is not possible" in
+	  | Ast.BEFORE(bef) -> Ast.BEFORE(bef@[[start_marker]])
+	  | Ast.AFTER(aft) -> Ast.BEFOREAFTER([[start_marker]],aft)
+	  | Ast.BEFOREAFTER(bef,aft) ->
+	      Ast.BEFOREAFTER(bef@[[start_marker]],aft) in
 	info := (new_ba,before_info,after_info)
     | _ -> failwith "start: non-context is not possible" in
   
   let add_end_marker e =
     let end_marker = end_marker ((Ast0.get_info e).Ast0.line_end) in
     match Ast0.get_mcodekind e with
-      Ast0.CONTEXT(info) ->
+      Ast0.MINUS(info) ->
+	let (repl,repl_info) = !info in
+	info := (repl@[[end_marker]],repl_info)
+    | Ast0.CONTEXT(info)
+    | Ast0.MIXED(info) ->
 	let (ba,before_info,after_info) = !info in
 	let new_ba =
 	  match ba with
 	    Ast.NOTHING -> Ast.AFTER([[end_marker]])
 	  | Ast.BEFORE(bef) -> Ast.BEFOREAFTER(bef,[[end_marker]])
-	  | _ -> failwith "non-nothing is not possible" in
+	  | Ast.AFTER(aft) -> Ast.AFTER([end_marker]::aft)
+	  | Ast.BEFOREAFTER(bef,aft) ->
+	      Ast.BEFOREAFTER(bef,[end_marker]::aft) in
 	info := (new_ba,before_info,after_info)
     | _ -> failwith "end: non-context is not possible" in
 

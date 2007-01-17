@@ -541,12 +541,13 @@ let rec pp_any = function
   (* this is not '...', but a list of expr/statement/params, and 
      normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
-  | Ast.InitDotsTag(x) -> dots (function _ -> ()) initialiser x
   | Ast.ParamDotsTag(x) -> parameter_list x
   | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
 
   | Ast.TypeCTag(x) -> typeC x
   | Ast.ParamTag(x) -> parameterTypeDef x
+  | Ast.SgrepStartTag(x) -> failwith "unexpected start tag"
+  | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
 
   (* todo? imitate what is in unparse_cocci ? *)

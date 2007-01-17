@@ -369,10 +369,11 @@ let combiner bind option_default
       | Ast.Code(cd) -> top_level cd
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
-      | Ast.InitDotsTag(pd) -> initialiser_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
-      | Ast.ParamTag(param) -> parameterTypeDef param in
+      | Ast.ParamTag(param) -> parameterTypeDef param
+      | Ast.SgrepStartTag(tok) -> option_default
+      | Ast.SgrepEndTag(tok) -> option_default in
     anyfn all_functions k a
 
   and all_functions =
@@ -779,11 +780,12 @@ let rebuilder
       | Ast.Token(tok) as x -> x
       | Ast.Code(cd) -> Ast.Code(top_level cd)
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
-      | Ast.InitDotsTag(pd) -> Ast.InitDotsTag(initialiser_dots pd)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
-      | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param) in
+      | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
+      | Ast.SgrepStartTag(tok) as x -> x
+      | Ast.SgrepEndTag(tok) as x -> x in
     anyfn all_functions k a
 
   and all_functions =

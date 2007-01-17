@@ -69,14 +69,144 @@ let transform_option f t1 t2 =
 (* Token decoration *)
 (*****************************************************************************)
 
+type marker =
+    NoMark | BefMark of string | AftMark of string
+  | BefAftMark of string * string
+
+let extract_sgrep_marker l =
+  let rec inner_loop acc = function
+      [] -> (acc,[])
+    | Ast_cocci.SgrepStartTag(s)::rest ->
+	Printf.printf "found a start\n";
+	(match acc with
+	  NoMark -> inner_loop (BefMark(s)) rest
+	| _ -> failwith "unexpected mark")
+    | Ast_cocci.SgrepEndTag(s)::rest ->
+	Printf.printf "found a end\n";
+	(match acc with
+	  NoMark -> inner_loop (AftMark(s)) rest
+	| BefMark(m) -> inner_loop (BefAftMark(m,s)) rest
+	| _ -> failwith "unexpected mark")
+    | x::rest ->
+	let (acc,rest) = inner_loop acc rest in
+	(acc,x::rest) in
+  let (acc,l) =
+    List.fold_left
+      (function (acc,prev) ->
+	function cur ->
+	  Printf.printf "length cur %d\n" (List.length cur);
+	  let (acc,cur) = inner_loop acc cur in
+	  (acc,cur::prev))
+      (NoMark,[]) l in
+  (acc,List.rev l)
+
+let process_sgrep s2 mck =
+  Printf.printf "in process sgrep\n";
+  match mck with
+    Ast_cocci.MINUS(repl) ->
+      (match extract_sgrep_marker repl with
+	(NoMark,_) -> Printf.printf "no match1\n"; mck
+      |	(BefMark(marker),repl) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    marker s2.file s2.line s2.column;
+	  Ast_cocci.MINUS(repl)
+      |	(AftMark(marker),repl) ->
+	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
+	    marker s2.file s2.line (s2.column + String.length s2.str);
+	  Ast_cocci.MINUS(repl)
+      |	(BefAftMark(bmarker,amarker),repl) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    bmarker s2.file s2.line s2.column;
+	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
+	    amarker s2.file s2.line (s2.column + String.length s2.str);
+	  Ast_cocci.MINUS(repl))
+  | Ast_cocci.CONTEXT(Ast_cocci.NOTHING) -> Printf.printf "no match2\n"; mck
+  | Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef)) ->
+      (match extract_sgrep_marker bef with
+	(NoMark,_) -> Printf.printf "no match3\n"; mck
+      |	(BefMark(marker),[]) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    marker s2.file s2.line s2.column;
+	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+      |	(BefMark(marker),bef) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    marker s2.file s2.line s2.column;
+	  Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+      |	_ -> failwith "after not possible")
+  | Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft)) ->
+      (match extract_sgrep_marker aft with
+	(NoMark,_) -> Printf.printf "no match4\n";  mck
+      |	(AftMark(marker),[]) ->
+	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
+	    marker s2.file s2.line (s2.column + String.length s2.str);
+	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+      |	(AftMark(marker),aft) ->
+	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
+	    marker s2.file s2.line (s2.column + String.length s2.str);
+	  Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+      |	_ -> failwith "before not possible")
+  | Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft)) ->
+      (match extract_sgrep_marker bef with
+	(NoMark,_) ->
+	  (match extract_sgrep_marker aft with
+	    (NoMark,_) -> Printf.printf "no match5\n";  mck
+	  | (AftMark(marker),[]) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+	  | (AftMark(marker),aft) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	  | _ -> failwith "before not possible")
+      | (BefMark(marker),[]) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    marker s2.file s2.line s2.column;
+	  (match extract_sgrep_marker aft with
+	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+	  | (AftMark(marker),[]) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+	  | (AftMark(marker),aft) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+	  | _ -> failwith "before not possible")
+      | (BefMark(marker),bef) ->
+	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
+	    marker s2.file s2.line s2.column;
+	  (match extract_sgrep_marker aft with
+	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	  | (AftMark(marker),[]) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+	  | (AftMark(marker),aft) ->
+	      Printf.printf
+		"Match on line %s ending at %s: line %d offset %d\n"
+		marker s2.file s2.line (s2.column + String.length s2.str);
+	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	  | _ -> failwith "before not possible")
+      |	_ -> failwith "after not possible")
+	
 (* todo: check not already tagged ? assert s1 = s2 ? no more cos now
- * have some "fake" string, and also because now s1:'a, no more
- * s1:string *)
+   * have some "fake" string, and also because now s1:'a, no more
+   * s1:string *)
 let tag_with_mck = fun mck ib  binding -> 
   let (s2, (oldmcode, oldenv)) = ib in
-
+  
+  let mck =
+    if !Flag_parsing_cocci.sgrep_mode
+    then process_sgrep s2 mck
+    else mck in
   if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
-     mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+    mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
   then
     begin
       Printf.printf "SP mcode "; flush stdout;
@@ -290,10 +420,10 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
       | A.MetaExprList _, _   -> raise Impossible (* only in arg lists *)
-      | A.TypeExp _, _ -> raise Impossible
-      | A.EComma _, _   -> raise Impossible (* can have EComma only in arg lists *)
-      | A.Ecircles _, _ -> raise Impossible (* can have EComma only in arg lists *)
-      | A.Estars _, _   -> raise Impossible (* can have EComma only in arg lists *)
+      | A.TypeExp _, _  -> raise Impossible
+      | A.EComma _, _   -> raise Impossible (* EComma only in arg lists *)
+      | A.Ecircles _, _ -> raise Impossible (* EComma only in arg lists *)
+      | A.Estars _, _   -> raise Impossible (* EComma only in arg lists *)
 
 
       | A.DisjExpr eas, eb -> 
@@ -309,7 +439,8 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
 
 
-      (* Because of Exp cant put a raise Impossible; have to put a raise NoMatch; *)
+      (* Because of Exp cant put a raise Impossible; have to put a raise
+         NoMatch; *)
 
       (* have not a counter part in coccinelle, for the moment *) 
       | _, ((B.Sequence _,_),_) 
@@ -407,7 +538,7 @@ and (transform_arguments: sequence_processing_style ->
 	  
       (* special case. todo: generalize *)
       | [A.Edots (mcode, None), ea], ebs -> 
-          D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs   binding
+          D.distribute_mck (mcodekind mcode) D.distribute_mck_arge ebs binding
 	    
 	    
       | (A.EComma i1, _)::(A.Edots (mcode, None),ea)::[], (eb, ii)::ebs -> 

@@ -384,10 +384,11 @@ and anything =
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
-  | InitDotsTag         of initialiser dots
   | StmtDotsTag         of statement dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
+  | SgrepStartTag       of string
+  | SgrepEndTag         of string
 
 (* --------------------------------------------------------------------- *)
 
