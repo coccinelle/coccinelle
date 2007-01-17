@@ -556,6 +556,7 @@ in
         (match any with
         | Ast.Rule_elemTag _ -> pr "\n"; pr current_tabbing;
         | Ast.StatementTag _ -> pr "\n"; pr current_tabbing;
+        | Ast.InitTag _ -> pr ","; pr "\n"; pr current_tabbing; 
         | _ -> ()
         );
 

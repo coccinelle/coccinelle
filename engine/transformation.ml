@@ -595,13 +595,107 @@ and (transform_initialiser:
         (Ast_cocci.initialiser, Ast_c.initialiser) transformer) = 
 fun inia ini -> 
  fun binding -> 
-    match (A.unwrap inia,ini) with
-    | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-        assert (null ii);
-        B.InitExpr (transform_e_e expa  expb binding), ii
-    | _ -> 
-        pr2 "TODO: complex initializer, transform does not handle yet that";
-        raise NoMatch
+   match (A.unwrap inia,ini) with
+   | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
+       assert (null ii);
+       B.InitExpr (transform_e_e expa  expb binding), ii
+
+    | (A.InitList (i1, ias, i2), (B.InitList ibs, ii)) -> 
+        let ii' = 
+          (match ii with 
+          | ii1::ii2::iicommaopt -> 
+              tag_symbols [i1;i2] [ii1;ii2] binding ++ iicommaopt
+          | _ -> raise Impossible
+          )
+        in
+        B.InitList 
+          (Ast_c.unsplit_comma
+              (transform_initialisers 
+                  (A.undots ias) 
+                  (Ast_c.split_comma ibs)
+                  binding
+          )),
+        ii'
+
+    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), ii)) -> 
+        (match ii with 
+        | [iidot;iidb;iieq] -> 
+
+            let (_, iidb') = 
+              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+            in
+            let ii' = 
+              tag_symbols [i1] [iidot] binding ++
+              iidb' ++
+              tag_symbols [i2] [iieq] binding
+            in
+            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
+        | _ -> raise NoMatch
+        )
+
+    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), ii)) -> 
+
+        (match ii with 
+        | [iidb;iicolon] -> 
+
+            let (_, iidb') = 
+              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
+            in
+            let ii' = iidb' ++  tag_symbols [i1] [iicolon] binding
+            in
+            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
+        | _ -> raise NoMatch
+        )
+
+
+    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
+        B.InitGccIndex 
+          (transform_e_e ea eb  binding,
+           transform_initialiser inia inib binding),
+        tag_symbols [i1;i2;i3]  ii  binding
+
+    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
+      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
+        B.InitGccRange 
+          (transform_e_e e1a e1b  binding,
+           transform_e_e e2a e2b  binding,
+           transform_initialiser inia inib  binding),
+        tag_symbols [i1;i2;i3;i4] ii binding
+        
+
+    | A.Idots _, _ -> raise Impossible
+
+    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
+      failwith "not handling Opt/Unique/Multi on initialisers"
+          
+    | _, _ -> raise NoMatch
+
+
+
+
+and transform_initialisers = fun ias ibs ->
+ fun binding -> 
+  match ias, ibs with
+  | [], ys -> ys
+  | x::xs, ys -> 
+      let permut = Common.uncons_permut ys in
+      permut +> Common.fold_k (fun acc ((e, pos), rest) k -> 
+        try (
+          let e' = 
+            match e with 
+            | Left y -> Left (transform_initialiser x y binding)
+            | Right y -> raise NoMatch
+          in
+          let rest' = transform_initialisers xs rest binding in
+          Common.insert_elem_pos (e', pos) rest'
+        ) 
+        with NoMatch -> k acc
+      )
+        (fun _ -> raise NoMatch)
+        ys
+        
+            
+
 
 (* ------------------------------------------------------------------------- *)
 and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) = 

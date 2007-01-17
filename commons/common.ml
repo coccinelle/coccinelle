@@ -1905,6 +1905,35 @@ let rec (permutation: 'a list -> 'a list list) = function
   | x::xs -> List.flatten (List.map (inseredans x) (permutation xs))
 
 
+
+let rec remove_elem_pos pos xs =
+  match (pos, xs) with
+  | _, [] -> failwith "remove_elem_pos"
+  | 0, x::xs -> xs
+  | n, x::xs -> x::(remove_elem_pos (n-1) xs)
+
+let rec insert_elem_pos (e, pos) xs =
+  match (pos, xs) with 
+  | 0, xs -> e::xs 
+  | n, x::xs -> x::(insert_elem_pos (e, (n-1)) xs)
+  | n, [] -> failwith "insert_elem_pos"
+
+let rec uncons_permut xs = 
+  let indexed = index_list xs in
+  indexed +> List.map (fun (x, pos) -> 
+    (x, pos),  remove_elem_pos pos xs 
+  )
+let _ = 
+  example 
+    (uncons_permut ['a';'b';'c'] = 
+     [('a', 0),  ['b';'c'];
+      ('b', 1),  ['a';'c'];
+      ('c', 2),  ['a';'b']
+     ])
+        
+    
+    
+
 (* pix *)
 let rec map_flatten f l =
   let rec map_flatten_aux accu = function    
@@ -2776,7 +2805,8 @@ let error_message = fun filename (lexeme, lexstart) ->
   try 
     error_messagebis filename (lexeme, lexstart) 0    
   with End_of_file -> 
-    pr2 ("PB in Common.error_message, position given out of file" ^ filename);
+    pr2 ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+         " given out of file:" ^ filename);
     raise End_of_file
 
 (*****************************************************************************)

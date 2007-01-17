@@ -864,7 +864,7 @@ initialize_list: initialize2                        { [$1,   []] }
 	       | initialize_list TComma initialize2 { ($3,  [$2])::$1 }
 
 initialize2: arith_expr                                         { InitExpr $1,   [] } /* gccext:, arithexpr and no assign_expr cos can have ambiguity with comma */
-          | TOBrace initialize_list gcc_comma_opt TCBrace       { InitList (List.rev $2),   [$1]++$3++[$4] }
+          | TOBrace initialize_list gcc_comma_opt TCBrace       { InitList (List.rev $2),   [$1;$4]++$3 }
           | TOBrace TCBrace                                     { InitList [],  [$1;$2]  }
 
            /* gccext:, labeled elements */

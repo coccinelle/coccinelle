@@ -622,6 +622,11 @@ val doublon : 'a list -> bool
 val inseredans : 'a -> 'a list -> 'a list list
 val permutation : 'a list -> 'a list list
 
+val remove_elem_pos : int -> 'a list -> 'a list
+val insert_elem_pos : ('a * int) -> 'a list -> 'a list
+val uncons_permut :   'a list -> (('a * int) * 'a list) list
+
+
 val map_flatten : ('a -> 'b list) -> 'a list -> 'b list
 
 val repeat : 'a -> int -> 'a list

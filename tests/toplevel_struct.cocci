@@ -3,8 +3,8 @@ identifier proc_info_func, proc_info_func2;
 @@
 
 struct SHT usb_stor_host_template = {
-	.proc_info2 =			proc_info_func2,
 	.proc_info =			proc_info_func,
+	.proc_info2 =			proc_info_func2,
 +	.foo = 12
 };
 

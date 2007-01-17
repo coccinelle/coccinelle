@@ -18,6 +18,7 @@ let term ((s,_,_) : 'a Ast_cocci.mcode) = s
 
 (*****************************************************************************)
 
+(* 0x0 is equivalent to 0,  value format isomorphism *)
 let equal_c_int s1 s2 = 
   try 
     int_of_string s1 = int_of_string s2
@@ -685,8 +686,6 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
         match_e_e e2a e2b >&&>
         match_initialiser inia inib
 
-    (* only in arg lists *)
-    (*| A.IComma _, _*)
     | A.Idots _, _ -> raise Impossible
 
     | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
@@ -694,29 +693,22 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
           
     | _, _ -> return false
 
-
 and match_initialisers = fun ias ibs -> 
   match ias, ibs with
-  | [], [] -> return true
-  | [], y::ys -> return false
+  | [], ys -> return true
   | x::xs, ys -> 
-      (match A.unwrap x, ys with
-      | A.Idots (mcode, optexpr), ys -> 
-          if optexpr <> None then failwith "not handling when in argument";
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-            acc >||> match_initialisers xs endxs
-          ) (return false)
-            
-      (*| A.IComma i1, (Right ii)::ys -> 
-          match_initialisers xs ys
-      | A.IComma i1, _ -> return false*)
-      | unwrapx, (Left y)::ys -> 
-          match_initialiser x y
-      | unwrapx, (Right y)::ys -> 
-          raise Impossible
-      | unwrapx, [] -> return false
-      )
+      let permut = Common.uncons_permut ys in
+      permut +> List.fold_left (fun acc ((e, _pos), rest) -> 
+        acc >||> 
+          (
+            (match e with 
+            | Left y -> match_initialiser x y 
+            | Right y -> return false 
+            ) >&&> match_initialisers xs rest
+          )
+      ) (return false)
+  
+
 
 
 

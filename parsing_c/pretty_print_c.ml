@@ -575,26 +575,16 @@ and pp_init_gen = fun pr_elem ->
   let rec pp_init = fun (init, iinit) -> 
     match init, iinit with
     | InitExpr e, [] -> pp_expression e;
-    | InitList xs, [i1;i2] -> 
+    | InitList xs, i1::i2::iicommaopt -> 
         pr_elem i1;
         xs +> List.iter (fun (x, ii) -> 
           assert (List.length ii <= 1);
           ii +> List.iter pr_elem;
           pp_init x
         );
-
+        iicommaopt +> List.iter pr_elem;
         pr_elem i2;
 
-    | InitList xs, [i1;i2;i3] -> (* case where have the optional trailing ','  *)
-        pr_elem i1;
-        xs +> List.iter (fun (x, ii) -> 
-          assert (List.length ii <= 1);
-          ii +> List.iter pr_elem;
-          pp_init x
-        );
-        pr_elem i2;
-        pr_elem i3;
-        
     | InitGcc (string, initialiser), [i1;i2;i3] -> (* .label: *)
         pr_elem i1;
         pr_elem i2; 
