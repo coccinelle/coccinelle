@@ -64,168 +64,9 @@ let transform_option f t1 t2 =
   | _ -> raise NoMatch
 
 
-
-(*****************************************************************************)
-(* Token decoration *)
-(*****************************************************************************)
-
-type marker =
-    NoMark | BefMark of string | AftMark of string
-  | BefAftMark of string * string
-
-let extract_sgrep_marker l =
-  let rec inner_loop acc = function
-      [] -> (acc,[])
-    | Ast_cocci.SgrepStartTag(s)::rest ->
-	Printf.printf "found a start\n";
-	(match acc with
-	  NoMark -> inner_loop (BefMark(s)) rest
-	| _ -> failwith "unexpected mark")
-    | Ast_cocci.SgrepEndTag(s)::rest ->
-	Printf.printf "found a end\n";
-	(match acc with
-	  NoMark -> inner_loop (AftMark(s)) rest
-	| BefMark(m) -> inner_loop (BefAftMark(m,s)) rest
-	| _ -> failwith "unexpected mark")
-    | x::rest ->
-	let (acc,rest) = inner_loop acc rest in
-	(acc,x::rest) in
-  let (acc,l) =
-    List.fold_left
-      (function (acc,prev) ->
-	function cur ->
-	  Printf.printf "length cur %d\n" (List.length cur);
-	  let (acc,cur) = inner_loop acc cur in
-	  (acc,cur::prev))
-      (NoMark,[]) l in
-  (acc,List.rev l)
-
-let process_sgrep s2 mck =
-  Printf.printf "in process sgrep\n";
-  match mck with
-    Ast_cocci.MINUS(repl) ->
-      (match extract_sgrep_marker repl with
-	(NoMark,_) -> Printf.printf "no match1\n"; mck
-      |	(BefMark(marker),repl) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    marker s2.file s2.line s2.column;
-	  Ast_cocci.MINUS(repl)
-      |	(AftMark(marker),repl) ->
-	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
-	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.MINUS(repl)
-      |	(BefAftMark(bmarker,amarker),repl) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    bmarker s2.file s2.line s2.column;
-	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
-	    amarker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.MINUS(repl))
-  | Ast_cocci.CONTEXT(Ast_cocci.NOTHING) -> Printf.printf "no match2\n"; mck
-  | Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef)) ->
-      (match extract_sgrep_marker bef with
-	(NoMark,_) -> Printf.printf "no match3\n"; mck
-      |	(BefMark(marker),[]) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    marker s2.file s2.line s2.column;
-	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-      |	(BefMark(marker),bef) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    marker s2.file s2.line s2.column;
-	  Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
-      |	_ -> failwith "after not possible")
-  | Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft)) ->
-      (match extract_sgrep_marker aft with
-	(NoMark,_) -> Printf.printf "no match4\n";  mck
-      |	(AftMark(marker),[]) ->
-	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
-	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-      |	(AftMark(marker),aft) ->
-	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
-	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
-      |	_ -> failwith "before not possible")
-  | Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft)) ->
-      (match extract_sgrep_marker bef with
-	(NoMark,_) ->
-	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Printf.printf "no match5\n";  mck
-	  | (AftMark(marker),[]) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
-	  | (AftMark(marker),aft) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
-	  | _ -> failwith "before not possible")
-      | (BefMark(marker),[]) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    marker s2.file s2.line s2.column;
-	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
-	  | (AftMark(marker),[]) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-	  | (AftMark(marker),aft) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
-	  | _ -> failwith "before not possible")
-      | (BefMark(marker),bef) ->
-	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
-	    marker s2.file s2.line s2.column;
-	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
-	  | (AftMark(marker),[]) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
-	  | (AftMark(marker),aft) ->
-	      Printf.printf
-		"Match on line %s ending at %s: line %d offset %d\n"
-		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
-	  | _ -> failwith "before not possible")
-      |	_ -> failwith "after not possible")
-	
-(* todo: check not already tagged ? assert s1 = s2 ? no more cos now
-   * have some "fake" string, and also because now s1:'a, no more
-   * s1:string *)
-let tag_with_mck = fun mck ib  binding -> 
-  let (s2, (oldmcode, oldenv)) = ib in
-  
-  let mck =
-    if !Flag_parsing_cocci.sgrep_mode
-    then process_sgrep s2 mck
-    else mck in
-  if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
-    mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-  then
-    begin
-      Printf.printf "SP mcode "; flush stdout;
-      Pretty_print_cocci.print_mcodekind oldmcode;
-      Format.print_newline();
-      Printf.printf "C code mcode "; flush stdout;
-      Pretty_print_cocci.print_mcodekind mck;
-      Format.print_newline();
-      failwith
-	(Common.sprintf
-	   "already tagged token:\n%s"
-	   (Common.error_message s2.file (s2.str, s2.charpos)))
-    end
-  else 
-    (s2, (mck, binding))
-
 let tag_one_symbol = fun ia ib  binding -> 
   let (s1,_,x) = ia in
-  tag_with_mck x ib binding
+  D.tag_with_mck x ib binding
 
 
 let (tag_symbols: ('a A.mcode) list -> B.il -> B.metavars_binding -> B.il) =
@@ -661,7 +502,7 @@ and transform_de_de = fun mckstart decla declb ->
   | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
       let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
       in
-      let iifakestart' = tag_with_mck mckstart iifakestart binding in 
+      let iifakestart' = D.tag_with_mck mckstart iifakestart binding in 
       B.DeclList ([var'], iiptvirgb'::iifakestart'::iisto)
 
   | (B.DeclList (x::y::xs, iiptvirgb::iifake::iisto)) -> 
@@ -1173,7 +1014,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
       | iidb::ioparenb::icparenb::iifakestart::iistob -> 
-          let iifakestart' = tag_with_mck mckstart iifakestart binding in 
+          let iifakestart' = D.tag_with_mck mckstart iifakestart binding in 
           
           let stob' = stob in
           let (iistob') = 

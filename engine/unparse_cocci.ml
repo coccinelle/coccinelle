@@ -557,7 +557,15 @@ in
         (match any with
         | Ast.Rule_elemTag _ -> pr "\n"; pr current_tabbing;
         | Ast.StatementTag _ -> pr "\n"; pr current_tabbing;
-        | Ast.InitTag _ -> pr ","; pr "\n"; pr current_tabbing; 
+        | Ast.InitTag x -> 
+            (match Ast.unwrap x with
+            | Ast.InitGccDotName _ 
+            | Ast.InitGccName _
+            | Ast.InitGccIndex _
+            | Ast.InitGccRange _ ->
+                pr ","; pr "\n"; pr current_tabbing; 
+            | _ -> ()
+            )
         | _ -> ()
         );
 
