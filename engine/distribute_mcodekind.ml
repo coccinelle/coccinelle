@@ -8,8 +8,7 @@ module F = Control_flow_c
  * - S
  * + foo();
  * we have to minusize all the token that compose S in the C code, and 
- * attach the foo();  to the right token, the one at the very right. 
- * This is the goal of this module.
+ * attach the 'foo();'  to the right token, the one at the very right. 
  *)
 (*****************************************************************************)
 
