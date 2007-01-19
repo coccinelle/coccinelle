@@ -1,0 +1,18 @@
+ata_piix.c
+ * [status]
+
+libata-scsi.c
+ * [status]
+
+sata_promise.c
+ * [status]
+
+sata_sil.c
+ * [status]
+
+sata_svw.c
+ * [status]
+
+sata_via.c
+ * [status]
+
