@@ -650,7 +650,9 @@ and match_re_onedecl = fun decla declb ->
       failwith "fill something in for a declaration that is just a type"
 
   | _, ((None, typb, sto), _) -> 
-      failwith "no variable in this declaration, wierd"
+      (* it would be better to have the line number of the C code, but I
+	 don't know how to get it *)
+      failwith (Printf.sprintf "no variable in this declaration, wierd\nin code matching SP code on line %d" (A.get_line decla))
 
       
   | A.DisjDecl xs, _ -> 
