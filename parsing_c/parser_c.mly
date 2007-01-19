@@ -852,7 +852,7 @@ direct_abstract_declarator:
 			  
 /*---------------------------------------------------------------------------*/
 initialize: assign_expr                                           { InitExpr $1,                [] }
-          | TOBrace initialize_list gcc_comma_opt  TCBrace        { InitList (List.rev $2),     [$1]++$3++[$4] }
+          | TOBrace initialize_list gcc_comma_opt  TCBrace        { InitList (List.rev $2),     [$1;$4]++$3 }
           | TOBrace TCBrace                                       { InitList [],       [$1;$2] } /* gccext: */
 
 /* opti: This time we use the weird order of non-terminal which requires in 
