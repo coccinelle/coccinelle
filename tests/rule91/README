@@ -1,29 +1,87 @@
 aircable.c
+ * [status]
+
 airprime.c
+ * [status]
+
 belkin_sa.c
+ * [status]
+
 cyberjack.c
+ * [status]
+
 cypress_m8.c
+ * [status]
+
 digi_acceleport.c
+ * [status]
+
 empeg.c
+ * [status]
+
 ftdi_sio.c
+ * [status]
+
 garmin_gps.c
+ * [status]
+
 generic.c
+ * [status]
+
 io_edgeport.c
+ * [status]
+
 io_ti.c
+ * [status]
+
 ipaq.c
+ * [status]
+
 ipw.c
+ * [status]
+
 ir-usb.c
+ * [status]
+
 keyspan.c
+ * [status]
+
 keyspan_pda.c
+ * [status]
+
 kl5kusb105.c
+ * [status]
+
 kobil_sct.c
+ * [status]
+
 mct_u232.c
+ * [status]
+
 mos7840.c
+ * [status]
+
 navman.c
+ * [status]
+
 omninet.c
+ * [status]
+
 option.c
+ * [status]
+
 pl2303.c
+ * [status]
+
 safe_serial.c
+ * [status]
+
 ti_usb_3410_5052.c
+ * [status]
+
 visor.c
+ * [status]
+
 whiteheat.c
+ * [status]
+

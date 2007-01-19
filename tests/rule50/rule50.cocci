@@ -1,5 +1,5 @@
 @@
-union acpi_operaand_object *E;
+acpi_operand_object *E;
 expression E1;
 @@
 

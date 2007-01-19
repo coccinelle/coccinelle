@@ -1,86 +1,90 @@
-None work because they require modifying toplevel declarations
+26 ok
+2 wrong because of not renaming local variables (which is not done in a
+systematic way in the source code)
 
 airprime.c
- * [status] 
+ * [status] ok
 
 belkin_sa.c
- * [status] 
+ * [status] ok
 
 bus.c
- * [status] 
+ * [status] wrong
+ a variable name changes, and the SP doesn't cover this (alpha conversion)
 
 cp2101.c
- * [status] 
+ * [status] ok
 
 cyberjack.c
- * [status] 
+ * [status] ok
 
 cypress_m8.c
- * [status] 
+ * [status] ok
 
 digi_acceleport.c
- * [status] 
+ * [status] ok
 
 empeg.c
- * [status] 
+ * [status] ok
 
 ftdi_sio.c
- * [status] 
+ * [status] ok
 
 garmin_gps.c
- * [status] 
+ * [status] ok
 
 generic.c
- * [status] 
+ * [status] ok
 
 hp4x.c
- * [status] 
+ * [status] ok
 
 io_ti.c
- * [status] 
+ * [status] ok
 
 ipaq.c
- * [status] 
+ * [status] ok
 
 ipw.c
- * [status] 
+ * [status] ok
 
 ir-usb.c
- * [status] 
+ * [status] ok
 
 keyspan_pda.c
- * [status] 
+ * [status] ok
 
 kl5kusb105.c
- * [status] 
+ * [status] ok
 
 kobil_sct.c
- * [status] 
+ * [status] ok
 
 mct_u232.c
- * [status] 
+ * [status] ok
 
 omninet.c
- * [status] 
+ * [status] ok
 
 option.c
- * [status] 
+ * [status] ok
 
 pl2303.c
- * [status] 
+ * [status] ok
 
 safe_serial.c
- * [status] 
+ * [status] ok
 
 ti_usb_3410_5052.c
- * [status] 
+ * [status] ok
 
 usb-serial.c
- * [status] 
+ * [status] wrong
+ a variable name changes, and the SP doesn't cover this (alpha conversion)
 
 visor.c
- * [status] 
+ * [status] ok
 
 whiteheat.c
- * [status] 
+ * [status] ok
 
