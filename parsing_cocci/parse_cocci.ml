@@ -541,6 +541,7 @@ let parse file =
 	let (more,tokens) =
 	  tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
+	let tokens = detect_types tokens in
 	let metavars = parse_one PC.meta_main file tokens in
 	(* get transformation rules *)
 	let (more,tokens) =
@@ -599,6 +600,7 @@ let parse_iso = function
 	    let (more,tokens) =
 	      tokens_all table file true lexbuf [PC.TArobArob] in
 	    Data.in_meta := false;
+	    let tokens = detect_types tokens in
 	    let iso_metavars = parse_one PC.meta_main file tokens in
 	    (* get the rule *)
 	    let (more,tokens) =

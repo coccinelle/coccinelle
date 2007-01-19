@@ -315,22 +315,24 @@ pure: TPure { true } | /* empty */ { false }
       else failwith "bad typedef") }
 
 meta_exp_type:
-  pure_ident
+  pure_ident m=list(TMul)
     { let name = id2name $1 in
       let fail _ =
-	try let _ = Hashtbl.find typenames name in [Type_cocci.TypeName name]
+	try let _ = Hashtbl.find typenames name in Type_cocci.TypeName name
 	with
 	  Not_found ->
 	    failwith
 	      (Printf.sprintf "%s: bad type for expression metavariable"
 		 name) in
-      if !Data.in_iso
-      then
+      [ty_pointerify
+	(if !Data.in_iso
+	then
 	(* unbound type variables only allowed in isomorphisms *)
-	try
-	  let _ = Hashtbl.find metatypes name in [Type_cocci.MetaType name]
-	with Not_found -> fail()
-      else fail() }
+	  try
+	    let _ = Hashtbl.find metatypes name in Type_cocci.MetaType name
+	  with Not_found -> fail()
+	else fail())
+	m] }
 | ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
 | TOBrace comma_list(ctype) TCBrace
