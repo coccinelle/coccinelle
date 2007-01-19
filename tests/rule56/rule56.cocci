@@ -2,7 +2,7 @@
 statement S;
 @@
 
-- if (pci_present()) S
+- if (!pci_present()) S
 
 @@
 expression E;
@@ -25,7 +25,7 @@ statement S1, S2;
 @@
 type T;
 identifier x;
-statement S1, S2;
+statement S;
 @@
 
 (
@@ -35,14 +35,14 @@ statement S1, S2;
 \+  T x;
     ...>
   }
-- else S2
+- else S
 |
 - if (pci_present()) {
     ...
 -  }
-- else S2
+- else S
 |
 - if (pci_present())
   S
-- else S2
+- else S
 )

@@ -1,5 +1,5 @@
 3w-xxxx.c
- * [status]
+ * [status] ok
 
 acenic.c
  * [status]
@@ -14,25 +14,25 @@ atp870u.c
  * [status]
 
 BusLogic.c
- * [status]
+ * [status] ok
 
 cmpci.c
- * [status]
+ * [status] ok
 
 cpqfcTSinit.c
  * [status]
 
 cs4281m.c
- * [status]
+ * [status] ok
 
 cs46xx.c
- * [status]
+ * [status] ok
 
 dc395x.c
  * [status]
 
 de4x5.c
- * [status]
+ * [status] ok
 
 dgrs.c
  * [status]
@@ -41,22 +41,22 @@ Divas_mod.c
  * [status]
 
 dmx3191d.c
- * [status]
+ * [status] ok
 
 eata.c
- * [status]
+ * [status] ok
 
 epca.c
  * [status]
 
 es1370.c
- * [status]
+ * [status] ok
 
 es1371.c
- * [status]
+ * [status] ok
 
 esssolo1.c
- * [status]
+ * [status] ok
 
 fore200e.c
  * [status]
@@ -68,13 +68,13 @@ hp100.c
  * [status]
 
 hysdn_init.c
- * [status]
+ * [status] ok
 
 i2c-elektor.c
  * [status]
 
 i810_audio.c
- * [status]
+ * [status] ok
 
 ide.c
  * [status]
@@ -92,25 +92,25 @@ isicom.c
  * [status]
 
 istallion.c
- * [status]
+ * [status] ok
 
 ite8172.c
- * [status]
+ * [status] ok
 
 ixj.c
  * [status]
 
 lmc_main.c
- * [status]
+ * [status] ok
 
 maestro3.c
- * [status]
+ * [status] ok
 
 nec_vrc5477.c
- * [status]
+ * [status] ok
 
 nicstar.c
- * [status]
+ * [status] ok
 
 pci2000.c
  * [status]
@@ -119,7 +119,7 @@ pci2220i.c
  * [status]
 
 pm2fb.c
- * [status]
+ * [status] ok
 
 pmc551.c
  * [status]
@@ -137,13 +137,13 @@ qlogicisp.c
  * [status]
 
 radio-maestro.c
- * [status]
+ * [status] ok
 
 rio_linux.c
  * [status]
 
 rme96xx.c
- * [status]
+ * [status] ok
 
 rocket.c
  * [status]
@@ -152,7 +152,7 @@ saa9730.c
  * [status]
 
 sbni.c
- * [status]
+ * [status] ok
 
 sbus.c
  * [status]
@@ -164,22 +164,22 @@ search.c
  * [status]
 
 skeleton.c
- * [status]
+ * [status] ok
 
 skfddi.c
- * [status]
+ * [status] ok
 
 skge.c
- * [status]
+ * [status] ok
 
 sonicvibes.c
- * [status]
+ * [status] ok
 
 specialix.c
  * [status]
 
 stallion.c
- * [status]
+ * [status] ok
 
 sx.c
  * [status]
@@ -188,17 +188,17 @@ sym53c8xx.c
  * [status]
 
 sym_glue.c
- * [status]
+ * [status] ok
 
 syscall.c
- * [status]
+ * [status] ok
 
 tc35815.c
- * [status]
+ * [status] ok
 
 tmscsim.c
  * [status]
 
 trident.c
- * [status]
+ * [status] ok
 

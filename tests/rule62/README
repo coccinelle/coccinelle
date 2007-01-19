@@ -1,3 +1,38 @@
-Linux 2.5.39
-block, ide, md, mtd, s390, and scsi directories
-calls to blk_clear are dropped
+DAC960.c
+ * [status] ok
+
+amiflop.c
+ * [status] ok
+
+dasd_genhd.c
+ * [status] ok
+
+ftl.c
+ * [status] ok
+
+ide.c
+ * [status] ok
+
+ll_rw_blk.c
+ * [status] ok
+
+md.c
+ * [status] ok
+
+ps2esdi.c
+ * [status] ok
+
+rd.c
+ * [status] ok
+
+sd.c
+ * [status] ok
+
+sr.c
+ * [status] ok
+
+xd.c
+ * [status] ok
+
+xpram.c
+ * [status] ok

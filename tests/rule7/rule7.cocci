@@ -1,12 +1,12 @@
 @@
 identifier I;
-expression E1, E2;
+expression E;
 @@
 
-struct i2c_client I {
-- 	.name = E1,
-+	.dev = { .name = E1 }
-}
+struct i2c_client I = {
+- 	.name = E,
++	.dev = { .name = E }
+};
 
 @@
 struct i2c_client *x;
@@ -18,7 +18,6 @@ expression E;
 
 @@
 struct i2c_client *x;
-expression E;
 @@
 
 (

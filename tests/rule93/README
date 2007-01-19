@@ -27,9 +27,7 @@ gameport.c
  * [status] ok
 
 hub.c
- * [status] wrong
- typedef parsing problem in the function that contains the collateral
- evolution site
+ * [status] ok
 
 ieee1394_core.c
  * [status] ok

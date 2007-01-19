@@ -1,4 +1,4 @@
-SP=rule91.cocci
+SP=rule53.cocci
 
 SOURCES = ata_piix.c \
 libata-scsi.c \
