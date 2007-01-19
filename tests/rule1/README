@@ -1,0 +1,21 @@
+ac.c
+ * [status]
+
+battery.c
+ * [status]
+
+button.c
+ * [status]
+
+fan.c
+ * [status]
+
+power.c
+ * [status]
+
+processor.c
+ * [status]
+
+thermal.c
+ * [status]
+
