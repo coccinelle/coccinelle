@@ -1,0 +1,156 @@
+aiptek.c
+ * [status]
+
+audio.c
+ * [status]
+
+auerswald.c
+ * [status]
+
+bluetty.c
+ * [status]
+
+brlvger.c
+ * [status]
+
+catc.c
+ * [status]
+
+cdc-acm.c
+ * [status]
+
+cdc-ether.c
+ * [status]
+
+cpia_usb.c
+ * [status]
+
+dabusb.c
+ * [status]
+
+devio.c
+ * [status]
+
+dsbr100.c
+ * [status]
+
+hci_usb.c
+ * [status]
+
+hid-core.c
+ * [status]
+
+hpusbscsi.c
+ * [status]
+
+hub.c
+ * [status]
+
+ibmcam.c
+ * [status]
+
+iforce-usb.c
+ * [status]
+
+irda-usb.c
+ * [status]
+
+kaweth.c
+ * [status]
+
+konicawc.c
+ * [status]
+
+mdc800.c
+ * [status]
+
+microtek.c
+ * [status]
+
+ov511.c
+ * [status]
+
+pegasus.c
+ * [status]
+
+powermate.c
+ * [status]
+
+pwc-if.c
+ * [status]
+
+rio500.c
+ * [status]
+
+rtl8150.c
+ * [status]
+
+scanner.c
+ * [status]
+
+se401.c
+ * [status]
+
+speedtouch.c
+ * [status]
+
+st5481_init.c
+ * [status]
+
+stv680.c
+ * [status]
+
+tiglusb.c
+ * [status]
+
+ultracam.c
+ * [status]
+
+usbaudio.c
+ * [status]
+
+usb.c
+ * [status]
+
+usbkbd.c
+ * [status]
+
+usblcd.c
+ * [status]
+
+usblp.c
+ * [status]
+
+usb-midi.c
+ * [status]
+
+usbmouse.c
+ * [status]
+
+usbnet.c
+ * [status]
+
+usb-serial.c
+ * [status]
+
+usb-skeleton.c
+ * [status]
+
+usbtest.c
+ * [status]
+
+usbvideo.c
+ * [status]
+
+uss720.c
+ * [status]
+
+vicam.c
+ * [status]
+
+wacom.c
+ * [status]
+
+xpad.c
+ * [status]
+
