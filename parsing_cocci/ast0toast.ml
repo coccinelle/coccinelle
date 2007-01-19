@@ -380,12 +380,30 @@ and declaration d =
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 
+and strip_idots initlist =
+  match Ast0.unwrap initlist with
+    Ast0.DOTS(x) ->
+      let (whencode,init) = 
+	List.fold_left
+	  (function (prevwhen,previnit) ->
+	    function cur ->
+	      match Ast0.unwrap cur with
+		Ast0.Idots(dots,Some whencode) ->
+		  (whencode :: prevwhen, previnit)
+	      | Ast0.Idots(dots,None) -> (prevwhen,previnit)
+	      | _ -> (prevwhen, cur :: previnit))
+	  ([],[]) x in
+      (List.rev whencode, List.rev init)
+  | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
+
 and initialiser i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb) ->
-	Ast.InitList(mcode lb,dots initialiser initlist,mcode rb)
+	let (whencode,initlist) = strip_idots initlist in
+	Ast.InitList(mcode lb,List.map initialiser initlist,mcode rb,
+		     List.map initialiser whencode)
     | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	Ast.InitGccDotName(mcode dot,ident name,mcode eq,initialiser ini)
     | Ast0.InitGccName(name,eq,ini) ->
@@ -396,11 +414,7 @@ and initialiser i =
     | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
 	Ast.InitGccRange(mcode lb,expression exp1,mcode dots,
 			  expression exp2,mcode rb,mcode eq,initialiser ini)
-(*  | Ast0.IComma(cm) -> Ast.IComma(mcode cm)*)
-    | Ast0.Idots(dots,whencode) ->
-	let dots = mcode dots in
-	let whencode = get_option initialiser whencode in
-	Ast.Idots(dots,whencode)
+    | Ast0.Idots(_,_) -> failwith "Idots should have been removed"
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini)
     | Ast0.MultiIni(ini) -> Ast.MultiIni(initialiser ini))

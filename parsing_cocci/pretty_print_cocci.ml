@@ -344,9 +344,16 @@ and declaration d =
 and initialiser i =
   match Ast.unwrap i with
     Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(lb,initlist,rb) ->
+  | Ast.InitList(lb,initlist,rb,whencode) ->
       mcode print_string lb;
-      let _ = dots (function _ -> print_string ", ") initialiser initlist in
+      if not (whencode = [])
+      then
+	(print_string "   WHEN != ";
+	 print_between (function _ -> print_string " v ")
+	   initialiser whencode;
+	 force_newline());
+      let _ =
+	print_between (function _ -> print_string ", ") initialiser initlist in
       mcode print_string rb
   | Ast.InitGccDotName(dot,name,eq,ini) ->
       mcode print_string dot; ident name; print_string " ";
@@ -362,11 +369,6 @@ and initialiser i =
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
-(*| Ast.IComma(cm) -> mcode print_string cm; print_space()*)
-  | Ast.Idots(d,Some whencode) ->
-      mcode print_string d; print_string "   WHEN != ";
-      initialiser whencode
-  | Ast.Idots(d,None) -> mcode print_string d
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
   | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
   | Ast.MultiIni(ini) -> print_string "\\+"; initialiser ini

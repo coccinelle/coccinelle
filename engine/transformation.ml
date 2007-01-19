@@ -571,7 +571,7 @@ fun inia ini ->
        assert (null ii);
        B.InitExpr (transform_e_e expa  expb binding), ii
 
-    | (A.InitList (i1, ias, i2), (B.InitList ibs, ii)) -> 
+    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, ii)) -> 
         let ii' = 
           (match ii with 
           | ii1::ii2::iicommaopt -> 
@@ -581,12 +581,12 @@ fun inia ini ->
         in
         B.InitList 
           (Ast_c.unsplit_comma
-              (transform_initialisers 
-                  (A.undots ias) 
-                  (Ast_c.split_comma ibs)
-                  binding
+             (transform_initialisers ias (Ast_c.split_comma ibs) binding
           )),
         ii'
+
+    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, ii)) -> 
+        failwith "TODO: not handling whencode in initialisers"
 
     | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), ii)) -> 
         (match ii with 
@@ -633,8 +633,6 @@ fun inia ini ->
            transform_initialiser inia inib  binding),
         tag_symbols [i1;i2;i3;i4] ii binding
         
-
-    | A.Idots _, _ -> raise Impossible
 
     | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
       failwith "not handling Opt/Unique/Multi on initialisers"

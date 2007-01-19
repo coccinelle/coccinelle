@@ -5,7 +5,6 @@ type 'a combiner =
 	  combiner_typeC : Ast_cocci.typeC -> 'a;
 	    combiner_declaration : Ast_cocci.declaration -> 'a;
 	      combiner_initialiser : Ast_cocci.initialiser -> 'a;
-	      combiner_initialiser_list : Ast_cocci.initialiser_list -> 'a;
 	      combiner_parameter : Ast_cocci.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast_cocci.parameter_list -> 'a;
 		combiner_rule_elem : Ast_cocci.rule_elem -> 'a;
@@ -34,7 +33,6 @@ val combiner :
 			((Ast_cocci.structUnion,'a) cmcode) ->
 			  ((Ast_cocci.storage,'a) cmcode) ->
 			    ((Ast_cocci.expression Ast_cocci.dots,'a) ccode) ->
-			      ((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
 			      ((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
 				((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
 				  ((Ast_cocci.ident,'a) ccode) ->
@@ -58,7 +56,6 @@ type rebuilder =
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
       rebuilder_initialiser : Ast_cocci.initialiser inout;
-      rebuilder_initialiser_list : Ast_cocci.initialiser_list inout;
       rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast_cocci.parameter_list inout;
       rebuilder_statement : Ast_cocci.statement inout;
@@ -84,7 +81,6 @@ val rebuilder :
 		      (Ast_cocci.structUnion rmcode) ->
 			(Ast_cocci.storage rmcode) ->
 			  (Ast_cocci.expression Ast_cocci.dots rcode) ->
-			    (Ast_cocci.initialiser Ast_cocci.dots rcode) ->
 			    (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
 			      (Ast_cocci.statement Ast_cocci.dots rcode) ->
 				(Ast_cocci.ident rcode) ->

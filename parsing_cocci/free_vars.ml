@@ -207,7 +207,7 @@ let astfvs bound =
 
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing astfvstatement_dots
+      donothing donothing astfvstatement_dots
       astfvident astfvexpr donothing astfvtypeC donothing astfvparam astfvdecls
       astfvrule_elem astfvstatement donothing donothing in
 
@@ -262,7 +262,7 @@ let update table unitary_variables =
 
   (V.rebuilder
      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-     donothing donothing donothing statement_dots
+     donothing donothing statement_dots
      donothing donothing donothing donothing donothing donothing donothing
      rule_elem statement donothing donothing).V.rebuilder_top_level
 
@@ -338,7 +338,7 @@ let drop_unitary_variables unitary_variables =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing in
 
@@ -426,7 +426,7 @@ let update_metavars previous_metavars =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing in
 

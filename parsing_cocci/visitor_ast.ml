@@ -15,7 +15,6 @@ type 'a combiner =
 	  combiner_typeC : Ast.typeC -> 'a;
 	    combiner_declaration : Ast.declaration -> 'a;
 	      combiner_initialiser : Ast.initialiser -> 'a;
-	      combiner_initialiser_list : Ast.initialiser_list -> 'a;
 	      combiner_parameter : Ast.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast.parameter_list -> 'a;
 		combiner_rule_elem : Ast.rule_elem -> 'a;
@@ -35,7 +34,7 @@ let combiner bind option_default
     string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn unary_mcodefn
     binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
-    expdotsfn initdotsfn paramdotsfn stmtdotsfn
+    expdotsfn paramdotsfn stmtdotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn
     topfn anyfn =
   let multibind l =
@@ -66,14 +65,6 @@ let combiner bind option_default
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
 	  multibind (List.map expression l) in
     expdotsfn all_functions k d
-
-  and initialiser_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) -> multibind (List.map initialiser l)
-      | Ast.CIRCLES(l) -> multibind (List.map initialiser l)
-      | Ast.STARS(l) -> multibind (List.map initialiser l) in
-    initdotsfn all_functions k d
 
   and parameter_dots d =
     let k d =
@@ -207,9 +198,12 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.InitExpr(exp) -> expression exp
-      | Ast.InitList(lb,initlist,rb) ->
+      | Ast.InitList(lb,initlist,rb,whencode) ->
 	  multibind
-	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
+	    [string_mcode lb;
+	      multibind (List.map initialiser initlist);
+	      string_mcode rb;
+	      multibind (List.map initialiser whencode)]
       | Ast.InitGccDotName(dot,name,eq,ini) ->
 	  multibind
 	    [string_mcode dot; ident name; string_mcode eq; initialiser ini]
@@ -224,9 +218,6 @@ let combiner bind option_default
 	    [string_mcode lb; expression exp1; string_mcode dots;
 	      expression exp2; string_mcode rb; string_mcode eq;
 	      initialiser ini]
-(*    | Ast.IComma(cm) -> string_mcode cm*)
-      | Ast.Idots(dots,whencode) ->
-	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast.OptIni(i) -> initialiser i
       | Ast.UniqueIni(i) -> initialiser i
       | Ast.MultiIni(i) -> initialiser i in
@@ -383,7 +374,6 @@ let combiner bind option_default
       combiner_typeC = typeC;
       combiner_declaration = declaration;
       combiner_initialiser = initialiser;
-      combiner_initialiser_list = initialiser_dots;
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_rule_elem = rule_elem;
@@ -404,7 +394,6 @@ type rebuilder =
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
       rebuilder_initialiser : Ast.initialiser inout;
-      rebuilder_initialiser_list : Ast.initialiser_list inout;
       rebuilder_parameter : Ast.parameterTypeDef inout;
       rebuilder_parameter_list : Ast.parameter_list inout;
       rebuilder_statement : Ast.statement inout;
@@ -421,7 +410,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
-    expdotsfn initdotsfn paramdotsfn stmtdotsfn
+    expdotsfn paramdotsfn stmtdotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn
     topfn anyfn =
   let get_option f = function
@@ -435,15 +424,6 @@ let rebuilder
 	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map expression l)
 	| Ast.STARS(l) -> Ast.STARS(List.map expression l)) in
     expdotsfn all_functions k d
-
-  and initialiser_dots i =
-    let k i =
-      Ast.rewrap i
-	(match Ast.unwrap i with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map initialiser l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map initialiser l)
-	| Ast.STARS(l) -> Ast.STARS(List.map initialiser l)) in
-    initdotsfn all_functions k i
 
   and parameter_dots d =
     let k d =
@@ -597,9 +577,9 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
-	| Ast.InitList(lb,initlist,rb) ->
-	    Ast.InitList(string_mcode lb, initialiser_dots initlist,
-			  string_mcode rb)
+	| Ast.InitList(lb,initlist,rb,whencode) ->
+	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
+			  string_mcode rb, List.map initialiser whencode)
 	| Ast.InitGccDotName(dot,name,eq,ini) ->
 	    Ast.InitGccDotName
 	      (string_mcode dot, ident name, string_mcode eq, initialiser ini)
@@ -614,9 +594,6 @@ let rebuilder
 	      (string_mcode lb, expression exp1, string_mcode dots,
 	       expression exp2, string_mcode rb, string_mcode eq,
 	       initialiser ini)
-(*	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)*)
-	| Ast.Idots(d,whencode) ->
-	    Ast.Idots(string_mcode d, get_option initialiser whencode)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)
 	| Ast.MultiIni(i) -> Ast.MultiIni(initialiser i)) in
@@ -794,7 +771,6 @@ let rebuilder
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
       rebuilder_initialiser = initialiser;
-      rebuilder_initialiser_list = initialiser_dots;
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_dots;
       rebuilder_rule_elem = rule_elem;

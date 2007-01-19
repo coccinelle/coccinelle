@@ -66,11 +66,6 @@ let edots e =
     Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> true
   | _ -> false
 
-let idots i =
-  match Ast.unwrap i with
-    Ast.Idots(_,_) -> true
-  | _ -> false
-
 let pdots p =
   match Ast.unwrap p with
     Ast.Pdots(_) | Ast.Pcircles(_) -> true
@@ -258,8 +253,9 @@ and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,initlista,_),Ast.InitList(_,initlistb,_)) ->
-      unify_dots unify_initialiser idots initlista initlistb
+  | (Ast.InitList(_,initlista,_,whena),Ast.InitList(_,initlistb,_,whenb)) ->
+      (* ignore whencode - returns true safely *)
+      unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccDotName(_,namea,_,inia),
      Ast.InitGccDotName(_,nameb,_,inib)) ->
        conjunct_bindings
@@ -275,10 +271,6 @@ and unify_initialiser i1 i2 =
        conjunct_bindings (unify_expression exp1a exp1b)
 	 (conjunct_bindings (unify_expression exp2a exp2b)
 	    (unify_initialiser inia inib))
-(*| (Ast.IComma(_),Ast.IComma(_)) -> return true*)
-
-  (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Idots(_,_),_) | (_,Ast.Idots(_,_)) -> return true
 	
   | (Ast.OptIni(_),_)
   | (Ast.UniqueIni(_),_)
@@ -382,7 +374,7 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
@@ -395,7 +387,7 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
