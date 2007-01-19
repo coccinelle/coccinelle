@@ -623,7 +623,16 @@ let rec statement in_nest tgt stm =
   let stm_same = all_same in_nest true tgt in
   match Ast0.unwrap stm with
     Ast0.Decl(bef,decl) ->
-      Ast0.rewrap stm (Ast0.Decl(bef,declaration in_nest tgt decl))
+      let new_decl = declaration in_nest tgt decl in
+      Ast0.rewrap stm 
+	(match Ast0.unwrap new_decl with
+	  Ast0.OptDecl(decl) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
+	| Ast0.UniqueDecl(decl) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
+	| Ast0.MultiDecl(decl) ->
+	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
+	| _ -> Ast0.Decl(bef,new_decl))
   | Ast0.Seq(lbrace,body,rbrace) -> 
       let arity =
 	stm_same (mcode2line lbrace)
