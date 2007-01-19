@@ -335,8 +335,9 @@ meta_exp_type:
 	m] }
 | ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
-| TOBrace comma_list(ctype) TCBrace
-    { List.map Ast0_cocci.ast0_type_to_type $2 }
+| TOBrace comma_list(ctype) TCBrace m=list(TMul)
+    { List.map (function x -> ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
+	$2 }
 
 const_meta_exp_type:
   mtype
