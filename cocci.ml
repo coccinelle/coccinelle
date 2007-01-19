@@ -441,7 +441,8 @@ let program_elem_vs_ctl a b c =
 
 (* Returns nothing. The output is in the file outfile *)
 let full_engine2 cfile coccifile_and_iso_or_ctl outfile = 
-  assert (Common.lfile_exists cfile);
+  if not (Common.lfile_exists cfile)
+  then failwith (Printf.sprintf "can't find file %s" cfile);
 
   (* preparing the inputs (c, cocci, ctl) *)
   let (ctls, error_words_julia) = 

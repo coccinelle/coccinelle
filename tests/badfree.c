@@ -1,5 +1,6 @@
 int main() {
   free(x);
-//if (a) 
+  if (a) {
   foo(a,x,b);
+  }
 }

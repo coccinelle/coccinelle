@@ -139,6 +139,9 @@ let iso_adjust fn first rest =
   match loop rest with
     front::after -> (fn first::front)::after
   | _ -> failwith "not possible"
+
+let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
+let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %}
 
 
@@ -262,6 +265,7 @@ pure: TPure { true } | /* empty */ { false }
       !Data.add_id_meta name pure; [Ast.MetaFreshIdDecl(arity,name)]) }
 | TType
     { (function arity -> function name -> function pure ->
+      Hashtbl.add metatypes name ();
       !Data.add_type_meta name pure; [Ast.MetaTypeDecl(arity,name)]) } 
 | TParameter
     { (function arity -> function name -> function pure ->
@@ -307,11 +311,27 @@ pure: TPure { true } | /* empty */ { false }
 | TTypedef
     { (function arity -> function name -> function pure ->
       if arity = Ast.NONE && pure = false
-      then (!Data.add_type_name name; [])
+      then (Hashtbl.add typenames name (); !Data.add_type_name name; [])
       else failwith "bad typedef") }
 
 meta_exp_type:
-  ctype
+  pure_ident
+    { let name = id2name $1 in
+      let fail _ =
+	try let _ = Hashtbl.find typenames name in [Type_cocci.TypeName name]
+	with
+	  Not_found ->
+	    failwith
+	      (Printf.sprintf "%s: bad type for expression metavariable"
+		 name) in
+      if !Data.in_iso
+      then
+	(* unbound type variables only allowed in isomorphisms *)
+	try
+	  let _ = Hashtbl.find metatypes name in [Type_cocci.MetaType name]
+	with Not_found -> fail()
+      else fail() }
+| ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
 | TOBrace comma_list(ctype) TCBrace
     { List.map Ast0_cocci.ast0_type_to_type $2 }
@@ -667,13 +687,13 @@ initialize_list_start:
       (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  c=TComma
+  TComma
     { function dot_builder ->
       [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c))*)] }
-| c=TComma d=dotter
+| TComma d=dotter
     { function dot_builder ->
       [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) dot_builder d] }
-| c=TComma i=initialize2
+| TComma i=initialize2
     { function dot_builder ->
       [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) i] }
 
@@ -892,7 +912,8 @@ expr_dots(dotter):
 
 /*****************************************************************************/
 
-pure_ident: TIdent { $1 }
+pure_ident:
+     TIdent { $1 }
 
 /* allows redeclaring metavariables.  used in @@ @@ */
 pure_ident_or_meta_ident:

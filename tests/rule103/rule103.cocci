@@ -1,14 +1,12 @@
-//@@
-//identifier driver;
-//local function attach, detach;
-//@@
-//
-//struct pcmcia_driver driver = {
-//	...,
-//	.probe		= attach,
-//	.remove		= detach,
-//	...
-//};
+@@
+identifier driver;
+local function attach, detach;
+@@
+
+struct pcmcia_driver driver = {
+	.probe		= attach,
+	.remove		= detach
+};
 
 @@
 //local function detach, release;

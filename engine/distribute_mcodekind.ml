@@ -33,12 +33,10 @@ let extract_sgrep_marker l =
   let rec inner_loop acc = function
       [] -> (acc,[])
     | Ast_cocci.SgrepStartTag(s)::rest ->
-	Printf.printf "found a start\n";
 	(match acc with
 	  NoMark -> inner_loop (BefMark(s)) rest
 	| _ -> failwith "unexpected mark")
     | Ast_cocci.SgrepEndTag(s)::rest ->
-	Printf.printf "found a end\n";
 	(match acc with
 	  NoMark -> inner_loop (AftMark(s)) rest
 	| BefMark(m) -> inner_loop (BefAftMark(m,s)) rest
@@ -50,18 +48,16 @@ let extract_sgrep_marker l =
     List.fold_left
       (function (acc,prev) ->
 	function cur ->
-	  Printf.printf "length cur %d\n" (List.length cur);
 	  let (acc,cur) = inner_loop acc cur in
 	  (acc,cur::prev))
       (NoMark,[]) l in
   (acc,List.rev l)
 
 let process_sgrep s2 mck =
-  Printf.printf "in process sgrep\n";
   match mck with
     Ast_cocci.MINUS(repl) ->
       (match extract_sgrep_marker repl with
-	(NoMark,_) -> Printf.printf "no match1\n"; mck
+	(NoMark,_) -> mck
       |	(BefMark(marker),repl) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
@@ -76,10 +72,10 @@ let process_sgrep s2 mck =
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    amarker s2.file s2.line (s2.column + String.length s2.str);
 	  Ast_cocci.MINUS(repl))
-  | Ast_cocci.CONTEXT(Ast_cocci.NOTHING) -> Printf.printf "no match2\n"; mck
+  | Ast_cocci.CONTEXT(Ast_cocci.NOTHING) -> mck
   | Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef)) ->
       (match extract_sgrep_marker bef with
-	(NoMark,_) -> Printf.printf "no match3\n"; mck
+	(NoMark,_) -> mck
       |	(BefMark(marker),[]) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
@@ -91,7 +87,7 @@ let process_sgrep s2 mck =
       |	_ -> failwith "after not possible")
   | Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft)) ->
       (match extract_sgrep_marker aft with
-	(NoMark,_) -> Printf.printf "no match4\n";  mck
+	(NoMark,_) -> mck
       |	(AftMark(marker),[]) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.file s2.line (s2.column + String.length s2.str);
@@ -105,7 +101,7 @@ let process_sgrep s2 mck =
       (match extract_sgrep_marker bef with
 	(NoMark,_) ->
 	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Printf.printf "no match5\n";  mck
+	    (NoMark,_) -> mck
 	  | (AftMark(marker),[]) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
@@ -151,7 +147,6 @@ let process_sgrep s2 mck =
 	  | _ -> failwith "before not possible")
       |	_ -> failwith "after not possible")
 	
-
 (* todo: check not already tagged ? assert s1 = s2 ? no more cos now
    * have some "fake" string, and also because now s1:'a, no more
    * s1:string *)

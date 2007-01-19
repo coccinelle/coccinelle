@@ -1,29 +1,59 @@
-//@@
-//identifier I;
-//local function f;
-//@@
-//
-//static struct usb_serial_driver I = {
-//       ...,
-//(
-//	.write_bulk_callback =	f,
-//|
-//	.read_bulk_callback =	f,
-//|
-//	.read_int_callback =	f,
-//)
-//	...
-//};
-//
-//@@
-//identifier p1, p2;
-//@@
-//
-//- void f (struct urb *p1, struct pt_regs *p2)
-//+ void f (struct urb *p1)
-//  {
-//    ... when != p1
-//  }
+@@
+identifier I;
+local function f;
+@@
+
+static struct usb_serial_driver I = {
+	.write_bulk_callback =	f
+};
+
+@@
+identifier p1, p2;
+@@
+
+- void f (struct urb *p1, struct pt_regs *p2)
++ void f (struct urb *p1)
+  {
+    ... when != p1
+  }
+
+@@
+identifier I;
+local function f;
+@@
+
+static struct usb_serial_driver I = {
+	.read_bulk_callback =	f
+};
+
+@@
+identifier p1, p2;
+@@
+
+- void f (struct urb *p1, struct pt_regs *p2)
++ void f (struct urb *p1)
+  {
+    ... when != p1
+  }
+
+@@
+identifier I;
+local function f;
+@@
+
+static struct usb_serial_driver I = {
+	.read_int_callback =	f
+};
+
+@@
+identifier p1, p2;
+@@
+
+- void f (struct urb *p1, struct pt_regs *p2)
++ void f (struct urb *p1)
+  {
+    ... when != p1
+  }
 
 @@
 expression E1, E2, E3, E4, E5, E6, E7;
