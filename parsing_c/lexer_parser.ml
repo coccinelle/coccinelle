@@ -66,7 +66,10 @@ let add_typedef  s =
     Hashtbl.add !typedef s (TypeDefI s);
   end
 let add_typedef_root s = 
-  Hashtbl.add !typedef s (TypeDefI s)
+  if !Flag_parsing_c.add_typedef_root
+  then 
+    Hashtbl.add !typedef s (TypeDefI s)
+  else add_typedef s
   
 let add_ident s    = 
   begin

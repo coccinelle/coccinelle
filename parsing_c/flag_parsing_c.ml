@@ -18,3 +18,5 @@ let label_strategy_2 = ref true
 let ifdef_to_if = ref false
 
 let casse_initialisation = ref false
+
+let add_typedef_root = ref false

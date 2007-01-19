@@ -221,6 +221,7 @@ let main () =
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
+      "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
 
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
