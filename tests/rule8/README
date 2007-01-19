@@ -1,156 +1,165 @@
+48 ok
+4 error: 3 because of dead code, 1 because of expression matching problem
+
+
 aiptek.c
- * [status]
+ * [status] ok
 
 audio.c
- * [status]
+ * [status] ok
 
 auerswald.c
- * [status]
+ * [status] ok
 
 bluetty.c
- * [status]
+ * [status] ok
 
 brlvger.c
- * [status]
+ * [status] ok
 
 catc.c
- * [status]
+ * [status] ok
 
 cdc-acm.c
- * [status]
+ * [status] ok
 
 cdc-ether.c
- * [status]
+ * [status] ok
 
 cpia_usb.c
- * [status]
+ * [status] ok
 
 dabusb.c
- * [status]
+ * [status] ok
 
 devio.c
- * [status]
+ * [status] ok
 
 dsbr100.c
- * [status]
+ * [status] ok
 
 hci_usb.c
- * [status]
+ * [status] ok
 
 hid-core.c
- * [status]
+ * [status] ok
 
 hpusbscsi.c
- * [status]
+ * [status] ok
 
 hub.c
- * [status]
+ * [status] error
+ dead code: return after goto
 
 ibmcam.c
- * [status]
+ * [status] ok
 
 iforce-usb.c
- * [status]
+ * [status] ok
 
 irda-usb.c
- * [status]
+ * [status] error
+ dead code: break after return
 
 kaweth.c
- * [status]
+ * [status] ok
 
 konicawc.c
- * [status]
+ * [status] ok
 
 mdc800.c
- * [status]
+ * [status] ok
 
 microtek.c
- * [status]
+ * [status] ok
 
 ov511.c
- * [status]
+ * [status] ok
 
 pegasus.c
- * [status]
+ * [status] ok
 
 powermate.c
- * [status]
+ * [status] ok
 
 pwc-if.c
- * [status]
+ * [status] error
+ dead code: break after return
 
 rio500.c
- * [status]
+ * [status] ok
 
 rtl8150.c
- * [status]
+ * [status] ok
 
 scanner.c
- * [status]
+ * [status] ok
 
 se401.c
- * [status]
+ * [status] ok
 
 speedtouch.c
- * [status]
+ * [status] ok
 
 st5481_init.c
- * [status]
+ * [status] ok
 
 stv680.c
- * [status]
+ * [status] ok
 
 tiglusb.c
- * [status]
+ * [status] ok
 
 ultracam.c
- * [status]
+ * [status] ok
 
 usbaudio.c
- * [status]
+ * [status] ok
 
 usb.c
- * [status]
+ * [status] ok
 
 usbkbd.c
- * [status]
+ * [status] ok
 
 usblcd.c
- * [status]
+ * [status] ok
 
 usblp.c
- * [status]
+ * [status] ok
 
 usb-midi.c
- * [status]
+ * [status] ok
 
 usbmouse.c
- * [status]
+ * [status] ok
 
 usbnet.c
- * [status]
+ * [status] ok
 
 usb-serial.c
- * [status]
+ * [status] spatch-ok
+ programmer factorized some error handling code and created an exit label
+ at the end of a function.
 
 usb-skeleton.c
- * [status]
+ * [status] ok
 
 usbtest.c
- * [status]
+ * [status] error
+ ambiguous expression match - need positions
 
 usbvideo.c
- * [status]
+ * [status] ok
 
 uss720.c
- * [status]
+ * [status] ok
 
 vicam.c
- * [status]
+ * [status] ok
 
 wacom.c
- * [status]
+ * [status] ok
 
 xpad.c
- * [status]
-
+ * [status] ok
