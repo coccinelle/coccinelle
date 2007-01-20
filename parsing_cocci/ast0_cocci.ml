@@ -35,7 +35,6 @@ and dots_bef_aft = NoDots | BetweenDots of statement
    for SP metavariables, true if the metavariable is unitary (valid up to
    isomorphism phase only) *)
 and pure = bool
-and fresh = bool (* only true in +, request name from user *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -53,7 +52,7 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of string mcode * pure * fresh
+  | MetaId        of string mcode * pure
   | MetaFunc      of string mcode * pure
   | MetaLocalFunc of string mcode * pure
   | OptIdent      of ident
@@ -389,7 +388,7 @@ let rec ast0_type_to_type ty =
       let tag =
 	match unwrap tag with
 	  Id(tag) -> tag
-	| MetaId(tag,_,_) ->
+	| MetaId(tag,_) ->
 	    (Printf.printf
 	       "warning: struct/union with a metavariable name detected.\n";
 	     Printf.printf

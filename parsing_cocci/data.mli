@@ -8,7 +8,7 @@ val in_iso : bool ref  (* true if parsing the isomorphisms *)
 
 val clear_meta: (unit -> unit) ref
 
-val add_id_meta: (string -> bool -> bool -> unit) ref
+val add_id_meta: (string -> bool -> unit) ref
 
 val add_text_meta: (string -> bool -> unit) ref
 

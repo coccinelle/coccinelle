@@ -449,7 +449,7 @@ and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) =
  fun seminfo_idb ida idb -> 
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
- | A.MetaId(ida,keep,inherited,fresh) ->
+ | A.MetaId(ida,keep,inherited) ->
      check_add_metavars_binding keep inherited
        (term ida, Ast_c.MetaIdVal (idb))
 

@@ -84,7 +84,7 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_,_) -> string_mcode name
+      | Ast.MetaId(name,_,_) -> string_mcode name
       | Ast.MetaFunc(name,_,_) -> string_mcode name
       | Ast.MetaLocalFunc(name,_,_) -> string_mcode name
       | Ast.OptIdent(id) -> ident id
@@ -351,7 +351,6 @@ let combiner bind option_default
       | Ast.LogicalOpTag(logop) -> option_default
       | Ast.DeclarationTag(decl) -> declaration decl
       | Ast.InitTag(ini) -> initialiser ini
-      | Ast.ParameterTypeDefTag(ptd) -> parameterTypeDef ptd
       | Ast.StorageTag(stg) -> option_default
       | Ast.Rule_elemTag(rule) -> rule_elem rule
       | Ast.StatementTag(rule) -> statement rule
@@ -448,8 +447,8 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.Id(name) -> Ast.Id(string_mcode name)
-	| Ast.MetaId(name,keep,inherited,fresh) ->
-	    Ast.MetaId(string_mcode name,keep,inherited,fresh)
+	| Ast.MetaId(name,keep,inherited) ->
+	    Ast.MetaId(string_mcode name,keep,inherited)
 	| Ast.MetaFunc(name,keep,inherited) ->
 	    Ast.MetaFunc(string_mcode name,keep,inherited)
 	| Ast.MetaLocalFunc(name,keep,inherited) ->
@@ -748,8 +747,6 @@ let rebuilder
       | Ast.LogicalOpTag(logop) as x -> x
       | Ast.InitTag(decl) -> Ast.InitTag(initialiser decl)
       | Ast.DeclarationTag(decl) -> Ast.DeclarationTag(declaration decl)
-      | Ast.ParameterTypeDefTag(ptd) ->
-	  Ast.ParameterTypeDefTag(parameterTypeDef ptd)
       | Ast.StorageTag(stg) as x -> x
       | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)

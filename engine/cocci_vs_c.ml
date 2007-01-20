@@ -485,7 +485,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
       then idb +> tokenf_wrap [sa] ii
       else fail
 
-  | A.MetaId(ida,true,inherited,fresh) -> 
+  | A.MetaId(ida,true,inherited) -> 
       (* get binding, assert =*=,  distribute info in i1 *)
       envf inherited (term ida, Ast_c.MetaIdVal (idb)) >>= (fun v -> 
         match v with
@@ -528,7 +528,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string Ast_c.wrap) matcher) =
           failwith
 	    "MetaFunc and MetaLocalFunc, need more semantic info about id")
        
-  | A.MetaId(ida,false,inherited,_) | A.MetaFunc(ida,false,inherited)
+  | A.MetaId(ida,false,inherited) | A.MetaFunc(ida,false,inherited)
   | A.MetaLocalFunc(ida,false,inherited) ->
       failwith "should not appear in transformed code"
  

@@ -13,7 +13,7 @@ type line_type =
 let clear_meta: (unit -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_id_meta: (string -> bool -> bool -> unit) ref = 
+let add_id_meta: (string -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_text_meta: (string -> bool -> unit) ref = 

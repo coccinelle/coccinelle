@@ -65,7 +65,7 @@ let ident context table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())	
-  | Ast0.MetaId(name,_,_) -> check_table table minus name
+  | Ast0.MetaId(name,_) -> check_table table minus name
   | Ast0.MetaFunc(name,_) ->
       if minus then check_table table minus name
   | Ast0.MetaLocalFunc(name,_) ->

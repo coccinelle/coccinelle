@@ -3,7 +3,9 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line * string list (*free vars*) * dots_bef_aft)
+type 'a wrap =
+    ('a * line * string list (*free vars*) * string list (*fresh vars*) *
+       dots_bef_aft)
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -41,7 +43,6 @@ and metavar =
   | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool
-and fresh = bool
 and keep_binding = bool
 
 (* --------------------------------------------------------------------- *)
@@ -61,7 +62,7 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of string mcode * keep_binding * inherited * fresh
+  | MetaId        of string mcode * keep_binding * inherited
   | MetaFunc      of string mcode * keep_binding * inherited
   | MetaLocalFunc of string mcode * keep_binding * inherited
 
@@ -370,7 +371,6 @@ and anything =
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
   | InitTag             of initialiser
-  | ParameterTypeDefTag of parameterTypeDef
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
@@ -392,7 +392,10 @@ val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
 val get_fvs : 'a wrap -> string list
+val get_fresh : 'a wrap -> string list
 val get_dots_bef_aft : statement -> dots_bef_aft
 
-val make_meta_rule_elem : string -> mcodekind -> rule_elem
-val make_meta_decl : string -> mcodekind -> declaration
+val make_meta_rule_elem :
+    string -> mcodekind -> (string list * string list) -> rule_elem
+val make_meta_decl :
+    string -> mcodekind -> (string list * string list) -> declaration

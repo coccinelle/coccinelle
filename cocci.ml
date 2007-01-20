@@ -403,9 +403,10 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
               (* modify also the proto if FunHeader was touched *)
               let hack_funheaders = 
                 trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
-                  match rule_elem with
-                  | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots -> 
-                      Some  (binding, ((a,b,c,d,e,f,g,h),info,fv,dots))
+                  match Ast_cocci.unwrap rule_elem with
+                  | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
+		      let res = (binding, (a,b,c,d,e,f,g,h)) in
+                      Some (Ast_cocci.rewrap rule_elem res)
                   | _ -> None
                 )  
               in
@@ -575,8 +576,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
      *)
     if !Flag.show_misc then pr2 ("hack headers");
     Common.profile_code "hack_headers" (fun () -> 
-      !_hack_funheader +> List.iter (fun 
-        ((binding, ((a,b,c,d,e,f,g,h),info,fv,dots))) -> 
+      !_hack_funheader +> List.iter (fun info ->
+	let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
           
           let cprogram' = 
             !cprogram +> List.map (fun ((ebis, info_item), flow) -> 
@@ -591,7 +592,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
                         ], iiptvirg::iifake::iisto))  -> 
                     (try 
                         Transformation.transform_proto
-                          (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h),info,fv,dots)
+                          (Ast_cocci.rewrap info
+			     (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
                           (((Control_flow_c.FunHeader 
                                 ((s, ft, storage), 
                                 iis++iity++[iifake]++iisto)), []),"")

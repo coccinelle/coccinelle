@@ -96,6 +96,9 @@ let elim_opt =
   let fvlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_fvs l) in
 
+  let freshlist l =
+    List.fold_left Common.union_set [] (List.map Ast.get_fresh l) in
+
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
       ([],_) -> []
@@ -108,29 +111,37 @@ let elim_opt =
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
 	 let fv_rest1 = fvlist new_rest1 in
+	 let fresh_rest1 = freshlist new_rest1 in
 	 let fv_rest2 = fvlist new_rest2 in
-	 [d0;(Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1,Ast.NoDots);
-			(Ast.DOTS(new_rest2),l,fv_rest2,Ast.NoDots)],
-	      l,fv_rest1,Ast.NoDots)]
+	 let fresh_rest2 = freshlist new_rest2 in
+	 [d0;
+	   (Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,Ast.NoDots);
+		      (Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,Ast.NoDots)],
+	      l,fv_rest1,fresh_rest1,Ast.NoDots)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
 	 let fv_rest1 = fvlist new_rest1 in
+	 let fresh_rest1 = freshlist new_rest1 in
 	 let fv_rest2 = fvlist new_rest2 in
-	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2,Ast.NoDots);
-		     (Ast.DOTS(new_rest1),l,fv_rest1,Ast.NoDots)],
-	   l,fv_rest2,Ast.NoDots)]
+	 let fresh_rest2 = freshlist new_rest2 in
+	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,Ast.NoDots);
+		     (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,Ast.NoDots)],
+	   l,fv_rest2,fresh_rest2,Ast.NoDots)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
+	let fresh_stm = Ast.get_fresh stm in
 	let fv_d1 = Ast.get_fvs d1 in
+	let fresh_d1 = Ast.get_fresh d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
-	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,Ast.NoDots);
-		       (Ast.DOTS([d1]),l,fv_d1,Ast.NoDots)],
-	     l,fv_both,Ast.NoDots)]
+	let fresh_both = Common.union_set fresh_stm fresh_d1 in
+	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,Ast.NoDots);
+		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,Ast.NoDots)],
+	     l,fv_both,fresh_both,Ast.NoDots)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -141,7 +152,7 @@ let elim_opt =
 		    Ast.CONTEXT(Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],Ast.NoDots)])]
+			 (Ast.DOTS([rw dots]),l,[],[],Ast.NoDots)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -187,9 +198,12 @@ let fresh_var _ = "_v"
 
 let fresh_metavar _ = "_S"
 
-let make_meta_rule_elem d =
+(* fvinfo is going to end up being from the whole associated statement.
+   it would be better if it were just the free variables in d, but free_vars.ml
+   doesn't keep track of free variables on + code *)
+let make_meta_rule_elem d fvinfo =
   let nm = fresh_metavar() in
-  Ast.make_meta_rule_elem nm d
+  Ast.make_meta_rule_elem nm d fvinfo
 
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
@@ -533,14 +547,15 @@ let ends_in_return stmt_list =
 (* control structures *)
 
 let end_control_structure fvs header body after_pred
-    after_checks no_after_checks aft after n label guard =
+    after_checks no_after_checks aft after n label guard aftfvinfo =
   (* aft indicates what is added after the whole if, which has to be added
      to the endif node *)
   let (aft_needed,after_branch) =
     match aft with
       Ast.CONTEXT(Ast.NOTHING) -> (false,make_seq_after2 n after_pred after)
     | _ ->
-	let match_endif = make_match n label guard (make_meta_rule_elem aft) in
+	let match_endif =
+	  make_match n label guard (make_meta_rule_elem aft aftfvinfo) in
 	(true,
 	 make_seq_after n after_pred
 	   (After(make_seq_after n match_endif after))) in
@@ -555,7 +570,7 @@ let end_control_structure fvs header body after_pred
 	  | _ -> no_after_checks)))
 
 let ifthen ifheader branch aft after quantified n label recurse make_match
-    guard =
+    guard aftfvinfo =
 (* "if (test) thn" becomes:
     if(test) & AX((TrueBranch & AX thn) v FallThrough v After)
 
@@ -577,10 +592,10 @@ let ifthen ifheader branch aft after quantified n label recurse make_match
   let or_cases after_branch =
     wrapOr n (true_branch,wrapOr n (fallpred n label,after_branch)) in
   end_control_structure bfvs if_header or_cases after_pred
-      (Some(wrapEX n after_pred)) None aft after n label guard
+      (Some(wrapEX n after_pred)) None aft after n label guard aftfvinfo
 
 let ifthenelse ifheader branch1 els branch2 aft after quantified n label
-    recurse make_match guard =
+    recurse make_match guard aftfvinfo =
 (*  "if (test) thn else els" becomes:
     if(test) & AX((TrueBranch & AX thn) v
                   (FalseBranch & AX (else & AX els)) v After)
@@ -621,10 +636,10 @@ let ifthenelse ifheader branch1 els branch2 aft after quantified n label
   end_control_structure bothfvs if_header or_cases after_pred
       (Some(wrapAnd n (wrapEX n (falsepred n label),wrapEX n after_pred)))
       (Some(wrapEX n (falsepred n label)))
-      aft after n label guard
+      aft after n label guard aftfvinfo
 
 let forwhile header body aft after quantified n label recurse make_match
-    guard =
+    guard aftfvinfo =
   (* the translation in this case is similar to that of an if with no else *)
   (* free variables *) 
   let (efvs,bfvs) =
@@ -638,7 +653,7 @@ let forwhile header body aft after quantified n label recurse make_match
   let after_pred = fallpred n label in
   let or_cases after_branch = wrapOr n (body,after_branch) in
   end_control_structure bfvs header or_cases after_pred
-    (Some(wrapEX n after_pred)) None aft after n label guard
+    (Some(wrapEX n after_pred)) None aft after n label guard aftfvinfo
   
 (* --------------------------------------------------------------------- *)
 (* statement metavariables *)
@@ -663,13 +678,13 @@ let sequencibility body n label_pred process_bef_aft = function
   | Ast.NotSequencible -> body (function x -> x)
 
 let svar_context_with_add_after s n label quantified d ast
-    seqible after process_bef_aft guard =
+    seqible after process_bef_aft guard fvinfo =
   let label_var = (*fresh_label_var*) "_lab" in
   let label_pred =
     wrapPred n (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
     wrapPred n (Lib_engine.PrefixLabel(label_var),CTL.Control) in
-  let matcher d = make_match n None guard (make_meta_rule_elem d) in
+  let matcher d = make_match n None guard (make_meta_rule_elem d fvinfo) in
   let full_metamatch = matcher d in
   let first_metamatch =
     matcher
@@ -710,13 +725,13 @@ let svar_context_with_add_after s n label quantified d ast
     (sequencibility body n label_pred process_bef_aft seqible)
 
 let svar_minus_or_no_add_after s n label quantified d ast
-    seqible after process_bef_aft guard =
+    seqible after process_bef_aft guard fvinfo =
   let label_var = (*fresh_label_var*) "_lab" in
   let label_pred =
     wrapPred n (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
     wrapPred n (Lib_engine.PrefixLabel(label_var),CTL.Control) in
-  let matcher d = make_match n None guard (make_meta_rule_elem d) in
+  let matcher d = make_match n None guard (make_meta_rule_elem d fvinfo) in
   let first_metamatch = matcher d in
   let rest_metamatch =
     matcher
@@ -782,7 +797,7 @@ let decl_to_not_decl n dots stmt make_match f =
   then f
   else
     let de =
-      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) in
+      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) ([],[]) in
       Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NOTHING),md)) in
     wrapAU n (make_match de,
 	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
@@ -842,10 +857,12 @@ and statement stmt after quantified label guard =
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.AFTER(_)) as d)),keep,seqible,_) ->
 	  svar_context_with_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
+	    (Ast.get_fvs stmt, Ast.get_fresh stmt)
 
       |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
 	  svar_minus_or_no_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
+	    (Ast.get_fvs stmt, Ast.get_fresh stmt)
 
       |	_ ->
 	  let stmt_fvs = Ast.get_fvs stmt in
@@ -1010,15 +1027,15 @@ and statement stmt after quantified label guard =
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified n label statement
-	  make_match guard
+	  make_match guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
 	 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       ifthenelse ifheader branch1 els branch2 aft after quantified n label
-	  statement make_match guard
+	  statement make_match guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
       forwhile header body aft after quantified n label statement make_match
-	guard
+	guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
 
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
       List.fold_left
@@ -1055,7 +1072,7 @@ and statement stmt after quantified label guard =
 	  Ast.MINUS(_) ->
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem d))
+	    Some(make_match (make_meta_rule_elem d ([],[])))
 	| _ -> None in
       dots_and_nests None whencodes t dot_code after n label
 	(process_bef_aft quantified n label)

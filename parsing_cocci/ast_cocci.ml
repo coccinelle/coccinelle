@@ -3,7 +3,9 @@
 
 type info = { line : int; column : int }
 type line = int
-type 'a wrap = ('a * line * string list (*free vars*) * dots_bef_aft)
+type 'a wrap =
+    ('a * line * string list (*free vars*) * string list (*fresh vars*) *
+       dots_bef_aft)
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -41,11 +43,6 @@ and metavar =
   | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool (* true if inherited from a previous rule *)
-(* true if a fresh variable - ie name to be obtained from the user.
-   eventually, there should be fresh and input, fresh where the system tries
-   to pick a name like the one provided that doesn't conflict with anything,
-   and input where the user provides the name, eg for aesthetic reasons *)
-and fresh = bool
 
 (* true if a metavariable occurs more than once, and thus we need to keep
 track of its binding.  false otherwise *)
@@ -68,7 +65,7 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of string mcode * keep_binding * inherited * fresh
+  | MetaId        of string mcode * keep_binding * inherited
   | MetaFunc      of string mcode * keep_binding * inherited
   | MetaLocalFunc of string mcode * keep_binding * inherited
 
@@ -378,7 +375,6 @@ and anything =
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
   | InitTag             of initialiser
-  | ParameterTypeDefTag of parameterTypeDef
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
@@ -395,22 +391,24 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,d) x = (x,l,fvs,d)
-let unwrap (x,_,_,_) = x
+let rewrap (_,l,fvs,fresh,d) x = (x,l,fvs,fresh,d)
+let unwrap (x,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_,_) = l
-let get_fvs (_,_,fvs,_) = fvs
-let get_dots_bef_aft (_,_,_,d) = d
+let get_line (_,l,_,_,_) = l
+let get_fvs (_,_,fvs,_,_) = fvs
+let get_fresh (_,_,_,fresh,_) = fresh
+let get_dots_bef_aft (_,_,_,_,d) = d
 
 (* --------------------------------------------------------------------- *)
 
-let make_meta_rule_elem s d =
+let make_meta_rule_elem s d (fvs,fresh) =
   let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
-  (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false), 0, [], NoDots)
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false),
+   0, fvs, fresh, NoDots)
 
-let make_meta_decl s d =
+let make_meta_decl s d (fvs,fresh) =
   let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
-  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, [], NoDots)
+  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, fvs, fresh, NoDots)
 
 (* --------------------------------------------------------------------- *)
 

@@ -211,9 +211,9 @@ let match_maker context_required whencode_allowed =
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
-      Ast0.MetaId(name,pure,fresh) ->
+      Ast0.MetaId(name,pure) ->
 	add_pure_binding name pure
-	  (function Ast0.MetaId(name1,true,_) -> Some name1 | _ -> None)
+	  (function Ast0.MetaId(name1,true) -> Some name1 | _ -> None)
 	  (function id -> Ast0.IdentTag id)
 	  id
     | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
@@ -860,14 +860,14 @@ let instantiate bindings mv_bindings =
   (* cases where metavariables can occur *)
   let identfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaId(name,pure,fresh) ->
+      Ast0.MetaId(name,pure) ->
 	(rebuild_mcode None).V0.rebuilder_ident
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.IdentTag(id)) -> id
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaId(Ast0.set_mcode_data new_mv name,pure,fresh)))
+		(Ast0.MetaId(Ast0.set_mcode_data new_mv name,pure)))
     | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
     | _ -> k e in

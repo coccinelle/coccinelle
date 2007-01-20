@@ -83,10 +83,10 @@ and unify_ident i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.Id(i1),Ast.Id(i2)) -> return (unify_mcode i1 i2)
 
-  | (Ast.MetaId(_,_,_,_),_)
+  | (Ast.MetaId(_,_,_),_)
   | (Ast.MetaFunc(_,_,_),_)
   | (Ast.MetaLocalFunc(_,_,_),_)
-  | (_,Ast.MetaId(_,_,_,_))
+  | (_,Ast.MetaId(_,_,_))
   | (_,Ast.MetaFunc(_,_,_))
   | (_,Ast.MetaLocalFunc(_,_,_)) -> return true
 

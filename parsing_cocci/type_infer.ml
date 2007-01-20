@@ -34,7 +34,7 @@ let rec propagate_types env =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.Id(id) | Ast0.MetaId(id,_,_) ->
+      Ast0.Id(id) | Ast0.MetaId(id,_) ->
 	(try Some(List.assoc (Ast0.unwrap_mcode id) env)
 	with Not_found -> None)
     | _ -> k i in
@@ -137,7 +137,7 @@ let rec propagate_types env =
   let rec strip id =
     match Ast0.unwrap id with
       Ast0.Id(name)              -> Ast0.unwrap_mcode name
-    | Ast0.MetaId(name,_,_)      -> Ast0.unwrap_mcode name
+    | Ast0.MetaId(name,_)        -> Ast0.unwrap_mcode name
     | Ast0.MetaFunc(name,_)      -> Ast0.unwrap_mcode name
     | Ast0.MetaLocalFunc(name,_) -> Ast0.unwrap_mcode name
     | Ast0.OptIdent(id)    -> strip id

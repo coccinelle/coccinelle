@@ -82,7 +82,8 @@ let astfvs bound =
   (* used with fold_left, so the second argument is typically smaller *)
   let bind2 (unbound1,free1,refs1) (unbound2,free2,refs2) =
     (Common.union_set unbound2 unbound1, Common.union_set free2 free1,
-     refs2 @ refs1) in
+     (* dup refs because so that nothing in + code is considered unitary *)
+     refs2 @ refs2 @ refs1) in
   let option_default = ([],[],[]) in
 
   let mcode r (_,_,mcodekind) =
@@ -129,7 +130,7 @@ let astfvs bound =
 
   let astfvident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name,true,_,_) | Ast.MetaFunc(name,true,_)
+      Ast.MetaId(name,true,_) | Ast.MetaFunc(name,true,_)
     | Ast.MetaLocalFunc(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
@@ -238,24 +239,32 @@ let get_names = function
   | Ast.MetaLocalFuncDecl(ar,nm) -> nm
   | Ast.MetaTextDecl(ar,nm) -> nm
 
-let update table unitary_variables =
+let update table metavars unitary_variables =
+  let fresh =
+    List.fold_left
+      (function prev ->
+	function Ast.MetaFreshIdDecl(arity,name) -> name::prev | _ -> prev)
+      [] metavars in
+
+  let collect_fresh = List.filter (function x -> List.mem x fresh) in
+
   let statement r k s =
     let fvs = Hashtbl.find table (Statement s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,d) = k s in
-    (s,l,fvs,d) in
+    let (s,l,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,d) in
 
   let statement_dots r k s =
     let fvs = Hashtbl.find table (StatementDots s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,d) = k s in
-    (s,l,fvs,d) in
+    let (s,l,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,d) in
 
   let rule_elem r k s =
     let fvs = Hashtbl.find table (Rule_elem s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,d) = k s in
-    (s,l,fvs,d) in
+    let (s,l,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,d) in
 
   let mcode x = x in
   let donothing r k e = k e in
@@ -286,8 +295,8 @@ let drop_unitary_variables unitary_variables =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,_,inherited,fresh) ->
-	Ast.rewrap e (Ast.MetaId(name,not_unitary name,inherited,fresh))
+      Ast.MetaId(name,_,inherited) ->
+	Ast.rewrap e (Ast.MetaId(name,not_unitary name,inherited))
     | Ast.MetaFunc(name,_,inherited) ->
 	Ast.rewrap e (Ast.MetaFunc(name,not_unitary name,inherited))
     | Ast.MetaLocalFunc(name,_,inherited) ->
@@ -362,7 +371,7 @@ let rec loop defined = function
       let unitary_variables =
 	List.map2 collect_unitary_variables all_free_usage local_used_after in
       let rule_with_fvs =
-	List.map2 (update table) unitary_variables rule in
+	List.map2 (update table metavar_list) unitary_variables rule in
       let rule_with_fvs =
 	List.map2 drop_unitary_variables unitary_variables rule_with_fvs in
       (set_minus (Common.union_set locally_free later_free) locally_defined,
@@ -382,8 +391,8 @@ let update_metavars previous_metavars =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,keep,_,fresh) ->
-	Ast.rewrap e (Ast.MetaId(name,keep,free_mv name,fresh))
+      Ast.MetaId(name,keep,_) ->
+	Ast.rewrap e (Ast.MetaId(name,keep,free_mv name))
     | Ast.MetaFunc(name,keep,_) ->
 	Ast.rewrap e (Ast.MetaFunc(name,keep,free_mv name))
     | Ast.MetaLocalFunc(name,keep,_) ->

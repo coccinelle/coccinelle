@@ -158,8 +158,8 @@ let init _ =
   in_atat := false;
   Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
   Data.add_id_meta :=
-    (function name -> function pure -> function fresh ->
-      let fn clt = TMetaId(name,pure,fresh,clt) in
+    (function name -> function pure ->
+      let fn clt = TMetaId(name,pure,clt) in
       Hashtbl.replace metavariables name fn);
   Data.add_text_meta :=
     (function name -> function pure ->
