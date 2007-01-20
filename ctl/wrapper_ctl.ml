@@ -114,7 +114,7 @@ struct
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
   exception NEGATIVE_WITNESS
-  let unwrap_wits prev_env wits modifonly =
+  let unwrap_wits wits modifonly =
     let mkth th =
       Common.map_filter
 	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
@@ -141,7 +141,7 @@ struct
     List.concat
       (List.map
 	 (function wit ->
-	   try loop false prev_env wit
+	   try loop false [] wit
 	   with NEGATIVE_WITNESS -> [])
 	 wits)
   ;;
@@ -233,11 +233,11 @@ struct
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
       let res =
-	List.map (fun (_,_,w) -> unwrap_wits binding w true) noclean in
+	List.map (fun (_,_,w) -> unwrap_wits w true) noclean in
       let unmodif_res =
 	Common.uniq
 	  (List.concat
-	     (List.map (fun (_,_,w) -> unwrap_wits binding w false)
+	     (List.map (fun (_,_,w) -> unwrap_wits w false)
 		noclean)) in
       (noclean,
        try

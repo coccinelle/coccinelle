@@ -332,6 +332,7 @@ let (mysat2:
    string) 
   either) = 
   fun (flow, label, states) ctl (used_after, binding) -> 
+    Printf.printf "starting with %d\n" (List.length binding);
 
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,res) = 
@@ -341,9 +342,12 @@ let (mysat2:
     then Check_reachability.check_reachability triples flow;
     match res with
     | Left (trans_info2, returned_any_states, used_after_env) ->
-	let trans_info2 = Postprocess_transinfo.process trans_info2 in
+	let (trans_info2,used_after_fresh_env) =
+	  Postprocess_transinfo.process used_after binding2 trans_info2 in
+	let used_after_env = used_after_fresh_env @ used_after_env in
         let trans_info = satbis_to_trans_info trans_info2 in
         let newbinding = metavars_binding2_to_binding used_after_env in
+	Printf.printf "used after %s\n" (String.concat " " used_after);
         Left (trans_info, returned_any_states, newbinding)
     | Right var -> Right var
 
