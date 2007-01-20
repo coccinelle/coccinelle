@@ -86,7 +86,7 @@ let astfvs bound =
      refs2 @ refs2 @ refs1) in
   let option_default = ([],[],[]) in
 
-  let mcode r (_,_,mcodekind) =
+  let mcodekind r mck =
     let process_anything_list_list anythings =
       let astfvs = r.V.combiner_anything in
       List.fold_left bind ([],[],[])
@@ -94,7 +94,7 @@ let astfvs bound =
 	   (function l ->
 	     List.fold_left bind2 ([],[],[]) (List.map astfvs l))
 	   anythings) in
-    match mcodekind with
+    match mck with
       Ast.MINUS(anythings) -> process_anything_list_list anythings
     | Ast.CONTEXT(befaft) ->
 	(match befaft with
@@ -106,6 +106,8 @@ let astfvs bound =
 	      (process_anything_list_list llb)
 	| Ast.NOTHING -> option_default)
     | Ast.PLUS -> option_default in
+
+  let mcode r (_,_,mck) = mcodekind r mck in
 
   let donothing recursor k e = k e in (* just combine in the normal way *)
 
@@ -189,6 +191,8 @@ let astfvs bound =
 	      then bind ([],[id],[]) (mcode recursor name)
 	      else bind ([id],[id],[id]) (mcode recursor name)
 	  | _ -> k re)
+      |	Ast.FunHeader(bef,_,_,_,_,_,_,_) | Ast.Decl(bef,_) ->
+	  bind (mcodekind recursor bef) (k re)
       | _ -> k re in
     Hashtbl.add free_table (Rule_elem re) unbound;
     res in
@@ -198,6 +202,9 @@ let astfvs bound =
       match Ast.unwrap s with
 	Ast.Disj(stms) ->
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
+      | Ast.IfThen(_,_,aft) | Ast.IfThenElse(_,_,_,_,aft)
+      | Ast.While(_,_,aft) | Ast.For(_,_,aft) ->
+	  bind (k s) (mcodekind recursor aft)
       |	_ -> k s in
     Hashtbl.add free_table (Statement s) unbound;
     res in
