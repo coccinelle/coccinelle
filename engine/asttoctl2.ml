@@ -99,6 +99,11 @@ let elim_opt =
   let freshlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_fresh l) in
 
+  let inheritedlist l =
+    List.fold_left Common.union_set [] (List.map Ast.get_inherited l) in
+
+  let varlists l = (fvlist l, freshlist l, inheritedlist l) in
+
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
       ([],_) -> []
@@ -110,38 +115,43 @@ let elim_opt =
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
-	 let fv_rest1 = fvlist new_rest1 in
-	 let fresh_rest1 = freshlist new_rest1 in
-	 let fv_rest2 = fvlist new_rest2 in
-	 let fresh_rest2 = freshlist new_rest2 in
+	 let (fv_rest1,fresh_rest1,inherited_rest1) = varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2) = varlists new_rest2 in
 	 [d0;
-	   (Ast.Disj[(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,Ast.NoDots);
-		      (Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,Ast.NoDots)],
-	      l,fv_rest1,fresh_rest1,Ast.NoDots)]
+	   (Ast.Disj
+	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,
+		Ast.NoDots);
+		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,
+		 Ast.NoDots)],
+	      l,fv_rest1,fresh_rest1,inherited_rest1,Ast.NoDots)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
-	 let fv_rest1 = fvlist new_rest1 in
-	 let fresh_rest1 = freshlist new_rest1 in
-	 let fv_rest2 = fvlist new_rest2 in
-	 let fresh_rest2 = freshlist new_rest2 in
-	 [(Ast.Disj[(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,Ast.NoDots);
-		     (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,Ast.NoDots)],
-	   l,fv_rest2,fresh_rest2,Ast.NoDots)]
+	 let (fv_rest1,fresh_rest1,inherited_rest1) = varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2) = varlists new_rest2 in
+	 [(Ast.Disj
+	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,
+	       Ast.NoDots);
+	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,
+		Ast.NoDots)],
+	   l,fv_rest2,fresh_rest2,inherited_rest2,Ast.NoDots)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
 	let fresh_stm = Ast.get_fresh stm in
+	let inh_stm = Ast.get_inherited stm in
 	let fv_d1 = Ast.get_fvs d1 in
 	let fresh_d1 = Ast.get_fresh d1 in
+	let inh_d1 = Ast.get_inherited d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
 	let fresh_both = Common.union_set fresh_stm fresh_d1 in
-	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,Ast.NoDots);
-		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,Ast.NoDots)],
-	     l,fv_both,fresh_both,Ast.NoDots)]
+	let inh_both = Common.union_set inh_stm inh_d1 in
+	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,Ast.NoDots);
+		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,Ast.NoDots)],
+	     l,fv_both,fresh_both,inh_both,Ast.NoDots)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -152,7 +162,7 @@ let elim_opt =
 		    Ast.CONTEXT(Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],[],Ast.NoDots)])]
+			 (Ast.DOTS([rw dots]),l,[],[],[],Ast.NoDots)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -797,7 +807,7 @@ let decl_to_not_decl n dots stmt make_match f =
   then f
   else
     let de =
-      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) ([],[]) in
+      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) ([],[],[]) in
       Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NOTHING),md)) in
     wrapAU n (make_match de,
 	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
@@ -857,12 +867,12 @@ and statement stmt after quantified label guard =
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.AFTER(_)) as d)),keep,seqible,_) ->
 	  svar_context_with_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
-	    (Ast.get_fvs stmt, Ast.get_fresh stmt)
+	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
 	  svar_minus_or_no_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
-	    (Ast.get_fvs stmt, Ast.get_fresh stmt)
+	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	_ ->
 	  let stmt_fvs = Ast.get_fvs stmt in
@@ -1027,15 +1037,17 @@ and statement stmt after quantified label guard =
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified n label statement
-	  make_match guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
+	  make_match guard
+	  (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 	 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       ifthenelse ifheader branch1 els branch2 aft after quantified n label
-	  statement make_match guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
+	  statement make_match guard
+	  (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
       forwhile header body aft after quantified n label statement make_match
-	guard (Ast.get_fvs stmt, Ast.get_fresh stmt)
+	guard (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
       List.fold_left
@@ -1072,7 +1084,7 @@ and statement stmt after quantified label guard =
 	  Ast.MINUS(_) ->
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem d ([],[])))
+	    Some(make_match (make_meta_rule_elem d ([],[],[])))
 	| _ -> None in
       dots_and_nests None whencodes t dot_code after n label
 	(process_bef_aft quantified n label)

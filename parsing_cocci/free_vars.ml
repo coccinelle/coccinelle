@@ -54,7 +54,8 @@ type anything =
   | Statement        of Ast.statement
   | StatementDots    of Ast.statement Ast.dots
 
-type free_table = (anything,string list) Hashtbl.t
+type free_table =
+    (anything,(string list(*unbound*)*string list(*inherited*))) Hashtbl.t
 
 (* Note that we would really rather attach + code to - or context code that
 shares the same variables, if there is such.  If we attach it to something
@@ -175,7 +176,7 @@ let astfvs bound =
     | _ -> k p in
 
   let astfvrule_elem recursor k re =
-    let (unbound,_,_) as res =
+    let (unbound,free,_) as res =
       match Ast.unwrap re with
 	Ast.MetaRuleElem(name,true,_) | Ast.MetaStmt(name,true,_,_)
       | Ast.MetaStmtList(name,true,_) ->
@@ -194,11 +195,12 @@ let astfvs bound =
       |	Ast.FunHeader(bef,_,_,_,_,_,_,_) | Ast.Decl(bef,_) ->
 	  bind (mcodekind recursor bef) (k re)
       | _ -> k re in
-    Hashtbl.add free_table (Rule_elem re) unbound;
+    Hashtbl.add free_table (Rule_elem re)
+      (unbound, Common.minus_set free unbound);
     res in
 
   let astfvstatement recursor k s =
-    let (unbound,_,_) as res =
+    let (unbound,free,_) as res =
       match Ast.unwrap s with
 	Ast.Disj(stms) ->
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
@@ -206,12 +208,15 @@ let astfvs bound =
       | Ast.While(_,_,aft) | Ast.For(_,_,aft) ->
 	  bind (k s) (mcodekind recursor aft)
       |	_ -> k s in
-    Hashtbl.add free_table (Statement s) unbound;
+    Hashtbl.add free_table (Statement s)
+      (unbound, Common.minus_set free unbound);
     res in
 
   let astfvstatement_dots recursor k s = 
-    let (unbound,_,_) as res = k s in
-    Hashtbl.add free_table (StatementDots s) unbound; res in
+    let (unbound,free,_) as res = k s in
+    Hashtbl.add free_table (StatementDots s) 
+      (unbound, Common.minus_set free unbound);
+    res in
 
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -256,22 +261,22 @@ let update table metavars unitary_variables =
   let collect_fresh = List.filter (function x -> List.mem x fresh) in
 
   let statement r k s =
-    let fvs = Hashtbl.find table (Statement s) in
+    let (fvs,inherited) = Hashtbl.find table (Statement s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,d) in
+    let (s,l,_,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,inherited,d) in
 
   let statement_dots r k s =
-    let fvs = Hashtbl.find table (StatementDots s) in
+    let (fvs,inherited) = Hashtbl.find table (StatementDots s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,d) in
+    let (s,l,_,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,inherited,d) in
 
   let rule_elem r k s =
-    let fvs = Hashtbl.find table (Rule_elem s) in
+    let (fvs,inherited) = Hashtbl.find table (Rule_elem s) in
     let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,d) in
+    let (s,l,_,_,_,d) = k s in
+    (s,l,fvs,collect_fresh fvs,inherited,d) in
 
   let mcode x = x in
   let donothing r k e = k e in

@@ -194,6 +194,21 @@ let match_opt f eaopt ebopt =
 let _MatchFailure = []
 let _GoodMatch binding = [binding]
 
+(* all referenced inherited variables have to be bound.  This would be
+naturally checked for the minus or context ones in the matching process, but
+have to check the plus ones as well.  The result of get_inherited contains
+all of these, but the potential redundant checking for the minus and context
+ones is probably not a big deal.  If it's a problem, could fix free_vars to
+distinguish between + variables and the other ones. *)
+let all_bound l =
+  let is_bound inhvar binding =
+    match Common.optionise (fun () -> binding +> List.assoc inhvar) with
+      Some _ -> _GoodMatch binding
+    | None -> _MatchFailure in
+  List.fold_left
+    (function prev -> function inhvar -> is_bound inhvar >&&> prev)
+    (return true) l
+
 (* pre: if have declared a new metavar that hide another one, then must be 
    passed with a binding that deleted this metavar *)
 let check_add_metavars_binding keep inherited = fun (k, valu) binding -> 
@@ -269,6 +284,7 @@ let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
       
 let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) = 
   fun ep ec ->
+    all_bound (A.get_inherited ep) >&&>
   match A.unwrap ep, ec with
   
   (* cas general: a MetaExpr can match everything *)
@@ -447,6 +463,7 @@ let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) =
 (* ------------------------------------------------------------------------- *)
 and (match_ident: semantic_info_ident -> (Ast_cocci.ident, string) matcher) = 
  fun seminfo_idb ida idb -> 
+    all_bound (A.get_inherited ida) >&&>
  match A.unwrap ida with
  | A.Id ida -> return ((term ida) =$= idb)
  | A.MetaId(ida,keep,inherited) ->
@@ -488,6 +505,7 @@ and (match_arguments: sequence_processing_style ->
       | [], [] -> return true
       | [], y::ys -> return false
       | x::xs, ys -> 
+	  all_bound (A.get_inherited x) >&&>
           (match A.unwrap x, ys with
           | A.Edots (_, optexpr), ys -> 
               (* todo: if optexpr, then a WHEN and so may have to filter yys *)
@@ -526,6 +544,7 @@ and (match_arguments: sequence_processing_style ->
   | Unordered -> failwith "not handling ooo"
 
 and match_argument = fun arga argb -> 
+    all_bound (A.get_inherited arga) >&&>
   match A.unwrap arga, argb with
   | A.TypeExp tya,  (Right (B.ArgType (tyb, sto_iisto)),ii) ->
       match_ft_ft tya tyb
@@ -552,6 +571,7 @@ and (match_params:
       | [], [] -> return true
       | [], y::ys -> return false
       | x::xs, ys -> 
+	  all_bound (A.get_inherited x) >&&>
           (match A.unwrap x, ys with
           | A.Pdots (_), ys -> 
 
@@ -631,6 +651,7 @@ and match_storage stoa stob =
   | Some x -> return (equal_storage (term x) (fst stob))
 
 and match_re_onedecl = fun decla declb -> 
+  all_bound (A.get_inherited decla) >&&>
   match A.unwrap decla, declb with
   | A.MetaDecl(ida,keep,_inherited), _ -> 
       return true (* todo? add in env ? *)
@@ -667,6 +688,7 @@ and match_re_onedecl = fun decla declb ->
 (* ------------------------------------------------------------------------- *)
 and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) = 
   fun inia inib -> 
+    all_bound (A.get_inherited inia) >&&>
     match (A.unwrap inia,inib) with
     | (A.InitExpr expa, (B.InitExpr expb, _ii)) -> match_e_e expa expb
     | (A.InitList (i1, ias, i2, []), (B.InitList ibs, _ii)) -> 
@@ -719,6 +741,7 @@ and match_initialisers = fun ias ibs ->
 
 and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
   fun typa typb ->
+    all_bound (A.get_inherited typa) >&&>
     match (A.unwrap typa,typb) with
       (A.Type(cv,ty1),((qu,il),ty2)) ->
 	(* Drop out the const/volatile part that has been matched.
@@ -765,7 +788,8 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
  * preceding function).
 *)
 and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
-  fun typa typb -> 
+  fun typa typb ->
+    all_bound (A.get_inherited typa) >&&> 
     match A.unwrap typa, typb with
 
       (* cas general *)
@@ -895,6 +919,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
 
 let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
  fun re node -> 
+   all_bound (A.get_inherited re) >&&>
   match A.unwrap re, F.unwrap node with
 
   (* note: the order of the clauses is important. *)
@@ -1115,6 +1140,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), _)  ->
       match_ident DontKnow ida idb >&&> 
+      all_bound (A.get_inherited ida) >&&>
       (match A.unwrap bodya with
       | A.DMetaId (idbody, keep) -> 
           let inherited = false (* TODO ? *) in

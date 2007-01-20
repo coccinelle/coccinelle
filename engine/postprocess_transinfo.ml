@@ -21,10 +21,7 @@ let process_tree inherited_env l =
       (function (all_fresh,local_freshs,new_triples) ->
 	function (node,env,pred) ->
 	  let (other,fresh) = get_vars pred in
-	  Printf.printf "old environment %d\n" (List.length env);
-	  Printf.printf "other %s\n" (String.concat " " other);
 	  let env = List.filter (function (x,_) -> List.mem x other) env in
-	  Printf.printf "new environment %d\n" (List.length env);
 	  (Common.union_set fresh all_fresh,
 	   fresh::local_freshs,
 	   (node,env@inherited_env,pred)::new_triples))

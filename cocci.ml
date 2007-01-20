@@ -398,7 +398,6 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
           (match satres with
           | Left (trans_info, returned_any_states, newbinding) ->
-	      Printf.printf "at top level %d\n" (List.length newbinding);
               show_or_not_trans_info trans_info;
 
               (* modify also the proto if FunHeader was touched *)
@@ -525,8 +524,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         (* 2: iter binding *)
         (* ------------------ *)
         lastround_bindings +> List.iter (fun binding -> 
-
-	  Printf.printf "2: iter binding %d\n" (List.length binding);
 
           (* ------------------ *)
           (* 3: iter function *)

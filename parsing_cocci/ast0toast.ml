@@ -202,8 +202,8 @@ let mcode(term,_,info,mcodekind) =
 (* Dots *)
 
 let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], Ast.NoDots)
-let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [], [], Ast.NoDots)
+  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], Ast.NoDots)
+let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [], [], [], Ast.NoDots)
 
 let dots fn d =
   rewrap d
@@ -460,7 +460,7 @@ let get_ctr _ =
 let rec statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [],
        match Ast0.get_dots_bef_aft s with
 	 Ast0.NoDots -> Ast.NoDots
        | Ast0.BetweenDots s ->

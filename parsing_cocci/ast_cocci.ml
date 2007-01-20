@@ -5,7 +5,7 @@ type info = { line : int; column : int }
 type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
-       dots_bef_aft)
+       string list (*inherited vars*) * dots_bef_aft)
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -391,24 +391,26 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,fresh,d) x = (x,l,fvs,fresh,d)
-let unwrap (x,_,_,_,_) = x
+let rewrap (_,l,fvs,fresh,inherited,d) x = (x,l,fvs,fresh,inherited,d)
+let unwrap (x,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_,_,_) = l
-let get_fvs (_,_,fvs,_,_) = fvs
-let get_fresh (_,_,_,fresh,_) = fresh
-let get_dots_bef_aft (_,_,_,_,d) = d
+let get_line (_,l,_,_,_,_) = l
+let get_fvs (_,_,fvs,_,_,_) = fvs
+let get_fresh (_,_,_,fresh,_,_) = fresh
+let get_inherited (_,_,_,_,inherited,_) = inherited
+let get_dots_bef_aft (_,_,_,_,_,d) = d
 
 (* --------------------------------------------------------------------- *)
 
-let make_meta_rule_elem s d (fvs,fresh) =
+let make_meta_rule_elem s d (fvs,fresh,inh) =
   let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
   (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false),
-   0, fvs, fresh, NoDots)
+   0, fvs, fresh, inh, NoDots)
 
-let make_meta_decl s d (fvs,fresh) =
+let make_meta_decl s d (fvs,fresh,inh) =
   let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
-  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, fvs, fresh, NoDots)
+  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, fvs, fresh, inh,
+   NoDots)
 
 (* --------------------------------------------------------------------- *)
 

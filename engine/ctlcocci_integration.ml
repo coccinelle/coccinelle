@@ -332,8 +332,6 @@ let (mysat2:
    string) 
   either) = 
   fun (flow, label, states) ctl (used_after, binding) -> 
-    Printf.printf "starting with %d\n" (List.length binding);
-
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,res) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
@@ -347,7 +345,6 @@ let (mysat2:
 	let used_after_env = used_after_fresh_env @ used_after_env in
         let trans_info = satbis_to_trans_info trans_info2 in
         let newbinding = metavars_binding2_to_binding used_after_env in
-	Printf.printf "used after %s\n" (String.concat " " used_after);
         Left (trans_info, returned_any_states, newbinding)
     | Right var -> Right var
 
