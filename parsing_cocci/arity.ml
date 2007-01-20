@@ -143,12 +143,12 @@ let ident in_nest opt_allowed tgt i =
 	  [mcode2arity name] in
       let name = mcode name in
       make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,pure) ->
+  | Ast0.MetaId(name,pure,fresh) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,pure))
+      make_id i tgt arity (Ast0.MetaId(name,pure,fresh))
   | Ast0.MetaFunc(name,pure) ->
       let arity =
 	all_same in_nest opt_allowed tgt (mcode2line name)

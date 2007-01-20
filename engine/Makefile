@@ -9,7 +9,7 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
           cocci_vs_c.ml pattern2.ml transformation2.ml  \
 	  unparse_cocci.ml unparse_c.ml \
 	  asttomember.ml asttoctl2.ml ctltotex.ml \
-	  ctlcocci_integration.ml
+	  postprocess_transformation.ml ctlcocci_integration.ml
 
 # just to test asttoctl
 #CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \

@@ -341,6 +341,7 @@ let (mysat2:
     then Check_reachability.check_reachability triples flow;
     match res with
     | Left (trans_info2, returned_any_states, used_after_env) ->
+	let trans_info2 = Postprocess_transinfo.process trans_info2 in
         let trans_info = satbis_to_trans_info trans_info2 in
         let newbinding = metavars_binding2_to_binding used_after_env in
         Left (trans_info, returned_any_states, newbinding)

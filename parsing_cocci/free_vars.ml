@@ -129,7 +129,7 @@ let astfvs bound =
 
   let astfvident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name,true,_) | Ast.MetaFunc(name,true,_)
+      Ast.MetaId(name,true,_,_) | Ast.MetaFunc(name,true,_)
     | Ast.MetaLocalFunc(name,true,_) ->
 	let id = metaid name in
 	if List.mem id bound
@@ -286,8 +286,8 @@ let drop_unitary_variables unitary_variables =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaId(name,not_unitary name,inherited))
+      Ast.MetaId(name,_,inherited,fresh) ->
+	Ast.rewrap e (Ast.MetaId(name,not_unitary name,inherited,fresh))
     | Ast.MetaFunc(name,_,inherited) ->
 	Ast.rewrap e (Ast.MetaFunc(name,not_unitary name,inherited))
     | Ast.MetaLocalFunc(name,_,inherited) ->
@@ -382,8 +382,8 @@ let update_metavars previous_metavars =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaId(name,keep,free_mv name))
+      Ast.MetaId(name,keep,_,fresh) ->
+	Ast.rewrap e (Ast.MetaId(name,keep,free_mv name,fresh))
     | Ast.MetaFunc(name,keep,_) ->
 	Ast.rewrap e (Ast.MetaFunc(name,keep,free_mv name))
     | Ast.MetaLocalFunc(name,keep,_) ->

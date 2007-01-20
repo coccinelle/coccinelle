@@ -109,7 +109,7 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,_) -> mcode print_string name
+  | Ast.MetaId(name,_,_,_) -> mcode print_string name
   | Ast.MetaFunc(name,_,_) -> mcode print_string name
   | Ast.MetaLocalFunc(name,_,_) -> mcode print_string name
   | Ast.OptIdent(id) -> print_string "?"; ident id

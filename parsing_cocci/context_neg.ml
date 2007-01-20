@@ -285,7 +285,7 @@ let dots fn d1 d2 =
 let rec equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.Id(name1),Ast0.Id(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaId(name1,_),Ast0.MetaId(name2,_)) -> equal_mcode name1 name2
+  | (Ast0.MetaId(name1,_,_),Ast0.MetaId(name2,_,_)) -> equal_mcode name1 name2
   | (Ast0.MetaFunc(name1,_),Ast0.MetaFunc(name2,_)) -> equal_mcode name1 name2
   | (Ast0.MetaLocalFunc(name1,_),Ast0.MetaLocalFunc(name2,_)) ->
       equal_mcode name1 name2

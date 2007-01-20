@@ -84,7 +84,7 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_) -> string_mcode name
+      | Ast.MetaId(name,_,_,_) -> string_mcode name
       | Ast.MetaFunc(name,_,_) -> string_mcode name
       | Ast.MetaLocalFunc(name,_,_) -> string_mcode name
       | Ast.OptIdent(id) -> ident id
@@ -448,8 +448,8 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.Id(name) -> Ast.Id(string_mcode name)
-	| Ast.MetaId(name,keep,inherited) ->
-	    Ast.MetaId(string_mcode name,keep,inherited)
+	| Ast.MetaId(name,keep,inherited,fresh) ->
+	    Ast.MetaId(string_mcode name,keep,inherited,fresh)
 	| Ast.MetaFunc(name,keep,inherited) ->
 	    Ast.MetaFunc(string_mcode name,keep,inherited)
 	| Ast.MetaLocalFunc(name,keep,inherited) ->

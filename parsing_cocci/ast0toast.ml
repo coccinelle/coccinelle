@@ -219,7 +219,7 @@ let rec ident i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,true,false)
+    | Ast0.MetaId(name,_,fresh) -> Ast.MetaId(mcode name,true,false,fresh)
     | Ast0.MetaFunc(name,_) -> Ast.MetaFunc(mcode name,true,false)
     | Ast0.MetaLocalFunc(name,_) ->
 	Ast.MetaLocalFunc(mcode name,true,false)

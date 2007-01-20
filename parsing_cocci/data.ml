@@ -13,7 +13,7 @@ type line_type =
 let clear_meta: (unit -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_id_meta: (string -> bool -> unit) ref = 
+let add_id_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_text_meta: (string -> bool -> unit) ref = 
@@ -63,5 +63,6 @@ let add_type_name: (string -> unit) ref =
 (* for iso metavariables, true if they can only match nonmodified, unitary
    metavariables *)
 type pure = bool
+type fresh = bool
 
 type clt = line_type * int * int * int

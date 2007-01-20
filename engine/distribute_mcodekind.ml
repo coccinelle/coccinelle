@@ -146,6 +146,7 @@ let process_sgrep s2 mck =
 	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
 	  | _ -> failwith "before not possible")
       |	_ -> failwith "after not possible")
+  | _ -> failwith "unexpected plus code"
 	
 (* todo: check not already tagged ? assert s1 = s2 ? no more cos now
    * have some "fake" string, and also because now s1:'a, no more

@@ -305,7 +305,7 @@ and (transform_ident:
           then idb, tag_symbols [sa] ii binding
           else raise NoMatch
 	    
-      | A.MetaId(ida,true,_inherited) -> 
+      | A.MetaId(ida,true,_inherited,fresh) -> 
           (* get binding, assert =*=,  distribute info in i1 *)
 	  let v = binding +> find_env ((term ida) : string) in
 	  (match v with
@@ -349,7 +349,7 @@ and (transform_ident:
               failwith
 		"MetaFunc and MetaLocalFunc, need more semantic info about id")
 	    
-      | A.MetaId(ida,false,_inherited)
+      | A.MetaId(ida,false,_inherited,_)
       | A.MetaFunc(ida,false,_inherited)
       | A.MetaLocalFunc(ida,false,_inherited) ->
 	  idb, tag_symbols [ida] ii binding

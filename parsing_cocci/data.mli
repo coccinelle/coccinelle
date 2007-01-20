@@ -8,7 +8,7 @@ val in_iso : bool ref  (* true if parsing the isomorphisms *)
 
 val clear_meta: (unit -> unit) ref
 
-val add_id_meta: (string -> bool -> unit) ref
+val add_id_meta: (string -> bool -> bool -> unit) ref
 
 val add_text_meta: (string -> bool -> unit) ref
 
@@ -44,5 +44,6 @@ val add_type_name: (string -> unit) ref
 (* for iso metavariables, true if they can only match nonmodified, unitary
    metavariables *)
 type pure = bool
+type fresh = bool
 
 type clt = line_type * int * int * int

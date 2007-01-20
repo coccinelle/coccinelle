@@ -41,7 +41,7 @@ let statement_dots d =
 let ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) -> [10]
-  | Ast0.MetaId(name,_) -> [11]
+  | Ast0.MetaId(name,_,_) -> [11]
   | Ast0.MetaFunc(name,_) -> [12]
   | Ast0.MetaLocalFunc(name,_) -> [13]
   | Ast0.OptIdent(id) -> [14]

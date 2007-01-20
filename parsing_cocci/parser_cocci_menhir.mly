@@ -163,7 +163,8 @@ let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
 %token <string * Data.clt> TIdent TTypeId
-%token <string * Data.pure * Data.clt> TMetaId TMetaType TMetaErr
+%token <string * Data.pure * Data.fresh * Data.clt> TMetaId
+%token <string * Data.pure * Data.clt> TMetaType TMetaErr
 %token <string * Data.pure * Data.clt> TMetaParam TMetaParamList
 %token <string * Data.pure * Data.clt> TMetaStm TMetaStmList
 %token <string * Data.pure * Data.clt> TMetaFunc TMetaLocalFunc
@@ -259,10 +260,10 @@ pure: TPure { true } | /* empty */ { false }
 %inline metakind:
   TIdentifier
     { (function arity -> function name -> function pure ->
-      !Data.add_id_meta name pure; [Ast.MetaIdDecl(arity,name)]) }
+      !Data.add_id_meta name pure false; [Ast.MetaIdDecl(arity,name)]) }
 | TFresh TIdentifier
     { (function arity -> function name -> function pure ->
-      !Data.add_id_meta name pure; [Ast.MetaFreshIdDecl(arity,name)]) }
+      !Data.add_id_meta name pure true; [Ast.MetaFreshIdDecl(arity,name)]) }
 | TType
     { (function arity -> function name -> function pure ->
       Hashtbl.add metatypes name ();
@@ -921,7 +922,7 @@ pure_ident:
 /* allows redeclaring metavariables.  used in @@ @@ */
 pure_ident_or_meta_ident:
        x=pure_ident       { let (nm,clt) = x in nm }
-     | x=TMetaId          { let (nm,pure,clt) = x in nm }
+     | x=TMetaId          { let (nm,pure,fresh,clt) = x in nm }
      | x=TMetaType        { let (nm,pure,clt) = x in nm }
      | x=TMetaParam       { let (nm,pure,clt) = x in nm }
      | x=TMetaParamList   { let (nm,pure,clt) = x in nm }
@@ -937,8 +938,8 @@ pure_ident_or_meta_ident:
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
-         { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure)) }
+         { let (nm,pure,fresh,clt) = $1 in
+           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure,fresh)) }
      | TMetaFunc
          { let (nm,pure,clt) = $1 in
            Ast0.wrap(Ast0.MetaFunc(clt2mcode nm clt,pure)) }
@@ -949,8 +950,8 @@ func_ident: pure_ident
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(id2mcode $1)) }
      | TMetaId
-         { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure)) }
+         { let (nm,pure,fresh,clt) = $1 in
+           Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure,fresh)) }
 
 /*****************************************************************************/
 

@@ -103,7 +103,7 @@ let token2c (tok,_) =
   | PC.TMetaErr(_,_,clt) -> "errmeta"^(line_type2c clt)
   | PC.TMetaExp(_,_,_,clt) -> "expmeta"^(line_type2c clt)
   | PC.TMetaExpList(_,_,clt) -> "explistmeta"^(line_type2c clt)
-  | PC.TMetaId(_,_,clt)    -> "idmeta"^(line_type2c clt)
+  | PC.TMetaId(_,_,_,clt)    -> "idmeta"^(line_type2c clt)
   | PC.TMetaText(_,_,clt)    -> "textmeta"^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaStm(_,_,clt)   -> "stmmeta"^(line_type2c clt)
@@ -222,7 +222,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaExpList(_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
-  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,clt)
   | PC.TMetaFunc(_,_,clt) | PC.TMetaLocalFunc(_,_,clt) -> split t clt
   | PC.TArobArob -> ([t],[t])
@@ -285,7 +285,7 @@ seem very convenient to refactor the grammar to get around the problem. *)
 let rec find_function_names = function
     [] -> []
   | ((PC.TIdent(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaId(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaId(s,_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaLocalFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2)::rest
     ->
@@ -336,7 +336,7 @@ let token2line (tok,_) =
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt) 
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaExpList(_,_,clt) 
-  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt)   
   | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,clt)
   | PC.TMetaLocalFunc(_,_,clt) 
@@ -389,7 +389,7 @@ let detect_types l =
     | (PC.TComma(_),_) -> true
     | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_),_) -> true
     | _ -> false in
   let rec loop start type_names = function

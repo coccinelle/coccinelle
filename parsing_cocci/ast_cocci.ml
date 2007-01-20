@@ -41,6 +41,11 @@ and metavar =
   | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool (* true if inherited from a previous rule *)
+(* true if a fresh variable - ie name to be obtained from the user.
+   eventually, there should be fresh and input, fresh where the system tries
+   to pick a name like the one provided that doesn't conflict with anything,
+   and input where the user provides the name, eg for aesthetic reasons *)
+and fresh = bool
 
 (* true if a metavariable occurs more than once, and thus we need to keep
 track of its binding.  false otherwise *)
@@ -63,7 +68,7 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of string mcode * keep_binding * inherited
+  | MetaId        of string mcode * keep_binding * inherited * fresh
   | MetaFunc      of string mcode * keep_binding * inherited
   | MetaLocalFunc of string mcode * keep_binding * inherited
 

@@ -158,60 +158,61 @@ let init _ =
   in_atat := false;
   Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
   Data.add_id_meta :=
-    (let fn name pure clt = TMetaId(name,pure,clt) in
-    (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+    (function name -> function pure -> function fresh ->
+      let fn clt = TMetaId(name,pure,fresh,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_text_meta :=
-    (let fn name pure clt = TMetaText(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaText(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_type_meta :=
-    (let fn name pure clt = TMetaType(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaType(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_param_meta :=
-    (let fn name pure clt = TMetaParam(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaParam(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_paramlist_meta :=
-    (let fn name pure clt = TMetaParamList(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaParamList(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_const_meta :=
-    (let fn tyopt name pure clt = TMetaConst(name,pure,tyopt,clt) in
     (function tyopt -> function name -> function pure -> 
-      Hashtbl.replace metavariables name (fn tyopt name pure)));
+      let fn clt = TMetaConst(name,pure,tyopt,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_err_meta :=
-    (let fn name pure clt = TMetaErr(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaErr(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_exp_meta :=
-    (let fn tyopt name pure clt = TMetaExp(name,pure,tyopt,clt) in
     (function tyopt -> function name -> function pure ->
-      Hashtbl.replace metavariables name (fn tyopt name pure)));
+      let fn clt = TMetaExp(name,pure,tyopt,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_explist_meta :=
-    (let fn name pure clt = TMetaExpList(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaExpList(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_stm_meta :=
-    (let fn name pure clt = TMetaStm(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaStm(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_stmlist_meta :=
-    (let fn name pure clt = TMetaStmList(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaStmList(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_func_meta :=
-    (let fn name pure clt = TMetaFunc(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaFunc(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_local_func_meta :=
-    (let fn name pure clt = TMetaLocalFunc(name,pure,clt) in
     (function name -> function pure ->
-      Hashtbl.replace metavariables name (fn name pure)));
+      let fn clt = TMetaLocalFunc(name,pure,clt) in
+      Hashtbl.replace metavariables name fn);
   Data.add_type_name :=
-    (let fn name clt = TTypeId(name,clt) in
-    (function name -> Hashtbl.replace type_names name (fn name)))
+    (function name ->
+      let fn clt = TTypeId(name,clt) in
+      Hashtbl.replace type_names name fn)
 
 let drop_spaces s =
   let len = String.length s in

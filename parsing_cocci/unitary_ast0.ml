@@ -58,7 +58,7 @@ let get_free checker t =
   
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,_) | Ast0.MetaFunc(name,_)
+      Ast0.MetaId(name,_,_) | Ast0.MetaFunc(name,_)
     | Ast0.MetaLocalFunc(name,_) -> checker name
     | _ -> k i in
   
@@ -119,8 +119,8 @@ let update_unitary unitary =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,_) ->
-	Ast0.rewrap i (Ast0.MetaId(name,is_unitary name))
+      Ast0.MetaId(name,_,fresh) ->
+	Ast0.rewrap i (Ast0.MetaId(name,is_unitary name,fresh))
     | Ast0.MetaFunc(name,_) ->
 	Ast0.rewrap i (Ast0.MetaFunc(name,is_unitary name))
     | Ast0.MetaLocalFunc(name,_) ->

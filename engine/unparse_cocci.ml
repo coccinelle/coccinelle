@@ -59,7 +59,7 @@ in
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,true,_) -> 
+  | Ast.MetaId(name,true,_,fresh) -> 
       handle_metavar name (function
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
@@ -75,7 +75,7 @@ let rec ident i =
         | _ -> raise Impossible
         )
 
-  | Ast.MetaId(_,false,_) | Ast.MetaFunc(_,false,_)
+  | Ast.MetaId(_,false,_,_) | Ast.MetaFunc(_,false,_)
   | Ast.MetaLocalFunc(_,false,_)
   | Ast.OptIdent(_) | Ast.UniqueIdent(_) | Ast.MultiIdent(_) -> 
       raise CantBeInPlus

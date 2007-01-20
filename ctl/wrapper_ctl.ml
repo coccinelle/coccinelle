@@ -225,16 +225,15 @@ struct
 	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
 	       ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
-		  ((G.node * (SUB.mvar * SUB.value) list * predicate) list *
+		  ((G.node * (SUB.mvar * SUB.value) list * predicate)
+		     list list *
 		     bool *
 		     (WRAPPER_ENV.mvar * SUB.value) list,
 		   SUB.mvar) Common.either)) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
       let res =
-	Common.uniq
-	  (List.concat
-	     (List.map (fun (_,_,w) -> unwrap_wits binding w true) noclean)) in
+	List.map (fun (_,_,w) -> unwrap_wits binding w true) noclean in
       let unmodif_res =
 	Common.uniq
 	  (List.concat
@@ -249,8 +248,7 @@ struct
 	   things.  One could then wonder whether unwrap_wits needs
 	   binding as an argument. *)
 	    (collect_used_after used_after
-	      (binding ::
-	       (List.map (function (_,env,_) -> env) unmodif_res))))
+	      (binding :: (List.map (function (_,env,_) -> env) unmodif_res))))
        with INCOMPLETE_BINDINGS x -> Common.Right x)
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()

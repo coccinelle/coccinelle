@@ -41,6 +41,7 @@ and metavar =
   | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool
+and fresh = bool
 and keep_binding = bool
 
 (* --------------------------------------------------------------------- *)
@@ -60,7 +61,7 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of string mcode * keep_binding * inherited
+  | MetaId        of string mcode * keep_binding * inherited * fresh
   | MetaFunc      of string mcode * keep_binding * inherited
   | MetaLocalFunc of string mcode * keep_binding * inherited
 
