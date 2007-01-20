@@ -17,7 +17,7 @@ dsopcode.c
  * [status]
 
 dsutils.c
- * [status]
+ * [status] ok
 
 dswexec.c
  * [status]
@@ -32,7 +32,7 @@ evrgnini.c
  * [status]
 
 evxface.c
- * [status]
+ * [status] ok
 
 exconfig.c
  * [status]
@@ -41,7 +41,7 @@ exconvrt.c
  * [status]
 
 excreate.c
- * [status]
+ * [status] ok
 
 exdump.c
  * [status]
@@ -98,13 +98,13 @@ nsdump.c
  * [status]
 
 nseval.c
- * [status]
+ * [status] ok
 
 nsobject.c
  * [status]
 
 nssearch.c
- * [status]
+ * [status] ok
 
 nsutils.c
  * [status]
@@ -144,4 +144,3 @@ utmisc.c
 
 utobject.c
  * [status]
-

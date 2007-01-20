@@ -10,9 +10,7 @@ Bugs            :     0
   * [status] ok
 
 11_compress.c
-  * [status] fail
-  * control_flow: orphelin nodes, maybe something wierd happened
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 12_inode.c
   * [status] ok
@@ -24,8 +22,7 @@ Bugs            :     0
   * [status] ok
 
 15_dir.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 16_file.c
   * [status] ok
@@ -46,8 +43,7 @@ Bugs            :     0
   * [status] ok
 
 21_dir.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 22_inode.c
   * [status] ok
@@ -89,8 +85,7 @@ blkmtd.c
   * [status] ok
 
 buffer.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 cache.c
   * [status] ok
@@ -124,8 +119,7 @@ inode.c
   * [status] ok
 
 inode-v23.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Todo
+  * [status] ok
 
 ioctl.c
   * [status] ok
@@ -140,8 +134,7 @@ lvm-snap.c
   * [status] ok
 
 md.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 memory.c
   * [status] ok
@@ -167,12 +160,10 @@ rd.c
   * [status] ok
 
 read.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 rock.c
-  * [status] fail
-  * [parser] unparseable code
+  * [status] ok
 
 shmem.c
   * [status] fail
@@ -203,12 +194,10 @@ vmscan.c
   * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 vxfs_immed.c
-  * [status] fail
-  * [parser] unparseable code
+  * [status] ok
 
 vxfs_subr.c
-  * [status] fail
-  * [parser] unparseable code
+  * [status] ok
 
 write.c
   * [status] ok

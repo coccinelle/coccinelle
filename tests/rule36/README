@@ -15,17 +15,14 @@ cdc-ether.c
   * [status] ok
   * PBBB...
 
-
 hcd.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 pegasus.c
   * [status] ok
 
 uhci.c
-  * [status] fail
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 usb.c
   * [status] spatch-ok
@@ -36,8 +33,7 @@ usbnet.c
   * [status] ok
 
 usb-ohci.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 usb-uhci.c
   * [status] fail
@@ -46,4 +42,3 @@ usb-uhci.c
 usbvideo.c
   * [status] ok
   * PBBB...
-

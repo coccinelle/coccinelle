@@ -1,486 +1,494 @@
+157 ok
+5 wrong: 3 parsing problems, one src file with wrong number of args, one file
+with other changed
+
 a3d.c
- * [status] 
+ * [status] ok
 
 ac97_codec.c
- * [status] 
+ * [status] ok
 
 acecad.c
- * [status] 
+ * [status] ok
 
 ad1816a_lib.c
- * [status] 
+ * [status] ok
 
 ad1848_lib.c
- * [status] 
+ * [status] ok
 
 ad1889.c
- * [status] 
+ * [status] ok
 
 adi.c
- * [status] 
+ * [status] ok
 
 ainstr_gf1.c
- * [status] 
+ * [status] ok
 
 ainstr_iw.c
- * [status] 
+ * [status] wrong
+ parsing problem
 
 ak4114.c
- * [status] 
+ * [status] ok
 
 ak4117.c
- * [status] 
+ * [status] ok
 
 ak4531_codec.c
- * [status] 
+ * [status] ok
 
 ali5451.c
- * [status] 
+ * [status] ok
 
 amd7930.c
- * [status] 
+ * [status] ok
 
 analog.c
- * [status] 
+ * [status] ok
 
 aoedev.c
- * [status] 
+ * [status] ok
 
 atiixp.c
- * [status] 
+ * [status] ok
 
 atiixp_modem.c
- * [status] 
+ * [status] ok
 
 au88x0.c
- * [status] 
+ * [status] ok
 
 aureon.c
- * [status] 
+ * [status] ok
 
 azt3328.c
- * [status] 
+ * [status] ok
 
 bt87x.c
- * [status] 
+ * [status] ok
 
 ca0106_main.c
- * [status] 
+ * [status] ok
 
 cmipci.c
- * [status] 
+ * [status] ok
 
 cobra.c
- * [status] 
+ * [status] ok
 
 control.c
- * [status] 
+ * [status] ok
 
 control_compat.c
- * [status] 
+ * [status] ok
 
 corgikbd.c
- * [status] 
+ * [status] ok
 
 cs4231.c
- * [status] 
+ * [status] ok
 
 cs4231_lib.c
- * [status] 
+ * [status] ok
 
 cs4281.c
- * [status] 
+ * [status] ok
 
 cs46xx_lib.c
- * [status] 
+ * [status] ok
 
 cs8427.c
- * [status] 
+ * [status] ok
 
 db9.c
- * [status] 
+ * [status] ok
 
 device.c
- * [status] 
+ * [status] ok
 
 dummy.c
- * [status] 
+ * [status] ok
 
 ehci-sched.c
- * [status] 
+ * [status] ok
 
 emu10k1-gp.c
- * [status] 
+ * [status] ok
 
 emu10k1_main.c
- * [status] 
+ * [status] ok
 
 emu10k1x.c
- * [status] 
+ * [status] ok
 
 emu8000.c
- * [status] 
+ * [status] ok
 
 emu8000_pcm.c
- * [status] 
+ * [status] ok
 
 emufx.c
- * [status] 
+ * [status] wrong
+ parsing problem
 
 emupcm.c
- * [status] 
+ * [status] ok
 
 emux.c
- * [status] 
+ * [status] ok
 
 emux_seq.c
- * [status] 
+ * [status] ok
 
 ens1370.c
- * [status] 
+ * [status] ok
 
 es1688_lib.c
- * [status] 
+ * [status] ok
 
 es18xx.c
- * [status] 
+ * [status] ok
 
 es1938.c
- * [status] 
+ * [status] ok
 
 es1968.c
- * [status] 
+ * [status] ok
 
 fm801.c
- * [status] 
+ * [status] ok
 
 fm801-gp.c
- * [status] 
+ * [status] ok
 
 gamecon.c
- * [status] 
+ * [status] ok
 
 gf2k.c
- * [status] 
+ * [status] ok
 
 grip.c
- * [status] 
+ * [status] ok
 
 grip_mp.c
- * [status] 
+ * [status] ok
 
 guillemot.c
- * [status] 
+ * [status] ok
 
 gus_main.c
- * [status] 
+ * [status] ok
 
 gus_mem_proc.c
- * [status] 
+ * [status] ok
 
 gus_pcm.c
- * [status] 
+ * [status] ok
 
 hcd.c
- * [status] 
+ * [status] ok
 
 hda_codec.c
- * [status] 
+ * [status] ok
 
 hda_generic.c
- * [status] 
+ * [status] ok
 
 hda_intel.c
- * [status] 
+ * [status] ok
 
 hwdep.c
- * [status] 
+ * [status] ok
 
 i2c.c
- * [status] 
+ * [status] ok
 
 i8042.c
- * [status] 
+ * [status] ok
 
 ice1712.c
- * [status] 
+ * [status] ok
 
 ice1724.c
- * [status] 
+ * [status] ok
 
 info.c
- * [status] 
+ * [status] ok
 
 init.c
- * [status] 
+ * [status] ok
 
 intel8x0.c
- * [status] 
+ * [status] ok
 
 intel8x0m.c
- * [status] 
+ * [status] ok
 
 interact.c
- * [status] 
+ * [status] ok
 
 isp116x-hcd.c
- * [status] 
+ * [status] ok
 
 isp1301_omap.c
- * [status] 
+ * [status] ok
 
 itmtouch.c
- * [status] 
+ * [status] ok
 
 juli.c
- * [status] 
+ * [status] ok
 
 korg1212.c
- * [status] 
+ * [status] ok
 
 maestro3.c
- * [status] 
+ * [status] ok
 
 mbcs.c
- * [status] 
+ * [status] ok
 
 memory.c
- * [status] 
+ * [status] wrong
+ other changes.  is this a library file?
 
 mixart.c
- * [status] 
+ * [status] ok
 
 mixer_oss.c
- * [status] 
+ * [status] ok
 
 mpu401_uart.c
- * [status] 
+ * [status] ok
 
 mtpav.c
- * [status] 
+ * [status] ok
 
 nm256.c
- * [status] 
+ * [status] ok
 
 ns558.c
- * [status] 
+ * [status] ok
 
 opl3_lib.c
- * [status] 
+ * [status] ok
 
 opl3_oss.c
- * [status] 
+ * [status] ok
 
 opl3sa2.c
- * [status] 
+ * [status] ok
 
 opl4_lib.c
- * [status] 
+ * [status] ok
 
 opti92x-ad1848.c
- * [status] 
+ * [status] ok
 
 p16v.c
- * [status] 
+ * [status] ok
 
 patch_analog.c
- * [status] 
+ * [status] ok
 
 patch_cmedia.c
- * [status] 
+ * [status] ok
 
 patch_realtek.c
- * [status] 
+ * [status] ok
 
 patch_si3054.c
- * [status] 
+ * [status] ok
 
 patch_sigmatel.c
- * [status] 
+ * [status] ok
 
 pci-sysfs.c
- * [status] 
+ * [status] ok
 
 pcm.c
- * [status] 
+ * [status] ok
 
 pcm_memory.c
- * [status] 
+ * [status] ok
 
 pcm_native.c
- * [status] 
+ * [status] ok
 
 pcm_oss.c
- * [status] 
+ * [status] ok
 
 pcm_plugin.c
- * [status] 
+ * [status] ok
 
 pdaudiocf_core.c
- * [status] 
+ * [status] ok
 
 phase.c
- * [status] 
+ * [status] ok
 
 pid.c
- * [status] 
+ * [status] ok
 
 pmac.c
- * [status] 
+ * [status] ok
 
 pontis.c
- * [status] 
+ * [status] ok
 
 psmouse-base.c
- * [status] 
+ * [status] ok
 
 rawmidi.c
- * [status] 
+ * [status] ok
 
 sa11xx-uda1341.c
- * [status] 
+ * [status] ok
 
 sata_qstor.c
- * [status] 
+ * [status] ok
 
 sb16_csp.c
- * [status] 
+ * [status] ok
 
 sb_common.c
- * [status] 
+ * [status] wrong
+  parsing problem
 
 seq_clientmgr.c
- * [status] 
+ * [status] ok
 
 seq_device.c
- * [status] 
+ * [status] ok
 
 seq_dummy.c
- * [status] 
+ * [status] ok
 
 seq_fifo.c
- * [status] 
+ * [status] ok
 
 seq_instr.c
- * [status] 
+ * [status] ok
 
 seq_memory.c
- * [status] 
+ * [status] ok
 
 seq_midi.c
- * [status] 
+ * [status] ok
 
 seq_midi_event.c
- * [status] 
+ * [status] ok
 
 seq_oss_init.c
- * [status] 
+ * [status] ok
 
 seq_oss_midi.c
- * [status] 
+ * [status] ok
 
 seq_oss_readq.c
- * [status] 
+ * [status] ok
 
 seq_oss_synth.c
- * [status] 
+ * [status] ok
 
 seq_oss_timer.c
- * [status] 
+ * [status] ok
 
 seq_oss_writeq.c
- * [status] 
+ * [status] ok
 
 seq_ports.c
- * [status] 
+ * [status] ok
 
 seq_prioq.c
- * [status] 
+ * [status] ok
 
 seq_queue.c
- * [status] 
+ * [status] ok
 
 seq_system.c
- * [status] 
+ * [status] ok
 
 seq_timer.c
- * [status] 
+ * [status] ok
 
 seq_virmidi.c
- * [status] 
+ * [status] ok
 
 serial-u16550.c
- * [status] 
+ * [status] ok
 
 serport.c
- * [status] 
+ * [status] ok
 
 sgi_hotplug.c
- * [status] 
+ * [status] ok
 
 sidewinder.c
- * [status] 
+ * [status] ok
 
 sl811-hcd.c
- * [status] 
+ * [status] ok
 
 sonicvibes.c
- * [status] 
+ * [status] ok
 
 soundfont.c
- * [status] 
+ * [status] ok
 
 sysfs.c
- * [status] 
+ * [status] ok
 
 tea6330t.c
- * [status] 
+ * [status] ok
 
 timer.c
- * [status] 
+ * [status] ok
 
 tmdc.c
- * [status] 
+ * [status] ok
 
 trident_main.c
- * [status] 
+ * [status] ok
 
 turbografx.c
- * [status] 
+ * [status] ok
 
 uda1341.c
- * [status] 
+ * [status] wrong
+ in the source program, the call to kcalloc has 4 arguments, not 3 as expcted
 
 usbatm.c
- * [status] 
+ * [status] ok
 
 usbaudio.c
- * [status] 
+ * [status] ok
 
 usbmidi.c
- * [status] 
+ * [status] ok
 
 usbmixer.c
- * [status] 
+ * [status] ok
 
 usbusx2yaudio.c
- * [status] 
+ * [status] ok
 
 util_mem.c
- * [status] 
+ * [status] ok
 
 via82xx.c
- * [status] 
+ * [status] ok
 
 via82xx_modem.c
- * [status] 
+ * [status] ok
 
 vx_core.c
- * [status] 
+ * [status] ok
 
 vx_pcm.c
- * [status] 
+ * [status] ok
 
 ymfpci_main.c
- * [status] 
-
+ * [status] ok

@@ -20,19 +20,19 @@ hci_vhci.c
  * [status] ok
 
 icn.c
- * [status] ok
+ * [status] ok :(
 
 isdnl1.c
- * [status] ok
+ * [status] ok :(
 
 isdnl2.c
- * [status] ok
+ * [status] ok :(
 
 isdnl3.c
- * [status] ok
+ * [status] ok :(
 
 isdn_tty.c
- * [status] ok
+ * [status] ok :(
 
 ppp_async.c
  * [status] ok
@@ -44,7 +44,7 @@ ppp_synctty.c
  * [status] ok
 
 scc.c
- * [status] ok
+ * [status] ok :(
  makes a failed file because a comment comes out before a { while it was
  after the { in the original file
 
@@ -55,3 +55,9 @@ usbnet.c
  * [status] error
  problem with not knowing where an expression has already applied
 
+claw.ok
+hci_vhci.ok
+ppp_async.ok
+ppp_generic.ok
+ppp_synctty.ok
+tun.ok

@@ -21,8 +21,7 @@ dtl1_cs.c
  * [status] ok
 
 hci_bcsp.c
- * [status] error
- parsing problem
+ * [status] ok
 
 hci_h4.c
  * [status] ok

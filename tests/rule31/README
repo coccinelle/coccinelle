@@ -15,12 +15,11 @@ acsi.c
   * [rule] CLEAR_INTR should be replaced by do_acsi some places
 
 amiflop.c
-  * [status] spatch-ok
-  * PBBB...
+  * [status] ok
   * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 ataflop.c
-  * [status] spatch-ok
+  * [status] ok
   * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 cdu31a.c
@@ -30,8 +29,7 @@ cm206.c
   * [status] ok
 
 fd1772.c
-  * [status] spatch-ok
-  * PBBB...
+  * [status] ok
   * [independent] "#define DEVICE_INTR do_floppy" should be removed
 
 ftl.c
@@ -98,20 +96,18 @@ sonycd535.c
   * [exc] Fatal error: exception Common.Impossible
 
 swim3.c
-  * [status] spatch-ok
+  * [status] ok
   * [independent] remove "#define DEVICE_INTR do_floppy"
 
 swim_iop.c
-  * [status] spatch-ok
+  * [status] ok
   * [independent] remove "#define DEVICE_INTR do_floppy"
 
 xd.c
   * [status] ok
 
 xpram.c
-  * [status] fail
-  * PBBB...
-  * [exc] Fatal error: exception Not_found
+  * [status] ok
 
 z2ram.c
   * [status] ok

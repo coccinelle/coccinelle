@@ -2,17 +2,17 @@ amdtp.c
  * [status]
 
 buffer.c
- * [status]
+ * [status] ok
 
 ehci-mem.c
- * [status]
+ * [status] ok
 
 ohci-mem.c
  * [status]
+ some irrelevant debugging code added
 
 pool.c
  * [status]
 
 uhci-hcd.c
- * [status]
-
+ * [status] ok
