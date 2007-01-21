@@ -1,0 +1,134 @@
+ali5455.c
+ * [status] 
+
+atyfb_base.c
+ * [status] 
+
+au1000.c
+ * [status] 
+
+audio.c
+ * [status] 
+
+cmpci.c
+ * [status] 
+
+cpia.c
+ * [status] 
+
+cs4281m.c
+ * [status] 
+
+cs46xx.c
+ * [status] 
+
+es1370.c
+ * [status] 
+
+es1371.c
+ * [status] 
+
+esssolo1.c
+ * [status] 
+
+flash.c
+ * [status] 
+
+forte.c
+ * [status] 
+
+frontend.c
+ * [status] 
+
+ftape-ctl.c
+ * [status] 
+
+gbefb.c
+ * [status] 
+
+hpet.c
+ * [status] 
+
+i810_audio.c
+ * [status] 
+
+i810_dma.c
+ * [status] 
+
+i830_dma.c
+ * [status] 
+
+igafb.c
+ * [status] 
+
+ite8172.c
+ * [status] 
+
+jsflash.c
+ * [status] 
+
+maestro3.c
+ * [status] 
+
+maestro.c
+ * [status] 
+
+mem.c
+ * [status] 
+
+meye.c
+ * [status] 
+
+mmtimer.c
+ * [status] 
+
+ov511.c
+ * [status] 
+
+planb.c
+ * [status] 
+
+rme96xx.c
+ * [status] 
+
+se401.c
+ * [status] 
+
+sgivwfb.c
+ * [status] 
+
+sn9c102_core.c
+ * [status] 
+
+sonicvibes.c
+ * [status] 
+
+soundcard.c
+ * [status] 
+
+stv680.c
+ * [status] 
+
+trident.c
+ * [status] 
+
+usbvideo.c
+ * [status] 
+
+vicam.c
+ * [status] 
+
+video1394.c
+ * [status] 
+
+w9968cf.c
+ * [status] 
+
+ymfpci.c
+ * [status] 
+
+zoran_driver.c
+ * [status] 
+
+zr36120.c
+ * [status] 
