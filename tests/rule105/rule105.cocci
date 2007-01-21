@@ -122,6 +122,32 @@ f(...,dev_link_t *link,...) {
 
 @@
 identifier link, f, handle_var;
+expression E1;
+@@
+
+f(...,dev_link_t *link,...) {
+  ...
+(
+  client_handle_t handle_var = link->handle;
+|
+  struct pcmcia_device *handle_var = link->handle;
+|
+  client_handle_t handle_var;
+  ...
+  handle_var = link->handle;
+|
+  struct pcmcia_device *handle_var;
+  ...
+  handle_var = link->handle;
+)
+  <...
+- pcmcia_access_configuration_register(handle_var,E1)
++ pcmcia_access_configuration_register(link,E1)
+  ...>
+}
+
+@@
+identifier link, f, handle_var;
 @@
 
 f(...,dev_link_t *link,...) {
@@ -354,6 +380,14 @@ expression E1;
 
 - pcmcia_request_configuration(link->handle,E1)
 + pcmcia_request_configuration(link,E1)
+
+@@
+dev_link_t *link;
+expression E1;
+@@
+
+- pcmcia_access_configuration_register(link->handle,E1)
++ pcmcia_access_configuration_register(link,E1)
 
 @@
 dev_link_t *link;
