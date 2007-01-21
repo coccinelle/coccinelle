@@ -2,7 +2,6 @@ SP=rule56.cocci
 
 SOURCES = 3w-xxxx.c \
 acenic.c \
-aic7xxx_old.c \
 ambassador.c \
 atp870u.c \
 BusLogic.c \
@@ -28,7 +27,6 @@ i2c-elektor.c \
 i810_audio.c \
 ide.c \
 inia100.c \
-ip2main.c \
 iph5526.c \
 isicom.c \
 istallion.c \
@@ -67,6 +65,8 @@ sym_glue.c \
 syscall.c \
 tc35815.c \
 tmscsim.c \
-trident.c
+trident.c \
+aic7xxx_old.c \
+ip2main.c
 
 include ../generic_makefile

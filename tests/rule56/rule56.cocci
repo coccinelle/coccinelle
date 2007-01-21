@@ -30,19 +30,31 @@ statement S;
 
 (
 - if (pci_present())
-   {
-    <...
-\+  T x;
-    ...>
+  {
+    T x;
+    ...
   }
 - else S
+|
+- if (pci_present())
+  {
+    T x;
+    ...
+  }
 |
 - if (pci_present()) {
     ...
 -  }
 - else S
 |
+- if (pci_present()) {
+    ...
+-  }
+|
 - if (pci_present())
   S
 - else S
+|
+- if (pci_present())
+  S
 )

@@ -1,14 +1,14 @@
 dbcmds.c
- * [status]
+ * [status] ok
 
 dbdisply.c
  * [status]
 
 dbstats.c
- * [status]
+ * [status] ok
 
 dsmthdat.c
- * [status]
+ * [status] ok
 
 dsobject.c
  * [status]
@@ -26,7 +26,7 @@ dswstate.c
  * [status]
 
 evregion.c
- * [status]
+ * [status] ok
 
 evrgnini.c
  * [status]
@@ -47,7 +47,7 @@ exdump.c
  * [status]
 
 exfield.c
- * [status]
+ * [status] ok
 
 exfldio.c
  * [status]
@@ -65,10 +65,10 @@ exoparg3.c
  * [status]
 
 exoparg6.c
- * [status]
+ * [status] ok
 
 exprep.c
- * [status]
+ * [status] ok
 
 exresnte.c
  * [status]
@@ -92,10 +92,10 @@ hwregs.c
  * [status]
 
 nsaccess.c
- * [status]
+ * [status] ok
 
 nsdump.c
- * [status]
+ * [status] ok
 
 nseval.c
  * [status] ok
@@ -128,7 +128,7 @@ utcopy.c
  * [status]
 
 utdelete.c
- * [status]
+ * [status] ok
 
 uteval.c
  * [status]
