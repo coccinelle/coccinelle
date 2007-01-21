@@ -184,7 +184,8 @@ let fold_left_with_index f acc =
 
 (* let rec enum x n = if x = n then [n] else x::enum (x+1)  n *)
 let rec enum x n = 
-  assert (x <= n);
+  if not(x <= n)
+  then failwith (Printf.sprintf "bad values in enum, expect %d <= %d" x n);
   let rec enum_aux acc x n = 
     if x = n then n::acc else enum_aux (x::acc) (x+1) n 
   in
@@ -1920,9 +1921,7 @@ let rec insert_elem_pos (e, pos) xs =
 
 let rec uncons_permut xs = 
   let indexed = index_list xs in
-  indexed +> List.map (fun (x, pos) -> 
-    (x, pos),  remove_elem_pos pos xs 
-  )
+  indexed +> List.map (fun (x, pos) -> (x, pos),  remove_elem_pos pos xs)
 let _ = 
   example 
     (uncons_permut ['a';'b';'c'] = 

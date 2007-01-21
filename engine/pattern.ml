@@ -720,6 +720,7 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
 and match_initialisers = fun ias ibs -> 
   match ias, ibs with
   | [], ys -> return true
+  | xs, [] -> return false
   | x::xs, ys -> 
       let permut = Common.uncons_permut ys in
       permut +> List.fold_left (fun acc ((e, _pos), rest) -> 
