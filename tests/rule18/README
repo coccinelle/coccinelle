@@ -22,6 +22,8 @@ diva.c
 elsa_ser.c
   * [status] ok
   * PBB..
+  problem in determining the type of the bcs expression, but perhaps not
+  important, so metavariable changed to expression
 
 hfc_2bds0.c
   * [status] ok
@@ -72,4 +74,3 @@ st5481_b.c
 w6692.c
   * [status] ok
   * PBB..
-

@@ -20,7 +20,7 @@ identifier bcs, ev;
 
 @@
 struct BCState *bcs;
-int ev;
+expression ev;
 @@
 
 - fn2(bcs,ev)
@@ -28,7 +28,7 @@ int ev;
 
 @@
 struct BCState *bcs;
-int ev;
+expression ev;
 @@
 
 (
@@ -43,8 +43,13 @@ int ev;
 
 
 @@
-struct BCState *bcs;
-int ev;
+// in one case where this rule is used, the first argument is a complex
+// expression, so we can't figure out the type, but the type should be
+// fixed by the called function, so perhaps there is no need for the rule to
+// check for it
+//struct BCState *bcs;
+expression bcs;
+expression ev;
 @@
 // added due to experience - interfile effect
 - hscx_sched_event(bcs,ev)

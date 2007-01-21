@@ -14,6 +14,7 @@ SOURCES = avm_pci.c \
           isar.c \
           jade_irq.c \
           netjet.c \
-          w6692.c
+          w6692.c \
+	  st5481_b.c
 
 include ../generic_makefile

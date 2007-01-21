@@ -20,19 +20,24 @@ hci_vhci.c
  * [status] ok
 
 icn.c
- * [status] ok :(
+ * [status] spatch_ok
+ version string changed
 
 isdnl1.c
- * [status] ok :(
+ * [status] spatch_ok
+ version string changed
 
 isdnl2.c
- * [status] ok :(
+ * [status] spatch_ok
+ version string changed
 
 isdnl3.c
- * [status] ok :(
+ * [status] spatch_ok
+ version string changed
 
 isdn_tty.c
- * [status] ok :(
+ * [status] spatch_ok
+ version string changed
 
 ppp_async.c
  * [status] ok
@@ -44,9 +49,8 @@ ppp_synctty.c
  * [status] ok
 
 scc.c
- * [status] ok :(
- makes a failed file because a comment comes out before a { while it was
- after the { in the original file
+ * [status] spatch_ok
+ version string changed
 
 tun.c
  * [status] ok
@@ -54,10 +58,3 @@ tun.c
 usbnet.c
  * [status] error
  problem with not knowing where an expression has already applied
-
-claw.ok
-hci_vhci.ok
-ppp_async.ok
-ppp_generic.ok
-ppp_synctty.ok
-tun.ok

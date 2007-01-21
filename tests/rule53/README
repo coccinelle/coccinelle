@@ -2,7 +2,7 @@ ata_piix.c
  * [status]
 
 libata-scsi.c
- * [status]
+ * [status] ok
 
 sata_promise.c
  * [status]
@@ -15,4 +15,3 @@ sata_svw.c
 
 sata_via.c
  * [status]
-

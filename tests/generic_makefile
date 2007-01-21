@@ -22,11 +22,17 @@ opt: $(OBJS)
 
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) $(<:.c=.spatch_ok) /tmp/output.c
-	(time $(SPATCHCMD) $<) 2> $(<:.c=.ok) || \
+	(if ( test -e $(<:.c=.var) ) ; \
+	then (time $(SPATCHCMD) $<) < $(<:.c=.var) 2> $(<:.c=.ok) ; \
+	else (time $(SPATCHCMD) $<) 2> $(<:.c=.ok) ; \
+	fi) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.spatch_ok) && \
 	test -e corrected_$(<:.c=.res) && \
 	cp $< corrected_$< && \
-		(time $(SPATCHCMD) corrected_$<) 2>> $(<:.c=.spatch_ok) && \
+	(if ( test -e $(<:.c=.var) ) ; \
+	then (time $(SPATCHCMD) corrected_$<) < $(<:.c=.var) 2> $(<:.c=.ok) ; \
+	else (time $(SPATCHCMD) corrected_$<) 2> $(<:.c=.ok) ; \
+	fi) && \
 	/bin/rm corrected_$<) || \
 	(/bin/rm -f corrected_$< && test -e $(<:.c=.spatch_ok) && \
 		mv $(<:.c=.spatch_ok) $(<:.c=.failed)) || \

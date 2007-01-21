@@ -1,5 +1,6 @@
 amdtp.c
- * [status]
+ * [status] error
+ C parser doesn't handle case range: case 24 ... 27:
 
 buffer.c
  * [status] ok
@@ -11,8 +12,7 @@ ohci-mem.c
  * [status]
  some irrelevant debugging code added
 
-pool.c
- * [status]
-
 uhci-hcd.c
  * [status] ok
+
+pool.c was dropped because this is the library file

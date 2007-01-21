@@ -1,6 +1,6 @@
 @@
 identifier driver;
-local function attach, detach;
+identifier attach, detach;
 @@
 
 struct pcmcia_driver driver = {
@@ -9,8 +9,8 @@ struct pcmcia_driver driver = {
 };
 
 @@
-//local function detach, release;
-identifier detach, release;
+//local function release;
+identifier release;
 identifier link;
 @@
 
@@ -26,8 +26,7 @@ detach(struct pcmcia_device *link)
 }
 
 @@
-//local function attach, config;
-identifier attach, config;
+identifier config;
 identifier link;
 @@
 
@@ -74,6 +73,23 @@ statement S;
 +     return -ENOMEM;
       ...>
   }
+
+@@
+fresh identifier probefn;
+@@
+
+- attach
++ probefn
+       (struct pcmcia_device *link) { ... }
+
+@@
+@@
+
+struct pcmcia_driver driver = {
+	.probe		=
+-                         attach
++                         probefn
+};
 
 @@
 expression E;

@@ -4,7 +4,9 @@ SOURCES = amdtp.c \
 buffer.c \
 ehci-mem.c \
 ohci-mem.c \
-pool.c \
 uhci-hcd.c
 
 include ../generic_makefile
+
+# pool.c, which was in the git file, is not included because this is the
+# library file
