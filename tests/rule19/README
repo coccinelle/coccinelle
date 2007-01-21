@@ -1,0 +1,86 @@
+asuscom.c
+ * [status] 
+
+avm_a1.c
+ * [status] 
+
+avm_a1p.c
+ * [status] 
+
+bkm_a4t.c
+ * [status] 
+
+bkm_a8.c
+ * [status] 
+
+diva.c
+ * [status] 
+
+elsa.c
+ * [status] 
+
+gazel.c
+ * [status] 
+
+hfc_2bds0.c
+ * [status] 
+
+hfc_pci.c
+ * [status] 
+
+hfc_sx.c
+ * [status] 
+
+icc.c
+ * [status] 
+
+ipacx.c
+ * [status] 
+
+isac.c
+ * [status] 
+
+isar.c
+ * [status] 
+
+isurf.c
+ * [status] 
+
+ix1_micro.c
+ * [status] 
+
+jade_irq.c
+ * [status] 
+
+mic.c
+ * [status] 
+
+niccy.c
+ * [status] 
+
+s0box.c
+ * [status] 
+
+saphir.c
+ * [status] 
+
+sedlbauer.c
+ * [status] 
+
+sportster.c
+ * [status] 
+
+teleint.c
+ * [status] 
+
+teles0.c
+ * [status] 
+
+teles3.c
+ * [status] 
+
+telespci.c
+ * [status] 
+
+w6692.c
+ * [status] 
