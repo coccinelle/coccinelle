@@ -30,5 +30,4 @@ teles3.c \
 telespci.c \
 w6692.c
 
-
 include ../generic_makefile
