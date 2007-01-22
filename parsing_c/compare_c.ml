@@ -25,8 +25,7 @@ let normal_form_program xs =
       | (Constant (String (s,kind)), typ), [ii] 
           (* do not join the regexp, otherwise CVS will modify it :) *)
           when s =~ ("^\\$\\([A-Za-z_]+\\):.*" ^
-                        "\\$$")  -> 
-
+                     "\\$$")  -> 
           let tag = matched1 s in
           if List.mem tag ["Id"; "Date"]
           then 
