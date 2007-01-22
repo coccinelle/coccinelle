@@ -8,6 +8,20 @@ type compare_result =
   | Incorrect of string
   | IncorrectOnlyInNotParsedCorrectly
 
+
+let normal_form_program xs = 
+  let bigf = { Visitor_c.default_visitor_c_s with 
+    Visitor_c.kini_s = (fun (k,bigf) ini -> 
+      match ini with
+      | InitList xs, [i1;i2;iicommaopt] -> 
+          k (InitList xs, [i1;i2])
+      | _ -> k ini
+    )
+  }
+  in
+  xs +> List.map (fun p -> Visitor_c.visitor_program_k_s  bigf p)
+           
+
 (* Note that I use a kind of astdiff to know if there is a difference, but
  * then I use diff to print the differences. So sometimes you have to dig
  * a little to find really where the real difference (one not involving 
@@ -22,8 +36,8 @@ type compare_result =
  *)
 let compare (c1,filename1) (c2, filename2)  =
 
-    let c1' = Abstract_line_c.al_program c1 in
-    let c2' = Abstract_line_c.al_program c2 in
+    let c1' = c1 +> Abstract_line_c.al_program +> normal_form_program in
+    let c2' = c2 +> Abstract_line_c.al_program +> normal_form_program in
     
     let xs =
       process_output_to_list 
