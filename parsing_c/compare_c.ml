@@ -24,12 +24,16 @@ let normal_form_program xs =
       match e with
       | (Constant (String (s,kind)), typ), [ii] 
           (* do not join the regexp, otherwise CVS will modify it :) *)
-          when s =~ ("^\\$Id:.*" ^
+          when s =~ ("^\\$\\([A-Za-z_]\\):.*" ^
                         "\\$$")  -> 
-          let newstr = "VERSION_ID_STRING" in
-          (Constant (String (newstr,kind)), typ), 
-          [tok_set newstr ii]
-          
+
+          let tag = matched1 s in
+          if List.mem tag ["Id"; "Date"]
+          then 
+            let newstr = "VERSION_ID_STRING" in
+            (Constant (String (newstr,kind)), typ), [tok_set newstr ii]
+          else 
+            (Constant (String (s,kind)), typ), [ii] 
       | _ -> k e    
 
     );
