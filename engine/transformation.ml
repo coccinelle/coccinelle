@@ -512,6 +512,9 @@ and transform_de_de = fun mckstart decla declb ->
 and transform_onedecl = fun decla declb -> 
  fun binding -> 
    match A.unwrap decla, declb with
+   | A.MetaDecl(ida,_,_inherited), _ -> 
+       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
+
    | A.UnInit (stoa, typa, ida, ptvirga), 
      (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
        assert (null iini);
@@ -541,11 +544,8 @@ and transform_onedecl = fun decla declb ->
    | A.TyDecl (typa, _), _ ->
        failwith "fill something in for a declaration that is just a type"
        
-   | _, (((None, typb, sto), _),_) -> 
-       failwith "no variable in this declaration, wierd"
+   | _, (((None, typb, sto), _),_) -> raise NoMatch
 
-   | A.MetaDecl(ida,_,_inherited), _ -> 
-       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
 
    | A.DisjDecl xs, declb -> 
        xs +> Common.fold_k (fun acc decla k -> 

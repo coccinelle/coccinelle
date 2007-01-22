@@ -654,26 +654,27 @@ and match_re_onedecl = fun decla declb ->
   all_bound (A.get_inherited decla) >&&>
   match A.unwrap decla, declb with
   | A.MetaDecl(ida,keep,_inherited), _ -> 
-      return true (* todo? add in env ? *)
+      failwith "TODO: what is a MetaDecl ?"
 
     (* could handle iso here but handled in standard.iso *)
   | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
+
       match_storage stoa stob >&&> match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb
-  | A.Init (stoa, typa, sa, _, inia, _),
-      ((Some ((sb, Some inib),_), typb, stob), _) ->
+  | A.Init (stoa,typa,sa,_,inia,_),((Some ((sb,Some inib),_),typb,stob), _) ->
+
       match_storage stoa stob >&&> 
       match_ft_ft typa typb >&&>
       match_ident DontKnow sa sb >&&>
       match_initialiser inia inib
 
   | A.TyDecl (typa, _), _ ->
+
+      (* accept only '((None, typb, sto), _)' or do iso-by-absence here ?
+         allow typedecl and var ? *)
       failwith "fill something in for a declaration that is just a type"
 
-  | _, ((None, typb, sto), _) -> 
-      (* it would be better to have the line number of the C code, but I
-	 don't know how to get it *)
-      failwith (Printf.sprintf "no variable in this declaration, wierd\nin code matching SP code on line %d" (A.get_line decla))
+  | _, ((None, typb, sto), _) -> return false
 
       
   | A.DisjDecl xs, _ -> 
