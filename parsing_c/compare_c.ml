@@ -24,7 +24,8 @@ let normal_form_program xs =
       match e with
       | (Constant (String (s,kind)), typ), [ii] 
           (* do not join the regexp, otherwise CVS will modify it :) *)
-          when s =~ ("^\\$Id$$")  -> 
+          when s =~ ("^\\$Id:.*" ^
+                        "\\$$")  -> 
           let newstr = "VERSION_ID_STRING" in
           (Constant (String (newstr,kind)), typ), 
           [tok_set newstr ii]
