@@ -580,11 +580,21 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                Some newendswitch
          )
 
-    | Labeled (Ast_c.Case  (e, st)), ii -> 
+    | Labeled (Ast_c.Case  (_, _)), _
+    | Labeled (Ast_c.CaseRange  (_, _, _)), _ -> 
+
         incr counter_for_switch;
         let switchrank = !counter_for_switch in
+        let node, st = 
+          match stmt with 
+          | Labeled (Ast_c.Case  (e, st)), ii -> 
+              (Case (stmt, (e, ii))),  st
+          | Labeled (Ast_c.CaseRange  (e, e2, st)), ii -> 
+              (CaseRange (stmt, ((e, e2), ii))), st
+          | _ -> raise Impossible
+        in
 
-        let newi = add_node_g (Case (stmt, (e, ii))) lbl "case:" in
+        let newi = add_node_g node  lbl "case:" in
 
         (match auxinfo.ctx with
         | SwitchInfo (startbrace, switchendi, _braces) -> 
@@ -625,8 +635,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         );
         aux_statement (Some newi, auxinfo_label) st
 
-    | Labeled (Ast_c.CaseRange  (e, e2, st)), ii -> 
-        raise Todo
 
 
 
