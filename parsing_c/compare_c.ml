@@ -22,7 +22,9 @@ let normal_form_program xs =
     );
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       match e with
-      | (Constant (String (s,kind)), typ), [ii]   when s =~ "^\\$Id$$"  -> 
+      | (Constant (String (s,kind)), typ), [ii] 
+          (* do not join the regexp, otherwise CVS will modify it :) *)
+          when s =~ ("^\\$Id$$")  -> 
           let newstr = "VERSION_ID_STRING" in
           (Constant (String (newstr,kind)), typ), 
           [tok_set newstr ii]
