@@ -1250,8 +1250,10 @@ let int_to_month i =
 (* Lines/words/strings *)
 (*****************************************************************************)
 
+(* now in prelude 
 let (list_of_string: string -> char list) = fun s -> 
   (enum 0 ((String.length s) - 1) +> List.map (String.get s))
+*)
 
 let _ = example (list_of_string "abcd" = ['a';'b';'c';'d'])
 
@@ -1619,7 +1621,9 @@ let rec enum x n =
 *)
 
 
-let index_list xs = zip xs (enum 0 ((List.length xs) -1))
+let index_list xs = 
+  if xs = [] then [] (* enum 0 (-1) generate an exception *)
+  else zip xs (enum 0 ((List.length xs) -1))
 
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true

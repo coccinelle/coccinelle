@@ -218,10 +218,11 @@ let main () =
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-cocci_vs_c",          Arg.Set Flag_engine.use_cocci_vs_c,    " ";
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
-
-      "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
       "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
+
+      "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
+
 
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
@@ -259,7 +260,8 @@ let main () =
         | "tokens_c", [file] -> 
             Flag_parsing_c.debug_lexer := true; 
             Flag_parsing_c.verbose_parsing := true;
-            Parse_c.tokens file +> pr2gen
+            Parse_c.tokens file +> Common.pr2gen
+
         | "parse_c", x::xs -> 
             let fullxs = 
               if !dir
@@ -284,11 +286,14 @@ let main () =
         | "parse_cocci", [file] -> 
             if not (file =~ ".*\\.cocci") 
             then pr2 "warning: seems not a .cocci file";
+
             let (xs,_,_) = Cocci.sp_from_file file None in
             xs +> List.iter Pretty_print_cocci.unparse
+
         | "control_flow", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
+
             file 
               +> Parse_c.parse_print_error_heuristic
               +> (fun (program, stat) -> 
@@ -303,22 +308,22 @@ let main () =
                       | Ast_to_flow.DeadCode (Some info)-> pr2 ("deadcode detected: " ^ (error_message file ("", info.charpos) ))
                         
                       )
-                    
                   | _ -> ()
                  );
                  )
         | "parse_unparse", [file] -> 
             let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
-            let program2_with_method = 
+            let program2_with_ppmethod = 
               program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
             in
-            Unparse_c.pp_program program2_with_method "/tmp/output.c";
+            Unparse_c.pp_program program2_with_ppmethod "/tmp/output.c";
             Common.command2 "cat /tmp/output.c";
 
 
         | "typeur", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
+
             ignore(Cocci.cprogram_from_file file);
 
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
