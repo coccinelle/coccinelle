@@ -9,6 +9,9 @@ type compare_result =
   | IncorrectOnlyInNotParsedCorrectly
 
 
+let tok_set s (info, annot) =  { info with Common.str = s;}, annot
+
+
 let normal_form_program xs = 
   let bigf = { Visitor_c.default_visitor_c_s with 
     Visitor_c.kini_s = (fun (k,bigf) ini -> 
@@ -16,7 +19,17 @@ let normal_form_program xs =
       | InitList xs, [i1;i2;iicommaopt] -> 
           k (InitList xs, [i1;i2])
       | _ -> k ini
-    )
+    );
+    Visitor_c.kexpr_s = (fun (k,bigf) e -> 
+      match e with
+      | (Constant (String (s,kind)), typ), [ii]   when s =~ "^\\$Id$$"  -> 
+          let newstr = "VERSION_ID_STRING" in
+          (Constant (String (newstr,kind)), typ), 
+          [tok_set newstr ii]
+          
+      | _ -> k e    
+
+    );
   }
   in
   xs +> List.map (fun p -> Visitor_c.visitor_program_k_s  bigf p)
