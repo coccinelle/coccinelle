@@ -46,10 +46,13 @@ let normal_form_program xs =
           let newstr = 
             Str.global_substitute cvs_keyword_regexp (fun _s -> 
               let substr = Str.matched_string s in
-              assert (substr ==~ cvs_keyword_regexp);
+              assert (substr ==~ cvs_keyword_regexp); (* use its side-effect *)
               let tag = matched1 substr in
-              assert (List.mem tag cvs_keyword_list);
-              "VERSION_ID_STRING" 
+
+              if not (List.mem tag cvs_keyword_list)
+              then failwith ("unknown CVS keyword: " ^ tag);
+              
+              "CVS_MAGIC_STRING" 
             ) s 
           in
           (Constant (String (newstr,kind)), typ), [tok_set newstr ii]
