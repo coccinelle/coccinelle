@@ -653,10 +653,14 @@ and match_storage stoa stob =
 and match_re_onedecl = fun decla declb -> 
   all_bound (A.get_inherited decla) >&&>
   match A.unwrap decla, declb with
-  | A.MetaDecl(ida,keep,_inherited), _ -> 
-      failwith "TODO: what is a MetaDecl ?"
+  (* Un Metadecl est introduit dans l'asttoctl pour sauter au dessus
+     de toutes les declarations qui sont au debut d'un fonction et
+     commencer le reste du match au premier statement. Alors, ca matche
+     n'importe quelle declaration. On n'a pas besoin d'ajouter
+     quoi que ce soit dans l'environnement. C'est une sorte de DDots *)
+  | A.MetaDecl(ida,keep,_inherited), _ -> return true
 
-    (* could handle iso here but handled in standard.iso *)
+  (* could handle iso here but handled in standard.iso *)
   | A.UnInit (stoa, typa, sa, _), ((Some ((sb, None),_), typb, stob), _) ->
 
       match_storage stoa stob >&&> match_ft_ft typa typb >&&>

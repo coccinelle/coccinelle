@@ -513,7 +513,7 @@ and transform_onedecl = fun decla declb ->
  fun binding -> 
    match A.unwrap decla, declb with
    | A.MetaDecl(ida,_,_inherited), _ -> 
-       failwith "impossible ? can we transform MetaDecl ? I thought julia never do that"
+       failwith "impossible. We can't transform a MetaDecl"
 
    | A.UnInit (stoa, typa, ida, ptvirga), 
      (((Some ((idb, None),iidb::iini), typb, stob), iivirg), iiptvirgb) -> 
