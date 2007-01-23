@@ -414,6 +414,8 @@ val matched4 : string -> string * string * string * string
 val matched5 : string -> string * string * string * string * string
 val matched6 : string -> string * string * string * string * string * string
 
+val string_match_substring : Str.regexp -> string -> bool
+
 val split : string -> string -> string list
 
 val join : string -> string list -> string

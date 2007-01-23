@@ -1135,9 +1135,11 @@ let lowercase = String.lowercase
 (* Different from Perl a little. Must match the entire way. 
  *  So  "testBee" =~ "Bee" is wrong  
  *  but "testBee" =~ ".*Bee" is right
+ * Can have the perl behavior if use  Str.search_forward instead of 
+ * Str.string_match.
  *)
 
-(*
+(* now in commonop.ml
 -let (=~) s re = Str.string_match (Str.regexp re) s 0 
 -let (==~) s re = Str.string_match re s 0 
 *)
@@ -1155,7 +1157,9 @@ let match_func s re =
 
 let _ = Commonop._match_func := match_func
 
-
+let string_match_substring re s = 
+  try let _i = Str.search_forward re s 0 in true 
+  with Not_found -> false
 
 let (regexp_match: string -> string -> string) = fun s re -> 
   let _ = assert(s =~ re) in

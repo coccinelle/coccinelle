@@ -326,6 +326,12 @@ let main () =
 
             ignore(Cocci.cprogram_from_file file);
 
+        | "compare_c", _ -> 
+            print_diff_expected_res_and_exit 
+              "parsing_c/tests/equal_modulo1.c" 
+              "parsing_c/tests/equal_modulo2.c" 
+              false
+
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
         | _ -> failwith "no action for this"
         )

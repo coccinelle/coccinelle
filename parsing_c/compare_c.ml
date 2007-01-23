@@ -12,8 +12,25 @@ type compare_result =
 let tok_set s (info, annot) =  { info with Common.str = s;}, annot
 
 
+(* from CVS manual, 'Keyword substitution' chapter. I do not put "Log"
+ * because it is used only in comment, and not enough to substituate
+ * until the end of the line. 
+ *)
+let cvs_keyword_list = [
+  "Id";"Date"; "Revision"; (* the common one *)
+  "Name";"Author";"CVSHeader";"Header";"Locker";"RCSfile";"Source";"State";
+]
+
+(* Can also have just dollarIDdollar but it is only when you have not
+ * yet committed the file. After the commit it would be a dollarIddollar:
+ * If reput Id:, do not join the regexp, otherwise CVS will modify it :)
+ *)
+let cvs_keyword_regexp = Str.regexp 
+  ("\\$\\([A-Za-z_]+\\):[^\\$]*\\$")
+
 let normal_form_program xs = 
   let bigf = { Visitor_c.default_visitor_c_s with 
+
     Visitor_c.kini_s = (fun (k,bigf) ini -> 
       match ini with
       | InitList xs, [i1;i2;iicommaopt] -> 
@@ -22,24 +39,27 @@ let normal_form_program xs =
     );
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       match e with
+      (* todo: should also do something for multistrings *)
       | (Constant (String (s,kind)), typ), [ii] 
-          (* do not join the regexp, otherwise CVS will modify it :) *)
-          when s =~ ("^\\$\\([A-Za-z_]+\\):.*" ^
-                     "\\$$")  -> 
-          let tag = matched1 s in
-          if List.mem tag ["Id"; "Date"]
-          then 
-            let newstr = "VERSION_ID_STRING" in
-            (Constant (String (newstr,kind)), typ), [tok_set newstr ii]
-          else 
-            (Constant (String (s,kind)), typ), [ii] 
+          when Common.string_match_substring cvs_keyword_regexp s -> 
+
+          let newstr = 
+            Str.global_substitute cvs_keyword_regexp (fun _s -> 
+              let substr = Str.matched_string s in
+              assert (substr ==~ cvs_keyword_regexp);
+              let tag = matched1 substr in
+              assert (List.mem tag cvs_keyword_list);
+              "VERSION_ID_STRING" 
+            ) s 
+          in
+          (Constant (String (newstr,kind)), typ), [tok_set newstr ii]
       | _ -> k e    
 
     );
   }
   in
   xs +> List.map (fun p -> Visitor_c.visitor_program_k_s  bigf p)
-           
+    
 
 (* Note that I use a kind of astdiff to know if there is a difference, but
  * then I use diff to print the differences. So sometimes you have to dig
