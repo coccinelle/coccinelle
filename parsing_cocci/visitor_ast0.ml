@@ -245,7 +245,16 @@ let combiner bind option_default
       | Ast0.OptParam(param) -> parameterTypeDef param
       | Ast0.UniqueParam(param) -> parameterTypeDef param in
     paramfn all_functions k p
+
+  (* discard the result, because the statement is assumed to be already
+     represented elsewhere in the code *)
+  and process_bef_aft s =
+    match Ast0.get_dots_bef_aft s with
+      Ast0.NoDots -> ()
+    | Ast0.BetweenDots(stm) -> let _ = statement stm in ()
+
   and statement s =
+    process_bef_aft s;
     let wrapped (term,info,n,mc,ty,d) =
       match d with
 	Ast0.NoDots -> ()
@@ -595,6 +604,14 @@ let rebuilder = fun
 	| Ast0.UniqueParam(param) ->
 	    Ast0.UniqueParam(parameterTypeDef param)) in
     paramfn all_functions k p
+  (* not done for combiner, because the statement is assumed to be already
+     represented elsewhere in the code *)
+  and process_bef_aft s =
+    Ast0.set_dots_bef_aft s
+      (match Ast0.get_dots_bef_aft s with
+	Ast0.NoDots -> Ast0.NoDots
+      | Ast0.BetweenDots(stm) -> Ast0.BetweenDots(statement stm))
+
   and statement s =
     let s = wrapped s in
     let k s =
@@ -667,7 +684,8 @@ let rebuilder = fun
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
-    stmtfn all_functions k s
+    let s = stmtfn all_functions k s in
+    process_bef_aft s
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> Ast0.NoWhen
     | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
@@ -697,6 +715,10 @@ let rebuilder = fun
 	| Ast0.ERRORWORDS(exps) -> Ast0.ERRORWORDS(List.map expression exps)
 	| Ast0.OTHER(_) -> failwith "unexpected code") in
     topfn all_functions k t
+
+  (* not done for combiner, because the statement is assumed to be already
+     represented elsewhere in the code *)
+
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;

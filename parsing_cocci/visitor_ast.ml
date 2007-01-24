@@ -281,7 +281,15 @@ let combiner bind option_default
 	  multibind [string_mcode def; ident id; define_body body] in
     rulefn all_functions k re
 
+  (* discard the result, because the statement is assumed to be already
+     represented elsewhere in the code *)
+  and process_bef_aft s =
+    match Ast.get_dots_bef_aft s with
+      Ast.NoDots -> ()
+    | Ast.BetweenDots(stm,ind) -> let _ = statement stm in ()
+
   and statement s =
+    process_bef_aft s;
     let k s =
       match Ast.unwrap s with
 	Ast.Seq(lbrace,decls,dots,body,rbrace) ->
@@ -668,6 +676,12 @@ let rebuilder
 	    Ast.Define(string_mcode def,ident id,define_body body)) in
     rulefn all_functions k re
 
+  and process_bef_aft s =
+    Ast.rewrap_dots_bef_aft s
+      (match Ast.get_dots_bef_aft s with
+	Ast.NoDots -> Ast.NoDots
+      | Ast.BetweenDots(stm,ind) -> Ast.BetweenDots(statement stm,ind))
+
   and statement s =
     let k s =
       Ast.rewrap s
@@ -705,7 +719,11 @@ let rebuilder
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in
-    stmtfn all_functions k s
+    let s = stmtfn all_functions k s in
+    (* better to do this after, in case there is an equality test on the whole
+       statement, eg in free_vars.  equality test would require that this
+       subterm not already be changed *)
+    process_bef_aft s
 
   and whencode notfn alwaysfn = function
       Ast.NoWhen -> Ast.NoWhen

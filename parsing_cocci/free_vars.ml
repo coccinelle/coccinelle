@@ -339,6 +339,7 @@ let drop_unitary_variables unitary_variables =
 	Ast.rewrap e (Ast.MetaParam(name,not_unitary name,inherited))
     | Ast.MetaParamList(name,_,inherited) ->
 	Ast.rewrap e (Ast.MetaParamList(name,not_unitary name,inherited))
+    | Ast.Param(id,ty) -> k e
     | _ -> k e in
 
   let define_body b =

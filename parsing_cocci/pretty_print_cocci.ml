@@ -183,12 +183,14 @@ let rec expression e =
       Format.print_flush();
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
-  | Ast.MetaExpr(name,_,None,_) -> mcode print_string name
-  | Ast.MetaExpr(name,_,Some ty,_) ->
+  | Ast.MetaExpr(name,keep,None,_) -> mcode print_string name;
+      print_string "^"; print_bool keep;
+  | Ast.MetaExpr(name,keep,Some ty,_) ->
       mcode print_string name; print_string "/* ";
       Format.print_flush();
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       Format.print_flush();
+      print_string "keep:"; print_bool keep;
       print_string " */"
   | Ast.MetaExprList(name,_,_) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()

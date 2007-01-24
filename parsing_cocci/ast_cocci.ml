@@ -399,6 +399,8 @@ let get_fvs (_,_,fvs,_,_,_) = fvs
 let get_fresh (_,_,_,fresh,_,_) = fresh
 let get_inherited (_,_,_,_,inherited,_) = inherited
 let get_dots_bef_aft (_,_,_,_,_,d) = d
+let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,_) d =
+  (x,l,fvs,fresh,inherited,d)
 
 (* --------------------------------------------------------------------- *)
 

@@ -232,6 +232,11 @@ let make_seq_after n first = function
 let and_opt n first =
   function Some rest -> wrapAnd n (first,rest) | _ -> first
 
+let opt_and n first rest =
+  match first with
+    None -> rest
+  | Some first -> wrapAnd n (first,rest)
+
 let and_after n first =
   function After rest -> wrapAnd n (first,rest) | _ -> first
 
@@ -573,11 +578,12 @@ let end_control_structure fvs header body after_pred
   (* the code *)
   quantify n fvs
     (wrapAnd n
-       (header, and_opt n (wrapAX_absolute n body) 
+       (header, opt_and n
 	  (match (after,aft_needed) with
 	    (After _,_) (* pattern doesn't end here *)
 	  | (_,true) (* + code added after *) -> after_checks
-	  | _ -> no_after_checks)))
+	  | _ -> no_after_checks)
+	  (wrapAX_absolute n body)))
 
 let ifthen ifheader branch aft after quantified n label recurse make_match
     guard aftfvinfo =

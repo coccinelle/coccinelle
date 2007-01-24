@@ -395,6 +395,7 @@ val get_fvs : 'a wrap -> string list
 val get_fresh : 'a wrap -> string list
 val get_inherited : 'a wrap -> string list
 val get_dots_bef_aft : statement -> dots_bef_aft
+val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 
 val make_meta_rule_elem :
     string -> mcodekind -> (string list * string list * string list) ->
