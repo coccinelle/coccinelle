@@ -1,7 +1,5 @@
 COCCIDIR=../..
-SPATCH=$(COCCIDIR)/spatch
 ISOFILE=-iso_file $(COCCIDIR)/standard.iso
-SPATCH=../../spatch
 SPATCH=../../spatch.opt  # for the bench !!! can also use 'make opt'
 
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
@@ -17,8 +15,6 @@ all: $(OBJS)
 	ls *.spatch_ok || true
 	ls *.failed || true
 
-opt: $(OBJS)
-	$(MAKE) SPATCH=../../spatch.opt
 
 %.ok: %.c $(SPATCH) $(SP)
 	/bin/rm -f $(<:.c=.ok) $(<:.c=.failed) $(<:.c=.spatch_ok) /tmp/output.c

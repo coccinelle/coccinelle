@@ -49,8 +49,8 @@ let rec compatible_type a b =
       ) && 
       compatible_type a (qub, b)
 
-  (* todo?: so this function should return a binding ? *)
-  | A.MetaType        s, _ -> raise Todo
+  | A.MetaType        s, _ -> 
+      failwith "todo?: so this function should return a binding ?"
   (* for metavariables of type expression *^* *)
   | A.Unknown , _ -> true
 

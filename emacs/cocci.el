@@ -882,6 +882,7 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
   (make-local-variable 'font-lock-defaults)
   (make-local-variable 'comment-start)
   (make-local-variable 'comment-end)
+  (make-local-variable 'compile-command)
 
   (setq cocci-current-cocci (buffer-file-name))
   (setq compile-command (cocci-makeok-cmd cocci-current-cocci))
