@@ -246,6 +246,15 @@ let classify all_marked table code =
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
+	(* cases for everyhing eith extra mcode *)
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
+      | Ast0.Decl((info,bef),_) ->
+	  bind (mcode ((),(),info,bef)) (k s)
+      | Ast0.IfThen(_,_,_,_,_,(info,aft))
+      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
+      | Ast0.While(_,_,_,_,_,(info,aft))
+      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
+	  bind (k s) (mcode ((),(),info,aft))
       |	_ -> k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in
