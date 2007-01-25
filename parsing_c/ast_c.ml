@@ -375,6 +375,20 @@ let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NOTHING),emptyMetavarsBinding)
 (*****************************************************************************)
 let unwrap = fst
 
+
+let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
+
+let get_type_expr ((unwrap_e, typ), iie) = typ
+let rewrap_type_expr newtyp ((unwrap_e, _oldtyp), iie) =
+  (unwrap_e, newtyp), iie
+
+
+let unwrap_typeC (qu, (typeC, ii)) = typeC
+let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
+
+
+let rewrap_str s (info, annot) =  { info with Common.str = s;}, annot
+
 (*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)

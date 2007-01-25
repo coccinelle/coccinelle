@@ -201,7 +201,7 @@ let worth_trying cfile tokens =
 
 let contain_loop def = 
   let res = ref false in
-  def +> Visitor_c.visitor_def_k { Visitor_c.default_visitor_c with
+  def +> Visitor_c.vk_def { Visitor_c.default_visitor_c with
    Visitor_c.kstatement = (fun (k, bigf) stat -> 
      match stat with 
      | Ast_c.Iteration _, ii

@@ -232,11 +232,11 @@ let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
            * and call the iso engine of julia.
         *)
           | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
-              Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
+              Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
           | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
-              Abstract_line_c.al_statement a =*= Abstract_line_c.al_statement b
+              Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
           | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
-              Abstract_line_c.al_type a =*= Abstract_line_c.al_type b
+              Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b
 		
           | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
               failwith "not handling MetaExprListVal"
@@ -262,11 +262,11 @@ let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
             | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
             | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
             | Ast_c.MetaExprVal a ->
-		Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
+		Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
             | Ast_c.MetaStmtVal a ->
-		Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
+		Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
             | Ast_c.MetaTypeVal a ->
-		Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
+		Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
             | Ast_c.MetaExprListVal a ->
 		failwith "not handling MetaExprListVal"
             | Ast_c.MetaParamVal a ->
@@ -959,19 +959,6 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.MetaStmtList _, _ -> failwith "not handling MetaStmtList"
 
   | A.Exp expr, nodeb -> 
-     (* Now keep fullstatement inside the control flow node, 
-      * so that can then get in a MetaStmtVar the fullstatement to later
-      * pp back when the S is in a +. But that means that 
-      * Exp will match an Ifnode even if there is no such exp
-      * inside the condition of the Ifnode (because the exp may
-      * be deeper, in the then branch). So have to not visit
-      * all inside a node anymore.
-      * 
-      * update: j'ai choisi d'accrocher au noeud du CFG à la
-      * fois le fullstatement et le partialstatement et appeler le 
-      * visiteur que sur le partialstatement.
-      *)
-
       (* julia's code *)
       (*
       (function binding ->
@@ -984,107 +971,29 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
               }
         in
        *)
-
         let globals = ref [] in
-        let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = 
-              (fun (k, bigf) expr -> push2 expr globals;  k expr );
-           } 
+        let bigf = { Visitor_c.default_visitor_c with 
+          Visitor_c.kexpr = (fun (k, bigf) expr -> 
+            push2 expr globals;  k expr 
+          );
+        } 
         in
-       
-        let visitor_e = Visitor_c.visitor_expr_k bigf in
-
-        (match nodeb with 
-
-        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
-        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
-
-        | F.IfHeader (_, (e,_)) 
-        | F.SwitchHeader (_, (e,_))
-        | F.WhileHeader (_, (e,_))
-        | F.DoWhileTail (e,_) 
-          -> visitor_e e
-
-        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
-            e1opt +> do_option visitor_e;
-            e2opt +> do_option visitor_e;
-            e3opt +> do_option visitor_e;
-            
-        | F.ReturnExpr (_, (e,_)) -> visitor_e e
-
-        | F.Case  (_, (e,_)) -> visitor_e e
-        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
-
-        | (
-          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
-          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
-          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|F.FunHeader _|
-          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
-          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
-          F.IfCpp _ | F.CPPInclude _ | F.CPPDefine _
-          ) -> ()
-
-        );
-        !globals
-         +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+        Visitor_c.vk_node bigf node;
+        !globals +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
            (return false)
        
-
-
   | A.Ty ty, nodeb -> 
-     (* Maybe the above comments on the A.Exp case are relevant here*)
-
-        let globals = ref [] in
-        let bigf = { Visitor_c.default_visitor_c with Visitor_c.ktype = 
-              (fun (k, bigf) ty -> push2 ty globals;  k ty );
-           } 
-        in
-       
-        let visitor_e = Visitor_c.visitor_expr_k bigf in
-
-        (match nodeb with 
-        (* propre a Ty. Exp ne l'a pas *)
-        | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
-            Visitor_c.visitor_type_k bigf rett;
-            paramst +> List.iter (fun (((b, s, t), iibs), iicomma) ->
-              Visitor_c.visitor_type_k bigf t;
-            );
-
-
-
-        | F.Decl decl -> Visitor_c.visitor_decl_k bigf decl 
-        | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option visitor_e
-
-        | F.IfHeader (_, (e,_)) 
-        | F.SwitchHeader (_, (e,_))
-        | F.WhileHeader (_, (e,_))
-        | F.DoWhileTail (e,_) 
-          -> visitor_e e
-
-        | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
-            e1opt +> do_option visitor_e;
-            e2opt +> do_option visitor_e;
-            e3opt +> do_option visitor_e;
-            
-        | F.ReturnExpr (_, (e,_)) -> visitor_e e
-
-        | F.Case  (_, (e,_)) -> visitor_e e
-        | F.CaseRange (_, ((e1, e2),_)) -> visitor_e e1; visitor_e e2
-
-        | (
-          F.CaseNode _|F.Break (_, _)|F.Continue (_, _)|F.Goto (_, _)|
-          F.Default (_, _)|F.Label (_, _)|F.Return (_, _)|F.DoHeader (_, _)|
-          F.Else _|F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
-          F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|
-          F.TrueNode|F.Fake|F.EndStatement _|F.Exit|F.Enter|F.Asm|
-          F.IfCpp _ | F.CPPInclude _ | F.CPPDefine _
-          ) -> ()
-
+      let globals = ref [] in
+      let bigf = { Visitor_c.default_visitor_c with 
+        Visitor_c.ktype = (fun (k, bigf) ty -> 
+          push2 ty globals;  k ty 
         );
-        !globals
-         +> List.fold_left (fun acc t -> acc >||> match_ft_ft ty t) 
-           (return false)
+      } 
+      in
+      Visitor_c.vk_node bigf node;
+      !globals +> List.fold_left (fun acc t -> acc >||> match_ft_ft ty t) 
+        (return false)
        
-
 
   | A.FunHeader (_,_,stoa, tya, ida, _, paramsa, _), 
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs,_))), stob), _) -> 

@@ -9,9 +9,6 @@ type compare_result =
   | IncorrectOnlyInNotParsedCorrectly
 
 
-let tok_set s (info, annot) =  { info with Common.str = s;}, annot
-
-
 (* from CVS manual, 'Keyword substitution' chapter. I do not put "Log"
  * because it is used only in comment, and not enough to substituate
  * until the end of the line. 
@@ -55,13 +52,13 @@ let normal_form_program xs =
               "CVS_MAGIC_STRING" 
             ) s 
           in
-          (Constant (String (newstr,kind)), typ), [tok_set newstr ii]
+          (Constant (String (newstr,kind)), typ), [rewrap_str newstr ii]
       | _ -> k e    
 
     );
   }
   in
-  xs +> List.map (fun p -> Visitor_c.visitor_program_k_s  bigf p)
+  xs +> List.map (fun p -> Visitor_c.vk_program_s  bigf p)
     
 
 (* Note that I use a kind of astdiff to know if there is a difference, but
@@ -78,8 +75,8 @@ let normal_form_program xs =
  *)
 let compare (c1,filename1) (c2, filename2)  =
 
-    let c1' = c1 +> Abstract_line_c.al_program +> normal_form_program in
-    let c2' = c2 +> Abstract_line_c.al_program +> normal_form_program in
+    let c1' = c1 +> Lib_parsing_c.al_program +> normal_form_program in
+    let c2' = c2 +> Lib_parsing_c.al_program +> normal_form_program in
     
     let xs =
       process_output_to_list 

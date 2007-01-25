@@ -217,7 +217,7 @@ let split_init_assign xs iivirg' =
                       (Assignment (
                         ((Ident s, Ast_c.noType), [iis']),
                         SimpleAssign,
-                        Abstract_line_c.al_expr e
+                        Lib_parsing_c.al_expr e
                       ), 
                       Ast_c.noType),  iini'
                      )

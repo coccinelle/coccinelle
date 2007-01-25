@@ -103,7 +103,7 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
           let v = binding +> find_env (term ida) in
           (match v with
           | B.MetaExprVal expa -> 
-              if (Abstract_line_c.al_expr expa =*= Abstract_line_c.al_expr expb)
+              if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
               then D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
               else raise NoMatch
           | _ -> raise Impossible
@@ -694,7 +694,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
         (* get binding, assert =*=,  distribute info in ida *)
         (match binding +> find_env (term ida) with
         | B.MetaTypeVal typa -> 
-          if (Abstract_line_c.al_type typa =*= Abstract_line_c.al_type typb)
+          if (Lib_parsing_c.al_type typa =*= Lib_parsing_c.al_type typb)
           then 
             D.distribute_mck (mcodekind ida) D.distribute_mck_type typb binding
           else raise NoMatch
@@ -923,89 +923,27 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
      transform the expressions inside the switch. *)
 
   | A.Exp exp, nodeb -> 
-      let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.kexpr_s = 
-             (fun (k,_) e -> 
-               try transform_e_e exp e   binding 
-               with NoMatch -> k e
-             )
-          }
+      let bigf = { 
+        Visitor_c.default_visitor_c_s with 
+        Visitor_c.kexpr_s = (fun (k,_) e -> 
+          try transform_e_e exp e   binding 
+          with NoMatch -> k e
+        )
+      }
       in
-      let visitor_e = Visitor_c.visitor_expr_k_s bigf in
-
-      (match nodeb with
-      | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
-      | F.ExprStatement (st, (eopt, ii)) ->  
-          F.ExprStatement (st, (eopt +> map_option visitor_e, ii))
-
-      | F.IfHeader (st, (e,ii))     -> F.IfHeader     (st, (visitor_e e, ii))
-      | F.SwitchHeader (st, (e,ii)) -> F.SwitchHeader (st, (visitor_e e, ii))
-      | F.WhileHeader (st, (e,ii))  -> F.WhileHeader  (st, (visitor_e e, ii))
-      | F.DoWhileTail (e,ii)  -> F.DoWhileTail (visitor_e e, ii)
-
-      | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
-          F.ForHeader (st,
-                       (((e1opt +> Common.map_option visitor_e, i1),
-                         (e2opt +> Common.map_option visitor_e, i2),
-                         (e3opt +> Common.map_option visitor_e, i3)),
-                        ii))
-            
-      | F.ReturnExpr (st, (e,ii)) -> F.ReturnExpr (st, (visitor_e e, ii))
-            
-      | F.Case  (st, (e,ii)) -> F.Case (st, (visitor_e e, ii))
-      | F.CaseRange (st, ((e1, e2),ii)) -> 
-          F.CaseRange (st, ((visitor_e e1, visitor_e e2), ii))
-
-      (* called on transforming a node that does not contain any expr *)
-      | _ -> raise Impossible 
-      )
+      F.unwrap (Visitor_c.vk_node_s bigf node)
 
   | A.Ty ty, nodeb -> 
-      let bigf = { Visitor_c.default_visitor_c_s with Visitor_c.ktype_s = 
-             (fun (k,_) t -> 
-               try transform_ft_ft ty t   binding 
-               with NoMatch -> k t
-             )
-          }
+      let bigf = { 
+        Visitor_c.default_visitor_c_s with 
+        Visitor_c.ktype_s = (fun (k,_) t -> 
+          try transform_ft_ft ty t   binding 
+          with NoMatch -> k t
+        )
+      }
       in
-      let visitor_e = Visitor_c.visitor_expr_k_s bigf in
+      F.unwrap (Visitor_c.vk_node_s bigf node)
 
-      (match nodeb with
-        (* propre a Ty. Exp ne l'a pas *)
-        | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
-            F.FunHeader 
-              ((idb,
-               (Visitor_c.visitor_type_k_s bigf rett,
-               (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
-                 let t' = Visitor_c.visitor_type_k_s bigf t in
-                 (((b, s, t'), iibs), iicomma)
-               ), (isvaargs,iidotsb))), stob),ii)
-
-
-      | F.Decl declb -> F.Decl (declb +> Visitor_c.visitor_decl_k_s bigf)
-      | F.ExprStatement (st, (eopt, ii)) ->  
-          F.ExprStatement (st, (eopt +> map_option visitor_e, ii))
-
-      | F.IfHeader (st, (e,ii))     -> F.IfHeader     (st, (visitor_e e, ii))
-      | F.SwitchHeader (st, (e,ii)) -> F.SwitchHeader (st, (visitor_e e, ii))
-      | F.WhileHeader (st, (e,ii))  -> F.WhileHeader  (st, (visitor_e e, ii))
-      | F.DoWhileTail (e,ii)  -> F.DoWhileTail (visitor_e e, ii)
-
-      | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
-          F.ForHeader (st,
-                       (((e1opt +> Common.map_option visitor_e, i1),
-                         (e2opt +> Common.map_option visitor_e, i2),
-                         (e3opt +> Common.map_option visitor_e, i3)),
-                        ii))
-            
-      | F.ReturnExpr (st, (e,ii)) -> F.ReturnExpr (st, (visitor_e e, ii))
-            
-      | F.Case  (st, (e,ii)) -> F.Case (st, (visitor_e e, ii))
-      | F.CaseRange (st, ((e1, e2),ii)) -> 
-          F.CaseRange (st, ((visitor_e e1, visitor_e e2), ii))
-
-      (* called on transforming a node that does not contain any expr *)
-      | _ -> raise Impossible 
-      )
 
   | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 

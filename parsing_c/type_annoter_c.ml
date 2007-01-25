@@ -2,6 +2,8 @@ open Common open Commonop
 
 open Ast_c
 
+module Lib = Lib_parsing_c
+
 (*****************************************************************************)
 (* can either:
  *
@@ -31,27 +33,6 @@ open Ast_c
 let pr2 s = 
   if !Flag_parsing_c.verbose_type
   then Common.pr2 s
-
-let rewrap_type_expr newtyp e = 
-  let ((unwrap_e, _oldtyp), iie) = e in 
-  (unwrap_e, newtyp), iie
-
-let get_type ((unwrap_e, typ), iie) = typ
-let get_expr ((unwrap_e, typ), iie) = unwrap_e
-
-
-let unwrap_type (qu, (typeC, ii)) = typeC
-let rewrap_type (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
-
-module AL = Abstract_line_c
-(*****************************************************************************)
-(* Helpers *)
-(*****************************************************************************)
-
-let type_of_string s = 
-  Parse_c.parse_gen Parser_c.type_name s
-
-
 
 (*****************************************************************************)
 (* Environment *)
@@ -146,21 +127,21 @@ let member_env lookupf env =
 (* do pointfix *)
 let rec find_final_type ty env = 
 
-  match unwrap_type ty with 
-  | BaseType x  -> (BaseType x) +> rewrap_type ty
+  match Ast_c.unwrap_typeC ty with 
+  | BaseType x  -> (BaseType x) +> Ast_c.rewrap_typeC ty
       
-  | Pointer t -> (Pointer (find_final_type t env))  +> rewrap_type ty
-  | Array (e, t) -> Array (e, find_final_type t env) +> rewrap_type ty
+  | Pointer t -> (Pointer (find_final_type t env))  +> Ast_c.rewrap_typeC ty
+  | Array (e, t) -> Array (e, find_final_type t env) +> Ast_c.rewrap_typeC ty
       
-  | StructUnion (sopt, su) -> StructUnion (sopt, su)  +> rewrap_type ty
+  | StructUnion (sopt, su) -> StructUnion (sopt, su)  +> Ast_c.rewrap_typeC ty
       
-  | FunctionType t -> (FunctionType t) (* todo ? *) +> rewrap_type ty
-  | Enum  (s, enumt) -> (Enum  (s, enumt)) (* todo? *) +> rewrap_type ty
-  | EnumName s -> (EnumName s) (* todo? *) +> rewrap_type ty
+  | FunctionType t -> (FunctionType t) (* todo ? *) +> Ast_c.rewrap_typeC ty
+  | Enum  (s, enumt) -> (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
+  | EnumName s -> (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
       
   | StructUnionName (s, su) -> 
       let (structtyp, env') = lookup_structunion (s, su) env in
-      StructUnion (Some s, structtyp) +> rewrap_type ty
+      StructUnion (Some s, structtyp) +> Ast_c.rewrap_typeC ty
         (* not wrap with good ii, but don't care *)
       
   | TypeName s -> 
@@ -272,13 +253,13 @@ let rec (annotate_program: program -> program) = fun prog ->
       | FunCall (((Ident f, typ), ii), args) -> 
           (FunCall (((Ident f, typ), ii), 
                    args +> List.map (fun (e,ii) -> 
-                     Visitor_c.visitor_argument_k_s bigf e, ii
+                     Visitor_c.vk_argument_s bigf e, ii
                    )), oldtyp), iie
             
             
       | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
-          | Some (typ,_nextenv) -> rewrap_type_expr (Some typ) e
+          | Some (typ,_nextenv) -> Ast_c.rewrap_type_expr (Some typ) e
           | None  -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
               then 
@@ -291,15 +272,15 @@ let rec (annotate_program: program -> program) = fun prog ->
           )
 
       | RecordAccess  (e, fld) ->  
-          let e' = Visitor_c.visitor_expr_k_s bigf e in
+          let e' = Visitor_c.vk_expr_s bigf e in
           let defaulte = (RecordAccess (e', fld), oldtyp), iie in
           (try 
-            (match get_type e' with 
+            (match Ast_c.get_type_expr e' with 
             | None -> defaulte
             | Some t -> 
               (* TODO don't work, don't have good env *)
               let t' = find_final_type t !_scoped_env in
-              (match unwrap_type t' with 
+              (match Ast_c.unwrap_typeC t' with 
               | StructUnion (sopt, structtyp) -> 
                   let typefield = find_type_field fld structtyp in
                   ((RecordAccess (e', fld)), Some typefield), iie
@@ -310,17 +291,17 @@ let rec (annotate_program: program -> program) = fun prog ->
           )
 
       | RecordPtAccess (e, fld) -> 
-          let e' = Visitor_c.visitor_expr_k_s bigf e in
+          let e' = Visitor_c.vk_expr_s bigf e in
           let defaulte = (RecordPtAccess (e', fld), oldtyp), iie in
           (try 
-            (match get_type e' with 
+            (match Ast_c.get_type_expr e' with 
             | None -> defaulte
             | Some t -> 
               (* TODO don't work, don't have good env *)
               let t' = find_final_type t !_scoped_env in
-              (match unwrap_type t' with 
+              (match Ast_c.unwrap_typeC t' with 
               | Pointer (t) -> 
-                  (match unwrap_type t with
+                  (match Ast_c.unwrap_typeC t with
                   | StructUnion (sopt, structtyp) -> 
                       let typefield = find_type_field fld structtyp in
                       ((RecordPtAccess (e', fld)), (Some typefield)), iie
@@ -349,9 +330,9 @@ let rec (annotate_program: program -> program) = fun prog ->
         var +> do_option (fun ((s, ini), ii_s_ini) -> 
           match sto with 
           | StoTypedef, _inline -> 
-              add_binding (TypeDef (s,AL.al_type t)) true;
+              add_binding (TypeDef (s,Lib.al_type t)) true;
           | _ -> 
-              add_binding (VarOrFunc (s, AL.al_type t)) true;
+              add_binding (VarOrFunc (s, Lib.al_type t)) true;
         );
       );
       d'
@@ -359,7 +340,7 @@ let rec (annotate_program: program -> program) = fun prog ->
     );
 
     Visitor_c.ktype_s = (fun (k, bigf) typ -> 
-      let (q, t) = AL.al_type typ in
+      let (q, t) = Lib.al_type typ in
       match Ast_c.unwrap t with 
       | StructUnion  ((Some s),  (su, structType)) -> 
           add_binding (StructUnionNameDef (s, (su, structType))) true;
@@ -375,13 +356,13 @@ let rec (annotate_program: program -> program) = fun prog ->
           let (funcs, ((returnt, (paramst, b)) as ftyp), sto, statxs), _ = def
           in
           let iitodo = [] in
-          let typ' = AL.al_type (Ast_c.nullQualif, (FunctionType ftyp, iitodo))
+          let typ' = Lib.al_type (Ast_c.nullQualif, (FunctionType ftyp, iitodo))
           in
           add_binding (VarOrFunc (funcs, typ')) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 
               match s with 
-              | Some s -> add_binding (VarOrFunc (s,AL.al_type t)) true
+              | Some s -> add_binding (VarOrFunc (s,Lib.al_type t)) true
               | None -> pr2 "no type, certainly because Void type ?"
             );
             k elem
@@ -393,7 +374,8 @@ let rec (annotate_program: program -> program) = fun prog ->
   } 
   in
 
-  add_binding (VarOrFunc ("NULL", AL.al_type (type_of_string  "void *"))) true;
+  add_binding 
+    (VarOrFunc ("NULL", Lib.al_type (Parse_c.type_of_string "void *"))) true;
 
-  prog +> List.map (fun elem -> elem +> Visitor_c.visitor_program_k_s bigf)
+  prog +> List.map (Visitor_c.vk_program_s bigf)
   

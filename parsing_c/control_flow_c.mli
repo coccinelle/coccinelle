@@ -1,4 +1,3 @@
-
 open Ast_c
 
 (* The string is for debugging. Used by Ograph_extended.print_graph. 
@@ -59,11 +58,10 @@ type edge = Direct
 
 type cflow = (node, edge) Ograph_extended.ograph_extended
 
-
 val unwrap : node -> node2
 val rewrap : node -> node2 -> node
 val extract_labels : node -> int list
+val extract_fullstatement : node -> Ast_c.statement option
 
 val get_first_node : cflow -> Ograph_extended.nodei
 
-val extract_fullstatement : node -> Ast_c.statement option

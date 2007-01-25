@@ -6,4 +6,4 @@ expression X,Y;
 - g(Y);
 + h(X,Y);
 
-error words = [f]
+//error words = [f]

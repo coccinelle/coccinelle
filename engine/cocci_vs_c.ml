@@ -262,7 +262,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
       envf inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun v -> 
         match v with
         | Ast_c.MetaExprVal expa -> 
-            if (Abstract_line_c.al_expr expa =*= Abstract_line_c.al_expr expb)
+            if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
                && match_type
             then distrf distrf_e (mcodekind ida) expb
             else fail
@@ -589,8 +589,8 @@ and arguments_bis = fun eas ebs ->
                   match v with
                   | Ast_c.MetaExprListVal startxs'' -> 
                       (* TODO
-                      if (Abstract_line_c.al_expr expa =*= 
-                          Abstract_line_c.al_expr expb)
+                      if (Lib_parsing_c.al_expr expa =*= 
+                          Lib_parsing_c.al_expr expb)
                       *)
                      distrf distrf_args (mcodekind ida) startxs
                   | _ -> raise Impossible
@@ -681,7 +681,7 @@ and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
       envf inherited (term ida, B.MetaTypeVal typb) >>= (fun v ->  
         match v with
         | B.MetaTypeVal typa  -> 
-          if (Abstract_line_c.al_type typa =*= Abstract_line_c.al_type typb)
+          if (Lib_parsing_c.al_type typa =*= Lib_parsing_c.al_type typb)
           then distrf distrf_type (mcodekind ida) typb
           else fail
         | _ -> raise Impossible

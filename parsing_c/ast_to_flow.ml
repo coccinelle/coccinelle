@@ -161,7 +161,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
     let (h: (string, int) oassoc ref) = ref (new oassocb []) in
 
     begin
-      statement +> Visitor_c.visitor_statement_k { 
+      statement +> Visitor_c.vk_statement { 
         Visitor_c.default_visitor_c with 
          Visitor_c.kstatement = (fun (k, bigf) statement -> 
            match statement with

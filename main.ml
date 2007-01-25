@@ -27,6 +27,8 @@ let reentrant = ref false
 
 let action = ref "" 
 
+let default_output_file = ref "/tmp/output.c"
+
 (*****************************************************************************)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if not (Common.lfile_exists expected_res)
@@ -65,7 +67,7 @@ let testone x =
   let cocci_file = "tests/" ^ base ^ ".cocci" in
   let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) in
 
-  let outfile = "/tmp/output.c" in
+  let outfile = !default_output_file in
   let expected_res   = "tests/" ^ base ^ ".res" in
   begin
     Cocci.full_engine cfile (Left (cocci_file, iso_file)) outfile;
@@ -99,7 +101,7 @@ let testall () =
     let iso_file = Some (if !iso_file = "" then "standard.iso" else !iso_file) 
     in
 
-    let generated = "/tmp/output.c" in
+    let generated = !default_output_file in
     let expected = "tests/" ^ res in
 
     pr2 ("Test: " ^ x);
@@ -164,7 +166,9 @@ let main () =
       "-iso_file",   Arg.Set_string iso_file, 
         " <filename> the iso file";
 
-
+      "-o", Arg.Set_string default_output_file,
+        (" <filename> (default is " ^ !default_output_file ^ ")");
+ 
       "-dir", Arg.Set dir, 
         " <dirname> process all files in directory recursively";
 
@@ -252,7 +256,7 @@ let main () =
     | []  when !testall_mode -> testall ()
 
     | [x] when !test_ctl_foo -> 
-        Cocci.full_engine x (Right (Test.foo_ctl ())) "/tmp/output.c"
+        Cocci.full_engine x (Right (Test.foo_ctl ())) !default_output_file
 
     (* useful to debug *)
     | x::xs when !action <> "" -> 
@@ -316,8 +320,8 @@ let main () =
             let program2_with_ppmethod = 
               program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
             in
-            Unparse_c.pp_program program2_with_ppmethod "/tmp/output.c";
-            Common.command2 "cat /tmp/output.c";
+            Unparse_c.pp_program program2_with_ppmethod !default_output_file;
+            Common.command2 ("cat " ^ !default_output_file);
 
 
         | "typeur", [file] -> 
@@ -369,7 +373,7 @@ let main () =
           let generated_file = 
             if !reentrant 
             then Common.new_temp_file "cocci-output" ".c" 
-            else "/tmp/output.c"
+            else !default_output_file
           in
           
           let expected_res = base ^ ".res" in

@@ -489,7 +489,11 @@ let parse_gen parsefunc s =
   let result = parsefunc lexer_function lexbuf_fake in
   result
 
-(* ex: parse_gen Parser_c.statement "(struct us_data*)psh->hostdata = NULL;" *)
+
+let type_of_string      = parse_gen Parser_c.type_name
+let statement_of_string = parse_gen Parser_c.statement
+
+(* ex: statement_of_string "(struct us_data*)psh->hostdata = NULL;" *)
 
 
 

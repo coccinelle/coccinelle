@@ -97,11 +97,11 @@ module XMATCH = struct
            * =*=. Maybe would be easier to transform ast_c in ast_cocci
            * and call the iso engine of julia. *)
           | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
-              Abstract_line_c.al_expr a =*= Abstract_line_c.al_expr b
+              Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
           | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
-              Abstract_line_c.al_statement a =*= Abstract_line_c.al_statement b
+              Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
           | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
-              Abstract_line_c.al_type a =*= Abstract_line_c.al_type b
+              Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b
 
           | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
               failwith "not handling MetaExprListVal"
@@ -123,9 +123,9 @@ module XMATCH = struct
             | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
             | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
             | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
-            | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Abstract_line_c.al_expr a)
-            | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Abstract_line_c.al_statement a)
-            | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Abstract_line_c.al_type a)
+            | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
+            | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
+            | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
             | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
             | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"

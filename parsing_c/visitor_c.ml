@@ -1,13 +1,52 @@
 open Common open Commonop
 
 open Ast_c
+module F = Control_flow_c
 
-(******************************************************************************)
+(*****************************************************************************)
 (* Visitor based on continuation. Cleaner than the one based on mutable 
- * pointer functions.
- * src: based on a (vague) idea from remy douence.
+ * pointer functions. src: based on a (vague) idea from remy douence.
+ * 
+ * 
+ * 
+ * Diff with Julia's visitor ? She does:
+ * 
+ * let ident r k i =
+ *  ...
+ * let expression r k e =
+ *  ... 
+ *   ... (List.map r.V0.combiner_expression expr_list) ...
+ *  ...
+ * let res = V0.combiner bind option_default 
+ *   mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+ *   donothing donothing donothing donothing
+ *   ident expression typeC donothing parameter declaration statement
+ *   donothing in
+ * ...
+ * collect_unitary_nonunitary
+ *   (List.concat (List.map res.V0.combiner_top_level t))
+ * 
+ * 
+ * 
+ * So she has to remember at which position you must put the 'expression'
+ * function. I use record which is easier. 
+ * 
+ * When she calls recursively, her res.V0.combiner_xxx does not take bigf
+ * in param whereas I do 
+ *   | F.Decl decl -> Visitor_c.vk_decl bigf decl 
+ * And with the record she gets, she does not have to do my
+ * multiple defs of function such as 'let al_type = V0.vk_type_s bigf'
+ * 
+ * The code of visitor.ml is cleaner with julia, because mutual recursive calls
+ * are clean such as ... 'expression e' ... and not  'f (k, bigf) e'
+ * or 'vk_expr bigf e'.
+ * 
+ * So it is very dual:
+ * - I give a record but then I must handle bigf.
+ * - She gets a record, and gives a list of function
+ * 
  *) 
-(******************************************************************************)
+(*****************************************************************************)
  
 (*
 let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> unit)
@@ -49,6 +88,10 @@ let test =
 
 *)
 
+(*****************************************************************************)
+(* Side effect style visitor *)
+(*****************************************************************************)
+
 (* full visitors for all langage concept,  not just for expression *)
 type visitor_c = 
  { 
@@ -59,6 +102,10 @@ type visitor_c =
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit; 
    kini:       (initialiser  -> unit) * visitor_c -> initialiser  -> unit; 
+
+   kinfo: (info -> unit) * visitor_c -> info -> unit;
+   
+   knode: (F.node -> unit) * visitor_c -> F.node -> unit;
  } 
 
 let default_visitor_c = 
@@ -68,199 +115,330 @@ let default_visitor_c =
     kdecl      = (fun (k,_) d  -> k d);
     kdef       = (fun (k,_) d  -> k d);
     kini       = (fun (k,_) ie  -> k ie);
+    kinfo      = (fun (k,_) ii  -> k ii);
+    knode      = (fun (k,_) n  -> k n);
   } 
 
 
-let rec visitor_expr_k = fun bigf expr ->
-  let f = bigf.kexpr in
-  let rec k ((e,typ), ii) = 
-    match e,ii with
-    | Ident (s), i -> ()
-    | Constant (c),is -> ()
-    | FunCall  (e, es), is         -> 
+let rec vk_expr = fun bigf expr ->
+  let iif ii = List.iter (vk_info bigf) ii in
+
+  let rec exprf e = bigf.kexpr (k,bigf) e
+  and k ((e,typ), ii) = 
+    iif ii;
+    match e with
+    | Ident (s) -> ()
+    | Constant (c) -> ()
+    | FunCall  (e, es)         -> 
         let rec do_action = function 
-          | (ActMisc ii) -> ()
+          | (ActMisc ii) -> iif ii
           | (ActJump jump) -> 
               (match jump with
-              | (Goto s), is               -> ()
-              | ((Continue|Break|Return)), is -> ()
-              | (ReturnExpr e), is ->  f (k, bigf) e; 
+              | (Goto s), is               -> iif is
+              | ((Continue|Break|Return)), is -> iif is
+              | (ReturnExpr e), is ->  exprf e; iif is
               )
           | (ActSeq ((e,ii), action)) -> 
-              do_option (f (k, bigf)) e; 
+              iif ii;
+              do_option (exprf) e; 
               do_action action
         in
 
 
-        f (k, bigf) e;  
-        (es +> List.map fst) +> List.iter (fun e -> 
+        exprf e;  
+        es +> List.iter (fun (e, ii) -> 
+          iif ii;
           match e with
-          | Left e -> (f (k, bigf)) e
-          | Right (ArgType (t, stoil)) -> visitor_type_k bigf t
+          | Left e -> (exprf) e
+          | Right (ArgType (t, stoil)) -> 
+              let (unwrap_st, ii) = stoil in
+              iif ii;
+              vk_type bigf t
           | Right (ArgAction action) -> do_action action
           );
-    | CondExpr (e1, e2, e3), is    -> 
-        f (k, bigf) e1; do_option (f (k, bigf)) e2; f (k, bigf) e3
-    | Sequence (e1, e2), is        -> f (k, bigf) e1; f (k, bigf) e2;
-    | Assignment (e1, op, e2), is  -> f (k, bigf) e1; f (k, bigf) e2;
+    | CondExpr (e1, e2, e3)    -> 
+        exprf e1; do_option (exprf) e2; exprf e3
+    | Sequence (e1, e2)        -> exprf e1; exprf e2;
+    | Assignment (e1, op, e2)  -> exprf e1; exprf e2;
         
-    | Postfix  (e, op), is -> f (k, bigf) e
-    | Infix    (e, op), is -> f (k, bigf) e
-    | Unary    (e, op), is -> f (k, bigf) e
-    | Binary   (e1, op, e2), i -> f (k, bigf) e1; f (k, bigf)  e2;
+    | Postfix  (e, op) -> exprf e
+    | Infix    (e, op) -> exprf e
+    | Unary    (e, op) -> exprf e
+    | Binary   (e1, op, e2) -> exprf e1; exprf  e2;
         
-    | ArrayAccess    (e1, e2), is -> f (k, bigf) e1; f (k, bigf) e2;
-    | RecordAccess   (e, s), is -> f (k, bigf) e
-    | RecordPtAccess (e, s), is -> f (k, bigf) e
+    | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
+    | RecordAccess   (e, s) -> exprf e
+    | RecordPtAccess (e, s) -> exprf e
 
-    | SizeOfExpr  (e), is -> f (k, bigf) e
-    | SizeOfType  (t), is -> visitor_type_k bigf t
-    | Cast    (t, e), is -> visitor_type_k bigf t; f (k, bigf) e
+    | SizeOfExpr  (e) -> exprf e
+    | SizeOfType  (t) -> vk_type bigf t
+    | Cast    (t, e) -> vk_type bigf t; exprf e
 
     (* old: | StatementExpr (((declxs, statxs), is)), is2 -> 
-     *          List.iter (visitor_decl_k bigf) declxs; 
-     *          List.iter (visitor_statement_k bigf) statxs 
+     *          List.iter (vk_decl bigf) declxs; 
+     *          List.iter (vk_statement bigf) statxs 
      *)
-    | StatementExpr ((statxs, is)), is2 -> 
-        statxs +> List.iter (visitor_statement_k bigf);
+    | StatementExpr ((statxs, is)) -> 
+        iif is;
+        statxs +> List.iter (vk_statement bigf);
 
     (* TODO, we will certainly have to then do a special visitor for 
      * initializer 
      *)
-    | Constructor,is -> ()
+    | Constructor -> ()
           
-    | ParenExpr (e), is -> f (k, bigf) e
+    | ParenExpr (e) -> exprf e
 
-    | MacroCall arg,_ -> 
+    | MacroCall arg -> 
         (match arg with
-        | Left e -> f (k, bigf) e
-        | Right xs -> xs +> List.iter (visitor_statement_k bigf)
+        | Left e -> exprf e
+        | Right xs -> xs +> List.iter (vk_statement bigf)
         )
 
         
 
-  in f (k, bigf) expr
+  in exprf expr
 
-and visitor_statement_k = fun bigf st -> 
-  let f = bigf.kstatement in
-  let rec k st = 
-    match st with
-    | Labeled (Label (s, st)), _ -> f (k, bigf)  st;
-    | Labeled (Case  (e, st)), _ -> visitor_expr_k bigf e; f (k, bigf) st;
-    | Labeled (CaseRange  (e, e2, st)), _ -> 
-        visitor_expr_k bigf e; visitor_expr_k bigf e2; f (k, bigf) st;
-    | Labeled (Default st), _ -> f (k, bigf) st;
+and vk_statement = fun bigf st -> 
+  let iif ii = List.iter (vk_info bigf) ii in
 
-    | Compound statxs, is -> statxs +> List.iter (visitor_statement_k bigf)
-    | ExprStatement (None), _ -> ()
-    | ExprStatement (Some e), _ -> visitor_expr_k bigf e;
+  let rec statf x = bigf.kstatement (k,bigf) x 
+  and k st = 
+    let (unwrap_st, ii) = st in
+    iif ii;
+    match unwrap_st with
+    | Labeled (Label (s, st)) -> statf  st;
+    | Labeled (Case  (e, st)) -> vk_expr bigf e; statf st;
+    | Labeled (CaseRange  (e, e2, st)) -> 
+        vk_expr bigf e; vk_expr bigf e2; statf st;
+    | Labeled (Default st) -> statf st;
 
-    | Selection  (If (e, st1, st2)), _ -> 
-        visitor_expr_k bigf e; f (k, bigf) st1; f (k, bigf) st2;
-    | Selection (IfCpp (st1s, st2s)), _ -> 
-        st1s +> List.iter (visitor_statement_k bigf);
-        st2s +> List.iter (visitor_statement_k bigf)
-    | Selection  (Switch (e, st)), _ -> 
-        visitor_expr_k bigf e; f (k, bigf) st;
-    | Iteration  (While (e, st)), _ -> 
-        visitor_expr_k bigf e; f (k, bigf) st;
-    | Iteration  (DoWhile (st, e)), _ -> f (k, bigf) st; visitor_expr_k bigf e; 
-    | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)), _ -> 
-        f (k, bigf) (ExprStatement (e1opt),i1); 
-        f (k, bigf) (ExprStatement (e2opt),i2); 
-        f (k, bigf) (ExprStatement (e3opt),i3); 
-        f (k, bigf) st;
+    | Compound statxs -> statxs +> List.iter (vk_statement bigf)
+    | ExprStatement (eopt) -> do_option (vk_expr bigf) eopt;
+
+    | Selection  (If (e, st1, st2)) -> 
+        vk_expr bigf e; statf st1; statf st2;
+    | Selection (IfCpp (st1s, st2s)) -> 
+        st1s +> List.iter (vk_statement bigf);
+        st2s +> List.iter (vk_statement bigf)
+    | Selection  (Switch (e, st)) -> 
+        vk_expr bigf e; statf st;
+    | Iteration  (While (e, st)) -> 
+        vk_expr bigf e; statf st;
+    | Iteration  (DoWhile (st, e)) -> statf st; vk_expr bigf e; 
+    | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)) -> 
+        statf (ExprStatement (e1opt),i1); 
+        statf (ExprStatement (e2opt),i2); 
+        statf (ExprStatement (e3opt),i3); 
+        statf st;
           
-    | Jump (Goto s), _ -> ()
-    | Jump ((Continue|Break|Return)), _ -> ()
-    | Jump (ReturnExpr e), _ -> visitor_expr_k bigf e;
+    | Jump (Goto s) -> ()
+    | Jump ((Continue|Break|Return)) -> ()
+    | Jump (ReturnExpr e) -> vk_expr bigf e;
 
-    | Decl decl, _ -> visitor_decl_k bigf decl 
-    | Asm, _ -> ()
+    | Decl decl -> vk_decl bigf decl 
+    | Asm -> ()
 
-  in f (k, bigf) st
+  in statf st
 
-and visitor_type_k = fun bigf t -> 
-  let f = bigf.ktype in
-  let rec k t = 
-    match snd t with
-    | (BaseType _,_) -> ()
-    | (Pointer t,_) -> f (k, bigf) t
-    | (Array (eopt, t),_) -> 
-        do_option (visitor_expr_k bigf) eopt;
-        f (k, bigf) t 
-    | (FunctionType (returnt, paramst),_) -> 
-        f (k, bigf) returnt;
+and vk_type = fun bigf t -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
+  let rec typef x = bigf.ktype (k, bigf) x 
+  and k t = 
+    let (q, t) = t in
+    let (unwrap_q, iiq) = q in
+    let (unwrap_t, iit) = t in
+    iif iiq;
+    iif iit;
+    match unwrap_t with
+    | BaseType _ -> ()
+    | Pointer t -> typef t
+    | Array (eopt, t) -> 
+        do_option (vk_expr bigf) eopt;
+        typef t 
+    | FunctionType (returnt, paramst) -> 
+        typef returnt;
         (match paramst with
-        | (ts, (b,_)) -> 
-            ts +> List.iter (fun (((b, sopt, t), _),_) -> f (k, bigf) t)
+        | (ts, (b,iihas3dots)) -> 
+            iif iihas3dots;
+            ts +> List.iter (fun (((b, sopt, t), ii_b_s),iicomma) -> 
+              iif ii_b_s; 
+              iif iicomma;
+              typef t
+            )
         )
 
-    | (Enum  (sopt, enumt),_) -> 
+    | Enum  (sopt, enumt) -> 
         enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
-          eopt +> do_option (visitor_expr_k bigf)
+          iif ii_s_eq; iif iicomma;
+          eopt +> do_option (vk_expr bigf)
           );    
         
-    | (StructUnion (sopt, (_, fields)),_) -> 
+    | StructUnion (sopt, (_su, fields)) -> 
 
        fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
+         iif ii;
          onefield_multivars +> List.iter (fun (field, iicomma) ->
-         match field with
-         | Simple (s, t), ii -> f (k, bigf) t
-         | BitField (sopt, t, expr), ii -> 
-             visitor_expr_k bigf expr;
-             f (k, bigf) t 
+           iif iicomma;
+           match field with
+           | Simple (s, t), ii -> iif ii; typef t;
+           | BitField (sopt, t, expr), ii -> 
+               iif ii;
+               vk_expr bigf expr;
+               typef t 
          ))
 
 
-    | (StructUnionName (s, structunion),_) -> ()
-    | (EnumName  s,_) -> ()
+    | StructUnionName (s, structunion) -> ()
+    | EnumName  s -> ()
 
-    | (TypeName (s),_) -> ()
+    | TypeName (s) -> ()
 
-    | (ParenType t,_) -> f (k, bigf) t
+    | ParenType t -> typef t
 
 
-  in f (k, bigf) t
+  in typef t
 
-and visitor_decl_k = fun bigf d -> 
+and vk_decl = fun bigf d -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
   let f = bigf.kdecl in 
-  let rec k (DeclList (xs,ii)) = List.iter aux xs 
+  let rec k (DeclList (xs,ii)) = iif ii; List.iter aux xs 
   and aux ((var, t, sto), iicomma) = 
-    visitor_type_k bigf t;
+    iif iicomma;
+    vk_type bigf t;
     var +> do_option (fun ((s, ini), ii_s_ini) -> 
-      ini +> do_option (visitor_ini_k bigf)
+      iif ii_s_ini;
+      ini +> do_option (vk_ini bigf)
         );
   in f (k, bigf) d 
 
-and visitor_ini_k = fun bigf ini -> 
-  let f = bigf.kini in
-  let rec k (ini, iini) = 
-    match ini with
-    | InitExpr e -> visitor_expr_k bigf e
-    | InitList initxs -> List.iter (f (k, bigf)) (initxs +> List.map fst)
-    | InitGcc (s, e) -> f (k, bigf) e
-    | InitGccIndex (e1, e) -> visitor_expr_k bigf e1; f (k, bigf) e
-    | InitGccRange (e1, e2, e) -> 
-        visitor_expr_k bigf e1; 
-        visitor_expr_k bigf e2; 
-        f (k, bigf) e
-  in f (k, bigf) ini
+and vk_ini = fun bigf ini -> 
+  let iif ii = List.iter (vk_info bigf) ii in
 
-and visitor_def_k = fun bigf d -> 
+  let rec inif x = bigf.kini (k, bigf) x 
+  and k (ini, iini) = 
+    iif iini;
+    match ini with
+    | InitExpr e -> vk_expr bigf e
+    | InitList initxs -> List.iter (inif) (initxs +> List.map fst)
+    | InitGcc (s, e) -> inif e
+    | InitGccIndex (e1, e) -> vk_expr bigf e1; inif e
+    | InitGccRange (e1, e2, e) -> 
+        vk_expr bigf e1; 
+        vk_expr bigf e2; 
+        inif e
+  in inif ini
+
+and vk_def = fun bigf d -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
   let f = bigf.kdef in
   let rec k d = 
     match d with
-    | (s, (returnt, (paramst, b)), sto, statxs), _ -> 
-        visitor_type_k bigf returnt;
-        paramst +> List.iter (fun (((b, s, t), _),_) -> visitor_type_k bigf t);
-        statxs +> List.iter (visitor_statement_k bigf)
+    | (s, (returnt, (paramst, (b, iib))), sto, statxs), ii -> 
+        iif ii;
+        iif iib;
+        vk_type bigf returnt;
+        paramst +> List.iter (fun (((b, s, t), iibs),iicomma) -> 
+          iif iibs;
+          iif iicomma;
+          vk_type bigf t
+        );
+        statxs +> List.iter (vk_statement bigf)
   in f (k, bigf) d 
 
-    
+
+(* Now keep fullstatement inside the control flow node, 
+ * so that can then get in a MetaStmtVar the fullstatement to later
+ * pp back when the S is in a +. But that means that 
+ * Exp will match an Ifnode even if there is no such exp
+ * inside the condition of the Ifnode (because the exp may
+ * be deeper, in the then branch). So have to not visit
+ * all inside a node anymore.
+ * 
+ * update: j'ai choisi d'accrocher au noeud du CFG à la
+ * fois le fullstatement et le partialstatement et appeler le 
+ * visiteur que sur le partialstatement.
+ *)
+
+and vk_node = fun bigf node -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+  let infof info = vk_info bigf info in
+
+  let f = bigf.knode in
+  let rec k n = 
+    match F.unwrap n with
+
+    | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
+        vk_type bigf rett;
+        paramst +> List.iter (fun (((b, s, t), iibs), iicomma) ->
+          vk_type bigf t;
+        );
 
 
-(******************************************************************************)
+    | F.Decl decl -> vk_decl bigf decl 
+    | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option (vk_expr bigf)
+
+    | F.IfHeader (_, (e,_)) 
+    | F.SwitchHeader (_, (e,_))
+    | F.WhileHeader (_, (e,_))
+    | F.DoWhileTail (e,_) 
+      -> vk_expr bigf e
+
+    | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
+        iif i1; iif i2; iif i3;
+        e1opt +> do_option (vk_expr bigf);
+        e2opt +> do_option (vk_expr bigf);
+        e3opt +> do_option (vk_expr bigf);
+        
+    | F.ReturnExpr (_, (e,_)) -> vk_expr bigf e
+        
+    | F.Case  (_, (e,_)) -> vk_expr bigf e
+    | F.CaseRange (_, ((e1, e2),_)) -> vk_expr bigf e1; vk_expr bigf e2
+
+
+    | F.CaseNode i -> ()
+
+    | F.CPPDefine (s, ii) -> iif ii
+    | F.CPPInclude (s, ii) -> iif ii
+    | F.IfCpp (st, ((),ii)) -> iif ii
+
+    | F.Break    (st,((),ii)) -> iif ii
+    | F.Continue (st,((),ii)) -> iif ii
+    | F.Default  (st,((),ii)) -> iif ii
+    | F.Return   (st,((),ii)) -> iif ii
+    | F.Goto  (st, (s,ii)) -> iif ii
+    | F.Label (st, (s,ii)) -> iif ii
+    | F.EndStatement iopt -> do_option infof iopt
+    | F.DoHeader (st, info) -> infof info
+    | F.Else info -> infof info
+    | F.SeqEnd (i, info) -> infof info
+    | F.SeqStart (st, i, info) -> infof info
+
+    | (
+        F.ErrorExit|F.Exit|
+        F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
+        F.Fake|F.Enter|F.Asm
+      ) -> ()
+
+
+
+  in
+  f (k, bigf) node
+
+and vk_info = fun bigf info -> 
+  let rec infof ii = bigf.kinfo (k, bigf) ii
+  and k i = ()
+  in
+  infof info
+
+
+
+(*****************************************************************************)
+(* "syntetisized attributes" style *)
+(*****************************************************************************)
 type 'a inout = 'a -> 'a 
 
 (* _s for synthetizized attributes *)
@@ -268,11 +446,13 @@ type visitor_c_s = {
   kexpr_s:      (expression inout * visitor_c_s) -> expression inout;
   kstatement_s: (statement  inout * visitor_c_s) -> statement  inout;
   ktype_s:      (fullType   inout * visitor_c_s) -> fullType   inout;
+  kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout; 
 
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout; 
-  kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout; 
+
   kprogram_s: (programElement inout * visitor_c_s) -> programElement inout;
+  knode_s: (F.node inout * visitor_c_s) -> F.node inout;
 
   kinfo_s: (info inout * visitor_c_s) -> info inout;
  } 
@@ -285,62 +465,65 @@ let default_visitor_c_s =
     kdef_s       = (fun (k,_) d  -> k d);
     kini_s       = (fun (k,_) d  -> k d);
     kprogram_s   = (fun (k,_) p  -> k p);
+    knode_s      = (fun (k,_) n  -> k n);
     kinfo_s      = (fun (k,_) i  -> k i);
-
   } 
 
-let rec visitor_expr_k_s = fun bigf expr ->
-  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+let rec vk_expr_s = fun bigf expr ->
+  let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec exprf e = bigf.kexpr_s  (k, bigf) e
   and k e = 
     let ((unwrap_e, typ), ii) = e in
-    let typ' = typ +> map_option (visitor_type_k_s bigf) in
+    (* don't analyse optional type
+     * old:  typ +> map_option (vk_type_s bigf) in 
+     *)
+    let typ' = typ in 
     let e' = 
-    match unwrap_e with
-    | Ident (s) -> Ident (s)
-    | Constant (c) -> Constant (c)
-    | FunCall  (e, es)         -> 
-        FunCall (exprf e,
-                 es +> List.map (fun (e,ii) -> 
-                   visitor_argument_k_s bigf e, infolistf ii
-                     ))
-                
-    | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
-    | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
-    | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
-        
-    | Postfix  (e, op) -> Postfix (exprf e, op)
-    | Infix    (e, op) -> Infix   (exprf e, op)
-    | Unary    (e, op) -> Unary   (exprf e, op)
-    | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
-        
-    | ArrayAccess    (e1, e2) -> ArrayAccess (exprf e1, exprf e2)
-    | RecordAccess   (e, s) -> RecordAccess     (exprf e, s) 
-    | RecordPtAccess (e, s) -> RecordPtAccess   (exprf e, s) 
+      match unwrap_e with
+      | Ident (s) -> Ident (s)
+      | Constant (c) -> Constant (c)
+      | FunCall  (e, es)         -> 
+          FunCall (exprf e,
+                  es +> List.map (fun (e,ii) -> 
+                    vk_argument_s bigf e, infolistf ii
+                  ))
+            
+      | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
+      | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
+      | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
+          
+      | Postfix  (e, op) -> Postfix (exprf e, op)
+      | Infix    (e, op) -> Infix   (exprf e, op)
+      | Unary    (e, op) -> Unary   (exprf e, op)
+      | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
+          
+      | ArrayAccess    (e1, e2) -> ArrayAccess (exprf e1, exprf e2)
+      | RecordAccess   (e, s) -> RecordAccess     (exprf e, s) 
+      | RecordPtAccess (e, s) -> RecordPtAccess   (exprf e, s) 
 
-    | SizeOfExpr  (e) -> SizeOfExpr   (exprf e)
-    | SizeOfType  (t) -> SizeOfType (visitor_type_k_s bigf t)
-    | Cast    (t, e) ->  Cast   (visitor_type_k_s bigf t, exprf e)
+      | SizeOfExpr  (e) -> SizeOfExpr   (exprf e)
+      | SizeOfType  (t) -> SizeOfType (vk_type_s bigf t)
+      | Cast    (t, e) ->  Cast   (vk_type_s bigf t, exprf e)
 
-    | StatementExpr (statxs, is) -> 
-        StatementExpr (
-          statxs +> List.map (visitor_statement_k_s bigf),
-          infolistf is)
-    | Constructor -> Constructor
-    | ParenExpr (e) -> ParenExpr (exprf e)
+      | StatementExpr (statxs, is) -> 
+          StatementExpr (
+            statxs +> List.map (vk_statement_s bigf),
+            infolistf is)
+      | Constructor -> Constructor
+      | ParenExpr (e) -> ParenExpr (exprf e)
 
-    | MacroCall arg -> 
-        MacroCall
-        (match arg with
-        | Left e -> Left (exprf e)
-        | Right xs -> Right (xs +> List.map (visitor_statement_k_s bigf))
-        )
+      | MacroCall arg -> 
+          MacroCall
+            (match arg with
+            | Left e -> Left (exprf e)
+            | Right xs -> Right (xs +> List.map (vk_statement_s bigf))
+            )
     in
     (e', typ'), (infolistf ii)
   in exprf expr
 
-and visitor_argument_k_s bigf argument = 
-  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+and vk_argument_s bigf argument = 
+  let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec do_action = function 
     | (ActMisc ii) -> ActMisc (infolistf ii)
     | (ActJump jump) -> 
@@ -348,21 +531,21 @@ and visitor_argument_k_s bigf argument =
           (match jump with
           | (Goto s), is               -> (Goto s), infolistf is
           | ((Continue|Break|Return) as x), is -> x, infolistf is
-          | (ReturnExpr e), is ->  ReturnExpr (visitor_expr_k_s bigf e), 
-                                   infolistf is
+          | (ReturnExpr e), is ->  ReturnExpr (vk_expr_s bigf e), 
+              infolistf is
           )
     | (ActSeq ((e, iptvirg), action)) -> 
-        ActSeq ((map_option (visitor_expr_k_s bigf) e, 
-                 infolistf iptvirg), 
-                do_action action)
+        ActSeq ((map_option (vk_expr_s bigf) e, 
+                infolistf iptvirg), 
+               do_action action)
   in
 
   (match argument with
-  | Left e -> Left (visitor_expr_k_s bigf e)
+  | Left e -> Left (vk_expr_s bigf e)
   | Right (ArgType (t, stoil)) -> 
       let (unwrap_st, ii) = stoil in
       Right (ArgType 
-               (visitor_type_k_s bigf t, 
+                (vk_type_s bigf t, 
                 (unwrap_st, infolistf ii
                 )))
   | Right (ArgAction action) -> 
@@ -374,38 +557,38 @@ and visitor_argument_k_s bigf argument =
 
 
 
-and visitor_statement_k_s = fun bigf st -> 
+and vk_statement_s = fun bigf st -> 
   let rec statf st = bigf.kstatement_s (k, bigf) st 
   and k st = 
     let (unwrap_st, ii) = st in
     let st' = 
-    match unwrap_st with
-    | Labeled (Label (s, st)) -> 
-        Labeled (Label (s, statf st))
-    | Labeled (Case  (e, st)) -> 
-        Labeled (Case  ((visitor_expr_k_s bigf) e , statf st))
-    | Labeled (CaseRange  (e, e2, st)) -> 
-        Labeled (CaseRange  ((visitor_expr_k_s bigf) e, 
-                             (visitor_expr_k_s bigf) e2, 
-                             statf st))
-    | Labeled (Default st) -> Labeled (Default (statf st))
-    | Compound statxs -> 
-        Compound (statxs +> List.map (visitor_statement_k_s bigf))
-    | ExprStatement (None) ->  ExprStatement (None)
-    | ExprStatement (Some e) -> ExprStatement (Some ((visitor_expr_k_s bigf) e))
-    | Selection (If (e, st1, st2)) -> 
-        Selection  (If ((visitor_expr_k_s bigf) e, statf st1, statf st2))
-    | Selection (IfCpp (st1s, st2s)) -> 
-        Selection  (IfCpp 
-                      (st1s +> List.map (visitor_statement_k_s bigf),
-                       st2s +> List.map (visitor_statement_k_s bigf)))
-    | Selection (Switch (e, st))   -> 
-        Selection  (Switch ((visitor_expr_k_s bigf) e, statf st))
-    | Iteration (While (e, st))    -> 
-        Iteration  (While ((visitor_expr_k_s bigf) e, statf st))
-    | Iteration (DoWhile (st, e))  -> 
-        Iteration  (DoWhile (statf st, (visitor_expr_k_s bigf) e))
-    | Iteration (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)) -> 
+      match unwrap_st with
+      | Labeled (Label (s, st)) -> 
+          Labeled (Label (s, statf st))
+      | Labeled (Case  (e, st)) -> 
+          Labeled (Case  ((vk_expr_s bigf) e , statf st))
+      | Labeled (CaseRange  (e, e2, st)) -> 
+          Labeled (CaseRange  ((vk_expr_s bigf) e, 
+                              (vk_expr_s bigf) e2, 
+                              statf st))
+      | Labeled (Default st) -> Labeled (Default (statf st))
+      | Compound statxs -> 
+          Compound (statxs +> List.map (vk_statement_s bigf))
+      | ExprStatement (None) ->  ExprStatement (None)
+      | ExprStatement (Some e) -> ExprStatement (Some ((vk_expr_s bigf) e))
+      | Selection (If (e, st1, st2)) -> 
+          Selection  (If ((vk_expr_s bigf) e, statf st1, statf st2))
+      | Selection (IfCpp (st1s, st2s)) -> 
+          Selection  (IfCpp 
+                         (st1s +> List.map (vk_statement_s bigf),
+                         st2s +> List.map (vk_statement_s bigf)))
+      | Selection (Switch (e, st))   -> 
+          Selection  (Switch ((vk_expr_s bigf) e, statf st))
+      | Iteration (While (e, st))    -> 
+          Iteration  (While ((vk_expr_s bigf) e, statf st))
+      | Iteration (DoWhile (st, e))  -> 
+          Iteration  (DoWhile (statf st, (vk_expr_s bigf) e))
+      | Iteration (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)) -> 
           let e1opt' = statf (ExprStatement (e1opt),i1) in
           let e2opt' = statf (ExprStatement (e2opt),i2) in
           let e3opt' = statf (ExprStatement (e3opt),i3) in
@@ -415,159 +598,231 @@ and visitor_statement_k_s = fun bigf st ->
           | x -> failwith "cant be here if iterator keep ExprStatement as is"
           )
 
-          
-    | Jump (Goto s) -> Jump (Goto s)
-    | Jump (((Continue|Break|Return) as x)) -> Jump (x)
-    | Jump (ReturnExpr e) -> Jump (ReturnExpr ((visitor_expr_k_s bigf) e))
+            
+      | Jump (Goto s) -> Jump (Goto s)
+      | Jump (((Continue|Break|Return) as x)) -> Jump (x)
+      | Jump (ReturnExpr e) -> Jump (ReturnExpr ((vk_expr_s bigf) e))
 
-    | Decl decl -> Decl (visitor_decl_k_s bigf decl)
-    | Asm -> Asm
+      | Decl decl -> Decl (vk_decl_s bigf decl)
+      | Asm -> Asm
     in
-    st', List.map (visitor_info_k_s bigf) ii
+    st', List.map (vk_info_s bigf) ii
   in statf st
 
-and visitor_type_k_s = fun bigf t -> 
+and vk_type_s = fun bigf t -> 
   let rec typef t = bigf.ktype_s (k,bigf) t
-  and infolistf ii = List.map (visitor_info_k_s bigf) ii
+  and infolistf ii = List.map (vk_info_s bigf) ii
   and k t = 
     let (q, t) = t in
     let (unwrap_q, iiq) = q in
     let q' = unwrap_q in     (* todo? a visitor for qualifier *)
     let (unwrap_t, iit) = t in
     let t' = 
-    match unwrap_t with
-    | BaseType x -> BaseType x
-    | Pointer t  -> Pointer (typef t)
-    | Array (eopt, t) -> Array (fmap (visitor_expr_k_s bigf) eopt, typef t) 
-    | FunctionType (returnt, paramst) -> 
-        FunctionType 
-          (typef returnt, 
-           (match paramst with
-           | (ts, (b, iihas3dots)) -> 
-                 (ts +> List.map (fun (((b, sopt, t), ii_b_s),iicomma) -> 
-                   (((b, sopt, typef t), infolistf ii_b_s), 
-                    infolistf iicomma)),
-                  (b, infolistf iihas3dots))
-           ))
+      match unwrap_t with
+      | BaseType x -> BaseType x
+      | Pointer t  -> Pointer (typef t)
+      | Array (eopt, t) -> Array (fmap (vk_expr_s bigf) eopt, typef t) 
+      | FunctionType (returnt, paramst) -> 
+          FunctionType 
+            (typef returnt, 
+            (match paramst with
+            | (ts, (b, iihas3dots)) -> 
+                (ts +> List.map (fun (((b, sopt, t), ii_b_s),iicomma) -> 
+                  (((b, sopt, typef t), infolistf ii_b_s), 
+                  infolistf iicomma)),
+                (b, infolistf iihas3dots))
+            ))
 
-    | Enum  (sopt, enumt) -> 
-        Enum (sopt,
-              enumt +> List.map (fun (((s, eopt),ii_s_eq), iicomma) -> 
-                ((s, fmap (visitor_expr_k_s bigf) eopt), infolistf ii_s_eq),
-                infolistf iicomma
-                                )
-             )
-    | StructUnion (sopt, (su, fields)) -> 
-       StructUnion (sopt, (su, 
-        fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
-         FieldDeclList (
-          onefield_multivars +> List.map (fun (field, iicomma) ->
-            (match field with
-            | Simple (s, t), iis -> Simple (s, typef t), infolistf iis
-            | BitField (sopt, t, expr), iis -> 
-                BitField (sopt, typef t, visitor_expr_k_s bigf expr), 
-                          infolistf iis
-            ), infolistf iicomma
-                                         )
-         ), infolistf iiptvirg
-         )
-         ))
+      | Enum  (sopt, enumt) -> 
+          Enum (sopt,
+               enumt +> List.map (fun (((s, eopt),ii_s_eq), iicomma) -> 
+                 ((s, fmap (vk_expr_s bigf) eopt), infolistf ii_s_eq),
+                 infolistf iicomma
+               )
+          )
+      | StructUnion (sopt, (su, fields)) -> 
+          StructUnion (sopt, (su, 
+                             fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
+                               FieldDeclList (
+                                 onefield_multivars +> List.map (fun (field, iicomma) ->
+                                   (match field with
+                                   | Simple (s, t), iis -> Simple (s, typef t), infolistf iis
+                                   | BitField (sopt, t, expr), iis -> 
+                                       BitField (sopt, typef t, vk_expr_s bigf expr), 
+                                       infolistf iis
+                                   ), infolistf iicomma
+                                 )
+                               ), infolistf iiptvirg
+                             )
+          ))
 
 
-    | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
-    | EnumName  s -> EnumName  s
-    | TypeName s -> TypeName s
+      | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
+      | EnumName  s -> EnumName  s
+      | TypeName s -> TypeName s
 
-    | ParenType t -> ParenType (typef t)
+      | ParenType t -> ParenType (typef t)
     in
     (q', infolistf iiq), 
-    (t', infolistf iit)
+  (t', infolistf iit)
 
 
   in typef t
 
-and visitor_decl_k_s = fun bigf d -> 
+and vk_decl_s = fun bigf d -> 
   let f = bigf.kdecl_s in 
-  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+  let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec k (DeclList (xs, ii)) = DeclList (List.map aux xs,   infolistf ii)
   and aux ((var, t, sto), iicomma) = 
     ((var +> map_option (fun ((s, ini), ii_s_ini) -> 
-      (s, ini +> map_option (fun init -> visitor_ini_k_s bigf init)),
+      (s, ini +> map_option (fun init -> vk_ini_s bigf init)),
       infolistf ii_s_ini
-        )
-     ),
-     visitor_type_k_s bigf t, 
-     sto),
-    infolistf iicomma
+    )
+    ),
+    vk_type_s bigf t, 
+    sto),
+  infolistf iicomma
 
   in f (k, bigf) d 
 
-and visitor_ini_k_s = fun bigf ini -> 
+and vk_ini_s = fun bigf ini -> 
   let rec inif ini = bigf.kini_s (k,bigf) ini
   and k ini = 
     let (unwrap_ini, ii) = ini in
     let ini' = 
-    match unwrap_ini with
-    | InitExpr e -> InitExpr (visitor_expr_k_s bigf e)
-    | InitList initxs -> 
-         InitList (initxs +> List.map (fun (ini, ii) -> 
-           inif ini, List.map (visitor_info_k_s bigf) ii) 
-                     )
-    | InitGcc (s, e) -> InitGcc (s, inif e)
-    | InitGccIndex (e1, e) -> 
-        InitGccIndex (visitor_expr_k_s bigf e1 , inif e)
-    | InitGccRange (e1, e2, e) -> 
-        InitGccRange (visitor_expr_k_s bigf e1, visitor_expr_k_s bigf e2, inif e)
-    in ini', List.map (visitor_info_k_s bigf) ii
+      match unwrap_ini with
+      | InitExpr e -> InitExpr (vk_expr_s bigf e)
+      | InitList initxs -> 
+          InitList (initxs +> List.map (fun (ini, ii) -> 
+            inif ini, List.map (vk_info_s bigf) ii) 
+          )
+      | InitGcc (s, e) -> InitGcc (s, inif e)
+      | InitGccIndex (e1, e) -> 
+          InitGccIndex (vk_expr_s bigf e1 , inif e)
+      | InitGccRange (e1, e2, e) -> 
+          InitGccRange (vk_expr_s bigf e1, vk_expr_s bigf e2, inif e)
+    in ini', List.map (vk_info_s bigf) ii
   in inif ini
 
 
-and visitor_def_k_s = fun bigf d -> 
+and vk_def_s = fun bigf d -> 
   let f = bigf.kdef_s in
-  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+  let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec k d = 
     match d with
     | (s, (returnt, (paramst, (b, iib))), sto, statxs), ii  -> 
         (s, 
-         (visitor_type_k_s bigf returnt, 
-          (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
-          ((b, s, visitor_type_k_s bigf t), infolistf iibs), infolistf iicomma
-          ), 
-           (b, infolistf iib))), 
-         sto, 
-         statxs +> List.map (visitor_statement_k_s bigf) 
-         ),
+        (vk_type_s bigf returnt, 
+        (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
+          ((b, s, vk_type_s bigf t), infolistf iibs), infolistf iicomma
+        ), 
+        (b, infolistf iib))), 
+        sto, 
+        statxs +> List.map (vk_statement_s bigf) 
+        ),
         infolistf ii
 
   in f (k, bigf) d 
 
-and visitor_program_k_s = fun bigf p -> 
+and vk_program_s = fun bigf p -> 
   let f = bigf.kprogram_s in
-  let infolistf ii = List.map (visitor_info_k_s bigf) ii in
+  let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec k p = 
     match p with
-    | Declaration decl -> Declaration (visitor_decl_k_s bigf decl)
-    | Definition def -> Definition (visitor_def_k_s bigf def)
+    | Declaration decl -> Declaration (vk_decl_s bigf decl)
+    | Definition def -> Definition (vk_def_s bigf def)
     | EmptyDef ii -> EmptyDef (infolistf ii)
     | SpecialDeclMacro (s, xs, ii) -> 
         SpecialDeclMacro 
           (s, 
-           xs +> List.map (fun (elem, iicomma) -> 
-             visitor_argument_k_s bigf elem, infolistf iicomma
-            ),
-           infolistf ii
+          xs +> List.map (fun (elem, iicomma) -> 
+            vk_argument_s bigf elem, infolistf iicomma
+          ),
+          infolistf ii
           )
     | CPPInclude (s, ii) -> CPPInclude (s, infolistf ii)
     | CPPDefine (ss, ii) -> CPPDefine (ss, infolistf ii)
     | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
-    | FinalDef info -> FinalDef (visitor_info_k_s bigf info)
+    | FinalDef info -> FinalDef (vk_info_s bigf info)
   in f (k, bigf) p
   
 
-and visitor_info_k_s = fun bigf info -> 
+and vk_info_s = fun bigf info -> 
   let rec infof ii = bigf.kinfo_s (k, bigf) ii
   and k i = i
   in
   infof info
 
+
+and vk_node_s = fun bigf node -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  let infof info = vk_info_s bigf info  in
+
+  let rec nodef n = bigf.knode_s (k, bigf) n
+  and k node = 
+    F.rewrap node (
+    match F.unwrap node with
+    | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
+        F.FunHeader 
+          ((idb,
+           (vk_type_s bigf rett,
+           (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
+             (((b, s, vk_type_s bigf t), iif iibs), iif iicomma)
+           ), (isvaargs,iif iidotsb))), stob),iif ii)
+          
+          
+    | F.Decl declb -> F.Decl (vk_decl_s bigf declb)
+    | F.ExprStatement (st, (eopt, ii)) ->  
+        F.ExprStatement (st, (eopt +> map_option (vk_expr_s bigf), iif ii))
+          
+    | F.IfHeader (st, (e,ii))     -> 
+        F.IfHeader    (st, (vk_expr_s bigf e, iif ii))
+    | F.SwitchHeader (st, (e,ii)) -> 
+        F.SwitchHeader(st, (vk_expr_s bigf e, iif ii))
+    | F.WhileHeader (st, (e,ii))  -> 
+        F.WhileHeader (st, (vk_expr_s bigf e, iif ii))
+    | F.DoWhileTail (e,ii)  -> 
+        F.DoWhileTail (vk_expr_s bigf e, iif ii)
+
+    | F.ForHeader (st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
+        F.ForHeader (st,
+                    (((e1opt +> Common.map_option (vk_expr_s bigf), iif i1),
+                     (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
+                     (e3opt +> Common.map_option (vk_expr_s bigf), iif i3)),
+                    iif ii))
+          
+    | F.ReturnExpr (st, (e,ii)) -> 
+        F.ReturnExpr (st, (vk_expr_s bigf e, iif ii))
+        
+    | F.Case  (st, (e,ii)) -> F.Case (st, (vk_expr_s bigf e, ii))
+    | F.CaseRange (st, ((e1, e2),ii)) -> 
+        F.CaseRange (st, ((vk_expr_s bigf e1, vk_expr_s bigf e2), iif ii))
+
+    | F.CaseNode i -> F.CaseNode i
+
+    | F.CPPDefine (s, ii) -> F.CPPDefine (s, iif ii)
+    | F.CPPInclude (s, ii) -> F.CPPInclude (s, iif ii)
+    | F.IfCpp (st, ((),ii)) -> F.IfCpp (st, ((),iif ii))
+
+    | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))
+    | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))
+    | F.Default  (st,((),ii)) -> F.Default  (st,((),iif ii))
+    | F.Return   (st,((),ii)) -> F.Return   (st,((),iif ii))
+    | F.Goto  (st, (s,ii)) -> F.Goto  (st, (s,iif ii))
+    | F.Label (st, (s,ii)) -> F.Label (st, (s,iif ii))
+    | F.EndStatement iopt -> F.EndStatement (map_option infof iopt)
+    | F.DoHeader (st, info) -> F.DoHeader (st, infof info)
+    | F.Else info -> F.Else (infof info)
+    | F.SeqEnd (i, info) -> F.SeqEnd (i, infof info)
+    | F.SeqStart (st, i, info) -> F.SeqStart (st, i, infof info)
+
+    | ((F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
+       F.Fake|F.Exit|F.Enter|F.Asm) as x) -> x
+
+
+    )
+  in
+  nodef node
   
+  
+        
