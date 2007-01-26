@@ -487,7 +487,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         show_or_not_cfile  cfile;
         show_or_not_cocci coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
-        (zip ctls used_after_lists, toks, sp_contain_typed_metavar astcocci)
+        (zip ctls used_after_lists, toks, 
+        sp_contain_typed_metavar astcocci)
 
     | Right ctl ->([[(ctl,([],[]))], []]), [], true (* maybe typed metavar *)
     )
