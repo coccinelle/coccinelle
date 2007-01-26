@@ -31,6 +31,17 @@ open Oassocb
 open Oset
 open Osetb
 
+module Lib = Lib_parsing_c
+(*****************************************************************************)
+(* Helpers *)
+(*****************************************************************************)
+ 
+let file_strpos_of_node n = 
+  let xs = Lib.ii_of_node n in
+  let minii = Lib.min_ii_by_pos xs in
+  let (info,_) = minii in
+  info.Common.file, (info.Common.str, info.Common.charpos)
+
 
 (*---------------------------------------------------------------------------*)
 let get_next_node g nodei = 
@@ -70,6 +81,7 @@ let get_next_nodes_switch_sorted g nodei =
    +> List.map (fun (a,b,c) -> (a,b))
 
 
+
 let rec find_until_good_brace g level lasti = 
   match get_next_node g lasti with
   | nexti, SeqEnd (level2, i2) -> 
@@ -78,6 +90,7 @@ let rec find_until_good_brace g level lasti =
       then (nexti,  i2)
       else find_until_good_brace g level nexti
   | _ -> raise Not_found
+
 
 
 let find_next_best_label_candidate g xs = 
@@ -108,13 +121,13 @@ let find_next_best_label_candidate g xs =
 
     
 
-(*---------------------------------------------------------------------------*)
 type returnkind = 
   | LastCurrentNode of nodei 
   | NoNextNode of nodei (* the node where we stopped *)
 
 
-(*---------------------------------------------------------------------------*)
+(*****************************************************************************)
+(* Main entry point *)
 let (control_flow_to_ast: cflow -> definition) = fun g ->
   
   let nodes = g#nodes  in
@@ -674,7 +687,12 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
      match unwrap node with
      | Exit | ErrorExit -> ()
      | SeqEnd _ -> () (* TODO ?*)
-     | _ -> failwith "pb in flow_to_ast, some nodes have not been visited"
+     | _ -> 
+         let (file, strpos) = file_strpos_of_node node  in
+         let s = Common.error_message file strpos in
+         pr2 "PB node not visited";          
+         pr2 s;
+         failwith "pb in flow_to_ast, some nodes have not been visited"
       );
 
 

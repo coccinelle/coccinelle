@@ -933,7 +933,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   (* the metaRuleElem contains just '-' information. We dont need to add
    * stuff in the environment. If we need stuff in environment, because
-   * there is a + S somewhere, then this will be done via MetaStatement, not
+   * there is a + S somewhere, then this will be done via MetaStmt, not
    * via MetaRuleElem. 
    * Can match TrueNode/FalseNode/... so must be placed before those cases.
    *)

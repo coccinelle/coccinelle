@@ -389,6 +389,8 @@ let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 let rewrap_str s (info, annot) =  { info with Common.str = s;}, annot
 
+let get_pos_of_info (info, annot) = info.Common.charpos
+
 (*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)

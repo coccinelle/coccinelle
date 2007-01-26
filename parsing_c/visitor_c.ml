@@ -379,24 +379,29 @@ and vk_node = fun bigf node ->
 
 
     | F.Decl decl -> vk_decl bigf decl 
-    | F.ExprStatement (_, (eopt, _)) ->  eopt +> do_option (vk_expr bigf)
+    | F.ExprStatement (st, (eopt, ii)) ->  
+        iif ii;
+        eopt +> do_option (vk_expr bigf)
 
-    | F.IfHeader (_, (e,_)) 
-    | F.SwitchHeader (_, (e,_))
-    | F.WhileHeader (_, (e,_))
-    | F.DoWhileTail (e,_) 
-      -> vk_expr bigf e
+    | F.IfHeader (_, (e,ii)) 
+    | F.SwitchHeader (_, (e,ii))
+    | F.WhileHeader (_, (e,ii))
+    | F.DoWhileTail (e,ii) -> 
+        iif ii;
+        vk_expr bigf e
 
-    | F.ForHeader (_, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), _)) -> 
+    | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
         iif i1; iif i2; iif i3;
+        iif ii;
         e1opt +> do_option (vk_expr bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
         
-    | F.ReturnExpr (_, (e,_)) -> vk_expr bigf e
+    | F.ReturnExpr (_st, (e,ii)) -> iif ii; vk_expr bigf e
         
-    | F.Case  (_, (e,_)) -> vk_expr bigf e
-    | F.CaseRange (_, ((e1, e2),_)) -> vk_expr bigf e1; vk_expr bigf e2
+    | F.Case  (_st, (e,ii)) -> iif ii; vk_expr bigf e
+    | F.CaseRange (_st, ((e1, e2),ii)) -> 
+        iif ii; vk_expr bigf e1; vk_expr bigf e2
 
 
     | F.CaseNode i -> ()
