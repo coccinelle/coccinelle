@@ -50,11 +50,14 @@ let inline_mcodes =
     | Ast0.MIXED(befaft) ->
 	let concat starter startinfo ender endinfo =
 	  let lst =
-	    if startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
-	    then 
+	    if not(ender = []) &&
+	      startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
+	    then
+	      (Printf.printf "start's end %d, end's start %d\n"
+		 startinfo.Ast0.tline_end endinfo.Ast0.tline_start;
 	      let last = List.hd (List.rev starter) in
 	      let butlast = List.rev(List.tl(List.rev starter)) in
-	      butlast @ (last@(List.hd ender)) :: (List.tl ender)
+	      butlast @ (last@(List.hd ender)) :: (List.tl ender))
 	    else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
@@ -64,8 +67,7 @@ let inline_mcodes =
 		(function
 		    Ast0.MINUS(mreplacements) ->
 		      let (mrepl,tokeninfo) = !mreplacements in
-		      mreplacements :=
-			concat bef beforeinfo mrepl tokeninfo
+		      mreplacements := concat bef beforeinfo mrepl tokeninfo
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef),mbeforeinfo,a) ->
