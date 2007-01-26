@@ -237,7 +237,7 @@ let add_binding namedef warning =
 
 (* catch all the decl to grow the environment *)
 
-let rec (annotate_program: program -> program) = fun prog ->
+let rec (annotate_program2: program -> program) = fun prog ->
 
   (* globals (re)initialialisation *) 
   _scoped_env := initial_env;
@@ -379,3 +379,6 @@ let rec (annotate_program: program -> program) = fun prog ->
 
   prog +> List.map (Visitor_c.vk_program_s bigf)
   
+
+let annotate_program a = 
+  Common.profile_code "annotate_type" (fun () -> annotate_program2 a)

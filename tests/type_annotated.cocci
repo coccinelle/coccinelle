@@ -1,5 +1,6 @@
 @@
 struct foo x;
+//expression x;
 @@
 
 
