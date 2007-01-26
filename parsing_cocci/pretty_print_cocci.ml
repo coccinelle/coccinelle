@@ -183,8 +183,7 @@ let rec expression e =
       Format.print_flush();
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
-  | Ast.MetaExpr(name,keep,None,_) -> mcode print_string name;
-      print_string "^"; print_bool keep;
+  | Ast.MetaExpr(name,keep,None,_) -> mcode print_string name
   | Ast.MetaExpr(name,keep,Some ty,_) ->
       mcode print_string name; print_string "/* ";
       Format.print_flush();
