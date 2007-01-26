@@ -213,6 +213,29 @@ let contain_loop def =
      };
   !res
 
+let sp_contain_typed_metavar toplevel_list_list = 
+  let bind x y = x or y in
+  let option_default = false in
+  let mcode _ _ = option_default in
+  let donothing r k e = k e in
+
+  let expression r k e =
+    match Ast_cocci.unwrap e with
+    |  Ast_cocci.MetaExpr(ida,keep,Some x,inherited) -> true
+    | _ -> k e in
+
+  let combiner = 
+    Visitor_ast.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing
+      donothing expression donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing in
+  toplevel_list_list +> List.exists (fun toplevel_list -> 
+    toplevel_list +> List.exists (fun toplevel -> 
+      combiner.Visitor_ast.combiner_top_level toplevel
+  ))
+
+
 
 
 let ast_to_flow_with_error_messages2 def filename =
@@ -320,12 +343,18 @@ let build_maybe_info e cfile =
 
 
 
-let (build_info_program: filename -> celem_with_info list) = fun cfile -> 
+let (build_info_program: filename -> bool -> celem_with_info list) = 
+ fun cfile contain_typedmetavar -> 
   let cprogram = cprogram_from_file cfile in
-  let cprogram' = cprogram
-    +> Common.unzip 
-    +> (fun (program, infos) -> Type_annoter_c.annotate_program program, infos)
-    +> Common.uncurry Common.zip
+  let cprogram' = 
+    if contain_typedmetavar
+    then
+      cprogram
+      +> Common.unzip 
+      +> (fun (program, infos) -> 
+        Type_annoter_c.annotate_program program, infos)
+      +> Common.uncurry Common.zip
+    else cprogram
   in
   cprogram' +> List.map (fun (e, info_item) -> 
     (e, info_item), build_maybe_info e cfile)
@@ -334,14 +363,15 @@ let (build_info_program: filename -> celem_with_info list) = fun cfile ->
 
 (* bool is wether or not have to unparse and reparse the c element *)
 let (rebuild_info_program : 
-  (celem_with_info * bool) list -> celem_with_info list) = fun xs ->
+  (celem_with_info * bool) list -> bool -> celem_with_info list) = 
+ fun xs contain_typedmetavar ->
   let xxs = xs +> List.map (fun (((elem, info_item), flow), modified) -> 
     if modified 
     then begin
       let file = Common.new_temp_file "cocci_small_output" ".c" in
       cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
       (* Common.command2 ("cat " ^ file); *)
-      let xs = build_info_program file  in
+      let xs = build_info_program file contain_typedmetavar in
       Common.list_init xs (* get rid of the FinalDef *)
     end
     else 
@@ -446,7 +476,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
   then failwith (Printf.sprintf "can't find file %s" cfile);
 
   (* preparing the inputs (c, cocci, ctl) *)
-  let (ctls, error_words_julia) = 
+  let (ctls, error_words_julia, contain_typedmetavar) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
         let (astcocci,used_after_lists,toks)= sp_from_file coccifile isofile in
@@ -455,8 +485,9 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         show_or_not_cfile  cfile;
         show_or_not_cocci coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
-        (zip ctls used_after_lists, toks)
-    | Right ctl ->([[(ctl,([],[]))], []]), []
+        (zip ctls used_after_lists, toks, sp_contain_typed_metavar astcocci)
+
+    | Right ctl ->([[(ctl,([],[]))], []]), [], true (* maybe typed metavar *)
     )
   in
 
@@ -467,7 +498,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
 
     (* parsing and build CFG *)
-    let cprogram = ref (build_info_program cfile) in
+    let cprogram = ref (build_info_program cfile contain_typedmetavar) in
 
     (* And now the main algorithm *)
     (* The algorithm is roughly: 
@@ -560,7 +591,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
             ((elem', info_item), info), modified 
           ) (* end 3: iter function *)
           in
-          cprogram := rebuild_info_program cprogram';
+          cprogram := rebuild_info_program cprogram' contain_typedmetavar;
         ) (* end 2: iter bindings *)
       end
       else failwith "not handling multiple minirules"
@@ -607,7 +638,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
             ) 
               
           in
-          cprogram := rebuild_info_program cprogram';
+          cprogram := rebuild_info_program cprogram' contain_typedmetavar;
       );
     );
 
