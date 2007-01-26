@@ -1,21 +1,21 @@
 ac.c
- * [status]
+ * [status] ok
 
 battery.c
- * [status]
+ * [status] ok
 
 button.c
- * [status]
+ * [status] ok
 
 fan.c
- * [status]
+ * [status] ok
 
 power.c
- * [status]
+ * [status] ok
 
 processor.c
- * [status]
+ * [status] ok
 
 thermal.c
- * [status]
+ * [status] ok
 

@@ -26,8 +26,8 @@ all: $(OBJS)
 	test -e corrected_$(<:.c=.res) && \
 	cp $< corrected_$< && \
 	(if ( test -e $(<:.c=.var) ) ; \
-	then (time $(SPATCHCMD) corrected_$<) < $(<:.c=.var) 2> $(<:.c=.ok) ; \
-	else (time $(SPATCHCMD) corrected_$<) 2> $(<:.c=.ok) ; \
+	then (time $(SPATCHCMD) corrected_$<) < $(<:.c=.var) 2> $(<:.c=.spatch_ok) ; \
+	else (time $(SPATCHCMD) corrected_$<) 2> $(<:.c=.spatch_ok) ; \
 	fi) && \
 	/bin/rm corrected_$<) || \
 	(/bin/rm -f corrected_$< && test -e $(<:.c=.spatch_ok) && \

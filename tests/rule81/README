@@ -1,134 +1,150 @@
 ali5455.c
- * [status] 
+ * [status] ok
 
 atyfb_base.c
- * [status] 
+ * [status] ok
 
 au1000.c
- * [status] 
+ * [status] wrong
+ the call to remap_page_range in the C file is missing its first argument, so
+ the rule doesn't apply
 
 audio.c
- * [status] 
+ * [status] failed
 
 cmpci.c
- * [status] 
+ * [status] ok
 
 cpia.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 cs4281m.c
- * [status] 
+ * [status] ok
 
 cs46xx.c
- * [status] 
+ * [status] ok
 
 es1370.c
- * [status] 
+ * [status] ok
 
 es1371.c
- * [status] 
+ * [status] ok
 
 esssolo1.c
- * [status] 
+ * [status] ok
 
 flash.c
- * [status] 
+ * [status] failed
 
 forte.c
- * [status] 
+ * [status] failed
 
 frontend.c
- * [status] 
+ * [status] ok
 
 ftape-ctl.c
- * [status] 
+ * [status] failed
 
 gbefb.c
- * [status] 
+ * [status] ok
 
 hpet.c
- * [status] 
+ * [status] error
+ ends with two returns, each at the end of a different ifdef branch
 
 i810_audio.c
- * [status] 
+ * [status] ok
 
 i810_dma.c
- * [status] 
+ * [status] wrong
+ parsing problem
 
 i830_dma.c
- * [status] 
+ * [status] wrong
+ parsing problem
 
 igafb.c
- * [status] 
+ * [status] ok
 
 ite8172.c
- * [status] 
+ * [status] ok
 
 jsflash.c
- * [status] 
+ * [status] ok
 
 maestro3.c
- * [status] 
+ * [status] ok
 
 maestro.c
- * [status] 
+ * [status] ok
 
 mem.c
- * [status] 
+ * [status] failed
 
 meye.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 mmtimer.c
- * [status] 
+ * [status] spatch_ok
+ change the function name whose name changes in a string as well
 
 ov511.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 planb.c
- * [status] 
+ * [status] failed
 
 rme96xx.c
- * [status] 
+ * [status] ok
 
 se401.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 sgivwfb.c
- * [status] 
+ * [status] ok
 
 sn9c102_core.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 sonicvibes.c
- * [status] 
+ * [status] ok
 
 soundcard.c
- * [status] 
+ * [status] ok
 
 stv680.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 trident.c
- * [status] 
+ * [status] ok
 
 usbvideo.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 vicam.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 video1394.c
- * [status] 
+ * [status] ok
 
 w9968cf.c
- * [status] 
+ * [status] error
+ not able to delete declarations
 
 ymfpci.c
- * [status] 
+ * [status] ok
 
 zoran_driver.c
- * [status] 
+ * [status] wrong
+ previously used a macro to call remap_page_range
 
 zr36120.c
- * [status] 
+ * [status] failed

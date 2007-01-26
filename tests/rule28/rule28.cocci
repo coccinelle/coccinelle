@@ -3,7 +3,7 @@
 // address the problem.
 
 @@
-struct BCState *bcs;
+struct BCState *X;
 identifier Y;
 //expression Z1, Z2;
 @@
@@ -46,7 +46,7 @@ identifier Y;
 + bc_open(X);
 
 @@
-struct BCState *bcs;
+struct BCState *X;
 identifier Y;
 @@
 
@@ -56,7 +56,7 @@ identifier Y;
 |
 -     clear_bit(BC_FLG_INIT, &X->Flag)
 )
-     ) {
+-    ) {
 -   if (X->hw.Y.rcvbuf) {
 -     kfree(X->hw.Y.rcvbuf);
 -     X->hw.Y.rcvbuf = NULL;

@@ -1,4 +1,28 @@
 @@
+identifier adr, kva, ret, kvirt_to_pa_fn;
+@@
+
+- kvirt_to_pa_fn(unsigned long adr) {
+-       ...
+-       kva = (unsigned long) page_address(vmalloc_to_page((void *)adr));
+- 	kva |= adr & (PAGE_SIZE-1);
+- 	ret = __pa(kva);
+-       return ret;
+- }
+
+@@
+identifier page;
+expression pos;
+expression A, B, C, D;
+@@
+
+- page = kvirt_to_pa_fn(pos);
++ page = page_to_pfn(vmalloc_to_page((void *)pos));
+...
+- remap_page_range(A, B, page, C, D)
++ remap_pfn_range(A, B, page, C, D)
+
+@@
 identifier page;
 expression pos;
 expression A, B, C, D;

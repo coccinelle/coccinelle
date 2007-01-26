@@ -10,6 +10,17 @@ struct acpi_driver I = {
 @@
 identifier f;
 @@
+remove_function(...) {
+  <...
+  f(...)
+  ...>
+}
+
+
+@@
+identifier f;
+expression device, acpi_ac_dir;
+@@
 
 f(...) {
   <...
@@ -26,12 +37,5 @@ f(...) {
 +   acpi_device_dir(device) = NULL;
   }
 )
-  ...>
-}
-
-// exactly one layer of inter-proceduralness...
-remove_function(...) {
-  <...
-  f(...)
   ...>
 }

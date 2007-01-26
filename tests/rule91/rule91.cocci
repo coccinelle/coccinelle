@@ -1,6 +1,6 @@
 @@
 identifier I;
-local function f;
+identifier f;
 @@
 
 static struct usb_serial_driver I = {
@@ -19,7 +19,7 @@ identifier p1, p2;
 
 @@
 identifier I;
-local function f;
+identifier f;
 @@
 
 static struct usb_serial_driver I = {
@@ -38,7 +38,7 @@ identifier p1, p2;
 
 @@
 identifier I;
-local function f;
+identifier f;
 @@
 
 static struct usb_serial_driver I = {

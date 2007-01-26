@@ -48,53 +48,53 @@ mddev_t *mddev;
 
 @@
 mddev_t *mddev;
-mdp_super_t *sb;
+mdp_super_t *sbx;
 expression E1, E2;
 @@
 
-sb = mddev->sb;
+sbx = mddev->sb;
 <... when != \( sb = E1; \| mddev = E2; \)
 (
-- sb->major_version
+- sbx->major_version
 + mddev->major_version
 |
-- sb->minor_version
+- sbx->minor_version
 + mddev->minor_version
 |
-- sb->patch_version
+- sbx->patch_version
 + mddev->patch_version
 |
-- sb->persistent
+- sbx->persistent
 + mddev->persistent
 |
-- sb->chunk_size
+- sbx->chunk_size
 + mddev->chunk_size
 |
-- sb->ctime
+- sbx->ctime
 + mddev->ctime
 |
-- sb->utime
+- sbx->utime
 + mddev->utime
 |
-- sb->level
+- sbx->level
 + mddev->level
 |
-- sb->layout
+- sbx->layout
 + mddev->layout
 |
-- sb->raid_disks
+- sbx->raid_disks
 + mddev->raid_disks
 |
-- sb->state
+- sbx->state
 + mddev->state
 |
-- sb->size
+- sbx->size
 + mddev->size
 |
-- sb->events
+- sbx->events
 + mddev->events
 |
-- sb->uuid
+- sbx->uuid
 + mddev->uuid
 )
 ...>

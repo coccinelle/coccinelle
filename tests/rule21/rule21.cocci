@@ -8,7 +8,7 @@ identifier ent,dev;
 + static struct agp_driver agp_driver_struct = {
 +   .owner = THIS_MODULE,
 + };
-fn (struct pci_dev *dev, const struct pci_device_id *ent) {
+fn (struct pci_dev *dev, struct pci_device_id *ent) {
     ...
 -   agp_register_driver(dev);
 +   agp_driver_struct.dev = dev;

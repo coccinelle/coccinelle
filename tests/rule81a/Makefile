@@ -1,4 +1,4 @@
-SP=rule81.cocci
+SP=rule81a.cocci
 
 SOURCES = cpia.c \
 meye.c \

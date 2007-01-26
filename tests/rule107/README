@@ -1,1572 +1,1585 @@
 1_sb_common.c
- * [status] 
+ * [status] ok
 
 1_skge.c
- * [status] 
+ * [status] ok
 
 2_ad1889.c
- * [status] 
+ * [status] ok
 
 3c359.c
- * [status] 
+ * [status] ok
 
 3c515.c
- * [status] 
+ * [status] ok
 
 3c523.c
- * [status] 
+ * [status] ok
 
 3c527.c
- * [status] 
+ * [status] ok
 
 3c59x.c
- * [status] 
+ * [status] ok
 
 3_maestro3.c
- * [status] 
+ * [status] ok
 
 3w-9xxx.c
- * [status] 
+ * [status] ok
 
 3w-xxxx.c
- * [status] 
+ * [status] ok
 
 4_sonicvibes.c
- * [status] 
+ * [status] ok
 
 53c7xx.c
- * [status] 
+ * [status] ok
 
 5_cs4231.c
- * [status] 
+ * [status] ok
 
 8139cp.c
- * [status] 
+ * [status] ok
 
 8139too.c
- * [status] 
+ * [status] ok
 
 8250.c
- * [status] 
+ * [status] ok
 
 a100u2w.c
- * [status] 
+ * [status] ok
 
 a2065.c
- * [status] 
+ * [status] ok
 
 a2091.c
- * [status] 
+ * [status] ok
 
 a3000.c
- * [status] 
+ * [status] ok
 
 aaci.c
- * [status] 
+ * [status] ok
 
 abyss.c
- * [status] 
+ * [status] ok
 
 acenic.c
- * [status] 
+ * [status] ok
 
 acornscsi.c
- * [status] 
+ * [status] ok
 
 ad1816a.c
- * [status] 
+ * [status] ok
 
 ad1816a_lib.c
- * [status] 
+ * [status] ok
 
 ad1848_lib.c
- * [status] 
+ * [status] ok
 
 ad1889.c
- * [status] 
+ * [status] ok
 
 ads7846.c
- * [status] 
+ * [status] ok
 
 advansys.c
- * [status] 
+ * [status] ok
 
 aha152x.c
- * [status] 
+ * [status] ok
 
 aha1740.c
- * [status] 
+ * [status] ok
 
 ahci.c
- * [status] 
+ * [status] ok
 
 aic7770_osm.c
- * [status] 
+ * [status] ok
 
 aic79xx_osm_pci.c
- * [status] 
+ * [status] ok
 
 aic7xxx_old.c
- * [status] 
+ * [status] ok
 
 aic7xxx_osm_pci.c
- * [status] 
+ * [status] ok
 
 airo.c
- * [status] 
+ * [status] ok
 
 ali5451.c
- * [status] 
+ * [status] ok
 
 ali5455.c
- * [status] 
+ * [status] ok
 
 als100.c
- * [status] 
+ * [status] ok
 
 als300.c
- * [status] 
+ * [status] ok
 
 ambassador.c
- * [status] 
+ * [status] ok
 
 amd7930.c
- * [status] 
+ * [status] ok
 
 amd8111e.c
- * [status] 
+ * [status] ok
 
 amiserial.c
- * [status] 
+ * [status] ok
 
 apne.c
- * [status] 
+ * [status] ok
 
 applicom.c
- * [status] 
+ * [status]
+ problem with a version string
 
 arcfb.c
- * [status] 
+ * [status] ok
 
 ariadne.c
- * [status] 
+ * [status] ok
 
 at91_cf.c
- * [status] 
+ * [status] ok
 
 at91_mci.c
- * [status] 
+ * [status] ok
 
 at91_serial.c
- * [status] 
+ * [status] ok
 
 at91_udc.c
- * [status] 
+ * [status] ok
 
 atiixp.c
- * [status] 
+ * [status] ok
 
 atiixp_modem.c
- * [status] 
+ * [status] ok
 
 atmel.c
- * [status] 
+ * [status] ok
 
 atp870u.c
- * [status] 
+ * [status] failed
+ goto problem?
 
 atyfb_base.c
- * [status] 
+ * [status] ok
 
 au1000.c
- * [status] 
+ * [status] ok
 
 au1200fb.c
- * [status] 
+ * [status] ok
 
 au1x00.c
- * [status] 
+ * [status] ok
 
 au1xmmc.c
- * [status] 
+ * [status] ok
 
 au88x0.c
- * [status] 
+ * [status] ok
 
 aurora.c
- * [status] 
+ * [status] ok
 
 avm_a1p.c
- * [status] 
+ * [status] ok
 
 avm_pci.c
- * [status] 
+ * [status] ok
 
 axnet_cs.c
- * [status] 
+ * [status] ok
 
 azt2320.c
- * [status] 
+ * [status] ok
 
 azt3328.c
- * [status] 
+ * [status] ok
 
 b1pci.c
- * [status] 
+ * [status] ok
 
 b1pcmcia.c
- * [status] 
+ * [status] ok
 
 b44.c
- * [status] 
+ * [status] ok
 
 baycom_ser_fdx.c
- * [status] 
+ * [status] ok
 
 baycom_ser_hdx.c
- * [status] 
+ * [status] ok
 
 bbc_i2c.c
- * [status] 
+ * [status] ok
 
 bcm43xx_main.c
- * [status] 
+ * [status] ok
 
 bkm_a4t.c
- * [status] 
+ * [status] error
+ else case of an ifdef ends in a return.  CE required in the code following
+ this return, so flow_to_ast complains about nodes that are not visited.
 
 bkm_a8.c
- * [status] 
+ * [status] error
+ else case of an ifdef ends in a return.  CE required in the code following
+ this return, so flow_to_ast complains about nodes that are not visited.
 
 blz1230.c
- * [status] 
+ * [status] ok
 
 blz2060.c
- * [status] 
+ * [status] ok
 
 bnx2.c
- * [status] 
+ * [status] ok
 
 boardergo.c
- * [status] 
+ * [status] ok
 
 bt878.c
- * [status] 
+ * [status] ok
 
 bt87x.c
- * [status] 
+ * [status] ok
 
 btaudio.c
- * [status] 
+ * [status] ok
 
 bttv-driver.c
- * [status] 
+ * [status] ok
 
 BusLogic.c
- * [status] 
+ * [status] ok
 
 c4.c
- * [status] 
+ * [status] ok
 
 ca0106_main.c
- * [status] 
+ * [status] ok
 
 cassini.c
- * [status] 
+ * [status] ok
 
 cciss.c
- * [status] 
+ * [status] ok
 
 cdu31a.c
- * [status] 
+ * [status] ok
 
 cmipci.c
- * [status] 
+ * [status] ok
 
 cmpci.c
- * [status] 
+ * [status] ok
 
 com20020-pci.c
- * [status] 
+ * [status] ok
 
 corgikbd.c
- * [status] 
+ * [status] ok
 
 corgi_ts.c
- * [status] 
+ * [status] ok
 
 cpci_hotplug_core.c
- * [status] 
+ * [status] ok
 
 cpcihp_zt5550.c
- * [status] 
+ * [status]
+ an include also added
 
 cpqarray.c
- * [status] 
+ * [status] ok
 
 cpqphp_core.c
- * [status] 
+ * [status] ok
 
 cpwatchdog.c
- * [status] 
+ * [status] ok
 
 crisv10.c
- * [status] 
+ * [status] ok
 
 cs4231.c
- * [status] 
+ * [status] ok
 
 cs4231_lib.c
- * [status] 
+ * [status] ok
 
 cs4236.c
- * [status] 
+ * [status] ok
 
 cs4281.c
- * [status] 
+ * [status] ok
 
 cs4281m.c
- * [status] 
+ * [status] ok
 
 cs46xx.c
- * [status] 
+ * [status] ok
 
 cs46xx_lib.c
- * [status] 
+ * [status] ok
 
 cs5535audio.c
- * [status] 
+ * [status] ok
 
 cumana_1.c
- * [status] 
+ * [status] ok
 
 cumana_2.c
- * [status] 
+ * [status] ok
 
 cx88-alsa.c
- * [status] 
+ * [status] ok
 
 cx88-mpeg.c
- * [status] 
+ * [status] ok
 
 cx88-video.c
- * [status] 
+ * [status] ok
 
 cxgb2.c
- * [status] 
+ * [status] ok
 
 cyberstorm.c
- * [status] 
+ * [status] ok
 
 cyberstormII.c
- * [status] 
+ * [status] ok
 
 cyclades.c
- * [status] 
+ * [status] error
+ ifdef where both then and else branch end in a return
 
 DAC960.c
- * [status] 
+ * [status] error
+ function containing the CE doesn't parse
 
 dbri.c
- * [status] 
+ * [status] ok
 
 dc395x.c
- * [status] 
+ * [status] ok
 
 de2104x.c
- * [status] 
+ * [status] ok
 
 de4x5.c
- * [status] 
+ * [status] ok
 
 dec_esp.c
- * [status] 
+ * [status] ok
 
 defxx.c
- * [status] 
+ * [status] ok
 
 dgrs.c
- * [status] 
+ * [status]
+ version string changed
 
 diva.c
- * [status] 
+ * [status]
+ else case of an ifdef ends in a return.  CE required in the code following
+ this return, so flow_to_ast complains about nodes that are not visited.
 
 divasmain.c
- * [status] 
+ * [status] ok
 
 dl2k.c
- * [status] 
+ * [status] ok
 
 dm9000.c
- * [status] 
+ * [status] ok
 
 dmfe.c
- * [status] 
+ * [status] ok
 
 dmx3191d.c
- * [status] 
+ * [status] ok
 
 donauboe.c
  * [status] 
+ version string changed
 
 dpt_i2o.c
- * [status] 
+ * [status] ok
 
 drm_irq.c
- * [status] 
+ * [status] ok
 
 dscc4.c
- * [status] 
+ * [status] failed
 
 dt019x.c
- * [status] 
+ * [status] ok
 
 dtc.c
- * [status] 
+ * [status] ok
 
 dz.c
- * [status] 
+ * [status] ok
 
 e1000_ethtool.c
- * [status] 
+ * [status] ok
 
 e1000_main.c
- * [status] 
+ * [status] ok
 
 e100.c
- * [status] 
+ * [status] ok
 
 eata.c
- * [status] 
+ * [status] ok
 
 eata_pio.c
- * [status] 
+ * [status] ok
 
 echoaudio.c
- * [status] 
+ * [status] ok
 
 eepro100.c
- * [status] 
+ * [status] ok
 
 eepro.c
- * [status] 
+ * [status] ok
 
 ehci-au1xxx.c
- * [status] 
+ * [status] ok
 
 ehci-fsl.c
- * [status] 
+ * [status] ok
 
 eisa.c
- * [status] 
+ * [status] failed
 
 elsa.c
- * [status] 
+ * [status] failed
 
 emu10k1_main.c
- * [status] 
+ * [status] ok
 
 emu10k1x.c
- * [status] 
+ * [status] ok
 
 eni.c
- * [status] 
+ * [status] ok
 
 ens1370.c
- * [status] 
+ * [status] ok
 
 enternow_pci.c
- * [status] 
+ * [status] failed
 
 epic100.c
- * [status] 
+ * [status] ok
 
 es1370.c
- * [status] 
+ * [status] ok
 
 es1371.c
- * [status] 
+ * [status] ok
 
 es1688.c
- * [status] 
+ * [status] ok
 
 es1688_lib.c
- * [status] 
+ * [status] ok
 
 es18xx.c
- * [status] 
+ * [status] ok
 
 es1938.c
- * [status] 
+ * [status] ok
 
 es1968.c
- * [status] 
+ * [status] ok
 
 esp.c
- * [status] 
+ * [status] ok
 
 esssolo1.c
- * [status] 
+ * [status] ok
 
 eth_v10.c
- * [status] 
+ * [status] failed
 
 eurotechwdt.c
- * [status] 
+ * [status] ok
 
 farsync.c
- * [status] 
+ * [status] ok
 
 fastlane.c
- * [status] 
+ * [status] ok
 
 fdc-io.c
- * [status] 
+ * [status] ok
 
 fd_mcs.c
- * [status] 
+ * [status] ok
 
 fdomain.c
- * [status] 
+ * [status] ok
 
 fealnx.c
- * [status] 
+ * [status] ok
 
 firestream.c
- * [status] 
+ * [status] ok
 
 flexcop-pci.c
- * [status] 
+ * [status] ok
 
 fm801.c
- * [status] 
+ * [status] ok
 
 forcedeth.c
- * [status] 
+ * [status] ok
 
 fore200e.c
- * [status] 
+ * [status] ok
 
 forte.c
- * [status] 
+ * [status] failed
 
 fs_enet-main.c
- * [status] 
+ * [status] ok
 
 gazel.c
- * [status] 
+ * [status] ok
 
 gdth.c
- * [status] 
+ * [status] failed
 
 g_NCR5380.c
- * [status] 
+ * [status] failed
 
 goku_udc.c
- * [status] 
+ * [status] ok
 
 gscps2.c
- * [status] 
+ * [status] ok
 
 gt96100eth.c
- * [status] 
+ * [status] ok
 
 gusextreme.c
- * [status] 
+ * [status] ok
 
 gus_main.c
- * [status] 
+ * [status] ok
 
 gusmax.c
- * [status] 
+ * [status] ok
 
 gvp11.c
- * [status] 
+ * [status] failed
 
 h3600_ts_input.c
- * [status] 
+ * [status] ok
 
 hal2.c
- * [status] 
+ * [status] ok
 
 hamachi.c
- * [status] 
+ * [status] ok
 
 hcd-pci.c
- * [status] 
+ * [status] ok
 
 hd64465_ss.c
- * [status] 
+ * [status] ok
 
 hda_intel.c
- * [status] 
+ * [status] ok
 
 hd.c
- * [status] 
+ * [status] ok
 
 hdsp.c
- * [status] 
+ * [status] ok
 
 hdspm.c
- * [status] 
+ * [status] ok
 
 he.c
- * [status] 
+ * [status] failed
 
 hfc4s8s_l1.c
- * [status] 
+ * [status] ok
 
 hfc_pci.c
- * [status] 
+ * [status] failed
 
 hisax_fcpcipnp.c
- * [status] 
+ * [status] ok
 
 horizon.c
- * [status] 
+ * [status] failed
 
 hostap_pci.c
- * [status] 
+ * [status] ok
 
 hostap_plx.c
- * [status] 
+ * [status] ok
 
 hostess_sv11.c
- * [status] 
+ * [status] ok
 
 hp100.c
- * [status] 
+ * [status] ok
 
 hp680_ts_input.c
- * [status] 
+ * [status] ok
 
 hpet.c
- * [status] 
+ * [status] ok
 
 hptiop.c
- * [status] 
+ * [status] ok
 
 hvc_console.c
- * [status] 
+ * [status] ok
 
 hvcs.c
- * [status] 
+ * [status] ok
 
 hvsi.c
- * [status] 
+ * [status] ok
 
 hydra.c
- * [status] 
+ * [status] ok
 
 i2c-mpc.c
- * [status] 
+ * [status] ok
 
 i2c-pxa.c
- * [status] 
+ * [status] ok
 
 i2c-s3c2410.c
- * [status] 
+ * [status] ok
 
 i8042.c
- * [status] 
+ * [status] ok
 
 i810_audio.c
- * [status] 
+ * [status] ok
 
 i82092.c
- * [status] 
+ * [status] ok
 
 i82365.c
- * [status] 
+ * [status] ok
 
 ibmlana.c
- * [status] 
+ * [status] ok
 
 ibmmca.c
- * [status] 
+ * [status] ok
 
 ice1712.c
- * [status] 
+ * [status] ok
 
 ice1724.c
- * [status] 
+ * [status] ok
 
 icom.c
- * [status] 
+ * [status] ok
 
 ide-probe.c
- * [status] 
+ * [status] ok
 
 idt77252.c
- * [status] 
+ * [status] failed
 
 imx.c
- * [status] 
+ * [status] ok
 
 in2000.c
- * [status] 
+ * [status] ok
 
 init.c
- * [status] 
+ * [status] ok
 
 initio.c
- * [status] 
+ * [status] ok
 
 intel8x0.c
- * [status] 
+ * [status] ok
 
 intel8x0m.c
- * [status] 
+ * [status] ok
 
 interwave.c
- * [status] 
+ * [status] ok
 
 ioatdma.c
- * [status] 
+ * [status] ok
 
 ioc3.c
- * [status] 
+ * [status] ok
 
 ioc3-eth.c
- * [status] 
+ * [status] ok
 
 ioc4_serial.c
- * [status] 
+ * [status] ok
 
 ip2main.c
- * [status] 
+ * [status] failed
 
 ipath_driver.c
- * [status] 
+ * [status] ok
 
 iphase.c
- * [status] 
+ * [status] failed
 
 ipmi_si_intf.c
- * [status] 
+ * [status] ok
 
 ipr.c
- * [status] 
+ * [status] ok
 
 ips.c
- * [status] 
+ * [status] ok
 
 ipw2100.c
- * [status] 
+ * [status] ok
 
 ipw2200.c
- * [status] 
+ * [status] ok
 
 isicom.c
- * [status] 
+ * [status] ok
 
 islpci_hotplug.c
- * [status] 
+ * [status] ok
 
 isp116x-hcd.c
- * [status] 
+ * [status] ok
 
 isp1301_omap.c
- * [status] 
+ * [status] ok
 
 ite8172.c
- * [status] 
+ * [status] ok
 
 ite_gpio.c
- * [status] 
+ * [status] ok
 
 ixgb_main.c
- * [status] 
+ * [status] ok
 
 ixp4xx-beeper.c
- * [status] 
+ * [status] failed
 
 ixpdev.c
- * [status] 
+ * [status] ok
 
 jazz_esp.c
- * [status] 
+ * [status] ok
 
 jazzsonic.c
- * [status] 
+ * [status] failed
 
 jsm_driver.c
- * [status] 
+ * [status] ok
 
 korg1212.c
- * [status] 
+ * [status] ok
 
 lanai.c
- * [status] 
+ * [status] ok
 
 lanstreamer.c
- * [status] 
+ * [status] ok
 
 lasi700.c
- * [status] 
+ * [status] ok
 
 lh7a40x_udc.c
- * [status] 
+ * [status] ok
 
 libata-bmdma.c
- * [status] 
+ * [status] ok
 
 lmc_main.c
- * [status] 
+ * [status] ok
 
 lp486e.c
- * [status] 
+ * [status] ok
 
 lpfc_init.c
- * [status] 
+ * [status] ok
 
 m32r_sio.c
- * [status] 
+ * [status] ok
 
 madgemc.c
- * [status] 
+ * [status] ok
 
 maestro3.c
- * [status] 
+ * [status] ok
 
 maestro.c
- * [status] 
+ * [status] ok
 
 main.c
- * [status] 
+ * [status] ok
 
 matroxfb_base.c
- * [status] 
+ * [status] failed
 
 mbcs.c
- * [status] 
+ * [status] ok
 
 mcdx.c
- * [status] 
+ * [status] failed
 
 mcfserial.c
- * [status] 
+ * [status] ok
 
 megaraid.c
- * [status] 
+ * [status] ok
 
 megaraid_mbox.c
- * [status] 
+ * [status] ok
 
 megaraid_sas.c
- * [status] 
+ * [status] ok
 
 meye.c
- * [status] 
+ * [status] ok
 
 mfmhd.c
- * [status] 
+ * [status] ok
 
 mipsnet.c
- * [status] 
+ * [status] ok
 
 miro.c
- * [status] 
+ * [status] ok
 
 mixart.c
- * [status] 
+ * [status] ok
 
 mmci.c
- * [status] 
+ * [status] ok
 
 mmtimer.c
- * [status] 
+ * [status] failed
 
 module.c
- * [status] 
+ * [status] ok
 
 mpc52xx_uart.c
- * [status] 
+ * [status] ok
 
 mpcore_wdt.c
- * [status] 
+ * [status] ok
 
 mpsc.c
- * [status] 
+ * [status] ok
 
 mptbase.c
- * [status] 
+ * [status] failed
 
 mpu401.c
- * [status] 
+ * [status] ok
 
 mthca_eq.c
- * [status] 
+ * [status] ok
 
 mtpav.c
- * [status] 
+ * [status] ok
 
 mv643xx_eth.c
- * [status] 
+ * [status] ok
 
 mxser.c
- * [status] 
+ * [status] failed
 
 myri10ge.c
- * [status] 
+ * [status] ok
 
 myri_sbus.c
- * [status] 
+ * [status] ok
 
 natsemi.c
- * [status] 
+ * [status] ok
 
 NCR5380.c
- * [status] 
+ * [status] ok
 
 NCR_D700.c
- * [status] 
+ * [status] ok
 
 NCR_Q720.c
- * [status] 
+ * [status] ok
 
 ne2k-pci.c
- * [status] 
+ * [status] ok
 
 nec_vrc5477.c
- * [status] 
+ * [status] ok
 
 net2280.c
- * [status] 
+ * [status] ok
 
 netx-eth.c
- * [status] 
+ * [status] ok
 
 niccy.c
- * [status] 
+ * [status] ok
 
 nicstar.c
- * [status] 
+ * [status] ok
 
 nj_s.c
- * [status] 
+ * [status] failed
 
 nj_u.c
- * [status] 
+ * [status] failed
 
 nm256_audio.c
- * [status] 
+ * [status] ok
 
 nm256.c
- * [status] 
+ * [status] ok
 
 ns83820.c
- * [status] 
+ * [status] ok
 
 nsp32.c
- * [status] 
+ * [status] failed
 
 nsp_cs.c
- * [status] 
+ * [status] ok
 
 nwbutton.c
- * [status] 
+ * [status] ok
 
 ohci1394.c
- * [status] 
+ * [status] ok
 
 ohci-at91.c
- * [status] 
+ * [status] ok
 
 ohci-au1xxx.c
- * [status] 
+ * [status] ok
 
 ohci-lh7a404.c
- * [status] 
+ * [status] ok
 
 ohci-omap.c
- * [status] 
+ * [status] ok
 
 ohci-ppc-soc.c
- * [status] 
+ * [status] ok
 
 ohci-pxa27x.c
- * [status] 
+ * [status] ok
 
 ohci-s3c2410.c
- * [status] 
+ * [status] ok
 
 ohci-sa1111.c
- * [status] 
+ * [status] ok
 
 oktagon_esp.c
- * [status] 
+ * [status] ok
 
 olympic.c
- * [status] 
+ * [status] ok
 
 omap.c
- * [status] 
+ * [status] ok
 
 omap_cf.c
- * [status] 
+ * [status] ok
 
 omap_udc.c
- * [status] 
+ * [status] ok
 
 opl3sa2.c
- * [status] 
+ * [status] ok
 
 opti92x-ad1848.c
- * [status] 
+ * [status] ok
 
 orinoco_nortel.c
- * [status] 
+ * [status] ok
 
 orinoco_pci.c
- * [status] 
+ * [status] ok
 
 orinoco_plx.c
- * [status] 
+ * [status] ok
 
 orinoco_tmd.c
- * [status] 
+ * [status] ok
 
 osl.c
- * [status] 
+ * [status] failed
 
 parport_ax88796.c
- * [status] 
+ * [status] ok
 
 parport_mfc3.c
- * [status] 
+ * [status] failed
 
 parport_sunbpp.c
- * [status] 
+ * [status] ok
 
 pas16.c
- * [status] 
+ * [status] ok
 
 pc300_drv.c
- * [status] 
+ * [status] ok
 
 pci200syn.c
- * [status] 
+ * [status] ok
 
 pci.c
- * [status] 
+ * [status] ok
 
 pciehp_hpc.c
- * [status] 
+ * [status] failed
 
 pcilynx.c
- * [status] 
+ * [status] ok
 
 pcips2.c
- * [status] 
+ * [status] ok
 
 pci-skeleton.c
- * [status] 
+ * [status] ok
 
 pcmcia_resource.c
- * [status] 
+ * [status] ok
 
 pcnet32.c
- * [status] 
+ * [status] ok
 
 pcnet_cs.c
- * [status] 
+ * [status] ok
 
 pcxhr.c
- * [status] 
+ * [status] ok
 
 pd6729.c
- * [status] 
+ * [status] ok
 
 pdc_adma.c
- * [status] 
+ * [status] ok
 
 phy.c
- * [status] 
+ * [status] ok
 
 pluto2.c
- * [status] 
+ * [status] ok
 
 pmac_zilog.c
- * [status] 
+ * [status] ok
 
 powertec.c
- * [status] 
+ * [status] ok
 
 ps2esdi.c
- * [status] 
+ * [status] ok
 
 pxa2xx_udc.c
- * [status] 
+ * [status] failed
 
 pxafb.c
- * [status] 
+ * [status] ok
 
 qla1280.c
- * [status] 
+ * [status] ok
 
 qla_os.c
- * [status] 
+ * [status] ok
 
 qlogicpti.c
- * [status] 
+ * [status] ok
 
 qtronix.c
- * [status] 
+ * [status] ok
 
 r8169.c
- * [status] 
+ * [status] ok
 
 resource.c
- * [status] 
+ * [status] ok
 
 rio_linux.c
- * [status] 
+ * [status] ok
 
 riptide.c
- * [status] 
+ * [status] ok
 
 riscom8.c
- * [status] 
+ * [status] ok
 
 rkt.c
- * [status] 
+ * [status] ok
 
 rme32.c
- * [status] 
+ * [status] ok
 
 rme9652.c
- * [status] 
+ * [status] ok
 
 rme96.c
- * [status] 
+ * [status] ok
 
 rme96xx.c
- * [status] 
+ * [status] ok
 
 rpcmouse.c
- * [status] 
+ * [status] ok
 
 rrunner.c
- * [status] 
+ * [status] ok
 
 rtc-at91.c
- * [status] 
+ * [status] ok
 
 rtc.c
- * [status] 
+ * [status] ok
 
 rtc-ds1553.c
- * [status] 
+ * [status] ok
 
 rtc-pl031.c
- * [status] 
+ * [status] ok
 
 rtc-sa1100.c
- * [status] 
+ * [status] ok
 
 rtc-vr41xx.c
- * [status] 
+ * [status] ok
 
 rx.c
- * [status] 
+ * [status] ok
 
 s2io.c
- * [status] 
+ * [status] ok
 
 s3c2410fb.c
- * [status] 
+ * [status] ok
 
 s3c2410-rtc.c
- * [status] 
+ * [status] ok
 
 sa1100fb.c
- * [status] 
+ * [status] ok
 
 saa7134-alsa.c
- * [status] 
+ * [status] ok
 
 saa7134-core.c
- * [status] 
+ * [status] ok
 
 saa7134-oss.c
- * [status] 
+ * [status] ok
 
 saa7146_core.c
- * [status] 
+ * [status] ok
 
 sa.c
- * [status] 
+ * [status] ok
 
 sata_mv.c
- * [status] 
+ * [status] ok
 
 sata_promise.c
- * [status] 
+ * [status] ok
 
 sata_qstor.c
- * [status] 
+ * [status] ok
 
 sata_sil24.c
- * [status] 
+ * [status] ok
 
 sata_sil.c
- * [status] 
+ * [status] ok
 
 sata_svw.c
- * [status] 
+ * [status] ok
 
 sata_sx4.c
- * [status] 
+ * [status] ok
 
 sata_via.c
- * [status] 
+ * [status] ok
 
 sata_vsc.c
- * [status] 
+ * [status] ok
 
 sb1250-mac.c
- * [status] 
+ * [status] ok
 
 sb_common.c
- * [status] 
+ * [status] failed
 
 sbni.c
- * [status] 
+ * [status] ok
 
 scc.c
- * [status] 
+ * [status] failed
 
 sdhci.c
- * [status] 
+ * [status] ok
 
 seagate.c
- * [status] 
+ * [status] failed
 
 sealevel.c
- * [status] 
+ * [status] ok
 
 sedlbauer.c
- * [status] 
+ * [status] ok
 
 serial_txx9.c
- * [status] 
+ * [status] ok
 
 serial-u16550.c
- * [status] 
+ * [status] ok
 
 sgalaxy.c
- * [status] 
+ * [status] ok
 
 sh_dac_audio.c
- * [status] 
+ * [status] ok
 
 shpchp_hpc.c
- * [status] 
+ * [status] failed
 
 sh-sci.c
- * [status] 
+ * [status] failed
 
 sim710.c
- * [status] 
+ * [status] ok
 
 sis190.c
- * [status] 
+ * [status] ok
 
 sis900.c
- * [status] 
+ * [status] ok
 
 skfddi.c
- * [status] 
+ * [status] ok
 
 skge.c
- * [status] 
+ * [status] ok
 
 sk_mca.c
- * [status] 
+ * [status] ok
 
 sky2.c
- * [status] 
+ * [status] ok
 
 sl811-hcd.c
- * [status] 
+ * [status] ok
 
 smc911x.c
- * [status] 
+ * [status] ok
 
 smctr.c
- * [status] 
+ * [status] failed
 
 smc-ultra32.c
- * [status] 
+ * [status] ok
 
 smu.c
- * [status] 
+ * [status] ok
 
 sn_console.c
- * [status] 
+ * [status] ok
 
 snsc.c
- * [status] 
+ * [status] ok
 
 snsc_event.c
- * [status] 
+ * [status] ok
 
 socal.c
- * [status] 
+ * [status] failed
 
 soc.c
- * [status] 
+ * [status] failed
 
 soc_common.c
- * [status] 
+ * [status] ok
 
 sonicvibes.c
- * [status] 
+ * [status] ok
 
 sonycd535.c
- * [status] 
+ * [status] ok
 
 sonypi.c
- * [status] 
+ * [status] ok
 
 specialix.c
- * [status] 
+ * [status] ok
 
 spider_net.c
- * [status] 
+ * [status] ok
 
 spitzkbd.c
- * [status] 
+ * [status] ok
 
 sscape.c
- * [status] 
+ * [status] ok
 
 stallion.c
- * [status] 
+ * [status] failed
 
 starfire.c
- * [status] 
+ * [status] ok
 
 stradis.c
- * [status] 
+ * [status] ok
 
 sun3lance.c
- * [status] 
+ * [status] ok
 
 sun3x_esp.c
- * [status] 
+ * [status] ok
 
 sunbmac.c
- * [status] 
+ * [status] ok
 
 sundance.c
- * [status] 
+ * [status] ok
 
 sungem.c
- * [status] 
+ * [status] ok
 
 sunhme.c
- * [status] 
+ * [status] ok
 
 sunlance.c
- * [status] 
+ * [status] ok
 
 sunqe.c
- * [status] 
+ * [status] ok
 
 sunsab.c
- * [status] 
+ * [status] ok
 
 sunsu.c
- * [status] 
+ * [status] ok
 
 sunzilog.c
- * [status] 
+ * [status] ok
 
 superio.c
- * [status] 
+ * [status] ok
 
 sx8.c
- * [status] 
+ * [status] ok
 
 sx.c
- * [status] 
+ * [status] failed
 
 sym53c500_cs.c
- * [status] 
+ * [status] failed
 
 sym_glue.c
- * [status] 
+ * [status] ok
 
 synclink.c
- * [status] 
+ * [status] ok
 
 synclink_gt.c
- * [status] 
+ * [status] ok
 
 synclinkmp.c
- * [status] 
+ * [status] ok
 
 t128.c
- * [status] 
+ * [status] ok
 
 t1pci.c
- * [status] 
+ * [status] ok
 
 tc35815.c
- * [status] 
+ * [status] ok
 
 teles3.c
- * [status] 
+ * [status] ok
 
 telespci.c
- * [status] 
+ * [status] failed
 
 tg3.c
- * [status] 
+ * [status] ok
 
 tlan.c
- * [status] 
+ * [status] ok
 
 tlclk.c
- * [status] 
+ * [status] ok
 
 tmscsim.c
- * [status] 
+ * [status] ok
 
 tmspci.c
- * [status] 
+ * [status] ok
 
 tpm_tis.c
- * [status] 
+ * [status] ok
 
 tps65010.c
- * [status] 
+ * [status] ok
 
 trident.c
- * [status] 
+ * [status] ok
 
 trident_main.c
- * [status] 
+ * [status] ok
 
 tulip_core.c
- * [status] 
+ * [status] ok
 
 typhoon.c
- * [status] 
+ * [status] ok
 
 u14-34f.c
- * [status] 
+ * [status] ok
 
 ucb1x00-core.c
- * [status] 
+ * [status] ok
 
 uli526x.c
- * [status] 
+ * [status] ok
 
 umem.c
- * [status] 
+ * [status] ok
 
 v850e_uart.c
- * [status] 
+ * [status] ok
 
 via82cxxx_audio.c
- * [status] 
+ * [status] ok
 
 via82xx.c
- * [status] 
+ * [status] ok
 
 via82xx_modem.c
- * [status] 
+ * [status] ok
 
 via-rhine.c
- * [status] 
+ * [status] ok
 
 via-velocity.c
- * [status] 
+ * [status] ok
 
 vlsi_ir.c
- * [status] 
+ * [status] ok
 
 vme_scc.c
- * [status] 
+ * [status] ok
 
 vrc4171_card.c
- * [status] 
+ * [status] ok
 
 vrc4173_cardu.c
- * [status] 
+ * [status] ok
 
 vx222.c
- * [status] 
+ * [status] ok
 
 w6692.c
- * [status] 
+ * [status] failed
 
 wanxl.c
- * [status] 
+ * [status] ok
 
 wavefront.c
- * [status] 
+ * [status] ok
 
 wavfront.c
- * [status] 
+ * [status] ok
 
 wbsd.c
- * [status] 
+ * [status] ok
 
 wd7000.c
- * [status] 
+ * [status] ok
 
 wdt.c
- * [status] 
+ * [status] ok
 
 wdt_pci.c
- * [status] 
+ * [status] ok
 
 wf_midi.c
- * [status] 
+ * [status] ok
 
 winbond-840.c
- * [status] 
+ * [status] ok
 
 xircom_cb.c
- * [status] 
+ * [status] ok
 
 xircom_tulip_cb.c
- * [status] 
+ * [status] ok
 
 yam.c
- * [status] 
+ * [status] ok
 
 yellowfin.c
- * [status] 
+ * [status] ok
 
 yenta_socket.c
- * [status] 
+ * [status] ok
 
 ymfpci.c
- * [status] 
+ * [status] ok
 
 ymfpci_main.c
- * [status] 
+ * [status] ok
 
 zalon.c
- * [status] 
+ * [status] ok
 
 zatm.c
- * [status] 
+ * [status] ok
 
 zoran_card.c
- * [status] 
+ * [status] failed
 
 zorro8390.c
- * [status] 
+ * [status] ok
 
 zr36120.c
- * [status] 
+ * [status] ok
 
 zs.c
- * [status] 
+ * [status] ok
 

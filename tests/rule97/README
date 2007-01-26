@@ -20,24 +20,19 @@ hci_vhci.c
  * [status] ok
 
 icn.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 isdnl1.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 isdnl2.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 isdnl3.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 isdn_tty.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 ppp_async.c
  * [status] ok
@@ -49,8 +44,7 @@ ppp_synctty.c
  * [status] ok
 
 scc.c
- * [status] spatch_ok
- version string changed
+ * [status] ok
 
 tun.c
  * [status] ok
