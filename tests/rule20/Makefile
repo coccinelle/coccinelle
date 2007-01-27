@@ -10,7 +10,6 @@ bluecard_cs.c \
 bt3c_cs.c \
 btuart_cs.c \
 com20020_cs.c \
-ds.c \
 dtl1_cs.c \
 elsa_cs.c \
 fdomain_stub.c \

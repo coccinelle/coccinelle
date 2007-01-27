@@ -1,1 +1,41 @@
 concerns Linux 2.5.59 and the function agp_register_driver
+
+ali-agp.c
+ * [status] ok
+
+amd-k7-agp.c
+ * [status] ok
+
+amd-k8-agp.c
+ * [status] ok
+
+hp-agp.c
+ * [status] spatch_ok
+ typo in the hand transformed file - ";" should be a "," in a structure
+ initialization
+
+i460-agp.c
+ * [status] spatch_ok
+ typo in the hand transformed file - ";" should be a "," in a structure
+ initialization
+
+i7x05-agp.c
+ * [status] wrong
+ The C source code doesn't parse, because of a missing ;
+
+intel-agp.c
+ * [status] spatch_ok
+ some changes in the use of MODULE reference count macros also performed by
+ hand
+
+sis-agp.c
+ * [status] ok
+
+sworks-agp.c
+ * [status]
+
+via-agp.c
+ * [status] ok
+
+via-kt400.c
+ * [status] ok

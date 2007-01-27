@@ -12,7 +12,7 @@ USB files
 
 auerswald.c
  * [status] bugs, spatch-ok
- by hand, two cases were updated and two were not.  all are update by
+ by hand, two cases were updated and two were not.  all are updated by
  coccinelle
 
 cp2101.c
@@ -22,7 +22,7 @@ cypress_m8.c
  * [status] ok
 
 ehci-mem.c
- * [status] wrong
+ * [status] spatch-ok
  the hand transformation additionally inverts the sense of an if to move a
  return into the then branch, and drop a goto that now would just go to the
  next line.
@@ -66,9 +66,7 @@ mct_u232.c
  * [status] ok
 
 mon_main.c
- * [status] wrong
- not able to parse the function that contains the CE site because of the
- incorrect adding of a global typedef
+ * [status] ok
 
 mon_text.c
  * [status] ok
@@ -95,7 +93,7 @@ stv680.c
  * [status] ok
 
 ti_usb_3410_5052.c
- * [status] bugs, spatch-ok
+ * [status] bugs, spatch_ok
  by hand, one case was updated and one was not.  all are update by coccinelle 
 
 usblcd.c
@@ -105,7 +103,7 @@ usb-serial.c
  * [status] ok
 
 usbtest.c
- * [status] spatch-ok
+ * [status] spatch_ok
  in the .c file, parentheses are missing around the argument of sizeof.
  this is added by hand, but not by coccinelle
 
@@ -113,7 +111,7 @@ visor.c
  * [status] ok
 
 zd1201.c
- * [status] bugs, spatch-ok
+ * [status] bugs, spatch_ok
  by hand, two cases was updated and one was not.  all are update by coccinelle 
 
 Bluetooth files
@@ -162,7 +160,7 @@ hci_vhci.c
 
 
 Key: ok means a .ok file is generated
-     spatch-ok means that the result is different in inessential ways
+     spatch_ok means that the result is different in inessential ways
      wrong means that the result is wrong
      error means that coccinelle crashes
      bugs refers to cases where the hand transformation is wrong.

@@ -1,88 +1,107 @@
+ds.c is the library file, and thus has been dropped from the SOURCES list in
+the make file
+
+
 3c574_cs.c
- * [status] 
+ * [status] spatch_ok
+ programmer changed the names of the init and exit functions
 
 3c589_cs.c
- * [status] 
+ * [status] spatch_ok
+ programmer changed the names of the init and exit functions
 
 8250_cs.c
- * [status] 
+ * [status] ok
 
 avma1_cs.c
- * [status] 
+ * [status] spatch_ok
+ braces missing in the exit function added in the hand transformed version
 
 avm_cs.c
- * [status] 
+ * [status] spatch_ok
+ YYY string changed in the hand transformed version
 
 axnet_cs.c
- * [status] 
+ * [status] ok
 
 bluecard_cs.c
- * [status] 
+ * [status] wrong
+ programmer added static on init and exit functions; can't specify this in
+ smpl, because can't make a disj at the function level
 
 bt3c_cs.c
- * [status] 
+ * [status] wrong
+ programmer added static on init and exit functions; can't specify this in
+ smpl, because can't make a disj at the function level
 
 btuart_cs.c
- * [status] 
+ * [status] wrong
+ programmer added static on init and exit functions; can't specify this in
+ smpl, because can't make a disj at the function level
 
 com20020_cs.c
- * [status] 
-
-ds.c
- * [status] 
+ * [status] ok
 
 dtl1_cs.c
- * [status] 
+ * [status] wrong
+ programmer added static on init and exit functions; can't specify this in
+ smpl, because can't make a disj at the function level
 
 elsa_cs.c
- * [status] 
+ * [status] ok
 
 fdomain_stub.c
- * [status] 
+ * [status] ok
 
 fmvj18x_cs.c
- * [status] 
+ * [status] ok
 
 ibmtr_cs.c
- * [status] 
+ * [status] ok
 
 ide-cs.c
- * [status] 
+ * [status] spatch_ok
+ YYY string changed in the hand transformed version
 
 netwave_cs.c
- * [status] 
+ * [status] ok
 
 nmclan_cs.c
- * [status] 
+ * [status] ok
 
 orinoco_cs.c
- * [status] 
+ * [status] ok
 
 parport_cs.c
- * [status] 
+ * [status] ok
 
 pcmciamtd.c
- * [status] 
+ * [status] wrong
+ programmer didn't get rid of top-level call to DEBUG(1,...) in the exit
+ function 
 
 pcnet_cs.c
- * [status] 
+ * [status] wrong
+ the CE is already done in part, ie it already uses pcmcia_register_driver
+ and pcmcia_unregister_driver.  This could be good test data for partial
+ matches, because there are parts of the CE that still need to be done
 
 qlogic_stub.c
- * [status] 
+ * [status] ok
 
 sedlbauer_cs.c
- * [status] 
+ * [status] ok
 
 smc91c92_cs.c
- * [status] 
+ * [status] ok
 
 synclink_cs.c
- * [status] 
+ * [status] ok
 
 wavelan_cs.c
- * [status] 
+ * [status] failed
 
 xirc2ps_cs.c
- * [status] 
+ * [status] error
 
 See the note about scsi/pcmcia/aha152x_stub.c in rules.tex.

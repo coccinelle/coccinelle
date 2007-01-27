@@ -1,6 +1,5 @@
 Cocci file: rule93.cocci
 No bugs
-There is one cocci error due to a problem in parsing the C code
 The semantic patch is not so nice because it contains calls to unlikely
 everywhere, to accomodate the one file that uses this.
 

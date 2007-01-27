@@ -9,7 +9,7 @@ belkin_sa.c
  * [status] ok
 
 bus.c
- * [status] wrong
+ * [status] spatch_ok
  a variable name changes, and the SP doesn't cover this (alpha conversion)
 
 cp2101.c
@@ -79,7 +79,7 @@ ti_usb_3410_5052.c
  * [status] ok
 
 usb-serial.c
- * [status] wrong
+ * [status] spatch_ok
  a variable name changes, and the SP doesn't cover this (alpha conversion)
 
 visor.c
