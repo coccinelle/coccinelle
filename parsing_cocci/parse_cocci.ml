@@ -550,8 +550,10 @@ let parse file =
 	let minus_tokens = prepare_tokens minus_tokens in
 	let plus_tokens = prepare_tokens plus_tokens in
 	(*
+	Printf.printf "minus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
 	Printf.printf "\n\n";
+	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
 	Printf.printf "\n\n";
 	*)
