@@ -617,7 +617,7 @@ let rec statement s =
 	    Ast0.Decl(_) ->
 	      let (decls,dots,other) = collect_decls xs in
 	      (x :: decls,dots,other)
-	  | Ast0.Dots(_,_) ->
+	  | Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_) ->
 	      let (decls,dots,other) = collect_decls xs in
 	      (match decls with
 		[] -> ([],true,x::other)

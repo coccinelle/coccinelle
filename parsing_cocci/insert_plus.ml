@@ -116,7 +116,7 @@ let collect_minus_join_points root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode ((_,_,info,mcodekind) as mc) =
+  let mcode (_,_,info,mcodekind) =
     if List.mem (info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
