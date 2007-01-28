@@ -416,6 +416,11 @@ let rule_elem arity re =
       print_option expression e3; close_box();
       mcode print_string rp; print_string " "
 
+  | Ast.SwitchHeader(switch,lp,exp,rp) ->
+      print_string arity;
+      mcode print_string switch; print_string " "; mcode print_string_box lp;
+      expression exp; close_box(); mcode print_string rp; print_string " "
+
   | Ast.Break(br,sem) ->
       print_string arity; mcode print_string br; mcode print_string sem
   | Ast.Continue(cont,sem) ->
@@ -434,6 +439,11 @@ let rule_elem arity re =
   | Ast.Define(def,id,body) ->
       mcode print_string def; print_string " "; ident id; 
       define_body body
+  | Ast.Default(def,colon) ->
+      mcode print_string def; mcode print_string colon; print_string " "
+  | Ast.Case(case,exp,colon) ->
+      mcode print_string case; print_string " "; expression exp;
+      mcode print_string colon; print_string " "
 
   | Ast.MetaRuleElem(name,true,_) ->
       raise Impossible
@@ -474,6 +484,11 @@ let rec statement arity s =
   | Ast.For(header,body,_) ->
       rule_elem arity header; statement arity body
 
+  | Ast.Switch(header,lb,cases,rb) ->
+      rule_elem arity header; rule_elem arity lb;
+      List.iter (function x -> case_line arity x; force_newline()) cases;
+      rule_elem arity rb
+
   | Ast.Atomic(re) -> rule_elem arity re
 
   | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
@@ -486,7 +501,14 @@ let rec statement arity s =
       raise CantBeInPlus
 
   | Ast.OptStm(s) | Ast.UniqueStm(s) | Ast.MultiStm(s) -> 
-      raise CantBeInPlus in
+      raise CantBeInPlus
+
+and case_line arity c =
+  match Ast.unwrap c with
+    Ast.CaseLine(header,code) ->
+      rule_elem arity header; print_string " ";
+      dots force_newline (statement arity) code
+  | Ast.OptCase(case) -> raise CantBeInPlus in
 
 let top_level t =
   match Ast.unwrap t with
@@ -529,6 +551,7 @@ let rec pp_any = function
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x
   | Ast.StatementTag(x) -> statement "" x
+  | Ast.CaseLineTag(x) -> case_line "" x
 
   | Ast.ConstVolTag(x) -> const_vol x
   | Ast.Token(x) -> print_string x

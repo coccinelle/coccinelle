@@ -102,6 +102,7 @@ let create_root_token_table minus =
 	  | Ast0.InitTag(d) -> Ast0.get_index d
 	  | Ast0.DeclTag(d) -> Ast0.get_index d
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
+	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;

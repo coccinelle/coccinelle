@@ -33,7 +33,7 @@ let contains_modif x used_after =
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
 	  do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing rule_elem do_nothing do_nothing do_nothing in
+	  do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
     else true
 

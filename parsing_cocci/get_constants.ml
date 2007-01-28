@@ -30,7 +30,7 @@ let get_constants rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing
       ident expression donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing in
 
   let rule_fn tls =
     List.fold_left

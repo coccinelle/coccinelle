@@ -65,6 +65,9 @@ let token2c (tok,_) =
   | PC.TWhile(clt) -> "while"^(line_type2c clt)
   | PC.TFor(clt) -> "for"^(line_type2c clt)
   | PC.TDo(clt) -> "do"^(line_type2c clt)
+  | PC.TSwitch(clt) -> "switch"^(line_type2c clt)
+  | PC.TCase(clt) -> "case"^(line_type2c clt)
+  | PC.TDefault(clt) -> "default"^(line_type2c clt)
   | PC.TReturn(clt) -> "return"^(line_type2c clt)
   | PC.TBreak(clt) -> "break"^(line_type2c clt)
   | PC.TContinue(clt) -> "continue"^(line_type2c clt)
@@ -216,6 +219,7 @@ let split_token ((tok,_) as t) =
   | PC.TDefine(clt) -> split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
+  | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt)
@@ -321,7 +325,7 @@ let token2line (tok,_) =
   | PC.TInc(clt) | PC.TDec(clt) 
 	
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
-  | PC.TSizeof (clt)
+  | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt) | PC.TSizeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt)
 

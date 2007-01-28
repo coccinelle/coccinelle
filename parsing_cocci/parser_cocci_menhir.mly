@@ -158,7 +158,7 @@ let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token<Data.clt> Tstatic Tauto Tregister Textern
 %token<Data.clt> Tconst Tvolatile
 
-%token <Data.clt> TIf TElse TWhile TFor TDo TReturn
+%token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
@@ -520,6 +520,11 @@ statement:
 			clt2mcode "(" $4,$5,
 			clt2mcode ")" $6,
 			clt2mcode ";" $7)) }
+| TSwitch TOPar eexpr TCPar TOBrace list(case_line) TCBrace
+    { Ast0.wrap(Ast0.Switch(clt2mcode "switch" $1,
+			    clt2mcode "(" $2,$3,
+			    clt2mcode ")" $4,clt2mcode "{" $5,$6,
+			    clt2mcode "}" $7)) }
 | TReturn eexpr TPtVirg
     { Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" $1,$2,
 				clt2mcode ";" $3)) }
@@ -605,6 +610,12 @@ single_statement:
 	  (Ast0.Disj(clt2mcode "(" $1,
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		     mids, clt2mcode ")" $3)) }
+
+case_line:
+    TDefault TDotDot pre_post_decl_statement_and_expression_opt
+      { Ast0.wrap(Ast0.Default(clt2mcode "default" $1,clt2mcode ":" $2,$3)) }
+  | TCase eexpr TDotDot pre_post_decl_statement_and_expression_opt
+      { Ast0.wrap(Ast0.Case(clt2mcode "case" $1,$2,clt2mcode ":" $3,$4)) }
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */

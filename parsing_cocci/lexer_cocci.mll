@@ -132,6 +132,9 @@ let id_tokens lexbuf =
   | "while" ->      TWhile    linetype
   | "do" ->         TDo       linetype
   | "for" ->        TFor      linetype
+  | "switch" ->     TSwitch   linetype
+  | "case" ->       TCase     linetype
+  | "default" ->    TDefault  linetype
   | "return" ->     TReturn   linetype
   | "break" ->      TBreak    linetype
   | "continue" ->   TContinue linetype

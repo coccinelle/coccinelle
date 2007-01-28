@@ -1047,6 +1047,8 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
               transform (ea3opt, []) (eb3opt, ib3)),
             tag_symbols [i1;i2;i5] ii  binding))
 
+  | A.SwitchHeader(i1, i2, ea, i3), F.SwitchHeader _ ->
+      failwith "switch not supported"
 
   | A.Break (i1, i2), F.Break (st, ((),ii)) -> 
       F.Break (st, ((), tag_symbols [i1;i2] ii   binding))
@@ -1096,14 +1098,14 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       | _ -> raise Impossible
       )
       
-      
+  | A.Default(def,colon), F.Default _ -> failwith "switch not supported"
+  | A.Case(case,ea,colon), F.Case _ -> failwith "switch not supported"
 
   | _, F.ExprStatement (_, (None, ii)) -> raise NoMatch (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
-  | _, F.SwitchHeader _ 
   | _, F.Label _
-  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
+  | _, F.CaseRange _
   | _, F.Goto _ (* goto is just created by asttoctl2, with no +- info *)
   | _, F.Asm
   | _, F.IfCpp _

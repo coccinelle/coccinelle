@@ -472,6 +472,7 @@ let unparse_anything x =
   | Ast0.InitTag(d) -> initialiser d
   | Ast0.DeclTag(d) -> declaration d
   | Ast0.StmtTag(d) -> statement "" d
+  | Ast0.CaseLineTag(d) -> case_line "" d
   | Ast0.TopTag(d) -> top_level d);
   quiet := q;
   print_newline()

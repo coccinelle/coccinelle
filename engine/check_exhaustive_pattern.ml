@@ -30,6 +30,7 @@ let dumb_astcocci_rule_elem = function
  | A.DoHeader _ -> ()
  | A.WhileTail (_,_,ea,_,_) -> ()
  | A.ForHeader (_, _, ea1opt, _, ea2opt, _, ea3opt, _) -> ()
+ | A.SwitchHeader _ -> ()
  | A.Goto -> ()
  | A.Break _ -> ()
  | A.Continue _ -> ()
@@ -37,6 +38,8 @@ let dumb_astcocci_rule_elem = function
  | A.ReturnExpr (_, ea, _) -> ()
  | A.Define _ -> ()
  | A.Include _ -> ()
+ | A.Default _ -> ()
+ | A.Case _ -> ()
 
 let dumb_astcocci_decl = function
  | A.UnInit (stg, typa, sa, _)     -> ()

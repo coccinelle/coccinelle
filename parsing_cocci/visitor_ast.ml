@@ -19,6 +19,7 @@ type 'a combiner =
 	      combiner_parameter_list : Ast.parameter_list -> 'a;
 		combiner_rule_elem : Ast.rule_elem -> 'a;
 		  combiner_statement : Ast.statement -> 'a;
+		  combiner_case_line : Ast.case_line -> 'a;
 		    combiner_top_level : Ast.top_level -> 'a;
 		      combiner_anything : Ast.anything  -> 'a;
 			combiner_expression_dots :
@@ -35,7 +36,7 @@ let combiner bind option_default
     binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     expdotsfn paramdotsfn stmtdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn
+    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let multibind l =
     let rec loop = function
@@ -265,6 +266,9 @@ let combiner bind option_default
 		      get_option expression e1; string_mcode sem1; 
 		      get_option expression e2; string_mcode sem2; 
 		      get_option expression e3; string_mcode rp]
+      | Ast.SwitchHeader(switch,lp,exp,rp) ->
+	  multibind [string_mcode switch; string_mcode lp; expression exp; 
+		      string_mcode rp]
       | Ast.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
       |	Ast.Goto -> option_default
@@ -278,7 +282,10 @@ let combiner bind option_default
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
       | Ast.Define(def,id,body) ->
-	  multibind [string_mcode def; ident id; define_body body] in
+	  multibind [string_mcode def; ident id; define_body body]
+      |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
+      |	Ast.Case(case,exp,colon) ->
+	  multibind [string_mcode case; expression exp; string_mcode colon] in
     rulefn all_functions k re
 
   (* discard the result, because the statement is assumed to be already
@@ -305,6 +312,10 @@ let combiner bind option_default
       | Ast.Do(header,body,tail) ->
 	  multibind [rule_elem header; statement body; rule_elem tail]
       | Ast.For(header,body,_) -> multibind [rule_elem header; statement body]
+      |	Ast.Switch(header,lb,cases,rb) ->
+	  multibind [rule_elem header;rule_elem lb;
+		      multibind (List.map case_line cases);
+		      rule_elem rb]
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
@@ -326,6 +337,14 @@ let combiner bind option_default
     | Ast.WhenNot a -> notfn a
     | Ast.WhenAlways a -> alwaysfn a
  
+  and case_line c =
+    let k c =
+      match Ast.unwrap c with
+	Ast.CaseLine(header,code) ->
+	  bind (rule_elem header) (statement_dots code)
+      |	Ast.OptCase(case) -> case_line case in
+    casefn all_functions k c
+
   and define_body b =
     match Ast.unwrap b with
       Ast.DMetaId(name,_) -> string_mcode name
@@ -362,6 +381,7 @@ let combiner bind option_default
       | Ast.StorageTag(stg) -> option_default
       | Ast.Rule_elemTag(rule) -> rule_elem rule
       | Ast.StatementTag(rule) -> statement rule
+      | Ast.CaseLineTag(case) -> case_line case
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok) -> option_default
       | Ast.Code(cd) -> top_level cd
@@ -385,6 +405,7 @@ let combiner bind option_default
       combiner_parameter_list = parameter_dots;
       combiner_rule_elem = rule_elem;
       combiner_statement = statement;
+      combiner_case_line = case_line;
       combiner_top_level = top_level;
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
@@ -404,6 +425,7 @@ type rebuilder =
       rebuilder_parameter : Ast.parameterTypeDef inout;
       rebuilder_parameter_list : Ast.parameter_list inout;
       rebuilder_statement : Ast.statement inout;
+      rebuilder_case_line : Ast.case_line inout;
       rebuilder_rule_elem : Ast.rule_elem inout;
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
@@ -418,7 +440,7 @@ let rebuilder
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     expdotsfn paramdotsfn stmtdotsfn
-    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn
+    identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
@@ -653,6 +675,9 @@ let rebuilder
 			  get_option expression e1, string_mcode sem1, 
 			  get_option expression e2, string_mcode sem2, 
 			  get_option expression e3, string_mcode rp)
+	| Ast.SwitchHeader(switch,lp,exp,rp) ->
+	    Ast.SwitchHeader(string_mcode switch, string_mcode lp,
+			     expression exp, string_mcode rp)
 	| Ast.Break(br,sem) ->
 	    Ast.Break(string_mcode br, string_mcode sem)
 	| Ast.Continue(cont,sem) ->
@@ -673,7 +698,11 @@ let rebuilder
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,string_mcode name)
 	| Ast.Define(def,id,body) ->
-	    Ast.Define(string_mcode def,ident id,define_body body)) in
+	    Ast.Define(string_mcode def,ident id,define_body body)
+	| Ast.Default(def,colon) ->
+	    Ast.Default(string_mcode def,string_mcode colon)
+	| Ast.Case(case,exp,colon) ->
+	    Ast.Case(string_mcode case,expression exp,string_mcode colon)) in
     rulefn all_functions k re
 
   and process_bef_aft s =
@@ -700,6 +729,9 @@ let rebuilder
 	    Ast.Do(rule_elem header, statement body, rule_elem tail)
 	| Ast.For(header,body,aft) ->
 	    Ast.For(rule_elem header, statement body, aft)
+	| Ast.Switch(header,lb,cases,rb) ->
+	    Ast.Switch(rule_elem header,rule_elem lb,
+		       List.map case_line cases,rule_elem rb)
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
@@ -729,6 +761,15 @@ let rebuilder
       Ast.NoWhen -> Ast.NoWhen
     | Ast.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
+
+  and case_line c =
+    let k c =
+      Ast.rewrap c
+	(match Ast.unwrap c with
+	  Ast.CaseLine(header,code) ->
+	    Ast.CaseLine(rule_elem header,statement_dots code)
+	| Ast.OptCase(case) -> Ast.OptCase(case_line case)) in
+    casefn all_functions k c
 
   and define_body b =
     Ast.rewrap b
@@ -768,6 +809,7 @@ let rebuilder
       | Ast.StorageTag(stg) as x -> x
       | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
+      | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok) as x -> x
       | Ast.Code(cd) -> Ast.Code(top_level cd)
@@ -790,6 +832,7 @@ let rebuilder
       rebuilder_parameter_list = parameter_dots;
       rebuilder_rule_elem = rule_elem;
       rebuilder_statement = statement;
+      rebuilder_case_line = case_line;
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;

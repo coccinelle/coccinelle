@@ -1041,7 +1041,9 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       match_opt match_e_e ea2opt eb2opt >&&>
       match_opt match_e_e ea3opt eb3opt >&&>
       return true
-      
+
+  | A.SwitchHeader(_,_,ea,_), F.SwitchHeader _ ->
+      failwith "switch not supported"
 
   | A.Goto,                  F.Goto (_, (_,ii))       -> return true
   | A.Break _,               F.Break (_, ((),ii))      -> return true
@@ -1064,13 +1066,15 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       | A.Ddots (dots) -> return true
       )
 
+  | A.Default(_,_), F.Default _ -> failwith "switch not supported"
+  | A.Case(_,ea,_), F.Case _ -> failwith "switch not supported"
+
   | _, F.ExprStatement (_, (None, ii)) -> return false (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
-  | _, F.SwitchHeader _ 
   | _, F.Label _
-  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
+  | _, F.CaseRange _ 
   | _, F.Asm
   | _, F.IfCpp _
     -> return false

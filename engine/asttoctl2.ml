@@ -179,7 +179,7 @@ let elim_opt =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* after management *)
@@ -261,7 +261,7 @@ let contains_modif =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing do_nothing in
+      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let make_match n label guard code =
@@ -319,7 +319,7 @@ let count_nested_braces s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing stmt_count donothing donothing in
+      donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
   "p"^res
 
@@ -411,6 +411,7 @@ and get_before_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
+  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
@@ -521,6 +522,7 @@ and get_after_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
+  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (bd,bda) = get_after body [] in
       let (de,_) = get_after decls bda in
@@ -1097,6 +1099,8 @@ and statement stmt after quantified label guard =
 	(function x -> statement_list x Tail quantified label true true)
 	(function x -> statement x Tail quantified label true)
 	guard wrapDots (Ast.rewrap stmt)
+
+  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =

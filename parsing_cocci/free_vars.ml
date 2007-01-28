@@ -222,7 +222,7 @@ let astfvs bound =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing astfvstatement_dots
       astfvident astfvexpr donothing astfvtypeC donothing astfvparam astfvdecls
-      astfvrule_elem astfvstatement donothing donothing in
+      astfvrule_elem astfvstatement donothing donothing donothing in
 
   (* all is the information for each rule.  the second component is a
   summary of the information for all of the rules that share a single
@@ -285,7 +285,7 @@ let update table metavars unitary_variables =
      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
      donothing donothing statement_dots
      donothing donothing donothing donothing donothing donothing donothing
-     rule_elem statement donothing donothing).V.rebuilder_top_level
+     rule_elem statement donothing donothing donothing).V.rebuilder_top_level
 
 let inner_non_locally_used l =
   let rec loop bound = function
@@ -339,7 +339,6 @@ let drop_unitary_variables unitary_variables =
 	Ast.rewrap e (Ast.MetaParam(name,not_unitary name,inherited))
     | Ast.MetaParamList(name,_,inherited) ->
 	Ast.rewrap e (Ast.MetaParamList(name,not_unitary name,inherited))
-    | Ast.Param(id,ty) -> k e
     | _ -> k e in
 
   let define_body b =
@@ -362,7 +361,7 @@ let drop_unitary_variables unitary_variables =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   fn.V.rebuilder_top_level
 
@@ -450,7 +449,7 @@ let update_metavars previous_metavars =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   fn.V.rebuilder_top_level
 

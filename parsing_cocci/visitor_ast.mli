@@ -9,6 +9,7 @@ type 'a combiner =
 	      combiner_parameter_list : Ast_cocci.parameter_list -> 'a;
 		combiner_rule_elem : Ast_cocci.rule_elem -> 'a;
 		  combiner_statement : Ast_cocci.statement -> 'a;
+		  combiner_case_line : Ast_cocci.case_line -> 'a;
 		    combiner_top_level : Ast_cocci.top_level -> 'a;
 		      combiner_anything : Ast_cocci.anything  -> 'a;
 			combiner_expression_dots :
@@ -44,6 +45,7 @@ val combiner :
 					    ((Ast_cocci.declaration,'a) ccode) ->
 					      ((Ast_cocci.rule_elem,'a) ccode) ->
 						((Ast_cocci.statement,'a) ccode) ->
+						((Ast_cocci.case_line,'a) ccode) ->
 						  ((Ast_cocci.top_level,'a) ccode) ->
 						    ((Ast_cocci.anything,'a) ccode) ->
 						      'a combiner
@@ -59,6 +61,7 @@ type rebuilder =
       rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast_cocci.parameter_list inout;
       rebuilder_statement : Ast_cocci.statement inout;
+      rebuilder_case_line : Ast_cocci.case_line inout;
       rebuilder_rule_elem : Ast_cocci.rule_elem inout;
       rebuilder_top_level : Ast_cocci.top_level inout;
       rebuilder_expression_dots : Ast_cocci.expression Ast_cocci.dots inout;
@@ -92,6 +95,7 @@ val rebuilder :
 					(Ast_cocci.declaration rcode) ->
 					  (Ast_cocci.rule_elem rcode) ->
 					  (Ast_cocci.statement rcode) ->
+					  (Ast_cocci.case_line rcode) ->
 					    (Ast_cocci.top_level rcode) ->
 					    (Ast_cocci.anything rcode) ->
 					      rebuilder

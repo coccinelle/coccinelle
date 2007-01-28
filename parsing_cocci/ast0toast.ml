@@ -477,7 +477,7 @@ let rec statement s =
 	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
-		  tokenwrap lbrace (Ast.SeqEnd(rbrace)))
+		  tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap s(Ast.ExprStatement(expression exp,mcode sem)))
       | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
@@ -519,7 +519,16 @@ let rec statement s =
 	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body,convert_mcodekind aft)
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
-	  failwith "not supported"
+	  let switch = mcode switch in
+	  let lp = mcode lp in
+	  let exp = expression exp in
+	  let rp = mcode rp in
+	  let lb = mcode lb in
+	  let cases = List.map case_line cases in
+	  let rb = mcode rb in
+	  Ast.Switch(rewrap s (Ast.SwitchHeader(switch,lp,exp,rp)),
+		     tokenwrap lb (Ast.SeqStart(lb)),cases,
+		     tokenwrap rb (Ast.SeqEnd(rb)))
       | Ast0.Break(br,sem) ->
 	  Ast.Atomic(rewrap s (Ast.Break(mcode br,mcode sem)))
       | Ast0.Continue(cont,sem) ->
@@ -679,13 +688,13 @@ and case_line c =
 	let def = mcode def in
 	let colon = mcode colon in
 	let code = dots statement code in
-	Ast.Default(def,colon,code)
+	Ast.CaseLine(rewrap c (Ast.Default(def,colon)),code)
     | Ast0.Case(case,exp,colon,code) ->
 	let case = mcode case in
 	let exp = expression exp in
 	let colon = mcode colon in
 	let code = dots statement code in
-	Ast.Case(case,exp,colon,code)
+	Ast.CaseLine(rewrap c (Ast.Case(case,exp,colon)),code)
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
 let statement_dots l = dots statement l

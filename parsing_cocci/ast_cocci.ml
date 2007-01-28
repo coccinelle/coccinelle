@@ -279,6 +279,8 @@ and base_rule_elem =
                      expression option * string mcode (*;*) *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *)
+  | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
+	             expression * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
   | Goto             (* not in the source language *)
@@ -294,6 +296,8 @@ and base_rule_elem =
   | Ty            of fullType (* only at top level *)
   | Include       of string mcode (*#include*) * string mcode (*file *)
   | Define        of string mcode (*#define*) * ident (*name*) * define_body
+  | Case          of string mcode (* case *) * expression * string mcode (*:*)
+  | Default       of string mcode (* default *) * string mcode (*:*)
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
@@ -309,6 +313,8 @@ and base_statement =
   | While         of rule_elem (* header *) * statement * mcodekind(*endwhile*)
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
   | For           of rule_elem (* header *) * statement * mcodekind (*endfor*)
+  | Switch        of rule_elem (* header *) * rule_elem (* { *) *
+	             case_line list * rule_elem (* } *)
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of statement dots * (statement dots,statement) whencode *
@@ -342,9 +348,7 @@ and dots_whencode =
 and statement = base_statement wrap
 
 and base_case_line =
-    Default of string mcode (* default *) * string mcode (*:*) * statement dots
-  | Case of string mcode (* case *) * expression * string mcode (*:*) *
-	statement dots
+    CaseLine of rule_elem (* case/default header *) * statement dots
   | OptCase of case_line
 
 and case_line = base_case_line wrap
