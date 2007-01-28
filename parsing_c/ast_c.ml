@@ -377,9 +377,10 @@ let unwrap = fst
 
 
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
+let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
 let get_type_expr ((unwrap_e, typ), iie) = typ
-let rewrap_type_expr newtyp ((unwrap_e, _oldtyp), iie) =
+let rewrap_type_expr ((unwrap_e, _oldtyp), iie) newtyp =
   (unwrap_e, newtyp), iie
 
 

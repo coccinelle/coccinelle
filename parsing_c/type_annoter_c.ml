@@ -23,7 +23,7 @@ module Lib = Lib_parsing_c
  * store all posible variations in ast_c ? a list of type instead of just
  * the type ?
  * 
- * define a new type ? like type_cocci ? where have a bool ?
+ * todo: define a new type ? like type_cocci ? where have a bool ?
  *)
 
 (*****************************************************************************)
@@ -41,16 +41,16 @@ let pr2 s =
 (* the different namespaces from stdC manual:
  * 
  * You introduce two new name spaces with every block that you write.
- * One name space includes all functions, objects, type definitions, and
- * enumeration constants that you declare or define within the block.
- * The other name space includes all enumeration, structure, and union
- * tags that you define within the block.
+ * One name space includes all functions, objects, type definitions,
+ * and enumeration constants that you declare or define within the
+ * block. The other name space includes all enumeration, structure, and
+ * union tags that you define within the block.
 
  * You introduce a new member name space with every structure or union
  * whose content you define. You identify a member name space by the
- * type of left operand that you write for a member selection operator,
- * as in x.y or p->y. A member name space ends with the end of the block
- * in which you declare it.
+ * type of left operand that you write for a member selection
+ * operator, as in x.y or p->y. A member name space ends with the end
+ * of the block in which you declare it.
 
  * You introduce a new goto label name space with every function
  * definition you write. Each goto label name space ends with its
@@ -58,7 +58,13 @@ let pr2 s =
  *)
 
 (* But I don't try to do a type-checker, I try to "resolve" type of var
- * so don't need make difference between namespaces here *)
+ * so don't need make difference between namespaces here.
+ * 
+ * But, why not make simply a (string, kindstring) assoc ? 
+ * Because we dont want that a variable shadow a struct definition, because
+ * they are still in 2 different namespace. But could for typedef,
+ * because VarOrFunc and Typedef are in the same namespace.
+ *)
 
 type namedef = 
   | VarOrFunc of string * fullType
@@ -158,6 +164,7 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
       | FieldDeclList onefield_multivars -> 
           Common.optionise (fun () -> 
             onefield_multivars +> Common.find_some (fun fieldkind -> 
+
               match Ast_c.unwrap (Ast_c.unwrap fieldkind) with
               | Simple (Some s, t) | BitField (Some s, t, _) -> 
                   if s = fld then Some t else None
@@ -234,6 +241,24 @@ let add_binding namedef warning =
 (*****************************************************************************)
 (* Entry point *)
 (*****************************************************************************)
+let try_set_type subexpr expr env ffinalt = 
+  let defaulte = expr in
+  (try 
+      (match Ast_c.get_type_expr subexpr with 
+      | None -> defaulte
+      | Some t -> 
+          (* TODO don't work, don't have good env *)
+          let t' = find_final_type t env in
+          (*let typeC' = Ast_c.unwrap_typeC t' in *)
+          match ffinalt t' with
+          | Some result -> Ast_c.rewrap_type_expr expr (Some result)
+          | None -> defaulte
+      )
+    with Not_found -> defaulte
+  )
+          
+
+  
 
 (* catch all the decl to grow the environment *)
 
@@ -246,20 +271,23 @@ let rec (annotate_program2: program -> program) = fun prog ->
 
   let bigf = { Visitor_c.default_visitor_c_s with 
 
-    Visitor_c.kexpr_s = (fun (k,bigf) e -> 
-      let ((unwrap_e, oldtyp), iie) = e in
-      match unwrap_e with
+    Visitor_c.kexpr_s = (fun (k,bigf) expr -> 
+      let exprf e = Visitor_c.vk_expr_s bigf e in
+
+      match Ast_c.unwrap_expr expr with
       (* don't want a warning on the Ident that are a FunCall *)
       | FunCall (((Ident f, typ), ii), args) -> 
-          (FunCall (((Ident f, typ), ii), 
-                   args +> List.map (fun (e,ii) -> 
-                     Visitor_c.vk_argument_s bigf e, ii
-                   )), oldtyp), iie
+          Ast_c.rewrap_expr expr (
+            (FunCall (((Ident f, typ), ii), 
+                     args +> List.map (fun (e,ii) -> 
+                       Visitor_c.vk_argument_s bigf e, ii
+                     ))
+            ))
             
             
       | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
-          | Some (typ,_nextenv) -> Ast_c.rewrap_type_expr (Some typ) e
+          | Some (typ,_nextenv) -> Ast_c.rewrap_type_expr expr (Some typ) 
           | None  -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
               then 
@@ -268,53 +296,47 @@ let rec (annotate_program2: program -> program) = fun prog ->
                   pr2 ("Type_annoter: not finding type for " ^ s);
                   Hashtbl.add !_notyped_var s true;
                 end;
-              e 
+              expr 
           )
+      | Unary (e, DeRef)  -> 
+          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+            match Ast_c.unwrap_typeC type_subexpr with
+            | Pointer x -> Some x
+            | _ -> None
+          )
+          
+      | ArrayAccess (e1, e2) ->
+          try_set_type (exprf e1) (k expr) !_scoped_env (fun type_subexpr -> 
+            match Ast_c.unwrap_typeC type_subexpr with
+            | Pointer x -> Some x
+            | _ -> None
+          )
+         
 
       | RecordAccess  (e, fld) ->  
-          let e' = Visitor_c.vk_expr_s bigf e in
-          let defaulte = (RecordAccess (e', fld), oldtyp), iie in
-          (try 
-            (match Ast_c.get_type_expr e' with 
-            | None -> defaulte
-            | Some t -> 
-              (* TODO don't work, don't have good env *)
-              let t' = find_final_type t !_scoped_env in
-              (match Ast_c.unwrap_typeC t' with 
-              | StructUnion (sopt, structtyp) -> 
-                  let typefield = find_type_field fld structtyp in
-                  ((RecordAccess (e', fld)), Some typefield), iie
-              | _ -> defaulte
+          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+            match Ast_c.unwrap_typeC type_subexpr with 
+            | StructUnion (sopt, structtyp) -> 
+                let typefield = find_type_field fld structtyp in
+                Some typefield
+            | _ -> None
               )
-            )
-          with Not_found -> defaulte
-          )
 
       | RecordPtAccess (e, fld) -> 
-          let e' = Visitor_c.vk_expr_s bigf e in
-          let defaulte = (RecordPtAccess (e', fld), oldtyp), iie in
-          (try 
-            (match Ast_c.get_type_expr e' with 
-            | None -> defaulte
-            | Some t -> 
-              (* TODO don't work, don't have good env *)
-              let t' = find_final_type t !_scoped_env in
-              (match Ast_c.unwrap_typeC t' with 
-              | Pointer (t) -> 
-                  (match Ast_c.unwrap_typeC t with
-                  | StructUnion (sopt, structtyp) -> 
-                      let typefield = find_type_field fld structtyp in
-                      ((RecordPtAccess (e', fld)), (Some typefield)), iie
-                  | _ -> defaulte
-                  )
-              | _ -> defaulte
-              )
-            )
-          with Not_found -> defaulte
+          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+            match Ast_c.unwrap_typeC type_subexpr with 
+            | Pointer (t) -> 
+                (match Ast_c.unwrap_typeC t with
+                | StructUnion (sopt, structtyp) -> 
+                    let typefield = find_type_field fld structtyp in
+                    Some typefield
+                | _ -> None
+                )
+            | _ -> None
           )
           
 
-      | _ -> k e
+      | _ -> k expr
     );
     Visitor_c.kstatement_s = (fun (k, bigf) st -> 
       match st with 
