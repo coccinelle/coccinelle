@@ -518,6 +518,8 @@ let rec statement s =
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body,convert_mcodekind aft)
+      |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+	  failwith "not supported"
       | Ast0.Break(br,sem) ->
 	  Ast.Atomic(rewrap s (Ast.Break(mcode br,mcode sem)))
       | Ast0.Continue(cont,sem) ->

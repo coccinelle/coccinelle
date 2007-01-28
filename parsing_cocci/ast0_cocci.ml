@@ -217,6 +217,9 @@ and base_statement =
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *) * statement *
 	             (info * mcodekind) (* after info *)
+  | Switch        of string mcode (* switch *) * string mcode (* ( *) *
+	             expression * string mcode (* ) *) * string mcode (* { *) *
+	             case_line list * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
@@ -253,6 +256,13 @@ and ('a,'b) whencode =
   | WhenAlways of 'b
 
 and statement = base_statement wrap
+
+and base_case_line =
+    Default of string mcode (* default *) * string mcode (*:*) * statement dots
+  | Case of string mcode (* case *) * string mcode (*:*) *
+	expression * statement dots
+
+and case_line = base_case_line wrap
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)

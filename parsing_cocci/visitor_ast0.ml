@@ -33,7 +33,7 @@ let combiner bind option_default
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn topfn =
+    identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -298,6 +298,12 @@ let combiner bind option_default
 	      string_mcode sem1; get_option expression e2; string_mcode sem2;
 	      get_option expression e3;
 	      string_mcode rp; statement body]
+      |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+	  bind
+	    (multibind
+	       [string_mcode fr; string_mcode lp; expression exp;
+		 string_mcode rp; string_mcode lb])
+	    (bind (multibind (List.map case_line cases)) (string_mcode rb))
       | Ast0.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast0.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
       | Ast0.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
@@ -339,6 +345,16 @@ let combiner bind option_default
       Ast0.NoWhen -> option_default
     | Ast0.WhenNot a -> notfn a
     | Ast0.WhenAlways a -> alwaysfn a
+
+  and case_line c =
+    let k c =
+      match Ast0.unwrap c with
+	Ast0.Default(def,colon,code) ->
+	  multibind [string_mcode def;string_mcode colon;statement_dots code]
+      | Ast0.Case(case,colon,exp,code) ->
+	  multibind [string_mcode def;string_mcode colon;expression exp;
+		      statement_dots code]) in
+    casefn all_functions k c
 
   and define_body b =
     match Ast0.unwrap b with
@@ -649,6 +665,10 @@ let rebuilder = fun
 		     get_option expression e2, string_mcode sem2,
 		     get_option expression e3,
 		     string_mcode rp, statement body, aft)
+	| Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      	    Ast0.Switch(string_mcode switch,string_mcode lp,expression exp,
+			string_mcode rp,string_mcode lb,
+			List.map case_line cases, string_mcode rb)
 	| Ast0.Break(br,sem) ->
 	    Ast0.Break(string_mcode br,string_mcode sem)
 	| Ast0.Continue(cont,sem) ->
@@ -696,6 +716,14 @@ let rebuilder = fun
       Ast0.NoDots -> (term,info,n,mc,ty,d)
     | Ast0.BetweenDots s ->
 	(term,info,n,mc,ty,Ast0.BetweenDots (statement s))
+
+  and case_line c =
+    Ast0.rewrap c
+      (match Ast0.unwrap c with
+	Ast0.Default(def,code) ->
+	  Ast0.Default(string_mcode def,statement_dots code)
+      |	Ast0.Case(case,exp,code) ->
+	  Ast0.Case(string_mcode case,expression exp,statement_dots code))
 
   and define_body b =
     Ast0.rewrap b

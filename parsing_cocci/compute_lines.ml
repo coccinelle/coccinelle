@@ -534,6 +534,12 @@ let rec statement s =
       mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
 			(Ast0.get_info right,aft)))
 	(promote_mcode fr) right
+  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      let exp = expression exp in
+      let cases = List.map case_line cases in
+      mkres s
+	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	(promote_mcode switch) (promote_mcode rb)
   | Ast0.Break(br,sem) as us ->
       mkres s us (promote_mcode br) (promote_mcode sem)
   | Ast0.Continue(cont,sem) as us ->
@@ -629,6 +635,15 @@ let rec statement s =
       let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
   | Ast0.MultiStm(stm) ->
       let stm = statement stm in mkres s (Ast0.MultiStm(stm)) stm stm
+
+and case_line c =
+  match Ast0.unwrap c with
+    Ast0.Default(def,colon,code) ->
+      let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
+      mkres c (Ast0.Default(def,colon,code)) (promote_mcode def) code
+  | Ast0.Case(case,colon,exp,code) ->
+      let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
+      mkres c (Ast0.Case(case,colon,exp,code)) (promote_mcode case) code
 
 let statement_dots x = dots is_stm_dots None statement x
 	

@@ -167,6 +167,10 @@ let rec statement dots_before dots_after s =
 	(Ast0.rewrap s
 	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,statement false false body,
 		     x)))
+  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.Switch(switch,lp,exp,rp,lb,List.map case_line cases,rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s
@@ -196,6 +200,13 @@ let rec statement dots_before dots_after s =
   | Ast0.MultiStm(re) ->
       Ast0.rewrap s
 	(Ast0.MultiStm(statement dots_before dots_after re))
+
+and case_line c =
+  match Ast0.unwrap c with
+    Ast0.Default(def,colon,code) ->
+      Ast0.Default(def,colon,statement_dots false false code)
+  | Ast0.Case(case,colon,exp,code) ->
+      Ast0.Case(case,colon,exp,statement_dots false false code)
   
 and do_statement_dots dots_before dots_after = function
     [] -> []

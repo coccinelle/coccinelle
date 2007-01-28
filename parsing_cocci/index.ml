@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 124 *)
+(* current max is 125 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -142,6 +142,7 @@ let statement s =
   | Ast0.While(whl,lp,exp,rp,body,_) -> [74]
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> [75]
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) -> [76]
+  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> [125]
   | Ast0.Break(br,sem) -> [100]
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Return(ret,sem) -> [77]

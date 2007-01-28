@@ -3,7 +3,7 @@ identifier I;
 identifier f;
 @@
 
-static struct usb_serial_driver I = {
+struct usb_serial_driver I = {
 	.write_bulk_callback =	f
 };
 
@@ -14,7 +14,7 @@ identifier p1, p2;
 - void f (struct urb *p1, struct pt_regs *p2)
 + void f (struct urb *p1)
   {
-    ... when != p1
+    ... when != p2
   }
 
 @@
@@ -22,7 +22,7 @@ identifier I;
 identifier f;
 @@
 
-static struct usb_serial_driver I = {
+struct usb_serial_driver I = {
 	.read_bulk_callback =	f
 };
 
@@ -33,7 +33,7 @@ identifier p1, p2;
 - void f (struct urb *p1, struct pt_regs *p2)
 + void f (struct urb *p1)
   {
-    ... when != p1
+    ... when != p2
   }
 
 @@
@@ -41,7 +41,7 @@ identifier I;
 identifier f;
 @@
 
-static struct usb_serial_driver I = {
+struct usb_serial_driver I = {
 	.read_int_callback =	f
 };
 
@@ -52,7 +52,7 @@ identifier p1, p2;
 - void f (struct urb *p1, struct pt_regs *p2)
 + void f (struct urb *p1)
   {
-    ... when != p1
+    ... when != p2
   }
 
 @@

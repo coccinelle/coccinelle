@@ -449,6 +449,11 @@ let rec equal_statement s1 s2 =
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
        equal_mcode rp1 rp2
+  | (Ast0.Switch(switch1,lp1,_,rp1,lb1,_,rb1),
+     Ast0.Switch(switch2,lp2,_,rp2,lb2,_,rb2)) ->
+       equal_mcode switch1 switch2 && equal_mcode lp1 lp2 &&
+       equal_mcode rp1 rp2 && equal_mcode lb1 lb2 &&
+       equal_mcode rb1 rb2
   | (Ast0.Break(br1,sem1),Ast0.Break(br2,sem2)) ->
       equal_mcode br1 br2 && equal_mcode sem1 sem2
   | (Ast0.Continue(cont1,sem1),Ast0.Continue(cont2,sem2)) ->
