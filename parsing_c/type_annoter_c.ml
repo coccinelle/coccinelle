@@ -241,14 +241,14 @@ let add_binding namedef warning =
 (*****************************************************************************)
 (* Entry point *)
 (*****************************************************************************)
-let try_set_type subexpr expr env ffinalt = 
+let try_set_type subexpr expr ffinalt = 
   let defaulte = expr in
   (try 
       (match Ast_c.get_type_expr subexpr with 
       | None -> defaulte
       | Some t -> 
           (* TODO don't work, don't have good env *)
-          let t' = find_final_type t env in
+          let t' = find_final_type t !_scoped_env in
           (*let typeC' = Ast_c.unwrap_typeC t' in *)
           match ffinalt t' with
           | Some result -> Ast_c.rewrap_type_expr expr (Some result)
@@ -256,6 +256,10 @@ let try_set_type subexpr expr env ffinalt =
       )
     with Not_found -> defaulte
   )
+
+let set_type_s expr s = 
+  Ast_c.rewrap_type_expr expr  (Some (Lib.al_type (Parse_c.type_of_string s)))
+
           
 
   
@@ -275,6 +279,15 @@ let rec (annotate_program2: program -> program) = fun prog ->
       let exprf e = Visitor_c.vk_expr_s bigf e in
 
       match Ast_c.unwrap_expr expr with
+      | Constant (String (s,kind)) -> set_type_s expr "char *"
+      | Constant (Char   (s,kind)) -> set_type_s expr "char"
+      (* todo: should analyse the string to know if unsigned or not *)
+      | Constant (Int (s)) -> set_type_s expr "int"
+      | Constant (Float (s,kind)) -> 
+         let noii = [] in
+         Ast_c.rewrap_type_expr expr 
+           (Some (Ast_c.nQ, (BaseType (FloatType kind), noii)))
+
       (* don't want a warning on the Ident that are a FunCall *)
       | FunCall (((Ident f, typ), ii), args) -> 
           Ast_c.rewrap_expr expr (
@@ -299,14 +312,14 @@ let rec (annotate_program2: program -> program) = fun prog ->
               expr 
           )
       | Unary (e, DeRef)  -> 
-          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with
             | Pointer x -> Some x
             | _ -> None
           )
           
       | ArrayAccess (e1, e2) ->
-          try_set_type (exprf e1) (k expr) !_scoped_env (fun type_subexpr -> 
+          try_set_type (exprf e1) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with
             | Pointer x -> Some x
             | _ -> None
@@ -314,7 +327,7 @@ let rec (annotate_program2: program -> program) = fun prog ->
          
 
       | RecordAccess  (e, fld) ->  
-          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with 
             | StructUnion (sopt, structtyp) -> 
                 let typefield = find_type_field fld structtyp in
@@ -323,7 +336,7 @@ let rec (annotate_program2: program -> program) = fun prog ->
               )
 
       | RecordPtAccess (e, fld) -> 
-          try_set_type (exprf e) (k expr) !_scoped_env (fun type_subexpr -> 
+          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with 
             | Pointer (t) -> 
                 (match Ast_c.unwrap_typeC t with
