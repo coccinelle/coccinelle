@@ -29,7 +29,6 @@ module Lib = Lib_parsing_c
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-
 let pr2 s = 
   if !Flag_parsing_c.verbose_type
   then Common.pr2 s
@@ -76,7 +75,9 @@ type namedef =
 
 type environment = namedef list list (* cos have nested scope, so nested list*)
 
-let initial_env = [[]]
+let initial_env = [
+  [VarOrFunc ("NULL", Lib.al_type (Parse_c.type_of_string "void *"))]
+]
 
 
 let rec lookup_env f env = 
@@ -172,8 +173,6 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
             )
           )
     )
-             
-  
   
 
 (*****************************************************************************)
@@ -181,7 +180,6 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
 (*****************************************************************************)
 
 (* opti: cache ? use hash ? *)
-
 let _scoped_env = ref initial_env
 
 (* memoise unnanoted var, to avoid too much warning messages *)
@@ -203,7 +201,6 @@ let add_env namedef =
   _scoped_env := (namedef::current)::older
   
   
-
 
 (* the warning argument is here to allow some binding to overwrite an 
  * existing one. With function, we first have the protype and then the def
@@ -239,7 +236,7 @@ let add_binding namedef warning =
   
 
 (*****************************************************************************)
-(* Entry point *)
+(* Helpers *)
 (*****************************************************************************)
 let try_set_type subexpr expr ffinalt = 
   let defaulte = expr in
@@ -259,17 +256,17 @@ let try_set_type subexpr expr ffinalt =
 
 let set_type_s expr s = 
   Ast_c.rewrap_type_expr expr  (Some (Lib.al_type (Parse_c.type_of_string s)))
-
-          
-
   
-
+(*****************************************************************************)
+(* Entry point *)
+(*****************************************************************************)
 (* catch all the decl to grow the environment *)
 
-let rec (annotate_program2: program -> program) = fun prog ->
+let rec (annotate_program2 : environment -> programElement list -> 
+ (programElement * environment Common.pair) list) = fun env prog ->
 
   (* globals (re)initialialisation *) 
-  _scoped_env := initial_env;
+  _scoped_env := env;
   _notyped_var := (Hashtbl.create 100);
 
 
@@ -284,9 +281,9 @@ let rec (annotate_program2: program -> program) = fun prog ->
       (* todo: should analyse the string to know if unsigned or not *)
       | Constant (Int (s)) -> set_type_s expr "int"
       | Constant (Float (s,kind)) -> 
-         let noii = [] in
+         let iinull = [] in
          Ast_c.rewrap_type_expr expr 
-           (Some (Ast_c.nQ, (BaseType (FloatType kind), noii)))
+           (Some (Ast_c.nQ, (BaseType (FloatType kind), iinull)))
 
       (* don't want a warning on the Ident that are a FunCall *)
       | FunCall (((Ident f, typ), ii), args) -> 
@@ -296,7 +293,6 @@ let rec (annotate_program2: program -> program) = fun prog ->
                        Visitor_c.vk_argument_s bigf e, ii
                      ))
             ))
-            
             
       | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
@@ -347,7 +343,6 @@ let rec (annotate_program2: program -> program) = fun prog ->
                 )
             | _ -> None
           )
-          
 
       | _ -> k expr
     );
@@ -409,10 +404,13 @@ let rec (annotate_program2: program -> program) = fun prog ->
   } 
   in
 
-  add_binding 
-    (VarOrFunc ("NULL", Lib.al_type (Parse_c.type_of_string "void *"))) true;
-
-  prog +> List.map (Visitor_c.vk_program_s bigf)
+  prog +> List.map (fun elem -> 
+    let beforeenv = !_scoped_env in
+    let elem' = Visitor_c.vk_program_s bigf elem in
+    let afterenv = !_scoped_env in
+    (elem', (beforeenv, afterenv))
+  )
+    
   
 
 let annotate_program a = 

@@ -1,6 +1,7 @@
 open Common open Commonop
 
 module CCI = Ctlcocci_integration
+module TAC = Type_annoter_c
 
 (*****************************************************************************)
 (*
@@ -222,20 +223,21 @@ let sp_contain_typed_metavar toplevel_list_list =
   let expression r k e =
     match Ast_cocci.unwrap e with
     | (Ast_cocci.MetaExpr (_,_,Some t,_)| Ast_cocci.MetaConst (_,_,Some t,_)) 
-        -> true
-
-    | _ -> k e in
+      -> true
+    | _ -> k e 
+  in
 
   let combiner = 
     Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing 
+  in
   toplevel_list_list +> List.exists (fun toplevel_list -> 
     toplevel_list +> List.exists (fun toplevel -> 
       combiner.Visitor_ast.combiner_top_level toplevel
-  ))
+    ))
 
 
 
@@ -300,7 +302,8 @@ type celem_info = {
   contain_loop: bool;
 }
 
-type celem_with_info = (Parse_c.programElement2 * celem_info option)
+type celem_with_info = 
+  Parse_c.programElement2 * celem_info option * (TAC.environment Common.pair)
 
 
 let build_maybe_info e cfile = 
@@ -345,8 +348,9 @@ let build_maybe_info e cfile =
 
 
 
-let (build_info_program: filename -> bool -> celem_with_info list) = 
- fun cfile contain_typedmetavar -> 
+let (build_info_program: 
+ filename -> bool -> TAC.environment -> celem_with_info list) = 
+ fun cfile contain_typedmetavar env -> 
   let cprogram = cprogram_from_file cfile in
   let cprogram' = 
     if contain_typedmetavar
@@ -354,12 +358,17 @@ let (build_info_program: filename -> bool -> celem_with_info list) =
       cprogram
       +> Common.unzip 
       +> (fun (program, infos) -> 
-        Type_annoter_c.annotate_program program, infos)
+        TAC.annotate_program env program, infos)
       +> Common.uncurry Common.zip
-    else cprogram
+    else 
+      cprogram +> List.map (fun (e, info_item) -> 
+        ((e, (TAC.initial_env, TAC.initial_env)),  info_item)
+      )
   in
-  cprogram' +> List.map (fun (e, info_item) -> 
-    (e, info_item), build_maybe_info e cfile)
+  cprogram' +> List.map (fun ((e, beforeafterenv), info_item) -> 
+    (e, info_item), build_maybe_info e cfile, beforeafterenv
+  )
+  
     
         
 
@@ -367,17 +376,20 @@ let (build_info_program: filename -> bool -> celem_with_info list) =
 let (rebuild_info_program : 
   (celem_with_info * bool) list -> bool -> celem_with_info list) = 
  fun xs contain_typedmetavar ->
-  let xxs = xs +> List.map (fun (((elem, info_item), flow), modified) -> 
-    if modified 
-    then begin
-      let file = Common.new_temp_file "cocci_small_output" ".c" in
-      cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
-      (* Common.command2 ("cat " ^ file); *)
-      let xs = build_info_program file contain_typedmetavar in
-      Common.list_init xs (* get rid of the FinalDef *)
-    end
-    else 
-      [((elem, info_item), flow)]
+  let xxs = xs +> List.map 
+    (fun (x, modified) ->
+      if modified 
+      then begin
+        let ((elem, info_item), flow, (beforeenv, afterenvTOUSE)) = x in
+        let file = Common.new_temp_file "cocci_small_output" ".c" in
+
+        cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
+        (* Common.command2 ("cat " ^ file); *)
+        let xs = build_info_program file contain_typedmetavar beforeenv in
+        (* TODO: assert env has not changed  *)
+        Common.list_init xs (* get rid of the FinalDef *)
+      end
+      else [x]
   )
   in
   List.concat xxs
@@ -496,12 +508,14 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if not (worth_trying cfile error_words_julia)
-  then Common.command2("cp " ^ cfile ^ " /tmp/output.c")
+  then Common.command2 ("cp " ^ cfile ^ " /tmp/output.c")
   else begin
 
 
     (* parsing and build CFG *)
-    let cprogram = ref (build_info_program cfile contain_typedmetavar) in
+    let cprogram = ref 
+      (build_info_program cfile contain_typedmetavar TAC.initial_env) 
+    in
 
     (* And now the main algorithm *)
     (* The algorithm is roughly: 
@@ -518,7 +532,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
 
     let _hack_funheader = ref [] in
-
 
     (* ----------------- *)
     (* 1: iter ctl *)  
@@ -562,7 +575,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
           (* ------------------ *)
           (* 3: iter function *)
           (* ------------------ *)
-          let cprogram' = !cprogram +> List.map (fun ((elem, info_item), info) ->
+          let cprogram' = !cprogram +>List.map(fun((elem,info_item),info,env)->
 
             let full_used_after_list = 
 	      List.fold_left Common.union_set [] used_after_list 
@@ -591,7 +604,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
                 Common.insert_set newbinding !_current_bindings
             );
             
-            ((elem', info_item), info), modified 
+            ((elem', info_item), info, env), modified 
           ) (* end 3: iter function *)
           in
           cprogram := rebuild_info_program cprogram' contain_typedmetavar;
@@ -614,7 +627,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 	let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
           
           let cprogram' = 
-            !cprogram +> List.map (fun ((ebis, info_item), flow) -> 
+            !cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
               let ebis', modified = 
                 match ebis with
                 | Ast_c.Declaration 
@@ -637,7 +650,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
                     )
                 | x -> (x, false)
               in
-              (((ebis', info_item), flow), modified)
+              (((ebis', info_item), flow, env), modified)
             ) 
               
           in
@@ -646,7 +659,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     );
 
     (* and now unparse everything *)
-    let cprogram' = !cprogram +> List.map (fun ((ebis, info_item), _flow) -> 
+    let cprogram' = !cprogram +> List.map (fun ((ebis,info_item),_flow,_env) ->
       (ebis, info_item), Unparse_c.PPviastr) 
     in
     cfile_from_program cprogram' outfile;
