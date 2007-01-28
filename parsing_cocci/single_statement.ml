@@ -58,7 +58,7 @@ and contains_only_minus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing in
+      statement donothing donothing in
   combiner.V0.combiner_statement s
 
 (* ---------------------------------------------------------------------- *)
@@ -196,17 +196,19 @@ let rec statement dots_before dots_after s =
 	(Ast0.OptStm(statement dots_before dots_after re))
   | Ast0.UniqueStm(re) ->
       Ast0.rewrap s
-	(Ast0.UniqueStm( statement dots_before dots_after re))
+	(Ast0.UniqueStm(statement dots_before dots_after re))
   | Ast0.MultiStm(re) ->
       Ast0.rewrap s
 	(Ast0.MultiStm(statement dots_before dots_after re))
 
 and case_line c =
-  match Ast0.unwrap c with
-    Ast0.Default(def,colon,code) ->
-      Ast0.Default(def,colon,statement_dots false false code)
-  | Ast0.Case(case,colon,exp,code) ->
-      Ast0.Case(case,colon,exp,statement_dots false false code)
+  Ast0.rewrap c
+    (match Ast0.unwrap c with
+      Ast0.Default(def,colon,code) ->
+	Ast0.Default(def,colon,statement_dots false false code)
+    | Ast0.Case(case,exp,colon,code) ->
+	Ast0.Case(case,exp,colon,statement_dots false false code)
+    | Ast0.OptCase(case) -> Ast0.OptCase(case_line c))
   
 and do_statement_dots dots_before dots_after = function
     [] -> []

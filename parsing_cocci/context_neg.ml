@@ -25,6 +25,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
 
 let set_index x index =
@@ -40,6 +41,7 @@ let set_index x index =
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
+  | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
 
 let get_index = function
@@ -54,6 +56,7 @@ let get_index = function
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.StmtTag(d) -> Index.statement d
+  | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.TopTag(d) -> Index.top_level d
 
 (* --------------------------------------------------------------------- *)
@@ -266,7 +269,7 @@ let classify all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.ident) expression
       (do_nothing Ast0.typeC) initialiser (do_nothing Ast0.param) declaration
-      statement (do_top Ast0.top) in
+      statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -543,6 +546,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing
 
 let contextify_whencode =
   let bind x y = () in
@@ -581,7 +585,8 @@ let contextify_whencode =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing expression
-      do_nothing initialiser do_nothing do_nothing statement do_nothing in
+      do_nothing initialiser do_nothing do_nothing statement do_nothing
+      do_nothing in
   combiner.V0.combiner_top_level
 
 (* --------------------------------------------------------------------- *)

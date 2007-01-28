@@ -103,7 +103,7 @@ let get_free checker t =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression typeC donothing parameter declaration statement
-      donothing in
+      donothing donothing in
   
   collect_unitary_nonunitary
     (List.concat (List.map res.V0.combiner_top_level t))
@@ -173,7 +173,7 @@ let update_unitary unitary =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression typeC donothing parameter donothing statement
-      donothing in
+      donothing donothing in
 
   List.map res.V0.rebuilder_top_level
 

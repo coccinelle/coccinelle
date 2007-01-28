@@ -19,6 +19,7 @@ type 'a combiner =
 	    combiner_parameter : Ast0.parameterTypeDef -> 'a;
 	      combiner_parameter_list : Ast0.parameter_list -> 'a;
 		combiner_statement : Ast0.statement -> 'a;
+		combiner_case_line : Ast0.case_line -> 'a;
 		  combiner_top_level : Ast0.top_level -> 'a;
 		    combiner_expression_dots :
 		      Ast0.expression Ast0.dots -> 'a;
@@ -301,7 +302,7 @@ let combiner bind option_default
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  bind
 	    (multibind
-	       [string_mcode fr; string_mcode lp; expression exp;
+	       [string_mcode switch; string_mcode lp; expression exp;
 		 string_mcode rp; string_mcode lb])
 	    (bind (multibind (List.map case_line cases)) (string_mcode rb))
       | Ast0.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
@@ -351,9 +352,10 @@ let combiner bind option_default
       match Ast0.unwrap c with
 	Ast0.Default(def,colon,code) ->
 	  multibind [string_mcode def;string_mcode colon;statement_dots code]
-      | Ast0.Case(case,colon,exp,code) ->
-	  multibind [string_mcode def;string_mcode colon;expression exp;
-		      statement_dots code]) in
+      | Ast0.Case(case,exp,colon,code) ->
+	  multibind [string_mcode case;expression exp;string_mcode colon;
+		      statement_dots code]
+      |	Ast0.OptCase(case) -> case_line case in
     casefn all_functions k c
 
   and define_body b =
@@ -381,6 +383,7 @@ let combiner bind option_default
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_statement = statement;
+      combiner_case_line = case_line;
       combiner_top_level = top_level;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots} in
@@ -401,6 +404,7 @@ type rebuilder =
       rebuilder_parameter : Ast0_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast0_cocci.parameter_list inout;
       rebuilder_statement : Ast0_cocci.statement inout;
+      rebuilder_case_line : Ast0_cocci.case_line inout;
       rebuilder_top_level : Ast0_cocci.top_level inout;
       rebuilder_expression_dots :
 	Ast0_cocci.expression Ast0_cocci.dots ->
@@ -416,7 +420,7 @@ let rebuilder = fun
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn topfn ->
+    identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -718,12 +722,17 @@ let rebuilder = fun
 	(term,info,n,mc,ty,Ast0.BetweenDots (statement s))
 
   and case_line c =
-    Ast0.rewrap c
-      (match Ast0.unwrap c with
-	Ast0.Default(def,code) ->
-	  Ast0.Default(string_mcode def,statement_dots code)
-      |	Ast0.Case(case,exp,code) ->
-	  Ast0.Case(string_mcode case,expression exp,statement_dots code))
+    let k c =
+      Ast0.rewrap c
+	(match Ast0.unwrap c with
+	  Ast0.Default(def,colon,code) ->
+	    Ast0.Default(string_mcode def,string_mcode colon,
+			 statement_dots code)
+	| Ast0.Case(case,exp,colon,code) ->
+	    Ast0.Case(string_mcode case,expression exp,string_mcode colon,
+		      statement_dots code)
+	| Ast0.OptCase(case) -> Ast0.OptCase(case_line case)) in
+    casefn all_functions k c
 
   and define_body b =
     Ast0.rewrap b
@@ -757,6 +766,7 @@ let rebuilder = fun
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_list;
       rebuilder_statement = statement;
+      rebuilder_case_line = case_line;
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots} in

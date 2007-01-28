@@ -702,6 +702,19 @@ let rec statement in_nest tgt stm =
       let body = statement false arity body in
       make_rule_elem stm tgt arity
 	(Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,aft))
+  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      let arity =
+	stm_same (mcode2line switch)
+	  (List.map mcode2arity [switch;lp;rp;lb;rb]) in
+      let switch = mcode switch in
+      let lp = mcode lp in
+      let exp = expression false arity exp in
+      let rp = mcode rp in
+      let lb = mcode lb in
+      let cases = List.map (case_line arity) cases in
+      let rb = mcode rb in
+      make_rule_elem stm tgt arity
+	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
   | Ast0.Break(br,sem) ->
       let arity = stm_same (mcode2line br) (List.map mcode2arity [br;sem]) in
       let br = mcode br in
@@ -837,6 +850,33 @@ and whencode notfn alwaysfn = function
     Ast0.NoWhen -> Ast0.NoWhen
   | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
+
+and make_case_line =
+  make_opt_unique
+    (function x -> Ast0.OptCase x)
+    (function x -> failwith "unique not allowed for case_line")
+    (function x -> failwith "multi not allowed for case_line")
+
+and case_line tgt c =
+  match Ast0.unwrap c with
+    Ast0.Default(def,colon,code) ->
+      let arity =
+	all_same false true tgt (mcode2line def)
+	  [mcode2arity def; mcode2arity colon] in
+      let def = mcode def in
+      let colon = mcode colon in
+      let code = dots (statement false arity) code in
+      make_case_line c tgt arity (Ast0.Default(def,colon,code))
+  | Ast0.Case(case,exp,colon,code) ->
+      let arity =
+	all_same false true tgt (mcode2line case)
+	  [mcode2arity case; mcode2arity colon] in
+      let case = mcode case in
+      let exp = expression false arity exp in
+      let colon = mcode colon in
+      let code = dots (statement false arity) code in
+      make_case_line c tgt arity (Ast0.Case(case,exp,colon,code))
+  | Ast0.OptCase(_) -> failwith "unexpected OptCase"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

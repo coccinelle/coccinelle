@@ -362,7 +362,8 @@ let rec statement arity s =
 	  mcode print_string switch; print_string " ";
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp; print_string " "; mcode print_string lb;
-	  List.iter print_case cases; mcode print_string rb
+	  List.iter (function x -> case_line arity x; force_newline()) cases;
+	  mcode print_string rb
       | Ast0.Break(br,sem) ->
 	  print_string arity; mcode print_string br; mcode print_string sem
       | Ast0.Continue(cont,sem) ->
@@ -416,17 +417,20 @@ and whencode notfn alwaysfn = function
   | Ast0.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
 
-and case_line c =
+and case_line arity c =
   print_context c
     (function _ ->
       match Ast0.unwrap c with
 	Ast0.Default(def,colon,code) ->
+	  print_string arity;
 	  mcode print_string def; mcode print_string colon; print_string " ";
-	  dots force_newline (statement arity) body
-      | Ast0.Case(case,colon,exp,code) ->
+	  dots force_newline (statement arity) code
+      | Ast0.Case(case,exp,colon,code) ->
+	  print_string arity;
 	  mcode print_string case; print_string " "; expression exp;
 	  mcode print_string colon; print_string " ";
-	  dots force_newline (statement arity) body)
+	  dots force_newline (statement arity) code
+      | Ast0.OptCase(case) -> case_line "?" case)
 
 let statement_dots = dots (function _ -> ()) (statement "")
 

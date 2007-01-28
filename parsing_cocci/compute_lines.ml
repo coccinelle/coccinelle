@@ -641,9 +641,11 @@ and case_line c =
     Ast0.Default(def,colon,code) ->
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Default(def,colon,code)) (promote_mcode def) code
-  | Ast0.Case(case,colon,exp,code) ->
+  | Ast0.Case(case,exp,colon,code) ->
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
-      mkres c (Ast0.Case(case,colon,exp,code)) (promote_mcode case) code
+      mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
+  | Ast0.OptCase(case) ->
+      let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 
 let statement_dots x = dots is_stm_dots None statement x
 	

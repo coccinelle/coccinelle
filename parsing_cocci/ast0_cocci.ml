@@ -259,8 +259,9 @@ and statement = base_statement wrap
 
 and base_case_line =
     Default of string mcode (* default *) * string mcode (*:*) * statement dots
-  | Case of string mcode (* case *) * string mcode (*:*) *
-	expression * statement dots
+  | Case of string mcode (* case *) * expression * string mcode (*:*) *
+	statement dots
+  | OptCase of case_line
 
 and case_line = base_case_line wrap
 
@@ -309,6 +310,7 @@ type anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
+  | CaseLineTag of case_line
   | TopTag of top_level
 
 let dotsExpr x = DotsExprTag x
@@ -322,6 +324,7 @@ let param x = ParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
 let stmt x = StmtTag x
+let case_line x = CaseLineTag x
 let top x = TopTag x
 
 (* --------------------------------------------------------------------- *)

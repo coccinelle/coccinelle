@@ -258,8 +258,9 @@ and statement = base_statement wrap
 
 and base_case_line =
     Default of string mcode (* default *) * string mcode (*:*) * statement dots
-  | Case of string mcode (* case *) * string mcode (*:*) *
-	expression * statement dots
+  | Case of string mcode (* case *) * expression * string mcode (*:*) *
+	statement dots
+  | OptCase of case_line
 
 and case_line = base_case_line wrap
 
@@ -299,6 +300,7 @@ type anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
+  | CaseLineTag of case_line
   | TopTag of top_level
 
 val dotsExpr : expression dots -> anything
@@ -312,6 +314,7 @@ val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
 val stmt : statement -> anything
+val case_line : case_line -> anything
 val top : top_level -> anything
 
 (* --------------------------------------------------------------------- *)

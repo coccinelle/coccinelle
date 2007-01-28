@@ -25,7 +25,7 @@ let strip_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -56,6 +56,9 @@ let anything_equal = function
   | (Ast0.StmtTag(d1),Ast0.StmtTag(d2)) ->
       (strip_info.V0.rebuilder_statement d1) =
       (strip_info.V0.rebuilder_statement d2)
+  | (Ast0.CaseLineTag(d1),Ast0.CaseLineTag(d2)) ->
+      (strip_info.V0.rebuilder_case_line d1) =
+      (strip_info.V0.rebuilder_case_line d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.V0.rebuilder_top_level d1) =
       (strip_info.V0.rebuilder_top_level d2)
@@ -543,6 +546,11 @@ let match_maker context_required whencode_allowed =
 		    (conjunct_bindings
 		       (match_option match_expr e3a e3b)
 		       (match_statement bodya bodyb)))
+	  | (Ast0.Switch(_,_,expa,_,_,casesa,_),
+	     Ast0.Switch(_,_,expb,_,_,casesb,_)) ->
+	       conjunct_bindings (match_expr expa expb)
+		 (match_list match_case_line no_list do_nolist_match
+		    casesa casesb)
 	  | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
 	  | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
 	  | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
@@ -592,7 +600,23 @@ let match_maker context_required whencode_allowed =
 	  | (_,Ast0.UniqueStm(reb))
 	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
-	else return false in
+	else return false
+
+  and match_case_line pattern c =
+    if not(context_required) or is_context c
+    then
+      match (Ast0.unwrap pattern,Ast0.unwrap c) with
+	(Ast0.Default(_,_,codea),Ast0.Default(_,_,codeb)) ->
+	  match_dots match_statement is_slist_matcher do_slist_match
+	    codea codeb
+      | (Ast0.Case(_,expa,_,codea),Ast0.Case(_,expb,_,codeb)) ->
+	  conjunct_bindings (match_expr expa expb)
+	    (match_dots match_statement is_slist_matcher do_slist_match
+	       codea codeb)
+      |	(Ast0.OptCase(ca),Ast0.OptCase(cb)) -> match_case_line ca cb
+      |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
+      |	_ -> return false
+    else return false in
 (*
   let match_top_level pattern t =
     if not(context_required) or is_context t
@@ -735,7 +759,7 @@ let make_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots
     donothing expression donothing initialiser donothing donothing
-    statement donothing
+    statement donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -790,7 +814,7 @@ let rebuild_mcode start_line =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
-    donothing statement donothing
+    donothing statement donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -812,7 +836,7 @@ let count_edots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let count_idots =
   let mcode x = 0 in
@@ -826,7 +850,7 @@ let count_idots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
-    donothing
+    donothing donothing
 
 let count_dots =
   let mcode x = 0 in
@@ -842,7 +866,7 @@ let count_dots =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
-    donothing
+    donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -1038,7 +1062,7 @@ let instantiate bindings mv_bindings =
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist)
-    identfn exprfn tyfn donothing paramfn donothing stmtfn donothing
+    identfn exprfn tyfn donothing paramfn donothing stmtfn donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -1338,7 +1362,7 @@ let transform (alts : isomorphism) t =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing exprfn donothing donothing donothing declfn stmtfn
-      donothing in
+      donothing donothing in
   let res = res.V0.rebuilder_top_level t in
   (!extra_meta_decls,res)
 
@@ -1352,7 +1376,7 @@ let rewrap =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -1370,6 +1394,7 @@ let rewrap_anything = function
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.V0.rebuilder_declaration d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.V0.rebuilder_statement d)
+  | Ast0.CaseLineTag(d) -> Ast0.CaseLineTag(rewrap.V0.rebuilder_case_line d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.V0.rebuilder_top_level d)
 
 (* --------------------------------------------------------------------- *)

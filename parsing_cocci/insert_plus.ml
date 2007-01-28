@@ -65,7 +65,8 @@ it *)
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
-      (donothing Ast0.param) (donothing Ast0.decl) statement topfn in
+      (donothing Ast0.param) (donothing Ast0.decl) statement
+      (donothing Ast0.case_line) topfn in
   res.V0.combiner_top_level e
 
 (* --------------------------------------------------------------------- *)
@@ -226,7 +227,7 @@ bind to that; not good for isomorphisms *)
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     edots idots pdots sdots
     do_nothing expression do_nothing initialiser do_nothing do_nothing
-    statement do_top
+    statement do_nothing do_top
 
 
 let call_collect_minus context_nodes :
@@ -266,6 +267,9 @@ let call_collect_minus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_statement e)
+      | Ast0.CaseLineTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).V0.combiner_case_line e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e))
@@ -332,6 +336,7 @@ let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
+let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x            = Ast.Token x
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
@@ -370,7 +375,7 @@ let collect_plus_nodes root =
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
-    (do_nothing mk_statement) (do_nothing mk_code)
+    (do_nothing mk_statement) (do_nothing mk_case_line) (do_nothing mk_code)
 
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.anything) list) list =
@@ -409,6 +414,9 @@ let call_collect_plus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_statement e)
+      | Ast0.CaseLineTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).V0.combiner_case_line e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e))
@@ -702,7 +710,7 @@ let reevaluate_contextness =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing in
   res.V0.combiner_top_level
 
 (* --------------------------------------------------------------------- *)
@@ -820,7 +828,7 @@ let insert_markers e =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing statement_dots donothing donothing
-      donothing donothing donothing donothing donothing top_level in
+      donothing donothing donothing donothing donothing donothing top_level in
   res.V0.combiner_top_level e
 
 (* --------------------------------------------------------------------- *)

@@ -234,7 +234,7 @@ let rec statement table minus s =
       get_opt (expression ID table minus) exp3;
       statement table minus body
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
-      expression ID table exp; List.iter case_line cases
+      expression ID table minus exp; List.iter (case_line table minus) cases
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID table minus exp
   | Ast0.MetaStmt(name,_) -> if minus then check_table table minus name
   | Ast0.MetaStmtList(name,_) ->
@@ -263,12 +263,13 @@ and whencode notfn alwaysfn = function
   | Ast0.WhenNot a -> notfn a
   | Ast0.WhenAlways a -> alwaysfn a
 
-and case_line c =
+and case_line table minus c =
   match Ast0.unwrap c with
     Ast0.Default(def,colon,code) ->
       dots (statement table minus) code
-  | Ast0.Case(case,colon,exp,code) ->
+  | Ast0.Case(case,exp,colon,code) ->
       dots (statement table minus) code
+  | Ast0.OptCase(case) -> failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Rules *)

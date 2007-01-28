@@ -135,7 +135,7 @@ let inline_mcodes =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
+    do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -172,7 +172,7 @@ let check_allminus s =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing declaration
-      statement donothing in
+      statement donothing donothing in
   combiner.V0.combiner_statement s
     
 (* --------------------------------------------------------------------- *)
@@ -604,6 +604,7 @@ let rec statement s =
 	    (statement seqible x)::
 	    (process_list (Ast.SequencibleAfterDots []) rest)
 	| _ -> (statement seqible x)::(process_list Ast.Sequencible rest))
+
   and statement_dots seqible d =
     rewrap d
       (match Ast0.unwrap d with
@@ -648,11 +649,13 @@ let rec statement s =
 		      ([],true,l)
 		    end
 	  | _ -> ([],false,l))
+
     and collect_dot_decls d =
       match Ast0.unwrap d with
 	Ast0.DOTS(x) -> collect_decls x
       | Ast0.CIRCLES(x) -> collect_decls x
       | Ast0.STARS(x) -> collect_decls x in
+
     let process l d fn =
       let (decls,dots,other) = collect_decls l in
       (rewrap d (fn (List.map (statement seqible) decls)), dots,
@@ -668,8 +671,24 @@ let rec statement s =
 and option_to_list = function
     Some x -> [x]
   | None -> []
-    
-let statement_dots = dots statement
+
+and case_line c =
+  rewrap c
+    (match Ast0.unwrap c with
+      Ast0.Default(def,colon,code) ->
+	let def = mcode def in
+	let colon = mcode colon in
+	let code = dots statement code in
+	Ast.Default(def,colon,code)
+    | Ast0.Case(case,exp,colon,code) ->
+	let case = mcode case in
+	let exp = expression exp in
+	let colon = mcode colon in
+	let code = dots statement code in
+	Ast.Case(case,exp,colon,code)
+    | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
+
+let statement_dots l = dots statement l
     
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

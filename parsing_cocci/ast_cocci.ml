@@ -341,6 +341,14 @@ and dots_whencode =
 
 and statement = base_statement wrap
 
+and base_case_line =
+    Default of string mcode (* default *) * string mcode (*:*) * statement dots
+  | Case of string mcode (* case *) * expression * string mcode (*:*) *
+	statement dots
+  | OptCase of case_line
+
+and case_line = base_case_line wrap
+
 and base_define_body =
     DMetaId of string mcode * keep_binding
   | Ddots   of string mcode (* ... *)
@@ -378,6 +386,7 @@ and anything =
   | StorageTag          of storage
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
+  | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string
   | Code                of top_level

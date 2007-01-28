@@ -12,6 +12,7 @@ val initialiser_dots :
 val statement : Ast0_cocci.statement -> Ast_cocci.statement
 val statement_dots :
     Ast0_cocci.statement Ast0_cocci.dots -> Ast_cocci.statement Ast_cocci.dots
+val case_line : Ast0_cocci.case_line -> Ast_cocci.case_line
 val typeC : Ast0_cocci.typeC -> Ast_cocci.fullType
 val declaration : Ast0_cocci.declaration -> Ast_cocci.declaration
 val parameterTypeDef :

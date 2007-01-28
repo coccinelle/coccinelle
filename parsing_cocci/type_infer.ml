@@ -194,17 +194,18 @@ let rec propagate_types env =
 	  None -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))
 	| _ -> ());
 	None
-    |  _ -> k s in
+    |  _ -> k s
 
-  let case_line r k c =
+  and case_line r k c =
     match Ast0.unwrap c with
       Ast0.Default(def,colon,code) -> let _ = k c in None
-    | Ast0.Case(case,colon,exp,code) ->
+    | Ast0.Case(case,exp,colon,code) ->
 	let _ = k c in
 	(match Ast0.get_type exp with
 	  None -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))
 	| _ -> ());
-	None in
+	None
+    | Ast0.OptCase(case) -> k c in
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
