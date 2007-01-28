@@ -44,9 +44,9 @@ statement S;
   attach(struct pcmcia_device *link)
   {
       ...
-+     return
-      config(link);
+-     config(link);
 -     return 0;
++     return config(link);
   }
 
 @@
