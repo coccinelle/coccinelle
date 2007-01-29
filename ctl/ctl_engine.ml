@@ -801,22 +801,23 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 (* EF phi == E[true U phi] *)
 let satEF dir m s2 reqst = 
   inc satEF_calls;
-    (*let ctr = ref 0 in*)
+  (*let ctr = ref 0 in*)
   if !pNEW_INFO_OPT
   then
     let rec f y new_info =
       match new_info with
 	[] -> y
       | new_info ->
-	    (*ctr := !ctr + 1;
-	       print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	  (*ctr := !ctr + 1;
+	  print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir m new_info reqst in
 	  let res = triples_union first y in
 	  let new_info = setdiff res y in
-	    (*Printf.printf "EF %s iter %d res %d new_info %d\n"
-	       (if dir = A.BACKWARD then "reachable" else "real ef")
-	       !ctr (List.length res) (List.length new_info);
-	       flush stdout;*)
+	  (*Printf.printf "EF %s iter %d res %d new_info %d\n"
+	    (if dir = A.BACKWARD then "reachable" else "real ef")
+	    !ctr (List.length res) (List.length new_info);
+	  print_state "new info" new_info;
+	  flush stdout;*)
 	  f res new_info in
     f s2 s2
   else
@@ -900,7 +901,11 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	(satEU dir m negpsi (triples_conj negphi negpsi) (Some ostates))
     else
        *)
+      (*let ctr = ref 0 in*)
       let f y =
+	(*ctr := !ctr + 1;
+	Printf.printf "iter %d y %d\n" !ctr (List.length y);*)
+	flush stdout;
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
@@ -1200,18 +1205,25 @@ let rec satloop unchecked required required_states
 	then
 	  let wrap x = A.rewrap phi x in
 	  let v = new_let () in
-	  let phi2ref = wrap(A.Ref v) in
+	  let w = new_let () in
+	  let phi1ref = wrap(A.Ref v) in
+	  let phi2ref = wrap(A.Ref w) in
 	  loop unchecked required required_states
 	    (wrap
 	       (A.LetR
-		  (dir,v,phi2,
-		   wrap
-		     (A.AW
-			(dir,
-			 wrap
-			   (A.And(wrap(A.EF(dir,wrap(A.Uncheck(phi2ref)))),
-				  phi1)),
-			 phi2ref)))))
+		  (dir,v,phi1,
+		   (wrap
+		      (A.LetR
+			 (dir,w,phi2,
+			  wrap
+			    (A.AW
+			       (dir,
+				wrap
+				  (A.And
+				     (wrap(A.EU(dir,wrap(A.Uncheck(phi1ref)),
+						wrap(A.Uncheck(phi2ref)))),
+				      phi1ref)),
+				phi2ref))))))))
 	else
 	  let new_required_states = get_reachable dir m required_states in
 	  (match loop unchecked required new_required_states phi2 with
@@ -1393,18 +1405,25 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	then
 	  let wrap x = A.rewrap phi x in
 	  let v = new_let () in
-	  let phi2ref = wrap(A.Ref v) in
+	  let w = new_let () in
+	  let phi1ref = wrap(A.Ref v) in
+	  let phi2ref = wrap(A.Ref w) in
 	  satv unchecked required required_states
 	    (wrap
 	       (A.LetR
-		  (dir,v,phi2,
-		   wrap
-		     (A.AW
-			(dir,
-			 wrap
-			   (A.And(wrap(A.EF(dir,wrap(A.Uncheck(phi2ref)))),
-				  phi1)),
-			 phi2ref)))))
+		  (dir,v,phi1,
+		   (wrap
+		      (A.LetR
+			 (dir,w,phi2,
+			  wrap
+			    (A.AW
+			       (dir,
+				wrap
+				  (A.And
+				     (wrap(A.EU(dir,wrap(A.Uncheck(phi1ref)),
+						wrap(A.Uncheck(phi2ref)))),
+				      phi1ref)),
+				phi2ref))))))))
 	    env
 	else
 	  let new_required_states = get_reachable dir m required_states in

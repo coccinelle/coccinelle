@@ -96,8 +96,8 @@ let astfvs bound =
 	     List.fold_left bind2 ([],[],[]) (List.map astfvs l))
 	   anythings) in
     match mck with
-      Ast.MINUS(anythings) -> process_anything_list_list anythings
-    | Ast.CONTEXT(befaft) ->
+      Ast.MINUS(_,anythings) -> process_anything_list_list anythings
+    | Ast.CONTEXT(_,befaft) ->
 	(match befaft with
 	  Ast.BEFORE(ll) -> process_anything_list_list ll
 	| Ast.AFTER(ll) -> process_anything_list_list ll

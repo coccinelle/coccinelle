@@ -22,14 +22,14 @@ let wrap_mcode (_,i,mc) = ("fake", i, mc)
 
 
 let mcode_contain_plus = function
-  | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> false
+  | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
-  | Ast_cocci.MINUS ([]) -> false
-  | Ast_cocci.MINUS (x::xs) -> true
+  | Ast_cocci.MINUS (_,[]) -> false
+  | Ast_cocci.MINUS (_,x::xs) -> true
   | Ast_cocci.PLUS -> raise Impossible
 
 let mcode_simple_minus = function
-  | Ast_cocci.MINUS ([]) -> true
+  | Ast_cocci.MINUS (_,[]) -> true
   | _ -> false
 
 
@@ -1020,7 +1020,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         (match tya with
         | None -> 
             if allminus 
-            then distrf distrf_type (Ast_cocci.MINUS []) retb       
+            then distrf distrf_type (Ast_cocci.MINUS(None(*?*),[])) retb
             else return retb
         | Some tya -> fullType tya retb
         ) >>= (fun retb' -> 

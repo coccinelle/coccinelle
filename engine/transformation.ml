@@ -46,14 +46,14 @@ let find_env x env =
 (*****************************************************************************)
 
 let mcode_contain_plus = function
-  | Ast_cocci.CONTEXT (Ast_cocci.NOTHING) -> false
+  | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
-  | Ast_cocci.MINUS ([]) -> false
-  | Ast_cocci.MINUS (x::xs) -> true
+  | Ast_cocci.MINUS (_,[]) -> false
+  | Ast_cocci.MINUS (_,x::xs) -> true
   | Ast_cocci.PLUS -> raise Impossible
 
 let mcode_simple_minus = function
-  | Ast_cocci.MINUS ([]) -> true
+  | Ast_cocci.MINUS (_,[]) -> true
   | _ -> false
 
 
@@ -959,7 +959,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
                 then 
                   let minusizer = iistob +> List.map (fun _ -> 
                     "fake", 
-                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS [])
+                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS(None, []))
                   ) in
                   tag_symbols minusizer iistob binding
                 else iistob
@@ -974,8 +974,12 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
             match tya with
             | None -> 
                 if allminus 
-                then D.distribute_mck (Ast_cocci.MINUS [])  D.distribute_mck_type
-                  retb binding       
+                then
+		  (* perhaps things have to be done differently here for pos
+		     argument of MINUS *)
+		  D.distribute_mck (Ast_cocci.MINUS(None,[]))
+		    D.distribute_mck_type
+                    retb binding       
                 else retb
             | Some tya -> transform_ft_ft tya retb binding
           in

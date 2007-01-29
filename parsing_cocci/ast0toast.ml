@@ -191,10 +191,10 @@ let convert_info info =
 
 let convert_mcodekind = function
     Ast0.MINUS(replacements) ->
-      let (replacements,_) = !replacements in Ast.MINUS(replacements)
+      let (replacements,_) = !replacements in Ast.MINUS(None,replacements)
   | Ast0.PLUS -> Ast.PLUS
   | Ast0.CONTEXT(befaft) ->
-      let (befaft,_,_) = !befaft in Ast.CONTEXT(befaft)
+      let (befaft,_,_) = !befaft in Ast.CONTEXT(None,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
 let mcode(term,_,info,mcodekind) =

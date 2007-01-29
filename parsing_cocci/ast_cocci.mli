@@ -14,10 +14,13 @@ and 'a befaft =
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind
+ (* pos is an offset indicating where in the C code the mcodekind has an
+ effect *)
  and mcodekind =
-    MINUS       of anything list list
-  | CONTEXT     of anything befaft
+    MINUS       of pos * anything list list
+  | CONTEXT     of pos * anything befaft
   | PLUS
+ and pos = (int * int) option
 
 and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
 

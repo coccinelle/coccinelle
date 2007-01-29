@@ -55,49 +55,49 @@ let extract_sgrep_marker l =
 
 let process_sgrep s2 mck =
   match mck with
-    Ast_cocci.MINUS(repl) ->
+    Ast_cocci.MINUS(pos,repl) ->
       (match extract_sgrep_marker repl with
 	(NoMark,_) -> mck
       |	(BefMark(marker),repl) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
-	  Ast_cocci.MINUS(repl)
+	  Ast_cocci.MINUS(pos,repl)
       |	(AftMark(marker),repl) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.MINUS(repl)
+	  Ast_cocci.MINUS(pos,repl)
       |	(BefAftMark(bmarker,amarker),repl) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    bmarker s2.file s2.line s2.column;
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    amarker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.MINUS(repl))
-  | Ast_cocci.CONTEXT(Ast_cocci.NOTHING) -> mck
-  | Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef)) ->
+	  Ast_cocci.MINUS(pos,repl))
+  | Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING) -> mck
+  | Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef)) ->
       (match extract_sgrep_marker bef with
 	(NoMark,_) -> mck
       |	(BefMark(marker),[]) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
-	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+	  Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING)
       |	(BefMark(marker),bef) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
-	  Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+	  Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef))
       |	_ -> failwith "after not possible")
-  | Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft)) ->
+  | Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft)) ->
       (match extract_sgrep_marker aft with
 	(NoMark,_) -> mck
       |	(AftMark(marker),[]) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+	  Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING)
       |	(AftMark(marker),aft) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.file s2.line (s2.column + String.length s2.str);
-	  Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+	  Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft))
       |	_ -> failwith "before not possible")
-  | Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft)) ->
+  | Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft)) ->
       (match extract_sgrep_marker bef with
 	(NoMark,_) ->
 	  (match extract_sgrep_marker aft with
@@ -106,44 +106,44 @@ let process_sgrep s2 mck =
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef))
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft))
 	  | _ -> failwith "before not possible")
       | (BefMark(marker),[]) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
 	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+	    (NoMark,_) -> Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft))
 	  | (AftMark(marker),[]) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING)
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.AFTER(aft))
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft))
 	  | _ -> failwith "before not possible")
       | (BefMark(marker),bef) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    marker s2.file s2.line s2.column;
 	  (match extract_sgrep_marker aft with
-	    (NoMark,_) -> Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	    (NoMark,_) -> Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft))
 	  | (AftMark(marker),[]) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFORE(bef))
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef))
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.file s2.line (s2.column + String.length s2.str);
-	      Ast_cocci.CONTEXT(Ast_cocci.BEFOREAFTER(bef,aft))
+	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft))
 	  | _ -> failwith "before not possible")
       |	_ -> failwith "after not possible")
   | _ -> failwith "unexpected plus code"
@@ -159,10 +159,13 @@ let tag_with_mck = fun mck ib  binding ->
     if !Flag_parsing_cocci.sgrep_mode
     then process_sgrep s2 mck
     else mck in
-  if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
-     mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
-  then
-    begin
+  match (oldmcode,mck) with
+    (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_)
+  | (_,Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
+      let cocciinforef = (mck, binding) in
+      (*cocciinforef := (mck, binding); *)
+      (s2, cocciinforef) (* not useful anymore *)
+  | _ ->
       Printf.printf "SP mcode "; flush stdout;
       Pretty_print_cocci.print_mcodekind oldmcode;
       Format.print_newline();
@@ -170,62 +173,53 @@ let tag_with_mck = fun mck ib  binding ->
       Pretty_print_cocci.print_mcodekind mck;
       Format.print_newline();
       failwith
-	(Common.sprintf
-	   "already tagged token:\n%s"
+	(Common.sprintf "already tagged token:\n%s"
 	   (Common.error_message s2.file (s2.str, s2.charpos)))
-    end
-  else 
-    begin 
-      let cocciinforef = (mck, binding) in
-      (*cocciinforef := (mck, binding); *)
-    (s2, cocciinforef) (* not useful anymore *)
-    end
-
 
 (*****************************************************************************)
 
 let distribute_mck mcodekind distributef expr binding =
   match mcodekind with
-  | Ast_cocci.MINUS (any_xxs) -> 
+  | Ast_cocci.MINUS (pos,any_xxs) -> 
       (* could also instead add on right, it doesn't matter *)
       distributef (
-        (fun ib -> tag_with_mck (Ast_cocci.MINUS (any_xxs)) ib binding),
-        (fun ib -> tag_with_mck (Ast_cocci.MINUS []) ib binding),
-        (fun ib -> tag_with_mck (Ast_cocci.MINUS []) ib binding),
-        (fun ib -> tag_with_mck (Ast_cocci.MINUS (any_xxs)) ib binding)
+        (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding),
+        (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
+        (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
+        (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding)
       ) expr
-  | Ast_cocci.CONTEXT (any_befaft) -> 
+  | Ast_cocci.CONTEXT (pos,any_befaft) -> 
         (match any_befaft with
         | Ast_cocci.NOTHING -> expr
 
         | Ast_cocci.BEFORE xxs -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.BEFORE xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.BEFORE xxs)) ib binding)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding)
             ) expr
         | Ast_cocci.AFTER xxs ->  
             distributef (
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.AFTER xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding),
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.AFTER xxs)) ib binding)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding)
             ) expr
 
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.BEFORE xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.AFTER yys)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER yys)) ib binding),
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (Ast_cocci.BEFOREAFTER (xxs,yys)))
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFOREAFTER (xxs,yys)))
                 ib binding)
             ) expr
 

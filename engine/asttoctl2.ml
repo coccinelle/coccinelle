@@ -1,3 +1,4 @@
+(* for MINUS and CONTEXT, pos is always None in this file *)
 (*search for require*)
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
@@ -25,6 +26,12 @@ let used_after = ref ([] : string list)
 (* predicates matching various nodes in the graph *)
 
 let wrap n ctl = (ctl,n)
+
+let label_pred_maker line = function
+    None -> None
+  | Some label_var ->
+      let label_pred = (Lib_engine.PrefixLabel(label_var),CTL.Control) in
+      Some(wrap line (CTL.Pred label_pred))
 
 let predmaker pred line = function
     None -> wrap line (CTL.Pred pred)
@@ -159,7 +166,7 @@ let elim_opt =
 	let rwd = Ast.rewrap stm in
 	let dots =
 	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
-		    Ast.CONTEXT(Ast.NOTHING)),
+		    Ast.CONTEXT(None,Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
 			 (Ast.DOTS([rw dots]),l,[],[],[],Ast.NoDots)])]
@@ -245,9 +252,9 @@ let contains_modif =
   let option_default = false in
   let mcode r (_,_,kind) =
     match kind with
-      Ast.MINUS(_) -> true
+      Ast.MINUS(_,_) -> true
     | Ast.PLUS -> failwith "not possible"
-    | Ast.CONTEXT(info) -> not (info = Ast.NOTHING) in
+    | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
   let rule_elem r k re =
     let res = k re in
@@ -569,7 +576,7 @@ let end_control_structure fvs header body after_pred
      to the endif node *)
   let (aft_needed,after_branch) =
     match aft with
-      Ast.CONTEXT(Ast.NOTHING) -> (false,make_seq_after2 n after_pred after)
+      Ast.CONTEXT(_,Ast.NOTHING) -> (false,make_seq_after2 n after_pred after)
     | _ ->
 	let match_endif =
 	  make_match n label guard (make_meta_rule_elem aft aftfvinfo) in
@@ -707,20 +714,22 @@ let svar_context_with_add_after s n label quantified d ast
   let first_metamatch =
     matcher
       (match d with
-	Ast.CONTEXT(Ast.BEFOREAFTER(bef,_)) -> Ast.CONTEXT(Ast.BEFORE(bef))
-      |	Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
-      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_)) ->
+	  Ast.CONTEXT(pos,Ast.BEFORE(bef))
+      |	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
+      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
   let middle_metamatch =
     matcher
       (match d with
-	Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
-      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
+      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
   let last_metamatch =
     matcher
       (match d with
-	Ast.CONTEXT(Ast.BEFOREAFTER(_,aft)) -> Ast.CONTEXT(Ast.AFTER(aft))
-      |	Ast.CONTEXT(_) -> d
-      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
+	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft)) ->
+	  Ast.CONTEXT(pos,Ast.AFTER(aft))
+      |	Ast.CONTEXT(_,_) -> d
+      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
 
   let rest_nodes = wrapAnd n (middle_metamatch,prelabel_pred) in  
   let left_or = (* the whole statement is one node *)
@@ -754,8 +763,8 @@ let svar_minus_or_no_add_after s n label quantified d ast
   let rest_metamatch =
     matcher
       (match d with
-	Ast.MINUS(_) -> Ast.MINUS([])
-      | Ast.CONTEXT(_) -> Ast.CONTEXT(Ast.NOTHING)
+	Ast.MINUS(pos,_) -> Ast.MINUS(pos,[])
+      | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
       | Ast.PLUS -> failwith "not possible") in
   let rest_nodes = wrapAnd n (rest_metamatch,prelabel_pred) in
   let last_node = and_after n (wrapNot n prelabel_pred) after in
@@ -778,8 +787,9 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
   let befaftg = List.map (process_bef_aft true) befaftexps in
   let (notwhencodes,whencodes) =
     match whencodes with
-      Ast.NoWhen -> (None,None)
-    | Ast.WhenNot whencodes -> (Some (statement_list whencodes),None)
+      Ast.NoWhen -> (None,label_pred_maker n label)
+    | Ast.WhenNot whencodes ->
+	(Some (statement_list whencodes),label_pred_maker n label)
     | Ast.WhenAlways s -> (None,Some(statement s)) in
   let notwhencodes =
     (* add in after, because it's not part of the program *)
@@ -815,8 +825,9 @@ let decl_to_not_decl n dots stmt make_match f =
   then f
   else
     let de =
-      let md = Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NOTHING)) ([],[],[]) in
-      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NOTHING),md)) in
+      let md =
+	Ast.make_meta_decl "_d" (Ast.CONTEXT(None,Ast.NOTHING)) ([],[],[]) in
+      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(None,Ast.NOTHING),md)) in
     wrapAU n (make_match de,
 	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
 
@@ -870,9 +881,9 @@ and statement stmt after quantified label guard =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.BEFOREAFTER(_,_)) as d)),
+	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
 		     keep,seqible,_)
-      | Ast.MetaStmt((s,_,(Ast.CONTEXT(Ast.AFTER(_)) as d)),keep,seqible,_) ->
+      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->
 	  svar_context_with_add_after s n label quantified d ast seqible after
 	    (process_bef_aft quantified n label true) guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
@@ -914,14 +925,15 @@ and statement stmt after quantified label guard =
 		 is absent *)
 	      let new_mc =
 		match (retmc,semmc) with
-		  (Ast.MINUS(l1),Ast.MINUS(l2))
-		| (Ast.CONTEXT(Ast.BEFORE(l1)),Ast.CONTEXT(Ast.AFTER(l2))) ->
-		    Some (Ast.CONTEXT(Ast.BEFORE(l1@l2)))
-		| (Ast.CONTEXT(Ast.BEFORE(_)),Ast.CONTEXT(Ast.NOTHING))
-		| (Ast.CONTEXT(Ast.NOTHING),Ast.CONTEXT(Ast.NOTHING)) ->
+		  (Ast.MINUS(_,l1),Ast.MINUS(_,l2))
+		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
+		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
+		    Some (Ast.CONTEXT(None,Ast.BEFORE(l1@l2)))
+		| (Ast.CONTEXT(_,Ast.BEFORE(_)),Ast.CONTEXT(_,Ast.NOTHING))
+		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.NOTHING)) ->
 		    Some retmc
-		| (Ast.CONTEXT(Ast.NOTHING),Ast.CONTEXT(Ast.AFTER(l))) ->
-		    Some (Ast.CONTEXT(Ast.BEFORE(l)))
+		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
+		    Some (Ast.CONTEXT(None,Ast.BEFORE(l)))
 		| _ -> None in
 	      (match new_mc with
 		Some new_mc ->
@@ -931,7 +943,8 @@ and statement stmt after quantified label guard =
 		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc))) in
 		  let stripped_rbrace =
 		    Ast.rewrap ast
-		      (Ast.SeqEnd (("}",info,Ast.CONTEXT(Ast.NOTHING)))) in
+		      (Ast.SeqEnd
+			 (("}",info,Ast.CONTEXT(None,Ast.NOTHING)))) in
 		  wrapOr(normal_res,
 			 wrapAnd
 			   (make_match mod_rbrace,
@@ -1005,7 +1018,7 @@ and statement stmt after quantified label guard =
 	    match Ast.unwrap rbrace with
 	      Ast.SeqEnd((data,info,_)) ->
 		Ast.rewrap rbrace
-		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NOTHING))))
+		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(None,Ast.NOTHING))))
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
 	    [make_match (Ast.rewrap stmt Ast.Goto);
@@ -1089,7 +1102,7 @@ and statement stmt after quantified label guard =
   | Ast.Dots((_,i,d),whencodes,t) ->
       let dot_code =
 	match d with
-	  Ast.MINUS(_) ->
+	  Ast.MINUS(_,_) ->
             (* no need for the fresh metavar, but ... is a bit wierd as a
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))
@@ -1119,7 +1132,7 @@ and statement stmt after quantified label guard =
 	  match Ast.unwrap rbrace with
 	    Ast.SeqEnd((data,info,_)) ->
 	      Ast.rewrap rbrace
-		(Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NOTHING))))
+		(Ast.SeqEnd ((data,info,Ast.CONTEXT(None,Ast.NOTHING))))
 	  | _ -> failwith "unexpected close brace" in
 	let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
 	let errorexit = wrap n (CTL.Pred (Lib_engine.ErrorExit,CTL.Control)) in

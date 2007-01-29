@@ -58,23 +58,23 @@ let print_around printer term = function
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let mcode fn = function
-    (x, _, Ast.MINUS(plus_stream)) ->
+    (x, _, Ast.MINUS(_,plus_stream)) ->
       if !print_minus_flag
       then print_string "-"; 
       fn x; 
       if !print_plus_flag 
       then print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(plus_streams)) -> 
+  | (x, _, Ast.CONTEXT(_,plus_streams)) -> 
       if !print_plus_flag
       then print_around fn x plus_streams
       else fn x
   | (x, _, Ast.PLUS) -> fn x
 
 let print_mcodekind = function 
-    Ast.MINUS(plus_stream) ->
+    Ast.MINUS(_,plus_stream) ->
       print_string "MINUS";
       print_anything ">>> " plus_stream
-  | Ast.CONTEXT(plus_streams) ->
+  | Ast.CONTEXT(_,plus_streams) ->
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS -> print_string "PLUS"
 

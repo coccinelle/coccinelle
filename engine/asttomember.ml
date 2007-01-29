@@ -7,9 +7,9 @@ module CTL = Ast_ctl
 
 let mcode r (_,_,kind) =
   match kind with
-    Ast.MINUS(_) -> true
+    Ast.MINUS(_,_) -> true
   | Ast.PLUS -> failwith "not possible"
-  | Ast.CONTEXT(info) -> not (info = Ast.NOTHING)
+  | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
 let contains_modif x used_after =
   if List.exists (function x -> List.mem x used_after) (Ast.get_fvs x)

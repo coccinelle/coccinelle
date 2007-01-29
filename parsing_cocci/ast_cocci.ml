@@ -14,10 +14,13 @@ and 'a befaft =
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind
+ (* pos is an offset indicating where in the C code the mcodekind has an
+ effect *)
  and mcodekind =
-    MINUS       of anything list list
-  | CONTEXT     of anything befaft
+    MINUS       of pos * anything list list
+  | CONTEXT     of pos * anything befaft
   | PLUS
+ and pos = (int * int) option
 
 and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
 
@@ -418,12 +421,12 @@ let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,_) d =
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
+  let keep = match d with CONTEXT(_,NOTHING) -> false | _ -> true in
   (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false),
    0, fvs, fresh, inh, NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  let keep = match d with CONTEXT(NOTHING) -> false | _ -> true in
+  let keep = match d with CONTEXT(_,NOTHING) -> false | _ -> true in
   (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, fvs, fresh, inh,
    NoDots)
 

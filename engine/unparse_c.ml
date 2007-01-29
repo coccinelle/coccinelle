@@ -235,10 +235,10 @@ let pp_program2 xs outfile  =
       in
 
       match mcode with
-      | Ast_cocci.MINUS (any_xxs) -> 
+      | Ast_cocci.MINUS (_,any_xxs) -> 
           Unparse_cocci.pp_list_list_any 
             (env,!_current_tabbing,pr, pr_elem) any_xxs 
-      | Ast_cocci.CONTEXT (any_befaft) -> 
+      | Ast_cocci.CONTEXT (_,any_befaft) -> 
           (match any_befaft with
           | Ast_cocci.NOTHING -> pr s
               
