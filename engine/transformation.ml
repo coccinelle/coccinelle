@@ -891,7 +891,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
      | F.EndStatement None -> 
          if mcode_contain_plus (mcodekind mcode)
          then
-           let fake_info = Ast_c.fakeInfo  in
+           let fake_info = Ast_c.fakeInfo ()  in
            D.distribute_mck (mcodekind mcode) D.distribute_mck_node 
              (F.EndStatement (Some fake_info)) binding
          else unwrap_node

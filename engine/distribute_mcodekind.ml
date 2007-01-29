@@ -152,14 +152,15 @@ let process_sgrep s2 mck =
  * have some "fake" string, and also because now s1:'a, no more
  * s1:string *)
 let tag_with_mck = fun mck ib  binding -> 
-  let (s2, (oldmcode, oldenv)) = ib in
+  let (s2, cocciinforef) = ib in
+  let (oldmcode, oldenv) = (*!*)cocciinforef in
   
   let mck =
     if !Flag_parsing_cocci.sgrep_mode
     then process_sgrep s2 mck
     else mck in
   if oldmcode <> Ast_cocci.CONTEXT(Ast_cocci.NOTHING) && 
-    mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
+     mck <>      Ast_cocci.CONTEXT(Ast_cocci.NOTHING)
   then
     begin
       Printf.printf "SP mcode "; flush stdout;
@@ -174,7 +175,11 @@ let tag_with_mck = fun mck ib  binding ->
 	   (Common.error_message s2.file (s2.str, s2.charpos)))
     end
   else 
-    (s2, (mck, binding))
+    begin 
+      let cocciinforef = (mck, binding) in
+      (*cocciinforef := (mck, binding); *)
+    (s2, cocciinforef) (* not useful anymore *)
+    end
 
 
 (*****************************************************************************)
@@ -610,6 +615,7 @@ and (distribute_mck_decl: Ast_c.declaration distributer) = fun (lop,mop,rop,bop)
   fun decl ->
     (* use different strategy, collect ii, sort, recollect and tag *)
     let iidecl = Lib_parsing_c.ii_of_decl decl in
+
     let (maxii, minii) = Lib_parsing_c.max_min_ii_by_pos iidecl in
     let (maxpos, minpos) = 
       Ast_c.get_pos_of_info maxii, Ast_c.get_pos_of_info minii

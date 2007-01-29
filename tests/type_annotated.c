@@ -1,4 +1,4 @@
-void f1(int i) {
+void f1(int z) {
 
   struct foo i;
   struct foo2 j;

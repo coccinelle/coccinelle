@@ -271,6 +271,12 @@ let ast_to_flow_with_error_messages2 def filename =
   end;
   flow
 
+
+let ast_to_flow_with_error_messages a b = 
+  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
+
+
+
 let flow_to_ast2 flow = 
   let nodes = flow#nodes#tolist in
   match nodes with
@@ -284,13 +290,9 @@ let flow_to_ast2 flow =
   | _ -> 
       Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
 
-
-
-let ast_to_flow_with_error_messages a b = 
-  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
-
 let flow_to_ast a = 
   Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
+
                   
 (*****************************************************************************)
 (* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
@@ -462,12 +464,13 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
               then 
                 (* I do the transformation on flow, not fixed_flow, 
                    because the flow_to_ast need my extra information. *)
-                let flow' = 
+                let (*_flow'*) flow' = (* do via side effect now *)
                   if !Flag_engine.use_cocci_vs_c
                   then Transformation2.transform trans_info info.flow 
                   else Transformation.transform trans_info info.flow 
                 in
                 let celem' = flow_to_ast flow' in
+                (* let celem' = celem in*) (* done via side effect *)
                 (celem', true), Some newbinding, hack_funheaders
               else 
                 (celem, false), Some newbinding, hack_funheaders

@@ -17,7 +17,9 @@ open Ast_c
 (* Helpers *)
 (*****************************************************************************)
 
-let is_between_two_minus (infoa,(mcoda,enva)) (infob,(mcodb,envb)) =
+let is_between_two_minus (infoa,coccirefa) (infob,coccirefb) =
+  let (mcoda,enva) = (*!*)coccirefa in
+  let (mcodb,envb) = (*!*)coccirefb in
   match mcoda, mcodb with
   | Ast_cocci.MINUS _, Ast_cocci.MINUS _ -> true
   | _ -> false
@@ -123,7 +125,9 @@ let pp_program2 xs outfile  =
     let pr s = pr s (*; flush chan*) in
 
     let (toks: Parser_c.token list ref) = ref [] in
-    let _last_synced_token = ref (Common.fake_parse_info, Ast_c.emptyAnnot) in
+    let _last_synced_token = 
+      ref (Common.fake_parse_info, (*ref*) Ast_c.emptyAnnot) 
+    in
 
     let _current_tabbing = ref "" in
     let update_current_tabbing s = 
@@ -175,7 +179,8 @@ let pp_program2 xs outfile  =
     in
 
     (* ---------------------- *)
-    let rec pr_elem ((pinfo,(mcode,env)) as e) = 
+    let rec pr_elem ((pinfo,cocciinfo) as e) = 
+      let (mcode,env) = (*!*)cocciinfo in
 
       (* 'e' can be an abstract_lined token. Indeed when we capture
        * some code in a metavariable, this code may then further be
@@ -262,7 +267,7 @@ let pp_program2 xs outfile  =
 
     xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
       toks := toks_e;
-      _last_synced_token := (Common.fake_parse_info, Ast_c.emptyAnnot);
+      _last_synced_token := (Common.fake_parse_info, (*ref*) Ast_c.emptyAnnot);
 
       match ppmethod with
       | PPnormal -> Pretty_print_c.pp_program_gen pr_elem e

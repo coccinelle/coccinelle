@@ -177,7 +177,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 
 let fixFunc = function
   | (((s,iis), (nQ, (FunctionType (fullt, (params,bool)),iifunc)), (st,iist)), (cp,iicp)) -> 
-      let iistart = Ast_c.fakeInfo in
+      let iistart = Ast_c.fakeInfo () in
       assert (nQ =*= nullQualif);
       (match params with
       | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
@@ -603,13 +603,13 @@ colon_option: TString {}
 /*---------------------------------------------------------------------------*/
 decl2: decl_spec TPtVirg
         { let (returnType,storage) = fixDeclSpecForDecl $1 in 
-          let iistart = Ast_c.fakeInfo in
+          let iistart = Ast_c.fakeInfo () in
           DeclList ([(None, returnType, unwrap storage),[]],  
                        ($2::iistart::snd storage))
         } 
      | decl_spec init_declarator_list TPtVirg 
 	{ let (returnType,storage) = fixDeclSpecForDecl $1 in
-          let iistart = Ast_c.fakeInfo in
+          let iistart = Ast_c.fakeInfo () in
           DeclList (
 	       ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
                  let ini, iini = 

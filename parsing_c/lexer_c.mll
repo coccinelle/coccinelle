@@ -34,7 +34,7 @@ let tokinfo lexbuf  = {
   Common.charpos = Lexing.lexeme_start lexbuf; 
   Common.str     = Lexing.lexeme lexbuf;
   line = -1; column = -1; file = "";
-}, Ast_c.emptyAnnot
+}, (*ref*) Ast_c.emptyAnnot (* must generate a new ref each time, otherwise share*)
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 let tok_set s pos (info, annot) =  { info with 
@@ -230,8 +230,10 @@ rule token = parse
       let bodys = cpp_eat_until_nl lexbuf in
       TDefine (ident, bodys, 
               tok_set s1 pos i1, 
-              tok_set ident (pos + String.length s1)          Ast_c.fakeInfo, 
-              tok_set bodys (pos + String.length (s1 ^ ident)) Ast_c.fakeInfo)
+              tok_set ident (pos + String.length s1)  (Ast_c.fakeInfo ()), 
+              tok_set bodys (pos + String.length (s1 ^ ident)) 
+                (Ast_c.fakeInfo ())
+      )
     }
 
   (* todo: consider differently macro with arguments ? *)
@@ -243,9 +245,10 @@ rule token = parse
       let bodys = cpp_eat_until_nl lexbuf in
       TDefine (ident, bodys, 
               tok_set s1 pos i1, 
-              tok_set ident (pos + String.length s1) Ast_c.fakeInfo, 
+              tok_set ident (pos + String.length s1) (Ast_c.fakeInfo()), 
               tok_set (startbody ^ bodys) (pos + String.length (s1 ^ ident))
-                                                Ast_c.fakeInfo)
+                                                (Ast_c.fakeInfo())
+      )
     }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ' '\t' '\n']    
@@ -267,7 +270,8 @@ rule token = parse
         let pos = (fst i1).charpos in
         TInclude (filename, 
                  tok_set s1 pos i1, 
-                 tok_set filename (pos + String.length s1) Ast_c.fakeInfo)
+                 tok_set filename (pos + String.length s1) (Ast_c.fakeInfo())
+        )
       }
                                                         
   | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
@@ -277,7 +281,8 @@ rule token = parse
         let pos = (fst i1).charpos in
         TInclude (filename, 
                  tok_set s1 pos i1, 
-                 tok_set filename (pos + String.length s1) Ast_c.fakeInfo)
+                 tok_set filename (pos + String.length s1) (Ast_c.fakeInfo())
+        )
       }
 
 

@@ -679,7 +679,7 @@ let pp_program_gen pr_elem progelem =
      | NotParsedCorrectly ii -> 
          assert (List.length ii >= 1);
          ii +> List.iter pr_elem 
-     | FinalDef (ii,_ANNOT) -> pr_elem ({ii with str = ""},Ast_c.emptyAnnot)
+     | FinalDef (ii,annot) -> pr_elem ({ii with str = ""},annot)
 
      | _ -> raise Impossible
      
@@ -689,7 +689,7 @@ let pp_program_gen pr_elem progelem =
 (******************************************************************************)
 
 (* Do not use (mcode, env). It is a simple C pretty printer. *)
-let pr_elem (info,(mcode,env)) = 
+let pr_elem (info,mcode_env) = 
   let s = info.str in
   pp s
 

@@ -1,6 +1,6 @@
 TARGET=spatch
 
-SRC = flag.ml cocci.ml test.ml main.ml
+SRC = flag.ml cocci.ml testing.ml test.ml main.ml
 
 
 SYSLIBS = str.cma unix.cma
@@ -120,7 +120,3 @@ depend:: beforedepend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
 -include .depend
-
-
-
-

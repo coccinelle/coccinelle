@@ -40,10 +40,13 @@ open Common open Commonop
  * because the pending '+' may contain metavariables that refer to some
  * C code.
  * 
- * convention: I often use 'ii' for the name of a list of info. *)
+ * convention: I often use 'ii' for the name of a list of info. 
+ * 
+ * Update: Now I use a ref!!!! 
+ *)
 
 (* forunparser: *)
-type info = Common.parse_info *  (Ast_cocci.mcodekind * metavars_binding) 
+type info = Common.parse_info * (Ast_cocci.mcodekind * metavars_binding)(*ref*)
 and il = info list
 
 and 'a wrap  = 'a * il   
@@ -408,14 +411,14 @@ let al_info x =
     str = (fst x).str;
     line = -1; column = -1; file = "";
   }, 
-  emptyAnnot
+  (*ref*) emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
 
 (* When want add some info in ast that does not correspond to 
  * an existing C element or when don't want 'synchronize' on it 
  * in unparse_c.ml
  *)
-let fakeInfo = al_info (Common.fake_parse_info, emptyAnnot)
+let fakeInfo ()  = al_info (Common.fake_parse_info, (*ref*) emptyAnnot)
 
 (*****************************************************************************)
 (* Views *)

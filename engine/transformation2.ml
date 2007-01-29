@@ -47,8 +47,13 @@ module XTRANS = struct
   (* todo: check not already tagged ? *)
   let tokenf_one ia ib = fun binding -> 
     let (s1,_,x) = ia in
-    let (s2, (oldmcode, oldenv)) = ib in
-    Some (s2, (x, binding))
+    let (s2, cocciinforef) = ib in
+    let (_oldmcode, _oldenv) = (*!*)cocciinforef in
+    begin 
+      let cocciinforef = (x, binding) in
+      (* cocciinforef := (x, binding); *)
+      Some (s2, cocciinforef) (* useless now *)
+    end
       
 
   (***************************************************************************)
