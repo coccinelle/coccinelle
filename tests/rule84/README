@@ -1,54 +1,51 @@
-cdrom.c
- * [status] 
+ide, cdrom, and scsi_ioctl are libary files, and are thus omitted from the
+SOURCES list
+
+parsing problem in one file
+14 oks
 
 cdu31a.c
- * [status] 
+ * [status] ok
 
 cm206.c
- * [status] 
-
-ide.c
- * [status] 
+ * [status] ok
 
 ide-cd.c
- * [status] 
+ * [status] ok
 
 ide-disk.c
- * [status] 
+ * [status] ok
 
 ide-floppy.c
- * [status] 
+ * [status] ok
 
 ide-scsi.c
- * [status] 
+ * [status] ok
 
 ide-tape.c
- * [status] 
+ * [status] ok
 
 mcd.c
- * [status] 
+ * [status] ok
 
 mcdx.c
- * [status] 
+ * [status] ok
 
 pcd.c
- * [status] 
+ * [status] ok
 
 sbpcd.c
- * [status] 
-
-scsi_ioctl.c
- * [status] 
+ * [status] ok
 
 sd.c
- * [status] 
+ * [status] ok
 
 sr.c
- * [status] 
+ * [status] ok
 
 st.c
- * [status] 
+ * [status] error
+ parsing problem - macro call that has a statement as an argument
 
 viocd.c
- * [status] 
-
+ * [status] ok

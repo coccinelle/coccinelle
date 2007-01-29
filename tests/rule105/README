@@ -5,7 +5,9 @@
  * [status] 
 
 aha152x_stub.c
- * [status] 
+ * [status] spatch_ok
+ programmer change a parameter name in the function definition, but not in its
+ prototype
 
 airo_cs.c
  * [status] 
@@ -50,10 +52,14 @@ elsa_cs.c
  * [status] 
 
 fdomain_stub.c
- * [status] 
+ * [status] spatch_ok
+ programmer change a parameter name in the function definition, but not in its
+ prototype
 
 fmvj18x_cs.c
- * [status]
+ * [status] spatch_ok
+ programmer change a parameter name in the function definition, but not in its
+ prototype
 
 hostap_cs.c
  * [status] 
@@ -116,7 +122,9 @@ sym53c500_cs.c
  * [status] 
 
 synclink_cs.c
- * [status] 
+ * [status] spatch_ok
+ programmer change a parameter name in the function definition, but not in its
+ prototype
 
 teles_cs.c
  * [status] 

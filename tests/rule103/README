@@ -113,7 +113,8 @@ sedlbauer_cs.c
  looks like dead code
 
 serial_cs.c
- * [status] error
+ * [status] spatch_ok
+ programmer made the config function static
 
 sl811_cs.c
  * [status] error

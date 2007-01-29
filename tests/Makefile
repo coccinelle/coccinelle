@@ -1,10 +1,10 @@
-MAKESUBDIRS= rule1 rule10 rule101 rule103 rule105 rule107 rule108 rule17 \
+MAKESUBDIRS= rule1 rule10 rule101 rule105 rule107 rule108 rule17 \
 rule18 rule18a rule19 rule20 rule21 rule24 rule26 rule27 rule28 rule30 \
 rule31 rule33 rule35 rule36 rule38 rule41 rule42 rule50 \
 rule51 rule52 rule53 rule56 rule57 rule6 rule62 rule66 \
 rule7 rule70 rule71 rule74 rule75 rule8 rule81 rule81a rule82 rule83 \
 rule84 rule86 rule88 rule89 rule9 rule90 rule91 rule92 rule93 \
-rule94 rule95 rule96 rule97 rule98 rule99 
+rule94 rule95 rule96 rule97 rule98 rule99 rule103
 
 #todo, get .c and .res for:
 # rule64 rule65 

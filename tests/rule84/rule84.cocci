@@ -15,8 +15,8 @@ identifier inodename, filename, cmd, arg;
 f(struct inode *inodename, struct file *filename, unsigned int cmd,
   unsigned long arg) {
    <...
--  scsi_cmd_ioctl(A, B, C)
-+  scsi_cmd_ioctl(filename, A, B, C)
+-  scsi_cmd_ioctl(A, cmd, C)
++  scsi_cmd_ioctl(filename, A, cmd, C)
    ...>
 }
 
@@ -40,11 +40,14 @@ f(struct inode *inodename, struct file *filename, unsigned int cmd,
   unsigned long arg) {
    <...
 (
--  cdrom_ioctl(A, B, C)
-+  cdrom_ioctl(filename, A, B, C)
+-  cdrom_ioctl(A, inodename, cmd, arg)
++  cdrom_ioctl(filename, A, inodename, cmd, arg)
 |
--  generic_ide_ioctl(A, B, C)
-+  generic_ide_ioctl(filename, A, B, C)
+-  generic_ide_ioctl(A, cmd, arg)
++  generic_ide_ioctl(filename, A, cmd, arg)
+|
+-  scsi_cmd_ioctl(A, cmd, C)
++  scsi_cmd_ioctl(filename, A, cmd, C)
 )
    ...>
 }

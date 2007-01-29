@@ -1,68 +1,77 @@
 a3d.c
- * [status]
+ * [status] wrong
+ problem in type inference for fields
 
 adbhid.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 adi.c
- * [status]
+ * [status] ok
 
 aiptek.c
- * [status]
+ * [status] ok
 
 amijoy.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 amikbd.c
- * [status]
+ * [status] ok
 
 amimouse.c
- * [status]
+ * [status] ok
 
 analog.c
- * [status]
+ * [status] ok
 
 atkbd.c
- * [status]
+ * [status] ok
 
 cobra.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 cs461x.c
- * [status]
+ * [status] ok
 
 db9.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 emu10k1-gp.c
- * [status]
+ * [status] ok
 
 evdev.c
- * [status]
+ * [status] spatch_ok
+ some other reorganizations made in the affected code by the programmer
 
 fm801-gp.c
- * [status]
+ * [status] ok
 
 gamecon.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 gf2k.c
- * [status]
+ * [status] ok
 
 grip.c
- * [status]
+ * [status] wrong
+ type inference doesn't work for an array reference
 
 guillemot.c
- * [status]
+ * [status] ok
 
 gunze.c
- * [status]
+ * [status] ok
 
 h3600_ts_input.c
- * [status]
+ * [status] ok
 
 hid-input.c
- * [status]
+ * [status] wrong
+ needed structure declaration not in the file
 
 iforce-main.c
  * [status]
@@ -71,64 +80,64 @@ inport.c
  * [status]
 
 input.c
- * [status]
+ * [status] ok
 
 interact.c
- * [status]
+ * [status] ok
 
 lightning.c
- * [status]
+ * [status] ok
 
 logibm.c
  * [status]
 
 mac_hid.c
- * [status]
+ * [status] ok
 
 magellan.c
- * [status]
+ * [status] ok
 
 maple_keyb.c
- * [status]
+ * [status] ok
 
 newtonkbd.c
- * [status]
+ * [status] ok
 
 ns558.c
- * [status]
+ * [status] ok
 
 pc110pad.c
  * [status]
 
 powermate.c
- * [status]
+ * [status] ok
 
 ps2serkbd.c
- * [status]
+ * [status] ok
 
 psmouse.c
- * [status]
+ * [status] ok
 
 rpcmouse.c
  * [status]
 
 sermouse.c
- * [status]
+ * [status] ok
 
 sidewinder.c
  * [status]
 
 spaceball.c
- * [status]
+ * [status] ok
 
 spaceorb.c
- * [status]
+ * [status] ok
 
 stinger.c
  * [status]
 
 sunkbd.c
- * [status]
+ * [status] ok
 
 tmdc.c
  * [status]
@@ -137,7 +146,7 @@ turbografx.c
  * [status]
 
 twidjoy.c
- * [status]
+ * [status] ok
 
 uinput.c
  * [status]
@@ -149,17 +158,16 @@ usbmouse.c
  * [status]
 
 vortex.c
- * [status]
+ * [status] ok
 
 wacom.c
- * [status]
+ * [status] ok
 
 warrior.c
- * [status]
+ * [status] ok
 
 xpad.c
- * [status]
+ * [status] ok
 
 xtkbd.c
- * [status]
-
+ * [status] ok

@@ -24,7 +24,6 @@ ide-cs.c \
 ixj_pcmcia.c \
 netwave_cs.c \
 nmclan_cs.c \
-nsp_cs.c \
 orinoco_cs.c \
 parport_cs.c \
 pcmciamtd.c \
@@ -43,6 +42,7 @@ teles_cs.c \
 vxpocket.c \
 wavelan_cs.c \
 wl3501_cs.c \
-xirc2ps_cs.c
+xirc2ps_cs.c \
+nsp_cs.c
 
 include ../generic_makefile
