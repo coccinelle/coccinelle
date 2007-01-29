@@ -54,7 +54,6 @@ and 'a wrap  = 'a * il
 and 'a wrap2 = 'a * il
 
 (* ------------------------------------------------------------------------- *)
-
 and fullType = typeQualifier * typeC
 and  typeC = typeCbis wrap
 
