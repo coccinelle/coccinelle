@@ -386,7 +386,10 @@ let (rebuild_info_program :
         cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
         (* Common.command2 ("cat " ^ file); *)
         let xs = build_info_program file contain_typedmetavar beforeenv in
-        (* TODO: assert env has not changed  *)
+        (* TODO: assert env has not changed,
+         * if yes then must also reparse what follows even if not modified.
+         * Do that only if contain_typedmetavar of course, so good opti.
+         *)
         Common.list_init xs (* get rid of the FinalDef *)
       end
       else [x]

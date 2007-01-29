@@ -43,12 +43,12 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
   | Compare_c.Correct -> 
       pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
       if doexit then raise (Common.UnixExit 0)
-  | Compare_c.Incorrect s -> 
+  | Compare_c.Pb s -> 
       pr2 ("seems incorrect: " ^ s);
       pr2 "diff (result(-) vs expected_result(+)) = ";
       diffxs +> List.iter pr2;
       if doexit then raise (Common.UnixExit (-1))
-  | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
+  | Compare_c.PbOnlyInNotParsedCorrectly -> 
       pr2 "seems incorrect, but only because of code that was not parsable";
       if doexit then raise (Common.UnixExit (-1))
   
@@ -128,11 +128,11 @@ let testall () =
         | Compare_c.Correct -> 
             incr _good; 
             add_diagnose "CORRECT\n" 
-        | Compare_c.Incorrect s -> 
+        | Compare_c.Pb s -> 
             add_diagnose ("INCORRECT:" ^ s ^ "\n");
             add_diagnose "    diff (result(<) vs expected_result(>)) = \n";
             diffxs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
-        | Compare_c.IncorrectOnlyInNotParsedCorrectly -> 
+        | Compare_c.PbOnlyInNotParsedCorrectly -> 
             add_diagnose "seems incorrect, but only because of code that was not parsable";
         )
       )

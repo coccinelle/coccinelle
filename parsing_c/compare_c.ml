@@ -5,22 +5,25 @@ open Ast_c
 
 type compare_result = 
   | Correct 
-  | Incorrect of string
-  | IncorrectOnlyInNotParsedCorrectly
+  | Pb of string
+  | PbOnlyInNotParsedCorrectly
 
 
-(* from CVS manual, 'Keyword substitution' chapter. I do not put "Log"
- * because it is used only in comment, and not enough to substituate
- * until the end of the line. 
- *)
+(*****************************************************************************)
+(* Normalise before comparing *)
+(*****************************************************************************)
+
+(* List taken from CVS manual, 'Keyword substitution' chapter. Note
+ * that I do not put "Log" because it is used only in comment, and it
+ * is not enough to substituate until the end of the line. *)
 let cvs_keyword_list = [
   "Id";"Date"; "Revision"; (* the common one *)
   "Name";"Author";"CVSHeader";"Header";"Locker";"RCSfile";"Source";"State";
 ]
 
 (* Can also have just dollarIDdollar but it is only when you have not
- * yet committed the file. After the commit it would be a dollarIddollar:
- * If reput Id:, do not join the regexp, otherwise CVS will modify it :)
+ * yet committed the file. After the commit it would be a dollarIddollar:.
+ * If reput Id:, do not join the regexp!! otherwise CVS will modify it :)
  *)
 let cvs_keyword_regexp = Str.regexp 
   ("\\$\\([A-Za-z_]+\\):[^\\$]*\\$")
@@ -60,8 +63,11 @@ let normal_form_program xs =
   in
   xs +> List.map (fun p -> Visitor_c.vk_program_s  bigf p)
     
+(*****************************************************************************)
+(* Entry point *)
+(*****************************************************************************)
 
-(* Note that I use a kind of astdiff to know if there is a difference, but
+(* Note that I do a kind of astdiff to know if there is a difference, but
  * then I use diff to print the differences. So sometimes you have to dig
  * a little to find really where the real difference (one not involving 
  * just spacing difference) was.
@@ -72,6 +78,8 @@ let normal_form_program xs =
  *
  * todo?: do astdiff, tokendiff, linediff ? 
  * I have the info for tokendiff, because c1 and c2 are programElement2.
+ * (update: could also get them via visitor_c now).
+ * Maybe easier to print the relevant difference if do tokendiff.
  *)
 let compare (c1,filename1) (c2, filename2)  =
 
@@ -87,7 +95,7 @@ let compare (c1,filename1) (c2, filename2)  =
     
     let res = 
      if List.length c1' <> List.length c2' 
-     then Incorrect "not same number of entities (func, decl, ...)"
+     then Pb "not same number of entities (func, decl, ...)"
      else 
        begin
          zip c1' c2' +> List.iter (function
@@ -108,9 +116,8 @@ let compare (c1,filename1) (c2, filename2)  =
            | _, _ -> incr error
                         );
          (match () with
-         | _ when !pb_notparsed > 0 && !error = 0 -> 
-             IncorrectOnlyInNotParsedCorrectly
-         | _ when !error > 0 -> Incorrect ""
+         | _ when !pb_notparsed > 0 && !error = 0 -> PbOnlyInNotParsedCorrectly
+         | _ when !error > 0 -> Pb ""
          | _ -> Correct
          )
        end

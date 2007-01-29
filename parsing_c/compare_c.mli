@@ -2,8 +2,8 @@ open Common
 
 type compare_result = 
   | Correct 
-  | Incorrect of string
-  | IncorrectOnlyInNotParsedCorrectly
+  | Pb of string
+  | PbOnlyInNotParsedCorrectly
 
 
 val compare : 
