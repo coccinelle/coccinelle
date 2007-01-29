@@ -36,9 +36,9 @@ module Lib = Lib_parsing_c
 (* Helpers *)
 (*****************************************************************************)
  
-let file_strpos_of_node n = 
+let file_and_strpos_of_node n = 
   let xs = Lib.ii_of_node n in
-  let minii = Lib.min_ii_by_pos xs in
+  let (_,minii) = Lib.max_min_ii_by_pos xs in
   let (info,_) = minii in
   info.Common.file, (info.Common.str, info.Common.charpos)
 
@@ -128,6 +128,8 @@ type returnkind =
 
 (*****************************************************************************)
 (* Main entry point *)
+(*****************************************************************************)
+
 let (control_flow_to_ast: cflow -> definition) = fun g ->
   
   let nodes = g#nodes  in
@@ -688,7 +690,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
      | Exit | ErrorExit -> ()
      | SeqEnd _ -> () (* TODO ?*)
      | _ -> 
-         let (file, strpos) = file_strpos_of_node node  in
+         let (file, strpos) = file_and_strpos_of_node node  in
          let s = Common.error_message file strpos in
          pr2 "PB node not visited";          
          pr2 s;

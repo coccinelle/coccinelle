@@ -42,13 +42,21 @@ let ii_of_decl = extract_info_visitor Visitor_c.vk_decl
 let ii_of_node = extract_info_visitor Visitor_c.vk_node
 
 
-let min_ii_by_pos xs = 
-  xs +> Common.foldl1 (fun acc e -> 
-    if Ast_c.get_pos_of_info e <= Ast_c.get_pos_of_info acc
-      && not (Ast_c.is_al_info (fst e))
-    then e
-    else acc
-  )
+let max_min_ii_by_pos xs = 
+
+  match xs with
+  | [] -> failwith "empty list, max_min_ii_by_pos"
+  | x::xs -> 
+      xs +> List.fold_left (fun (maxii,minii) e -> 
+        let posf x = Ast_c.get_pos_of_info x in
+
+        if (Ast_c.is_al_info (fst e))
+        then (maxii, minii)
+        else 
+          let maxii' = if posf e >= posf maxii then e else maxii in
+          let minii' = if posf e <= posf minii then e else minii in
+          maxii', minii'
+      ) (x,x)
   
 
 

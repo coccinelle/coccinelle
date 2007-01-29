@@ -1,43 +1,48 @@
 open Ast_c
 
-(* The string is for debugging. Used by Ograph_extended.print_graph. 
- * The int list are Labels. Trick used for CTL engine. 
- *)
-type node = node1 * string 
- and node1 = node2 * int list
+type node = node1 * string (* For debugging. Used by print_graph *)
+ and node1 = node2 * int list (* Labels. Trick used for CTL engine *)
  and node2 =
-  | FunHeader of (string * functionType * storage) wrap
-  | Decl   of declaration
-  | SeqStart of statement * int * info
-  | SeqEnd   of int * info
+  | FunHeader     of (string * functionType * storage) wrap
+  | Decl          of declaration
+
+  | SeqStart      of statement * int * info
+  | SeqEnd        of int * info
+
   | ExprStatement of statement * (expression option) wrap
-  | IfHeader  of statement * expression wrap
-  | Else of info
-  | WhileHeader of statement * expression wrap
-  | DoHeader of statement * info
-  | DoWhileTail of expression wrap
-  | ForHeader of statement * 
+
+  | IfHeader      of statement * expression wrap
+  | Else          of info
+  | WhileHeader   of statement * expression wrap
+  | DoHeader      of statement * info
+  | DoWhileTail   of expression wrap
+  | ForHeader     of statement * 
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
-  | SwitchHeader of statement * expression wrap
-  | EndStatement of info option
-  | Return     of statement * unit wrap
-  | ReturnExpr of statement * expression wrap
+  | SwitchHeader  of statement * expression wrap
+
+  | EndStatement  of info option
+
+  | Return        of statement * unit wrap
+  | ReturnExpr    of statement * expression wrap
 
   (* ------------------------ *)
   (* no counter part in cocci *)
-  | Label of statement * string wrap
-  | Case  of statement * expression wrap
+  | Label     of statement * string wrap
+  | Case      of statement * expression wrap
   | CaseRange of statement * (expression * expression) wrap
-  | Default of statement * unit wrap
-  | Goto of statement * string wrap
-  | Continue of statement * unit wrap
-  | Break    of statement * unit wrap
+  | Default   of statement * unit wrap
+
+  | Goto      of statement * string wrap
+  | Continue  of statement * unit wrap
+  | Break     of statement * unit wrap
+
   | Asm
+
   | IfCpp of statement * unit wrap
 
   | CPPInclude of string wrap
-  | CPPDefine of (string * string) wrap
+  | CPPDefine  of (string * string) wrap
 
   (* ------------------------ *)
   (* some control nodes *)

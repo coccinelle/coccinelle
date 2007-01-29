@@ -97,16 +97,12 @@ type node = node1 * string
 
   | IfHeader  of statement * expression wrap
   | Else of info
-
   | WhileHeader of statement * expression wrap
-
   | DoHeader of statement * info
   | DoWhileTail of expression wrap
-
   | ForHeader of statement * 
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
-
   | SwitchHeader of statement * expression wrap
 
   (* Used to mark the end of if, while, dowhile, for, switch.

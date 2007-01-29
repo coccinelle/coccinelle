@@ -149,8 +149,8 @@ let process_sgrep s2 mck =
   | _ -> failwith "unexpected plus code"
 	
 (* todo: check not already tagged ? assert s1 = s2 ? no more cos now
-   * have some "fake" string, and also because now s1:'a, no more
-   * s1:string *)
+ * have some "fake" string, and also because now s1:'a, no more
+ * s1:string *)
 let tag_with_mck = fun mck ib  binding -> 
   let (s2, (oldmcode, oldenv)) = ib in
   
@@ -608,7 +608,25 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (lop,mop,rop,bop) -
 (* ------------------------------------------------------------------------- *)
 and (distribute_mck_decl: Ast_c.declaration distributer) = fun (lop,mop,rop,bop) ->
   fun decl ->
-    raise Todo
+    (* use different strategy, collect ii, sort, recollect and tag *)
+    let iidecl = Lib_parsing_c.ii_of_decl decl in
+    let (maxii, minii) = Lib_parsing_c.max_min_ii_by_pos iidecl in
+    let (maxpos, minpos) = 
+      Ast_c.get_pos_of_info maxii, Ast_c.get_pos_of_info minii
+    in
+    let bigf = { 
+      Visitor_c.default_visitor_c_s with
+        Visitor_c.kinfo_s = (fun (k,bigf) i -> 
+          let pos = Ast_c.get_pos_of_info i in
+          match () with
+          | _ when pos =|= maxpos && pos =|= minpos -> bop i
+          | _ when pos =|= maxpos -> rop i
+          | _ when pos =|= minpos -> lop i
+          | _ -> mop i
+        )
+    } in
+    Visitor_c.vk_decl_s bigf decl
+      
 
 
 (* ------------------------------------------------------------------------- *)
