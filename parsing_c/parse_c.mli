@@ -8,6 +8,7 @@ type parsing_stat = {
     mutable bad: int;
   } 
 
+(* the token list contain also the comment-tokens  *)
 type info_item = (string * Parser_c.token list)
 
 type program2 = programElement2 list

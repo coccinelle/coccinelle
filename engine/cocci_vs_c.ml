@@ -1028,6 +1028,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           >>= (fun paramsb' -> 
         (let stob' = stob in
         let (iistob') = iistob in
+         (* TODO manage storage *)
         return 
           (F.FunHeader 
               ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
