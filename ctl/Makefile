@@ -13,7 +13,7 @@ ADDONSPATH = -I ../commons
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc$(OPTBIN) -g $(ADDONSPATH)
+CAMLC =ocamlc$(OPTBIN) -dtypes -g $(ADDONSPATH)
 CAMLOPT=ocamlopt$(OPTBIN)  $(ADDONSPATH) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc

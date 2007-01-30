@@ -17,14 +17,16 @@ type ('value, 'pred) wrapped_binding =
   | PredVal of 'pred Ast_ctl.modif
 
 type ('pred,'state,'mvar,'value) labelfunc =
-    'pred -> ('state * ('mvar, 'value) Ast_ctl.generic_substitution) list
+    'pred -> 
+      ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution)) list
 
+(* pad: the 'wit will be the same than 'pred ? *)
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
-    ('pred * 'mvar Ast_ctl.modif) -> 
+  ('pred * 'mvar Ast_ctl.modif) -> 
       ('state * 
-       ('mvar, ('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
-       'wit)
-	list
+       ('mvar,('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
+       'wit
+      ) list
 
 
 
@@ -96,18 +98,24 @@ struct
 
   (* Wrap a label function *)
   let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 
-	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc)
-      = fun oldlabelfunc ->  fun (p, predvar) ->
-	let penv = 
+	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc) = 
+    fun oldlabelfunc ->
+      fun (p, predvar) ->
+
+	let penv p'  = 
 	  match predvar with
-	    | A.Modif(x)   -> [A.Subst(x,PredVal(A.Modif(p)))]
-	    | A.UnModif(x) -> [A.Subst(x,PredVal(A.UnModif(p)))]
-	    | A.Control    -> [] in
+	  | A.Modif(x)   -> [A.Subst(x,PredVal(A.Modif(p')))]
+	  | A.UnModif(x) -> [A.Subst(x,PredVal(A.UnModif(p')))]
+	  | A.Control    -> [] in
+
 	let conv_sub sub =
 	  match sub with
-	    | A.Subst(x,v)    -> A.Subst(x,ClassicVal(v))
-	    | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
-	let conv_trip (s,env) = (s,penv @ (List.map conv_sub env),[]) in
+	  | A.Subst(x,v)    -> A.Subst(x,ClassicVal(v))
+	  | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
+
+	let conv_trip (s,(p',env)) = 
+          (s,penv p' @ (List.map conv_sub env),[]) 
+        in
         List.map conv_trip (oldlabelfunc p)
 
   (* ---------------------------------------------------------------- *)
