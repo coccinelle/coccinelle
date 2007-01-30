@@ -35,6 +35,48 @@ let show_or_not_nodes nodes =
     )
   end
 
+
+(*****************************************************************************)
+(* tag just for test, to delete when will tag correctly the SP *)
+(*****************************************************************************)
+
+
+let _counter = ref 0 
+let tag_mck_rule_elem re = 
+  
+  let donothing r k e = k e in
+  let mcode (x,info,mck) = 
+    begin 
+      incr _counter;
+      let _cnt = !_counter in
+      let _pos' = Some (_cnt, _cnt) in 
+
+      let mck' = 
+        match mck with 
+        | Ast_cocci.PLUS -> Ast_cocci.PLUS
+            (* use pos' instead of pos and see how the rule_elem 
+             * returned in the transformation_info in cocci.ml change 
+             *)
+        | Ast_cocci.MINUS (pos, xs) ->   Ast_cocci.MINUS   (pos, xs)
+        | Ast_cocci.CONTEXT (pos, xs) -> Ast_cocci.CONTEXT (pos, xs)
+      in
+      (x, info, mck')
+       
+    end
+  in
+  let fn = Visitor_ast.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing in
+  fn.Visitor_ast.rebuilder_rule_elem re
+    
+
+let tag_just_for_test pred = 
+  match pred with
+  | Lib_engine.Match re -> Lib_engine.Match (tag_mck_rule_elem re)
+  | x -> x
+
 (*****************************************************************************)
 (* Labeling function *)
 (*****************************************************************************)
@@ -115,7 +157,9 @@ let (labels_for_ctl:
      in
 
      show_or_not_nodes nodes';
-     nodes'
+     nodes' +> List.map (fun (nodei, binding) -> 
+       (nodei, (tag_just_for_test pred, binding))
+     )
    ) 
 
 

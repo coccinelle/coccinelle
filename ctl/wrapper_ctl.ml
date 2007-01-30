@@ -20,7 +20,7 @@ type ('pred,'state,'mvar,'value) labelfunc =
     'pred -> 
       ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution)) list
 
-(* pad: the 'wit will be the same than 'pred ? *)
+(* pad: what is 'wit ? *)
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
   ('pred * 'mvar Ast_ctl.modif) -> 
       ('state * 
@@ -114,7 +114,7 @@ struct
 	  | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
 
 	let conv_trip (s,(p',env)) = 
-          (s,penv p' @ (List.map conv_sub env),[]) 
+          (s,penv p' @ (List.map conv_sub env),[](*pad: ?*)) 
         in
         List.map conv_trip (oldlabelfunc p)
 

@@ -8,7 +8,8 @@ type ('a, 'b) wrapped_binding =
   | PredVal of 'b Ast_ctl.modif
 
 type ('pred,'state,'mvar,'value) labelfunc =
-    'pred -> ('state * ('mvar, 'value) Ast_ctl.generic_substitution) list
+    'pred -> 
+      ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution))  list
 
 module CTL_ENGINE_BIS :
   functor (SUB : Ctl_engine.SUBST) ->

@@ -40,7 +40,10 @@ and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 (*****************************************************************************)
 type label_ctlcocci = 
  predicate -> 
- (nodei * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution) list
+ (nodei * 
+ (predicate * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution)) 
+ list
+ 
 
 type model = Control_flow_c.cflow * label_ctlcocci * nodei list
 
