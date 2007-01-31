@@ -1155,11 +1155,13 @@ let rec satloop unchecked required required_states
 	(match loop unchecked required required_states phi1 with
 	  [] -> []
 	| [(state,_,_)] as phi1res ->
+	    print_state "phi1res" phi1res;
 	    let new_required = extend_required phi1res required in
 	    let new_required_states = get_required_states phi1res in
 	    (match loop unchecked new_required new_required_states phi2 with
 	      [] -> []
 	    | phi2res ->
+		print_state "phi2res" phi2res;
 		let phi2res =
 		  List.map (function (s,e,w) -> (state,e,w)) phi2res in
 		let res = triples_conj phi1res phi2res in

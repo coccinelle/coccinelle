@@ -1148,7 +1148,7 @@ and statement stmt after quantified label guard =
 	match (Ast.undots decls,Ast.undots body) with
 	  ([],[body]) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,Ast.NoWhen,[]) -> Some stmt_dots
+	      Ast.Nest(stmt_dots,Ast.NoWhen,_) -> Some stmt_dots
 	    |  _ -> None)
 	| _ -> None in
       let body_code =
