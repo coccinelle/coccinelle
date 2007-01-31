@@ -1,4 +1,7 @@
 void info_func(int i) {
-  1+hostno;
-  2+hostno;
+  foo();
+  while (x) {
+    1+hostno+xxx;
+    2+hostno+xxx;
+  }
 }

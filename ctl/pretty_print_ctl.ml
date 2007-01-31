@@ -47,7 +47,8 @@ let rec (pp_ctl:
 	 Common.pp_do_in_box (fun () -> pp_aux env phi); 
 	 pp ")"
      | And(phi1,phi2)     -> pp_2args env char_and phi1 phi2; 
-     | AndAny(phi1,phi2)     -> pp_2args env char_and_any phi1 phi2; 
+     | AndAny(dir,phi1,phi2) ->
+	 pp_2args env (char_and_any^(pp_dirc dir)) phi1 phi2; 
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
      | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;
@@ -108,6 +109,10 @@ let rec (pp_ctl:
    and pp_dir = function
        FORWARD -> ()
      | BACKWARD -> pp char_back
+	     
+   and pp_dirc = function
+       FORWARD -> ""
+     | BACKWARD -> char_back
 	     
    and pp_2args env sym phi1 phi2 = 
      begin

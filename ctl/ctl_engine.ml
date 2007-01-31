@@ -1151,17 +1151,17 @@ let rec satloop unchecked required required_states
 		let res = triples_conj phi1res phi2res in
 		check_conj phi phi1res phi2res res;
 		res))
-    | A.AndAny(phi1,phi2)     ->
+    | A.AndAny(dir,phi1,phi2)     ->
 	(match loop unchecked required required_states phi1 with
 	  [] -> []
 	| [(state,_,_)] as phi1res ->
-	    print_state "phi1res" phi1res;
 	    let new_required = extend_required phi1res required in
 	    let new_required_states = get_required_states phi1res in
+	    let new_required_states =
+	      get_reachable dir m new_required_states in
 	    (match loop unchecked new_required new_required_states phi2 with
 	      [] -> []
 	    | phi2res ->
-		print_state "phi2res" phi2res;
 		let phi2res =
 		  List.map (function (s,e,w) -> (state,e,w)) phi2res in
 		let res = triples_conj phi1res phi2res in
@@ -1348,12 +1348,14 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
 		anno (triples_conj res1 res2) [child1; child2]))
-    | A.AndAny(phi1,phi2)     -> 
+    | A.AndAny(dir,phi1,phi2)     -> 
 	(match satv unchecked required required_states phi1 env with
 	  (child1,[]) -> Printf.printf "and\n"; flush stdout; anno [] [child1]
 	| (child1,([(state,_,_)] as res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
+	    let new_required_states =
+	      get_reachable dir m new_required_states in
 	    (match satv unchecked new_required new_required_states phi2
 		env with
 	      (child2,[]) ->
@@ -1542,7 +1544,7 @@ let simpleanno l phi res =
     | A.Not(phi)           -> pp "Not"
     | A.Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
     | A.And(phi1,phi2)     -> pp "And"
-    | A.AndAny(phi1,phi2)  -> pp "AndAny"
+    | A.AndAny(dir,phi1,phi2) -> pp "AndAny"
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.SeqOr(phi1,phi2)   -> pp "SeqOr"
     | A.Implies(phi1,phi2) -> pp "Implies"
