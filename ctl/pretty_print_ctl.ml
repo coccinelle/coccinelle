@@ -8,6 +8,7 @@ open Ast_ctl
  *)
 
 let char_and  = "&"
+let char_and_any  = "&+"
 let char_or   = "v"
 let char_seqor   = "|"
 let char_not  = "!"
@@ -46,6 +47,7 @@ let rec (pp_ctl:
 	 Common.pp_do_in_box (fun () -> pp_aux env phi); 
 	 pp ")"
      | And(phi1,phi2)     -> pp_2args env char_and phi1 phi2; 
+     | AndAny(phi1,phi2)     -> pp_2args env char_and_any phi1 phi2; 
      | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
      | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;

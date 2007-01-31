@@ -14,6 +14,8 @@ type ('pred,'mvar,'anno) generic_ctl =
   | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl)
   | And of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
+  | AndAny of (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Or  of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 

@@ -1144,21 +1144,38 @@ and statement stmt after quantified label guard =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
       let new_quantified4 = Common.union_set b4fvs new_quantified3 in
-      quantify b1fvs
-	(make_seq
-	   [function_header;
-	     (quantify b2fvs
-		(make_seq
-		   [start_brace;
-		     quantify b3fvs
-		       (statement_list decls
-			  (After
-			     (decl_to_not_decl n dots stmt make_match
-				(quantify b4fvs
-				   (statement_list body
-				      (After (make_seq_after end_brace after))
-				      new_quantified4 None true guard))))
-			  new_quantified3 None false guard)]))])
+      let fn_nest =
+	match (Ast.undots decls,Ast.undots body) with
+	  ([],[body]) ->
+	    (match Ast.unwrap body with
+	      Ast.Nest(stmt_dots,Ast.NoWhen,[]) -> Some stmt_dots
+	    |  _ -> None)
+	| _ -> None in
+      let body_code =
+	match fn_nest with
+	  Some stmt_dots ->
+	    (* special case for function header + body - header is unambiguous
+	       and unique, so we can just look for the nested body anywhere
+	       else in the CFG *)
+	    wrap n
+	      (CTL.AndAny
+		 (start_brace,
+		  statement_list body 
+		    (After (make_seq_after end_brace after))
+		    new_quantified4 None true guard))
+	| None ->
+	    make_seq
+	      [start_brace;
+		quantify b3fvs
+		  (statement_list decls
+		     (After
+			(decl_to_not_decl n dots stmt make_match
+			   (quantify b4fvs
+			      (statement_list body
+				 (After (make_seq_after end_brace after))
+				 new_quantified4 None true guard))))
+		     new_quantified3 None false guard)] in
+      quantify b1fvs (make_seq [function_header; quantify b2fvs body_code])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->
