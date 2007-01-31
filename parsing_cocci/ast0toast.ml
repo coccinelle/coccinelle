@@ -53,11 +53,9 @@ let inline_mcodes =
 	    if not(ender = []) &&
 	      startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
 	    then
-	      (Printf.printf "start's end %d, end's start %d\n"
-		 startinfo.Ast0.tline_end endinfo.Ast0.tline_start;
 	      let last = List.hd (List.rev starter) in
 	      let butlast = List.rev(List.tl(List.rev starter)) in
-	      butlast @ (last@(List.hd ender)) :: (List.tl ender))
+	      butlast @ (last@(List.hd ender)) :: (List.tl ender)
 	    else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in

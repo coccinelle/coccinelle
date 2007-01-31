@@ -1242,6 +1242,7 @@ let rec letify x =
 		|	_ -> failwith "duplicated befores?")
 	    | _ -> fail())
 	| _ -> fail())
+    | CTL.AndAny(phi1,phi2)  -> CTL.AndAny(letify phi1,letify phi2)
     | CTL.Or(phi1,phi2)      -> CTL.Or(letify phi1,letify phi2)
     | CTL.SeqOr(phi1,phi2)   -> CTL.SeqOr(letify phi1,letify phi2)
     | CTL.Implies(phi1,phi2) -> CTL.Implies(letify phi1,letify phi2)
