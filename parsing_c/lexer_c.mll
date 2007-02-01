@@ -34,7 +34,7 @@ let tokinfo lexbuf  = {
   Common.charpos = Lexing.lexeme_start lexbuf; 
   Common.str     = Lexing.lexeme lexbuf;
   line = -1; column = -1; file = "";
-}, (*ref*) Ast_c.emptyAnnot (* must generate a new ref each time, otherwise share*)
+}, ref Ast_c.emptyAnnot (* must generate a new ref each time, otherwise share*)
 
 let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
 let tok_set s pos (info, annot) =  { info with 

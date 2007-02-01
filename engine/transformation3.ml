@@ -52,7 +52,7 @@ module XTRANS = struct
     let pos = Ast_c.get_pos_of_info ib in
 
     let (s2, cocciinforef) = ib in
-    let (oldmcode, _oldenv) = (*!*)cocciinforef in
+    let (oldmcode, _oldenv) = !cocciinforef in
 
     (match mck with
     | Ast_cocci.PLUS -> raise Impossible
@@ -64,10 +64,15 @@ module XTRANS = struct
           | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING), _)
           | (_, Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 
-              let cocciinforef = (mck, binding) in
-              (* cocciinforef := (mck, binding); *)
-              Some (ia, (s2, cocciinforef)) (* useless now *)
-                
+              if !Flag_engine.use_ref 
+              then begin
+                cocciinforef := (mck, binding);
+                Some (ia, (s2, cocciinforef) )
+              end
+              else 
+                let newcocciinfo = ref (mck, binding) in
+                Some (ia, (s2, newcocciinfo))
+
 
           | _ -> failwith "already tagged"
           )

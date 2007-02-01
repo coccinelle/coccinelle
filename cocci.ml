@@ -468,13 +468,14 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
                   match () with 
                     | _ when !Flag_engine.use_cocci_vs_c_3 -> 
                         Transformation3.transform trans_info info.flow
-                    | _ when !Flag_engine.use_cocci_vs_c -> 
-                        Transformation2.transform trans_info info.flow 
                     | _ -> 
                         Transformation.transform trans_info info.flow 
                 in
-                let celem' = flow_to_ast flow' in
-                (* let celem' = celem in*) (* done via side effect *)
+                let celem' = 
+                  if !Flag_engine.use_ref
+                  then celem (* done via side effect *)
+                  else flow_to_ast flow' 
+                in
                 (celem', true), Some newbinding, hack_funheaders
               else 
                 (celem, false), Some newbinding, hack_funheaders

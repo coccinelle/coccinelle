@@ -153,7 +153,7 @@ let process_sgrep s2 mck =
  * s1:string *)
 let tag_with_mck = fun mck ib  binding -> 
   let (s2, cocciinforef) = ib in
-  let (oldmcode, _oldenv) = (*!*)cocciinforef in
+  let (oldmcode, _oldenv) = !cocciinforef in
   
   let mck =
     if !Flag_parsing_cocci.sgrep_mode
@@ -162,9 +162,14 @@ let tag_with_mck = fun mck ib  binding ->
   match (oldmcode,mck) with
     (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_)
   | (_,Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
-      let cocciinforef = (mck, binding) in
-      (*cocciinforef := (mck, binding); *)
-      (s2, cocciinforef) (* not useful anymore *)
+      if !Flag_engine.use_ref 
+      then begin
+        cocciinforef := (mck, binding);
+        (s2, cocciinforef) 
+      end
+      else 
+        let newcocciinfo = ref (mck, binding) in
+        (s2, newcocciinfo)
   | _ ->
       Printf.printf "SP mcode "; flush stdout;
       Pretty_print_cocci.print_mcodekind oldmcode;

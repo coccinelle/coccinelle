@@ -46,7 +46,7 @@ open Common open Commonop
  *)
 
 (* forunparser: *)
-type info = Common.parse_info * (Ast_cocci.mcodekind * metavars_binding)(*ref*)
+type info = Common.parse_info * (Ast_cocci.mcodekind * metavars_binding) ref
 and il = info list
 
 and 'a wrap  = 'a * il   
@@ -411,14 +411,14 @@ let al_info x =
     str = (fst x).str;
     line = -1; column = -1; file = "";
   }, 
-  (*ref*) emptyAnnot
+  ref emptyAnnot
 let is_al_info x = x.charpos = _Magic_info_number
 
 (* When want add some info in ast that does not correspond to 
  * an existing C element or when don't want 'synchronize' on it 
  * in unparse_c.ml
  *)
-let fakeInfo ()  = al_info (Common.fake_parse_info, (*ref*) emptyAnnot)
+let fakeInfo ()  = al_info (Common.fake_parse_info, ref emptyAnnot)
 
 (*****************************************************************************)
 (* Views *)

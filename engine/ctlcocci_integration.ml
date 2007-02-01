@@ -82,10 +82,6 @@ let (labels_for_ctl:
                   +> List.map (fun (re', subst) -> 
                     Lib_engine.Match (re'), subst
                   )
-
-            | _ when !Flag_engine.use_cocci_vs_c -> 
-                Pattern2.match_re_node re node binding 
-                  +> List.map (fun subst -> (p, subst))
             | _ -> 
                 Pattern.match_re_node re node binding 
                   +> List.map (fun subst -> (p, subst))
