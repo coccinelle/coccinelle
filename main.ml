@@ -290,7 +290,8 @@ let _ =
       Common.finalize
         (fun()-> 
           main ();
-          Ctlcocci_integration.print_bench())
+          Ctlcocci_integration.print_bench()
+        )
         (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
   
