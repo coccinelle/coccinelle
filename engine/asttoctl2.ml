@@ -935,6 +935,18 @@ and statement stmt after quantified label guard =
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
 		    Some (Ast.CONTEXT(None,Ast.BEFORE(l)))
 		| _ -> None in
+	      let ret = ("return",{Ast.line = (-1);Ast.column = (-1)},
+			 Ast.CONTEXT(None,Ast.NOTHING)) in
+	      let edots =
+		Ast.rewrap ast
+		  (Ast.Edots(("...",{Ast.line = (-1);Ast.column = (-1)},
+			     Ast.CONTEXT(None,Ast.NOTHING)),None)) in
+	      let semi = (";",{Ast.line = (-1);Ast.column = (-1)},
+			 Ast.CONTEXT(None,Ast.NOTHING)) in
+	      let simple_return =
+		make_match(Ast.rewrap ast (Ast.Return(ret,semi))) in
+	      let return_expr =
+		make_match(Ast.rewrap ast (Ast.ReturnExpr(ret,edots,semi))) in
 	      (match new_mc with
 		Some new_mc ->
 		  let exit = endpred n None in
@@ -950,7 +962,11 @@ and statement stmt after quantified label guard =
 			   (make_match mod_rbrace,
 			    wrapAnd
 			      (wrapBackAX
-				 (wrapNot(wrap n (CTL.Uncheck(normal_res)))),
+				 (wrapNot
+				    (wrap n
+				       (CTL.Uncheck
+					  (wrapOr
+					     (simple_return,return_expr))))),
 			       wrapAU(make_match stripped_rbrace,
 				      wrapOr(exit,errorexit)))))
 	      |	_ ->
