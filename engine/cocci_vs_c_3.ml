@@ -64,24 +64,23 @@ module type PARAM =
     val tokenf : 
       'a A.mcode -> Ast_c.info -> tin -> ('a A.mcode * Ast_c.info) tout
 
-    val cocciexp : 
+    val distrf_e : 
+     'a A.mcode -> Ast_c.expression -> tin -> 
+      ('a A.mcode * Ast_c.expression) tout
+
+    val cocciExp : 
       (A.expression->B.expression -> tin -> (A.expression*B.expression)tout) ->
       A.expression -> F.node -> (tin -> (A.expression * F.node) tout)
 
+    (* val cocciTy *)
     val envf : 
-      A.inherited -> 
+      bool (*keep*) -> A.inherited -> 
       string * Ast_c.metavar_binding_kind ->
       tin -> 
       (string * Ast_c.metavar_binding_kind) tout
 
 
-(*
 
-    type 'b tdistr
-    val distrf : 
-      'b tdistr ->  A.mcodekind -> 'b -> tin -> (A.mcodekind * 'b) tout
-    val distrf_e : Ast_c.expression tdistr
-*)
   end
 
 
@@ -99,11 +98,6 @@ let (>||>) = X.(>||>)
 
 let tokenf = X.tokenf
 
-(*
-let distrf = X.distrf
-let distrf_e = X.distrf_e
-*)
-
 (* should be raise Impossible when called from transformation.ml *)
 let fail2 = fail
 
@@ -117,18 +111,21 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
   
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,true,opttypa,inherited), (((expr, opttypb), ii) as _expb) ->
-      (*
-      envf inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun v -> 
+  | A.MetaExpr (ida,keep,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
+      X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun _s v ->
         match v with
         | Ast_c.MetaExprVal expa -> 
             if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
-            then distrf distrf_e (mcodekind ida) expb
+            then 
+              X.distrf_e ida expb >>= (fun ida expb -> 
+                return (
+                  A.MetaExpr (ida,keep,opttypa,inherited)+> A.rewrap ea,
+                  expb
+                )
+              )
             else fail
         | _ -> raise Impossible
       )
-      *)
-      raise Todo
 
   | A.Ident ida,   ((B.Ident idb, typ),ii) ->
       let ib1 = tuple_of_list1 ii in
@@ -194,8 +191,8 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
         ))
 
 
-  | A.MetaId(mida,true,inherited) -> 
-      X.envf inherited (term mida, Ast_c.MetaIdVal (idb)) >>= (fun _s v -> 
+  | A.MetaId(mida,keep,inherited) -> 
+      X.envf keep inherited (term mida, Ast_c.MetaIdVal (idb)) >>= (fun _s v ->
         match v with
         | Ast_c.MetaIdVal sa -> 
             if (sa =$= idb) 
@@ -282,7 +279,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.Exp exp, nodeb -> 
-      X.cocciexp expression exp node >>= (fun exp node -> 
+      X.cocciExp expression exp node >>= (fun exp node -> 
         return (
           A.Exp exp,
           F.unwrap node

@@ -348,7 +348,7 @@ let build_maybe_info e cfile =
 
 
 
-
+let fakeEnv = (TAC.initial_env, TAC.initial_env)
 
 let (build_info_program: 
  filename -> bool -> TAC.environment -> celem_with_info list) = 
@@ -363,9 +363,7 @@ let (build_info_program:
         TAC.annotate_program env program, infos)
       +> Common.uncurry Common.zip
     else 
-      cprogram +> List.map (fun (e, info_item) -> 
-        ((e, (TAC.initial_env, TAC.initial_env)),  info_item)
-      )
+      cprogram +> List.map (fun (e, info_item) -> ((e,fakeEnv),  info_item))
   in
   cprogram' +> List.map (fun ((e, beforeafterenv), info_item) -> 
     (e, info_item), build_maybe_info e cfile, beforeafterenv
@@ -464,7 +462,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
               then 
                 (* I do the transformation on flow, not fixed_flow, 
                    because the flow_to_ast need my extra information. *)
-                let (*_flow'*) flow' = (* do via side effect now *)
+                let flow' = (* can do via side effect now *)
                   match () with 
                     | _ when !Flag_engine.use_cocci_vs_c_3 -> 
                         Transformation3.transform trans_info info.flow

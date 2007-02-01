@@ -40,6 +40,7 @@ let extract_info_visitor recursor x =
 
 let ii_of_decl = extract_info_visitor Visitor_c.vk_decl
 let ii_of_node = extract_info_visitor Visitor_c.vk_node
+let ii_of_expr = extract_info_visitor Visitor_c.vk_expr
 
 
 let max_min_ii_by_pos xs = 
@@ -60,6 +61,9 @@ let max_min_ii_by_pos xs =
           maxii', minii'
       ) (x,x)
   
+let max_min_by_pos xs = 
+  let (i1, i2) = max_min_ii_by_pos xs in
+  (Ast_c.get_pos_of_info i1, Ast_c.get_pos_of_info i2)
 
 
 

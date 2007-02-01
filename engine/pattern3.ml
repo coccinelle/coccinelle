@@ -9,7 +9,7 @@ module XMATCH = struct
     let xs = m1 binding in
     let xxs = xs +> List.map (fun ((a,b), binding) -> m2 a b binding) in
     List.flatten xxs
-
+      
   let (>||>) m1 m2 = fun binding ->
     if false then 
       m1 binding ++ m2 binding 
@@ -19,13 +19,13 @@ module XMATCH = struct
       then m2 binding
       else xs
 
-
   let return res = fun binding -> 
     [res, binding]
+
   let fail = fun binding -> 
     []
 
-  let (cocciexp : 
+  let (cocciExp : 
       (Ast_cocci.expression->Ast_c.expression -> tin -> (Ast_cocci.expression*Ast_c.expression)tout) ->
       Ast_cocci.expression -> Control_flow_c.node -> (tin -> (Ast_cocci.expression * Control_flow_c.node) tout))
    = fun expf expa node -> fun binding -> 
@@ -40,7 +40,7 @@ module XMATCH = struct
     }
     in
     Visitor_c.vk_node bigf node;
-    !globals +> List.map (fun ((a, exp), binding) -> 
+    !globals +> List.map (fun ((a, _exp), binding) -> 
       (a, node), binding
     )
 
@@ -48,9 +48,7 @@ module XMATCH = struct
   (***************************************************************************)
   (* Tokens *) 
   (***************************************************************************)
-  let tokenf (x,info,mck) ib = fun binding -> 
-    let pos = Ast_c.get_pos_of_info ib in
-    let posmck = Some (pos, pos) in
+  let tag_mck_pos (x,info,mck) posmck stuff = fun binding -> 
 
     let mck = 
       match mck with 
@@ -62,8 +60,24 @@ module XMATCH = struct
           assert (pos = None);
           Ast_cocci.MINUS (posmck, xs)
     in
+    [((x, info, mck),stuff), binding]
 
-    [((x, info, mck),ib), binding]
+
+  let tokenf mcode ib = fun binding -> 
+    let pos = Ast_c.get_pos_of_info ib in
+    let posmck = Some (pos, pos) in
+    tag_mck_pos mcode posmck ib binding
+    
+
+  (***************************************************************************)
+  (* Misc *) 
+  (***************************************************************************)
+  let distrf_e mcode x = fun binding -> 
+    let (max, min) = Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr x)
+    in
+    let posmck = Some (min, max) (* subtil: and not max, min !!*) in
+    tag_mck_pos mcode posmck x binding
+
 
   (***************************************************************************)
   (* Environment *) 
@@ -71,7 +85,7 @@ module XMATCH = struct
 
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar *)
-  let check_add_metavars_binding inherited = fun (k, valu) binding -> 
+  let check_add_metavars_binding keepTODO inherited = fun (k, valu) binding ->
     (match Common.optionise (fun () -> binding +> List.assoc k) with
     | Some (valu') ->
         if
@@ -128,20 +142,10 @@ module XMATCH = struct
     )
 
 
-  let envf inherited = fun (k, valu) binding -> 
-    check_add_metavars_binding inherited (k, valu) binding
+  let envf keep inherited = fun (k, valu) binding -> 
+    check_add_metavars_binding keep inherited (k, valu) binding
       +> List.map (fun binding -> (k,valu), binding)
 
-
-  (***************************************************************************)
-  (* Misc *) 
-  (***************************************************************************)
-(*
-  type 'b tdistr = 'b -> 'b
-  let distrf distrop mck x = fun binding -> 
-    [x, binding]
-  let distrf_e x = x
-*)
 
 end
 
@@ -151,7 +155,7 @@ module MATCH  = Cocci_vs_c_3.COCCI_VS_C (XMATCH)
 let match_re_node2 a b binding = 
   MATCH.rule_elem_node a b binding 
   (* take only the tagged-SP, the 'a' *)
-  +> List.map (fun ((a,b), binding) -> a, binding)
+  +> List.map (fun ((a,_b), binding) -> a, binding)
     
 
 (* subtil: 3 args, otherwise profile nothing *)

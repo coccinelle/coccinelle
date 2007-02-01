@@ -108,7 +108,9 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
               else raise NoMatch
           | _ -> raise Impossible
           )
-
+      (* BUG ? because if have not tagged SP, then transform without doing
+       * any checks ! 
+       *)
       | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
           D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
 

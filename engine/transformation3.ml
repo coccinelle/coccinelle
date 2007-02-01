@@ -2,11 +2,18 @@ open Common open Commonop
 
 module F = Control_flow_c
 
+(*****************************************************************************)
+(* The functor argument  *) 
+(*****************************************************************************)
+
 module XTRANS = struct
+
+  (***************************************************************************)
+  (* Standard type and operators  *) 
+  (***************************************************************************)
 
   type tin = Lib_engine.metavars_binding
   type 'x tout = 'x option
-
 
   let (>>=) m f = fun tin -> 
      match m tin with
@@ -25,7 +32,11 @@ module XTRANS = struct
     | None -> m2 tin
     | Some x -> Some x (* stop as soon as have found something *)
 
-  let (cocciexp : 
+
+  (***************************************************************************)
+  (* Exp  *) 
+  (***************************************************************************)
+  let (cocciExp : 
       (Ast_cocci.expression->Ast_c.expression -> tin -> (Ast_cocci.expression*Ast_c.expression)tout) ->
       Ast_cocci.expression -> Control_flow_c.node -> (tin -> (Ast_cocci.expression * Control_flow_c.node) tout))
    = fun expf expa node -> fun binding -> 
@@ -45,73 +56,158 @@ module XTRANS = struct
   (***************************************************************************)
   (* Tokens *) 
   (***************************************************************************)
-  (* todo: check not already tagged ? *)
-  let tokenf ia ib = fun binding -> 
-    let (_s1,_i,mck) = ia in
+   let check_pos mck pos = 
+     match mck with
+     | Ast_cocci.PLUS -> raise Impossible
+     | Ast_cocci.CONTEXT (Some (i1,i2),_) 
+     | Ast_cocci.MINUS   (Some (i1,i2),_) -> 
+         pos <= i2 && pos >= i1
+     | _ -> failwith "wierd: dont have position info for the mcodekind"      
 
-    let pos = Ast_c.get_pos_of_info ib in
+
+  (* todo: check not already tagged ? *)
+  let tag_with_mck mck ib = fun binding -> 
 
     let (s2, cocciinforef) = ib in
     let (oldmcode, _oldenv) = !cocciinforef in
 
-    (match mck with
-    | Ast_cocci.PLUS -> raise Impossible
-    | Ast_cocci.CONTEXT (Some (i1,i2),_) 
-    | Ast_cocci.MINUS   (Some (i1,i2),_) -> 
-        if pos <= i2 && pos >= i1
-        then
-          (match (oldmcode,mck) with
-          | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING), _)
-          | (_, Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
-
-              if !Flag_engine.use_ref 
-              then begin
-                cocciinforef := (mck, binding);
-                Some (ia, (s2, cocciinforef) )
-              end
-              else 
-                let newcocciinfo = ref (mck, binding) in
-                Some (ia, (s2, newcocciinfo))
-
-
-          | _ -> failwith "already tagged"
-          )
+    match (oldmcode,mck) with
+    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING), _)
+    | (_, Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
+        
+        if !Flag_engine.use_ref 
+        then begin
+          cocciinforef := (mck, binding);
+          ((s2, cocciinforef) )
+        end
         else 
-          fail binding
-    | _ -> failwith "wierd: dont have position info for the mcodekind"      
-    )
+          let newcocciinfo = ref (mck, binding) in
+          ((s2, newcocciinfo))
 
-  (***************************************************************************)
-  (* Environment *) 
-  (***************************************************************************)
+    | _ -> failwith "already tagged"
 
-  let envf _inherited (s, value) = fun env -> 
-    try Some (s, List.assoc s env)
-    with Not_found -> 
-      pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
-      None
+
+
+  let tokenf ia ib = fun binding -> 
+    let (s1, i, mck) = ia in
+    let pos = Ast_c.get_pos_of_info ib in
+    if check_pos mck pos 
+    then return (ia, tag_with_mck mck ib binding) binding
+    else fail binding
 
 
   (***************************************************************************)
   (* Misc *) 
   (***************************************************************************)
+  let distribute_mck mcodekind distributef expr binding =
+    match mcodekind with
+    | Ast_cocci.MINUS (pos,any_xxs) -> 
+        (* could also instead add on right, it doesn't matter *)
+        distributef (
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding)
+        ) expr
+    | Ast_cocci.CONTEXT (pos,any_befaft) -> 
+        (match any_befaft with
+        | Ast_cocci.NOTHING -> expr
+            
+        | Ast_cocci.BEFORE xxs -> 
+            distributef (
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
+              (fun x -> x), 
+              (fun x -> x), 
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding)
+            ) expr
+        | Ast_cocci.AFTER xxs ->  
+            distributef (
+              (fun x -> x), 
+              (fun x -> x), 
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding),
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding)
+            ) expr
 
-(*
-  module D = Distribute_mcodekind
+        | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
+            distributef (
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
+              (fun x -> x), 
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER yys)) ib binding),
+              (fun ib -> tag_with_mck 
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFOREAFTER (xxs,yys)))
+                ib binding)
+            ) expr
 
-  type 'a tdistr = 'a D.distributer
+        )
+    | Ast_cocci.PLUS -> raise Impossible
 
-  let distrf distrop mck x   = fun binding -> 
-    Some (D.distribute_mck mck distrop x binding)
+
+  let mk_bigf (maxpos, minpos) (lop,mop,rop,bop) = 
+    let bigf = { 
+      Visitor_c.default_visitor_c_s with
+        Visitor_c.kinfo_s = (fun (k,bigf) i -> 
+          let pos = Ast_c.get_pos_of_info i in
+          match () with
+          | _ when pos =|= maxpos && pos =|= minpos -> bop i
+          | _ when pos =|= maxpos -> rop i
+          | _ when pos =|= minpos -> lop i
+          | _ -> mop i
+        )
+    } in
+    bigf
+
+  let distribute_mck_expr (maxpos, minpos) = fun (lop,mop,rop,bop) ->
+  fun x ->
+    Visitor_c.vk_expr_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+
+  let distrf_e ia x   = fun binding -> 
+    let (s1, i, mck) = ia in
+    let (max, min) = Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr x)
+    in
+    
+    if check_pos mck max && check_pos mck min 
+    then 
+      return (
+        ia, 
+        distribute_mck mck (distribute_mck_expr (max,min))  x binding
+      ) binding
+    else fail binding
+
+
+  (***************************************************************************)
+  (* Environment *) 
+  (***************************************************************************)
+
+  let envf keep _inherited (s, value) = fun env -> 
+    if keep 
+    then (
+      try Some (s, List.assoc s env)
+      with Not_found -> 
+        pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
+        None
+    )
+    else 
+      Some (s, value)
+
+
+    
       
-  let distrf_e = D.distribute_mck_e
-*)
    
 end
 
 
-module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
 
+(*****************************************************************************)
+(* Entry point  *) 
+(*****************************************************************************)
+module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
 
 let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
  fun xs cflow -> 
