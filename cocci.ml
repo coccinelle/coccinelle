@@ -465,9 +465,13 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
                 (* I do the transformation on flow, not fixed_flow, 
                    because the flow_to_ast need my extra information. *)
                 let (*_flow'*) flow' = (* do via side effect now *)
-                  if !Flag_engine.use_cocci_vs_c
-                  then Transformation2.transform trans_info info.flow 
-                  else Transformation.transform trans_info info.flow 
+                  match () with 
+                    | _ when !Flag_engine.use_cocci_vs_c_3 -> 
+                        Transformation3.transform trans_info info.flow
+                    | _ when !Flag_engine.use_cocci_vs_c -> 
+                        Transformation2.transform trans_info info.flow 
+                    | _ -> 
+                        Transformation.transform trans_info info.flow 
                 in
                 let celem' = flow_to_ast flow' in
                 (* let celem' = celem in*) (* done via side effect *)

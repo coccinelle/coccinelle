@@ -24,7 +24,7 @@ let show_or_not_nodes nodes =
         pp "{";
         Common.print_between 
           (fun () -> pp ";"; Format.print_cut())
-          (fun (nodei, subst) -> 
+          (fun (nodei, (_predTODO, subst)) -> 
             Format.print_int nodei;
             Common.pp_do_in_box (fun () -> 
               Pretty_print_engine.pp_binding2_ctlsubst subst
@@ -35,47 +35,6 @@ let show_or_not_nodes nodes =
     )
   end
 
-
-(*****************************************************************************)
-(* tag just for test, to delete when will tag correctly the SP *)
-(*****************************************************************************)
-
-
-let _counter = ref 0 
-let tag_mck_rule_elem re = 
-  
-  let donothing r k e = k e in
-  let mcode (x,info,mck) = 
-    begin 
-      incr _counter;
-      let _cnt = !_counter in
-      let _pos' = Some (_cnt, _cnt) in 
-
-      let mck' = 
-        match mck with 
-        | Ast_cocci.PLUS -> Ast_cocci.PLUS
-            (* use pos' instead of pos and see how the rule_elem 
-             * returned in the transformation_info in cocci.ml change 
-             *)
-        | Ast_cocci.MINUS (pos, xs) ->   Ast_cocci.MINUS   (pos, xs)
-        | Ast_cocci.CONTEXT (pos, xs) -> Ast_cocci.CONTEXT (pos, xs)
-      in
-      (x, info, mck')
-       
-    end
-  in
-  let fn = Visitor_ast.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing in
-  fn.Visitor_ast.rebuilder_rule_elem re
-    
-
-let tag_just_for_test pred = 
-  match pred with
-  | Lib_engine.Match re -> Lib_engine.Match (tag_mck_rule_elem re)
-  | x -> x
 
 (*****************************************************************************)
 (* Labeling function *)
@@ -91,49 +50,63 @@ let (labels_for_ctl:
  Lib_engine.label_ctlcocci) =
   fun nodes binding ->
 
-   (fun pred -> 
-     show_or_not_predicate pred;
+   (fun p -> 
+     show_or_not_predicate p;
 
      let nodes' = nodes +> map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
-      (match pred, Control_flow_c.unwrap node with
+      (match p, Control_flow_c.unwrap node with
       | Lib_engine.Paren s,  (Control_flow_c.SeqStart (_, bracelevel, _)) -> 
-         [(nodei,     [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
+          [(nodei, (p,[(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))]))]
       | Lib_engine.Paren s,  (Control_flow_c.SeqEnd (bracelevel, _)) -> 
-          [(nodei,    [(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))])]
+          [(nodei, (p,[(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))]))]
       | Lib_engine.Paren _, _ -> []
 
       | Lib_engine.Label s, _ -> 
           let labels = Control_flow_c.extract_labels node in
-          [(nodei, [(s --> (Lib_engine.LabelVal labels))])]
+          [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
       | Lib_engine.PrefixLabel s, _ -> 
           let labels = Control_flow_c.extract_labels node in
           let prefixes = Common.inits labels +> Common.tail in
           prefixes +> List.map (fun prefixlabels -> 
-            (nodei, [(s --> (Lib_engine.LabelVal prefixlabels))])
+            (nodei, (p,[(s --> (Lib_engine.LabelVal prefixlabels))]))
           )
           
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-            if !Flag_engine.use_cocci_vs_c
-            then Pattern2.match_re_node re node binding 
-            else Pattern.match_re_node re node binding 
-          in
-          substs +> List.map (fun subst -> 
-            (nodei, 
-             subst +> List.map (fun (s, meta) -> 
-               s --> Lib_engine.NormalMetaVal meta
-                               )
-              )
-             )
 
-      | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, []]
-      | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, []]
-      | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, []]
-      | Lib_engine.FallThrough, Control_flow_c.FallThroughNode -> [nodei, []]
-      | Lib_engine.Exit,        Control_flow_c.Exit ->      [nodei, []]
-      | Lib_engine.ErrorExit,   Control_flow_c.ErrorExit -> [nodei, []]
+            match () with 
+            | _ when !Flag_engine.use_cocci_vs_c_3 -> 
+                Pattern3.match_re_node re node binding
+                  +> List.map (fun (re', subst) -> 
+                    Lib_engine.Match (re'), subst
+                  )
+
+            | _ when !Flag_engine.use_cocci_vs_c -> 
+                Pattern2.match_re_node re node binding 
+                  +> List.map (fun subst -> (p, subst))
+            | _ -> 
+                Pattern.match_re_node re node binding 
+                  +> List.map (fun subst -> (p, subst))
+                  
+          in
+          substs +> List.map (fun (p', subst) -> 
+            (nodei, 
+              (p', 
+                subst +> List.map (fun (s, meta) -> 
+                  s --> Lib_engine.NormalMetaVal meta
+                )
+              )
+            )
+          )
+
+      | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, (p,[])]
+      | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, (p,[])]
+      | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, (p,[])]
+      | Lib_engine.FallThrough, Control_flow_c.FallThroughNode ->[nodei,(p,[])]
+      | Lib_engine.Exit,        Control_flow_c.Exit ->      [nodei, (p,[])]
+      | Lib_engine.ErrorExit,   Control_flow_c.ErrorExit -> [nodei, (p,[])]
 
       | Lib_engine.TrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
@@ -148,8 +121,8 @@ let (labels_for_ctl:
              * todo: one day try also to match the special function
              * such as panic(); 
              *)
-          | Control_flow_c.Return _ ->  [nodei, []]
-          | Control_flow_c.ReturnExpr _ -> [nodei, []]
+          | Control_flow_c.Return _ ->  [nodei, (p,[])]
+          | Control_flow_c.ReturnExpr _ -> [nodei, (p,[])]
           | _ -> []
           )
       )
@@ -157,9 +130,7 @@ let (labels_for_ctl:
      in
 
      show_or_not_nodes nodes';
-     nodes' +> List.map (fun (nodei, binding) -> 
-       (nodei, (tag_just_for_test pred, binding))
-     )
+     nodes'
    ) 
 
 

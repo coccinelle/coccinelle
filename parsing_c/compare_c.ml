@@ -90,6 +90,13 @@ let compare (c1,filename1) (c2, filename2)  =
       process_output_to_list 
         ("diff -u -b -B " ^  filename1 ^ " "  ^ filename2) 
     in
+    (* get rid of the --- and +++ lines *)
+    let xs = 
+      if null xs then xs 
+      else 
+        Common.drop 2 xs
+    in
+        
     let error = ref 0 in
     let pb_notparsed = ref 0 in
     

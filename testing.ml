@@ -3,11 +3,13 @@ open Common open Commonop
 let iso_file = "standard.iso"
 let default_output_file = "/tmp/output.c"
 
+let _Best_score_file = "/tmp/score_cocci_best.marshalled"
 
 (*****************************************************************************)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
   if not (Common.lfile_exists expected_res)
   then failwith ("no such .res file: " ^ expected_res);
+
   let a = Cocci.cprogram_from_file generated_file +> List.map fst in
   let b = Cocci.cprogram_from_file expected_res   +> List.map fst in
 
@@ -53,10 +55,27 @@ let testone x compare_with_expected =
           
 
 (*****************************************************************************)
+
+(* None mean that the test file run correctly
+ * 
+ * todo: Keep also size of file, compute md5sum ? cos maybe the file
+ * has changed!*)
+
+type score = (filename, string option) Hashtbl.t
+
+let empty_score () = (Hashtbl.create 101 : score)
+
+
 let testall () =
 
-  let _total = ref 0 in
-  let _good  = ref 0 in
+  let newscore  = empty_score () in
+  let bestscore = 
+    if not (Common.lfile_exists _Best_score_file)
+    then Common.write_value (empty_score()) _Best_score_file;
+
+    Common.get_value _Best_score_file 
+  in
+
 
   let expected_result_files = 
     Common.readdir_to_file_list "tests/" +> List.filter (fun s -> 
@@ -64,68 +83,128 @@ let testall () =
     ) +> List.sort compare
   in
 
-  let diagnose = ref [] in
-  let add_diagnose s = Common.push2 s diagnose in
-
   begin
-   expected_result_files +> List.iter (fun res -> 
-    let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
-    let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
-    let cfile      = "tests/" ^ x ^ ".c" in
-    let cocci_file = "tests/" ^ base ^ ".cocci" in
-    let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) 
-    in
+    expected_result_files +> List.iter (fun res -> 
+      let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
+      let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
+      let cfile      = "tests/" ^ x ^ ".c" in
+      let cocci_file = "tests/" ^ base ^ ".cocci" in
+      let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) 
+      in
 
-    let generated = default_output_file in
-    let expected = "tests/" ^ res in
+      let generated = default_output_file in
+      let expected = "tests/" ^ res in
 
-    pr2 ("Test: " ^ x);
+      let timeout_value = 30 in
 
-    add_diagnose (sprintf "%s:\t" x);
-    incr _total;
+      try (
+        Common.timeout_function timeout_value (fun () -> 
+          
+          Cocci.full_engine cfile (Left (cocci_file, iso_file)) generated;
 
-    let timeout_value = 30 in
+          let a = Cocci.cprogram_from_file generated +> List.map fst in
+          let b = Cocci.cprogram_from_file expected  +> List.map fst in
 
-    try (
-      Common.timeout_function timeout_value (fun () -> 
-        
-        Cocci.full_engine cfile (Left (cocci_file, iso_file)) generated;
+          let (correct, diffxs) = Compare_c.compare (a, generated) (b, expected)
+          in
+	  pr2 res;
+	  Ctlcocci_integration.print_bench();
 
-        let a = Cocci.cprogram_from_file generated +> List.map fst in
-        let b = Cocci.cprogram_from_file expected  +> List.map fst in
+          (match correct with
+          | Compare_c.Correct -> Hashtbl.add newscore res None;
+          | Compare_c.Pb s -> 
+              let s = 
+                "INCORRECT:" ^ s ^ "\n" ^ 
+                  "    diff (result(<) vs expected_result(>)) = \n" ^
+                  (diffxs +> List.map (fun s -> ("    " ^ s ^ "\n")) 
+                    +> Common.join ""
+                  )
 
-        let (correct, diffxs) = Compare_c.compare (a, generated) (b, expected)
-        in
-	pr2 res;
-	Ctlcocci_integration.print_bench();
-
-        (match correct with
-        | Compare_c.Correct -> 
-            incr _good; 
-            add_diagnose "CORRECT\n" 
-        | Compare_c.Pb s -> 
-            add_diagnose ("INCORRECT:" ^ s ^ "\n");
-            add_diagnose "    diff (result(<) vs expected_result(>)) = \n";
-            diffxs +> List.iter (fun s -> add_diagnose ("    " ^ s ^ "\n"));
-        | Compare_c.PbOnlyInNotParsedCorrectly -> 
-            add_diagnose "seems incorrect, but only because of code that was not parsable";
+              in
+              Hashtbl.add newscore res (Some s)
+          | Compare_c.PbOnlyInNotParsedCorrectly -> 
+              let s = "seems incorrect, but only because of code that was not parsable" 
+              in
+              Hashtbl.add newscore res (Some s)
+          )
         )
       )
-     )
-    with exn -> 
-      add_diagnose "PROBLEM\n";
-      add_diagnose ("   exn = " ^ Printexc.to_string exn ^ "\n")
+      with exn -> 
+        let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
+        Hashtbl.add newscore res (Some s)
     );
 
-    pr2 "----------------------";
+    pr2 "--------------------------------";
     pr2 "statistics";
-    pr2 "----------------------";
-    !diagnose +> List.rev +> List.iter (fun s -> print_string s; );
+    pr2 "--------------------------------";
+
+    Common.hash_to_list newscore +> List.iter (fun (s, v) -> 
+      print_string (Printf.sprintf "%-30s: " s);
+      print_string (
+        match v with
+        | None ->  "CORRECT\n" 
+        | Some s -> s
+      )
+    );
     flush stdout; flush stderr;
 
-    pr2 "----------------------";
+    pr2 "--------------------------------";
+    pr2 "regression testing  information";
+    pr2 "--------------------------------";
+
+    let newbestscore = empty_score () in
+
+    let allres = 
+      (Common.hash_to_list newscore +> List.map fst)
+        $+$
+        (Common.hash_to_list bestscore +> List.map fst)
+    in
+
+    allres +> List.iter (fun res -> 
+      match 
+        Common.optionise (fun () -> Hashtbl.find newscore res),
+        Common.optionise (fun () -> Hashtbl.find bestscore res)
+      with
+      | None, None -> raise Impossible
+      | Some x, None -> 
+          pr2 ("new test file appeared: " ^ res);
+          Hashtbl.add newbestscore res x;
+      | None, Some x -> 
+          pr2 ("old test file disappeared: " ^ res);
+      | Some newone, Some bestone -> 
+          (match newone, bestone with
+          | None, None -> 
+              Hashtbl.add newbestscore res None
+          | Some x, None -> 
+              pr2 ("PBBBBBBBB: a test file does not work anymore!!! : " ^ res);
+              pr2 ("Error : " ^ x);
+              Hashtbl.add newbestscore res None
+          | None, Some x -> 
+              pr2 ("Great: a test file now work: " ^ res);
+              Hashtbl.add newbestscore res None
+          | Some x, Some y -> 
+              Hashtbl.add newbestscore res (Some x);
+              if not (x = y)
+              then begin 
+                pr2 ("Semipb: still error but not same error : " ^ res);
+                pr2 (Common.chop ("Old error: " ^ x));
+                pr2 ("New error: " ^ y);
+              end
+          )
+    );
+    Common.write_value newbestscore _Best_score_file;
+
+
+    pr2 "--------------------------------";
     pr2 "total score";
-    pr2 "----------------------";
-    pr2 (sprintf "good = %d/%d" !_good !_total);
+    pr2 "--------------------------------";
+    let total = 
+      Common.hash_to_list newscore +> List.length in
+    let good  = 
+      Common.hash_to_list newscore +> List.filter (fun (s, v) -> v = None) +> 
+        List.length 
+    in
+    
+    pr2 (sprintf "good = %d/%d" good total);
 
   end

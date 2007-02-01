@@ -153,7 +153,7 @@ let process_sgrep s2 mck =
  * s1:string *)
 let tag_with_mck = fun mck ib  binding -> 
   let (s2, cocciinforef) = ib in
-  let (oldmcode, oldenv) = (*!*)cocciinforef in
+  let (oldmcode, _oldenv) = (*!*)cocciinforef in
   
   let mck =
     if !Flag_parsing_cocci.sgrep_mode

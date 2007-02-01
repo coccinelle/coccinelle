@@ -95,6 +95,7 @@ let main () =
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
       "-cocci_vs_c",          Arg.Set Flag_engine.use_cocci_vs_c,    " ";
+      "-cocci_vs_c_3",        Arg.Set Flag_engine.use_cocci_vs_c_3,    " ";
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
       "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
@@ -168,7 +169,7 @@ let main () =
             let (xs,_,_) = Cocci.sp_from_file file None in
             xs +> List.iter Pretty_print_cocci.unparse
 
-(*
+
         | "control_flow", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
@@ -190,7 +191,7 @@ let main () =
                   | _ -> ()
                  );
                  )
-*)
+
         | "parse_unparse", [file] -> 
             let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
             let program2_with_ppmethod = 

@@ -162,8 +162,15 @@ let (>&&>) m1 m2 = fun binding ->
   let xxs = xs +> List.map (fun binding -> m2 binding) in
   List.flatten xxs
 
+
 let (>||>) m1 m2 = fun binding ->
-  m1 binding ++ m2 binding
+  if true then 
+    m1 binding ++ m2 binding 
+  else 
+    let xs = m1 binding in
+    if null xs
+    then m2 binding
+    else xs
 
 (* An exclusive or (xor). *)
 (*
@@ -173,6 +180,7 @@ let (>|+|>) m1 m2 = fun binding ->
   then m2 binding
   else xs
 *)
+
 
 let return res = fun binding -> 
   match res with
