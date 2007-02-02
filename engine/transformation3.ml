@@ -8,12 +8,29 @@ module F = Control_flow_c
 
 module XTRANS = struct
 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
+  (* Combinators history *) 
+  (* ------------------------------------------------------------------------*)
+  (*
+   * version0: 
+   *  type ('a, 'b) transformer = 
+   *    'a -> 'b -> Lib_engine.metavars_binding -> 'b
+   *  exception NoMatch 
+   * 
+   * version1:
+   *   type ('a, 'b) transformer = 
+   *    'a -> 'b -> Lib_engine.metavars_binding -> 'b option
+   * use an exception monad 
+   *)
+
+  (* ------------------------------------------------------------------------*)
   (* Standard type and operators  *) 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
 
   type tin = Lib_engine.metavars_binding
   type 'x tout = 'x option
+
+  type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
   let (>>=) m f = fun tin -> 
      match m tin with
@@ -33,13 +50,10 @@ module XTRANS = struct
     | Some x -> Some x (* stop as soon as have found something *)
 
 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   (* Exp  *) 
-  (***************************************************************************)
-  let (cocciExp : 
-      (Ast_cocci.expression->Ast_c.expression -> tin -> (Ast_cocci.expression*Ast_c.expression)tout) ->
-      Ast_cocci.expression -> Control_flow_c.node -> (tin -> (Ast_cocci.expression * Control_flow_c.node) tout))
-   = fun expf expa node -> fun binding -> 
+  (* ------------------------------------------------------------------------*)
+  let cocciExp = fun expf expa node -> fun binding -> 
 
     let bigf = { 
       Visitor_c.default_visitor_c_s with 
@@ -52,10 +66,9 @@ module XTRANS = struct
     Some (expa, Visitor_c.vk_node_s bigf node)
 
 
-
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   (* Tokens *) 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
    let check_pos mck pos = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
@@ -65,16 +78,21 @@ module XTRANS = struct
      | _ -> failwith "wierd: dont have position info for the mcodekind"      
 
 
-  (* todo: check not already tagged ? *)
   let tag_with_mck mck ib = fun binding -> 
 
     let (s2, cocciinforef) = ib in
     let (oldmcode, _oldenv) = !cocciinforef in
 
+    let mck =
+      if !Flag_parsing_cocci.sgrep_mode
+      then Sgrep_julia.process_sgrep s2 mck
+      else mck 
+    in
+
     match (oldmcode,mck) with
     | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING), _)
     | (_, Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
-        
+
         if !Flag_engine.use_ref 
         then begin
           cocciinforef := (mck, binding);
@@ -84,7 +102,16 @@ module XTRANS = struct
           let newcocciinfo = ref (mck, binding) in
           ((s2, newcocciinfo))
 
-    | _ -> failwith "already tagged"
+    | _ -> 
+      Printf.printf "SP mcode "; flush stdout;
+      Pretty_print_cocci.print_mcodekind oldmcode;
+      Format.print_newline();
+      Printf.printf "C code mcode "; flush stdout;
+      Pretty_print_cocci.print_mcodekind mck;
+      Format.print_newline();
+      failwith
+	(Common.sprintf "already tagged token:\n%s"
+	   (Common.error_message s2.file (s2.str, s2.charpos)))
 
 
 
@@ -96,13 +123,27 @@ module XTRANS = struct
     else fail binding
 
 
-  (***************************************************************************)
-  (* Misc *) 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
+  (* Distribute mcode *) 
+  (* ------------------------------------------------------------------------*)
+
+  (* When in the SP we attach something to a metavariable, or delete it, as in
+   * - S
+   * + foo();
+   * we have to minusize all the token that compose S in the C code, and 
+   * attach the 'foo();'  to the right token, the one at the very right. 
+   *)
+
+  type 'a distributer = 
+      (Ast_c.info -> Ast_c.info) *  (* what to do on left *)
+      (Ast_c.info -> Ast_c.info) *  (* what to do on middle *)
+      (Ast_c.info -> Ast_c.info) *  (* what to do on right *)
+      (Ast_c.info -> Ast_c.info) -> (* what to do on both *)
+      'a -> 'a
+
   let distribute_mck mcodekind distributef expr binding =
     match mcodekind with
     | Ast_cocci.MINUS (pos,any_xxs) -> 
-        (* could also instead add on right, it doesn't matter *)
         distributef (
           (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding),
           (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
@@ -148,6 +189,8 @@ module XTRANS = struct
     | Ast_cocci.PLUS -> raise Impossible
 
 
+  (* use new strategy, collect ii, sort, recollect and tag *)
+
   let mk_bigf (maxpos, minpos) (lop,mop,rop,bop) = 
     let bigf = { 
       Visitor_c.default_visitor_c_s with
@@ -180,11 +223,9 @@ module XTRANS = struct
       ) binding
     else fail binding
 
-
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   (* Environment *) 
-  (***************************************************************************)
-
+  (* ------------------------------------------------------------------------*)
   let envf keep _inherited (s, value) = fun env -> 
     if keep 
     then (
@@ -196,10 +237,6 @@ module XTRANS = struct
     else 
       Some (s, value)
 
-
-    
-      
-   
 end
 
 

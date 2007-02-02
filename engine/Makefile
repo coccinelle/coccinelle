@@ -6,13 +6,13 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 	  types.ml isomorphisms_c_c.ml \
 	  check_reachability.ml \
           pattern.ml distribute_mcodekind.ml transformation.ml \
-          cocci_vs_c_3.ml pattern3.ml transformation3.ml  \
+          cocci_vs_c_3.ml pattern3.ml sgrep_julia.ml transformation3.ml  \
 	  unparse_cocci.ml unparse_c.ml \
 	  asttomember.ml asttoctl2.ml ctltotex.ml \
 	  postprocess_transinfo.ml ctlcocci_integration.ml
 
 # just to test asttoctl
-#CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
+# CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
 INCLUDE_PATH = -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci

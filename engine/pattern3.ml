@@ -1,10 +1,60 @@
 open Common open Commonop
 
+
+(*****************************************************************************)
+(* The functor argument  *) 
+(*****************************************************************************)
+
 module XMATCH = struct
 
+  (* ------------------------------------------------------------------------*)
+  (* Combinators history *) 
+  (* ------------------------------------------------------------------------*)
+  (*
+   * version0: 
+   *   type ('a, 'b) matcher = 'a -> 'b -> bool
+   *
+   * version1: same but with a global variable holding the current binding
+   *  BUT bug
+   *   - can have multiple possibilities
+   *   - globals sux
+   *   - sometimes have to undo, cos if start match, then it binds, 
+   *     and if later it does not match, then must undo the first binds.
+   *     ex: when match parameters, can  try to match, but then we found far 
+   *     later that the last argument of a function does not match
+   *      => have to uando the binding !!!
+   *      (can handle that too with a global, by saving the 
+   *      global, ... but sux)
+   *   => better not use global
+   * 
+   * version2: 
+   *    type ('a, 'b) matcher = binding -> 'a -> 'b -> binding list
+   *
+   * Empty list mean failure (let matchfailure = []).
+   * To be able to have pretty code, have to use partial application 
+   * powa, and so the type is in fact
+   *
+   * version3:
+   *    type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
+   *
+   * Then by defining the correct combinators, can have quite pretty code (that 
+   * looks like the clean code of version0).
+   * 
+   * opti: return a lazy list of possible matchs ?
+   * 
+   *)
+
+  (* ------------------------------------------------------------------------*)
+  (* Standard type and operators  *) 
+  (* ------------------------------------------------------------------------*)
+
   type tin = Lib_engine.metavars_binding
+  (* 'x is a ('a * 'b) but in fact dont care about 'b, we just tag the SP *)
   type 'x tout = ('x * Lib_engine.metavars_binding) list 
 
+  type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
+
+  (* was >&&> *)
   let (>>=) m1 m2 = fun binding ->
     let xs = m1 binding in
     let xxs = xs +> List.map (fun ((a,b), binding) -> m2 a b binding) in
@@ -14,6 +64,8 @@ module XMATCH = struct
     if false then 
       m1 binding ++ m2 binding 
     else 
+      (* An exclusive or (xor). *)
+      (* let (>|+|>) m1 m2 = fun binding -> *)
       let xs = m1 binding in
       if null xs
       then m2 binding
@@ -25,10 +77,10 @@ module XMATCH = struct
   let fail = fun binding -> 
     []
 
-  let (cocciExp : 
-      (Ast_cocci.expression->Ast_c.expression -> tin -> (Ast_cocci.expression*Ast_c.expression)tout) ->
-      Ast_cocci.expression -> Control_flow_c.node -> (tin -> (Ast_cocci.expression * Control_flow_c.node) tout))
-   = fun expf expa node -> fun binding -> 
+  (* ------------------------------------------------------------------------*)
+  (* Exp  *) 
+  (* ------------------------------------------------------------------------*)
+  let cocciExp = fun expf expa node -> fun binding -> 
 
     let globals = ref [] in
     let bigf = { 
@@ -45,9 +97,9 @@ module XMATCH = struct
     )
 
 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   (* Tokens *) 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   let tag_mck_pos (x,info,mck) posmck stuff = fun binding -> 
 
     let mck = 
@@ -63,15 +115,15 @@ module XMATCH = struct
     [((x, info, mck),stuff), binding]
 
 
-  let tokenf mcode ib = fun binding -> 
+  let tokenf ia ib = fun binding -> 
     let pos = Ast_c.get_pos_of_info ib in
     let posmck = Some (pos, pos) in
-    tag_mck_pos mcode posmck ib binding
+    tag_mck_pos ia posmck ib binding
     
 
-  (***************************************************************************)
-  (* Misc *) 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
+  (* Distribute mcode *) 
+  (* ------------------------------------------------------------------------*)
   let distrf_e mcode x = fun binding -> 
     let (max, min) = Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr x)
     in
@@ -79,10 +131,9 @@ module XMATCH = struct
     tag_mck_pos mcode posmck x binding
 
 
-  (***************************************************************************)
+  (* ------------------------------------------------------------------------*)
   (* Environment *) 
-  (***************************************************************************)
-
+  (* ------------------------------------------------------------------------*)
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar *)
   let check_add_metavars_binding keepTODO inherited = fun (k, valu) binding ->
@@ -149,6 +200,9 @@ module XMATCH = struct
 
 end
 
+(*****************************************************************************)
+(* Entry point  *) 
+(*****************************************************************************)
 module MATCH  = Cocci_vs_c_3.COCCI_VS_C (XMATCH)
 
 
