@@ -3,7 +3,7 @@ expression X,Y;
 @@
  f(...,X,Y,...);
  ...
- h(X);
+- h(X);
  ...
  g(X);
 

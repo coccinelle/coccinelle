@@ -49,6 +49,8 @@ module XTRANS = struct
     | None -> m2 tin
     | Some x -> Some x (* stop as soon as have found something *)
 
+  let (>|+|>) m1 m2 = m1 >||> m2
+
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -85,7 +87,7 @@ module XTRANS = struct
 
     let mck =
       if !Flag_parsing_cocci.sgrep_mode
-      then Sgrep_julia.process_sgrep s2 mck
+      then Sgrep.process_sgrep s2 mck
       else mck 
     in
 
@@ -205,23 +207,34 @@ module XTRANS = struct
     } in
     bigf
 
-  let distribute_mck_expr (maxpos, minpos) = fun (lop,mop,rop,bop) ->
-  fun x ->
+  let distribute_mck_expr (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_expr_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_args (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_args_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
-  let distrf_e ia x   = fun binding -> 
+  let distribute_mck_type (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_type_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+      
+  let distrf (ii_of_x_f, distribute_mck_x_f) = 
+    fun ia x -> fun binding -> 
     let (s1, i, mck) = ia in
-    let (max, min) = Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr x)
+    let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
-    
     if check_pos mck max && check_pos mck min 
     then 
       return (
         ia, 
-        distribute_mck mck (distribute_mck_expr (max,min))  x binding
+        distribute_mck mck (distribute_mck_x_f (max,min))  x binding
       ) binding
     else fail binding
+
+
+  let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
+  let distrf_args = distrf (Lib_parsing_c.ii_of_args,  distribute_mck_args)
+  let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
+
 
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
@@ -235,6 +248,7 @@ module XTRANS = struct
         None
     )
     else 
+      (* raise Impossible ? *)
       Some (s, value)
 
 end

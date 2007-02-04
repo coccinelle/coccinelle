@@ -59,17 +59,19 @@ module XMATCH = struct
     let xs = m1 binding in
     let xxs = xs +> List.map (fun ((a,b), binding) -> m2 a b binding) in
     List.flatten xxs
-      
-  let (>||>) m1 m2 = fun binding ->
-    if false then 
-      m1 binding ++ m2 binding 
-    else 
-      (* An exclusive or (xor). *)
-      (* let (>|+|>) m1 m2 = fun binding -> *)
+
+  let (>|+|>) m1 m2 = fun binding -> 
       let xs = m1 binding in
       if null xs
       then m2 binding
       else xs
+      
+  let (>||>) m1 m2 = fun binding ->
+    if true then 
+      m1 binding ++ m2 binding 
+    else 
+      (m1 >|+|> m2) binding
+
 
   let return res = fun binding -> 
     [res, binding]
@@ -84,11 +86,19 @@ module XMATCH = struct
 
     let globals = ref [] in
     let bigf = { 
+      (* julia's style *)
       Visitor_c.default_visitor_c with 
       Visitor_c.kexpr = (fun (k, bigf) expb ->
 	match expf expa expb binding with
 	| [] -> (* failed *) k expb
 	| xs -> globals := xs @ !globals);
+      (* pad's style.
+       * push2 expr globals;  k expr
+       *  ...
+       *  !globals +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+       * (return false)
+       * 
+       *)
     }
     in
     Visitor_c.vk_node bigf node;
@@ -124,12 +134,16 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* Distribute mcode *) 
   (* ------------------------------------------------------------------------*)
-  let distrf_e mcode x = fun binding -> 
-    let (max, min) = Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr x)
+  let distrf (ii_of_x_f) =
+    fun mcode x -> fun binding -> 
+    let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
     let posmck = Some (min, max) (* subtil: and not max, min !!*) in
     tag_mck_pos mcode posmck x binding
 
+  let distrf_e    = distrf (Lib_parsing_c.ii_of_expr)
+  let distrf_args = distrf (Lib_parsing_c.ii_of_args)
+  let distrf_type = distrf (Lib_parsing_c.ii_of_type)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *) 

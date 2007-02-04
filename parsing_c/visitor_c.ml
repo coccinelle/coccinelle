@@ -130,31 +130,10 @@ let rec vk_expr = fun bigf expr ->
     | Ident (s) -> ()
     | Constant (c) -> ()
     | FunCall  (e, es)         -> 
-        let rec do_action = function 
-          | (ActMisc ii) -> iif ii
-          | (ActJump jump) -> 
-              (match jump with
-              | (Goto s), is               -> iif is
-              | ((Continue|Break|Return)), is -> iif is
-              | (ReturnExpr e), is ->  exprf e; iif is
-              )
-          | (ActSeq ((e,ii), action)) -> 
-              iif ii;
-              do_option (exprf) e; 
-              do_action action
-        in
-
-
         exprf e;  
         es +> List.iter (fun (e, ii) -> 
           iif ii;
-          match e with
-          | Left e -> (exprf) e
-          | Right (ArgType (t, stoil)) -> 
-              let (unwrap_st, ii) = stoil in
-              iif ii;
-              vk_type bigf t
-          | Right (ArgAction action) -> do_action action
+          vk_argument bigf e
           );
     | CondExpr (e1, e2, e3)    -> 
         exprf e1; do_option (exprf) e2; exprf e3
@@ -198,6 +177,33 @@ let rec vk_expr = fun bigf expr ->
         
 
   in exprf expr
+
+and vk_argument = fun bigf arg -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
+  let rec do_action = function 
+    | (ActMisc ii) -> iif ii
+    | (ActJump jump) -> 
+        (match jump with
+        | (Goto s), is               -> iif is
+        | ((Continue|Break|Return)), is -> iif is
+        | (ReturnExpr e), is ->  vk_expr  bigf e; iif is
+        )
+    | (ActSeq ((e,ii), action)) -> 
+        iif ii;
+        do_option (vk_expr bigf) e; 
+        do_action action
+  in
+  match arg with
+  | Left e -> (vk_expr bigf) e
+  | Right (ArgType (t, stoil)) -> 
+      let (unwrap_st, ii) = stoil in
+      iif ii;
+      vk_type bigf t
+  | Right (ArgAction action) -> do_action action
+
+
+
 
 and vk_statement = fun bigf st -> 
   let iif ii = List.iter (vk_info bigf) ii in
@@ -440,6 +446,14 @@ and vk_info = fun bigf info ->
   infof info
 
 
+
+let vk_args_splitted = fun bigf args_splitted -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+  args_splitted +> List.iter (function  
+  | Left arg -> vk_argument bigf arg
+  | Right ii -> iif ii
+  )
+  
 
 (*****************************************************************************)
 (* "syntetisized attributes" style *)
@@ -831,3 +845,9 @@ and vk_node_s = fun bigf node ->
   
   
         
+let vk_args_splitted_s = fun bigf args_splitted -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  args_splitted +> List.map (function  
+  | Left arg -> Left (vk_argument_s bigf arg)
+  | Right ii -> Right (iif ii)
+  )

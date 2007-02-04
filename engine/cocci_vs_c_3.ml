@@ -143,6 +143,57 @@ let equal_storage a b =
       -> true
   | _ -> false
 
+(*---------------------------------------------------------------------------*)
+let split_signb_baseb_ii (baseb, ii) = 
+  let iis = ii +> List.map (fun (ii,mc) -> ii.Common.str, (ii,mc)) in
+  match baseb, iis with
+  
+  | B.Void, ["void",i1] -> None, [i1]
+      
+  | B.FloatType (B.CFloat),["float",i1] -> None, [i1]
+  | B.FloatType (B.CDouble),["double",i1] -> None, [i1]
+  | B.FloatType (B.CLongDouble),["long",i1;"double",i2] -> None,[i1;i2]
+      
+  | B.IntType (B.CChar), ["char",i1] -> None, [i1]
+
+
+  | B.IntType (B.Si (sign, base)), xs -> 
+      (match sign, base, xs with
+      | B.Signed, B.CChar2,   ["signed",i1;"char",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CChar2,   ["unsigned",i1;"char",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CShort, ["short",i1] -> None, [i1]
+      | B.Signed, B.CShort, ["signed",i1;"short",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CInt, ["int",i1] -> None, [i1]
+      | B.Signed, B.CInt, ["signed",i1;"int",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
+          Some (B.UnSigned, i1), []
+
+      | B.Signed, B.CLong, ["long",i1] -> None, [i1]
+      | B.Signed, B.CLong, ["signed",i1;"long",i2] -> 
+          Some (B.Signed, i1), [i2]
+      | B.UnSigned, B.CLong, ["unsigned",i1;"long",i2] -> 
+          Some (B.UnSigned, i1), [i2]
+
+      | B.Signed, B.CLongLong, ["long",i1;"long",i2] -> None, [i1;i2]
+      | B.Signed, B.CLongLong, ["signed",i1;"long",i2;"long",i3] -> 
+          Some (B.Signed, i1), [i2;i3]
+      | B.UnSigned, B.CLongLong, ["unsigned",i1;"long",i2;"long",i3] -> 
+          Some (B.UnSigned, i1), [i2;i3]
+      | _ -> failwith "strange type1, maybe because of weird order"
+      )
+  | _ -> failwith "strange type2, maybe because of weird order"
+
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
@@ -176,15 +227,21 @@ module type PARAM =
       (tin -> 'x tout) -> 
       (tin -> 'x tout)
 
+    val (>|+|>) : 
+      (tin -> 'x tout) ->
+      (tin -> 'x tout) -> 
+      (tin -> 'x tout)
+
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
     val tokenf : ('a A.mcode, B.info) matcher
 
     val distrf_e : (string A.mcode, B.expression) matcher
+    val distrf_args : 
+      (string A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
+    val distrf_type : (string A.mcode, Ast_c.fullType) matcher
     (*
-    val distrf_type : Ast_c.fullType tdistr
     val distrf_node : Control_flow_c.node2 tdistr
-    val distrf_args : (Ast_c.argument, Ast_c.il) either list tdistr
     *)
 
     val cocciExp : 
@@ -215,6 +272,7 @@ let return = X.return
 let fail = X.fail
 
 let (>||>) = X.(>||>)
+let (>|+|>) = X.(>|+|>)
 
 let tokenf = X.tokenf
 
@@ -238,6 +296,7 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
  *  - arguments
  *  - parameters
  *  - declaration
+ *  - initializers
  *  - type       
  *  - node
  *)
@@ -302,19 +361,52 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
         ))
           
 
+  (* todo?: handle some isomorphisms in int/float ? can have different
+   * format : 1l can match a 1.
+   * 
+   * todo: normally string can contain some metavar too, so should
+   * recurse on the string 
+   *)
   | A.Constant (ia1), ((B.Constant (ib) , typ),ii) -> 
       (match term ia1, ib with 
-      | A.Int inta, B.Int intb when inta =$= intb -> 
-         let ib1 = tuple_of_list1 ii in 
-         tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-           return ( 
-             ((A.Constant ia1)) +> wa, 
-             ((B.Constant (B.Int intb), typ),[ib1])
-           ))
+      | A.Int x, B.Int y 
+      | A.Char x, B.Char (y,_) (* todo: use kind ? *)
+      | A.Float x, B.Float (y,_) (* todo: use floatType ? *)
+          -> 
+          if x =$= y 
+          then 
+            let ib1 = tuple_of_list1 ii in 
+            tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+              return ( 
+                ((A.Constant ia1)) +> wa, 
+                ((B.Constant (ib), typ),[ib1])
+              ))
+          else fail
+      | A.String sa, B.String (sb,_kind) -> 
+          (match ii with
+          | [ib1] -> 
+            tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+              return ( 
+                ((A.Constant ia1)) +> wa, 
+                ((B.Constant (ib), typ),[ib1])
+              ))
+          | _ -> fail (* multi string, not handled *)
+          )
       | _, _ -> fail
       )
 
+
   | A.FunCall (ea, ia1, eas, ia2),  ((B.FunCall (eb, ebs), typ),ii) -> 
+      (* todo: do special case to allow IdMetaFunc, cos doing the
+       * recursive call will be too late, match_ident will not have the
+       * info whether it was a function. todo: but how detect when do
+       * x.field = f; how know that f is a Func ? By having computed
+       * some information before the matching!
+       * 
+       * Allow match with FunCall containing types. Now ast_cocci allow
+       * type in parameter, and morover ast_cocci allow f(...) and those
+       * ... could match type. 
+       *)
       let (ib1, ib2) = tuple_of_list2 ii in
       expression ea eb >>= (fun ea eb -> 
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
@@ -326,6 +418,101 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
           ((B.FunCall (eb, ebs),typ), [ib1;ib2])
         ))))))
 
+
+
+
+  | A.Assignment (ea1, opa, ea2), ((B.Assignment (eb1, opb, eb2), typ),ii) -> 
+      let (opbi) = tuple_of_list1 ii in
+      if equal_assignOp (term opa) opb 
+      then
+        expression ea1 eb1 >>= (fun ea1 eb1 -> 
+        expression ea2 eb2 >>= (fun ea2 eb2 -> 
+        tokenf opa opbi >>= (fun opa opbi -> 
+          return (
+            ((A.Assignment (ea1, opa, ea2))) +> wa,
+            ((B.Assignment (eb1, opb, eb2), typ), [opbi])
+        ))))
+      else fail
+
+  | A.CondExpr(ea1,ia1,ea2opt,ia2,ea3),((B.CondExpr(eb1,eb2opt,eb3),typ),ii) ->
+      let (ib1, ib2) = tuple_of_list2 ii in
+      expression ea1 eb1 >>= (fun ea1 eb1 -> 
+      option expression ea2opt eb2opt >>= (fun  ea2opt eb2opt -> 
+      expression ea3 eb3 >>= (fun ea3 eb3 -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          ((A.CondExpr(ea1,ia1,ea2opt,ia2,ea3))) +> wa,
+          ((B.CondExpr (eb1, eb2opt, eb3),typ), [ib1;ib2])
+        ))))))
+
+  (* todo?: handle some isomorphisms here ? *)
+  | A.Postfix (ea, opa), ((B.Postfix (eb, opb), typ),ii) -> 
+      let opbi = tuple_of_list1 ii in
+      if equal_fixOp (term opa) opb
+      then
+        expression ea eb >>= (fun ea eb -> 
+        tokenf opa opbi >>= (fun opa opbi -> 
+          return (
+            ((A.Postfix (ea, opa))) +> wa,
+            ((B.Postfix (eb, opb), typ),[opbi])
+        )))
+      else fail
+        
+        
+  | A.Infix (ea, opa), ((B.Infix (eb, opb), typ),ii) -> 
+      let opbi = tuple_of_list1 ii in
+      if equal_fixOp (term opa) opb
+      then
+        expression ea eb >>= (fun ea eb -> 
+        tokenf opa opbi >>= (fun opa opbi -> 
+          return (
+            ((A.Infix (ea, opa))) +> wa,
+            ((B.Infix (eb, opb), typ),[opbi])
+        )))
+      else fail
+
+  | A.Unary (ea, opa), ((B.Unary (eb, opb), typ),ii) -> 
+      let opbi = tuple_of_list1 ii in
+      if equal_unaryOp (term opa) opb
+      then
+        expression ea eb >>= (fun ea eb -> 
+        tokenf opa opbi >>= (fun opa opbi -> 
+          return (
+            ((A.Unary (ea, opa))) +> wa,
+            ((B.Unary (eb, opb), typ),[opbi])
+        )))
+      else fail
+
+
+
+  | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) -> 
+      let opbi = tuple_of_list1 ii in
+      if equal_binaryOp (term opa) opb
+      then 
+        expression ea1 eb1 >>= (fun ea1 eb1 -> 
+        expression ea2 eb2 >>= (fun ea2 eb2 -> 
+        tokenf opa opbi >>= (fun opa opbi -> 
+          return (
+            ((A.Binary (ea1, opa, ea2))) +> wa,
+            ((B.Binary (eb1, opb, eb2), typ),[opbi]
+          )))))
+      else fail
+
+
+  (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
+  | A.ArrayAccess (ea1, ia1, ea2, ia2),((B.ArrayAccess (eb1, eb2), typ),ii) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      expression ea1 eb1 >>= (fun ea1 eb1 -> 
+      expression ea2 eb2 >>= (fun ea2 eb2 -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          ((A.ArrayAccess (ea1, ia1, ea2, ia2))) +> wa,
+          ((B.ArrayAccess (eb1, eb2),typ), [ib1;ib2])
+        )))))
+
+  (* todo?: handle some isomorphisms here ? *)
   | A.RecordAccess (ea, ia1, ida), ((B.RecordAccess (eb, idb), typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       ident DontKnow ida (idb, ib2) >>= (fun ida (idb, ib2) -> 
@@ -335,6 +522,70 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
           ((A.RecordAccess (ea, ia1, ida))) +> wa,
           ((B.RecordAccess (eb, idb), typ), [ib1;ib2])
         ))))
+
+
+
+  | A.RecordPtAccess (ea,ia1,ida),((B.RecordPtAccess (eb, idb), typ), ii) ->
+      let (ib1, ib2) = tuple_of_list2 ii in
+      ident DontKnow ida (idb, ib2) >>= (fun ida (idb, ib2) -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      expression ea eb >>= (fun ea eb -> 
+        return (
+          ((A.RecordPtAccess (ea, ia1, ida))) +> wa,
+          ((B.RecordPtAccess (eb, idb), typ), [ib1;ib2])
+        ))))
+
+
+  (* todo?: handle some isomorphisms here ? 
+   * todo?: do some iso-by-absence on cast ? 
+   *    by trying | ea, B.Case (typb, eb) -> match_e_e ea eb ?
+   *)
+
+  | A.Cast (ia1, typa, ia2, ea), ((B.Cast (typb, eb), typ),ii) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      fullType typa typb >>= (fun typa typb -> 
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          ((A.Cast (ia1, typa, ia2, ea))) +> wa,
+          ((B.Cast (typb, eb),typ),[ib1;ib2])
+        )))))
+
+  | A.SizeOfExpr (ia1, ea), ((B.SizeOfExpr (eb), typ),ii) -> 
+      let ib1 = tuple_of_list1 ii in
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        return (
+          ((A.SizeOfExpr (ia1, ea))) +> wa,
+          ((B.SizeOfExpr (eb), typ),[ib1])
+      )))
+
+  | A.SizeOfType (ia1, ia2, typa, ia3), ((B.SizeOfType typb, typ),ii) -> 
+      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+      fullType typa typb >>= (fun typa typb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        return (
+          ((A.SizeOfType (ia1, ia2, typa, ia3))) +> wa,
+          ((B.SizeOfType (typb),typ),[ib1;ib2;ib3])
+      )))))
+
+
+  (* todo? iso ? allow all the combinations ? *)
+  | A.Paren (ia1, ea, ia2), ((B.ParenExpr (eb), typ),ii) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          ((A.Paren (ia1, ea, ia2))) +> wa,
+          ((B.ParenExpr (eb), typ), [ib1;ib2])
+      ))))
+
+
+
 
   | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
   
@@ -347,9 +598,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
       -> raise Impossible
 
   | A.DisjExpr eas, eb -> 
-      eas +> List.fold_left (fun acc ea -> 
-        acc >||> (expression ea eb)
-      ) fail
+      eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
   | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
       failwith "not handling Opt/Unique/Multi on expr"
@@ -382,6 +631,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
 
 
   | A.MetaId(mida,keep,inherited) -> 
+      (* get binding, assert =*=,  distribute info *)
       X.envf keep inherited (term mida, Ast_c.MetaIdVal (idb)) >>= (fun _s v ->
         match v with
         | Ast_c.MetaIdVal sa -> 
@@ -389,11 +639,51 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
             then 
               tokenf mida iib >>= (fun mida iib -> 
                 return (
-                  ((A.MetaId (mida, true, inherited)) +> A.rewrap ida,
+                  ((A.MetaId (mida, keep, inherited)) +> A.rewrap ida,
                   (idb, iib)
                   )))
             else fail
         | _ -> raise Impossible
+      )
+
+  | A.MetaFunc(mida,keep,inherited) -> 
+      (match infoidb with 
+      | LocalFunction | Function -> 
+          X.envf keep inherited(term mida,Ast_c.MetaFuncVal idb)>>=(fun _s v ->
+            match v with
+            | Ast_c.MetaFuncVal sa -> 
+                if(sa =$= idb) 
+                then 
+                  tokenf mida iib >>= (fun mida iib -> 
+                    return (
+                      ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
+                      (idb, iib)
+                    ))
+                else fail
+            | _ -> raise Impossible
+          )
+      | DontKnow -> failwith "MetaFunc, need more semantic info about id"
+      )
+
+  | A.MetaLocalFunc(mida,keep,inherited) -> 
+      (match infoidb with 
+      | LocalFunction -> 
+          X.envf keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) >>=
+            (fun _s v ->
+            match v with
+            | Ast_c.MetaLocalFuncVal sa -> 
+                if(sa =$= idb) 
+                then 
+                  tokenf mida iib >>= (fun mida iib -> 
+                    return (
+                      ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
+                      (idb, iib)
+                    ))
+                else fail
+            | _ -> raise Impossible
+          )
+      | Function -> fail
+      | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
 
   | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
@@ -413,16 +703,40 @@ and (arguments: sequence ->
         return (eas, (Ast_c.unsplit_comma ebs_splitted))
       )
 
-(* because '...' can match nothing, need to take care when have 
+(* todo: because '...' can match nothing, need to take care when have 
  * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
  * f(1,2) for instance.
+ * 
+ * old: Must do some try, for instance when f(...,X,Y,...) have to
+ * test the transfo for all the combinaitions (and if multiple transfo
+ * possible ? pb ? => the type is to return a expression option ? use
+ * some combinators to help ?
+ * update: with the tag-SP approach, no more a problem.
  *)
+
 and arguments_bis = fun eas ebs -> 
   match eas, ebs with
   | [], [] -> return ([], [])
   | [], eb::ebs -> fail
   | ea::eas, ebs -> 
       (match A.unwrap ea, ebs with
+      | A.Edots (mcode, optexpr), ys -> 
+          (* todo: if optexpr, then a WHEN and so may have to filter yys *)
+          if optexpr <> None then failwith "not handling when in argument";
+
+          (* '...' can take more or less the beginnings of the arguments *)
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> (
+              X.distrf_args mcode startxs >>= (fun mcode startxs ->
+              arguments_bis eas endxs >>= (fun eas endxs -> 
+                return (
+                  (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
+                  startxs ++ endxs
+                )))
+              )
+            ) fail 
+
       | A.EComma ia1, Right ii::ebs -> 
           let ib1 = tuple_of_list1 ii in
           tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
@@ -433,6 +747,32 @@ and arguments_bis = fun eas ebs ->
             )
           ))
       | A.EComma ia1, _ -> fail
+
+      | A.MetaExprList (ida, keep, inherited), ys -> 
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            let startxs' = Ast_c.unsplit_comma startxs in
+            acc >||> (
+              X.envf keep inherited (term ida, Ast_c.MetaExprListVal startxs')
+              >>= (fun _s v -> 
+                  match v with
+                  | Ast_c.MetaExprListVal startxsenv -> 
+                      (* TODO
+                      if (Lib_parsing_c.al_expr expa =*= 
+                          Lib_parsing_c.al_expr expb)
+                      *)
+                     X.distrf_args ida (Ast_c.split_comma startxs')
+                  | _ -> raise Impossible) 
+              >>= (fun ida startxs -> 
+                  arguments_bis eas endxs >>= (fun eas endxs -> 
+                    return (
+                      (A.MetaExprList(ida,keep,inherited)) +> A.rewrap ea::eas,
+                      startxs ++ endxs
+                    ))
+                  )
+                )
+            ) fail 
+
 
       | _unwrapx, (Left eb)::ebs -> 
           argument ea eb >>= (fun ea eb -> 
@@ -446,11 +786,24 @@ and arguments_bis = fun eas ebs ->
       
 and argument arga argb = 
    match A.unwrap arga, argb with
+  | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
+      if sto <> (B.NoSto, false)
+      then failwith "the argument have a storage and ast_cocci does not have"
+      else 
+        fullType tya tyb >>= (fun tya tyb -> 
+          return (
+            (A.TypeExp tya) +> A.rewrap arga,
+            (Right (B.ArgType (tyb, (sto, iisto))))
+        ))
+
+  | A.TypeExp tya,  _                                  -> fail
+  | _,              Right (B.ArgType (tyb, sto_iisto)) -> fail
   | _, Left argb -> 
       expression arga argb >>= (fun arga argb -> 
         return (arga, Left argb)
       )
-  | _, _ -> raise Todo
+  | _, Right (B.ArgAction y) -> fail
+
 
 (* ------------------------------------------------------------------------- *)
 and (parameters: sequence -> 
@@ -478,10 +831,242 @@ and onedecl = fun decla declb ->
    raise Todo
 
 
+(* ------------------------------------------------------------------------- *)
+
+and (transform_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
+  =  fun inia inib -> 
+    raise Todo
+
+and transform_initialisers = fun ias ibs ->
+  raise Todo
+
+(* ------------------------------------------------------------------------- *)
 and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) = 
  fun typa typb -> 
-   raise Todo
 
+   match A.unwrap typa, typb with
+   | A.Type(cv,ty1), ((qu,il),ty2) ->
+
+       if qu.B.const && qu.B.volatile 
+       then pr2 ("warning: the type is both const & volatile but cocci " ^ 
+                 "does not handle that");
+
+	(* Drop out the const/volatile part that has been matched.
+         * This is because a SP can contain  const T v; in which case
+         * later in match_t_t when we encounter a T, we must not add in
+         * the environment the whole type.
+         *)
+       
+
+       (match cv with
+       (* "iso-by-absence" *)
+       | None -> fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 -> 
+           return (
+             (A.Type(None, ty1)) +> A.rewrap typa,
+             fullty2
+           ))
+       | Some x -> raise Todo
+(* XXX
+	let new_il todrop = List.filter (fun (pi,_) -> 
+          not (pi.Common.str = todrop)) 
+        in
+
+	| Some(A.Const,_,_) ->
+	    if qu.B.const
+	    then
+	      match_t_t ty1
+		(({qu with B.const = false},new_il "const" il),ty2)
+	    else return false
+	| Some(A.Volatile,_,_) ->
+	    if qu.B.volatile
+	    then
+	      match_t_t ty1
+		(({qu with B.volatile = false},new_il "volatile" il),ty2)
+	    else return false)
+*)
+
+
+       )
+
+   | A.OptType(_), _  | A.UniqueType(_), _ | A.MultiType(_), _ 
+       -> failwith "not handling Opt/Unique/Multi on type"
+
+ 
+
+(*
+ * Why not (Ast_cocci.typeC, Ast_c.typeC) matcher ?
+ * because when there is MetaType, we want that T record the whole type, 
+ * including the qualifier, and so this type (and the new_il function in
+ * preceding function).
+*)
+
+and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) = 
+  fun ta tb -> 
+  match A.unwrap ta, tb with
+
+  (* cas general *)
+  | A.MetaType(ida,keep, inherited),  typb -> 
+      X.envf keep inherited (term ida, B.MetaTypeVal typb) >>= (fun _s v ->  
+        match v with
+        | B.MetaTypeVal typa  -> 
+          if (Lib_parsing_c.al_type typa =*= Lib_parsing_c.al_type typb)
+          then X.distrf_type ida typb >>= (fun ida typb -> 
+            return (
+              A.MetaType(ida,keep, inherited) +> A.rewrap ta,
+              typb
+            ))
+          else fail
+        | _ -> raise Impossible
+      )
+  | unwrap, (qub, typb) -> 
+      typeC ta typb >>= (fun ta typb -> 
+        return (ta, (qub, typb))
+      )
+
+
+and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) = 
+  fun ta tb -> 
+  match A.unwrap ta, tb with
+  | A.BaseType (basea, signaopt), (B.BaseType baseb, ii) -> 
+      (* In ii there is a list, sometimes of length 1 or 2 or 3.
+       * And even if in baseb we have a Signed Int, that does not mean
+       * that ii is of length 2, cos Signed is the default, so if in signa
+       * we have Signed explicitely ? we cant "accrocher" this mcode to 
+       * something :( So for the moment when there is signed in cocci,
+       * we force that there is a signed in c too (done in pattern.ml).
+       *)
+      let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
+
+        
+      (* handle some iso on type ? (cf complex C rule for possible implicit
+	 casting) *)
+      (match term basea, baseb with
+      | A.VoidType,  B.Void 
+      | A.FloatType, B.FloatType (B.CFloat)
+      | A.DoubleType, B.FloatType (B.CDouble) -> 
+           assert (signaopt = None); 
+           let (ibaseb) = tuple_of_list1 ii in 
+           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+             return (
+               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (B.BaseType baseb, [ibaseb])
+             ))
+            
+      | A.CharType,  B.IntType B.CChar when signaopt = None -> 
+          let ibaseb = tuple_of_list1 ii in
+           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+             return (
+               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (B.BaseType (B.IntType B.CChar), [ibaseb])
+             ))
+            
+      | A.CharType,B.IntType (B.Si (_sign, B.CChar2)) when signaopt <> None -> 
+          let ibaseb = tuple_of_list1 iibaseb in
+          sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+            return (
+               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               )))
+          
+      | A.ShortType, B.IntType (B.Si (_, B.CShort)) 
+      | A.IntType,   B.IntType (B.Si (_, B.CInt))   
+      | A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
+          let ibaseb = tuple_of_list1 iibaseb in
+          sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+            return (
+               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+               )))
+
+            
+      | _, B.IntType (B.Si (_, B.CLongLong)) 
+      | _, B.FloatType B.CLongDouble 
+          -> 
+          pr2 "warning: long long or long double not handled by ast_cocci";
+          fail
+          
+          
+      | _, _ -> fail
+          
+          
+      )
+
+
+    (* todo? iso with array *)
+    | A.Pointer (typa, iamult),            (B.Pointer typb, ii) -> 
+        let (ibmult) = tuple_of_list1 ii in 
+        fullType typa typb >>= (fun typa typb -> 
+        tokenf iamult ibmult >>= (fun iamult ibmult -> 
+          return (
+            (A.Pointer (typa, iamult)) +> A.rewrap ta,
+            (B.Pointer typb, [ibmult])
+          )))
+        
+    (* todo: handle the iso on optionnal size specifification ? *)
+    | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) -> 
+        let (ib1, ib2) = tuple_of_list2 ii in
+        fullType typa typb >>= (fun typa typb -> 
+        option expression eaopt ebopt >>= (fun eaopt ebopt -> 
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+          return (
+            (A.Array (typa, ia1, eaopt, ia2)) +> A.rewrap ta,
+            (B.Array (ebopt, typb), [ib1;ib2])
+          )))))
+
+
+     (* todo: could also match a Struct that has provided a name *)
+    | A.StructUnionName(sua, sa), (B.StructUnionName (sb, sub), ii) -> 
+        (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
+        let (ib1, ib2) = tuple_of_list2 ii in
+        if equal_structUnion  (term sua) sub 
+        then
+          ident DontKnow sa (sb, ib2) >>= (fun sa (sb, ib2) -> 
+          tokenf sua ib1 >>= (fun sua ib1 -> 
+            return (
+              (A.StructUnionName (sua, sa)) +> A.rewrap ta,
+              (B.StructUnionName (sb, sub), [ib1;ib2])
+              )))
+        else fail
+        
+
+    | A.StructUnionDef(sua, sa, lb, decls, rb), _ -> 
+	failwith "to be filled in"
+
+   (* todo? handle isomorphisms ? because Unsigned Int can be match on a 
+    * uint in the C code. But some CEs consists in renaming some types,
+    * so we don't want apply isomorphisms every time. 
+    *) 
+    | A.TypeName sa,  (B.TypeName sb, ii) ->
+        let (isb) = tuple_of_list1 ii in
+        if (term sa) =$= sb
+        then 
+          tokenf sa isb >>= (fun sa isb -> 
+          return (
+            (A.TypeName sa) +> A.rewrap ta,
+            (B.TypeName sb, [isb])
+          ))
+        else fail
+          
+    | _, _ -> fail
+
+(* todo: iso on sign, if not mentioned then free.  tochange? 
+ * but that require to know if signed int because explicit
+ * signed int,  or because implicit signed int.
+ *)
+
+and sign signa signb = 
+  match signa, signb with
+  | None, None -> return (None, [])
+  | Some signa,  Some (signb, ib) -> 
+      if equal_sign (term signa) signb
+      then tokenf signa ib >>= (fun signa ib -> 
+        return (Some signa, [ib])
+      )
+      else fail
+  | _, _ -> fail
 
 (*****************************************************************************)
 (* Entry points *)
@@ -508,6 +1093,32 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   | A.MetaRuleElem(mcode,keep,inherited), unwrap_node -> 
       raise Todo
+(* XXX
+     (match unwrap_node with
+     | F.CaseNode _
+     | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
+       -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then failwith "try add stuff on fake node";
+         (* minusize or contextize a fake node is ok *)
+         return unwrap_node
+
+     | F.EndStatement None -> 
+         if mcode_contain_plus (mcodekind mcode)
+         then
+           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
+           let fake_info = Ast_c.al_info fake_info in
+           distrf distrf_node (mcodekind mcode) 
+             (F.EndStatement (Some fake_info)) 
+         else return unwrap_node
+         
+     | F.EndStatement (Some _) -> raise Impossible (* really ? *)
+
+     | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
+     | n -> distrf distrf_node (mcodekind mcode) n
+     )
+
+*)
 
 
   (* rene cant have found that a state containing a fake/exit/... should be 
@@ -525,7 +1136,18 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   (* really ? diff between pattern.ml and transformation.ml *)
   (* failwith "I cant have been called. I can only transform MetaRuleElem." *)
   | A.MetaStmt (ida,keep,_metainfo,inherited),  unwrap_node -> 
+      (* match only "header"-statement *)
       raise Todo
+(* XXX
+     (match Control_flow_c.extract_fullstatement node with
+     | Some stb -> 
+         envf inherited (term ida, Ast_c.MetaStmtVal stb) >>= (fun v -> 
+           (* do the match v with ... ? *)
+           return unwrap_node
+         )
+     | None -> fail
+     )
+*)
 
   (* not me?: *)
   | A.MetaStmtList _, _ -> 
@@ -561,6 +1183,65 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 		 allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       raise Todo
+(* XXX
+     (match ii with
+     | iidb::ioparenb::icparenb::iistob -> 
+        if isvaargs 
+        then failwith "not handling variable length arguments func";
+        let iidotsb' = iidotsb in (* todo *)
+
+        ident LocalFunction ida (idb, [iidb])        >>= (fun (idb', iidb') -> 
+        tokenf [oparen;cparen] [ioparenb;icparenb]   >>= (fun iiparensb' -> 
+        (* "iso-by-absence" for storage, and return type. *)
+        (match tya with
+        | None -> 
+            if allminus 
+            then distrf distrf_type (Ast_cocci.MINUS(None(*?*),[])) retb
+            else return retb
+        | Some tya -> fullType tya retb
+        ) >>= (fun retb' -> 
+        parameters (seqstyle paramsa) (A.undots paramsa) paramsb 
+          >>= (fun paramsb' -> 
+        (let stob' = stob in
+        let (iistob') = iistob in
+         (* TODO manage storage *)
+        return 
+          (F.FunHeader 
+              ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
+              (iidb'++iiparensb'++iistob'))
+          )
+        )
+          ))))
+     | _ -> raise Impossible
+     )
+*)
+
+
+
+
+
+  | A.Decl (need_to_do_something_with_this_mcodekind,decla), F.Decl declb -> 
+      raise Todo
+(* XXX
+      declaration decla declb >>= (fun decl' -> 
+        return (F.Decl (decl'))
+      )
+*)
+
+
+  | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 
+      tokenf mcode i1 >>= (fun mcode i1 -> 
+        return (
+          A.SeqStart mcode, 
+          F.SeqStart (st, level, i1)
+        ))
+
+  | A.SeqEnd mcode, F.SeqEnd (level, i1) -> 
+      tokenf mcode i1 >>= (fun mcode i1 -> 
+        return (
+          A.SeqEnd mcode,
+          F.SeqEnd (level, i1)
+          ))
 
   | A.ExprStatement (ea, ia1), F.ExprStatement (st, (Some eb, ii)) -> 
       let ib1 = tuple_of_list1 ii in 
@@ -573,6 +1254,112 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       ))
 
 
+  | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) -> 
+      let (ib1, ib2, ib3) = tuple_of_list3 ii in
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        return (
+          A.IfHeader (ia1, ia2, ea, ia3),
+          F.IfHeader (st, (eb,[ib1;ib2;ib3]))
+        )))))
+
+  | A.Else ia, F.Else ib -> 
+      tokenf ia ib >>= (fun ia ib -> 
+        return (A.Else ia, F.Else ib)
+      )
+
+  | A.WhileHeader (ia1, ia2, ea, ia3), F.WhileHeader (st, (eb, ii)) -> 
+      let (ib1, ib2, ib3) = tuple_of_list3 ii in
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        return (
+          A.WhileHeader (ia1, ia2, ea, ia3), 
+          F.WhileHeader (st, (eb, [ib1;ib2;ib3]))
+        )))))
+
+  | A.DoHeader ia, F.DoHeader (st, ib) -> 
+      tokenf ia ib >>= (fun ia ib -> 
+        return (
+          A.DoHeader ia, 
+          F.DoHeader (st, ib)
+        ))
+  | A.WhileTail (ia1,ia2,ea,ia3,ia4), F.DoWhileTail (eb, ii) -> 
+      let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+      expression ea eb >>= (fun ea eb -> 
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+      tokenf ia4 ib4 >>= (fun ia4 ib4 -> 
+        return (
+          A.WhileTail (ia1,ia2,ea,ia3,ia4), 
+          F.DoWhileTail (eb, [ib1;ib2;ib3;ib4])
+        ))))))
+      
+
+  | A.ForHeader (ia1, ia2, ea1opt, ia3, ea2opt, ia4, ea3opt, ia5), 
+    F.ForHeader (st, (((eb1opt,ib3s), (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
+    -> 
+      assert (null ib4vide);
+      let (ib1, ib2, ib5) = tuple_of_list3 ii in
+      let ib3 = tuple_of_list1 ib3s in
+      let ib4 = tuple_of_list1 ib4s in
+      
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+      tokenf ia4 ib4 >>= (fun ia4 ib4 -> 
+      tokenf ia5 ib5 >>= (fun ia5 ib5 -> 
+      option expression ea1opt eb1opt >>= (fun ea1opt eb1opt -> 
+      option expression ea2opt eb2opt >>= (fun ea2opt eb2opt -> 
+      option expression ea3opt eb3opt >>= (fun ea3opt eb3opt -> 
+        return (
+          A.ForHeader (ia1, ia2, ea1opt, ia3, ea2opt, ia4, ea3opt, ia5),
+          F.ForHeader (st, (((eb1opt,[ib3]), (eb2opt,[ib4]), (eb3opt,[])),
+                           [ib1;ib2;ib5]))
+
+        )))))))))
+
+
+  | A.Break (ia1, ia2), F.Break (st, ((),ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          A.Break (ia1, ia2), 
+          F.Break (st, ((),[ib1;ib2]))
+        )))
+
+  | A.Continue (ia1, ia2), F.Continue (st, ((),ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          A.Continue (ia1, ia2), 
+          F.Continue (st, ((),[ib1;ib2]))
+        )))
+
+  | A.Return (ia1, ia2), F.Return (st, ((),ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        return (
+          A.Return (ia1, ia2), 
+          F.Return (st, ((),[ib1;ib2]))
+        )))
+
+  | A.ReturnExpr (ia1, ea, ia2), F.ReturnExpr (st, (eb, ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      expression ea eb >>= (fun ea eb -> 
+        return (
+          A.ReturnExpr (ia1, ea, ia2), 
+          F.ReturnExpr (st, (eb, [ib1;ib2]))
+        ))))
 
 
   | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)

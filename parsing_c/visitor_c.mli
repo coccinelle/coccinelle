@@ -23,6 +23,8 @@ val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
 val vk_info      : visitor_c -> info -> unit
 
+val vk_args_splitted : visitor_c -> (argument, il) Common.either list -> unit
+
 type 'a inout = 'a -> 'a
 type visitor_c_s = {
   kexpr_s      : expression     inout * visitor_c_s -> expression     inout;
@@ -49,3 +51,8 @@ val vk_def_s : visitor_c_s -> definition -> definition
 val vk_program_s : visitor_c_s -> programElement -> programElement
 val vk_info_s : visitor_c_s -> info -> info
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
+
+val vk_args_splitted_s : 
+  visitor_c_s -> 
+  (argument, il) Common.either list -> 
+  (argument, il) Common.either list

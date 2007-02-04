@@ -1,7 +1,6 @@
 void main()
 {
   f(1,2,3);
-  h(1);
   if(1) 
     g(1);
   else 
