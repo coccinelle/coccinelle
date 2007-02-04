@@ -1160,13 +1160,13 @@ and statement stmt after quantified label guard =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
       let new_quantified4 = Common.union_set b4fvs new_quantified3 in
-      let fn_nest =
+      let fn_nest =(*
 	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
 	      Ast.Nest(stmt_dots,Ast.NoWhen,_) -> Some stmt_dots
 	    | _ -> None)
-	| _ -> None in
+	| _ -> *)None in
       let body_code =
 	match fn_nest with
 	  Some stmt_dots ->

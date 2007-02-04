@@ -270,7 +270,7 @@ let main () =
 	  Ctlcocci_integration.print_bench();
 
 	  if !save_output_file 
-          then Common.command2 ("cp " ^ generated_file ^ saved);
+          then Common.command2 ("cp " ^ generated_file ^ " " ^ saved);
 
           if !compare_with_expected then 
             Testing.print_diff_expected_res_and_exit
