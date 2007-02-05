@@ -646,7 +646,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
                           storage),
                          []
                         ], iiptvirg::iifake::iisto))  -> 
-                    (try 
+                    (try
+                        (* XXX *)
                         Transformation.transform_proto
                           (Ast_cocci.rewrap info
 			     (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))

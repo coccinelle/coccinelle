@@ -608,7 +608,7 @@ and (match_params:
           (* filtered by the caller, in the case for FunDecl *)
           | A.PComma (_), ys -> raise Impossible 
 
-          | A.MetaParam (ida,keep,inherited), y::ys -> 
+          | A.MetaParam (ida,keep,inherited), (y,_)::ys -> 
              (* todo: use quaopt, hasreg ? *)
 	      check_add_metavars_binding keep inherited
                 (term ida, Ast_c.MetaParamVal (y)) >&&>

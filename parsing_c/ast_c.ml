@@ -355,8 +355,8 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaExprListVal  of argument wrap2 list
   | MetaTypeVal      of fullType
   | MetaStmtVal      of statement
-  | MetaParamVal     of parameterType wrap
-  | MetaParamListVal of (parameterType wrap) list
+  | MetaParamVal     of parameterType
+  | MetaParamListVal of parameterType wrap2 list
   | MetaTextVal         of string
 
 (*****************************************************************************)
@@ -450,4 +450,11 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
       raise Impossible
 
 
+
+let split_register_param = fun (hasreg, idb, ii_b_s) -> 
+  match hasreg, idb,  ii_b_s with
+  | false, Some s, [i1] -> Left (s, [], i1)
+  | true, Some s, [i1;i2] -> Left (s, [i1], i2)
+  | _, None, ii -> Right ii
+  | _ -> raise Impossible
 

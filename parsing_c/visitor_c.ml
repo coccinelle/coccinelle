@@ -446,11 +446,25 @@ and vk_info = fun bigf info ->
   infof info
 
 
+let vk_param = fun bigf (((b, s, t), iibs)) ->  
+  let iif ii = List.iter (vk_info bigf) ii in
+  iif iibs;
+  vk_type bigf t
+
 
 let vk_args_splitted = fun bigf args_splitted -> 
   let iif ii = List.iter (vk_info bigf) ii in
   args_splitted +> List.iter (function  
   | Left arg -> vk_argument bigf arg
+  | Right ii -> iif ii
+  )
+
+
+
+let vk_params_splitted = fun bigf args_splitted -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+  args_splitted +> List.iter (function  
+  | Left arg -> vk_param bigf arg
   | Right ii -> iif ii
   )
   
@@ -844,10 +858,22 @@ and vk_node_s = fun bigf node ->
   nodef node
   
   
+
+let vk_param_s = fun bigf ((b, s, t), iibs) -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  ((b, s, vk_type_s bigf t), iif iibs)
         
 let vk_args_splitted_s = fun bigf args_splitted -> 
   let iif ii = List.map (vk_info_s bigf) ii in
   args_splitted +> List.map (function  
   | Left arg -> Left (vk_argument_s bigf arg)
+  | Right ii -> Right (iif ii)
+  )
+
+
+let vk_params_splitted_s = fun bigf args_splitted -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  args_splitted +> List.map (function  
+  | Left arg -> Left (vk_param_s bigf arg)
   | Right ii -> Right (iif ii)
   )

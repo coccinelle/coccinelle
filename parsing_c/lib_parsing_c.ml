@@ -43,6 +43,8 @@ let ii_of_node = extract_info_visitor Visitor_c.vk_node
 let ii_of_expr = extract_info_visitor Visitor_c.vk_expr
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
 let ii_of_type = extract_info_visitor Visitor_c.vk_type
+let ii_of_param = extract_info_visitor Visitor_c.vk_param
+let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 
 let max_min_ii_by_pos xs = 
 

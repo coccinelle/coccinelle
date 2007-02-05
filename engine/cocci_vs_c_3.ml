@@ -24,6 +24,7 @@ let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
     | A.CIRCLES _ -> A.CIRCLES easundots
     | A.STARS _ -> A.STARS easundots
   )
+
         
 (* todo? put in semantic_c.ml *)
 type info_ident = 
@@ -72,7 +73,6 @@ let equal_unaryOp a b =
   | A.Not      , B.Not     -> true
   | _, _ -> false
 
-
 let equal_arithOp a b = 
   match a, b with
   | A.Plus     , B.Plus     -> true
@@ -98,15 +98,12 @@ let equal_logicalOp a b =
   | A.AndLog , B.AndLog -> true
   | A.OrLog  , B.OrLog  -> true
   | _          , _          -> false
-  
-
 
 let equal_assignOp a b = 
   match a, b with
   | A.SimpleAssign, B.SimpleAssign -> true
   | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
   | _ -> false
-
 
 let equal_fixOp a b = 
   match a, b with
@@ -120,13 +117,11 @@ let equal_binaryOp a b =
   | A.Logical a,  B.Logical b -> equal_logicalOp a b
   | _ -> false
 
-
 let equal_structUnion a b = 
   match a, b with
   | A.Struct, B.Struct -> true
   | A.Union,  B.Union -> true
   | _, _ -> false
-
 
 let equal_sign a b = 
   match a, b with
@@ -144,6 +139,7 @@ let equal_storage a b =
   | _ -> false
 
 (*---------------------------------------------------------------------------*)
+(* could put in ast_c.ml, next to the split/unsplit_comma *)
 let split_signb_baseb_ii (baseb, ii) = 
   let iis = ii +> List.map (fun (ii,mc) -> ii.Common.str, (ii,mc)) in
   match baseb, iis with
@@ -235,11 +231,16 @@ module type PARAM =
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
     val tokenf : ('a A.mcode, B.info) matcher
+    val tokenf_mck : (A.mcodekind, B.info) matcher
 
     val distrf_e : (string A.mcode, B.expression) matcher
     val distrf_args : 
       (string A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
     val distrf_type : (string A.mcode, Ast_c.fullType) matcher
+    val distrf_params : 
+      (string A.mcode, (Ast_c.parameterType, Ast_c.il) either list) matcher
+    val distrf_param : 
+      (string A.mcode, Ast_c.parameterType) matcher
     (*
     val distrf_node : Control_flow_c.node2 tdistr
     *)
@@ -321,7 +322,15 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 
       (* get binding, assert =*=,  distribute info in ida *)
       X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun _s v ->
+        (* todo: now that we have tagged SP, useless to check if what is
+         * in env match what is in C because the tag on ida will detect
+         * it also sooner or later
+         *)
+           
         match v with
+        (* the expa is 'abstract-lined' so should not be the base of 
+         *  futur processing. Just here to check. Then use expb! 
+         *)
         | Ast_c.MetaExprVal expa -> 
             if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb) && 
                match_type
@@ -695,7 +704,6 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
 and (arguments: sequence -> 
       (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
-  (* in fact it gives the  unwrapped and the wrapped version *)
   match seqstyle with
   | Unordered -> failwith "not handling ooo"
   | Ordered -> 
@@ -809,35 +817,289 @@ and argument arga argb =
 and (parameters: sequence -> 
       (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
         matcher) = 
- fun seqstyle pas pbs ->
-   raise Todo
+ fun seqstyle eas ebs ->
+  match seqstyle with
+  | Unordered -> failwith "not handling ooo"
+  | Ordered -> 
+      parameters_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted -> 
+        return (eas, (Ast_c.unsplit_comma ebs_splitted))
+      )
 
-and (parameter: (Ast_cocci.parameterTypeDef, (Ast_c.parameterType)) matcher) = 
- fun pa pb  -> 
-   raise Todo
+
+and parameters_bis eas ebs = 
+  match eas, ebs with
+  | [], [] -> return ([], [])
+  | [], eb::ebs -> fail
+  | ea::eas, ebs -> 
+      (match A.unwrap ea, ebs with
+      | A.Pdots (mcode), ys -> 
+
+          (* '...' can take more or less the beginnings of the arguments *)
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> (
+              X.distrf_params mcode startxs >>= (fun mcode startxs ->
+              parameters_bis eas endxs >>= (fun eas endxs -> 
+                return (
+                  (A.Pdots (mcode) +> A.rewrap ea) ::eas,
+                  startxs ++ endxs
+                )))
+              )
+            ) fail 
+
+      | A.PComma ia1, Right ii::ebs -> 
+          let ib1 = tuple_of_list1 ii in
+          tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+          parameters_bis eas ebs >>= (fun eas ebs -> 
+            return (
+              (A.PComma ia1 +> A.rewrap ea)::eas,
+              (Right [ib1])::ebs
+            )
+          ))
+
+      | A.PComma ia1, _ -> fail
+
+      | A.MetaParamList (ida, keep, inherited), ys -> 
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            let startxs' = Ast_c.unsplit_comma startxs in
+            acc >||> (
+              X.envf keep inherited (term ida, Ast_c.MetaParamListVal startxs')
+              >>= (fun _s v -> 
+                  match v with
+                  | Ast_c.MetaParamListVal startxsenv -> 
+                      (* TODO
+                      if (Lib_parsing_c.al_expr expa =*= 
+                          Lib_parsing_c.al_expr expb)
+                      *)
+                     X.distrf_params ida (Ast_c.split_comma startxs')
+                  | _ -> raise Impossible) 
+              >>= (fun ida startxs -> 
+                  parameters_bis eas endxs >>= (fun eas endxs -> 
+                    return (
+                      (A.MetaParamList(ida,keep,inherited))+> A.rewrap ea::eas,
+                      startxs ++ endxs
+                    ))
+                  )
+                )
+            ) fail 
+
+
+      | A.VoidParam _, _ -> failwith "handling VoidParam"
+          (* XXX
+                  assert (null ys);
+                  assert (
+                    match typb with 
+                    | (_qua, (B.BaseType B.Void,_)) -> true
+                    | _ -> false
+                          );
+   
+                  return false
+              
+          *)
+
+
+      | (A.OptParam _ | A.UniqueParam _), _ -> 
+              failwith "handling Opt/Unique/Multi for Param"
+
+      | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
+
+
+      | A.MetaParam (ida,keep,inherited), (Left eb)::ebs -> 
+          (* todo: use quaopt, hasreg ? *)
+          X.envf keep inherited (term ida, Ast_c.MetaParamVal eb) >>= 
+            (fun _s v -> 
+              match v with
+              | Ast_c.MetaParamVal ea -> 
+                  (* TODO
+                     if (Lib_parsing_c.al_expr expa =*= 
+                     Lib_parsing_c.al_expr expb)
+                  *)
+                  X.distrf_param ida eb
+              | _ -> raise Impossible
+            ) >>= (fun ida eb -> 
+              parameters_bis eas ebs >>= (fun eas ebs -> 
+                return (
+                  (A.MetaParam(ida,keep,inherited))+> A.rewrap ea::eas,
+                  (Left eb)::ebs
+                )))
+
+
+      | A.Param (ida, typa), (Left eb)::ebs -> 
+          parameter (ida, typa) eb >>= (fun (ida, typa) eb -> 
+          parameters_bis eas ebs >>= (fun eas ebs -> 
+            return (
+              (A.Param (ida, typa))+> A.rewrap ea :: eas,
+              (Left eb)::ebs
+            )))
+          
+      | _unwrapx, (Right y)::ys -> raise Impossible
+      | _unwrapx, [] -> fail
+      )
+  
+
+
+
+
+and parameter = fun (ida, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
+  fullType typa typb >>= (fun typa typb -> 
+  match Ast_c.split_register_param (hasreg, idbopt, ii_b_s) with
+  | Left (idb, iihasreg, iidb) -> 
+      (* todo: if minus on ida, should also minus the iihasreg ? *)
+      ident DontKnow ida (idb,iidb) >>= (fun ida (idb,iidb) -> 
+        return (
+          (ida, typa),
+          ((hasreg, Some idb, typb), iihasreg++[iidb])
+        ))
+        
+  (* why handle this case ? because of transform_proto ? we may not
+   * have an ident in the proto.
+   * If have some plus on ida ? do nothing about ida ? 
+   *)
+  | Right iihasreg -> 
+      return (
+        (ida, typa),
+        ((hasreg, None, typb), iihasreg)
+      )
+  )
+
 
 
 
 (* ------------------------------------------------------------------------- *)
-and (declaration: (Ast_cocci.declaration, Ast_c.declaration) matcher) =
- fun decla declb -> 
-   raise Todo
+and (declaration: (A.mcodekind * A.declaration, B.declaration) matcher) =
+ fun (mckstart, decla) declb -> 
 
-(* facto with code for FunHeader ? *)
+(* XXX
+ fun decla (B.DeclList (xs, _)) -> 
+   xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
+     (return false)
+*)
+
+   match declb with
+  | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
+      onedecl decla (var,iiptvirgb,iisto) >>=(fun decla (var,iiptvirgb,iisto)->
+      X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
+      return (
+        (mckstart, decla),
+        (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
+      )))
+        
+  | (B.DeclList (x::y::xs, iiptvirgb::iifakestart::iisto)) -> 
+      failwith "More that one variable in decl. Have to split to transform."
+  
+  | _ -> raise Impossible                
+
+
 and storage stoa stob =
-  raise Todo
+  (* "iso-by-absence" for storage. *)
+  match stoa, stob with 
+  | None, _ -> 
+      return (None, stob)
+  | Some x, ((stobis, inline),iistob) -> 
+      if equal_storage (term x) stobis
+      then 
+        match iistob with
+        | [i1] ->
+           tokenf x i1 >>= (fun x i1 -> 
+             return (Some x,  ((stobis, inline), [i1]))
+           )
+       (* or if have inline ? have to do a split_storage_inline a la 
+        * split_signb_baseb_ii *)
+        | _ -> raise Impossible 
+      else fail
+  
 
-and onedecl = fun decla declb -> 
-   raise Todo
+
+
+
+
+and onedecl = fun decla (declb, iiptvirgb, iistob) -> 
+   match A.unwrap decla, declb with
+  (* Un Metadecl est introduit dans l'asttoctl pour sauter au dessus
+   * de toutes les declarations qui sont au debut d'un fonction et
+   * commencer le reste du match au premier statement. Alors, ca matche
+   * n'importe quelle declaration. On n'a pas besoin d'ajouter
+   * quoi que ce soit dans l'environnement. C'est une sorte de DDots.
+   *)
+   | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
+       return (decla, (declb, iiptvirgb, iistob))
+
+
+    (* could handle iso here but handled in standard.iso *)
+   | A.UnInit (stoa, typa, ida, ptvirga), 
+     ((Some ((idb, None),[iidb]), typb, stob), iivirg) -> 
+       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
+       fullType typa typb >>= (fun typa typb -> 
+       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+       storage stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
+         return (
+           (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
+           (((Some ((idb,None),[iidb]),typb,stob),iivirg),iiptvirgb,iistob)
+         )))))
+
+
+
+   | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
+     ((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg)
+       ->
+       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
+       tokenf eqa iieqb >>= (fun eqa iieqb -> 
+       fullType typa typb >>= (fun typa typb -> 
+       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+       storage stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
+       initialiser inia inib >>= (fun inia inib -> 
+         return (
+           (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
+           (((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg),
+           iiptvirgb,iistob)
+         )))))))
+           
+
+   | A.TyDecl (typa, _), _ ->
+       failwith "fill something in for a declaration that is just a type"
+       
+   | _, ((None, typb, sto), _) -> 
+       failwith "no variable in this declaration, wierd"
+
+
+   | A.DisjDecl declas, declb -> 
+       declas +> List.fold_left (fun acc decla -> 
+         acc >|+|> (onedecl decla (declb,iiptvirgb, iistob))) fail
+            
+   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
+       failwith "not handling Opt/Unique/Multi Decl"
+   | _, _ -> fail
+
 
 
 (* ------------------------------------------------------------------------- *)
 
-and (transform_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
+and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
   =  fun inia inib -> 
+(*
+      (match (A.unwrap inia,inib) with
+      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
+      | _ -> 
+          pr2 "warning: complex initializer, cocci does not handle that";
+          return false
+      )
+*)
+(*
+       let ini' = 
+         match (A.unwrap inia,ini) with
+         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
+             assert (null ii);
+             B.InitExpr (transform_e_e expa  expb binding), ii
+         | _ -> 
+             pr2 "warning: complex initializer, cocci does not handle that";
+             raise NoMatch
+       in
+*)
+
     raise Todo
 
-and transform_initialisers = fun ias ibs ->
+and initialisers = fun ias ibs ->
   raise Todo
 
 (* ------------------------------------------------------------------------- *)
@@ -1179,54 +1441,66 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )
       )
 
-  | A.FunHeader (need_to_do_something_with_this_mcodekind,
-		 allminus, stoa, tya, ida, oparen, paramsa, cparen),
+  | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
-      raise Todo
-(* XXX
-     (match ii with
-     | iidb::ioparenb::icparenb::iistob -> 
-        if isvaargs 
-        then failwith "not handling variable length arguments func";
-        let iidotsb' = iidotsb in (* todo *)
 
-        ident LocalFunction ida (idb, [iidb])        >>= (fun (idb', iidb') -> 
-        tokenf [oparen;cparen] [ioparenb;icparenb]   >>= (fun iiparensb' -> 
-        (* "iso-by-absence" for storage, and return type. *)
-        (match tya with
-        | None -> 
-            if allminus 
-            then distrf distrf_type (Ast_cocci.MINUS(None(*?*),[])) retb
-            else return retb
-        | Some tya -> fullType tya retb
-        ) >>= (fun retb' -> 
-        parameters (seqstyle paramsa) (A.undots paramsa) paramsb 
-          >>= (fun paramsb' -> 
-        (let stob' = stob in
-        let (iistob') = iistob in
-         (* TODO manage storage *)
-        return 
-          (F.FunHeader 
-              ((idb', (retb', (paramsb', (isvaargs, iidotsb'))), stob'), 
-              (iidb'++iiparensb'++iistob'))
-          )
-        )
-          ))))
-     | _ -> raise Impossible
-     )
-*)
+      if isvaargs 
+      then failwith "not handling variable length arguments func";
+      let iidotsb = iidotsb in (* todo *)
 
+      (match ii with
+      | iidb::ioparenb::icparenb::iifakestart::iistob -> 
 
+          ident LocalFunction ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+          X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
+          tokenf oparen ioparenb >>= (fun oparen ioparenb ->
+          tokenf cparen icparenb >>= (fun cparen icparenb ->
+          parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
+            (fun paramsaundots paramsb -> 
+              let paramsa = redots paramsa paramsaundots in
 
-
-
-  | A.Decl (need_to_do_something_with_this_mcodekind,decla), F.Decl declb -> 
-      raise Todo
-(* XXX
-      declaration decla declb >>= (fun decl' -> 
-        return (F.Decl (decl'))
+          (* "iso-by-absence" for storage, and return type. *)
+              (match stoa with
+              | None -> 
+                  if allminus 
+                  then raise Todo
+                  else return (None, (stob, iistob))
+              | Some stoa -> 
+                  storage (Some stoa) (stob, iistob)
+              ) >>= (fun stoa (stob, iistob) -> 
+                match tya with 
+                | None -> 
+                    if allminus
+                    then raise Todo
+                      (* distrf_type (Ast_cocci.MINUS(None(*?*),[])) retb *)
+                    else return (None, retb)
+                | Some tya -> 
+                    fullType tya retb >>= (fun tya retb -> 
+                      return (Some tya, retb)
+                    )
+              ) >>= (fun tya retb -> 
+                return (
+                A.FunHeader(mckstart,allminus,stoa,tya,ida,oparen,
+                           paramsa,cparen),
+                F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), 
+                             stob), 
+                            iidb::ioparenb::icparenb::iifakestart::iistob)
+                )
+              ))))))
+      | _ -> raise Impossible
       )
-*)
+
+
+
+
+
+
+  | A.Decl (mckstart,decla), F.Decl declb -> 
+      declaration (mckstart,decla) declb >>= (fun (mckstart,decla) declb -> 
+        return (
+          A.Decl (mckstart,decla),
+          F.Decl declb
+        ))
 
 
   | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 

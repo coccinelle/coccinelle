@@ -110,25 +110,31 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* Tokens *) 
   (* ------------------------------------------------------------------------*)
-  let tag_mck_pos (x,info,mck) posmck stuff = fun binding -> 
+  let tag_mck_pos mck posmck =
+    match mck with 
+    | Ast_cocci.PLUS -> Ast_cocci.PLUS
+    | Ast_cocci.CONTEXT (pos, xs) -> 
+        assert (pos = None);
+        Ast_cocci.CONTEXT (posmck, xs)
+    | Ast_cocci.MINUS (pos, xs) -> 
+        assert (pos = None);
+        Ast_cocci.MINUS (posmck, xs)
+  
 
-    let mck = 
-      match mck with 
-      | Ast_cocci.PLUS -> Ast_cocci.PLUS
-      | Ast_cocci.CONTEXT (pos, xs) -> 
-          assert (pos = None);
-          Ast_cocci.CONTEXT (posmck, xs)
-      | Ast_cocci.MINUS (pos, xs) -> 
-          assert (pos = None);
-          Ast_cocci.MINUS (posmck, xs)
-    in
-    [((x, info, mck),stuff), binding]
-
+  let tag_mck_pos_mcode (x,info, mck) posmck stuff = fun binding -> 
+    [((x, info, tag_mck_pos mck posmck),stuff), binding]
+    
 
   let tokenf ia ib = fun binding -> 
     let pos = Ast_c.get_pos_of_info ib in
     let posmck = Some (pos, pos) in
-    tag_mck_pos ia posmck ib binding
+    tag_mck_pos_mcode ia posmck ib binding
+
+  let tokenf_mck mck ib = fun binding -> 
+    let pos = Ast_c.get_pos_of_info ib in
+    let posmck = Some (pos, pos) in
+    [(tag_mck_pos mck posmck, ib), binding]
+    
     
 
   (* ------------------------------------------------------------------------*)
@@ -139,11 +145,13 @@ module XMATCH = struct
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
     let posmck = Some (min, max) (* subtil: and not max, min !!*) in
-    tag_mck_pos mcode posmck x binding
+    tag_mck_pos_mcode mcode posmck x binding
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args)
   let distrf_type = distrf (Lib_parsing_c.ii_of_type)
+  let distrf_param = distrf (Lib_parsing_c.ii_of_param)
+  let distrf_params = distrf (Lib_parsing_c.ii_of_params)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *) 

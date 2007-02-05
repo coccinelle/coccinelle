@@ -486,6 +486,9 @@ and (transform_param:
             in
             let typb' = transform_ft_ft typa typb binding in
             (hasreg, Some idb', typb'), (iihasreg++iidb') 
+         (* why handle this case ? because of transform_proto ? we may not
+          *  have an ident in the proto.
+          *)
         | Right iihasreg -> 
             let typb' = transform_ft_ft typa typb binding in
             (hasreg, None, typb'), (iihasreg) 
@@ -500,6 +503,7 @@ and (transform_param:
 and transform_de_de = fun mckstart decla declb -> 
   fun binding -> 
   match declb with
+  (* TODO iisto *)
   | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
       let (var', iiptvirgb') = transform_onedecl decla (var, iiptvirgb) binding
       in

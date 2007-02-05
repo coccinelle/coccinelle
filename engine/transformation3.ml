@@ -124,6 +124,12 @@ module XTRANS = struct
     then return (ia, tag_with_mck mck ib binding) binding
     else fail binding
 
+  let tokenf_mck mck ib = fun binding -> 
+    let pos = Ast_c.get_pos_of_info ib in
+    if check_pos mck pos 
+    then return (mck, tag_with_mck mck ib binding) binding
+    else fail binding
+
 
   (* ------------------------------------------------------------------------*)
   (* Distribute mcode *) 
@@ -216,6 +222,13 @@ module XTRANS = struct
   let distribute_mck_type (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_type_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_param (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_param_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_params (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
+    Visitor_c.vk_params_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+      x
+
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
     fun ia x -> fun binding -> 
@@ -234,6 +247,8 @@ module XTRANS = struct
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args,  distribute_mck_args)
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
+  let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
+  let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
 
 
   (* ------------------------------------------------------------------------*)
@@ -295,3 +310,43 @@ let transform a b =
   Common.profile_code "Transformation2.transform(proto)?" 
     (fun () -> transform2 a b)
 
+
+
+
+(* ------------------------------------------------------------------------- *)
+let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen = 
+  raise Todo
+
+(* XXX
+  let node' = transform_re_node a b binding in
+  match F.unwrap node' with
+  | F.FunHeader 
+      ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
+
+        (* Also delete the ';' at the end of the proto.
+         * The heuristic is to see if the ')' was deleted. Buggy but
+         * first step.
+         * todo: what if SP is '-f(int i) { +f(int i, char j) { ' 
+         * I will not accuratly modify the proto.
+         * todo?: maybe can use the allminusinfo of Ast_cocci.FunHeader ?
+         *)
+        let iiptvirg' = 
+          if mcode_simple_minus (mcodekind infolastparen)
+          then tag_one_symbol infolastparen iiptvirg  binding
+          else iiptvirg
+        in
+        B.Declaration 
+          (B.DeclList 
+             ([((Some ((s, None), [iis])), 
+                (qu, (B.FunctionType ft, [iioparen;iicparen])), 
+                storage),
+               []
+             ], iiptvirg'::iisto)) 
+          
+  | _ -> 
+      raise Impossible
+*)
+
+let transform_proto a b c d e = 
+  Common.profile_code "Transformation.transform(proto)?" 
+   (fun () -> transform_proto2 a b c d e)

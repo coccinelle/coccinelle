@@ -24,6 +24,9 @@ val vk_node      : visitor_c -> Control_flow_c.node -> unit
 val vk_info      : visitor_c -> info -> unit
 
 val vk_args_splitted : visitor_c -> (argument, il) Common.either list -> unit
+val vk_param : visitor_c -> parameterType -> unit
+val vk_params_splitted : 
+  visitor_c -> (parameterType, il) Common.either list -> unit
 
 type 'a inout = 'a -> 'a
 type visitor_c_s = {
@@ -56,3 +59,11 @@ val vk_args_splitted_s :
   visitor_c_s -> 
   (argument, il) Common.either list -> 
   (argument, il) Common.either list
+
+
+val vk_params_splitted_s : 
+  visitor_c_s -> 
+  (parameterType, il) Common.either list -> 
+  (parameterType, il) Common.either list
+
+val vk_param_s : visitor_c_s -> parameterType -> parameterType
