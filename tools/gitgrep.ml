@@ -2,7 +2,7 @@
 let prefix = "/tmp/"
 let prefix = ""
 
-type dir = Minus | Plus
+type dir = Minus | Plus | Context
 
 let space = Str.regexp " "
 
@@ -20,7 +20,9 @@ let scan dir pattern i =
     | _ ->
 	if String.length line > 0 && not skipping &&
 	  ((String.get line 0 = '-' && dir = Minus) or
-	   (String.get line 0 = '+' && dir = Plus)) &&
+	   (String.get line 0 = '+' && dir = Plus) or
+	   (not (String.get line 0 = '-') && not (String.get line 0 = '+') &&
+	    dir = Context)) &&
 	  matches pattern line
 	then (res := git::!res; loop true git)
 	else loop skipping git in
@@ -52,6 +54,7 @@ let rec split_args = function
     [] -> []
   | "-"::pattern::rest -> (Minus,Str.regexp pattern) :: split_args rest
   | "+"::pattern::rest -> (Plus,Str.regexp pattern) :: split_args rest
+  | "@"::pattern::rest -> (Context,Str.regexp pattern) :: split_args rest
   | _ -> failwith "bad argument list"
 
 let process_one (dir,pattern) version =
@@ -64,7 +67,7 @@ let inter l1 l2 = List.filter (function x -> List.mem x l1) l2
 
 let _ =
   if Array.length Sys.argv < 4
-  then failwith "arguments: -/+ pattern -/+ pattern ... version";
+  then failwith "arguments: -/+/@ pattern -/+/@ pattern ... version";
   let args = List.tl(Array.to_list Sys.argv) in
   let version = List.hd(List.rev args) in
   let pairs = List.rev(List.tl(List.rev args)) in
