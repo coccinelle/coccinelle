@@ -55,6 +55,18 @@ let mcode_simple_minus = function
 
 
 (*---------------------------------------------------------------------------*)
+
+
+(* 0x0 is equivalent to 0,  value format isomorphism *)
+let equal_c_int s1 s2 = 
+  try 
+    int_of_string s1 = int_of_string s2
+  with Failure("int_of_string") -> 
+    s1 = s2
+
+
+
+(*---------------------------------------------------------------------------*)
 (* Normally Ast_cocci should reuse some types of Ast_c, so those
  * functions should not exist.
  * 
@@ -248,7 +260,8 @@ module type PARAM =
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
-    (* val cocciTy *)
+    val cocciTy : 
+      (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
     val envf : 
       bool (*keep*) -> A.inherited -> 
@@ -310,15 +323,22 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
   
   (* general case: a MetaExpr can match everything *)
   | A.MetaExpr (ida,keep,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
-      let match_type = 
-        match opttypa, opttypb with
-        | None, _ -> true
+
+      (match opttypa, opttypb with
+        | None, _ -> return ((),())
         | Some tas, Some tb -> 
-            tas +> List.exists (fun ta ->  Types.compatible_type ta tb)
+            tas +> List.fold_left (fun acc ta ->  
+              acc >||> (
+                if Types.compatible_type ta tb
+                then return ((),())
+                else fail
+              )) fail
         | Some _, None -> 
-            failwith ("I have not the type information. Certainly a pb in " ^
-                         "annotate_typer.ml")
-      in
+            pr2 ("I don't have the type information. Certainly a pb in " ^
+                         "annotate_typer.ml");
+            fail
+      ) >>= (fun () () ->
+
 
       (* get binding, assert =*=,  distribute info in ida *)
       X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun _s v ->
@@ -332,8 +352,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
          *  futur processing. Just here to check. Then use expb! 
          *)
         | Ast_c.MetaExprVal expa -> 
-            if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb) && 
-               match_type
+            if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
             then 
               X.distrf_e ida expb >>= (fun ida expb -> 
                 return (
@@ -342,7 +361,15 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
                 ))
             else fail
         | _ -> raise Impossible
-      )
+      ))
+
+  (* old: 
+   * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+   *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+   * but bug! because if have not tagged SP, then transform without doing
+   * any checks. Hopefully now have tagged SP technique.
+   *)
+
 
   (* old: | A.Edots _, _ -> raise Impossible. In fact now can also have
    * the Edots inside normal expression, not just in arg lists. in
@@ -377,20 +404,22 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
    * recurse on the string 
    *)
   | A.Constant (ia1), ((B.Constant (ib) , typ),ii) -> 
+      let do1 () = 
+        let ib1 = tuple_of_list1 ii in 
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+          return ( 
+            ((A.Constant ia1)) +> wa, 
+            ((B.Constant (ib), typ),[ib1])
+          ))
+      in
+
       (match term ia1, ib with 
-      | A.Int x, B.Int y 
-      | A.Char x, B.Char (y,_) (* todo: use kind ? *)
-      | A.Float x, B.Float (y,_) (* todo: use floatType ? *)
-          -> 
-          if x =$= y 
-          then 
-            let ib1 = tuple_of_list1 ii in 
-            tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-              return ( 
-                ((A.Constant ia1)) +> wa, 
-                ((B.Constant (ib), typ),[ib1])
-              ))
-          else fail
+      | A.Int x, B.Int y when equal_c_int x y -> do1 ()
+      | A.Char x, B.Char (y,_) when x =$= y  (* todo: use kind ? *)
+          -> do1 ()
+      | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
+          -> do1 ()
+
       | A.String sa, B.String (sb,_kind) -> 
           (match ii with
           | [ib1] -> 
@@ -612,7 +641,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
   | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
       failwith "not handling Opt/Unique/Multi on expr"
 
- (* Because of Exp cant put a raise Impossible; have to put a raise NoMatch; *)
+ (* Because of Exp cant put a raise Impossible; have to put a fail *)
 
  (* have not a counter part in coccinelle, for the moment *) 
   | _, ((B.Sequence _,_),_) 
@@ -1023,6 +1052,7 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
    * quoi que ce soit dans l'environnement. C'est une sorte de DDots.
    *)
    | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
+       (* todo: should not happen in transform mode *)
        return (decla, (declb, iiptvirgb, iistob))
 
 
@@ -1057,10 +1087,13 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
            
 
    | A.TyDecl (typa, _), _ ->
+      (* accept only '((None, typb, sto), _)' or do iso-by-absence here ?
+         allow typedecl and var ? *)
        failwith "fill something in for a declaration that is just a type"
        
    | _, ((None, typb, sto), _) -> 
-       failwith "no variable in this declaration, wierd"
+       (* old:   failwith "no variable in this declaration, wierd" *)
+       fail
 
 
    | A.DisjDecl declas, declb -> 
@@ -1095,11 +1128,155 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
              pr2 "warning: complex initializer, cocci does not handle that";
              raise NoMatch
        in
+
+
++    match (A.unwrap inia,inib) with
++    | (A.InitExpr expa, (B.InitExpr expb, _ii)) -> match_e_e expa expb
++    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, _ii)) -> 
++        match_initialisers ias (Ast_c.split_comma ibs)
++    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, _ii)) -> 
++        failwith "TODO: not handling whencode in initialisers"
++    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), _ii)) -> 
++        match_ident DontKnow ida idb >&&> 
++        match_initialiser inia inib
++    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), _ii)) -> 
++        match_ident DontKnow ida idb >&&> 
++        match_initialiser inia inib
++
++    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
++        match_e_e ea eb >&&>
++        match_initialiser inia inib
++
++    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
++      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
++        match_e_e e1a e1b >&&>
++        match_e_e e2a e2b >&&>
++        match_initialiser inia inib
++
++    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
++      failwith "not handling Opt/Unique/Multi on initialisers"
++          
++    | _, _ -> return false
+
+*)
+
+(*
++   match (A.unwrap inia,ini) with
++   | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
++       assert (null ii);
++       B.InitExpr (transform_e_e expa  expb binding), ii
++
++    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, ii)) -> 
++        let ii' = 
++          (match ii with 
++          | ii1::ii2::iicommaopt -> 
++              tag_symbols [i1;i2] [ii1;ii2] binding ++ iicommaopt
++          | _ -> raise Impossible
++          )
++        in
++        B.InitList 
++          (Ast_c.unsplit_comma
++             (transform_initialisers ias (Ast_c.split_comma ibs) binding
++          )),
++        ii'
++
++    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, ii)) -> 
++        failwith "TODO: not handling whencode in initialisers"
++
++    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), ii)) -> 
++        (match ii with 
++        | [iidot;iidb;iieq] -> 
++
++            let (_, iidb') = 
++              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
++            in
++            let ii' = 
++              tag_symbols [i1] [iidot] binding ++
++              iidb' ++
++              tag_symbols [i2] [iieq] binding
++            in
++            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
++        | _ -> raise NoMatch
++        )
++
++    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), ii)) -> 
++
++        (match ii with 
++        | [iidb;iicolon] -> 
++
++            let (_, iidb') = 
++              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
++            in
++            let ii' = iidb' ++  tag_symbols [i1] [iicolon] binding
++            in
++            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
++        | _ -> raise NoMatch
++        )
++
++
++    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
++        B.InitGccIndex 
++          (transform_e_e ea eb  binding,
++           transform_initialiser inia inib binding),
++        tag_symbols [i1;i2;i3]  ii  binding
++
++    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
++      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
++        B.InitGccRange 
++          (transform_e_e e1a e1b  binding,
++           transform_e_e e2a e2b  binding,
++           transform_initialiser inia inib  binding),
++        tag_symbols [i1;i2;i3;i4] ii binding
++        
++
++    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
++      failwith "not handling Opt/Unique/Multi on initialisers"
++          
++    | _, _ -> raise NoMatch
++
 *)
 
     raise Todo
 
 and initialisers = fun ias ibs ->
+
+(*
++  match ias, ibs with
++  | [], ys -> return true
++  | x::xs, ys -> 
++      let permut = Common.uncons_permut ys in
++      permut +> List.fold_left (fun acc ((e, _pos), rest) -> 
++        acc >||> 
++          (
++            (match e with 
++            | Left y -> match_initialiser x y 
++            | Right y -> return false 
++            ) >&&> match_initialisers xs rest
++          )
++      ) (return false)
+*)
+
+(*
++  | [], ys -> ys
++  | x::xs, ys -> 
++      let permut = Common.uncons_permut ys in
++      permut +> Common.fold_k (fun acc ((e, pos), rest) k -> 
++        try (
++          let e' = 
++            match e with 
++            | Left y -> Left (transform_initialiser x y binding)
++            | Right y -> raise NoMatch
++          in
++          let rest' = transform_initialisers xs rest binding in
++          Common.insert_elem_pos (e', pos) rest'
++        ) 
++        with NoMatch -> k acc
++      )
++        (fun _ -> raise NoMatch)
++        ys
+*)
+
+
   raise Todo
 
 (* ------------------------------------------------------------------------- *)
@@ -1348,7 +1525,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   (* the metaRuleElem contains just '-' information. We dont need to add
    * stuff in the environment. If we need stuff in environment, because
-   * there is a + S somewhere, then this will be done via MetaStatement, not
+   * there is a + S somewhere, then this will be done via MetaStmt, not
    * via MetaRuleElem. 
    * Can match TrueNode/FalseNode/... so must be placed before those cases.
    *)
@@ -1368,8 +1545,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
      | F.EndStatement None -> 
          if mcode_contain_plus (mcodekind mcode)
          then
-           let fake_info = Common.fake_parse_info, Ast_c.emptyAnnot in
-           let fake_info = Ast_c.al_info fake_info in
+           let fake_info = Ast_c.fakeInfo() in
            distrf distrf_node (mcodekind mcode) 
              (F.EndStatement (Some fake_info)) 
          else return unwrap_node
@@ -1385,6 +1561,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
   (* rene cant have found that a state containing a fake/exit/... should be 
    * transformed 
+   * TODO: and F.Fake ?
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
@@ -1441,6 +1618,15 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )
       )
 
+  | A.Ty ty, nodeb -> 
+      X.cocciTy fullType ty node >>= (fun ty node -> 
+        return (
+          A.Ty ty,
+          F.unwrap node
+        )
+      )
+
+
   | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
 
@@ -1464,6 +1650,14 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
               | None -> 
                   if allminus 
                   then raise Todo
+(*XXX
+               let minusizer = iistob +> List.map (fun _ -> 
+                    "fake", 
+                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS(None, []))
+                 ) in
+               tag_symbols minusizer iistob binding
+*)
+
                   else return (None, (stob, iistob))
               | Some stoa -> 
                   storage (Some stoa) (stob, iistob)
@@ -1598,6 +1792,14 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )))))))))
 
 
+  | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader _ ->
+      failwith "switch not supported"
+
+(* julia: goto is just created by asttoctl2, with no +- info *)
+  | A.Goto,                  F.Goto (a,b)       -> 
+      return (A.Goto, F.Goto (a,b))
+      
+
   | A.Break (ia1, ia2), F.Break (st, ((),ii)) -> 
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
@@ -1635,15 +1837,75 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
+(*
++  | A.Include(incl,filea), F.CPPInclude (fileb, _) -> 
++      return ((term filea) =$= fileb)
++  | A.Include(incl,filea), F.CPPInclude (fileb, ii) ->
++      if ((term filea) =$= fileb)
++      then 
++        F.CPPInclude (fileb, tag_symbols [incl;filea] ii binding)
++      else raise NoMatch
+*)
+
+
+(*
++
++  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), _)  ->
++      match_ident DontKnow ida idb >&&> 
++      all_bound (A.get_inherited ida) >&&>
++      (match A.unwrap bodya with
++      | A.DMetaId (idbody, keep) -> 
++          let inherited = false (* TODO ? *) in
++          check_add_metavars_binding keep inherited
++            (term idbody, Ast_c.MetaTextVal (bodyb))
++
++      | A.Ddots (dots) -> return true
++      )
+
++  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), ii) ->
++      (match ii with 
++      | [iidefine;iidb;iibody] -> 
++          let (idb', iidb') = 
++            transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
++          in
++          let iidefine' = tag_symbols [define] [iidefine] binding in
++          let iibody' = 
++            (match A.unwrap bodya with
++            | A.DMetaId (idbodya, keep) -> 
++                if not keep 
++                then tag_symbols [idbodya] [iibody] binding
++                else 
++                  let v = binding +> find_env ((term idbodya) : string) in
++	          (match v with
++	          | B.MetaTextVal sa -> 
++                    if (sa =$= bodyb) 
++                    then tag_symbols [idbodya] [iibody] binding
++                    else raise NoMatch
++	        | _ -> raise Impossible
++	        )
++
++                
++            | A.Ddots (dots) -> 
++                tag_symbols [dots] [iibody] binding
++            )
++          in
++          F.CPPDefine ((idb, bodyb), iidefine'++iidb'++iibody')
++
++      | _ -> raise Impossible
++      )
++      
+*)
+
+
+  | A.Default(def,colon), F.Default _ -> failwith "switch not supported"
+  | A.Case(case,ea,colon), F.Case _ -> failwith "switch not supported"
 
   | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
-  | _, F.SwitchHeader _ 
   | _, F.Label _
-  | _, F.Case _  | _, F.CaseRange _  | _, F.Default _
-  | _, F.Goto _ 
+  | _, F.CaseRange _  
   | _, F.Asm
   | _, F.IfCpp _
     -> fail2

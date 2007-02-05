@@ -68,6 +68,19 @@ module XTRANS = struct
     Some (expa, Visitor_c.vk_node_s bigf node)
 
 
+  let cocciTy = fun expf expa node -> fun binding -> 
+
+    let bigf = { 
+      Visitor_c.default_visitor_c_s with 
+      Visitor_c.ktype_s = (fun (k, bigf) expb ->
+	match expf expa expb binding with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
+
   (* ------------------------------------------------------------------------*)
   (* Tokens *) 
   (* ------------------------------------------------------------------------*)
@@ -263,7 +276,7 @@ module XTRANS = struct
         None
     )
     else 
-      (* raise Impossible ? *)
+      (* not raise Impossible! *)
       Some (s, value)
 
 end
@@ -314,14 +327,14 @@ let transform a b =
 
 
 (* ------------------------------------------------------------------------- *)
-let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen = 
+let transform_proto2 a b binding (qu, iiptvirg) infolastparen = 
   raise Todo
 
 (* XXX
   let node' = transform_re_node a b binding in
   match F.unwrap node' with
   | F.FunHeader 
-      ((s, ft, storate), iis::iioparen::iicparen::iisto) -> 
+      ((s, ft, storage), iis::iioparen::iicparen::iifake::iisto) -> 
 
         (* Also delete the ';' at the end of the proto.
          * The heuristic is to see if the ')' was deleted. Buggy but
@@ -341,7 +354,7 @@ let transform_proto2 a b binding (qu, iiptvirg, storage) infolastparen =
                 (qu, (B.FunctionType ft, [iioparen;iicparen])), 
                 storage),
                []
-             ], iiptvirg'::iisto)) 
+             ], iiptvirg'::iifake::iisto)) 
           
   | _ -> 
       raise Impossible

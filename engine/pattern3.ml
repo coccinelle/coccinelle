@@ -106,6 +106,23 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  let cocciTy = fun expf expa node -> fun binding -> 
+
+    let globals = ref [] in
+    let bigf = { 
+      Visitor_c.default_visitor_c with 
+        Visitor_c.ktype = (fun (k, bigf) expb -> 
+	match expf expa expb binding with
+	| [] -> (* failed *) k expb
+	| xs -> globals := xs @ !globals);
+
+    } 
+    in
+    Visitor_c.vk_node bigf node;
+    !globals +> List.map (fun ((a, _exp), binding) -> 
+      (a, node), binding
+    )
+
 
   (* ------------------------------------------------------------------------*)
   (* Tokens *) 
@@ -158,7 +175,9 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar *)
-  let check_add_metavars_binding keepTODO inherited = fun (k, valu) binding ->
+  let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
+  if keep
+  then
     (match Common.optionise (fun () -> binding +> List.assoc k) with
     | Some (valu') ->
         if
@@ -213,6 +232,8 @@ module XMATCH = struct
           in
           [binding +> Common.insert_assoc (k, valu')]
     )
+  else [binding]
+
 
 
   let envf keep inherited = fun (k, valu) binding -> 
