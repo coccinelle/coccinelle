@@ -1109,175 +1109,124 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
 (* ------------------------------------------------------------------------- *)
 
 and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
-  =  fun inia inib -> 
-(*
-      (match (A.unwrap inia,inib) with
-      | (A.InitExpr expa,(B.InitExpr expb, _)) -> match_e_e expa expb
-      | _ -> 
-          pr2 "warning: complex initializer, cocci does not handle that";
-          return false
-      )
-*)
-(*
-       let ini' = 
-         match (A.unwrap inia,ini) with
-         | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-             assert (null ii);
-             B.InitExpr (transform_e_e expa  expb binding), ii
-         | _ -> 
-             pr2 "warning: complex initializer, cocci does not handle that";
-             raise NoMatch
-       in
+  =  fun ia ib -> 
+    match (A.unwrap ia,ib) with
+    
+    | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
+        assert (null ii);
+        expression expa expb >>= (fun expa expb -> 
+          return (
+            (A.InitExpr expa) +> A.rewrap ia,
+            (B.InitExpr expb, ii)
+          ))
+
+    | (A.InitList (ia1, ias, ia2, []), (B.InitList ibs, ii)) -> 
+        (match ii with 
+        | ib1::ib2::iicommaopt -> 
+            tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+            tokenf ia2 ib2 >>= (fun ia1 ib1 ->
+            initialisers ias (Ast_c.split_comma ibs) >>= (fun ias ibs_split ->
+              let ibs = Ast_c.unsplit_comma ibs_split in
+              return (
+                (A.InitList (ia1, ias, ia2, [])) +> A.rewrap ia,
+                (B.InitList ibs, ib1::ib2::iicommaopt)
+              ))))
+              
+        | _ -> raise Impossible
+        )
+
+    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, _ii)) -> 
+        failwith "TODO: not handling whencode in initialisers"
 
 
-+    match (A.unwrap inia,inib) with
-+    | (A.InitExpr expa, (B.InitExpr expb, _ii)) -> match_e_e expa expb
-+    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, _ii)) -> 
-+        match_initialisers ias (Ast_c.split_comma ibs)
-+    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, _ii)) -> 
-+        failwith "TODO: not handling whencode in initialisers"
-+    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), _ii)) -> 
-+        match_ident DontKnow ida idb >&&> 
-+        match_initialiser inia inib
-+    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), _ii)) -> 
-+        match_ident DontKnow ida idb >&&> 
-+        match_initialiser inia inib
-+
-+    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
-+        match_e_e ea eb >&&>
-+        match_initialiser inia inib
-+
-+    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
-+      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
-+        match_e_e e1a e1b >&&>
-+        match_e_e e2a e2b >&&>
-+        match_initialiser inia inib
-+
-+    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
-+      failwith "not handling Opt/Unique/Multi on initialisers"
-+          
-+    | _, _ -> return false
+    | (A.InitGccDotName (ia1, ida, ia2, inia), (B.InitGcc (idb, inib), ii)) -> 
+        (match ii with 
+        | [iidot;iidb;iieq] -> 
+            tokenf ia1 iidot >>= (fun ia1 iidot -> 
+            tokenf ia2 iieq >>= (fun ia2 iieq -> 
+            ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+            initialiser inia inib >>= (fun inia inib -> 
+              return (
+                (A.InitGccDotName (ia1, ida, ia2, inia)) +> A.rewrap ia,
+                (B.InitGcc (idb, inib), [iidot;iidb;iieq])
+              )))))
+        | _ -> fail
+        )
 
-*)
 
-(*
-+   match (A.unwrap inia,ini) with
-+   | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-+       assert (null ii);
-+       B.InitExpr (transform_e_e expa  expb binding), ii
-+
-+    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, ii)) -> 
-+        let ii' = 
-+          (match ii with 
-+          | ii1::ii2::iicommaopt -> 
-+              tag_symbols [i1;i2] [ii1;ii2] binding ++ iicommaopt
-+          | _ -> raise Impossible
-+          )
-+        in
-+        B.InitList 
-+          (Ast_c.unsplit_comma
-+             (transform_initialisers ias (Ast_c.split_comma ibs) binding
-+          )),
-+        ii'
-+
-+    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, ii)) -> 
-+        failwith "TODO: not handling whencode in initialisers"
-+
-+    | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), ii)) -> 
-+        (match ii with 
-+        | [iidot;iidb;iieq] -> 
-+
-+            let (_, iidb') = 
-+              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
-+            in
-+            let ii' = 
-+              tag_symbols [i1] [iidot] binding ++
-+              iidb' ++
-+              tag_symbols [i2] [iieq] binding
-+            in
-+            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
-+        | _ -> raise NoMatch
-+        )
-+
-+    | (A.InitGccName (ida, i1, inia), (B.InitGcc (idb, inib), ii)) -> 
-+
-+        (match ii with 
-+        | [iidb;iicolon] -> 
-+
-+            let (_, iidb') = 
-+              transform_ident Pattern.DontKnow ida (idb, [iidb])  binding 
-+            in
-+            let ii' = iidb' ++  tag_symbols [i1] [iicolon] binding
-+            in
-+            B.InitGcc (idb,  transform_initialiser inia inib  binding), ii'
-+        | _ -> raise NoMatch
-+        )
-+
-+
-+    | (A.InitGccIndex (i1,ea,i2,i3,inia), (B.InitGccIndex (eb, inib), ii)) -> 
-+        B.InitGccIndex 
-+          (transform_e_e ea eb  binding,
-+           transform_initialiser inia inib binding),
-+        tag_symbols [i1;i2;i3]  ii  binding
-+
-+    | (A.InitGccRange (i1,e1a,i2,e2a,i3,i4,inia), 
-+      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
-+        B.InitGccRange 
-+          (transform_e_e e1a e1b  binding,
-+           transform_e_e e2a e2b  binding,
-+           transform_initialiser inia inib  binding),
-+        tag_symbols [i1;i2;i3;i4] ii binding
-+        
-+
-+    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
-+      failwith "not handling Opt/Unique/Multi on initialisers"
-+          
-+    | _, _ -> raise NoMatch
-+
-*)
 
-    raise Todo
+    | (A.InitGccName (ida, ia1, inia), (B.InitGcc (idb, inib), ii)) -> 
+        (match ii with 
+        | [iidb;iicolon] -> 
+            ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+            initialiser inia inib >>= (fun inia inib -> 
+            tokenf ia1 iicolon >>= (fun ia1 iicolon -> 
+              return (
+                (A.InitGccName (ida, ia1, inia)) +> A.rewrap ia,
+                (B.InitGcc (idb, inib), [iidb;iicolon])
+              ))))
+        | _ -> fail
+        )
+
+
+
+    | (A.InitGccIndex (ia1,ea,ia2,ia3,inia),(B.InitGccIndex (eb, inib),ii)) ->
+        let (ib1, ib2, ib3) = tuple_of_list3 ii in
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        expression ea eb >>= (fun ea eb -> 
+        initialiser inia inib >>= (fun inia inib -> 
+          return (
+            (A.InitGccIndex (ia1,ea,ia2,ia3,inia)) +> A.rewrap ia,
+            (B.InitGccIndex (eb, inib),[ib1;ib2;ib3])
+          ))))))
+
+    | (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia), 
+      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
+
+        let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        tokenf ia4 ib4 >>= (fun ia4 ib4 -> 
+        expression e1a e1b >>= (fun e1a e1b -> 
+        expression e2a e2b >>= (fun e2a e2b -> 
+        initialiser inia inib >>= (fun inia inib -> 
+          return (
+            (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia)) +> A.rewrap ia,
+            (B.InitGccRange (e1b, e2b, inib), [ib1;ib2;ib3;ib4])
+          ))))))))
+
+    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
+      failwith "not handling Opt/Unique/Multi on initialisers"
+          
+    | _, _ -> fail
+
+
 
 and initialisers = fun ias ibs ->
+  match ias, ibs with
+  | [], ys -> return ([], ys)
+  | x::xs, ys -> 
 
-(*
-+  match ias, ibs with
-+  | [], ys -> return true
-+  | x::xs, ys -> 
-+      let permut = Common.uncons_permut ys in
-+      permut +> List.fold_left (fun acc ((e, _pos), rest) -> 
-+        acc >||> 
-+          (
-+            (match e with 
-+            | Left y -> match_initialiser x y 
-+            | Right y -> return false 
-+            ) >&&> match_initialisers xs rest
-+          )
-+      ) (return false)
-*)
-
-(*
-+  | [], ys -> ys
-+  | x::xs, ys -> 
-+      let permut = Common.uncons_permut ys in
-+      permut +> Common.fold_k (fun acc ((e, pos), rest) k -> 
-+        try (
-+          let e' = 
-+            match e with 
-+            | Left y -> Left (transform_initialiser x y binding)
-+            | Right y -> raise NoMatch
-+          in
-+          let rest' = transform_initialisers xs rest binding in
-+          Common.insert_elem_pos (e', pos) rest'
-+        ) 
-+        with NoMatch -> k acc
-+      )
-+        (fun _ -> raise NoMatch)
-+        ys
-*)
-
-
-  raise Todo
+      let permut = Common.uncons_permut ys in
+      permut +> List.fold_left (fun acc ((e, pos), rest) -> 
+        acc >||> 
+          (
+            (match e with 
+            | Left y -> 
+                initialiser x y >>= (fun x y -> 
+                  return (x, Left y)
+                )
+            | Right y -> fail
+            ) >>= (fun x e -> 
+            initialisers xs rest >>= (fun xs rest -> 
+              return (
+                x::xs,
+                Common.insert_elem_pos (e, pos) rest
+              ))))) fail
+       
 
 (* ------------------------------------------------------------------------- *)
 and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) = 
