@@ -1,13 +1,17 @@
 @@
 struct BCState *bcs;
-identifier hscx;
+identifier hscx_id;
+identifier f;
 @@
 
-- u8 hscx = bcs->hw.hscx.hscx;
-  ... when != hscx
-- hcsx
+f(...) {
+  ...
+- u8 hscx_id = bcs->hw.hscx.hscx;
+  ... when != hscx_id
+- hscx_id
 + bcs->unit
-  ... when != hscx
+  ... when != hscx_id //should extend to the fn end without putting the fn decl
+}
 
 @@
 struct BCState *bcs;

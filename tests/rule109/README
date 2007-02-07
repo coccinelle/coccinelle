@@ -1,21 +1,25 @@
 avm_pci.c
- * [status] 
+ * [status] ok
 
 diva.c
- * [status] 
+ * [status] ok
 
 hscx.c
- * [status] 
+ * [status] wrong
+ type inference doesn't know that cs->bcs has type BCState
+ created a corrected in which () added back around some return values, in
+ case the above problem is ever fixed.
 
 ipacx.c
- * [status] 
+ * [status] wrong
+ type inference doesn't know that cs->bcs has type BCState
 
 jade.c
- * [status] 
+ * [status] wrong
+ type inference doesn't know that cs->bcs has type BCState
 
 jade_irq.c
- * [status] 
+ * [status] ok
 
 w6692.c
- * [status] 
-
+ * [status] ok
