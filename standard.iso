@@ -340,6 +340,13 @@ identifier fld;
 
 E.fld => E1->fld
 
+Expression
+@@
+expression E1, E2;
+identifier fld;
+@@
+
+E1->fld => E1[E2].fld
 
 // ****************************************************************************
 // Put here all the Linux specific isomorphisms 
