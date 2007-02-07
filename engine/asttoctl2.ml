@@ -166,7 +166,7 @@ let elim_opt =
 	let rwd = Ast.rewrap stm in
 	let dots =
 	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
-		    Ast.CONTEXT(None,Ast.NOTHING)),
+		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
 			 (Ast.DOTS([rw dots]),l,[],[],[],Ast.NoDots)])]
@@ -826,8 +826,9 @@ let decl_to_not_decl n dots stmt make_match f =
   else
     let de =
       let md =
-	Ast.make_meta_decl "_d" (Ast.CONTEXT(None,Ast.NOTHING)) ([],[],[]) in
-      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(None,Ast.NOTHING),md)) in
+	Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) ([],[],[])
+      in
+      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NoPos,Ast.NOTHING),md)) in
     wrapAU n (make_match de,
 	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
 
@@ -928,21 +929,21 @@ and statement stmt after quantified label guard =
 		  (Ast.MINUS(_,l1),Ast.MINUS(_,l2))
 		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
 		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
-		    Some (Ast.CONTEXT(None,Ast.BEFORE(l1@l2)))
+		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2)))
 		| (Ast.CONTEXT(_,Ast.BEFORE(_)),Ast.CONTEXT(_,Ast.NOTHING))
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.NOTHING)) ->
 		    Some retmc
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
-		    Some (Ast.CONTEXT(None,Ast.BEFORE(l)))
+		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l)))
 		| _ -> None in
 	      let ret = ("return",{Ast.line = (-1);Ast.column = (-1)},
-			 Ast.CONTEXT(None,Ast.NOTHING)) in
+			 Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
 	      let edots =
 		Ast.rewrap ast
 		  (Ast.Edots(("...",{Ast.line = (-1);Ast.column = (-1)},
-			     Ast.CONTEXT(None,Ast.NOTHING)),None)) in
+			     Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),None)) in
 	      let semi = (";",{Ast.line = (-1);Ast.column = (-1)},
-			 Ast.CONTEXT(None,Ast.NOTHING)) in
+			 Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
 	      let simple_return =
 		make_match(Ast.rewrap ast (Ast.Return(ret,semi))) in
 	      let return_expr =
@@ -956,7 +957,7 @@ and statement stmt after quantified label guard =
 		  let stripped_rbrace =
 		    Ast.rewrap ast
 		      (Ast.SeqEnd
-			 (("}",info,Ast.CONTEXT(None,Ast.NOTHING)))) in
+			 (("}",info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)))) in
 		  wrapOr(normal_res,
 			 wrapAnd
 			   (make_match mod_rbrace,
@@ -1034,7 +1035,7 @@ and statement stmt after quantified label guard =
 	    match Ast.unwrap rbrace with
 	      Ast.SeqEnd((data,info,_)) ->
 		Ast.rewrap rbrace
-		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(None,Ast.NOTHING))))
+		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
 	    [make_match (Ast.rewrap stmt Ast.Goto);
@@ -1148,7 +1149,7 @@ and statement stmt after quantified label guard =
 	  match Ast.unwrap rbrace with
 	    Ast.SeqEnd((data,info,_)) ->
 	      Ast.rewrap rbrace
-		(Ast.SeqEnd ((data,info,Ast.CONTEXT(None,Ast.NOTHING))))
+		(Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
 	  | _ -> failwith "unexpected close brace" in
 	let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
 	let errorexit = wrap n (CTL.Pred (Lib_engine.ErrorExit,CTL.Control)) in

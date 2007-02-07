@@ -54,6 +54,25 @@ let mcode_simple_minus = function
   | _ -> false
 
 
+let minusizer = 
+  "fake", 
+  {Ast_cocci.line = 0; column =0},
+  (Ast_cocci.MINUS(Ast_cocci.DontCarePos, []))
+
+let generalize_mcode ia = 
+    let (s1, i, mck) = ia in
+    (s1, i, 
+    match mck with
+    | Ast_cocci.PLUS -> raise Impossible
+    | Ast_cocci.CONTEXT (Ast_cocci.NoPos,x) -> 
+        Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,x)
+    | Ast_cocci.MINUS   (Ast_cocci.NoPos,x) -> 
+        Ast_cocci.MINUS   (Ast_cocci.DontCarePos,x)
+    | _ -> raise Impossible
+    )
+
+
+
 (*---------------------------------------------------------------------------*)
 
 
@@ -768,6 +787,7 @@ and arguments_bis = fun eas ebs ->
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
 
+              (* allow '...', and maybe its associated ',' to match nothing *)
               (if startxs = []
               then
                 if mcode_contain_plus (mcodekind mcode)
@@ -795,6 +815,7 @@ and arguments_bis = fun eas ebs ->
             )
           ))
       | A.EComma ia1, ebs -> 
+          (* allow ',' to maching nothing *)
           if mcode_contain_plus (mcodekind ia1)
           then fail
           else 
@@ -1540,7 +1561,9 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           if X.mode = PatternMode then return default
           else failwith "a MetaRuleElem can't transform a headfunc"
       | _n -> 
-          X.distrf_node mcode node >>= (fun mcode node -> 
+          if X.mode = PatternMode then return default 
+          else 
+          X.distrf_node (generalize_mcode mcode) node >>= (fun mcode node -> 
             return (
               A.MetaRuleElem(mcode,keep, inherited),
               F.unwrap node
@@ -1649,16 +1672,19 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           (* "iso-by-absence" for storage, and return type. *)
               (match stoa with
               | None -> 
+                  
                   if allminus 
-                  then raise Todo
-(*XXX
-               let minusizer = iistob +> List.map (fun _ -> 
-                    "fake", 
-                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS(None, []))
-                 ) in
-               tag_symbols minusizer iistob binding
-*)
-
+                  then 
+                    iistob +> List.fold_left (fun acc ii -> 
+                      acc >>= (fun xs ys -> 
+                      tokenf minusizer ii >>= (fun minus ii -> 
+                        return (minus::xs, ii::ys)
+                      ))
+                    ) (return ([],[]))
+                    >>= (fun _xsminys ys -> 
+                      return (None, (stob, List.rev ys))
+                    )
+                       
                   else return (None, (stob, iistob))
               | Some stoa -> 
                   storage (Some stoa) (stob, iistob)
@@ -1666,8 +1692,11 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
                 match tya with 
                 | None -> 
                     if allminus
-                    then raise Todo
-                      (* distrf_type (Ast_cocci.MINUS(None(*?*),[])) retb *)
+                    then 
+                      X.distrf_type minusizer retb >>= (fun _x retb -> 
+                        return (None, retb)
+                      )
+
                     else return (None, retb)
                 | Some tya -> 
                     fullType tya retb >>= (fun tya retb -> 

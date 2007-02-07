@@ -20,7 +20,7 @@ and 'a mcode = 'a * info * mcodekind
     MINUS       of pos * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
- and pos = (int * int) option
+ and pos = NoPos | DontCarePos | FixPos of (int * int)
 
 and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
 

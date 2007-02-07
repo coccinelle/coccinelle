@@ -133,10 +133,10 @@ module XMATCH = struct
     match mck with 
     | Ast_cocci.PLUS -> Ast_cocci.PLUS
     | Ast_cocci.CONTEXT (pos, xs) -> 
-        assert (pos = None);
+        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
     | Ast_cocci.MINUS (pos, xs) -> 
-        assert (pos = None);
+        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
         Ast_cocci.MINUS (posmck, xs)
   
 
@@ -146,12 +146,12 @@ module XMATCH = struct
 
   let tokenf ia ib = fun binding -> 
     let pos = Ast_c.get_pos_of_info ib in
-    let posmck = Some (pos, pos) in
+    let posmck = Ast_cocci.FixPos (pos, pos) in
     tag_mck_pos_mcode ia posmck ib binding
 
   let tokenf_mck mck ib = fun binding -> 
     let pos = Ast_c.get_pos_of_info ib in
-    let posmck = Some (pos, pos) in
+    let posmck = Ast_cocci.FixPos (pos, pos) in
     [(tag_mck_pos mck posmck, ib), binding]
     
     
@@ -163,7 +163,8 @@ module XMATCH = struct
     fun mcode x -> fun binding -> 
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
-    let posmck = Some (min, max) (* subtil: and not max, min !!*) in
+    let posmck = Ast_cocci.FixPos (min, max) (* subtil: and not max, min !!*) 
+    in
     tag_mck_pos_mcode mcode posmck x binding
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr)

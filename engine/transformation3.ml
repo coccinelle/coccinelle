@@ -88,9 +88,12 @@ module XTRANS = struct
    let check_pos mck pos = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
-     | Ast_cocci.CONTEXT (Some (i1,i2),_) 
-     | Ast_cocci.MINUS   (Some (i1,i2),_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
          pos <= i2 && pos >= i1
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+         true
      | _ -> failwith "wierd: dont have position info for the mcodekind"      
 
 

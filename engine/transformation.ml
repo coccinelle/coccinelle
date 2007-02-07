@@ -965,7 +965,8 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
                 then 
                   let minusizer = iistob +> List.map (fun _ -> 
                     "fake", 
-                    {Ast_cocci.line = 0; column =0},(Ast_cocci.MINUS(None, []))
+                    {Ast_cocci.line = 0; column =0},
+                    (Ast_cocci.MINUS(Ast_cocci.NoPos, []))
                   ) in
                   tag_symbols minusizer iistob binding
                 else iistob
@@ -983,7 +984,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
                 then
 		  (* perhaps things have to be done differently here for pos
 		     argument of MINUS *)
-		  D.distribute_mck (Ast_cocci.MINUS(None,[]))
+		  D.distribute_mck (Ast_cocci.MINUS(Ast_cocci.NoPos,[]))
 		    D.distribute_mck_type
                     retb binding       
                 else retb

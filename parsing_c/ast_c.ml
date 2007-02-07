@@ -370,7 +370,8 @@ let noType = None
 let noInstr = (ExprStatement (None), [])
 
 let emptyMetavarsBinding = ([]: metavars_binding)
-let emptyAnnot = (Ast_cocci.CONTEXT(None,Ast_cocci.NOTHING),emptyMetavarsBinding)
+let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NoPos,Ast_cocci.NOTHING),
+                 emptyMetavarsBinding)
 
 (*****************************************************************************)
 (* Wrappers *)
