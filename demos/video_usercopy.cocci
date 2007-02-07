@@ -1,3 +1,6 @@
+// - if(copy_from_user(&x, arg))   does not work. 
+// the if-isomorphism does not work :(
+
 @@ 
 type T; 
 identifier x, fld; 
@@ -10,7 +13,7 @@ function ioctl; // should be caracterised by another rule
 - T x;
 + T *x = arg;
  ...
-- if(copy_from_user(&x, arg)) 
+- if(copy_from_user(&x, arg)!=0) 
 - { ... return ...; } 
  <...
 (
