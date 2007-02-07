@@ -654,7 +654,8 @@ let process file isofile verbose =
 	  (extra_meta@metavars, minus_ast))
       minus plus in
   let (code,ua) = Free_vars.free_vars parsed in
-  List.iter Pretty_print_cocci.unparse code;
+  if !Flag_parsing_cocci.show_SP 
+  then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
   (code,ua,tokens)
 
