@@ -218,6 +218,8 @@ let split_signb_baseb_ii (baseb, ii) =
  * version1: now also tag the SP so return a ('a * 'b)
  *)
 
+type mode = PatternMode | TransformMode
+
 module type PARAM = 
   sig 
     type tin
@@ -242,6 +244,8 @@ module type PARAM =
 
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
+    val mode : mode
+
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
 
@@ -253,9 +257,7 @@ module type PARAM =
       (string A.mcode, (Ast_c.parameterType, Ast_c.il) either list) matcher
     val distrf_param : 
       (string A.mcode, Ast_c.parameterType) matcher
-    (*
-    val distrf_node : Control_flow_c.node2 tdistr
-    *)
+    val distrf_node : (string A.mcode, Control_flow_c.node) matcher
 
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
@@ -765,7 +767,16 @@ and arguments_bis = fun eas ebs ->
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
-              X.distrf_args mcode startxs >>= (fun mcode startxs ->
+
+              (if startxs = []
+              then
+                if mcode_contain_plus (mcodekind mcode)
+                then fail 
+                  (* failwith "I have no token that I could accroche myself on" *)
+                else return (mcode, [])
+              else X.distrf_args mcode startxs
+              )
+               >>= (fun mcode startxs ->
               arguments_bis eas endxs >>= (fun eas endxs -> 
                 return (
                   (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
@@ -783,7 +794,11 @@ and arguments_bis = fun eas ebs ->
               (Right [ib1])::ebs
             )
           ))
-      | A.EComma ia1, _ -> fail
+      | A.EComma ia1, ebs -> 
+          if mcode_contain_plus (mcodekind ia1)
+          then fail
+          else 
+            (arguments_bis eas ebs) (* try optional comma trick *)
 
       | A.MetaExprList (ida, keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
@@ -843,6 +858,7 @@ and argument arga argb =
 
 
 (* ------------------------------------------------------------------------- *)
+(* todo? facto code with argument ? *)
 and (parameters: sequence -> 
       (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
         matcher) = 
@@ -867,7 +883,15 @@ and parameters_bis eas ebs =
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
-              X.distrf_params mcode startxs >>= (fun mcode startxs ->
+
+              (if startxs = []
+              then
+                if mcode_contain_plus (mcodekind mcode)
+                then fail 
+                  (* failwith "I have no token that I could accroche myself on" *)
+                else return (mcode, [])
+              else X.distrf_params mcode startxs
+              ) >>= (fun mcode startxs ->
               parameters_bis eas endxs >>= (fun eas endxs -> 
                 return (
                   (A.Pdots (mcode) +> A.rewrap ea) ::eas,
@@ -886,7 +910,12 @@ and parameters_bis eas ebs =
             )
           ))
 
-      | A.PComma ia1, _ -> fail
+      | A.PComma ia1, ebs -> 
+          if mcode_contain_plus (mcodekind ia1)
+          then fail
+          else 
+            (parameters_bis eas ebs) (* try optional comma trick *)
+
 
       | A.MetaParamList (ida, keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
@@ -1480,32 +1509,43 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
    *)
 
   | A.MetaRuleElem(mcode,keep,inherited), unwrap_node -> 
-      raise Todo
-(* XXX
-     (match unwrap_node with
-     | F.CaseNode _
-     | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode
-       -> 
-         if mcode_contain_plus (mcodekind mcode)
-         then failwith "try add stuff on fake node";
-         (* minusize or contextize a fake node is ok *)
-         return unwrap_node
+      let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
+      (match unwrap_node with
+      | F.CaseNode _
+      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode -> 
+          if X.mode = PatternMode 
+          then return default 
+          else
+            if mcode_contain_plus (mcodekind mcode)
+            then failwith "try add stuff on fake node"
+              (* minusize or contextize a fake node is ok *)
+            else return default
 
-     | F.EndStatement None -> 
-         if mcode_contain_plus (mcodekind mcode)
-         then
-           let fake_info = Ast_c.fakeInfo() in
-           distrf distrf_node (mcodekind mcode) 
-             (F.EndStatement (Some fake_info)) 
-         else return unwrap_node
-         
-     | F.EndStatement (Some _) -> raise Impossible (* really ? *)
+      | F.EndStatement None -> 
+          if X.mode = PatternMode then return default 
+          else 
+              (* XXX
+                 if mcode_contain_plus (mcodekind mcode)
+                 then
+                 let fake_info = Ast_c.fakeInfo() in
+                 distrf distrf_node (mcodekind mcode) 
+                 (F.EndStatement (Some fake_info)) 
+                 else return unwrap_node
+              *)
+            raise Todo
+              
+      | F.EndStatement (Some _) -> raise Impossible (* really ? *)
 
-     | F.FunHeader _ -> failwith "a MetaRuleElem can't transform a headfunc"
-     | n -> distrf distrf_node (mcodekind mcode) n
-     )
-
-*)
+      | F.FunHeader _ -> 
+          if X.mode = PatternMode then return default
+          else failwith "a MetaRuleElem can't transform a headfunc"
+      | _n -> 
+          X.distrf_node mcode node >>= (fun mcode node -> 
+            return (
+              A.MetaRuleElem(mcode,keep, inherited),
+              F.unwrap node
+            ))
+      )
 
 
   (* rene cant have found that a state containing a fake/exit/... should be 
@@ -1520,22 +1560,34 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | _, F.Fake -> fail2
 
 
-  (* cas general: a Meta can match everything *)
-  (* really ? diff between pattern.ml and transformation.ml *)
-  (* failwith "I cant have been called. I can only transform MetaRuleElem." *)
-  | A.MetaStmt (ida,keep,_metainfo,inherited),  unwrap_node -> 
-      (* match only "header"-statement *)
-      raise Todo
-(* XXX
-     (match Control_flow_c.extract_fullstatement node with
-     | Some stb -> 
-         envf inherited (term ida, Ast_c.MetaStmtVal stb) >>= (fun v -> 
-           (* do the match v with ... ? *)
-           return unwrap_node
-         )
-     | None -> fail
-     )
-*)
+  (* cas general: a Meta can match everything. It matches only
+   * "header"-statement. We transform only MetaRuleElem, not MetaStmt.
+   * So can't have been called in transform. 
+   *)
+  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  unwrap_node -> 
+      (* todo: should not happen in transform mode *)
+
+      (match Control_flow_c.extract_fullstatement node with
+      | Some stb -> 
+         X.envf keep inherited (term ida, Ast_c.MetaStmtVal stb) >>= 
+           (fun _s v -> 
+             match v with
+             | B.MetaStmtVal sta -> 
+                 if (Lib_parsing_c.al_statement sta 
+                      =*= 
+                     Lib_parsing_c.al_statement stb)
+                 then
+                   (* no need tag ida, we can't be called in transform-mode *)
+                   return (
+                     A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
+                     unwrap_node
+                   )
+                 else fail
+             | _ -> raise Impossible
+           )
+           
+      | None -> fail
+      )
 
   (* not me?: *)
   | A.MetaStmtList _, _ -> 
@@ -1744,7 +1796,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader _ ->
       failwith "switch not supported"
 
-(* julia: goto is just created by asttoctl2, with no +- info *)
+  (* julia: goto is just created by asttoctl2, with no +- info *)
   | A.Goto,                  F.Goto (a,b)       -> 
       return (A.Goto, F.Goto (a,b))
       
@@ -1786,64 +1838,56 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
-(*
-+  | A.Include(incl,filea), F.CPPInclude (fileb, _) -> 
-+      return ((term filea) =$= fileb)
-+  | A.Include(incl,filea), F.CPPInclude (fileb, ii) ->
-+      if ((term filea) =$= fileb)
-+      then 
-+        F.CPPInclude (fileb, tag_symbols [incl;filea] ii binding)
-+      else raise NoMatch
-*)
 
 
-(*
-+
-+  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), _)  ->
-+      match_ident DontKnow ida idb >&&> 
-+      all_bound (A.get_inherited ida) >&&>
-+      (match A.unwrap bodya with
-+      | A.DMetaId (idbody, keep) -> 
-+          let inherited = false (* TODO ? *) in
-+          check_add_metavars_binding keep inherited
-+            (term idbody, Ast_c.MetaTextVal (bodyb))
-+
-+      | A.Ddots (dots) -> return true
-+      )
+  | A.Include(incla,filea), F.CPPInclude (filebstr, ii) ->
+      let (inclb, fileb) = tuple_of_list2 ii in 
+      if ((term filea) =$= filebstr)
+      then 
+        tokenf incla inclb >>= (fun incla inclb -> 
+        tokenf filea fileb >>= (fun filea fileb -> 
+          return (
+            A.Include(incla, filea),
+            F.CPPInclude (filebstr, [inclb;fileb])
+          )))
+      else fail
 
-+  | A.Define(define,ida,bodya), F.CPPDefine ((idb, bodyb), ii) ->
-+      (match ii with 
-+      | [iidefine;iidb;iibody] -> 
-+          let (idb', iidb') = 
-+            transform_ident Pattern.DontKnow ida (idb, [iidb])   binding 
-+          in
-+          let iidefine' = tag_symbols [define] [iidefine] binding in
-+          let iibody' = 
-+            (match A.unwrap bodya with
-+            | A.DMetaId (idbodya, keep) -> 
-+                if not keep 
-+                then tag_symbols [idbodya] [iibody] binding
-+                else 
-+                  let v = binding +> find_env ((term idbodya) : string) in
-+	          (match v with
-+	          | B.MetaTextVal sa -> 
-+                    if (sa =$= bodyb) 
-+                    then tag_symbols [idbodya] [iibody] binding
-+                    else raise NoMatch
-+	        | _ -> raise Impossible
-+	        )
-+
-+                
-+            | A.Ddots (dots) -> 
-+                tag_symbols [dots] [iibody] binding
-+            )
-+          in
-+          F.CPPDefine ((idb, bodyb), iidefine'++iidb'++iibody')
-+
-+      | _ -> raise Impossible
-+      )
-+      
-*)
+
+
+  | A.Define(definea,ida,bodya), F.CPPDefine ((idb, bodyb), ii) ->
+      let (defineb, iidb, iibodyb) = tuple_of_list3 ii in
+      ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+(*      all_bound (A.get_inherited ida) >&&> *)
+      tokenf definea defineb >>= (fun definea defineb -> 
+        (match A.unwrap bodya with
+        | A.DMetaId (idbodya, keep) -> 
+            let inherited = false (* TODO ? *) in
+            X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
+              (fun _s v -> 
+                match v with
+                | B.MetaTextVal sa -> 
+                    if (sa =$= bodyb)
+                    then 
+                      tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
+                        return (
+                          A.Define(definea,ida, 
+                                  (A.DMetaId (idbodya, keep)
+                                    +> A.rewrap bodya)),
+                          F.CPPDefine ((idb, bodyb), [defineb;iidb;iibodyb])
+                        ))
+                    else fail
+                | _ -> raise Impossible
+              )
+
+
+                
+        | A.Ddots (dots) -> 
+            tokenf dots iibodyb >>= (fun dots iibodyb -> 
+              return (
+                A.Define(definea,ida, (A.Ddots (dots) +> A.rewrap bodya)),
+                F.CPPDefine ((idb, bodyb), [defineb;iidb;iibodyb])
+              ))
+        )))
 
 
   | A.Default(def,colon), F.Default _ -> failwith "switch not supported"

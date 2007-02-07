@@ -51,6 +51,7 @@ module XTRANS = struct
 
   let (>|+|>) m1 m2 = m1 >||> m2
 
+  let mode = Cocci_vs_c_3.TransformMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -242,6 +243,10 @@ module XTRANS = struct
     Visitor_c.vk_params_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
 
+  let distribute_mck_node (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
+    Visitor_c.vk_node_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+      x
+
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
     fun ia x -> fun binding -> 
@@ -262,6 +267,7 @@ module XTRANS = struct
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
+  let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
 
 
   (* ------------------------------------------------------------------------*)

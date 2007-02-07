@@ -79,6 +79,8 @@ module XMATCH = struct
   let fail = fun binding -> 
     []
 
+  let mode = Cocci_vs_c_3.PatternMode
+
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
   (* ------------------------------------------------------------------------*)
@@ -169,6 +171,7 @@ module XMATCH = struct
   let distrf_type = distrf (Lib_parsing_c.ii_of_type)
   let distrf_param = distrf (Lib_parsing_c.ii_of_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params)
+  let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
 
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
