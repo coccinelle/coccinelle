@@ -54,22 +54,30 @@ let mcode_simple_minus = function
   | _ -> false
 
 
+(* In transformation.ml sometime I build some mcodekind myself and
+ * julia has put None for the pos. But there is no possible raise
+ * NoMatch in those cases because it is for the minusall trick or for
+ * the distribute, so either have to build those pos, in fact a range,
+ * because for the distribute have to erase a fullType with one
+ * mcodekind, or add an argument to tag_with_mck such as "safe" that
+ * don't do the check_pos. Hence this DontCarePos constructor. *)
+
 let minusizer = 
   "fake", 
   {Ast_cocci.line = 0; column =0},
   (Ast_cocci.MINUS(Ast_cocci.DontCarePos, []))
 
 let generalize_mcode ia = 
-    let (s1, i, mck) = ia in
-    (s1, i, 
-    match mck with
-    | Ast_cocci.PLUS -> raise Impossible
-    | Ast_cocci.CONTEXT (Ast_cocci.NoPos,x) -> 
-        Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,x)
-    | Ast_cocci.MINUS   (Ast_cocci.NoPos,x) -> 
-        Ast_cocci.MINUS   (Ast_cocci.DontCarePos,x)
-    | _ -> raise Impossible
-    )
+  let (s1, i, mck) = ia in
+  (s1, i, 
+  match mck with
+  | Ast_cocci.PLUS -> raise Impossible
+  | Ast_cocci.CONTEXT (Ast_cocci.NoPos,x) -> 
+      Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,x)
+  | Ast_cocci.MINUS   (Ast_cocci.NoPos,x) -> 
+      Ast_cocci.MINUS   (Ast_cocci.DontCarePos,x)
+  | _ -> raise Impossible
+  )
 
 
 
@@ -760,10 +768,11 @@ and (arguments: sequence ->
       arguments_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted -> 
         return (eas, (Ast_c.unsplit_comma ebs_splitted))
       )
-
-(* todo: because '...' can match nothing, need to take care when have 
+(* because '...' can match nothing, need to take care when have 
  * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
  * f(1,2) for instance.
+ * So I have added special cases such as (if startxs = []) and code
+ * in the Ecomma matching rule.
  * 
  * old: Must do some try, for instance when f(...,X,Y,...) have to
  * test the transfo for all the combinaitions (and if multiple transfo
@@ -1822,8 +1831,17 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )))))))))
 
 
-  | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader _ ->
-      failwith "switch not supported"
+  | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader (st, (eb,ii)) ->
+      let (ib1, ib2, ib3) = tuple_of_list3 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+      expression ea eb >>= (fun ea eb -> 
+        return (
+          A.SwitchHeader(ia1,ia2,ea,ia3), 
+          F.SwitchHeader (st, (eb,[ib1;ib2;ib3]))
+        )))))
+      
 
   (* julia: goto is just created by asttoctl2, with no +- info *)
   | A.Goto,                  F.Goto (a,b)       -> 
@@ -1919,8 +1937,27 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         )))
 
 
-  | A.Default(def,colon), F.Default _ -> failwith "switch not supported"
-  | A.Case(case,ea,colon), F.Case _ -> failwith "switch not supported"
+  | A.Default(def,colon), F.Default (st, ((),ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf def ib1 >>= (fun def ib1 -> 
+      tokenf colon ib2 >>= (fun colon ib2 -> 
+        return (
+          A.Default(def,colon), 
+          F.Default (st, ((),[ib1;ib2]))
+        )))
+
+      
+      
+  | A.Case(case,ea,colon), F.Case (st, (eb,ii)) -> 
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf case ib1 >>= (fun case ib1 -> 
+      expression ea eb >>= (fun ea eb -> 
+      tokenf colon ib2 >>= (fun colon ib2 -> 
+        return (
+          A.Case(case,ea,colon), 
+          F.Case (st, (eb,[ib1;ib2]))
+        ))))
+      
 
   | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)
 
