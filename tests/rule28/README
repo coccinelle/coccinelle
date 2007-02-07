@@ -1,15 +1,15 @@
 avm_pci.c
- * [status] 
+ * [status] ok
 
 hscx.c
- * [status] 
+ * [status] failed
 
 ipacx.c
- * [status] 
+ * [status] ok
 
 jade.c
- * [status] 
+ * [status] spatch_ok
+ programmer put an extra ; in the transformed code
 
 w6692.c
- * [status] 
-
+ * [status] ok

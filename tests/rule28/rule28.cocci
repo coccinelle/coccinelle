@@ -39,10 +39,10 @@ struct BCState *X;
 - clear_bit(BC_FLG_BUSY, &X->Flag);
 )
 - X->event = 0;
-- X->hw.Y.rcvidx = 0;
+- X->rcvidx = 0;
 - X->tx_cnt = 0;
 - return (0);
-+ bc_open(X);
++ return bc_open(X);
 
 @@
 struct BCState *X;
