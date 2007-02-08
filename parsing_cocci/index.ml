@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 128 *)
+(* current max is 129 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -85,6 +85,7 @@ let typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> [44]
   | Ast0.BaseType(ty,sign) -> [48]
+  | Ast0.ImplicitInt(sign) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.StructUnionName(kind,name) -> [51]

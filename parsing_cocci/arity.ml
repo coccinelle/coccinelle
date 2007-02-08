@@ -369,6 +369,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line ty) [mcode2arity ty] in
       let ty = mcode ty in
       make_typeC typ tgt arity (Ast0.BaseType(ty,None))
+  | Ast0.ImplicitInt(sign) ->
+      let arity =
+	all_same false opt_allowed tgt (mcode2line sign) [mcode2arity sign] in
+      let sign = mcode sign in
+      make_typeC typ tgt arity (Ast0.ImplicitInt(sign))
   | Ast0.Pointer(ty,star) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line star) [mcode2arity star] in

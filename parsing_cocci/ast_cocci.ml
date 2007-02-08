@@ -159,6 +159,7 @@ and base_fullType =
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
+  | ImplicitInt     of sign mcode
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
@@ -411,6 +412,7 @@ let rewrap (_,l,fvs,fresh,inherited,d) x = (x,l,fvs,fresh,inherited,d)
 let unwrap (x,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
 let get_line (_,l,_,_,_,_) = l
+let get_mcode_line (_,l,_) = l.line
 let get_fvs (_,_,fvs,_,_,_) = fvs
 let get_fresh (_,_,_,fresh,_,_) = fresh
 let get_inherited (_,_,_,_,inherited,_) = inherited

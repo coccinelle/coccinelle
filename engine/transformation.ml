@@ -834,6 +834,9 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
 
         )
 
+    | A.ImplicitInt (signa),   _ -> 
+	failwith "implicitInt pattern not supported"
+
     | A.Pointer (typa, imult),            (qu, (B.Pointer typb, ii)) -> 
         let ii' = tag_symbols [imult] ii binding in
         let typb' = transform_ft_ft typa typb  binding in

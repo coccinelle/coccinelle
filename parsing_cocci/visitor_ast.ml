@@ -160,6 +160,7 @@ let combiner bind option_default
       match Ast.unwrap ty with
 	Ast.BaseType(ty,sgn) ->
 	  bind (get_option sign_mcode sgn) (base_mcode ty)
+      | Ast.ImplicitInt(sgn) -> sign_mcode sgn
       | Ast.Pointer(ty,star) ->
 	  bind (fullType ty) (string_mcode star)
       | Ast.Array(ty,lb,size,rb) ->
@@ -566,6 +567,7 @@ let rebuilder
 	(match Ast.unwrap ty with
 	  Ast.BaseType(ty,sgn) ->
 	    Ast.BaseType (base_mcode ty,get_option sign_mcode sgn)
+	| Ast.ImplicitInt(sgn) -> Ast.ImplicitInt (sign_mcode sgn)
 	| Ast.Pointer(ty,star) ->
 	    Ast.Pointer (fullType ty, string_mcode star)
 	| Ast.Array(ty,lb,size,rb) ->

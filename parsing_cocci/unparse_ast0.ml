@@ -190,6 +190,7 @@ and typeC t =
 	  mcode U.const_vol cv; print_string " "; typeC ty
       |	Ast0.BaseType(ty,sgn) ->
 	  mcode U.baseType ty; print_option (mcode U.sign) sgn
+      |	Ast0.ImplicitInt(sgn) -> mcode U.sign sgn
       | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;

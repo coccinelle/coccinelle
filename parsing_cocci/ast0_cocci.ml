@@ -114,6 +114,7 @@ and expression = base_expression wrap
 and base_typeC = 
     ConstVol        of Ast.const_vol mcode * typeC
   | BaseType        of Ast.baseType mcode * Ast.sign mcode option
+  | ImplicitInt     of Ast.sign mcode
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
@@ -394,6 +395,9 @@ let rec ast0_type_to_type ty =
       Type_cocci.BaseType(baseType bty,None)
   | BaseType(bty,Some sgn) ->
       Type_cocci.BaseType(baseType bty,Some (sign sgn))
+  | ImplicitInt(sgn) ->
+      let bty = Type_cocci.IntType in
+      Type_cocci.BaseType(bty,Some (sign sgn))
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
   | StructUnionName(su,tag)

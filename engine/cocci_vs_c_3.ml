@@ -1464,6 +1464,8 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
           
       )
 
+    | A.ImplicitInt (signa),   _ -> 
+	failwith "implicitInt pattern not supported"
 
     (* todo? iso with array *)
     | A.Pointer (typa, iamult),            (B.Pointer typb, ii) -> 

@@ -158,6 +158,7 @@ let combiner bind option_default
 	Ast0.ConstVol(cv,ty) -> bind (cv_mcode cv) (typeC ty)
       |	Ast0.BaseType(ty,sign) ->
 	  bind (get_option sign_mcode sign) (base_mcode ty)
+      |	Ast0.ImplicitInt(sign) -> (sign_mcode sign)
       | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.Array(ty,lb,size,rb) ->
 	  multibind
@@ -541,6 +542,7 @@ let rebuilder = fun
 	  Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv_mcode cv,typeC ty)
 	| Ast0.BaseType(ty,sign) ->
 	    Ast0.BaseType(base_mcode ty, get_option sign_mcode sign)
+	| Ast0.ImplicitInt(sign) -> Ast0.ImplicitInt(sign_mcode sign)
 	| Ast0.Pointer(ty,star) ->
 	    Ast0.Pointer(typeC ty, string_mcode star)
 	| Ast0.Array(ty,lb,size,rb) ->

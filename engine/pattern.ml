@@ -897,6 +897,9 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
               return false
 	| x, y -> return false
         )
+
+    | A.ImplicitInt (signa),   _ -> 
+	failwith "implicitInt pattern not supported"
 	  
   (* todo? iso with array *)
     | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 

@@ -111,6 +111,7 @@ and expression = base_expression wrap
 and base_typeC = 
     ConstVol        of Ast_cocci.const_vol mcode * typeC
   | BaseType        of Ast_cocci.baseType mcode * Ast_cocci.sign mcode option
+  | ImplicitInt     of Ast_cocci.sign mcode
   | Pointer         of typeC * string mcode (* * *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)

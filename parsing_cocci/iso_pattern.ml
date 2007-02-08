@@ -365,6 +365,8 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.BaseType(tya,signa),Ast0.BaseType(tyb,signb)) ->
 	      return (mcode_equal tya tyb &&
 		      bool_match_option mcode_equal signa signb)
+	  | (Ast0.ImplicitInt(signa),Ast0.ImplicitInt(signb)) ->
+	      return (mcode_equal signa signb)
 	  | (Ast0.Pointer(tya,_),Ast0.Pointer(tyb,star)) -> match_typeC tya tyb
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)

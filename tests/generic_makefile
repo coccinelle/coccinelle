@@ -5,9 +5,6 @@ SPATCH=../../spatch.opt  # for the bench !!! can also use 'make opt'
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 -no_type_error_msg
 
-ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
--no_type_error_msg -cocci_vs_c_3 -use_ref
-
 
 SPATCHCMD=$(SPATCH) $(ISOFILE) -compare_with_expected -cocci_file $(SP) $(ARGS)
 

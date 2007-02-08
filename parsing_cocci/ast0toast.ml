@@ -314,6 +314,8 @@ and typeC t =
       Ast0.ConstVol(cv,ty) -> Ast.Type(Some (mcode cv),base_typeC ty)
     | Ast0.BaseType(ty,sign) ->
 	Ast.Type(None,rewrap t(Ast.BaseType(mcode ty,get_option mcode sign)))
+    | Ast0.ImplicitInt(sign) ->
+	Ast.Type(None,rewrap t(Ast.ImplicitInt(mcode sign)))
     | Ast0.Pointer(ty,star) ->
 	Ast.Type
 	  (None,rewrap t(Ast.Pointer(typeC ty,mcode star)))

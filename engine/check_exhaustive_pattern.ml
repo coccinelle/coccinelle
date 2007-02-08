@@ -100,6 +100,7 @@ let dumb_astcocci_expr = function
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()
  | A.BaseType (basea, signaopt) -> ()
+ | A.ImplicitInt (signa) -> ()
  | A.Pointer (typa, _) -> ()
  | A.Array (typa, _, eaopt, _) -> ()
  | A.StructUnionName(sa, sua) -> ()

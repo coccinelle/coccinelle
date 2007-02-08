@@ -353,6 +353,8 @@ arity: TBang0 { Ast.UNIQUE }
 generic_ctype:
        t=Tvoid
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t, None)) }
+     | q=ctype_qualif
+         { Ast0.wrap(Ast0.ImplicitInt(q)) }
      | q=ioption(ctype_qualif) ty=Tchar
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.CharType ty, q)) }
      | q=ioption(ctype_qualif) ty=Tshort

@@ -194,6 +194,8 @@ and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
     (Ast.BaseType(ty1,sgn1),Ast.BaseType(ty2,sgn2)) ->
       return (unify_mcode ty1 ty2 && bool_unify_option unify_mcode sgn1 sgn2)
+  | (Ast.ImplicitInt(sgn1),Ast.ImplicitInt(sgn2)) ->
+      return (unify_mcode sgn1 sgn2)
   | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings

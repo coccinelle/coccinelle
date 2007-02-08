@@ -36,7 +36,9 @@ let print_between = Common.print_between in
 
 let handle_metavar name fn = 
   match (Common.optionise (fun () -> List.assoc (term name) env)) with
-  | None -> failwith ("Not found a value in env for: " ^ term name)
+  | None ->
+      failwith (Printf.sprintf "SP line %d: Not found a value in env for: %s"
+		  (Ast_cocci.get_mcode_line name) (term name))
   | Some e  -> fn e
 in
 

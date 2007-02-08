@@ -157,6 +157,7 @@ and base_fullType =
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
+  | ImplicitInt     of sign mcode
   | Pointer         of fullType * string mcode (* * *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
@@ -407,6 +408,7 @@ val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
+val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> string list
 val get_fresh : 'a wrap -> string list
 val get_inherited : 'a wrap -> string list
