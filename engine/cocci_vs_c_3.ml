@@ -1084,8 +1084,21 @@ and (declaration: (A.mcodekind * A.declaration, B.declaration) matcher) =
         (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
       )))
         
-  | (B.DeclList (x::y::xs, iiptvirgb::iifakestart::iisto)) -> 
-      failwith "More that one variable in decl. Have to split to transform."
+  | (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) -> 
+      if X.mode = PatternMode
+      then
+        xs +> List.fold_left (fun acc var -> 
+          acc >||> (
+            X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+              onedecl decla (var, iiptvirgb, iisto) >>= 
+                (fun decla (var, iiptvirgb, iisto) -> 
+                  return (
+                    (mckstart, decla),
+                    (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
+                  )))))
+          fail
+      else 
+        failwith "More that one variable in decl. Have to split to transform."
   
   | _ -> raise Impossible                
 
@@ -1565,7 +1578,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       | F.EndStatement None -> 
           if X.mode = PatternMode then return default 
           else 
-              (* XXX
+              (* DEAD CODE NOW ? only useful in -no_cocci_vs_c_3 ?
                  if mcode_contain_plus (mcodekind mcode)
                  then
                  let fake_info = Ast_c.fakeInfo() in
