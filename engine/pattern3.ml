@@ -61,7 +61,7 @@ module XMATCH = struct
     List.flatten xxs
 
   let (>|+|>) m1 m2 = fun binding -> 
-    if true then 
+    if true then (* CHOICE *)
       m1 binding ++ m2 binding 
     else 
       let xs = m1 binding in
@@ -70,7 +70,7 @@ module XMATCH = struct
       else xs
       
   let (>||>) m1 m2 = fun binding ->
-    if true then 
+    if true then (* CHOICE *)
       m1 binding ++ m2 binding 
     else 
       let xs = m1 binding in
@@ -101,7 +101,7 @@ module XMATCH = struct
 	| [] -> (* failed *) k expb
 	| xs -> 
             globals := xs @ !globals; 
-            k expb
+            (* k expb *) (* CHOICE *)
       );
       (* pad's style.
        * push2 expr globals;  k expr

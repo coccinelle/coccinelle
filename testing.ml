@@ -45,7 +45,7 @@ let testone x compare_with_expected =
   let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) in
 
   let outfile = default_output_file in
-  let expected_res   = "tests/" ^ base ^ ".res" in
+  let expected_res   = "tests/" ^ x ^ ".res" in
   begin
     Cocci.full_engine cfile (Left (cocci_file, iso_file)) outfile;
 
