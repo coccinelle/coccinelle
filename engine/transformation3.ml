@@ -250,13 +250,38 @@ module XTRANS = struct
     Visitor_c.vk_node_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
 
+
+   let get_pos mck = 
+     match mck with
+     | Ast_cocci.PLUS -> raise Impossible
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
+         Ast_cocci.FixPos (i1,i2)
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+         Ast_cocci.DontCarePos
+     | _ -> failwith "wierd: dont have position info for the mcodekind"      
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
     fun ia x -> fun binding -> 
     let (s1, i, mck) = ia in
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
-    if check_pos mck max && check_pos mck min 
+    if 
+      (* bug: check_pos mck max && check_pos mck min
+       * 
+       * if do that then if have - f(...); and in C f(1,2); then we
+       * would get a "already tagged" because the '...' would sucess in
+       * transformaing both '1' and '1,2'. So being in the range is not
+       * enough. We must be equal exactly to the range! 
+       *)
+      (match get_pos mck with 
+      | Ast_cocci.DontCarePos -> true
+      | Ast_cocci.FixPos (i1, i2) -> 
+          i1 = min && i2 = max
+      | _ -> raise Impossible
+      )
+
     then 
       return (
         ia, 

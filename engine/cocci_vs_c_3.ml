@@ -803,26 +803,37 @@ and arguments_bis = fun eas ebs ->
                 then fail 
                   (* failwith "I have no token that I could accroche myself on" *)
                 else return (mcode, [])
-              else X.distrf_args mcode startxs
+              else 
+                (* subtil: we dont want the '...' to match until the
+                 * comma. cf -test pb_params_iso. We would get at
+                 * "already tagged" error.
+                 * this is because both f (... x, ...) and f (..., x, ...)
+                 * would match a  f(x,3)  with our "optional-comma" strategy.
+                 *)
+                  (match Common.last startxs with
+                  | Right _ -> fail
+                  | Left _ -> 
+                      X.distrf_args mcode startxs
+                  )
               )
-               >>= (fun mcode startxs ->
-              arguments_bis eas endxs >>= (fun eas endxs -> 
-                return (
-                  (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
-                  startxs ++ endxs
-                )))
-              )
-            ) fail 
+              >>= (fun mcode startxs ->
+                arguments_bis eas endxs >>= (fun eas endxs -> 
+                  return (
+                    (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
+                    startxs ++ endxs
+                  )))
+            )
+          ) fail 
 
       | A.EComma ia1, Right ii::ebs -> 
           let ib1 = tuple_of_list1 ii in
           tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-          arguments_bis eas ebs >>= (fun eas ebs -> 
-            return (
-              (A.EComma ia1 +> A.rewrap ea)::eas,
-              (Right [ib1])::ebs
-            )
-          ))
+            arguments_bis eas ebs >>= (fun eas ebs -> 
+              return (
+                (A.EComma ia1 +> A.rewrap ea)::eas,
+                (Right [ib1])::ebs
+              )
+            ))
       | A.EComma ia1, ebs -> 
           (* allow ',' to maching nothing *)
           if mcode_contain_plus (mcodekind ia1)
@@ -920,7 +931,12 @@ and parameters_bis eas ebs =
                 then fail 
                   (* failwith "I have no token that I could accroche myself on" *)
                 else return (mcode, [])
-              else X.distrf_params mcode startxs
+              else 
+                (match Common.last startxs with
+                | Right _ -> fail
+                | Left _ -> 
+                    X.distrf_params mcode startxs
+                )
               ) >>= (fun mcode startxs ->
               parameters_bis eas endxs >>= (fun eas endxs -> 
                 return (
