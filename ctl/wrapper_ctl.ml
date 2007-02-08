@@ -157,9 +157,6 @@ struct
   exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
-    Printf.printf "used after is ";
-    List.iter (function x -> print_var x; Format.print_string " ") used_after;
-    Format.print_newline();
     List.concat
       (List.map
 	 (function used_after_var ->
