@@ -228,6 +228,7 @@ and fullType ft =
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
+  | Ast.ImplicitInt(sgn) -> mcode sign sgn
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
