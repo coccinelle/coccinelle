@@ -1,6 +1,6 @@
 @@
 identifier init;
-identifier XXX_attach, XXX_detach;
+identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
 @@
 
   int init (...) {

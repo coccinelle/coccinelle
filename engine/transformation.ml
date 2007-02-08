@@ -958,6 +958,14 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
       (match ii with
       | iidb::ioparenb::icparenb::iifakestart::iistob -> 
+          (* ugly trick for use_ref, important to first do this
+           * and only after trying to transform the other tokens.
+           * this for transform_proto
+           *)
+          let (idb', iidb') = 
+            transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
+          in
+
           let iifakestart' = D.tag_with_mck mckstart iifakestart binding in 
           
           let stob' = stob in
@@ -994,9 +1002,6 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
             | Some tya -> transform_ft_ft tya retb binding
           in
           
-          let (idb', iidb') = 
-            transform_ident Pattern.LocalFunction ida (idb, [iidb])   binding 
-          in
       
           let iiparensb' = tag_symbols [oparen;cparen] [ioparenb;icparenb] binding
           in

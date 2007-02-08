@@ -178,7 +178,6 @@ let show_or_not_trans_info trans_info =
 
 let show_or_not_binding binding =
   begin
-  pr2 "start binding = ";
   Pretty_print_c.pp_binding binding;
   Format.print_newline()
   end
@@ -420,14 +419,16 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
           (match celem with 
           | Ast_c.Definition ((funcs, _, _, _c),_) -> 
-              if !Flag.show_misc then pr2 ("starting function " ^ funcs);
+              if !Flag.show_misc then pr2 ("STARTING function: " ^ funcs);
 
           | Ast_c.Declaration 
               (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> 
-              if !Flag.show_misc then pr2 ("starting variable " ^ s);
+              if !Flag.show_misc then pr2 ("STARTING variable " ^ s);
           | _ -> 
-              if !Flag.show_misc then pr2 ("starting something else");
+              if !Flag.show_misc then pr2 ("STARTING something else");
           );
+          pr2 "binding in = ";
+          show_or_not_binding binding;
 
           let satres = 
             Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
@@ -445,8 +446,6 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
 
           (match satres with
           | Left (trans_info, returned_any_states, newbinding) ->
-              show_or_not_trans_info trans_info;
-
               (* modify also the proto if FunHeader was touched *)
               let hack_funheaders = 
                 trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
@@ -457,9 +456,13 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
                   | _ -> None
                 )  
               in
-              
-              if not (null trans_info) (* TODOOOOO returned_any_states *)
-              then 
+               
+              if returned_any_states (* old: not (null trans_info)  *)
+              then begin
+                show_or_not_trans_info trans_info;
+                pr2 "binding out = ";
+                show_or_not_binding binding;
+
                 (* I do the transformation on flow, not fixed_flow, 
                    because the flow_to_ast need my extra information. *)
                 let flow' = (* can do via side effect now *)
@@ -475,8 +478,9 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
                   else flow_to_ast flow' 
                 in
                 (celem', true), Some newbinding, hack_funheaders
+              end
               else 
-                (celem, false), Some newbinding, hack_funheaders
+                (celem, false), None, []
           | Right x -> 
               pr2 ("Unable to find a value for " ^ x);
               (celem, false),   None, []
@@ -632,39 +636,40 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
      *)
     if !Flag.show_misc then pr2 ("hack headers");
     Common.profile_code "hack_headers" (fun () -> 
+      
       !_hack_funheader +> List.iter (fun info ->
-	let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
-          
-          let cprogram' = 
-            !cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
-              let ebis', modified = 
-                match ebis with
-                | Ast_c.Declaration 
-                    (Ast_c.DeclList 
-                        ([((Some ((s, None), iis)), 
-                          (qu, (Ast_c.FunctionType ft, iity)), 
-                          storage),
-                         []
-                        ], iiptvirg::iifake::iisto))  -> 
-                    (try
-                        (* XXX *)
-                        Transformation.transform_proto
-                          (Ast_cocci.rewrap info
-			     (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
-                          (((Control_flow_c.FunHeader 
-                                ((s, ft, storage), 
-                                iis++iity++[iifake]++iisto)), []),"")
-                          binding (qu, iiptvirg) h
-                        +> (fun x -> x,  true)
-                      with Transformation.NoMatch -> (ebis, false)
-                    )
-                | x -> (x, false)
-              in
-              (((ebis', info_item), flow, env), modified)
-            ) 
-              
-          in
-          cprogram := rebuild_info_program cprogram' contain_typedmetavar;
+        let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
+        
+        let cprogram' = 
+          !cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
+            let ebis', modified = 
+              match ebis with
+              | Ast_c.Declaration 
+                  (Ast_c.DeclList 
+                      ([((Some ((s, None), iis)), 
+                        (qu, (Ast_c.FunctionType ft, iity)), 
+                        storage),
+                       []
+                      ], iiptvirg::iifake::iisto))  -> 
+                  (try
+                      
+
+                      Transformation.transform_proto
+                        (Ast_cocci.rewrap info
+			    (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
+                        (((Control_flow_c.FunHeader 
+                              ((s, ft, storage), 
+                              iis++iity++[iifake]++iisto)), []),"")
+                        binding (qu, iiptvirg) h
+                      +> (fun x -> x,  true)
+                    with Transformation.NoMatch -> (ebis, false)
+                  )
+              | x -> (x, false)
+            in
+            (((ebis', info_item), flow, env), modified)
+          ) 
+        in
+        cprogram := rebuild_info_program cprogram' contain_typedmetavar;
       );
     );
 
