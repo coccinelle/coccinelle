@@ -56,6 +56,14 @@ Declaration
 @@ identifier Z; @@
 int Z; => signed int Z;
 
+Declaration
+@@ identifier Z; @@
+unsigned Z; => unsigned int Z;
+
+Declaration
+@@ identifier Z; @@
+signed Z; => signed int Z;
+
 
 // ---------------------------------------------------------------------------
 // Typedef isomorphisms
