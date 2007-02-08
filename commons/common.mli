@@ -39,6 +39,8 @@ val debugon : unit -> unit
 val debugoff : unit -> unit
 val debug : (unit -> unit) -> unit
 
+val debugger : bool ref
+
 (*****************************************************************************)
 (* Profiling *)
 (*****************************************************************************)

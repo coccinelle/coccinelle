@@ -368,7 +368,12 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         
 
      (* ------------------------- *)        
-    | Selection  (Ast_c.If (e, st1, (Ast_c.ExprStatement (None), ii2))), ii -> 
+    | Selection  (Ast_c.If (e, st1, (Ast_c.ExprStatement (None), []))), ii ->
+        (* sometome can have ExprStatement None but it is a if-then-else,
+         * because something like   if() xx else ;
+         * so must force to have [] in the ii associated with ExprStatement 
+         *)
+        
         let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
         let ii = [i1;i2;i3] in
        (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti

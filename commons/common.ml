@@ -248,6 +248,10 @@ let debug f = if !_debug then f () else ()
  hierarchy of loggers, config file,  different target (console, file, ...)
  also show the function you are in.
 *)
+
+(* used to tell if want to run from debuger *)
+let debugger = ref false 
+
 (*****************************************************************************)
 (* Profiling *)
 (*****************************************************************************)

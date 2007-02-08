@@ -92,6 +92,7 @@ let main () =
       "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
       
       "-profile",          Arg.Set  Common.profile , "  ";
+      "-debugger",          Arg.Set  Common.debugger , "  ";
 
       "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
@@ -288,11 +289,15 @@ let main () =
 let _ =
   if not (!Sys.interactive) then 
     Common.exn_to_unixexit (fun () -> 
-      Common.finalize
-        (fun()-> 
-          main ();
-          Ctlcocci_integration.print_bench()
-        )
-        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+      if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
+      then
+        main ()
+      else 
+        Common.finalize
+          (fun()-> 
+            main ();
+            Ctlcocci_integration.print_bench()
+          )
+          (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
   

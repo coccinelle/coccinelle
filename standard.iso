@@ -66,7 +66,7 @@ signed Z; => signed int Z;
 
 
 // ---------------------------------------------------------------------------
-// Typedef isomorphisms
+// Field isomorphisms
 // ---------------------------------------------------------------------------
 // Dereferences
 
@@ -98,6 +98,10 @@ expression E,E1;
 // ---------------------------------------------------------------------------
 // TODO should be handled in engine/
 
+
+
+// unsigned X => unsigned int X ?
+// signed X => signed int X ?
 
 
 
