@@ -38,14 +38,14 @@ let process_sgrep s2 mck =
       |	(AftMark(marker),repl) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.Common.file s2.Common.line
-	    (s2.Common.column + String.length s2.str);
+	    (s2.Common.column + String.length s2.Common.str);
 	  Ast_cocci.MINUS(pos,repl)
       |	(BefAftMark(bmarker,amarker),repl) ->
 	  Printf.printf "Match on line %s starting at %s: line %d offset %d\n"
 	    bmarker s2.Common.file s2.Common.line s2.Common.column;
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    amarker s2.Common.file s2.Common.line
-	    (s2.Common.column + String.length s2.str);
+	    (s2.Common.column + String.length s2.Common.str);
 	  Ast_cocci.MINUS(pos,repl))
   | Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING) -> mck
   | Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef)) ->
@@ -66,12 +66,12 @@ let process_sgrep s2 mck =
       |	(AftMark(marker),[]) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.Common.file s2.Common.line
-	    (s2.Common.column + String.length s2.str);
+	    (s2.Common.column + String.length s2.Common.str);
 	  Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING)
       |	(AftMark(marker),aft) ->
 	  Printf.printf "Match on line %s ending at %s: line %d offset %d\n"
 	    marker s2.Common.file s2.Common.line
-	    (s2.Common.column + String.length s2.str);
+	    (s2.Common.column + String.length s2.Common.str);
 	  Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft))
       |	_ -> failwith "before not possible")
   | Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft)) ->
@@ -83,13 +83,13 @@ let process_sgrep s2 mck =
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef))
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft))
 	  | _ -> failwith "before not possible")
       | (BefMark(marker),[]) ->
@@ -101,13 +101,13 @@ let process_sgrep s2 mck =
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING)
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.AFTER(aft))
 	  | _ -> failwith "before not possible")
       | (BefMark(marker),bef) ->
@@ -119,13 +119,13 @@ let process_sgrep s2 mck =
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFORE(bef))
 	  | (AftMark(marker),aft) ->
 	      Printf.printf
 		"Match on line %s ending at %s: line %d offset %d\n"
 		marker s2.Common.file s2.Common.line
-		(s2.Common.column + String.length s2.str);
+		(s2.Common.column + String.length s2.Common.str);
 	      Ast_cocci.CONTEXT(pos,Ast_cocci.BEFOREAFTER(bef,aft))
 	  | _ -> failwith "before not possible")
       |	_ -> failwith "after not possible")
