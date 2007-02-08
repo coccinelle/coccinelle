@@ -1,3 +1,5 @@
+// test with -cocci_vs_c_3 -use_ref
+
 @@
 identifier driver;
 identifier attach, detach;
