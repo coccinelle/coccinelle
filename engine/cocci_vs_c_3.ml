@@ -36,11 +36,6 @@ type info_ident =
 let term      (s,i,mc) = s
 let mcodekind (s,i,mc) = mc
 
-let tuple_of_list1 = function [a] -> a | _ -> failwith "tuple_of_list1"
-let tuple_of_list2 = function [a;b] -> a,b | _ -> failwith "tuple_of_list2"
-let tuple_of_list3 = function [a;b;c] -> a,b,c | _ -> failwith "tuple_of_list3"
-let tuple_of_list4 = function [a;b;c;d] -> a,b,c,d | _ -> failwith "tuple_of_list4"
-let tuple_of_list5 = function [a;b;c;d;e] -> a,b,c,d,e | _ -> failwith "tuple_of_list5"
 
 let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
@@ -1199,7 +1194,7 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
         (match ii with 
         | ib1::ib2::iicommaopt -> 
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-            tokenf ia2 ib2 >>= (fun ia1 ib1 ->
+            tokenf ia2 ib2 >>= (fun ia2 ib2 ->
             initialisers ias (Ast_c.split_comma ibs) >>= (fun ias ibs_split ->
               let ibs = Ast_c.unsplit_comma ibs_split in
               return (
@@ -1580,7 +1575,12 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
               *)
             raise Todo
               
-      | F.EndStatement (Some _) -> raise Impossible (* really ? *)
+      | F.EndStatement (Some i1) -> 
+          tokenf mcode i1 >>= (fun mcode i1 -> 
+            return (
+              A.MetaRuleElem (mcode,keep, inherited),
+              F.EndStatement (Some i1)
+            ))
 
       | F.FunHeader _ -> 
           if X.mode = PatternMode then return default

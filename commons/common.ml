@@ -1019,6 +1019,14 @@ let double a = a,a
 let swap (x,y) = (y,x)
 
 
+let tuple_of_list1 = function [a] -> a | _ -> failwith "tuple_of_list1"
+let tuple_of_list2 = function [a;b] -> a,b | _ -> failwith "tuple_of_list2"
+let tuple_of_list3 = function [a;b;c] -> a,b,c | _ -> failwith "tuple_of_list3"
+let tuple_of_list4 = function [a;b;c;d] -> a,b,c,d | _ -> failwith "tuple_of_list4"
+let tuple_of_list5 = function [a;b;c;d;e] -> a,b,c,d,e | _ -> failwith "tuple_of_list5"
+let tuple_of_list6 = function [a;b;c;d;e;f] -> a,b,c,d,e,f | _ -> failwith "tuple_of_list6"
+
+
 (*****************************************************************************)
 (* Maybe *)
 (*****************************************************************************)

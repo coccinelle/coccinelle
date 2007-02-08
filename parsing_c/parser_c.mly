@@ -497,12 +497,12 @@ decl_spec3: decl_spec { et "decl_spec3" (); $1 }
 
 /*****************************************************************************/
 
-statement: labeled         { Labeled        (fst $1),      snd $1 }
-	 | compound        { Compound       (fst $1),      snd $1 }
-	 | expr_statement  { ExprStatement  (fst $1),      snd $1 }
-	 | selection       { Selection      (fst $1),      snd $1 }
-	 | iteration       { Iteration      (fst $1),      snd $1 }
-	 | jump TPtVirg    { Jump           (fst $1),      snd $1 ++ [$2] }
+statement: labeled         { Labeled      (fst $1), snd $1 }
+	 | compound        { Compound     (fst $1), snd $1 }
+	 | expr_statement  { ExprStatement(fst $1), snd $1 }
+	 | selection       { Selection    (fst $1), snd $1 ++ [fakeInfo()] }
+	 | iteration       { Iteration    (fst $1), snd $1 ++ [fakeInfo()] }
+	 | jump TPtVirg    { Jump         (fst $1), snd $1 ++ [$2] }
          /* gccext: */
          | Tasm TOPar asmbody TCPar TPtVirg             { Asm, [] }
 
@@ -548,9 +548,9 @@ stat_or_decl: decl      { Decl $1, [] }
             | statement { $1 }
             /* cppext: */
             | TIfdef stat_or_decl_list TIfdefelse stat_or_decl_list TEndif 
-                { Selection (IfCpp ($2, $4)), [$1;$3;$5] }
+                { Selection (IfCpp ($2, $4)), [$1;$3;$5;fakeInfo()] }
             | TIfdef stat_or_decl_list TEndif 
-                { Selection (IfCpp ($2, [])), [$1;$3] }
+                { Selection (IfCpp ($2, [])), [$1;$3;fakeInfo()] }
 
 statement_list: stat_or_decl_list { $1 }
 

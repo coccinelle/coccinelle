@@ -61,6 +61,9 @@ module XMATCH = struct
     List.flatten xxs
 
   let (>|+|>) m1 m2 = fun binding -> 
+    if true then 
+      m1 binding ++ m2 binding 
+    else 
       let xs = m1 binding in
       if null xs
       then m2 binding
@@ -70,7 +73,10 @@ module XMATCH = struct
     if true then 
       m1 binding ++ m2 binding 
     else 
-      (m1 >|+|> m2) binding
+      let xs = m1 binding in
+      if null xs
+      then m2 binding
+      else xs
 
 
   let return res = fun binding -> 
@@ -93,7 +99,10 @@ module XMATCH = struct
       Visitor_c.kexpr = (fun (k, bigf) expb ->
 	match expf expa expb binding with
 	| [] -> (* failed *) k expb
-	| xs -> globals := xs @ !globals);
+	| xs -> 
+            globals := xs @ !globals; 
+            k expb
+      );
       (* pad's style.
        * push2 expr globals;  k expr
        *  ...

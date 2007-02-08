@@ -141,18 +141,23 @@ and pp_statement_gen pr_elem =
         pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st1; 
         (match (st2, is) with
         | ((ExprStatement None, []), [])  -> ()
-        | st2, [i4] -> pr_elem i4; pp_statement st2
+        | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
+        | st2, [i4;iifakend] -> pr_elem i4; pp_statement st2; pr_elem iifakend
         | x -> raise Impossible
         )
-    | Selection  (Switch (e, st)), [i1;i2;i3] -> 
-        pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st
-    | Iteration  (While (e, st)), [i1;i2;i3] -> 
-        pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st
-    | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5] -> 
+    | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] -> 
+        pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st;
+        pr_elem iifakend
+    | Iteration  (While (e, st)), [i1;i2;i3;iifakend] -> 
+        pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st;
+        pr_elem iifakend
+    | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5;iifakend] -> 
         pr_elem i1; pp_statement st; pr_elem i2; pr_elem i3; pp_expression e; 
-        pr_elem i4; pr_elem i5
+        pr_elem i4; pr_elem i5;
+        pr_elem iifakend
+        
           
-    | Iteration  (For ((e1opt,il1), (e2opt,il2), (e3opt, il3), st)), [i1;i2;i3] ->
+    | Iteration  (For ((e1opt,il1), (e2opt,il2), (e3opt, il3), st)), [i1;i2;i3;iifakend] ->
         pr_elem i1;
         pr_elem i2;
         pp_statement (ExprStatement e1opt, il1);
@@ -160,7 +165,8 @@ and pp_statement_gen pr_elem =
         assert (null il3);
         pp_statement (ExprStatement e3opt, il3);
         pr_elem i3;
-        pp_statement st
+        pp_statement st;
+        pr_elem iifakend
           
     | Jump (Goto s), [i1;i2;i3]               -> 
         pr_elem i1; pr_elem i2; pr_elem i3;
@@ -174,11 +180,12 @@ and pp_statement_gen pr_elem =
         pr_elem i1; 
         st1s +> List.iter pp_statement; 
         (match (st2s, is) with
-        | [], [] -> pr_elem i2
-        | x::xs, [i3] -> 
+        | [], [iifakend] -> pr_elem i2; pr_elem iifakend
+        | x::xs, [i3;iifakend] -> 
             pr_elem i2;
             st2s +> List.iter pp_statement; 
             pr_elem i3;
+            pr_elem iifakend
             
         | _ -> raise Impossible
         )

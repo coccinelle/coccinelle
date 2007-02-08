@@ -369,6 +369,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
      (* ------------------------- *)        
     | Selection  (Ast_c.If (e, st1, (Ast_c.ExprStatement (None), ii2))), ii -> 
+        let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+        let ii = [i1;i2;i3] in
        (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
         *                  |                                      |
         *                  |->   newfakeelse -> ... -> finalelse -|
@@ -382,7 +384,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newfakethen = add_node_g TrueNode        lbl "[then]" in
         let newfakeelse = add_node_g FallThroughNode lbl "[fallthrough]" in
         let afteri = add_node_g AfterNode lbl "[after]" in
-        let lasti  = add_node_g (EndStatement None) lbl "[endif]" in
+        let lasti  = add_node_g (EndStatement (Some iifakeend)) lbl "[endif]" 
+        in
 
         (* for ErrorExit heuristic *)
         let newauxinfo = { auxinfo_label with  ctx_bis = true; } in
@@ -404,9 +407,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         *                 |->   newfakeelse -> ... -> finalelse -|
         * update: there is now also a link directly to lasti.
         *)
-        let (iiheader, iielse) = 
+        let (iiheader, iielse, iifakeend) = 
           match ii with
-          | [i1;i2;i3;i4] -> [i1;i2;i3], i4
+          | [i1;i2;i3;i4;i5] -> [i1;i2;i3], i4, i5
           | _ -> raise Impossible
         in
         let newi = add_node_g (IfHeader (stmt, (e, iiheader))) lbl "if" in
@@ -427,7 +430,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         (match finalthen, finalelse with 
           | (None, None) -> None
           | _ -> 
-              let lasti =  add_node_g (EndStatement None) lbl "[endif]" in
+              let lasti = add_node_g (EndStatement(Some iifakeend)) lbl "[endif]" in
               let afteri = add_node_g AfterNode lbl "[after]" in
               !g#add_arc ((newi, afteri),  Direct) +> adjust_g;
               !g#add_arc ((afteri, lasti), Direct) +> adjust_g;
@@ -435,10 +438,16 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                 attach_to_previous_node finalthen lasti;
                 attach_to_previous_node finalelse lasti;
                 Some lasti
-             end
-        )
+             end)
+          
         
     | Selection  (Ast_c.IfCpp (st1s, st2s)), ii -> 
+        let (ii,iifakeend) = 
+          match ii with
+          | [i1;i2;i3;i4] -> [i1;i2;i3], i4
+          | [i1;i2;i3] -> [i1;i2], i3
+          | _ -> raise Impossible
+        in
 
         let newi = add_node_g (IfCpp (stmt, ((), ii))) lbl "ifcpp" in
         attach_to_previous_node starti newi;
@@ -461,7 +470,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         (match finalthen, finalelse with 
           | (None, None) -> None
           | _ -> 
-              let lasti =  add_node_g (EndStatement None) lbl "[endifcpp]" in
+              let lasti =  add_node_g (EndStatement (Some iifakeend)) lbl "[endifcpp]" in
               begin
                 attach_to_previous_node finalthen lasti;
                 attach_to_previous_node finalelse lasti;
@@ -472,11 +481,15 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
      (* ------------------------- *)        
     | Selection  (Ast_c.Switch (e, st)), ii -> 
+        let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+        let ii = [i1;i2;i3] in
+
+
         let newswitchi = add_node_g (SwitchHeader (stmt, (e,ii))) lbl "switch" 
         in
         attach_to_previous_node starti newswitchi;
 
-        let newendswitch = add_node_g (EndStatement None) lbl "[endswitch]" in
+        let newendswitch = add_node_g (EndStatement (Some iifakeend)) lbl "[endswitch]" in
 
     
         (* The newswitchi is for the labels to know where to attach.
@@ -647,12 +660,15 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         *                 |-> newfakelse 
         *)
 
+        let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+        let ii = [i1;i2;i3] in
+
         let newi = add_node_g (WhileHeader (stmt, (e,ii))) lbl "while" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[whiletrue]" in
         (* let newfakeelse = add_node_g FalseNode lbl "[endwhile]" in *)
         let newafter = add_node_g FallThroughNode lbl "[whilefall]" in
-        let newfakeelse = add_node_g (EndStatement None) lbl "[endwhile]" in
+        let newfakeelse = add_node_g (EndStatement (Some iifakeend)) lbl "[endwhile]" in
 
         let newauxinfo = { auxinfo_label with
            ctx = LoopInfo (newi, newfakeelse,  auxinfo_label.braces);
@@ -676,9 +692,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        (* starti -> doi ---> ... ---> finalthen (opt) ---> whiletaili
         *             |--------- newfakethen ---------------|  |---> newfakelse
         *)
-        let (iido, iiwhiletail) = 
+
+        let (iido, iiwhiletail, iifakeend) = 
           match ii with
-          | [i1;i2;i3;i4;i5] -> i1, [i2;i3;i4;i5]
+          | [i1;i2;i3;i4;i5;i6] -> i1, [i2;i3;i4;i5], i6
           | _ -> raise Impossible
         in
         let doi = add_node_g (DoHeader (stmt, iido))  lbl "do" in
@@ -690,7 +707,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newfakethen = add_node_g TrueNode lbl "[dowhiletrue]" in
         (*let newfakeelse = add_node_g FalseNode lbl "[enddowhile]" in *)
         let newafter = add_node_g FallThroughNode lbl "[dowhilefall]" in
-        let newfakeelse = add_node_g (EndStatement None) lbl "[enddowhile]" in
+        let newfakeelse = add_node_g (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
         let newauxinfo = { auxinfo_label with
            ctx = LoopInfo (taili, newfakeelse, auxinfo_label.braces);
@@ -718,6 +735,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
 
     | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)), ii -> 
+        let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+        let ii = [i1;i2;i3] in
+
         let newi = 
           add_node_g (ForHeader (stmt, ((e1opt, e2opt, e3opt), ii))) lbl "for" 
         in
@@ -725,7 +745,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         let newfakethen = add_node_g TrueNode  lbl "[fortrue]" in
         (*let newfakeelse = add_node_g FalseNode lbl "[endfor]" in*)
         let newafter = add_node_g FallThroughNode lbl "[forfall]" in
-        let newfakeelse = add_node_g (EndStatement None) lbl "[endfor]" in
+        let newfakeelse = add_node_g (EndStatement (Some iifakeend)) lbl "[endfor]" in
 
         let newauxinfo = { auxinfo_label with
              ctx = LoopInfo (newi, newfakeelse, auxinfo_label.braces); 

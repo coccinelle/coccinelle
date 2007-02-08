@@ -346,6 +346,13 @@ val fst : 'a * 'b -> 'a
 val double : 'a -> 'a * 'a
 val swap : 'a * 'b -> 'b * 'a
 
+val tuple_of_list1 : 'a list -> 'a
+val tuple_of_list2 : 'a list -> 'a * 'a
+val tuple_of_list3 : 'a list -> 'a * 'a * 'a
+val tuple_of_list4 : 'a list -> 'a * 'a * 'a * 'a
+val tuple_of_list5 : 'a list -> 'a * 'a * 'a * 'a * 'a
+val tuple_of_list6 : 'a list -> 'a * 'a * 'a * 'a * 'a * 'a
+
 (*****************************************************************************)
 (* Maybe *)
 (*****************************************************************************)

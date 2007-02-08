@@ -17,7 +17,7 @@ open Common open Commonop
  * himself (but we can do it for pointer).
  * 
  * 
- * Because of ExprStatement, can have more 'new scope', but rare I
+ * Because of ExprStatement, can have more 'new scope' event, but rare I
  * think. For instance array of constExpression => possibly an
  * exprStatement and a new (local) struct defined. Same for
  * Constructor.
@@ -43,6 +43,13 @@ open Common open Commonop
  * convention: I often use 'ii' for the name of a list of info. 
  * 
  * Update: Now I use a ref!!!! 
+ * 
+ * Sometimes we want to add someting at the beginning or at the end 
+ * of a construct. For 'function' and 'decl' we want add something
+ * to their left and for 'if' 'while' et 'for' and so on at their right.
+ * We want kind of "virtual placeholders" that represent the start or
+ * end of a construct. We use fakeInfo for that purpose.
+ * So to mark those cases I have added a fakestart/fakeend comment.
  *)
 
 (* forunparser: *)
@@ -262,7 +269,7 @@ and statementbis =
   * with a case:, otherwise unreachable code 
   *)
   and selection     = 
-   | If     of expression * statement * statement        
+   | If     of expression * statement * statement (* have fakeend *)
    | Switch of expression * statement 
    | IfCpp of statement list * statement list    (* cppext: *)
 
@@ -297,7 +304,7 @@ and statementbis =
 and declaration = 
    DeclList of (((string * initialiser option) wrap (* s = *) option) * 
                  fullType * storage)
-                wrap2 (* , *) list wrap (* ; fake_start sto *)
+                wrap2 (* , *) list wrap (* ; fakestart sto *)
      and storage       = storagebis * bool (* inline or not *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
@@ -318,7 +325,7 @@ and declaration =
  * same functionType type for both declaration and function definition.
  *)
 and definition = (string * functionType * storage * compound) 
-                 wrap (* s ( ) { } fake_start sto *)
+                 wrap (* s ( ) { } fakestart sto *)
 
  
 (* ------------------------------------------------------------------------- *)
