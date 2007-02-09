@@ -56,13 +56,13 @@ Declaration
 @@ identifier Z; @@
 int Z; => signed int Z;
 
-//Declaration
-//@@ identifier Z; @@
-//unsigned Z; => unsigned int Z;
-//
-//Declaration
-//@@ identifier Z; @@
-//signed Z; => signed int Z;
+Declaration
+@@ identifier Z; @@
+unsigned Z; => unsigned int Z;
+
+Declaration
+@@ identifier Z; @@
+signed Z; => signed int Z;
 
 
 // ---------------------------------------------------------------------------
@@ -269,6 +269,12 @@ T Z = ...; <=> T Z;
 Statement
 @@ statement S; @@
 { ... S } => S
+Statement
+@@ statement S; @@
+{ ... S ... } => S
+Statement
+@@ statement S; @@
+{ S ... } => S
 Statement
 @@ statement S; @@
 { S } => S
