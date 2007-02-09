@@ -1783,12 +1783,12 @@ let preprocess label (req,opt) =
     try not([] = Hashtbl.find memo_label x)
     with
       Not_found ->
-(*
-	Printf.printf "failed to find\n";
-	P.print_predicate x;
-	Format.print_newline();
-*)
 	let triples = setify(label x) in
+	(*if triples = []
+	then
+	  (Printf.printf "failed to find\n";
+	   P.print_predicate x;
+	   Format.print_newline());*)
 	Hashtbl.add memo_label x
 	  (List.map (function (st,th,_) -> (st,th)) triples);
 	not ([] = triples) in

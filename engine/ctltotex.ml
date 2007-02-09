@@ -69,6 +69,12 @@ let rec ctl2c ct pp pv x =
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = andwrap (ct+1) pp pv f2 in
       (res1^" \\wedge "^res2,ct)
+  | CTL.AndAny(dir,f1,f2) ->
+      let (diamond,ct) = print_diamond (ct+2) dir in
+      let (res1,ct) = andwrap ct pp pv f1 in
+      let (res1,ct) = check_ct ct res1 in
+      let (res2,ct) = andwrap (ct+1) pp pv f2 in
+      (res1^" \\wedge? "^diamond^res2,ct)
   | CTL.Or(f1,f2) ->
       let (res1,ct) = orwrap ct pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
