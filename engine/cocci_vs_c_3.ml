@@ -264,6 +264,8 @@ module type PARAM =
       (tin -> 'x tout) -> 
       (tin -> 'x tout)
 
+    val (>&&>) : (tin -> bool) -> (tin -> 'x tout) -> (tin -> 'x tout)
+
     type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
     val mode : mode
@@ -293,6 +295,8 @@ module type PARAM =
       tin -> 
       (string * Ast_c.metavar_binding_kind) tout
 
+    val all_bound : string list -> (tin -> bool)
+
   end
 
 (*****************************************************************************)
@@ -311,6 +315,7 @@ let fail = X.fail
 
 let (>||>) = X.(>||>)
 let (>|+|>) = X.(>|+|>)
+let (>&&>) = X.(>&&>)
 
 let tokenf = X.tokenf
 
@@ -342,6 +347,7 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
 (*---------------------------------------------------------------------------*)
 let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
+  X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
   
@@ -681,6 +687,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 (* ------------------------------------------------------------------------- *)
 and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida (idb, iib) -> 
+  X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa -> 
       if (term sa) =$= idb then
@@ -781,6 +788,7 @@ and arguments_bis = fun eas ebs ->
   | [], [] -> return ([], [])
   | [], eb::ebs -> fail
   | ea::eas, ebs -> 
+      X.all_bound (A.get_inherited ea) >&&>
       (match A.unwrap ea, ebs with
       | A.Edots (mcode, optexpr), ys -> 
           (* todo: if optexpr, then a WHEN and so may have to filter yys *)
@@ -873,6 +881,7 @@ and arguments_bis = fun eas ebs ->
             
       
 and argument arga argb = 
+  X.all_bound (A.get_inherited arga) >&&>
    match A.unwrap arga, argb with
   | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
       if sto <> (B.NoSto, false)
@@ -912,6 +921,7 @@ and parameters_bis eas ebs =
   | [], [] -> return ([], [])
   | [], eb::ebs -> fail
   | ea::eas, ebs -> 
+      X.all_bound (A.get_inherited ea) >&&>
       (match A.unwrap ea, ebs with
       | A.Pdots (mcode), ys -> 
 
@@ -1127,6 +1137,7 @@ and storage stoa stob =
 
 
 and onedecl = fun decla (declb, iiptvirgb, iistob) -> 
+  X.all_bound (A.get_inherited decla) >&&>
    match A.unwrap decla, declb with
   (* Un Metadecl est introduit dans l'asttoctl pour sauter au dessus
    * de toutes les declarations qui sont au debut d'un fonction et
@@ -1193,6 +1204,7 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
 
 and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
   =  fun ia ib -> 
+    X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
     
     | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
@@ -1314,7 +1326,7 @@ and initialisers = fun ias ibs ->
 (* ------------------------------------------------------------------------- *)
 and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) = 
  fun typa typb -> 
-
+   X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
    | A.Type(cv,ty1), ((qu,il),ty2) ->
 
@@ -1373,6 +1385,7 @@ and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 
 and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) = 
   fun ta tb -> 
+  X.all_bound (A.get_inherited ta) >&&> 
   match A.unwrap ta, tb with
 
   (* cas general *)
@@ -1550,6 +1563,8 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   let rewrap x = 
     x >>= (fun a b -> return (A.rewrap re a, F.rewrap node b))
   in
+  X.all_bound (A.get_inherited re) >&&>
+
   rewrap (
   match A.unwrap re, F.unwrap node with
 

@@ -50,6 +50,9 @@ module XTRANS = struct
     | Some x -> Some x (* stop as soon as have found something *)
 
   let (>|+|>) m1 m2 = m1 >||> m2
+  let (>&&>) f m = fun tin -> 
+    if f tin then m tin else fail tin
+    
 
   let mode = Cocci_vs_c_3.TransformMode
 
@@ -312,6 +315,12 @@ module XTRANS = struct
     else 
       (* not raise Impossible! *)
       Some (s, value)
+
+  (* ------------------------------------------------------------------------*)
+  (* Environment, allbounds *) 
+  (* ------------------------------------------------------------------------*)
+  let (all_bound : string list -> tin -> bool) = fun l binding ->
+    true (* in transform we don't care ? *)
 
 end
 

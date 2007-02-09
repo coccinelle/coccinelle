@@ -85,6 +85,12 @@ module XMATCH = struct
   let fail = fun binding -> 
     []
 
+  let (>&&>) f m = fun binding -> 
+    if f binding
+    then m binding
+    else fail binding
+
+
   let mode = Cocci_vs_c_3.PatternMode
 
   (* ------------------------------------------------------------------------*)
@@ -252,6 +258,26 @@ module XMATCH = struct
   let envf keep inherited = fun (k, valu) binding -> 
     check_add_metavars_binding keep inherited (k, valu) binding
       +> List.map (fun binding -> (k,valu), binding)
+
+
+
+  (* ------------------------------------------------------------------------*)
+  (* Environment, allbounds *) 
+  (* ------------------------------------------------------------------------*)
+  (* all referenced inherited variables have to be bound. This would
+   * be naturally checked for the minus or context ones in the
+   * matching process, but have to check the plus ones as well. The
+   * result of get_inherited contains all of these, but the potential
+   * redundant checking for the minus and context ones is probably not
+   * a big deal. If it's a problem, could fix free_vars to distinguish
+   * between + variables and the other ones. *)
+
+  let (all_bound : string list -> tin -> bool) = fun l binding ->
+    l +> List.for_all (fun inhvar -> 
+      match Common.optionise (fun () -> binding +> List.assoc inhvar) with
+      | Some _ -> true
+      | None -> false
+    )
 
 
 end

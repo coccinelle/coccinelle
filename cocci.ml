@@ -480,7 +480,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
                 (celem', true), Some newbinding, hack_funheaders
               end
               else 
-                (celem, false), None, []
+                (celem, false), Some newbinding (* keep old one *), []
           | Right x -> 
               pr2 ("Unable to find a value for " ^ x);
               (celem, false),   None, []
