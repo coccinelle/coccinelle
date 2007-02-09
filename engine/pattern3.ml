@@ -60,14 +60,23 @@ module XMATCH = struct
     let xxs = xs +> List.map (fun ((a,b), binding) -> m2 a b binding) in
     List.flatten xxs
 
+  (* Je compare les bindings retournés par les differentes branches.
+   * Si la deuxieme branche amene a des bindings qui sont deja presents
+   * dans la premiere branche, alors je ne les accepte pas.
+   *)
   let (>|+|>) m1 m2 = fun binding -> 
-    if true then (* CHOICE *)
-      m1 binding ++ m2 binding 
-    else 
-      let xs = m1 binding in
-      if null xs
-      then m2 binding
-      else xs
+    let res1 = m1 binding in
+    let res2 = m2 binding in
+    let list_bindings_already = List.map snd res1 in
+    res1 ++ 
+      (res2 +> List.filter (fun (x, binding) -> 
+        not 
+          (list_bindings_already +> List.exists (fun already -> 
+            Lib_engine.equal_binding binding already))
+      ))
+          
+        
+
       
   let (>||>) m1 m2 = fun binding ->
     if true then (* CHOICE *)

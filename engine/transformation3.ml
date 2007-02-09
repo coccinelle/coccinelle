@@ -50,6 +50,7 @@ module XTRANS = struct
     | Some x -> Some x (* stop as soon as have found something *)
 
   let (>|+|>) m1 m2 = m1 >||> m2
+
   let (>&&>) f m = fun tin -> 
     if f tin then m tin else fail tin
     

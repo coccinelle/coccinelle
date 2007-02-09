@@ -52,3 +52,11 @@ type model = Control_flow_c.cflow * label_ctlcocci * nodei list
 
 type transformation_info = 
  (nodei * metavars_binding * Ast_cocci.rule_elem) list
+
+
+(*****************************************************************************)
+(* comparing binding *)
+(*****************************************************************************)
+
+let equal_binding xs ys = 
+  List.sort compare xs = List.sort compare ys

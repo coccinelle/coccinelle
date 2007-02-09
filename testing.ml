@@ -1,6 +1,5 @@
 open Common open Commonop 
 
-let iso_file = "standard.iso"
 let default_output_file = "/tmp/output.c"
 
 let _Best_score_file = "/tmp/score_cocci_best.marshalled"
@@ -36,7 +35,7 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
  * is to have one base.cocci and a base.c and optional multiple
  * base_vernn.c and base_vernn.res 
  *)
-let testone x compare_with_expected = 
+let testone x compare_with_expected iso_file = 
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
@@ -66,7 +65,7 @@ type score = (filename, string option) Hashtbl.t
 let empty_score () = (Hashtbl.create 101 : score)
 
 
-let testall () =
+let testall iso_file =
 
   let newscore  = empty_score () in
   let bestscore = 

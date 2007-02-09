@@ -130,8 +130,9 @@ let main () =
     (match (!args) with
 
     (* the test framework. Works with tests/  *)
-    | [x] when !test_mode    -> Testing.testone x !compare_with_expected
-    | []  when !testall_mode -> Testing.testall ()
+    | [x] when !test_mode    -> 
+        Testing.testone x !compare_with_expected !iso_file
+    | []  when !testall_mode -> Testing.testall !iso_file
 
     | [x] when !test_ctl_foo -> 
         Cocci.full_engine x (Right (Test.foo_ctl ())) !default_output_file
