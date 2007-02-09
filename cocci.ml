@@ -176,11 +176,13 @@ let show_or_not_trans_info trans_info =
   end
 
 
-let show_or_not_binding binding =
-  begin
-  Pretty_print_c.pp_binding binding;
-  Format.print_newline()
+let show_or_not_binding s binding =
+  if !Flag.show_binding_in_out then begin
+    pr2 ("binding " ^ s ^ " = ");
+    Pretty_print_c.pp_binding binding;
+    Format.print_newline()
   end
+
 
 
 (*****************************************************************************)
@@ -427,8 +429,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
           | _ -> 
               if !Flag.show_misc then pr2 ("STARTING something else");
           );
-          pr2 "binding in = ";
-          show_or_not_binding binding;
+          show_or_not_binding "in" binding;
 
           let satres = 
             Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
@@ -460,8 +461,7 @@ let program_elem_vs_ctl2 = fun cinfo cocciinfo binding ->
               if returned_any_states (* old: not (null trans_info)  *)
               then begin
                 show_or_not_trans_info trans_info;
-                pr2 "binding out = ";
-                show_or_not_binding binding;
+                show_or_not_binding "out" binding;
 
                 (* I do the transformation on flow, not fixed_flow, 
                    because the flow_to_ast need my extra information. *)

@@ -74,6 +74,7 @@ let main () =
         Flag_engine.show_misc := false;
         ), " ";
       "-no_show_SP_julia"       , Arg.Clear Flag_parsing_cocci.show_SP,  " ";
+      "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
 
       (* works in conjunction with -show_ctl *)
       "-inline_let_ctl",        Arg.Set Flag.inline_let_ctl, " ";
