@@ -42,6 +42,13 @@ let main () =
 
       "-o", Arg.Set_string default_output_file,
         (" <filename> (default is " ^ !default_output_file ^ ")");
+
+
+      "-c", Arg.Set_string cocci_file, 
+        " <filename> the semantic patch file";
+      "-i", Arg.Set_string cocci_file, 
+        " <filename> the semantic patch file";
+
  
       "-dir", Arg.Set dir, 
         " <dirname> process all files in directory recursively";
@@ -228,7 +235,11 @@ let main () =
         then failwith "I need a cocci file,  use -cocci_file <filename>";
 
         if not (!cocci_file =~ ".*\\.cocci") 
-        then pr2 "warning: seems not a .cocci file";
+        then begin
+          pr2 "warning: seems not a .cocci file";
+          pr2 "I add a .cocci extension to it, maybe it will help";
+          cocci_file := !cocci_file ^ ".cocci";
+        end;
 
         if !iso_file <> "" && not (!iso_file =~ ".*\\.iso") 
         then pr2 "warning: seems not a .iso file";
