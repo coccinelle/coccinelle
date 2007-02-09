@@ -103,7 +103,7 @@ module XTRANS = struct
   let tag_with_mck mck ib = fun binding -> 
 
     let (s2, cocciinforef) = ib in
-    let (oldmcode, _oldenv) = !cocciinforef in
+    let (oldmcode, oldenv) = !cocciinforef in
 
     let mck =
       if !Flag_parsing_cocci.sgrep_mode
@@ -112,8 +112,8 @@ module XTRANS = struct
     in
 
     match (oldmcode,mck) with
-    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING), _)
-    | (_, Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
+    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
+    | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 
         if !Flag_engine.use_ref 
         then begin
@@ -125,15 +125,23 @@ module XTRANS = struct
           ((s2, newcocciinfo))
 
     | _ -> 
-      Printf.printf "SP mcode "; flush stdout;
-      Pretty_print_cocci.print_mcodekind oldmcode;
-      Format.print_newline();
-      Printf.printf "C code mcode "; flush stdout;
-      Pretty_print_cocci.print_mcodekind mck;
-      Format.print_newline();
-      failwith
-	(Common.sprintf "already tagged token:\n%s"
-	   (Common.error_message s2.file (s2.str, s2.charpos)))
+        if (oldmcode, oldenv) = (mck, binding)
+        then begin
+          pr2 "already tagged but with same mcode, so safe";
+          ib
+        end
+           
+        else begin
+          Printf.printf "SP mcode "; flush stdout;
+          Pretty_print_cocci.print_mcodekind oldmcode;
+          Format.print_newline();
+          Printf.printf "C code mcode "; flush stdout;
+          Pretty_print_cocci.print_mcodekind mck;
+          Format.print_newline();
+          failwith
+	    (Common.sprintf "already tagged token:\n%s"
+	        (Common.error_message s2.file (s2.str, s2.charpos)))
+        end
 
 
 

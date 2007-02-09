@@ -1753,6 +1753,10 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       (match ii with
       | iidb::ioparenb::icparenb::iifakestart::iistob -> 
 
+          (* maybe important to put ident as the first tokens to transform.
+           * It's related to transform_proto. So don't change order
+           * between the >>=.
+           *)
           ident LocalFunction ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
           X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
           tokenf oparen ioparenb >>= (fun oparen ioparenb ->
