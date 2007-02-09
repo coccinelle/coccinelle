@@ -1554,6 +1554,47 @@ and sign signa signb =
       else fail
   | _, _ -> fail
 
+
+let minusize_list iixs = 
+  iixs +> List.fold_left (fun acc ii -> 
+    acc >>= (fun xs ys -> 
+    tokenf minusizer ii >>= (fun minus ii -> 
+      return (minus::xs, ii::ys)
+    ))) (return ([],[]))
+   >>= (fun _xsminys ys -> 
+     return ((), List.rev ys)
+   )
+
+let storage_optional_allminus allminus stoa (stob, iistob) = 
+  (* "iso-by-absence" for storage, and return type. *)
+  match stoa with
+  | None -> 
+      if allminus 
+      then 
+        minusize_list iistob >>= (fun () iistob -> 
+          return (None, (stob, iistob))
+        )
+      else return (None, (stob, iistob))
+  | Some stoa -> 
+      storage (Some stoa) (stob, iistob)
+
+
+
+let fullType_optional_allminus allminus tya retb = 
+  match tya with 
+  | None -> 
+      if allminus
+      then 
+        X.distrf_type minusizer retb >>= (fun _x retb -> 
+          return (None, retb)
+        )
+
+      else return (None, retb)
+  | Some tya -> 
+      fullType tya retb >>= (fun tya retb -> 
+        return (Some tya, retb)
+      )
+
 (*****************************************************************************)
 (* Entry points *)
 (*****************************************************************************)
@@ -1709,10 +1750,6 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
 
-      if isvaargs 
-      then failwith "not handling variable length arguments func";
-      let iidotsb = iidotsb in (* todo *)
-
       (match ii with
       | iidb::ioparenb::icparenb::iifakestart::iistob -> 
 
@@ -1720,52 +1757,32 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
           X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
           tokenf oparen ioparenb >>= (fun oparen ioparenb ->
           tokenf cparen icparenb >>= (fun cparen icparenb ->
-          parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
+          parameters (seqstyle paramsa) 
+            (A.undots paramsa) paramsb >>=
             (fun paramsaundots paramsb -> 
               let paramsa = redots paramsa paramsaundots in
-
-          (* "iso-by-absence" for storage, and return type. *)
-              (match stoa with
-              | None -> 
-                  
-                  if allminus 
-                  then 
-                    iistob +> List.fold_left (fun acc ii -> 
-                      acc >>= (fun xs ys -> 
-                      tokenf minusizer ii >>= (fun minus ii -> 
-                        return (minus::xs, ii::ys)
-                      ))
-                    ) (return ([],[]))
-                    >>= (fun _xsminys ys -> 
-                      return (None, (stob, List.rev ys))
-                    )
-                       
-                  else return (None, (stob, iistob))
-              | Some stoa -> 
-                  storage (Some stoa) (stob, iistob)
-              ) >>= (fun stoa (stob, iistob) -> 
-                match tya with 
-                | None -> 
-                    if allminus
-                    then 
-                      X.distrf_type minusizer retb >>= (fun _x retb -> 
-                        return (None, retb)
-                      )
-
-                    else return (None, retb)
-                | Some tya -> 
-                    fullType tya retb >>= (fun tya retb -> 
-                      return (Some tya, retb)
-                    )
-              ) >>= (fun tya retb -> 
-                return (
-                A.FunHeader(mckstart,allminus,stoa,tya,ida,oparen,
-                           paramsa,cparen),
-                F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), 
-                             stob), 
-                            iidb::ioparenb::icparenb::iifakestart::iistob)
+          storage_optional_allminus allminus 
+            stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
+              (
+                if isvaargs 
+                then begin 
+                  pr2 "Not handling well variable length arguments func. ";
+                  pr2 "You have been warned";
+                end;
+                if allminus
+                then minusize_list iidotsb
+                else return ((),iidotsb)
+              ) >>= (fun () iidotsb -> 
+            
+           fullType_optional_allminus allminus tya retb >>= (fun tya retb -> 
+             return (
+               A.FunHeader(mckstart,allminus,stoa,tya,ida,oparen,
+                          paramsa,cparen),
+               F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), 
+                            stob), 
+                           iidb::ioparenb::icparenb::iifakestart::iistob)
                 )
-              ))))))
+              ))))))))
       | _ -> raise Impossible
       )
 
