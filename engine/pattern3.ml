@@ -50,6 +50,7 @@ module XMATCH = struct
 
   type tin = Lib_engine.metavars_binding
   (* 'x is a ('a * 'b) but in fact dont care about 'b, we just tag the SP *)
+  (* opti? use set instead of list *)
   type 'x tout = ('x * Lib_engine.metavars_binding) list 
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
@@ -75,11 +76,11 @@ module XMATCH = struct
             Lib_engine.equal_binding binding already))
       ))
           
-        
-
+     
       
   let (>||>) m1 m2 = fun binding ->
     if true then (* CHOICE *)
+      (* opti? use set instead of list *)
       m1 binding ++ m2 binding 
     else 
       let xs = m1 binding in
