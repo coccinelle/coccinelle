@@ -144,6 +144,7 @@ let id_tokens lexbuf =
   | "Expression"     -> TIsoExpression
   | "Statement"      -> TIsoStatement
   | "Declaration"    -> TIsoDeclaration
+  | "Type"           -> TIsoType
 
   | s ->
       (try (Hashtbl.find metavariables s) linetype

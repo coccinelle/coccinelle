@@ -162,6 +162,7 @@ let token2c (tok,_) =
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
+  | PC.TIsoType -> "Type"
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
@@ -267,7 +268,7 @@ let split_token ((tok,_) as t) =
   | PC.EOF | PC.TInvalid -> ([t],[t])
 
   | PC.TIso | PC.TRightIso
-  | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration ->
+  | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType ->
       failwith "unexpected tokens"
 
 let split_token_stream tokens =
@@ -611,7 +612,8 @@ let parse_iso = function
 	    (* get the rule *)
 	    let (more,tokens) =
 	      tokens_all table file false lexbuf
-		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration] in
+		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration;
+		  PC.TIsoType] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in

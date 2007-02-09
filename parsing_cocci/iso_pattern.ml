@@ -642,18 +642,22 @@ let match_maker context_required whencode_allowed =
       | _ -> return false
     else return false in
 *)
-  (match_expr, match_decl, match_statement)
+  (match_expr, match_decl, match_statement, match_typeC)
 
 let match_expr context_required whencode_allowed =
-  let (fn,_,_) = match_maker context_required whencode_allowed in
+  let (fn,_,_,_) = match_maker context_required whencode_allowed in
   fn
 
 let match_decl context_required whencode_allowed =
-  let (_,fn,_) = match_maker context_required whencode_allowed in
+  let (_,fn,_,_) = match_maker context_required whencode_allowed in
   fn
 
 let match_statement context_required whencode_allowed =
-  let (_,_,fn) = match_maker context_required whencode_allowed in
+  let (_,_,fn,_) = match_maker context_required whencode_allowed in
+  fn
+
+let match_typeC context_required whencode_allowed =
+  let (_,_,_,fn) = match_maker context_required whencode_allowed in
   fn
 
 (* --------------------------------------------------------------------- *)
@@ -1247,6 +1251,13 @@ let disj_ender =
 let disj_mid _ =
   ("|",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
 
+let make_disj_type tl =
+  let mids =
+    match tl with
+      [] -> failwith "bad disjunction"
+    | x::xs -> List.map disj_mid xs in
+  failwith "no disjtype"
+  (*Ast0.context_wrap (Ast0.DisjType(disj_starter,el,mids,disj_ender))*)
 let make_disj_expr el =
   let mids =
     match el with
@@ -1267,6 +1278,29 @@ let make_disj_stmt sl =
     | x::xs -> List.map disj_mid xs in
   Ast0.context_wrap
     (Ast0.Disj(disj_starter,List.map dotify sl,mids,disj_ender))
+
+let transform_type (metavars,alts) e =
+  match alts with
+    (Ast0.TypeCTag(_)::_)::_ ->
+      (* start line is given to any leaves in the iso code *)
+      let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+      let alts =
+	List.map
+	  (List.map
+	     (function
+		 Ast0.TypeCTag(p) ->
+		   (p,count_edots.V0.combiner_typeC p,
+		    count_idots.V0.combiner_typeC p,
+		    count_dots.V0.combiner_typeC p)
+	       | _ -> failwith "invalid alt"))
+	  alts in
+      mkdisj match_typeC metavars alts
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_typeC) e
+	make_disj_type make_minus.V0.rebuilder_typeC
+	(rebuild_mcode start_line).V0.rebuilder_typeC
+	Unparse_ast0.typeC
+  | _ -> ([],e)
 
 let transform_expr (metavars,alts) e =
   match alts with

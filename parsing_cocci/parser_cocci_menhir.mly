@@ -207,7 +207,7 @@ let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Data.clt> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
-%token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration
+%token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
 
 %token TInvalid
 
@@ -1336,6 +1336,8 @@ iso_main:
   { iso_adjust (function x -> Ast0.ExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
+| TIsoType t1=ctype tl=list(iso(ctype)) EOF
+    { iso_adjust (function x -> Ast0.TypeCTag x) t1 tl }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
 	[x] -> x
