@@ -206,6 +206,8 @@ let split_signb_baseb_ii (baseb, ii) =
       | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
           Some (B.UnSigned, i1), [i2]
 
+      | B.Signed, B.CInt, ["signed",i1;] -> 
+          Some (B.Signed, i1), []
       | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
           Some (B.UnSigned, i1), []
 
@@ -1456,13 +1458,30 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
       | A.ShortType, B.IntType (B.Si (_, B.CShort)) 
       | A.IntType,   B.IntType (B.Si (_, B.CInt))   
       | A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
-          let ibaseb = tuple_of_list1 iibaseb in
+          (match iibaseb with 
+          | [] -> 
+              (* iso-by-presence ? *)
+              (* when unsigned int in SP,  allow have just unsigned in C ? *)
+              if mcode_contain_plus (mcodekind basea)
+              then fail
+              else 
+                
+                sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+                    return (
+                      (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+                      (B.BaseType (baseb), iisignbopt ++ [])
+                    ))
+              
+
+          | x::y::ys -> raise Impossible
+          | [ibaseb] -> 
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
           tokenf basea ibaseb >>= (fun basea ibaseb -> 
             return (
                (A.BaseType (basea, signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
+          )
 
             
       | _, B.IntType (B.Si (_, B.CLongLong)) 
@@ -1477,8 +1496,23 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
           
       )
 
-    | A.ImplicitInt (signa),   _ -> 
-	failwith "implicitInt pattern not supported"
+    | A.ImplicitInt (signa),   (B.BaseType baseb, ii) -> 
+        let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
+        (match iibaseb, baseb with
+        | [], B.IntType (B.Si (_sign, B.CInt)) -> 
+            sign (Some signa) signbopt >>= (fun signaopt iisignbopt -> 
+              match signaopt with
+              | None -> raise Impossible
+              | Some signa -> 
+                  return (
+                    (A.ImplicitInt (signa)) +> A.rewrap ta,
+                    (B.BaseType baseb, iisignbopt)
+                  )
+            )
+        | _ -> fail
+        )
+
+
 
     (* todo? iso with array *)
     | A.Pointer (typa, iamult),            (B.Pointer typb, ii) -> 

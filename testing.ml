@@ -186,8 +186,8 @@ let testall iso_file =
               if not (x = y)
               then begin 
                 pr2 ("Semipb: still error but not same error : " ^ res);
-                pr2 (Common.chop ("Old error: " ^ x));
-                pr2 ("New error: " ^ y);
+                pr2 (Common.chop ("Old error: " ^ y));
+                pr2 ("New error: " ^ x);
               end
           )
     );
