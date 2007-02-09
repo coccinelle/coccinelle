@@ -242,7 +242,11 @@ let main () =
         end;
 
         if !iso_file <> "" && not (!iso_file =~ ".*\\.iso") 
-        then pr2 "warning: seems not a .iso file";
+        then begin 
+          pr2 "warning: seems not a .iso file";
+          pr2 "I add a .iso extension to it, maybe it will help";
+          iso_file := !iso_file ^ ".iso";
+        end;
 
         (* todo?: for iso could try to go back the parent dir recursively to
            find the standard.iso *)
@@ -259,6 +263,17 @@ let main () =
         in
 
         fullxs +> List.iter (fun cfile -> 
+
+          let cfile = 
+            if not (cfile =~ ".*\\.c") 
+            then begin
+              pr2 "warning: seems not a .c file";
+              pr2 "I add a .c extension to it, maybe it will help";
+              cfile ^ ".c";
+            end
+            else cfile
+          in
+          
 
           let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
           in 
