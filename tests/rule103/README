@@ -9,23 +9,19 @@
  looks like dead code
 
 aha152x_stub.c
- * [status] wrong
- a function is incorrectly identified as the attach function, because we
- don't have matching on top-level structures
+ * [status] ok
 
 airo_cs.c
- * [status] error
- goto whose destination is within a loop
+ * [status] ok
 
 atmel_cs.c
- * [status] error
- goto whose destination is within a loop
+ * [status] ok
 
 avma1_cs.c
- * [status] error
+ * [status] ok
 
 avm_cs.c
- * [status] error
+ * [status] ok
 
 axnet_cs.c
  * [status] error
@@ -33,13 +29,13 @@ axnet_cs.c
  looks like dead code
 
 bluecard_cs.c
- * [status] error
+ * [status] ok
 
 bt3c_cs.c
- * [status] error
+ * [status] ok
 
 btuart_cs.c
- * [status] error
+ * [status] ok
 
 cm4000_cs.c
  * [status] error
@@ -54,16 +50,17 @@ com20020_cs.c
  * [status] error
 
 dtl1_cs.c
- * [status] error
+ * [status] ok
 
 elsa_cs.c
- * [status] error
+ * [status] ok
 
 fdomain_stub.c
- * [status] error
+ * [status] 
+ kmalloc/memset -> kzalloc CE also performed
 
 fmvj18x_cs.c
- * [status] error
+ * [status] ok
 
 hostap_cs.c
  * [status] error
@@ -87,7 +84,7 @@ nsp_cs.c
  * [status] error
 
 orinoco_cs.c
- * [status] error
+ * [status] ok
 
 parport_cs.c
  * [status] error
@@ -120,10 +117,10 @@ sl811_cs.c
  * [status] error
 
 smc91c92_cs.c
- * [status] error
+ * [status] ok
 
 spectrum_cs.c
- * [status] error
+ * [status] ok
 
 sym53c500_cs.c
  * [status] error

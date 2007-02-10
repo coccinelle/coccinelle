@@ -1,8 +1,10 @@
 3c574_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 3c589_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 aha152x_stub.c
  * [status] spatch_ok
@@ -10,28 +12,36 @@ aha152x_stub.c
  prototype
 
 airo_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 atmel_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 avma1_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 avm_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 axnet_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 bluecard_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 bt3c_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 btuart_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 cm4000_cs.c
  * [status] 
@@ -40,16 +50,19 @@ cm4040_cs.c
  * [status] 
 
 com20020_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 ds.c
  * [status] 
 
 dtl1_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 elsa_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 fdomain_stub.c
  * [status] spatch_ok
@@ -63,48 +76,61 @@ fmvj18x_cs.c
 
 hostap_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 ibmtr_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 ide-cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 ixj_pcmcia.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 netwave_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 nmclan_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 nsp_cs.c
  * [status] 
 
 orinoco_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 parport_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 pcmciamtd.c
  * [status] 
 
 pcnet_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 pdaudiocf.c
  * [status] 
+ param name not updated in prototype of detach function
 
 qlogic_stub.c
  * [status] 
+ param name not updated in prototype of detach function
 
 ray_cs.c
- * [status] 
+ * [status] spatch_ok
+ param name not updated in prototype of detach function
 
 sedlbauer_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 serial_cs.c
  * [status] 
@@ -114,6 +140,7 @@ sl811_cs.c
 
 smc91c92_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 spectrum_cs.c
  * [status] 
@@ -128,6 +155,7 @@ synclink_cs.c
 
 teles_cs.c
  * [status] 
+ param name not updated in prototype of detach function
 
 vxpocket.c
  * [status] 
@@ -140,3 +168,4 @@ wl3501_cs.c
 
 xirc2ps_cs.c
  * [status] 
+ param name not updated in prototype of detach function

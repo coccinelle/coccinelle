@@ -25,57 +25,41 @@ amd7930.c:
   * strange typecasts
 
 amd7930_fn.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 avm_pci.c:
   * [status] ok
 
 config.c:
-  * [status] spatch-ok
-  * [independent] assignment "cs->work.data = cs" should be removed
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 elsa_ser.c:
   * [status] ok
 
 hfc_2bds0.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 hfc_2bs0.c:
   * [status] ok
 
 hfc_pci.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
-  * PBBB...
+  * [status] ok
 
 hfc_sx.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 hscx.c:
   * [status] ok
 
 icc.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 ipacx.c:
   * [status] spatch-ok
   * [independent] moving declaration (see amd7930.c)
 
 isac.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] INIT_WORK: change final argument (works with rul17full)
+  * [status] ok
 
 isar.c:
   * [status] spatch-ok
@@ -94,7 +78,4 @@ netjet.c:
   * [status] ok
 
 w6692.c:
-  * [status] spatch-ok
-  * [independent] moving declaration (see amd7930.c)
-  * [independent] null check of moved declaration should be (re-)moved
-  * PBBB...
+  * [status] ok

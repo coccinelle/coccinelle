@@ -474,7 +474,10 @@ eisa.c
  * [status] failed
 
 elsa.c
- * [status] failed
+ * [status] spatch_ok
+ programmer also changed ELSA_TIMER_RUN to ELIRQF_TIMER_RUN and
+ ELSA_TIMER_RUN_PCC8 to ELIRQF_TIMER_RUN_PCC8 and ELSA_TIMER_AKTIV to
+ ELIRQF_TIMER_AKTIV
 
 emu10k1_main.c
  * [status] ok
@@ -802,6 +805,7 @@ jazz_esp.c
 
 jazzsonic.c
  * [status] failed
+ requires making a modification in a macro definition
 
 jsm_driver.c
  * [status] ok
@@ -919,6 +923,7 @@ mv643xx_eth.c
 
 mxser.c
  * [status] failed
+ requires making a modification in a macro definition
 
 myri10ge.c
  * [status] ok
@@ -1041,7 +1046,8 @@ orinoco_tmd.c
  * [status] ok
 
 osl.c
- * [status] failed
+ * [status] error
+ can't parse an #include that doesn't involve either "" or <>
 
 parport_ax88796.c
  * [status] ok
@@ -1278,7 +1284,8 @@ shpchp_hpc.c
  * [status] failed
 
 sh-sci.c
- * [status] failed
+ * [status] error
+ can't unparse properly a function pointer declaration
 
 sim710.c
  * [status] ok
@@ -1404,7 +1411,8 @@ sx8.c
  * [status] ok
 
 sx.c
- * [status] failed
+ * [status] error
+ there seems to be a problem with CVS strings in a #define
 
 sym53c500_cs.c
  * [status] failed

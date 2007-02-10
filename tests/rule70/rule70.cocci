@@ -58,12 +58,12 @@ expression A, C, D;
 expression A, C, D, E;
 @@
 
-- usb_storage_bulk_transport(A,SCSI_DATA_WRITE,C,D,E)} becomes
+- usb_storage_bulk_transport(A,SCSI_DATA_WRITE,C,D,E)
 + usb_stor_bulk_transfer_sg(A,A->send_bulk_pipe,C,D,E,NULL)
 
 @@
 expression A, C, D, E;
 @@
 
-- usb_storage_bulk_transport(A,SCSI_DATA_READ,C,D,E)} becomes
+- usb_storage_bulk_transport(A,SCSI_DATA_READ,C,D,E)
 + usb_stor_bulk_transfer_sg(A,A->recv_bulk_pipe,C,D,E,NULL)

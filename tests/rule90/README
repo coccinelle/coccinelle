@@ -1,6 +1,6 @@
 157 ok
 5 wrong: 3 parsing problems, one src file with wrong number of args, one file
-with other changed
+with other changes
 
 a3d.c
  * [status] ok
