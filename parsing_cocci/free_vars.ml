@@ -157,6 +157,11 @@ let astfvs bound =
       Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
     | _ -> k d in
 
+  let astfvfullType recursor k ty =
+    match Ast.unwrap ty with
+      Ast.DisjType(types) -> bind_disj (List.map k types)
+    | _ -> k ty in
+
   let astfvtypeC recursor k ty =
     match Ast.unwrap ty with
       Ast.MetaType(name,true,_) ->
@@ -221,7 +226,8 @@ let astfvs bound =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing astfvstatement_dots
-      astfvident astfvexpr donothing astfvtypeC donothing astfvparam astfvdecls
+      astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
+      astfvdecls
       astfvrule_elem astfvstatement donothing donothing donothing in
 
   (* all is the information for each rule.  the second component is a

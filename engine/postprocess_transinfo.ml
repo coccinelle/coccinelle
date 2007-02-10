@@ -32,6 +32,7 @@ let process_tree inherited_env l =
     List.map
       (function fresh ->
 	Printf.printf "name for %s: " fresh; (* not debugging code!!! *)
+	flush stdout;
 	(fresh,string2val(read_line())))
       all_fresh in
   let (_,res) =

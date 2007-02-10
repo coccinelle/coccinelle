@@ -416,6 +416,15 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.MetaType(name,pure))
+  | Ast0.DisjType(starter,types,mids,ender) ->
+      let types = List.map (typeC tgt) types in
+      (match List.rev types with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptType(_) -> true | _ -> false)
+	  then fail typ "opt only allowed in the last disjunct"
+      |	_ -> ());
+      let res = Ast0.DisjType(starter,types,mids,ender) in
+      Ast0.rewrap typ res
   | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.MultiType(_) ->
       failwith "unexpected code"
 

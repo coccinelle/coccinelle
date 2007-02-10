@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 129 *)
+(* current max is 130 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -92,6 +92,7 @@ let typeC t =
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
   | Ast0.MetaType(name,_) -> [53]
+  | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
   | Ast0.MultiType(ty) -> [47]

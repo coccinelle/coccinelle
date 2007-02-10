@@ -47,6 +47,12 @@ and contains_only_minus s =
 	List.for_all r.V0.combiner_declaration decls
     | _ -> k e in
 
+  let typeC r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjType(starter,types,mids,ender) ->
+	List.for_all r.V0.combiner_typeC types
+    | _ -> k e in
+
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
@@ -57,7 +63,7 @@ and contains_only_minus s =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      donothing expression donothing donothing donothing declaration
+      donothing expression typeC donothing donothing declaration
       statement donothing donothing in
   combiner.V0.combiner_statement s
 

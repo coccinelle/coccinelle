@@ -204,6 +204,12 @@ and typeC t =
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_string name; print_string " "
+      | Ast0.DisjType(_,types,_,_) ->
+	  print_string "\n("; force_newline();
+	  print_between
+	    (function _ -> print_string "\n|"; force_newline())
+	    typeC types;
+	  print_string "\n)"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
       | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)

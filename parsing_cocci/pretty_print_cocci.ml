@@ -267,6 +267,7 @@ and fullType ft =
     Ast.Type(cv,ty) ->
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
+  | Ast.DisjType(decls) -> print_disj_list fullType decls
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
   | Ast.MultiType(ty) -> print_string "\\+"; fullType ty

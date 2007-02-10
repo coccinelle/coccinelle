@@ -153,6 +153,7 @@ and constant =
 
 and base_fullType =
     Type            of const_vol mcode option * typeC
+  | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
   | UniqueType      of fullType
   | MultiType       of fullType

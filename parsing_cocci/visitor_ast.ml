@@ -150,6 +150,7 @@ let combiner bind option_default
     let k ft =
       match Ast.unwrap ft with
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
+      | Ast.DisjType(types) -> multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty
       | Ast.MultiType(ty) -> fullType ty in
@@ -556,6 +557,7 @@ let rebuilder
       Ast.rewrap ft
 	(match Ast.unwrap ft with
 	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
+	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)
 	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)) in

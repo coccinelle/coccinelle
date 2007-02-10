@@ -123,6 +123,8 @@ and base_typeC =
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode * pure
+  | DisjType        of string mcode * typeC list * (* only after iso *)
+                       string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC
@@ -415,6 +417,7 @@ let rec ast0_type_to_type ty =
       Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name,_) -> Type_cocci.MetaType(unwrap_mcode name)
+  | DisjType(_,types,_,_) -> failwith "unexpected DisjType"
   | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
       ast0_type_to_type ty
 

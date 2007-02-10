@@ -173,6 +173,20 @@ let combiner bind option_default
 	      string_mcode rb]
       | Ast0.TypeName(name) -> string_mcode name
       | Ast0.MetaType(name,_) -> string_mcode name
+      |	Ast0.DisjType(starter,types,mids,ender) ->
+	  (match types with
+	    [] -> failwith "bad disjunction"
+	  | x::xs ->
+	      bind (string_mcode starter)
+		(bind (typeC x)
+		   (bind
+		      (multibind
+			 (List.map2
+			    (function mid ->
+			      function x ->
+				bind (string_mcode mid) (typeC x))
+			    mids xs))
+	              (string_mcode ender))))
       | Ast0.OptType(ty) -> typeC ty
       | Ast0.UniqueType(ty) -> typeC ty
       | Ast0.MultiType(ty) -> typeC ty in
@@ -557,6 +571,9 @@ let rebuilder = fun
 	| Ast0.TypeName(name) -> Ast0.TypeName(string_mcode name)
 	| Ast0.MetaType(name,pure) ->
 	    Ast0.MetaType(string_mcode name,pure)
+	| Ast0.DisjType(starter,types,mids,ender) ->
+	    Ast0.DisjType(string_mcode starter,List.map typeC types,
+			  List.map string_mcode mids,string_mcode ender)
 	| Ast0.OptType(ty) -> Ast0.OptType(typeC ty)
 	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)
 	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)) in

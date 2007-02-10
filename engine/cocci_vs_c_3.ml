@@ -1373,6 +1373,10 @@ and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 
        )
 
+  | A.DisjType typas, typb -> 
+      typas +>
+      List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
+
    | A.OptType(_), _  | A.UniqueType(_), _ | A.MultiType(_), _ 
        -> failwith "not handling Opt/Unique/Multi on type"
 

@@ -685,6 +685,13 @@ and (transform_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) transformer) =
         | Some x -> raise Todo
         )
 
+    | A.DisjType typas, typb -> 
+        typas +> Common.fold_k (fun acc typa k -> 
+          try transform_ft_ft typa acc  binding
+          with NoMatch -> k acc) 
+          (fun _ -> raise NoMatch)
+          typb
+
     | A.OptType(_), _  | A.UniqueType(_), _ | A.MultiType(_), _ 
       -> failwith "not handling Opt/Unique/Multi on type"
 

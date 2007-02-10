@@ -1819,7 +1819,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
 (* print_state "final result" res;*)
     res
-  else (Printf.printf "missing something required\n"; flush stdout; [])
+  else ((*Printf.printf "missing something required\n"; flush stdout;*) [])
 ;;
 
 (* ********************************************************************** *)

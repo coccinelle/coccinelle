@@ -182,6 +182,10 @@ and unify_fullType ft1 ft2 =
       if bool_unify_option unify_mcode cv1 cv2
       then unify_typeC ty1 ty2
       else return false
+  | (Ast.DisjType(ft1),_) ->
+      disjunct_all_bindings (List.map (function x -> unify_fullType x ft2) ft1)
+  | (_,Ast.DisjType(ft2)) ->
+      disjunct_all_bindings (List.map (function x -> unify_fullType ft1 x) ft2)
 
   | (Ast.OptType(_),_)
   | (Ast.UniqueType(_),_)

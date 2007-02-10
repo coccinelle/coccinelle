@@ -55,6 +55,7 @@ foreach my $f (@files) {
   if(-e "$target_dir/$base") {
     $counter++;                              
     $base = "${counter}_$base";
+    $res = "${counter}_$res";
     pr2 "try transform one file because already exist: $base";
   }                         
   die "one of the file already exist: $base" if (-e "$target_dir/$base");

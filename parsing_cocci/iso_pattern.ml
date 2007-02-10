@@ -386,6 +386,8 @@ let match_maker context_required whencode_allowed =
 	       else return false
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      return (mcode_equal namea nameb)
+	  | (Ast0.DisjType(_,typesa,_,_),Ast0.DisjType(_,typesb,_,_)) ->
+	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
 	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb))
 	  | (Ast0.MultiType(tya),Ast0.MultiType(tyb)) -> match_typeC tya tyb
@@ -1256,8 +1258,7 @@ let make_disj_type tl =
     match tl with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
-  failwith "no disjtype"
-  (*Ast0.context_wrap (Ast0.DisjType(disj_starter,el,mids,disj_ender))*)
+  Ast0.context_wrap (Ast0.DisjType(disj_starter,tl,mids,disj_ender))
 let make_disj_expr el =
   let mids =
     match el with
@@ -1393,11 +1394,16 @@ let transform (alts : isomorphism) t =
     extra_meta_decls := extra_meta @ !extra_meta_decls;
     stm in
   
+  let typefn r k e =
+    let (extra_meta,ty) = transform_type alts (k e) in
+    extra_meta_decls := extra_meta @ !extra_meta_decls;
+    ty in
+  
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      donothing exprfn donothing donothing donothing declfn stmtfn
+      donothing exprfn typefn donothing donothing declfn stmtfn
       donothing donothing in
   let res = res.V0.rebuilder_top_level t in
   (!extra_meta_decls,res)

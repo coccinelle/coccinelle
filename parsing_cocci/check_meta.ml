@@ -135,6 +135,8 @@ and typeC table minus t =
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name,_) -> if minus then check_table table minus name
+  | Ast0.DisjType(_,types,_,_) ->
+      List.iter (typeC table minus) types
   | Ast0.OptType(ty) | Ast0.UniqueType(ty) | Ast0.MultiType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)

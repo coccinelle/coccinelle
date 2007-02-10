@@ -94,8 +94,12 @@ let dumb_astcocci_expr = function
  | A.UniqueExp _ -> ()
  | A.OptExp _ -> ()
 
-
-
+let dumb_astcocci_fulltype = function
+    A.Type(cv,ty) -> ()
+  | A.DisjType(types) -> ()
+  | A.OptType(ty) -> ()
+  | A.UniqueType(ty) -> ()
+  | A.MultiType(ty) -> ()
 
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()

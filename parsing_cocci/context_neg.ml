@@ -221,11 +221,20 @@ let classify all_marked table code =
 	    disj_cases starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
+  (* not clear why we have the next two cases, since DisjDecl and
+  DisjType shouldn't have been constructed yet, as they only come from isos *)
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,_,ender) ->
 	  disj_cases starter decls r.V0.combiner_declaration ender
+      |	_ -> k e) in
+
+  let typeC r k e =
+    compute_result Ast0.typeC e
+      (match Ast0.unwrap e with
+	Ast0.DisjType(starter,types,_,ender) ->
+	  disj_cases starter types r.V0.combiner_typeC ender
       |	_ -> k e) in
 
   let initialiser r k i =
@@ -267,8 +276,8 @@ let classify all_marked table code =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
-      (do_nothing Ast0.ident) expression
-      (do_nothing Ast0.typeC) initialiser (do_nothing Ast0.param) declaration
+      (do_nothing Ast0.ident) expression typeC initialiser
+      (do_nothing Ast0.param) declaration
       statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 
@@ -374,6 +383,8 @@ let rec equal_typeC t1 t2 =
        equal_mcode kind1 kind2 && equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaType(name1,_),Ast0.MetaType(name2,_)) -> equal_mcode name1 name2
+  | (Ast0.DisjType _,_) | (_,Ast0.DisjType _) ->
+      failwith "DisjDecl not expected here"
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | (Ast0.MultiType(_),Ast0.MultiType(_)) -> true
@@ -389,6 +400,8 @@ let equal_declaration d1 d2 =
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.MultiDecl(_),Ast0.MultiDecl(_)) -> true
+  | (Ast0.DisjDecl _,_) | (_,Ast0.DisjDecl _) ->
+      failwith "DisjDecl not expected here"
   | _ -> false
 
 let equal_initialiser i1 i2 =

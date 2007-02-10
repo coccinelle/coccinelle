@@ -784,6 +784,10 @@ and (match_ft_ft: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
 	      match_t_t ty1
 		(({qu with B.volatile = false},new_il "volatile" il),ty2)
 	    else return false)
+    | A.DisjType typas, typb -> 
+	typas +>
+	List.fold_left (fun acc typa -> acc >||>  match_ft_ft typa typb) 
+          (return false)
     | (A.OptType(ty),typb) ->
 	pr2 "warning: ignoring ? arity on type";
 	match_ft_ft ty typb

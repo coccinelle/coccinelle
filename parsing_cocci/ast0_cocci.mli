@@ -120,6 +120,8 @@ and base_typeC =
 	string mcode (* { *) * declaration list * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode * pure
+  | DisjType        of string mcode * typeC list * (* only after iso *)
+                       string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
   | UniqueType      of typeC
   | MultiType       of typeC

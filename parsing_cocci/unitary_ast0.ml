@@ -73,6 +73,8 @@ let get_free checker t =
   let typeC r k t =
     match Ast0.unwrap t with
       Ast0.MetaType(name,_) -> checker name
+    | Ast0.DisjType(starter,types,mids,ender) ->
+	detect_unitary_frees(List.map r.V0.combiner_typeC types)
     | _ -> k t in
   
   let parameter r k p =
@@ -85,7 +87,7 @@ let get_free checker t =
       Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_declaration decls)
     | _ -> k d in
-  
+
   let define_body b =
     match Ast0.unwrap b with
       Ast0.DMetaId(name,_) -> checker name

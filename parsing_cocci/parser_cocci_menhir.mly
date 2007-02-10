@@ -420,7 +420,9 @@ minus_body:
     f=loption(filespec) i=list(includes)
     b=loption(minus_function_decl_statement_or_expression)
     ew=loption(error_words)
-    { Top_level.top_level (f@i@b@ew) }
+    { match f@i@b@ew with
+      [] -> failwith "minus slice can't be empty"
+    | code -> Top_level.top_level code }
 
 plus_body: 
     f=loption(filespec) i=list(includes)

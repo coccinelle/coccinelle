@@ -12,7 +12,7 @@ expression A, B, C;
 identifier inodename, filename, cmd, arg;
 @@
 
-f(struct inode *inodename, struct file *filename, unsigned int cmd,
+f(struct inode *inodename, struct file *filename, unsigned cmd,
   unsigned long arg) {
    <...
 -  scsi_cmd_ioctl(A, cmd, C)
@@ -36,7 +36,7 @@ expression A, B, C;
 identifier inodename, filename, cmd, arg;
 @@
 
-f(struct inode *inodename, struct file *filename, unsigned int cmd,
+f(struct inode *inodename, struct file *filename, unsigned cmd,
   unsigned long arg) {
    <...
 (

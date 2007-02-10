@@ -318,6 +318,14 @@ and typeC t =
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.MetaType(name,_) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
+  | Ast0.DisjType(starter,types,mids,ender) ->
+      let starter = bad_mcode starter in
+      let types = List.map typeC types in
+      let mids = List.map bad_mcode mids in
+      let ender = bad_mcode ender in
+      mkmultires t (Ast0.DisjType(starter,types,mids,ender))
+	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info types) (get_all_end_info types)
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.UniqueType(ty) ->
