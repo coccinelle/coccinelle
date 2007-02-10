@@ -30,8 +30,8 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
 
 and dots_bef_aft = NoDots | BetweenDots of statement
 
-(* for iso metavariables, true if they can only match nonmodified, unitary
-   metavariables
+(* for iso metavariables, true if they can only match nonmodified terms with
+   all metavariables unitary
    for SP metavariables, true if the metavariable is unitary (valid up to
    isomorphism phase only) *)
 and pure = bool

@@ -146,45 +146,77 @@ let match_maker context_required whencode_allowed =
     | Ast0.CIRCLES(_) -> Ast0.rewrap pattern (Ast0.CIRCLES(data))
     | Ast0.STARS(_) -> Ast0.rewrap pattern (Ast0.STARS(data)) in
 
-  let pure_name = function
-      Ast0.CONTEXT(mc) ->
-	(match !mc with (Ast.NOTHING,_,_) -> true |_ -> false)
-    | Ast0.MINUS(mc) ->
-	(match !mc with ([],_) -> true | _ -> false)
-    | _ -> false in
+  let pure_sp_code =
+    let bind x y = x && y in
+    let option_default = true in
+    let pure_mcodekind = function
+	Ast0.CONTEXT(mc) ->
+	  (match !mc with (Ast.NOTHING,_,_) -> true | _ -> false)
+      | Ast0.MINUS(mc) ->
+	  (match !mc with ([],_) -> true | _ ->  false)
+      | _ -> false in
+    let donothing r k e = (pure_mcodekind (Ast0.get_mcodekind e)) && k e in
 
-  let add_pure_list_binding name pure extract_other builder1 builder2 lst =
+    let mcode m = pure_mcodekind (Ast0.get_mcode_mcodekind m) in
+
+    (* a case for everything that has a metavariable *)
+    let ident r k i =
+      (pure_mcodekind (Ast0.get_mcodekind i)) && k i &&
+      match Ast0.unwrap i with
+	Ast0.MetaId(name,pure) | Ast0.MetaFunc(name,pure)
+      | Ast0.MetaLocalFunc(name,pure) -> pure
+      |	_ -> true in
+
+    let expression r k e =
+      (pure_mcodekind (Ast0.get_mcodekind e)) && k e &&
+      match Ast0.unwrap e with
+	Ast0.MetaConst(name,_,pure) | Ast0.MetaErr(name,pure) 
+      | Ast0.MetaExpr(name,_,pure) | Ast0.MetaExprList(name,pure) -> pure
+      |	_ -> true in
+
+    let typeC r k t =
+      (pure_mcodekind (Ast0.get_mcodekind t)) && k t &&
+      match Ast0.unwrap t with
+	Ast0.MetaType(name,pure) -> pure
+      |	_ -> true in
+
+    let param r k p =
+      (pure_mcodekind (Ast0.get_mcodekind p)) && k p &&
+      match Ast0.unwrap p with
+	Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,pure) -> pure
+      |	_ -> true in
+
+    let stmt r k s =
+      (pure_mcodekind (Ast0.get_mcodekind s)) && k s &&
+      match Ast0.unwrap s with
+	Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
+      |	_ -> true in
+
+    V0.combiner bind option_default 
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing
+      ident expression typeC donothing param donothing stmt donothing
+      donothing in
+
+  let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     if pure
     then
       (match lst with
 	[x] ->
-	  (match extract_other (Ast0.unwrap x) with
-	    Some name1 ->
-	      if pure_name (Ast0.get_mcodekind x) &&
-		pure_name (Ast0.get_mcode_mcodekind name1)
-	      then add_binding name (builder1 lst)
-	      else return false
-	  | None -> return false)
+	  if is_pure x then add_binding name (builder1 lst) else return false
       | _ -> return false)
     else add_binding name (builder2 lst) in
 
-  let add_pure_binding name pure extract_other builder x =
+  let add_pure_binding name pure is_pure builder x =
     if pure
-    then
-      (match extract_other (Ast0.unwrap x) with
-	Some name1 ->
-	  if pure_name (Ast0.get_mcodekind x) &&
-	    pure_name (Ast0.get_mcode_mcodekind name1)
-	  then add_binding name (builder x)
-	  else return false
-      | None -> return false)
+    then if is_pure x then add_binding name (builder x) else return false
     else add_binding name (builder x) in
 
   let do_elist_match builder el lst =
     match Ast0.unwrap el with
       Ast0.MetaExprList(name,pure) ->
 	add_pure_list_binding name pure
-	  (function Ast0.MetaExprList(name1,true) -> Some name1 | _ -> None)
+	  pure_sp_code.V0.combiner_expression
 	  (function lst -> Ast0.ExprTag(List.hd lst))
 	  (function lst -> Ast0.DotsExprTag(build_dots builder lst))
 	  lst
@@ -194,7 +226,7 @@ let match_maker context_required whencode_allowed =
     match Ast0.unwrap pl with
       Ast0.MetaParamList(name,pure) ->
 	add_pure_list_binding name pure
-	  (function Ast0.MetaParamList(name1,true) -> Some name1 | _ -> None)
+	  pure_sp_code.V0.combiner_parameter
 	  (function lst -> Ast0.ParamTag(List.hd lst))
 	  (function lst -> Ast0.DotsParamTag(build_dots builder lst))
 	  lst
@@ -204,7 +236,7 @@ let match_maker context_required whencode_allowed =
     match Ast0.unwrap sl with
       Ast0.MetaStmtList(name,pure) ->
 	add_pure_list_binding name pure
-	  (function Ast0.MetaStmtList(name1,true) -> Some name1 | _ -> None)
+	  pure_sp_code.V0.combiner_statement
 	  (function lst -> Ast0.StmtTag(List.hd lst))
 	  (function lst -> Ast0.DotsStmtTag(build_dots builder lst))
 	  lst
@@ -216,7 +248,7 @@ let match_maker context_required whencode_allowed =
     match Ast0.unwrap pattern with
       Ast0.MetaId(name,pure) ->
 	add_pure_binding name pure
-	  (function Ast0.MetaId(name1,true) -> Some name1 | _ -> None)
+	  pure_sp_code.V0.combiner_ident
 	  (function id -> Ast0.IdentTag id)
 	  id
     | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
@@ -238,16 +270,14 @@ let match_maker context_required whencode_allowed =
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
       Ast0.MetaExpr(name,None,pure) ->
-	add_pure_binding name pure
-	  (function Ast0.MetaExpr(name1,_,true) -> Some name1 | _ -> None)
+	add_pure_binding name pure pure_sp_code.V0.combiner_expression
 	  (function expr -> Ast0.ExprTag expr)
 	  expr
     | Ast0.MetaExpr(name,Some ts,pure) ->
 	let expty = Ast0.get_type expr in
 	if List.exists (function t -> Type_cocci.compatible t expty) ts
 	then
-	  add_pure_binding name pure
-	    (function Ast0.MetaExpr(name1,_,true) -> Some name1 | _ -> None)
+	  add_pure_binding name pure pure_sp_code.V0.combiner_expression
 	    (function expr -> Ast0.ExprTag expr)
 	    expr
 	else return false
@@ -350,8 +380,7 @@ let match_maker context_required whencode_allowed =
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
-	add_pure_binding name pure
-	  (function Ast0.MetaType(name1,true) -> Some name1 | _ -> None)
+	add_pure_binding name pure pure_sp_code.V0.combiner_typeC
 	  (function ty -> Ast0.TypeCTag ty)
 	  t
     | up ->
@@ -467,8 +496,7 @@ let match_maker context_required whencode_allowed =
   and match_param pattern p =
     match Ast0.unwrap pattern with
       Ast0.MetaParam(name,pure) ->
-	add_pure_binding name pure
-	  (function Ast0.MetaParam(name1,true) -> Some name1 | _ -> None)
+	add_pure_binding name pure pure_sp_code.V0.combiner_parameter
 	  (function p -> Ast0.ParamTag p)
 	  p
     | Ast0.MetaParamList(name,pure) -> failwith "metaparamlist not supported"
@@ -493,8 +521,7 @@ let match_maker context_required whencode_allowed =
   and match_statement pattern s =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
-	add_pure_binding name pure
-	  (function Ast0.MetaStmt(name1,true) -> Some name1 | _ -> None)
+	add_pure_binding name pure pure_sp_code.V0.combiner_statement
 	  (function ty -> Ast0.StmtTag ty)
 	  s
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"

@@ -360,7 +360,7 @@ E.fld => E1->fld
 
 Expression
 @@
-expression E1, E2;
+pure expression E1, E2;
 identifier fld;
 @@
 
