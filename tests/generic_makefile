@@ -1,6 +1,7 @@
-COCCIDIR=../..
+COCCIDIR=~/coccinelle
 ISOFILE=-iso_file $(COCCIDIR)/standard.iso
-SPATCH=../../spatch.opt  # for the bench !!! can also use 'make opt'
+SPATCH=$(COCCIDIR)/spatch.opt  # for the bench !!! can also use 'make opt'
+#SPATCH=$(COCCIDIR)/spatch
 
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 -no_type_error_msg
@@ -63,7 +64,7 @@ clean2::
 
 
 %.ok2: %.c $(SPATCH) $(SP)
-	$(SPATCH) -iso_file ../../standard.iso -cocci_file $(SP) \
+	$(SPATCH) -iso_file $(COCCIDIR)/standard.iso -cocci_file $(SP) \
 	-compare_with_expected -debug_cpp \
 	 $<
 
@@ -76,7 +77,7 @@ score:
 
 
 info_order:
-	set -e; for i in $(SOURCES); do ../../scripts/extract_info_ok_failed.pl $$i.ok $$i.failed; done 
+	set -e; for i in $(SOURCES); do $(COCCIDIR)/scripts/extract_info_ok_failed.pl $$i.ok $$i.failed; done 
 
 info2:
 	-ls *.ok
@@ -85,9 +86,9 @@ info2:
 	make info_failed
 
 info_ok:
-	../../scripts/extract_info_ok_failed.pl *.ok
+	$(COCCIDIR)/scripts/extract_info_ok_failed.pl *.ok
 
 info_failed:
-	../../scripts/extract_info_ok_failed.pl *.failed
+	$(COCCIDIR)/scripts/extract_info_ok_failed.pl *.failed
 
 
