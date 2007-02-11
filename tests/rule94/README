@@ -47,7 +47,9 @@ io_edgeport.c
  by hand, one case was updated and one was not.  all are update by coccinelle 
 
 io_ti.c
- * [status] ok
+ * [status] wrong
+ programmer seems to know that zeroing is not necessary, because the whole
+ structure will subsequently be initialized
 
 ir-usb.c
  * [status] ok
@@ -73,7 +75,8 @@ mon_text.c
 
 option.c
  * [status] wrong
- need to be able to access the type of the expression matched by a metavariable
+ need to be able to access the type of the expression matched by a
+ metavariable
 
 ov511.c
  * [status] ok
@@ -84,7 +87,9 @@ pl2303.c
 
 pwc-if.c
  * [status] error
- unparsing problem, because there is a break after a return.
+ not updated until sometime after 2.6.17.13 and before 2.6.18
+ one kmalloc site seems like it could use kcalloc, but used kmalloc with
+ the multiplication instead
 
 se401.c
  * [status] ok
@@ -113,6 +118,8 @@ visor.c
 zd1201.c
  * [status] bugs, spatch_ok
  by hand, two cases was updated and one was not.  all are update by coccinelle 
+ a pair of braces dropped around an if branch containing only one statement
+ no connection to the collateral evolution
 
 Bluetooth files
 
