@@ -2,6 +2,7 @@ type typeC =
     ConstVol        of const_vol * typeC
   | BaseType        of baseType * sign option
   | Pointer         of typeC
+  | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
   | StructUnionName of structUnion * string
   | TypeName        of string
@@ -27,6 +28,7 @@ let rec typeC = function
   | BaseType(ty,None) -> baseType ty
   | BaseType(ty,Some sgn) -> sign sgn; baseType ty
   | Pointer(ty) -> typeC ty; print_string "*"
+  | FunctionPointer(ty) -> typeC ty; print_string "(*)(...)"
   | Array(ty) -> typeC ty; print_string "[] "
   | StructUnionName(kind,name) ->
       structUnion kind; print_string name; print_string " "
@@ -66,6 +68,8 @@ let compatible t1 = function
 	| (ConstVol(cv1,ty1),ConstVol(cv2,ty2)) when cv1 = cv2 ->
 	    loop(ty1,ty2)
 	| (Pointer(ty1),Pointer(ty2)) -> loop(ty1,ty2)
+	| (FunctionPointer(ty1),_) -> false (* not enough info *)
+	| (_,FunctionPointer(ty2)) -> false (* not enough info *)
 	| (Array(ty1),Array(ty2)) -> loop(ty1,ty2)
 	| (_,_) -> t1=t2 in
       loop (t1,t2)

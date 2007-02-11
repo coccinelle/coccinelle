@@ -182,6 +182,12 @@ and expression_dots x = dots (function _ -> ()) expression x
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
+and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
+  typeC ty; mcode print_string lp1; mcode print_string star; fn();
+  mcode print_string rp1; mcode print_string lp1;
+  parameter_list params; mcode print_string rp2
+
+
 and typeC t =
   print_context t
     (function _ ->
@@ -192,6 +198,9 @@ and typeC t =
 	  mcode U.baseType ty; print_option (mcode U.sign) sgn
       |	Ast0.ImplicitInt(sgn) -> mcode U.sign sgn
       | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
+      | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+	    (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
@@ -225,12 +234,22 @@ and declaration d =
       match Ast0.unwrap d with
 	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
-	  typeC ty; ident id; print_string " ";
+	  (match Ast0.unwrap ty with
+	    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		(function _ -> print_string " "; ident id)
+	  | _ -> typeC ty; ident id);
+	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg;
-	  typeC ty; ident id; mcode print_string sem
+	  (match Ast0.unwrap ty with
+	    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		(function _ -> print_string " "; ident id)
+	  | _ -> typeC ty; ident id);
+	  mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();
@@ -278,17 +297,22 @@ and initialiser i =
       | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
       | Ast0.MultiIni(ini) -> print_string "+"; initialiser ini)
 
-let initialiser_list = dots (function _ -> ()) initialiser
+and initialiser_list l = dots (function _ -> ()) initialiser l
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec parameterTypeDef p =
+and parameterTypeDef p =
   print_context p
     (function _ ->
       match Ast0.unwrap p with
 	Ast0.VoidParam(ty) -> typeC ty
-      | Ast0.Param(id,ty) -> typeC ty; ident id
+      | Ast0.Param(ty,id) ->
+	  (match (Ast0.unwrap ty,id) with
+	    (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2),Some id) ->
+	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		(function _ -> print_string " "; ident id)
+	  | _ -> typeC ty; print_option ident id)
       | Ast0.MetaParam(name,_) -> mcode print_string name
       | Ast0.MetaParamList(name,_) -> mcode print_string name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
@@ -297,7 +321,7 @@ let rec parameterTypeDef p =
       | Ast0.OptParam(param) -> print_string "?"; parameterTypeDef param
       | Ast0.UniqueParam(param) -> print_string "!"; parameterTypeDef param)
 
-let parameter_list = dots (function _ -> ()) parameterTypeDef
+and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)

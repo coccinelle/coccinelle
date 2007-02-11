@@ -132,6 +132,9 @@ and typeC table minus t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> typeC table minus ty
   | Ast0.Pointer(ty,star) -> typeC table minus ty
+  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      typeC table minus ty;
+      parameter_list table minus params
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name,_) -> if minus then check_table table minus name
@@ -146,7 +149,7 @@ and typeC table minus t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-let rec declaration context table minus d =
+and declaration context table minus d =
   match Ast0.unwrap d with
     Ast0.Init(stg,ty,id,eq,ini,sem) ->
       (match Ast0.unwrap ini with
@@ -194,16 +197,17 @@ and initialiser_list table minus = dots (initialiser table minus)
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let parameterTypeDef table minus param =
+and parameterTypeDef table minus param =
   match Ast0.unwrap param with
-    Ast0.Param(id,ty) -> ident ID table minus id; typeC table minus ty
+    Ast0.Param(ty,id) ->
+      get_opt (ident ID table minus) id; typeC table minus ty
   | Ast0.MetaParam(name,_) ->
       if minus then check_table table minus name
   | Ast0.MetaParamList(name,_) ->
       if minus then check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
-let parameter_list table minus = dots (parameterTypeDef table minus)
+and parameter_list table minus = dots (parameterTypeDef table minus)
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)

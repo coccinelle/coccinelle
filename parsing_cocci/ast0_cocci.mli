@@ -113,6 +113,9 @@ and base_typeC =
   | BaseType        of Ast_cocci.baseType mcode * Ast_cocci.sign mcode option
   | ImplicitInt     of Ast_cocci.sign mcode
   | Pointer         of typeC * string mcode (* * *)
+  | FunctionPointer of typeC *
+	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
+                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident (* name *)
@@ -179,7 +182,7 @@ and initialiser_list = initialiser dots
 
 and base_parameterTypeDef =
     VoidParam     of typeC
-  | Param         of ident * typeC
+  | Param         of typeC * ident option
   | MetaParam     of string mcode * pure
   | MetaParamList of string mcode * pure
   | PComma        of string mcode

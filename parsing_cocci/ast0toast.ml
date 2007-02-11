@@ -325,6 +325,12 @@ and typeC t =
     | Ast0.Pointer(ty,star) ->
 	Ast.Type
 	  (None,rewrap t(Ast.Pointer(typeC ty,mcode star)))
+    | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	Ast.Type(None,
+		 rewrap t
+		   (Ast.FunctionPointer
+		      (typeC ty,mcode lp1,mcode star,mcode rp1,
+		       mcode lp2,parameter_list params,mcode rp2)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
 		 rewrap t
@@ -429,16 +435,16 @@ and initialiser i =
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini)
     | Ast0.MultiIni(ini) -> Ast.MultiIni(initialiser ini))
 
-let initialiser_dots = dots initialiser
+and initialiser_dots l = dots initialiser l
     
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
     
-let rec parameterTypeDef p =
+and parameterTypeDef p =
   rewrap p
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
-    | Ast0.Param(id,ty) -> Ast.Param(ident id,typeC ty)
+    | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
     | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,true,false)
     | Ast0.MetaParamList(name,_) -> Ast.MetaParamList(mcode name,true,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -447,7 +453,7 @@ let rec parameterTypeDef p =
     | Ast0.OptParam(param) -> Ast.OptParam(parameterTypeDef param)
     | Ast0.UniqueParam(param) -> Ast.UniqueParam(parameterTypeDef param))
 
-let parameter_list = dots parameterTypeDef
+and parameter_list l = dots parameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)

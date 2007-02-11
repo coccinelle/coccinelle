@@ -1036,13 +1036,18 @@ and parameters_bis eas ebs =
                 )))
 
 
-      | A.Param (ida, typa), (Left eb)::ebs -> 
+      | A.Param (typa, Some ida), (Left eb)::ebs -> 
+	  (*this should succeed if the C code has a name, and fail otherwise*)
           parameter (ida, typa) eb >>= (fun (ida, typa) eb -> 
           parameters_bis eas ebs >>= (fun eas ebs -> 
             return (
-              (A.Param (ida, typa))+> A.rewrap ea :: eas,
+              (A.Param (typa, Some ida))+> A.rewrap ea :: eas,
               (Left eb)::ebs
             )))
+
+      | A.Param (typa, None), _ -> 
+	  (* This should succeed, and have no effect on the bindings *)
+	  failwith "TODO: pattern parameter specifies no name"
           
       | _unwrapx, (Right y)::ys -> raise Impossible
       | _unwrapx, [] -> fail
@@ -1527,7 +1532,10 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
             (A.Pointer (typa, iamult)) +> A.rewrap ta,
             (B.Pointer typb, [ibmult])
           )))
-        
+
+    | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2), _ ->
+	failwith "TODO: matching and transformation for function pointer"
+
     (* todo: handle the iso on optionnal size specifification ? *)
     | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) -> 
         let (ib1, ib2) = tuple_of_list2 ii in

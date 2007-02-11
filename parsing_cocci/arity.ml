@@ -380,6 +380,14 @@ and top_typeC tgt opt_allowed typ =
       let ty = typeC arity ty in
       let star = mcode star in
       make_typeC typ tgt arity (Ast0.Pointer(ty,star))
+  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      let arity =
+	all_same false opt_allowed tgt (mcode2line lp1)
+	  (List.map mcode2arity [lp1;star;rp1;lp2;rp2]) in
+      let ty = typeC arity ty in
+      let params = parameter_list tgt params in
+      make_typeC typ tgt arity
+	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line lb)
@@ -555,30 +563,39 @@ and initialiser tgt i =
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let make_param =
+and make_param =
   make_opt_unique
     (function x -> Ast0.OptParam x)
     (function x -> Ast0.UniqueParam x)
     (function x -> failwith "multi not allowed for parameters")
 
-let parameterTypeDef tgt param =
+and parameterTypeDef tgt param =
   let param_same = all_same false true tgt in
   match Ast0.unwrap param with
     Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty))
-  | Ast0.Param(id,ty) ->
+  | Ast0.Param(ty,Some id) ->
+      let ty = top_typeC tgt true ty in
       let id = ident false true tgt id in
+      Ast0.rewrap param 
+	(match (Ast0.unwrap ty,Ast0.unwrap id) with
+	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
+	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
+	| (Ast0.UniqueType(ty),Ast0.UniqueIdent(id)) ->
+	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
+	| (Ast0.OptType(ty),_) ->
+	    fail param "arity mismatch in param declaration"
+	| (_,Ast0.OptIdent(id)) ->
+	    fail param "arity mismatch in param declaration"
+	| _ -> Ast0.Param(ty,Some id))
+  | Ast0.Param(ty,None) ->
       let ty = top_typeC tgt true ty in
       Ast0.rewrap param 
-	(match (Ast0.unwrap id,Ast0.unwrap ty) with
-	  (Ast0.OptIdent(id),Ast0.OptType(ty)) ->
-	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(id,ty)))
-	| (Ast0.UniqueIdent(id),Ast0.UniqueType(ty)) ->
-	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(id,ty)))
-	| (Ast0.OptIdent(id),_) ->
-	    fail param "arity mismatch in param declaration"
-	| (_,Ast0.OptType(ty)) ->
-	    fail param "arity mismatch in param declaration"
-	| _ -> Ast0.Param(id,ty))
+	(match Ast0.unwrap ty with
+	  Ast0.OptType(ty) ->
+	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None)))
+	| Ast0.UniqueType(ty) ->
+	    Ast0.UniqueParam(Ast0.rewrap param (Ast0.Param(ty,None)))
+	| _ -> Ast0.Param(ty,None))
   | Ast0.MetaParam(name,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
@@ -602,7 +619,7 @@ let parameterTypeDef tgt param =
   | Ast0.OptParam(_) | Ast0.UniqueParam(_) ->
       failwith "unexpected code"
 
-let parameter_list tgt = dots (parameterTypeDef tgt)
+and parameter_list tgt = dots (parameterTypeDef tgt)
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 130 *)
+(* current max is 131 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -87,6 +87,7 @@ let typeC t =
   | Ast0.BaseType(ty,sign) -> [48]
   | Ast0.ImplicitInt(sign) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
+  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
@@ -124,7 +125,7 @@ let initialiser i =
 let parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) -> [59]
-  | Ast0.Param(id,ty) -> [60]
+  | Ast0.Param(ty,id) -> [60]
   | Ast0.MetaParam(name,_) -> [61]
   | Ast0.MetaParamList(name,_) -> [62]
   | Ast0.PComma(cm) -> [63]

@@ -294,14 +294,21 @@ let rec find_function_names = function
   | ((PC.TMetaFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaLocalFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2)::rest
     ->
-      let rec skip = function
+      let rec skip level = function
 	  [] -> ([],false,[])
-	| ((PC.TCPar(_),_) as t)::rest -> ([t],true,rest)
+	| ((PC.TCPar(_),_) as t)::rest ->
+	    let level = level - 1 in
+	    if level = 0
+	    then ([t],true,rest)
+	    else let (pre,found,post) = skip level rest in (t::pre,found,post)
+	| ((PC.TOPar(_),_) as t)::rest ->
+	    let level = level + 1 in
+	    let (pre,found,post) = skip level rest in (t::pre,found,post)
 	| ((PC.TArobArob,_) as t)::rest -> ([t],false,rest)
 	| ((PC.EOF,_) as t)::rest -> ([t],false,rest)
 	| t::rest ->
-      	    let (pre,found,post) = skip rest in (t::pre,found,post) in
-      let (pre,found,post) = skip rest in
+      	    let (pre,found,post) = skip level rest in (t::pre,found,post) in
+      let (pre,found,post) = skip 1 rest in
       (match (found,post) with
 	(true,((PC.TOBrace(_),_) as t3)::rest) ->
 	  (PC.TFunDecl(clt),info) :: t1 :: t2 :: pre @

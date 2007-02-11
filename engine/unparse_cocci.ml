@@ -226,11 +226,19 @@ and fullType ft =
   | Ast.OptType(_) | Ast.UniqueType(_) | Ast.MultiType(_) ->
       raise CantBeInPlus
 
+and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
+  fullType ty; mcode print_string lp1; mcode print_string star; fn();
+  mcode print_string rp1; mcode print_string lp1;
+  parameter_list params; mcode print_string rp2
+
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
   | Ast.ImplicitInt(sgn) -> mcode sign sgn
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
+  | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+	(function _ -> ())
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -291,11 +299,27 @@ and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
-      fullType ty; ident id; print_string " "; mcode print_string eq;
+      (match Ast.unwrap ty with
+	Ast.Type(None,ty1) ->
+	  (match Ast.unwrap ty1 with
+	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		(function _ -> print_string " "; ident id)
+	  | _ -> fullType ty; ident id)
+      | _ -> fullType ty; ident id);
+      print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
-      fullType ty; ident id; mcode print_string sem
+      (match Ast.unwrap ty with
+	Ast.Type(None,ty1) ->
+	  (match Ast.unwrap ty1 with
+	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		(function _ -> print_string " "; ident id)
+	  | _ -> fullType ty; ident id)
+      | _ -> fullType ty; ident id);
+      mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
@@ -329,15 +353,22 @@ and initialiser i =
       initialiser ini
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) | Ast.MultiIni(ini) ->
       raise CantBeInPlus
-in
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec parameterTypeDef p =
+and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(id,ty) -> fullType ty; ident id
+  | Ast.Param(ty,id) ->
+      (match (Ast.unwrap ty,id) with
+	(Ast.Type(None,ty1),Some id) ->
+	  (match Ast.unwrap ty1 with
+	      Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+		print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+		  (function _ -> print_string " "; ident id)
+	  | _ -> fullType ty; ident id)
+      | _ -> fullType ty; print_option ident id)
 
   | Ast.MetaParam(name,true,_) -> 
       failwith "not handling MetaParam"
@@ -351,10 +382,8 @@ let rec parameterTypeDef p =
   | Ast.Pcircles(dots) 
     ->  raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
-in
 
-
-let parameter_list = dots (function _ -> ()) parameterTypeDef
+and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 in
 
 

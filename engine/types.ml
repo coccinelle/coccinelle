@@ -35,6 +35,9 @@ let rec compatible_type a b =
       )
   | A.Pointer  a, (qub, (B.Pointer b, ii)) -> 
       compatible_type a b
+  | A.FunctionPointer a, _ ->
+      failwith
+	"TODO: function pointer type doesn't store enough information to determine compatability"
   | A.Array   a, (qub, (B.Array (eopt, b),ii)) -> (* no size info for cocci *)
       compatible_type a b
   | A.StructUnionName (sua, sa), (qub, (B.StructUnionName (sb, sub),ii)) -> 

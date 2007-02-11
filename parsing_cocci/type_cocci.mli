@@ -2,6 +2,7 @@ type typeC =
     ConstVol        of const_vol * typeC
   | BaseType        of baseType * sign option
   | Pointer         of typeC
+  | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
   | StructUnionName of structUnion * string
   | TypeName        of string

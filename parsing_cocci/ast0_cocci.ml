@@ -116,6 +116,9 @@ and base_typeC =
   | BaseType        of Ast.baseType mcode * Ast.sign mcode option
   | ImplicitInt     of Ast.sign mcode
   | Pointer         of typeC * string mcode (* * *)
+  | FunctionPointer of typeC *
+	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
+                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of Ast.structUnion mcode * ident (* name *)
@@ -180,7 +183,7 @@ and initialiser_list = initialiser dots
 
 and base_parameterTypeDef =
     VoidParam     of typeC
-  | Param         of ident * typeC
+  | Param         of typeC * ident option
   | MetaParam     of string mcode * pure
   | MetaParamList of string mcode * pure
   | PComma        of string mcode
@@ -401,6 +404,8 @@ let rec ast0_type_to_type ty =
       let bty = Type_cocci.IntType in
       Type_cocci.BaseType(bty,Some (sign sgn))
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
+  | FunctionPointer(ty,_,_,_,_,params,_) ->
+      Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
   | StructUnionName(su,tag)
   | StructUnionDef(su,tag,_,_,_) ->

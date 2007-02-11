@@ -614,15 +614,16 @@ and (match_params:
                 (term ida, Ast_c.MetaParamVal (y)) >&&>
               match_params seqstyle xs ys
 
-          | A.Param (ida, typa), (((hasreg, idb, typb), _), _)::ys -> 
-              (match idb with
-              | Some idb -> 
+          | A.Param (typa, ida), (((hasreg, idb, typb), _), _)::ys -> 
+              (match (ida, idb) with
+		(None,Some _) -> return true
+              | (Some ida,Some idb) -> 
                   (* todo: use quaopt, hasreg ? *)
                   (match_ft_ft typa typb >&&>
                    match_ident DontKnow ida idb
                   ) >&&> 
                   match_params seqstyle xs ys
-              | None -> 
+              | (_,None) -> 
                   assert (null ys);
                   assert (
                     match typb with 
@@ -630,7 +631,7 @@ and (match_params:
                     | _ -> false
                           );
    
-                  return false
+                  return (ida = None)
               )
 
           | x, [] -> return false
@@ -908,6 +909,9 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
   (* todo? iso with array *)
     | A.Pointer (typa, _),            (qu, (B.Pointer typb, _)) -> 
 	match_ft_ft typa typb
+
+    | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2), _ ->
+	failwith "TODO: matching for function pointer"
 	  
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
 	match_ft_ft typa typb >&&>

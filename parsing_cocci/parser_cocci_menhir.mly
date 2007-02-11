@@ -461,7 +461,7 @@ includes:
 
 fundecl:
   s=ioption(storage) t=option(fn_ctype)
-  TFunDecl i=func_ident lp=TOPar d=decl_list rp=TCPar
+  TFunDecl i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
       { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       s, t, i,
@@ -477,10 +477,28 @@ storage:
        | s=Textern      { clt2mcode Ast.Extern s }
 
 decl: ctype ident
-	{ Ast0.wrap(Ast0.Param($2, $1)) }
+	{ Ast0.wrap(Ast0.Param($1, Some $2)) }
+    | ctype TOPar TMul ident TCPar TOPar decl_list(name_opt_decl) TCPar
+        { let fnptr =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       ($1,clt2mcode "(" $2,clt2mcode "*" $3,clt2mcode ")" $5,
+		clt2mcode "(" $6,$7,clt2mcode ")" $8)) in
+	Ast0.wrap(Ast0.Param(fnptr, Some $4)) }
     | TMetaParam
 	{ let (nm,pure,clt) = $1 in
 	Ast0.wrap(Ast0.MetaParam(clt2mcode nm clt,pure)) }
+
+name_opt_decl:
+      decl  { $1 }
+    | ctype { Ast0.wrap(Ast0.Param($1, None)) }
+    | ctype TOPar TMul TCPar TOPar decl_list(name_opt_decl) TCPar
+        { let fnptr =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       ($1,clt2mcode "(" $2,clt2mcode "*" $3,clt2mcode ")" $4,
+		clt2mcode "(" $5,$6,clt2mcode ")" $7)) in
+	Ast0.wrap(Ast0.Param(fnptr, None)) }
 
 const_vol:
       Tconst       { clt2mcode Ast.Const $1 }
@@ -636,6 +654,7 @@ decl_var:
   | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,clt2mcode ";" pv))] }
+  /* type is a typedef name */
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
       d=comma_list(d_ident) pv=TPtVirg
       { List.map
@@ -650,6 +669,30 @@ decl_var:
       let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
       [Ast0.wrap(Ast0.Init(s,fn idtype,id,clt2mcode "=" q,e,
 			   clt2mcode ";" pv))] }
+  /* function pointer type */
+  | s=ioption(storage)
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+    pv=TPtVirg
+      { let (id,fn) = d in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,clt2mcode "(" lp1,clt2mcode "*" st,clt2mcode ")" rp1,
+		clt2mcode "(" lp2,p,clt2mcode ")" rp2)) in
+        [Ast0.wrap(Ast0.UnInit(s,fn t,id,clt2mcode ";" pv))] }
+  | s=ioption(storage)
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+    q=TEq e=initialize pv=TPtVirg
+      { let (id,fn) = d in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,clt2mcode "(" lp1,clt2mcode "*" st,clt2mcode ")" rp1,
+		clt2mcode "(" lp2,p,clt2mcode ")" rp2)) in
+      [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,clt2mcode ";" pv))] }
+
 
 d_ident:
     ident
@@ -969,33 +1012,33 @@ ident: pure_ident
 
 /*****************************************************************************/
 
-decl_list:
-   decl_list_start
+decl_list(decl):
+   decl_list_start(decl)
      {let circle x =
        match Ast0.unwrap x with Ast0.Pcircles(_) -> true | _ -> false in
      if List.exists circle $1
      then Ast0.wrap(Ast0.CIRCLES($1))
      else Ast0.wrap(Ast0.DOTS($1)) }
 
-decl_list_start:
+decl_list_start(decl):
   decl  { [$1] }
 | TMetaParamList
     { let (nm,pure,clt) = $1 in
     [Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt,pure))] }
-| decl TComma decl_list_start
+| decl TComma decl_list_start(decl)
     { $1::Ast0.wrap(Ast0.PComma(clt2mcode "," $2))::$3 }
-| TMetaParamList TComma decl_list_start
+| TMetaParamList TComma decl_list_start(decl)
     { let (nm,pure,clt) = $1 in
     Ast0.wrap(Ast0.MetaParamList(clt2mcode nm clt,pure))::
     Ast0.wrap(Ast0.PComma(clt2mcode "," $2))::$3 }
-| TEllipsis list(comma_decls(TEllipsis))
+| TEllipsis list(comma_decls(TEllipsis,decl))
     { Ast0.wrap(Ast0.Pdots(clt2mcode "..." $1))::
       (List.concat(List.map (function x -> x (mkpdots "...")) $2)) }
-| TCircles list(comma_decls(TCircles))
+| TCircles list(comma_decls(TCircles,decl))
     { Ast0.wrap(Ast0.Pdots(clt2mcode "ooo" $1))::
       (List.concat(List.map (function x -> x (mkpdots "ooo")) $2)) }
 
-comma_decls(dotter):
+comma_decls(dotter,decl):
   TComma dotter
     { function dot_builder ->
       [Ast0.wrap(Ast0.PComma(clt2mcode "," $1));

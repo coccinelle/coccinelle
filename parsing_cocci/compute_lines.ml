@@ -302,6 +302,11 @@ and typeC t =
   | Ast0.Pointer(ty,star) ->
       let ty = typeC ty in
       mkres t (Ast0.Pointer(ty,star)) ty (promote_mcode star)
+  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      let ty = typeC ty in
+      let params = parameter_list (Some(promote_mcode lp2)) params in
+      mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
+	ty (promote_mcode rp2)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
@@ -432,26 +437,28 @@ and initialiser i =
       let ini = initialiser ini in
       mkres i (Ast0.MultiIni(ini)) ini ini
 
-let initialiser_list prev = dots is_init_dots prev initialiser
+and initialiser_list prev = dots is_init_dots prev initialiser
 
 (* for export *)
-let initialiser_dots x = dots is_init_dots None initialiser x
+and initialiser_dots x = dots is_init_dots None initialiser x
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let is_param_dots p =
+and is_param_dots p =
   match Ast0.unwrap p with
     Ast0.Pdots(_) | Ast0.Pcircles(_) -> true
   | _ -> false
 	
-let rec parameterTypeDef p =
+and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) ->
       let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
-  | Ast0.Param(id,ty) ->
+  | Ast0.Param(ty,Some id) ->
       let id = ident id in
-      let ty = typeC ty in mkres p (Ast0.Param(id,ty)) ty id
+      let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
+  | Ast0.Param(ty,None) ->
+      let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
   | Ast0.MetaParam(name,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.MetaParamList(name,_) as up ->
@@ -472,7 +479,7 @@ let rec parameterTypeDef p =
       let res = parameterTypeDef param in
       mkres p (Ast0.UniqueParam(res)) res res
 
-let parameter_list prev = dots is_param_dots prev parameterTypeDef
+and parameter_list prev = dots is_param_dots prev parameterTypeDef
 
 (* for export *)
 let parameter_dots x = dots is_param_dots None parameterTypeDef x

@@ -155,6 +155,13 @@ let combiner bind option_default
       | Ast.UniqueType(ty) -> fullType ty
       | Ast.MultiType(ty) -> fullType ty in
     ftfn all_functions k ft
+
+  and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
+    (* have to put the treatment of the identifier into the right position *)
+    multibind
+      ([fullType ty; string_mcode lp1; string_mcode star] @ extra @
+       [string_mcode rp1;
+	 string_mcode lp2; parameter_dots params; string_mcode rp2])
 	  
   and typeC ty =
     let k ty =
@@ -164,6 +171,8 @@ let combiner bind option_default
       | Ast.ImplicitInt(sgn) -> sign_mcode sgn
       | Ast.Pointer(ty,star) ->
 	  bind (fullType ty) (string_mcode star)
+      | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
       | Ast.Array(ty,lb,size,rb) ->
 	  multibind [fullType ty; string_mcode lb;
 		      get_option expression size; string_mcode rb]
@@ -182,13 +191,30 @@ let combiner bind option_default
     let k d =
       match Ast.unwrap d with
 	Ast.Init(stg,ty,id,eq,ini,sem) ->
-	  multibind
-	    [get_option storage_mcode stg; fullType ty; ident id;
-	      string_mcode eq; initialiser ini; string_mcode sem]
+	  bind (get_option storage_mcode stg)
+	    (bind
+	       (match Ast.unwrap ty with
+		 Ast.Type(None,ty1) ->
+		   (match Ast.unwrap ty1 with
+		     Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+		       function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+			 [ident id]
+		   | _ -> bind (fullType ty) (ident id))
+	       | _ -> bind (fullType ty) (ident id))
+	       (multibind
+		  [string_mcode eq; initialiser ini; string_mcode sem]))
       | Ast.UnInit(stg,ty,id,sem) ->
-	  multibind
-	    [get_option storage_mcode stg; fullType ty; ident id;
-	      string_mcode sem]
+	  bind (get_option storage_mcode stg)
+	    (bind
+	       (match Ast.unwrap ty with
+		 Ast.Type(None,ty1) ->
+		   (match Ast.unwrap ty1 with
+		     Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+		       function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+			 [ident id]
+		   | _ -> bind (fullType ty) (ident id))
+	       | _ -> bind (fullType ty) (ident id))
+	       (string_mcode sem))
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       | Ast.MetaDecl(name,_,_) -> string_mcode name
@@ -230,7 +256,14 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.VoidParam(ty) -> fullType ty
-      | Ast.Param(id,ty) -> bind (fullType ty) (ident id)
+      | Ast.Param(ty,id) ->
+	  (match (Ast.unwrap ty,id) with
+	    (Ast.Type(None,ty1),Some id) ->
+	      (match Ast.unwrap ty1 with
+		Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+		  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
+	      | _ -> bind (fullType ty) (ident id))
+	  | _ -> bind (fullType ty) (get_option ident id))
       | Ast.MetaParam(name,_,_) -> string_mcode name
       | Ast.MetaParamList(name,_,_) -> string_mcode name
       | Ast.PComma(cm) -> string_mcode cm
@@ -572,6 +605,11 @@ let rebuilder
 	| Ast.ImplicitInt(sgn) -> Ast.ImplicitInt (sign_mcode sgn)
 	| Ast.Pointer(ty,star) ->
 	    Ast.Pointer (fullType ty, string_mcode star)
+	| Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	    Ast.FunctionPointer(fullType ty,string_mcode lp1,string_mcode star,
+				string_mcode rp1,string_mcode lp2,
+				parameter_dots params,
+				string_mcode rp2)
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
@@ -637,7 +675,7 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
-	| Ast.Param(id,ty) -> Ast.Param(ident id, fullType ty)
+	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
 	| Ast.MetaParam(name,keep,inherited) ->
 	    Ast.MetaParam(string_mcode name,keep,inherited)
 	| Ast.MetaParamList(name,keep,inherited) ->

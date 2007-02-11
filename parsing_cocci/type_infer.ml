@@ -50,7 +50,10 @@ let rec propagate_types env =
 	  | Ast.Char(_) -> Some (T.BaseType(T.CharType,None))
 	  | Ast.Int(_) -> Some (T.BaseType(T.IntType,None))
 	  | Ast.Float(_) ->  Some (T.BaseType(T.FloatType,None)))
-      | Ast0.FunCall(fn,lp,args,rp) -> None
+      | Ast0.FunCall(fn,lp,args,rp) ->
+	  (match Ast0.get_type fn with
+	    Some (T.FunctionPointer(ty)) -> Some ty
+	  |  _ -> None)
       | Ast0.Assignment(exp1,op,exp2) ->
 	  let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 	  Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
@@ -181,7 +184,7 @@ let rec propagate_types env =
       Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
-	    Ast0.Param(id,ty) -> [(strip id,Ast0.ast0_type_to_type ty)]
+	    Ast0.Param(ty,Some id) -> [(strip id,Ast0.ast0_type_to_type ty)]
 	  | Ast0.OptParam(param) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in

@@ -397,6 +397,11 @@ let match_maker context_required whencode_allowed =
 	  | (Ast0.ImplicitInt(signa),Ast0.ImplicitInt(signb)) ->
 	      return (mcode_equal signa signb)
 	  | (Ast0.Pointer(tya,_),Ast0.Pointer(tyb,star)) -> match_typeC tya tyb
+	  | (Ast0.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
+	     Ast0.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->
+	       conjunct_bindings (match_typeC tya tyb)
+		 (match_dots match_param is_plist_matcher do_plist_match
+		    paramsa paramsb)
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_expr sizea sizeb)
@@ -505,8 +510,9 @@ let match_maker context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
-	  | (Ast0.Param(ida,tya),Ast0.Param(idb,tyb)) ->
-	      conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
+	  | (Ast0.Param(tya,ida),Ast0.Param(tyb,idb)) ->
+	      conjunct_bindings (match_typeC tya tyb)
+		(match_option match_ident ida idb)
 	  | (Ast0.PComma(_),Ast0.PComma(_))
 	  | (Ast0.Pdots(_),Ast0.Pdots(_))
 	  | (Ast0.Pcircles(_),Ast0.Pcircles(_)) -> return true

@@ -160,6 +160,9 @@ and base_typeC =
     BaseType        of baseType mcode * sign mcode option
   | ImplicitInt     of sign mcode
   | Pointer         of fullType * string mcode (* * *)
+  | FunctionPointer of fullType *
+	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
+                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of structUnion mcode * ident (* name *)
@@ -230,7 +233,7 @@ and initialiser = base_initialiser wrap
 
 and base_parameterTypeDef =
     VoidParam     of fullType
-  | Param         of ident * fullType
+  | Param         of fullType * ident option
 
   | MetaParam     of string mcode * keep_binding * inherited
   | MetaParamList of string mcode * keep_binding * inherited

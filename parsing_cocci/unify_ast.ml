@@ -201,6 +201,14 @@ and unify_typeC t1 t2 =
   | (Ast.ImplicitInt(sgn1),Ast.ImplicitInt(sgn2)) ->
       return (unify_mcode sgn1 sgn2)
   | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
+  | (Ast.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
+     Ast.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->
+       if List.for_all2 unify_mcode
+	   [lp1a;stara;rp1a;lp2a;rp2a] [lp1b;starb;rp1b;lp2b;rp2b]
+       then
+	 conjunct_bindings (unify_fullType tya tyb)
+	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
+       else return false
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
@@ -289,11 +297,12 @@ and unify_initialiser i1 i2 =
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
 
-let rec unify_parameterTypeDef p1 p2 =
+and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.VoidParam(ft1),Ast.VoidParam(ft2)) -> unify_fullType ft1 ft2
-  | (Ast.Param(i1,ft1),Ast.Param(i2,ft2)) ->
-      conjunct_bindings (unify_ident i1 i2) (unify_fullType ft1 ft2)
+  | (Ast.Param(ft1,i1),Ast.Param(ft2,i2)) ->
+      conjunct_bindings (unify_fullType ft1 ft2)
+	(unify_option unify_ident i1 i2)
 
   | (Ast.MetaParam(_,_,_),_)
   | (Ast.MetaParamList(_,_,_),_)

@@ -465,7 +465,7 @@ and (transform_param:
  fun pa pb  -> 
   fun binding -> 
     match A.unwrap pa, pb with
-    | A.Param (ida, typa), ((hasreg, idb, typb), ii_b_s) -> 
+    | A.Param (typa, Some ida), ((hasreg, idb, typb), ii_b_s) -> 
         
         let kindparam = 
           (match hasreg, idb,  ii_b_s with
@@ -494,7 +494,8 @@ and (transform_param:
             (hasreg, None, typb'), (iihasreg) 
         )
             
-        
+    | A.Param (typa, None), ((hasreg, idb, typb), ii_b_s) -> 
+	failwith "TODO: Cocci parameter has no name, what to do in this case?"
         
     | A.PComma _, _ -> raise Impossible
     | _ -> raise Todo
@@ -848,7 +849,10 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
         let ii' = tag_symbols [imult] ii binding in
         let typb' = transform_ft_ft typa typb  binding in
         (qu, (B.Pointer typb', ii'))
-        
+
+    | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2), _ ->
+	failwith "TODO: transformation for function pointer"
+	          
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
     | A.StructUnionName(sua, sa), (qu, (B.StructUnionName (sb, sub), ii)) -> 
