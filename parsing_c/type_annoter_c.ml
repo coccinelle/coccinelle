@@ -353,11 +353,30 @@ let rec (annotate_program2 : environment -> programElement list ->
                 )
             | _ -> None
           )
-(*
       | Cast (t, e) -> 
-          let e = exprf e in
-          raise Todo
-*)
+          let ((_, _oldtyp), iitop) = expr in
+
+          let ((e, typ_e), ii_e) = exprf e in
+          (match typ_e with 
+          | None -> 
+              (Cast (t,
+                    ((e, Some (Lib.al_type t)), ii_e)),
+               Some (Lib.al_type t)),
+              iitop
+          | Some tbis -> 
+              (* assert t = tbis ? *)
+              (Cast (t,  
+                   ((e, Some tbis), ii_e)), 
+              Some (Lib.al_type t)),
+              iitop
+          )
+
+      | ParenExpr e -> 
+          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
+            Some type_subexpr
+          )
+
+            
           
 
       | _ -> k expr
