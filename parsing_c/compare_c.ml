@@ -28,6 +28,19 @@ let cvs_keyword_list = [
 let cvs_keyword_regexp = Str.regexp 
   ("\\$\\([A-Za-z_]+\\):[^\\$]*\\$")
 
+
+let cvs_compute_newstr s = 
+  Str.global_substitute cvs_keyword_regexp (fun _s -> 
+    let substr = Str.matched_string s in
+    assert (substr ==~ cvs_keyword_regexp); (* use its side-effect *)
+    let tag = matched1 substr in
+
+    if not (List.mem tag cvs_keyword_list)
+    then failwith ("unknown CVS keyword: " ^ tag);
+    
+    "CVS_MAGIC_STRING" 
+  ) s 
+
 let normal_form_program xs = 
   let bigf = { Visitor_c.default_visitor_c_s with 
 
@@ -42,23 +55,34 @@ let normal_form_program xs =
       (* todo: should also do something for multistrings *)
       | (Constant (String (s,kind)), typ), [ii] 
           when Common.string_match_substring cvs_keyword_regexp s -> 
-
-          let newstr = 
-            Str.global_substitute cvs_keyword_regexp (fun _s -> 
-              let substr = Str.matched_string s in
-              assert (substr ==~ cvs_keyword_regexp); (* use its side-effect *)
-              let tag = matched1 substr in
-
-              if not (List.mem tag cvs_keyword_list)
-              then failwith ("unknown CVS keyword: " ^ tag);
-              
-              "CVS_MAGIC_STRING" 
-            ) s 
-          in
+          let newstr = cvs_compute_newstr s in
           (Constant (String (newstr,kind)), typ), [rewrap_str newstr ii]
       | _ -> k e    
 
     );
+    Visitor_c.kprogram_s = (fun (k,bigf) p -> 
+      match p with
+      | CPPDefine ((s, body), ii) -> 
+          let (i1, i2, i3) = Common.tuple_of_list3 ii in
+          if Common.string_match_substring cvs_keyword_regexp body
+          then 
+            let newstr = cvs_compute_newstr body in
+            CPPDefine ((s, newstr), [i1;i2;rewrap_str newstr i3])
+          else p
+      | _ -> k p
+    );
+
+(*
+    Visitor_c.kinfo_s = (fun (k,bigf) i -> 
+      let s = Ast_c.get_str_of_info i in
+      if Common.string_match_substring cvs_keyword_regexp s
+      then 
+        let newstr = cvs_compute_newstr s in
+        rewrap_str newstr i
+      else i
+    );
+*)
+
   }
   in
   xs +> List.map (fun p -> Visitor_c.vk_program_s  bigf p)
@@ -112,7 +136,8 @@ let compare (c1,filename1) (c2, filename2)  =
            | SpecialDeclMacro (a1,b1,c1), SpecialDeclMacro (a2,b2,c2) -> 
                if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
            | CPPInclude a, CPPInclude b -> if not (a =*= b) then incr error
-           | CPPDefine a, CPPDefine b ->   if not (a =*= b) then incr error
+           | CPPDefine a, CPPDefine b ->   
+               if not (a =*= b) then incr error
            | NotParsedCorrectly a, NotParsedCorrectly b -> 
                if not (a =*= b) then incr pb_notparsed
            | NotParsedCorrectly a, _ -> 
