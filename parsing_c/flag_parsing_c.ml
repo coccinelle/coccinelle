@@ -20,3 +20,5 @@ let ifdef_to_if = ref false
 let casse_initialisation = ref false
 
 let add_typedef_root = ref false
+
+let pretty_print_type_info = ref false

@@ -261,9 +261,12 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
    
         let newi =    add_node_g (SeqStart (stmt, brace, i1)) lbl o_info in
         let endnode = build_node (SeqEnd (brace, i2))         lbl c_info in
+        let endnode_dup = 
+          build_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl c_info 
+        in
 
         let newauxinfo = 
-          { auxinfo_label with braces = endnode:: auxinfo_label.braces }
+          { auxinfo_label with braces = endnode(*_dup*):: auxinfo_label.braces }
         in
        
 
@@ -535,9 +538,13 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                   *)
                  let newi = add_node_g (SeqStart (stmt,brace,i1)) lbl o_info in
                  let endnode = build_node (SeqEnd (brace, i2))    lbl c_info in
+                 let endnode_dup = 
+                   build_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl c_info 
+                 in
 
                  let newauxinfo = 
-                  { auxinfo_label with braces = endnode:: auxinfo_label.braces}
+                  { auxinfo_label with 
+                    braces = endnode(*_dup*):: auxinfo_label.braces}
                  in
 
                  (* new: cos of switch *)

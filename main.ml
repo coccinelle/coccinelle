@@ -11,6 +11,7 @@ let dir = ref false
  *)
 let cocci_file = ref ""
 let iso_file   = ref "" 
+let default_output_file = ref "/tmp/output.c"
 
 let test_mode = ref false
 let testall_mode = ref false
@@ -25,8 +26,34 @@ let reentrant = ref false
 
 let action = ref "" 
 
-let default_output_file = ref "/tmp/output.c"
+(*****************************************************************************)
+(* Profile *)
+(*****************************************************************************)
 
+(* pair of  (list of flag to set true, list of flag to set false *)
+let quiet_profile = (
+  [
+    Flag.show_diff;
+  ],
+  [
+    Flag.show_c;
+    Flag.show_cocci;
+    Flag.show_flow;
+    Flag.show_before_fixed_flow;
+    Flag.show_ctl_tex;
+    Flag.show_ctl_text;
+    Flag.show_transinfo;
+    Flag.show_binding_in_out;
+    Flag.show_misc;
+    Flag_engine.show_misc;
+    Flag_parsing_cocci.show_SP;
+    Flag_ctl.verbose_ctl_engine;
+    Flag_engine.debug_engine;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+  ])
+
+ 
 (*****************************************************************************)
 (* The coccinelle main entry point *)
 (*****************************************************************************)
@@ -46,7 +73,7 @@ let main () =
 
       "-c", Arg.Set_string cocci_file, 
         " <filename> the semantic patch file";
-      "-i", Arg.Set_string cocci_file, 
+      "-i", Arg.Set_string iso_file, 
         " <filename> the semantic patch file";
 
  
@@ -64,7 +91,6 @@ let main () =
       "-save_output_file",  Arg.Set save_output_file, " ";
       "-save_tmp_files",    Arg.Set save_tmp_files,   " ";
       "-reentrant",         Arg.Set reentrant, " ";
-      "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";
@@ -72,6 +98,7 @@ let main () =
       "-show_flow"              , Arg.Set Flag.show_flow,        " ";
       "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
       "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
+      "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
 
       "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
       "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
@@ -81,7 +108,6 @@ let main () =
         Flag_engine.show_misc := false;
         ), " ";
       "-no_show_SP_julia"       , Arg.Clear Flag_parsing_cocci.show_SP,  " ";
-      "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
 
       (* works in conjunction with -show_ctl *)
       "-inline_let_ctl",        Arg.Set Flag.inline_let_ctl, " ";
@@ -98,14 +124,22 @@ let main () =
       "-debug_etdt",         Arg.Set  Flag_parsing_c.debug_etdt , "  ";
       "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
       "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
+
+      (* todo: other profile ? *)
+      "-quiet",   Arg.Unit (fun () -> 
+        let (set_to_true, set_to_false) = quiet_profile in
+        List.iter (fun x -> x := false) set_to_false;
+        List.iter (fun x -> x := true) set_to_true;
+      ), " ";
       
       "-profile",          Arg.Set  Common.profile , "  ";
       "-debugger",          Arg.Set  Common.debugger , "  ";
+      "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
-      "-loop",                 Arg.Set Flag_ctl.loop_in_src_code,    " ";
-      "-l1",     Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-      "-no_cocci_vs_c_3",        Arg.Clear Flag_engine.use_cocci_vs_c_3,  " ";
-      "-no_ref",        Arg.Clear Flag_engine.use_ref,    " ";
+      "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
+      "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
+      "-no_cocci_vs_c_3",   Arg.Clear Flag_engine.use_cocci_vs_c_3,  " ";
+      "-no_ref",            Arg.Clear Flag_engine.use_ref,    " ";
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
       "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
@@ -121,6 +155,7 @@ let main () =
                parse_c
                parse_cocci
                control_flow
+               parse_unparse
 
          so to test C parser, do -action parse_c ...
                 "
@@ -160,18 +195,36 @@ let main () =
             in
             
             let _stat_list = ref [] in
+            let newscore  = empty_score () in
 
             fullxs +> List.iter (fun file -> 
-              pr2 ("HANDLING: " ^ file);
-              
               if not (file =~ ".*\\.c") 
               then pr2 "warning: seems not a .c file";
-              
-              file +> Parse_c.parse_print_error_heuristic 
-                   +> (fun (x, stat) -> Common.push2 stat _stat_list);
+
+              pr2 ("HANDLING: " ^ file);
+
+              let (_x, stat) = Parse_c.parse_print_error_heuristic file 
+              in
+
+              Common.push2 stat _stat_list;
+              let s = 
+                sprintf "bad = %d, timeout = %B" 
+                  stat.Parse_c.bad stat.Parse_c.have_timeout
+              in
+              if stat.Parse_c.bad = 0 && not stat.Parse_c.have_timeout
+              then Hashtbl.add newscore file (Common.Ok)
+              else Hashtbl.add newscore file (Common.Pb s)
+
             );
             if not (null !_stat_list) 
             then Parse_c.print_parsing_stat_list !_stat_list;
+
+            pr2 "--------------------------------";
+            pr2 "regression testing  information";
+            pr2 "--------------------------------";
+            Common.regression_testing newscore "/tmp/score_parsing.marshalled";
+
+
 
         | "parse_cocci", [file] -> 
             if not (file =~ ".*\\.cocci") 
@@ -216,7 +269,24 @@ let main () =
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
 
-            ignore(Cocci.cprogram_from_file file);
+            let (program2, _stat) =  Parse_c.parse_print_error_heuristic file
+            in
+            let program2 =
+              program2 
+              +> Common.unzip 
+              +> (fun (program, infos) -> 
+                Type_annoter_c.annotate_program Type_annoter_c.initial_env
+                  program +> List.map fst,
+                infos
+              )
+              +> Common.uncurry Common.zip
+            in
+            let program2_with_ppmethod = 
+              program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
+            in
+            Flag_parsing_c.pretty_print_type_info := true;
+            Unparse_c.pp_program program2_with_ppmethod !default_output_file;
+            Common.command2 ("cat " ^ !default_output_file);
 
         | "compare_c", _ -> 
             Testing.print_diff_expected_res_and_exit 
@@ -227,26 +297,19 @@ let main () =
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
         | _ -> failwith "no action for this"
         )
-
+    (* ---------------------- *)
     (* This is the main entry *)
+    (* ---------------------- *)
     | x::xs -> 
 
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -cocci_file <filename>";
 
-        if not (!cocci_file =~ ".*\\.cocci") 
-        then begin
-          pr2 "warning: seems not a .cocci file";
-          pr2 "I add a .cocci extension to it, maybe it will help";
-          cocci_file := !cocci_file ^ ".cocci";
-        end;
+        cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
 
-        if !iso_file <> "" && not (!iso_file =~ ".*\\.iso") 
-        then begin 
-          pr2 "warning: seems not a .iso file";
-          pr2 "I add a .iso extension to it, maybe it will help";
-          iso_file := !iso_file ^ ".iso";
-        end;
+        if !iso_file <> "" 
+        then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
+
 
         (* todo?: for iso could try to go back the parent dir recursively to
            find the standard.iso *)
@@ -264,16 +327,7 @@ let main () =
 
         fullxs +> List.iter (fun cfile -> 
 
-          let cfile = 
-            if not (cfile =~ ".*\\.c") 
-            then begin
-              pr2 "warning: seems not a .c file";
-              pr2 "I add a .c extension to it, maybe it will help";
-              cfile ^ ".c";
-            end
-            else cfile
-          in
-          
+          let cfile = Common.adjust_extension_if_needed cfile ".c" in
 
           let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
           in 
@@ -313,13 +367,15 @@ let main () =
   Common.profile_diagnostic ();
   end
 
-
+(*****************************************************************************)
 let _ =
   if not (!Sys.interactive) then 
     Common.exn_to_unixexit (fun () -> 
+      (* because the finalize makes it tedious to go back to exn
+       * when use 'back' in the debugger. Hence this special case.
+       *)
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
-      then
-        main ()
+      then main ()
       else 
         Common.finalize
           (fun()-> 

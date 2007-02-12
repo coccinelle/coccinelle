@@ -7,9 +7,11 @@ open Lexer_parser
 open Ast_c (* to factorise tokens, OpAssign, ... *)
 
 (*****************************************************************************)
-(* todo?: stdC: multibyte character ??  
+(*
  * todo: certains cas cpp hardcodés peuvent peut etre geré maintenant via
  *  ma lalr(k) technique.
+ * 
+ * todo?: stdC: multibyte character ??  
  *
  * subtil: ocamllex use side effect on lexbuf, so must take care. 
  * For instance must do   
@@ -264,7 +266,7 @@ rule token = parse
   | "#" [' ' '\t']* "error"  { TCommentCpp (tokinfo lexbuf)} 
 
   | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
-    (('"' ([^ '"']+) '"' ) as filename)
+    (('"' ([^ '"']+) '"' | '<' [^ '>']+ '>' | ['A'-'Z''_']+ ) as filename)
       {
         let i1 = tokinfo lexbuf in 
         let pos = (fst i1).charpos in
@@ -273,18 +275,9 @@ rule token = parse
                  tok_set filename (pos + String.length s1) (Ast_c.fakeInfo())
         )
       }
-                                                        
-  | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
-    (('<' [^ '>']+ '>') as filename)
-      { 
-        let i1 = tokinfo lexbuf in 
-        let pos = (fst i1).charpos in
-        TInclude (filename, 
-                 tok_set s1 pos i1, 
-                 tok_set filename (pos + String.length s1) (Ast_c.fakeInfo())
-        )
-      }
 
+   (* special_for_no_exn: in atm/ambassador.c *)
+  | "#include UCODE(" [^'\n']+  '\n'    { TCommentCpp (tokinfo lexbuf) }
 
 
   | "#" [' ' '\t']* "if" [' ' '\t']* "0" 
@@ -318,8 +311,6 @@ rule token = parse
   | "#" [' ' '\t']* "ident" [' ' '\t']+ { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* '\n'                { TCommentCpp (tokinfo lexbuf) }
 
-   (* special_for_no_exn: in atm/ambassador.c *)
-  | "#include UCODE(" [^'\n']+  '\n'    { TCommentCpp (tokinfo lexbuf) }
 
   | "\\" '\n' { TCommentSpace (tokinfo lexbuf) }
  

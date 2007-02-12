@@ -765,6 +765,12 @@ let lookahead2 next before =
            Lexer_parser.add_typedef_root s;
            Tsizeof
          *)
+   (* x ( *y )(params),  function pointer *)
+  | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOPar _::_,  _) 
+      when not_struct_enum before -> 
+      msg_typedef s; Lexer_parser.add_typedef_root s;
+      TypedefIdent (s, i1)
+
 
    (*-------------------------------------------------------------*)
    (* higher order macro, iterator macro, debug macro *)

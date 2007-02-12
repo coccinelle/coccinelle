@@ -11,7 +11,7 @@ let rec pp_expression_gen pr_elem =
      otherwise get infinite funcall and huge memory consumption *)
   let pp_statement e = pp_statement_gen pr_elem e in
   let rec pp_expression = fun ((exp, typ), ii) -> 
-    match exp, ii with
+    (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
     | Constant (String s),        is     -> is +> List.iter pr_elem
         (* only a String can have multiple ii *)
@@ -81,6 +81,15 @@ let rec pp_expression_gen pr_elem =
         | StatementExpr (_) | Constructor 
         | ParenExpr (_) | MacroCall (_)
       ),_ -> raise Impossible
+    );
+    if !Flag_parsing_c.pretty_print_type_info
+    then
+      typ +> do_option (fun x -> 
+        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
+        pp_type_gen pr_elem x;
+        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
+
+      )
 
   in
   pp_expression

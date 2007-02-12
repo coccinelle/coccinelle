@@ -79,6 +79,14 @@ val example : bool -> unit
 
 val assert_equal : 'a -> 'a -> unit
 
+
+type score_result = Ok | Pb of string 
+type score = (string (* filename *), score_result) Hashtbl.t
+
+val empty_score : unit -> score
+val regression_testing : score -> string (* filename *) -> unit
+
+
 val _list_bool : (string * bool) list ref
 
 val example2 : string -> bool -> unit
@@ -442,6 +450,8 @@ type filename = string
 
 val filesuffix : filename -> string
 val fileprefix : filename -> filename
+
+val adjust_extension_if_needed : filename -> string -> filename
 
 (*****************************************************************************)
 (* Dates *)

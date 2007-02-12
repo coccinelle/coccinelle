@@ -54,27 +54,9 @@ let testone x compare_with_expected iso_file =
           
 
 (*****************************************************************************)
-
-(* None mean that the test file run correctly
- * 
- * todo: Keep also size of file, compute md5sum ? cos maybe the file
- * has changed!*)
-
-type score = (filename, string option) Hashtbl.t
-
-let empty_score () = (Hashtbl.create 101 : score)
-
-
 let testall iso_file =
 
   let newscore  = empty_score () in
-  let bestscore = 
-    if not (Common.lfile_exists _Best_score_file)
-    then Common.write_value (empty_score()) _Best_score_file;
-
-    Common.get_value _Best_score_file 
-  in
-
 
   let expected_result_files = 
     Common.readdir_to_file_list "tests/" +> List.filter (fun s -> 
@@ -84,7 +66,8 @@ let testall iso_file =
 
   begin
     expected_result_files +> List.iter (fun res -> 
-      let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
+      let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible 
+      in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
@@ -104,13 +87,13 @@ let testall iso_file =
           let a = Cocci.cprogram_from_file generated +> List.map fst in
           let b = Cocci.cprogram_from_file expected  +> List.map fst in
 
-          let (correct, diffxs) = Compare_c.compare (a, generated) (b, expected)
+          let (correct, diffxs)= Compare_c.compare (a, generated) (b, expected)
           in
 	  pr2 res;
 	  Ctlcocci_integration.print_bench();
 
           (match correct with
-          | Compare_c.Correct -> Hashtbl.add newscore res None;
+          | Compare_c.Correct -> Hashtbl.add newscore res Common.Ok;
           | Compare_c.Pb s -> 
               let s = 
                 "INCORRECT:" ^ s ^ "\n" ^ 
@@ -118,19 +101,20 @@ let testall iso_file =
                   (diffxs +> List.map (fun s -> ("    " ^ s ^ "\n")) 
                     +> Common.join ""
                   )
-
               in
-              Hashtbl.add newscore res (Some s)
+              Hashtbl.add newscore res (Common.Pb s)
           | Compare_c.PbOnlyInNotParsedCorrectly -> 
-              let s = "seems incorrect, but only because of code that was not parsable" 
+              let s = 
+                "seems incorrect, but only because of code that " ^
+                "was not parsable" 
               in
-              Hashtbl.add newscore res (Some s)
+              Hashtbl.add newscore res (Common.Pb s)
           )
         )
       )
       with exn -> 
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
-        Hashtbl.add newscore res (Some s)
+        Hashtbl.add newscore res (Common.Pb s)
     );
 
     pr2 "--------------------------------";
@@ -141,8 +125,8 @@ let testall iso_file =
       print_string (Printf.sprintf "%-30s: " s);
       print_string (
         match v with
-        | None ->  "CORRECT\n" 
-        | Some s -> s
+        | Common.Ok ->  "CORRECT\n" 
+        | Common.Pb s -> s
       )
     );
     flush stdout; flush stderr;
@@ -150,48 +134,7 @@ let testall iso_file =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
-
-    let newbestscore = empty_score () in
-
-    let allres = 
-      (Common.hash_to_list newscore +> List.map fst)
-        $+$
-        (Common.hash_to_list bestscore +> List.map fst)
-    in
-
-    allres +> List.iter (fun res -> 
-      match 
-        Common.optionise (fun () -> Hashtbl.find newscore res),
-        Common.optionise (fun () -> Hashtbl.find bestscore res)
-      with
-      | None, None -> raise Impossible
-      | Some x, None -> 
-          pr2 ("new test file appeared: " ^ res);
-          Hashtbl.add newbestscore res x;
-      | None, Some x -> 
-          pr2 ("old test file disappeared: " ^ res);
-      | Some newone, Some bestone -> 
-          (match newone, bestone with
-          | None, None -> 
-              Hashtbl.add newbestscore res None
-          | Some x, None -> 
-              pr2 ("PBBBBBBBB: a test file does not work anymore!!! : " ^ res);
-              pr2 ("Error : " ^ x);
-              Hashtbl.add newbestscore res None
-          | None, Some x -> 
-              pr2 ("Great: a test file now work: " ^ res);
-              Hashtbl.add newbestscore res None
-          | Some x, Some y -> 
-              Hashtbl.add newbestscore res (Some x);
-              if not (x = y)
-              then begin 
-                pr2 ("Semipb: still error but not same error : " ^ res);
-                pr2 (Common.chop ("Old error: " ^ y));
-                pr2 ("New error: " ^ x);
-              end
-          )
-    );
-    Common.write_value newbestscore _Best_score_file;
+    Common.regression_testing newscore _Best_score_file;
 
 
     pr2 "--------------------------------";
@@ -200,7 +143,7 @@ let testall iso_file =
     let total = 
       Common.hash_to_list newscore +> List.length in
     let good  = 
-      Common.hash_to_list newscore +> List.filter (fun (s, v) -> v = None) +> 
+      Common.hash_to_list newscore +> List.filter (fun (s, v) -> v = Ok) +> 
         List.length 
     in
     

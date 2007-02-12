@@ -351,6 +351,13 @@ let assert_equal a b =
                  (dump a) ^ "\n\t" ^ (dump b) ^ "\n")
 
 (*-------------------------------------------------------------------*)
+(* Regression testing *)
+(*-------------------------------------------------------------------*)
+
+(* cf end of file *)
+
+
+(*-------------------------------------------------------------------*)
 let _list_bool = ref []
 
 (* introduce a fun () ??, otherwise the calculus is made at compile time and this can be long *)
@@ -1238,6 +1245,14 @@ let withoutExtension s = global_replace (regexp "\\..*$") "" s
 let () = example "without"
     (withoutExtension "toto.s.toto" = "toto")
 *)
+
+let adjust_extension_if_needed filename ext = 
+  if String.get ext 0 <> '.' 
+  then failwith "I need an extension such as .c not just c";
+
+  if not (filename =~ (".*\\" ^ ext))
+  then filename ^ ext
+  else filename
 
 
 (*****************************************************************************)
@@ -2824,9 +2839,78 @@ let error_message = fun filename (lexeme, lexstart) ->
   try 
     error_messagebis filename (lexeme, lexstart) 0    
   with End_of_file -> 
-    pr2 ("PB in Common.error_message, position " ^ i_to_s lexstart ^
-         " given out of file:" ^ filename);
-    raise End_of_file
+    begin
+      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+              " given out of file:" ^ filename);
+    end
+    
+
+
+(*****************************************************************************)
+(* Regression testing bis *)
+(*****************************************************************************)
+
+(* todo: Keep also size of file, compute md5sum ? cos maybe the file
+ * has changed!
+ *)
+
+type score_result = Ok | Pb of string 
+type score = (string (* filename *), score_result) Hashtbl.t
+
+let empty_score () = (Hashtbl.create 101 : score)
+
+
+
+let regression_testing newscore best_score_file = 
+
+  let bestscore = 
+    if not (lfile_exists best_score_file)
+    then write_value (empty_score()) best_score_file;
+    get_value best_score_file 
+  in
+  
+  let newbestscore = empty_score () in
+
+  let allres = 
+    (hash_to_list newscore +> List.map fst)
+      $+$
+    (hash_to_list bestscore +> List.map fst)
+  in
+  begin 
+    allres +> List.iter (fun res -> 
+      match 
+        optionise (fun () -> Hashtbl.find newscore res),
+        optionise (fun () -> Hashtbl.find bestscore res)
+      with
+      | None, None -> raise Impossible
+      | Some x, None -> 
+          pr2 ("new test file appeared: " ^ res);
+          Hashtbl.add newbestscore res x;
+      | None, Some x -> 
+          pr2 ("old test file disappeared: " ^ res);
+      | Some newone, Some bestone -> 
+          (match newone, bestone with
+          | Ok, Ok -> 
+              Hashtbl.add newbestscore res Ok
+          | Pb x, Ok -> 
+              pr2 ("PBBBBBBBB: a test file does not work anymore!!! : " ^ res);
+              pr2 ("Error : " ^ x);
+              Hashtbl.add newbestscore res Ok
+          | Ok, Pb x -> 
+              pr2 ("Great: a test file now work: " ^ res);
+              Hashtbl.add newbestscore res Ok
+          | Pb x, Pb y -> 
+              Hashtbl.add newbestscore res (Pb x);
+              if not (x = y)
+              then begin 
+                pr2 ("Semipb: still error but not same error : " ^ res);
+                pr2 (chop ("Old error: " ^ y));
+                pr2 ("New error: " ^ x);
+              end
+          )
+    );
+    write_value newbestscore best_score_file;
+  end
 
 (*****************************************************************************)
 (* Misc/test *)
