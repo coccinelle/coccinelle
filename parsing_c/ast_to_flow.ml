@@ -26,7 +26,7 @@ open Common open Commonop
  *)
 (*****************************************************************************)
 
-exception DeadCode of Common.parse_info option
+exception DeadCode          of Common.parse_info option
 exception CaseNoSwitch      of Common.parse_info
 exception OnlyBreakInSwitch of Common.parse_info
 exception NoEnclosingLoop   of Common.parse_info

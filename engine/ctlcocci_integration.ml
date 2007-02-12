@@ -159,10 +159,17 @@ let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) =
  *
  * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
  * une fonction qui passe a travers les Fake, mais bof.
+ * 
+ * update: also make loop the deadcode nodes, the one that have
+ * no predecessor.
  *)
 let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
   let g = ref flow in
 
+  (* ------------------------ *)
+  (* helpers *)
+  (* ------------------------ *)
+    
   let adjust_g (newg)        = begin  g := newg;    end in
   let adjust_g_i (newg,newi) = begin  g := newg;   newi end in
 
@@ -196,6 +203,9 @@ let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
   in
 
 
+
+  (* ------------------------ *)
+
   (* note that must choose a kind that will not be deleted after *)
   let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
   in
@@ -228,6 +238,18 @@ let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
     ) in
   
   fake_nodes +> List.iter (fun (nodei, node) -> remove_one_node nodei);
+
+  (* even when have deadcode, julia want loop over those nodes *)
+  !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
+    if (!g#predecessors nodei)#null 
+    then begin
+      let fakei = !g#add_node ((Control_flow_c.Fake,[]), "DEADCODELOOP") 
+        +> adjust_g_i
+      in
+      !g#add_arc ((fakei, nodei), Control_flow_c.Direct) +> adjust_g;
+      !g#add_arc ((fakei, fakei), Control_flow_c.Direct) +> adjust_g;
+    end
+  );
 
 
   !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
