@@ -241,33 +241,35 @@ let sp_contain_typed_metavar toplevel_list_list =
 
 
 let ast_to_flow_with_error_messages2 def filename =
-  let flow = 
-    try Ast_to_flow.ast_to_control_flow def 
-    with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
+  let flowopt = 
+    try Some (Ast_to_flow.ast_to_control_flow def)
+    with Ast_to_flow.Error x -> 
       pr2 "PBBBBBBBBBBBBBBBBBB";
-      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-      failwith 
+      Ast_to_flow.report_error x;
+      pr2
         ("At least 1 DEADCODE detected (there may be more)," ^
-         "but I can't continue." ^ 
-         "Maybe because of cpp #ifdef side effects."
+            "but I can't continue." ^ 
+            "Maybe because of cpp #ifdef side effects."
         );
+      None
   in
-  (* This time even if there is a deadcode, we still have a
-   * flow graph, so I can try the transformation and hope the
-   * deadcode will not bother us. 
-   *)
-  begin
+  flowopt +> do_option (fun flow -> 
+    (* This time even if there is a deadcode, we still have a
+     * flow graph, so I can try the transformation and hope the
+     * deadcode will not bother us. 
+     *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
       pr2 "PBBBBBBBBBBBBBBBBBB";
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
       pr2 ("At least 1 DEADCODE detected (there may be more)," ^
-           "but I continue.");
-     (* not a failwith this time *)
+              "but I continue.");
+      (* not a failwith this time *)
       pr2 "Maybe because of cpp #ifdef side effects."; 
-              
-  end;
-  flow
+  );
+  flowopt
+    
+      
 
 
 let ast_to_flow_with_error_messages a b = 
@@ -311,18 +313,19 @@ let build_maybe_info e cfile =
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
       if !Flag.show_misc then pr2 ("build info function " ^ funcs);
       
-      let flow = ast_to_flow_with_error_messages def cfile in
+      let flowopt = ast_to_flow_with_error_messages def cfile in
+      flowopt +> map_option (fun flow -> 
       
-      (* remove the fake nodes for julia *)
-      let fixed_flow = CCI.fix_flow_ctl flow in
+        (* remove the fake nodes for julia *)
+        let fixed_flow = CCI.fix_flow_ctl flow in
       
-      if !Flag.show_flow              then print_flow fixed_flow;
-      if !Flag.show_before_fixed_flow then print_flow flow;
-      Some
+        if !Flag.show_flow              then print_flow fixed_flow;
+        if !Flag.show_before_fixed_flow then print_flow flow;
         { flow = flow; 
           fixed_flow = fixed_flow; 
           contain_loop = contain_loop def 
         }
+      )
   | Ast_c.Declaration _ | Ast_c.CPPInclude _ | Ast_c.CPPDefine _  -> 
       let (elem, str) = 
         match e with 

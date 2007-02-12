@@ -1072,18 +1072,21 @@ let (check_control_flow: cflow -> unit) = fun g ->
 (*****************************************************************************)
 
 let report_error error = 
+  let error_from_info info = 
+    (Common.error_message info.file ("", info.charpos))
+  in
   match error with
   | DeadCode          infoopt -> 
       (match infoopt with
-      | None -> pr2 "deadcode detected, but cant trace back the place"
-      | Some info -> 
-         pr2 ("deadcode detected: " ^ 
-              (Common.error_message info.file ("", info.charpos)))
+      | None ->       pr2 "deadcode detected, but cant trace back the place"
+      | Some info ->  pr2 ("deadcode detected: " ^ error_from_info info)
       )
-
-  | CaseNoSwitch      info -> raise Todo
-  | OnlyBreakInSwitch info -> raise Todo
-  | NoEnclosingLoop   (info) -> raise Todo
+  | CaseNoSwitch      info -> 
+      pr2 ("case without corresponding switch: " ^ error_from_info info)
+  | OnlyBreakInSwitch info -> 
+      pr2 ("Only break are allowed in switch: " ^ error_from_info info)
+  | NoEnclosingLoop   (info) -> 
+      pr2 ("can't find enclosing loop: " ^ error_from_info info)
   | GotoCantFindLabel (s, info) ->
       pr2 ("cant jump to " ^ s ^ ": because we can't find this label")
   | DuplicatedLabel s -> 
