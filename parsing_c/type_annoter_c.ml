@@ -68,9 +68,8 @@ let pr2 s =
 type namedef = 
   | VarOrFunc of string * fullType
   | TypeDef of string * fullType
-  (* todo: EnumConstant *)
-
   | StructUnionNameDef of string * structType
+  (* todo: EnumConstant *)
   (* todo: EnumDef *)
 
 type environment = namedef list list (* cos have nested scope, so nested list*)
@@ -147,13 +146,21 @@ let rec find_final_type ty env =
   | EnumName s -> (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
       
   | StructUnionName (s, su) -> 
-      let (structtyp, env') = lookup_structunion (s, su) env in
-      StructUnion (Some s, structtyp) +> Ast_c.rewrap_typeC ty
-        (* not wrap with good ii, but don't care *)
+      (try 
+          let (structtyp, env') = lookup_structunion (s, su) env in
+          StructUnion (Some s, structtyp) +> Ast_c.rewrap_typeC ty
+            (* not wrap with good ii, but don't care *)
+       with Not_found -> 
+         ty
+      )
       
   | TypeName s -> 
-      let (t', env') = lookup_typedef s env in
-      find_final_type t' env'
+      (try 
+          let (t', env') = lookup_typedef s env in
+          find_final_type t' env'
+        with Not_found -> 
+          ty
+      )
       
   | ParenType t -> find_final_type t env
   
@@ -263,7 +270,8 @@ let set_type_s expr s =
 (* catch all the decl to grow the environment *)
 
 let rec (annotate_program2 : environment -> programElement list -> 
- (programElement * environment Common.pair) list) = fun env prog ->
+ (programElement * environment Common.pair) list) = 
+ fun env prog ->
 
   (* globals (re)initialialisation *) 
   _scoped_env := env;
@@ -311,6 +319,7 @@ let rec (annotate_program2 : environment -> programElement list ->
           try_set_type (exprf e) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with
             | Pointer x -> Some x
+            | Array (size, x) -> Some x
             | _ -> None
           )
           
@@ -318,6 +327,7 @@ let rec (annotate_program2 : environment -> programElement list ->
           try_set_type (exprf e1) (k expr) (fun type_subexpr -> 
             match Ast_c.unwrap_typeC type_subexpr with
             | Pointer x -> Some x
+            | Array (size, x) -> Some x
             | _ -> None
           )
          
@@ -343,6 +353,12 @@ let rec (annotate_program2 : environment -> programElement list ->
                 )
             | _ -> None
           )
+(*
+      | Cast (t, e) -> 
+          let e = exprf e in
+          raise Todo
+*)
+          
 
       | _ -> k expr
     );
