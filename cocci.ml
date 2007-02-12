@@ -12,7 +12,7 @@ module TAC = Type_annoter_c
  *  - astcocci
  *  - flow (contain nodes)
  *  - ctl  (contain rule_elems)
- * There are functions to transform one in another.
+ * This file contains functions to transform one in another.
  *)
 (*****************************************************************************)
 
@@ -87,17 +87,14 @@ let flows astc =
     match e with
     | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
         let flow = Ast_to_flow.ast_to_control_flow def in
-        (try begin Ast_to_flow.deadcode_detection flow; Some flow end
-        with
-           | Ast_to_flow.DeadCode None      -> 
-               pr2 "deadcode detected, but cant trace back the place"; 
-               None
-           | Ast_to_flow.DeadCode (Some info) -> 
-               pr2 ("deadcode detected: " ^ 
-                    (Common.error_message 
-                       stat.Parse_c.filename ("", info.charpos) )); 
-               None
+        let everythings_fine = 
+          (try Ast_to_flow.deadcode_detection flow; true
+           with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
+             Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
+             false 
           )
+        in
+        if everythings_fine then Some flow else None
     | _ -> None
    )
 
@@ -246,9 +243,9 @@ let sp_contain_typed_metavar toplevel_list_list =
 let ast_to_flow_with_error_messages2 def filename =
   let flow = 
     try Ast_to_flow.ast_to_control_flow def 
-    with Ast_to_flow.DeadCode (Some info) -> 
+    with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
       pr2 "PBBBBBBBBBBBBBBBBBB";
-      pr2 (Common.error_message filename ("", info.charpos));
+      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
       failwith 
         ("At least 1 DEADCODE detected (there may be more)," ^
          "but I can't continue." ^ 
@@ -261,9 +258,9 @@ let ast_to_flow_with_error_messages2 def filename =
    *)
   begin
     try Ast_to_flow.deadcode_detection flow
-    with Ast_to_flow.DeadCode (Some info) -> 
+    with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
       pr2 "PBBBBBBBBBBBBBBBBBB";
-      pr2 (Common.error_message filename ("", info.charpos));
+      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
       pr2 ("At least 1 DEADCODE detected (there may be more)," ^
            "but I continue.");
      (* not a failwith this time *)

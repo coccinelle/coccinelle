@@ -1,43 +1,46 @@
 open Common open Commonop
 
-(*****************************************************************************)
-(*
- * todo?: goto,  compute target level (but rare that different I think)
- *    ver1: just do init,  
- *    ver2: compute depth of label (easy, intercept compound in the visitor)
- *
- * todo: 
- * To generate less exception with the breakInsideLoop, analyse correctly
- * the loop deguisé  comme list_for_each 
- * Add a case ForMacro in ast_c (and in lexer/parser), and then do code that 
- * imitates the code for the For.
- * note: the list_for_each was previously converted into Tif by the lexer, 
- * now they are returned as Twhile so less pbs. But not perfect solutio.
- *
- * checktodo: after a switch, need check that all the st in the compound start 
- * with a case: ?
- * checktodo: how ensure that when we call aux_statement recursivly, 
- * we pass it auxinfo_label and not just auxinfo ? how enforce that ?
- *
- * todo: can have code (and so nodes) in many places, in the size of an array, 
- * in the init of initializer, but also in StatementExpr, ...
- *
- * todo?: steal code from CIL ? (but seems complicated ... again)
- *)
-(*****************************************************************************)
-
-exception DeadCode          of Common.parse_info option
-exception CaseNoSwitch      of Common.parse_info
-exception OnlyBreakInSwitch of Common.parse_info
-exception NoEnclosingLoop   of Common.parse_info
-(* exception GotoCantFindLabel *)
-
 open Ast_c
 open Control_flow_c
 
 open Ograph_extended
 open Oassoc
 open Oassocb
+
+
+(*****************************************************************************)
+(* todo?: compute target level with goto (but rare that different I think)
+ * ver1: just do init, ver2: compute depth of label (easy, intercept
+ * compound in the visitor)
+ * 
+ * todo: to generate less exception with the breakInsideLoop, analyse
+ * correctly the loop deguisé comme list_for_each. Add a case ForMacro
+ * in ast_c (and in lexer/parser), and then do code that imitates the
+ * code for the For. note: the list_for_each was previously converted
+ * into Tif by the lexer, now they are returned as Twhile so less pbs.
+ * But not perfect solution.
+ * 
+ * checktodo: after a switch, need check that all the st in the
+ * compound start with a case: ?
+ * 
+ * checktodo: how ensure that when we call aux_statement recursivly, we
+ * pass it auxinfo_label and not just auxinfo ? how enforce that ?
+ * 
+ * todo: can have code (and so nodes) in many places, in the size of an
+ * array, in the init of initializer, but also in StatementExpr, ...
+ * 
+ * todo?: steal code from CIL ? (but seems complicated ... again) *)
+(*****************************************************************************)
+
+type error = 
+  | DeadCode          of Common.parse_info option
+  | CaseNoSwitch      of Common.parse_info
+  | OnlyBreakInSwitch of Common.parse_info
+  | NoEnclosingLoop   of Common.parse_info
+  | GotoCantFindLabel of string * Common.parse_info
+  | DuplicatedLabel of string
+
+exception Error of error
 
 (*****************************************************************************)
 (* Helpers *)
@@ -54,6 +57,8 @@ let build_node node labels nodestr =
 
 let lbl_empty = [] 
 
+let pinfo_of_ii ii = fst (List.hd ii)
+
 (*****************************************************************************)
 (* Degenerated control flow graph *)
 (*****************************************************************************)
@@ -66,17 +71,17 @@ let (simple_cfg : node2 -> string -> cflow) = fun node2 nodestr ->
 
 
 (*****************************************************************************)
-(* Function definition to flow *)
+(* Contextual information passed in aux_statement *)
 (*****************************************************************************)
 
 (* Information used internally in ast_to_flow and passed recursively. *) 
 type additionnal_info =  { 
 
-  ctx: context_info;
+  ctx: context_info; (* cf below *)
   ctx_stack: context_info list;
 
   (* are we under a ifthen[noelse]. Used for ErrorExit *)
-  ctx_bis: bool; 
+  under_ifthen: bool; 
 
   (* ctl_braces: the nodei list is to handle current imbrication depth.
    * It contains the must-close '}'. 
@@ -102,31 +107,103 @@ type additionnal_info =  {
       | SwitchInfo of nodei * nodei (* start, end *) * node list
 
 
+let initial_info = {
+  ctx = NoInfo; 
+  ctx_stack = [];
+  under_ifthen = false;
+  braces = [];
+  labels = []; 
+} 
 
+
+(*****************************************************************************)
+(* (Semi) Globals, Julia's style,  and helpers *)
+(*****************************************************************************)
+(* global graph *)
+let g = ref (new ograph_extended) 
+
+
+(* Because ograph_extended is a functional graph implem, if want 
+ * use it imperatively, must use those extra functions.
+ *)
+let adjust_g_i (newg,newi) = begin  g := newg;   newi end 
+let adjust_g   (newg)      = begin  g := newg;    end
+
+
+
+let add_node_g node labels nodestr = 
+  !g#add_node (build_node node labels nodestr)  +> adjust_g_i
+
+let attach_to_previous_node (starti: int option) (nodei: int) = 
+  starti +> do_option (fun starti -> 
+    !g#add_arc ((starti, nodei), Direct) +> adjust_g)
+
+
+
+(* alt: do via a todo list, so can do all in one pass (but more complex) 
+ * todo: can also count the depth level and associate it to the node, for 
+ * the ctl_braces: 
+ *)
+let compute_labels_and_create_them statement = 
+
+  (* map C label to index number in graph *)
+  let (h: (string, int) oassoc ref) = ref (new oassocb []) in
+
+  begin
+    statement +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with 
+      Visitor_c.kstatement = (fun (k, bigf) statement -> 
+        match statement with
+        | Labeled (Ast_c.Label (s, st)),ii -> 
+            (* at this point I put a lbl_empty, but later
+             * I will put the good labels. 
+             *)
+            let newi = add_node_g (Label (statement,(s,ii))) lbl_empty  (s^":")
+            in
+            begin
+              (* the C label already exist ? *)
+              if (!h#haskey s) then raise (Error (DuplicatedLabel s));
+              h := !h#add (s, newi);
+              (* not k st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
+              k statement; 
+            end
+        | st -> k st
+      )
+    };
+    !h;
+  end
+
+
+(* ctl_braces: *)
+let insert_all_braces xs starti = 
+  xs  +> List.fold_left (fun acc e -> 
+    (* Have to build a new node (clone), cos cant share it. 
+     * update: This is now done by the caller. The clones are in xs.
+     *)
+    let node = e in
+    let newi = !g#add_node node +> adjust_g_i in
+    !g#add_arc ((acc, newi), Direct) +> adjust_g;
+    newi
+  ) starti
+
+(*****************************************************************************)
+(* Entry point *)
+(*****************************************************************************)
 
 let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
-  let g = ref (new ograph_extended) in
 
-
-  (* monad like, >>= *)
-  let adjust_g_i (newg,newi) = begin  g := newg;   newi end in
-  (* monad like, >> *)
-  let adjust_g (newg)        = begin  g := newg;    end in
-
-
-  let add_node_g node labels nodestr = 
-    !g#add_node (build_node node labels nodestr)  +> adjust_g_i
-  in
-    
-  let attach_to_previous_node (starti: int option) (nodei: int) = 
-    starti +> do_option (fun starti -> 
-      !g#add_arc ((starti, nodei), Direct) +> adjust_g);
-  in
-
+  (* globals (re)initialialisation *) 
+  g := (new ograph_extended);
 
   let counter_for_labels = ref 0 in
   incr counter_for_labels;
+
+  (* For switch, use compteur (or pass int ref) too cos need know order of the
+   *  case if then later want to  go from CFG to (original) AST. *)
+  let counter_for_braces = ref 0 in
+  let counter_for_switch = ref 0 in
+
   let lbl_start = [!counter_for_labels] in
+
 
 
   let ((funcs, functype, sto, compound), ii) = funcdef in
@@ -139,102 +216,72 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
   in
 
   let topstatement = Ast_c.Compound compound, iicompound in
-
+  let labels_assoc = compute_labels_and_create_them topstatement in
 
   let headi = add_node_g (FunHeader ((funcs, functype, sto), iifunheader))
                          lbl_start ("function " ^ funcs) in
-  let enteri = add_node_g Enter lbl_empty "[enter]" in
-  let exiti  = add_node_g Exit  lbl_empty "[exit]" in
+  let enteri     = add_node_g Enter     lbl_empty "[enter]"     in
+  let exiti      = add_node_g Exit      lbl_empty "[exit]"      in
+  let errorexiti = add_node_g ErrorExit lbl_empty "[errorexit]" in
+
   !g#add_arc ((headi, enteri), Direct) +> adjust_g;
 
-  let errorexiti = add_node_g ErrorExit lbl_empty "[errorexit]" in
-  
 
-
-  (* alt: do via a todo list, so can do all in one pass (but more complex) 
-   * todo: can also count the depth level and associate it to the node, for 
-   * the ctl_braces: 
-   *)
-  let compute_labels statement = 
-
-    (* map Clabel to index number in graph *)
-    let (h: (string, int) oassoc ref) = ref (new oassocb []) in
-
-    begin
-      statement +> Visitor_c.vk_statement { 
-        Visitor_c.default_visitor_c with 
-         Visitor_c.kstatement = (fun (k, bigf) statement -> 
-           match statement with
-           | Labeled (Ast_c.Label (s, st)),ii -> 
-              (* at this point I put a lbl_empty, but later
-               * I will put the good labels. *)
-              let newi = add_node_g (Label (statement, (s, ii)))
-                                     lbl_empty  (s ^ ":") in
-               begin
-                 (* Clabel already exist ? todo: replace assert with a raise 
-                  *  DuplicatedLabel *)
-                 assert (not (!h#haskey s)); 
-                 h := !h#add (s, newi);
-                 (* not k st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
-                 k statement; 
-               end
-           | e -> k e
-         )
-      };
-      !h;
-    end
-    
-  in
-
-  let labels_assoc = compute_labels topstatement in
-
-  (* ctl_braces: *)
-  let insert_all_braces xs starti = 
-    xs  +> List.fold_left (fun acc e -> 
-      (* Have to build a new node (clone), cos cant share it. 
-       * update: This is now done by the caller. The clones are in xs.
-       *)
-      let node = e in
-      let newi = !g#add_node node +> adjust_g_i in
-      !g#add_arc ((acc, newi), Direct) +> adjust_g;
-      newi
-     ) starti
-  in
-
-  (* For switch, use compteur (or pass int ref) too cos need know order of the
-   *  case if then later want to  go from CFG to (original) AST. *)
-  let counter_for_braces = ref 0 in
-  let counter_for_switch = ref 0 in
-
-
-  (* Take start, return end.
-   * old: old code was returning an int, but goto has no end, so aux_statement 
-   * should return   int option.
-   * old: old code was taking an int, but should also take int option.
-   *
+  (* Take in a (optional) start node, return an (optional) end node.
+   * 
+   * old: old code was returning an nodei, but goto has no end, so
+   * aux_statement should return nodei option.
+   * 
+   * old: old code was taking a nodei, but should also take nodei
+   * option.
+   * 
+   * note: deadCode detection. What is dead code ? When there is no
+   * starti to start from ? So make starti an option too ? Si on arrive
+   * sur un label: au moment d'un deadCode, on peut verifier les
+   * predecesseurs de ce label, auquel cas si y'en a, ca veut dire
+   * qu'en fait c'est pas du deadCode et que donc on peut se permettre
+   * de partir d'un starti à None. Mais si on a xx; goto far:; near:
+   * yy; zz; far: goto near:. Bon ca doit etre un cas tres tres rare,
+   * mais a cause de notre parcours, on va rejeter ce programme car au
+   * moment d'arriver sur near: on n'a pas encore de predecesseurs pour
+   * ce label. De meme, meme le cas simple ou la derniere instruction
+   * c'est un return, alors ca va generer un DeadCode :(
+   * 
+   * So make a first pass where dont launch exn at all. Create nodes,
+   * if starti is None then dont add arc. Then make a second pass that
+   * just checks that all nodes (except enter) have predecessors.
+   * (todo: if the pb is at a fake node, then try first successos that
+   * is non fake). So make starti an option too. So type is now
+   * 
+   * nodei option -> statement -> nodei option.
+   * 
    * Because of special needs of coccinelle, need pass more info, cf
    * type additionnal_info defined above.
-   *  - to complete (break, continue (and enclosing loop),   
-   *    switch (and associated case, casedefault)) we need to pass additionnal 
-   *    info. The start/exit when enter in a loop,  to know the current 'for'.
-   *  - to handle the braces, need again pass additionnal info.
-   *  - need pass the labels.
+   * 
+   * - to complete (break, continue (and enclosing loop), switch (and
+   * associated case, casedefault)) we need to pass additionnal info.
+   * The start/exit when enter in a loop, to know the current 'for'.
+   * 
+   * - to handle the braces, need again pass additionnal info.
+   * 
+   * - need pass the labels.
+   * 
    *)
   let rec (aux_statement: (nodei option * additionnal_info) -> statement -> nodei option) = 
-   fun (starti, auxinfo) stmt ->
+    fun (starti, auxinfo) stmt ->
 
     if not !Flag_parsing_c.label_strategy_2
     then 
       incr counter_for_labels;
-    
+      
     let lbl = 
       if not !Flag_parsing_c.label_strategy_2 
       then auxinfo.labels @ [!counter_for_labels]
       else auxinfo.labels 
     in
 
-    (* Normally the new auxinfo to pass recursively to the next aux_statement.
-     * But in some cases we add additionnal stuff. *)
+      (* Normally the new auxinfo to pass recursively to the next aux_statement.
+       * But in some cases we add additionnal stuff. *)
     let auxinfo_label = 
       if not !Flag_parsing_c.label_strategy_2
       then
@@ -322,8 +369,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 
        let ilabel = 
          try labels_assoc#find s 
-         with Not_found -> failwith ("cant jump to " ^ s ^ 
-                                     ": because we can't find this label")
+         with Not_found -> 
+           raise (Error (GotoCantFindLabel (s, pinfo_of_ii ii)))
        in
        (* attach_to_previous_node starti ilabel; 
         * todo: special_case: suppose that always goto to toplevel of function,
@@ -396,7 +443,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         in
 
         (* for ErrorExit heuristic *)
-        let newauxinfo = { auxinfo_label with  ctx_bis = true; } in
+        let newauxinfo = { auxinfo_label with  under_ifthen = true; } in
 
         !g#add_arc ((newi, newfakethen), Direct) +> adjust_g;
         !g#add_arc ((newi, newfakeelse), Direct) +> adjust_g;
@@ -636,7 +683,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
             in
             !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
             !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
-        | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
+        | _ -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
         );
         aux_statement (Some newi, auxinfo_label) st
         
@@ -656,7 +703,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
              in
              !g#add_arc ((startbrace, newcasenodei), Direct) +> adjust_g;
              !g#add_arc ((newcasenodei, newi), Direct) +> adjust_g;
-        | _ -> raise (CaseNoSwitch (fst (List.hd ii)))
+        | _ -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
         );
         aux_statement (Some newi, auxinfo_label) st
 
@@ -737,7 +784,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         (match finalthen with
         | None -> 
             if (!g#predecessors taili)#null
-            then raise (DeadCode (Some (ii +> List.hd +> fst)))
+            then raise (Error (DeadCode (Some (ii +> List.hd +> fst))))
             else Some newfakeelse
         | Some finali -> 
             !g#add_arc ((finali, taili), Direct) +> adjust_g;
@@ -838,10 +885,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                  None
                  
                  with Not_found -> 
-                   raise (OnlyBreakInSwitch (fst (List.hd ii)))
+                   raise (Error (OnlyBreakInSwitch (pinfo_of_ii ii)))
                )
              else raise Impossible
-        | NoInfo -> raise (NoEnclosingLoop (fst (List.hd ii)))
+        | NoInfo -> raise (Error (NoEnclosingLoop (pinfo_of_ii ii)))
         )        
 
 
@@ -868,7 +915,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         let newi = insert_all_braces auxinfo.braces newi in
 
-        if auxinfo.ctx_bis
+        if auxinfo.under_ifthen
         then !g#add_arc ((newi, errorexiti), Direct) +> adjust_g
         else !g#add_arc ((newi, exiti), Direct) +> adjust_g
         ;
@@ -895,16 +942,12 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         Some newi
 
   in
-  (* todocheck: assert ? such as we have "consommer" tous les labels  *)
 
-  let info = { 
-    ctx = NoInfo; 
-    ctx_stack = [];
-    ctx_bis = false;
-    labels = lbl_start; 
-    braces = [] 
-  } 
-  in
+
+  (* ---------------------------------------------------------------- *)
+  (* todocheck: assert ? such as we have "consommer" tous les labels  *)
+  let info = { initial_info with labels = lbl_start } in
+
   let lasti = aux_statement (Some enteri, info) topstatement in
   attach_to_previous_node lasti exiti;
   !g
@@ -913,67 +956,47 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
 (*****************************************************************************)
 (* CFG checks *)
 (*****************************************************************************)
-(*
- * note: deadCode detection
- * What is dead code ? when there is no starti  to start from ? => make starti
- * an option too ?
- * Si on arrive sur un label: au moment d'un deadCode, on peut verifier les 
- * predecesseurs de ce label, auquel cas si y'en a, ca veut dire qu'en fait 
- * c'est pas du deadCode et que donc on peut se permettre de partir d'un starti
- * à None.
- * Mais si on a   xx; goto far:; near: yy; zz; far: goto near:. Bon ca doit
- * etre un cas tres tres rare, mais a cause de notre parcours, on va rejeter
- * ce programme car au moment d'arriver sur near:  on n'a pas encore de 
- * predecesseurs pour ce label.
- * De meme, meme le cas simple ou la derniere instruction c'est un return, 
- * alors ca va generer un DeadCode :(
- *  => Make a first pass where dont launch exn at all, create nodes, if starti
- *   is None then dont add    arc. 
- *     Make a second pass, just check that all nodes (except enter) have
- *      predecessors. (todo: if the pb is at a fake node, then try first
- *      successos that is non fake)
- *  => Make starti  an option too.
- *     So type is now  int option -> statement -> int option.
- * 
- * old: I think that DeadCode is too aggressive, what if  have both return in 
- *  else/then ? 
- *)
 
+(* the second phase, deadcode detection. Old code was raising DeadCode if
+ * lasti = None, but maybe not. In fact if have 2 return in the then
+ * and else of an if ? alt: but can assert that at least there exist
+ * a node to exiti, just check #pred of exiti 
+ * 
+ * old: I think that DeadCode is too aggressive, what if have both
+ * return in else/then ? 
+ *)
 let deadcode_detection g = 
-  (* phase 2, deadcode detection 
-     old raise DeadCode: if lasti = None, but maybe not, in fact if have 2
-     return in the then and else of an if ? 
-     alt: but can assert that at least there exist a node to exiti,  just 
-     check #pred of exiti *)
 
   g#nodes#iter (fun (k, node) -> 
     let pred = g#predecessors k in
     if pred#null then 
       (match unwrap node with
+      (* old: 
+       * | Enter -> ()
+       * | EndStatement _ -> pr2 "deadcode sur fake node, pas grave"; 
+       *)
       | FunHeader _ -> ()
       | ErrorExit -> ()
-      | Exit -> () (* if have in .c   loop: if(x) return; i++; goto loop *)
-      (* old: | Enter -> () *)
-      (*      | EndStatement _ -> pr2 "control_flow: deadcode sur fake node, pas grave"; *)
-      | SeqEnd _ -> () (* todo?: certaines deviennent orphelins *)
+      | Exit -> ()     (* if have 'loop: if(x) return; i++; goto loop' *)
+      | SeqEnd _ -> () (* todo?: certaines '}' deviennent orphelins *)
       | x -> 
           (match Control_flow_c.extract_fullstatement node with
-          | Some (st, ii::iis) -> raise (DeadCode (Some (fst ii)))
+          | Some (st, ii::iis) -> raise (Error (DeadCode (Some (fst ii))))
           | _ -> 
              pr2 "control_flow: orphelin nodes, maybe something wierd happened"
-                )
+          )
       )
-    )
+  )
 
-(*
- * special_cfg_braces: 
- * The check are really specific to the way we have build our control_flow, 
- * with the { } in the graph so normally all those checks here are useless.
- *
- * evo: to better error reporting, to report earlier the message, 
- * pass the list of '{' (containing morover a brace_identifier) instead of 
- * just the depth.
- *)
+(*****************************************************************************)
+
+(* special_cfg_braces: the check are really specific to the way we
+ * have build our control_flow, with the { } in the graph so normally
+ * all those checks here are useless.
+ * 
+ * evo: to better error reporting, to report earlier the message, pass
+ * the list of '{' (containing morover a brace_identifier) instead of
+ * just the depth. *)
 
 let (check_control_flow: cflow -> unit) = fun g ->
 
@@ -1043,3 +1066,25 @@ let (check_control_flow: cflow -> unit) = fun g ->
     in
 
   dfs (starti, (* Depth 0*) [], [])
+
+(*****************************************************************************)
+(* Error report *)
+(*****************************************************************************)
+
+let report_error error = 
+  match error with
+  | DeadCode          infoopt -> 
+      (match infoopt with
+      | None -> pr2 "deadcode detected, but cant trace back the place"
+      | Some info -> 
+         pr2 ("deadcode detected: " ^ 
+              (Common.error_message info.file ("", info.charpos)))
+      )
+
+  | CaseNoSwitch      info -> raise Todo
+  | OnlyBreakInSwitch info -> raise Todo
+  | NoEnclosingLoop   (info) -> raise Todo
+  | GotoCantFindLabel (s, info) ->
+      pr2 ("cant jump to " ^ s ^ ": because we can't find this label")
+  | DuplicatedLabel s -> 
+      pr2 ("duplicate label" ^ s)

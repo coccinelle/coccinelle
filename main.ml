@@ -156,6 +156,8 @@ let main () =
                parse_cocci
                control_flow
                parse_unparse
+               typeur
+               compare_c
 
          so to test C parser, do -action parse_c ...
                 "
@@ -240,21 +242,17 @@ let main () =
 
             file 
               +> Parse_c.parse_print_error_heuristic
-              +> (fun (program, stat) -> 
+              +> (fun (program, _stat) -> 
                 program +> List.iter (fun (e,_) -> 
                   match e with
                   | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
                       pr2 funcs;
-                      (try 
-                        Flow_to_ast.test !Flag.show_flow def
-                      with 
-                      | Ast_to_flow.DeadCode None      -> pr2 "deadcode detected, but cant trace back the place"
-                      | Ast_to_flow.DeadCode (Some info)-> pr2 ("deadcode detected: " ^ (error_message file ("", info.charpos) ))
-                        
+                      (try Flow_to_ast.test !Flag.show_flow def
+                      with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
                       )
                   | _ -> ()
                  );
-                 )
+              )
 
         | "parse_unparse", [file] -> 
             let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
@@ -371,9 +369,8 @@ let main () =
 let _ =
   if not (!Sys.interactive) then 
     Common.exn_to_unixexit (fun () -> 
-      (* because the finalize makes it tedious to go back to exn
-       * when use 'back' in the debugger. Hence this special case.
-       *)
+      (* The finalize makes it tedious to go back to exn when use
+       * 'back' in the debugger. Hence this special case. *)
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
       then main ()
       else 
@@ -384,4 +381,4 @@ let _ =
           )
           (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
-  
+      
