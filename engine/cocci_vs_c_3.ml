@@ -1036,18 +1036,14 @@ and parameters_bis eas ebs =
                 )))
 
 
-      | A.Param (typa, Some ida), (Left eb)::ebs -> 
+      | A.Param (typa, idaopt), (Left eb)::ebs -> 
 	  (*this should succeed if the C code has a name, and fail otherwise*)
-          parameter (ida, typa) eb >>= (fun (ida, typa) eb -> 
+          parameter (idaopt, typa) eb >>= (fun (idaopt, typa) eb -> 
           parameters_bis eas ebs >>= (fun eas ebs -> 
             return (
-              (A.Param (typa, Some ida))+> A.rewrap ea :: eas,
+              (A.Param (typa, idaopt))+> A.rewrap ea :: eas,
               (Left eb)::ebs
             )))
-
-      | A.Param (typa, None), _ -> 
-	  (* This should succeed, and have no effect on the bindings *)
-	  failwith "TODO: pattern parameter specifies no name"
           
       | _unwrapx, (Right y)::ys -> raise Impossible
       | _unwrapx, [] -> fail
@@ -1057,26 +1053,34 @@ and parameters_bis eas ebs =
 
 
 
-and parameter = fun (ida, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
+and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
   fullType typa typb >>= (fun typa typb -> 
-  match Ast_c.split_register_param (hasreg, idbopt, ii_b_s) with
-  | Left (idb, iihasreg, iidb) -> 
+  match idaopt, Ast_c.split_register_param (hasreg, idbopt, ii_b_s) with
+  | Some ida, Left (idb, iihasreg, iidb) -> 
       (* todo: if minus on ida, should also minus the iihasreg ? *)
       ident DontKnow ida (idb,iidb) >>= (fun ida (idb,iidb) -> 
         return (
-          (ida, typa),
+          (Some ida, typa),
           ((hasreg, Some idb, typb), iihasreg++[iidb])
         ))
         
+  | None, Right iihasreg -> 
+      return (
+        (None, typa),
+        ((hasreg, None, typb), iihasreg)
+      )
+      
+
   (* why handle this case ? because of transform_proto ? we may not
    * have an ident in the proto.
    * If have some plus on ida ? do nothing about ida ? 
    *)
-  | Right iihasreg -> 
+  | _, Right iihasreg -> 
       return (
-        (ida, typa),
+        (idaopt, typa),
         ((hasreg, None, typb), iihasreg)
       )
+  | None, Left _ -> fail
   )
 
 
@@ -1533,8 +1537,60 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
             (B.Pointer typb, [ibmult])
           )))
 
-    | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2), _ ->
-	failwith "TODO: matching and transformation for function pointer"
+    | A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a), 
+        (B.ParenType t1, ii) ->
+        let (lp1b, rp1b) = tuple_of_list2 ii in
+        let (qu1b, t1b) = t1 in
+        (match t1b with
+        | B.Pointer t2, ii -> 
+            let (starb) = tuple_of_list1 ii in
+            let (qu2b, t2b) = t2 in
+            (match t2b with
+            | B.FunctionType (tyb, (paramsb, (isvaargs, iidotsb))), ii -> 
+                let (lp2b, rp2b) = tuple_of_list2 ii in
+
+                if isvaargs 
+                then begin 
+                  pr2 "Not handling well variable length arguments func. ";
+                  pr2 "You have been warned";
+                end;
+
+
+                fullType tya tyb >>= (fun tya tyb -> 
+                tokenf lp1a lp1b >>= (fun lp1a lp1b -> 
+                tokenf rp1a rp1b >>= (fun rp1a rp1b -> 
+                tokenf lp2a lp2b >>= (fun lp2a lp2b -> 
+                tokenf rp2a rp2b >>= (fun rp2a rp2b -> 
+                tokenf stara starb >>= (fun stara starb -> 
+                parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
+                (fun paramsaundots paramsb -> 
+                  let paramsa = redots paramsa paramsaundots in
+
+                  let t2 = 
+                    (qu2b, 
+                    (B.FunctionType (tyb, (paramsb, (isvaargs, iidotsb))),
+                    [lp2b;rp2b])) 
+                  in
+                  let t1 = 
+                    (qu1b,
+                    (B.Pointer t2, [starb]))
+                  in
+                  
+                  return (
+                    (A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a))
+                    +> A.rewrap ta,
+                    (B.ParenType t1, [lp1b;rp1b])
+                  )
+                )))))))
+
+
+
+            | _ -> fail
+            )
+        | _ -> fail
+        )
+        
+        
 
     (* todo: handle the iso on optionnal size specifification ? *)
     | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) -> 
