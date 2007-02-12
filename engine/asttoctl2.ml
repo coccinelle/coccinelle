@@ -68,6 +68,8 @@ let wrapAU      n (x,y) =
   if !Flag_parsing_cocci.sgrep_mode
   then wrap n (CTL.EU(CTL.FORWARD,x,y))
   else wrap n (CTL.AU(CTL.FORWARD,x,y))
+(* only used for goto, where we want AU even for sgrep *)
+let wrapAF      n (x,y) = wrap n (CTL.AF(CTL.FORWARD,x))
 let wrapAX      n (x)   =
   if !Flag_parsing_cocci.sgrep_mode
   then wrap n (CTL.EX(CTL.FORWARD,x))
@@ -552,7 +554,7 @@ let preprocess_dots_e sl =
 (* --------------------------------------------------------------------- *)
 (* various return_related things *)
 
-let ends_in_return stmt_list =
+let rec ends_in_return stmt_list =
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) ->
       (match List.rev x with
@@ -562,6 +564,7 @@ let ends_in_return stmt_list =
 	      (match Ast.unwrap x with
 		Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
 	      | _ -> false)
+	  | Ast.Disj(disjs) -> List.for_all ends_in_return disjs
 	  | _ -> false)
       |	_ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
@@ -867,6 +870,7 @@ and statement stmt after quantified label guard =
   let wrapOr     = wrapOr n in
   let wrapSeqOr  = wrapSeqOr n in
   let wrapAU     = wrapAU n in
+  let wrapAF     = wrapAF n in
   let wrapBackEX = wrapBackEX n in
   let wrapBackAX = wrapBackAX n in
   let wrapNot    = wrapNot n in
@@ -997,9 +1001,6 @@ and statement stmt after quantified label guard =
 		wrapAnd(paren_pred,label_pred)) in
       let end_brace =
 	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
-      let nopv_start_brace =
-	wrapAnd(quantify lbfvs (make_match lbrace),label_pred) in
-      let nopv_end_brace = quantify rbfvs (make_match rbrace) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
@@ -1049,22 +1050,24 @@ and statement stmt after quantified label guard =
 	  wrapExists
 	    (lv,quantify b1fvs
 	       (make_seq
-		  [nopv_start_brace;
+		  [start_brace;
 		    wrapAnd
 		      (wrapAU
 			 (wrap n
 			    (CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control)),
-			  real_make_match n (Some lv) false
-			    (Ast.rewrap stmt Ast.Goto)),
+			  (wrapAnd (* brace must be eventually after goto *)
+			     (real_make_match n (Some lv) false
+				(Ast.rewrap stmt Ast.Goto),
+			      wrapAF (wrap n end_brace)))),
 		       quantify b2fvs
 			 (statement_list decls
 			    (After
 			       (decl_to_not_decl n dots stmt make_match
 				  (quantify b3fvs
-				     (statement_list body
-					(After
+				     (statement_list body Tail
+					(*After
 					   (make_seq_after
-					      nopv_end_brace after))
+					      nopv_end_brace after)*)
 					new_quantified3 None true guard))))
 			    new_quantified2 (Some lv) false guard))])) in
 	wrapOr(pattern_as_given,
@@ -1331,6 +1334,21 @@ and drop_dots x
   let all =
     (lst dotcode) @ (lst nest) @ (lst notwhens) @ (lst whens) @ before_after in
   let wrap f = CTL.rewrap x f in
+  let gotopred = (* dotcode may contain - *)
+    match dotcode with
+      None -> gotopred
+    | Some x ->
+	wrap
+	  (CTL.And
+	     (x,
+	      wrap
+		(CTL.And(gotopred,
+			 (* the code below keeps matching dotcode until
+			    it doesn't match any more, in hopes of getting
+			    rid of braces following a goto, if the dotcode
+			    is -.  Probably doesn't completely work - depends
+			    on the label associated with the dots *)
+			 wrap(CTL.AU(dir,x,wrap(CTL.Not(x)))))))) in
   let build_big_rest bef_aft_builder =
     (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
     let error_exiter =
