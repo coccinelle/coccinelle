@@ -2,7 +2,7 @@
 let prefix = "/tmp/"
 let prefix = ""
 
-type dir = Minus | Plus | Context
+type dir = Minus | Plus | Context | ChangeLog
 
 let space = Str.regexp " "
 
@@ -13,20 +13,22 @@ let matches pattern line =
 let res = ref []
 
 let scan dir pattern i =
-  let rec loop skipping git =
+  let rec loop skipping cl git =
     let line = input_line i in
     match Str.split space line with
-      ["commit";git] -> loop false git
+      ["commit";git] -> loop false true git
+    | "diff"::_ -> loop skipping false git
     | _ ->
 	if String.length line > 0 && not skipping &&
 	  ((String.get line 0 = '-' && dir = Minus) or
 	   (String.get line 0 = '+' && dir = Plus) or
+	   (cl && dir = ChangeLog) or
 	   (not (String.get line 0 = '-') && not (String.get line 0 = '+') &&
 	    dir = Context)) &&
 	  matches pattern line
-	then (res := git::!res; loop true git)
-	else loop skipping git in
-  loop false ""
+	then (res := git::!res; loop true cl git)
+	else loop skipping cl git in
+  loop false false ""
 
 let dot = Str.regexp "\\."
 
@@ -55,6 +57,7 @@ let rec split_args = function
   | "-"::pattern::rest -> (Minus,Str.regexp pattern) :: split_args rest
   | "+"::pattern::rest -> (Plus,Str.regexp pattern) :: split_args rest
   | "@"::pattern::rest -> (Context,Str.regexp pattern) :: split_args rest
+  | "C"::pattern::rest -> (ChangeLog,Str.regexp pattern) :: split_args rest
   | _ -> failwith "bad argument list"
 
 let process_one (dir,pattern) version =

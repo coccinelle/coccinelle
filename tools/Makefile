@@ -1,2 +1,2 @@
 all: gitgrep.ml
-	ocamlc -o /usr/local/bin/gitgrep str.cma gitgrep.ml
+	ocamlopt -o gitgrep str.cmxa gitgrep.ml
