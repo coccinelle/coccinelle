@@ -415,8 +415,50 @@ let (rebuild_info_program :
 (* The main functions *)
 (*****************************************************************************)
 
+(* The main algorithm =~
+ * The algorithm is roughly: 
+ *  for_all ctl rules in SP
+ *   for_all minirule in rule
+ *    for_all binding (computed during previous phase)
+ *      for_all C elements
+ *         match control flow of function vs minirule 
+ *         with the binding and update the set of possible 
+ *         bindings, and returned the possibly modified function.
+ *      pretty print modified C elements and reparse it.
+ *
+ * 
+ * On ne prends que les newbinding ou returned_any_state est vrai.
+ * Si ca ne donne rien, on prends ce qu'il y avait au depart.
+ * Mais au nouveau depart de quoi ?  
+ * - si ca donne rien apres avoir traité toutes les fonctions avec ce binding ?
+ * - ou alors si ca donne rien, apres avoir traité toutes les fonctions 
+ *   avec tous les bindings du round d'avant ?
+ * 
+ * Julia pense qu'il faut prendre la premiere solution.
+ * Example: on a deux environnements candidats, E1 et E2 apres avoir traité
+ * la regle ctl 1. On arrive sur la regle ctl 2.
+ * E1 ne donne rien pour la regle 2, on garde quand meme E1 pour la regle 3.
+ * E2 donne un match a un endroit et rend E2' alors on utilise ca pour
+ * la regle 3.
+ * 
+ * I have not to look at used_after_list to decide to restart from
+ * scratch. I just need to look if the binding list is empty.
+ * Indeed, let's suppose that a SP have 3 regions/rules. If we
+ * don't find a match for the first region, then if this first
+ * region does not bind metavariable used after, that is if
+ * used_after_list is empty, then mysat(), even if does not find a
+ * match, will return a Left, with an empty transformation_info,
+ * and so current_binding will grow. On the contrary if the first
+ * region must bind some metavariables used after, and that we
+ * dont find any such region, then mysat() will returns lots of
+ * Right, and current_binding will not grow, and so we will have
+ * an empty list of binding, and we will catch such a case. 
+ *
+ *)
+
+
 (* This function returns a triplet option. First the C element (modified),
- * then a binding option if there is new info brought by the matching,
+ * then a binding because there is could be new info brought by the matching,
  * and finally a hack_funheaders list. 
  *)
 let program_elem_vs_ctl2 = fun (celem, info) (ctl, used_after_list) binding -> 
@@ -520,17 +562,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
       (build_info_program cfile contain_typedmetavar TAC.initial_env) 
     in
 
-    (* And now the main algorithm *)
-    (* The algorithm is roughly: 
-     *  for_all ctl rules in SP
-     *   for_all minirule in rule
-     *    for_all binding (computed during previous phase)
-     *      for_all C elements
-     *         match control flow of function vs minirule 
-     *         with the binding and update the set of possible 
-     *         bindings, and returned the possibly modified function.
-     *      pretty print modified C elements and reparse it.
-     *)
 
     let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
 
@@ -549,24 +580,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         
         (* 2: prepare to iter binding *)
 
-        (* I have not to look at used_after_list to decide to restart from
-         * scratch. I just need to look if the binding list is empty.
-         * Indeed, let's suppose that a SP have 3 regions/rules. If we
-         * don't find a match for the first region, then if this first
-         * region does not bind metavariable used after, that is if
-         * used_after_list is empty, then mysat(), even if does not find a
-         * match, will return a Left, with an empty transformation_info,
-         * and so current_binding will grow. On the contrary if the first
-         * region must bind some metavariables used after, and that we
-         * dont find any such region, then mysat() will returns lots of
-         * Right, and current_binding will not grow, and so we will have
-         * an empty list of binding, and we will catch such a case. 
-         *)
 
-        if null (!_current_bindings) then begin 
-          pr2 "Empty list of bindings, I restart from scratch";
-          _current_bindings := [Ast_c.emptyMetavarsBinding];
-        end;
         let lastround_bindings = !_current_bindings in
         lastround_bindings +> List.iter (show_or_not_binding "last");
         _current_bindings := [];
@@ -610,7 +624,10 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
           in
           cprogram := rebuild_info_program cprogram' contain_typedmetavar;
           if null !_current_bindings
-          then _current_bindings := [binding]
+          then begin
+            pr2 "Empty list of bindings, I restart from scratch";
+            _current_bindings := [binding]
+          end
 
         ) (* end 2: iter bindings *)
       end
