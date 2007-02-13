@@ -1,15 +1,12 @@
-struct adbhid {
-	struct input_dev input;
-};
-
-static struct adbhid *adbhid[16] = { 0 };
+static int adbhid_kbd_event()
+{
+}
 
 
 static void
-adbhid_keyboard_input()
+adbhid_input_register()
 {
-  int id;
-	if (!adbhid[id]) {
-		return;
-	}
+
+		adbhid[id]->input.event = adbhid_kbd_event;
+
 }
