@@ -104,7 +104,7 @@ let lookup_typedef s env =
   in
   lookup_env f env
 
-let lookup_structunion (s, su) env =
+let lookup_structunion (su, s) env =
   let f = function
     | StructUnionNameDef (s2, typ) -> if s2 = s then Some typ else None
     | _ -> None
@@ -145,9 +145,9 @@ let rec find_final_type ty env =
   | Enum  (s, enumt) -> (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
   | EnumName s -> (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
       
-  | StructUnionName (s, su) -> 
+  | StructUnionName (su, s) -> 
       (try 
-          let (structtyp, env') = lookup_structunion (s, su) env in
+          let (structtyp, env') = lookup_structunion (su, s) env in
           StructUnion (Some s, structtyp) +> Ast_c.rewrap_typeC ty
             (* not wrap with good ii, but don't care *)
        with Not_found -> 
@@ -232,7 +232,7 @@ let add_binding namedef warning =
     | VarOrFunc (s, typ) -> member_env (lookup_var s), s
     | TypeDef (s, typ) -> member_env (lookup_typedef s), s
     | StructUnionNameDef (s, (su, typ)) -> 
-        member_env (lookup_structunion (s, su)), s
+        member_env (lookup_structunion (su, s)), s
     ) in
 
   if  memberf [current] && warning

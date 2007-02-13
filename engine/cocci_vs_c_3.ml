@@ -1150,11 +1150,15 @@ and storage stoa stob =
 and onedecl = fun decla (declb, iiptvirgb, iistob) -> 
   X.all_bound (A.get_inherited decla) >&&>
    match A.unwrap decla, declb with
-  (* Un Metadecl est introduit dans l'asttoctl pour sauter au dessus
+  (* Un MetaDecl est introduit dans l'asttoctl pour sauter au dessus
    * de toutes les declarations qui sont au debut d'un fonction et
    * commencer le reste du match au premier statement. Alors, ca matche
    * n'importe quelle declaration. On n'a pas besoin d'ajouter
    * quoi que ce soit dans l'environnement. C'est une sorte de DDots.
+   * 
+   * When the SP want to remove the whole function, the minus is not
+   * on the MetaDecl but on the MetaRuleElem. So there should
+   * be no transform of MetaDecl, just matching are allowed.
    *)
    | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
        (* todo: should not happen in transform mode *)
@@ -1606,7 +1610,7 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
 
 
      (* todo: could also match a Struct that has provided a name *)
-    | A.StructUnionName(sua, sa), (B.StructUnionName (sb, sub), ii) -> 
+    | A.StructUnionName(sua, sa), (B.StructUnionName (sub, sb), ii) -> 
         (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
         let (ib1, ib2) = tuple_of_list2 ii in
         if equal_structUnion  (term sua) sub 
@@ -1615,7 +1619,7 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
           tokenf sua ib1 >>= (fun sua ib1 -> 
             return (
               (A.StructUnionName (sua, sa)) +> A.rewrap ta,
-              (B.StructUnionName (sb, sub), [ib1;ib2])
+              (B.StructUnionName (sub, sb), [ib1;ib2])
               )))
         else fail
         

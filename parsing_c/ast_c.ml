@@ -49,7 +49,7 @@ open Common open Commonop
  * to their left and for 'if' 'while' et 'for' and so on at their right.
  * We want kind of "virtual placeholders" that represent the start or
  * end of a construct. We use fakeInfo for that purpose.
- * So to mark those cases I have added a fakestart/fakeend comment.
+ * To identify those cases I have added a fakestart/fakeend comment.
  *)
 
 (* forunparser: *)
@@ -78,7 +78,7 @@ and typeCbis =
   | StructUnion     of string option * structType (* new scope *)
 
   | EnumName        of string
-  | StructUnionName of string * structUnion
+  | StructUnionName of structUnion * string 
 
   | TypeName   of string
  

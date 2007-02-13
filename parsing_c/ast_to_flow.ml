@@ -308,7 +308,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
    
         let newi =    add_node_g (SeqStart (stmt, brace, i1)) lbl o_info in
         let endnode = build_node (SeqEnd (brace, i2))         lbl c_info in
-        let endnode_dup = 
+        let _endnode_dup = 
           build_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl c_info 
         in
 
@@ -370,6 +370,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        let ilabel = 
          try labels_assoc#find s 
          with Not_found -> 
+           (* jump vers ErrorExit a la place ? 
+            * pourquoi tant de "cant jump" ? pas detecté par gcc ? 
+            *)
            raise (Error (GotoCantFindLabel (s, pinfo_of_ii ii)))
        in
        (* attach_to_previous_node starti ilabel; 
@@ -585,7 +588,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                   *)
                  let newi = add_node_g (SeqStart (stmt,brace,i1)) lbl o_info in
                  let endnode = build_node (SeqEnd (brace, i2))    lbl c_info in
-                 let endnode_dup = 
+                 let _endnode_dup = 
                    build_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl c_info 
                  in
 
@@ -964,6 +967,10 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
  * 
  * old: I think that DeadCode is too aggressive, what if have both
  * return in else/then ? 
+ * 
+ * Why so many deadcode in Linux ? Ptet que le label est utilisé 
+ * mais dans le corps d'une macro et donc on le voit pas :(
+ * 
  *)
 let deadcode_detection g = 
 

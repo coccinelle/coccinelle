@@ -578,6 +578,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
           _current_bindings := [Ast_c.emptyMetavarsBinding];
         end;
         let lastround_bindings = !_current_bindings in
+        lastround_bindings +> List.iter (show_or_not_binding "last");
         _current_bindings := [];
 
         (* ------------------ *)
@@ -621,6 +622,9 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
           ) (* end 3: iter function *)
           in
           cprogram := rebuild_info_program cprogram' contain_typedmetavar;
+(*          if null !_current_bindings
+          then _current_bindings := [binding]
+*)
         ) (* end 2: iter bindings *)
       end
       else failwith "not handling multiple minirules"

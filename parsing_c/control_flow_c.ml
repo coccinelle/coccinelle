@@ -88,6 +88,11 @@ type node = node1 * string
    * needed by CTL engine.
    *
    * Because of those nodes, there is no equivalent for Compound.
+   * 
+   * There was a problem with SeqEnd. Some info can be tagged on it 
+   * but there is multiple SeqEnd that correspond to the same '}' even
+   * if they are in different nodes. Solved by using shared ref
+   * and allow the "already-tagged" token.
    *)
   | SeqStart of statement * int * info
   | SeqEnd   of int * info
@@ -105,8 +110,42 @@ type node = node1 * string
                  wrap
   | SwitchHeader of statement * expression wrap
 
-  (* Used to mark the end of if, while, dowhile, for, switch.
-   * Later we will be able to "accrocher" some cocci code on this node.
+  (* Used to mark the end of if, while, dowhile, for, switch. Later we
+   * will be able to "tag" some cocci code on this node.
+   * 
+   * This is because in
+   * 
+   * - S + foo();
+   * 
+   * the S can be anything, including an if, and this is internally
+   * translated in a series of MetaRuleElem, and the last element is a
+   * EndStatement, and we must tag foo() to this EndStatement.
+   * Otherwise, without this last common node, we would tag foo() to 2
+   * nodes :( So having a unique node makes it correct, and in
+   * flow_to_ast we must propagate back this + foo() to the last token
+   * of an if (maybe a '}', maybe a ';') 
+   * 
+   * The problem is that this stuff should be in transformation.ml,  
+   * but need information available in flow_to_ast, but we dont want
+   * to polluate both files.
+   * 
+   * So the choices are 
+   * 
+   * - soluce julia1, extend Ast_c by adding a fake token to the if
+   * 
+   * - extend Ast with a Skip, and add this next to EndStatement node,
+   * and do special case in flow_to_ast to start from this node
+   * (not to get_next EndStatement, but from EndStatement directly)
+   * and so add a case when have directly a EndStatement node an extract
+   * the statement from it.
+   * 
+   * - remonter dans le graphe pour accrocher le foo() non plus au 
+   * EndStatement (qui n'a pas d'equivalent niveau token dans l'ast_c), 
+   * mais au dernier token de la branche Else (ou Then si y'a pas de else).
+   * 
+   * I first did solution 2 and then when we decided to use ref,
+   * I use julia'as solution. Have virtual-placeholders, the fakeInfo
+   * for the if, while, and put this shared ref in the EndStatement.
    *)
   | EndStatement of info option (* fake_info *)
 

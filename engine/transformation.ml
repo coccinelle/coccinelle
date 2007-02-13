@@ -855,7 +855,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
 	          
     | A.Array (typa, _, eaopt, _), (qu, (B.Array (ebopt, typb), _)) -> 
         raise Todo
-    | A.StructUnionName(sua, sa), (qu, (B.StructUnionName (sb, sub), ii)) -> 
+    | A.StructUnionName(sua, sa), (qu, (B.StructUnionName (sub, sb), ii)) -> 
         (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
         (match ii with
         | [i1;i2] -> 
@@ -865,7 +865,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
                 transform_ident Pattern.DontKnow sa (sb, [i2])   binding 
               in
               let i1' = tag_symbols [wrap_mcode sua] [i1]  binding in
-              (qu, (B.StructUnionName (sb', sub), i1' ++ i2'))
+              (qu, (B.StructUnionName (sub, sb'), i1' ++ i2'))
             else raise NoMatch
       | _ -> raise Impossible
         )

@@ -40,7 +40,7 @@ let rec compatible_type a b =
 	"TODO: function pointer type doesn't store enough information to determine compatability"
   | A.Array   a, (qub, (B.Array (eopt, b),ii)) -> (* no size info for cocci *)
       compatible_type a b
-  | A.StructUnionName (sua, sa), (qub, (B.StructUnionName (sb, sub),ii)) -> 
+  | A.StructUnionName (sua, sa), (qub, (B.StructUnionName (sub, sb),ii)) -> 
       equal_structUnion sua sub && sa = sb
   | A.TypeName sa, (qub, (B.TypeName sb, ii)) -> 
       sa = sb

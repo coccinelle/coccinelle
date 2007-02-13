@@ -918,7 +918,7 @@ and (match_t_t: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
         match_opt match_e_e  eaopt ebopt
        (* todo: handle the iso on optionnal size specifification ? *)
 	  
-    | A.StructUnionName (sua, sa), (qu, (B.StructUnionName (sb, sub), _)) -> 
+    | A.StructUnionName (sua, sa), (qu, (B.StructUnionName (sub, sb), _)) -> 
      (* todo: could also match a Struct that has provided a name *)
 	if equal_structUnion (term sua) sub
 	then match_ident DontKnow sa sb

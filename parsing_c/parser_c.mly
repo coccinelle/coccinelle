@@ -680,7 +680,7 @@ type_spec: type_spec2            { dt "type" (); $1   }
 /*---------------------------------------------------------------------------*/
 s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
             | struct_or_union       tobrace_struct struct_decl_list_gcc TCBrace gcc_attr_opt { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
-	    | struct_or_union ident       { StructUnionName ((fst $2), fst $1), [snd $1;snd $2] }
+	    | struct_or_union ident       { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
 
 struct_or_union2: Tstruct { Struct, $1 }
     	        | Tunion  { Union, $1 }
