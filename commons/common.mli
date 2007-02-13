@@ -149,15 +149,18 @@ val print_option : ('a -> 'b) -> 'a option -> unit
 val print_list : ('a -> 'b) -> 'a list -> unit
 val print_between : (unit -> unit) -> ('a -> unit) -> 'a list -> unit
 
+val print_xxxxxxxxxxxxxxxxx : unit -> unit
+
 val pp_do_in_box : (unit -> unit) -> unit
+val pp_f_in_box : (unit -> 'a) -> 'a
 val pp_do_in_zero_box : (unit -> unit) -> unit
-val pp_init : (unit -> unit) -> unit
 val pp : string -> unit
+val pp2 : string -> unit
 
 (* convert something printed using format to print into a string *)
 val format_to_string : (unit -> unit) (* printer *) -> string
 
-val print_xxxxxxxxxxxxxxxxx : unit -> unit
+val format_xxxxxxxxxxxxxxxxx : unit -> unit
 
 
 (*****************************************************************************)

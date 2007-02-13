@@ -22,6 +22,7 @@ and const_vol = Const | Volatile
 
 (* --------------------------------------------------------------------- *)
 (* Printer *)
+open Format 
 	
 let rec typeC = function
     ConstVol(cv,ty) -> const_vol cv; typeC ty

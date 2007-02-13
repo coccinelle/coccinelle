@@ -121,16 +121,16 @@ let rec ident i =
 
 let print_disj_list fn l =
   if !print_newlines_disj
-  then (print_string "\n("; force_newline())
+  then (force_newline(); print_string "("; force_newline())
   else print_string "(";
   print_between
     (function _ ->
       if !print_newlines_disj
-      then (print_string "\n|"; force_newline())
+      then (force_newline(); print_string "|"; force_newline())
       else print_string " | ")
     fn l;
   if !print_newlines_disj
-  then (print_string "\n)"; force_newline())
+  then (force_newline(); print_string ")"; force_newline())
   else print_string ")"
 
 let rec expression e =
@@ -177,18 +177,16 @@ let rec expression e =
 
   | Ast.MetaConst(name,_,None,_) -> mcode print_string name
   | Ast.MetaConst(name,_,Some ty,_) ->
-      mcode print_string name; print_string "/* ";
-      Format.print_flush(); (* no idea why this is needed *)
+      mcode print_string name; 
+      print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-      Format.print_flush();
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
   | Ast.MetaExpr(name,keep,None,_) -> mcode print_string name
   | Ast.MetaExpr(name,keep,Some ty,_) ->
-      mcode print_string name; print_string "/* ";
-      Format.print_flush();
+      mcode print_string name; 
+      print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-      Format.print_flush();
       print_string "keep:"; print_bool keep;
       print_string " */"
   | Ast.MetaExprList(name,_,_) -> mcode print_string name
@@ -553,12 +551,12 @@ let rec statement arity s =
 	(statement arity) stmt_dots
   | Ast.Disj(stmt_dots_list) -> (* ignores newline directive for readability *)
       print_string arity;
-      print_string "\n("; force_newline();
+      force_newline(); print_string "("; force_newline();
       print_between
-	(function _ -> print_string "\n|"; force_newline())
+	(function _ -> force_newline();print_string "|"; force_newline())
 	(dots force_newline (statement arity))
 	stmt_dots_list;
-      print_string "\n)"
+      force_newline(); print_string ")"
   | Ast.Nest(stmt_dots,whn,_) ->
       print_string arity;
       nest_dots (statement arity)
@@ -646,12 +644,15 @@ let _ =
     | Ast.SgrepEndTag(x) -> print_string x
 
 let unparse x =
-  print_string "\n@@\n@@";
+  force_newline();
+  print_string "@@";
+  force_newline();
+  print_string "@@";
   print_newlines_disj := true;
   force_newline();
   force_newline();
   rule x;
-  print_newline()
+  force_newline()
 
 let rule_elem_to_string x =
   print_newlines_disj := true;

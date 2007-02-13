@@ -376,8 +376,10 @@ let _ =
       else 
         Common.finalize
           (fun()-> 
-            main ();
-            Ctlcocci_integration.print_bench()
+            Common.pp_do_in_zero_box (fun () -> 
+              main ();
+              Ctlcocci_integration.print_bench()
+            )
           )
           (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )

@@ -147,15 +147,27 @@ let show_or_not_ctl_tex astcocci ctls =
               "gv __cocci_ctl.ps &");
   end
 
-let show_or_not_ctl_text ctl =
+
+let show_or_not_ctl_text ctl ast =
   if !Flag.show_ctl_text then begin
-    Common.print_xxxxxxxxxxxxxxxxx();
-    pr2 "ctl";
-    Common.print_xxxxxxxxxxxxxxxxx();
+
+    Common.format_xxxxxxxxxxxxxxxxx();
+    ast +> do_option (fun ast -> 
+      pp2 "rule = ";
+      Common.pp_do_in_box (fun () -> 
+        Pretty_print_cocci.unparse ast;
+      );
+      Format.force_newline();
+    );
+
+    pp2 "ctl = ";
     let (ctl,_) = ctl in
-    Pretty_print_engine.pp_ctlcocci 
-      !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-    Format.print_newline();
+    Common.pp_do_in_box (fun () -> 
+      Format.force_newline();
+      Pretty_print_engine.pp_ctlcocci 
+        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+    );
+    Format.force_newline();
   end
 
 
@@ -164,32 +176,36 @@ let show_or_not_celem celem =
   if !Flag.show_misc then 
   (match celem with 
   | Ast_c.Definition ((funcs,_,_,_c),_) -> 
-      pr2 ("STARTING function: " ^ funcs);
+      pp2 ("STARTING function: " ^ funcs);
   | Ast_c.Declaration (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) ->
-      pr2 ("STARTING variable " ^ s);
+      pp2 ("STARTING variable " ^ s);
   | _ -> 
-      pr2 ("STARTING something else");
+      pp2 ("STARTING something else");
   )
 
 
 let show_or_not_trans_info trans_info = 
   if !Flag.show_transinfo then begin
-    if null trans_info then pr2 "transformation info is empty"
+    if null trans_info then pp2 "transformation info is empty"
     else begin
-      Common.print_xxxxxxxxxxxxxxxxx();
-      pr2 "transformation info returned:";
-      Common.print_xxxxxxxxxxxxxxxxx();
-      Pretty_print_engine.pp_transformation_info trans_info;
-      Format.print_newline();
+      pp2 "transformation info returned:";
+      Common.pp_do_in_box (fun () -> 
+        Format.force_newline();
+        Pretty_print_engine.pp_transformation_info trans_info;
+        Format.force_newline();
+      );
+      Format.force_newline();
     end
   end
 
 
 let show_or_not_binding s binding =
   if !Flag.show_binding_in_out then begin
-    pr2 ("binding " ^ s ^ " = ");
+    Format.force_newline();
+    pp ("binding " ^ s ^ " = ");
     Pretty_print_c.pp_binding binding;
-    Format.print_newline()
+    Format.force_newline();
+
   end
 
 
@@ -255,9 +271,9 @@ let ast_to_flow_with_error_messages2 def =
   let flowopt = 
     try Some (Ast_to_flow.ast_to_control_flow def)
     with Ast_to_flow.Error x -> 
-      pr2 "PBBBBBBBBBBBBBBBBBB";
+      pp2 "PBBBBBBBBBBBBBBBBBB";
       Ast_to_flow.report_error x;
-      pr2
+      pp2
         ("At least 1 DEADCODE detected (there may be more)," ^
             "but I can't continue :(" ^ 
             "Maybe because of cpp #ifdef side effects."
@@ -271,12 +287,12 @@ let ast_to_flow_with_error_messages2 def =
      *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-      pr2 "PBBBBBBBBBBBBBBBBBB";
+      pp2 "PBBBBBBBBBBBBBBBBBB";
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-      pr2 ("At least 1 DEADCODE detected (there may be more)," ^
+      pp2 ("At least 1 DEADCODE detected (there may be more)," ^
               "but I continue.");
       (* not a failwith this time *)
-      pr2 "Maybe because of cpp #ifdef side effects."; 
+      pp2 "Maybe because of cpp #ifdef side effects."; 
   );
   flowopt
 
@@ -320,7 +336,7 @@ type celem_with_info =
 let build_maybe_info e = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-      if !Flag.show_misc then pr2 ("build info function " ^ funcs);
+      if !Flag.show_misc then pp2 ("build info function " ^ funcs);
       
       let flowopt = ast_to_flow_with_error_messages def in
       flowopt +> map_option (fun flow -> 
@@ -467,13 +483,13 @@ let rec process_ctls ctls envs =
   match ctls with
   | [] -> ()
   | ctl::ctls_remaining -> 
-      let (ctl_toplevel_list,used_after_list) = ctl in
+      let ((ctl_toplevel_list,ast),used_after_list) = ctl in
 
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
         
       let ctl = List.hd ctl_toplevel_list in
-      show_or_not_ctl_text ctl;
+      show_or_not_ctl_text ctl ast;
 
       let newenvs = process_a_ctl (ctl, used_after_list) envs in
       process_ctls ctls_remaining newenvs
@@ -482,12 +498,16 @@ and process_a_ctl ctl envs =
   match envs with
   | [] -> []
   | env::envs_remaining -> 
-      let children_envs = process_a_ctl_a_env ctl env in
-      Common.union_set children_envs (process_a_ctl ctl envs_remaining)
+      Common.pp_f_in_box (fun () -> 
+        let children_envs = process_a_ctl_a_env ctl env in
+        Common.union_set children_envs (process_a_ctl ctl envs_remaining)
+      )
 
 and process_a_ctl_a_env (ctl, used_after_list) env = 
 
   let new_c_elems = ref [] in
+  show_or_not_binding "in" env;
+
   let children_envs = !g_cprogram +> List.fold_left 
     (fun acc ((elem,info_item),info,_env) ->
 
@@ -499,14 +519,14 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
       (* !Main point! The call to the function that will call the
        * ctl engine and all the machinery *)
       (************************************************************)
-      match process_a_ctl_a_env_a_celem 
+      match process_a_ctl_a_env_a_celem
         (elem,info) (ctl,full_used_after_list) env
       with
       | None -> 
           push2 None new_c_elems ;
           acc
-      | Some (elem', newbinding, hacks) ->  
-          push2 (Some elem') new_c_elems;
+      | Some (elem, modified, newbinding, hacks) ->  
+          push2 (Some (elem, modified)) new_c_elems;
           hacks +>List.iter (fun x ->Common.push2 x g_hack_funheaders);
           Common.insert_set newbinding acc
     ) []
@@ -515,8 +535,10 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
   let cprogram' = zip new_c_elems !g_cprogram  +> List.map 
     (fun (optnewelem, ((elem, info_item), flow, env))  -> 
       match optnewelem with 
-      | None ->        ((elem,     info_item), flow, env), false
-      | Some newelem -> ((newelem, info_item), flow, env), true
+      | None ->        
+          ((elem,     info_item), flow, env), false
+      | Some (newelem, modified) -> 
+          ((newelem, info_item), flow, env), modified
     )
   in
   g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
@@ -524,7 +546,7 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
   if not (null children_envs)
   then children_envs
   else begin
-    pr2 "Empty list of bindings, I will restart from old env";
+    pp2 "Empty list of bindings, I will restart from old env";
     [env]
   end
 
@@ -540,11 +562,11 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
  *)
 and process_a_ctl_a_env_a_celem2 = 
  fun (celem, info) (ctl, used_after_list) binding -> 
+  Common.pp_f_in_box (fun () -> 
   match info with
   | None -> None
   | Some info -> 
       show_or_not_celem celem;
-      show_or_not_binding "in" binding;
 
       let satres = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
@@ -561,7 +583,7 @@ and process_a_ctl_a_env_a_celem2 =
         ) in
 
       (match satres with
-      | Right x -> pr2 ("Unable to find a value for " ^ x); None
+      | Right x -> pp2 ("Unable to find a value for " ^ x); None
       | Left (trans_info, returned_any_states, newbinding) ->
           (* modify also the proto if FunHeader was touched *)
           let hack_funheaders = 
@@ -578,24 +600,30 @@ and process_a_ctl_a_env_a_celem2 =
           then None
           else begin
             show_or_not_trans_info trans_info;
-            show_or_not_binding "out" binding;
+            show_or_not_binding "out" newbinding;
+            if not (null trans_info)
+            then 
 
-            (* I do the transformation on flow, not fixed_flow, 
-               because the flow_to_ast need my extra information. *)
-            let flow' = (* can do via side effect now *)
-              match () with 
-              | _ when !Flag_engine.use_cocci_vs_c_3 -> 
-                     Transformation3.transform trans_info info.flow
-              | _ -> Transformation.transform trans_info info.flow 
-            in
-            let celem' = 
-              if !Flag_engine.use_ref
-              then celem (* done via side effect *)
-              else flow_to_ast flow' 
-            in
-            Some (celem', newbinding, hack_funheaders)
+              (* I do the transformation on flow, not fixed_flow, 
+                 because the flow_to_ast need my extra information. *)
+              let flow' = (* can do via side effect now *)
+                match () with 
+                | _ when !Flag_engine.use_cocci_vs_c_3 -> 
+                       Transformation3.transform trans_info info.flow
+                | _ -> Transformation.transform trans_info info.flow 
+              in
+              let celem' = 
+                if !Flag_engine.use_ref
+                then celem (* done via side effect *)
+                else flow_to_ast flow' 
+              in
+              Some (celem', true, newbinding, hack_funheaders)
+            else 
+              Some (celem, false, newbinding, hack_funheaders)
+                
           end
       )
+  )
 
 
 and process_a_ctl_a_env_a_celem  a b c = 
@@ -612,7 +640,7 @@ let process_hack_funheaders2 hack_funheaders =
    * modify the prototype as soon as possible, not wait until the end
    * of all the ctl rules 
    *)
-  if !Flag.show_misc then pr2 ("hack headers");
+  if !Flag.show_misc then pp2 ("hack headers");
       
   hack_funheaders +> List.iter (fun info ->
     let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
@@ -666,14 +694,18 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     | Left (coccifile, isofile) -> 
         let (astcocci,used_after_lists,toks)= sp_from_file coccifile isofile in
         let ctls = ctls astcocci used_after_lists in
+        let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in
 
         show_or_not_cfile   cfile;
         show_or_not_cocci   coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
 
-        (zip ctls used_after_lists, toks, sp_contain_typed_metavar astcocci)
+        (zip ctls_asts used_after_lists,
+         toks,
+         sp_contain_typed_metavar astcocci
+        )
 
-    | Right ctl ->([[(ctl,([],[]))], []]), [], true (* maybe typed metavar *)
+    | Right ctl ->([([(ctl,([],[]))],None), []]), [], true (* typed metavar *)
     )
   in
 
@@ -683,11 +715,11 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
   else begin
     
    (* parsing and build CFG *)
-    
     g_cprogram:= build_info_program cfile contain_typedmetavar TAC.initial_env;
     g_hack_funheaders := [];
     g_contain_typedmetavar := contain_typedmetavar;
 
+    Format.print_newline();
     process_ctls ctls [Ast_c.emptyMetavarsBinding];
     process_hack_funheaders !g_hack_funheaders;
 
@@ -698,7 +730,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
     if !Flag.show_diff then begin
       (* may need --strip-trailing-cr under windows *)
-      pr2 "diff = ";
+      pp2 "diff = ";
+      Format.print_newline();
       Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
     end
   end

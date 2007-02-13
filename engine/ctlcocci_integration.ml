@@ -7,7 +7,7 @@ open Ograph_extended
 (*****************************************************************************)
 let show_or_not_predicate pred = 
   if !Flag_engine.debug_engine then begin 
-    Common.pp_init (fun () -> 
+    Common.pp_do_in_box (fun () -> 
       pp "labeling: pred =";
       Format.print_space ();
       Pretty_print_engine.pp_predicate pred;
@@ -16,7 +16,7 @@ let show_or_not_predicate pred =
 
 let show_or_not_nodes nodes =
   if !Flag_engine.debug_engine  then begin 
-    Common.pp_init (fun () -> 
+    Common.pp_do_in_box (fun () -> 
       pp "labeling: result =";
       Format.print_space ();
       

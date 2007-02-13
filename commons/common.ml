@@ -602,21 +602,26 @@ let rec print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between(); print_between between fn xs
 
-let pp_do_in_box f      = Format.open_box 1; f(); Format.close_box ()
+let print_xxxxxxxxxxxxxxxxx () = 
+  pr2 "-----------------------------------------------------------------------"
+
+
+
+
+let pp_do_in_box f      = Format.open_box 2; f(); Format.close_box ()
 let pp_do_in_zero_box f = Format.open_box 0; f(); Format.close_box ()
 
+let pp_f_in_box f      = 
+  Format.open_box 2; 
+  let res = f() in 
+  Format.close_box ();
+  Format.force_newline();
+  res
 
-(* Format.mli says that behaviour is undefined when there is no open_box *)
-let pp_init f = 
-  begin 
-    Format.open_box 0; 
-    f(); 
-    Format.close_box();
-    Format.print_newline();
-  end
 
 
 let pp s = Format.print_string s
+let pp2 s = Format.force_newline();Format.print_string s; Format.force_newline()
 
 (* convert something printed using format to print into a string *)
 let format_to_string f =
@@ -636,8 +641,8 @@ let format_to_string f =
   String.concat "\n" (List.rev !lines)
 
 
-let print_xxxxxxxxxxxxxxxxx () = 
-  pr2 "-----------------------------------------------------------------------"
+let format_xxxxxxxxxxxxxxxxx () = 
+  pp2 "----------------------------------------------------------"
 
 
 (*****************************************************************************)

@@ -135,4 +135,4 @@ let rec (pp_ctl:
        
    and pp_arg env phi =  Common.pp_do_in_box (fun () -> pp_aux env phi)      
    in
-   Common.pp_init (fun () ->  pp_aux [] ctl;)
+   Common.pp_do_in_box (fun () ->  pp_aux [] ctl;)

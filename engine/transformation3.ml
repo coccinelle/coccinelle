@@ -133,12 +133,13 @@ module XTRANS = struct
         end
            
         else begin
-          Printf.printf "SP mcode "; flush stdout;
+          Format.printf "SP mcode ";
           Pretty_print_cocci.print_mcodekind oldmcode;
-          Format.print_newline();
-          Printf.printf "C code mcode "; flush stdout;
+          Format.force_newline();
+          Format.printf "C code mcode ";
           Pretty_print_cocci.print_mcodekind mck;
-          Format.print_newline();
+          Format.force_newline();
+          Format.print_flush();
           failwith
 	    (Common.sprintf "already tagged token:\n%s"
 	        (Common.error_message s2.file (s2.str, s2.charpos)))
@@ -318,7 +319,7 @@ module XTRANS = struct
     then (
       try Some (s, List.assoc s env)
       with Not_found -> 
-        pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
+        pp2 ("Don't find value for metavariable " ^ s ^ " in the environment");
         None
     )
     else 
@@ -349,7 +350,7 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       let node  = acc#nodes#assoc nodei in 
 
       if !Flag_engine.show_misc 
-      then pr2 "transform one node";
+      then pp2 "transform one node";
 
       let node' = TRANS.rule_elem_node rule_elem node binding in
 
