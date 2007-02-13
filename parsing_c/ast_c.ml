@@ -5,21 +5,21 @@ open Common open Commonop
 (*****************************************************************************)
 
 (* Could have more precise type in fullType, in expression, etc, but
- * it requires to do too much things in parsing (checking no
- * conflicting structname, computing value, ...). Better to separate
- * concern, so I put '=>' to mean what we would really like (in fact
- * what we really like is a defining another fullType from scratch,
- * because many stuff are just sugar).
+ * it requires to do too much things in parsing such as checking no
+ * conflicting structname, computing value, etc. Better to separate
+ * concern, so I put '=>' to mean what we would really like. In fact
+ * what we really like is defining another fullType from scratch,
+ * because many stuff are just sugar.
  * 
- * inv: Array and FunctionType have also typeQualifier but they dont
- * have sense. I put this to factorise some code. If you look in
+ * invariant: Array and FunctionType have also typeQualifier but they
+ * dont have sense. I put this to factorise some code. If you look in
  * grammar, you see that we can never specify const for the array
  * himself (but we can do it for pointer).
  * 
  * 
- * Because of ExprStatement, can have more 'new scope' event, but rare I
- * think. For instance array of constExpression => possibly an
- * exprStatement and a new (local) struct defined. Same for
+ * Because of ExprStatement, we can have more 'new scope' events, but
+ * rare I think. For instance with 'array of constExpression' there can
+ * have an exprStatement and a new (local) struct defined. Same for
  * Constructor.
  * 
  * Some stuff are tagged semantic: which means that they are computed
@@ -42,7 +42,7 @@ open Common open Commonop
  * 
  * convention: I often use 'ii' for the name of a list of info. 
  * 
- * Update: Now I use a ref!!!! 
+ * Update: Now I use a ref! so take care.
  * 
  * Sometimes we want to add someting at the beginning or at the end 
  * of a construct. For 'function' and 'decl' we want add something
@@ -131,7 +131,7 @@ and typeCbis =
      (* return * (params * has "...") *)
      and functionType = fullType * (parameterType wrap2 list * bool wrap)
         and parameterType = (bool * string option * fullType) wrap (* reg s *)
-     (* => (bool (register) * fullType) list * bool *)
+              (* => (bool (register) * fullType) list * bool *)
 
 
 and typeQualifier = typeQualifierbis wrap 
@@ -144,13 +144,10 @@ and expressionbis =
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
    * With CPP, Ident can also be the name of a macro.
-   * todo? put more semantic info on this ident, such as 'is it a local func?'
    *)
-  | Ident          of string   
+  | Ident          of string  (* todo? more semantic info such as LocalFunc *)
   | Constant       of constant                                  
-
   | FunCall        of expression * argument wrap2 (* , *) list
-
   (* gccext: x ? /* empty */ : y <=> x ? x : y; *)
   | CondExpr       of expression * expression option * expression
 
@@ -171,7 +168,6 @@ and expressionbis =
   | SizeOfExpr     of expression                                
   | SizeOfType     of fullType                                  
   | Cast           of fullType * expression                     
-
 
   (* gccext: *)        
   | StatementExpr of compound wrap (* ( )     new scope *) 
@@ -194,19 +190,19 @@ and expressionbis =
          | ActMisc of il 
 
 
-  (* I put string for Int and Float cos int would not be enough cos
-   * Caml int are 31 bits. So simpler to do string. Same reason to have
-   * string instead of int list, for String.
+  (* I put string for Int and Float because int would not be enough because
+   * OCaml int are 31 bits. So simpler to do string. Same reason to have
+   * string instead of int list for the String case.
    * 
-   * note: that -2 is not a constant, it is the unary operator -
+   * note: that -2 is not a constant, it is the unary operator '-'
    * applied to constant 2. So the string must represent a positive
    * integer only. *)
+
   and constant = 
     | String of (string * isWchar) 
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string  (* * intType*)) 
     | Float  of (string * floatType)
-
 
     and isWchar = IsWchar | IsChar
 
@@ -230,18 +226,18 @@ and expressionbis =
 
 
 (* ------------------------------------------------------------------------- *)
-(* note: that assignement is not a statement but an expression; 
- * wonderful C langage.
- * note: I use  'and' for type definition cos gccext allow statement as 
- * expression, so need mutual recursive type definition.
+(* note: that assignement is not a statement but an expression;
+ * wonderful C langage. note: I use 'and' for type definition cos
+ * gccext allow statement as expression, so need mutual recursive type
+ * definition. 
  *)
 and statement = statementbis wrap 
 and statementbis = 
   | Labeled       of labeled
   | Compound      of compound   (* new scope *)
   | ExprStatement of exprStatement
-  | Selection     of selection
-  | Iteration     of iteration
+  | Selection     of selection (* have fakeend *)
+  | Iteration     of iteration (* have fakeend *)
   | Jump          of jump
 
   (* simplify cocci: only at the beginning of a compound normally *)
@@ -269,7 +265,7 @@ and statementbis =
   * with a case:, otherwise unreachable code 
   *)
   and selection     = 
-   | If     of expression * statement * statement (* have fakeend *)
+   | If     of expression * statement * statement
    | Switch of expression * statement 
    | IfCpp of statement list * statement list    (* cppext: *)
 
@@ -330,19 +326,18 @@ and definition = (string * functionType * storage * compound)
  
 (* ------------------------------------------------------------------------- *)
 and program = programElement list
-     and programElement = 
-          | Declaration of declaration
-          | Definition of definition
-
-          (* cppext: *)
-          | CPPInclude of string wrap (* #include s *)
-          | CPPDefine of (string * string) wrap (* #define s body *)
-          | SpecialDeclMacro of 
-             string * argument wrap2 list * il 
-
-          | EmptyDef of il      (* gccext: allow redundant ';' *)
-          | NotParsedCorrectly of il
-          | FinalDef of info
+   and programElement = 
+     | Declaration of declaration
+     | Definition of definition
+         
+     (* cppext: *)
+     | CPPInclude of string wrap           (* #include s *)
+     | CPPDefine of (string * string) wrap (* #define s body *)
+     | SpecialDeclMacro of string * argument wrap2 list * il 
+         
+     | EmptyDef of il      (* gccext: allow redundant ';' *)
+     | NotParsedCorrectly of il
+     | FinalDef of info
 
 
 
@@ -406,7 +401,7 @@ let get_str_of_info (info, annot) = info.Common.str
 (*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)
-(* Abstract line. When we have extended the C Ast, to add some info to the
+(* Abstract line. When we have extended the C Ast to add some info to the
  * tokens, such as its line number in the file, we can not use anymore the
  * ocaml '=' to compare Ast elements. To overcome this problem, to be
  * able to use again '=', we just have to get rid of all those extra 
@@ -421,7 +416,8 @@ let al_info x =
     line = -1; column = -1; file = "";
   }, 
   ref emptyAnnot
-let is_al_info x = x.charpos = _Magic_info_number
+
+let is_al_info (x, annot) = x.charpos = _Magic_info_number
 
 (* When want add some info in ast that does not correspond to 
  * an existing C element or when don't want 'synchronize' on it 
@@ -433,12 +429,11 @@ let fakeInfo ()  = al_info (Common.fake_parse_info, ref emptyAnnot)
 (* Views *)
 (*****************************************************************************)
 
-(* Transform a list of arguments (or parameters) where the comma are
+(* Transform a list of arguments (or parameters) where the commas are
  * represented via the wrap2 and associated with an element, with
  * a list where the comma are on their own. f(1,2,2) was
  * [(1,[]); (2,[,]); (2,[,])] and become [1;',';2;',';2].
  *)
-
 let rec (split_comma: 'a wrap2 list -> ('a, il) either list) = 
   function
   | [] -> []
@@ -457,6 +452,7 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
       (e, empty_ii)::unsplit_comma xs
   | Right ii::_ -> 
       raise Impossible
+
 
 
 

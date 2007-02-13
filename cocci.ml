@@ -82,8 +82,7 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
 (* Flow related *)
 (* --------------------------------------------------------------------- *)
 let flows astc = 
-  let (program, stat) = astc in
-  program +> Common.map_filter (fun (e,_) -> 
+  astc +> Common.map_filter (fun e -> 
     match e with
     | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
         let flow = Ast_to_flow.ast_to_control_flow def in
@@ -160,6 +159,19 @@ let show_or_not_ctl_text ctl =
   end
 
 
+
+let show_or_not_celem celem = 
+  if !Flag.show_misc then 
+  (match celem with 
+  | Ast_c.Definition ((funcs,_,_,_c),_) -> 
+      pr2 ("STARTING function: " ^ funcs);
+  | Ast_c.Declaration (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) ->
+      pr2 ("STARTING variable " ^ s);
+  | _ -> 
+      pr2 ("STARTING something else");
+  )
+
+
 let show_or_not_trans_info trans_info = 
   if !Flag.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
@@ -232,15 +244,14 @@ let sp_contain_typed_metavar toplevel_list_list =
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing 
   in
-  toplevel_list_list +> List.exists (fun toplevel_list -> 
-    toplevel_list +> List.exists (fun toplevel -> 
-      combiner.Visitor_ast.combiner_top_level toplevel
-    ))
+  toplevel_list_list +> 
+    List.exists (List.exists combiner.Visitor_ast.combiner_top_level)
+    
 
 
 
 
-let ast_to_flow_with_error_messages2 def filename =
+let ast_to_flow_with_error_messages2 def =
   let flowopt = 
     try Some (Ast_to_flow.ast_to_control_flow def)
     with Ast_to_flow.Error x -> 
@@ -248,7 +259,7 @@ let ast_to_flow_with_error_messages2 def filename =
       Ast_to_flow.report_error x;
       pr2
         ("At least 1 DEADCODE detected (there may be more)," ^
-            "but I can't continue." ^ 
+            "but I can't continue :(" ^ 
             "Maybe because of cpp #ifdef side effects."
         );
       None
@@ -272,11 +283,11 @@ let ast_to_flow_with_error_messages2 def filename =
       
 
 
-let ast_to_flow_with_error_messages a b = 
-  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a b)
+let ast_to_flow_with_error_messages a = 
+  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
 
-
+(* obsolete with -use_ref *)
 let flow_to_ast2 flow = 
   let nodes = flow#nodes#tolist in
   match nodes with
@@ -299,7 +310,7 @@ let flow_to_ast a =
 (*****************************************************************************)
 
 type celem_info = { 
-  flow: Control_flow_c.cflow;
+  flow: Control_flow_c.cflow; (* obsolete with -use_ref *)
   fixed_flow: Control_flow_c.cflow;
   contain_loop: bool;
 }
@@ -308,12 +319,12 @@ type celem_with_info =
   Parse_c.programElement2 * celem_info option * (TAC.environment Common.pair)
 
 
-let build_maybe_info e cfile = 
+let build_maybe_info e = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
       if !Flag.show_misc then pr2 ("build info function " ^ funcs);
       
-      let flowopt = ast_to_flow_with_error_messages def cfile in
+      let flowopt = ast_to_flow_with_error_messages def in
       flowopt +> map_option (fun flow -> 
       
         (* remove the fake nodes for julia *)
@@ -367,7 +378,7 @@ let (build_info_program:
       cprogram +> List.map (fun (e, info_item) -> ((e,fakeEnv),  info_item))
   in
   cprogram' +> List.map (fun ((e, beforeafterenv), info_item) -> 
-    (e, info_item), build_maybe_info e cfile, beforeafterenv
+    (e, info_item), build_maybe_info e, beforeafterenv
   )
   
     
@@ -404,88 +415,68 @@ let (rebuild_info_program :
 (* The main functions *)
 (*****************************************************************************)
 
-(* This function returns a triplet. First the C element (modified),
+(* This function returns a triplet option. First the C element (modified),
  * then a binding option if there is new info brought by the matching,
  * and finally a hack_funheaders list. 
  *)
-let program_elem_vs_ctl2 = fun cinfo cocciinfo binding -> 
-  let (elem, info) = cinfo in
-  let (ctl, used_after_list) = cocciinfo in
+let program_elem_vs_ctl2 = fun (celem, info) (ctl, used_after_list) binding -> 
+  match info with
+  | None -> None
+  | Some info -> 
+      show_or_not_celem celem;
+      show_or_not_binding "in" binding;
 
-  match elem, ctl  with
-
-  | celem, ctl -> 
-      (match info with
-      | None -> (celem, false), None, []
-      | Some info -> 
-
-          (match celem with 
-          | Ast_c.Definition ((funcs, _, _, _c),_) -> 
-              if !Flag.show_misc then pr2 ("STARTING function: " ^ funcs);
-
-          | Ast_c.Declaration 
-              (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> 
-              if !Flag.show_misc then pr2 ("STARTING variable " ^ s);
-          | _ -> 
-              if !Flag.show_misc then pr2 ("STARTING something else");
-          );
-          show_or_not_binding "in" binding;
-
-          let satres = 
-            Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
-              Flag_ctl.loop_in_src_code := 
-                !Flag_ctl.loop_in_src_code || info.contain_loop;
+      let satres = 
+        Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
+          Flag_ctl.loop_in_src_code := 
+            !Flag_ctl.loop_in_src_code || info.contain_loop;
               
-              (***************************************)
-              (* !Main point! The call to the engine *)
-              (***************************************)
-              (* model_ctl internally build a fixed_flow *)
-              let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
-	      CCI.mysat model_ctl ctl (used_after_list, binding)
+          (***************************************)
+          (* !Main point! The call to the engine *)
+          (***************************************)
+          (* model_ctl internally build a fixed_flow *)
+          let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
+	  CCI.mysat model_ctl ctl (used_after_list, binding)
+            
+        ) in
 
-            ) in
+      (match satres with
+      | Right x -> pr2 ("Unable to find a value for " ^ x); None
+      | Left (trans_info, returned_any_states, newbinding) ->
+          (* modify also the proto if FunHeader was touched *)
+          let hack_funheaders = 
+            trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
+              match Ast_cocci.unwrap rule_elem with
+              | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
+		  let res = (binding, (a,b,c,d,e,f,g,h)) in
+                  Some (Ast_cocci.rewrap rule_elem res)
+              | _ -> None
+            )  
+          in
+          
+          if not returned_any_states (* old: not (null trans_info)  *)
+          then None
+          else begin
+            show_or_not_trans_info trans_info;
+            show_or_not_binding "out" binding;
 
-          (match satres with
-          | Left (trans_info, returned_any_states, newbinding) ->
-              (* modify also the proto if FunHeader was touched *)
-              let hack_funheaders = 
-                trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
-                  match Ast_cocci.unwrap rule_elem with
-                  | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
-		      let res = (binding, (a,b,c,d,e,f,g,h)) in
-                      Some (Ast_cocci.rewrap rule_elem res)
-                  | _ -> None
-                )  
-              in
-               
-              if returned_any_states (* old: not (null trans_info)  *)
-              then begin
-                show_or_not_trans_info trans_info;
-                show_or_not_binding "out" binding;
-
-                (* I do the transformation on flow, not fixed_flow, 
-                   because the flow_to_ast need my extra information. *)
-                let flow' = (* can do via side effect now *)
-                  match () with 
-                    | _ when !Flag_engine.use_cocci_vs_c_3 -> 
-                        Transformation3.transform trans_info info.flow
-                    | _ -> 
-                        Transformation.transform trans_info info.flow 
-                in
-                let celem' = 
-                  if !Flag_engine.use_ref
-                  then celem (* done via side effect *)
-                  else flow_to_ast flow' 
-                in
-                (celem', true), Some newbinding, hack_funheaders
-              end
-              else 
-                (celem, false), Some newbinding (* keep old one *), []
-          | Right x -> 
-              pr2 ("Unable to find a value for " ^ x);
-              (celem, false),   None, []
-          )
+            (* I do the transformation on flow, not fixed_flow, 
+               because the flow_to_ast need my extra information. *)
+            let flow' = (* can do via side effect now *)
+              match () with 
+              | _ when !Flag_engine.use_cocci_vs_c_3 -> 
+                     Transformation3.transform trans_info info.flow
+              | _ -> Transformation.transform trans_info info.flow 
+            in
+            let celem' = 
+              if !Flag_engine.use_ref
+              then celem (* done via side effect *)
+              else flow_to_ast flow' 
+            in
+            Some (celem', newbinding, hack_funheaders)
+          end
       )
+
 
 
 let program_elem_vs_ctl a b c = 
@@ -512,8 +503,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         show_or_not_cfile  cfile;
         show_or_not_cocci coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
-        (zip ctls used_after_lists, toks, 
-        sp_contain_typed_metavar astcocci)
+        (zip ctls used_after_lists, toks, sp_contain_typed_metavar astcocci)
 
     | Right ctl ->([[(ctl,([],[]))], []]), [], true (* maybe typed metavar *)
     )
@@ -599,32 +589,29 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
             (* !Main point! The call to the function that will call the
              * ctl engine and all the machinery *)
             (************************************************************)
-            let (elem',modified), newbinding, hack_funheaders = 
-              program_elem_vs_ctl 
-                (elem, info)
-                (ctl, full_used_after_list) 
-                binding 
-            in
-
-            hack_funheaders +> List.iter 
-              (fun hack -> Common.push2 hack _hack_funheader);
-
-            (* opti: julia says that because the binding is
-             * determined by the used_after_list, the items in the list
-             * are kind of sorted, so could optimise the union.
-             *)
-            newbinding +> Common.do_option (fun newbinding -> 
-              _current_bindings := 
-                Common.insert_set newbinding !_current_bindings
-            );
+            match 
+             program_elem_vs_ctl (elem,info) (ctl,full_used_after_list) binding
+            with
+            | None -> ((elem, info_item), info, env), false
+            | Some (elem', newbinding, hack_funheaders) ->  
+                
+                hack_funheaders +> List.iter 
+                  (fun hack -> Common.push2 hack _hack_funheader);
+                
+                (* opti: julia says that because the binding is
+                 * determined by the used_after_list, the items in the list
+                 * are kind of sorted, so could optimise the union.
+                 *)
+                _current_bindings := 
+                  Common.insert_set newbinding !_current_bindings;
             
-            ((elem', info_item), info, env), modified 
+                ((elem', info_item), info, env), true
           ) (* end 3: iter function *)
           in
           cprogram := rebuild_info_program cprogram' contain_typedmetavar;
-(*          if null !_current_bindings
+          if null !_current_bindings
           then _current_bindings := [binding]
-*)
+
         ) (* end 2: iter bindings *)
       end
       else failwith "not handling multiple minirules"

@@ -50,13 +50,13 @@ let max_min_ii_by_pos xs =
 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
-  | [(x,cocciinforef)] when Ast_c.is_al_info x -> 
+  | [x] when Ast_c.is_al_info x -> 
       failwith "no max or min, have fake info, should not happen"
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let posf x = Ast_c.get_pos_of_info x in
 
-        if (Ast_c.is_al_info (fst e))
+        if (Ast_c.is_al_info e)
         then (maxii, minii)
         else 
           let maxii' = if posf e >= posf maxii then e else maxii in

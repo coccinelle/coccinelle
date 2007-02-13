@@ -204,10 +204,10 @@ let pp_program2 xs outfile  =
        * todo: but that means we cant move huge chunk of code that contains
        * comments. During the move we will lose those space/comments/cpp.
        *)
-      if not (Ast_c.is_al_info pinfo)
+      if not (Ast_c.is_al_info e)
       then 
         begin
-          if not ((fst e).charpos > (fst !_last_synced_token).charpos)
+          if not (get_pos_of_info e > get_pos_of_info !_last_synced_token)
           then 
             failwith 
               (sprintf 
@@ -223,7 +223,7 @@ let pp_program2 xs outfile  =
 
       (* UGLY trick *)
       let s = 
-        if Ast_c.is_al_info pinfo 
+        if Ast_c.is_al_info e 
         then
           (match s with
           | "char" | "short" | "int" | "double" | "float" | "long" 
