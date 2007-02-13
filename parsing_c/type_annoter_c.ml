@@ -421,11 +421,16 @@ let rec (annotate_program2 : environment -> programElement list ->
       _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def -> 
-          let (funcs, ((returnt, (paramst, b)) as ftyp), sto, statxs), _ = def
+          let (funcs, ((returnt, (paramst, b)) as ftyp), sto, statxs),ii = def
           in
-          let iitodo = [] in
-          let typ' = Lib.al_type (Ast_c.nullQualif, (FunctionType ftyp, iitodo))
+          let (i1, i2) = 
+            match ii with 
+            | is::iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
+                iifunc1, iifunc2
+            | _ -> raise Impossible
           in
+
+          let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
           add_binding (VarOrFunc (funcs, typ')) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 

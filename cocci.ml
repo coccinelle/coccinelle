@@ -23,8 +23,8 @@ let cprogram_from_file file =
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 
-let cfile_from_program program2_with_method outf = 
-  Unparse_c.pp_program program2_with_method outf
+let cfile_from_program program2_with_ppmethod outf = 
+  Unparse_c.pp_program program2_with_ppmethod outf
 
 
   
