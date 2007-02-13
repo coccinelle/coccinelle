@@ -68,7 +68,7 @@ let pr2 s =
 type namedef = 
   | VarOrFunc of string * fullType
   | TypeDef of string * fullType
-  | StructUnionNameDef of string * structType
+  | StructUnionNameDef of string * structType wrap
   (* todo: EnumConstant *)
   (* todo: EnumDef *)
 
@@ -147,9 +147,12 @@ let rec find_final_type ty env =
       
   | StructUnionName (su, s) -> 
       (try 
-          let (structtyp, env') = lookup_structunion (su, s) env in
-          StructUnion (Some s, structtyp) +> Ast_c.rewrap_typeC ty
-            (* not wrap with good ii, but don't care *)
+          let ((structtyp,ii), env') = lookup_structunion (su, s) env in
+          Ast_c.nQ, (StructUnion (Some s, structtyp), ii)
+          (* old: +> Ast_c.rewrap_typeC ty 
+           * but must wrap with good ii, otherwise pretty_print_c
+           * will be lost and raise some Impossible
+           *)
        with Not_found -> 
          ty
       )
@@ -406,9 +409,9 @@ let rec (annotate_program2 : environment -> programElement list ->
 
     Visitor_c.ktype_s = (fun (k, bigf) typ -> 
       let (q, t) = Lib.al_type typ in
-      match Ast_c.unwrap t with 
-      | StructUnion  ((Some s),  (su, structType)) -> 
-          add_binding (StructUnionNameDef (s, (su, structType))) true;
+      match t with 
+      | StructUnion  ((Some s),  (su, structType)),ii -> 
+          add_binding (StructUnionNameDef (s, ((su, structType),ii))) true;
           k typ (* todo: restrict ? new scope so use do_in_scope ? *)
       | _ -> k typ
           
