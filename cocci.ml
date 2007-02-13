@@ -279,8 +279,6 @@ let ast_to_flow_with_error_messages2 def =
       pr2 "Maybe because of cpp #ifdef side effects."; 
   );
   flowopt
-    
-      
 
 
 let ast_to_flow_with_error_messages a = 
@@ -454,14 +452,94 @@ let (rebuild_info_program :
  * Right, and current_binding will not grow, and so we will have
  * an empty list of binding, and we will catch such a case. 
  *
+ * opti: julia says that because the binding is
+ * determined by the used_after_list, the items in the list
+ * are kind of sorted, so could optimise the insert_set operations.
  *)
+
+
+let g_cprogram = ref [] 
+let g_hack_funheaders = ref []
+let g_contain_typedmetavar = ref false 
+
+(* --------------------------------------------------------------------- *)
+let rec process_ctls ctls envs = 
+  match ctls with
+  | [] -> ()
+  | ctl::ctls_remaining -> 
+      let (ctl_toplevel_list,used_after_list) = ctl in
+
+      if not (List.length ctl_toplevel_list = 1)
+      then failwith "not handling multiple minirules";
+        
+      let ctl = List.hd ctl_toplevel_list in
+      show_or_not_ctl_text ctl;
+
+      let newenvs = process_a_ctl (ctl, used_after_list) envs in
+      process_ctls ctls_remaining newenvs
+
+and process_a_ctl ctl envs = 
+  match envs with
+  | [] -> []
+  | env::envs_remaining -> 
+      let children_envs = process_a_ctl_a_env ctl env in
+      Common.union_set children_envs (process_a_ctl ctl envs_remaining)
+
+and process_a_ctl_a_env (ctl, used_after_list) env = 
+
+  let new_c_elems = ref [] in
+  let children_envs = !g_cprogram +> List.fold_left 
+    (fun acc ((elem,info_item),info,_env) ->
+
+      let full_used_after_list = 
+	List.fold_left Common.union_set [] used_after_list 
+      in
+
+      (************************************************************)
+      (* !Main point! The call to the function that will call the
+       * ctl engine and all the machinery *)
+      (************************************************************)
+      match process_a_ctl_a_env_a_celem 
+        (elem,info) (ctl,full_used_after_list) env
+      with
+      | None -> 
+          push2 None new_c_elems ;
+          acc
+      | Some (elem', newbinding, hacks) ->  
+          push2 (Some elem') new_c_elems;
+          hacks +>List.iter (fun x ->Common.push2 x g_hack_funheaders);
+          Common.insert_set newbinding acc
+    ) []
+  in
+  let new_c_elems = List.rev !new_c_elems in
+  let cprogram' = zip new_c_elems !g_cprogram  +> List.map 
+    (fun (optnewelem, ((elem, info_item), flow, env))  -> 
+      match optnewelem with 
+      | None ->        ((elem,     info_item), flow, env), false
+      | Some newelem -> ((newelem, info_item), flow, env), true
+    )
+  in
+  g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
+
+  if not (null children_envs)
+  then children_envs
+  else begin
+    pr2 "Empty list of bindings, I will restart from old env";
+    [env]
+  end
+
+
 
 
 (* This function returns a triplet option. First the C element (modified),
  * then a binding because there is could be new info brought by the matching,
  * and finally a hack_funheaders list. 
+ * 
+ * This function does not use the global, so could put it before,
+ * but more logical to make it follows the other process_xxx functions.
  *)
-let program_elem_vs_ctl2 = fun (celem, info) (ctl, used_after_list) binding -> 
+and process_a_ctl_a_env_a_celem2 = 
+ fun (celem, info) (ctl, used_after_list) binding -> 
   match info with
   | None -> None
   | Some info -> 
@@ -520,10 +598,57 @@ let program_elem_vs_ctl2 = fun (celem, info) (ctl, used_after_list) binding ->
       )
 
 
+and process_a_ctl_a_env_a_celem  a b c = 
+  Common.profile_code "process_a_ctl_a_env_a_celem" 
+    (fun () -> process_a_ctl_a_env_a_celem2 a b c)
 
-let program_elem_vs_ctl a b c = 
-  Common.profile_code "program_elem_vs_ctl" 
-    (fun () -> program_elem_vs_ctl2 a b c)
+
+(* --------------------------------------------------------------------- *)
+let process_hack_funheaders2 hack_funheaders = 
+
+  (* Last fix.
+   *
+   * todo: what if the function is modified two times ? we should
+   * modify the prototype as soon as possible, not wait until the end
+   * of all the ctl rules 
+   *)
+  if !Flag.show_misc then pr2 ("hack headers");
+      
+  hack_funheaders +> List.iter (fun info ->
+    let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
+        
+    let cprogram' = 
+      !g_cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
+        let ebis', modified = 
+          match ebis with
+          | Ast_c.Declaration 
+              (Ast_c.DeclList 
+                  ([((Some ((s, None), iis)), 
+                    (qu, (Ast_c.FunctionType ft, iity)), 
+                    storage),
+                   []
+                  ], iiptvirg::iifake::iisto))  -> 
+              (try
+                  Transformation.transform_proto
+                    (Ast_cocci.rewrap info
+			(Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
+                    (((Control_flow_c.FunHeader 
+                          ((s, ft, storage), 
+                          iis++iity++[iifake]++iisto)), []),"")
+                    binding (qu, iiptvirg) h
+                  +> (fun x -> x,  true)
+                with Transformation.NoMatch -> (ebis, false)
+              )
+          | x -> (x, false)
+        in
+        (((ebis', info_item), flow, env), modified)
+      ) 
+    in
+    g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
+  )
+
+let process_hack_funheaders a = 
+  Common.profile_code "hack_headers" (fun () -> process_hack_funheaders2 a)
 
 
 
@@ -542,9 +667,10 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
         let (astcocci,used_after_lists,toks)= sp_from_file coccifile isofile in
         let ctls = ctls astcocci used_after_lists in
 
-        show_or_not_cfile  cfile;
-        show_or_not_cocci coccifile isofile;
+        show_or_not_cfile   cfile;
+        show_or_not_cocci   coccifile isofile;
         show_or_not_ctl_tex astcocci ctls;
+
         (zip ctls used_after_lists, toks, sp_contain_typed_metavar astcocci)
 
     | Right ctl ->([[(ctl,([],[]))], []]), [], true (* maybe typed metavar *)
@@ -555,135 +681,18 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
   if not (worth_trying cfile error_words_julia)
   then Common.command2 ("cp " ^ cfile ^ " /tmp/output.c")
   else begin
+    
+   (* parsing and build CFG *)
+    
+    g_cprogram:= build_info_program cfile contain_typedmetavar TAC.initial_env;
+    g_hack_funheaders := [];
+    g_contain_typedmetavar := contain_typedmetavar;
 
-
-    (* parsing and build CFG *)
-    let cprogram = ref 
-      (build_info_program cfile contain_typedmetavar TAC.initial_env) 
-    in
-
-
-    let _current_bindings = ref [Ast_c.emptyMetavarsBinding] in
-
-    let _hack_funheader = ref [] in
-
-    (* ----------------- *)
-    (* 1: iter ctl *)  
-    (* ----------------- *)
-    ctls +> List.iter (fun  (ctl_toplevel_list, used_after_list) -> 
-      
-      if List.length ctl_toplevel_list = 1 
-      then begin
-        
-        let ctl = List.hd ctl_toplevel_list in
-        show_or_not_ctl_text ctl;
-        
-        (* 2: prepare to iter binding *)
-
-
-        let lastround_bindings = !_current_bindings in
-        lastround_bindings +> List.iter (show_or_not_binding "last");
-        _current_bindings := [];
-
-        (* ------------------ *)
-        (* 2: iter binding *)
-        (* ------------------ *)
-        lastround_bindings +> List.iter (fun binding -> 
-
-          (* ------------------ *)
-          (* 3: iter function *)
-          (* ------------------ *)
-          let cprogram' = !cprogram +>List.map(fun((elem,info_item),info,env)->
-
-            let full_used_after_list = 
-	      List.fold_left Common.union_set [] used_after_list 
-            in
-
-            (************************************************************)
-            (* !Main point! The call to the function that will call the
-             * ctl engine and all the machinery *)
-            (************************************************************)
-            match 
-             program_elem_vs_ctl (elem,info) (ctl,full_used_after_list) binding
-            with
-            | None -> ((elem, info_item), info, env), false
-            | Some (elem', newbinding, hack_funheaders) ->  
-                
-                hack_funheaders +> List.iter 
-                  (fun hack -> Common.push2 hack _hack_funheader);
-                
-                (* opti: julia says that because the binding is
-                 * determined by the used_after_list, the items in the list
-                 * are kind of sorted, so could optimise the union.
-                 *)
-                _current_bindings := 
-                  Common.insert_set newbinding !_current_bindings;
-            
-                ((elem', info_item), info, env), true
-          ) (* end 3: iter function *)
-          in
-          cprogram := rebuild_info_program cprogram' contain_typedmetavar;
-          if null !_current_bindings
-          then begin
-            pr2 "Empty list of bindings, I restart from scratch";
-            _current_bindings := [binding]
-          end
-
-        ) (* end 2: iter bindings *)
-      end
-      else failwith "not handling multiple minirules"
-
-    ); (* end 1: iter ctl *)
-
-    (* ----------------------------------------------------------------- *)
-    (* Last fix *)
-    (* ----------------------------------------------------------------- *)
-    (* todo: what if the function is modified two times ? we should
-     * modify the prototype as soon as possible, not wait until the end
-     * of all the ctl rules 
-     *)
-    if !Flag.show_misc then pr2 ("hack headers");
-    Common.profile_code "hack_headers" (fun () -> 
-      
-      !_hack_funheader +> List.iter (fun info ->
-        let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
-        
-        let cprogram' = 
-          !cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
-            let ebis', modified = 
-              match ebis with
-              | Ast_c.Declaration 
-                  (Ast_c.DeclList 
-                      ([((Some ((s, None), iis)), 
-                        (qu, (Ast_c.FunctionType ft, iity)), 
-                        storage),
-                       []
-                      ], iiptvirg::iifake::iisto))  -> 
-                  (try
-                      
-
-                      Transformation.transform_proto
-                        (Ast_cocci.rewrap info
-			    (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
-                        (((Control_flow_c.FunHeader 
-                              ((s, ft, storage), 
-                              iis++iity++[iifake]++iisto)), []),"")
-                        binding (qu, iiptvirg) h
-                      +> (fun x -> x,  true)
-                    with Transformation.NoMatch -> (ebis, false)
-                  )
-              | x -> (x, false)
-            in
-            (((ebis', info_item), flow, env), modified)
-          ) 
-        in
-        cprogram := rebuild_info_program cprogram' contain_typedmetavar;
-      );
-    );
+    process_ctls ctls [Ast_c.emptyMetavarsBinding];
+    process_hack_funheaders !g_hack_funheaders;
 
     (* and now unparse everything *)
-    let cprogram' = !cprogram +> List.map (fun ((ebis,info_item),_flow,_env) ->
-      (ebis, info_item), Unparse_c.PPviastr) 
+    let cprogram' = !g_cprogram +> List.map (fun ((ebis,info_item),_flow,_env) ->(ebis, info_item), Unparse_c.PPviastr) 
     in
     cfile_from_program cprogram' outfile;
 
@@ -697,3 +706,4 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
 let full_engine a b c = 
   Common.profile_code "full_engine" (fun () -> full_engine2 a b c)
+
