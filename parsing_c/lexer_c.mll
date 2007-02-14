@@ -309,7 +309,7 @@ rule token = parse
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* "ident" [' ' '\t']+ { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "ident" [' ' '\t']+ [^'\n']+ '\n' { TCommentCpp (tokinfo lexbuf) }
   | "#" [' ' '\t']* '\n'                { TCommentCpp (tokinfo lexbuf) }
 
 

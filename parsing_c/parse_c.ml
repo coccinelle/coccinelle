@@ -563,6 +563,9 @@ let msg_typedef s =
  * 
  * Note that in next there is only "clean" tokens, there is no comment
  * or space tokens. This is done by the caller.
+ * 
+ * todo: but sometimes there is some __inline__ that prevent the transformation
+ *  :( so perhaps could filter them from the next 10 tokens ?
  *)
 
 
@@ -858,12 +861,11 @@ let rec find_next_synchro next already_passed =
           (TPtVirg iptvirg)::v::already_passed, xs
       | _ -> 
           v::already_passed, xs
-      (* reput ? why in comment ?
-       (Tstatic _, 0)  -> 
-          pr2 ("FOUND SYNC 2 at line "^ i_to_s line);
-         ...
-      *)
       )
+  | (Tstatic i as v)::xs when col_of_tok v = 0  -> 
+      pr2 ("FOUND SYNC 2 at line "^ i_to_s (line_of_tok v));
+      already_passed, v::xs
+
   | v::xs -> 
       find_next_synchro xs (v::already_passed)
       

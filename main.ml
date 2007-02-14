@@ -232,7 +232,7 @@ let main () =
             if not (null !_stat_list) 
             then Parse_c.print_parsing_stat_list !_stat_list;
 
-            if not (null xs)
+            if !dir
             then begin 
               pr2 "--------------------------------";
               pr2 "regression testing  information";
