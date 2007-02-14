@@ -1820,7 +1820,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
 (* print_state "final result" res;*)
     res
-  else (Common.pp2 "missing something required"; [])
+  else (Common.pr2 "missing something required"; [])
 ;;
 
 (* ********************************************************************** *)

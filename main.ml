@@ -302,6 +302,12 @@ let main () =
               "parsing_c/tests/equal_modulo1.c" 
               "parsing_c/tests/equal_modulo2.c" 
               false
+        | "xxx", _ -> 
+            Format.print_newline();
+            Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";
+            Format.print_newline();
+            Format.printf "@[<v>(---@[<v>(---@[<v>(---@,)@]@,)@]@,)@]";
+
 
         | s, [] -> Arg.usage options usage_msg; failwith "too few arguments"
         | _ -> failwith "no action for this"

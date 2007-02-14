@@ -6,6 +6,9 @@ val pr : string -> unit
 val pr2 : string -> unit
 val pr2gen: 'a -> unit
 
+val indent_do : (unit -> 'a) -> 'a
+val pr2_no_nl : string -> unit
+
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
 val eprintf : ('a, out_channel, unit) format -> 'a
@@ -155,13 +158,11 @@ val pp_do_in_box : (unit -> unit) -> unit
 val pp_f_in_box : (unit -> 'a) -> 'a
 val pp_do_in_zero_box : (unit -> unit) -> unit
 val pp : string -> unit
-val pp2 : string -> unit
 
 (* convert something printed using format to print into a string *)
 val format_to_string : (unit -> unit) (* printer *) -> string
 
-val format_xxxxxxxxxxxxxxxxx : unit -> unit
-
+val adjust_pp_with_indent : (unit -> unit) -> unit
 
 (*****************************************************************************)
 (* Macro *)

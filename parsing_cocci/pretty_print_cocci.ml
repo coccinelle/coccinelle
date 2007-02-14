@@ -644,7 +644,6 @@ let _ =
     | Ast.SgrepEndTag(x) -> print_string x
 
 let unparse x =
-  force_newline();
   print_string "@@";
   force_newline();
   print_string "@@";

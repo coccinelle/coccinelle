@@ -319,7 +319,7 @@ module XTRANS = struct
     then (
       try Some (s, List.assoc s env)
       with Not_found -> 
-        pp2 ("Don't find value for metavariable " ^ s ^ " in the environment");
+        pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
         None
     )
     else 
@@ -350,7 +350,7 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       let node  = acc#nodes#assoc nodei in 
 
       if !Flag_engine.show_misc 
-      then pp2 "transform one node";
+      then pr2 "transform one node";
 
       let node' = TRANS.rule_elem_node rule_elem node binding in
 

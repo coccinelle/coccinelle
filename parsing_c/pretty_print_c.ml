@@ -733,5 +733,4 @@ and pp_binding subst =
       (fun (s, kind) -> pp s; pp " --> "; pp_binding_kind kind)
       subst;
     pp "]";
-    Format.force_newline();
   end

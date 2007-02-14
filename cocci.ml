@@ -148,64 +148,77 @@ let show_or_not_ctl_tex astcocci ctls =
   end
 
 
+
+
+
+
+
 let show_or_not_ctl_text ctl ast =
   if !Flag.show_ctl_text then begin
 
-    Common.format_xxxxxxxxxxxxxxxxx();
     ast +> do_option (fun ast -> 
-      pp2 "rule = ";
-      Common.pp_do_in_box (fun () -> 
-        Pretty_print_cocci.unparse ast;
-      );
-      Format.force_newline();
+      pr2_no_nl "rule = ";
+      indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+          Pretty_print_cocci.unparse ast;
+      ));
     );
 
-    pp2 "ctl = ";
+    pr2_no_nl "ctl = ";
     let (ctl,_) = ctl in
-    Common.pp_do_in_box (fun () -> 
-      Format.force_newline();
+    indent_do (fun() -> adjust_pp_with_indent (fun () -> 
       Pretty_print_engine.pp_ctlcocci 
         !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-    );
-    Format.force_newline();
+    ));
   end
 
 
 
-let show_or_not_celem celem = 
+let show_or_not_celem prelude celem = 
   if !Flag.show_misc then 
   (match celem with 
   | Ast_c.Definition ((funcs,_,_,_c),_) -> 
-      pp2 ("STARTING function: " ^ funcs);
+      pr2 (prelude ^ " function: " ^ funcs);
   | Ast_c.Declaration (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) ->
-      pp2 ("STARTING variable " ^ s);
+      pr2 (prelude ^ " variable " ^ s);
   | _ -> 
-      pp2 ("STARTING something else");
+      pr2 (prelude ^ " something else");
   )
 
 
 let show_or_not_trans_info trans_info = 
   if !Flag.show_transinfo then begin
-    if null trans_info then pp2 "transformation info is empty"
+    if null trans_info then pr2 "transformation info is empty"
     else begin
-      pp2 "transformation info returned:";
-      Common.pp_do_in_box (fun () -> 
-        Format.force_newline();
-        Pretty_print_engine.pp_transformation_info trans_info;
-        Format.force_newline();
-      );
-      Format.force_newline();
+      pr2 "transformation info returned:";
+      let trans_info =
+        List.sort (function (i1,_,_) -> function (i2,_,_) -> compare i1 i2)
+          trans_info 
+      in
+      indent_do (fun () -> 
+        trans_info +> List.iter (fun (i, subst, re) -> 
+          pr2 ("transform state:" ^ (Common.i_to_s i));
+          indent_do (fun () -> 
+            pr2_no_nl "with rule_elem:";
+            indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+              Pretty_print_cocci.rule_elem "" re;
+            ));
+            pr2_no_nl "with binding:";
+            indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+              Pretty_print_c.pp_binding subst;
+            ));
+          )
+        );
+      )
     end
   end
 
 
 let show_or_not_binding s binding =
   if !Flag.show_binding_in_out then begin
-    Format.force_newline();
-    pp ("binding " ^ s ^ " = ");
-    Pretty_print_c.pp_binding binding;
-    Format.force_newline();
-
+    pr2_no_nl ("binding " ^ s ^ " = ");
+    indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+      Pretty_print_c.pp_binding binding;
+    ))
   end
 
 
@@ -271,9 +284,9 @@ let ast_to_flow_with_error_messages2 def =
   let flowopt = 
     try Some (Ast_to_flow.ast_to_control_flow def)
     with Ast_to_flow.Error x -> 
-      pp2 "PBBBBBBBBBBBBBBBBBB";
+      pr2 "PBBBBBBBBBBBBBBBBBB";
       Ast_to_flow.report_error x;
-      pp2
+      pr2
         ("At least 1 DEADCODE detected (there may be more)," ^
             "but I can't continue :(" ^ 
             "Maybe because of cpp #ifdef side effects."
@@ -287,12 +300,12 @@ let ast_to_flow_with_error_messages2 def =
      *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-      pp2 "PBBBBBBBBBBBBBBBBBB";
+      pr2 "PBBBBBBBBBBBBBBBBBB";
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-      pp2 ("At least 1 DEADCODE detected (there may be more)," ^
+      pr2 ("At least 1 DEADCODE detected (there may be more)," ^
               "but I continue.");
       (* not a failwith this time *)
-      pp2 "Maybe because of cpp #ifdef side effects."; 
+      pr2 "Maybe because of cpp #ifdef side effects."; 
   );
   flowopt
 
@@ -336,7 +349,7 @@ type celem_with_info =
 let build_maybe_info e = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-      if !Flag.show_misc then pp2 ("build info function " ^ funcs);
+      if !Flag.show_misc then pr2 ("build info function " ^ funcs);
       
       let flowopt = ast_to_flow_with_error_messages def in
       flowopt +> map_option (fun flow -> 
@@ -498,7 +511,7 @@ and process_a_ctl ctl envs =
   match envs with
   | [] -> []
   | env::envs_remaining -> 
-      Common.pp_f_in_box (fun () -> 
+      indent_do (fun () -> 
         let children_envs = process_a_ctl_a_env ctl env in
         Common.union_set children_envs (process_a_ctl ctl envs_remaining)
       )
@@ -546,7 +559,7 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
   if not (null children_envs)
   then children_envs
   else begin
-    pp2 "Empty list of bindings, I will restart from old env";
+    pr2 "Empty list of bindings, I will restart from old env";
     [env]
   end
 
@@ -562,12 +575,10 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
  *)
 and process_a_ctl_a_env_a_celem2 = 
  fun (celem, info) (ctl, used_after_list) binding -> 
-  Common.pp_f_in_box (fun () -> 
+  indent_do (fun () -> 
   match info with
   | None -> None
   | Some info -> 
-      show_or_not_celem celem;
-
       let satres = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
           Flag_ctl.loop_in_src_code := 
@@ -583,7 +594,7 @@ and process_a_ctl_a_env_a_celem2 =
         ) in
 
       (match satres with
-      | Right x -> pp2 ("Unable to find a value for " ^ x); None
+      | Right x -> pr2 ("Unable to find a value for " ^ x); None
       | Left (trans_info, returned_any_states, newbinding) ->
           (* modify also the proto if FunHeader was touched *)
           let hack_funheaders = 
@@ -599,6 +610,7 @@ and process_a_ctl_a_env_a_celem2 =
           if not returned_any_states (* old: not (null trans_info)  *)
           then None
           else begin
+            show_or_not_celem "found match in" celem;
             show_or_not_trans_info trans_info;
             show_or_not_binding "out" newbinding;
             if not (null trans_info)
@@ -640,7 +652,7 @@ let process_hack_funheaders2 hack_funheaders =
    * modify the prototype as soon as possible, not wait until the end
    * of all the ctl rules 
    *)
-  if !Flag.show_misc then pp2 ("hack headers");
+  if !Flag.show_misc then pr2 ("hack headers");
       
   hack_funheaders +> List.iter (fun info ->
     let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
@@ -711,7 +723,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if not (worth_trying cfile error_words_julia)
-  then Common.command2 ("cp " ^ cfile ^ " /tmp/output.c")
+  then Common.command2 ("cp " ^ cfile ^ " " ^ outfile)
   else begin
     
    (* parsing and build CFG *)
@@ -719,7 +731,11 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     g_hack_funheaders := [];
     g_contain_typedmetavar := contain_typedmetavar;
 
-    Format.print_newline();
+    flush stdout;
+    flush stderr;
+    Common.print_xxxxxxxxxxxxxxxxx();
+    pr2 "let's go";
+    Common.print_xxxxxxxxxxxxxxxxx();
     process_ctls ctls [Ast_c.emptyMetavarsBinding];
     process_hack_funheaders !g_hack_funheaders;
 
@@ -730,8 +746,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
     if !Flag.show_diff then begin
       (* may need --strip-trailing-cr under windows *)
-      pp2 "diff = ";
-      Format.print_newline();
+      pr2 "diff = ";
       Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
     end
   end

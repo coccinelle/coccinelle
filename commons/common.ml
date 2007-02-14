@@ -204,7 +204,28 @@ let command2 s = ignore(Sys.command s)
 (*****************************************************************************)
 
 let pr s = (print_string s; print_string "\n"; flush stdout)
-let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr)
+
+
+let _tab_level_print = ref 0
+
+let indent_do f = 
+  _tab_level_print := !_tab_level_print + 5;
+  let res = f() in
+  _tab_level_print := !_tab_level_print - 5;
+  res
+
+let pr2 s = 
+  do_n !_tab_level_print (fun () -> prerr_string " ");
+  prerr_string s;
+  prerr_string "\n"; flush stderr
+
+let pr2_no_nl s = 
+  do_n !_tab_level_print (fun () -> prerr_string " ");
+  prerr_string s;
+  flush stderr
+
+
+(* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 
 let pr2gen x = pr2 (Dumper.dump x)
 
@@ -606,22 +627,27 @@ let print_xxxxxxxxxxxxxxxxx () =
   pr2 "-----------------------------------------------------------------------"
 
 
+let adjust_pp_with_indent f = 
+  Format.open_box !_tab_level_print; 
+  Format.force_newline();
+  f(); 
+  Format.close_box ();
+  Format.print_newline()
 
 
-let pp_do_in_box f      = Format.open_box 2; f(); Format.close_box ()
+
+let pp_do_in_box f      = Format.open_box 1; f(); Format.close_box ()
 let pp_do_in_zero_box f = Format.open_box 0; f(); Format.close_box ()
 
 let pp_f_in_box f      = 
-  Format.open_box 2; 
+  Format.open_box 1; 
   let res = f() in 
   Format.close_box ();
-  Format.force_newline();
   res
 
-
-
 let pp s = Format.print_string s
-let pp2 s = Format.force_newline();Format.print_string s; Format.force_newline()
+
+
 
 (* convert something printed using format to print into a string *)
 let format_to_string f =
@@ -640,9 +666,6 @@ let format_to_string f =
   (try loop() with End_of_file -> ());
   String.concat "\n" (List.rev !lines)
 
-
-let format_xxxxxxxxxxxxxxxxx () = 
-  pp2 "----------------------------------------------------------"
 
 
 (*****************************************************************************)

@@ -45,25 +45,31 @@ let rec (pp_ctl:
 	 pp " . "; 
 	 print_cut();
 	 Common.pp_do_in_box (fun () -> pp_aux env phi); 
-	 pp ")"
-     | And(phi1,phi2)     -> pp_2args env char_and phi1 phi2; 
+	 pp ")";
      | AndAny(dir,phi1,phi2) ->
 	 pp_2args env (char_and_any^(pp_dirc dir)) phi1 phi2; 
-     | Or(phi1,phi2)      -> pp_2args env char_or phi1 phi2; 
+     | And(phi1,phi2)        -> pp_2args env char_and phi1 phi2; 
+     | Or(phi1,phi2)         -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
-     | Implies(phi1,phi2) -> pp_2args env "=>" phi1 phi2;
-     | AF(dir,phi1)   -> pp "AF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AX(dir,phi1)   -> pp "AX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | AG(dir,phi1)     -> pp "AG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | EF(dir,phi1)     -> pp "EF"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | EX(dir,phi1)   -> pp "EX"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
-     | EG(dir,phi1)   -> pp "EG"; pp_dir dir; pp "("; pp_arg env phi1; pp ")"
+     | Implies(phi1,phi2)    -> pp_2args env "=>" phi1 phi2;
+     | AF(dir,phi1)     -> pp "AF"; pp_dir dir;  pp_arg_paren env phi1; 
+     | AX(dir,phi1)     -> pp "AX"; pp_dir dir;  pp_arg_paren env phi1; 
+     | AG(dir,phi1)     -> pp "AG"; pp_dir dir;  pp_arg_paren env phi1;
+     | EF(dir,phi1)     -> pp "EF"; pp_dir dir;  pp_arg_paren env phi1;
+     | EX(dir,phi1)     -> pp "EX"; pp_dir dir;  pp_arg_paren env phi1; 
+     | EG(dir,phi1)     -> pp "EG"; pp_dir dir;  pp_arg_paren env phi1; 
      | AW(dir,phi1,phi2) ->
-	 pp "A"; pp_dir dir; pp "["; pp_2args_bis env "W" phi1 phi2; pp "]" 
+	 pp "A"; pp_dir dir; pp "["; 
+           pp_2args_bis env "W" phi1 phi2; 
+         pp "]" 
      | AU(dir,phi1,phi2) ->
-	 pp "A"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
+	 pp "A"; pp_dir dir; pp "["; 
+           pp_2args_bis env "U" phi1 phi2; 
+         pp "]" 
      | EU(dir,phi1,phi2)  ->
-	 pp "E"; pp_dir dir; pp "["; pp_2args_bis env "U" phi1 phi2; pp "]" 
+	 pp "E"; pp_dir dir; pp "["; 
+           pp_2args_bis env "U" phi1 phi2; 
+         pp "]" 
      | Let (x,phi1,phi2)  -> 
 	 let env' = (x, (Val (phi1,env)))::env in
 	 
@@ -72,6 +78,7 @@ let rec (pp_ctl:
            begin
              pp ("Let"^" "^x);
 	     pp " = ";
+	     print_cut();
              Common.pp_do_in_box (fun () -> pp_aux env phi1);
              print_space ();
              pp "in"; 
@@ -86,6 +93,7 @@ let rec (pp_ctl:
            begin
              pp ("LetR"^" "^x); pp_dir dir;
 	     pp " = ";
+	     print_cut();
              Common.pp_do_in_box (fun () -> pp_aux env phi1);
              print_space ();
              pp "in"; 
@@ -102,7 +110,8 @@ let rec (pp_ctl:
 	   pp s 
            (* pp ")" *)
      | Uncheck(phi1) ->
-	 pp "Uncheck"; pp "("; pp_arg env phi1; pp ")"
+	 pp "Uncheck"; pp_arg_paren env phi1; 
+
      | Dots _ -> failwith "should not occur"
      | PDots _ -> failwith "should not occur"
 
@@ -133,6 +142,10 @@ let rec (pp_ctl:
        Common.pp_do_in_box (fun () -> pp_aux env phi2);
      end
        
-   and pp_arg env phi =  Common.pp_do_in_box (fun () -> pp_aux env phi)      
+   and pp_arg_paren env phi =  Common.pp_do_in_box (fun () -> 
+     pp "(";
+     pp_aux env phi;
+     pp ")";
+   )      
    in
    Common.pp_do_in_box (fun () ->  pp_aux [] ctl;)
