@@ -733,6 +733,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
     flush stdout;
     flush stderr;
+    Format.print_newline();
     Common.print_xxxxxxxxxxxxxxxxx();
     pr2 "let's go";
     Common.print_xxxxxxxxxxxxxxxxx();

@@ -306,7 +306,7 @@ let inner_non_locally_used l =
 (* detection and updating of unitary variables *)
 
 let drop_unitary_variables unitary_variables =
-  Format.printf "unitary variables %s\n" (String.concat " " unitary_variables);
+  Printf.printf "unitary variables %s\n" (String.concat " " unitary_variables);
   let donothing r k e = k e in
   let mcode x = x in
   let not_unitary (name,_,mc) = not(List.mem name unitary_variables) in
