@@ -68,7 +68,7 @@ let main () =
         " <filename> the iso file";
 
       "-o", Arg.Set_string default_output_file,
-        (" <filename> (default is " ^ !default_output_file ^ ")");
+        (" <filename> the output file (default="^ !default_output_file^")");
 
 
       "-c", Arg.Set_string cocci_file, 
