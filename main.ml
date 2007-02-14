@@ -71,19 +71,22 @@ let main () =
         (" <filename> the output file (default="^ !default_output_file^")");
 
 
-      "-c", Arg.Set_string cocci_file, 
-        " short option of -cocci_file";
-      "-i", Arg.Set_string iso_file, 
-        " short option of -iso_file";
+      "-show_flow"              , Arg.Set Flag.show_flow,        " ";
 
       "-version",   Arg.Unit (fun () -> 
         pr2 "version: $Date$";
         raise (Common.UnixExit 0)
       ), " ";
 
-      (* The first 6 options will be printed when use only ./spatch.
+      (* The first 5 options will be printed when use only ./spatch.
        * For the rest you have to use -help to see them.
        *)
+
+      "-c", Arg.Set_string cocci_file, 
+        " short option of -cocci_file";
+      "-i", Arg.Set_string iso_file, 
+        " short option of -iso_file";
+
 
  
       "-dir", Arg.Set dir, 
@@ -104,7 +107,6 @@ let main () =
       
       "-show_c"                 , Arg.Set Flag.show_c,           " ";
       "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
-      "-show_flow"              , Arg.Set Flag.show_flow,        " ";
       "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
       "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
       "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
@@ -369,12 +371,12 @@ let main () =
           );
 
     | [] -> 
-        Arg.usage (Common.take 6 options) usage_msg; 
+        Arg.usage (Common.take 5 options) usage_msg; 
         pr2 "To get the full list of options, use -help";
         pr2 "Example of use:";
         pr2 "  ./spatch -cocci_file foo.cocci foo.c";
         pr2 "";
-        failwith "too few arguments"
+        raise (UnixExit (-1));
    )
   );
   Common.profile_diagnostic ();
