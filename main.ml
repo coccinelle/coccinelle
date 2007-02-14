@@ -174,7 +174,7 @@ let main () =
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 
-                     " [options] <path-to-c-dir>\nOptions are:") 
+                     " [options] <path-to-c-file>\nOptions are:") 
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
 
