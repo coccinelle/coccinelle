@@ -459,7 +459,7 @@ primary_expr: TIdent  { ((Ident  (fst $1)), noType), [snd $1] }
 
 
 
-action_higherordermacro: jump        { ActJump $1 }
+action_higherordermacro: jump          { ActJump $1 }
                        | assign_expr_statement action_higherordermacro { ActSeq ($1, $2)  }
                        | /* empty */ { ActMisc [] }
 /*                     | Tdo         { ActMisc [$1] }
@@ -684,6 +684,7 @@ s_or_u_spec2: struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace 
 
 struct_or_union2: Tstruct { Struct, $1 }
     	        | Tunion  { Union, $1 }
+
 
 
 struct_decl2: spec_qualif_list struct_declarator_list TPtVirg 

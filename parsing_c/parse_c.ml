@@ -503,15 +503,6 @@ let statement_of_string = parse_gen Parser_c.statement
 open Parser_c
 open Lexer_parser
 
-(* LALR(k) trick. We can do stuff by adding cases in lexer_c.mll, but
- * it is more general to do it via my LALR(k) tech. Because here we can
- * transform some token give some context information. So sometimes it
- * makes sense to transform a token in one context, sometimes not, and
- * lex can not provide us this context information. Note that the order
- * in the pattern matching is important. Do not cut/paste. *)
-
-
-
 let forLOOKAHEAD = 20
 
 (* opti: was better to built it once and for all *)
@@ -560,6 +551,19 @@ let msg_typedef s =
   | _ ->  
       if !Flag_parsing_c.debug_typedef
       then pr2 ("CERTAINLY TYPEDEF, promoting: " ^ s)
+
+
+
+(* LALR(k) trick. We can do stuff by adding cases in lexer_c.mll, but
+ * it is more general to do it via my LALR(k) tech. Because here we can
+ * transform some token give some context information. So sometimes it
+ * makes sense to transform a token in one context, sometimes not, and
+ * lex can not provide us this context information. Note that the order
+ * in the pattern matching in lookahead is important. Do not cut/paste. 
+ * 
+ * Note that in next there is only "clean" tokens, there is no comment
+ * or space tokens. This is done by the caller.
+ *)
 
 
 let lookahead2 next before = 

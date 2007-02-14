@@ -120,6 +120,7 @@ let keyword_table = Common.hash_of_list [
   "INLINE", (fun ii -> TCommentAttrOrMacro ii); 
   "_INLINE_", (fun ii -> TCommentAttrOrMacro ii); 
   "STATIC", (fun ii -> TCommentAttrOrMacro ii); 
+  "_static", (fun ii -> TCommentAttrOrMacro ii); 
   " __pmac", (fun ii -> TCommentAttrOrMacro ii);  
 
   (* foreach-like macro. Now generalize via lalr(k) tech *) 

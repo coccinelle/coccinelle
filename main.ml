@@ -232,10 +232,15 @@ let main () =
             if not (null !_stat_list) 
             then Parse_c.print_parsing_stat_list !_stat_list;
 
-            pr2 "--------------------------------";
-            pr2 "regression testing  information";
-            pr2 "--------------------------------";
-            Common.regression_testing newscore "/tmp/score_parsing.marshalled";
+            if not (null xs)
+            then begin 
+              pr2 "--------------------------------";
+              pr2 "regression testing  information";
+              pr2 "--------------------------------";
+              Common.regression_testing newscore 
+                "/tmp/score_parsing.marshalled";
+            end
+              
 
 
 

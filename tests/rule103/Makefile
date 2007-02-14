@@ -1,4 +1,4 @@
-SP=mini.cocci
+SP=rule103.cocci
 
 SOURCES=3c574_cs.c \
 3c589_cs.c \
