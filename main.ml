@@ -72,9 +72,18 @@ let main () =
 
 
       "-c", Arg.Set_string cocci_file, 
-        " <filename> the semantic patch file";
+        " short option of -cocci_file";
       "-i", Arg.Set_string iso_file, 
-        " <filename> the semantic patch file";
+        " short option of -iso_file";
+
+      "-version",   Arg.Unit (fun () -> 
+        pr2 "version: $Date$";
+        raise (Common.UnixExit 0)
+      ), " ";
+
+      (* The first 6 options will be printed when use only ./spatch.
+       * For the rest you have to use -help to see them.
+       *)
 
  
       "-dir", Arg.Set dir, 
@@ -147,11 +156,6 @@ let main () =
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
 
-      "-version",   Arg.Unit (fun () -> 
-        pr2 "version: $Date$";
-        raise (Common.UnixExit 0)
-      ), " ";
-
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
           "\n\t possibles actions are:
@@ -181,8 +185,8 @@ let main () =
     (* the test framework. Works with tests/  *)
     | [x] when !test_mode    -> 
         Testing.testone x !compare_with_expected !iso_file
-    | []  when !testall_mode -> Testing.testall !iso_file
-
+    | []  when !testall_mode -> 
+        Testing.testall !iso_file
     | [x] when !test_ctl_foo -> 
         Cocci.full_engine x (Right (Test.foo_ctl ())) !default_output_file
 
@@ -364,7 +368,13 @@ let main () =
               generated_file expected_res (List.length fullxs = 1)
           );
 
-    | [] -> Arg.usage options usage_msg; failwith "too few arguments"
+    | [] -> 
+        Arg.usage (Common.take 6 options) usage_msg; 
+        pr2 "To get the full list of options, use -help";
+        pr2 "Example of use:";
+        pr2 "  ./spatch -cocci_file foo.cocci foo.c";
+        pr2 "";
+        failwith "too few arguments"
    )
   );
   Common.profile_diagnostic ();
@@ -379,13 +389,10 @@ let _ =
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
       then main ()
       else 
-        Common.finalize
-          (fun()-> 
-            Common.pp_do_in_zero_box (fun () -> 
-              main ();
-              Ctlcocci_integration.print_bench()
-            )
-          )
-          (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+        Common.finalize (fun()-> Common.pp_do_in_zero_box (fun () -> 
+          main ();
+          Ctlcocci_integration.print_bench()
+        ))
+        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
       
