@@ -1818,7 +1818,10 @@ let sat m phi reqopt check_conj =
 	else fn() in
 (* print_state "final result" res;*)
     res
-  else (Common.pr2 "missing something required"; [])
+  else
+    (if !Flag_ctl.verbose_ctl_engine
+    then Common.pr2 "missing something required";
+     [])
 ;;
 
 (* ********************************************************************** *)
