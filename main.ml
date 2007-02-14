@@ -147,6 +147,11 @@ let main () =
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
 
+      "-version",   Arg.Unit (fun () -> 
+        pr2 "version: $Date$";
+        raise (Common.UnixExit 0)
+      ), " ";
+
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
           "\n\t possibles actions are:
