@@ -224,6 +224,8 @@ let pr2_no_nl s =
   prerr_string s;
   flush stderr
 
+let reset_pr2_indent () =
+  _tab_level_print := 0
 
 (* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 

@@ -120,15 +120,17 @@ let one_ctl ctls = List.hd (List.hd ctls)
 (* Some  debugging functions *)
 (*****************************************************************************)
 
-let show_or_not_cfile cfile =
+let show_or_not_cfile2 cfile =
   if !Flag.show_c then begin
     Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.print_xxxxxxxxxxxxxxxxx ();
     Common.command2 ("cat " ^ cfile);
   end
+let show_or_not_cfile a = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_cfile2 a)
 
-let show_or_not_cocci coccifile isofile = 
+let show_or_not_cocci2 coccifile isofile = 
   if !Flag.show_cocci then begin
     Common.print_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing semantic patch file: " ^ coccifile);
@@ -137,23 +139,23 @@ let show_or_not_cocci coccifile isofile =
     Common.command2 ("cat " ^ coccifile);
     pr2 "";
   end
+let show_or_not_cocci a b = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_cocci2 a b)
 
 
-let show_or_not_ctl_tex astcocci ctls =
+let show_or_not_ctl_tex2 astcocci ctls =
   if !Flag.show_ctl_tex then begin
     Ctltotex.totex ("/tmp/__cocci_ctl.tex") astcocci ctls;
     Common.command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
               "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
               "gv __cocci_ctl.ps &");
   end
+let show_or_not_ctl_tex a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_tex2 a b)
 
 
 
-
-
-
-
-let show_or_not_ctl_text ctl ast =
+let show_or_not_ctl_text2 ctl ast =
   if !Flag.show_ctl_text then begin
 
     ast +> do_option (fun ast -> 
@@ -170,10 +172,12 @@ let show_or_not_ctl_text ctl ast =
         !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
     ));
   end
+let show_or_not_ctl_text a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b)
 
 
 
-let show_or_not_celem prelude celem = 
+let show_or_not_celem2 prelude celem = 
   if !Flag.show_misc then 
   (match celem with 
   | Ast_c.Definition ((funcs,_,_,_c),_) -> 
@@ -183,9 +187,12 @@ let show_or_not_celem prelude celem =
   | _ -> 
       pr2 (prelude ^ " something else");
   )
+let show_or_not_celem a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
 
 
-let show_or_not_trans_info trans_info = 
+
+let show_or_not_trans_info2 trans_info = 
   if !Flag.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
     else begin
@@ -211,15 +218,31 @@ let show_or_not_trans_info trans_info =
       )
     end
   end
+let show_or_not_trans_info a  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_trans_info2 a)
 
 
-let show_or_not_binding s binding =
+
+let show_or_not_binding2 s binding =
   if !Flag.show_binding_in_out then begin
     pr2_no_nl ("binding " ^ s ^ " = ");
     indent_do (fun() -> adjust_pp_with_indent (fun () -> 
       Pretty_print_c.pp_binding binding;
     ))
   end
+let show_or_not_binding a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_binding2 a b)
+
+
+
+let show_or_not_diff2 cfile outfile = 
+  if !Flag.show_diff then begin
+    (* may need --strip-trailing-cr under windows *)
+    pr2 "diff = ";
+    Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
+  end
+let show_or_not_diff a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
 
 
 
@@ -308,8 +331,6 @@ let ast_to_flow_with_error_messages2 def =
       pr2 "Maybe because of cpp #ifdef side effects."; 
   );
   flowopt
-
-
 let ast_to_flow_with_error_messages a = 
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
@@ -327,7 +348,6 @@ let flow_to_ast2 flow =
       )
   | _ -> 
       Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
-
 let flow_to_ast a = 
   Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
 
@@ -507,6 +527,7 @@ let rec process_ctls ctls envs =
       let newenvs = process_a_ctl (ctl, used_after_list) envs in
       process_ctls ctls_remaining newenvs
 
+
 and process_a_ctl ctl envs = 
   match envs with
   | [] -> []
@@ -515,6 +536,7 @@ and process_a_ctl ctl envs =
         let children_envs = process_a_ctl_a_env ctl env in
         Common.union_set children_envs (process_a_ctl ctl envs_remaining)
       )
+
 
 and process_a_ctl_a_env (ctl, used_after_list) env = 
 
@@ -528,10 +550,6 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
 	List.fold_left Common.union_set [] used_after_list 
       in
 
-      (************************************************************)
-      (* !Main point! The call to the function that will call the
-       * ctl engine and all the machinery *)
-      (************************************************************)
       match process_a_ctl_a_env_a_celem
         (elem,info) (ctl,full_used_after_list) env
       with
@@ -539,7 +557,7 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
           push2 None new_c_elems ;
           acc
       | Some (elem, modified, newbinding, hacks) ->  
-          push2 (Some (elem, modified)) new_c_elems;
+          push2 (if modified then (Some elem) else None) new_c_elems;
           hacks +>List.iter (fun x ->Common.push2 x g_hack_funheaders);
           Common.insert_set newbinding acc
     ) []
@@ -548,10 +566,8 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
   let cprogram' = zip new_c_elems !g_cprogram  +> List.map 
     (fun (optnewelem, ((elem, info_item), flow, env))  -> 
       match optnewelem with 
-      | None ->        
-          ((elem,     info_item), flow, env), false
-      | Some (newelem, modified) -> 
-          ((newelem, info_item), flow, env), modified
+      | None ->         ((elem, info_item),    flow, env), false
+      | Some newelem -> ((newelem, info_item), flow, env), true
     )
   in
   g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
@@ -607,14 +623,15 @@ and process_a_ctl_a_env_a_celem2 =
             )  
           in
           
-          if not returned_any_states (* old: not (null trans_info)  *)
+          if not returned_any_states
           then None
           else begin
             show_or_not_celem "found match in" celem;
             show_or_not_trans_info trans_info;
             show_or_not_binding "out" newbinding;
-            if not (null trans_info)
-            then 
+            if (null trans_info)
+            then Some (celem, false, newbinding, hack_funheaders)
+            else 
 
               (* I do the transformation on flow, not fixed_flow, 
                  because the flow_to_ast need my extra information. *)
@@ -630,14 +647,9 @@ and process_a_ctl_a_env_a_celem2 =
                 else flow_to_ast flow' 
               in
               Some (celem', true, newbinding, hack_funheaders)
-            else 
-              Some (celem, false, newbinding, hack_funheaders)
-                
           end
       )
   )
-
-
 and process_a_ctl_a_env_a_celem  a b c = 
   Common.profile_code "process_a_ctl_a_env_a_celem" 
     (fun () -> process_a_ctl_a_env_a_celem2 a b c)
@@ -737,19 +749,17 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     Common.print_xxxxxxxxxxxxxxxxx();
     pr2 "let's go";
     Common.print_xxxxxxxxxxxxxxxxx();
+
     process_ctls ctls [Ast_c.emptyMetavarsBinding];
     process_hack_funheaders !g_hack_funheaders;
 
     (* and now unparse everything *)
-    let cprogram' = !g_cprogram +> List.map (fun ((ebis,info_item),_flow,_env) ->(ebis, info_item), Unparse_c.PPviastr) 
+    let cprogram' = !g_cprogram +> List.map (fun ((ebis,info_item),_cfg,_e) ->
+      (ebis, info_item), Unparse_c.PPviastr) 
     in
     cfile_from_program cprogram' outfile;
 
-    if !Flag.show_diff then begin
-      (* may need --strip-trailing-cr under windows *)
-      pr2 "diff = ";
-      Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
-    end
+    show_or_not_diff cfile outfile;
   end
 
 

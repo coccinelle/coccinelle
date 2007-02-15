@@ -3,24 +3,21 @@ open Commonop
 
 (* Tricks used to handle the ambiguity in the grammar with the typedef
  * which impose a cooperation between the lexer and the parser.
-
- * An example by hughes casse:
- * NOTE: in the symbol table, local definition must replace type definition
- * in order to correctly parse local variable in functions body.
- * This is the only way to correctly handle this kind of exception,
- * that is,
-
- * typedef ... ID;
- * int f(int *p) {int ID; return (ID) * *p;}
- * If ID isn't overload, last expression is parsed as a type cast,
- * if it isn't, this a multiplication.
-
- * Why parse_typedef_fix2 ? 
- * Cos when introduce new variable (for instance when declare parameters 
- * for a function such as int var_t), then the var_t must not be lexed as a 
- * typedef,  so we must disable temporaly the typedef mechanism to allow
- * variable with same name as a typedef.
- *)
+ * 
+ * An example by hughes casse: NOTE: in the symbol table, local
+ * definition must replace type definition in order to correctly parse
+ * local variable in functions body. This is the only way to correctly
+ * handle this kind of exception, that is,
+ * 
+ * typedef ... ID; int f(int *p) {int ID; return (ID) * *p;} If ID
+ * isn't overload, last expression is parsed as a type cast, if it
+ * isn't, this a multiplication.
+ * 
+ * Why parse_typedef_fix2 ? Cos when introduce new variable (for
+ * instance when declare parameters for a function such as int var_t),
+ * then the var_t must not be lexed as a typedef, so we must disable
+ * temporaly the typedef mechanism to allow variable with same name as
+ * a typedef. *)
 
 (* parse_typedef_fix *)
 let _handle_typedef = ref true

@@ -8,6 +8,7 @@ val pr2gen: 'a -> unit
 
 val indent_do : (unit -> 'a) -> 'a
 val pr2_no_nl : string -> unit
+val reset_pr2_indent : unit -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
