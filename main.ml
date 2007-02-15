@@ -248,7 +248,12 @@ let main () =
             if not (file =~ ".*\\.cocci") 
             then pr2 "warning: seems not a .cocci file";
 
-            let (xs,_,_) = Cocci.sp_from_file file None in
+            if !iso_file <> "" 
+            then 
+              iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
+            let iso_file = if !iso_file = "" then None else Some !iso_file in
+
+            let (xs,_,_) = Cocci.sp_from_file file iso_file  in
             xs +> List.iter Pretty_print_cocci.unparse
 
 

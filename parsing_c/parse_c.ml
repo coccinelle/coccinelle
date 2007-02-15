@@ -28,8 +28,8 @@ let not_struct_enum = function
 
 
 
-(* Because ocamllex force us to do it that way. Cant return a pair to
- * ocamlyacc :( 
+(* Because ocamlyacc force us to do it that way. The ocamlyacc token 
+ * cant be a pair of a sum type, it must be directly a sum type.
  *)
 let info_from_token = function
   | Parser_c.TString ((string, isWchar), i) -> i
@@ -127,7 +127,7 @@ let info_from_token = function
   | Parser_c.Tinline              (i) -> i
   | Parser_c.EOF                  (i) -> i
   
-
+(* used by tokens to complete the parse_info with filename, line, col infos *)
 let visitor_info_from_token f = function
   | Parser_c.TString ((string, isWchar), i) -> 
       Parser_c.TString ((string, isWchar), f i) 
@@ -145,7 +145,7 @@ let visitor_info_from_token f = function
   | Parser_c.TInt  (s, i) -> 
       Parser_c.TInt  (s, f i) 
 
-
+  (* Don't visit, fakeInfo cant have better line x col info *)
   | Parser_c.TDefine (s, body, i1, i2, i3) -> 
       Parser_c.TDefine (s, body, f i1, i2, i3)
   | Parser_c.TInclude (s, i1, i2) -> 
@@ -493,7 +493,7 @@ let parse_gen parsefunc s =
 let type_of_string      = parse_gen Parser_c.type_name
 let statement_of_string = parse_gen Parser_c.statement
 
-(* ex: statement_of_string "(struct us_data*)psh->hostdata = NULL;" *)
+(* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
 
 
