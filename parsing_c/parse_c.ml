@@ -577,6 +577,17 @@ let lookahead2 next before =
   | (TIdent ("ANDP",i1)::TIdent (_,_)::_,   _) ->  TComma i1
   | (TIdent ("ANDP",i1)::TOPar _::_,   _)       ->  TComma i1
 
+
+  (* static void mtdblock_request(RQFUNC_ARG);
+   * but must put this before other rules otherwise the typedef
+   * transformer will catch before 
+   *)
+  | TIdent (s, i1)::TCPar _::rest, TOPar _::_ 
+      when !Lexer_parser._lexer_hint.parameterDeclaration -> 
+      if !Flag_parsing_c.debug_cpp 
+      then pr2 ("CERTAINLY MACRO arg, transforming: " ^ s);
+      TCommentCpp (i1)
+
   (*-------------------------------------------------------------*)
   (* stringification of ident *)
   (*-------------------------------------------------------------*)
@@ -804,6 +815,11 @@ let lookahead2 next before =
       end
       else TIdent (s, i1)
 
+
+  (*-------------------------------------------------------------*)
+  (* Fucking Macro *)
+  (*-------------------------------------------------------------*)
+      
         
   (*-------------------------------------------------------------*)
   (* CPP *)
