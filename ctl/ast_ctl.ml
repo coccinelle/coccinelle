@@ -93,8 +93,7 @@ type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list
 type ('state,'subst,'anno) generic_witnesstree =
     Wit of
       'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree list
-  | NegWit of
-      'state * 'subst * 'anno * ('state,'subst,'anno) generic_witnesstree list
+  | NegWit of ('state,'subst,'anno) generic_witnesstree
 
 (* ---------------------------------------------------------------------- *)
 

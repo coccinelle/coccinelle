@@ -127,7 +127,7 @@ let main () =
 
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
-      (*"-partial_match",        Arg.Set Flag_ctl.partial_match, " ";*)
+      "-partial_match",        Arg.Set Flag_ctl.partial_match, " ";
 
       "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-no_type_error_msg", Arg.Clear Flag_parsing_c.verbose_type, " ";

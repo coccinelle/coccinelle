@@ -141,7 +141,7 @@ struct
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,th,anno,wit) ->
 	  List.concat (List.map (loop neg ((mkth th) @ acc)) wit)
-      | A.NegWit(st,th,anno,wit) -> [] in
+      | A.NegWit(_) -> [] in
     List.concat
       (List.map
 	 (function wit -> loop false [] wit)
@@ -188,7 +188,7 @@ struct
 	    (function A.Subst(_,(PredVal(_) as x)) -> Some (st,x) | _ -> None)
 	    th) @
 	  (List.concat (List.map loop wit))
-      | A.NegWit(st,th,anno,wit) -> loop (A.Wit(st,th,anno,wit)) in
+      | A.NegWit(wit) -> loop wit in
     List.fold_left Common.union_set [] (List.map loop wits)
 
   let check_conjunction phipsi res_phi res_psi res_phipsi = () (*

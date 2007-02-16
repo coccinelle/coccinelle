@@ -39,7 +39,7 @@ let build_modified (n,_,wits) =
 	cell := n :: !cell;
 	List.iter loop wit
     |	CTL.Wit(st,_,anno,wit) -> List.iter loop wit
-    |	CTL.NegWit(st,_,anno,wit) -> List.iter loop wit in
+    |	CTL.NegWit(wit) -> () in
   List.iter loop wits
     
 (* Step 2: For each node in the hash table, create the error and warning
@@ -114,9 +114,15 @@ let test_formula state formula cfg =
     List.mem state seen_before
   with Not_found ->
     let label pred = [(pred,[],[])] in
+    let verbose = !Flag_ctl.verbose_ctl_engine in
+    let pm = !Flag_ctl.partial_match in
+    Flag_ctl.verbose_ctl_engine := false;
+    Flag_ctl.partial_match := false;
     let res =
       ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist) formula ([state],[])
 	(function _ -> function _ -> function _ -> function _ -> ()) in
+    Flag_ctl.verbose_ctl_engine := verbose;
+    Flag_ctl.partial_match := pm;
     let res = List.map (function (st,_,_) -> st) res in
     Hashtbl.add tested formula res;
     List.mem state res

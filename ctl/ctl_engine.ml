@@ -263,9 +263,9 @@ let rec (print_generic_witness: ('pred, 'anno) witness -> unit) =
       |	_ -> 
 	  Format.force_newline(); Format.print_string "   "; Format.open_box 0;
 	  print_generic_witnesstree childrens; Format.close_box())
-  | A.NegWit  (state, subst, anno, childrens) -> 
+  | A.NegWit(wit) -> 
       Format.print_string "!";
-      print_generic_witness(A.Wit  (state, subst, anno, childrens))
+      print_generic_witness wit
 
 and (print_generic_witnesstree: ('pred,'anno) witness list -> unit) =
   fun witnesstree ->
@@ -449,10 +449,10 @@ let eq_wit wit wit' = wit = wit';;
 
 let union_wit wit wit' = unionBy compare (=) wit wit';;
 
-let negate_wit wit =
+let negate_wit wit = A.NegWit wit (*
   match wit with
-    | A.Wit(s,th,anno,ws)    -> A.NegWit(s,th,anno,ws)
-    | A.NegWit(s,th,anno,ws) -> A.Wit(s,th,anno,ws)
+    | A.Wit(s,th,anno,ws)    -> A.NegWitWit(s,th,anno,ws)
+    | A.NegWitWit(s,th,anno,ws) -> A.Wit(s,th,anno,ws)*)
 ;;
 
 let negate_wits wits =
@@ -579,9 +579,7 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
 	[] -> simple
       | (t::ts) -> triples_state_conj (triple_negate t) (compl ts) in
     let compld = (compl complex) in
-    print_state "trips" trips;
     let compld = concatmap cleanup compld in
-    print_state "compld" compld;
     compld)
   else
     let negstates (st,th,wits) =
@@ -678,24 +676,39 @@ let triples_union trips trips' =
 	first_loop trips trips'
     else unionBy compare eq_trip trips trips'
 
-let triples_witness x unchecked trips = 
-    let mkwit ((s,th,wit) as t) =
-      let (th_x,newth) = split_subst th x in
-      match (th_x,unchecked,wit) with
-	([],_,_) ->
-	  SUB.print_mvar x; Format.print_flush();
-	  print_state ": empty witness from" [(s,th,wit)];
-	  t
-      |	(_,true,_) | (_,_,[A.NegWit(_,_,_,_)]) -> t
-      |	_ -> (s,newth,[A.Wit(s,th_x,[],wit)]) in	(* [] = annotation *)
-  (* not sure that nub is needed here.  would require empty witness case to
-     make a duplicate. *)
-  (* setify not needed in checked case - set before implies set after *)
-    if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
-    then setify(map mkwit trips)
-    else map mkwit trips
-;;
 
+let triples_witness x unchecked trips =
+  let anyneg = (* if any is neg, then all are *)
+    List.exists (function A.NegSubst _ -> true | A.Subst _ -> false) in
+  let anynegwit = (* if any is neg, then all are *)
+    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+  let allnegwit = (* if any is neg, then all are *)
+    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+  let res = 
+    List.fold_left
+      (function prev ->
+	function (s,th,wit) as t ->
+	  let (th_x,newth) = split_subst th x in
+	  match th_x with
+	    [] ->
+	      SUB.print_mvar x; Format.print_flush();
+	      print_state ": empty witness from" [t];
+	      t::prev
+	  | l when anyneg l ->
+	      if anynegwit wit && allnegwit wit
+	      then prev
+	      else
+		failwith "unexpected negative binding with positive witnesses"
+	  | [_] -> (* positive must be alone *)
+	      if unchecked or anynegwit wit
+	      then (s,newth,wit)::prev
+	      else (s,newth,[A.Wit(s,th_x,[],wit)])::prev
+	  | _ -> failwith "there can only be one positive binding")
+      [] trips in
+  if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
+  then setify res
+  else List.rev res
+;;
 
 
 (* ---------------------------------------------------------------------- *)
@@ -944,40 +957,60 @@ let satEG dir ((_,_,states) as m) s reqst =
     triples_conj y pre in
   setgfix f s
 
-(* can't drop witnesses under a negation, because eg (1,X=2,[Y=3]) contains
-info other than the witness *)
-let drop_wits required_states s phi =
-  match required_states with
-    None -> s
-  | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
-
 (* *************** *)
 (* Partial matches *)
 (* *************** *)
 
-let strict_triples_conj states trips trips' =
-  print_state "left" trips;
-  print_state "right" trips';
+let filter_conj states unwanted partial_matches =
+  let x =
+    triples_conj (triples_complement states (unwitify unwanted))
+      partial_matches in
+  triples_conj (unwitify x) (triples_complement states x)
+
+let strict_triples_conj strict states trips trips' =
   let res = triples_conj trips trips' in
-  if !Flag_ctl.partial_match
-  then res
-  else
-    let fail_left =
-      let x =
-	triples_conj (triples_complement states (unwitify trips)) trips' in
-      triples_conj (unwitify x) (triples_complement states x) in
-    let fail_right =
-      let x =
-	triples_conj trips (triples_complement states (unwitify trips')) in
-      triples_conj (unwitify x) (triples_complement states x) in
-    print_state "res" res;
-    print_state "fail_left" fail_left;
-    print_state "fail_right" fail_right;
+  if !Flag_ctl.partial_match && strict = A.STRICT
+  then
+    let fail_left = filter_conj states trips trips' in
+    let fail_right = filter_conj states trips' trips in
     triples_union res (triples_union fail_left fail_right)
+  else res
+
+let left_strict_triples_conj strict states trips trips' =
+  let res = triples_conj trips trips' in
+  if !Flag_ctl.partial_match && strict = A.STRICT
+  then
+    let fail_left = filter_conj states trips trips' in
+    triples_union res fail_left
+  else res
+
+let strict_A1 strict op failop dir ((_,_,states) as m) trips required_states = 
+  let res = op dir m trips required_states in
+  if !Flag_ctl.partial_match && strict = A.STRICT
+  then
+    let states = mkstates states required_states in
+    let fail = filter_conj states res (failop dir m trips required_states) in
+    triples_union res fail
+  else res
+
+let strict_A2 strict op failop dir ((_,_,states) as m) trips trips'
+    required_states = 
+  let res = op dir m trips trips' required_states in
+  if !Flag_ctl.partial_match && strict = A.STRICT
+  then
+    let states = mkstates states required_states in
+    let fail = filter_conj states res (failop dir m trips' required_states) in
+    triples_union res fail
+  else res
       
 (* ********************* *)
 (* Environment functions *)
 (* ********************* *)
+
+let drop_wits required_states s phi =
+  match required_states with
+    None -> s
+  | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
 
 let extend_required trips required =
   if !pREQUIRED_ENV_OPT
@@ -1000,7 +1033,7 @@ let extend_required trips required =
 	    rest required)
       [] envs)
   else required
-
+	
 let drop_required v required =
   if !pREQUIRED_ENV_OPT
   then
@@ -1009,7 +1042,6 @@ let drop_required v required =
   else required
 
 let print_required required =
-  Printf.printf "required\n";
   List.iter
     (function reqd -> print_generic_substitution reqd; Format.print_newline())
     required
@@ -1045,13 +1077,13 @@ let satLabel label required p =
   else triples
 
 let get_required_states l =
-  if !pREQUIRED_STATES_OPT
+  if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match
   then
     Some(inner_setify (List.map (function (s,_,_) -> s) l))
   else None
 
 let get_children_required_states dir (grp,_,_) required_states =
-  if !pREQUIRED_STATES_OPT
+  if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match
   then
     match required_states with
       None -> None
@@ -1161,40 +1193,46 @@ let rec satloop unchecked required required_states
 	(* phi1 is considered to be more likely to be [], because of the
 	   definition of asttoctl.  Could use heuristics such as the size of
 	   the term *)
-	(match loop unchecked required required_states phi1 with
-	  [] -> []
-	| phi1res ->
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,loop unchecked required required_states phi1) with
+	  (false,[]) -> []
+	| (_,phi1res) ->
 	    let new_required = extend_required phi1res required in
 	    let new_required_states = get_required_states phi1res in
-	    (match loop unchecked new_required new_required_states phi2 with
-	      [] -> []
-	    | phi2res ->
-		(match strict with
-		  A.NONSTRICT -> triples_conj phi1res phi2res
-		| A.STRICT ->
-		    strict_triples_conj (mkstates states required_states)
-		      phi1res phi2res)))
+	    (match (pm,loop unchecked new_required new_required_states phi2)
+	    with
+	      (false,[]) -> []
+	    | (_,phi2res) ->
+		strict_triples_conj strict (mkstates states required_states)
+		  phi1res phi2res))
     | A.AndAny(dir,strict,phi1,phi2)     ->
 	(* phi2 can appear anywhere that is reachable *)
-	(match loop unchecked required required_states phi1 with
-	  [] -> []
-	| [(state,_,_)] as phi1res ->
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,loop unchecked required required_states phi1) with
+	  (false,[]) -> []
+	| (_,phi1res) ->
 	    let new_required = extend_required phi1res required in
 	    let new_required_states = get_required_states phi1res in
 	    let new_required_states =
 	      get_reachable dir m new_required_states in
-	    (match loop unchecked new_required new_required_states phi2 with
-	      [] -> []
-	    | phi2res ->
-		let phi2res =
-		  List.map (function (s,e,w) -> (state,e,w)) phi2res in
-		(match strict with
-		  A.NONSTRICT -> triples_conj phi1res phi2res
-		| A.STRICT ->
-		    strict_triples_conj (mkstates states required_states)
-		      phi1res phi2res))
-	| _ ->
-	    failwith "only one result allowed for the left argument of AndAny")
+	    (match (pm,loop unchecked new_required new_required_states phi2)
+	    with
+	      (false,[]) -> []
+	    | (_,phi2res) ->
+		(match phi1res with
+		  [] -> (* !Flag_ctl.partial_match must be true *)
+		    strict_triples_conj strict
+		      (mkstates states required_states)
+		      phi1res phi2res
+		| [(state,_,_)] ->
+		    let phi2res =
+		      List.map (function (s,e,w) -> (state,e,w)) phi2res in
+		    strict_triples_conj strict
+		      (mkstates states required_states)
+		      phi1res phi2res
+		| _ ->
+		    failwith
+		      "only one result allowed for the left arg of AndAny")))
     | A.EX(dir,phi)      ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
@@ -1203,8 +1241,8 @@ let rec satloop unchecked required required_states
     | A.AX(dir,strict,phi)      ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
-	satAX dir m (loop unchecked required new_required_states phi)
-	  required_states
+	let res = loop unchecked required new_required_states phi in
+	strict_A1 strict satAX satEX dir m res required_states
     | A.EF(dir,phi)            ->
 	let new_required_states = get_reachable dir m required_states in
 	satEF dir m (loop unchecked required new_required_states phi)
@@ -1217,16 +1255,16 @@ let rec satloop unchecked required required_states
 	    (A.rewrap phi (A.AU(dir,strict,tr,phi)))
 	else
 	  let new_required_states = get_reachable dir m required_states in
-	  satAF dir m (loop unchecked required new_required_states phi)
-	    new_required_states
+	  let res = loop unchecked required new_required_states phi in
+	  strict_A1 strict satAF satEF dir m res new_required_states
     | A.EG(dir,phi)            ->
 	let new_required_states = get_reachable dir m required_states in
 	satEG dir m (loop unchecked required new_required_states phi)
 	  new_required_states
     | A.AG(dir,strict,phi)            ->
 	let new_required_states = get_reachable dir m required_states in
-	satAG dir m (loop unchecked required new_required_states phi)
-	  new_required_states
+	let res = loop unchecked required new_required_states phi in
+	strict_A1 strict satAG satEF dir m res new_required_states
     | A.EU(dir,phi1,phi2)      ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
@@ -1241,9 +1279,8 @@ let rec satloop unchecked required required_states
 	  [] -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
-	    satAW dir m
-	      (loop unchecked new_required new_required_states phi1)
-	      s2 new_required_states)
+	    let s1 = loop unchecked new_required new_required_states phi1 in
+	    strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.AU(dir,strict,phi1,phi2) ->
 	if !Flag_ctl.loop_in_src_code
 	then
@@ -1275,9 +1312,8 @@ let rec satloop unchecked required required_states
 	    [] -> []
 	  | s2 ->
 	      let new_required = extend_required s2 required in
-	      satAU dir m
-		(loop unchecked new_required new_required_states phi1)
-		s2 new_required_states)
+	      let s1 = loop unchecked new_required new_required_states phi1 in
+	      strict_A2 strict satAU satEF dir m s1 s2 new_required_states)
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
@@ -1364,49 +1400,57 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		   res2))
 	  [child1; child2]
     | A.And(strict,phi1,phi2)     -> 
-	(match satv unchecked required required_states phi1 env with
-	  (child1,[]) -> Printf.printf "and\n"; flush stdout; anno [] [child1]
-	| (child1,res1) ->
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,satv unchecked required required_states phi1 env) with
+	  (false,(child1,[])) ->
+	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	| (_,(child1,res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
-	    (match satv unchecked new_required new_required_states phi2
-		env with
-	      (child2,[]) ->
+	    (match (pm,satv unchecked new_required new_required_states phi2
+		      env) with
+	      (false,(child2,[])) ->
 		Printf.printf "and\n"; flush stdout; anno [] [child1;child2]
-	    | (child2,res2) ->
+	    | (_,(child2,res2)) ->
 		Printf.printf "and\n"; flush stdout;
 		let res =
-		  (match strict with
-		    A.NONSTRICT -> triples_conj res1 res2
-		  | A.STRICT ->
-		      strict_triples_conj (mkstates states required_states)
-			res1 res2) in
+		  strict_triples_conj strict (mkstates states required_states)
+		    res1 res2 in
 		anno res [child1; child2]))
-    | A.AndAny(dir,strict,phi1,phi2)     -> 
-	(match satv unchecked required required_states phi1 env with
-	  (child1,[]) -> Printf.printf "and\n"; flush stdout; anno [] [child1]
-	| (child1,([(state,_,_)] as res1)) ->
+    | A.AndAny(dir,strict,phi1,phi2)     ->
+	let pm = !Flag_ctl.partial_match in 
+	(match (pm,satv unchecked required required_states phi1 env) with
+	  (false,(child1,[])) ->
+	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	| (_,(child1,res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
 	    let new_required_states =
 	      get_reachable dir m new_required_states in
-	    (match satv unchecked new_required new_required_states phi2
-		env with
-	      (child2,[]) ->
+	    (match (pm,satv unchecked new_required new_required_states phi2
+		env) with
+	      (false,(child2,[])) ->
 		Printf.printf "andany\n"; flush stdout; anno [] [child1;child2]
-	    | (child2,res2) ->
-		let res2 =
-		  List.map (function (s,e,w) -> (state,e,w)) res2 in
-		Printf.printf "andany\n"; flush stdout;
-		let res =
-		  (match strict with
-		    A.NONSTRICT -> triples_conj res1 res2
-		  | A.STRICT ->
-		      strict_triples_conj (mkstates states required_states)
-			res1 res2) in
-		anno res [child1; child2])
-	| _ ->
-	    failwith "only one result allowed for the left argument of AndAny")
+	    | (_,(child2,res2)) ->
+		(match res1 with
+		  [] -> (* !Flag_ctl.partial_match must be true *)
+		    let res =
+		      strict_triples_conj strict
+			(mkstates states required_states)
+			res1 res2 in
+		    anno res [child1; child2]
+		| [(state,_,_)] ->
+		    let res2 =
+		      List.map (function (s,e,w) -> (state,e,w)) res2 in
+		    Printf.printf "andany\n"; flush stdout;
+		    let res =
+		      strict_triples_conj strict
+			(mkstates states required_states)
+			res1 res2 in
+		    anno res [child1; child2]
+		| _ ->
+		    failwith
+		      "only one result allowed for the left arg of AndAny")))
     | A.EX(dir,phi1)       -> 
 	let new_required_states =
 	  get_children_required_states dir m required_states in
@@ -1420,7 +1464,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
 	Printf.printf "AX\n"; flush stdout;
-	anno (satAX dir m res required_states) [child]
+	let res = strict_A1 strict satAX satEX dir m res required_states in
+	anno res [child]
     | A.EF(dir,phi1)       -> 
 	let new_required_states = get_reachable dir m required_states in
 	let (child,res) =
@@ -1439,7 +1484,9 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  let (child,res) =
 	    satv unchecked required new_required_states phi1 env in
 	  Printf.printf "AF\n"; flush stdout;
-	  anno (satAF dir m res new_required_states) [child])
+	  let res =
+	    strict_A1 strict satAF satEF dir m res new_required_states in
+	  anno res [child])
     | A.EG(dir,phi1)       -> 
 	let new_required_states = get_reachable dir m required_states in
 	let (child,res) =
@@ -1451,7 +1498,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
 	Printf.printf "AG\n"; flush stdout;
-	anno (satAG dir m res new_required_states) [child]
+	let res = strict_A1 strict satAG satEF dir m res new_required_states in
+	anno res [child]
 	  
     | A.EU(dir,phi1,phi2)  -> 
 	let new_required_states = get_reachable dir m required_states in
@@ -1475,8 +1523,10 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	      let (child1,res1) =
 		satv unchecked new_required new_required_states phi1 env in
 	      Printf.printf "AW %b\n" unchecked; flush stdout;
-	      anno (satAW dir m res1 res2 new_required_states)
-		[child1; child2])
+	      let res =
+		strict_A2 strict satAW satEF dir m res1 res2
+		  new_required_states in
+	      anno res [child1; child2])
     | A.AU(dir,strict,phi1,phi2)      -> 
 	if !Flag_ctl.loop_in_src_code
 	then
@@ -1513,8 +1563,10 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	      let (child1,res1) =
 		satv unchecked new_required new_required_states phi1 env in
 	      Printf.printf "AU %b\n" unchecked; flush stdout;
-	      anno (satAU dir m res1 res2 new_required_states)
-		[child1; child2])
+	      let res =
+		strict_A2 strict satAU satEF dir m res1 res2
+		  new_required_states in
+	      anno res [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	satv unchecked required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
@@ -1807,7 +1859,7 @@ let print_bench _ =
        perms)
 
 (* ---------------------------------------------------------------------- *)
-(* preprocssing: ignore irrelevant functions *)
+(* preprocessing: ignore irrelevant functions *)
 
 let preprocess label (req,opt) =
   let get_any x =
@@ -1825,7 +1877,35 @@ let preprocess label (req,opt) =
 	not ([] = triples) in
   match req with
     [] -> List.exists get_any opt
-  | _ -> List.for_all get_any req
+  | _ ->
+      if !Flag_ctl.partial_match
+      then
+	let found = List.filter get_any req in
+	let len = List.length found in
+	if len = 0
+	then false
+	else
+	  if List.length found = List.length req
+	  then true
+	  else
+	    begin
+	      Printf.printf "missing something required\nfound:\n";
+	      List.iter
+		(function x -> P.print_predicate x; Format.print_newline())
+		found;
+	      false
+	    end
+      else List.for_all get_any req
+
+let filter_partial_matches trips =
+  let anynegwit = (* if any is neg, then all are *)
+    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+  let (bad,good) =
+    List.partition (function (s,th,wit) -> anynegwit wit) trips in
+  (match bad with
+    [] -> ()
+  | _ -> print_state "partial matches" bad; Format.print_newline());
+  good
 
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)
@@ -1848,7 +1928,8 @@ let sat m phi reqopt check_conj =
 	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn() in
-    print_state "final result" res;
+    let res = filter_partial_matches res in
+    (*print_state "final result" res;*)
     res
   else
     (if !Flag_ctl.verbose_ctl_engine
