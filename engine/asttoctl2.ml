@@ -21,6 +21,7 @@ let foldr1 f xs =
   let xs = List.rev xs in List.fold_left f (List.hd xs) (List.tl xs)
 
 let used_after = ref ([] : string list)
+let guard_to_strict guard = if guard then CTL.NONSTRICT else CTL.STRICT
 
 (* --------------------------------------------------------------------- *)
 (* predicates matching various nodes in the graph *)
@@ -33,20 +34,21 @@ let label_pred_maker line = function
       let label_pred = (Lib_engine.PrefixLabel(label_var),CTL.Control) in
       Some(wrap line (CTL.Pred label_pred))
 
-let predmaker pred line = function
+let predmaker guard pred line = function
     None -> wrap line (CTL.Pred pred)
   | Some label_var ->
       let label_pred = (Lib_engine.PrefixLabel(label_var),CTL.Control) in
       wrap line
-	(CTL.And(wrap line (CTL.Pred pred),wrap line (CTL.Pred label_pred)))
+	(CTL.And(guard_to_strict guard,
+		 wrap line (CTL.Pred pred),wrap line (CTL.Pred label_pred)))
 
-let aftpred     = predmaker (Lib_engine.After,       CTL.Control)
-let retpred     = predmaker (Lib_engine.Return,      CTL.Control)
-let exitpred    = predmaker (Lib_engine.ErrorExit,   CTL.Control)
-let endpred     = predmaker (Lib_engine.Exit,        CTL.Control)
-let truepred    = predmaker (Lib_engine.TrueBranch,  CTL.Control)
-let falsepred   = predmaker (Lib_engine.FalseBranch, CTL.Control)
-let fallpred    = predmaker (Lib_engine.FallThrough, CTL.Control)
+let aftpred     = predmaker false (Lib_engine.After,       CTL.Control)
+let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
+let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
+let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
+let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
+let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
+let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 
 let aftret line label_var =
   wrap line (CTL.Or(aftpred line label_var, exitpred line label_var))
@@ -61,34 +63,34 @@ let get_let_ctr _ =
 
 let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
 let wrapExists  n (x,y) = wrap n (CTL.Exists(x,y))
-let wrapAnd     n (x,y) = wrap n (CTL.And(x,y))
+let wrapAnd     n s (x,y) = wrap n (CTL.And(s,x,y))
 let wrapOr      n (x,y) = wrap n (CTL.Or(x,y))
 let wrapSeqOr   n (x,y) = wrap n (CTL.SeqOr(x,y))
-let wrapAU      n (x,y) =
+let wrapAU      n s (x,y) =
   if !Flag_parsing_cocci.sgrep_mode
   then wrap n (CTL.EU(CTL.FORWARD,x,y))
-  else wrap n (CTL.AU(CTL.FORWARD,x,y))
+  else wrap n (CTL.AU(CTL.FORWARD,s,x,y))
 (* only used for goto, where we want AU even for sgrep *)
-let wrapAF      n (x,y) = wrap n (CTL.AF(CTL.FORWARD,x))
-let wrapAX      n (x)   =
+let wrapAF      n s (x,y) = wrap n (CTL.AF(CTL.FORWARD,s,x))
+let wrapAX      n s x   =
   if !Flag_parsing_cocci.sgrep_mode
   then wrap n (CTL.EX(CTL.FORWARD,x))
-  else wrap n (CTL.AX(CTL.FORWARD,x))
-let wrapAX_absolute      n (x)   = wrap n (CTL.AX(CTL.FORWARD,x))
+  else wrap n (CTL.AX(CTL.FORWARD,s,x))
+let wrapAX_absolute      n s (x)   = wrap n (CTL.AX(CTL.FORWARD,s,x))
 (* This stays being AX even for sgrep_mode, because it is used to identify
 the structure of the term, not matching the pattern. *)
-let wrapBackAX  n (x)   = wrap n (CTL.AX(CTL.BACKWARD,x))
+let wrapBackAX  n (x)   = wrap n (CTL.AX(CTL.BACKWARD,CTL.NONSTRICT,x))
 let wrapEX      n (x)   = wrap n (CTL.EX(CTL.FORWARD,x))
 let wrapBackEX  n (x)   = wrap n (CTL.EX(CTL.BACKWARD,x))
-let wrapAG      n (x)   = wrap n (CTL.AG(CTL.FORWARD,x))
+let wrapAG      n (s,x) = wrap n (CTL.AG(CTL.FORWARD,s,x))
 let wrapEG      n (x)   = wrap n (CTL.EG(CTL.FORWARD,x))
 let wrapEF      n (x)   = wrap n (CTL.EF(CTL.FORWARD,x))
 let wrapNot     n (x)   = wrap n (CTL.Not(x))
 let wrapPred    n (x)   = wrap n (CTL.Pred(x))
-let wrapDots    n (x,y,z,a,b,c,d,e,f,g) =
-  wrap n (CTL.Dots(CTL.FORWARD,x,y,z,a,b,c,d,e,f,g))
-let wrapPDots   n (x,y,z,a,b,c,d,e,f,g) =
-  wrap n (CTL.PDots(CTL.FORWARD,x,y,z,a,b,c,d,e,f,g))
+let wrapDots    n s (x,y,z,a,b,c,d,e,f,g) =
+  wrap n (CTL.Dots(CTL.FORWARD,s,x,y,z,a,b,c,d,e,f,g))
+let wrapPDots   n s (x,y,z,a,b,c,d,e,f,g) =
+  wrap n (CTL.PDots(CTL.FORWARD,s,x,y,z,a,b,c,d,e,f,g))
 let wrapLet     n (x,y,z) = wrap n (CTL.Let(x,y,z))
 let wrapRef     n (x)   = wrap n (CTL.Ref(x))
 
@@ -227,27 +229,31 @@ let make_meta_rule_elem d fvinfo =
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
 
-let make_seq n l =
-  foldr1 (function rest -> function cur -> wrapAnd n (cur,wrapAX n rest)) l
+let make_seq n guard l =
+  let s = guard_to_strict guard in
+  foldr1 (function rest -> function cur -> wrapAnd n s (cur,wrapAX n s rest))
+    l
 
-let make_seq_after2 n first = function
-    After rest -> wrapAnd n (first,wrapAX n (wrapAX n rest))
+let make_seq_after2 n guard first rest =
+  let s = guard_to_strict guard in
+  match rest with
+    After rest -> wrapAnd n s (first,wrapAX n s (wrapAX n s rest))
   | _ -> first
 
-let make_seq_after n first = function
-    After rest -> make_seq n [first;rest]
+let make_seq_after n guard first rest =
+  match rest with
+    After rest -> make_seq n guard [first;rest]
   | _ -> first
 
-let and_opt n first =
-  function Some rest -> wrapAnd n (first,rest) | _ -> first
-
-let opt_and n first rest =
+let opt_and n guard first rest =
+  let s = guard_to_strict guard in
   match first with
     None -> rest
-  | Some first -> wrapAnd n (first,rest)
+  | Some first -> wrapAnd n s (first,rest)
 
-let and_after n first =
-  function After rest -> wrapAnd n (first,rest) | _ -> first
+let and_after n guard first rest =
+  let s = guard_to_strict guard in
+  match rest with After rest -> wrapAnd n s (first,rest) | _ -> first
 
 let contains_modif =
   let bind x y = x or y in
@@ -276,17 +282,19 @@ let contains_modif =
 let make_match n label guard code =
   let v = fresh_var() in
   if contains_modif code && not guard
-  then wrapExists n (v,predmaker (Lib_engine.Match(code),CTL.Modif v) n label)
+  then
+    wrapExists n
+      (v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
   else
     match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
       (true,_,[]) | (_,true,_) ->
-	predmaker (Lib_engine.Match(code),CTL.Control) n label
+	predmaker guard (Lib_engine.Match(code),CTL.Control) n label
     | _ ->
 	wrapExists n
-	  (v,predmaker (Lib_engine.Match(code),CTL.UnModif v) n label)
+	  (v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label)
 
-let make_raw_match n label code =
-  predmaker (Lib_engine.Match(code),CTL.Control) n label
+let make_raw_match n label guard code =
+  predmaker guard (Lib_engine.Match(code),CTL.Control) n label
 
 let rec seq_fvs quantified = function
     [] -> []
@@ -579,23 +587,25 @@ let end_control_structure fvs header body after_pred
      to the endif node *)
   let (aft_needed,after_branch) =
     match aft with
-      Ast.CONTEXT(_,Ast.NOTHING) -> (false,make_seq_after2 n after_pred after)
+      Ast.CONTEXT(_,Ast.NOTHING) ->
+	(false,make_seq_after2 n guard after_pred after)
     | _ ->
 	let match_endif =
 	  make_match n label guard (make_meta_rule_elem aft aftfvinfo) in
 	(true,
-	 make_seq_after n after_pred
-	   (After(make_seq_after n match_endif after))) in
+	 make_seq_after n guard after_pred
+	   (After(make_seq_after n guard match_endif after))) in
   let body = body after_branch in
+  let s = guard_to_strict guard in
   (* the code *)
   quantify n fvs
-    (wrapAnd n
-       (header, opt_and n
+    (wrapAnd n s
+       (header, opt_and n guard
 	  (match (after,aft_needed) with
 	    (After _,_) (* pattern doesn't end here *)
 	  | (_,true) (* + code added after *) -> after_checks
 	  | _ -> no_after_checks)
-	  (wrapAX_absolute n body)))
+	  (wrapAX_absolute n s body)))
 
 let ifthen ifheader branch aft after quantified n label recurse make_match
     guard aftfvinfo =
@@ -614,7 +624,7 @@ let ifthen ifheader branch aft after quantified n label recurse make_match
   let if_header = quantify n efvs (make_match ifheader) in
   (* then branch and after *)
   let true_branch =
-    make_seq n
+    make_seq n guard
       [truepred n label; recurse branch Tail new_quantified label guard] in
   let after_pred = aftpred n label in
   let or_cases after_branch =
@@ -652,17 +662,18 @@ let ifthenelse ifheader branch1 els branch2 aft after quantified n label
   let if_header = quantify n exponlyfvs (make_match ifheader) in
   (* then and else branches *)
   let true_branch =
-    make_seq n
+    make_seq n guard
       [truepred n label; recurse branch1 Tail new_quantified label guard] in
   let false_branch =
-    make_seq n
+    make_seq n guard
       [falsepred n label; make_match els;
 	recurse branch2 Tail new_quantified label guard] in
   let after_pred = aftpred n label in
   let or_cases after_branch =
     wrapOr n (true_branch,wrapOr n (false_branch,after_branch)) in
+  let s = guard_to_strict guard in
   end_control_structure bothfvs if_header or_cases after_pred
-      (Some(wrapAnd n (wrapEX n (falsepred n label),wrapEX n after_pred)))
+      (Some(wrapAnd n s (wrapEX n (falsepred n label),wrapEX n after_pred)))
       (Some(wrapEX n (falsepred n label)))
       aft after n label guard aftfvinfo
 
@@ -676,7 +687,7 @@ let forwhile header body aft after quantified n label recurse make_match
   (* loop header *)
   let header = quantify n efvs (make_match header) in
   let body =
-    make_seq n
+    make_seq n guard
       [truepred n label; recurse body Tail new_quantified label guard] in
   let after_pred = fallpred n label in
   let or_cases after_branch = wrapOr n (body,after_branch) in
@@ -692,17 +703,20 @@ let forwhile header body aft after quantified n label recurse make_match
    from the label of the first node matched by the S *)
 let sequencibility body n label_pred process_bef_aft = function
     Ast.Sequencible | Ast.SequencibleAfterDots [] ->
-      body (function x -> (wrapAnd n (wrapNot n (wrapBackAX n label_pred),x)))
+      body
+	(function x ->
+	  (wrapAnd n CTL.NONSTRICT (wrapNot n (wrapBackAX n label_pred),x)))
   | Ast.SequencibleAfterDots l ->
       (* S appears after some dots.  l is the code that comes after the S.
 	 want to search for that first, because S can match anything, while
 	 the stuff after is probably more restricted *)
       let afts = List.map process_bef_aft l in
       let ors = foldl1 (function x -> function y -> wrapOr n (x,y)) afts in
-      wrapAnd n
-	(wrapEF n (wrapAnd n (ors,wrapBackAX n label_pred)),
+      wrapAnd n CTL.NONSTRICT
+	(wrapEF n (wrapAnd n CTL.NONSTRICT (ors,wrapBackAX n label_pred)),
 	 body
-	   (function x -> wrapAnd n (wrapNot n (wrapBackAX n label_pred),x)))
+	   (function x ->
+	     wrapAnd n CTL.NONSTRICT (wrapNot n (wrapBackAX n label_pred),x)))
   | Ast.NotSequencible -> body (function x -> x)
 
 let svar_context_with_add_after s n label quantified d ast
@@ -734,23 +748,25 @@ let svar_context_with_add_after s n label quantified d ast
       |	Ast.CONTEXT(_,_) -> d
       | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
 
-  let rest_nodes = wrapAnd n (middle_metamatch,prelabel_pred) in  
+  let rest_nodes =
+    wrapAnd n CTL.NONSTRICT (middle_metamatch,prelabel_pred) in  
   let left_or = (* the whole statement is one node *)
-    make_seq n [full_metamatch;
-		 and_after n (wrapNot n prelabel_pred) after] in
+    make_seq n guard
+      [full_metamatch; and_after n guard (wrapNot n prelabel_pred) after] in
   let right_or = (* the statement covers multiple nodes *)
-    make_seq n
+    make_seq n guard
       [first_metamatch;
-	wrapAU n (rest_nodes,
-		  make_seq n
-		    [wrapAnd n (last_metamatch,label_pred);
-		      and_after n
-			(wrapNot n prelabel_pred) after])] in
+	wrapAU n CTL.NONSTRICT
+	  (rest_nodes,
+	   make_seq n guard
+	     [wrapAnd n CTL.NONSTRICT (last_metamatch,label_pred);
+	       and_after n guard
+		 (wrapNot n prelabel_pred) after])] in
   let body f =
-    wrapAnd n
+    wrapAnd n CTL.NONSTRICT
       (label_pred,
-       f (wrapAnd n
-	    (make_raw_match n label ast,wrapOr n (left_or,right_or)))) in
+       f (wrapAnd n CTL.NONSTRICT
+	    (make_raw_match n label false ast,wrapOr n (left_or,right_or)))) in
   quantify n (label_var::get_unquantified quantified [s])
     (sequencibility body n label_pred process_bef_aft seqible)
 
@@ -769,15 +785,16 @@ let svar_minus_or_no_add_after s n label quantified d ast
 	Ast.MINUS(pos,_) -> Ast.MINUS(pos,[])
       | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
       | Ast.PLUS -> failwith "not possible") in
-  let rest_nodes = wrapAnd n (rest_metamatch,prelabel_pred) in
-  let last_node = and_after n (wrapNot n prelabel_pred) after in
+  let rest_nodes = wrapAnd n CTL.NONSTRICT (rest_metamatch,prelabel_pred) in
+  let last_node = and_after n guard (wrapNot n prelabel_pred) after in
   let body f =
-    wrapAnd n
+    wrapAnd n CTL.NONSTRICT
       (label_pred,
-       f (wrapAnd n
-	    (make_raw_match n label ast,
-	     (make_seq n
-		[first_metamatch; wrapAU n (rest_nodes,last_node)])))) in
+       f (wrapAnd n CTL.NONSTRICT
+	    (make_raw_match n label false ast,
+	     (make_seq n guard
+		[first_metamatch;
+		  wrapAU n CTL.NONSTRICT (rest_nodes,last_node)])))) in
   quantify n (label_var::get_unquantified quantified [s])
     (sequencibility body n label_pred process_bef_aft seqible)
 
@@ -814,7 +831,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	if !Flag_parsing_cocci.sgrep_mode
 	then wrapOr n (exit,errorexit)
 	else wrap n CTL.False in
-  builder n
+  builder n (guard_to_strict guard)
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,ender,
      aftret n label, truepred n label,
      make_match n label false (wrapcode Ast.Goto),
@@ -832,8 +849,9 @@ let decl_to_not_decl n dots stmt make_match f =
 	Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) ([],[],[])
       in
       Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NoPos,Ast.NOTHING),md)) in
-    wrapAU n (make_match de,
-	      wrap n (CTL.And(wrap n (CTL.Not (make_match de)), f)))
+    wrapAU n CTL.NONSTRICT
+      (make_match de,
+       wrapAnd n CTL.NONSTRICT (wrap n (CTL.Not (make_match de)), f))
 
 let rec statement_list stmt_list after quantified label dots_before guard =
   let n = Ast.get_line stmt_list in
@@ -866,19 +884,20 @@ let rec statement_list stmt_list after quantified label dots_before guard =
 and statement stmt after quantified label guard =
   let n = Ast.get_line stmt in
   let wrapExists = wrapExists n in
-  let wrapAnd    = wrapAnd n in
+  let wrapAnd    = wrapAnd n CTL.NONSTRICT in
   let wrapOr     = wrapOr n in
   let wrapSeqOr  = wrapSeqOr n in
-  let wrapAU     = wrapAU n in
-  let wrapAF     = wrapAF n in
+  let wrapAU     = wrapAU n CTL.NONSTRICT in
+  let wrapAF     = wrapAF n CTL.NONSTRICT in
+  let wrapAX     = wrapAX n CTL.NONSTRICT in
   let wrapBackEX = wrapBackEX n in
   let wrapBackAX = wrapBackAX n in
   let wrapNot    = wrapNot n in
   let wrapPred   = wrapPred n in
   let wrapLet    = wrapLet n in
   let wrapRef    = wrapRef n in
-  let make_seq   = make_seq n in
-  let make_seq_after = make_seq_after n in
+  let make_seq   = make_seq n guard in
+  let make_seq_after = make_seq_after n guard in
   let quantify   = quantify n in
   let real_make_match = make_match in
   let make_match = make_match n label guard in
@@ -997,10 +1016,11 @@ and statement stmt after quantified label guard =
       let paren_pred = wrapPred(Lib_engine.Paren pv,CTL.Control) in
       let label_pred = wrapPred(Lib_engine.Label lv,CTL.Control) in
       let start_brace =
-	wrapAnd(quantify lbfvs (make_match lbrace),
-		wrapAnd(paren_pred,label_pred)) in
+	wrapAnd (quantify lbfvs (make_match lbrace),
+		 wrapAnd (paren_pred,label_pred)) in
       let end_brace =
-	wrapAnd(quantify rbfvs (make_match rbrace),paren_pred) in
+	wrapAnd
+	  (quantify rbfvs (make_match rbrace),paren_pred) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
@@ -1040,7 +1060,7 @@ and statement stmt after quantified label guard =
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
 	    [make_match (Ast.rewrap stmt Ast.Goto);
-	      wrapAX n (* skip the destination label *)
+	      wrapAX (* skip the destination label *)
 		(wrapAU
 		   (make_match empty_rbrace,
 		    quantify b3fvs
@@ -1179,7 +1199,7 @@ and statement stmt after quantified label guard =
 	       else in the CFG *)
 	    wrap n
 	      (CTL.AndAny
-		 (CTL.FORWARD,start_brace,
+		 (CTL.FORWARD,guard_to_strict guard,start_brace,
 		  statement_list stmt_dots
 		    (* discards match on right brace, but don't need it *)
 		    (Guard (make_seq_after end_brace after))
@@ -1210,7 +1230,8 @@ and statement stmt after quantified label guard =
 and process_bef_aft quantified ln label guard = function
     Ast.WParen (re,n) ->
       let paren_pred = wrapPred ln (Lib_engine.Paren n,CTL.Control) in
-      wrapAnd ln (make_raw_match ln None re,paren_pred)
+      let s = guard_to_strict guard in
+      wrapAnd ln s (make_raw_match ln None guard re,paren_pred)
   | Ast.Other s -> statement s Tail quantified label guard
   | Ast.Other_dots d -> statement_list d Tail quantified label true guard
 
@@ -1229,14 +1250,14 @@ let rec letify x =
     | CTL.Pred(p)            -> CTL.Pred(p)
     | CTL.Not(phi)           -> CTL.Not(letify phi)
     | CTL.Exists(v,phi)      -> CTL.Exists(v,letify phi)
-    | CTL.And(phi1,phi2)     ->
-	let fail _ = CTL.And(letify phi1,letify phi2) in
+    | CTL.And(s,phi1,phi2)     ->
+	let fail _ = CTL.And(s,letify phi1,letify phi2) in
 	(match CTL.unwrap phi2 with
-	  CTL.AX(dir,ax) ->
+	  CTL.AX(dir1,s1,ax) ->
 	    (match CTL.unwrap ax with
-	      CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,
+	      CTL.Dots(dir2,s2,before_after,nest,notwhens,whens,dotcode,rest,
 		       ar,tr,goto,goto')
-	      ->
+	      when dir1 = dir2 ->
 		let (same,different) =
 		  List.partition (function (x,_) -> x = phi1) before_after in
 		(match same with
@@ -1244,17 +1265,17 @@ let rec letify x =
 		| [(same,_)] ->
 		    let v = get_let_ctr() in
 		    CTL.LetR
-		      (dir,v,letify phi1,
+		      (dir2,v,letify phi1,
 		       CTL.rewrap x
 			 (CTL.And
-			    (CTL.rewrap phi1 (CTL.Ref v),
+			    (s,CTL.rewrap phi1 (CTL.Ref v),
 			     CTL.rewrap phi2
 			       (CTL.AX
-				  (dir,
+				  (dir1,s1,
 				   letify
 				     (CTL.rewrap ax
 					(CTL.Dots
-					   (dir,
+					   (dir2,s2,
 					    (same,
 					     CTL.rewrap same (CTL.Ref v))::
 					    different,nest,
@@ -1263,52 +1284,52 @@ let rec letify x =
 		|	_ -> failwith "duplicated befores?")
 	    | _ -> fail())
 	| _ -> fail())
-    | CTL.AndAny(dir,phi1,phi2) -> CTL.AndAny(dir,letify phi1,letify phi2)
+    | CTL.AndAny(dir,s,phi1,phi2) -> CTL.AndAny(dir,s,letify phi1,letify phi2)
     | CTL.Or(phi1,phi2)      -> CTL.Or(letify phi1,letify phi2)
     | CTL.SeqOr(phi1,phi2)   -> CTL.SeqOr(letify phi1,letify phi2)
     | CTL.Implies(phi1,phi2) -> CTL.Implies(letify phi1,letify phi2)
-    | CTL.AF(dir,phi1)       -> CTL.AF(dir,letify phi1)
-    | CTL.AX(dir,phi1)       ->
+    | CTL.AF(dir,s,phi1)     -> CTL.AF(dir,s,letify phi1)
+    | CTL.AX(dir1,s1,phi1)       ->
 	(match CTL.unwrap phi1 with
-	  CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,
-		    ar,tr,goto,goto') ->
+	  CTL.PDots(dir2,s2,before_after,nest,notwhens,whens,dotcode,rest,
+		    ar,tr,goto,goto') when dir1 = dir2 ->
 	    drop_pdots phi1
-	      (dir,List.map (function (x,y) -> (x,letify y)) before_after,
+	      (dir2,s2,List.map (function (x,y) -> (x,letify y)) before_after,
 	       get_option letify nest,
 	       get_option letify notwhens,get_option letify whens,
 	       dotcode, letify rest, ar, tr, goto, goto')
-	      (function ax -> CTL.rewrap x (CTL.AX(dir,ax)))
-	      (function ex -> CTL.rewrap x (CTL.EX(dir,ex)))
-	| _ -> CTL.AX(dir,letify phi1))
-    | CTL.AG(dir,phi1)       -> CTL.AG(dir,letify phi1)
+	      (function ax -> CTL.rewrap x (CTL.AX(dir1,s1,ax)))
+	      (function ex -> CTL.rewrap x (CTL.EX(dir1,ex)))
+	| _ -> CTL.AX(dir1,s1,letify phi1))
+    | CTL.AG(dir,s,phi1)     -> CTL.AG(dir,s,letify phi1)
     | CTL.EF(dir,phi1)       -> CTL.EF(dir,letify phi1)
     | CTL.EX(dir,phi1)       -> CTL.EX(dir,letify phi1)
     | CTL.EG(dir,phi1)       -> CTL.EG(dir,letify phi1)
-    | CTL.AU(dir,phi1,phi2)  -> CTL.AU(dir,letify phi1,letify phi2)
-    | CTL.AW(dir,phi1,phi2)  -> CTL.AW(dir,letify phi1,letify phi2)
+    | CTL.AU(dir,s,phi1,phi2) -> CTL.AU(dir,s,letify phi1,letify phi2)
+    | CTL.AW(dir,s,phi1,phi2) -> CTL.AW(dir,s,letify phi1,letify phi2)
     | CTL.EU(dir,phi1,phi2)  -> CTL.EU(dir,letify phi1,letify phi2)
     | CTL.Let (x,phi1,phi2)  -> CTL.Let (x,letify phi1,letify phi2)
     | CTL.LetR (d,x,phi1,phi2)  -> CTL.LetR (d,x,letify phi1,letify phi2)
     | CTL.Ref(s)             -> CTL.Ref(s)
     | CTL.Uncheck(phi1)      -> CTL.Uncheck(letify phi1)
-    | CTL.Dots(dir,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
+    | CTL.Dots(dir,s,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
 	       goto,goto') ->
 	drop_dots x
-	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
+	  (dir,s,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
 	   dotcode, letify rest, ar, tr, goto, goto')
-    | CTL.PDots(dir,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
+    | CTL.PDots(dir,s,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
 		goto,goto')->
 	drop_pdots x
-	  (dir,List.map (function (x,y) -> (x,letify y)) before_after,
+	  (dir,s,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
 	   get_option letify notwhens,get_option letify whens,
 	   dotcode, letify rest, ar, tr, goto, goto')
 	  (function ax -> ax) (function ex -> ex))
 
 and drop_dots x
-    (dir,before_after,nest,notwhens,whens,dotcode,rest,
+    (dir,s,before_after,nest,notwhens,whens,dotcode,rest,
      aftret,truepred,gotopred,gotomatch) =
   let lst = function None -> [] | Some x -> [x] in
   let uncheck nw = CTL.rewrap x (CTL.Uncheck nw) in
@@ -1340,15 +1361,16 @@ and drop_dots x
     | Some x ->
 	wrap
 	  (CTL.And
-	     (x,
+	     (CTL.NONSTRICT,x,
 	      wrap
-		(CTL.And(gotopred,
+		(CTL.And
+		   (CTL.NONSTRICT,gotopred,
 			 (* the code below keeps matching dotcode until
 			    it doesn't match any more, in hopes of getting
 			    rid of braces following a goto, if the dotcode
 			    is -.  Probably doesn't completely work - depends
 			    on the label associated with the dots *)
-			 wrap(CTL.AU(dir,x,wrap(CTL.Not(x)))))))) in
+		    wrap(CTL.AU(dir,CTL.NONSTRICT,x,wrap(CTL.Not(x)))))))) in
   let build_big_rest bef_aft_builder =
     (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
     let error_exiter =
@@ -1360,11 +1382,11 @@ and drop_dots x
 	       (* encoding of a goto-generated error exit *)
 		wrap
 		  (CTL.And
-		     (truepred,
+		     (CTL.NONSTRICT,truepred,
 		      bef_aft_builder
 			(wrap
 			   (CTL.And
-			      (gotopred,
+			      (CTL.NONSTRICT,gotopred,
 			       wrap
 				 (CTL.Not
 				    (wrap
@@ -1378,23 +1400,26 @@ and drop_dots x
   match (all,!Flag_parsing_cocci.sgrep_mode) with
     ([],true) -> CTL.EF(dir,rest)
   | ([],false) ->
-      CTL.AF(dir,build_big_rest (function body -> wrap(CTL.AF(dir,body))))
+      CTL.AF(dir,s,
+	     build_big_rest
+	       (function body -> wrap(CTL.AF(dir,CTL.NONSTRICT,body))))
   | (l,true) ->
       let flat_all =
 	foldr1
-	  (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
+	  (function rest -> function cur -> CTL.rewrap x (CTL.And(s,cur,rest)))
 	  l in
       CTL.EU(dir,flat_all,rest)
   | (l,false) ->
       let v = get_let_ctr() in
       let flat_all =
 	foldr1
-	  (function rest -> function cur -> CTL.rewrap x (CTL.And(cur,rest)))
+	  (function rest -> function cur -> CTL.rewrap x (CTL.And(s,cur,rest)))
 	  l in
       let rest =
 	build_big_rest
-	  (function body -> wrap(CTL.AU(dir,wrap(CTL.Ref v),body))) in
-      CTL.LetR(dir,v,flat_all,wrap(CTL.AU(dir,wrap(CTL.Ref v),rest)))
+	  (function body ->
+	    wrap(CTL.AU(dir,CTL.NONSTRICT,wrap(CTL.Ref v),body))) in
+      CTL.LetR(dir,v,flat_all,wrap(CTL.AU(dir,s,wrap(CTL.Ref v),rest)))
 	
 (* f(); <... \+ g(); ...> h(); after 
    
@@ -1409,7 +1434,7 @@ We have taken care of the AX(PDots ...) case, and hope nothing else can
 show up. *)
 
 and drop_pdots x
-    (dir,before_after,nest,notwhens,whens,dotcode,rest,aftret,truepred,
+    (dir,s,before_after,nest,notwhens,whens,dotcode,rest,aftret,truepred,
      goto,goto')
     fA fE =
   let rewrap e = CTL.rewrap x e in
@@ -1430,7 +1455,7 @@ and drop_pdots x
   let nest_pattern =
     rewrap
       (drop_dots x
-	 (dir,
+	 (dir,s,
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  get_option (function _ -> rewrap(CTL.Ref nest_name)) nest,
 	  notwhens,whens,dotcode,rewrap (CTL.Ref rest_name),
@@ -1440,12 +1465,13 @@ and drop_pdots x
 		  rewrap
 		    (CTL.Not
 		       (rewrap(CTL.Uncheck(rewrap(CTL.Ref befaft_name))))),
-	   rewrap(CTL.And(rewrap(CTL.Uncheck(rewrap(CTL.Ref nest_name))),
+	   rewrap(CTL.And(CTL.NONSTRICT,
+			  rewrap(CTL.Uncheck(rewrap(CTL.Ref nest_name))),
 			  body)))) in
   let end_pattern =
     rewrap
       (drop_dots x
-	 (dir,
+	 (dir,CTL.NONSTRICT,
 	  [(rewrap(CTL.Ref befaft_name),rewrap(CTL.Ref befaft_name))],
 	  None,notwhens,whens,dotcode,
 	  rewrap(CTL.Uncheck(rewrap(CTL.Ref rest_name))),
@@ -1454,7 +1480,8 @@ and drop_pdots x
     (nest_maker
        (rest_maker
 	  (* fA might add AX or do nothing, fE might add EX or do nothing *)
-	  (rewrap(CTL.And(fE(exists_pattern end_pattern),fA nest_pattern)))))
+	  (rewrap(CTL.And(CTL.NONSTRICT,
+			  fE(exists_pattern end_pattern),fA nest_pattern)))))
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

@@ -46,24 +46,24 @@ let rec (pp_ctl:
 	 print_cut();
 	 Common.pp_do_in_box (fun () -> pp_aux env phi); 
 	 pp ")";
-     | AndAny(dir,phi1,phi2) ->
-	 pp_2args env (char_and_any^(pp_dirc dir)) phi1 phi2; 
-     | And(phi1,phi2)        -> pp_2args env char_and phi1 phi2; 
+     | AndAny(dir,s,phi1,phi2) ->
+	 pp_2args env (char_and_any^(pp_dirc dir)^(pp_sc s)) phi1 phi2; 
+     | And(s,phi1,phi2)      -> pp_2args env (char_and^(pp_sc s)) phi1 phi2; 
      | Or(phi1,phi2)         -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
      | Implies(phi1,phi2)    -> pp_2args env "=>" phi1 phi2;
-     | AF(dir,phi1)     -> pp "AF"; pp_dir dir;  pp_arg_paren env phi1; 
-     | AX(dir,phi1)     -> pp "AX"; pp_dir dir;  pp_arg_paren env phi1; 
-     | AG(dir,phi1)     -> pp "AG"; pp_dir dir;  pp_arg_paren env phi1;
+     | AF(dir,s,phi1)   -> pp "AF"; pp_dir dir; pp_s s; pp_arg_paren env phi1; 
+     | AX(dir,s,phi1)   -> pp "AX"; pp_dir dir; pp_s s; pp_arg_paren env phi1; 
+     | AG(dir,s,phi1)   -> pp "AG"; pp_dir dir; pp_s s; pp_arg_paren env phi1;
      | EF(dir,phi1)     -> pp "EF"; pp_dir dir;  pp_arg_paren env phi1;
      | EX(dir,phi1)     -> pp "EX"; pp_dir dir;  pp_arg_paren env phi1; 
      | EG(dir,phi1)     -> pp "EG"; pp_dir dir;  pp_arg_paren env phi1; 
-     | AW(dir,phi1,phi2) ->
-	 pp "A"; pp_dir dir; pp "["; 
+     | AW(dir,s,phi1,phi2) ->
+	 pp "A"; pp_dir dir; pp_s s; pp "["; 
            pp_2args_bis env "W" phi1 phi2; 
          pp "]" 
-     | AU(dir,phi1,phi2) ->
-	 pp "A"; pp_dir dir; pp "["; 
+     | AU(dir,s,phi1,phi2) ->
+	 pp "A"; pp_dir dir; pp_s s; pp "["; 
            pp_2args_bis env "U" phi1 phi2; 
          pp "]" 
      | EU(dir,phi1,phi2)  ->
@@ -122,6 +122,14 @@ let rec (pp_ctl:
    and pp_dirc = function
        FORWARD -> ""
      | BACKWARD -> char_back
+	     
+   and pp_s = function
+       STRICT -> pp ","
+     | NONSTRICT -> ()
+	     
+   and pp_sc = function
+       STRICT -> ","
+     | NONSTRICT -> ""
 	     
    and pp_2args env sym phi1 phi2 = 
      begin

@@ -218,7 +218,7 @@ let classify all_marked table code =
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
       | Ast0.DisjExpr(starter,expr_list,_,ender) -> 
-	    disj_cases starter expr_list r.V0.combiner_expression ender
+	  disj_cases starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
   (* not clear why we have the next two cases, since DisjDecl and

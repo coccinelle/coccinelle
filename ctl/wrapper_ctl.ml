@@ -121,7 +121,6 @@ struct
   (* ---------------------------------------------------------------- *)
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
-  exception NEGATIVE_WITNESS
   let unwrap_wits wits modifonly =
     let mkth th =
       Common.map_filter
@@ -142,15 +141,10 @@ struct
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,th,anno,wit) ->
 	  List.concat (List.map (loop neg ((mkth th) @ acc)) wit)
-      | A.NegWit(st,th,anno,wit) ->
-	  if List.for_all no_negwits wit
-	  then raise NEGATIVE_WITNESS
-	  else raise (TODO_CTL "nested negative witnesses") in
+      | A.NegWit(st,th,anno,wit) -> [] in
     List.concat
       (List.map
-	 (function wit ->
-	   try loop false [] wit
-	   with NEGATIVE_WITNESS -> [])
+	 (function wit -> loop false [] wit)
 	 wits)
   ;;
 

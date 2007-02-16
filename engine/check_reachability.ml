@@ -64,8 +64,8 @@ let create_formulas _ =
 	      (function prev -> function cur -> wrap(Ast_ctl.Or(prev,cur)))
 	      (List.hd match_roots) (List.tl match_roots) in
 	  (node,
-	   wrap (Ast_ctl.AF(Ast_ctl.BACKWARD,roots)),
-	   exef(wrap(Ast_ctl.And(match_node,exef(roots)))))
+	   wrap (Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,roots)),
+	   exef(wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots)))))
 	  :: acc)
     modified []
 

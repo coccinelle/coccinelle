@@ -3,6 +3,8 @@
 (* Types                                                                  *)
 (* ---------------------------------------------------------------------- *)
 
+type strict = STRICT | NONSTRICT
+
 (* CTL parameterised on basic predicates and metavar's*)
 type ('pred,'mvar,'anno) generic_ctl =
     ('pred,'mvar,'anno) generic_ctl_bis * 'anno
@@ -12,21 +14,21 @@ type ('pred,'mvar,'anno) generic_ctl =
   | Pred of 'pred
   | Not of (('pred,'mvar,'anno) generic_ctl)
   | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl)
-  | And of (('pred,'mvar,'anno) generic_ctl) * 
+  | And of strict * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | AndAny of direction * (('pred,'mvar,'anno) generic_ctl) * 
+  | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Or  of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | AF of direction * (('pred,'mvar,'anno) generic_ctl)
-  | AX of direction * (('pred,'mvar,'anno) generic_ctl)
-  | AG of direction * (('pred,'mvar,'anno) generic_ctl)
-  | AW of direction *
+  | AF of direction * strict * (('pred,'mvar,'anno) generic_ctl)
+  | AX of direction * strict * (('pred,'mvar,'anno) generic_ctl)
+  | AG of direction * strict * (('pred,'mvar,'anno) generic_ctl)
+  | AW of direction * strict *
 	(* versions with exists v *)
 	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
-  | AU of direction *
+  | AU of direction * strict *
 	(* versions with exists v *)
 	(('pred,'mvar,'anno) generic_ctl) * (('pred,'mvar,'anno) generic_ctl)
   | EF of direction * (('pred,'mvar,'anno) generic_ctl)
@@ -46,7 +48,7 @@ type ('pred,'mvar,'anno) generic_ctl =
   | Dots of
       (* dir * (before_after * before_after_guard) * nest * whennots * when *
 	 rest * aftret * truepred * gotopred * goto_match_anywhere *)
-      direction *
+      direction * strict *
 	((('pred,'mvar,'anno) generic_ctl) *
 	   (('pred,'mvar,'anno) generic_ctl)) list *
 	(('pred,'mvar,'anno) generic_ctl) option *
@@ -61,7 +63,7 @@ type ('pred,'mvar,'anno) generic_ctl =
   | PDots of (* for \+ code *)
       (* dir * (before_after * before_after_guard) * nest * whennots * when *
 	 rest * aftret * truepred * gotopred * goto_match_anywhere *)
-      direction *
+      direction * strict *
 	((('pred,'mvar,'anno) generic_ctl) *
 	   (('pred,'mvar,'anno) generic_ctl)) list *
 	(('pred,'mvar,'anno) generic_ctl) option *
