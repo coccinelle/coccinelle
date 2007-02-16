@@ -99,7 +99,8 @@ let flows astc =
 
 let one_flow flows = List.hd flows
 
-let print_flow flow = Ograph_extended.print_ograph_extended flow
+let print_flow flow = 
+  Ograph_extended.print_ograph_extended "/tmp/test.dot" flow
 
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)

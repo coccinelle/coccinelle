@@ -17,4 +17,4 @@ class ['a, 'b] ograph_extended :
     method allsuccessors : (nodei, (nodei * 'b) Osetb.osetb) Oassocb.oassocb
   end
 
-val print_ograph_extended : ('a * string, 'b) ograph_extended -> unit
+val print_ograph_extended : string -> ('a * string, 'b) ograph_extended -> unit

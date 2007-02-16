@@ -25,6 +25,7 @@ let save_tmp_files = ref false
 let reentrant = ref false 
 
 let action = ref "" 
+let function_cfg = ref "" (* used in conjonction with -action control_flow *)
 
 (*****************************************************************************)
 (* Profile *)
@@ -158,6 +159,8 @@ let main () =
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
+      "-function", Arg.Set_string function_cfg, 
+      " works with -action control_flow";
 
       "-action", Arg.Set_string action , 
          (" <action>  (default_value = " ^ !action ^")" ^ 
@@ -262,19 +265,26 @@ let main () =
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
 
-            file 
-              +> Parse_c.parse_print_error_heuristic
-              +> (fun (program, _stat) -> 
-                program +> List.iter (fun (e,_) -> 
-                  match e with
-                  | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
-                      pr2 funcs;
-                      (try Flow_to_ast.test !Flag.show_flow def
-                      with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
-                      )
+            let (program, _stat) = Parse_c.parse_print_error_heuristic file in
+            program +> List.iter (fun (e,_) -> 
+              match e with
+              | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
+                  pr2 funcs;
+                  if !function_cfg = "" || !function_cfg = funcs
+                  then 
+
+                    (* old: Flow_to_ast.test !Flag.show_flow def *)
+                    (try 
+                        let flow = Ast_to_flow.ast_to_control_flow def in
+                        Ast_to_flow.deadcode_detection flow;
+                        let fixed = Ctlcocci_integration.fix_flow_ctl flow in
+                        Ograph_extended.print_ograph_extended 
+                          ("/tmp/" ^ funcs ^ ".dot") fixed;
+                                                   
+                    with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
+                    )
                   | _ -> ()
-                 );
-              )
+            )
 
         | "parse_unparse", [file] -> 
             let (program2, _stat) = Parse_c.parse_print_error_heuristic file in

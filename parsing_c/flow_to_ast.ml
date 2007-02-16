@@ -713,7 +713,7 @@ let test do_print def =
   let g = Ast_to_flow.ast_to_control_flow def in
   Ast_to_flow.check_control_flow g;
   Ast_to_flow.deadcode_detection g;
-  if do_print then print_ograph_extended g;
+  if do_print then print_ograph_extended "/tmp/test.dot" g;
   assert (
   def =*= def +> Ast_to_flow.ast_to_control_flow +>control_flow_to_ast
  );

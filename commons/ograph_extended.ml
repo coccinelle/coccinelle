@@ -130,9 +130,8 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit)=
- fun g ->
-  with_open_outfile "/tmp/test.dot" (fun (pr,_) ->
+let print_ograph_extended filename g =
+  with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in
     nodes#iter (fun (k,(node, s)) -> 
@@ -148,8 +147,9 @@ let (print_ograph_extended: (('node * string), 'edge) ograph_extended -> unit)=
     );
     pr "}\n" ;
     );
-  let _status = Unix.system ("dot /tmp/test.dot -Tps  -o /tmp/test.ps; " ^ 
-                             "gv /tmp/test.ps &")
+  let _status = 
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;" ^ 
+                 "gv " ^ filename ^ ".ps &")
   in
   (* zarb: I need this when I launch the program via eshell, otherwise gv
      do not get the chance to be launched *)
