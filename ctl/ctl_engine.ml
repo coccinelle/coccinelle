@@ -951,6 +951,30 @@ let drop_wits required_states s phi =
     None -> s
   | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
 
+(* *************** *)
+(* Partial matches *)
+(* *************** *)
+
+let strict_triples_conj states trips trips' =
+  print_state "left" trips;
+  print_state "right" trips';
+  let res = triples_conj trips trips' in
+  if !Flag_ctl.partial_match
+  then res
+  else
+    let fail_left =
+      let x =
+	triples_conj (triples_complement states (unwitify trips)) trips' in
+      triples_conj (unwitify x) (triples_complement states x) in
+    let fail_right =
+      let x =
+	triples_conj trips (triples_complement states (unwitify trips')) in
+      triples_conj (unwitify x) (triples_complement states x) in
+    print_state "res" res;
+    print_state "fail_left" fail_left;
+    print_state "fail_right" fail_right;
+    triples_union res (triples_union fail_left fail_right)
+      
 (* ********************* *)
 (* Environment functions *)
 (* ********************* *)
@@ -1144,7 +1168,12 @@ let rec satloop unchecked required required_states
 	    let new_required_states = get_required_states phi1res in
 	    (match loop unchecked new_required new_required_states phi2 with
 	      [] -> []
-	    | phi2res -> triples_conj phi1res phi2res))
+	    | phi2res ->
+		(match strict with
+		  A.NONSTRICT -> triples_conj phi1res phi2res
+		| A.STRICT ->
+		    strict_triples_conj (mkstates states required_states)
+		      phi1res phi2res)))
     | A.AndAny(dir,strict,phi1,phi2)     ->
 	(* phi2 can appear anywhere that is reachable *)
 	(match loop unchecked required required_states phi1 with
@@ -1159,7 +1188,11 @@ let rec satloop unchecked required required_states
 	    | phi2res ->
 		let phi2res =
 		  List.map (function (s,e,w) -> (state,e,w)) phi2res in
-		triples_conj phi1res phi2res)
+		(match strict with
+		  A.NONSTRICT -> triples_conj phi1res phi2res
+		| A.STRICT ->
+		    strict_triples_conj (mkstates states required_states)
+		      phi1res phi2res))
 	| _ ->
 	    failwith "only one result allowed for the left argument of AndAny")
     | A.EX(dir,phi)      ->
@@ -1342,7 +1375,13 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		Printf.printf "and\n"; flush stdout; anno [] [child1;child2]
 	    | (child2,res2) ->
 		Printf.printf "and\n"; flush stdout;
-		anno (triples_conj res1 res2) [child1; child2]))
+		let res =
+		  (match strict with
+		    A.NONSTRICT -> triples_conj res1 res2
+		  | A.STRICT ->
+		      strict_triples_conj (mkstates states required_states)
+			res1 res2) in
+		anno res [child1; child2]))
     | A.AndAny(dir,strict,phi1,phi2)     -> 
 	(match satv unchecked required required_states phi1 env with
 	  (child1,[]) -> Printf.printf "and\n"; flush stdout; anno [] [child1]
@@ -1359,7 +1398,13 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		let res2 =
 		  List.map (function (s,e,w) -> (state,e,w)) res2 in
 		Printf.printf "andany\n"; flush stdout;
-		anno (triples_conj res1 res2) [child1; child2])
+		let res =
+		  (match strict with
+		    A.NONSTRICT -> triples_conj res1 res2
+		  | A.STRICT ->
+		      strict_triples_conj (mkstates states required_states)
+			res1 res2) in
+		anno res [child1; child2])
 	| _ ->
 	    failwith "only one result allowed for the left argument of AndAny")
     | A.EX(dir,phi1)       -> 
@@ -1803,7 +1848,7 @@ let sat m phi reqopt check_conj =
 	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn() in
-    (*print_state "final result" res;*)
+    print_state "final result" res;
     res
   else
     (if !Flag_ctl.verbose_ctl_engine
