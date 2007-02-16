@@ -525,11 +525,8 @@ let match_maker context_required whencode_allowed =
 	else return false
 	    
   and match_statement pattern s =
-    Printf.printf "in match_statement context_required %b\n" context_required;
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
-	Printf.printf "trying to add a binding! %s\n" (Ast0.unwrap_mcode name);
-	Unparse_ast0.statement "" s; Format.print_newline();
 	add_pure_binding name pure pure_sp_code.V0.combiner_statement
 	  (function ty -> Ast0.StmtTag ty)
 	  s
@@ -556,7 +553,6 @@ let match_maker context_required whencode_allowed =
 	       else return false
 	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
-	      Printf.printf "doing a seq!\n";
 	      match_dots match_statement is_slist_matcher do_slist_match
 		bodya bodyb
 	  | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
