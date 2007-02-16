@@ -33,7 +33,7 @@ let pp_predicate = function
 and pp_binding2 subst = 
   begin
     pp "[";
-    Common.print_between (fun () -> pp ";" ) 
+    Common.print_between (fun () -> pp ";";Format.print_cut(); ) 
       (fun (s, kind) -> pp s; pp " --> "; pp_binding_kind2 kind)
       subst;
     pp "]";
@@ -42,7 +42,7 @@ and pp_binding2 subst =
 and pp_binding2_ctlsubst subst = 
   begin
     pp "[";
-    Common.print_between (fun () -> pp ";" ) 
+    Common.print_between (fun () -> pp ";"; Format.print_cut(); ) 
       (function
        | Ast_ctl.Subst (s, kind) ->    pp s; pp " --> ";  pp_binding_kind2 kind;
        | Ast_ctl.NegSubst (s, kind) -> pp s; pp " -/-> "; pp_binding_kind2 kind;

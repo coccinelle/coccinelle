@@ -24,13 +24,13 @@ let warning s v =
 type shortLong      = Short  | Long | LongLong
 
 type decl = { 
-    storageD: storagebis wrap;
-    typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
-    qualifD: typeQualifierbis wrap;
-    inlineD: bool             wrap;
-    (* note: have a full_info: parse_info list; to remember ordering
-     * between storage, qualifier, type ? well this info is already in
-     * the Ast_c.info, just have to sort them to get good order *)
+  storageD: storagebis wrap;
+  typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
+  qualifD: typeQualifierbis wrap;
+  inlineD: bool             wrap;
+  (* note: have a full_info: parse_info list; to remember ordering
+   * between storage, qualifier, type ? well this info is already in
+   * the Ast_c.info, just have to sort them to get good order *)
 } 
 
 let nullDecl = {
@@ -465,7 +465,7 @@ postfix_expr:
  | primary_expr               { $1 }
  | postfix_expr TOCro expr TCCro                
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
- | postfix_expr TOPar argument_expr_list TCPar  
+ | postfix_expr TOPar argument_list TCPar  
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] }
  | postfix_expr TDot   ident  { mk_e(RecordAccess   ($1,fst $3)) [$2;snd $3] }
@@ -524,7 +524,8 @@ primary_expr:
 
 
 action_higherordermacro: 
- | jump          { ActJump $1 }
+ | jump                  { ActJump $1 }
+/* | jump TPtVirg          { ActJump $1 } */
  | assign_expr_statement action_higherordermacro { ActSeq ($1, $2)  }
  | /* empty */ { ActMisc [] }
 /*
@@ -855,7 +856,7 @@ struct_decl_list_gcc:
 
 gcc_attr_opt: 
  | /* empty */ { }
- | Tattribute TOPar TOPar argument_expr_list TCPar TCPar { }
+ | Tattribute TOPar TOPar argument_list TCPar TCPar { }
 
 
 /*---------------------------------------------------------------------------*/
@@ -1072,9 +1073,9 @@ translation_unit:
 external_declaration: 
  | function_definition               { Definition (fixFunc $1) }
  | decl                              { Declaration $1 }
- | TIdent TOPar argument_expr_list TCPar TPtVirg 
+ | TIdent TOPar argument_list TCPar TPtVirg 
      { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } /* cppext: */
- | TIdent TOPar argument_expr_list TCPar         
+ | TIdent TOPar argument_list TCPar         
      { EmptyDef [] } /* seems dont work */
 
 function_definition: start_fun compound      { del_scope(); ($1, $2) }
@@ -1131,9 +1132,9 @@ colon_option_list:
 
 
 
-argument_expr_list: 
+argument_list: 
  | argument                           { [$1, []] }
- | argument_expr_list TComma argument { $1 ++ [$3,    [$2]] }
+ | argument_list TComma argument { $1 ++ [$3,    [$2]] }
 
 
 struct_decl_list: 

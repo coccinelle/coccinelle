@@ -122,9 +122,9 @@ let one_ctl ctls = List.hd (List.hd ctls)
 
 let show_or_not_cfile2 cfile =
   if !Flag.show_c then begin
-    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
-    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.pr2_xxxxxxxxxxxxxxxxx ();
     Common.command2 ("cat " ^ cfile);
   end
 let show_or_not_cfile a = 
@@ -132,10 +132,10 @@ let show_or_not_cfile a =
 
 let show_or_not_cocci2 coccifile isofile = 
   if !Flag.show_cocci then begin
-    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing semantic patch file: " ^ coccifile);
     isofile +> Common.do_option (fun s -> pr2 ("with isos from: " ^ s));
-    Common.print_xxxxxxxxxxxxxxxxx ();
+    Common.pr2_xxxxxxxxxxxxxxxxx ();
     Common.command2 ("cat " ^ coccifile);
     pr2 "";
   end
@@ -155,25 +155,32 @@ let show_or_not_ctl_tex a b  =
 
 
 
-let show_or_not_ctl_text2 ctl ast =
+let show_or_not_ctl_text2 ctl ast rulenb =
   if !Flag.show_ctl_text then begin
 
     ast +> do_option (fun ast -> 
-      pr2_no_nl "rule = ";
-      indent_do (fun() -> adjust_pp_with_indent (fun () -> 
-          Pretty_print_cocci.unparse ast;
-      ));
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+      pr ("rule " ^ i_to_s rulenb ^ " = ");
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+      adjust_pp_with_indent (fun () -> 
+        Format.force_newline();
+        Pretty_print_cocci.print_plus_flag := true;
+        Pretty_print_cocci.print_minus_flag := true;
+        Pretty_print_cocci.unparse ast;
+      );
     );
 
-    pr2_no_nl "ctl = ";
+    pr "CTL = ";
     let (ctl,_) = ctl in
-    indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+    adjust_pp_with_indent (fun () -> 
+      Format.force_newline();
       Pretty_print_engine.pp_ctlcocci 
         !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
-    ));
+    );
+    pr "";
   end
-let show_or_not_ctl_text a b  = 
-  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b)
+let show_or_not_ctl_text a b c = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c)
 
 
 
@@ -203,16 +210,16 @@ let show_or_not_trans_info2 trans_info =
       in
       indent_do (fun () -> 
         trans_info +> List.iter (fun (i, subst, re) -> 
-          pr2 ("transform state:" ^ (Common.i_to_s i));
+          pr2 ("transform state: " ^ (Common.i_to_s i));
           indent_do (fun () -> 
-            pr2_no_nl "with rule_elem:";
-            indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+            adjust_pp_with_indent_and_header "with rule_elem: " (fun () -> 
+              Pretty_print_cocci.print_plus_flag := true;
+              Pretty_print_cocci.print_minus_flag := true;
               Pretty_print_cocci.rule_elem "" re;
-            ));
-            pr2_no_nl "with binding:";
-            indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+            );
+            adjust_pp_with_indent_and_header "with binding: " (fun () -> 
               Pretty_print_c.pp_binding subst;
-            ));
+            );
           )
         );
       )
@@ -225,10 +232,9 @@ let show_or_not_trans_info a  =
 
 let show_or_not_binding2 s binding =
   if !Flag.show_binding_in_out then begin
-    pr2_no_nl ("binding " ^ s ^ " = ");
-    indent_do (fun() -> adjust_pp_with_indent (fun () -> 
+    adjust_pp_with_indent_and_header ("binding " ^ s ^ " = ") (fun () -> 
       Pretty_print_c.pp_binding binding;
-    ))
+    )
   end
 let show_or_not_binding a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_binding2 a b)
@@ -376,8 +382,8 @@ let build_maybe_info e =
       
         (* remove the fake nodes for julia *)
         let fixed_flow = CCI.fix_flow_ctl flow in
-      
-        if !Flag.show_flow              then print_flow fixed_flow;
+
+        if !Flag.show_flow then print_flow fixed_flow;
         if !Flag.show_before_fixed_flow then print_flow flow;
         { flow = flow; 
           fixed_flow = fixed_flow; 
@@ -516,15 +522,15 @@ let rec process_ctls ctls envs =
   match ctls with
   | [] -> ()
   | ctl::ctls_remaining -> 
-      let ((ctl_toplevel_list,ast),used_after_list) = ctl in
+      let ((ctl_toplevel_list,ast),used_after_list), rulenb = ctl in
 
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
         
       let ctl = List.hd ctl_toplevel_list in
-      show_or_not_ctl_text ctl ast;
+      show_or_not_ctl_text ctl ast rulenb;
 
-      let newenvs = process_a_ctl (ctl, used_after_list) envs in
+      let newenvs = process_a_ctl (ctl, used_after_list, rulenb) envs in
       process_ctls ctls_remaining newenvs
 
 
@@ -532,13 +538,11 @@ and process_a_ctl ctl envs =
   match envs with
   | [] -> []
   | env::envs_remaining -> 
-      indent_do (fun () -> 
         let children_envs = process_a_ctl_a_env ctl env in
         Common.union_set children_envs (process_a_ctl ctl envs_remaining)
-      )
 
 
-and process_a_ctl_a_env (ctl, used_after_list) env = 
+and process_a_ctl_a_env (ctl, used_after_list, rulenb) env = 
 
   let new_c_elems = ref [] in
   show_or_not_binding "in" env;
@@ -551,7 +555,7 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
       in
 
       match process_a_ctl_a_env_a_celem
-        (elem,info) (ctl,full_used_after_list) env
+        (elem,info) (ctl,full_used_after_list, rulenb) env
       with
       | None -> 
           push2 None new_c_elems ;
@@ -590,11 +594,12 @@ and process_a_ctl_a_env (ctl, used_after_list) env =
  * but more logical to make it follows the other process_xxx functions.
  *)
 and process_a_ctl_a_env_a_celem2 = 
- fun (celem, info) (ctl, used_after_list) binding -> 
+ fun (celem, info) (ctl, used_after_list, rulenb) binding -> 
   indent_do (fun () -> 
   match info with
   | None -> None
   | Some info -> 
+
       let satres = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
           Flag_ctl.loop_in_src_code := 
@@ -746,12 +751,16 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     flush stdout;
     flush stderr;
     Format.print_newline();
-    Common.print_xxxxxxxxxxxxxxxxx();
-    pr2 "let's go";
-    Common.print_xxxxxxxxxxxxxxxxx();
+    Common.pr_xxxxxxxxxxxxxxxxx();
+    pr "let's go";
+    Common.pr_xxxxxxxxxxxxxxxxx();
 
-    process_ctls ctls [Ast_c.emptyMetavarsBinding];
+    process_ctls (Common.index_list_1 ctls) [Ast_c.emptyMetavarsBinding];
     process_hack_funheaders !g_hack_funheaders;
+
+    Common.pr_xxxxxxxxxxxxxxxxx ();
+    pr "Finished";
+    Common.pr_xxxxxxxxxxxxxxxxx();
 
     (* and now unparse everything *)
     let cprogram' = !g_cprogram +> List.map (fun ((ebis,info_item),_cfg,_e) ->

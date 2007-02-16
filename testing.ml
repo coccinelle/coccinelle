@@ -113,7 +113,7 @@ let testall iso_file =
         )
       )
       with exn -> 
-        Common.reset_pr2_indent();
+        Common.reset_pr_indent();
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
         Hashtbl.add newscore res (Common.Pb s)
     );

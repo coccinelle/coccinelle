@@ -203,7 +203,6 @@ let command2 s = ignore(Sys.command s)
 (* Debugging/logging *)
 (*****************************************************************************)
 
-let pr s = (print_string s; print_string "\n"; flush stdout)
 
 
 let _tab_level_print = ref 0
@@ -213,6 +212,18 @@ let indent_do f =
   let res = f() in
   _tab_level_print := !_tab_level_print - 5;
   res
+
+let pr s = 
+  do_n !_tab_level_print (fun () -> print_string " ");
+  print_string s;
+  print_string "\n"; flush stdout
+
+let pr_no_nl s = 
+  do_n !_tab_level_print (fun () -> print_string " ");
+  print_string s;
+  flush stdout
+
+
 
 let pr2 s = 
   do_n !_tab_level_print (fun () -> prerr_string " ");
@@ -224,9 +235,10 @@ let pr2_no_nl s =
   prerr_string s;
   flush stderr
 
-let reset_pr2_indent () =
+let reset_pr_indent () =
   _tab_level_print := 0
 
+(* let pr s = (print_string s; print_string "\n"; flush stdout) *)
 (* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 
 let pr2gen x = pr2 (Dumper.dump x)
@@ -625,14 +637,25 @@ let rec print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between(); print_between between fn xs
 
-let print_xxxxxxxxxxxxxxxxx () = 
+let pr_xxxxxxxxxxxxxxxxx () = 
+  pr "-----------------------------------------------------------------------"
+
+let pr2_xxxxxxxxxxxxxxxxx () = 
   pr2 "-----------------------------------------------------------------------"
 
 
 let adjust_pp_with_indent f = 
   Format.open_box !_tab_level_print; 
-  Format.force_newline();
+  (*Format.force_newline();*)
   f(); 
+  Format.close_box ();
+  Format.print_newline()
+
+let adjust_pp_with_indent_and_header s f = 
+  Format.open_box (!_tab_level_print + String.length s); 
+  do_n !_tab_level_print (fun () -> Format.print_string " ");
+  Format.print_string s;
+  f();
   Format.close_box ();
   Format.print_newline()
 
@@ -1685,6 +1708,9 @@ let rec enum x n =
 let index_list xs = 
   if xs = [] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
+
+let index_list_1 xs = 
+  xs +> index_list +> List.map (fun (x,i) -> x, i+1)
 
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true

@@ -4,11 +4,16 @@
 
 val pr : string -> unit
 val pr2 : string -> unit
+
 val pr2gen: 'a -> unit
 
 val indent_do : (unit -> 'a) -> 'a
+val pr_no_nl : string -> unit
 val pr2_no_nl : string -> unit
-val reset_pr2_indent : unit -> unit
+val reset_pr_indent : unit -> unit
+
+val pr_xxxxxxxxxxxxxxxxx : unit -> unit
+val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -153,7 +158,6 @@ val print_option : ('a -> 'b) -> 'a option -> unit
 val print_list : ('a -> 'b) -> 'a list -> unit
 val print_between : (unit -> unit) -> ('a -> unit) -> 'a list -> unit
 
-val print_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val pp_do_in_box : (unit -> unit) -> unit
 val pp_f_in_box : (unit -> 'a) -> 'a
@@ -164,6 +168,8 @@ val pp : string -> unit
 val format_to_string : (unit -> unit) (* printer *) -> string
 
 val adjust_pp_with_indent : (unit -> unit) -> unit
+
+val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
 
 (*****************************************************************************)
 (* Macro *)
@@ -559,7 +565,8 @@ val skipfirst : 'a -> 'a list -> 'a list
 
 val enum : int -> int -> int list
 
-val index_list : 'a list -> ('a * int) list
+val index_list              : 'a list -> ('a * int) list
+val index_list_1 : 'a list -> ('a * int) list
 
 val snoc : 'a -> 'a list -> 'a list
 val cons : 'a -> 'a list -> 'a list
