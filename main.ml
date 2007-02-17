@@ -27,6 +27,9 @@ let reentrant = ref false
 let action = ref "" 
 let function_cfg = ref "" (* used in conjonction with -action control_flow *)
 
+let timeout = ref (None : int option)
+let set_timeout x = timeout := Some x
+
 (*****************************************************************************)
 (* Profile *)
 (*****************************************************************************)
@@ -128,6 +131,7 @@ let main () =
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-partial_match",        Arg.Set Flag_ctl.partial_match, " ";
+      "-timeout",              Arg.Int set_timeout, "timeout, in seconds";
 
       "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-no_type_error_msg", Arg.Clear Flag_parsing_c.verbose_type, " ";
@@ -183,6 +187,12 @@ let main () =
                      " [options] <path-to-c-file>\nOptions are:") 
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
+
+    let timeout_fn =
+      match !timeout with
+	Some x -> Common.timeout_function x
+      |	None -> (function f -> f()) in
+    timeout_fn (fun () -> 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
@@ -405,7 +415,7 @@ let main () =
         pr2 "";
         raise (UnixExit (-1));
    )
-  );
+  ));
   Common.profile_diagnostic ();
   end
 
