@@ -459,7 +459,14 @@ let negate_wits wits =
   List.sort compare (map (fun wit -> [negate_wit wit]) wits);;
 
 let unwitify trips =
-  setify (List.map (function (s,th,_) -> (s,th,top_wit)) trips)
+  let anynegwit = (* if any is neg, then all are *)
+    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+  setify
+    (List.fold_left
+       (function prev ->
+	 function (s,th,wit) ->
+	   if anynegwit wit then prev else (s,th,top_wit)::prev)
+       [] trips)
 
 (* ************************* *)
 (* Triples                   *)
