@@ -289,7 +289,6 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
 
       | _, ((B.StatementExpr _,_),_) 
       | _, ((B.Constructor,_),_) 
-      | _, ((B.MacroCall _,_),_) 
           -> raise NoMatch
 
       | _, _ -> raise NoMatch

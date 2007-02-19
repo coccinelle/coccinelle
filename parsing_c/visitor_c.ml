@@ -168,13 +168,6 @@ let rec vk_expr = fun bigf expr ->
           
     | ParenExpr (e) -> exprf e
 
-    | MacroCall arg -> 
-        (match arg with
-        | Left e -> exprf e
-        | Right xs -> xs +> List.iter (vk_statement bigf)
-        )
-
-        
 
   in exprf expr
 
@@ -545,12 +538,6 @@ let rec vk_expr_s = fun bigf expr ->
       | Constructor -> Constructor
       | ParenExpr (e) -> ParenExpr (exprf e)
 
-      | MacroCall arg -> 
-          MacroCall
-            (match arg with
-            | Left e -> Left (exprf e)
-            | Right xs -> Right (xs +> List.map (vk_statement_s bigf))
-            )
     in
     (e', typ'), (infolistf ii)
   in exprf expr

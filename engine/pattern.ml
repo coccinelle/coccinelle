@@ -463,7 +463,6 @@ let rec (match_e_e: (Ast_cocci.expression,Ast_c.expression) matcher) =
 
   | _, ((B.StatementExpr _,_),_) 
   | _, ((B.Constructor,_),_) 
-  | _, ((B.MacroCall _,_),_) 
     -> return false
 
   | _, _ -> return false

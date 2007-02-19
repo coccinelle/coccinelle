@@ -36,7 +36,7 @@ let main () =
       let xs = if !Flag.dir then process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
         
         (xs) +> List.iter (fun file -> 
-            pr2 ("HANDLING: " ^ file);
+            pr2 ("PARSING: " ^ file);
             (match !Flag.action with
 
             | "parse_c" -> 

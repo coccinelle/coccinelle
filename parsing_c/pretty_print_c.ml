@@ -64,14 +64,6 @@ let rec pp_expression_gen pr_elem =
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | MacroCall  (arg),     [i1;i2;i3] -> 
-        pr_elem i1;
-        pr_elem i2;
-        (match arg with
-        | Left e -> pp_expression e
-        | Right xs -> xs +> List.iter pp_statement;
-        );
-        pr_elem i3;
     | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
         | Sequence (_,_)
         | Assignment (_,_,_) 
@@ -79,7 +71,7 @@ let rec pp_expression_gen pr_elem =
         | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
         | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
         | StatementExpr (_) | Constructor 
-        | ParenExpr (_) | MacroCall (_)
+        | ParenExpr (_)
       ),_ -> raise Impossible
     );
     if !Flag_parsing_c.pretty_print_type_info

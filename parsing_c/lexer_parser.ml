@@ -27,6 +27,8 @@ let enable_typedef ()  = _handle_typedef := true
 let disable_typedef () = _handle_typedef := false
 
 
+let is_enable_state () = !_handle_typedef
+
 
 type typedef = TypeDefI of string | IdentI of string
 

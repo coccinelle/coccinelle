@@ -372,9 +372,6 @@ let rec (distribute_mck_e: Ast_c.expression distributer)= fun (lop,mop,rop,bop) 
         ParenExpr (distribute_mck_e (mop, mop, mop,  mop) e),
         [i1 +> lop; i2 +> rop]
 
-    | MacroCall  (es),     [i1;i2;i3] -> 
-        failwith "MacroCall"
-
 
     | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
         | Sequence (_,_)
@@ -383,7 +380,7 @@ let rec (distribute_mck_e: Ast_c.expression distributer)= fun (lop,mop,rop,bop) 
         | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
         | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
         | StatementExpr (_) | Constructor 
-        | ParenExpr (_) | MacroCall (_)
+        | ParenExpr (_) 
       ),_ -> raise Impossible
   in
   (e', typ), ii'

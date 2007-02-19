@@ -25,7 +25,7 @@ let (is_between_two_minus : Ast_c.info -> Ast_c.info -> bool) =
   | Ast_cocci.MINUS _, Ast_cocci.MINUS _ -> true
   | _ -> false
 
-let pinfo_from_tok tok = fst (Parse_c.info_from_token tok)
+let pinfo_from_tok tok = fst (Token_helpers.info_from_token tok)
 
 (* When insert some new code, because of a + in a SP, we must add this
  * code at the right place, with the good indentation. So each time we
@@ -77,7 +77,7 @@ let (passed_commentsbefore_notbefore2:
         | Parser_c.TComment i -> true
         | Parser_c.TCommentSpace i -> true
         | Parser_c.TCommentCpp i -> true
-        | Parser_c.TCommentAttrOrMacro i -> true
+        | Parser_c.TCommentMisc i -> true
         | _ -> false
         ))
   in
@@ -150,7 +150,7 @@ let pp_program2 xs outfile  =
         match tok with
         | Parser_c.TComment (i,_) ->     pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
         | Parser_c.TCommentCpp (i,_) ->  pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-        | Parser_c.TCommentAttrOrMacro (i,_) -> 
+        | Parser_c.TCommentMisc (i,_) -> 
             pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
         | _ -> pr2 ("pp_passing_token: " ^ (pinfo_from_tok tok).str);
             
@@ -164,7 +164,7 @@ let pp_program2 xs outfile  =
 
         | Parser_c.TComment            (i,_) -> pr i.str
         | Parser_c.TCommentCpp         (i,_) -> pr i.str
-        | Parser_c.TCommentAttrOrMacro (i,_) -> pr i.str
+        | Parser_c.TCommentMisc (i,_) -> pr i.str
         | x -> error_cant_have x
       );
       

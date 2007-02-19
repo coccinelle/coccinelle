@@ -227,7 +227,7 @@ typedef enum { RED } RED;
 struct t {
   int i:(sizeof (struct w { int i, j;}));
   struct w f;
-}
+};
 
 
 /*struct t { int i,j;} f(struct t);*/
@@ -242,9 +242,9 @@ struct t { int k;};
 struct t {
   enum { RED, GREEN} i;
   int RED;
-}
+};
 
- char *s = 0;
+char *s = 0;
 
 
 typedef struct EFF v;
@@ -291,7 +291,7 @@ struct {
 
   struct t {int g;};
   
-}
+};
 
 
 struct t { int i;};

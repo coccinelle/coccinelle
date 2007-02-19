@@ -5,7 +5,8 @@ SOURCES = \
  flag_parsing_c.ml ast_c.ml control_flow_c.ml semantic_c.ml \
  visitor_c.ml lib_parsing_c.ml  \
  ast_to_flow.ml flow_to_ast.ml \
- lexer_parser.ml parser_c.ml lexer_c.ml parse_c.ml \
+ lexer_parser.ml parser_c.ml lexer_c.ml \
+ token_helpers.ml parsing_hacks.ml parse_c.ml \
  compare_c.ml type_annoter_c.ml  pretty_print_c.ml
 
 

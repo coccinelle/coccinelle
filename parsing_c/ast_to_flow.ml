@@ -407,10 +407,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                    SimpleAssign, 
                    e) -> 
                      var ^ "." ^ field ^ " = ... ;"
-              | MacroCall _ -> 
-                  (* todo: it can contain some goto, return, so should 
-                     modify the CFG *)
-                   "<macrocall>"
                      
               | _ -> "statement"
           )

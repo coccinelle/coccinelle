@@ -315,16 +315,27 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 
 /*****************************************************************************/
 
-%token <Ast_c.info> TComment TCommentSpace TCommentCpp TCommentAttrOrMacro 
+/* Some tokens are not even used in this file because they are filtered
+ * in some intermediate phase. But they still must be declared because
+ * ocamllex may generate them, or some intermediate phase may also
+ * generate them
+ */
+                           
+%token <Ast_c.info> TComment TCommentSpace 
+%token <Ast_c.info> TCommentCpp TCommentMisc
 %token <(string * Ast_c.info * Ast_c.info)> TInclude
 %token <(string * string * Ast_c.info * Ast_c.info * Ast_c.info)> TDefine 
-%token <Ast_c.info> TIfdef TIfdefelse TEndif
+%token <Ast_c.info> TIfdef TIfdefelse TIfdefelif TEndif
+%token <Ast_c.info> TIfdefzero
 
-%token <(string * Ast_c.isWchar) * Ast_c.info> TString
-%token <(string * Ast_c.isWchar) * Ast_c.info> TChar
-%token <string * Ast_c.info> TIdent TypedefIdent
-%token <string * Ast_c.info> TInt
+
+
+%token <string * Ast_c.info>                     TInt
 %token <(string * Ast_c.floatType) * Ast_c.info> TFloat
+%token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
+%token <(string * Ast_c.isWchar) * Ast_c.info>   TString
+
+%token <string * Ast_c.info> TIdent TypedefIdent
 
 
 
@@ -354,8 +365,6 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
 %token <Ast_c.info> Tinline
-
-%token <Ast_c.info> THigherOrderMacro
 
 %token <Ast_c.info> EOF
 
@@ -479,13 +488,6 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor) [] }
 
- /* cppext: */
- | THigherOrderMacro TOPar statement_list TCPar 
-     { mk_e(MacroCall (Right $3)) [$1;$2;$4] }
- | THigherOrderMacro TOPar expr TCPar           
-     { mk_e(MacroCall (Left $3)) [$1;$2;$4] }
-
-
 /* decl_spec and not just type_spec cos can have  unsigned short for 
  * instance => type_spec_list 
  */
@@ -512,12 +514,6 @@ primary_expr:
 
  /* gccext: allow statement as expressions via ({ statement }) */
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] } 
-
- /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
- /* | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */
- /* note that can make a bug cos if not good parsing of typedef,  
-  * ucharv toto;  is not parsed as a declaration 
-  */
 
 
 
@@ -577,6 +573,7 @@ statement:
 
  /* gccext: */
  | Tasm TOPar asmbody TCPar TPtVirg             { Asm, [] }
+ | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm, [] }
 
 
 
@@ -591,7 +588,7 @@ labeled:
      { CaseRange ($2, $4, $6), [$1;$3;$5] } /* gccext: allow range */
  | Tdefault         TDotDot statement   { Default $3,             [$1; $2] } 
 
- /* generate each 31 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il
+ /* generate each 30 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il
   *  faut 
   */
  /* gccext:  allow toto: } */
@@ -599,6 +596,7 @@ labeled:
      { Label (fst $1, (ExprStatement None, [])), [snd $1; $2] }
  | Tcase const_expr TDotDot { Case ($2, (ExprStatement None, [])), [$1;$3] }   
  | Tdefault         TDotDot { Default (ExprStatement None, []),    [$1; $2] }  
+
 
 
 
@@ -615,6 +613,9 @@ compound2:
  |  decl_list                 { ($1, []) }
  |  decl_list statement_list  { ($1,$2) }
 */
+
+/* statement_list: stat_or_decl_list { $1 } */
+
 
 /* cppext: because of cpp, some stuff look like declaration but are in
  * fact statement but too hard to figure out, and if parse them as
@@ -636,7 +637,6 @@ stat_or_decl:
  | TIfdef stat_or_decl_list TEndif 
      { Selection (IfCpp ($2, [])), [$1;$3;fakeInfo()] }
 
-statement_list: stat_or_decl_list { $1 }
 
 
 
@@ -680,11 +680,22 @@ asmbody:
  | string_list colon_asm_list  { }
  | string_list { } /* in old kernel */
 
-string_elem: 
+ /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
+ /* | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */
+ /* note that can make a bug cos if not good parsing of typedef,  
+  * ucharv toto;  is not parsed as a declaration 
+  */
+
+string_elem:
  | TString { snd $1 }
  /* cppext: can cause some strange behaviour ... */
  | TIdent                    { snd $1 } 
+ /* 2 s/r conflicts */
  | TIdent TOPar TIdent TCPar { snd $1 } 
+ /* because lalr(k) can have already transformed me */
+ | TString TOPar TIdent TCPar { snd $1 }  
+
+
 
 
 colon_asm: TDotDot colon_option_list {}
@@ -861,9 +872,9 @@ gcc_attr_opt:
 
 /*---------------------------------------------------------------------------*/
 enum_spec: 
- | Tenum        TOBrace enumerator_list gcc_comma_opt TCBrace 
+ | Tenum        tobrace_enum enumerator_list gcc_comma_opt TCBrace 
      { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
- | Tenum ident  TOBrace enumerator_list gcc_comma_opt TCBrace
+ | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt TCBrace
      { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
  | Tenum ident                                                
      { EnumName (fst $2),       [$1; snd $2] }
@@ -879,6 +890,9 @@ enumerator:
 /*----------------------------*/
 
 idente: ident { Lexer_parser.add_ident (fst $1); $1 }
+
+tobrace_enum: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
+
 
 /*---------------------------------------------------------------------------*/
 /* for struct and also typename */
@@ -1029,9 +1043,9 @@ direct_abstract_declarator:
 initialize: 
  | assign_expr                                    
      { InitExpr $1,                [] }
- | TOBrace initialize_list gcc_comma_opt  TCBrace
+ | tobrace_ini initialize_list gcc_comma_opt  TCBrace
      { InitList (List.rev $2),     [$1;$4]++$3 }
- | TOBrace TCBrace
+ | tobrace_ini TCBrace
      { InitList [],       [$1;$2] } /* gccext: */
 
 /* opti: This time we use the weird order of non-terminal which requires in 
@@ -1047,9 +1061,9 @@ initialize_list:
 initialize2: 
  | arith_expr 
      { InitExpr $1,   [] } 
- | TOBrace initialize_list gcc_comma_opt TCBrace
+ | tobrace_ini initialize_list gcc_comma_opt TCBrace
      { InitList (List.rev $2),   [$1;$4]++$3 }
- | TOBrace TCBrace
+ | tobrace_ini TCBrace
      { InitList [],  [$1;$2]  }
 
  /* gccext:, labeled elements */
@@ -1062,6 +1076,13 @@ initialize2:
  | TOCro const_expr TEllipsis const_expr TCCro TEq initialize2
      { InitGccRange ($2, $4, $7),  [$1;$3;$5;$6] }
 
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+
+tobrace_ini: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
+
 /*****************************************************************************/
 
 translation_unit: 
@@ -1073,10 +1094,6 @@ translation_unit:
 external_declaration: 
  | function_definition               { Definition (fixFunc $1) }
  | decl                              { Declaration $1 }
- | TIdent TOPar argument_list TCPar TPtVirg 
-     { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } /* cppext: */
- | TIdent TOPar argument_list TCPar         
-     { EmptyDef [] } /* seems dont work */
 
 function_definition: start_fun compound      { del_scope(); ($1, $2) }
 
@@ -1184,6 +1201,16 @@ gcc_opt_expr:
 external_declaration2: 
  | external_declaration                         { $1 }
 
+ | TIdent TOPar argument_list TCPar TPtVirg 
+     { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } /* cppext: */
+
+/* seems dont work */
+ | TIdent TOPar argument_list TCPar         
+     { EmptyDef [] } 
+
+
+
+
  /* can have asm declaration at toplevel */
  | Tasm TOPar asmbody TCPar TPtVirg             { EmptyDef [] } 
          
@@ -1192,13 +1219,7 @@ external_declaration2:
   */
  | TPtVirg    { EmptyDef [$1] } 
 
- | TInclude   
-     { let (s, i1, i2) = $1 in 
-       CPPInclude (s, [i1;i2]) 
-     }
- | TDefine    
-     { let (s, body, i1, i2, i3) = $1 in 
-       CPPDefine ((s, body), [i1;i2;i3]) 
-     }
+ | TInclude { let (s, i1, i2) = $1       in CPPInclude (s,[i1;i2])  }
+ | TDefine  { let (s,body,i1,i2,i3) = $1 in CPPDefine ((s, body), [i1;i2;i3]) }
 
  | EOF        { FinalDef $1 } 

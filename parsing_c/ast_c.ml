@@ -176,9 +176,6 @@ and expressionbis =
   (* forunparser: *)
   | ParenExpr of expression 
 
-  (* cppext: *)
-  | MacroCall of (expression, statement list) either
-
   (* cppext: normmally just expression *)
   and argument = (expression, wierd_argument) either
    and wierd_argument = 
@@ -333,6 +330,7 @@ and program = programElement list
      (* cppext: *)
      | CPPInclude of string wrap           (* #include s *)
      | CPPDefine of (string * string) wrap (* #define s body *)
+
      | SpecialDeclMacro of string * argument wrap2 list * il 
          
      | EmptyDef of il      (* gccext: allow redundant ';' *)

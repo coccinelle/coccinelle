@@ -161,6 +161,8 @@ let main () =
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
       "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
 
+      "-ng", Arg.Set Flag_parsing_c.next_gen_parsing," next gen parsing";
+
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
       "-function", Arg.Set_string function_cfg, 
@@ -228,7 +230,7 @@ let main () =
               if not (file =~ ".*\\.c") 
               then pr2 "warning: seems not a .c file";
 
-              pr2 ("HANDLING: " ^ file);
+              pr2 ("PARSING: " ^ file);
 
               let (_x, stat) = Parse_c.parse_print_error_heuristic file 
               in
