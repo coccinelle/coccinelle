@@ -50,13 +50,16 @@ let inline_mcodes =
     | Ast0.MIXED(befaft) ->
 	let concat starter startinfo ender endinfo =
 	  let lst =
-	    if not(ender = []) &&
-	      startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
-	    then
-	      let last = List.hd (List.rev starter) in
-	      let butlast = List.rev(List.tl(List.rev starter)) in
-	      butlast @ (last@(List.hd ender)) :: (List.tl ender)
-	    else starter @ ender in
+	    match (starter,ender) with
+	      ([],_) -> ender
+	    | (_,[]) -> starter
+	    | _ ->
+		if startinfo.Ast0.tline_end = endinfo.Ast0.tline_start
+		then (* put them in the same inner list *)
+		  let last = List.hd (List.rev starter) in
+		  let butlast = List.rev(List.tl(List.rev starter)) in
+		  butlast @ (last@(List.hd ender)) :: (List.tl ender)
+		else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
 	let attach_bef bef beforeinfo = function
@@ -73,6 +76,7 @@ let inline_mcodes =
 			    concat bef beforeinfo mbef mbeforeinfo in
 			  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
 		      | (Ast.AFTER(maft),_,a) ->
+			  Printf.printf "making a beforeafter1\n";
 			  mbefaft :=
 			    (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
 		      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
@@ -97,6 +101,7 @@ let inline_mcodes =
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef),b,_) ->
+			  Printf.printf "making a beforeafter2\n";
 			  mbefaft :=
 			    (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
 		      | (Ast.AFTER(maft),b,mafterinfo) ->
