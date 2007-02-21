@@ -1,4 +1,3 @@
-
 // was bug in standard C grammar
 
 void main() {

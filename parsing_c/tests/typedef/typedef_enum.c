@@ -1,0 +1,17 @@
+bad: typedef enum {
+bad:   AHC_NONE             = 0x0000,
+bad:   AHC_CHIPID_MASK      = 0x00ff,
+bad:   AHC_AIC7770          = 0x0001,
+bad:   AHC_AIC7850          = 0x0002,
+bad:   AHC_AIC7860          = 0x0003,
+bad:   AHC_AIC7870          = 0x0004,
+bad:   AHC_AIC7880          = 0x0005,
+bad:   AHC_AIC7890          = 0x0006,
+bad:   AHC_AIC7895          = 0x0007,
+bad:   AHC_AIC7896          = 0x0008,
+bad:   AHC_AIC7892          = 0x0009,
+bad:   AHC_AIC7899          = 0x000a,
+bad:   AHC_VL               = 0x0100,
+bad:   AHC_EISA             = 0x0200,
+bad:   AHC_PCI              = 0x0400,
+bad: } ahc_chip;
