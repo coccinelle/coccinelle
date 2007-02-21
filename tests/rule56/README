@@ -11,7 +11,7 @@ ambassador.c
  * [status]
 
 atp870u.c
- * [status]
+ * [status] ok
 
 BusLogic.c
  * [status] ok
@@ -20,7 +20,7 @@ cmpci.c
  * [status] ok
 
 cpqfcTSinit.c
- * [status]
+ * [status] ok
 
 cs4281m.c
  * [status] ok
@@ -38,9 +38,7 @@ dgrs.c
  * [status]
 
 Divas_mod.c
- * [status] error
- #ifdef ending in return; causes the rest of the function to be considered
- dead code.
+ * [status] ok
 
 dmx3191d.c
  * [status] ok
@@ -61,7 +59,7 @@ esssolo1.c
  * [status] ok
 
 fore200e.c
- * [status]
+ * [status] ok
 
 gdth.c
  * [status]
@@ -73,7 +71,7 @@ hysdn_init.c
  * [status] ok
 
 i2c-elektor.c
- * [status]
+ * [status] ok
 
 i810_audio.c
  * [status] ok
@@ -85,13 +83,13 @@ inia100.c
  * [status]
 
 ip2main.c
- * [status]
+ * [status] ok
 
 iph5526.c
- * [status]
+ * [status] ok
 
 isicom.c
- * [status]
+ * [status] ok
 
 istallion.c
  * [status] ok
@@ -100,7 +98,7 @@ ite8172.c
  * [status] ok
 
 ixj.c
- * [status]
+ * [status] ok
 
 lmc_main.c
  * [status] ok
@@ -118,7 +116,7 @@ pci2000.c
  * [status]
 
 pci2220i.c
- * [status]
+ * [status] ok
 
 pm2fb.c
  * [status] ok
@@ -127,16 +125,16 @@ pmc551.c
  * [status]
 
 proc.c
- * [status]
+ * [status] ok
 
 qla1280.c
  * [status]
 
 qlogicfc.c
- * [status]
+ * [status] ok
 
 qlogicisp.c
- * [status]
+ * [status] ok
 
 radio-maestro.c
  * [status] ok
@@ -151,7 +149,7 @@ rocket.c
  * [status]
 
 saa9730.c
- * [status]
+ * [status] ok
 
 sbni.c
  * [status] ok
@@ -160,7 +158,7 @@ sbus.c
  * [status]
 
 sdladrv.c
- * [status]
+ * [status] ok
 
 search.c
  * [status]
@@ -178,7 +176,7 @@ sonicvibes.c
  * [status] ok
 
 specialix.c
- * [status]
+ * [status] ok
 
 stallion.c
  * [status] ok

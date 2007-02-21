@@ -86,7 +86,7 @@ pl2303.c
  need to be able to match 7 to 0x07, not a constant in SP
 
 pwc-if.c
- * [status] error
+ * [status] spatch_ok
  not updated until sometime after 2.6.17.13 and before 2.6.18
  one kmalloc site seems like it could use kcalloc, but used kmalloc with
  the multiplication instead

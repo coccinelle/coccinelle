@@ -3,7 +3,7 @@ identifier I;
 identifier f;
 @@
 
-struct ctl_table I = {
+ctl_table I = {
   .proc_handler = f
 };
 
@@ -13,7 +13,7 @@ identifier ctl, write, filp, buffer, lenp;
 expression A, B, C, D, E;
 @@
 
-  int cdrom_sysctl_info(struct ctl_table *ctl, int write, struct file * filp,
+  int f(ctl_table *ctl, int write, struct file * filp,
                            void *buffer, size_t *lenp
 +                          , loff_t *ppos
   ) {

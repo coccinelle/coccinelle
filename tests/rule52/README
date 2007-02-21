@@ -1,6 +1,5 @@
 a3d.c
- * [status] wrong
- problem in type inference for fields
+ * [status] ok
 
 adbhid.c
  * [status] wrong
@@ -14,7 +13,7 @@ aiptek.c
 
 amijoy.c
  * [status] wrong
- type inference doesn't work for an array reference
+ amijoy structure type not in the given file
 
 amikbd.c
  * [status] ok
@@ -29,15 +28,13 @@ atkbd.c
  * [status] ok
 
 cobra.c
- * [status] wrong
- type inference doesn't work for an array reference
+ * [status] ok
 
 cs461x.c
  * [status] ok
 
 db9.c
- * [status] wrong
- type inference doesn't work for an array reference
+ * [status] ok
 
 emu10k1-gp.c
  * [status] ok
@@ -50,15 +47,13 @@ fm801-gp.c
  * [status] ok
 
 gamecon.c
- * [status] wrong
- type inference doesn't work for an array reference
+ * [status] ok
 
 gf2k.c
  * [status] ok
 
 grip.c
- * [status] wrong
- type inference doesn't work for an array reference
+ * [status] ok
 
 guillemot.c
  * [status] ok
@@ -107,7 +102,9 @@ ns558.c
  * [status] ok
 
 pc110pad.c
- * [status]
+ * [status] spatch_ok
+ save_flags converted to __save_flags, cli to __cli, and restore_flags to
+ __restore_flags
 
 powermate.c
  * [status] ok
@@ -125,7 +122,7 @@ sermouse.c
  * [status] ok
 
 sidewinder.c
- * [status]
+ * [status] ok
 
 spaceball.c
  * [status] ok
@@ -134,16 +131,16 @@ spaceorb.c
  * [status] ok
 
 stinger.c
- * [status]
+ * [status] ok
 
 sunkbd.c
  * [status] ok
 
 tmdc.c
- * [status]
+ * [status] ok
 
 turbografx.c
- * [status]
+ * [status] ok
 
 twidjoy.c
  * [status] ok
@@ -152,10 +149,12 @@ uinput.c
  * [status]
 
 usbkbd.c
- * [status]
+ * [status] spatch_ok
+ programmer converted idbus to id.bus, not to id.bustype
 
 usbmouse.c
- * [status]
+ * [status] spatch_ok
+ programmer converted idbus to id.bus, not to id.bustype
 
 vortex.c
  * [status] ok
