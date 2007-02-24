@@ -46,7 +46,7 @@ and metavar =
   | MetaTextDecl of arity * string (* name *)
 
 and inherited = bool
-and keep_binding = bool
+and keep_binding = Unitary | Nonunitary | Saved
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

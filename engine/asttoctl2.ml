@@ -830,7 +830,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	let errorexit = exitpred n label in
 	if !Flag_parsing_cocci.sgrep_mode
 	then wrapOr n (exit,errorexit)
-	else wrap n CTL.False in
+	else exit (* was wrap n CTL.False *) in
   builder n (guard_to_strict guard)
     (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,ender,
      aftret n label, truepred n label,

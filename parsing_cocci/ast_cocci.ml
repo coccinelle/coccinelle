@@ -49,7 +49,8 @@ and inherited = bool (* true if inherited from a previous rule *)
 
 (* true if a metavariable occurs more than once, and thus we need to keep
 track of its binding.  false otherwise *)
-and keep_binding = bool
+and keep_binding = Unitary (* need no info *)
+  | Nonunitary (* need an env entry *) | Saved (* need a witness *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -427,13 +428,11 @@ let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,_) d =
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  let keep = match d with CONTEXT(_,NOTHING) -> false | _ -> true in
-  (MetaRuleElem((s,{ line = 0; column = 0 },d),keep,false),
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),Unitary,false),
    0, fvs, fresh, inh, NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  let keep = match d with CONTEXT(_,NOTHING) -> false | _ -> true in
-  (MetaDecl((s,{ line = 0; column = 0 },d),keep,false), 0, fvs, fresh, inh,
+  (MetaDecl((s,{ line = 0; column = 0 },d),Unitary,false), 0, fvs, fresh, inh,
    NoDots)
 
 (* --------------------------------------------------------------------- *)

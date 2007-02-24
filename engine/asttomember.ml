@@ -69,7 +69,6 @@ and statement stmt used_after optional =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       if contains_modif ast used_after then optional [ast] else Opt []
-
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let body_info =
 	lub (statement_list decls used_after optional,

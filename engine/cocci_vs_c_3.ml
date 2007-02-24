@@ -292,7 +292,7 @@ module type PARAM =
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
     val envf : 
-      bool (*keep*) -> A.inherited -> 
+      A.keep_binding -> A.inherited -> 
       string * Ast_c.metavar_binding_kind ->
       tin -> 
       (string * Ast_c.metavar_binding_kind) tout

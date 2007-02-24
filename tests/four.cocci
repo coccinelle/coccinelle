@@ -13,7 +13,7 @@ f(E);
 expression E;
 @@
 
-h(E);
+- h(E);
 
 @@
 @@

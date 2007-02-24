@@ -86,7 +86,8 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       match A.unwrap ep, ec with
 
       (* general case: a MetaExpr can match everything *)
-      | A.MetaExpr(ida,true,opttypa,_inherited), (((expr, opttypb), ii) as expb) ->
+      | A.MetaExpr(ida,A.Saved,opttypa,_inherited),
+	(((expr, opttypb), ii) as expb) ->
           (match opttypa, opttypb with
           | None, _ -> ()
           | Some tas, Some tb -> 
@@ -111,7 +112,8 @@ let rec (transform_e_e: (Ast_cocci.expression, Ast_c.expression) transformer) =
       (* BUG ? because if have not tagged SP, then transform without doing
        * any checks ! 
        *)
-      | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+      | A.MetaExpr(ida,keep,opttypa,_inherited), expb
+	    when keep = A.Unitary or keep = A.Nonunitary ->
           D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
 
       (* todo: in fact can also have the Edots family inside nest, as in 
@@ -306,7 +308,7 @@ and (transform_ident:
           then idb, tag_symbols [sa] ii binding
           else raise NoMatch
 	    
-      | A.MetaId(ida,true,_inherited) -> 
+      | A.MetaId(ida,A.Saved,_inherited) -> 
           (* get binding, assert =*=,  distribute info in i1 *)
 	  let v = binding +> find_env ((term ida) : string) in
 	  (match v with
@@ -317,7 +319,7 @@ and (transform_ident:
 	  | _ -> raise Impossible
 	  )
 
-      | A.MetaFunc(ida,true,_inherited) -> 
+      | A.MetaFunc(ida,A.Saved,_inherited) -> 
 	  (match seminfo_idb with 
 	  | Pattern.LocalFunction | Pattern.Function -> 
               let v = binding +> find_env ((term ida) : string) in
@@ -332,7 +334,7 @@ and (transform_ident:
               failwith
 		"MetaFunc and MetaLocalFunc, need more semantic info about id")
 
-      | A.MetaLocalFunc(ida,true,_inherited) -> 
+      | A.MetaLocalFunc(ida,A.Saved,_inherited) -> 
 	  (match seminfo_idb with
 	  | Pattern.LocalFunction -> 
               let v = binding +> find_env ((term ida) : string) in
@@ -350,14 +352,16 @@ and (transform_ident:
               failwith
 		"MetaFunc and MetaLocalFunc, need more semantic info about id")
 	    
-      | A.MetaId(ida,false,_inherited)
-      | A.MetaFunc(ida,false,_inherited)
-      | A.MetaLocalFunc(ida,false,_inherited) ->
+      | A.MetaId(ida,keep,_inherited)
+      | A.MetaFunc(ida,keep,_inherited)
+      | A.MetaLocalFunc(ida,keep,_inherited)
+	when keep = A.Unitary or keep = A.Nonunitary ->
 	  idb, tag_symbols [ida] ii binding
 	    
       | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
 	  failwith "not handling Opt/Unique/Multi for ident"
-            
+
+      |	_ -> failwith "cannot occur"
 	    
 (* ------------------------------------------------------------------------- *)
 	    
@@ -703,7 +707,7 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
     match A.unwrap typa, typb with
 
      (* cas general *)
-    | A.MetaType(ida,true,_inherited),  typb -> 
+    | A.MetaType(ida,A.Saved,_inherited),  typb -> 
         (* get binding, assert =*=,  distribute info in ida *)
         (match binding +> find_env (term ida) with
         | B.MetaTypeVal typa -> 
@@ -713,8 +717,11 @@ and (transform_t_t: (Ast_cocci.typeC, Ast_c.fullType) transformer) =
           else raise NoMatch
         | _ -> raise Impossible
       )
-    | A.MetaType(ida,false,_inherited),  typb ->
+    | A.MetaType(ida,keep,_inherited),  typb 
+      when keep = A.Unitary or keep = A.Nonunitary ->
 	D.distribute_mck (mcodekind ida) D.distribute_mck_type typb binding
+
+    | A.MetaType(ida,keep,_inherited),  typb  -> failwith "cannot occur"
 
     | A.BaseType (basea, signaopt),   (qu, (B.BaseType baseb, ii)) -> 
        (* In ii there is a list, sometimes of length 1 or 2 or 3.
@@ -1105,7 +1112,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
           let iibody' = 
             (match A.unwrap bodya with
             | A.DMetaId (idbodya, keep) -> 
-                if not keep 
+                if keep = A.Unitary
                 then tag_symbols [idbodya] [iibody] binding
                 else 
                   let v = binding +> find_env ((term idbodya) : string) in

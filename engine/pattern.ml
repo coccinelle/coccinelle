@@ -220,7 +220,7 @@ let all_bound l =
 (* pre: if have declared a new metavar that hide another one, then must be 
    passed with a binding that deleted this metavar *)
 let check_add_metavars_binding keep inherited = fun (k, valu) binding -> 
-  if keep
+  if not (keep = A.Unitary)
   then
     (match Common.optionise (fun () -> binding +> List.assoc k) with
     | Some (valu') ->

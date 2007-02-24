@@ -1,245 +1,14 @@
-(* for each rule return:
-1. Hash table of all of the terms in the rule with their free variables
-2. The list of metavariables that are declared in this one and used without
-being redeclared in subsequent ones *)
+(* For each rule return the list of variables that are used after it.
+Also augment various parts of each rule with unitary, inherited, and freshness
+informations *)
 
 module Ast = Ast_cocci
 module V = Visitor_ast
-
-let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s
-let set_intersect s1 s2 = List.filter (function n -> List.mem n s2) s1
-
-let rec split3 = function
-    [] -> ([],[],[])
-  | (a,b,c)::rest -> let (a1,b1,c1) = split3 rest in (a::a1,b::b1,c::c1)
 
 let rec nub = function
     [] -> []
   | (x::xs) when (List.mem x xs) -> nub xs
   | (x::xs) -> x::(nub xs)
-
-(* --------------------------------------------------------------------- *)
-
-(* a variable that occurs only once in free_usage and does not occur in used
-after is unitary *)
-let collect_unitary_nonunitary free_usage used_after =
-  let free_usage = set_minus free_usage used_after in
-  let free_usage = List.sort compare free_usage in
-  let rec loop1 todrop = function
-      [] -> []
-    | (x::xs) as all -> if x = todrop then loop1 todrop xs else all in
-  let rec loop2 = function
-      [] -> ([],[])
-    | [x] -> ([x],[])
-    | x::y::xs ->
-	if x = y
-	then
-	  let (unitary,non_unitary) = loop2(loop1 x xs) in
-	  (unitary,x::non_unitary)
-	else
-	  let (unitary,non_unitary) = loop2 (y::xs) in
-	  (x::unitary,non_unitary) in
-  loop2 free_usage
-
-let collect_unitary_variables free_usage used_after =
-  let (unitary,non_unitary) =
-    collect_unitary_nonunitary free_usage used_after in
-  unitary
-
-(* --------------------------------------------------------------------- *)
-(* Computing free variables *)
-
-type anything =
-    Rule_elem        of Ast.rule_elem
-  | Statement        of Ast.statement
-  | StatementDots    of Ast.statement Ast.dots
-
-type free_table =
-    (anything,(string list(*unbound*)*string list(*inherited*))) Hashtbl.t
-
-(* Note that we would really rather attach + code to - or context code that
-shares the same variables, if there is such.  If we attach it to something
-else, the we increase the scope of the variable, and may allow less
-variation.  Perhaps this is never a problem, because multiple control-flow
-paths are only possible when there are dots, and + code can't attach to
-dots.  If there are two options for attaching the + code, then both options
-necessarily occur the same number of times in the matched code, so it
-doesn't matter where the quantifier goes. *)
-
-(* unbound is free and not in the argument bound.  free is as though the
-argument bound were [].  only unbound is hashed, since that is what asttoctl
-needs. *)
-
-(* bound means the metavariable was declared previously, not locally *)
-
-let astfvs bound =
-  let free_table = (Hashtbl.create(50) : free_table) in
-
-  let metaid (x,_,_) = x in
-
-  let bind (unbound1,free1,refs1) (unbound2,free2,refs2) =
-    (Common.union_set unbound1 unbound2, Common.union_set free1 free2,
-     refs1 @ refs2) in
-  (* used with fold_left, so the second argument is typically smaller *)
-  let bind2 (unbound1,free1,refs1) (unbound2,free2,refs2) =
-    (Common.union_set unbound2 unbound1, Common.union_set free2 free1,
-     (* dup refs because so that nothing in + code is considered unitary *)
-     refs2 @ refs2 @ refs1) in
-  let option_default = ([],[],[]) in
-
-  let mcodekind r mck =
-    let process_anything_list_list anythings =
-      let astfvs = r.V.combiner_anything in
-      List.fold_left bind ([],[],[])
-	(List.map
-	   (function l ->
-	     List.fold_left bind2 ([],[],[]) (List.map astfvs l))
-	   anythings) in
-    match mck with
-      Ast.MINUS(_,anythings) -> process_anything_list_list anythings
-    | Ast.CONTEXT(_,befaft) ->
-	(match befaft with
-	  Ast.BEFORE(ll) -> process_anything_list_list ll
-	| Ast.AFTER(ll) -> process_anything_list_list ll
-	| Ast.BEFOREAFTER(llb,lla) ->
-	    bind
-	      (process_anything_list_list lla)
-	      (process_anything_list_list llb)
-	| Ast.NOTHING -> option_default)
-    | Ast.PLUS -> option_default in
-
-  let mcode r (_,_,mck) = mcodekind r mck in
-
-  let donothing recursor k e = k e in (* just combine in the normal way *)
-
-  (* the following considers that anything that occurs non-unitarily in one
-     branch occurs nonunitarily in all branches.  This is not optimal, but
-     doing better seems to require a breadth-first traversal, which is
-     perhaps better to avoid.  Also, unitarily is represented as occuring once,
-     while nonunitarily is represented as twice - more is irrelevant *)
-  let bind_disj infos =
-    let (unbound,free,refs_branches) = split3 infos in
-    let (unitary,nonunitary) =
-      List.split
-	(List.map (function x -> collect_unitary_nonunitary x [])
-	   refs_branches) in
-    let unbound = nub (List.concat unbound) in
-    let free = nub (List.concat free) in
-    let unitary = nub (List.concat unitary) in
-    let nonunitary = nub (List.concat nonunitary) in
-    let unitary =
-      List.filter (function x -> not (List.mem x nonunitary)) unitary in
-    (unbound,free,unitary@nonunitary@nonunitary) in
-
-  let astfvident recursor k i =
-    match Ast.unwrap i with
-      Ast.MetaId(name,true,_) | Ast.MetaFunc(name,true,_)
-    | Ast.MetaLocalFunc(name,true,_) ->
-	let id = metaid name in
-	if List.mem id bound
-	then bind ([],[id],[]) (mcode recursor name)
-	else bind ([id],[id],[id]) (mcode recursor name)
-    | _ -> k i in
-
-  let astfvexpr recursor k e =
-    match Ast.unwrap e with
-      Ast.MetaConst(name,true,_,_) | Ast.MetaErr(name,true,_)
-    | Ast.MetaExpr(name,true,_,_) | Ast.MetaExprList(name,true,_) ->
-	let id = metaid name in
-	if List.mem id bound
-	then bind ([],[id],[]) (mcode recursor name)
-	else bind ([id],[id],[id]) (mcode recursor name)
-    | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
-    | _ -> k e in
-
-  let astfvdecls recursor k d =
-    match Ast.unwrap d with
-      Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
-    | _ -> k d in
-
-  let astfvfullType recursor k ty =
-    match Ast.unwrap ty with
-      Ast.DisjType(types) -> bind_disj (List.map k types)
-    | _ -> k ty in
-
-  let astfvtypeC recursor k ty =
-    match Ast.unwrap ty with
-      Ast.MetaType(name,true,_) ->
-	let id = metaid name in
-	if List.mem id bound
-	then bind ([],[id],[]) (mcode recursor name)
-	else bind ([id],[id],[id]) (mcode recursor name)
-    | _ -> k ty in
-
-  let astfvparam recursor k p =
-    match Ast.unwrap p with
-      Ast.MetaParam(name,true,_) | Ast.MetaParamList(name,true,_) ->
-	let id = metaid name in
-	if List.mem id bound
-	then bind ([],[id],[]) (mcode recursor name)
-	else bind ([id],[id],[id]) (mcode recursor name)
-    | _ -> k p in
-
-  let astfvrule_elem recursor k re =
-    let (unbound,free,_) as res =
-      match Ast.unwrap re with
-	Ast.MetaRuleElem(name,true,_) | Ast.MetaStmt(name,true,_,_)
-      | Ast.MetaStmtList(name,true,_) ->
-	  let id = metaid name in
-	  if List.mem id bound
-	  then bind ([],[id],[]) (mcode recursor name)
-	  else bind ([id],[id],[id]) (mcode recursor name)
-      |	Ast.Define(_,_,db) ->
-	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,true) ->
-	      let id = metaid name in
-	      if List.mem id bound
-	      then bind ([],[id],[]) (mcode recursor name)
-	      else bind ([id],[id],[id]) (mcode recursor name)
-	  | _ -> k re)
-      |	Ast.FunHeader(bef,_,_,_,_,_,_,_) | Ast.Decl(bef,_) ->
-	  bind (mcodekind recursor bef) (k re)
-      | _ -> k re in
-    Hashtbl.add free_table (Rule_elem re)
-      (unbound, Common.minus_set free unbound);
-    res in
-
-  let astfvstatement recursor k s =
-    let (unbound,free,_) as res =
-      match Ast.unwrap s with
-	Ast.Disj(stms) ->
-	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
-      | Ast.IfThen(_,_,aft) | Ast.IfThenElse(_,_,_,_,aft)
-      | Ast.While(_,_,aft) | Ast.For(_,_,aft) ->
-	  bind (k s) (mcodekind recursor aft)
-      |	_ -> k s in
-    Hashtbl.add free_table (Statement s)
-      (unbound, Common.minus_set free unbound);
-    res in
-
-  let astfvstatement_dots recursor k s = 
-    let (unbound,free,_) as res = k s in
-    Hashtbl.add free_table (StatementDots s) 
-      (unbound, Common.minus_set free unbound);
-    res in
-
-  let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing astfvstatement_dots
-      astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
-      astfvdecls
-      astfvrule_elem astfvstatement donothing donothing donothing in
-
-  (* all is the information for each rule.  the second component is a
-  summary of the information for all of the rules that share a single
-  metavariable declaration.  in each case, the first component is the set
-  of non-local variables that are referenced and the second component is
-  the complete set of variables that are referenced. *)
-  let rule l =
-    let all = List.map recursor.V.combiner_top_level l in
-    (all,List.fold_left bind option_default all) in
-
-  (function l -> (rule l,free_table))
 
 let get_names = function
     Ast.MetaIdDecl(ar,nm) -> nm
@@ -257,107 +26,265 @@ let get_names = function
   | Ast.MetaLocalFuncDecl(ar,nm) -> nm
   | Ast.MetaTextDecl(ar,nm) -> nm
 
-let update table metavars unitary_variables =
-  let fresh =
-    List.fold_left
-      (function prev ->
-	function Ast.MetaFreshIdDecl(arity,name) -> name::prev | _ -> prev)
-      [] metavars in
+(* Collect all variable references in a minirule.  For a disj, we collect
+the maximum number (2 is enough) of references in any branch. *)
 
-  let collect_fresh = List.filter (function x -> List.mem x fresh) in
-
-  let statement r k s =
-    let (fvs,inherited) = Hashtbl.find table (Statement s) in
-    let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,inherited,d) in
-
-  let statement_dots r k s =
-    let (fvs,inherited) = Hashtbl.find table (StatementDots s) in
-    let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,inherited,d) in
-
-  let rule_elem r k s =
-    let (fvs,inherited) = Hashtbl.find table (Rule_elem s) in
-    let fvs = set_minus fvs unitary_variables in
-    let (s,l,_,_,_,d) = k s in
-    (s,l,fvs,collect_fresh fvs,inherited,d) in
-
-  let mcode x = x in
-  let donothing r k e = k e in
-
-  (V.rebuilder
-     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-     donothing donothing statement_dots
-     donothing donothing donothing donothing donothing donothing donothing
-     rule_elem statement donothing donothing donothing).V.rebuilder_top_level
-
-let inner_non_locally_used l =
-  let rec loop bound = function
+let collect_unitary_nonunitary free_usage =
+  let free_usage = List.sort compare free_usage in
+  let rec loop1 todrop = function (* skips multiple occurrences *)
       [] -> []
-    | x::xs ->
-	let all = Common.union_set x bound in
-	let x = List.filter (function x -> List.exists (List.mem x) xs) all in
-	x::(loop all xs) in
-  loop [] l
+    | (x::xs) as all -> if x = todrop then loop1 todrop xs else all in
+  let rec loop2 = function
+      [] -> ([],[])
+    | [x] -> ([x],[])
+    | x::y::xs ->
+	if x = y (* occurs more than once in free_usage *)
+	then
+	  let (unitary,non_unitary) = loop2(loop1 x xs) in
+	  (unitary,x::non_unitary)
+	else (* occurs only once in free_usage *)
+	  let (unitary,non_unitary) = loop2 (y::xs) in
+	  (x::unitary,non_unitary) in
+  loop2 free_usage
 
-(* --------------------------------------------------------------------- *)
-(* detection and updating of unitary variables *)
+let collect_all_refs =
+  let bind x y = x @ y in
+  let option_default = [] in
 
-let drop_unitary_variables unitary_variables =
+  let donothing recursor k e = k e in (* just combine in the normal way *)
+
+  (* the following considers that anything that occurs non-unitarily in one
+     branch occurs nonunitarily in all branches.  This is not optimal, but
+     doing better seems to require a breadth-first traversal, which is
+     perhaps better to avoid.  Also, unitarily is represented as occuring once,
+     while nonunitarily is represented as twice - more is irrelevant *)
+  (* cases for disjs and metavars *)
+  let bind_disj refs_branches =
+    let (unitary,nonunitary) =
+      List.split (List.map collect_unitary_nonunitary refs_branches) in
+    let unitary = nub (List.concat unitary) in
+    let nonunitary = nub (List.concat nonunitary) in
+    let unitary =
+      List.filter (function x -> not (List.mem x nonunitary)) unitary in
+    unitary@nonunitary@nonunitary in
+
+  let metaid (x,_,_) = x in
+
+  let astfvident recursor k i =
+    match Ast.unwrap i with
+      Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
+    | Ast.MetaLocalFunc(name,_,_) -> [metaid name]
+    | _ -> k i in
+
+  let astfvexpr recursor k e =
+    match Ast.unwrap e with
+      Ast.MetaConst(name,_,_,_) | Ast.MetaErr(name,_,_)
+    | Ast.MetaExpr(name,_,_,_) | Ast.MetaExprList(name,_,_) -> [metaid name]
+    | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
+    | _ -> k e in
+
+  let astfvdecls recursor k d =
+    match Ast.unwrap d with
+      Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+    | _ -> k d in
+
+  let astfvfullType recursor k ty =
+    match Ast.unwrap ty with
+      Ast.DisjType(types) -> bind_disj (List.map k types)
+    | _ -> k ty in
+
+  let astfvtypeC recursor k ty =
+    match Ast.unwrap ty with
+      Ast.MetaType(name,_,_) -> [metaid name]
+    | _ -> k ty in
+
+  let astfvparam recursor k p =
+    match Ast.unwrap p with
+      Ast.MetaParam(name,_,_) | Ast.MetaParamList(name,_,_) -> [metaid name]
+    | _ -> k p in
+
+  let astfvrule_elem recursor k re =
+    nub (*within a rule_elem, pattern3 manages the coherence of the bindings*)
+      (match Ast.unwrap re with
+	Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
+      | Ast.MetaStmtList(name,_,_) -> [metaid name]
+      | Ast.Define(_,_,db) ->
+	  (match Ast.unwrap db with
+	    Ast.DMetaId(name,_) -> [metaid name]
+	  | _ -> k re)
+      | _ -> k re) in
+
+  let astfvstatement recursor k s =
+    match Ast.unwrap s with
+      Ast.Disj(stms) ->
+	bind_disj (List.map recursor.V.combiner_statement_dots stms)
+    | _ -> k s in
+
+  let mcode r e = [] in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
+    astfvdecls astfvrule_elem astfvstatement donothing donothing donothing
+
+let collect_all_rule_refs minirules =
+  List.fold_left (@) []
+    (List.map collect_all_refs.V.combiner_top_level minirules)
+
+let collect_all_minirule_refs = collect_all_refs.V.combiner_top_level
+
+(* ---------------------------------------------------------------- *)
+
+(* For the rules under a given metavariable declaration, collect all of the
+variables that occur in the plus code *)
+
+let collect_in_plus_term =
+  let bind x y = x @ y in
+  let option_default = [] in
+  let donothing r k e = k e in
+
+  let mcodekind r mck =
+    let process_anything_list_list anythings =
+      let astfvs = collect_all_refs.V.combiner_anything in
+      List.fold_left bind []
+	(List.map (function l -> List.fold_left bind [] (List.map astfvs l))
+	   anythings) in
+    match mck with
+      Ast.MINUS(_,anythings) -> process_anything_list_list anythings
+    | Ast.CONTEXT(_,befaft) ->
+	(match befaft with
+	  Ast.BEFORE(ll) -> process_anything_list_list ll
+	| Ast.AFTER(ll) -> process_anything_list_list ll
+	| Ast.BEFOREAFTER(llb,lla) ->
+	    bind
+	      (process_anything_list_list lla)
+	      (process_anything_list_list llb)
+	| Ast.NOTHING -> option_default)
+    | Ast.PLUS -> option_default in
+
+  let mcode r (_,_,mck) = mcodekind r mck in
+
+  (* case for things with bef/aft mcode *)
+
+  let astfvrule_elem recursor k re =
+    match Ast.unwrap re with
+      Ast.FunHeader(bef,_,_,_,_,_,_,_) | Ast.Decl(bef,_) ->
+	bind (mcodekind recursor bef) (k re)
+    | _ -> k re in
+
+  let astfvstatement recursor k s =
+    match Ast.unwrap s with
+      Ast.IfThen(_,_,aft) | Ast.IfThenElse(_,_,_,_,aft)
+    | Ast.While(_,_,aft) | Ast.For(_,_,aft) ->
+	bind (k s) (mcodekind recursor aft)
+    | _ -> k s in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing astfvrule_elem astfvstatement donothing donothing donothing
+
+let collect_in_plus minirules =
+  nub
+    (List.concat
+       (List.map collect_in_plus_term.V.combiner_top_level minirules))
+
+(* ---------------------------------------------------------------- *)
+
+(* For the rules under a given metavariable declaration, collect all of the
+variables that occur only once and more than once in the minus code *)
+
+let collect_all_multirefs minirules =
+  let refs = List.map collect_all_refs.V.combiner_top_level minirules in
+  collect_unitary_nonunitary (List.concat refs)
+
+(* ---------------------------------------------------------------- *)
+
+(* classify as unitary (no binding) or nonunitary (env binding) or saved
+(witness binding) *)
+
+let classify_variables metavars minirules used_after =
+  let metavars = List.map get_names metavars in
+  let (unitary,nonunitary) = collect_all_multirefs minirules in
+  let inplus = collect_in_plus minirules in
+  
   let donothing r k e = k e in
   let mcode x = x in
-  let not_unitary (name,_,mc) = not(List.mem name unitary_variables) in
+  let check_unitary name inherited =
+    if List.mem name inplus or List.mem name used_after
+    then Ast.Saved
+    else if not inherited && List.mem name unitary
+    then Ast.Unitary
+    else Ast.Nonunitary in
+
+  let classify (name,_,_) =
+    let inherited = not (List.mem name metavars) in
+    (check_unitary name inherited,inherited) in
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaId(name,not_unitary name,inherited))
-    | Ast.MetaFunc(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaFunc(name,not_unitary name,inherited))
-    | Ast.MetaLocalFunc(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaLocalFunc(name,not_unitary name,inherited))
+      Ast.MetaId(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaId(name,unitary,inherited))
+    | Ast.MetaFunc(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaFunc(name,unitary,inherited))
+    | Ast.MetaLocalFunc(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaLocalFunc(name,unitary,inherited))
     | _ -> k e in
 
   let expression r k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,_,ty,inherited) ->
-	Ast.rewrap e (Ast.MetaConst(name,not_unitary name,ty,inherited))
-    | Ast.MetaErr(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaErr(name,not_unitary name,inherited))
-    | Ast.MetaExpr(name,_,ty,inherited) ->
-	Ast.rewrap e (Ast.MetaExpr(name,not_unitary name,ty,inherited))
-    | Ast.MetaExprList(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaExprList(name,not_unitary name,inherited))
+      Ast.MetaConst(name,_,ty,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaConst(name,unitary,ty,inherited))
+    | Ast.MetaErr(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaErr(name,unitary,inherited))
+    | Ast.MetaExpr(name,_,ty,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e
+	  (Ast.MetaExpr(name,unitary,ty,inherited))
+    | Ast.MetaExprList(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaExprList(name,unitary,inherited))
     | _ -> k e in
 
   let typeC r k e =
     match Ast.unwrap e with
-      Ast.MetaType(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaType(name,not_unitary name,inherited))
+      Ast.MetaType(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaType(name,unitary,inherited))
     | _ -> k e in
 
   let param r k e =
     match Ast.unwrap e with
-      Ast.MetaParam(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaParam(name,not_unitary name,inherited))
-    | Ast.MetaParamList(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaParamList(name,not_unitary name,inherited))
+      Ast.MetaParam(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaParam(name,unitary,inherited))
+    | Ast.MetaParamList(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaParamList(name,unitary,inherited))
     | _ -> k e in
 
   let define_body b =
     match Ast.unwrap b with
       Ast.DMetaId(name,_) ->
-	Ast.rewrap b (Ast.DMetaId(name,not_unitary name))
+	let (unitary,_) = classify name in
+	Ast.rewrap b (Ast.DMetaId(name,unitary))
     | _ -> b in
   
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.MetaStmt(name,_,msi,inherited) ->
-	Ast.rewrap e (Ast.MetaStmt(name,not_unitary name,msi,inherited))
-    | Ast.MetaStmtList(name,_,inherited) ->
-	Ast.rewrap e (Ast.MetaStmtList(name,not_unitary name,inherited))
+      Ast.MetaStmt(name,_,msi,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaStmt(name,unitary,msi,inherited))
+    | Ast.MetaStmtList(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
     | Ast.Define(def,id,body) ->
 	Ast.rewrap e (Ast.Define(def,id,define_body body))
     | _ -> k e in
@@ -368,112 +295,166 @@ let drop_unitary_variables unitary_variables =
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing donothing in
 
-  fn.V.rebuilder_top_level
+  List.map fn.V.rebuilder_top_level minirules
 
-(* --------------------------------------------------------------------- *)
+(* ---------------------------------------------------------------- *)
 
-let rec loop defined = function
-    [] -> ([],[],[])
-  | (metavar_list,rule)::rest ->
-      let locally_defined = List.map get_names metavar_list in
-      let not_rebound = set_minus defined locally_defined in
-      let ((all_info,(_,locally_free,free_usage)),table) =
-	astfvs not_rebound rule in
-      let (_,all_locally_frees,all_free_usage) = split3 all_info in
-      let (later_free,later_nonlocally_used,later_rules) =
-	loop (Common.union_set defined locally_defined) rest in
-      let local_used_after =
-	List.map (function x -> Common.union_set x later_free)
-	  (inner_non_locally_used all_locally_frees) in
-      let unitary_variables =
-	List.map2 collect_unitary_variables all_free_usage local_used_after in
-      let rule_with_fvs =
-	List.map2 (update table metavar_list) unitary_variables rule in
-      let rule_with_fvs =
-	List.map2 drop_unitary_variables unitary_variables rule_with_fvs in
-      (set_minus (Common.union_set locally_free later_free) locally_defined,
-       local_used_after::later_nonlocally_used,
-       rule_with_fvs::later_rules)
+(* For a minirule, collect the set of non-local (not in "bound") variables that
+are referenced.  Store them in a hash table. *)
 
-(* --------------------------------------------------------------------- *)
-(* determine for each metavar whether it is declared in the current rule or
-previously *)
-(* this fills in the inherited field *)
+(* bound means the metavariable was declared previously, not locally *)
 
-(* special case for metavars *)
-let update_metavars previous_metavars =
-  let donothing r k e = k e in
+(* Highly inefficient, because we call collect_all_refs on nested code
+multiple times.  But we get the advantage of not having too many variants
+of the same functions. *)
+
+type anything =
+    Rule_elem        of Ast.rule_elem
+  | Statement        of Ast.statement
+  | StatementDots    of Ast.statement Ast.dots
+
+type free_table =
+    (anything,(string list(*unbound*)*string list(*inherited*))) Hashtbl.t
+
+let astfvs metavars bound =
+  let free_table = (Hashtbl.create(50) : free_table) in
+
+  let fresh =
+    List.fold_left
+      (function prev ->
+	function Ast.MetaFreshIdDecl(arity,name) -> name::prev | _ -> prev)
+      [] metavars in
+
+  let collect_fresh = List.filter (function x -> List.mem x fresh) in
+
+  (* cases for the elements of anything *)
+  let astfvrule_elem recursor k re =
+    let free =
+      Common.union_set (nub (collect_all_refs.V.combiner_rule_elem re))
+	(collect_in_plus_term.V.combiner_rule_elem re) in
+    let (unbound,inherited) as iu =
+      List.partition (function x -> not(List.mem x bound)) free in
+    Hashtbl.add free_table (Rule_elem re) iu;
+    let (re,l,_,_,_,d) = k re in
+    (re,l,unbound,collect_fresh unbound,inherited,d) in
+
+  let astfvstatement recursor k s =
+    let free =
+      Common.union_set (nub (collect_all_refs.V.combiner_statement s))
+	(collect_in_plus_term.V.combiner_statement s) in
+    let (unbound,inherited) as iu =
+      List.partition (function x -> not(List.mem x bound)) free in
+    Hashtbl.add free_table (Statement s) iu;
+    let (s,l,_,_,_,d) = k s in
+    (s,l,unbound,collect_fresh unbound,inherited,d) in
+
+  let astfvstatement_dots recursor k sd =
+    let free =
+      Common.union_set (nub (collect_all_refs.V.combiner_statement_dots sd))
+	(collect_in_plus_term.V.combiner_statement_dots sd) in
+    let (unbound,inherited) as iu =
+      List.partition (function x -> not(List.mem x bound)) free in
+    Hashtbl.add free_table (StatementDots sd) iu;
+    let (sd,l,_,_,_,d) = k sd in
+    (sd,l,unbound,collect_fresh unbound,inherited,d) in
+
   let mcode x = x in
-  let free_mv (name,_,_) = List.mem name previous_metavars in
+  let donothing r k e = k e in
 
-  let ident r k e =
-    match Ast.unwrap e with
-      Ast.MetaId(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaId(name,keep,free_mv name))
-    | Ast.MetaFunc(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaFunc(name,keep,free_mv name))
-    | Ast.MetaLocalFunc(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaLocalFunc(name,keep,free_mv name))
-    | _ -> k e in
+  V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing astfvstatement_dots
+    donothing donothing donothing donothing donothing donothing donothing
+    astfvrule_elem astfvstatement donothing donothing donothing
 
-  let expression r k e =
-    match Ast.unwrap e with
-      Ast.MetaConst(name,keep,ty,_) ->
-	Ast.rewrap e (Ast.MetaConst(name,keep,ty,free_mv name))
-    | Ast.MetaErr(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaErr(name,keep,free_mv name))
-    | Ast.MetaExpr(name,keep,ty,_) ->
-	Ast.rewrap e (Ast.MetaExpr(name,keep,ty,free_mv name))
-    | Ast.MetaExprList(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaExprList(name,keep,free_mv name))
-    | _ -> k e in
-
-  let typeC r k e =
-    match Ast.unwrap e with
-      Ast.MetaType(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaType(name,keep,free_mv name))
-    | _ -> k e in
-
-  let param r k e =
-    match Ast.unwrap e with
-      Ast.MetaParam(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaParam(name,keep,free_mv name))
-    | Ast.MetaParamList(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaParamList(name,keep,free_mv name))
-    | _ -> k e in
-
-  let rule_elem r k e =
-    match Ast.unwrap e with
-      Ast.MetaStmt(name,keep,msi,_) ->
-	Ast.rewrap e (Ast.MetaStmt(name,keep,msi,free_mv name))
-    | Ast.MetaStmtList(name,keep,_) ->
-	Ast.rewrap e (Ast.MetaStmtList(name,keep,free_mv name))
-    | _ -> k e in
-
-  let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
-      ident expression donothing typeC donothing param donothing rule_elem
-      donothing donothing donothing donothing in
-
-  fn.V.rebuilder_top_level
-
-let update_loop nonlocally_used rules =
-  let rec inner_loop = function
-      ([],nonlocally_used) -> ([],nonlocally_used)
-    | (x::xs,nlu::nonlocally_used) ->
-	let (xs,rest_nonlocally_used) = inner_loop (xs, nonlocally_used) in
-	(update_metavars nlu x::xs,rest_nonlocally_used)
-    | _ -> failwith "not possible" in
-  let rec outer_loop nonlocally_used = function
+let collect_astfvs rules =
+  let rec loop bound = function
       [] -> []
-    | x::xs ->
-	let (x,nonlocally_used) = inner_loop (x,nonlocally_used) in
-	x::(outer_loop nonlocally_used xs) in
-  outer_loop ([]::List.concat nonlocally_used) rules
+    | (metavars,minirules)::rules ->
+	let bound = Common.minus_set bound (List.map get_names metavars) in
+	(List.map (astfvs metavars bound).V.rebuilder_top_level minirules)::
+	(loop ((List.map get_names metavars)@bound) rules) in
+  loop [] rules
 
-(* --------------------------------------------------------------------- *)
+(* ---------------------------------------------------------------- *)
+
+(* collect used after lists, per minirule *)
+
+(* defined is a list of variables that were declared in a previous metavar
+declaration *)
+
+(* Top-level used after: For each rule collect the set of variables that
+are inherited, ie used but not defined.  These are accumulated back to
+their point of definition. *)
+
+
+let collect_top_level_used_after metavar_rule_list =
+  let (used_after,used_after_lists) =
+    List.fold_right
+      (function (metavar_list,rule) ->
+	function (used_after,used_after_lists) ->
+	  let locally_defined = List.map get_names metavar_list in
+	  let continue_propagation =
+	    List.filter (function x -> not(List.mem x locally_defined))
+	      used_after in
+	  let free_vars =
+	    Common.union_set (nub (collect_all_rule_refs rule))
+	      (collect_in_plus rule) in
+	  let inherited =
+	    List.filter (function x -> not (List.mem x locally_defined))
+	      free_vars in
+	  (Common.union_set inherited continue_propagation,
+	   used_after::used_after_lists))
+      metavar_rule_list ([],[]) in
+  match used_after with
+    [] -> used_after_lists
+  | _ -> failwith "collect_top_level_used_after: unbound variables"
+	
+let collect_local_used_after metavars minirules used_after =
+  let locally_defined = List.map get_names metavars in
+  let rec loop defined = function
+      [] -> (used_after,[])
+    | minirule::rest ->
+	let local_free_vars =
+	  List.filter (function x -> List.mem x locally_defined)
+	    (Common.union_set
+	       (nub (collect_all_minirule_refs minirule))
+	       (collect_in_plus_term.V.combiner_top_level minirule)) in
+	let new_defined = Common.union_set local_free_vars defined in
+	let (mini_used_after,mini_used_after_lists) = loop new_defined rest in
+	let local_used = Common.union_set local_free_vars mini_used_after in
+	let (new_used_after,new_list) =
+	  List.partition (function x -> List.mem x defined) mini_used_after in
+	let new_used_after = Common.union_set local_used new_used_after in
+	(new_used_after,new_list::mini_used_after_lists) in
+  let (_,used_after_lists) = loop [] minirules in
+  used_after_lists
+
+let collect_used_after metavar_rule_list =
+  let used_after_lists = collect_top_level_used_after metavar_rule_list in
+  List.map2
+    (function (metavars,minirules) ->
+      function used_after ->
+	collect_local_used_after metavars minirules used_after)
+    metavar_rule_list used_after_lists
+
+(* ---------------------------------------------------------------- *)
+
+(* entry point *)
 
 let free_vars rules =
-  let (_,nonlocally_used,rules) = loop [] rules in
-  (update_loop nonlocally_used rules,nonlocally_used)
+  let (metavars,_) = List.split rules in
+  let used_after_lists = collect_used_after rules in
+  let new_rules = collect_astfvs rules in
+  let new_rules =
+    List.map2
+      (function (mv,r) ->
+	function ua ->
+	  classify_variables mv r (List.concat ua))
+      (List.combine metavars new_rules) used_after_lists in
+  List.iter
+    (List.iter
+       (function l -> Printf.printf "one rule: %s\n" (String.concat " " l)))
+    used_after_lists;
+  (new_rules,used_after_lists)
+

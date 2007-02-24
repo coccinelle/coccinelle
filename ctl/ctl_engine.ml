@@ -1869,6 +1869,7 @@ let print_bench _ =
 (* preprocessing: ignore irrelevant functions *)
 
 let preprocess label (req,opt) =
+  Printf.printf "req %d opt%d\n" (List.length req) (List.length opt);
   let get_any x =
     try not([] = Hashtbl.find memo_label x)
     with
@@ -1889,19 +1890,16 @@ let preprocess label (req,opt) =
       then
 	let found = List.filter get_any req in
 	let len = List.length found in
-	if len = 0
-	then false
+	if List.length found = List.length req
+	then true
 	else
-	  if List.length found = List.length req
-	  then true
-	  else
-	    begin
-	      Printf.printf "missing something required\nfound:\n";
-	      List.iter
-		(function x -> P.print_predicate x; Format.print_newline())
-		found;
-	      false
-	    end
+	  begin
+	    Printf.printf "missing something required\nfound:\n";
+	    List.iter
+	      (function x -> P.print_predicate x; Format.print_newline())
+	      found;
+	    false
+	  end
       else List.for_all get_any req
 
 let filter_partial_matches trips =
@@ -1922,6 +1920,7 @@ let sat m phi reqopt check_conj =
   let (x,label,states) = m in
   if (!Flag_ctl.bench > 0) or (preprocess label reqopt)
   then
+    (Printf.printf "starting\n";
     let m = (x,label,List.sort compare states) in
     let res =
       if(!Flag_ctl.verbose_ctl_engine)
@@ -1937,7 +1936,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
     let res = filter_partial_matches res in
     (*print_state "final result" res;*)
-    res
+    res)
   else
     (if !Flag_ctl.verbose_ctl_engine
     then Common.pr2 "missing something required";

@@ -30,9 +30,7 @@ and contains_only_minus s =
   let mcode (_,_,_,mc) =
     match mc with
       Ast0.MINUS(_) -> true
-    | Ast0.CONTEXT(mc) ->
-      let (text,tinfo1,tinfo2) = !mc in
-      (match text with Ast.NOTHING -> true | _ -> false)
+    | Ast0.CONTEXT(mc) -> false
     | _ -> false in
 
   let expression r k e =

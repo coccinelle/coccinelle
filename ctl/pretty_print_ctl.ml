@@ -124,7 +124,7 @@ let rec (pp_ctl:
      | BACKWARD -> char_back
 	     
    and pp_s = function
-       STRICT -> pp ","
+       STRICT -> if !Flag_ctl.partial_match then pp "," else ()
      | NONSTRICT -> ()
 	     
    and pp_sc = function

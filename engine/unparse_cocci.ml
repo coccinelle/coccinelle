@@ -61,24 +61,22 @@ in
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,true,_) -> 
+  | Ast.MetaId(name,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaFunc(name,true,_) -> 
+  | Ast.MetaFunc(name,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaFuncVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaLocalFunc(name,true,_) -> 
+  | Ast.MetaLocalFunc(name,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaLocalFuncVal id) -> pr id
         | _ -> raise Impossible
         )
 
-  | Ast.MetaId(_,false,_) | Ast.MetaFunc(_,false,_)
-  | Ast.MetaLocalFunc(_,false,_)
   | Ast.OptIdent(_) | Ast.UniqueIdent(_) | Ast.MultiIdent(_) -> 
       raise CantBeInPlus
 
@@ -130,28 +128,23 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaConst(name,true,None,_) -> 
+  | Ast.MetaConst(name,_,None,_) -> 
       failwith "metaConst not handled"
-  | Ast.MetaConst(name,true,Some ty,_) ->
+  | Ast.MetaConst(name,_,Some ty,_) ->
       failwith "metaConst not handled"
 
-  | Ast.MetaErr(name,true,_) -> 
+  | Ast.MetaErr(name,_,_) -> 
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,true,_typedontcare,_) -> 
+  | Ast.MetaExpr (name,_,_typedontcare,_) -> 
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
             Pretty_print_c.pp_expression_gen pr_elem  exp
         | _ -> raise Impossible
                            )
 
-  | Ast.MetaExprList (name,true,_) -> 
+  | Ast.MetaExprList (name,_,_) -> 
       failwith "not handling MetaExprList"
-
-  | Ast.MetaConst(name,false,_,_)
-  | Ast.MetaErr(name,false,_)
-  | Ast.MetaExpr (name,false,_,_)
-  | Ast.MetaExprList (name,false,_) -> raise CantBeInPlus
       
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
 
@@ -250,15 +243,12 @@ and typeC ty =
       print_between force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name; print_string " "
-  | Ast.MetaType(name,true,_) -> 
+  | Ast.MetaType(name,_,_) -> 
       handle_metavar name  (function
         | Ast_c.MetaTypeVal exp -> 
             Pretty_print_c.pp_type_gen pr_elem  exp
         | _ -> raise Impossible
                            )
-  | Ast.MetaType(name,false,_) -> 
-      raise CantBeInPlus
-
 
 
 and baseType = function
@@ -370,12 +360,10 @@ and parameterTypeDef p =
 	  | _ -> fullType ty; ident id)
       | _ -> fullType ty; print_option ident id)
 
-  | Ast.MetaParam(name,true,_) -> 
+  | Ast.MetaParam(name,_,_) -> 
       failwith "not handling MetaParam"
-  | Ast.MetaParamList(name,true,_) -> 
+  | Ast.MetaParamList(name,_,_) -> 
       failwith "not handling MetaParamList"
-  | Ast.MetaParam(name,false,_)
-  | Ast.MetaParamList(name,false,_) -> raise CantBeInPlus
 
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) 
@@ -392,13 +380,12 @@ in
 
 let define_body m =
   match Ast.unwrap m with
-    Ast.DMetaId(name,true) -> 
+    Ast.DMetaId(name,_) -> 
       handle_metavar name (function
       | (Ast_c.MetaTextVal text) -> pr text
       | _ -> raise Impossible
       ) 
 
-  | Ast.DMetaId(name,false) -> raise CantBeInPlus
   | Ast.Ddots(dots) -> mcode print_string dots in
 
 (* --------------------------------------------------------------------- *)
@@ -478,22 +465,18 @@ let rule_elem arity re =
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
 
-  | Ast.MetaRuleElem(name,true,_) ->
+  | Ast.MetaRuleElem(name,_,_) ->
       raise Impossible
 
-  | Ast.MetaStmt(name,true,_,_) ->
+  | Ast.MetaStmt(name,_,_,_) ->
       handle_metavar name  (function
         | Ast_c.MetaStmtVal exp -> 
             Pretty_print_c.pp_statement_gen pr_elem  exp
         | _ -> raise Impossible
                            )
-  | Ast.MetaStmtList(name,true,_) ->
+  | Ast.MetaStmtList(name,_,_) ->
       failwith
-	"MetaStmtList not supported (not even in ast_c metavars binding)"
-
-  | Ast.MetaRuleElem(name,false,_) | Ast.MetaStmt(name,false,_,_)
-  | Ast.MetaStmtList(name,false,_) ->
-      raise CantBeInPlus in
+	"MetaStmtList not supported (not even in ast_c metavars binding)" in
 
 let rec statement arity s =
   match Ast.unwrap s with
