@@ -1324,9 +1324,9 @@ let rec satloop unchecked required required_states
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
-    | A.Exists (v,phi)     ->
+    | A.Exists (v,phi,keep)     ->
 	let new_required = drop_required v required in
-	triples_witness v unchecked
+	triples_witness v (unchecked or not keep)
 	  (loop unchecked new_required required_states phi)
     | A.Let(v,phi1,phi2)   ->
 	(* should only be used when the properties unchecked, required,
@@ -1373,7 +1373,6 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
 	Printf.printf "label\n"; flush stdout;
-	print_required_states required_states;
 	anno (satLabel label required p) []
     | A.Uncheck(phi1) ->
 	let unchecked = if !pUNCHECK_OPT then true else false in
@@ -1578,12 +1577,12 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	satv unchecked required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
 	  env
-    | A.Exists (v,phi1)    -> 
+    | A.Exists (v,phi1,keep)    -> 
 	let new_required = drop_required v required in
 	let (child,res) =
 	  satv unchecked new_required required_states phi1 env in
 	Printf.printf "exists\n"; flush stdout;
-	anno (triples_witness v unchecked res) [child]
+	anno (triples_witness v (unchecked or not keep) res) [child]
     | A.Let(v,phi1,phi2)   ->
 	let (child1,res1) =
 	  satv unchecked required required_states phi1 env in
@@ -1642,7 +1641,7 @@ let simpleanno l phi res =
     | A.True               -> pp "True"
     | A.Pred(p)            -> pp ("Pred" ^ (Dumper.dump p))
     | A.Not(phi)           -> pp "Not"
-    | A.Exists(v,phi)      -> pp ("Exists " ^ (Dumper.dump(v)))
+    | A.Exists(v,phi,_)    -> pp ("Exists " ^ (Dumper.dump(v)))
     | A.And(_,phi1,phi2)   -> pp "And"
     | A.AndAny(dir,_,phi1,phi2) -> pp "AndAny"
     | A.Or(phi1,phi2)      -> pp "Or"
@@ -1869,7 +1868,6 @@ let print_bench _ =
 (* preprocessing: ignore irrelevant functions *)
 
 let preprocess label (req,opt) =
-  Printf.printf "req %d opt%d\n" (List.length req) (List.length opt);
   let get_any x =
     try not([] = Hashtbl.find memo_label x)
     with
@@ -1889,7 +1887,6 @@ let preprocess label (req,opt) =
       if !Flag_ctl.partial_match
       then
 	let found = List.filter get_any req in
-	let len = List.length found in
 	if List.length found = List.length req
 	then true
 	else
@@ -1920,7 +1917,6 @@ let sat m phi reqopt check_conj =
   let (x,label,states) = m in
   if (!Flag_ctl.bench > 0) or (preprocess label reqopt)
   then
-    (Printf.printf "starting\n";
     let m = (x,label,List.sort compare states) in
     let res =
       if(!Flag_ctl.verbose_ctl_engine)
@@ -1936,7 +1932,7 @@ let sat m phi reqopt check_conj =
 	else fn() in
     let res = filter_partial_matches res in
     (*print_state "final result" res;*)
-    res)
+    res
   else
     (if !Flag_ctl.verbose_ctl_engine
     then Common.pr2 "missing something required";

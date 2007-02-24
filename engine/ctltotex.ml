@@ -58,7 +58,7 @@ let rec ctl2c ct pp pv x =
   | CTL.Not(f) ->
       let (res,ct) = wrap (ct+1) pp pv f in
       ("\\neg "^res,ct)
-  | CTL.Exists(v,f) ->
+  | CTL.Exists(v,f,_) ->
       let (res1,len) = texify(pv v) in
       let ct = ct + len in
       let (res1,ct) = check_ct ct res1 in
@@ -195,7 +195,7 @@ and existswrap ct pp pv x =
   match CTL.unwrap x with
     CTL.Ref _ | CTL.AX(_,_,_) | CTL.AF(_,_,_) | CTL.AG(_,_,_) | CTL.AU(_,_,_,_)
   | CTL.Pred(_)
-  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_)
+  | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_,_)
   | CTL.True | CTL.False | CTL.Not(_) ->
       ctl2c ct pp pv x
   | _ ->

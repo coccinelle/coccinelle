@@ -233,11 +233,6 @@ struct
 		     (WRAPPER_ENV.mvar * SUB.value) list,
 		   SUB.mvar) Common.either)) =
     fun m phi (used_after, binding) ->
-      Printf.printf "used after\n";
-      List.iter
-	(function x -> SUB.print_mvar x; print_string " ")
-	used_after;
-      Format.print_newline();
       let noclean = satbis_noclean m phi in
       let res =
 	List.map (fun (_,_,w) -> unwrap_wits w true) noclean in

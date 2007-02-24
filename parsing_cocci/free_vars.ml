@@ -136,6 +136,60 @@ let collect_all_minirule_refs = collect_all_refs.V.combiner_top_level
 
 (* ---------------------------------------------------------------- *)
 
+let collect_saved =
+  let bind = Common.union_set in
+  let option_default = [] in
+
+  let donothing recursor k e = k e in (* just combine in the normal way *)
+
+  let metaid (x,_,_) = x in
+
+  (* cases for metavariables *)
+  let astfvident recursor k i =
+    match Ast.unwrap i with
+      Ast.MetaId(name,Ast.Saved,_) | Ast.MetaFunc(name,Ast.Saved,_)
+    | Ast.MetaLocalFunc(name,Ast.Saved,_) -> [metaid name]
+    | _ -> k i in
+
+  let astfvexpr recursor k e =
+    match Ast.unwrap e with
+      Ast.MetaConst(name,Ast.Saved,_,_) | Ast.MetaErr(name,Ast.Saved,_)
+    | Ast.MetaExpr(name,Ast.Saved,_,_) | Ast.MetaExprList(name,Ast.Saved,_) ->
+	[metaid name]
+    | _ -> k e in
+
+  let astfvtypeC recursor k ty =
+    match Ast.unwrap ty with
+      Ast.MetaType(name,Ast.Saved,_) -> [metaid name]
+    | _ -> k ty in
+
+  let astfvparam recursor k p =
+    match Ast.unwrap p with
+      Ast.MetaParam(name,Ast.Saved,_) | Ast.MetaParamList(name,Ast.Saved,_) ->
+	[metaid name]
+    | _ -> k p in
+
+  let astfvrule_elem recursor k re =
+    nub (*within a rule_elem, pattern3 manages the coherence of the bindings*)
+      (match Ast.unwrap re with
+	Ast.MetaRuleElem(name,Ast.Saved,_) | Ast.MetaStmt(name,Ast.Saved,_,_)
+      | Ast.MetaStmtList(name,Ast.Saved,_) -> [metaid name]
+      | Ast.Define(_,_,db) ->
+	  (match Ast.unwrap db with
+	    Ast.DMetaId(name,Ast.Saved) -> [metaid name]
+	  | _ -> k re)
+      | _ -> k re) in
+
+  let mcode r e = [] in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    astfvident astfvexpr donothing astfvtypeC donothing astfvparam
+    donothing astfvrule_elem donothing donothing donothing donothing
+
+(* ---------------------------------------------------------------- *)
+
 (* For the rules under a given metavariable declaration, collect all of the
 variables that occur in the plus code *)
 
@@ -308,17 +362,7 @@ are referenced.  Store them in a hash table. *)
 multiple times.  But we get the advantage of not having too many variants
 of the same functions. *)
 
-type anything =
-    Rule_elem        of Ast.rule_elem
-  | Statement        of Ast.statement
-  | StatementDots    of Ast.statement Ast.dots
-
-type free_table =
-    (anything,(string list(*unbound*)*string list(*inherited*))) Hashtbl.t
-
 let astfvs metavars bound =
-  let free_table = (Hashtbl.create(50) : free_table) in
-
   let fresh =
     List.fold_left
       (function prev ->
@@ -332,31 +376,33 @@ let astfvs metavars bound =
     let free =
       Common.union_set (nub (collect_all_refs.V.combiner_rule_elem re))
 	(collect_in_plus_term.V.combiner_rule_elem re) in
-    let (unbound,inherited) as iu =
+    let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    Hashtbl.add free_table (Rule_elem re) iu;
-    let (re,l,_,_,_,d) = k re in
-    (re,l,unbound,collect_fresh unbound,inherited,d) in
+    let (re,l,_,_,_,_,d) = k re in
+    (re,l,unbound,collect_fresh unbound,inherited,[],d) in
 
   let astfvstatement recursor k s =
     let free =
       Common.union_set (nub (collect_all_refs.V.combiner_statement s))
 	(collect_in_plus_term.V.combiner_statement s) in
-    let (unbound,inherited) as iu =
+    let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    Hashtbl.add free_table (Statement s) iu;
-    let (s,l,_,_,_,d) = k s in
-    (s,l,unbound,collect_fresh unbound,inherited,d) in
+    let (s,l,_,_,_,_,d) = k s in
+    (s,l,unbound,collect_fresh unbound,inherited,[],d) in
 
   let astfvstatement_dots recursor k sd =
     let free =
       Common.union_set (nub (collect_all_refs.V.combiner_statement_dots sd))
 	(collect_in_plus_term.V.combiner_statement_dots sd) in
-    let (unbound,inherited) as iu =
+    let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    Hashtbl.add free_table (StatementDots sd) iu;
-    let (sd,l,_,_,_,d) = k sd in
-    (sd,l,unbound,collect_fresh unbound,inherited,d) in
+    let (sd,l,_,_,_,_,d) = k sd in
+    (sd,l,unbound,collect_fresh unbound,inherited,[],d) in
+
+  let astfvtoplevel recursor k tl =
+    let saved = collect_saved.V.combiner_top_level tl in
+    let (tl,l,unbound,fresh,inherited,_,d) = k tl in
+    (tl,l,unbound,fresh,inherited,saved,d) in
 
   let mcode x = x in
   let donothing r k e = k e in
@@ -365,7 +411,7 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing astfvstatement_dots
     donothing donothing donothing donothing donothing donothing donothing
-    astfvrule_elem astfvstatement donothing donothing donothing
+    astfvrule_elem astfvstatement donothing astfvtoplevel donothing
 
 let collect_astfvs rules =
   let rec loop bound = function
@@ -445,16 +491,15 @@ let collect_used_after metavar_rule_list =
 let free_vars rules =
   let (metavars,_) = List.split rules in
   let used_after_lists = collect_used_after rules in
-  let new_rules = collect_astfvs rules in
   let new_rules =
     List.map2
       (function (mv,r) ->
 	function ua ->
 	  classify_variables mv r (List.concat ua))
-      (List.combine metavars new_rules) used_after_lists in
-  List.iter
+      rules used_after_lists in
+  let new_rules = collect_astfvs (List.combine metavars new_rules) in
+  (*List.iter
     (List.iter
        (function l -> Printf.printf "one rule: %s\n" (String.concat " " l)))
-    used_after_lists;
+    used_after_lists;*)
   (new_rules,used_after_lists)
-

@@ -5,6 +5,8 @@
 
 type strict = STRICT | NONSTRICT
 
+type keep_binding = bool (* true = put in witness tree *)
+
 (* CTL parameterised on basic predicates and metavar's*)
 type ('pred,'mvar,'anno) generic_ctl =
     ('pred,'mvar,'anno) generic_ctl_bis * 'anno
@@ -13,7 +15,7 @@ type ('pred,'mvar,'anno) generic_ctl =
   | True
   | Pred of 'pred
   | Not of (('pred,'mvar,'anno) generic_ctl)
-  | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl)
+  | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl) * keep_binding
   | And of strict * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 

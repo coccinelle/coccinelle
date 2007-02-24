@@ -5,7 +5,8 @@ type info = { line : int; column : int }
 type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
-       string list (*inherited vars*) * dots_bef_aft)
+       string list (*inherited vars*) * string list (*witness vars*) *
+       dots_bef_aft)
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -416,6 +417,7 @@ val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> string list
 val get_fresh : 'a wrap -> string list
 val get_inherited : 'a wrap -> string list
+val get_saved : 'a wrap -> string list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 

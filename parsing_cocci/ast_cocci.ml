@@ -5,7 +5,8 @@ type info = { line : int; column : int }
 type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
-       string list (*inherited vars*) * dots_bef_aft)
+       string list (*inherited vars*) * string list (*witness vars*) *
+       dots_bef_aft)
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -413,27 +414,29 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,fresh,inherited,d) x = (x,l,fvs,fresh,inherited,d)
-let unwrap (x,_,_,_,_,_) = x
+let rewrap (_,l,fvs,fresh,inherited,saved,d) x =
+  (x,l,fvs,fresh,inherited,saved,d)
+let unwrap (x,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_,_,_,_) = l
+let get_line (_,l,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
-let get_fvs (_,_,fvs,_,_,_) = fvs
-let get_fresh (_,_,_,fresh,_,_) = fresh
-let get_inherited (_,_,_,_,inherited,_) = inherited
-let get_dots_bef_aft (_,_,_,_,_,d) = d
-let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,_) d =
-  (x,l,fvs,fresh,inherited,d)
+let get_fvs (_,_,fvs,_,_,_,_) = fvs
+let get_fresh (_,_,_,fresh,_,_,_) = fresh
+let get_inherited (_,_,_,_,inherited,_,_) = inherited
+let get_saved (_,_,_,_,_,saved,_) = saved
+let get_dots_bef_aft (_,_,_,_,_,_,d) = d
+let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,_) d =
+  (x,l,fvs,fresh,inherited,saved,d)
 
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   (MetaRuleElem((s,{ line = 0; column = 0 },d),Unitary,false),
-   0, fvs, fresh, inh, NoDots)
+   0, fvs, fresh, inh, [], NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
   (MetaDecl((s,{ line = 0; column = 0 },d),Unitary,false), 0, fvs, fresh, inh,
-   NoDots)
+   [], NoDots)
 
 (* --------------------------------------------------------------------- *)
 

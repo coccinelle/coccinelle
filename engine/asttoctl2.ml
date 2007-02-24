@@ -23,6 +23,8 @@ let foldr1 f xs =
 let used_after = ref ([] : string list)
 let guard_to_strict guard = if guard then CTL.NONSTRICT else CTL.STRICT
 
+let saved = ref ([] : string list)
+
 (* --------------------------------------------------------------------- *)
 (* predicates matching various nodes in the graph *)
 
@@ -62,7 +64,7 @@ let get_let_ctr _ =
 (* --------------------------------------------------------------------- *)
 
 let wrapImplies n (x,y) = wrap n (CTL.Implies(x,y))
-let wrapExists  n (x,y) = wrap n (CTL.Exists(x,y))
+let wrapExists  n keep (x,y) = wrap n (CTL.Exists(x,y,keep))
 let wrapAnd     n s (x,y) = wrap n (CTL.And(s,x,y))
 let wrapOr      n (x,y) = wrap n (CTL.Or(x,y))
 let wrapSeqOr   n (x,y) = wrap n (CTL.SeqOr(x,y))
@@ -113,7 +115,10 @@ let elim_opt =
   let inheritedlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_inherited l) in
 
-  let varlists l = (fvlist l, freshlist l, inheritedlist l) in
+  let savedlist l =
+    List.fold_left Common.union_set [] (List.map Ast.get_saved l) in
+
+  let varlists l = (fvlist l, freshlist l, inheritedlist l, savedlist l) in
 
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
@@ -126,43 +131,48 @@ let elim_opt =
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
-	 let (fv_rest1,fresh_rest1,inherited_rest1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2) = varlists new_rest2 in
+	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
 	 [d0;
 	   (Ast.Disj
-	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,
+	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
 		Ast.NoDots);
-		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,
+		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
 		 Ast.NoDots)],
-	      l,fv_rest1,fresh_rest1,inherited_rest1,Ast.NoDots)]
+	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,Ast.NoDots)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
-	 let (fv_rest1,fresh_rest1,inherited_rest1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2) = varlists new_rest2 in
+	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
 	 [(Ast.Disj
-	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,
+	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
 	       Ast.NoDots);
-	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,
+	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
 		Ast.NoDots)],
-	   l,fv_rest2,fresh_rest2,inherited_rest2,Ast.NoDots)]
+	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
 	let fresh_stm = Ast.get_fresh stm in
 	let inh_stm = Ast.get_inherited stm in
+	let saved_stm = Ast.get_saved stm in
 	let fv_d1 = Ast.get_fvs d1 in
 	let fresh_d1 = Ast.get_fresh d1 in
 	let inh_d1 = Ast.get_inherited d1 in
+	let saved_d1 = Ast.get_saved d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
 	let fresh_both = Common.union_set fresh_stm fresh_d1 in
 	let inh_both = Common.union_set inh_stm inh_d1 in
-	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,Ast.NoDots);
-		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,Ast.NoDots)],
-	     l,fv_both,fresh_both,inh_both,Ast.NoDots)]
+	let saved_both = Common.union_set saved_stm saved_d1 in
+	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,saved_stm,
+		       Ast.NoDots);
+		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,saved_d1,
+			Ast.NoDots)],
+	     l,fv_both,fresh_both,inh_both,saved_both,Ast.NoDots)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -173,7 +183,7 @@ let elim_opt =
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],[],[],Ast.NoDots)])]
+			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -283,14 +293,14 @@ let make_match n label guard code =
   let v = fresh_var() in
   if contains_modif code && not guard
   then
-    wrapExists n
+    wrapExists n true
       (v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
   else
     match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
       (true,_,[]) | (_,true,_) ->
 	predmaker guard (Lib_engine.Match(code),CTL.Control) n label
     | _ ->
-	wrapExists n
+	wrapExists n true
 	  (v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label)
 
 let make_raw_match n label guard code =
@@ -309,7 +319,9 @@ let rec seq_fvs quantified = function
       (t1onlyfvs,bothfvs)::(seq_fvs new_quantified fvs)
 
 let quantify n =
-  List.fold_right (function cur -> function code -> wrapExists n (cur,code))
+  List.fold_right
+    (function cur ->
+      function code -> wrapExists n (List.mem cur !saved) (cur,code))
 
 let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
@@ -883,7 +895,7 @@ let rec statement_list stmt_list after quantified label dots_before guard =
 
 and statement stmt after quantified label guard =
   let n = Ast.get_line stmt in
-  let wrapExists = wrapExists n in
+  let wrapExists = wrapExists n true in
   let wrapAnd    = wrapAnd n CTL.NONSTRICT in
   let wrapOr     = wrapOr n in
   let wrapSeqOr  = wrapSeqOr n in
@@ -1249,7 +1261,7 @@ let rec letify x =
     | CTL.True               -> CTL.True
     | CTL.Pred(p)            -> CTL.Pred(p)
     | CTL.Not(phi)           -> CTL.Not(letify phi)
-    | CTL.Exists(v,phi)      -> CTL.Exists(v,letify phi)
+    | CTL.Exists(v,phi,keep) -> CTL.Exists(v,letify phi,keep)
     | CTL.And(s,phi1,phi2)     ->
 	let fail _ = CTL.And(s,letify phi1,letify phi2) in
 	(match CTL.unwrap phi2 with
@@ -1488,6 +1500,7 @@ and drop_pdots x
 
 let top_level ua t =
   used_after := ua;
+  saved := Ast.get_saved t;
   match Ast.unwrap t with
     Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.DECL(stmt) ->

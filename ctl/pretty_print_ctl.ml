@@ -38,9 +38,9 @@ let rec (pp_ctl:
      | Pred(p)            -> pp_pred p
      | Not(phi)           ->
 	 pp char_not; Common.pp_do_in_box (fun () -> pp_aux env phi)
-     | Exists(v,phi)      ->  
+     | Exists(v,phi,keep) ->  
 	 pp "(";
-	 pp ("Ex ");
+	 if keep then pp ("Ex ") else pp ("Ex_ ");
 	 pp_mvar v;
 	 pp " . "; 
 	 print_cut();
