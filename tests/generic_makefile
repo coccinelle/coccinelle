@@ -17,6 +17,7 @@ all: $(OBJS)
 	ls *.ok || true
 	ls *.spatch_ok || true
 	ls *.failed || true
+	ls *.gave_up || true
 
 
 %.ok: %.c $(SPATCH) $(SP)
@@ -47,6 +48,11 @@ all: $(OBJS)
 	(test -e /tmp/output.c && test -e $(<:.c=.failed) && \
 	((diff -b -B -w /tmp/output.c $(<:.c=.res) >> $(<:.c=.failed)) || \
 	true)) || true
+	(if (test -e $(<:.c=.gave_up) ) ; \
+	then (if (test -e $(<:.c=.failed) ) ; \
+	then mv $(<:.c=.failed) $(<:.c=.gave_up) ; \
+	else /bin/rm $(<:.c=.gave_up) ; fi) \
+	else true ; fi)
 
 #-----------------------------------------------------------------------------
 # Pad stuff
