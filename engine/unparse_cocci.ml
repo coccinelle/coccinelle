@@ -270,8 +270,8 @@ and sign = function
 
 
 and const_vol = function
-    Ast.Const -> print_string "const"
-  | Ast.Volatile -> print_string "volatile"
+    Ast.Const -> print_string "const "
+  | Ast.Volatile -> print_string "volatile "
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

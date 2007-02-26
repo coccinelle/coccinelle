@@ -1,6 +1,9 @@
 open Common
 
-val testone : string -> bool (* compare_expected *) -> string (* iso *) -> unit
+val testone : 
+ string (* test file *) -> bool (* compare_expected *) -> string (* iso *) -> 
+ string (* output file *) -> unit
+
 val testall : string (* iso *) -> unit
 
 

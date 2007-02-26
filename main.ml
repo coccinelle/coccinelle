@@ -206,7 +206,13 @@ let main () =
 
     (* The test framework. Works with tests/  *)
     | [x] when !test_mode    -> 
-        Testing.testone x !compare_with_expected !iso_file
+        let output_file =
+          if !reentrant 
+          then Common.new_temp_file "cocci-output" ".c" 
+          else !default_output_file
+        in
+        Testing.testone x !compare_with_expected !iso_file output_file
+
     | []  when !testall_mode -> 
         Testing.testall !iso_file
     | [x] when !test_ctl_foo -> 
