@@ -202,8 +202,6 @@ struct
 	    binding ::
 	    (List.map (function (_,env,_) -> env) bindings_per_witness_tree))
 	  (List.map (unwrap_wits false) witness_trees) in
-      Printf.printf "new_bindings %d used_after %d\n"
-	(List.length new_bindings) (List.length used_after);
       (noclean,
        (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
