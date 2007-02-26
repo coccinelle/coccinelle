@@ -738,8 +738,7 @@ initialize_list:
    initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
 
 initialize_list_start:
-  initialize2        { [$1] }
-| initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))] }
+  initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))] }
 | initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
 | d=edots_when(TEllipsis,initialize)
