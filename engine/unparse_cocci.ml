@@ -321,12 +321,10 @@ and declaration d =
 and initialiser i =
   match Ast.unwrap i with
     Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(lb,initlist,_,rb,[]) ->
-      mcode print_string lb;
-      let _ =
-	print_between (function _ -> print_string ", ") initialiser initlist in
+  | Ast.InitList(lb,initlist,rb,[]) ->
+      mcode print_string lb; List.iter initialiser initlist;
       mcode print_string rb
-  | Ast.InitList(lb,initlist,_,rb,_) -> failwith "unexpected whencode in plus"
+  | Ast.InitList(lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
   | Ast.InitGccDotName(dot,name,eq,ini) ->
       mcode print_string dot; ident name; print_string " ";
       mcode print_string eq; print_string " "; initialiser ini
@@ -341,6 +339,7 @@ and initialiser i =
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
+  | Ast.IComma(comma) -> mcode print_string comma; force_newline()
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) | Ast.MultiIni(ini) ->
       raise CantBeInPlus
 

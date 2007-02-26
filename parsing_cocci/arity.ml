@@ -548,10 +548,10 @@ and initialiser tgt i =
       let ini = initialiser arity ini in
       make_init i tgt arity
 	(Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini))
-(*  | Ast0.IComma(cm) ->
+  | Ast0.IComma(cm) ->
       let arity = init_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
-      make_init i tgt arity (Ast0.IComma(cm))*)
+      make_init i tgt arity (Ast0.IComma(cm))
   | Ast0.Idots(dots,whencode) ->
       let arity = init_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

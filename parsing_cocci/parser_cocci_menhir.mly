@@ -739,24 +739,18 @@ initialize_list:
 
 initialize_list_start:
   initialize2        { [$1] }
-| initialize2 TComma { [$1(*;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))*)] }
+| initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(clt2mcode "," $2))] }
 | initialize2 TComma initialize_list_start
-    { $1(*::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))*)::$3 }
+    { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
 | d=edots_when(TEllipsis,initialize)
       r=list(comma_initializers(edots_when(TEllipsis,initialize)))
     { (mkidots "..." d)::
       (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  TComma
-    { function dot_builder ->
-      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c))*)] }
-| TComma d=dotter
-    { function dot_builder ->
-      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) dot_builder d] }
-| TComma i=initialize2
-    { function dot_builder ->
-      [(*Ast0.wrap(Ast0.IComma(clt2mcode "," c));*) i] }
+  d=dotter { function dot_builder -> [dot_builder d] }
+| i=initialize2 c=TComma
+    { function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))] }
 
 
 /* a statement that is part of a list */

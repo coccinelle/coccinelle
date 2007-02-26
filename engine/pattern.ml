@@ -704,9 +704,9 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
     all_bound (A.get_inherited inia) >&&>
     match (A.unwrap inia,inib) with
     | (A.InitExpr expa, (B.InitExpr expb, _ii)) -> match_e_e expa expb
-    | (A.InitList (i1, ias, allminuses, i2, []), (B.InitList ibs, _ii)) -> 
+    | (A.InitList (i1, ias, i2, []), (B.InitList ibs, _ii)) -> 
         match_initialisers ias (Ast_c.split_comma ibs)
-    | (A.InitList (i1, ias, allminuses, i2, whencode),(B.InitList ibs, _ii)) ->
+    | (A.InitList (i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
         failwith "TODO: not handling whencode in initialisers"
     | (A.InitGccDotName (i1, ida, i2, inia), (B.InitGcc (idb, inib), _ii)) -> 
         match_ident DontKnow ida idb >&&> 
@@ -724,6 +724,8 @@ and (match_initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher) =
         match_e_e e1a e1b >&&>
         match_e_e e2a e2b >&&>
         match_initialiser inia inib
+
+    | A.IComma _, _ -> failwith "not updated for IComma"
 
     | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
       failwith "not handling Opt/Unique/Multi on initialisers"

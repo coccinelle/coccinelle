@@ -477,7 +477,7 @@ let match_maker context_required whencode_allowed =
 	 Ast0.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
 	   conjunct_bindings (match_expr exp1a exp1b)
 	    (conjunct_bindings (match_expr exp2a exp2b) (match_init inia inib))
-(*    | (Ast0.IComma(_),Ast0.IComma(_)) -> return true*)
+      | (Ast0.IComma(_),Ast0.IComma(_)) -> return true
       | (Ast0.Idots(_,None),Ast0.Idots(_,None)) -> return true
       | (Ast0.Idots(id,None),Ast0.Idots(_,Some wc)) ->
 	  (* hope that mcode of edots is unique somehow *)

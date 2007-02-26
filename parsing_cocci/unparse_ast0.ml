@@ -270,10 +270,9 @@ and initialiser i =
       match Ast0.unwrap i with
 	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb) ->
-	  mcode print_string lb;
-	  let _ =
-	    dots (function _ -> print_string ", ") initialiser initlist in
-	  mcode print_string rb
+	  mcode print_string lb; open_box 0;
+	  let _ = dots (function _ -> ()) initialiser initlist in
+	  close_box(); mcode print_string rb
       | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	  mcode print_string dot; ident name; print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini
@@ -288,7 +287,7 @@ and initialiser i =
 	  expression exp2; mcode print_string rb;
 	  print_string " "; mcode print_string eq; print_string " ";
 	  initialiser ini
-(*    | Ast0.IComma(cm) -> mcode print_string cm*)
+      | Ast0.IComma(cm) -> mcode print_string cm; force_newline()
       | Ast0.Idots(d,Some whencode) ->
 	  mcode print_string d; print_string "   WHEN != ";
 	  initialiser whencode

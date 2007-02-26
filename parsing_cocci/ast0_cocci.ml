@@ -169,6 +169,7 @@ and base_initialiser =
   | InitGccRange of
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
+  | IComma of string mcode (* , *)
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser

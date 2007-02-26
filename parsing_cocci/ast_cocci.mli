@@ -210,10 +210,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     InitExpr of expression 
-  | InitList of string mcode (*{*) * initialiser list *
-	(* bool list element is true if the corresponding initialiser is
-	   all -, no + *)
-	bool list * string mcode (*}*) *
+  | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccDotName of
       string mcode (*.*) * ident (* name *) * string mcode (*=*) *
@@ -226,6 +223,7 @@ and base_initialiser =
   | InitGccRange of
       string mcode (*[*) * expression * string mcode (*...*) *
         expression * string mcode (*]*) * string mcode (*=*) * initialiser
+  | IComma of string mcode (* , *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
   | MultiIni  of initialiser

@@ -227,7 +227,7 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.InitExpr(exp) -> expression exp
-      | Ast.InitList(lb,initlist,_,rb,whencode) ->
+      | Ast.InitList(lb,initlist,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
 	      multibind (List.map initialiser initlist);
@@ -247,6 +247,7 @@ let combiner bind option_default
 	    [string_mcode lb; expression exp1; string_mcode dots;
 	      expression exp2; string_mcode rb; string_mcode eq;
 	      initialiser ini]
+      | Ast.IComma(cm) -> string_mcode cm
       | Ast.OptIni(i) -> initialiser i
       | Ast.UniqueIni(i) -> initialiser i
       | Ast.MultiIni(i) -> initialiser i in
@@ -648,9 +649,8 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
-	| Ast.InitList(lb,initlist,allminuslist,rb,whencode) ->
+	| Ast.InitList(lb,initlist,rb,whencode) ->
 	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
-			 allminuslist (* assumed still valid *),
 			 string_mcode rb, List.map initialiser whencode)
 	| Ast.InitGccDotName(dot,name,eq,ini) ->
 	    Ast.InitGccDotName
@@ -666,6 +666,7 @@ let rebuilder
 	      (string_mcode lb, expression exp1, string_mcode dots,
 	       expression exp2, string_mcode rb, string_mcode eq,
 	       initialiser ini)
+	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)
 	| Ast.MultiIni(i) -> Ast.MultiIni(initialiser i)) in
