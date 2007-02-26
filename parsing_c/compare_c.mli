@@ -3,9 +3,13 @@ open Common
 type compare_result = 
   | Correct 
   | Pb of string
-  | PbOnlyInNotParsedCorrectly
+  | PbOnlyInNotParsedCorrectly of string
 
 
-val compare : 
- (Ast_c.program * filename) -> (Ast_c.program * filename) ->
- compare_result * string list (* the output of diff *)
+(* the string list is the output of diff *)
+
+val compare_ast : 
+ filename -> filename -> compare_result * string list 
+
+val compare_token :
+  filename -> filename -> compare_result * string list

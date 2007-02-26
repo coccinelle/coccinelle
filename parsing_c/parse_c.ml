@@ -82,16 +82,22 @@ let mk_info_item a b =
 (*****************************************************************************)
 type parsing_stat = {
     filename: filename;
-    mutable passing_through_lines: int;
     mutable have_timeout: bool;
 
     mutable correct: int;  
     mutable bad: int;
+
+    (* if want to know exactly what was passed through
+     * mutable passing_through_lines: int;
+     * it differs from bad by starting from the error to
+     * the synchro point instead of strating from start of
+     * function to end of function.
+     *)
+
   } 
 
 let default_stat file =  { 
     filename = file;
-    passing_through_lines = 0;
     have_timeout          = false;
     correct = 0; bad = 0;
   }
@@ -475,6 +481,7 @@ let parse_print_error_heuristic2 file =
         with e -> 
           begin
             (match e with
+            (* this one is no more launched I think *)
             | Lexer_c.Lexical s -> 
                 pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok file !cur_tok)
             | Parsing.Parse_error -> 

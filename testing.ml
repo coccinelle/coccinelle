@@ -9,11 +9,8 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
   if not (Common.lfile_exists expected_res)
   then failwith ("no such .res file: " ^ expected_res);
 
-  let a = Cocci.cprogram_from_file generated_file +> List.map fst in
-  let b = Cocci.cprogram_from_file expected_res   +> List.map fst in
-
   let (correct, diffxs) =  
-    Compare_c.compare  (a, generated_file)  (b, expected_res)
+    Compare_c.compare_token  generated_file  expected_res
   in
   match correct with
   | Compare_c.Correct -> 
@@ -24,8 +21,11 @@ let print_diff_expected_res_and_exit generated_file expected_res doexit =
       pr2 "diff (result(-) vs expected_result(+)) = ";
       diffxs +> List.iter pr2;
       if doexit then raise (Common.UnixExit (-1))
-  | Compare_c.PbOnlyInNotParsedCorrectly -> 
+  | Compare_c.PbOnlyInNotParsedCorrectly s -> 
       pr2 "seems incorrect, but only because of code that was not parsable";
+      pr2 ("explanation:" ^ s);
+      pr2 "diff (result(-) vs expected_result(+)) = ";
+      diffxs +> List.iter pr2;
       if doexit then raise (Common.UnixExit (-1))
   
 
@@ -84,11 +84,7 @@ let testall iso_file =
           
           Cocci.full_engine cfile (Left (cocci_file, iso_file)) generated;
 
-          let a = Cocci.cprogram_from_file generated +> List.map fst in
-          let b = Cocci.cprogram_from_file expected  +> List.map fst in
-
-          let (correct, diffxs)= Compare_c.compare (a, generated) (b, expected)
-          in
+          let (correct, diffxs)= Compare_c.compare_token generated expected in
 	  pr2 res;
 	  Ctlcocci_integration.print_bench();
 
@@ -103,10 +99,10 @@ let testall iso_file =
                   )
               in
               Hashtbl.add newscore res (Common.Pb s)
-          | Compare_c.PbOnlyInNotParsedCorrectly -> 
+          | Compare_c.PbOnlyInNotParsedCorrectly s -> 
               let s = 
                 "seems incorrect, but only because of code that " ^
-                "was not parsable" 
+                "was not parsable" ^ s
               in
               Hashtbl.add newscore res (Common.Pb s)
           )

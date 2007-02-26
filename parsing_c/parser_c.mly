@@ -16,11 +16,17 @@ open Semantic_c
 
 let warning s v = 
   if !Flag_parsing_c.verbose_parsing 
-  then Common.warning s v
+  then Common.warning ("PARSING: " ^ s) v
   else v
 
 (*****************************************************************************)
-(* parse auxillary function *)
+(* Parse helpers functions *)
+(*****************************************************************************)
+
+(*-------------------------------------------------------------------------- *)
+(* Type related *)
+(*-------------------------------------------------------------------------- *)
+
 type shortLong      = Short  | Long | LongLong
 
 type decl = { 
@@ -95,7 +101,11 @@ let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
   { x with qualifD = (addQualif (qu, v),ii::ii2) }
 
 
-(**************************************)
+(*-------------------------------------------------------------------------- *)
+(* Declaration/Function related *)
+(*-------------------------------------------------------------------------- *)
+
+
 (* stdC: type section, basic integer types (and ritchie)
    to understand the code, just look at the result (right part of the PM) 
    and go back
@@ -186,6 +196,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
       | params -> 
           (params +> List.iter (function 
           | (((b, None, _),  ii1),ii2) -> 
+              (* if majuscule, then certainly macro-parameter *)
               raise (Semantic ("parameter name omitted", fake_pi)) 
 	  | _ -> ()
           );
@@ -225,6 +236,9 @@ let fixFunc = function
 
 
 
+(*-------------------------------------------------------------------------- *)
+(* Misc *)
+(*-------------------------------------------------------------------------- *)
           
 (* pour ne pas avoir les pp_passing_token message, au lieu de deplacer
  * les initialiseurs, je pourrais tagger les tokens avec es MINUS. *)
@@ -280,9 +294,9 @@ let casse_initialisation xs =
   else xs
 
 
-
-(**************************************)
+(*-------------------------------------------------------------------------- *)
 (* parse_typedef_fix2 *)
+(*-------------------------------------------------------------------------- *)
 
 let dt s () = 
   if !Flag_parsing_c.debug_etdt then pr2 ("<" ^ s); 
@@ -306,8 +320,9 @@ let fix_add_params_ident = function
       )) 
   | _ -> ()
 
-(**************************************)
+(*-------------------------------------------------------------------------- *)
 (* shortcuts *)
+(*-------------------------------------------------------------------------- *)
 
 let mk_e e ii = ((e, Ast_c.noType), ii)
     
@@ -318,15 +333,21 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 /* Some tokens are not even used in this file because they are filtered
  * in some intermediate phase. But they still must be declared because
  * ocamllex may generate them, or some intermediate phase may also
- * generate them
+ * generate them.
  */
+
+%token <Ast_c.info> TUnknown
                            
 %token <Ast_c.info> TComment TCommentSpace 
-%token <Ast_c.info> TCommentCpp TCommentMisc
+
 %token <(string * Ast_c.info * Ast_c.info)> TInclude
 %token <(string * string * Ast_c.info * Ast_c.info * Ast_c.info)> TDefine 
 %token <Ast_c.info> TIfdef TIfdefelse TIfdefelif TEndif
-%token <Ast_c.info> TIfdefzero
+%token <(bool * Ast_c.info)> TIfdefbool
+
+%token <Ast_c.info> TCommentCpp TCommentMisc
+
+%token <Ast_c.info> TMacro
 
 
 
@@ -416,12 +437,16 @@ assign_expr:
  | cast_expr TAssign assign_expr { mk_e(Assignment ($1,fst $2,$3)) [snd $2]}
  | cast_expr TEq     assign_expr { mk_e(Assignment ($1,SimpleAssign,$3)) [$2]}
 
-/* gccext: allow optional then part hence gcc_opt_expr */
+/* gccext: allow optional then part hence gcc_opt_expr 
+ * buyfix: in C grammar they put TDotDot cond_expr, but in fact it must be
+ * assign_expr, otherwise   pnp ? x : x = 0x388  is not allowed
+ */
 cond_expr: 
  | arith_expr                                     
      { $1 }
- | arith_expr TWhy gcc_opt_expr TDotDot cond_expr 
+ | arith_expr TWhy gcc_opt_expr TDotDot assign_expr 
      { mk_e (CondExpr ($1,$3,$5)) [$2;$4] } 
+
 
 arith_expr: 
  | cast_expr                     { $1 }
@@ -463,11 +488,11 @@ unary_op:
  | TMinus { UnMinus,    $1 }
  | TTilde { Tilde,      $1 }
  | TBang  { Not,        $1 }
-/* ONLY OLD KERNEL, and also many 2.5.39->53 ? , generate s/r conflict, 
- *  gccext: have that in old kernel to get address of local declared label?
- *  UGLY 
- */
-/* | TAndLog { GetRef } */   
+ /* ONLY OLD KERNEL, and also many 2.5.39->53 ? , generate s/r conflict, 
+  *  gccext: have that in old kernel to get address of local declared label?
+  *  UGLY 
+  * | TAndLog { GetRef }
+  */
 
 
 postfix_expr: 
@@ -488,19 +513,6 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor) [] }
 
-/* decl_spec and not just type_spec cos can have  unsigned short for 
- * instance => type_spec_list 
- */
-argument: 
- | assign_expr { Left $1 }
-
- /* cppext: */
- | decl_spec3  
-     { let (returnType,storage) = fixDeclSpecForDecl $1 in 
-       Right (ArgType (returnType, storage) )
-     }
- | action_higherordermacro { Right (ArgAction $1) }
-
 primary_expr: 
  | TIdent  { mk_e(Ident  (fst $1)) [snd $1] }
  | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
@@ -517,6 +529,20 @@ primary_expr:
 
 
 
+
+/* cppext: */
+
+argument: 
+ | assign_expr { Left $1 }
+
+ /* decl_spec and not just type_spec cos can have  unsigned short for 
+  * instance => type_spec_list 
+  */
+ | decl_spec3  
+     { let (returnType,storage) = fixDeclSpecForDecl $1 in 
+       Right (ArgType (returnType, storage) )
+     }
+ | action_higherordermacro { Right (ArgAction $1) }
 
 
 action_higherordermacro: 
@@ -575,6 +601,9 @@ statement:
  | Tasm TOPar asmbody TCPar TPtVirg             { Asm, [] }
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm, [] }
 
+ /* cppext: */
+ | TMacro { MacroStmt, [$1] }
+
 
 
 
@@ -588,10 +617,10 @@ labeled:
      { CaseRange ($2, $4, $6), [$1;$3;$5] } /* gccext: allow range */
  | Tdefault         TDotDot statement   { Default $3,             [$1; $2] } 
 
- /* generate each 30 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il
-  *  faut 
+ /* gccext:  allow toto: }
+  * generate each 30 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il
+  * faut
   */
- /* gccext:  allow toto: } */
  | ident            TDotDot 
      { Label (fst $1, (ExprStatement None, [])), [snd $1; $2] }
  | Tcase const_expr TDotDot { Case ($2, (ExprStatement None, [])), [$1;$3] }   
@@ -622,7 +651,7 @@ compound2:
  * expression, then we force to have first decls and then exprs, then
  * will have a parse error. So easier to let mix decl/statement.
  * Morover it helps to not make such a difference between decl and
- * statement for further coccinelle phases.
+ * statement for further coccinelle phases to factorize code.
 */
 compound2:  
  |                   { ([]) }
@@ -692,7 +721,7 @@ string_elem:
  | TIdent                    { snd $1 } 
  /* 2 s/r conflicts */
  | TIdent TOPar TIdent TCPar { snd $1 } 
- /* because lalr(k) can have already transformed me */
+ /* because lalr(k) can have already transformed the TIdent in TString */
  | TString TOPar TIdent TCPar { snd $1 }  
 
 
@@ -768,14 +797,16 @@ type_spec2:
  | Tunsigned            { Left3 UnSigned, [$1]}
  | struct_or_union_spec { Right3 (fst $1), snd $1 }
  | enum_spec            { Right3 (fst $1), snd $1 }
- | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
 
  /* parse_typedef_fix1: cant put: TIdent {} cos it make the grammar 
   * ambigue, generate lots of conflicts => we must 
-  * use some tricks: we make the lexer and parser cooperate, cf lexerParser.ml
+  * use some tricks: we make the lexer and parser cooperate, cf lexerParser.ml.
+  * 
   * parse_typedef_fix2: this is not enough, and you must use parse_typedef_fix2
-  * to fully manage typedef pb in grammar
+  * to fully manage typedef problems in grammar.
   */                            
+ | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
+
 
 type_qualif: 
  | Tconst    { {const=true  ; volatile=false}, $1 }
@@ -787,9 +818,9 @@ type_qualif:
 /* workarounds */
 /*----------------------------*/
 
-decl: decl2  { et "decl" (); $1 }
-decl_spec: decl_spec2                   { dt "declspec" (); $1  }
-type_spec: type_spec2            { dt "type" (); $1   }
+decl:      decl2         { et "decl" (); $1 }
+decl_spec: decl_spec2    { dt "declspec" (); $1  }
+type_spec: type_spec2    { dt "type" (); $1   }
 
 /*---------------------------------------------------------------------------*/
 s_or_u_spec2: 
@@ -910,7 +941,7 @@ init_declarator: init_declarator2 gcc_attr_opt  { dt "init" (); $1 }
 
 init_declarator2:  
  | declaratori                  { ($1, None) }
- |  declaratori teq initialize   { ($1, Some ($3, $2)) }
+ | declaratori teq initialize   { ($1, Some ($3, $2)) }
 
 
 
@@ -1057,9 +1088,9 @@ initialize_list:
  | initialize2                        { [$1,   []] }
  | initialize_list TComma initialize2 { ($3,  [$2])::$1 }
 
-/* gccext: arithexpr and no assign_expr cos can have ambiguity with comma */
+/* gccext: condexpr and no assign_expr cos can have ambiguity with comma */
 initialize2: 
- | arith_expr 
+ | cond_expr 
      { InitExpr $1,   [] } 
  | tobrace_ini initialize_list gcc_comma_opt TCBrace
      { InitList (List.rev $2),   [$1;$4]++$3 }
@@ -1207,9 +1238,6 @@ external_declaration2:
 /* seems dont work */
  | TIdent TOPar argument_list TCPar         
      { EmptyDef [] } 
-
-
-
 
  /* can have asm declaration at toplevel */
  | Tasm TOPar asmbody TCPar TPtVirg             { EmptyDef [] } 

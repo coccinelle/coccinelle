@@ -7,6 +7,10 @@ let pr2_cpp s =
   if !Flag_parsing_c.debug_cpp
   then pr2 ("CPP-" ^ s)
 
+let pr2 s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2 s
+
 (*****************************************************************************)
 (* CPP handling: macros, ifdefs  *)
 (*****************************************************************************)
@@ -16,7 +20,7 @@ let regexp_macro =  Str.regexp
 
 (* opti: better to built it once and for all *)
 let regexp_foreach = Str.regexp_case_fold 
-  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|each\\)"
+  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|each\\|for\\)"
 
 
 type linecol = { line : int; col : int }
@@ -28,22 +32,30 @@ let is_same_line line = function
   | (x, {line = line2}) when line2 = line -> true 
   | _ -> false 
 
-let pos_of_token x = 
-  Ast_c.get_pos_of_info (Token_helpers.info_from_token x)
+
+let str_of_token = Token_helpers.str_of_token
+let pos_of_token = Token_helpers.pos_of_token
 
 (* ------------------------------------------------------------------------- *)
 (* fuzzy parsing, different views over the same program *)
 (* ------------------------------------------------------------------------- *)
 
-(*  x list list, because x list separated by ',' *) 
+(* x list list, because x list separated by ',' *) 
 type paren_grouped = 
   | Parenthised   of paren_grouped list list * token_with_pos list
   | NotParenToken of token_with_pos
 
-(*  x list list, because x list separated by #else or #elif *) 
+(* Far better data structure than doing hacks in the lexer or parser
+ * because in lexer we don't know to which ifdef a endif is related
+ * and so when we want to comment a ifdef, we don't know which endif
+ * we must also comment. Especially true for the #if 0 which sometimes
+ * have a #else part.
+ * 
+ * x list list, because x list separated by #else or #elif 
+ *) 
 type ifdef_grouped = 
   | Ifdef     of ifdef_grouped list list * token_with_pos list
-  | Ifdefzero of ifdef_grouped list list * token_with_pos list
+  | Ifdefbool of bool * ifdef_grouped list list * token_with_pos list
   | NotIfdefLine of token_with_pos list
 
 
@@ -61,7 +73,10 @@ type body_function_grouped =
 (* fuzzy builders *)
 (* ------------------------------------------------------------------------- *)
 
-(* todo! synchro ! *)
+(* todo: synchro ! can use indentation ? 
+ * if paren not closed and same indentation level, certainly because
+ * part of a mid-ifdef-expression.
+*)
 let rec mk_parenthised xs = 
   match xs with
   | [] -> []
@@ -78,6 +93,7 @@ let rec mk_parenthised xs =
 and mk_parameters extras acc_before_sep  xs = 
   match xs with
   | [] -> 
+      (* maybe because of #ifdef which "opens" '(' in 2 branches *)
       pr2 "PB: not found closing paren in fuzzy parsing";
       [List.rev acc_before_sep], List.rev extras, []
   | x::xs -> 
@@ -106,9 +122,9 @@ let rec mk_ifdef xs =
       | TIfdef _, _ -> 
           let body, extra, xs = mk_ifdef_parameters [x] [] xs in
           Ifdef (body, extra)::mk_ifdef xs
-      | TIfdefzero _, _ -> 
+      | TIfdefbool (b,_), _ -> 
           let body, extra, xs = mk_ifdef_parameters [x] [] xs in
-          Ifdefzero (body, extra)::mk_ifdef xs
+          Ifdefbool (b, body, extra)::mk_ifdef xs
           
       | tok, {line = line1} -> 
           (* todo? can have some Ifdef in the line ? *)
@@ -119,6 +135,11 @@ let rec mk_ifdef xs =
 and mk_ifdef_parameters extras acc_before_sep xs = 
   match xs with
   | [] -> 
+      (* Note that mk_ifdef is assuming that CPP instruction are alone
+       * on their line. Because I do a span (fun x -> is_same_line ...)
+       * I might take with me a #endif if this one is mixed on a line
+       * with some "normal" tokens.
+       *)
       pr2 "PB: not found closing ifdef in fuzzy parsing";
       [List.rev acc_before_sep], List.rev extras, []
   | x::xs -> 
@@ -130,10 +151,10 @@ and mk_ifdef_parameters extras acc_before_sep xs =
           mk_ifdef_parameters 
             extras (Ifdef (body, extrasnest)::acc_before_sep) xs
 
-      | TIfdefzero _, _ -> 
+      | TIfdefbool (b,_), _ -> 
           let body, extrasnest, xs = mk_ifdef_parameters [x] [] xs in
           mk_ifdef_parameters 
-            extras (Ifdefzero (body, extrasnest)::acc_before_sep) xs
+            extras (Ifdefbool (b, body, extrasnest)::acc_before_sep) xs
 
       | TIfdefelse _, _ 
       | TIfdefelif _, _ -> 
@@ -145,14 +166,6 @@ and mk_ifdef_parameters extras acc_before_sep xs =
       )
 
 (* --------------------------------------- *)
-let line_of_paren = function
-  | NotParenToken (tok, { line = line }) -> line
-  | Parenthised (xxs, info_parens) -> 
-      (match info_parens with
-      | [] -> raise Impossible
-      | (tok, {line = line})::xs -> line
-      )
-
 let rec iter_token_paren f xs = 
   xs +> List.iter (function
   | NotParenToken tok -> f tok;
@@ -160,6 +173,27 @@ let rec iter_token_paren f xs =
       info_parens +> List.iter f;
       xxs +> List.iter (fun xs -> iter_token_paren f xs)
   )
+
+let rec iter_token_ifdef f xs = 
+  xs +> List.iter (function
+  | NotIfdefLine xs -> xs +> List.iter f;
+  | Ifdefbool (_, xxs, info_parens) 
+  | Ifdef (xxs, info_parens) -> 
+      info_parens +> List.iter f;
+      xxs +> List.iter (iter_token_ifdef f)
+  )
+      
+
+
+(* --------------------------------------- *)
+
+let line_of_paren = function
+  | NotParenToken (tok, { line = line }) -> line
+  | Parenthised (xxs, info_parens) -> 
+      (match info_parens with
+      | [] -> raise Impossible
+      | (tok, {line = line})::xs -> line
+      )
 
 
 let rec span_line_paren line = function
@@ -226,15 +260,27 @@ let keyword_table = Common.hash_of_list [
   "__cacheline_aligned",        (fun ii -> TCommentCpp ii); 
   "____cacheline_aligned",      (fun ii -> TCommentCpp ii); 
   "__cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
+  "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
   "__devinit",                  (fun ii -> TCommentCpp ii); 
   "__devexit",                  (fun ii -> TCommentCpp ii); 
   "__devinitdata",              (fun ii -> TCommentCpp ii); 
   "__ALIGNED__",                (fun ii -> TCommentCpp ii); 
-  "asmlinkage",                 (fun ii -> TCommentCpp ii);  
 
   "__pmac",                    (fun ii -> TCommentCpp ii);  
   "__force",                    (fun ii -> TCommentCpp ii);  
   "__nocast",                    (fun ii -> TCommentCpp ii);  
+
+  "__cpuinit",                   (fun ii -> TCommentCpp ii);  
+  "__cpuinitdata",                   (fun ii -> TCommentCpp ii);  
+  "__must_check",                   (fun ii -> TCommentCpp ii);  
+  "__unused",                   (fun ii -> TCommentCpp ii);  
+
+
+
+  "asmlinkage",                 (fun ii -> TCommentCpp ii);  
+
+  "far",                    (fun ii -> TCommentCpp ii);  
+  "near",                    (fun ii -> TCommentCpp ii);  
 
   "DIVA_EXIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
   "DIVA_INIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
@@ -298,6 +344,74 @@ let fix_tokens_annotation_and_stringification_part1 tokens =
 let find_and_tag_good_ifdef xs = 
   let (keep_ifdef  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
+
+  let debug_ifdef_zero = ref false in
+
+  let rec find_ifdef_zero = function
+    | [] -> ()
+    | NotIfdefLine _::xs -> find_ifdef_zero xs
+
+    | Ifdefbool (is_ifdef_positif, xxs, info_ifdef_stmt)::xs -> 
+
+        if is_ifdef_positif
+        then pr2_cpp "commenting parts of a #if 1 or #if LINUX_VERSION"
+        else pr2_cpp "commenting a #if 0 or #if LINUX_VERSION"
+        ;
+
+        (match xxs with
+        | [] -> raise Impossible
+        | firstclause::xxs -> 
+
+
+            info_ifdef_stmt +> List.iter (fun (tok, x) ->
+              if !debug_ifdef_zero 
+              then pr2_cpp ("passing: " ^ str_of_token tok);
+              Hashtbl.add !put_comment (pos_of_token tok) true
+            );
+
+            if is_ifdef_positif
+            then begin
+              xxs +> List.iter (fun xs -> 
+                xs +> iter_token_ifdef (fun (tok, x) -> 
+                  if !debug_ifdef_zero 
+                  then pr2_cpp ("passing: " ^ str_of_token tok);
+                  Hashtbl.add !put_comment (pos_of_token tok) true
+                )
+              );
+            end
+            else begin
+            
+              firstclause +> iter_token_ifdef (fun (tok, x) -> 
+                if !debug_ifdef_zero 
+                then pr2_cpp ("passing: " ^ str_of_token tok);
+                Hashtbl.add !put_comment (pos_of_token tok) true
+              ) ;
+            
+              (match List.rev xxs with
+              | last::startxs -> 
+                  (* keep only last *)
+
+                  startxs +> List.iter (fun xs -> 
+                    xs +> iter_token_ifdef (fun (tok, x) -> 
+                      if !debug_ifdef_zero 
+                      then pr2_cpp ("passing: " ^ str_of_token tok);
+                      Hashtbl.add !put_comment (pos_of_token tok) true
+                    )
+                  );
+           
+              | [] -> (* not #else *) ()
+              );
+            end
+        );
+        find_ifdef_zero xs
+
+    | Ifdef (xxs, info_ifdef_stmt)::xs -> 
+        find_ifdef_zero xs;
+        xxs +> List.iter find_ifdef_zero
+  in
+
+
+
 
   let rec find_ifdef_funheaders = function
     | [] -> ()
@@ -374,23 +488,30 @@ let find_and_tag_good_ifdef xs =
         
 
   | Ifdef (xxs,info_ifdef_stmt)::xs 
-  | Ifdefzero (xxs,info_ifdef_stmt)::xs -> 
+  | Ifdefbool (_, xxs,info_ifdef_stmt)::xs -> 
       List.iter find_ifdef_funheaders xxs; 
       find_ifdef_funheaders xs
         
   in
   find_ifdef_funheaders xs;
+  find_ifdef_zero xs;
 
   !keep_ifdef, !put_comment
     
 
 
+
+
 let adjust_tokens_based_on_mark_ifdef (keep_ifdef, put_comments) tokens = 
   tokens +> List.map (fun tok -> 
-    let info = Token_helpers.info_from_token tok in
+    let info = Token_helpers.info_from_token_fullstr tok in
     let charpos = Ast_c.get_pos_of_info info in
 
     match tok with
+    (* don't touch this one ! *)
+    | EOF x -> EOF x 
+
+
     | TIfdef _ 
     | TIfdefelse _ 
     | TIfdefelif _
@@ -446,13 +567,14 @@ let debug_macros_list =
    "READ_UNLOCK_IRQRESTORE";
    "TRACE_CATCH";
    "PDBGG";
-
    "IF_ABR";"IF_EVENT";"IF_ERR";"IF_CBR";"IF_INIT";"IF_RX";
    "SOD";
+   "KDBG";
   ]
 
 let find_and_tag_good_macro cleanxs_with_pos = 
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
+  let (keep_macro  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
 
 
   let rec find_macro = function
@@ -460,7 +582,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
     (* known debugging macro *)
     | (Line 
-          ([NotParenToken (TIdent (s,ii),_);
+          ([NotParenToken (TIdent (s,ii) as macro,_);
             Parenthised (xxs,info_parens);
             NotParenToken (TPtVirg x, _);
           ] as line1
@@ -470,6 +592,8 @@ let find_and_tag_good_macro cleanxs_with_pos =
        -> 
         
         pr2_cpp ("MACRO: found debug-macro: " ^ s);
+        Hashtbl.add !keep_macro (pos_of_token macro) true;
+
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
@@ -477,7 +601,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 
     | (Line 
-          ([NotParenToken (TIdent (s,ii),_);
+          ([NotParenToken (TIdent (s,ii) as macro,_);
             Parenthised (xxs,info_parens);
           ] as line1
           ))
@@ -485,14 +609,15 @@ let find_and_tag_good_macro cleanxs_with_pos =
           List.mem s debug_macros_list
       -> 
         pr2_cpp ("MACRO: found debug-macro: " ^ s);
+        Hashtbl.add !keep_macro (pos_of_token macro) true;
+
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
         find_macro (xs)
 
         
-    (* macro fun header *)
-
+    (* special known macro around fun header *)
     | (Line 
           ([NotParenToken ((TIdent (s,ii),_) as ident);
             Parenthised (xxs,info_parens);
@@ -511,7 +636,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
     (* macro with parameters *)
     | (Line 
-          ([NotParenToken (TIdent (s,ii), {col = col1});
+          ([NotParenToken (TIdent (s,ii) as macro, {col = col1});
             Parenthised (xxs,info_parens);
           ] as line1
           ))
@@ -530,7 +655,8 @@ let find_and_tag_good_macro cleanxs_with_pos =
           )) || 
           (col2 <= col1 &&
            (match tok with
-           | TCBrace _ -> true
+           (* TCBrace _ -> true  have false positif *)
+           | Treturn _ -> true
            | _ -> false
            ))
 
@@ -539,6 +665,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
         if condition (* && s ==~ regexp_macro *)
         then begin
           pr2_cpp ("MACRO: found macro with param " ^ s);
+          Hashtbl.add !keep_macro (pos_of_token macro) true;
           iter_token_paren (fun (tok, x) -> 
             Hashtbl.add !put_comment (pos_of_token tok) true
           ) line1;
@@ -547,7 +674,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
     (* single macro *)
     | (Line 
-          ([NotParenToken (TIdent (s,ii), {col = col1});
+          ([NotParenToken (TIdent (s,ii) as macro, {col = col1});
           ] as line1
           ))
       ::(Line 
@@ -565,7 +692,8 @@ let find_and_tag_good_macro cleanxs_with_pos =
           )) ||
           (col2 <= col1 &&
            (match tok with
-           | TCBrace _ -> true
+           (* | TCBrace _ -> true  have some false positif *)
+           | Treturn _ -> true
            | _ -> false
            ))
 
@@ -574,6 +702,9 @@ let find_and_tag_good_macro cleanxs_with_pos =
         if condition
         then begin
           pr2_cpp ("MACRO: found single-macro " ^ s);
+
+          Hashtbl.add !keep_macro (pos_of_token macro) true;
+
           iter_token_paren (fun (tok, x) -> 
             Hashtbl.add !put_comment (pos_of_token tok) true
           ) line1
@@ -600,20 +731,25 @@ let find_and_tag_good_macro cleanxs_with_pos =
   );
 *)
 
-  !put_comment
+  !keep_macro, !put_comment
 
 
 
-let adjust_tokens_based_on_mark_macro (put_comments) tokens = 
+let adjust_tokens_based_on_mark_macro (keep_macro, put_comments) tokens = 
   tokens +> List.map (fun tok -> 
-    let info = Token_helpers.info_from_token tok in
+    let info = Token_helpers.info_from_token_fullstr tok in
     let charpos = Ast_c.get_pos_of_info info in
 
     match tok with
+    | EOF x -> EOF x 
+
     | x -> 
-        if Hashtbl.mem put_comments charpos 
-        then TCommentCpp info
-        else x
+        if Hashtbl.mem keep_macro charpos
+        then TMacro info
+        else 
+          if Hashtbl.mem put_comments charpos 
+          then TCommentCpp info
+          else x
   )
 
 
@@ -642,8 +778,7 @@ let fix_tokens_macro tokens =
 let fix_tokens_cpp tokens = 
   let tokens = fix_tokens_annotation_and_stringification_part1 tokens in
 
-  
-  (* todo? stringification detection *) 
+  (* todo: stringification detection *) 
 
   if !Flag_parsing_c.next_gen_parsing 
   then 
@@ -970,7 +1105,9 @@ let lookahead2 next before =
       pr2_cpp ("INCLUDE: inside function, I treat it as comment");
       TCommentCpp (merge_info_str i1 [i2])
 
-  | ((TIfdef ii | TIfdefelse ii | TIfdefelif ii | TEndif ii) as x)::_, _ -> 
+  | (
+      (TIfdef ii | TIfdefelse ii | TIfdefelif ii | TEndif ii | 
+      TIfdefbool (_,ii)) as x)::_, _ -> 
       if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
       else 
         if not !Lexer_parser._lexer_hint.toplevel

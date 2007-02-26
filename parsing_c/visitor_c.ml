@@ -237,6 +237,7 @@ and vk_statement = fun bigf st ->
 
     | Decl decl -> vk_decl bigf decl 
     | Asm -> ()
+    | MacroStmt -> ()
 
   in statf st
 
@@ -420,6 +421,8 @@ and vk_node = fun bigf node ->
     | F.Else info -> infof info
     | F.SeqEnd (i, info) -> infof info
     | F.SeqStart (st, i, info) -> infof info
+
+    | F.Macro (st, ((),ii)) -> iif ii
 
     | (
         F.ErrorExit|F.Exit|
@@ -625,6 +628,7 @@ and vk_statement_s = fun bigf st ->
 
       | Decl decl -> Decl (vk_decl_s bigf decl)
       | Asm -> Asm
+      | MacroStmt -> MacroStmt
     in
     st', List.map (vk_info_s bigf) ii
   in statf st
@@ -823,6 +827,8 @@ and vk_node_s = fun bigf node ->
     | F.CPPDefine (s, ii) -> F.CPPDefine (s, iif ii)
     | F.CPPInclude (s, ii) -> F.CPPInclude (s, iif ii)
     | F.IfCpp (st, ((),ii)) -> F.IfCpp (st, ((),iif ii))
+
+    | F.Macro (st, ((),ii)) -> F.Macro (st, ((),iif ii))
 
     | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))
     | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))

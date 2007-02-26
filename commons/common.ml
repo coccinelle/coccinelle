@@ -1575,6 +1575,8 @@ let timeout_function timeoutval = fun f ->
      (* subtil: important to disable the alarm before relaunching the exn,
       * otherwise the alarm is still running.
       * robust?: and if alarm launch after the log (...) ? 
+      * 
+      * Maybe signals are disabled when process an exception handler ?
       *)
       begin 
         log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e);

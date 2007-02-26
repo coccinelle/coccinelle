@@ -241,7 +241,8 @@ and statementbis =
   | Decl  of declaration 
   (* gccext: *)
   | Asm  
-
+  (* cppext: *)
+  | MacroStmt
 
 
   and labeled = Label   of string * statement

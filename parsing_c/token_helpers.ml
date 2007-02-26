@@ -1,7 +1,7 @@
 open Common open Commonop
 
 let is_comment = function
-  | Parser_c.TComment _  | Parser_c.TCommentSpace _ 
+  | Parser_c.TComment _    | Parser_c.TCommentSpace _ 
   | Parser_c.TCommentCpp _ | Parser_c.TCommentMisc _ -> true
   | _ -> false
 
@@ -10,9 +10,9 @@ let is_not_comment x = not (is_comment x)
 
 let is_cpp_instruction = function
   | Parser_c.TInclude _ | Parser_c.TDefine _
-  | Parser_c.TIfdef _ | Parser_c.TIfdefelse _ | Parser_c.TIfdefelif _
+  | Parser_c.TIfdef _   | Parser_c.TIfdefelse _ | Parser_c.TIfdefelif _
   | Parser_c.TEndif _ 
-  | Parser_c.TIfdefzero _ 
+  | Parser_c.TIfdefbool _ 
       -> true
   | _ -> false
 
@@ -37,6 +37,9 @@ let info_from_token = function
   | Parser_c.TInclude (s, i1, i2) -> 
       i1
 
+  | Parser_c.TUnknown             (i) -> i
+  | Parser_c.TMacro             (i) -> i
+
   | Parser_c.TComment             (i) -> i
   | Parser_c.TCommentSpace        (i) -> i
   | Parser_c.TCommentCpp          (i) -> i
@@ -45,7 +48,7 @@ let info_from_token = function
   | Parser_c.TIfdefelse           (i) -> i
   | Parser_c.TIfdefelif           (i) -> i
   | Parser_c.TEndif               (i) -> i
-  | Parser_c.TIfdefzero           (i) -> i
+  | Parser_c.TIfdefbool           (b, i) -> i
   | Parser_c.TOPar                (i) -> i
   | Parser_c.TCPar                (i) -> i
   | Parser_c.TOBrace              (i) -> i
@@ -145,6 +148,9 @@ let visitor_info_from_token f = function
   | Parser_c.TInclude (s, i1, i2) -> 
       Parser_c.TInclude (s, f i1, i2)
 
+  | Parser_c.TUnknown             (i) -> Parser_c.TUnknown             (f i)
+  | Parser_c.TMacro               (i) -> Parser_c.TMacro             (f i)
+
   | Parser_c.TComment             (i) -> Parser_c.TComment             (f i) 
   | Parser_c.TCommentSpace        (i) -> Parser_c.TCommentSpace        (f i) 
   | Parser_c.TCommentCpp          (i) -> Parser_c.TCommentCpp          (f i) 
@@ -153,7 +159,7 @@ let visitor_info_from_token f = function
   | Parser_c.TIfdefelse           (i) -> Parser_c.TIfdefelse           (f i) 
   | Parser_c.TIfdefelif           (i) -> Parser_c.TIfdefelif           (f i) 
   | Parser_c.TEndif               (i) -> Parser_c.TEndif               (f i) 
-  | Parser_c.TIfdefzero           (i) -> Parser_c.TIfdefzero           (f i) 
+  | Parser_c.TIfdefbool           (b, i) -> Parser_c.TIfdefbool    (b, f i) 
   | Parser_c.TOPar                (i) -> Parser_c.TOPar                (f i) 
   | Parser_c.TCPar                (i) -> Parser_c.TCPar                (f i) 
   | Parser_c.TOBrace              (i) -> Parser_c.TOBrace              (f i) 
@@ -233,5 +239,29 @@ let linecol_of_tok tok =
   let (parse_info,_cocci_info) = info_from_token tok in
   parse_info.Common.line, parse_info.Common.column
 
+
+
+
+
+let info_from_token_fullstr x = 
+
+  match x with 
+  | Parser_c.TDefine (s, body, i1, i2, i3) -> 
+      let (info, annot) = i1 in
+      { info with 
+        Common.str = (fst i1).str ^ (fst i2).str ^ (fst i3).str
+      }, annot
+  | Parser_c.TInclude (s, i1, i2) -> 
+      let (info, annot) = i1 in
+      { info with 
+        Common.str = (fst i1).str ^ (fst i2).str
+      }, annot
+  | x -> info_from_token x
+
+let pos_of_token x = 
+  Ast_c.get_pos_of_info (info_from_token_fullstr x)
+
+let str_of_token x = 
+  Ast_c.get_str_of_info (info_from_token_fullstr x)
 
 

@@ -38,6 +38,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Break     of statement * unit wrap
 
   | Asm
+  | Macro of statement * unit wrap
 
   | IfCpp of statement * unit wrap
 

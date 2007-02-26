@@ -592,6 +592,8 @@ and (distribute_mck_stat: Ast_c.statement distributer) = fun (lop,mop,rop,bop) -
         
   | (Asm, []) -> failwith "Asm, what to do ? not enough info"
 
+  | (MacroStmt, _) -> failwith "Asm, what to do ? not enough info"
+
   | Selection  (IfCpp (st1s, st2s)), i1::i2::is -> 
       raise Todo
 
@@ -807,6 +809,8 @@ and (distribute_mck_node: Control_flow_c.node2 distributer) =
                    [i1 +> lop; i2 +> rop]))
 
   | F.Asm -> F.Asm
+
+  | F.Macro _ -> raise Todo
 
   | F.IfCpp (_,_) -> raise Todo
 

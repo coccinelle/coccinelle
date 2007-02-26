@@ -3,8 +3,8 @@ let verbose_type    = ref true
 
 let debug_lexer   = ref false
 let debug_etdt    = ref false
-let debug_typedef = ref true
-let debug_cpp     = ref true
+let debug_typedef = ref false
+let debug_cpp     = ref false
 
 let debug_cfg = ref false
 
@@ -25,4 +25,4 @@ let pretty_print_type_info = ref false
 
 
 
-let next_gen_parsing = ref false
+let next_gen_parsing = ref true

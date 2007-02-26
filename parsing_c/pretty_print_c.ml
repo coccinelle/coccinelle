@@ -177,6 +177,10 @@ and pp_statement_gen pr_elem =
     | Decl decl, [] -> pp_decl_gen pr_elem decl 
     | (Asm, []) -> pr "<<asm_or_strange_stuff>>";
 
+    | (MacroStmt, ii) -> 
+        pr "<<macro:>>";
+        ii +> List.iter pr_elem ;
+
     | Selection  (IfCpp (st1s, st2s)), i1::i2::is -> 
         pr_elem i1; 
         st1s +> List.iter pp_statement; 

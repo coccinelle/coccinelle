@@ -164,6 +164,7 @@ type node = node1 * string
   | Break    of statement * unit wrap
 
   | Asm
+  | Macro of statement * unit wrap
   | IfCpp of statement * unit wrap
 
   | CPPInclude of string wrap
@@ -224,6 +225,7 @@ let extract_fullstatement node =
       (* old: Some (Ast_c.Decl decl, []) *)
       None 
   | Asm -> Some (Ast_c.Asm, [])
+  | Macro (st, _) -> Some st
   | IfCpp _ -> None (* other ? *)
   | CPPInclude _ | CPPDefine _ -> None
 

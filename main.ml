@@ -3,8 +3,6 @@ open Common open Commonop
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
-let dir = ref false
-
 (* can't put "standard.iso" for iso_file because the user may want to
  * launch spatch from any directory and so to be more consistent,
  * better to not put a default value for iso_file.
@@ -13,13 +11,15 @@ let cocci_file = ref ""
 let iso_file   = ref "" 
 let default_output_file = ref "/tmp/output.c"
 
+let dir = ref false
+
 let test_mode = ref false
 let testall_mode = ref false
 let test_ctl_foo = ref false
 
 let compare_with_expected = ref false
-let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 
+let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 let save_tmp_files = ref false
 
 let reentrant = ref false 
@@ -28,13 +28,12 @@ let action = ref ""
 let function_cfg = ref "" (* used in conjonction with -action control_flow *)
 
 let timeout = ref (None : int option)
-let set_timeout x = timeout := Some x
 
 (*****************************************************************************)
 (* Profile *)
 (*****************************************************************************)
 
-(* pair of  (list of flag to set true, list of flag to set false *)
+(* pair of  (list of flags to set true, list of flags to set false *)
 let quiet_profile = (
   [
     Flag.show_diff;
@@ -86,11 +85,8 @@ let main () =
        * For the rest you have to use -help to see them.
        *)
 
-      "-c", Arg.Set_string cocci_file, 
-        " short option of -cocci_file";
-      "-i", Arg.Set_string iso_file, 
-        " short option of -iso_file";
-
+      "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
+      "-i", Arg.Set_string iso_file,       " short option of -iso_file";
 
  
       "-dir", Arg.Set dir, 
@@ -109,20 +105,14 @@ let main () =
       "-reentrant",         Arg.Set reentrant, " ";
 
       
-      "-show_c"                 , Arg.Set Flag.show_c,           " ";
-      "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
-      "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
-      "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
-      "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
-
       "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
       "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
+      "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
       "-no_show_diff"           , Arg.Clear Flag.show_diff, " ";
       "-no_show_misc",   Arg.Unit (fun () -> 
         Flag.show_misc := false;
         Flag_engine.show_misc := false;
         ), " ";
-      "-show_SP_julia"       , Arg.Set Flag_parsing_cocci.show_SP,  " ";
 
       (* works in conjunction with -show_ctl *)
       "-inline_let_ctl",        Arg.Set Flag.inline_let_ctl, " ";
@@ -131,10 +121,19 @@ let main () =
       "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
       "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
       "-partial_match",        Arg.Set Flag_ctl.partial_match, " ";
-      "-timeout",              Arg.Int set_timeout, "timeout, in seconds";
+
+
+      "-show_c"                 , Arg.Set Flag.show_c,           " ";
+      "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
+      "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
+      "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
+
+      "-show_SP_julia"       , Arg.Set Flag_parsing_cocci.show_SP,  " ";
+
+
 
       "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
-      "-no_type_error_msg", Arg.Clear Flag_parsing_c.verbose_type, " ";
+      "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";
 
       "-debug_cpp",          Arg.Set  Flag_parsing_c.debug_cpp, " ";
       "-debug_lexer",        Arg.Set  Flag_parsing_c.debug_lexer , " ";
@@ -148,9 +147,13 @@ let main () =
         List.iter (fun x -> x := false) set_to_false;
         List.iter (fun x -> x := true) set_to_true;
       ), " ";
+
+
+      "-timeout",              Arg.Int (fun x -> timeout := Some x), 
+        "timeout, in seconds";
       
       "-profile",          Arg.Set  Common.profile , "  ";
-      "-debugger",          Arg.Set  Common.debugger , "  ";
+      "-debugger",         Arg.Set  Common.debugger , "  ";
       "-bench", Arg.Int (function x -> Flag_ctl.bench := x), " ";
 
       "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
@@ -158,10 +161,11 @@ let main () =
       "-no_cocci_vs_c_3",   Arg.Clear Flag_engine.use_cocci_vs_c_3,  " ";
       "-no_ref",            Arg.Clear Flag_engine.use_ref,    " ";
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
-      "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if,"convert ifdef to if, buggy!";
+      "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if, 
+        " convert ifdef to if, buggy!";
       "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
-
-      "-ng", Arg.Set Flag_parsing_c.next_gen_parsing," next gen parsing";
+      "-ng",   Arg.Set Flag_parsing_c.next_gen_parsing," next gen parsing";
+      "-nong", Arg.Clear Flag_parsing_c.next_gen_parsing," next gen parsing";
 
       "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, " ";
 
@@ -200,7 +204,7 @@ let main () =
     Common.profile_code "Main total" (fun () -> 
     (match (!args) with
 
-    (* the test framework. Works with tests/  *)
+    (* The test framework. Works with tests/  *)
     | [x] when !test_mode    -> 
         Testing.testone x !compare_with_expected !iso_file
     | []  when !testall_mode -> 
@@ -224,7 +228,7 @@ let main () =
             in
             
             let _stat_list = ref [] in
-            let newscore  = empty_score () in
+            let newscore  = Common.empty_score () in
 
             fullxs +> List.iter (fun file -> 
               if not (file =~ ".*\\.c") 
@@ -253,8 +257,9 @@ let main () =
               pr2 "--------------------------------";
               pr2 "regression testing  information";
               pr2 "--------------------------------";
+              let file = Str.global_replace (Str.regexp "/") "__" x in
               Common.regression_testing newscore 
-                "/tmp/score_parsing.marshalled";
+                ("/tmp/score_parsing__" ^ file ^ ".marshalled");
             end
               
 
@@ -332,8 +337,12 @@ let main () =
 
         | "compare_c", _ -> 
             Testing.print_diff_expected_res_and_exit 
+              "parsing_c/tests/compare1.c" 
+              "parsing_c/tests/compare2.c" 
+              (*
               "parsing_c/tests/equal_modulo1.c" 
               "parsing_c/tests/equal_modulo2.c" 
+              *)
               false
         | "xxx", _ -> 
             Format.print_newline();
@@ -360,16 +369,14 @@ let main () =
 
 
         (* todo?: for iso could try to go back the parent dir recursively to
-           find the standard.iso *)
+         * find the standard.iso 
+         *)
         let cocci_file = !cocci_file in
         let iso_file = if !iso_file = "" then None else Some !iso_file in
 
         let fullxs = 
           if !dir 
-          then begin
-            assert (xs = []); 
-            Common.process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
-          end 
+          then Common.process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
           else x::xs 
         in
 
@@ -388,26 +395,24 @@ let main () =
           let expected_res = base ^ ".res" in
           let saved = cfile ^ ".cocci_res" in
 
-         (try 
-             Cocci.full_engine 
-               cfile 
-               (Left (cocci_file, iso_file)) 
-               generated_file
-          with e -> 
-            if !dir 
-            then pr2 ("EXN:" ^ Printexc.to_string e)
-            else raise e
+          (try 
+              Cocci.full_engine cfile (Left (cocci_file, iso_file)) 
+                generated_file
+            with e -> 
+              if !dir 
+              then pr2 ("EXN:" ^ Printexc.to_string e)
+              else raise e
           );
-
+          
 	  Ctlcocci_integration.print_bench();
 
 	  if !save_output_file 
           then Common.command2 ("cp " ^ generated_file ^ " " ^ saved);
-
+          
           if !compare_with_expected then 
             Testing.print_diff_expected_res_and_exit
               generated_file expected_res (List.length fullxs = 1)
-          );
+        ) (* iter *)
 
     | [] -> 
         Arg.usage (Common.take 5 options) usage_msg; 
@@ -434,6 +439,6 @@ let _ =
           main ();
           Ctlcocci_integration.print_bench()
         ))
-        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+          (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
       

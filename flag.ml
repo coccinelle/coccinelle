@@ -11,9 +11,9 @@ let inline_let_ctl = ref false
 let show_mcodekind_in_ctl = ref false
 
 let show_transinfo = ref true
+let show_binding_in_out = ref false
 let show_diff = ref true
 let show_misc = ref true
-let show_binding_in_out = ref false
 
 
 

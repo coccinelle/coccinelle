@@ -22,7 +22,6 @@ type program2 = programElement2 list
 
 type parsing_stat = {
     filename: filename;
-    mutable passing_through_lines: int;
     mutable have_timeout: bool;
     mutable correct: int;
     mutable bad: int;

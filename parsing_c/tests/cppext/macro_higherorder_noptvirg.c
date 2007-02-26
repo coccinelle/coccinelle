@@ -215,6 +215,17 @@ void main(int i)
 
    ECALL(fd_copyin((void *)param, &inparam, size))
 
+
+   if (res < 0)
+		DBG(4, "Failed to read a register "
+		       "(index 0x%02X, error #%d, %s)",
+		    index, res, symbolic(urb_errlist, res))
+
+   return (res >= 0) ? (int)(*buff) : -1;
+
+   if ((err = usb_register(&sn9c102_usb_driver)))
+		KDBG(1, "usb_register() failed")
+
 }
 
 void main(int i)

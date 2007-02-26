@@ -634,6 +634,9 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         let iiempty = [] in
         (Ast_c.Asm, iiempty), LastCurrentNode starti
 
+    | Macro _ -> 
+        raise Todo
+
     | CPPInclude _ | CPPDefine _
     | CaseNode _ | DoWhileTail _ | Else _ | SeqEnd _ | FunHeader _ -> 
 	raise Impossible

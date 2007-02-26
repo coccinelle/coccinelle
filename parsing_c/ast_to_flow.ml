@@ -940,6 +940,11 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         Some newi
 
+    | Ast_c.MacroStmt, ii -> 
+        let newi = add_node_g (Macro (stmt, ((),ii))) lbl "macro;" in
+        attach_to_previous_node starti newi;
+        Some newi
+
   in
 
 
