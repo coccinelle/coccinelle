@@ -361,25 +361,20 @@ let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list * pred list)) -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
-  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding,
-   string) 
-  either) = 
+  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding)) = 
   fun (flow, label, states) ctl (used_after, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
-    let (triples,res) = 
+    let (triples,(trans_info2, returned_any_states, used_after_env)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in
     if not (!Flag_parsing_cocci.sgrep_mode)
     then Check_reachability.check_reachability triples flow;
-    match res with
-    | Left (trans_info2, returned_any_states, used_after_env) ->
-	let (trans_info2,used_after_fresh_env) =
-	  Postprocess_transinfo.process used_after binding2 trans_info2 in
-	let used_after_env = used_after_fresh_env @ used_after_env in
-        let trans_info = satbis_to_trans_info trans_info2 in
-        let newbinding = metavars_binding2_to_binding used_after_env in
-        Left (trans_info, returned_any_states, newbinding)
-    | Right var -> Right var
+    let (trans_info2,used_after_fresh_env) =
+      Postprocess_transinfo.process used_after binding2 trans_info2 in
+    let used_after_env = used_after_fresh_env @ used_after_env in
+    let trans_info = satbis_to_trans_info trans_info2 in
+    let newbinding = metavars_binding2_to_binding used_after_env in
+    (trans_info, returned_any_states, newbinding)
 
 let mysat a b c = 
   Common.profile_code "mysat" (fun () -> mysat2 a b c)

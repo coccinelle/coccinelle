@@ -601,7 +601,7 @@ and process_a_ctl_a_env_a_celem2 =
   | None -> None
   | Some info -> 
 
-      let satres = 
+      let (trans_info, returned_any_states, newbinding) = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
           Flag_ctl.loop_in_src_code := 
             !Flag_ctl.loop_in_src_code || info.contain_loop;
@@ -615,92 +615,88 @@ and process_a_ctl_a_env_a_celem2 =
             
         ) in
 
-      (match satres with
-      | Right x -> pr2 ("Unable to find a value for " ^ x); None
-      | Left (trans_info, returned_any_states, newbinding) ->
-          (* modify also the proto if FunHeader was touched *)
-          let hack_funheaders = 
-            trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
-              match Ast_cocci.unwrap rule_elem with
-              | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
-		  let res = (binding, (a,b,c,d,e,f,g,h)) in
-                  Some (Ast_cocci.rewrap rule_elem res)
-              | _ -> None
-            )  
-          in
-          
-          if not returned_any_states
-          then None
-          else begin
-            show_or_not_celem "found match in" celem;
-            show_or_not_trans_info trans_info;
-            show_or_not_binding "out" newbinding;
-            if (null trans_info)
-            then Some (celem, false, newbinding, hack_funheaders)
-            else 
-
+      (* modify also the proto if FunHeader was touched *)
+      let hack_funheaders = 
+        trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
+          match Ast_cocci.unwrap rule_elem with
+          | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
+	      let res = (binding, (a,b,c,d,e,f,g,h)) in
+              Some (Ast_cocci.rewrap rule_elem res)
+          | _ -> None
+		)  
+      in
+      
+      if not returned_any_states
+      then None
+      else begin
+        show_or_not_celem "found match in" celem;
+        show_or_not_trans_info trans_info;
+        show_or_not_binding "out" newbinding;
+        if (null trans_info)
+        then Some (celem, false, newbinding, hack_funheaders)
+        else 
+	  
               (* I do the transformation on flow, not fixed_flow, 
                  because the flow_to_ast need my extra information. *)
-              let flow' = (* can do via side effect now *)
-                match () with 
-                | _ when !Flag_engine.use_cocci_vs_c_3 -> 
-                       Transformation3.transform trans_info info.flow
-                | _ -> Transformation.transform trans_info info.flow 
-              in
-              let celem' = 
-                if !Flag_engine.use_ref
-                then celem (* done via side effect *)
-                else flow_to_ast flow' 
-              in
-              Some (celem', true, newbinding, hack_funheaders)
-          end
-      )
-  )
+          let flow' = (* can do via side effect now *)
+            match () with 
+            | _ when !Flag_engine.use_cocci_vs_c_3 -> 
+                Transformation3.transform trans_info info.flow
+            | _ -> Transformation.transform trans_info info.flow 
+          in
+          let celem' = 
+            if !Flag_engine.use_ref
+            then celem (* done via side effect *)
+            else flow_to_ast flow' 
+          in
+          Some (celem', true, newbinding, hack_funheaders)
+      end
+	  )
 and process_a_ctl_a_env_a_celem  a b c = 
   Common.profile_code "process_a_ctl_a_env_a_celem" 
     (fun () -> process_a_ctl_a_env_a_celem2 a b c)
-
-
+    
+    
 (* --------------------------------------------------------------------- *)
 let process_hack_funheaders2 hack_funheaders = 
-
+  
   (* Last fix.
-   *
-   * todo: what if the function is modified two times ? we should
-   * modify the prototype as soon as possible, not wait until the end
-   * of all the ctl rules 
-   *)
+     *
+     * todo: what if the function is modified two times ? we should
+     * modify the prototype as soon as possible, not wait until the end
+     * of all the ctl rules 
+  *)
   if !Flag.show_misc then pr2 ("hack headers");
-      
+  
   hack_funheaders +> List.iter (fun info ->
     let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
-        
+    
     let cprogram' = 
       !g_cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
         let ebis', modified = 
           match ebis with
           | Ast_c.Declaration 
               (Ast_c.DeclList 
-                  ([((Some ((s, None), iis)), 
+                 ([((Some ((s, None), iis)), 
                     (qu, (Ast_c.FunctionType ft, iity)), 
                     storage),
-                   []
+                    []
                   ], iiptvirg::iifake::iisto))  -> 
-              (try
-                  Transformation.transform_proto
-                    (Ast_cocci.rewrap info
-			(Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
-                    (((Control_flow_c.FunHeader 
-                          ((s, ft, storage), 
-                          iis++iity++[iifake]++iisto)), []),"")
-                    binding (qu, iiptvirg) h
-                  +> (fun x -> x,  true)
-                with Transformation.NoMatch -> (ebis, false)
-              )
+		    (try
+                      Transformation.transform_proto
+			(Ast_cocci.rewrap info
+			   (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
+			(((Control_flow_c.FunHeader 
+                             ((s, ft, storage), 
+                              iis++iity++[iifake]++iisto)), []),"")
+			binding (qu, iiptvirg) h
+			+> (fun x -> x,  true)
+                    with Transformation.NoMatch -> (ebis, false)
+			)
           | x -> (x, false)
         in
         (((ebis', info_item), flow, env), modified)
-      ) 
+	  ) 
     in
     g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
   )

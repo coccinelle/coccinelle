@@ -148,7 +148,6 @@ struct
 	 wits)
   ;;
 
-  exception INCOMPLETE_BINDINGS of SUB.mvar
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
     List.concat
@@ -173,7 +172,7 @@ struct
 		   with Not_found -> rest)
 	       None envs in
 	   match vl with
-	     None -> [] (*raise (INCOMPLETE_BINDINGS used_after_var)*)
+	     None -> []
 	   | Some vl -> [(used_after_var, vl)])
 	 used_after)
       
@@ -230,28 +229,22 @@ struct
 		  ((G.node * (SUB.mvar * SUB.value) list * predicate)
 		     list list *
 		     bool *
-		     (WRAPPER_ENV.mvar * SUB.value) list,
-		   SUB.mvar) Common.either)) =
+		     (WRAPPER_ENV.mvar * SUB.value) list))) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
-      let res =
-	List.map (fun (_,_,w) -> unwrap_wits w true) noclean in
+      let res = List.map (fun (_,_,w) -> unwrap_wits w true) noclean in
       let unmodif_res =
 	Common.uniq
 	  (List.concat
-	     (List.map (fun (_,_,w) -> unwrap_wits w false)
-		noclean)) in
+	     (List.map (fun (_,_,w) -> unwrap_wits w false) noclean)) in
       (noclean,
-       try
-	 Common.Left
-	   (res,not(noclean = []),
+       (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs
 	   binding as an argument. *)
-	    (collect_used_after used_after
-	      (binding :: (List.map (function (_,env,_) -> env) unmodif_res))))
-       with INCOMPLETE_BINDINGS x -> Common.Right x)
+	(collect_used_after used_after
+	   (binding :: (List.map (function (_,env,_) -> env) unmodif_res)))))
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()
 

@@ -56,12 +56,10 @@ module CTL_ENGINE_BIS :
 	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
 		(WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
 		  ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
-		     ((* a list with a list for each tree *)
-		      (G.node * (SUB.mvar * SUB.value) list * predicate)
+		     ((G.node * (SUB.mvar * SUB.value) list * predicate)
 			list list *
 			bool *
-			(WRAPPER_ENV.mvar * SUB.value) list,
-		      SUB.mvar) Common.either)
+			(WRAPPER_ENV.mvar * SUB.value) list))
 
     val print_bench : unit -> unit
 end
