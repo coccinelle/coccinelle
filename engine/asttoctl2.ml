@@ -1179,13 +1179,13 @@ and statement stmt after quantified label guard =
 	| _ -> failwith "not possible" in
       let function_header = quantify hfvs (make_match header) in
       let start_brace = quantify lbfvs (make_match lbrace) in
+      let stripped_rbrace =
+	match Ast.unwrap rbrace with
+	  Ast.SeqEnd((data,info,_)) ->
+	    Ast.rewrap rbrace
+	      (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
+	| _ -> failwith "unexpected close brace" in
       let end_brace =
-	let stripped_rbrace =
-	  match Ast.unwrap rbrace with
-	    Ast.SeqEnd((data,info,_)) ->
-	      Ast.rewrap rbrace
-		(Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
-	  | _ -> failwith "unexpected close brace" in
 	let exit = wrap n (CTL.Pred (Lib_engine.Exit,CTL.Control)) in
 	let errorexit = wrap n (CTL.Pred (Lib_engine.ErrorExit,CTL.Control)) in
 	wrapAnd(quantify rbfvs (make_match rbrace),
@@ -1196,16 +1196,17 @@ and statement stmt after quantified label guard =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
       let new_quantified4 = Common.union_set b4fvs new_quantified3 in
-      let fn_nest =(*
+      let fn_nest =
 	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,Ast.NoWhen,_) -> Some stmt_dots
+	      Ast.Nest(stmt_dots,Ast.NoWhen,_) -> Some (Common.Left stmt_dots)
+	    | Ast.Dots(_,whencode,_) -> Some (Common.Right whencode)
 	    | _ -> None)
-	| _ -> *)None in
+	| _ -> None in
       let body_code =
 	match fn_nest with
-	  Some stmt_dots ->
+	  Some (Common.Left stmt_dots) ->
 	    (* special case for function header + body - header is unambiguous
 	       and unique, so we can just look for the nested body anywhere
 	       else in the CFG *)
@@ -1216,6 +1217,20 @@ and statement stmt after quantified label guard =
 		    (* discards match on right brace, but don't need it *)
 		    (Guard (make_seq_after end_brace after))
 		    new_quantified4 None true guard))
+	| Some (Common.Right whencode) ->
+	    (* try to be more efficient for the case where the body is just
+	       ...  Perhaps this is too much of a special case, but useful
+	       for dropping a parameter and checking that it is never used. *)
+	    (match whencode with
+	      Ast.NoWhen -> wrap n CTL.True
+	    | Ast.WhenNot(x) ->
+		wrapAU
+		  (wrapNot(statement_list x Tail new_quantified4 label
+			     true true),
+		   make_match stripped_rbrace)
+	    | Ast.WhenAlways(x) ->
+		wrapAU (statement x Tail new_quantified4 label true,
+			make_match stripped_rbrace))
 	| None ->
 	    make_seq
 	      [start_brace;
