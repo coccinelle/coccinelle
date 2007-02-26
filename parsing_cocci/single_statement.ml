@@ -9,13 +9,14 @@ module V0 = Visitor_ast0
 if a new statement is added.  For this it would be best to correlate with the
 plus slice. Or at least be sure that the new stuff is on the far left or
 far right. *)
+
 let rec adding_something s =
   match Ast0.get_mcodekind s with
     Ast0.MINUS(mc) ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
 	([[Ast.StatementTag(_)]],tinfo) -> false
-      |	_ -> true)
+      |	(_,_) -> true)
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
       (match text with Ast.NOTHING -> false | _ -> true)
@@ -24,34 +25,42 @@ let rec adding_something s =
 
 (* needs a special case when there is a Disj *)
 and contains_only_minus s =
-  let donothing r k e = k e in
   let bind x y = x && y in
   let option_default = true in
-  let mcode (_,_,_,mc) =
-    match mc with
-      Ast0.MINUS(_) -> true
+  let mcodekind = function
+      Ast0.MINUS(mc) ->
+	(match !mc with
+	  ([],_) -> true
+	| _ -> false)
     | Ast0.CONTEXT(mc) -> false
     | _ -> false in
+  let mcode (_,_,_,mc) = mcodekind mc in
+
+  let donothing r k e = mcodekind (Ast0.get_mcodekind e) && k e in
 
   let expression r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.V0.combiner_expression expr_list
     | _ -> k e in
 
   let declaration r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
 	List.for_all r.V0.combiner_declaration decls
     | _ -> k e in
 
   let typeC r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjType(starter,types,mids,ender) ->
 	List.for_all r.V0.combiner_typeC types
     | _ -> k e in
 
   let statement r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	List.for_all r.V0.combiner_statement_dots statement_dots_list
@@ -132,6 +141,10 @@ let all_minus s =
 
 let rec statement dots_before dots_after s =
   let do_one s =
+    Unparse_ast0.statement "" s;
+    Format.print_newline();
+    Printf.printf "adding something %b contains only minus %b\n"
+      (adding_something s) (contains_only_minus s);
     if dots_before && dots_after &&
       (adding_something s or contains_only_minus s)
     then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))

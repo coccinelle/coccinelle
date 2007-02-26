@@ -340,7 +340,15 @@ let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x            = Ast.Token x
-let mk_code x             = Ast.Code (Ast0toast.top_level x)
+(* statementTag is preferred, because it indicates that one statement is
+replaced by one statement, in single_statement *)
+let mk_code x             =
+  match Ast0.unwrap x with
+    Ast0.CODE(dots) ->
+      (match Ast0.unwrap dots with
+	Ast0.DOTS([s]) -> Ast.StatementTag(Ast0toast.statement s)
+      |	_ -> Ast.Code (Ast0toast.top_level x))
+  | _ -> Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
