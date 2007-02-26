@@ -584,31 +584,48 @@ let rec pp_any = function
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
 
-  (* todo? imitate what is in unparse_cocci ? *)
+  (* todo? imitate what is in pretty_print_cocci ? *)
   match xxs with
   | xs::xxs -> 
+      (* for many tags, we must not do a first newline on
+       * the first '+'
+       *)
       xs +> List.iter (fun any -> 
         (match any with
-        | Ast.Rule_elemTag _ -> pr "\n"; pr current_tabbing;
-        | Ast.StatementTag _ -> pr "\n"; pr current_tabbing;
-        | Ast.InitTag x -> 
+        | Ast.Rule_elemTag _ -> pr "\n"; pr current_tabbing; pp_any any;
+        | Ast.StatementTag _ -> pr "\n"; pr current_tabbing; pp_any any;
+        | Ast.InitTag x -> pr "\n"; pr current_tabbing; 
             (match Ast.unwrap x with
             | Ast.InitGccDotName _ 
             | Ast.InitGccName _
             | Ast.InitGccIndex _
             | Ast.InitGccRange _ ->
-                pr ","; pr "\n"; pr current_tabbing; 
-            | _ -> ()
+                pp_any any;
+                pr ","; 
+            | _ -> pp_any any;
             )
-        | _ -> ()
-        );
 
-        pp_any any
+        | _ -> pp_any any
+        );
       );
       xxs +> List.iter (fun xs -> 
         pr "\n"; 
         pr current_tabbing;
-        xs +> List.iter pp_any
+        xs +> List.iter (fun any -> 
+          (match any with
+          | Ast.InitTag x -> 
+              (match Ast.unwrap x with
+              | Ast.InitGccDotName _ 
+              | Ast.InitGccName _
+              | Ast.InitGccIndex _
+              | Ast.InitGccRange _ ->
+                  pp_any any;
+                  pr ","; 
+            | _ -> pp_any any;
+              )
+          | _ -> pp_any any
+          )
+        );
       )
   | [] -> ()
 
