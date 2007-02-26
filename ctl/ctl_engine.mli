@@ -56,11 +56,7 @@ module CTL_ENGINE :
           G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
             (P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
 	      (P.t list * P.t list) ->
-		((P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-		  (P.t,'anno) triples ->
-		  (P.t,'anno) triples ->
-		  (P.t,'anno) triples -> unit) -> (* check_conjunction *)
-		    (P.t,'anno) triples
+		(P.t,'anno) triples
 
 	val print_bench : unit -> unit
       end

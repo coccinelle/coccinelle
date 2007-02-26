@@ -1170,8 +1170,7 @@ let new_var _ =
 type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 
 let rec satloop unchecked required required_states
-    ((grp,label,states) as m) phi env
-    check_conj =
+    ((grp,label,states) as m) phi env =
   let rec loop unchecked required required_states phi =
     let res =
     match A.unwrap phi with
@@ -1334,7 +1333,6 @@ let rec satloop unchecked required required_states
 	   compatible between all the uses.  this is not checked. *)
 	let res = loop unchecked required required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-	  check_conj
     | A.LetR(dir,v,phi1,phi2)   ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
@@ -1342,7 +1340,6 @@ let rec satloop unchecked required required_states
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-	  check_conj
     | A.Ref(v)             ->
 	let res = List.assoc v env in
 	if unchecked
@@ -1359,13 +1356,13 @@ let rec satloop unchecked required required_states
 
 (* SAT with tracking *)
 let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
-    ((_,label,states) as m) phi env check_conj =
+    ((_,label,states) as m) phi env =
   let anno res children = (annot lvl phi res children,res) in
   let satv unchecked required required_states phi0 env =
     sat_verbose_loop unchecked required required_states annot maxlvl (lvl+1)
-      m phi0 env check_conj in
+      m phi0 env in
   if (lvl > maxlvl) && (maxlvl > -1) then
-    anno (satloop unchecked required required_states m phi env check_conj) []
+    anno (satloop unchecked required required_states m phi env) []
   else
     let (child,res) =
       match A.unwrap phi with
@@ -1612,15 +1609,15 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	
 ;;
 
-let sat_verbose annotate maxlvl lvl m phi check_conj =
-  sat_verbose_loop false [[]] None annotate maxlvl lvl m phi [] check_conj
+let sat_verbose annotate maxlvl lvl m phi =
+  sat_verbose_loop false [[]] None annotate maxlvl lvl m phi []
 
 (* Type for annotations collected in a tree *)
 type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
 
-let sat_annotree annotate m phi check_conj =
+let sat_annotree annotate m phi =
   let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
-    sat_verbose_loop false [[]] None tree_anno (-1) 0 m phi [] check_conj
+    sat_verbose_loop false [[]] None tree_anno (-1) 0 m phi []
 ;;
 
 (*
@@ -1911,7 +1908,7 @@ let filter_partial_matches trips =
 
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)
-let sat m phi reqopt check_conj = 
+let sat m phi reqopt = 
   Hashtbl.clear reachable_table;
   Hashtbl.clear memo_label;
   let (x,label,states) = m in
@@ -1921,12 +1918,12 @@ let sat m phi reqopt check_conj =
     let res =
       if(!Flag_ctl.verbose_ctl_engine)
       then
-	let fn _ = snd (sat_annotree simpleanno2 m phi check_conj) in
+	let fn _ = snd (sat_annotree simpleanno2 m phi) in
 	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn()
       else
-	let fn _ = satloop false [[]] None m phi [] check_conj in
+	let fn _ = satloop false [[]] None m phi [] in
 	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn() in

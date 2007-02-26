@@ -190,32 +190,12 @@ struct
       | A.NegWit(wit) -> loop wit in
     List.fold_left Common.union_set [] (List.map loop wits)
 
-  let check_conjunction phipsi res_phi res_psi res_phipsi = () (*
-    let phi_code = collect_predvar_bindings res_phi in
-    let psi_code = collect_predvar_bindings res_psi in
-    let all_code = collect_predvar_bindings res_phipsi in
-    let check str = function
-	[] -> ()
-      |	l ->
-	  Printf.printf "Warning: The conjunction derived from SP line %d:\n"
-	    (Ast_ctl.get_line phipsi);
-	  Printf.printf
-	    "drops code matched on the %s side at the following nodes\naccording to the corresponding predicates\n" str;
-	  List.iter
-	    (function (n,x) ->
-	      G.print_node n; Format.print_flush(); Printf.printf ": ";
-	      WRAPPER_ENV.print_value x; Format.print_flush();
-	      Printf.printf "\n")
-	    l in
-    check "left" (Common.minus_set phi_code all_code);
-    check "right" (Common.minus_set psi_code all_code) *)
-
   (* ----------------------------------------------------- *)
 
   (* The wrapper for sat from the CTL_ENGINE *)
   let satbis_noclean (grp,lab,states) (phi,reqopt) :
       ('pred,'anno) WRAPPER_ENGINE.triples =
-    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi reqopt check_conjunction
+    WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi reqopt
       
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
