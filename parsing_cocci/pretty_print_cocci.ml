@@ -383,7 +383,7 @@ and declaration d =
 and initialiser i =
   match Ast.unwrap i with
     Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(lb,initlist,rb,whencode) ->
+  | Ast.InitList(lb,initlist,_,rb,whencode) ->
       mcode print_string lb;
       if not (whencode = [])
       then
@@ -391,8 +391,8 @@ and initialiser i =
 	 print_between (function _ -> print_string " v ")
 	   initialiser whencode;
 	 force_newline());
-      let _ =
-	print_between (function _ -> print_string ", ") initialiser initlist in
+      let _ = print_between (function _ -> print_string ", ") initialiser
+	  initlist in
       mcode print_string rb
   | Ast.InitGccDotName(dot,name,eq,ini) ->
       mcode print_string dot; ident name; print_string " ";

@@ -267,7 +267,8 @@ and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,initlista,_,whena),Ast.InitList(_,initlistb,_,whenb)) ->
+  | (Ast.InitList(_,initlista,_,_,whena),
+     Ast.InitList(_,initlistb,_,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccDotName(_,namea,_,inia),

@@ -417,13 +417,19 @@ and strip_idots initlist =
       (List.rev whencode, List.rev init)
   | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
 
+and check_all_minus i =
+  Single_statement.contains_only_minus.V0.combiner_initialiser i
+
 and initialiser i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb) ->
 	let (whencode,initlist) = strip_idots initlist in
-	Ast.InitList(mcode lb,List.map initialiser initlist,mcode rb,
+	Ast.InitList(mcode lb,
+		     List.map initialiser initlist,
+		     List.map check_all_minus initlist,
+		     mcode rb,
 		     List.map initialiser whencode)
     | Ast0.InitGccDotName(dot,name,eq,ini) ->
 	Ast.InitGccDotName(mcode dot,ident name,mcode eq,initialiser ini)

@@ -1229,7 +1229,7 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
             (B.InitExpr expb, ii)
           ))
 
-    | (A.InitList (ia1, ias, ia2, []), (B.InitList ibs, ii)) -> 
+    | (A.InitList (ia1, ias, allminuses, ia2, []), (B.InitList ibs, ii)) -> 
         (match ii with 
         | ib1::ib2::iicommaopt -> 
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
@@ -1237,14 +1237,14 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
             initialisers ias (Ast_c.split_comma ibs) >>= (fun ias ibs_split ->
               let ibs = Ast_c.unsplit_comma ibs_split in
               return (
-                (A.InitList (ia1, ias, ia2, [])) +> A.rewrap ia,
+                (A.InitList (ia1, ias, allminuses, ia2, [])) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
               
         | _ -> raise Impossible
         )
 
-    | (A.InitList (i1, ias, i2, whencode), (B.InitList ibs, _ii)) -> 
+    | (A.InitList (i1, ias, allminuses, i2, whencode),(B.InitList ibs, _ii)) ->
         failwith "TODO: not handling whencode in initialisers"
 
 

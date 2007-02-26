@@ -20,11 +20,11 @@ let rec adding_something s =
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
       (match text with Ast.NOTHING -> false | _ -> true)
-  | Ast0.MIXED(_) -> not(contains_only_minus s)
+  | Ast0.MIXED(_) -> not(contains_only_minus.V0.combiner_statement s)
   | _ -> failwith "unexpected plus code"
 
 (* needs a special case when there is a Disj *)
-and contains_only_minus s =
+and contains_only_minus =
   let bind x y = x && y in
   let option_default = true in
   let mcodekind = function
@@ -66,13 +66,11 @@ and contains_only_minus s =
 	List.for_all r.V0.combiner_statement_dots statement_dots_list
     | _ -> k e in
 
-  let combiner = 
-    V0.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
-      donothing expression typeC donothing donothing declaration
-      statement donothing donothing in
-  combiner.V0.combiner_statement s
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing
+    donothing expression typeC donothing donothing declaration
+    statement donothing donothing
 
 (* ---------------------------------------------------------------------- *)
 
@@ -141,12 +139,8 @@ let all_minus s =
 
 let rec statement dots_before dots_after s =
   let do_one s =
-    Unparse_ast0.statement "" s;
-    Format.print_newline();
-    Printf.printf "adding something %b contains only minus %b\n"
-      (adding_something s) (contains_only_minus s);
     if dots_before && dots_after &&
-      (adding_something s or contains_only_minus s)
+      (adding_something s or contains_only_minus.V0.combiner_statement s)
     then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))
     else s in
 

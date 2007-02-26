@@ -227,7 +227,7 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.InitExpr(exp) -> expression exp
-      | Ast.InitList(lb,initlist,rb,whencode) ->
+      | Ast.InitList(lb,initlist,_,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
 	      multibind (List.map initialiser initlist);
@@ -648,9 +648,10 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
-	| Ast.InitList(lb,initlist,rb,whencode) ->
+	| Ast.InitList(lb,initlist,allminuslist,rb,whencode) ->
 	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
-			  string_mcode rb, List.map initialiser whencode)
+			 allminuslist (* assumed still valid *),
+			 string_mcode rb, List.map initialiser whencode)
 	| Ast.InitGccDotName(dot,name,eq,ini) ->
 	    Ast.InitGccDotName
 	      (string_mcode dot, ident name, string_mcode eq, initialiser ini)
