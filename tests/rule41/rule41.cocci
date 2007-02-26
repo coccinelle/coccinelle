@@ -6,7 +6,7 @@ expression fops_val, minor_val, num_minor_val;
 struct usb_driver I = {
 -	fops:		fops_val,
 -	minor:		minor_val,
--	num_minors:	num_minor_val
+-	num_minors:	num_minor_val,
 };
 
 @@

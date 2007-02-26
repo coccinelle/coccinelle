@@ -4,7 +4,7 @@ identifier f;
 @@
 
 struct usb_serial_driver I = {
-	.write_bulk_callback =	f
+	.write_bulk_callback =	f,
 };
 
 @@
@@ -23,7 +23,7 @@ identifier f;
 @@
 
 struct usb_serial_driver I = {
-	.read_bulk_callback =	f
+	.read_bulk_callback =	f,
 };
 
 @@
@@ -42,7 +42,7 @@ identifier f;
 @@
 
 struct usb_serial_driver I = {
-	.read_int_callback =	f
+	.read_int_callback =	f,
 };
 
 @@

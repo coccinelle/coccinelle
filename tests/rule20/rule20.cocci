@@ -17,10 +17,10 @@ fresh identifier ZZZ_driver;
 + static struct pcmcia_driver ZZZ_driver = {
 +       .owner          = THIS_MODULE,
 +       .drv            = {
-+               .name   = YYY
++               .name   = YYY,
 +       },
 +       .attach         = XXX_attach,
-+       .detach         = XXX_detach
++       .detach         = XXX_detach,
 + };
 
 //__init

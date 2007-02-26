@@ -9,11 +9,11 @@ expression E;
 
 (
 struct usb_driver I = {
- 	.no_dynamic_id = 	E
+ 	.no_dynamic_id = 	E,
 };
 |
 struct usb_driver I = {
         ...
-+	, .no_dynamic_id = 	1
++	.no_dynamic_id = 	1,
 };
 )

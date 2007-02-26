@@ -4,7 +4,7 @@ identifier remove_function;
 @@
 
 struct acpi_driver I = {
-  .ops = { .remove = remove_function }
+  .ops = { .remove = remove_function, },
 };
 
 @@

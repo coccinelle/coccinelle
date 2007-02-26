@@ -4,7 +4,7 @@ identifier f;
 @@
 
 struct file_operations I = {
-  .ioctl = f
+  .ioctl = f,
 };
 
 @@
@@ -28,7 +28,7 @@ identifier f;
 @@
 
 struct block_device_operations I = {
-  .ioctl = f
+  .ioctl = f,
 };
 
 @@

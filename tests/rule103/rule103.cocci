@@ -5,7 +5,7 @@ identifier attach, detach;
 
 struct pcmcia_driver driver = {
 	.probe		= attach,
-	.remove		= detach
+	.remove		= detach,
 };
 
 @@
@@ -87,8 +87,8 @@ fresh identifier probefn;
 
 struct pcmcia_driver driver = {
 	.probe		=
--                         attach
-+                         probefn
+-                         attach,
++                         probefn,
 };
 
 @@

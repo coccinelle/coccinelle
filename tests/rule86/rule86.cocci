@@ -4,7 +4,7 @@ identifier f;
 @@
 
 ctl_table I = {
-  .proc_handler = f
+  .proc_handler = f,
 };
 
 @@
