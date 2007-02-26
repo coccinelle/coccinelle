@@ -175,20 +175,6 @@ struct
 	     None -> []
 	   | Some vl -> [(used_after_var, vl)])
 	 used_after)
-      
-  (* ------------------ Partial matches ------------------ *)
-  (* Limitation: this only gives information about terms with PredVals, which
-     can be optimized to only those with modifs *)
-  let collect_predvar_bindings res =
-    let wits = List.concat (List.map (fun (_,_,w) -> w) res) in
-    let rec loop = function
-	A.Wit(st,th,anno,wit) ->
-	  (Common.map_filter
-	    (function A.Subst(_,(PredVal(_) as x)) -> Some (st,x) | _ -> None)
-	    th) @
-	  (List.concat (List.map loop wit))
-      | A.NegWit(wit) -> loop wit in
-    List.fold_left Common.union_set [] (List.map loop wits)
 
   (* ----------------------------------------------------- *)
 
