@@ -334,8 +334,6 @@ module XTRANS = struct
 
 end
 
-
-
 (*****************************************************************************)
 (* Entry point  *) 
 (*****************************************************************************)
@@ -368,6 +366,9 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
               -> ()
           | _ -> () (* assert (not (node =*= node')); *)
           );
+
+          (* useless, we dont go back from flow to ast now *)
+          (* let node' = lastfix_comma_struct node' in *)
           
           acc#replace_node (nodei, node')
      ) cflow

@@ -226,6 +226,57 @@ let split_signb_baseb_ii (baseb, ii) =
       )
   | _ -> failwith "strange type2, maybe because of weird order"
 
+(*---------------------------------------------------------------------------*)
+
+let rec unsplit_icomma xs = 
+  match xs with
+  | [] -> []
+  | x::y::xs -> 
+      (match A.unwrap y with
+      | A.IComma mcode -> 
+          (x, y)::unsplit_icomma xs
+      | _ -> failwith "wrong ast_cocci in initializer"
+      )
+  | _ -> 
+      failwith ("wrong ast_cocci in initializer, should have pair " ^
+                "number of Icomma")
+
+
+
+let resplit_initialiser ibs iicomma = 
+  match iicomma, ibs with
+  | [], [] -> []
+  | [], _ -> 
+      failwith "should have a iicomma, do you generate fakeInfo in parser?"
+  | _, [] -> 
+      failwith "shouldn't have a iicomma"
+  | [iicomma], x::xs -> 
+      let elems = List.map fst (x::xs) in
+      let commas = List.map snd (x::xs) +> List.flatten in
+      let commas = commas @ [iicomma] in
+      zip elems commas 
+  | _ -> raise Impossible
+
+
+
+let rec split_icomma xs = 
+  match xs with
+  | [] -> []
+  | (x,y)::xs -> x::y::split_icomma xs
+
+let rec unsplit_initialiser ibs_unsplit = 
+  match ibs_unsplit with
+  | [] -> [],  [] (* empty iicomma *)
+  | (x, commax)::xs -> 
+      let (xs, lastcomma) = unsplit_initialiser_bis commax xs in
+      (x, [])::xs,  lastcomma
+
+and unsplit_initialiser_bis comma_before = function
+  | [] -> [], [comma_before]
+  | (x, commax)::xs -> 
+      let (xs, lastcomma) = unsplit_initialiser_bis commax xs in
+      (x, [comma_before])::xs,  lastcomma
+
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
@@ -1234,8 +1285,7 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
         | ib1::ib2::iicommaopt -> 
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
             tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-            initialisers ias (Ast_c.split_comma ibs) >>= (fun ias ibs_split ->
-              let ibs = Ast_c.unsplit_comma ibs_split in
+            initialisers ias (ibs, iicommaopt) >>= (fun ias (ibs,iicommaopt) ->
               return (
                 (A.InitList (ia1, ias, ia2, [])) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
@@ -1308,7 +1358,7 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
           ))))))))
 
     | A.IComma(comma), _ ->
-	failwith "needs to be filled in for IComma"
+        raise Impossible
 
     | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
       failwith "not handling Opt/Unique/Multi on initialisers"
@@ -1317,23 +1367,41 @@ and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
 
 
 
-and initialisers = fun ias ibs ->
+
+
+and initialisers = fun ias (ibs, iicomma) ->
+  let ias_unsplit = unsplit_icomma      ias in
+  let ibs_split   = resplit_initialiser ibs iicomma in
+  
+  initialisers2 ias_unsplit ibs_split >>= (fun ias_unsplit ibs_split -> 
+    return (
+      split_icomma ias_unsplit,
+      unsplit_initialiser ibs_split
+    )
+  )
+
+and initialisers2 = fun ias ibs -> 
+
   match ias, ibs with
   | [], ys -> return ([], ys)
-  | x::xs, ys -> 
+  | (x,xcomma)::xs, ys -> 
 
       let permut = Common.uncons_permut ys in
       permut +> List.fold_left (fun acc ((e, pos), rest) -> 
         acc >||> 
           (
-            (match e with 
-            | Left y -> 
+            (match A.unwrap xcomma, e with 
+            | A.IComma commax, (y, commay) -> 
+                tokenf commax commay >>= (fun commax commay -> 
                 initialiser x y >>= (fun x y -> 
-                  return (x, Left y)
+                  return (
+                    (x, (A.IComma commax) +> A.rewrap xcomma), 
+                    (y, commay))
                 )
-            | Right y -> fail
+                )
+            | _ -> raise Impossible (* unsplit_iicomma wrong *)
             ) >>= (fun x e -> 
-            initialisers xs rest >>= (fun xs rest -> 
+            initialisers2 xs rest >>= (fun xs rest -> 
               return (
                 x::xs,
                 Common.insert_elem_pos (e, pos) rest

@@ -1074,7 +1074,7 @@ direct_abstract_declarator:
 initialize: 
  | assign_expr                                    
      { InitExpr $1,                [] }
- | tobrace_ini initialize_list gcc_comma_opt  TCBrace
+ | tobrace_ini initialize_list gcc_comma_opt_struct  TCBrace
      { InitList (List.rev $2),     [$1;$4]++$3 }
  | tobrace_ini TCBrace
      { InitList [],       [$1;$2] } /* gccext: */
@@ -1092,7 +1092,7 @@ initialize_list:
 initialize2: 
  | cond_expr 
      { InitExpr $1,   [] } 
- | tobrace_ini initialize_list gcc_comma_opt TCBrace
+ | tobrace_ini initialize_list gcc_comma_opt_struct TCBrace
      { InitList (List.rev $2),   [$1;$4]++$3 }
  | tobrace_ini TCBrace
      { InitList [],  [$1;$2]  }
@@ -1111,6 +1111,11 @@ initialize2:
 /*----------------------------*/
 /* workarounds */
 /*----------------------------*/
+
+gcc_comma_opt_struct: 
+ | TComma {  [$1] } 
+ | /* */  {  [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
+
 
 tobrace_ini: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
 

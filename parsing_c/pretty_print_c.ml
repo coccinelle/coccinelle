@@ -552,9 +552,6 @@ and pp_decl_gen pr_elem = function
       (* handling the first var. Special case, we print the whole type *)
       (match var with
       | Some ((s, ini),  iis::iini) -> 
-          if s = "scsi_device_types"
-          then pr2 "ICI"
-          else ();
           pp_type_with_ident_gen pr_elem (Some (s, iis)) (Some (storage, iisto))
             returnType;
           ini +> do_option (fun init -> 

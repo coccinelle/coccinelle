@@ -594,38 +594,15 @@ in
         (match any with
         | Ast.Rule_elemTag _ -> pr "\n"; pr current_tabbing; pp_any any;
         | Ast.StatementTag _ -> pr "\n"; pr current_tabbing; pp_any any;
-        | Ast.InitTag x -> pr "\n"; pr current_tabbing; 
-            (match Ast.unwrap x with
-            | Ast.InitGccDotName _ 
-            | Ast.InitGccName _
-            | Ast.InitGccIndex _
-            | Ast.InitGccRange _ ->
-                pp_any any;
-                pr ","; 
-            | _ -> pp_any any;
-            )
-
         | _ -> pp_any any
-        );
-      );
+        ));
       xxs +> List.iter (fun xs -> 
         pr "\n"; 
         pr current_tabbing;
         xs +> List.iter (fun any -> 
-          (match any with
-          | Ast.InitTag x -> 
-              (match Ast.unwrap x with
-              | Ast.InitGccDotName _ 
-              | Ast.InitGccName _
-              | Ast.InitGccIndex _
-              | Ast.InitGccRange _ ->
-                  pp_any any;
-                  pr ","; 
-            | _ -> pp_any any;
-              )
-          | _ -> pp_any any
-          )
-        );
-      )
+          pp_any any
+        )
+      );
+
   | [] -> ()
 

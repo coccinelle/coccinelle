@@ -12,6 +12,44 @@ open Ast_c
 (*****************************************************************************)
 
 
+(*****************************************************************************)
+(* Last fix *)
+(*****************************************************************************)
+
+(* Because of the ugly trick to handle initialiser, I generate fake ',' 
+ * for the last initializer element, but if there is nothing around it,
+ * I don't want in the end to print it.
+ *)
+
+let contain_plus info = 
+  let mck = Ast_c.mcode_of_info info in
+  Cocci_vs_c_3.mcode_contain_plus mck
+
+let lastfix program = 
+  let bigf = { 
+    Visitor_c.default_visitor_c_s with
+    Visitor_c.kini_s = (fun (k,bigf) ini -> 
+      match k ini with
+      | Ast_c.InitList args, ii -> 
+          (match ii with
+          | [i1;i2] -> Ast_c.InitList args, ii 
+          | [i1;i2;iicommaopt] -> 
+              if Ast_c.is_al_info iicommaopt && 
+                 (not (contain_plus iicommaopt)) &&
+                 (not (contain_plus i2))
+              then 
+                Ast_c.InitList args, [i1;i2]
+              else 
+                Ast_c.InitList args, [i1;i2;iicommaopt]
+          | _ -> raise Impossible
+          )
+      | x -> x
+    )
+  } in
+  Visitor_c.vk_program_s bigf program
+
+
+
 
 (*****************************************************************************)
 (* Helpers *)
@@ -123,7 +161,7 @@ type ppmethod = PPnormal | PPviastr
 let pp_program2 xs outfile  = 
   
   Common.with_open_outfile outfile (fun (pr,chan) -> 
-    let pr s = pr s (*; flush chan*) in
+    let pr s = pr s ; flush chan in
 
     let (toks: Parser_c.token list ref) = ref [] in
     let _last_synced_token = 
@@ -269,6 +307,8 @@ let pp_program2 xs outfile  =
     xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
       toks := toks_e;
       _last_synced_token := (Common.fake_parse_info, ref Ast_c.emptyAnnot);
+
+      let e = lastfix e in
 
       match ppmethod with
       | PPnormal -> Pretty_print_c.pp_program_gen pr_elem e
