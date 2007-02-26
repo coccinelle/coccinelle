@@ -121,14 +121,11 @@ struct
   (* ---------------------------------------------------------------- *)
 
   (* FIX ME: what about negative witnesses and negative substitutions *)
-  let unwrap_wits wits modifonly =
+  let unwrap_wits modifonly wits =
     let mkth th =
       Common.map_filter
 	(function A.Subst(x,ClassicVal(v)) -> Some (x,v) | _ -> None)
 	th in
-    let rec no_negwits = function
-	A.Wit(st,th,anno,wit) -> List.for_all no_negwits wit
-      | A.NegWit(_) -> false in
     let rec loop neg acc = function
 	A.Wit(st,[A.Subst(x,PredVal(A.Modif(v)))],anno,wit) ->
 	  (match wit with
@@ -141,13 +138,12 @@ struct
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,th,anno,wit) ->
 	  List.concat (List.map (loop neg ((mkth th) @ acc)) wit)
-      | A.NegWit(_) -> [] in
-    List.concat
-      (List.map
-	 (function wit -> loop false [] wit)
-	 wits)
+      | A.NegWit(_) -> [] (* why not failure? *) in
+    List.concat (List.map (function wit -> loop false [] wit) wits)
   ;;
 
+  (* a match can return many trees, but within each tree, there has to be
+     at most one value for each variable that is in the used_after list *)
   let collect_used_after used_after envs =
     let print_var var = SUB.print_mvar var; Format.print_flush() in
     List.concat
@@ -195,22 +191,27 @@ struct
 		  ((G.node * (SUB.mvar * SUB.value) list * predicate)
 		     list list *
 		     bool *
-		     (WRAPPER_ENV.mvar * SUB.value) list))) =
+		     (WRAPPER_ENV.mvar * SUB.value) list list))) =
     fun m phi (used_after, binding) ->
       let noclean = satbis_noclean m phi in
-      let res = List.map (fun (_,_,w) -> unwrap_wits w true) noclean in
-      let unmodif_res =
-	Common.uniq
-	  (List.concat
-	     (List.map (fun (_,_,w) -> unwrap_wits w false) noclean)) in
+      let witness_trees = List.map (fun (_,_,w) -> w) noclean in
+      let res = List.map (unwrap_wits true) witness_trees in
+      let new_bindings =
+	List.map
+	  (function bindings_per_witness_tree ->
+	    binding ::
+	    (List.map (function (_,env,_) -> env) bindings_per_witness_tree))
+	  (List.map (unwrap_wits false) witness_trees) in
+      Printf.printf "new_bindings %d used_after %d\n"
+	(List.length new_bindings) (List.length used_after);
       (noclean,
        (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things.  One could then wonder whether unwrap_wits needs
 	   binding as an argument. *)
-	(collect_used_after used_after
-	   (binding :: (List.map (function (_,env,_) -> env) unmodif_res)))))
+	(Common.uniq
+	   (List.map (collect_used_after used_after) new_bindings))))
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()
 

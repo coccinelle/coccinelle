@@ -59,7 +59,7 @@ module CTL_ENGINE_BIS :
 		     ((G.node * (SUB.mvar * SUB.value) list * predicate)
 			list list *
 			bool *
-			(WRAPPER_ENV.mvar * SUB.value) list))
+			(WRAPPER_ENV.mvar * SUB.value) list list))
 
     val print_bench : unit -> unit
 end

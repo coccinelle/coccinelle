@@ -561,10 +561,14 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
       | None -> 
           push2 None new_c_elems ;
           acc
-      | Some (elem, modified, newbinding, hacks) ->  
+      | Some (elem, modified, newbindings, hacks) ->  
           push2 (if modified then (Some elem) else None) new_c_elems;
           hacks +>List.iter (fun x ->Common.push2 x g_hack_funheaders);
-          Common.insert_set newbinding acc
+	  List.fold_left
+	    (function acc ->
+	      function newbinding -> 
+		Common.insert_set newbinding acc)
+	    acc newbindings
     ) []
   in
   let new_c_elems = List.rev !new_c_elems in
@@ -588,8 +592,8 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
 
 
 (* This function returns a triplet option. First the C element (modified),
- * then a binding because there is could be new info brought by the matching,
- * and finally a hack_funheaders list. 
+ * then a list of bindings because there is could be new info brought by 
+ * the matching, and finally a hack_funheaders list. 
  * 
  * This function does not use the global, so could put it before,
  * but more logical to make it follows the other process_xxx functions.
@@ -601,7 +605,7 @@ and process_a_ctl_a_env_a_celem2 =
   | None -> None
   | Some info -> 
 
-      let (trans_info, returned_any_states, newbinding) = 
+      let (trans_info, returned_any_states, newbindings) = 
         Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
           Flag_ctl.loop_in_src_code := 
             !Flag_ctl.loop_in_src_code || info.contain_loop;
@@ -631,9 +635,9 @@ and process_a_ctl_a_env_a_celem2 =
       else begin
         show_or_not_celem "found match in" celem;
         show_or_not_trans_info trans_info;
-        show_or_not_binding "out" newbinding;
+        List.iter (show_or_not_binding "out") newbindings;
         if (null trans_info)
-        then Some (celem, false, newbinding, hack_funheaders)
+        then Some (celem, false, newbindings, hack_funheaders)
         else 
 	  
               (* I do the transformation on flow, not fixed_flow, 
@@ -649,7 +653,7 @@ and process_a_ctl_a_env_a_celem2 =
             then celem (* done via side effect *)
             else flow_to_ast flow' 
           in
-          Some (celem', true, newbinding, hack_funheaders)
+          Some (celem', true, newbindings, hack_funheaders)
       end
 	  )
 and process_a_ctl_a_env_a_celem  a b c = 

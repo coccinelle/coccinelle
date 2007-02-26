@@ -20,7 +20,7 @@ val mysat :
   Lib_engine.model -> 
   (Lib_engine.ctlcocci * (pred list * pred list)) -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding) -> 
-  (Lib_engine.transformation_info *  bool * Lib_engine.metavars_binding)
+  (Lib_engine.transformation_info *  bool * Lib_engine.metavars_binding list)
 
 
 val print_bench : unit -> unit
