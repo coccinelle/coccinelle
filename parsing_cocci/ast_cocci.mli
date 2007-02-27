@@ -164,6 +164,10 @@ and base_typeC =
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
+  | FunctionType     of bool (* true if all minus for dropping return type *) *
+                   fullType option *
+	           string mcode (* ( *) * parameter_list *
+                   string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of structUnion mcode * ident (* name *)

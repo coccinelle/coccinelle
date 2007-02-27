@@ -75,17 +75,10 @@ let (labels_for_ctl:
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-
-            match () with 
-            | _ when !Flag_engine.use_cocci_vs_c_3 -> 
                 Pattern3.match_re_node re node binding
                   +> List.map (fun (re', subst) -> 
                     Lib_engine.Match (re'), subst
                   )
-            | _ -> 
-                Pattern.match_re_node re node binding 
-                  +> List.map (fun subst -> (p, subst))
-                  
           in
           substs +> List.map (fun (p', subst) -> 
             (nodei, 

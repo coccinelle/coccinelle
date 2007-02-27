@@ -302,6 +302,12 @@ let match_re_node2 a b binding =
   MATCH.rule_elem_node a b binding 
   (* take only the tagged-SP, the 'a' *)
   +> List.map (fun ((a,_b), binding) -> a, binding)
+
+
+let match_declaration a b binding = 
+  MATCH.declaration a b binding 
+  (* take only the tagged-SP, the 'a' *)
+  +> List.map (fun ((a,_b), binding) -> a, binding)
     
 
 (* subtil: 3 args, otherwise profile nothing *)

@@ -339,6 +339,18 @@ end
 (*****************************************************************************)
 module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
 
+let transform_declaration a b binding = 
+  match TRANS.declaration a b binding with
+  | None -> raise Impossible
+  | Some (_sp, b') -> b'
+
+let transform_re_node a b binding = 
+  match TRANS.rule_elem_node a b binding with 
+  | None -> raise Impossible
+  | Some (_sp, b') -> b'
+
+
+
 let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
  fun xs cflow -> 
   (* find the node, transform, update the node,  and iter for all elements *)
@@ -350,28 +362,26 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
       if !Flag_engine.show_misc 
       then pr2 "transform one node";
 
-      let node' = TRANS.rule_elem_node rule_elem node binding in
+      let node' = transform_re_node rule_elem node binding in
 
-      match node' with
-      | None -> raise Impossible
-      | Some (_sp, node') -> 
+      (* assert that have done something. But with metaruleElem sometimes 
+         dont modify fake nodes. So special case before on Fake nodes. *)
+      (match F.unwrap node with
+      | F.Enter | F.Exit | F.ErrorExit
+      | F.EndStatement _ | F.CaseNode _        
+      | F.Fake
+      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
+          -> ()
+      | _ -> () (* assert (not (node =*= node')); *)
+      );
 
-          (* assert that have done something. But with metaruleElem sometimes 
-             dont modify fake nodes. So special case before on Fake nodes. *)
-          (match F.unwrap node with
-          | F.Enter | F.Exit | F.ErrorExit
-          | F.EndStatement _ | F.CaseNode _        
-          | F.Fake
-          | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
-              -> ()
-          | _ -> () (* assert (not (node =*= node')); *)
-          );
+      (* useless, we dont go back from flow to ast now *)
+      (* let node' = lastfix_comma_struct node' in *)
+      
+      acc#replace_node (nodei, node')
+   ) cflow
 
-          (* useless, we dont go back from flow to ast now *)
-          (* let node' = lastfix_comma_struct node' in *)
-          
-          acc#replace_node (nodei, node')
-     ) cflow
+
 
 let transform a b = 
   Common.profile_code "Transformation2.transform(proto)?" 
@@ -380,40 +390,3 @@ let transform a b =
 
 
 
-(* ------------------------------------------------------------------------- *)
-let transform_proto2 a b binding (qu, iiptvirg) infolastparen = 
-  raise Todo
-
-(* XXX
-  let node' = transform_re_node a b binding in
-  match F.unwrap node' with
-  | F.FunHeader 
-      ((s, ft, storage), iis::iioparen::iicparen::iifake::iisto) -> 
-
-        (* Also delete the ';' at the end of the proto.
-         * The heuristic is to see if the ')' was deleted. Buggy but
-         * first step.
-         * todo: what if SP is '-f(int i) { +f(int i, char j) { ' 
-         * I will not accuratly modify the proto.
-         * todo?: maybe can use the allminusinfo of Ast_cocci.FunHeader ?
-         *)
-        let iiptvirg' = 
-          if mcode_simple_minus (mcodekind infolastparen)
-          then tag_one_symbol infolastparen iiptvirg  binding
-          else iiptvirg
-        in
-        B.Declaration 
-          (B.DeclList 
-             ([((Some ((s, None), [iis])), 
-                (qu, (B.FunctionType ft, [iioparen;iicparen])), 
-                storage),
-               []
-             ], iiptvirg'::iifake::iisto)) 
-          
-  | _ -> 
-      raise Impossible
-*)
-
-let transform_proto a b c d e = 
-  Common.profile_code "Transformation.transform(proto)?" 
-   (fun () -> transform_proto2 a b c d e)

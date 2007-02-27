@@ -358,6 +358,56 @@ let flow_to_ast2 flow =
 let flow_to_ast a = 
   Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
 
+
+
+
+let fake_line = {Ast_cocci.line = -1; Ast_cocci.column = -1}
+let wrap ast = (ast, -1, [], [], [], [], Ast_cocci.NoDots)
+
+let put_no_pos_everywhere decl =
+  let mcode (x, info, mck) = 
+    x, info, 
+    (match mck with
+    | Ast_cocci.MINUS (pos, xxs) -> Ast_cocci.MINUS(Ast_cocci.NoPos, xxs)
+    | Ast_cocci.CONTEXT (pos, xxs) -> Ast_cocci.CONTEXT(Ast_cocci.NoPos, xxs)
+    | Ast_cocci.PLUS -> Ast_cocci.PLUS
+    )
+  in
+
+  let donothing r k e = k e in
+
+  let res = 
+  Visitor_ast.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
+  in
+  res.Visitor_ast.rebuilder_declaration decl
+
+
+(* reste the position *)
+let convert_funheader_for_proto (bef,allminus,stg,ty,name,lp,params,rp) env =
+  let proto = 
+    wrap (
+      Ast_cocci.Type 
+        (None, 
+        wrap (
+          Ast_cocci.FunctionType (allminus, ty, lp, params, rp))
+        ))
+  in
+  let ptvirg = 
+    if allminus
+    then (";",fake_line, Ast_cocci.MINUS (Ast_cocci.NoPos,[[]]))
+    else (";",fake_line, Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING))
+  in
+
+  let decl = wrap (Ast_cocci.UnInit (stg, proto, name, ptvirg)) in
+  let decl = put_no_pos_everywhere decl in
+  let mckstart = Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING) in
+  (mckstart, allminus, decl), env
+  
+  
                   
 (*****************************************************************************)
 (* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
@@ -624,8 +674,7 @@ and process_a_ctl_a_env_a_celem2 =
         trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
           match Ast_cocci.unwrap rule_elem with
           | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
-	      let res = (binding, (a,b,c,d,e,f,g,h)) in
-              Some (Ast_cocci.rewrap rule_elem res)
+              Some (convert_funheader_for_proto (a,b,c,d,e,f,g,h) binding)
           | _ -> None
 		)  
       in
@@ -643,10 +692,7 @@ and process_a_ctl_a_env_a_celem2 =
               (* I do the transformation on flow, not fixed_flow, 
                  because the flow_to_ast need my extra information. *)
           let flow' = (* can do via side effect now *)
-            match () with 
-            | _ when !Flag_engine.use_cocci_vs_c_3 -> 
                 Transformation3.transform trans_info info.flow
-            | _ -> Transformation.transform trans_info info.flow 
           in
           let celem' = 
             if !Flag_engine.use_ref
@@ -662,45 +708,35 @@ and process_a_ctl_a_env_a_celem  a b c =
     
     
 (* --------------------------------------------------------------------- *)
+ 
+(* Last fix.
+ *
+ * todo: what if the function is modified two times ? we should
+ * modify the prototype as soon as possible, not wait until the end
+ * of all the ctl rules 
+ *)
 let process_hack_funheaders2 hack_funheaders = 
-  
-  (* Last fix.
-     *
-     * todo: what if the function is modified two times ? we should
-     * modify the prototype as soon as possible, not wait until the end
-     * of all the ctl rules 
-  *)
   if !Flag.show_misc then pr2 ("hack headers");
   
-  hack_funheaders +> List.iter (fun info ->
-    let (binding, (a,b,c,d,e,f,g,h)) = Ast_cocci.unwrap info in
-    
+  hack_funheaders +> List.iter (fun (sp, binding) ->
     let cprogram' = 
       !g_cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
         let ebis', modified = 
           match ebis with
-          | Ast_c.Declaration 
-              (Ast_c.DeclList 
-                 ([((Some ((s, None), iis)), 
-                    (qu, (Ast_c.FunctionType ft, iity)), 
-                    storage),
-                    []
-                  ], iiptvirg::iifake::iisto))  -> 
-		    (try
-                      Transformation.transform_proto
-			(Ast_cocci.rewrap info
-			   (Ast_cocci.FunHeader (a,b,c,d,e,f,g,h)))
-			(((Control_flow_c.FunHeader 
-                             ((s, ft, storage), 
-                              iis++iity++[iifake]++iisto)), []),"")
-			binding (qu, iiptvirg) h
-			+> (fun x -> x,  true)
-                    with Transformation.NoMatch -> (ebis, false)
-			)
-          | x -> (x, false)
+          | Ast_c.Declaration decl -> 
+              (match Pattern3.match_declaration sp decl binding with
+              | [sp', binding'] -> 
+                  let decl' = 
+                    Transformation3.transform_declaration sp' decl binding' 
+                  in
+                  (Ast_c.Declaration decl',  true)
+              | [] -> (ebis, false)
+              | _ -> failwith "multiple match for proto, wierd"
+              )
+          | ebis -> (ebis, false)
         in
         (((ebis', info_item), flow, env), modified)
-	  ) 
+      ) 
     in
     g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
   )

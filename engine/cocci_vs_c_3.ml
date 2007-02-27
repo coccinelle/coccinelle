@@ -1137,8 +1137,8 @@ and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
 
 
 (* ------------------------------------------------------------------------- *)
-and (declaration: (A.mcodekind * A.declaration, B.declaration) matcher) =
- fun (mckstart, decla) declb -> 
+and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
+ fun (mckstart, allminus, decla) declb -> 
 
 (* XXX
  fun decla (B.DeclList (xs, _)) -> 
@@ -1148,12 +1148,13 @@ and (declaration: (A.mcodekind * A.declaration, B.declaration) matcher) =
 
    match declb with
   | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
-      onedecl decla (var,iiptvirgb,iisto) >>=(fun decla (var,iiptvirgb,iisto)->
-      X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
-      return (
-        (mckstart, decla),
-        (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
-      )))
+      onedecl allminus decla (var,iiptvirgb,iisto) >>=
+      (fun decla (var,iiptvirgb,iisto)->
+        X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
+          return (
+            (mckstart, allminus, decla),
+            (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
+          )))
         
   | (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) -> 
       if X.mode = PatternMode
@@ -1161,10 +1162,10 @@ and (declaration: (A.mcodekind * A.declaration, B.declaration) matcher) =
         xs +> List.fold_left (fun acc var -> 
           acc >||> (
             X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
-              onedecl decla (var, iiptvirgb, iisto) >>= 
+              onedecl allminus decla (var, iiptvirgb, iisto) >>= 
                 (fun decla (var, iiptvirgb, iisto) -> 
                   return (
-                    (mckstart, decla),
+                    (mckstart, allminus, decla),
                     (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
                   )))))
           fail
@@ -1197,7 +1198,7 @@ and storage stoa stob =
 
 
 
-and onedecl = fun decla (declb, iiptvirgb, iistob) -> 
+and onedecl = fun allminus decla (declb, iiptvirgb, iistob) -> 
   X.all_bound (A.get_inherited decla) >&&>
    match A.unwrap decla, declb with
   (* Un MetaDecl est introduit dans l'asttoctl pour sauter au dessus
@@ -1221,7 +1222,8 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-       storage stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
+       storage_optional_allminus allminus stoa (stob, iistob) >>= 
+        (fun stoa (stob, iistob) -> 
          return (
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
            (((Some ((idb,None),[iidb]),typb,stob),iivirg),iiptvirgb,iistob)
@@ -1257,7 +1259,7 @@ and onedecl = fun decla (declb, iiptvirgb, iistob) ->
 
    | A.DisjDecl declas, declb -> 
        declas +> List.fold_left (fun acc decla -> 
-         acc >|+|> (onedecl decla (declb,iiptvirgb, iistob))) fail
+         acc >|+|> (onedecl allminus decla (declb,iiptvirgb, iistob))) fail
             
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
        failwith "not handling Opt/Unique/Multi Decl"
@@ -1611,6 +1613,31 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
             (B.Pointer typb, [ibmult])
           )))
 
+    | A.FunctionType(allminus,tyaopt,lpa,paramsa,rpa), 
+      (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii) -> 
+
+        let (lpb, rpb) = tuple_of_list2 ii in
+        if isvaargs 
+        then begin 
+          pr2 "Not handling well variable length arguments func. ";
+          pr2 "You have been warned";
+        end;
+        tokenf lpa lpb >>= (fun lpa lpb -> 
+        tokenf rpa rpb >>= (fun rpa rpb -> 
+        fullType_optional_allminus allminus tyaopt tyb >>= (fun tyaopt tyb -> 
+        parameters (seqstyle paramsa) (A.undots paramsa) paramsb >>=
+          (fun paramsaundots paramsb -> 
+            let paramsa = redots paramsa paramsaundots in
+            return (
+              (A.FunctionType(allminus,tyaopt,lpa,paramsa,rpa) +> A.rewrap ta,
+              (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), [lpb;rpb])
+              )
+            )))))
+            
+        
+
+          
+
     | A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a), 
         (B.ParenType t1, ii) ->
         let (lp1b, rp1b) = tuple_of_list2 ii in
@@ -1731,7 +1758,7 @@ and sign signa signb =
   | _, _ -> fail
 
 
-let minusize_list iixs = 
+and minusize_list iixs = 
   iixs +> List.fold_left (fun acc ii -> 
     acc >>= (fun xs ys -> 
     tokenf minusizer ii >>= (fun minus ii -> 
@@ -1741,7 +1768,7 @@ let minusize_list iixs =
      return ((), List.rev ys)
    )
 
-let storage_optional_allminus allminus stoa (stob, iistob) = 
+and storage_optional_allminus allminus stoa (stob, iistob) = 
   (* "iso-by-absence" for storage, and return type. *)
   match stoa with
   | None -> 
@@ -1756,7 +1783,7 @@ let storage_optional_allminus allminus stoa (stob, iistob) =
 
 
 
-let fullType_optional_allminus allminus tya retb = 
+and fullType_optional_allminus allminus tya retb = 
   match tya with 
   | None -> 
       if allminus
@@ -1972,7 +1999,8 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.Decl (mckstart,allminus,decla), F.Decl declb -> 
-      declaration (mckstart,decla) declb >>= (fun (mckstart,decla) declb -> 
+      declaration (mckstart,allminus,decla) declb >>= 
+       (fun (mckstart,allminus,decla) declb -> 
         return (
           A.Decl (mckstart,allminus,decla),
           F.Decl declb

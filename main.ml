@@ -158,7 +158,6 @@ let main () =
 
       "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
       "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-      "-no_cocci_vs_c_3",   Arg.Clear Flag_engine.use_cocci_vs_c_3,  " ";
       "-no_ref",            Arg.Clear Flag_engine.use_ref,    " ";
       "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
       "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if, 
