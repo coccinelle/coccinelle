@@ -25,7 +25,7 @@ let contains_modif x used_after =
 	match Ast.unwrap re with
 	  Ast.FunHeader(bef,_,stg,ty,name,lp,params,rp) ->
 	    bind (mcode r ((),(),bef)) res
-	| Ast.Decl(bef,decl) ->
+	| Ast.Decl(bef,_,decl) ->
 	    bind (mcode r ((),(),bef)) res
 	| _ -> res in
       let recursor =

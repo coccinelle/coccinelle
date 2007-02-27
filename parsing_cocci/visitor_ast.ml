@@ -281,7 +281,7 @@ let combiner bind option_default
 	  multibind [get_option storage_mcode stg; get_option fullType ty;
 		      ident name; string_mcode lp; parameter_dots params;
 		      string_mcode rp]
-      | Ast.Decl(_,decl) -> declaration decl
+      | Ast.Decl(_,_,decl) -> declaration decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
       | Ast.ExprStatement(exp,sem) ->
@@ -698,7 +698,8 @@ let rebuilder
 			  get_option fullType ty, ident name,
 			  string_mcode lp, parameter_dots params,
 			  string_mcode rp)
-	| Ast.Decl(bef,decl) -> Ast.Decl(bef,declaration decl)
+	| Ast.Decl(bef,allminus,decl) ->
+	    Ast.Decl(bef,allminus,declaration decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
 	| Ast.ExprStatement(exp,sem) ->

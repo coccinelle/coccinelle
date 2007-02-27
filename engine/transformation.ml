@@ -1045,7 +1045,7 @@ let (transform_re_node: (Ast_cocci.rule_elem, Control_flow_c.node) transformer)
       )
       
 
-  | A.Decl (mck,decla), F.Decl declb -> 
+  | A.Decl (mck,allminus,decla), F.Decl declb -> 
       F.Decl (transform_de_de mck decla declb  binding) 
 
   | A.SeqStart mcode, F.SeqStart (st, level, i1) -> 

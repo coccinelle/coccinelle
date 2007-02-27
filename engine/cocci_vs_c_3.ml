@@ -1971,10 +1971,10 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Decl (mckstart,decla), F.Decl declb -> 
+  | A.Decl (mckstart,allminus,decla), F.Decl declb -> 
       declaration (mckstart,decla) declb >>= (fun (mckstart,decla) declb -> 
         return (
-          A.Decl (mckstart,decla),
+          A.Decl (mckstart,allminus,decla),
           F.Decl declb
         ))
 

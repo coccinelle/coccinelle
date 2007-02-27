@@ -262,12 +262,13 @@ and storage = Static | Auto | Register | Extern
 
 and base_rule_elem =
     FunHeader     of mcodekind (* before the function header *) *
-	             bool (* true if all minus *) *
+	             bool (* true if all minus, for dropping static, etc *) *
 	             storage mcode option * fullType option *
 	             ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
-  | Decl          of mcodekind (* before the decl *) * declaration
+  | Decl          of mcodekind (* before the decl *) * 
+                     bool (* true if all minus *) * declaration
 
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)

@@ -1041,7 +1041,7 @@ let (match_re_node2: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
          paramsa' paramsb
       )
 
-  | A.Decl (_,decla), F.Decl declb -> match_re_decl decla declb
+  | A.Decl (_,_,decla), F.Decl declb -> match_re_decl decla declb
 
   | A.SeqStart _, F.SeqStart _ -> return true
   | A.SeqEnd _,   F.SeqEnd   _ -> return true

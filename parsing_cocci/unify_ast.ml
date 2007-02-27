@@ -335,7 +335,7 @@ let rec unify_rule_elem re1 re2 =
 	  (conjunct_bindings (unify_ident nm1 nm2)
 	     (unify_dots unify_parameterTypeDef pdots params1 params2))
       else return false
-  | (Ast.Decl(_,d1),Ast.Decl(_,d2)) -> unify_declaration d1 d2
+  | (Ast.Decl(_,_,d1),Ast.Decl(_,_,d2)) -> unify_declaration d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
   | (Ast.SeqEnd(rb1),Ast.SeqEnd(rb2)) -> return true

@@ -458,7 +458,7 @@ let rule_elem arity re =
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
-  | Ast.Decl(bef,decl) ->
+  | Ast.Decl(bef,allminus,decl) ->
       mcode (function _ -> ()) ((),(),bef);
       print_string arity; declaration decl
   | Ast.SeqStart(brace) ->

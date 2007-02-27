@@ -245,7 +245,7 @@ let collect_in_plus_term =
 	  (bind nm_metas
 	     (bind param_metas
 		(bind (mcodekind recursor bef) (k re))))
-    | Ast.Decl(bef,_) ->
+    | Ast.Decl(bef,_,_) ->
 	bind (mcodekind recursor bef) (k re)
     | _ -> k re in
 

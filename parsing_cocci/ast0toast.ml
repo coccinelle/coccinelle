@@ -492,7 +492,9 @@ let rec statement s =
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
 	  Ast.Atomic(rewrap s
-		       (Ast.Decl(convert_mcodekind bef,declaration decl)))
+		       (Ast.Decl(convert_mcodekind bef,
+				 check_allminus s,
+				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) -> 
 	  let lbrace = mcode lbrace in
 	  let (decls,dots,body) = separate_decls seqible body in

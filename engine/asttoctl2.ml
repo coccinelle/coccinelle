@@ -279,7 +279,7 @@ let contains_modif =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,stg,ty,name,lp,params,rp) ->
 	bind (mcode r ((),(),bef)) res
-    | Ast.Decl(bef,decl) -> bind (mcode r ((),(),bef)) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef)) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
@@ -860,7 +860,7 @@ let decl_to_not_decl n dots stmt make_match f =
       let md =
 	Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) ([],[],[])
       in
-      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NoPos,Ast.NOTHING),md)) in
+      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NoPos,Ast.NOTHING),false,md)) in
     wrapAU n CTL.NONSTRICT
       (make_match de,
        wrapAnd n CTL.NONSTRICT (wrap n (CTL.Not (make_match de)), f))
