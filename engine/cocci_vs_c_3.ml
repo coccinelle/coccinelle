@@ -797,7 +797,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
                 then 
                   tokenf mida iib >>= (fun mida iib -> 
                     return (
-                      ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
+                      ((A.MetaLocalFunc(mida,keep,inherited))) +> A.rewrap ida,
                       (idb, iib)
                     ))
                 else fail

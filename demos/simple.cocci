@@ -1,5 +1,5 @@
 @@ expression E; @@
 
 - f(E);
-+ f(E,2);
++ f(E,3);
 
