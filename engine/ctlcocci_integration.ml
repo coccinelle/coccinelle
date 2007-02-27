@@ -7,31 +7,31 @@ open Ograph_extended
 (*****************************************************************************)
 let show_or_not_predicate pred = 
   if !Flag_engine.debug_engine then begin 
-    Common.pp_do_in_box (fun () -> 
-      pp "labeling: pred =";
-      Format.print_space ();
-      Pretty_print_engine.pp_predicate pred;
-    );
+    indent_do (fun () -> 
+      adjust_pp_with_indent_and_header "labeling: pred = " (fun () -> 
+        Pretty_print_engine.pp_predicate pred;
+      );
+    )
   end
 
 let show_or_not_nodes nodes =
   if !Flag_engine.debug_engine  then begin 
-    Common.pp_do_in_box (fun () -> 
-      pp "labeling: result =";
-      Format.print_space ();
-      
-      Common.pp_do_in_box (fun () -> 
-        pp "{";
-        Common.print_between 
-          (fun () -> pp ";"; Format.print_cut())
-          (fun (nodei, (_predTODO, subst)) -> 
-            Format.print_int nodei;
-            Common.pp_do_in_box (fun () -> 
-              Pretty_print_engine.pp_binding2_ctlsubst subst
-            )
-          ) nodes;
-        pp "}";
-      );
+
+    indent_do (fun () -> 
+      adjust_pp_with_indent_and_header "labeling: result = " (fun () -> 
+        Common.pp_do_in_box (fun () -> 
+          pp "{";
+          Common.print_between 
+            (fun () -> pp ";"; Format.print_cut())
+            (fun (nodei, (_predTODO, subst)) -> 
+              Format.print_int nodei;
+              Common.pp_do_in_box (fun () -> 
+                Pretty_print_engine.pp_binding2_ctlsubst subst
+              )
+            ) nodes;
+          pp "}";
+        );
+      )
     )
   end
 
