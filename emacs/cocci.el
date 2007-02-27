@@ -89,6 +89,7 @@
     (define-key map "*f" 'cocci-dired-mark-failed-files)
     (define-key map "T" 'cocci-dired-toggle-terse-mode)
     (define-key map "E" 'cocci-ediff-merge)
+    (define-key map "D" 'cocci-ediff-diff)
     map)
   "Keymap used for cocci bindings in `dired-mode'.")
 
@@ -102,6 +103,9 @@
 
 (defvar cocci-spatch-output nil
   "The buffer for spatch output")
+
+(defvar cocci-current-cocci-buffer nil
+  "The current cocci-filebuffer")
 
 ;--------------------------------------------------
 ; Misc helpers
@@ -152,6 +156,8 @@
 (defvar ediff-buffer-B)
 (defvar ediff-buffer-C)
 
+(defvar ediff-show-sp t)
+
 (defun cocci-merge-files (orig-file new-file &optional name-A name-B)
   "Invoke ediff to review application of SP and manually perform merge."
   (interactive)
@@ -166,6 +172,7 @@
         ;; Fire up ediff.
 
         (set-buffer (ediff-merge-files orig-file new-file))
+
 
         ;; Ediff is now set up, and we are in the control buffer.
         ;; Do a few further adjustments and take precautions for exit.
@@ -193,6 +200,161 @@
 ;		  (insert-buffer buffer-C)
 		  (kill-buffer buffer-A)
 		  (kill-buffer buffer-B)
+		  (when cocci-save-merge-result
+		    (switch-to-buffer buffer-C)
+		    (delete-other-windows)
+		    (ediff-write-merge-buffer-and-maybe-kill buffer-C original))
+;		  (kill-buffer buffer-C)
+		  (set-window-configuration windows)
+		  (message "Merge resolved; you may save the buffer"))))
+        (message "Please resolve merge now; exit ediff when done")
+        nil))))
+
+
+; pad's code
+; merge between ediff-setup-windows-plain-compare and 
+; ediff-setup-windows-plain from 'ediff-wind.el'
+(defun cocci-ediff-setup-windows-plain (buf-A buf-B buf-C control-buffer)
+  (ediff-with-current-buffer control-buffer
+    (setq ediff-multiframe nil))
+
+  (ediff-destroy-control-frame control-buffer)
+  (let ((window-min-height 1)
+	split-window-function wind-width-or-height
+	three-way-comparison
+	wind-A-start wind-B-start wind-A wind-B wind-C)
+    (ediff-with-current-buffer control-buffer
+      (setq wind-A-start (ediff-overlay-start
+			  (ediff-get-value-according-to-buffer-type
+			   'A ediff-narrow-bounds))
+	    wind-B-start (ediff-overlay-start
+			  (ediff-get-value-according-to-buffer-type
+			   'B  ediff-narrow-bounds))
+	    ;; this lets us have local versions of ediff-split-window-function
+	    split-window-function ediff-split-window-function
+	    three-way-comparison ediff-3way-comparison-job))
+    (delete-other-windows)
+    (split-window-vertically)
+    (ediff-select-lowest-window)
+
+    ;NEW
+    (setq lowest-wind (selected-window))
+
+    (ediff-setup-control-buffer control-buffer)
+    
+    ;; go to the upper window and split it betw A, B, and possibly C
+    (other-window 1)
+
+    ;NEW
+    (split-window-vertically)
+    (setq this-wind (selected-window))
+    (other-window 1)
+    (switch-to-buffer cocci-current-cocci-buffer)
+    (select-window this-wind)
+
+    (switch-to-buffer buf-A)
+    (setq wind-A (selected-window))
+
+    (if three-way-comparison
+	(setq wind-width-or-height
+	      (/ (if (eq split-window-function 'split-window-vertically)
+		     (window-height wind-A)
+		   (window-width wind-A))
+		 3)))
+    
+    ;; XEmacs used to have a lot of trouble with display
+    ;; It did't set things right unless we told it to sit still
+    ;; 19.12 seems ok.
+    ;;(if ediff-xemacs-p (sit-for 0))
+    
+;    (funcall split-window-function wind-width-or-height)
+    (split-window-horizontally)
+		  
+    (if (eq (selected-window) wind-A)
+	(other-window 1))
+    (switch-to-buffer buf-B)
+    (setq wind-B (selected-window))
+	  
+    (if three-way-comparison
+	(progn
+	  (funcall split-window-function) ; equally
+	  (if (eq (selected-window) wind-B)
+	      (other-window 1))
+	  (switch-to-buffer buf-C)
+	  (setq wind-C (selected-window))))
+	  
+    (ediff-with-current-buffer control-buffer
+      (setq ediff-window-A wind-A
+	    ediff-window-B wind-B
+	    ediff-window-C wind-C))
+    
+    ;; It is unlikely that we will want to implement 3way window comparison.
+    ;; So, only buffers A and B are used here.
+    (if ediff-windows-job
+	(progn
+	  (set-window-start wind-A wind-A-start)
+	  (set-window-start wind-B wind-B-start)))
+  
+    (ediff-select-lowest-window)
+    (ediff-setup-control-buffer control-buffer)
+    ))
+
+
+
+(defvar old-ediff-setup-function ediff-window-setup-function)
+
+; pad's code, almost copy paste of rene's cocci-merge-files
+(defun cocci-diff-files (orig-file new-file &optional name-A name-B)
+  "Invoke ediff to review application of SP and manually perform merge."
+  (interactive)
+  (let* ((found nil))
+    (save-excursion
+
+      ;; Set-up
+      (let ((config (current-window-configuration))
+            (ediff-default-variant 'default-B)
+	    (ediff-keep-variants t)
+            )
+
+        ;; Fire up ediff.
+
+
+
+        ;NEW, use ediff-files
+        (setq ediff-window-setup-function 'cocci-ediff-setup-windows-plain)
+
+        (set-buffer (ediff-files orig-file new-file))
+
+
+        ;; Ediff is now set up, and we are in the control buffer.
+        ;; Do a few further adjustments and take precautions for exit.
+
+	(make-local-variable 'cocci-ediff-orig)
+	(setq cocci-ediff-orig orig-file)
+
+        (make-local-variable 'cocci-ediff-windows)
+        (setq cocci-ediff-windows config)
+;        (make-local-variable 'cocci-ediff-result)
+;        (setq cocci-ediff-result result-buffer)
+        (make-local-variable 'ediff-quit-hook)
+        (setq ediff-quit-hook
+              (lambda ()
+		(let ((buffer-A ediff-buffer-A)
+		      (buffer-B ediff-buffer-B)
+		      (buffer-C ediff-buffer-C)
+;		      (result cocci-ediff-result)
+		      (windows cocci-ediff-windows)
+		      (original cocci-ediff-orig))
+		  (ediff-cleanup-mess)
+;		  (ediff-janitor)
+;		  (set-buffer result)
+;		  (erase-buffer)
+;		  (insert-buffer buffer-C)
+		  (kill-buffer buffer-A)
+		  (kill-buffer buffer-B)
+
+                  (setq ediff-window-setup-function old-ediff-setup-function)
+
 		  (when cocci-save-merge-result
 		    (switch-to-buffer buffer-C)
 		    (delete-other-windows)
@@ -254,6 +416,22 @@ names are substituted (useful for Makefiles)."
 	     (file-name-nondirectory file))
 ;    (ediff-merge-files file (or res-file cocci-spatch-default-output))
     (cocci-merge-files file (or res-file cocci-spatch-default-output))))
+
+
+(defun cocci-ediff-diff (&optional res-file)
+  "Use EDiff to review and apply semantic patch."
+  (interactive)
+  (let ((file (dired-get-filename t))
+	(out-buf (get-spatch-output-buffer)))
+    (message "Applying SP '%s' to file '%s'..." 
+	     (file-name-nondirectory cocci-current-cocci) 
+	     (file-name-nondirectory file))
+    (cocci-apply-spatch file cocci-current-cocci out-buf)
+    (message "Applying SP '%s' to file '%s'... done." 
+	     (file-name-nondirectory cocci-current-cocci) 
+	     (file-name-nondirectory file))
+;    (ediff-merge-files file (or res-file cocci-spatch-default-output))
+    (cocci-diff-files file (or res-file cocci-spatch-default-output))))
 
 (defun cocci-dired-view-file ()
   "In cocci dired, visit the file or directory named on this line 
@@ -885,6 +1063,7 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
   (make-local-variable 'compile-command)
 
   (setq cocci-current-cocci (buffer-file-name))
+  (setq cocci-current-cocci-buffer (current-buffer))
   (setq compile-command (cocci-makeok-cmd cocci-current-cocci))
 
   (use-local-map cocci-mode-map)
