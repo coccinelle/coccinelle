@@ -109,11 +109,11 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_string name;
+  | Ast.MetaId(name,keep,inherited) -> mcode print_string name(*;
       print_string "/* ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
-      print_string " */"
+      print_string " */"*)
   | Ast.MetaFunc(name,_,_) -> mcode print_string name
   | Ast.MetaLocalFunc(name,_,_) -> mcode print_string name
   | Ast.OptIdent(id) -> print_string "?"; ident id
@@ -191,11 +191,11 @@ let rec expression e =
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
-  | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_string name;
+  | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_string name(*;
       print_string "/* ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
-      print_string " */"
+      print_string " */"*)
   | Ast.MetaExpr(name,keep,Some ty,inherited) ->
       mcode print_string name; 
       print_string "/* ";
