@@ -135,7 +135,6 @@ and typeC table minus t =
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC table minus ty;
       parameter_list table minus params
-  | Ast0.FunctionPointer _ -> failwith "not supported"
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name,_) -> if minus then check_table table minus name

@@ -307,7 +307,6 @@ and typeC t =
       let params = parameter_list (Some(promote_mcode lp2)) params in
       mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
 	ty (promote_mcode rp2)
-  | Ast0.FunctionPointer _ -> failwith "not supported"
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))

@@ -402,7 +402,6 @@ let match_maker context_required whencode_allowed =
 	       conjunct_bindings (match_typeC tya tyb)
 		 (match_dots match_param is_plist_matcher do_plist_match
 		    paramsa paramsb)
-	  | (Ast0.FunctionPointer _,_) -> failwith "not supported"
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_expr sizea sizeb)

@@ -388,7 +388,6 @@ and top_typeC tgt opt_allowed typ =
       let params = parameter_list tgt params in
       make_typeC typ tgt arity
 	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-  | Ast0.FunctionPointer _ -> failwith "not supported"
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line lb)
