@@ -68,7 +68,7 @@ let add_typedef_root s =
   if !Flag_parsing_c.add_typedef_root
   then 
     Hashtbl.add !typedef s (TypeDefI s)
-  else add_typedef s
+  else add_typedef s (* have far more .failed without this *)
   
 let add_ident s    = 
   begin
