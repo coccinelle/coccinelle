@@ -70,6 +70,7 @@ nsp_cs.c \
 powertec.c \
  * [status] spatch-ok
  * [bug] maintainer changed some if in If in .res (making .res code unparsable)
+   and forgot to remove the host_no parameter.
 
 
 sbp2.c \
