@@ -356,23 +356,32 @@ let main () =
 
         | "rule_regression_info", _ -> 
             let newscore  = Common.empty_score () in
-            (Common.process_output_to_list ("find -name \"*.ok\"") 
-             ++
-             Common.process_output_to_list ("find -name \"*.spatch_ok\"")
-            ) +> List.iter (fun s -> 
-              Hashtbl.add newscore (Filename.chop_extension s) 
-                Common.Ok
-            );
-            Common.process_output_to_list ("find -name \"*.failed\"")
-              +> List.iter (fun s -> 
+            let oks = 
+              (Common.process_output_to_list ("find -name \"*.ok\"") 
+                ++
+                Common.process_output_to_list ("find -name \"*.spatch_ok\"")
+              )
+            in
+            let failed = 
+              Common.process_output_to_list ("find -name \"*.failed\"") 
+            in
+
+            if null (oks ++ failed) 
+            then failwith "no ok or failed file, you certainly do a make clean"
+            else begin
+              oks +> List.iter (fun s -> 
+                Hashtbl.add newscore (Filename.chop_extension s) Common.Ok
+              );
+              failed +> List.iter (fun s -> 
                 Hashtbl.add newscore (Filename.chop_extension s) 
                   (Common.Pb "fail")
               );
-            pr2 "--------------------------------";
-            pr2 "regression testing  information";
-            pr2 "--------------------------------";
-            Common.regression_testing newscore 
-                ("/tmp/score_rule.marshalled");
+
+              pr2 "--------------------------------";
+              pr2 "regression testing  information";
+              pr2 "--------------------------------";
+              Common.regression_testing newscore ("/tmp/score_rule.marshalled")
+            end
                 
 
 
