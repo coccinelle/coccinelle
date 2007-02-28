@@ -1221,16 +1221,18 @@ and statement stmt after quantified label guard =
 	    (* try to be more efficient for the case where the body is just
 	       ...  Perhaps this is too much of a special case, but useful
 	       for dropping a parameter and checking that it is never used. *)
-	    (match whencode with
-	      Ast.NoWhen -> wrap n CTL.True
-	    | Ast.WhenNot(x) ->
-		wrapAU
-		  (wrapNot(statement_list x Tail new_quantified4 label
-			     true true),
-		   make_match stripped_rbrace)
-	    | Ast.WhenAlways(x) ->
-		wrapAU (statement x Tail new_quantified4 label true,
-			make_match stripped_rbrace))
+	    	    make_seq
+	      [start_brace;
+		match whencode with
+		  Ast.NoWhen -> wrap n CTL.True
+		| Ast.WhenNot(x) ->
+		    wrapAU
+		      (wrapNot(statement_list x Tail new_quantified4 label
+				 true true),
+		       make_match stripped_rbrace)
+		| Ast.WhenAlways(x) ->
+		    wrapAU (statement x Tail new_quantified4 label true,
+			    make_match stripped_rbrace)]
 	| None ->
 	    make_seq
 	      [start_brace;
