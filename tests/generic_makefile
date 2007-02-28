@@ -85,11 +85,10 @@ clean2::
 	 $<
 
 score:
-	-ls -l *.ok | wc -l
-	-ls -l *.failed | wc -l
-
-#	find . -name "*.ok" -print
-#	find . -name "*.failed" -print
+	find -name "*.ok" | wc -l
+	find -name "*.spatch_ok" | wc -l
+	find -name "*ok" | wc -l
+	find -name "*.failed" | wc -l
 
 
 info_order:

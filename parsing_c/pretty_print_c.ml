@@ -4,7 +4,7 @@ open Ast_c
 
 type pr_elem_func = Ast_c.info -> unit
 
-(******************************************************************************)
+(*****************************************************************************)
 
 let rec pp_expression_gen pr_elem = 
   (* subtil: dont try to shorten the def of pp_statement by omitting e,
@@ -135,8 +135,8 @@ and pp_statement_gen pr_elem =
     | ExprStatement (None), [i] -> pr_elem i;
     | ExprStatement (None), [] -> ()
     | ExprStatement (Some e), [i] -> pp_expression e; pr_elem i
-        (* the last ExprStatement of a for does not have a trailing ';' hence the
-           [] for ii  *)
+        (* the last ExprStatement of a for does not have a trailing
+           ';' hence the [] for ii *)
     | ExprStatement (Some e), [] -> pp_expression e; 
     | Selection  (If (e, st1, st2)), i1::i2::i3::is -> 
         pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3; pp_statement st1; 
@@ -156,9 +156,11 @@ and pp_statement_gen pr_elem =
         pr_elem i1; pp_statement st; pr_elem i2; pr_elem i3; pp_expression e; 
         pr_elem i4; pr_elem i5;
         pr_elem iifakend
-        
           
-    | Iteration  (For ((e1opt,il1), (e2opt,il2), (e3opt, il3), st)), [i1;i2;i3;iifakend] ->
+          
+    | Iteration  (For ((e1opt,il1),(e2opt,il2),(e3opt, il3),st)),
+        [i1;i2;i3;iifakend] ->
+
         pr_elem i1;
         pr_elem i2;
         pp_statement (ExprStatement e1opt, il1);
@@ -191,7 +193,7 @@ and pp_statement_gen pr_elem =
             st2s +> List.iter pp_statement; 
             pr_elem i3;
             pr_elem iifakend
-            
+              
         | _ -> raise Impossible
         )
     | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
@@ -227,12 +229,12 @@ and (pp_base_type_gen:
       fun (qu, (ty, iity)) sto -> 
         let get_sto sto = 
           match sto with 
-          | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis  
+          | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis
         in
         let print_sto_qu (sto, (qu, iiqu)) = 
           let all_ii = get_sto sto ++ iiqu in
           all_ii 
-          +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos) 
+          +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos)
           +> List.iter pr_elem;
           
         in
@@ -251,10 +253,8 @@ and (pp_base_type_gen:
         | (Pointer t, [i])                           -> pp_base_type t sto
         | (ParenType t, _)                           -> pp_base_type t sto
         | (Array (eopt, t), [i1;i2])                 -> pp_base_type t sto
-        | (FunctionType (returnt, paramst), [i1;i2]) -> pp_base_type returnt sto
-
-
-
+        | (FunctionType (returnt, paramst), [i1;i2]) -> 
+            pp_base_type returnt sto
 
 
         | (StructUnion (sopt, (su, fields)),iis) -> 
@@ -268,12 +268,14 @@ and (pp_base_type_gen:
             | x -> raise Impossible
             );
 
-            fields +> List.iter (fun (FieldDeclList onefield_multivars, iipttvirg) -> 
+            fields +> List.iter 
+              (fun (FieldDeclList onefield_multivars, iipttvirg) -> 
 
               (match onefield_multivars with
               | x::xs -> 
-                  (* handling the first var. Special case, with the first var, we
-                     print the whole type *)
+                  (* handling the first var. Special case, with the
+                     first var, we print the whole type *)
+
                   (match x with
                   | (Simple (sopt, typ), iis), iivirg -> 
                       (* first var cant have a preceding ',' *)
@@ -295,7 +297,8 @@ and (pp_base_type_gen:
                           pr_elem idot;
                           pp_expression expr
                       | (Some s, [is;idot]) -> 
-                          pp_type_with_ident_gen pr_elem (Some (s, is)) None typ;
+                          pp_type_with_ident_gen 
+                            pr_elem (Some (s, is)) None typ;
                           pr_elem idot;
                           pp_expression expr
                       | x -> raise Impossible
@@ -319,7 +322,8 @@ and (pp_base_type_gen:
                       iivirg +> List.iter pr_elem;
                       (match sopt, ii with
                       | (Some s, [is;idot]) -> 
-                          pp_type_with_ident_rest_gen pr_elem (Some (s, is)) typ;
+                          pp_type_with_ident_rest_gen 
+                            pr_elem (Some (s, is)) typ;
                           pr_elem idot;
                           pp_expression expr
                       | x -> raise Impossible
@@ -365,9 +369,11 @@ and (pp_base_type_gen:
 
             (match sopt, iis with
             | (Some s, [i1;i2;i3;i4]) ->    pr_elem i4
-            | (Some s, [i1;i2;i3;i4;i5]) -> pr_elem i5; pr_elem i4 (* trailing comma *)
+            | (Some s, [i1;i2;i3;i4;i5]) -> 
+                pr_elem i5; pr_elem i4 (* trailing comma *)
             | (None, [i1;i2;i3]) ->         pr_elem i3
-            | (None, [i1;i2;i3;i4]) ->      pr_elem i4; pr_elem i3 (* trailing comma *)
+            | (None, [i1;i2;i3;i4]) ->      
+                pr_elem i4; pr_elem i3 (* trailing comma *)
 
 
             | x -> raise Impossible
@@ -432,6 +438,25 @@ and (pp_type_with_ident_rest_gen:
           print_ident ident;
           pr_elem i2;
           pp_type_right_gen pr_elem (q2, (FunctionType t, ii3));
+
+      (* another ugly special case *)
+      | (ParenType 
+          (q1, (Array (eopt,
+            (q2, (Pointer 
+              (q3, (FunctionType t, iifunc)), 
+                 [ipointer]))),
+               [iarray1;iarray2])), [i1;i2]) -> 
+          pp_type_left_gen pr_elem (q3, (FunctionType t, iifunc));
+          pr_elem i1;
+          pr_elem ipointer;
+          print_ident ident;
+          pr_elem iarray1;
+          do_option (pp_expression_gen pr_elem) eopt;
+          pr_elem iarray2;
+          pr_elem i2;
+          pp_type_right_gen pr_elem (q3, (FunctionType t, iifunc))
+            
+
 
       | (ParenType t, [i1;i2]) ->  
           pr2 "PB PARENTYPE ZARB, I forget about the ()";
@@ -658,7 +683,8 @@ let pp_program_gen pr_elem progelem =
          );
             
 
-         (* normally ii represent the ",..."  but it is also abused with the f(void) case *)
+         (* normally ii represent the ",..." but it is also abused
+            with the f(void) case *)
          (* assert (List.length iib <= 2);*)
          iib +> List.iter pr_elem;
 
@@ -695,9 +721,9 @@ let pp_program_gen pr_elem progelem =
 
 
 
-(******************************************************************************)
+(*****************************************************************************)
 
-(* Do not use (mcode, env). It is a simple C pretty printer. *)
+(* Here we do not use (mcode, env). It is a simple C pretty printer. *)
 let pr_elem (info,mcode_env) = 
   let s = info.str in
   pp s

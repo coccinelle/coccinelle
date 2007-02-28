@@ -51,7 +51,8 @@ let max_min_ii_by_pos xs =
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] when Ast_c.is_al_info x -> 
-      failwith "no max or min, have fake info, should not happen"
+      Common.pr2 "PB: no max or min, have fake info, should not happen";
+      (x, x)
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let posf x = Ast_c.get_pos_of_info x in

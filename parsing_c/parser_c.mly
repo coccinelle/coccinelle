@@ -547,13 +547,14 @@ argument:
 
 action_higherordermacro: 
  | jump                  { ActJump $1 }
-/* | jump TPtVirg          { ActJump $1 } */
  | assign_expr_statement action_higherordermacro { ActSeq ($1, $2)  }
- | /* empty */ { ActMisc [] }
-/*
+ | /* empty */ { ActMisc [ Ast_c.fakeInfo() ] }
+/* | jump TPtVirg          { ActJump $1 } */
  | Tdo         { ActMisc [$1] }
- | Textern     { ActMisc [$1] }
+/* generate conflict with decl_spec3 above, because decl_spec contain 
+   storage specificier 
 */
+/* | Textern     { ActMisc [$1] } */
 
 
 /* We cannot reuse expr_statement because expr_statement allows ',' and 
