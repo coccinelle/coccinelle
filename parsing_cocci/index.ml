@@ -88,6 +88,7 @@ let typeC t =
   | Ast0.ImplicitInt(sign) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
+  | Ast0.FunctionPointer _ -> failwith "not supported"
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]

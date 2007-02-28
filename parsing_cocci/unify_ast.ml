@@ -209,6 +209,7 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
+  | (Ast.FunctionType _ , _) -> failwith "not supported"
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)

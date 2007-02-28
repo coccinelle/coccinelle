@@ -107,6 +107,7 @@ let dumb_astcocci_type = function
  | A.ImplicitInt (signa) -> ()
  | A.Pointer (typa, _) -> ()
  | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> ()
+ | A.FunctionType _ -> ()
  | A.Array (typa, _, eaopt, _) -> ()
  | A.StructUnionName(sa, sua) -> ()
  | A.StructUnionDef(sa, sua, lb, decls, rb) -> ()

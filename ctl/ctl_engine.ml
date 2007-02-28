@@ -684,7 +684,7 @@ let triples_union trips trips' =
     else unionBy compare eq_trip trips trips'
 
 
-let triples_witness x unchecked trips =
+let triples_witness x unchecked not_keep trips =
   let anyneg = (* if any is neg, then all are *)
     List.exists (function A.NegSubst _ -> true | A.Subst _ -> false) in
   let anynegwit = (* if any is neg, then all are *)
@@ -698,8 +698,10 @@ let triples_witness x unchecked trips =
 	  let (th_x,newth) = split_subst th x in
 	  match th_x with
 	    [] ->
-	      SUB.print_mvar x; Format.print_flush();
-	      print_state ": empty witness from" [t];
+	      if not not_keep
+	      then
+		(SUB.print_mvar x; Format.print_flush();
+		 print_state ": empty witness from" [t]);
 	      t::prev
 	  | l when anyneg l ->
 	      if anynegwit wit && allnegwit wit
@@ -707,7 +709,7 @@ let triples_witness x unchecked trips =
 	      else
 		failwith "unexpected negative binding with positive witnesses"
 	  | [_] -> (* positive must be alone *)
-	      if unchecked or anynegwit wit
+	      if unchecked or not_keep or anynegwit wit
 	      then (s,newth,wit)::prev
 	      else (s,newth,[A.Wit(s,th_x,[],wit)])::prev
 	  | _ -> failwith "there can only be one positive binding")
@@ -1325,7 +1327,7 @@ let rec satloop unchecked required required_states
 	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
     | A.Exists (v,phi,keep)     ->
 	let new_required = drop_required v required in
-	triples_witness v (unchecked or not keep)
+	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
     | A.Let(v,phi1,phi2)   ->
 	(* should only be used when the properties unchecked, required,
@@ -1579,7 +1581,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let (child,res) =
 	  satv unchecked new_required required_states phi1 env in
 	Printf.printf "exists\n"; flush stdout;
-	anno (triples_witness v (unchecked or not keep) res) [child]
+	anno (triples_witness v unchecked (not keep) res) [child]
     | A.Let(v,phi1,phi2)   ->
 	let (child1,res1) =
 	  satv unchecked required required_states phi1 env in

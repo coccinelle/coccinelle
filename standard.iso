@@ -38,19 +38,14 @@
 //  also match 
 // - X = snd_magic_kcalloc(T, 0, C)
 
-// Why doesn't the following parse???
-//Expression
-//@@ expression E; type T; @@
-//(T)E => E
-
 Expression
 @@
-expression E1, E2;
-expression list args;
+expression E;
 type T;
 @@
 
-E1 = (T) E2(args) => E1 = E2(args)
+// in the following, the space at the beginning of the line is very important!
+ (T)E => E
 
 Type
 @@ @@

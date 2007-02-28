@@ -173,9 +173,7 @@ let combiner bind option_default
 	  bind (fullType ty) (string_mcode star)
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      | Ast.FunctionType(allminus,tyopt,lp,params,rp) ->
-          multibind[get_option fullType tyopt; string_mcode lp;
-                    parameter_dots params; string_mcode rp]
+      |	Ast.FunctionType _ -> failwith "not supported"
       | Ast.Array(ty,lb,size,rb) ->
 	  multibind [fullType ty; string_mcode lb;
 		      get_option expression size; string_mcode rb]
@@ -618,8 +616,7 @@ let rebuilder
 	    Ast.FunctionType(allminus, 
                             get_option fullType tyopt, string_mcode lp,
 			    parameter_dots params,
-                            string_mcode rp
-			    )
+                            string_mcode rp)
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
