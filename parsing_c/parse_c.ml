@@ -310,6 +310,7 @@ let rec find_next_synchro next already_passed =
             v::
             already_passed, 
           xs
+
       | _ -> 
           v::already_passed, xs
       )

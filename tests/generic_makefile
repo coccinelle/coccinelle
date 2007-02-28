@@ -13,8 +13,7 @@ ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 -no_type_error_msg
 
-#PAD
-#ARGS=-no_show_ctl_text -no_show_transinfo -debug_cpp -debug_typedef
+-include ../my_generic_makefile
 
 SPATCHCMD=$(SPATCH) $(ISOFILE) -compare_with_expected -cocci_file $(SP) $(ARGS)
 

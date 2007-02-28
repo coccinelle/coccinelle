@@ -179,11 +179,9 @@ and expressionbis =
   (* cppext: normmally just expression *)
   and argument = (expression, wierd_argument) either
    and wierd_argument = 
-       | ArgType of fullType * storage wrap
+       | ArgType of parameterType
        | ArgAction of action_macro
       and action_macro = 
-         | ActJump of jump wrap 
-         | ActSeq of (exprStatement wrap * action_macro)
          | ActMisc of il 
 
 

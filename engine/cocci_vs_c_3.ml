@@ -935,14 +935,17 @@ and arguments_bis = fun eas ebs ->
 and argument arga argb = 
   X.all_bound (A.get_inherited arga) >&&>
    match A.unwrap arga, argb with
-  | A.TypeExp tya,  Right (B.ArgType (tyb, (sto, iisto))) ->
-      if sto <> (B.NoSto, false)
-      then failwith "the argument have a storage and ast_cocci does not have"
+  | A.TypeExp tya,  Right (B.ArgType (((b, sopt, tyb), ii_b_s))) ->
+
+      if b || sopt <> None
+      then 
+        (* failwith "the argument have a storage and ast_cocci does not have"*)
+        fail
       else 
         fullType tya tyb >>= (fun tya tyb -> 
           return (
             (A.TypeExp tya) +> A.rewrap arga,
-            (Right (B.ArgType (tyb, (sto, iisto))))
+            (Right (B.ArgType (((b, sopt, tyb), ii_b_s))))
         ))
 
   | A.TypeExp tya,  _                                  -> fail

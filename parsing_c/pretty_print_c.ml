@@ -90,27 +90,13 @@ let rec pp_expression_gen pr_elem =
 and pp_argument_gen pr_elem argument = 
   let rec pp_action = function 
     | (ActMisc ii) -> ii +> List.iter pr_elem
-    | (ActJump jump) -> 
-        (match jump with
-        | (Goto s), [i1;i2]               -> pr_elem i1; pr_elem i2; 
-        | ((Continue|Break|Return)), [i1] -> pr_elem i1; 
-        | (ReturnExpr e), [i1] -> pr_elem i1; pp_expression_gen pr_elem e; 
-        | x -> raise Impossible
-        )
-    | (ActSeq ((e,ii), action)) -> 
-        pp_statement_gen pr_elem (ExprStatement e, ii);
-        pp_action action
   in
   match argument with
   | Left e -> pp_expression_gen pr_elem e
   | Right wierd -> 
       (match wierd with
-      | ArgType (returnType, (sto, iisto)) -> 
-          assert (List.length iisto <= 1);
-          iisto +> List.iter pr_elem;
-          pp_type_gen pr_elem  returnType
-      | ArgAction action -> 
-          pp_action action
+      | ArgType param -> pp_param_gen pr_elem param
+      | ArgAction action -> pp_action action
       )
 
 
@@ -509,6 +495,22 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
     pp_type_left
 
 
+and pp_param_gen pr_elem = fun ((b, sopt, t), ii_b_s) -> 
+  match b, sopt, ii_b_s with
+  | false, None, [] -> 
+      pp_type_gen pr_elem t
+  | true, None, [i1] -> 
+      pr_elem i1;
+      pp_type_gen pr_elem t
+
+  | false, Some s, [i1] -> 
+      pp_type_with_ident_gen pr_elem (Some (s, i1)) None t;
+  | true, Some s, [i1;i2] -> 
+      pr_elem i1;
+      pp_type_with_ident_gen pr_elem (Some (s, i2)) None t;
+  | _ -> raise Impossible                
+
+
 and (pp_type_right_gen: pr_elem_func -> fullType -> unit) = 
   fun pr_elem -> 
     let rec pp_type_right = fun ((qu, iiqu), (ty, iity)) -> 
@@ -526,24 +528,11 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
           pr_elem i1;
           (match paramst with
           | (ts, (b, iib)) -> 
-              ts +> List.iter (fun (((b, sopt, t), ii_b_s),iicomma) -> 
+              ts +> List.iter (fun (param,iicomma) -> 
                 assert ((List.length iicomma) <= 1);
                 iicomma +> List.iter pr_elem;
-
-                (match b, sopt, ii_b_s with
-                | false, None, [] -> 
-                    pp_type_gen pr_elem t
-                | true, None, [i1] -> 
-                    pr_elem i1;
-                    pp_type_gen pr_elem t
-
-                | false, Some s, [i1] -> 
-                    pp_type_with_ident_gen pr_elem (Some (s, i1)) None t;
-                | true, Some s, [i1;i2] -> 
-                    pr_elem i1;
-                    pp_type_with_ident_gen pr_elem (Some (s, i2)) None t;
-                | _ -> raise Impossible                
-                );
+                
+                pp_param_gen pr_elem param;
               );
               iib +> List.iter pr_elem;
           );

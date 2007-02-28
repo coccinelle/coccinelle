@@ -176,23 +176,10 @@ and vk_argument = fun bigf arg ->
 
   let rec do_action = function 
     | (ActMisc ii) -> iif ii
-    | (ActJump jump) -> 
-        (match jump with
-        | (Goto s), is               -> iif is
-        | ((Continue|Break|Return)), is -> iif is
-        | (ReturnExpr e), is ->  vk_expr  bigf e; iif is
-        )
-    | (ActSeq ((e,ii), action)) -> 
-        iif ii;
-        do_option (vk_expr bigf) e; 
-        do_action action
   in
   match arg with
   | Left e -> (vk_expr bigf) e
-  | Right (ArgType (t, stoil)) -> 
-      let (unwrap_st, ii) = stoil in
-      iif ii;
-      vk_type bigf t
+  | Right (ArgType param) -> vk_param bigf param
   | Right (ArgAction action) -> do_action action
 
 
@@ -262,10 +249,10 @@ and vk_type = fun bigf t ->
         (match paramst with
         | (ts, (b,iihas3dots)) -> 
             iif iihas3dots;
-            ts +> List.iter (fun (((b, sopt, t), ii_b_s),iicomma) -> 
-              iif ii_b_s; 
+            ts +> List.iter (fun (param,iicomma) -> 
+              vk_param bigf param;
               iif iicomma;
-              typef t
+              
             )
         )
 
@@ -341,10 +328,9 @@ and vk_def = fun bigf d ->
         iif ii;
         iif iib;
         vk_type bigf returnt;
-        paramst +> List.iter (fun (((b, s, t), iibs),iicomma) -> 
-          iif iibs;
+        paramst +> List.iter (fun (param,iicomma) -> 
+          vk_param bigf param;
           iif iicomma;
-          vk_type bigf t
         );
         statxs +> List.iter (vk_statement bigf)
   in f (k, bigf) d 
@@ -373,8 +359,9 @@ and vk_node = fun bigf node ->
 
     | F.FunHeader ((idb, (rett, (paramst,(isvaargs,iidotsb))), stob),ii) ->
         vk_type bigf rett;
-        paramst +> List.iter (fun (((b, s, t), iibs), iicomma) ->
-          vk_type bigf t;
+        paramst +> List.iter (fun (param, iicomma) ->
+          vk_param bigf param;
+          iif iicomma;
         );
 
 
@@ -442,9 +429,9 @@ and vk_info = fun bigf info ->
   infof info
 
 
-let vk_param = fun bigf (((b, s, t), iibs)) ->  
+and vk_param = fun bigf (((b, s, t), ii_b_s)) ->  
   let iif ii = List.iter (vk_info bigf) ii in
-  iif iibs;
+  iif ii_b_s;
   vk_type bigf t
 
 
@@ -549,30 +536,11 @@ and vk_argument_s bigf argument =
   let infolistf ii = List.map (vk_info_s bigf) ii in
   let rec do_action = function 
     | (ActMisc ii) -> ActMisc (infolistf ii)
-    | (ActJump jump) -> 
-        ActJump
-          (match jump with
-          | (Goto s), is               -> (Goto s), infolistf is
-          | ((Continue|Break|Return) as x), is -> x, infolistf is
-          | (ReturnExpr e), is ->  ReturnExpr (vk_expr_s bigf e), 
-              infolistf is
-          )
-    | (ActSeq ((e, iptvirg), action)) -> 
-        ActSeq ((map_option (vk_expr_s bigf) e, 
-                infolistf iptvirg), 
-               do_action action)
   in
-
   (match argument with
   | Left e -> Left (vk_expr_s bigf e)
-  | Right (ArgType (t, stoil)) -> 
-      let (unwrap_st, ii) = stoil in
-      Right (ArgType 
-                (vk_type_s bigf t, 
-                (unwrap_st, infolistf ii
-                )))
-  | Right (ArgAction action) -> 
-      Right (ArgAction (do_action action))
+  | Right (ArgType param) ->    Right (ArgType (vk_param_s bigf param))
+  | Right (ArgAction action) -> Right (ArgAction (do_action action))
   )
 
 
@@ -651,9 +619,8 @@ and vk_type_s = fun bigf t ->
             (typef returnt, 
             (match paramst with
             | (ts, (b, iihas3dots)) -> 
-                (ts +> List.map (fun (((b, sopt, t), ii_b_s),iicomma) -> 
-                  (((b, sopt, typef t), infolistf ii_b_s), 
-                  infolistf iicomma)),
+                (ts +> List.map (fun (param,iicomma) -> 
+                  (vk_param_s bigf param, infolistf iicomma)),
                 (b, infolistf iihas3dots))
             ))
 
@@ -737,8 +704,8 @@ and vk_def_s = fun bigf d ->
     | (s, (returnt, (paramst, (b, iib))), sto, statxs), ii  -> 
         (s, 
         (vk_type_s bigf returnt, 
-        (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
-          ((b, s, vk_type_s bigf t), infolistf iibs), infolistf iicomma
+        (paramst +> List.map (fun (param, iicomma) ->
+          (vk_param_s bigf param, infolistf iicomma)
         ), 
         (b, infolistf iib))), 
         sto, 
@@ -790,8 +757,8 @@ and vk_node_s = fun bigf node ->
         F.FunHeader 
           ((idb,
            (vk_type_s bigf rett,
-           (paramst +> List.map (fun (((b, s, t), iibs), iicomma) ->
-             (((b, s, vk_type_s bigf t), iif iibs), iif iicomma)
+           (paramst +> List.map (fun (param, iicomma) ->
+             (vk_param_s bigf param, iif iicomma)
            ), (isvaargs,iif iidotsb))), stob),iif ii)
           
           
@@ -850,11 +817,9 @@ and vk_node_s = fun bigf node ->
   in
   nodef node
   
-  
-
-let vk_param_s = fun bigf ((b, s, t), iibs) -> 
+and vk_param_s = fun bigf ((b, s, t), ii_b_s) -> 
   let iif ii = List.map (vk_info_s bigf) ii in
-  ((b, s, vk_type_s bigf t), iif iibs)
+  ((b, s, vk_type_s bigf t), iif ii_b_s)
         
 let vk_args_splitted_s = fun bigf args_splitted -> 
   let iif ii = List.map (vk_info_s bigf) ii in

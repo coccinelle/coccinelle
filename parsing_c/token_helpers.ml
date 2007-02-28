@@ -39,6 +39,7 @@ let info_from_token = function
 
   | Parser_c.TUnknown             (i) -> i
   | Parser_c.TMacro             (i) -> i
+  | Parser_c.TAction             (i) -> i
 
   | Parser_c.TComment             (i) -> i
   | Parser_c.TCommentSpace        (i) -> i
@@ -150,6 +151,7 @@ let visitor_info_from_token f = function
 
   | Parser_c.TUnknown             (i) -> Parser_c.TUnknown             (f i)
   | Parser_c.TMacro               (i) -> Parser_c.TMacro             (f i)
+  | Parser_c.TAction               (i) -> Parser_c.TAction             (f i)
 
   | Parser_c.TComment             (i) -> Parser_c.TComment             (f i) 
   | Parser_c.TCommentSpace        (i) -> Parser_c.TCommentSpace        (f i) 

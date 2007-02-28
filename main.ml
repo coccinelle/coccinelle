@@ -226,6 +226,9 @@ let main () =
             Parse_c.tokens file +> Common.pr2gen
 
         | "parse_c", x::xs -> 
+            Flag_parsing_c.debug_cpp := true;
+            Flag_parsing_c.debug_typedef := true;
+
             let fullxs = 
               if !dir
               then Common.process_output_to_list ("find " ^x^" -name \"*.c\"") 
@@ -349,6 +352,31 @@ let main () =
               "parsing_c/tests/equal_modulo2.c" 
               *)
               false
+
+
+        | "rule_regression_info", _ -> 
+            let newscore  = Common.empty_score () in
+            (Common.process_output_to_list ("find -name \"*.ok\"") 
+             ++
+             Common.process_output_to_list ("find -name \"*.spatch_ok\"")
+            ) +> List.iter (fun s -> 
+              Hashtbl.add newscore (Filename.chop_extension s) 
+                Common.Ok
+            );
+            Common.process_output_to_list ("find -name \"*.failed\"")
+              +> List.iter (fun s -> 
+                Hashtbl.add newscore (Filename.chop_extension s) 
+                  (Common.Pb "fail")
+              );
+            pr2 "--------------------------------";
+            pr2 "regression testing  information";
+            pr2 "--------------------------------";
+            Common.regression_testing newscore 
+                ("/tmp/score_rule.marshalled");
+                
+
+
+
         | "xxx", _ -> 
             Format.print_newline();
             Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";

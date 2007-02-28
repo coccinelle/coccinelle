@@ -1,4 +1,5 @@
 @@
+identifier init;
 @@
   init(...) {
 -   DEBUG(...);

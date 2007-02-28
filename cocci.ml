@@ -577,8 +577,9 @@ let rec process_ctls ctls envs =
 
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
-        
+
       let ctl = List.hd ctl_toplevel_list in
+      let used_after_list = List.hd used_after_list in
       show_or_not_ctl_text ctl ast rulenb;
 
       let newenvs = process_a_ctl (ctl, used_after_list, rulenb) envs in
@@ -601,12 +602,8 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
   let children_envs = !g_cprogram +> List.fold_left 
     (fun acc ((elem,info_item),info,_env) ->
 
-      let full_used_after_list = 
-	List.fold_left Common.union_set [] used_after_list 
-      in
-
       match process_a_ctl_a_env_a_celem
-        (elem,info) (ctl,full_used_after_list, rulenb) env
+        (elem,info) (ctl,used_after_list, rulenb) env
       with
       | None -> 
           push2 None new_c_elems ;
@@ -635,7 +632,7 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
   then children_envs
   else begin
     pr2 "Empty list of bindings, I will restart from old env";
-    [env]
+    [env +> List.filter (fun (s,v) -> List.mem s used_after_list)]
   end
 
 

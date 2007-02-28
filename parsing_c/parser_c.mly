@@ -349,6 +349,8 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 
 %token <Ast_c.info> TMacro
 
+%token <Ast_c.info> TAction
+
 
 
 %token <string * Ast_c.info>                     TInt
@@ -531,39 +533,17 @@ primary_expr:
 
 
 /* cppext: */
-
 argument: 
  | assign_expr { Left $1 }
-
- /* decl_spec and not just type_spec cos can have  unsigned short for 
-  * instance => type_spec_list 
-  */
- | decl_spec3  
-     { let (returnType,storage) = fixDeclSpecForDecl $1 in 
-       Right (ArgType (returnType, storage) )
-     }
+ | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro { Right (ArgAction $1) }
 
-
 action_higherordermacro: 
- | jump                  { ActJump $1 }
- | assign_expr_statement action_higherordermacro { ActSeq ($1, $2)  }
- | /* empty */ { ActMisc [ Ast_c.fakeInfo() ] }
-/* | jump TPtVirg          { ActJump $1 } */
- | Tdo         { ActMisc [$1] }
-/* generate conflict with decl_spec3 above, because decl_spec contain 
-   storage specificier 
-*/
-/* | Textern     { ActMisc [$1] } */
-
-
-/* We cannot reuse expr_statement because expr_statement allows ',' and 
- * we are in an argument of a macro, and it would not be parsed by CPP as
- * a single expr_statement but as another argument.
- */
-assign_expr_statement: 
- | TPtVirg             { None,    [$1] }
- | assign_expr TPtVirg { Some $1, [$2] }
+ | taction_list 
+     { if null $1
+       then ActMisc [Ast_c.fakeInfo()]
+       else ActMisc $1
+     }
 
 
 /*----------------------------*/
@@ -585,7 +565,6 @@ const_expr: cond_expr { $1  }
 topar2: TOPar { et "topar2" (); $1  }
 tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) } 
 
-decl_spec3: decl_spec { et "decl_spec3" (); $1 }
 
 
 /*****************************************************************************/
@@ -1217,6 +1196,10 @@ parameter_list:
  | parameter_decl                       { [$1, []] }
  | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
 
+taction_list: 
+ | /* empty */ { [] }
+ | TAction { [$1] }
+ | taction_list TAction { $1 ++ [$2] }
 
 
 /* gccext:  which allow a trailing ',' in enum, as in perl */
