@@ -18,7 +18,7 @@ rule94 rule95 rule96 rule97 rule98 rule99 rule103
 
 all:
 	time set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i; done 
-	../spatch -action rule_regression_info xxx
+	../spatch.opt -action rule_regression_info xxx
 
 clean:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
@@ -35,7 +35,7 @@ score:
 	find -name "*.failed" | wc -l
 
 regression:
-	../spatch -action rule_regression_info xxx
+	../spatch.opt -action rule_regression_info xxx
 
 opt:	
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) SPATCH=../../spatch.opt -C $$i; done 
