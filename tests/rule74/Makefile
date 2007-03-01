@@ -6,10 +6,6 @@ SP=atomic_dec.cocci
 SOURCES = multipath.c \
           raid1.c \
           raid5.c \
-          raid6main.c \
-	  multipath_fixed.c \
-          raid1_fixed.c \
-          raid5_fixed.c \
-          raid6main_fixed.c
+          raid6main.c
 
 include ../generic_makefile

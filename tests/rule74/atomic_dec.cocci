@@ -1,5 +1,6 @@
 // The first rule is supposed to transform code into the form treated by the
 // next rule.  Some code uses only the second rule.
+// I have no idea what the above comment means... - jll
 @@
 identifier Rdev;
 type T,T1;
@@ -24,6 +25,11 @@ identifier B;
 - atomic_dec(&Rdev->nr_pending)
 + rdev_dec_pending(Rdev,A)
   ...>
+(                                  // this is needed because the code above
+? T1 *Rdev = V->B[C].rdev;         // is in a loop
+|                                  // this problem was very hard to find
+? Rdev = V->B[C].rdev;             // and the solution is very inelegant
+)
 ...>
 
 @@
