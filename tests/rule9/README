@@ -12,12 +12,14 @@ cpqfcTSinit.c \
  * comments should also be erased
 
 53c700.c \
- * [status] spatch-ok
+ * [status] wrong
+ * we don't modify correctly the prototype, we should not put a name
+   for the parameter
  * [bug] maintainer forgot to remove the decl of hostptr, shadowing
      the one now given in parameter.
 
 acornscsi.c \
- * [status] wrong
+ * [status] ok
  * can be made ok  if modify SP.  the test on the hostptr value is in an ||
  with another test
 
@@ -52,16 +54,16 @@ in2000.c \
  * because of cpp
 
 ncr53c8xx.c \
- * [status] wrong
+ * [status] ok
  * can be made ok  by modifying SP.
 
 nsp32.c \
- * [status] spatch-ok
+ * [status] wrong
  * comments difference, and when modifying proto I put the name of the var host
    whereas maintainer remove it (as for the other parameter)
 
 nsp_cs.c \
- * [status] spatch-ok
+ * [status] wrong
  * there is an loop over hostno, which was the old way to compute a hosptr, 
    enclosed by an ifdef >= VERSION_xxx.  We transform the new version
    correctly and leave the old code.  IN the version created by hand the

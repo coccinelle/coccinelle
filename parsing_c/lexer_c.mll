@@ -117,6 +117,10 @@ let keyword_table = Common.hash_of_list [
   (* todo?  typeof, __typeof__  *)
   
  ]
+
+let error_radix s = 
+  ("numeric " ^ s ^ " constant contains digits beyond the radix:")
+
 }
 
 (*****************************************************************************)
@@ -295,24 +299,21 @@ rule token = parse
       }
 
   | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
-      {
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         TIfdefbool (true, info) 
       } 
 
 
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
       [^'\n']* '\n' 
-      {
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         TIfdefbool (true, info) 
       } 
 
   | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
   | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
       [^'\n']* '\n' 
-      {
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         TIfdefbool (false, info) 
       } 
 
@@ -362,7 +363,6 @@ rule token = parse
   | "#" [' ' '\t']* "endif" [^'\n']* '\n'    { TEndif     (tokinfo lexbuf) }
   (* can be at eof *)
   | "#" [' ' '\t']* "endif"                  { TEndif     (tokinfo lexbuf) }
-
 
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']   { TIfdefelse (tokinfo lexbuf) }
   (* there is a file in 2.6 that have this *)
@@ -427,34 +427,17 @@ rule token = parse
   | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
  
 
+
+
   (* TODO TO GENERALIZE *)
+
 
   | "ACPI_STATE_COMMON" { TCommentMisc (tokinfo lexbuf) }
   | "ACPI_PARSE_COMMON" { TCommentMisc (tokinfo lexbuf) }
   | "ACPI_COMMON_DEBUG_MEM_HEADER"  { TCommentMisc (tokinfo lexbuf) }
 
+
   | "TRACE_EXIT" {  Treturn (tokinfo lexbuf) } 
-
-  | "static" [' ' '\t']+ ((['A'-'Z'] (['A'-'Z' '_'] | digit) *) as id)  [' ' '\t']* "(" [^'\n' ';']+ ';' [' ' '\t']* '\n' { 
-        (match id with
-        | "DECLARE_MUTEX" | "DECLARE_COMPLETION"  | "DECLARE_RWSEM"
-        | "DECLARE_WAIT_QUEUE_HEAD" | "DEFINE_SPINLOCK"
-        | "DEVICE_ATTR" | "CLASS_DEVICE_ATTR"  | "SENSOR_DEVICE_ATTR"
-        | "LIST_HEAD"
-        | "DECLARE_WORK"  | "DECLARE_TASKLET"
-        | "PORT_ATTR_RO" | "PORT_PMA_ATTR"
-          -> ()
-        | s when s =~ "^DECLARE_.*" -> ()
-        | s when s =~ ".*_ATTR$" -> ()
-        | s when s =~ "^DEFINE_.*" -> ()
-
-        | _ -> pr2 ("LEXER: PassingMacro: " ^ id)
-        ); 
-        TCommentMisc (tokinfo lexbuf) 
-     }
-   (* cos sometimes this one is on multiple line, so just transform it into an ident and then it looks like a funcall *)
-   | "static" [' ' '\t']+ "DEVICE_ATTR" { TIdent (tok lexbuf, tokinfo lexbuf) }
-
 
   | "EXPORT_NO_SYMBOLS;" { TCommentMisc (tokinfo lexbuf) }
 
@@ -463,24 +446,6 @@ rule token = parse
       { TCommentMisc (tokinfo lexbuf) }
   | "module_init(" letter (letter | digit)* ")"  
       { TCommentMisc (tokinfo lexbuf) }
-
-  (*
-    "DECLARE_TASKLET" 
-  *)
-
-  | "DECLARE_WAITQUEUE" [' ' '\t']* "(" [^'\n' ]+  '\n'       
-      { TCommentMisc (tokinfo lexbuf) }
-  | "DECLARE_COMPLETION" [' ' '\t']* "(" [^'\n']+ '\n'        
-      { TCommentMisc (tokinfo lexbuf) }
-  | "DECLARE_WAIT_QUEUE_HEAD" [' ' '\t']* "(" [^'\n' ]+  '\n' 
-      { TCommentMisc (tokinfo lexbuf) }
-  | "DECLARE_COMPLETION" [' ' '\t']* "(" [^'\n']+ '\n'        
-      { TCommentMisc (tokinfo lexbuf) }
-
-
-
-
-
 
 
  (* struct def component. todo? generalize via LALR(k) tech by using a
@@ -502,69 +467,58 @@ rule token = parse
 
 
 
-
   (* ----------------------------------------------------------------------- *)
   (* C keywords and ident *)
   (* ----------------------------------------------------------------------- *)
 
+  (* StdC: must handle at least name of length > 509, but can
+   * truncate to 31 when compare and truncate to 6 and even lowerise
+   * in the external linkage phase 
+   *)
   | letter (letter | digit) *  
-      { 
-      
-      (* StdC: must handle at least name of length > 509, but can
-       * truncate to 31 when compare and truncate to 6 and even lowerise
-       * in the external linkage phase *)
-      let info = tokinfo lexbuf in
-      let s = tok lexbuf in
-      Common.profile_code "C parsing.lex_ident" (fun () -> 
-        match Common.optionise (fun () -> Hashtbl.find keyword_table s)
-        with
-        | Some f -> f info
-        | None -> TIdent (s, info)
-      )            
-      (*
-        (match s with
-        | s when s =~ "__.*__" -> TCommentAttrOrMacro info
-        | s -> 
-            if s =~ "_.*" then 
-            warning "_ is often reserved for internal use by the compiler" ^
-                    "and libc\n" ()
-            * parse_typedef_fix. note: now this is no more useful,
-            * cos as we use tokens_all, it first parse all as an
-            * ident and later transform an indent in a typedef. so
-            * this job is now done in parse_c.ml
+      { let info = tokinfo lexbuf in
+        let s = tok lexbuf in
+        Common.profile_code "C parsing.lex_ident" (fun () -> 
+          match Common.optionise (fun () -> Hashtbl.find keyword_table s)
+          with
+          | Some f -> f info
 
-	    if Lexer_parser.is_typedef s 
-            then TypedefIdent (s, info)
-            else TIdent (s, info)
-       *)
-    }	
+           (* parse_typedef_fix. note: now this is no more useful, cos
+            * as we use tokens_all, it first parse all as an ident and
+            * later transform an indent in a typedef. so this job is
+            * now done in parse_c.ml 
+            * 
+            * if Lexer_parser.is_typedef s 
+            * then TypedefIdent (s, info)
+            * else TIdent (s, info)
+            *)
+
+          | None -> TIdent (s, info)
+        )            
+      }	
 
   (* ----------------------------------------------------------------------- *)
   (* C constant *)
   (* ----------------------------------------------------------------------- *)
 
   | "'"     
-      { 
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         let s = char lexbuf   in 
         TChar     ((s,   IsChar),  (info +> tok_add_s (s ^ "'"))) 
       }
   | '"'     
-      { 
-        let info = tokinfo lexbuf in
+      { let info = tokinfo lexbuf in
         let s = string lexbuf in 
         TString   ((s,   IsChar),  (info +> tok_add_s (s ^ "\""))) 
       }
   (* wide character encoding, TODO L'toto' valid ? what is allowed ? *)
   | 'L' "'" 
-      { 
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         let s = char lexbuf   in 
         TChar     ((s,   IsWchar),  (info +> tok_add_s (s ^ "'"))) 
       } 
   | 'L' '"' 
-      { 
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         let s = string lexbuf in 
         TString   ((s,   IsWchar),  (info +> tok_add_s (s ^ "\""))) 
       }
@@ -591,18 +545,11 @@ rule token = parse
   | (real as x)           { TFloat ((x, CDouble),     tokinfo lexbuf) }
 
   | ['0'] ['0'-'9']+  
-      { pr2 
-          ("LEXER: numeric octal constant contains digits beyond the radix:" ^
-          tok lexbuf
-          );
+      { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf); 
         TCommentMisc (tokinfo lexbuf)
       }
   | ("0x" |"0X") ['0'-'9' 'a'-'z' 'A'-'Z']+ 
-      { 
-        pr2 
-          ("LEXER: numeric hexa constant contains digits beyond the radix:" ^
-          tok lexbuf
-          );
+      { pr2 ("LEXER: " ^ error_radix "hexa" ^ tok lexbuf);
         TCommentMisc (tokinfo lexbuf)
       }
 
@@ -610,11 +557,11 @@ rule token = parse
  (* special, !!! to put after other rules such  !! otherwise 0xff
   * will be parsed as an ident  
   *)
-  | ['0'-'9']+ letter (letter | digit) *  { 
-       let info = tokinfo lexbuf in
-       pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
-       TIdent (tok lexbuf, info)
-     } 
+  | ['0'-'9']+ letter (letter | digit) *  
+      { let info = tokinfo lexbuf in
+        pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
+        TIdent (tok lexbuf, info)
+      } 
 
 (*  | ['0'-'1']+'b' { TInt (((tok lexbuf)<!!>(0,-2)) +> int_of_stringbits) } *)
 
@@ -623,8 +570,7 @@ rule token = parse
   | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = ""},an) }
 
   | _ 
-      { 
-        pr2 ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
+      { pr2 ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
         TUnknown (tokinfo lexbuf)
       }
 
@@ -656,7 +602,6 @@ and char = parse
       { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
         tok lexbuf
       }
-
 
 
 
@@ -696,7 +641,6 @@ and string  = parse
 
 
 
-
 (*****************************************************************************)
 
 (* todo?: allow only char-'*' *)
@@ -705,11 +649,11 @@ and comment = parse
   (* noteopti: *)
   | [^ '*']+ { let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { let s = tok lexbuf in s ^ comment lexbuf }
-  | _  { 
-      let s = tok lexbuf in
-      pr2 ("LEXER: unrecognised symbol in comment:"^tok lexbuf);
-      s ^ comment lexbuf
-    }
+  | _  
+      { let s = tok lexbuf in
+        pr2 ("LEXER: unrecognised symbol in comment:"^tok lexbuf);
+        s ^ comment lexbuf
+      }
 
 
 
@@ -741,9 +685,6 @@ and cpp_eat_until_nl = parse
   | [^ '\n' '\\'      '/' '*'  ]+ 
       { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf } (* need fix too *)
   | eof 
-      {
-        pr2 "LEXER: end of file in cpp_eat_until_nl";
-        ""
-      }
+      { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
   | _                             
       { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }  

@@ -11,14 +11,23 @@ identifier proc_info_func;
     ...
 -   struct Scsi_Host *hostptr;
     ...
+(
+-   if(!(hostptr = scsi_host_hn_get(hostno))) return ...;
+|
 -   hostptr = scsi_host_hn_get(hostno);
     ...
+(
+     if(...
+-       || !hostptr
+       ) return ...;
+|
 ?-  if (!hostptr) { ... return ...; }
+)
+)
     ...
 ?-  scsi_host_put(hostptr);
     ...
   }
-
 
 @@ @@
   proc_info_func(...) {

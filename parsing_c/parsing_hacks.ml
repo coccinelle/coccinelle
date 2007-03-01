@@ -28,6 +28,9 @@ let regexp_macro =  Str.regexp
 let regexp_annot =  Str.regexp
   "^__.*$"
 
+let regexp_declare =  Str.regexp
+  ".*DECLARE.*"
+
 let regexp_foreach = Str.regexp_case_fold 
   ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|each\\|for\\)"
 
@@ -191,9 +194,9 @@ let tokens_of_paren xs =
 let rec iter_token_ifdef f xs = 
   xs +> List.iter (function
   | NotIfdefLine xs -> xs +> List.iter f;
-  | Ifdefbool (_, xxs, info_parens) 
-  | Ifdef (xxs, info_parens) -> 
-      info_parens +> List.iter f;
+  | Ifdefbool (_, xxs, info_ifdef) 
+  | Ifdef (xxs, info_ifdef) -> 
+      info_ifdef +> List.iter f;
       xxs +> List.iter (iter_token_ifdef f)
   )
       
@@ -358,17 +361,35 @@ let fix_tokens_annotation_and_stringification_part1 tokens =
 (* ifdef keeping/passing *)
 (* ------------------------------------------------------------------------- *)
 
+(* the pair is the status of '()' and '{)', ex: (-1,0) 
+ * if too much ')' and good '{}' 
+ * could do for [] too ? 
+ *)
+let (count_open_close_ifdef_clause: ifdef_grouped list -> (int * int)) = 
+ fun xs -> 
+   let cnt_paren, cnt_brace = ref 0, ref 0 in
+   xs +> iter_token_ifdef (fun (tok, pos) -> 
+     (match tok with
+     | TOPar _ -> incr cnt_paren
+     | TOBrace _ -> incr cnt_brace
+     | TCPar _ -> decr cnt_paren
+     | TCBrace _ -> decr cnt_brace
+     | _ -> ()
+     )
+   );
+   !cnt_paren, !cnt_brace
+
 let find_and_tag_good_ifdef xs = 
   let (keep_ifdef  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
 
   let debug_ifdef_zero = ref false in
 
-  let rec find_ifdef_zero = function
-    | [] -> ()
-    | NotIfdefLine _::xs -> find_ifdef_zero xs
-
-    | Ifdefbool (is_ifdef_positif, xxs, info_ifdef_stmt)::xs -> 
+  (* ---------------------------------------------------------------------- *)
+  let rec find_ifdef_zero xs = 
+    xs +> List.iter (function 
+    | NotIfdefLine _ -> ()
+    | Ifdefbool (is_ifdef_positif, xxs, info_ifdef_stmt) -> 
 
         if is_ifdef_positif
         then pr2_cpp "commenting parts of a #if 1 or #if LINUX_VERSION"
@@ -420,16 +441,67 @@ let find_and_tag_good_ifdef xs =
               );
             end
         );
-        find_ifdef_zero xs
 
-    | Ifdef (xxs, info_ifdef_stmt)::xs -> 
-        find_ifdef_zero xs;
+    | Ifdef (xxs, info_ifdef_stmt) -> 
         xxs +> List.iter find_ifdef_zero
+    )
   in
 
 
+  (* ---------------------------------------------------------------------- *)
+  let rec find_ifdef_mid xs = 
+    xs +> List.iter (function 
+    | NotIfdefLine _ -> ()
+    | Ifdef (xxs, info_ifdef_stmt) -> 
+        (match xxs with 
+        | [] -> raise Impossible
+        | [first] -> ()
+        | first::second::rest -> 
+            if xxs +> List.for_all (fun xs -> List.length xs <= 3) && 
+              (* don't want nested ifdef *)
+               xxs +> List.for_all (fun xs -> 
+                 xs +> List.for_all 
+                   (function NotIfdefLine _ -> true | _ -> false)
+               )
+                   
+            then 
+              let counts = xxs +> List.map count_open_close_ifdef_clause in
+              let cnt1,cnt2 = List.hd counts in 
+              if cnt1 <> 0 || cnt2 <> 0 
+                && counts +> List.for_all (fun x -> x = (cnt1, cnt2))
+              (*
+              if counts +> List.exists (fun (cnt1, cnt2) -> 
+                cnt1 <> 0 || cnt2 <> 0 
+                ) 
+              *)
+              then begin
+                pr2_cpp "found ifdef-mid-something";
+                info_ifdef_stmt +> List.iter (fun (tok, x) ->
+                  Hashtbl.add !put_comment (pos_of_token tok) true
+                );
+                (second::rest) +> List.iter (fun xs -> 
+                    xs +> iter_token_ifdef (fun (tok, x) -> 
+                      Hashtbl.add !put_comment (pos_of_token tok) true
+                    )
+                );
+              end
+                
+        );
+        List.iter find_ifdef_mid xxs
+
+    (* no need complex analysis for ifdefbool *)
+    | Ifdefbool (_, xxs, info_ifdef_stmt) -> 
+        List.iter find_ifdef_mid xxs
+
+        
+    )
+  in
+        
+
+        
 
 
+  (* ---------------------------------------------------------------------- *)
   let rec find_ifdef_funheaders = function
     | [] -> ()
     | NotIfdefLine _::xs -> find_ifdef_funheaders xs 
@@ -510,8 +582,12 @@ let find_and_tag_good_ifdef xs =
       find_ifdef_funheaders xs
         
   in
+  (* ---------------------------------------------------------------------- *)
+
+
   find_ifdef_funheaders xs;
   find_ifdef_zero xs;
+  find_ifdef_mid xs;
 
   !keep_ifdef, !put_comment
     
@@ -593,31 +669,68 @@ let find_and_tag_good_macro cleanxs_with_pos =
   let (keep_macro  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
 
 
-  let rec find_macro = function
+  (* ---------------------------------------------------------------------- *)
+  let rec find_macro xs = 
+    match xs with
     | [] -> ()
 
-    (* known debugging macro *)
-    (*
+
+    (* ex: static DEVICE_ATTR(); *)
     | (Line 
-          ([NotParenToken (TIdent (s,ii) as macro,_);
+          ([NotParenToken (Tstatic _,_);
+            NotParenToken (TIdent (s,_),_);
             Parenthised (xxs,info_parens);
-            NotParenToken (TPtVirg x, _);
+            NotParenToken (TPtVirg _,_);
           ] as line1
           ))
-      ::xs when 
-          List.mem s debug_macros_list
-       -> 
-        
-        pr2_cpp ("MACRO: found debug-macro: " ^ s);
-        Hashtbl.add !keep_macro (pos_of_token macro) true;
+        ::xs when s ==~ regexp_macro -> 
 
+        pr2_cpp ("MACRO: found static declare-macro: " ^ s);
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
         find_macro (xs)
-    *)
 
 
+    (* I do not put the final ';' because it can be on a multiline
+     * and because of the way mk_line is coded, we will not have access
+     * to this ';' on the next line, even if next to the ')'
+     *)
+    | (Line 
+          ([NotParenToken (Tstatic _,_);
+            NotParenToken (TIdent (s,_),_);
+            Parenthised (xxs,info_parens);
+          ] as line1
+          ))
+        ::xs when s ==~ regexp_macro -> 
+
+        pr2_cpp ("MACRO: found static declare-macro: " ^ s);
+        iter_token_paren (fun (tok, x) -> 
+          Hashtbl.add !put_comment (pos_of_token tok) true
+        ) line1;
+        find_macro (xs)
+
+
+
+    (* ex: DECLARE_BITMAP(); *)
+    | (Line 
+          ([NotParenToken (TIdent (s,_),_);
+            Parenthised (xxs,info_parens);
+            NotParenToken (TPtVirg _,_);
+          ] as line1
+          ))
+        ::xs when s ==~ regexp_declare -> 
+
+        pr2_cpp ("MACRO: found declare-macro: " ^ s);
+        iter_token_paren (fun (tok, x) -> 
+          Hashtbl.add !put_comment (pos_of_token tok) true
+        ) line1;
+        find_macro (xs)
+
+
+    (* DEBUG(), because a known macro, can relax the condition
+     * on the token we must have on the next line.
+     *) 
     | (Line 
           ([NotParenToken (TIdent (s,ii) as macro,_);
             Parenthised (xxs,info_parens);
@@ -652,7 +765,10 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 
 
-    (* macro with parameters *)
+    (* macro with parameters 
+     * ex: DEBUG()
+     *     return x;
+     *)
     | (Line 
           ([NotParenToken (TIdent (s,ii) as macro, {col = col1});
             Parenthised (xxs,info_parens);
@@ -690,7 +806,11 @@ let find_and_tag_good_macro cleanxs_with_pos =
         end;
         find_macro (line2::xs)
 
-    (* single macro *)
+    (* single macro 
+     * ex: LOCK
+     *     foo();
+     *     UNLOCK
+     *)
     | (Line 
           ([NotParenToken (TIdent (s,ii) as macro, {col = col1});
           ] as line1
@@ -730,10 +850,14 @@ let find_and_tag_good_macro cleanxs_with_pos =
         find_macro (line2::xs)
 
 
+
+
+
     | x::xs -> 
         find_macro xs
 
   in
+  (* ---------------------------------------------------------------------- *)
 (*
   let body_functions = mk_body_function_grouped cleanxs_with_pos in
   
@@ -807,6 +931,7 @@ let is_statement_token = function
 let find_and_tag_actions cleanxs_with_pos =
   let (put_actions : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
 
+  (* ---------------------------------------------------------------------- *)
   let rec find_actions = function
     | [] -> ()
     | NotParenToken (TIdent (s,ii),_)
@@ -832,6 +957,7 @@ let find_and_tag_actions cleanxs_with_pos =
       else acc
     ) false
   in
+  (* ---------------------------------------------------------------------- *)
 
 
   let paren_grouped = mk_parenthised  cleanxs_with_pos in
@@ -871,6 +997,8 @@ let fix_tokens_action tokens =
   let put_actions = find_and_tag_actions cleanxs_with_pos in
   adjust_tokens_based_on_mark_action (put_actions) tokens
 
+
+
 (* ------------------------------------------------------------------------- *)
 (* main fix cpp function *)
 (* ------------------------------------------------------------------------- *)
@@ -892,6 +1020,7 @@ let fix_tokens_cpp tokens =
 (*****************************************************************************)
 (* Lexing with lookahead *)
 (*****************************************************************************)
+
 open Lexer_parser (* for the fields of lexer_hint type *)
 
 let not_struct_enum = function

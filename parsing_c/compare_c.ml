@@ -214,13 +214,21 @@ let compare_ast filename1 filename2  =
 (*****************************************************************************)
 
 (* Because I now commentize more in parsing, with parsing_hacks,
- * compare_ast may say that 2 programs are equal whereas they are no!
+ * compare_ast may say that 2 programs are equal whereas they are not.
+ * Here I compare token, and so have still the TCommentCpp and TCommentMisc
+ * so at least detect such differences.
+ * 
  * Morover compare_ast is not very precise in his report when it
  * detects a difference. So token_diff is better.
  * 
  * I do token_diff but I use programCelement2, so that
  * I know if I am in a "notparsable" zone. The tokens are 
  * in (snd programCelement2).
+ * 
+ * Faire aussi un compare_token qui se moque des TCommentMisc, 
+ * TCommentCPP et TIfdef ? Normalement si fait ca retrouvera 
+ * les meme resultats que compare_ast.
+ * 
  *)
 
 

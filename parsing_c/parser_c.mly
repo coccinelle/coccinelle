@@ -584,9 +584,6 @@ statement:
  /* cppext: */
  | TMacro { MacroStmt, [$1] }
 
-
-
-
 /* note that case 1: case 2: i++;    would be correctly parsed, but with 
  * a Case  (1, (Case (2, i++)))  :(  
  */
@@ -645,6 +642,9 @@ stat_or_decl:
      { Selection (IfCpp ($2, $4)), [$1;$3;$5;fakeInfo()] }
  | TIfdef stat_or_decl_list TEndif 
      { Selection (IfCpp ($2, [])), [$1;$3;fakeInfo()] }
+  /* gccext: */
+ /* | function_definition { raise Todo } */
+
 
 
 
