@@ -426,7 +426,7 @@ type celem_with_info =
 let build_maybe_info e = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-      if !Flag.show_misc then pr2 ("build info function " ^ funcs);
+      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
       
       let flowopt = ast_to_flow_with_error_messages def in
       flowopt +> map_option (fun flow -> 
@@ -784,7 +784,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
 
     flush stdout;
     flush stderr;
-    Format.print_newline();
     Common.pr_xxxxxxxxxxxxxxxxx();
     pr "let's go";
     Common.pr_xxxxxxxxxxxxxxxxx();
