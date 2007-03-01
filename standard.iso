@@ -41,7 +41,7 @@
 Expression
 @@
 expression E;
-type T;
+pure type T;
 @@
 
 // in the following, the space at the beginning of the line is very important!

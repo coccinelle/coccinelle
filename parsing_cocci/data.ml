@@ -13,45 +13,45 @@ type line_type =
 let clear_meta: (unit -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_id_meta: (string -> bool -> unit) ref = 
+let add_id_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_text_meta: (string -> bool -> unit) ref = 
+let add_text_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_type_meta: (string -> bool -> unit) ref = 
+let add_type_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_param_meta: (string -> bool -> unit) ref = 
+let add_param_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_paramlist_meta: (string -> bool -> unit) ref = 
+let add_paramlist_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_const_meta:
-    (Type_cocci.typeC list option -> string -> bool -> unit) ref =
+    (Type_cocci.typeC list option -> string -> bool -> bool -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_err_meta: (string -> bool -> unit) ref =
+let add_err_meta: (string -> bool -> bool -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_exp_meta:
-    (Type_cocci.typeC list option -> string -> bool -> unit) ref =
+    (Type_cocci.typeC list option -> string -> bool -> bool -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_explist_meta: (string -> bool -> unit) ref = 
+let add_explist_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_stm_meta: (string -> bool -> unit) ref = 
+let add_stm_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_stmlist_meta: (string -> bool -> unit) ref = 
+let add_stmlist_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_func_meta: (string -> bool -> unit) ref = 
+let add_func_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_local_func_meta: (string -> bool -> unit) ref = 
+let add_local_func_meta: (string -> bool -> bool -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_type_name: (string -> unit) ref = 

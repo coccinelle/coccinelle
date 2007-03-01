@@ -447,7 +447,14 @@ let top_wit = ([] : (('pred, 'anno) witness list));;
 
 let eq_wit wit wit' = wit = wit';;
 
-let union_wit wit wit' = unionBy compare (=) wit wit';;
+let union_wit wit wit' =
+  let res = unionBy compare (=) wit wit' in
+  let anynegwit = (* if any is neg, then all are *)
+    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+  if anynegwit res
+  then List.filter (function A.NegWit _ -> true | A.Wit _ -> false) res
+  else res
+
 
 let negate_wit wit = A.NegWit wit (*
   match wit with
@@ -690,7 +697,9 @@ let triples_witness x unchecked not_keep trips =
   let anynegwit = (* if any is neg, then all are *)
     List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
   let allnegwit = (* if any is neg, then all are *)
-    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+    List.for_all (function A.NegWit _ -> true | A.Wit _ -> false) in
+  let negtopos =
+    List.map (function A.NegWit w -> w | A.Wit _ -> failwith "bad wit")in
   let res = 
     List.fold_left
       (function prev ->
@@ -704,14 +713,22 @@ let triples_witness x unchecked not_keep trips =
 		 print_state ": empty witness from" [t]);
 	      t::prev
 	  | l when anyneg l ->
-	      if anynegwit wit && allnegwit wit
+	      (* negated substitution only allowed with negwits.
+		 just dropped *)
+	      if anynegwit wit && allnegwit wit (* nonempty negwit list *)
 	      then prev
 	      else
 		failwith "unexpected negative binding with positive witnesses"
 	  | [_] -> (* positive must be alone *)
-	      if unchecked or not_keep or anynegwit wit
-	      then (s,newth,wit)::prev
-	      else (s,newth,[A.Wit(s,th_x,[],wit)])::prev
+	      let new_triple =
+		if unchecked or not_keep
+		then (s,newth,wit)
+		else
+		  if anynegwit wit && allnegwit wit
+		  then
+		    (s,newth,[A.NegWit(A.Wit(s,th_x,[],negtopos wit))])
+		  else (s,newth,[A.Wit(s,th_x,[],wit)]) in
+	      new_triple::prev
 	  | _ -> failwith "there can only be one positive binding")
       [] trips in
   if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
