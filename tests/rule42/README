@@ -161,8 +161,7 @@ rock.c
   * [status] ok
 
 shmem.c
-  * [status] fail
-  * [exc] bizarre unparsing of an assignment (RHS disappears)
+  * [status] ok
 
 slab.c
   * [status] ok
