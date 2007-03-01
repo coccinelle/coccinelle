@@ -343,7 +343,14 @@ let main () =
             Unparse_c.pp_program program2_with_ppmethod !default_output_file;
             Common.command2 ("cat " ^ !default_output_file);
 
-        | "compare_c", _ -> 
+        | "compare_c", xs -> 
+            (match xs with
+            | [file1;file2] -> 
+                Testing.print_diff_expected_res_and_exit file1 file2 true
+            | _ -> failwith "not enough argument for compare_c"
+            )
+
+        | "compare_c_hardcoded", _ -> 
             Testing.print_diff_expected_res_and_exit 
               "parsing_c/tests/compare1.c" 
               "parsing_c/tests/compare2.c" 
