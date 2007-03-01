@@ -3,13 +3,135 @@ open Common open Commonop
 open Parser_c 
 
 
+let pr2 s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2 s
+
 let pr2_cpp s = 
   if !Flag_parsing_c.debug_cpp
   then pr2 ("CPP-" ^ s)
 
-let pr2 s = 
-  if !Flag_parsing_c.verbose_parsing 
-  then Common.pr2 s
+
+(*****************************************************************************)
+(* Some debugging functions  *)
+(*****************************************************************************)
+
+(* Harcoded names of types or macros but they are not used by our heuristics!
+ * They are just here to enable to detect false positive by printing only
+ * the typedef/macros that we don't know yet. If print everything, then
+ * can easily get lost with too much verbose tracing information.
+ * So those functions "filter" some messages.
+ *)
+
+let msg_gen cond is_known printer s = 
+  if cond
+  then
+    if not (!Flag_parsing_c.filter_msg)
+    then printer s
+    else
+      if not (is_known s)
+      then printer s
+      
+
+(* note: cant use partial application with let msg_typedef = 
+ * because it would compute msg_typedef at compile time when 
+ * the flag debug_typedef is always false
+ *)
+let msg_typedef s = 
+  msg_gen (!Flag_parsing_c.debug_typedef)
+    (fun s -> 
+      (match s with
+      | "u_char"   | "u_short"  | "u_int"  | "u_long"
+      | "u8" | "u16" | "u32" | "u64" 
+      | "s8"  | "s16" | "s32" | "s64" 
+      | "__u8" | "__u16" | "__u32"  | "__u64"  
+          -> true
+          
+      | "acpi_handle" 
+      | "acpi_status" 
+        -> true
+          
+      | s when s =~ ".*_t$" -> true
+      | _ -> false 
+      )
+    )
+    (fun s -> pr2 ("TYPEDEF: promoting: " ^ s))
+    s
+
+let msg_declare_macro s = 
+  msg_gen (!Flag_parsing_c.debug_cpp)
+    (fun s -> 
+      (match s with 
+      | "DECLARE_MUTEX" | "DECLARE_COMPLETION"  | "DECLARE_RWSEM"
+      | "DECLARE_WAITQUEUE" | "DECLARE_WAIT_QUEUE_HEAD" 
+      | "DEFINE_SPINLOCK" | "DEFINE_TIMER"
+      | "DEVICE_ATTR" | "CLASS_DEVICE_ATTR" | "DRIVER_ATTR"
+      | "SENSOR_DEVICE_ATTR"
+      | "LIST_HEAD"
+      | "DECLARE_WORK"  | "DECLARE_TASKLET"
+      | "PORT_ATTR_RO" | "PORT_PMA_ATTR"
+      | "DECLARE_BITMAP"
+
+          -> true
+(*
+      | s when s =~ "^DECLARE_.*" -> true
+      | s when s =~ ".*_ATTR$" -> true
+      | s when s =~ "^DEFINE_.*" -> true
+*)
+
+      | _ -> false
+      )
+    )
+    (fun s -> pr2_cpp ("MACRO: found declare-macro: " ^ s))
+    s
+      
+
+let msg_foreach s = 
+  pr2_cpp ("MACRO: certainly foreach, transforming: " ^ s)
+
+
+let msg_debug_macro s = 
+  pr2_cpp ("MACRO: found debug-macro: " ^ s)
+
+
+let msg_macro_noptvirg s = 
+  pr2_cpp ("MACRO: found macro with param " ^ s)
+
+
+let msg_macro_noptvirg_single s = 
+  pr2_cpp ("MACRO: found single-macro " ^ s)
+
+
+let msg_macro_higher_order s = 
+  msg_gen (!Flag_parsing_c.debug_cpp)
+    (fun s -> 
+      (match s with 
+      | "DBGINFO"
+      | "DBGPX"
+      | "DFLOW"
+        -> true
+      | _ -> false
+      )
+    )
+    (fun s -> pr2_cpp ("MACRO: found higher ordre macro : " ^ s))
+    s
+
+
+
+let msg_stringification s = 
+  msg_gen (!Flag_parsing_c.debug_cpp)
+    (fun s -> 
+      (match s with 
+      | "REVISION"
+      | "UTS_RELEASE"
+          -> true
+      | _ -> false
+      )
+    )
+    (fun s -> pr2_cpp ("MACRO: found string-macro " ^ s))
+    s
+
+  
 
 (*****************************************************************************)
 (* CPP handling: macros, ifdefs  *)
@@ -664,6 +786,8 @@ let debug_macros_list =
    "KDBG";
   ]
 
+
+
 let find_and_tag_good_macro cleanxs_with_pos = 
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
   let (keep_macro  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
@@ -684,8 +808,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
           ] as line1
           ))
         ::xs when s ==~ regexp_macro -> 
-
-        pr2_cpp ("MACRO: found static declare-macro: " ^ s);
+        msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
@@ -704,7 +827,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
           ))
         ::xs when s ==~ regexp_macro -> 
 
-        pr2_cpp ("MACRO: found static declare-macro: " ^ s);
+        msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
@@ -712,7 +835,12 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 
 
-    (* ex: DECLARE_BITMAP(); *)
+    (* ex: DECLARE_BITMAP(); 
+     * Here I use regexp_declare and not regexp_macro because
+     * Sometimes it can be a FunCallMacro such as DEBUG(foo());
+     * Here we don't have the preceding 'static' so only way to
+     * not have positive is to restrict to .*DECLARE.* macros.
+    *)
     | (Line 
           ([NotParenToken (TIdent (s,_),_);
             Parenthised (xxs,info_parens);
@@ -721,7 +849,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
           ))
         ::xs when s ==~ regexp_declare -> 
 
-        pr2_cpp ("MACRO: found declare-macro: " ^ s);
+        msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (pos_of_token tok) true
         ) line1;
@@ -739,7 +867,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
       ::xs when 
           List.mem s debug_macros_list
       -> 
-        pr2_cpp ("MACRO: found debug-macro: " ^ s);
+        msg_debug_macro s;
         Hashtbl.add !keep_macro (pos_of_token macro) true;
 
         iter_token_paren (fun (tok, x) -> 
@@ -798,7 +926,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
         if condition (* && s ==~ regexp_macro *)
         then begin
-          pr2_cpp ("MACRO: found macro with param " ^ s);
+          msg_macro_noptvirg s;
           Hashtbl.add !keep_macro (pos_of_token macro) true;
           iter_token_paren (fun (tok, x) -> 
             Hashtbl.add !put_comment (pos_of_token tok) true
@@ -839,8 +967,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
         if condition
         then begin
-          pr2_cpp ("MACRO: found single-macro " ^ s);
-
+          msg_macro_noptvirg_single s;
           Hashtbl.add !keep_macro (pos_of_token macro) true;
 
           iter_token_paren (fun (tok, x) -> 
@@ -858,20 +985,17 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
   in
   (* ---------------------------------------------------------------------- *)
-(*
-  let body_functions = mk_body_function_grouped cleanxs_with_pos in
-  
-  body_functions +> List.iter (function
-  | NotBodyLine _ -> ()
-  | BodyFunction cleanxs_with_pos -> 
-      (* une base vraiment plus pratique de travail *)
-*)
-      let paren_grouped = mk_parenthised  cleanxs_with_pos in
-      let line_paren_grouped = mk_line_parenthised paren_grouped in
-      find_macro line_paren_grouped;
-(*
-  );
-*)
+  (*
+    let body_functions = mk_body_function_grouped cleanxs_with_pos in
+    body_functions +> List.iter (function
+    | NotBodyLine _ -> ()
+    | BodyFunction cleanxs_with_pos -> 
+  *)
+
+  (* une base vraiment plus pratique de travail *)
+  let paren_grouped = mk_parenthised  cleanxs_with_pos in
+  let line_paren_grouped = mk_line_parenthised paren_grouped in
+  find_macro line_paren_grouped;
 
   !keep_macro, !put_comment
 
@@ -940,14 +1064,14 @@ let find_and_tag_actions cleanxs_with_pos =
         xxs +> List.iter find_actions;
         let modified = find_actions_params xxs in
         if modified 
-        then pr2_cpp ("MACRO: found higher ordre macro : " ^ s)
+        then msg_macro_higher_order s
 
     | x::xs -> 
         find_actions xs
+
   and find_actions_params xxs = 
     xxs +> List.fold_left (fun acc xs -> 
-      if (tokens_of_paren xs) +> 
-           List.exists (fun (tok, pos) -> is_statement_token tok)
+      if List.exists (fun (tok,_)-> is_statement_token tok)(tokens_of_paren xs)
       then begin
         xs +> iter_token_paren (fun (tok, pos) -> 
           Hashtbl.add !put_actions (pos_of_token tok) true
@@ -958,8 +1082,6 @@ let find_and_tag_actions cleanxs_with_pos =
     ) false
   in
   (* ---------------------------------------------------------------------- *)
-
-
   let paren_grouped = mk_parenthised  cleanxs_with_pos in
   find_actions paren_grouped;
   !put_actions
@@ -1036,23 +1158,6 @@ let merge_info_str x xs =
   
 
 
-
-let msg_typedef s = 
-  match s with
-  | "u_char"   | "u_short"  | "u_int"  | "u_long"
-  | "u8" | "u16" | "u32" | "u64" 
-  | "s8"  | "s16" | "s32" | "s64" 
-  | "__u8" | "__u16" | "__u32"  | "__u64"  -> () 
-      
-  | "acpi_handle" -> ()
-  | "acpi_status" -> ()
-        
-  | s when s =~ ".*_t$" -> ()
-  | _ ->  
-      if !Flag_parsing_c.debug_typedef
-      then pr2 ("TYPEDEF: promoting: " ^ s)
-
-
 let forLOOKAHEAD = 20
 
   
@@ -1115,17 +1220,22 @@ let lookahead2 next before =
    *)
   | TIdent (s, i1)::TCPar _::rest, TOPar _::_ 
       when !Lexer_parser._lexer_hint.parameterDeclaration -> 
-      pr2_cpp ("MACRO: arg, transforming: " ^ s);
+      pr2_cpp ("MACRO: a la RQFUNC_ARG: " ^ s);
       TCommentCpp (i1)
 
   (*-------------------------------------------------------------*)
   (* stringification of ident *)
   (*-------------------------------------------------------------*)
   | (TIdent (s,i1)::_,       TOPar _::TIdent ("printk", _)::_) -> 
+      msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
 
-  | (TIdent (s,i1)::TString (_,_)::_,   _) ->  TString ((s, Ast_c.IsChar), i1)
-  | (TIdent (s,i1)::_,   TString _::_) ->      TString ((s, Ast_c.IsChar), i1)
+  | (TIdent (s,i1)::TString (_,_)::_,   _) ->  
+      msg_stringification s;
+      TString ((s, Ast_c.IsChar), i1)
+  | (TIdent (s,i1)::_,   TString _::_) ->      
+      msg_stringification s;
+      TString ((s, Ast_c.IsChar), i1)
 
 
                   
@@ -1357,7 +1467,7 @@ let lookahead2 next before =
       if s ==~ regexp_foreach && 
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)
       then begin
-        pr2_cpp ("MACRO: certainly foreach, transforming: " ^ s);
+        msg_foreach s;
         Twhile i1
       end
       else TIdent (s, i1)

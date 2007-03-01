@@ -144,6 +144,8 @@ let main () =
       "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
       "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
 
+      "-no_filter_msg",      Arg.Clear  Flag_parsing_c.filter_msg , "  ";
+
       (* todo: other profile ? *)
       "-quiet",   Arg.Unit (fun () -> 
         let (set_to_true, set_to_false) = quiet_profile in
