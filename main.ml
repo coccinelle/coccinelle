@@ -293,6 +293,7 @@ let main () =
             xs +> List.iter Pretty_print_cocci.unparse
 
 
+        | "show_flow", [file] 
         | "control_flow", [file] -> 
             if not (file =~ ".*\\.c") 
             then pr2 "warning: seems not a .c file";
