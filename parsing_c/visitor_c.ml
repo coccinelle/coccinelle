@@ -164,7 +164,12 @@ let rec vk_expr = fun bigf expr ->
     (* TODO, we will certainly have to then do a special visitor for 
      * initializer 
      *)
-    | Constructor -> ()
+    | Constructor (t, initxs) -> 
+        vk_type bigf t;
+        initxs +> List.iter (fun (ini, ii) -> 
+          vk_ini bigf ini;
+          List.iter (vk_info bigf) ii
+        ) 
           
     | ParenExpr (e) -> exprf e
 
@@ -309,7 +314,12 @@ and vk_ini = fun bigf ini ->
     iif iini;
     match ini with
     | InitExpr e -> vk_expr bigf e
-    | InitList initxs -> List.iter (inif) (initxs +> List.map fst)
+    | InitList initxs -> 
+        initxs +> List.iter (fun (ini, ii) -> 
+          inif ini;
+          List.iter (vk_info bigf) ii
+        ) 
+          
     | InitGcc (s, e) -> inif e
     | InitGccIndex (e1, e) -> vk_expr bigf e1; inif e
     | InitGccRange (e1, e2, e) -> 
@@ -525,7 +535,13 @@ let rec vk_expr_s = fun bigf expr ->
           StatementExpr (
             statxs +> List.map (vk_statement_s bigf),
             infolistf is)
-      | Constructor -> Constructor
+      | Constructor (t, initxs) -> 
+          Constructor 
+            (vk_type_s bigf t, 
+            (initxs +> List.map (fun (ini, ii) -> 
+              vk_ini_s bigf ini, List.map (vk_info_s bigf) ii) 
+            ))
+                      
       | ParenExpr (e) -> ParenExpr (exprf e)
 
     in

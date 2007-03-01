@@ -729,7 +729,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
  (* have not a counter part in coccinelle, for the moment *) 
   | _, ((B.Sequence _,_),_) 
   | _, ((B.StatementExpr _,_),_) 
-  | _, ((B.Constructor,_),_) 
+  | _, ((B.Constructor _,_),_) 
     -> fail
 
   | _, _ -> fail

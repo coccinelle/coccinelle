@@ -4,8 +4,7 @@ module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
 
 (*****************************************************************************)
-(*
- * This file is a kind of driver. It gathers all the important functions 
+(* This file is a kind of driver. It gathers all the important functions 
  * from coccinelle in one place. The different entities in coccinelle are:
  *  - files
  *  - astc
@@ -360,6 +359,9 @@ let flow_to_ast a =
 
 
 
+(* --------------------------------------------------------------------- *)
+(* Helpers for hack funheader *)
+(* --------------------------------------------------------------------- *)
 
 let fake_line = {Ast_cocci.line = -1; Ast_cocci.column = -1}
 let wrap ast = (ast, -1, [], [], [], [], Ast_cocci.NoDots)
@@ -386,7 +388,6 @@ let put_no_pos_everywhere decl =
   res.Visitor_ast.rebuilder_declaration decl
 
 
-(* reste the position *)
 let convert_funheader_for_proto (bef,allminus,stg,ty,name,lp,params,rp) env =
   let proto = 
     wrap (

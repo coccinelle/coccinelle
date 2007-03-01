@@ -60,7 +60,20 @@ let rec pp_expression_gen pr_elem =
         statxs +> List.iter pp_statement;
         pr_elem ii2;
         pr_elem i2;
-    | Constructor, [] -> pr "<<constructur_or_strange_stuff>>"
+    | Constructor (t, xs), lp::rp::i1::i2::iicommaopt -> 
+        pr_elem lp;
+        pp_type_gen pr_elem t;
+        pr_elem rp;
+        pr_elem i1;
+        xs +> List.iter (fun (x, ii) -> 
+          assert (List.length ii <= 1);
+          ii +> List.iter pr_elem;
+          pp_init_gen pr_elem x
+        );
+        iicommaopt +> List.iter pr_elem;
+        pr_elem i2;
+
+        
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
@@ -70,7 +83,7 @@ let rec pp_expression_gen pr_elem =
         | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
         | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
         | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
-        | StatementExpr (_) | Constructor 
+        | StatementExpr (_) | Constructor _
         | ParenExpr (_)
       ),_ -> raise Impossible
     );

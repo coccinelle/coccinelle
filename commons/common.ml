@@ -2908,8 +2908,14 @@ let error_message = fun filename (lexeme, lexstart) ->
 (* Regression testing bis *)
 (*****************************************************************************)
 
-(* todo: Keep also size of file, compute md5sum ? cos maybe the file
- * has changed!
+(* todo: keep also size of file, compute md5sum ? cos maybe the file
+ * has changed!.
+ * 
+ * todo: could also compute the date, or some version info of the program,
+ * can record the first date when was found a OK, the last date where
+ * was ok, and then first date when found fail. So the 
+ * Common.Ok would have more information that would be passed
+ * to the Common.Pb of date * date * date * string   peut etre.
  *)
 
 type score_result = Ok | Pb of string 

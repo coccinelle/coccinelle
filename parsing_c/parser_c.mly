@@ -511,9 +511,9 @@ postfix_expr:
 
  /* gccext: also called compound literals */
  | topar2 type_name tcpar2 TOBrace TCBrace 
-     { mk_e(Constructor) [] }
+     { mk_e(Constructor ($2, [])) [$1;$3;$4;$5] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
-     { mk_e(Constructor) [] }
+     { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
 primary_expr: 
  | TIdent  { mk_e(Ident  (fst $1)) [snd $1] }

@@ -171,7 +171,7 @@ and expressionbis =
 
   (* gccext: *)        
   | StatementExpr of compound wrap (* ( )     new scope *) 
-  | Constructor 
+  | Constructor  of fullType * initialiser wrap2 (* , *) list 
 
   (* forunparser: *)
   | ParenExpr of expression 

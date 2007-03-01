@@ -10,6 +10,10 @@ void main(int i)
 
 
  	request.uid = (mixart_uid_t){0,0};  /* board num = 0 */
+
+
+        *entry = (swp_entry_t) {0};
+
 }
 
 
