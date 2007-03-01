@@ -379,7 +379,7 @@ E.fld => E1->fld
 
 Expression
 @@
-pure expression E1, E2;
+expression E1, E2; // was pure, not sure why that's needed, not good for rule27
 identifier fld;
 @@
 
