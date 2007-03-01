@@ -71,8 +71,7 @@ Bugs            :     0
   * [status] ok
 
 9_dir.c
-  * [status] fail
-  * [parser] unparseable code
+  * [status] ok
 
 agpgart_be.c
   * [status] ok
@@ -91,8 +90,7 @@ cache.c
   * [status] ok
 
 check.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 compress.c
   * [status] ok
@@ -101,16 +99,13 @@ dir.c
   * [status] ok
 
 emd.c
-  * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [status] ok
 
 file.c
   * [status] ok
 
 filemap.c
-  * [status] fail
-  * [exc] Fatal error: exception Failure("pb in flow_to_ast, some nodes have
-    not been visited") 
+  * [status] ok
 
 i810_dma.c
   * [status] ok
@@ -167,7 +162,7 @@ rock.c
 
 shmem.c
   * [status] fail
-  * [exc] Fatal error: exception Common.Impossible
+  * [exc] bizarre unparsing of an assignment (RHS disappears)
 
 slab.c
   * [status] ok
@@ -190,8 +185,8 @@ tail_conversion.c
   * [status] ok
 
 vmscan.c
-  * [status] fail
-  * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
+  * [status] spatch-ok
+  * [exc] dropped definition of a function that was made local
 
 vxfs_immed.c
   * [status] ok

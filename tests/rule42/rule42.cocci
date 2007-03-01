@@ -22,6 +22,9 @@ expression page;
 - PageClearSlab(page)
 + ClearPageSlab(page)
 |
+- PageTestandClearReferenced(page)
++ TestClearPageReferenced(page)
+|
 - PageSetSlab(page)
 + SetPageSlab(page)
 |
