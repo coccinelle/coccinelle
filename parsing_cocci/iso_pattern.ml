@@ -160,37 +160,39 @@ let match_maker context_required whencode_allowed =
     let mcode m = pure_mcodekind (Ast0.get_mcode_mcodekind m) in
 
     (* a case for everything that has a metavariable *)
+    (* pure is supposed to match only unitary metavars, not anything that
+       contains only unitary metavars *)
     let ident r k i =
       (pure_mcodekind (Ast0.get_mcodekind i)) && k i &&
       match Ast0.unwrap i with
 	Ast0.MetaId(name,pure) | Ast0.MetaFunc(name,pure)
       | Ast0.MetaLocalFunc(name,pure) -> pure
-      |	_ -> true in
+      |	_ -> false in
 
     let expression r k e =
       (pure_mcodekind (Ast0.get_mcodekind e)) && k e &&
       match Ast0.unwrap e with
 	Ast0.MetaConst(name,_,pure) | Ast0.MetaErr(name,pure) 
       | Ast0.MetaExpr(name,_,pure) | Ast0.MetaExprList(name,pure) -> pure
-      |	_ -> true in
+      |	_ -> false in
 
     let typeC r k t =
       (pure_mcodekind (Ast0.get_mcodekind t)) && k t &&
       match Ast0.unwrap t with
 	Ast0.MetaType(name,pure) -> pure
-      |	_ -> true in
+      |	_ -> false in
 
     let param r k p =
       (pure_mcodekind (Ast0.get_mcodekind p)) && k p &&
       match Ast0.unwrap p with
 	Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,pure) -> pure
-      |	_ -> true in
+      |	_ -> false in
 
     let stmt r k s =
       (pure_mcodekind (Ast0.get_mcodekind s)) && k s &&
       match Ast0.unwrap s with
 	Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
-      |	_ -> true in
+      |	_ -> false in
 
     V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode

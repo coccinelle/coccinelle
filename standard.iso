@@ -351,6 +351,8 @@ unlikely(E) => E
 
 // pure means that either the whole field reference expression is dropped,
 // or E is context code and has no attached + code
+// not really... pure means matches a unitary unplussed metavariable
+// but this rule doesn't work anyway
 Expression
 @@
 type T;
