@@ -17,6 +17,8 @@ ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 
 SPATCHCMD=$(SPATCH) $(ISOFILE) -compare_with_expected -cocci_file $(SP) $(ARGS)
 
+RECOMPARE=$(SPATCH) -action compare_c /tmp/output.c
+
 OBJS = $(SOURCES:.c=.ok)
 
 all: $(OBJS)
@@ -35,13 +37,8 @@ all: $(OBJS)
 	fi) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.spatch_ok) && \
 	test -e corrected_$(<:.c=.res) && \
-	cp $< corrected_$< && \
-	(if ( test -e $(<:.c=.var) ) ; \
-	then (time $(SPATCHCMD) corrected_$<) < $(<:.c=.var) 2> $(<:.c=.spatch_ok) ; \
-	else (time $(SPATCHCMD) corrected_$<) 2> $(<:.c=.spatch_ok) ; \
-	fi) && \
-	/bin/rm corrected_$<) || \
-	(/bin/rm -f corrected_$< && test -e $(<:.c=.spatch_ok) && \
+	$(RECOMPARE) corrected_$(<:.c=.res) 2> $(<:.c=.spatch_ok)) || \
+	(test -e $(<:.c=.spatch_ok) && \
 		mv $(<:.c=.spatch_ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
 	(test -e /tmp/output.c && test -e $(<:.c=.ok) && \
