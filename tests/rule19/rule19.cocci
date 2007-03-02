@@ -8,6 +8,7 @@ statement S;
 interrupt(int intno, void *dev_id, struct pt_regs *regs) {
   ...
   struct IsdnCardState *cs = dev_id;
+  ...
 - if (!cs) { ... return; }
 + spin_lock(&cs->lock);
   <...
@@ -31,11 +32,6 @@ statement S;
 
   interrupt(...) {
     ...
-(
 +   spin_unlock(&cs->lock);
     return;
-|
-    S
-+   spin_unlock(&cs->lock);
-)
   }
