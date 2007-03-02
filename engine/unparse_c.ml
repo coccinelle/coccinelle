@@ -264,9 +264,13 @@ let pp_program2 xs outfile  =
         if Ast_c.is_al_info e 
         then
           (match s with
-          | "char" | "short" | "int" | "double" | "float" | "long" 
-          | "struct" | "union" | "signed" | "unsigned" 
+          | "char" | "short" | "int" | "double" | "float" | "long" | "void"
+          | "auto" | "register" | "extern" | "static"
+          | "signed" | "unsigned" 
+          | "struct" | "union" | "enum" | "typedef" 
           | "const" | "volatile"
+          | "else" | "case" | "do"
+          | "goto" | "return" 
               -> s ^ " "
           | x -> x
           )
