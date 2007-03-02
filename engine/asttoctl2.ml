@@ -944,9 +944,6 @@ and statement stmt after quantified label guard =
 		  Format.print_newline();
 		  (match Ast.unwrap brace_term with
 		    Ast.Atomic(brace_ast) ->
-		      Printf.printf "between dots\n";
-		      Pretty_print_cocci.statement "" brace_term;
-		      Format.print_newline();
 		      let v = Printf.sprintf "_r_%d" n in
 		      let case1 = wrapAnd(wrapRef v,make_match brace_ast) in
 		      let case2 = wrapAnd(wrapNot(wrapRef v),term) in
