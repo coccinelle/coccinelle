@@ -76,7 +76,6 @@ let inline_mcodes =
 			    concat bef beforeinfo mbef mbeforeinfo in
 			  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
 		      | (Ast.AFTER(maft),_,a) ->
-			  Printf.printf "making a beforeafter1\n";
 			  mbefaft :=
 			    (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
 		      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
@@ -101,7 +100,6 @@ let inline_mcodes =
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef),b,_) ->
-			  Printf.printf "making a beforeafter2\n";
 			  mbefaft :=
 			    (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
 		      | (Ast.AFTER(maft),b,mafterinfo) ->
@@ -488,10 +486,13 @@ let rec statement s =
 	 Ast0.NoDots -> Ast.NoDots
        | Ast0.BetweenDots s ->
 	   Ast.BetweenDots (statement seqible s,get_ctr())) in
+    let local_rewrap ast0 ast =
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
+       Ast.NoDots) in
     rewrap s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
-	  Ast.Atomic(rewrap s
+	  Ast.Atomic(local_rewrap s
 		       (Ast.Decl(convert_mcodekind bef,
 				 check_allminus s,
 				 declaration decl)))
@@ -502,29 +503,30 @@ let rec statement s =
 	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
 		  tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
-	  Ast.Atomic(rewrap s(Ast.ExprStatement(expression exp,mcode sem)))
+	  Ast.Atomic(local_rewrap s
+		       (Ast.ExprStatement(expression exp,mcode sem)))
       | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
 	  Ast.IfThen
-	    (rewrap s
+	    (local_rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch,convert_mcodekind aft)
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
-	    (rewrap s
+	    (local_rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch1,
 	     tokenwrap els (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
 	     convert_mcodekind aft)
       | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
-	  Ast.While(rewrap s
+	  Ast.While(local_rewrap s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
 		    statement Ast.NotSequencible body,convert_mcodekind aft)
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
-	  Ast.Do(rewrap s (Ast.DoHeader(mcode d)),
+	  Ast.Do(local_rewrap s (Ast.DoHeader(mcode d)),
 		 statement Ast.NotSequencible body,
 		 tokenwrap wh
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
@@ -539,7 +541,8 @@ let rec statement s =
 	  let exp3 = get_option expression exp3 in
 	  let rp = mcode rp in
 	  let body = statement Ast.NotSequencible body in
-	  Ast.For(rewrap s (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
+	  Ast.For(local_rewrap s
+		    (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body,convert_mcodekind aft)
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  let switch = mcode switch in
@@ -549,28 +552,29 @@ let rec statement s =
 	  let lb = mcode lb in
 	  let cases = List.map case_line cases in
 	  let rb = mcode rb in
-	  Ast.Switch(rewrap s (Ast.SwitchHeader(switch,lp,exp,rp)),
+	  Ast.Switch(local_rewrap s (Ast.SwitchHeader(switch,lp,exp,rp)),
 		     tokenwrap lb (Ast.SeqStart(lb)),cases,
 		     tokenwrap rb (Ast.SeqEnd(rb)))
       | Ast0.Break(br,sem) ->
-	  Ast.Atomic(rewrap s (Ast.Break(mcode br,mcode sem)))
+	  Ast.Atomic(local_rewrap s (Ast.Break(mcode br,mcode sem)))
       | Ast0.Continue(cont,sem) ->
-	  Ast.Atomic(rewrap s (Ast.Continue(mcode cont,mcode sem)))
+	  Ast.Atomic(local_rewrap s (Ast.Continue(mcode cont,mcode sem)))
       | Ast0.Return(ret,sem) ->
-	  Ast.Atomic(rewrap s (Ast.Return(mcode ret,mcode sem)))
+	  Ast.Atomic(local_rewrap s (Ast.Return(mcode ret,mcode sem)))
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  Ast.Atomic
-	    (rewrap s (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
+	    (local_rewrap s
+	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
-	  Ast.Atomic(rewrap s
+	  Ast.Atomic(local_rewrap s
 		       (Ast.MetaStmt(mcode name,Ast.Nonunitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
-	  Ast.Atomic(rewrap s
+	  Ast.Atomic(local_rewrap s
 		       (Ast.MetaStmtList(mcode name,Ast.Nonunitary,false)))
       | Ast0.Exp(exp) ->
-	  Ast.Atomic(rewrap s (Ast.Exp(expression exp)))
+	  Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
       | Ast0.Ty(ty) ->
-	  Ast.Atomic(rewrap s (Ast.Ty(typeC ty)))
+	  Ast.Atomic(local_rewrap s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
@@ -610,17 +614,17 @@ let rec statement s =
 	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus s in
-	  Ast.FunDecl(rewrap s
+	  Ast.FunDecl(local_rewrap s
 			(Ast.FunHeader(convert_mcodekind bef,
 				       allminus,stg,ty,name,lp,params,rp)),
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		      decls,dots,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
-	  Ast.Atomic(rewrap s (Ast.Include(mcode inc,mcode str)))
+	  Ast.Atomic(local_rewrap s (Ast.Include(mcode inc,mcode str)))
       | Ast0.Define(def,id,body) ->
 	  Ast.Atomic
-	    (rewrap s (Ast.Define(mcode def,ident id,define_body body)))
+	    (local_rewrap s (Ast.Define(mcode def,ident id,define_body body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))

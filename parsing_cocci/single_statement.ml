@@ -89,7 +89,6 @@ branch, so the braces get added in oddly.
 
 let add_braces orig_s =
   let s = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
-  let s = Compute_lines.statement s in
   let new_mcodekind =
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->
@@ -123,6 +122,7 @@ let add_braces orig_s =
 	Ast0.MIXED(ref(new_text,tinfo1,tinfo2))
     | _ -> failwith "unexpected plus code" in
   Ast0.set_mcodekind s new_mcodekind;
+  let s = Compute_lines.statement s in
   s
 
 (* ---------------------------------------------------------------------- *)
@@ -146,9 +146,12 @@ let rec statement dots_before dots_after s =
 
   match Ast0.unwrap s with
     Ast0.FunDecl(x,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+      (* true for close brace, because that represents any way we can
+	 exit the function, which is not necessarily followed by an explicit
+	 close brace. *)
       Ast0.rewrap s
 	(Ast0.FunDecl(x,stg,ty,name,lp,params,rp,lbrace,
-		      statement_dots false false body,
+		      statement_dots false true body,
 		      rbrace))
   | Ast0.Decl(_,_) -> s
   | Ast0.Seq(lbrace,body,rbrace) ->

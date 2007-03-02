@@ -293,11 +293,6 @@ let combiner bind option_default
 
   and statement s =
     process_bef_aft s;
-    let wrapped (term,info,n,mc,ty,d) =
-      match d with
-	Ast0.NoDots -> ()
-      | Ast0.BetweenDots s -> let _ = statement s in () in
-    wrapped s;
     let k s =
       match Ast0.unwrap s with
 	Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
@@ -679,7 +674,6 @@ let rebuilder = fun
       | Ast0.BetweenDots(stm) -> Ast0.BetweenDots(statement stm))
 
   and statement s =
-    let s = wrapped s in
     let k s =
       Ast0.rewrap s
 	(match Ast0.unwrap s with
@@ -760,12 +754,6 @@ let rebuilder = fun
       Ast0.NoWhen -> Ast0.NoWhen
     | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
-
-  and wrapped (term,info,n,mc,ty,d) =
-    match d with
-      Ast0.NoDots -> (term,info,n,mc,ty,d)
-    | Ast0.BetweenDots s ->
-	(term,info,n,mc,ty,Ast0.BetweenDots (statement s))
 
   and case_line c =
     let k c =
