@@ -49,8 +49,9 @@ let lub = function
   | (Req x1,Opt x2) -> Req x1
   | (Req x1,Req x2) -> Req (x1@x2)
 
-let extend data = function
-    Opt x -> Opt x
+let extend optional data = function
+    Opt [] -> optional [data]
+  | Opt x -> Opt x
   | Req x -> Req (data::x)
 
 (* --------------------------------------------------------------------- *)
@@ -93,13 +94,13 @@ and statement tail stmt used_after optional =
   | Ast.While(header,branch,aft) | Ast.For(header,branch,aft) ->
       if contains_modif header used_after or mcode () ((),(),aft)
       then optional [header]
-      else extend header (statement tail branch used_after optional)
+      else extend optional header (statement tail branch used_after optional)
 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       if contains_modif ifheader used_after or mcode () ((),(),aft)
       then optional [ifheader]
       else
-	extend ifheader
+	extend optional ifheader
 	  (lub(statement tail branch1 used_after optional,
 	       statement tail branch2 used_after optional))
 
@@ -125,7 +126,7 @@ and statement tail stmt used_after optional =
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let body_info =
-	extend header (* only extends if the rest is required *)
+	extend optional header (* only extends if the rest is required *)
 	  (lub (statement_list false decls used_after optional,
 		statement_list true body used_after optional)) in
       if contains_modif header used_after or
