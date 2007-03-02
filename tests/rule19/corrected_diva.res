@@ -1,4 +1,4 @@
-/* $Id: corrected_diva.res,v 1.1 2007-03-02 08:39:10 julia Exp $
+/* $Id: corrected_diva.res,v 1.2 2007-03-02 20:19:45 julia Exp $
  *
  * low level stuff for Eicon.Diehl Diva Family ISDN cards
  *
@@ -28,7 +28,7 @@
 
 extern const char *CardType[];
 
-const char *Diva_revision = "$Revision: 1.1 $";
+const char *Diva_revision = "$Revision: 1.2 $";
 static spinlock_t diva_lock = SPIN_LOCK_UNLOCKED;
 
 #define byteout(addr,val) outb(val,addr)
@@ -588,7 +588,7 @@ diva_irq_ipac_pci(int intno, void *dev_id, struct pt_regs *regs)
 	cfg = (u_char *) cs->hw.diva.pci_cfg;
 	val = *cfg;
 	if (!(val & PITA_INT0_STATUS))
-		{ spin_lock(&cs->lock); return; } /* other shared IRQ */
+		{ spin_unlock(&cs->lock); return; } /* other shared IRQ */
 	*cfg = PITA_INT0_STATUS; /* Reset pending INT0 */
 	ista = memreadreg(cs->hw.diva.cfg_reg, IPAC_ISTA);
 Start_IPACPCI:

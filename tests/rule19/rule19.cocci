@@ -35,3 +35,16 @@ statement S;
 +   spin_unlock(&cs->lock);
     return;
   }
+
+
+@@
+struct IsdnCardState *cs;
+@@
+
+interrupt (...) {
+  <...
+- if ((cs->tx_skb = skb_dequeue(&cs->sq))) { ... }
+- else sched_d_event(cs, D_XMTBUFREADY);
++ xmit_ready_d(cs);
+  ...>
+}

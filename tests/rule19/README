@@ -1,26 +1,31 @@
 asuscom.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 avm_a1.c
- * [status] 
+ * [status] ok
 
 avm_a1p.c
- * [status] 
+ * [status] ok
 
 bkm_a4t.c
- * [status] 
+ * [status] ok
 
 bkm_a8.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 diva.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 elsa.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 gazel.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 hfc_2bds0.c
  * [status] 
@@ -44,43 +49,44 @@ isar.c
  * [status] 
 
 isurf.c
- * [status] 
+ * [status] ok
 
 ix1_micro.c
- * [status] 
+ * [status] ok
 
 jade_irq.c
  * [status] 
 
 mic.c
- * [status] 
+ * [status] ok
 
 niccy.c
  * [status] 
 
 s0box.c
- * [status] 
+ * [status] ok
 
 saphir.c
- * [status] 
+ * [status] ok
 
 sedlbauer.c
- * [status] 
+ * [status] spatch_ok
+ some interrupt functions not transformed
 
 sportster.c
- * [status] 
+ * [status] ok
 
 teleint.c
- * [status] 
+ * [status] ok
 
 teles0.c
- * [status] 
+ * [status] ok
 
 teles3.c
- * [status] 
+ * [status] ok
 
 telespci.c
- * [status] 
+ * [status] ok
 
 w6692.c
- * [status] 
+ * [status] fail
