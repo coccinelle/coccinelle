@@ -1908,9 +1908,17 @@ let preprocess label (req,opt) =
 	else
 	  begin
 	    Printf.printf "missing something required\nfound:\n";
+	    flush stdout;
 	    List.iter
 	      (function x -> P.print_predicate x; Format.print_newline())
 	      found;
+	    let notfound =
+	      List.filter (function x -> not(List.mem x found)) req in
+	    Printf.printf "not found:\n";
+	    flush stdout;
+	    List.iter
+	      (function x -> P.print_predicate x; Format.print_newline())
+	      notfound;
 	    false
 	  end
       else List.for_all get_any req

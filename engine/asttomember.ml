@@ -56,23 +56,32 @@ let extend data = function
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
-let rec statement_list stmt_list used_after optional =
+let rec statement_list tail stmt_list used_after optional =
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) | Ast.CIRCLES(x) | Ast.STARS(x) ->
-      List.fold_left
-	(function prev ->
-	  function cur ->
-	    lub (statement cur used_after optional, prev))
-	(Opt []) x
+      (match List.rev x with
+	[] -> Opt []
+      |	last::rest ->
+	  List.fold_right
+	    (function cur ->
+	      function rest ->
+		lub (statement false cur used_after optional, rest))
+	    rest (statement tail last used_after optional))
 
-and statement stmt used_after optional =
+and statement tail stmt used_after optional =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
-      if contains_modif ast used_after then optional [ast] else Opt []
+      (match Ast.unwrap ast with
+	(* modifications on return are managed in some other way *)
+	Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) when tail -> optional []
+      |	_ ->
+	  if contains_modif ast used_after
+	  then optional [ast]
+	  else Opt [])
   | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
       let body_info =
-	lub (statement_list decls used_after optional,
-	     statement_list body used_after optional) in
+	lub (statement_list false decls used_after optional,
+	     statement_list tail body used_after optional) in
       if contains_modif lbrace used_after or contains_modif rbrace used_after
       then
 	match body_info with
@@ -84,21 +93,22 @@ and statement stmt used_after optional =
   | Ast.While(header,branch,aft) | Ast.For(header,branch,aft) ->
       if contains_modif header used_after or mcode () ((),(),aft)
       then optional [header]
-      else extend header (statement branch used_after optional)
+      else extend header (statement tail branch used_after optional)
 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       if contains_modif ifheader used_after or mcode () ((),(),aft)
       then optional [ifheader]
       else
 	extend ifheader
-	  (lub(statement branch1 used_after optional,
-	       statement branch2 used_after optional))
+	  (lub(statement tail branch1 used_after optional,
+	       statement tail branch2 used_after optional))
 
   | Ast.Disj(stmt_dots_list) ->
       List.fold_left
 	(function prev ->
 	  function cur ->
-	    lub (statement_list cur used_after (function x -> Opt x), prev))
+	    lub (statement_list tail cur used_after (function x -> Opt x),
+		 prev))
 	(Opt []) stmt_dots_list
 
   | Ast.Nest(stmt_dots,whencode,t) ->
@@ -106,17 +116,18 @@ and statement stmt used_after optional =
 	Ast.DOTS([l]) ->
 	  (match Ast.unwrap l with
 	    Ast.MultiStm(stm) ->
-	      statement stm used_after optional
-	  | _ -> statement_list stmt_dots used_after (function x -> Opt x))
-      | _ -> statement_list stmt_dots used_after (function x -> Opt x))
+	      statement tail stm used_after optional
+	  | _ ->
+	      statement_list tail stmt_dots used_after (function x -> Opt x))
+      | _ -> statement_list tail stmt_dots used_after (function x -> Opt x))
 
   | Ast.Dots((_,i,d),whencodes,t) -> Opt []
 
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let body_info =
 	extend header (* only extends if the rest is required *)
-	  (lub (statement_list decls used_after optional,
-		statement_list body used_after optional)) in
+	  (lub (statement_list false decls used_after optional,
+		statement_list true body used_after optional)) in
       if contains_modif header used_after or
 	contains_modif lbrace used_after or contains_modif rbrace used_after
       then
@@ -125,9 +136,10 @@ and statement stmt used_after optional =
 	| Opt(elems) -> lub (optional [header], body_info)
       else body_info
 
-  | Ast.OptStm(stm) -> statement stm used_after (function x -> Opt x)
+  | Ast.OptStm(stm) -> statement tail stm used_after (function x -> Opt x)
 
-  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) -> statement stm used_after optional
+  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
+      statement tail stm used_after optional
 
   | _ -> failwith "not supported"
 
@@ -138,9 +150,9 @@ let top_level ua t =
   match Ast.unwrap t with
     Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
   | Ast.DECL(stmt) ->
-      statement stmt ua (function x -> Req x)
+      statement false stmt ua (function x -> Req x)
   | Ast.CODE(stmt_dots) ->
-      statement_list stmt_dots ua (function x -> Req x)
+      statement_list false stmt_dots ua (function x -> Req x)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)
