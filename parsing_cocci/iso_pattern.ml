@@ -529,9 +529,13 @@ let match_maker context_required whencode_allowed =
   and match_statement pattern s =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
-	add_pure_binding name pure pure_sp_code.V0.combiner_statement
-	  (function ty -> Ast0.StmtTag ty)
-	  s
+	match Ast0.unwrap s with
+	  Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) ->
+	    return false (* ... is not a single statement *)
+	| _ ->
+	    add_pure_binding name pure pure_sp_code.V0.combiner_statement
+	      (function ty -> Ast0.StmtTag ty)
+	      s
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | up ->
 	if not(context_required) or is_context s
