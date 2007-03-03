@@ -143,8 +143,7 @@ apne.c
  * [status] ok
 
 applicom.c
- * [status] spatch_ok
- problem with a version string
+ * [status] ok
 
 arcfb.c
  * [status] ok
@@ -174,8 +173,7 @@ atmel.c
  * [status] ok
 
 atp870u.c
- * [status] failed
- goto problem?
+ * [status] ok
 
 atyfb_base.c
  * [status] ok
@@ -235,14 +233,10 @@ bcm43xx_main.c
  * [status] ok
 
 bkm_a4t.c
- * [status] error
- else case of an ifdef ends in a return.  CE required in the code following
- this return, so flow_to_ast complains about nodes that are not visited.
+ * [status] ok
 
 bkm_a8.c
- * [status] error
- else case of an ifdef ends in a return.  CE required in the code following
- this return, so flow_to_ast complains about nodes that are not visited.
+ * [status] ok
 
 blz1230.c
  * [status] ok
@@ -305,7 +299,7 @@ cpci_hotplug_core.c
  * [status] ok
 
 cpcihp_zt5550.c
- * [status]
+ * [status] spatch_ok
  an include also added
 
 cpqarray.c
@@ -369,12 +363,10 @@ cyberstormII.c
  * [status] ok
 
 cyclades.c
- * [status] error
- ifdef where both then and else branch end in a return
+ * [status] ok
 
 DAC960.c
- * [status] error
- function containing the CE doesn't parse
+ * [status] ok
 
 dbri.c
  * [status] ok
@@ -386,7 +378,8 @@ de2104x.c
  * [status] ok
 
 de4x5.c
- * [status] ok
+ * [status] failed
+ parsing problem
 
 dec_esp.c
  * [status] ok
@@ -429,7 +422,7 @@ drm_irq.c
  * [status] ok
 
 dscc4.c
- * [status] failed
+ * [status] ok
 
 dt019x.c
  * [status] ok
@@ -472,6 +465,7 @@ ehci-fsl.c
 
 eisa.c
  * [status] failed
+ parsing problem
 
 elsa.c
  * [status] spatch_ok
@@ -492,7 +486,7 @@ ens1370.c
  * [status] ok
 
 enternow_pci.c
- * [status] failed
+ * [status] ok
 
 epic100.c
  * [status] ok
@@ -525,7 +519,7 @@ esssolo1.c
  * [status] ok
 
 eth_v10.c
- * [status] failed
+ * [status] ok
 
 eurotechwdt.c
  * [status] ok
@@ -564,7 +558,7 @@ fore200e.c
  * [status] ok
 
 forte.c
- * [status] failed
+ * [status] ok
 
 fs_enet-main.c
  * [status] ok
@@ -574,9 +568,11 @@ gazel.c
 
 gdth.c
  * [status] failed
+ parsing problem
 
 g_NCR5380.c
- * [status] failed
+ * [status] spatch_ok
+ programer added some text in an irrelevant string
 
 goku_udc.c
  * [status] ok
@@ -597,7 +593,7 @@ gusmax.c
  * [status] ok
 
 gvp11.c
- * [status] failed
+ * [status] ok
 
 h3600_ts_input.c
  * [status] ok
@@ -627,19 +623,19 @@ hdspm.c
  * [status] ok
 
 he.c
- * [status] failed
+ * [status] ok
 
 hfc4s8s_l1.c
  * [status] ok
 
 hfc_pci.c
- * [status] failed
+ * [status] ok
 
 hisax_fcpcipnp.c
  * [status] ok
 
 horizon.c
- * [status] failed
+ * [status] ok
 
 hostap_pci.c
  * [status] ok
@@ -714,7 +710,7 @@ ide-probe.c
  * [status] ok
 
 idt77252.c
- * [status] failed
+ * [status] ok
 
 imx.c
  * [status] ok
@@ -750,13 +746,13 @@ ioc4_serial.c
  * [status] ok
 
 ip2main.c
- * [status] failed
+ * [status] ok
 
 ipath_driver.c
  * [status] ok
 
 iphase.c
- * [status] failed
+ * [status] ok
 
 ipmi_si_intf.c
  * [status] ok
@@ -795,7 +791,7 @@ ixgb_main.c
  * [status] ok
 
 ixp4xx-beeper.c
- * [status] failed
+ * [status] ok
 
 ixpdev.c
  * [status] ok
@@ -853,13 +849,13 @@ main.c
  * [status] ok
 
 matroxfb_base.c
- * [status] failed
+ * [status] ok
 
 mbcs.c
  * [status] ok
 
 mcdx.c
- * [status] failed
+ * [status] ok
 
 mcfserial.c
  * [status] ok
@@ -892,7 +888,7 @@ mmci.c
  * [status] ok
 
 mmtimer.c
- * [status] failed
+ * [status] ok
 
 module.c
  * [status] ok
@@ -907,7 +903,7 @@ mpsc.c
  * [status] ok
 
 mptbase.c
- * [status] failed
+ * [status] ok
 
 mpu401.c
  * [status] ok
@@ -962,10 +958,10 @@ nicstar.c
  * [status] ok
 
 nj_s.c
- * [status] failed
+ * [status] ok
 
 nj_u.c
- * [status] failed
+ * [status] ok
 
 nm256_audio.c
  * [status] ok
@@ -977,7 +973,7 @@ ns83820.c
  * [status] ok
 
 nsp32.c
- * [status] failed
+ * [status] ok
 
 nsp_cs.c
  * [status] ok
@@ -1046,14 +1042,13 @@ orinoco_tmd.c
  * [status] ok
 
 osl.c
- * [status] error
- can't parse an #include that doesn't involve either "" or <>
+ * [status] ok
 
 parport_ax88796.c
  * [status] ok
 
 parport_mfc3.c
- * [status] failed
+ * [status] ok
 
 parport_sunbpp.c
  * [status] ok
@@ -1071,7 +1066,7 @@ pci.c
  * [status] ok
 
 pciehp_hpc.c
- * [status] failed
+ * [status] ok
 
 pcilynx.c
  * [status] ok
@@ -1116,7 +1111,8 @@ ps2esdi.c
  * [status] ok
 
 pxa2xx_udc.c
- * [status] failed
+ * [status] spatch_ok
+ progframmer added a line of assembly code
 
 pxafb.c
  * [status] ok
@@ -1248,19 +1244,19 @@ sb1250-mac.c
  * [status] ok
 
 sb_common.c
- * [status] failed
+ * [status] ok
 
 sbni.c
  * [status] ok
 
 scc.c
- * [status] failed
+ * [status] ok
 
 sdhci.c
  * [status] ok
 
 seagate.c
- * [status] failed
+ * [status] ok
 
 sealevel.c
  * [status] ok
@@ -1281,11 +1277,10 @@ sh_dac_audio.c
  * [status] ok
 
 shpchp_hpc.c
- * [status] failed
+ * [status] ok
 
 sh-sci.c
- * [status] error
- can't unparse properly a function pointer declaration
+ * [status] ok
 
 sim710.c
  * [status] ok
@@ -1315,7 +1310,7 @@ smc911x.c
  * [status] ok
 
 smctr.c
- * [status] failed
+ * [status] ok
 
 smc-ultra32.c
  * [status] ok
@@ -1333,10 +1328,10 @@ snsc_event.c
  * [status] ok
 
 socal.c
- * [status] failed
+ * [status] ok
 
 soc.c
- * [status] failed
+ * [status] ok
 
 soc_common.c
  * [status] ok
@@ -1363,7 +1358,7 @@ sscape.c
  * [status] ok
 
 stallion.c
- * [status] failed
+ * [status] ok
 
 starfire.c
  * [status] ok
@@ -1411,11 +1406,10 @@ sx8.c
  * [status] ok
 
 sx.c
- * [status] error
- there seems to be a problem with CVS strings in a #define
+ * [status] ok
 
 sym53c500_cs.c
- * [status] failed
+ * [status] ok
 
 sym_glue.c
  * [status] ok
@@ -1442,7 +1436,7 @@ teles3.c
  * [status] ok
 
 telespci.c
- * [status] failed
+ * [status] ok
 
 tg3.c
  * [status] ok
@@ -1523,7 +1517,7 @@ vx222.c
  * [status] ok
 
 w6692.c
- * [status] failed
+ * [status] ok
 
 wanxl.c
  * [status] ok
@@ -1580,7 +1574,7 @@ zatm.c
  * [status] ok
 
 zoran_card.c
- * [status] failed
+ * [status] ok
 
 zorro8390.c
  * [status] ok
@@ -1591,3 +1585,10 @@ zr36120.c
 zs.c
  * [status] ok
 
+de4x5.failed
+eisa.failed
+g_NCR5380.failed
+gdth.failed
+jazzsonic.failed
+mxser.failed
+pxa2xx_udc.failed

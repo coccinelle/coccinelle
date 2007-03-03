@@ -5,6 +5,7 @@ identifier f;
 identifier g;
 @@
 
+<... // needed to get f and g bound at the same time
 (
 - b->BC_SetStack = f;
 |
@@ -14,18 +15,25 @@ identifier g;
 |
 - i->bcs->BC_Close = g;
 )
+...>
 
 @@
-identifier b;
-struct IsdnCardState *e;
+identifier str;
+struct BCState *b;
+struct IsdnCardState *i;
 @@
 
-e->bc_l1_ops = &b;
+(
+i->bc_l1_ops = &str;
+|
+b->cs->bc_l1_ops = &str;
+)
 
 @@
 @@
 
-struct bc_l1_ops b = {
+struct bc_l1_ops str = {
+  ...
 + .open = f,
 + .close = g,
 };
