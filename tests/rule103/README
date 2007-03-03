@@ -58,6 +58,7 @@ elsa_cs.c
 fdomain_stub.c
  * [status] 
  kmalloc/memset -> kzalloc CE also performed
+ irrelevant error checking added
 
 fmvj18x_cs.c
  * [status] ok
