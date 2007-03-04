@@ -6,6 +6,7 @@ type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
        string list (*inherited vars*) * string list (*witness vars*) *
+       (string * string) list (*metavars (1) typed by metavars (2)*) *
        dots_bef_aft)
 
 and 'a befaft =
@@ -178,7 +179,7 @@ and base_typeC =
 	               expression option * string mcode (* ] *)
   | StructUnionName of structUnion mcode * ident (* name *)
   | StructUnionDef  of structUnion mcode * ident (* name *) *
-	string mcode (* { *) * declaration list * string mcode (* } *)
+	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of string mcode * keep_binding * inherited
@@ -206,6 +207,8 @@ and base_declaration =
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
   | DisjDecl of declaration list
+  (* Ddots is for a structure declaration *)
+  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of string mcode * keep_binding * inherited
 
@@ -374,7 +377,7 @@ and case_line = base_case_line wrap
 
 and base_define_body =
     DMetaId of string mcode * keep_binding
-  | Ddots   of string mcode (* ... *)
+  | Defdots of string mcode (* ... *)
 
 and define_body = base_define_body wrap
 
@@ -416,6 +419,7 @@ and anything =
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
+  | DeclDotsTag         of declaration dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
@@ -423,29 +427,30 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,fresh,inherited,saved,d) x =
-  (x,l,fvs,fresh,inherited,saved,d)
-let unwrap (x,_,_,_,_,_,_) = x
+let rewrap (_,l,fvs,fresh,inherited,saved,tymetas,d) x =
+  (x,l,fvs,fresh,inherited,saved,tymetas,d)
+let unwrap (x,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_,_,_,_,_) = l
+let get_line (_,l,_,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
-let get_fvs (_,_,fvs,_,_,_,_) = fvs
-let get_fresh (_,_,_,fresh,_,_,_) = fresh
-let get_inherited (_,_,_,_,inherited,_,_) = inherited
-let get_saved (_,_,_,_,_,saved,_) = saved
-let get_dots_bef_aft (_,_,_,_,_,_,d) = d
-let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,_) d =
-  (x,l,fvs,fresh,inherited,saved,d)
+let get_fvs (_,_,fvs,_,_,_,_,_) = fvs
+let get_fresh (_,_,_,fresh,_,_,_,_) = fresh
+let get_inherited (_,_,_,_,inherited,_,_,_) = inherited
+let get_saved (_,_,_,_,_,saved,_,_) = saved
+let get_typed_metaexps (_,_,_,_,_,_,tymetas,_) = tymetas
+let get_dots_bef_aft (_,_,_,_,_,_,_,d) = d
+let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,tymetas,_) d =
+  (x,l,fvs,fresh,inherited,saved,tymetas,d)
 
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   (MetaRuleElem((s,{ line = 0; column = 0 },d),Unitary,false),
-   0, fvs, fresh, inh, [], NoDots)
+   0, fvs, fresh, inh, [], [], NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
   (MetaDecl((s,{ line = 0; column = 0 },d),Unitary,false), 0, fvs, fresh, inh,
-   [], NoDots)
+   [], [], NoDots)
 
 (* --------------------------------------------------------------------- *)
 

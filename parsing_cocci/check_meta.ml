@@ -135,11 +135,18 @@ and typeC table minus t =
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC table minus ty;
       parameter_list table minus params
+  | Ast0.FunctionType(ty,lp1,params,rp1) ->
+      get_opt (typeC table minus) ty;
+      parameter_list table minus params
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name,_) -> if minus then check_table table minus name
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC table minus) types
+  | Ast0.StructUnionName(su,id) -> ident GLOBAL table minus id
+  | Ast0.StructUnionDef(su,id,lb,decls,rb) ->
+      ident ID table minus id;
+      dots (declaration GLOBAL table minus) decls
   | Ast0.OptType(ty) | Ast0.UniqueType(ty) | Ast0.MultiType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
@@ -169,6 +176,8 @@ and declaration context table minus d =
   | Ast0.TyDecl(ty,sem) -> typeC table minus ty
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID table minus) decls
+  | Ast0.Ddots(_,Some x) -> declaration ID table minus x
+  | Ast0.Ddots(_,None) -> ()
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 
@@ -188,6 +197,7 @@ and initialiser table minus ini =
   | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
       expression ID table minus exp1; expression ID table minus exp2;
       initialiser table minus ini
+  | Ast0.Idots(_,Some x) -> initialiser table minus x
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.MultiIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
@@ -215,7 +225,7 @@ and parameter_list table minus = dots (parameterTypeDef table minus)
 let define_body table minus s =
   match Ast0.unwrap s with
     Ast0.DMetaId(name,_) -> check_table table minus name
-  | Ast0.Ddots(dots) -> ()
+  | Ast0.Defdots(dots) -> ()
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

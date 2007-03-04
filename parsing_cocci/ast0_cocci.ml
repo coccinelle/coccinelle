@@ -119,11 +119,14 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
+  | FunctionType    of typeC option *
+	               string mcode (* ( *) * parameter_list *
+                       string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of Ast.structUnion mcode * ident (* name *)
   | StructUnionDef  of Ast.structUnion mcode * ident (* name *) *
-	string mcode (* { *) * declaration list * string mcode (* } *)
+	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode * pure
   | DisjType        of string mcode * typeC list * (* only after iso *)
@@ -146,6 +149,8 @@ and base_declaration =
   | TyDecl of typeC * string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list *
                   string mcode list (* the |s *)  * string mcode
+  (* Ddots is for a structure declaration *)
+  | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
   | MultiDecl  of declaration (* only allowed in nests *)
@@ -286,7 +291,7 @@ and meta = base_meta wrap
 
 and base_define_body =
     DMetaId of string mcode * pure
-  | Ddots   of string mcode (* ... *)
+  | Defdots of string mcode (* ... *)
 
 and define_body = base_define_body wrap
 
@@ -310,6 +315,7 @@ type anything =
   | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
+  | DotsDeclTag of declaration dots
   | IdentTag of ident
   | ExprTag of expression
   | TypeCTag of typeC
@@ -324,6 +330,7 @@ let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x
 let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
+let dotsDecl x = DotsDeclTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
 let typeC x = TypeCTag x
@@ -407,6 +414,7 @@ let rec ast0_type_to_type ty =
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
+  | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
   | StructUnionName(su,tag)
   | StructUnionDef(su,tag,_,_,_) ->

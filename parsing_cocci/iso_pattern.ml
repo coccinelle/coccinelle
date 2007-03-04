@@ -23,7 +23,7 @@ let strip_info =
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -35,6 +35,8 @@ let anything_equal = function
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) ->
+      failwith "not a possible variable binding"
+  | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.IdentTag(d1),Ast0.IdentTag(d2)) ->
       (strip_info.V0.rebuilder_ident d1) = (strip_info.V0.rebuilder_ident d2)
@@ -196,7 +198,7 @@ let match_maker context_required whencode_allowed =
 
     V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       ident expression typeC donothing param donothing stmt donothing
       donothing in
 
@@ -269,6 +271,7 @@ let match_maker context_required whencode_allowed =
 	  | _ -> return false
 	else return false in
 
+  (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
       Ast0.MetaExpr(name,None,pure) ->
@@ -404,6 +407,11 @@ let match_maker context_required whencode_allowed =
 	       conjunct_bindings (match_typeC tya tyb)
 		 (match_dots match_param is_plist_matcher do_plist_match
 		    paramsa paramsb)
+	  | (Ast0.FunctionType(tya,lp1a,paramsa,rp1a),
+	     Ast0.FunctionType(tyb,lp1b,paramsb,rp1b)) ->
+	       conjunct_bindings (match_option match_typeC tya tyb)
+		 (match_dots match_param is_plist_matcher do_plist_match
+		    paramsa paramsb)
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_expr sizea sizeb)
@@ -417,7 +425,7 @@ let match_maker context_required whencode_allowed =
 	       if mcode_equal kinda kindb
 	       then
 		 conjunct_bindings (match_ident namea nameb)
-		   (match_list match_decl no_list do_nolist_match
+		   (match_dots match_decl no_list do_nolist_match
 		      declsa declsb)
 	       else return false
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
@@ -450,6 +458,18 @@ let match_maker context_required whencode_allowed =
       | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) -> match_typeC tya tyb
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"
+      | (Ast0.Ddots(_,None),Ast0.Ddots(_,None)) -> return true
+      |	(Ast0.Ddots(dd,None),Ast0.Ddots(_,Some wc)) ->
+	    (* hope that mcode of ddots is unique somehow *)
+	  let (ddots_whencode_allowed,_,_) = whencode_allowed in
+	  if ddots_whencode_allowed
+	  then add_dot_binding dd (Ast0.DeclTag wc)
+	  else
+	    (Printf.printf "warning: not applying iso because of whencode";
+	     return false)
+      | (Ast0.Ddots(_,Some _),_) ->
+	  failwith "whencode not allowed in a pattern1"
+
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
       | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
       | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) -> match_decl decla declb
@@ -529,13 +549,13 @@ let match_maker context_required whencode_allowed =
   and match_statement pattern s =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
-	match Ast0.unwrap s with
+	(match Ast0.unwrap s with
 	  Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) ->
 	    return false (* ... is not a single statement *)
 	| _ ->
 	    add_pure_binding name pure pure_sp_code.V0.combiner_statement
 	      (function ty -> Ast0.StmtTag ty)
-	      s
+	      s)
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | up ->
 	if not(context_required) or is_context s
@@ -752,6 +772,14 @@ let make_minus =
 			 mcode ender,whencode))
     | _ -> donothing r k e in
 
+  let declaration r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
+      Ast0.Ddots(d,whencode) ->
+	(*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
+    | _ -> donothing r k e in
+
   let statement r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -804,8 +832,8 @@ let make_minus =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    dots dots dots dots
-    donothing expression donothing initialiser donothing donothing
+    dots dots dots dots dots
+    donothing expression donothing initialiser donothing declaration
     statement donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -859,7 +887,7 @@ let rebuild_mcode start_line =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
 
@@ -881,7 +909,7 @@ let count_edots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -895,7 +923,7 @@ let count_idots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
 
@@ -911,7 +939,7 @@ let count_dots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
 
@@ -943,6 +971,7 @@ let instantiate bindings mv_bindings =
     | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
+  (* cas for list metavariables *)
   let rec elist r same_dots = function
       [] -> []
     | [x] ->
@@ -1053,6 +1082,16 @@ let instantiate bindings mv_bindings =
 		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,pure)))
     | _ -> k e in
 
+  let declfn r k e =
+    match Ast0.unwrap e with
+      Ast0.Ddots(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.DeclTag(exp) -> Ast0.rewrap e (Ast0.Ddots(d,Some exp))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | _ -> k e in
+
   let paramfn r k e =
     match Ast0.unwrap e with
       Ast0.MetaParam(name,pure) ->
@@ -1108,8 +1147,8 @@ let instantiate bindings mv_bindings =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    (dots elist) donothing (dots plist) (dots slist)
-    identfn exprfn tyfn donothing paramfn donothing stmtfn donothing donothing
+    (dots elist) donothing (dots plist) (dots slist) donothing
+    identfn exprfn tyfn donothing paramfn declfn stmtfn donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -1441,7 +1480,7 @@ let transform (alts : isomorphism) t =
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing exprfn typefn donothing donothing declfn stmtfn
       donothing donothing in
   let res = res.V0.rebuilder_top_level t in
@@ -1455,7 +1494,7 @@ let rewrap =
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -1468,6 +1507,8 @@ let rewrap_anything = function
       Ast0.DotsParamTag(rewrap.V0.rebuilder_parameter_list d)
   | Ast0.DotsStmtTag(d) ->
       Ast0.DotsStmtTag(rewrap.V0.rebuilder_statement_dots d)
+  | Ast0.DotsDeclTag(d) ->
+      Ast0.DotsDeclTag(rewrap.V0.rebuilder_declaration_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)

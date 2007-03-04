@@ -241,6 +241,8 @@ let pred2c = function
       let s = Pretty_print_cocci.rule_elem_to_string re in
       let (s,len) = texify s in
       (Printf.sprintf "%s" s,len)
+  | Lib_engine.TypeOf(s1,s2) ->
+      ("\\msf{TypeOf}("^s1^","^s1^")",8+(String.length s1)+(String.length s2))
 
 let totex out_file rules ctls =
   let o = open_out out_file in

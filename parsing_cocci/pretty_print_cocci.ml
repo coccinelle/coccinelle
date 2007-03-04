@@ -109,7 +109,7 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_string name(*;
+  | Ast.MetaId(name,keep,inherited) -> mcode print_string name; (*;
       print_string "/* ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
@@ -289,6 +289,14 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
+and print_function_type (ty,lp1,params,rp1) fn =
+  print_option fullType ty; fn(); mcode print_string lp1;
+  parameter_list params; mcode print_string rp1
+
+and print_array (ty,lb,size,rb) fn =
+  fullType ty; fn(); mcode print_string lb; print_option expression size;
+  mcode print_string rb
+
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
@@ -297,7 +305,8 @@ and typeC ty =
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
-  | Ast.FunctionType _ -> failwith "not supported"
+  | Ast.FunctionType (_,ty,lp1,params,rp1) ->
+      print_function_type (ty,lp1,params,rp1) (function _ -> ())
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -306,7 +315,7 @@ and typeC ty =
   | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
       mcode structUnion kind; ident name; print_string " ";
       mcode print_string lb;
-      print_between force_newline declaration decls;
+      dots force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_) -> mcode print_string name; print_string " "
@@ -346,33 +355,36 @@ and storage = function
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
+and print_named_type ty id =
+  match Ast.unwrap ty with
+    Ast.Type(None,ty1) ->
+      (match Ast.unwrap ty1 with
+	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+	    (function _ -> print_string " "; ident id)
+      | Ast.FunctionType(_,ty,lp1,params,rp1) ->
+	  print_function_type (ty,lp1,params,rp1)
+	    (function _ -> print_string " "; ident id)
+      | Ast.Array(ty,lb,size,rb) ->
+	  print_array (ty,lb,size,rb)
+	    (function _ -> print_string " "; ident id)
+      | _ -> fullType ty; ident id)
+  | _ -> fullType ty; ident id
+
 and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
-      print_option (mcode storage) stg;
-      (match Ast.unwrap ty with
-	Ast.Type(None,ty1) ->
-	  (match Ast.unwrap ty1 with
-	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; ident id);
+      print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
-      print_option (mcode storage) stg;
-      (match Ast.unwrap ty with
-	Ast.Type(None,ty1) ->
-	  (match Ast.unwrap ty1 with
-	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; ident id);
+      print_option (mcode storage) stg; print_named_type ty id;
       mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
+  | Ast.Ddots(dots,Some whencode) -> 
+      mcode print_string dots; print_string "   when != "; declaration whencode
+  | Ast.Ddots(dots,None) -> mcode print_string dots
   | Ast.MetaDecl(name,_,_) -> mcode print_string name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
@@ -419,15 +431,8 @@ and initialiser i =
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(ty,id) ->
-      (match (Ast.unwrap ty,id) with
-	(Ast.Type(None,ty1),Some id) ->
-	  (match Ast.unwrap ty1 with
-	      Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-		print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		  (function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; print_option ident id)
+  | Ast.Param(ty,Some id) -> print_named_type ty id
+  | Ast.Param(ty,None) -> fullType ty
   | Ast.MetaParam(name,_,_) -> mcode print_string name
   | Ast.MetaParamList(name,_,_) -> mcode print_string name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
@@ -444,7 +449,7 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 let define_body m =
   match Ast.unwrap m with
     Ast.DMetaId(name,_) -> mcode print_string name
-  | Ast.Ddots(dots) -> mcode print_string dots
+  | Ast.Defdots(dots) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -653,6 +658,7 @@ let _ =
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
+    | Ast.DeclDotsTag(x) -> dots (function _ -> ()) declaration x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
     | Ast.SgrepStartTag(x) -> print_string x

@@ -6,6 +6,7 @@ type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
        string list (*inherited vars*) * string list (*witness vars*) *
+       (string * string) list (*metavars (1) typed by metavars (2)*) *
        dots_bef_aft)
 
 and 'a befaft =
@@ -172,7 +173,7 @@ and base_typeC =
 	               expression option * string mcode (* ] *)
   | StructUnionName of structUnion mcode * ident (* name *)
   | StructUnionDef  of structUnion mcode * ident (* name *) *
-	string mcode (* { *) * declaration list * string mcode (* } *)
+	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
 
   | MetaType        of string mcode * keep_binding * inherited
@@ -200,6 +201,7 @@ and base_declaration =
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
   | DisjDecl   of declaration list
+  | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of string mcode * keep_binding * inherited
 
@@ -366,7 +368,7 @@ and case_line = base_case_line wrap
 
 and base_define_body =
     DMetaId of string mcode * keep_binding
-  | Ddots   of string mcode (* ... *)
+  | Defdots of string mcode (* ... *)
 
 and define_body = base_define_body wrap
 
@@ -408,6 +410,7 @@ and anything =
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
   | StmtDotsTag         of statement dots
+  | DeclDotsTag         of declaration dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
@@ -424,6 +427,7 @@ val get_fvs : 'a wrap -> string list
 val get_fresh : 'a wrap -> string list
 val get_inherited : 'a wrap -> string list
 val get_saved : 'a wrap -> string list
+val get_typed_metaexps : 'a wrap -> (string * string) list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 

@@ -648,20 +648,27 @@ let process file isofile verbose =
   (!Data.clear_meta)();
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
-    List.map2
-      (function (minus, metavars) ->
-	function (plus, metavars) ->
-	  let minus = Compute_lines.compute_lines minus in
-	  let plus = Compute_lines.compute_lines plus in
-	  let minus = Arity.minus_arity minus in
-	  let (m,p) = List.split(Context_neg.context_neg minus plus) in
-	  Insert_plus.insert_plus m p;
-	  Type_infer.type_infer minus;
-	  let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
-	  let minus = Single_statement.single_statement minus in
-	  let minus_ast = Ast0toast.ast0toast minus in
-	  (extra_meta@metavars, minus_ast))
-      minus plus in
+    List.concat
+      (List.map2
+	 (function (minus, metavars) ->
+	   function (plus, metavars) ->
+	     let minus = Compute_lines.compute_lines minus in
+	     let plus = Compute_lines.compute_lines plus in
+	     let minus = Arity.minus_arity minus in
+	     let function_prototypes =
+	       Function_prototypes.process minus plus in
+	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
+	     Insert_plus.insert_plus m p;
+	     Type_infer.type_infer minus;
+	     let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
+	     let minus = Single_statement.single_statement minus in
+	     let minus_ast = Ast0toast.ast0toast minus in
+	     match function_prototypes with
+	       None -> [(extra_meta@metavars, minus_ast)]
+	     | Some fp ->
+		 Pretty_print_cocci.unparse fp;
+		 [(extra_meta@metavars, minus_ast); ([], fp)])
+	 minus plus) in
   let (code,ua) = Free_vars.free_vars parsed in
   if !Flag_parsing_cocci.show_SP 
   then List.iter Pretty_print_cocci.unparse code;

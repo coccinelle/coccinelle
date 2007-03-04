@@ -78,7 +78,16 @@ let collect_all_refs =
 
   let astfvexpr recursor k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,_,_,_) | Ast.MetaErr(name,_,_)
+      Ast.MetaExpr(name,_,Some type_list,_) ->
+	bind [metaid name]
+	  (List.rev
+	     (List.fold_left
+		(function res ->
+		  function
+		      Type_cocci.MetaType(tyname) -> bind [tyname] res
+		    | _ -> res)
+		[] type_list))
+    | Ast.MetaConst(name,_,_,_) | Ast.MetaErr(name,_,_)
     | Ast.MetaExpr(name,_,_,_) | Ast.MetaExprList(name,_,_) -> [metaid name]
     | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
     | _ -> k e in
@@ -124,7 +133,7 @@ let collect_all_refs =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing
 
@@ -184,7 +193,7 @@ let collect_saved =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC donothing astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
 
@@ -258,7 +267,7 @@ let collect_in_plus_term =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
 
@@ -367,11 +376,43 @@ let classify_variables metavars minirules used_after =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
+
+(* ---------------------------------------------------------------- *)
+(* collect the names and types of expression metavariables that have a
+metavariable as their type *)
+
+let collect_tymetas =
+  let bind x y = Common.union_set x y in
+  let option_default = [] in
+  let metaid (x,_,_) = x in
+  let expr r k e =
+    match Ast.unwrap e with
+      Ast.MetaExpr(name,_,Some type_list,_) ->
+	let type_vars =
+	  List.fold_left
+	    (function res ->
+	      function
+		  Type_cocci.MetaType(tyname) -> tyname :: res
+		| _ -> res)
+	    [] type_list in
+	(match (type_list,type_vars) with
+	  ([_],[ty]) -> [(metaid name, ty)]
+	| (_,[]) -> []
+	| _ -> failwith "at most one type variable allowed")
+    | _ -> k e in
+  let donothing r k e = k e in
+  let mcode r e = [] in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing
+    donothing expr donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -400,8 +441,9 @@ let astfvs metavars bound =
 	(collect_in_plus_term.V.combiner_rule_elem re) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (re,l,_,_,_,_,d) = k re in
-    (re,l,unbound,collect_fresh unbound,inherited,[],d) in
+    let tymetas = collect_tymetas.V.combiner_rule_elem re in
+    let (re,l,_,_,_,_,_,d) = k re in
+    (re,l,unbound,collect_fresh unbound,inherited,[],tymetas,d) in
 
   let astfvstatement recursor k s =
     let free =
@@ -409,8 +451,9 @@ let astfvs metavars bound =
 	(collect_in_plus_term.V.combiner_statement s) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (s,l,_,_,_,_,d) = k s in
-    (s,l,unbound,collect_fresh unbound,inherited,[],d) in
+    let tymetas = collect_tymetas.V.combiner_statement s in
+    let (s,l,_,_,_,_,_,d) = k s in
+    (s,l,unbound,collect_fresh unbound,inherited,[],tymetas,d) in
 
   let astfvstatement_dots recursor k sd =
     let free =
@@ -418,20 +461,21 @@ let astfvs metavars bound =
 	(collect_in_plus_term.V.combiner_statement_dots sd) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (sd,l,_,_,_,_,d) = k sd in
-    (sd,l,unbound,collect_fresh unbound,inherited,[],d) in
+    let tymetas = collect_tymetas.V.combiner_statement_dots sd in
+    let (sd,l,_,_,_,_,_,d) = k sd in
+    (sd,l,unbound,collect_fresh unbound,inherited,[],tymetas,d) in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let (tl,l,unbound,fresh,inherited,_,d) = k tl in
-    (tl,l,unbound,fresh,inherited,saved,d) in
+    let (tl,l,unbound,fresh,inherited,_,tymetas,d) = k tl in
+    (tl,l,unbound,fresh,inherited,saved,tymetas,d) in
 
   let mcode x = x in
   let donothing r k e = k e in
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing astfvstatement_dots
+    donothing donothing astfvstatement_dots donothing
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement donothing astfvtoplevel donothing
 

@@ -8,7 +8,7 @@ visitor_ast.ml visitor_ast0.ml compute_lines.ml \
 iso_pattern.ml single_statement.ml \
 ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
 unitary_ast0.ml arity.ml index.ml context_neg.ml \
-insert_plus.ml \
+insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) get_constants.ml \
 parse_cocci.ml

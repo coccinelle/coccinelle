@@ -25,7 +25,9 @@ type 'a combiner =
 			combiner_expression_dots :
 			  Ast.expression Ast.dots -> 'a;
 			    combiner_statement_dots :
-			      Ast.statement Ast.dots -> 'a}
+			      Ast.statement Ast.dots -> 'a;
+			    combiner_declaration_dots :
+			      Ast.declaration Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
@@ -35,7 +37,7 @@ let combiner bind option_default
     string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn unary_mcodefn
     binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn
+    expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let multibind l =
@@ -80,6 +82,13 @@ let combiner bind option_default
 	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
 	  multibind (List.map statement l) in
     stmtdotsfn all_functions k d
+
+  and declaration_dots d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map declaration l) in
+    decldotsfn all_functions k d
 
   and ident i =
     let k i =
@@ -163,6 +172,17 @@ let combiner bind option_default
        [string_mcode rp1;
 	 string_mcode lp2; parameter_dots params; string_mcode rp2])
 	  
+  and function_type (ty,lp1,params,rp1) extra =
+    (* have to put the treatment of the identifier into the right position *)
+    multibind
+      ([get_option fullType ty] @ extra @
+       [string_mcode lp1; parameter_dots params; string_mcode rp1])
+
+  and array_type (ty,lb,size,rb) extra =
+    multibind
+      ([fullType ty] @ extra @
+       [string_mcode lb; get_option expression size; string_mcode rb])
+	  
   and typeC ty =
     let k ty =
       match Ast.unwrap ty with
@@ -173,51 +193,46 @@ let combiner bind option_default
 	  bind (fullType ty) (string_mcode star)
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      |	Ast.FunctionType _ -> failwith "not supported"
-      | Ast.Array(ty,lb,size,rb) ->
-	  multibind [fullType ty; string_mcode lb;
-		      get_option expression size; string_mcode rb]
+      |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
+	  function_type (ty,lp1,params,rp1) []
+      | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       | Ast.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (ident name)
       | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
 	  multibind
 	    [struct_mcode kind; ident name; string_mcode lb;
-	      multibind (List.map declaration decls);
-	      string_mcode rb]
+	      declaration_dots decls; string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_,_) -> string_mcode name in
     tyfn all_functions k ty
-	  
+
+  and named_type ty id =
+    match Ast.unwrap ty with
+      Ast.Type(None,ty1) ->
+	(match Ast.unwrap ty1 with
+	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	    function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
+	| Ast.FunctionType(_,ty,lp1,params,rp1) ->
+	    function_type (ty,lp1,params,rp1) [ident id]
+	| Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) [ident id]
+	| _ -> bind (fullType ty) (ident id))
+    | _ -> bind (fullType ty) (ident id)
+
   and declaration d =
     let k d =
       match Ast.unwrap d with
 	Ast.Init(stg,ty,id,eq,ini,sem) ->
 	  bind (get_option storage_mcode stg)
-	    (bind
-	       (match Ast.unwrap ty with
-		 Ast.Type(None,ty1) ->
-		   (match Ast.unwrap ty1 with
-		     Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-		       function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-			 [ident id]
-		   | _ -> bind (fullType ty) (ident id))
-	       | _ -> bind (fullType ty) (ident id))
+	    (bind (named_type ty id)
 	       (multibind
 		  [string_mcode eq; initialiser ini; string_mcode sem]))
       | Ast.UnInit(stg,ty,id,sem) ->
 	  bind (get_option storage_mcode stg)
-	    (bind
-	       (match Ast.unwrap ty with
-		 Ast.Type(None,ty1) ->
-		   (match Ast.unwrap ty1 with
-		     Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-		       function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-			 [ident id]
-		   | _ -> bind (fullType ty) (ident id))
-	       | _ -> bind (fullType ty) (ident id))
-	       (string_mcode sem))
+	    (bind (named_type ty id) (string_mcode sem))
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
+      |	Ast.Ddots(dots,whencode) ->
+	  bind (string_mcode dots) (get_option declaration whencode)
       | Ast.MetaDecl(name,_,_) -> string_mcode name
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl
@@ -258,14 +273,8 @@ let combiner bind option_default
     let k p =
       match Ast.unwrap p with
 	Ast.VoidParam(ty) -> fullType ty
-      | Ast.Param(ty,id) ->
-	  (match (Ast.unwrap ty,id) with
-	    (Ast.Type(None,ty1),Some id) ->
-	      (match Ast.unwrap ty1 with
-		Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-		  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
-	      | _ -> bind (fullType ty) (ident id))
-	  | _ -> bind (fullType ty) (get_option ident id))
+      | Ast.Param(ty,Some id) -> named_type ty id
+      | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> string_mcode name
       | Ast.MetaParamList(name,_,_) -> string_mcode name
       | Ast.PComma(cm) -> string_mcode cm
@@ -385,7 +394,7 @@ let combiner bind option_default
   and define_body b =
     match Ast.unwrap b with
       Ast.DMetaId(name,_) -> string_mcode name
-    | Ast.Ddots(d) -> string_mcode d
+    | Ast.Defdots(d) -> string_mcode d
 
   and top_level t =
     let k t =
@@ -425,6 +434,7 @@ let combiner bind option_default
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
+      | Ast.DeclDotsTag(sd) -> declaration_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
       | Ast.SgrepStartTag(tok) -> option_default
@@ -446,7 +456,8 @@ let combiner bind option_default
       combiner_top_level = top_level;
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
-      combiner_statement_dots = statement_dots} in
+      combiner_statement_dots = statement_dots;
+      combiner_declaration_dots = declaration_dots} in
   all_functions
 
 (* ---------------------------------------------------------------------- *)
@@ -467,6 +478,7 @@ type rebuilder =
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
+      rebuilder_declaration_dots : Ast.declaration Ast.dots inout;
       rebuilder_anything : Ast.anything inout}
 
 type 'mc rmcode = 'mc Ast.mcode inout
@@ -476,7 +488,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
-    expdotsfn paramdotsfn stmtdotsfn
+    expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let get_option f = function
@@ -508,6 +520,15 @@ let rebuilder
 	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map statement l)
 	| Ast.STARS(l) -> Ast.STARS(List.map statement l)) in
     stmtdotsfn all_functions k d
+
+  and declaration_dots d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DOTS(l) -> Ast.DOTS(List.map declaration l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map declaration l)
+	| Ast.STARS(l) -> Ast.STARS(List.map declaration l)) in
+    decldotsfn all_functions k d
 
   and ident i =
     let k i =
@@ -624,7 +645,7 @@ let rebuilder
 	    Ast.StructUnionName (struct_mcode kind, ident name)
 	| Ast.StructUnionDef(kind,name,lb,decls,rb) ->
 	    Ast.StructUnionDef (struct_mcode kind, ident name,
-				string_mcode lb, List.map declaration decls,
+				string_mcode lb, declaration_dots decls,
 				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,keep,inherited) ->
@@ -643,6 +664,8 @@ let rebuilder
 		       string_mcode sem)
 	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
+	| Ast.Ddots(dots,whencode) ->
+	    Ast.Ddots(string_mcode dots, get_option declaration whencode)
 	| Ast.MetaDecl(name,keep,inherited) ->
 	    Ast.MetaDecl(string_mcode name,keep,inherited)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
@@ -826,7 +849,7 @@ let rebuilder
     Ast.rewrap b
       (match Ast.unwrap b with
 	Ast.DMetaId(name,keep) -> Ast.DMetaId(string_mcode name,keep)
-      | Ast.Ddots(d) -> Ast.Ddots(string_mcode d))
+      | Ast.Defdots(d) -> Ast.Defdots(string_mcode d))
 
   and top_level t =
     let k t =
@@ -867,6 +890,7 @@ let rebuilder
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
+      | Ast.DeclDotsTag(sd) -> Ast.DeclDotsTag(declaration_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
       | Ast.SgrepStartTag(tok) as x -> x
@@ -887,6 +911,7 @@ let rebuilder
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
+      rebuilder_declaration_dots = declaration_dots;
       rebuilder_anything = anything} in
   all_functions
 

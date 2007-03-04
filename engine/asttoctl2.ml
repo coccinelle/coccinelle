@@ -118,7 +118,11 @@ let elim_opt =
   let savedlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_saved l) in
 
-  let varlists l = (fvlist l, freshlist l, inheritedlist l, savedlist l) in
+  let tymetas l =
+    List.fold_left Common.union_set [] (List.map Ast.get_typed_metaexps l) in
+
+  let varlists l =
+    (fvlist l, freshlist l, inheritedlist l, savedlist l, tymetas l) in
 
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
@@ -131,28 +135,32 @@ let elim_opt =
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
-	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
+	 let (fv_rest1,fresh_rest1,inherited_rest1,s1,tm1) =
+	   varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2,s2,tm2) =
+	   varlists new_rest2 in
 	 [d0;
 	   (Ast.Disj
 	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots);
+		tm1,Ast.NoDots);
 		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
-		 Ast.NoDots)],
-	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,Ast.NoDots)]
+		 tm2,Ast.NoDots)],
+	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,tm1,Ast.NoDots)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
-	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
+	 let (fv_rest1,fresh_rest1,inherited_rest1,s1,tm1) =
+	   varlists new_rest1 in
+	 let (fv_rest2,fresh_rest2,inherited_rest2,s2,tm2) =
+	   varlists new_rest2 in
 	 [(Ast.Disj
 	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
-	       Ast.NoDots);
+	       tm2,Ast.NoDots);
 	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots)],
-	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots)]
+		tm1,Ast.NoDots)],
+	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,tm2,Ast.NoDots)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -160,19 +168,22 @@ let elim_opt =
 	let fresh_stm = Ast.get_fresh stm in
 	let inh_stm = Ast.get_inherited stm in
 	let saved_stm = Ast.get_saved stm in
+	let tymetastm = Ast.get_typed_metaexps stm in
 	let fv_d1 = Ast.get_fvs d1 in
 	let fresh_d1 = Ast.get_fresh d1 in
 	let inh_d1 = Ast.get_inherited d1 in
 	let saved_d1 = Ast.get_saved d1 in
+	let tymetad1 = Ast.get_typed_metaexps d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
 	let fresh_both = Common.union_set fresh_stm fresh_d1 in
 	let inh_both = Common.union_set inh_stm inh_d1 in
 	let saved_both = Common.union_set saved_stm saved_d1 in
+	let tymeta_both = Common.union_set tymetastm tymetad1 in
 	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,saved_stm,
-		       Ast.NoDots);
+		       tymetastm,Ast.NoDots);
 		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,saved_d1,
-			Ast.NoDots)],
-	     l,fv_both,fresh_both,inh_both,saved_both,Ast.NoDots)]
+			tymetad1,Ast.NoDots)],
+	     l,fv_both,fresh_both,inh_both,saved_both,tymeta_both,Ast.NoDots)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -183,7 +194,7 @@ let elim_opt =
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots)])]
+			 (Ast.DOTS([rw dots]),l,[],[],[],[],[],Ast.NoDots)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -198,7 +209,7 @@ let elim_opt =
   
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing stmtdotsfn
+    donothing donothing stmtdotsfn donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -284,24 +295,35 @@ let contains_modif =
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let make_match n label guard code =
-  let v = fresh_var() in
-  if contains_modif code && not guard
-  then
-    wrapExists n true
-      (v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
-  else
-    match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
-      (true,_,[]) | (_,true,_) ->
-	predmaker guard (Lib_engine.Match(code),CTL.Control) n label
-    | _ ->
-	wrapExists n true
-	  (v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label)
+  let main_code =
+    let v = fresh_var() in
+    if contains_modif code && not guard
+    then
+      wrapExists n true
+	(v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
+    else
+      match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
+	(true,_,[]) | (_,true,_) ->
+	  predmaker guard (Lib_engine.Match(code),CTL.Control) n label
+      | _ ->
+	  wrapExists n true
+	    (v,
+	     predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label) in
+  let typed_metaexps = Ast.get_typed_metaexps code in
+  List.fold_left
+    (function rest ->
+      function (metaexp,typevar) ->
+	wrapAnd n CTL.NONSTRICT
+	  (rest,
+	   predmaker guard (Lib_engine.TypeOf(metaexp,typevar),CTL.Control)
+	     n label))
+    main_code typed_metaexps
 
 let make_raw_match n label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) n label
@@ -346,7 +368,7 @@ let count_nested_braces s =
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in

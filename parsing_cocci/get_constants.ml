@@ -23,12 +23,14 @@ let get_constants rules =
 	     (List.map (function id -> ["."^id;"->"^id])
 		(r.V.combiner_ident fld)))
 	  (r.V.combiner_expression exp)
+    | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
+	bind [Ast.unwrap_mcode sizeof] (k e)
     | _ -> k e in
 
   let res =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       ident expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
 

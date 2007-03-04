@@ -1263,6 +1263,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.DisjDecl declas, declb -> 
        declas +> List.fold_left (fun acc decla -> 
          acc >|+|> (onedecl allminus decla (declb,iiptvirgb, iistob))) fail
+
+   | A.Ddots(dots,whencode), _ ->
+       failwith "to be filled in" (*matches fields in struct type decls only*)
             
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
        failwith "not handling Opt/Unique/Multi Decl"
@@ -2202,10 +2205,10 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
                 
-        | A.Ddots (dots) -> 
+        | A.Defdots (dots) -> 
             tokenf dots iibodyb >>= (fun dots iibodyb -> 
               return (
-                A.Define(definea,ida, (A.Ddots (dots) +> A.rewrap bodya)),
+                A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
                 F.CPPDefine ((idb, bodyb), [defineb;iidb;iibodyb])
               ))
         )))

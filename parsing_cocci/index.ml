@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 131 *)
+(* current max is 136 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -37,6 +37,13 @@ let statement_dots d =
     Ast0.DOTS(l) -> 7::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 8::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 9::(if l = [] then [ln] else [0])
+	
+let declaration_dots d =
+  let ln = (Ast0.get_info d).Ast0.line_start in
+  match Ast0.unwrap d with
+    Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
+  | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
+  | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
 	
 let ident i =
   match Ast0.unwrap i with
@@ -88,6 +95,7 @@ let typeC t =
   | Ast0.ImplicitInt(sign) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
+  | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
@@ -104,6 +112,7 @@ let declaration d =
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
+  | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
   | Ast0.MultiDecl(decl) -> [58]

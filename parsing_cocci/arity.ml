@@ -388,6 +388,13 @@ and top_typeC tgt opt_allowed typ =
       let params = parameter_list tgt params in
       make_typeC typ tgt arity
 	(Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
+  | Ast0.FunctionType(ty,lp1,params,rp1) ->
+      let arity =
+	all_same false opt_allowed tgt (mcode2line lp1)
+	  (List.map mcode2arity [lp1;rp1]) in
+      let ty = get_option (typeC arity) ty in
+      let params = parameter_list tgt params in
+      make_typeC typ tgt arity (Ast0.FunctionType(ty,lp1,params,rp1))
   | Ast0.Array(ty,lb,size,rb) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line lb)
@@ -411,7 +418,7 @@ and top_typeC tgt opt_allowed typ =
       let kind = mcode kind in
       let name = ident false false arity name in
       let lb = mcode lb in
-      let decls = List.map (declaration false tgt) decls in
+      let decls = dots (declaration false tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.StructUnionDef(kind,name,lb,decls,rb))
   | Ast0.TypeName(name) ->
@@ -488,6 +495,12 @@ and declaration in_nest tgt decl =
       |	_ -> ());
       let res = Ast0.DisjDecl(starter,decls,mids,ender) in
       Ast0.rewrap decl res
+  | Ast0.Ddots(dots,whencode) ->
+      let arity =
+	all_same false true tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      let whencode = get_option (declaration false Ast0.NONE) whencode in
+      make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
   | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
       failwith "unexpected code"
 
@@ -635,11 +648,11 @@ let define_body tgt s =
 	all_same false false tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_define_body s tgt arity (Ast0.DMetaId(name,pure))
-  | Ast0.Ddots(dots) ->
+  | Ast0.Defdots(dots) ->
       let arity =
 	all_same false false tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
-      make_define_body s tgt arity (Ast0.Ddots(dots))
+      make_define_body s tgt arity (Ast0.Defdots(dots))
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

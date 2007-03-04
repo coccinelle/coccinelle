@@ -66,6 +66,11 @@ let edots e =
     Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> true
   | _ -> false
 
+let ddots e =
+  match Ast.unwrap e with
+    Ast.Ddots(_,_) -> true
+  | _ -> false
+
 let pdots p =
   match Ast.unwrap p with
     Ast.Pdots(_) | Ast.Pcircles(_) -> true
@@ -209,6 +214,13 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
+  | (Ast.FunctionType(_,tya,lp1a,paramsa,rp1a),
+     Ast.FunctionType(_,tyb,lp1b,paramsb,rp1b)) ->
+       if List.for_all2 unify_mcode [lp1a;rp1a] [lp1b;rp1b]
+       then
+	 conjunct_bindings (unify_option unify_fullType tya tyb)
+	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
+       else return false
   | (Ast.FunctionType _ , _) -> failwith "not supported"
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
@@ -220,7 +232,7 @@ and unify_typeC t1 t2 =
        if unify_mcode s1 s2
        then
 	 conjunct_bindings (unify_ident ts1 ts2)
-	   (unify_lists unify_declaration (function _ -> false) decls1 decls2)
+	   (unify_dots unify_declaration ddots decls1 decls2)
        else return false
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> return (unify_mcode t1 t2)
 
@@ -252,6 +264,8 @@ and unify_declaration d1 d2 =
   | (_,Ast.DisjDecl(d2)) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration d1 x) d2)
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.Ddots(_,_),_) | (_,Ast.Ddots(_,_)) -> return true
 
   | (Ast.OptDecl(_),_)
   | (Ast.UniqueDecl(_),_)
@@ -391,7 +405,7 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
@@ -404,7 +418,7 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem

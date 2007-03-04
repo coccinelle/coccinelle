@@ -134,7 +134,7 @@ let inline_mcodes =
     | Ast0.PLUS -> () in
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing
 
@@ -143,7 +143,7 @@ let inline_mcodes =
 might be mixed when the function contains ()s, where agglomeration of -s is
 not possible. *)
 
-let check_allminus s =
+let check_allminus =
   let donothing r k e = k e in
   let bind x y = x && y in
   let option_default = true in
@@ -174,13 +174,11 @@ let check_allminus s =
 	List.for_all r.V0.combiner_statement_dots statement_dots_list
     | _ -> k e in
 
-  let combiner = 
-    V0.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
-      donothing expression typeC donothing donothing declaration
-      statement donothing donothing in
-  combiner.V0.combiner_statement s
+  V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing
+    donothing expression typeC donothing donothing declaration
+    statement donothing donothing
     
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -212,8 +210,9 @@ let mcode(term,_,info,mcodekind) =
 (* Dots *)
 
 let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], Ast.NoDots)
-let tokenwrap (_,info,_) ast = (ast, info.Ast.line, [], [], [], [], Ast.NoDots)
+  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [], Ast.NoDots)
+let tokenwrap (_,info,_) ast =
+  (ast, info.Ast.line, [], [], [], [], [], Ast.NoDots)
 
 let dots fn d =
   rewrap d
@@ -334,6 +333,13 @@ and typeC t =
 		   (Ast.FunctionPointer
 		      (typeC ty,mcode lp1,mcode star,mcode rp1,
 		       mcode lp2,parameter_list params,mcode rp2)))
+    | Ast0.FunctionType(ty,lp1,params,rp1) ->
+	let allminus = check_allminus.V0.combiner_typeC t in
+	Ast.Type(None,
+		 rewrap t
+		   (Ast.FunctionType
+		      (allminus,get_option typeC ty,mcode lp1,
+		       parameter_list params,mcode rp1)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
 		 rewrap t
@@ -345,7 +351,7 @@ and typeC t =
 	Ast.Type(None,
 		 rewrap t
 		   (Ast.StructUnionDef(mcode kind,ident name,mcode lb,
-				       List.map declaration decls,mcode rb)))
+				       dots declaration decls,mcode rb)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
     | Ast0.MetaType(name,_) ->
 	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,Ast.Nonunitary,false)))
@@ -366,7 +372,7 @@ and base_typeC t =
 	Ast.StructUnionName(mcode kind,ident name)
     | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
 	Ast.StructUnionDef(mcode kind,ident name,
-			   mcode lb,List.map declaration decls,mcode rb)
+			   mcode lb,dots declaration decls,mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
     | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,Ast.Nonunitary,false)
     | _ -> failwith "unexpected type")
@@ -388,13 +394,30 @@ and declaration d =
 	let sem = mcode sem in
 	Ast.Init(stg,ty,id,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,sem) ->
-	let stg = get_option mcode stg in
-	Ast.UnInit(stg,typeC ty,ident id,mcode sem)
+	(match Ast0.unwrap ty with
+	  Ast0.FunctionType(ty,lp1,params,rp1) ->
+	    let allminus = check_allminus.V0.combiner_declaration d in
+	    Ast.UnInit(get_option mcode stg,
+		       rewrap d
+			 (Ast.Type
+			    (None,
+			     rewrap d
+			       (Ast.FunctionType
+				  (allminus,get_option typeC ty,mcode lp1,
+				   parameter_list params,mcode rp1)))),
+		       ident id,mcode sem)
+	| _ -> Ast.UnInit(get_option mcode stg,typeC ty,ident id,mcode sem))
     | Ast0.TyDecl(ty,sem) -> Ast.TyDecl(typeC ty,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
+    | Ast0.Ddots(dots,whencode) ->
+	let dots = mcode dots in
+	let whencode = get_option declaration whencode in
+	Ast.Ddots(dots,whencode)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
     | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
     | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl))
+
+and declaration_dots l = dots declaration l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -467,7 +490,7 @@ let define_body m =
   rewrap m
     (match Ast0.unwrap m with
       Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,Ast.Nonunitary)
-    | Ast0.Ddots(dots) -> Ast.Ddots(mcode dots))
+    | Ast0.Defdots(dots) -> Ast.Defdots(mcode dots))
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -481,20 +504,20 @@ let get_ctr _ =
 let rec statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
        match Ast0.get_dots_bef_aft s with
 	 Ast0.NoDots -> Ast.NoDots
        | Ast0.BetweenDots s ->
 	   Ast.BetweenDots (statement seqible s,get_ctr())) in
     let local_rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
        Ast.NoDots) in
     rewrap s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
 	  Ast.Atomic(local_rewrap s
 		       (Ast.Decl(convert_mcodekind bef,
-				 check_allminus s,
+				 check_allminus.V0.combiner_statement s,
 				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) -> 
 	  let lbrace = mcode lbrace in
@@ -613,7 +636,7 @@ let rec statement s =
 	  let lbrace = mcode lbrace in
 	  let (decls,dots,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  let allminus = check_allminus s in
+	  let allminus = check_allminus.V0.combiner_statement s in
 	  Ast.FunDecl(local_rewrap s
 			(Ast.FunHeader(convert_mcodekind bef,
 				       allminus,stg,ty,name,lp,params,rp)),

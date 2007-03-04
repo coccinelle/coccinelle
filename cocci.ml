@@ -298,7 +298,7 @@ let sp_contain_typed_metavar toplevel_list_list =
   let combiner = 
     Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing
+      donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing 
   in
@@ -364,7 +364,7 @@ let flow_to_ast a =
 (* --------------------------------------------------------------------- *)
 
 let fake_line = {Ast_cocci.line = -1; Ast_cocci.column = -1}
-let wrap ast = (ast, -1, [], [], [], [], Ast_cocci.NoDots)
+let wrap ast = (ast, -1, [], [], [], [], [], Ast_cocci.NoDots)
 
 let put_no_pos_everywhere decl =
   let mcode (x, info, mck) = 
@@ -381,7 +381,7 @@ let put_no_pos_everywhere decl =
   let res = 
   Visitor_ast.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing
+    donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
   in
@@ -790,7 +790,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     Common.pr_xxxxxxxxxxxxxxxxx();
 
     process_ctls (Common.index_list_1 ctls) [Ast_c.emptyMetavarsBinding];
-    process_hack_funheaders !g_hack_funheaders;
+    (*process_hack_funheaders !g_hack_funheaders;*)
 
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr "Finished";

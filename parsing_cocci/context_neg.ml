@@ -18,6 +18,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsInitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -34,6 +35,7 @@ let set_index x index =
   | Ast0.DotsInitTag(d) -> Ast0.set_index d index
   | Ast0.DotsParamTag(d) -> Ast0.set_index d index
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
+  | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
@@ -49,6 +51,7 @@ let get_index = function
   | Ast0.DotsInitTag(d) -> Index.initialiser_dots d
   | Ast0.DotsParamTag(d) -> Index.parameter_dots d
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
+  | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
   | Ast0.TypeCTag(d) -> Index.typeC d
@@ -228,6 +231,8 @@ let classify all_marked table code =
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,_,ender) ->
 	  disj_cases starter decls r.V0.combiner_declaration ender
+      | Ast0.Ddots(dots,whencode) ->
+	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -276,6 +281,7 @@ let classify all_marked table code =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
+      (do_nothing Ast0.dotsDecl)
       (do_nothing Ast0.ident) expression typeC initialiser
       (do_nothing Ast0.param) declaration
       statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
@@ -397,6 +403,7 @@ let equal_declaration d1 d2 =
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
+  | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
   | (Ast0.MultiDecl(_),Ast0.MultiDecl(_)) -> true
@@ -517,6 +524,7 @@ let root_equal e1 e2 =
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       dots equal_parameterTypeDef d1 d2
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
+  | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
   | (Ast0.IdentTag(i1),Ast0.IdentTag(i2)) -> equal_ident i1 i2
   | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
   | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
@@ -561,7 +569,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing
+    do_nothing do_nothing
 
 let contextify_whencode =
   let bind x y = () in
@@ -599,7 +607,8 @@ let contextify_whencode =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing expression
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      expression
       do_nothing initialiser do_nothing do_nothing statement do_nothing
       do_nothing in
   combiner.V0.combiner_top_level

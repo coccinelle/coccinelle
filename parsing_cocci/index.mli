@@ -2,6 +2,7 @@ val expression_dots : Ast0_cocci.expression Ast0_cocci.dots -> int list
 val initialiser_dots : Ast0_cocci.initialiser Ast0_cocci.dots -> int list
 val parameter_dots : Ast0_cocci.parameterTypeDef Ast0_cocci.dots -> int list
 val statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> int list
+val declaration_dots : Ast0_cocci.declaration Ast0_cocci.dots -> int list
 val ident : Ast0_cocci.ident -> int list
 val expression : Ast0_cocci.expression -> int list
 val typeC : Ast0_cocci.typeC -> int list

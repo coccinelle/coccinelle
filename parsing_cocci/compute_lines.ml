@@ -307,6 +307,15 @@ and typeC t =
       let params = parameter_list (Some(promote_mcode lp2)) params in
       mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
 	ty (promote_mcode rp2)
+  | Ast0.FunctionType(Some ty,lp1,params,rp1) ->
+      let ty = typeC ty in
+      let params = parameter_list (Some(promote_mcode lp1)) params in
+      mkres t (Ast0.FunctionType(Some ty,lp1,params,rp1))
+	ty (promote_mcode rp1)
+  | Ast0.FunctionType(None,lp1,params,rp1) ->
+      let params = parameter_list (Some(promote_mcode lp1)) params in
+      mkres t (Ast0.FunctionType(None,lp1,params,rp1))
+	(promote_mcode lp1) (promote_mcode rp1)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
@@ -316,7 +325,8 @@ and typeC t =
       mkres t (Ast0.StructUnionName(kind,name)) (promote_mcode kind) name
   | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
       let name = ident name in
-      let decls = List.map declaration decls in
+      let decls =
+	dots is_decl_dots (Some(promote_mcode lb)) declaration decls in
       mkres t (Ast0.StructUnionDef(kind,name,lb,decls,rb))
 	(promote_mcode kind) (promote_mcode rb)
   | Ast0.TypeName(name) as ut ->
@@ -342,6 +352,11 @@ and typeC t =
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
+
+and is_decl_dots s =
+  match Ast0.unwrap s with
+    Ast0.Ddots(_,_) -> true
+  | _ -> false
 	
 and declaration d =
   match Ast0.unwrap d with
@@ -375,6 +390,10 @@ and declaration d =
       mkmultires d (Ast0.DisjDecl(starter,decls,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info decls) (get_all_end_info decls)
+  | Ast0.Ddots(dots,whencode) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres d (Ast0.Ddots(dots,whencode)) ln ln
   | Ast0.OptDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.OptDecl(declaration decl)) decl decl
@@ -491,7 +510,7 @@ let define_body s =
   match Ast0.unwrap s with
     Ast0.DMetaId(name,_) as us ->
       let nm = promote_mcode name in mkres s us nm nm
-  | Ast0.Ddots(dots) as us ->
+  | Ast0.Defdots(dots) as us ->
       let dt = promote_mcode dots in mkres s us dt dt
     
 (* --------------------------------------------------------------------- *)

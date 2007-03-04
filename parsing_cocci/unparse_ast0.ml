@@ -184,9 +184,16 @@ and expression_dots x = dots (function _ -> ()) expression x
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   typeC ty; mcode print_string lp1; mcode print_string star; fn();
-  mcode print_string rp1; mcode print_string lp1;
+  mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
+and print_function_type (ty,lp1,params,rp1) fn =
+  print_option typeC ty; fn(); mcode print_string lp1;
+  parameter_list params; mcode print_string rp1
+
+and print_array (ty,lb,size,rb) fn =
+  typeC ty; fn(); mcode print_string lb; print_option expression size;
+  mcode print_string rb
 
 and typeC t =
   print_context t
@@ -201,15 +208,16 @@ and typeC t =
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> ())
+      | Ast0.FunctionType(ty,lp1,params,rp1) ->
+	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
-	  typeC ty; mcode print_string lb; print_option expression size;
-	  mcode print_string rb
+	  print_array (ty,lb,size,rb) (function _ -> ())
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind; ident name; print_string " "
       | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
 	  mcode U.structUnion kind; ident name; print_string " ";
 	  mcode print_string lb;
-	  print_between force_newline declaration decls;
+	  dots force_newline declaration decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_string name; print_string " "
@@ -228,27 +236,31 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
+and print_named_type ty id =
+  match Ast0.unwrap ty with
+    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+	(function _ -> print_string " "; ident id)
+  | Ast0.FunctionType(ty,lp1,params,rp1) ->
+      print_function_type (ty,lp1,params,rp1)
+	(function _ -> print_string " "; ident id)
+  | Ast0.Array(ty,lb,size,rb) ->
+      print_array (ty,lb,size,rb)
+	(function _ -> print_string " "; ident id)
+  | _ -> typeC ty; ident id
+
 and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
 	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
-	  (match Ast0.unwrap ty with
-	    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> typeC ty; ident id);
+	  print_named_type ty id;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
       | Ast0.UnInit(stg,ty,id,sem) ->
-	  print_option (mcode U.storage) stg;
-	  (match Ast0.unwrap ty with
-	    Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> typeC ty; ident id);
+	  print_option (mcode U.storage) stg; print_named_type ty id;
 	  mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
@@ -257,9 +269,15 @@ and declaration d =
 	    (function _ -> print_string "\n|"; force_newline())
 	    declaration decls;
 	  print_string "\n)"
+      | Ast0.Ddots(dots,Some whencode) -> 
+	  mcode print_string dots; print_string "   when != ";
+	  declaration whencode
+      | Ast0.Ddots(dots,None) -> mcode print_string dots
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
       | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
       | Ast0.MultiDecl(decl) -> print_string "\\+"; declaration decl)
+
+and declaration_dots l = dots (function _ -> ()) declaration l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -306,12 +324,8 @@ and parameterTypeDef p =
     (function _ ->
       match Ast0.unwrap p with
 	Ast0.VoidParam(ty) -> typeC ty
-      | Ast0.Param(ty,id) ->
-	  (match (Ast0.unwrap ty,id) with
-	    (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2),Some id) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> typeC ty; print_option ident id)
+      | Ast0.Param(ty,Some id) -> print_named_type ty id
+      |	Ast0.Param(ty,None) -> typeC ty
       | Ast0.MetaParam(name,_) -> mcode print_string name
       | Ast0.MetaParamList(name,_) -> mcode print_string name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
@@ -330,7 +344,7 @@ let define_body s =
     (function _ ->
       match Ast0.unwrap s with
 	Ast0.DMetaId(name,_) -> mcode print_string name
-      | Ast0.Ddots(dots) -> mcode print_string dots)
+      | Ast0.Defdots(dots) -> mcode print_string dots)
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -495,6 +509,7 @@ let unparse_anything x =
   | Ast0.DotsParamTag(d) -> parameter_list d
   | Ast0.DotsInitTag(d) -> initialiser_list d
   | Ast0.DotsStmtTag(d) -> statement_dots d
+  | Ast0.DotsDeclTag(d) -> declaration_dots d
   | Ast0.IdentTag(d) -> ident d
   | Ast0.ExprTag(d) -> expression d
   | Ast0.TypeCTag(d) -> typeC d

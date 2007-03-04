@@ -81,6 +81,11 @@ let mkidots str (dot,whencode) =
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
+let mkddots str (dot,whencode) =
+  match str with
+    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+  | _ -> failwith "cannot happen"
+
 let mkpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
@@ -369,7 +374,7 @@ generic_ctype:
          { Ast0.wrap(Ast0.BaseType(clt2mcode Ast.LongType ty, q)) }
      | s=struct_or_union i=ident
 	 { Ast0.wrap(Ast0.StructUnionName(s, i)) }
-     | s=struct_or_union i=ident l=TOBrace d=list(struct_decl) r=TCBrace
+     | s=struct_or_union i=ident l=TOBrace d=struct_decl_list r=TCBrace
 	 { Ast0.wrap(Ast0.StructUnionDef(s, i, clt2mcode "{" l,
 					 d, clt2mcode "}" r)) }
      | p=TTypeId { Ast0.wrap(Ast0.TypeName(id2mcode p)) }
@@ -386,6 +391,31 @@ struct_decl:
 	 { let (id,fn) = d in
 	 let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
 	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,clt2mcode ";" pv)) }
+
+struct_decl_list:
+   struct_decl_list_start { Ast0.wrap(Ast0.DOTS($1)) }
+
+struct_decl_list_start:
+  struct_decl                        { [$1] }
+| struct_decl struct_decl_list_start { $1::$2 }
+| d=edots_when(TEllipsis,struct_decl)
+      r=continue_struct_decl_list(edots_when(TEllipsis,struct_decl))
+    { (mkddots "..." d)::(List.map (function x -> x (mkddots "...")) r) }
+
+continue_struct_decl_list(dotter):
+  d=dotter r=continue_struct_decl_list2(dotter)
+    { (function dot_builder -> dot_builder d)::r }
+| i=struct_decl
+    { [function dot_builder -> i] }
+| i=struct_decl r=continue_struct_decl_list(dotter)
+    { (function dot_builder -> i)::r }
+
+continue_struct_decl_list2(dotter):
+  /* empty */  { [] }
+| i=struct_decl
+    { [function dot_builder -> i] }
+| i=struct_decl r=continue_struct_decl_list(dotter)
+    { (function dot_builder -> i)::r }
 
 mtype: // no metavariable, for constant metavariable declarations
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
@@ -448,7 +478,7 @@ includes:
 	(Ast0.DECL
 	   (Ast0.wrap
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
-			   Ast0.wrap(Ast0.Ddots(clt2mcode "..." $3)))))) }
+			   Ast0.wrap(Ast0.Defdots(clt2mcode "..." $3)))))) }
 | TDefine ident TMetaText
     { let (nm,pure,clt) = $3 in
       Ast0.wrap
@@ -742,15 +772,26 @@ initialize_list_start:
 | initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(clt2mcode "," $2))::$3 }
 | d=edots_when(TEllipsis,initialize)
-      r=list(comma_initializers(edots_when(TEllipsis,initialize)))
+      r=comma_initializers(edots_when(TEllipsis,initialize))
     { (mkidots "..." d)::
       (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  d=dotter { function dot_builder -> [dot_builder d] }
+  d=dotter r=comma_initializers2(dotter)
+      { (function dot_builder -> [dot_builder d])::r }
 | i=initialize2 c=TComma
-    { function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))] }
+    { [function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))]] }
+| i=initialize2 c=TComma r=comma_initializers(dotter)
+    { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))])::
+      r }
 
+comma_initializers2(dotter):
+  /* empty */ { [] }
+| i=initialize2 c=TComma
+    { [function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))]] }
+| i=initialize2 c=TComma r=comma_initializers(dotter)
+    { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))])::
+      r }
 
 /* a statement that is part of a list */
 decl_statement:

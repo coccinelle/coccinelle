@@ -165,6 +165,7 @@ let rec propagate_types env =
 	      | Ast0.TyDecl(ty,_) -> []
 	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)
+	      | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
 	      | Ast0.OptDecl(decl) -> process_decl decl
 	      | Ast0.UniqueDecl(decl) -> process_decl decl
 	      | Ast0.MultiDecl(decl) -> process_decl decl in
@@ -212,7 +213,7 @@ let rec propagate_types env =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing statement_dots
+    donothing donothing donothing statement_dots donothing
     ident expression donothing donothing donothing donothing statement
     case_line donothing
 

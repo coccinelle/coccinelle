@@ -224,6 +224,10 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
+and print_array (ty,lb,size,rb) fn =
+  fullType ty; fn(); mcode print_string lb; print_option expression size;
+  mcode print_string rb
+
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
@@ -234,15 +238,13 @@ and typeC ty =
 	(function _ -> ())
   | Ast.FunctionType _ ->
       failwith "not supported" 
-  | Ast.Array(ty,lb,size,rb) ->
-      fullType ty; mcode print_string lb; print_option expression size;
-      mcode print_string rb
+  | Ast.Array(ty,lb,size,rb) -> print_array (ty,lb,size,rb) (function () -> ())
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; ident name; print_string " "
   | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
       mcode structUnion kind; ident name; print_string " ";
       mcode print_string lb;
-      print_between force_newline declaration decls;
+      dots force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name)-> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_) -> 
@@ -287,33 +289,33 @@ and storage = function
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
+and print_named_type ty id =
+  match Ast.unwrap ty with
+    Ast.Type(None,ty1) ->
+      (match Ast.unwrap ty1 with
+	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
+	    (function _ -> print_string " "; ident id)
+      | Ast.Array(ty,lb,size,rb) ->
+	  print_array (ty,lb,size,rb)
+	    (function _ -> print_string " "; ident id)
+      | _ -> fullType ty; ident id)
+  | _ -> fullType ty; ident id
+
 and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
-      (match Ast.unwrap ty with
-	Ast.Type(None,ty1) ->
-	  (match Ast.unwrap ty1 with
-	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; ident id);
+      print_named_type ty id;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
-      (match Ast.unwrap ty with
-	Ast.Type(None,ty1) ->
-	  (match Ast.unwrap ty1 with
-	    Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		(function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; ident id);
+      print_named_type ty id;
       mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_,_) -> raise CantBeInPlus
+  | Ast.Ddots(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
       raise CantBeInPlus
 
@@ -351,15 +353,8 @@ and initialiser i =
 and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(ty,id) ->
-      (match (Ast.unwrap ty,id) with
-	(Ast.Type(None,ty1),Some id) ->
-	  (match Ast.unwrap ty1 with
-	      Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-		print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-		  (function _ -> print_string " "; ident id)
-	  | _ -> fullType ty; ident id)
-      | _ -> fullType ty; print_option ident id)
+  | Ast.Param(ty,Some id) -> print_named_type ty id
+  | Ast.Param(ty,None) -> fullType ty
 
   | Ast.MetaParam(name,_,_) -> 
       failwith "not handling MetaParam"
@@ -387,7 +382,7 @@ let define_body m =
       | _ -> raise Impossible
       ) 
 
-  | Ast.Ddots(dots) -> mcode print_string dots in
+  | Ast.Defdots(dots) -> mcode print_string dots in
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -579,6 +574,7 @@ let rec pp_any = function
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
   | Ast.ParamDotsTag(x) -> parameter_list x
   | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
+  | Ast.DeclDotsTag(x) -> dots (function _ -> ()) declaration x
 
   | Ast.TypeCTag(x) -> typeC x
   | Ast.ParamTag(x) -> parameterTypeDef x
