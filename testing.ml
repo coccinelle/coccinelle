@@ -1,6 +1,6 @@
 open Common open Commonop 
 
-let default_output_file = "/tmp/output.c"
+let default_output_file = "/tmp/output_testall.c"
 
 let _Best_score_file = "/tmp/score_cocci_best.marshalled"
 
