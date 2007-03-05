@@ -1169,6 +1169,10 @@ let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
+let not_define = function
+  | (Parser_c.TDefineSimpleStart _ | Parser_c.TDefineFuncStart _)::_ -> false
+  | _ -> true
+
 let not_annot s = 
   not (s ==~ regexp_annot)
 
@@ -1253,7 +1257,7 @@ let lookahead2 next before =
       msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
 
-  | (TIdent (s,i1)::TString (_,_)::_,   _) ->  
+  | (TIdent (s,i1)::TString (_,_)::_,   _) when not_define before ->  
       msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
   | (TIdent (s,i1)::_,   TString _::_) ->      

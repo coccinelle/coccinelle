@@ -415,6 +415,7 @@ let rewrap_str s (info, annot) =  { info with Common.str = s;}, annot
 
 let get_pos_of_info (info, annot) = info.Common.charpos
 let get_str_of_info (info, annot) = info.Common.str
+let get_file_of_info (info, annot) = info.Common.file
 
 let mcode_of_info (info, annot)  = fst !annot 
 

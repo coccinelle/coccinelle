@@ -343,23 +343,30 @@ and find_next_synchro_orig next already_passed =
 
 let tok_set s (info, annot) =  {info with Common.str = s;}, annot
 
+(* used to generate new token from existing one *)
 let new_info posadd str (info, annot) = 
   { info with
-    Common.charpos = info.charpos + posadd;
-    Common.str     = str;
+    charpos = info.charpos + posadd;
+    str     = str;
     column = info.column + posadd;
   }, ref Ast_c.emptyAnnot 
  (*must generate a new ref each time, otherwise share*)
 
 
-let adjust_pos posadd toks = 
-  toks +> TH.visitor_info_from_token (fun info -> 
-    new_info posadd (Ast_c.get_str_of_info info) info
+(* adjust token because fresh token coming from a Parse_c.token_string *)
+let adjust_tok posadd filename tok = 
+  tok +> TH.visitor_info_from_token (fun (info, annot) -> 
+    { info with
+      charpos = info.charpos + posadd;
+      file = filename;
+    }, annot
   )
+      
 
 
 
-(* returns a pair (replace token, list of next tokens) *)
+
+(* returns a pair (replaced token, list of next tokens) *)
 
 let tokens_include (info, includes, filename) = 
   Parser_c.TIncludeStart (tok_set includes info), 
@@ -368,21 +375,31 @@ let tokens_include (info, includes, filename) =
   ]
 
 
-let tokens_define_val beforestring bodys info = 
+let tokens_define_val posadd bodys info = 
   try 
     let _ = expression_of_string bodys in
-    Common.list_init (tokens_string bodys) 
-    +> List.map (fun tok -> adjust_pos (String.length (beforestring)) tok)
+    tokens_string bodys
+    +> Common.list_init 
+    +> List.map (fun tok -> 
+      adjust_tok  
+        (posadd + Ast_c.get_pos_of_info info)
+        (Ast_c.get_file_of_info info) 
+        tok
+    )
   with
   _ -> 
-    [Parser_c.TDefineText 
-        (bodys, (new_info (String.length (beforestring))) bodys info);]
+    [Parser_c.TDefineText (bodys, (new_info posadd bodys info));]
+
+
 
 
 
 
 let tokens_define_simple (info, define, ident, bodys) = 
-  let tokens_body = tokens_define_val (define ^ ident) bodys info in
+
+  let tokens_body = 
+    tokens_define_val (String.length (define ^ ident)) bodys info 
+  in
 
   Parser_c.TDefineSimpleStart (tok_set define info),
   [Parser_c.TIdent (ident, (new_info (String.length define) ident info))]
@@ -391,14 +408,26 @@ let tokens_define_simple (info, define, ident, bodys) =
       (new_info (String.length (define ^ ident ^ bodys)) "" info)]
 
 
-let tokens_define_func (info, define, ident, params, bodys) = 
-  let tokens_body = tokens_define_val (define ^ ident ^ params) bodys info in
 
+
+let tokens_define_func (info, define, ident, params, bodys) = 
   (* don't want last EOF, hence the list_init *)
+
   let tokens_params = 
-    Common.list_init (tokens_string params) 
-    +> List.map (fun tok -> adjust_pos (String.length (define ^ ident)) tok)
+    tokens_string params
+    +> Common.list_init 
+    +> List.map (fun tok -> 
+      adjust_tok 
+        (String.length (define ^ ident) + Ast_c.get_pos_of_info info)
+        (Ast_c.get_file_of_info info) 
+        tok
+    )
   in
+
+  let tokens_body = 
+    tokens_define_val (String.length (define ^ ident ^ params)) bodys info 
+  in
+
 
   Parser_c.TDefineFuncStart (tok_set define info),
   [Parser_c.TIdent (ident, (new_info (String.length define) ident info))]
