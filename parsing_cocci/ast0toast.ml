@@ -147,7 +147,10 @@ let check_allminus =
   let donothing r k e = k e in
   let bind x y = x && y in
   let option_default = true in
-  let mcode (_,_,_,mc) = match mc with Ast0.MINUS(_) -> true | _ -> false in
+  let mcode (_,_,_,mc) =
+    match mc with
+      Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = []
+    | _ -> false in
 
   (* special case for disj *)
   let expression r k e =

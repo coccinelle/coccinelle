@@ -14,7 +14,10 @@ let rec get_name name =
 
 let brace_to_semi (_,arity,info,mcodekind) = (";",Ast0.NONE,info,mcodekind)
 
-let collect_function (stm : Ast0.statement) =
+let plusify (x,info,index,_,ty,dots) = (x,info,index,ref Ast0.PLUS,ty,dots)
+
+let collect_function minus (stm : Ast0.statement) =
+  let stm = if minus then stm else plusify stm in
   match Ast0.unwrap stm with
     Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       [(get_name name,
@@ -27,15 +30,15 @@ let collect_function (stm : Ast0.statement) =
 			     (Ast0.FunctionType(ty,lp,params,rp)),
 			   name,brace_to_semi lbrace)))))]
   | _ -> []
-	
-let collect_functions stmt_dots =
-  List.concat (List.map collect_function (Ast0.undots stmt_dots))
-    
+
+let collect_functions minus stmt_dots =
+  List.concat (List.map (collect_function minus) (Ast0.undots stmt_dots))
+
 let get_all_functions minus rule =
   let res =
     match Ast0.unwrap rule with
-      Ast0.DECL(stmt) -> collect_function stmt
-    | Ast0.CODE(rule_elem_dots) -> collect_functions rule_elem_dots
+      Ast0.DECL(stmt) -> collect_function minus stmt
+    | Ast0.CODE(rule_elem_dots) -> collect_functions minus rule_elem_dots
     | _ -> [] in
   if minus
   then
