@@ -656,7 +656,8 @@ let process file isofile verbose =
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
-	     let function_prototypes = Function_prototypes.process m p in
+	     let function_prototypes =
+	       Function_prototypes.process minus plus in
 	     Insert_plus.insert_plus m p;
 	     Type_infer.type_infer minus;
 	     let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
