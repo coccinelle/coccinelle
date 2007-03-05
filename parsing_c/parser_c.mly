@@ -1274,9 +1274,12 @@ cpp_directives:
      }
 
 
+/* perhaps better to use assign_expr ? but in that case need 
+ * do a assign_expr_of_string in parse_c
+ */
 define_val: 
  | TDefText { DefineText (fst $1, [snd $1]) }
- | assign_expr { DefineExpr $1 }
+ | expr { DefineExpr $1 }
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 

@@ -2907,6 +2907,20 @@ let error_message = fun filename (lexeme, lexstart) ->
       ("PB in Common.error_message, position " ^ i_to_s lexstart ^
               " given out of file:" ^ filename);
     end
+
+
+
+let error_message_short = fun filename (lexeme, lexstart) -> 
+  try 
+  let charpos = lexstart in
+  let (line, pos, linecontent) =  info_from_charpos charpos filename in
+  sprintf "File \"%s\", line %d"  filename line
+
+  with End_of_file -> 
+    begin
+      ("PB in Common.error_message, position " ^ i_to_s lexstart ^
+          " given out of file:" ^ filename);
+    end
     
 
 

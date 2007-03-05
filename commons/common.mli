@@ -1011,6 +1011,8 @@ val info_from_charpos : int -> filename -> (int * int * string)
 val error_messagebis : filename -> (string * int) -> int -> string
 val error_message : filename -> (string * int) -> string
 
+val error_message_short : filename -> (string * int) -> string
+
 
 (*****************************************************************************)
 (* Misc/test *)

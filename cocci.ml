@@ -313,13 +313,15 @@ let ast_to_flow_with_error_messages2 def =
   let flowopt = 
     try Some (Ast_to_flow.ast_to_control_flow def)
     with Ast_to_flow.Error x -> 
-      pr2 "PBBBBBBBBBBBBBBBBBB";
+      (* pr2 "PBBBBBBBBBBBBBBBBBB"; *)
       Ast_to_flow.report_error x;
+      (*
       pr2
         ("At least 1 DEADCODE detected (there may be more)," ^
             "but I can't continue :(" ^ 
             "Maybe because of cpp #ifdef side effects."
         );
+      *)
       None
   in
   flowopt +> do_option (fun flow -> 
@@ -329,12 +331,14 @@ let ast_to_flow_with_error_messages2 def =
      *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-      pr2 "PBBBBBBBBBBBBBBBBBB";
+      (* pr2 "PBBBBBBBBBBBBBBBBBB"; *)
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
+      (*
       pr2 ("At least 1 DEADCODE detected (there may be more)," ^
               "but I continue.");
+      *)
       (* not a failwith this time *)
-      pr2 "Maybe because of cpp #ifdef side effects."; 
+      (* pr2 "Maybe because of cpp #ifdef side effects."; *)
   );
   flowopt
 let ast_to_flow_with_error_messages a = 
