@@ -1,0 +1,5 @@
+@@
+constant X;
+@@
+
+- foo(X);
