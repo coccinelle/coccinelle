@@ -777,18 +777,15 @@ initialize_list_start:
       (List.concat(List.map (function x -> x (mkidots "...")) r)) }
 
 comma_initializers(dotter):
-  d=dotter r=comma_initializers2(dotter)
+  /* empty */ { [] }
+| d=dotter r=comma_initializers2(dotter)
       { (function dot_builder -> [dot_builder d])::r }
-| i=initialize2 c=TComma
-    { [function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))]] }
 | i=initialize2 c=TComma r=comma_initializers(dotter)
     { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))])::
       r }
 
 comma_initializers2(dotter):
   /* empty */ { [] }
-| i=initialize2 c=TComma
-    { [function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))]] }
 | i=initialize2 c=TComma r=comma_initializers(dotter)
     { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(clt2mcode "," c))])::
       r }
