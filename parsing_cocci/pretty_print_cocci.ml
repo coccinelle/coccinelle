@@ -362,7 +362,7 @@ and print_named_type ty id =
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> print_string " "; ident id)
-      | Ast.FunctionType(am,ty,lp1,params,rp1) -> print_bool am;
+      | Ast.FunctionType(_,ty,lp1,params,rp1) ->
 	  print_function_type (ty,lp1,params,rp1)
 	    (function _ -> print_string " "; ident id)
       | Ast.Array(ty,lb,size,rb) ->

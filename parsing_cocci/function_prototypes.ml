@@ -14,34 +14,9 @@ let rec get_name name =
 
 let brace_to_semi (_,arity,info,mcodekind) = (";",Ast0.NONE,info,mcodekind)
 
-let plusify stg ty name lp params rp lbrace ((x,info,index,_,ty1,dots) as stm)=
-  let stg_mcode =
-    match stg with
-      None -> true
-    | Some x -> Ast0.get_mcode_mcodekind x = Ast0.PLUS in
-  let ty_mcode =
-    match ty with
-      None -> true
-    | Some x -> Ast0.get_mcodekind x = Ast0.PLUS in
-  let name_mcode = Ast0.get_mcodekind name = Ast0.PLUS in
-  let lp_mcode = Ast0.get_mcode_mcodekind lp = Ast0.PLUS in
-  let params_mcode = Ast0.get_mcodekind params = Ast0.PLUS in
-  let rp_mcode = Ast0.get_mcode_mcodekind rp = Ast0.PLUS in
-  let lbrace_mcode = Ast0.get_mcode_mcodekind lbrace = Ast0.PLUS in
-  Printf.printf "stg %b ty %b name %b lp %b params %b rp %b lbrace %b\n"
-    stg_mcode ty_mcode name_mcode lp_mcode params_mcode rp_mcode lbrace_mcode;
-  if stg_mcode && ty_mcode && name_mcode && lp_mcode && params_mcode &&
-    rp_mcode && lbrace_mcode
-  then (x,info,index,ref Ast0.PLUS,ty1,dots)
-  else stm
-
-let collect_function minus (stm : Ast0.statement) =
+let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
     Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-      let stm =
-	if minus
-	then stm
-	else plusify stg ty name lp params rp lbrace stm in
       [(get_name name,
 	Ast0.rewrap stm
 	  (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
@@ -53,14 +28,14 @@ let collect_function minus (stm : Ast0.statement) =
 			   name,brace_to_semi lbrace)))))]
   | _ -> []
 
-let collect_functions minus stmt_dots =
-  List.concat (List.map (collect_function minus) (Ast0.undots stmt_dots))
+let collect_functions stmt_dots =
+  List.concat (List.map collect_function (Ast0.undots stmt_dots))
 
 let get_all_functions minus rule =
   let res =
     match Ast0.unwrap rule with
-      Ast0.DECL(stmt) -> collect_function minus stmt
-    | Ast0.CODE(rule_elem_dots) -> collect_functions minus rule_elem_dots
+      Ast0.DECL(stmt) -> collect_function stmt
+    | Ast0.CODE(rule_elem_dots) -> collect_functions rule_elem_dots
     | _ -> [] in
   if minus
   then
