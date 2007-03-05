@@ -345,7 +345,7 @@ let mk_storage x          = Ast.StorageTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
-let mk_token x            = Printf.printf "making a token for %s\n" x ;Ast.Token x
+let mk_token x            = Ast.Token x
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
