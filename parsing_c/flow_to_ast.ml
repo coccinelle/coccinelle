@@ -361,7 +361,7 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
          )
 
     (* ------------------------- *)        
-    | IfCpp (_fullst, ((),ii)) -> 
+    | Ifdef (_fullst, ((),ii)) -> 
 
          (match get_next_nodes_ifthenelse_sorted g starti with
          | [(theni, TrueNode);  (elsei, FalseNode)] -> 
@@ -382,14 +382,14 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
            (match return1, return2 with
            | LastCurrentNode return1, LastCurrentNode return2 -> 
                assert (return1 = return2); (* it's the endifcpp node *)
-               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+               (Selection (Ast_c.Ifdef (st1s, st2s)),ii), 
                 LastCurrentNode (return1)
            | LastCurrentNode return, NoNextNode _  
            | NoNextNode _ , LastCurrentNode return ->
-               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+               (Selection (Ast_c.Ifdef (st1s, st2s)),ii), 
                 LastCurrentNode (return)
            | NoNextNode i1 , NoNextNode i2  -> 
-               (Selection (Ast_c.IfCpp (st1s, st2s)),ii), 
+               (Selection (Ast_c.Ifdef (st1s, st2s)),ii), 
                 NoNextNode i1 (* could be i2 *)
            )
          | _ -> raise Impossible
@@ -630,14 +630,13 @@ let (control_flow_to_ast: cflow -> definition) = fun g ->
         (Ast_c.ExprStatement None, [x]), LastCurrentNode starti
 
     (* ------------------------- *)        
-    | Asm -> 
-        let iiempty = [] in
-        (Ast_c.Asm, iiempty), LastCurrentNode starti
+    | Asm (_fullst, (body,ii)) -> 
+        (Ast_c.Asm body, ii), LastCurrentNode starti
 
     | Macro _ -> 
         raise Todo
 
-    | CPPInclude _ | CPPDefine _
+    | Include _ | Define _
     | CaseNode _ | DoWhileTail _ | Else _ | SeqEnd _ | FunHeader _ -> 
 	raise Impossible
 

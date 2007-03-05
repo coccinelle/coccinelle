@@ -495,7 +495,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
              end)
           
         
-    | Selection  (Ast_c.IfCpp (st1s, st2s)), ii -> 
+    | Selection  (Ast_c.Ifdef (st1s, st2s)), ii -> 
         let (ii,iifakeend) = 
           match ii with
           | [i1;i2;i3;i4] -> [i1;i2;i3], i4
@@ -503,7 +503,7 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
           | _ -> raise Impossible
         in
 
-        let newi = add_node_g (IfCpp (stmt, ((), ii))) lbl "ifcpp" in
+        let newi = add_node_g (Ifdef (stmt, ((), ii))) lbl "ifcpp" in
         attach_to_previous_node starti newi;
         let newfakethen = add_node_g TrueNode  lbl "[then]" in
         let newfakeelse = add_node_g FalseNode lbl "[else]" in
@@ -935,8 +935,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        Some newi
         
     (* ------------------------- *)        
-    | Ast_c.Asm, ii -> 
-        let newi = add_node_g Asm lbl "asm;" in
+    | Ast_c.Asm body, ii -> 
+        let newi = add_node_g (Asm (stmt, ((body,ii)))) lbl "asm;" in
         attach_to_previous_node starti newi;
         Some newi
 

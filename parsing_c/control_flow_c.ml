@@ -152,6 +152,12 @@ type node = node1 * string
   | Return     of statement * unit wrap
   | ReturnExpr of statement * expression wrap
 
+
+  (* ------------------------ *)
+  | Include of string wrap
+  | Define of string wrap * define
+
+
   (* ------------------------ *)
   (* no counter part in cocci *)
   | Label of statement * string wrap
@@ -163,12 +169,10 @@ type node = node1 * string
   | Continue of statement * unit wrap
   | Break    of statement * unit wrap
 
-  | Asm
+  | Asm of statement * asmbody wrap
   | Macro of statement * unit wrap
-  | IfCpp of statement * unit wrap
 
-  | CPPInclude of string wrap
-  | CPPDefine of (string * string) wrap
+  | Ifdef of statement * unit wrap
 
   (* ------------------------ *)
   (* some control nodes *)
@@ -224,10 +228,9 @@ let extract_fullstatement node =
       (* new policy. no more considered as a statement *)
       (* old: Some (Ast_c.Decl decl, []) *)
       None 
-  | Asm -> Some (Ast_c.Asm, [])
   | Macro (st, _) -> Some st
-  | IfCpp _ -> None (* other ? *)
-  | CPPInclude _ | CPPDefine _ -> None
+  | Ifdef _ -> None (* other ? *)
+  | Include _ | Define _ -> None
 
   | SeqStart (st,_,_) 
   | ExprStatement (st, _)
@@ -246,6 +249,7 @@ let extract_fullstatement node =
   | Goto (st, _)
   | Continue (st, _)
   | Break    (st, _)
+  | Asm (st,_)
       -> Some st
 
   | FunHeader _

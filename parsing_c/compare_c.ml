@@ -63,13 +63,16 @@ let normal_form_program xs =
     );
     Visitor_c.kprogram_s = (fun (k,bigf) p -> 
       match p with
-      | CPPDefine ((s, body), ii) -> 
+      | Define _ -> 
+          raise Todo
+          (*
           let (i1, i2, i3) = Common.tuple_of_list3 ii in
           if Common.string_match_substring cvs_keyword_regexp body
           then 
             let newstr = cvs_compute_newstr body in
-            CPPDefine ((s, newstr), [i1;i2;rewrap_str newstr i3])
+            Define ((s, newstr), [i1;i2;rewrap_str newstr i3])
           else p
+          *)
       | _ -> k p
     );
 
@@ -97,24 +100,15 @@ let normal_form_token x =
 
   let x' = 
     match x with 
-    | Parser_c.TDefine (s, body, i1, i2, i3) -> 
-        let (info, annot) = i1 in
-        let i1' = 
-          { info with 
-            Common.str = (fst i1).str ^ (fst i2).str ^ (fst i3).str
-          }, annot
-        in
-        Parser_c.TDefine ("", "", i1', Ast_c.fakeInfo(), Ast_c.fakeInfo())
 
-    | Parser_c.TInclude (s, i1, i2) -> 
-        let (info, annot) = i1 in
-        let i1' = 
-          { info with 
-            Common.str = (fst i1).str ^ (fst i2).str
-          }, annot
-        in
-        Parser_c.TInclude ("", i1', Ast_c.fakeInfo()) 
+    (* they must have been substitued, but they can be in
+     *  NotParsedCorrectly zone 
+     *)
+    | Parser_c.TDefineSimple _ 
+    | Parser_c.TDefineFunc _  ->
+        x
 
+    | Parser_c.TDefineText (s, i1) ->    Parser_c.TDefineText ("", i1)
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
     | x -> x
   in
@@ -183,9 +177,10 @@ let compare_ast filename1 filename2  =
         | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
         | SpecialDeclMacro (a1,b1,c1), SpecialDeclMacro (a2,b2,c2) -> 
             if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
-        | CPPInclude a, CPPInclude b -> if not (a =*= b) then incr error
-        | CPPDefine a, CPPDefine b ->   
-            if not (a =*= b) then incr error
+        | Include a, Include b -> if not (a =*= b) then incr error
+        | Define _, Define _ ->   
+            raise Todo
+            (* if not (a =*= b) then incr error *)
         | NotParsedCorrectly a, NotParsedCorrectly b -> 
             if not (a =*= b) then incr pb_notparsed
         | NotParsedCorrectly a, _ -> 

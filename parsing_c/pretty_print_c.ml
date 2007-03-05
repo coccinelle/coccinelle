@@ -176,13 +176,24 @@ and pp_statement_gen pr_elem =
     | Jump (ReturnExpr e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2
 
     | Decl decl, [] -> pp_decl_gen pr_elem decl 
-    | (Asm, []) -> pr "<<asm_or_strange_stuff>>";
+    | Asm asmbody, ii -> 
+        (match ii with
+        | [iasm;iopar;icpar;iptvirg] -> 
+            pr_elem iasm; pr_elem iopar;
+            pp_asmbody_gen pr_elem asmbody;
+            pr_elem icpar; pr_elem iptvirg
+        | [iasm;ivolatile;iopar;icpar;iptvirg] -> 
+            pr_elem iasm; pr_elem ivolatile; pr_elem iopar; 
+            pp_asmbody_gen pr_elem asmbody;
+            pr_elem icpar; pr_elem iptvirg
+        | _ -> raise Impossible
+        )
 
-    | (MacroStmt, ii) -> 
-        pr "<<macro:>>";
+
+    | MacroStmt, ii -> 
         ii +> List.iter pr_elem ;
 
-    | Selection  (IfCpp (st1s, st2s)), i1::i2::is -> 
+    | Selection  (Ifdef (st1s, st2s)), i1::i2::is -> 
         pr_elem i1; 
         st1s +> List.iter pp_statement; 
         (match (st2s, is) with
@@ -202,13 +213,31 @@ and pp_statement_gen pr_elem =
         | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
         | Iteration  (For ((_,_), (_,_), (_, _), _))
         | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
-        | Decl _ | Asm | Selection (IfCpp (_,_))
+        | Decl _ | Selection (Ifdef (_,_))
       ), _ -> raise Impossible
 
   in
   pp_statement
 
 
+and pp_asmbody_gen pr_elem (string_list, colon_list) = 
+  string_list +> List.iter pr_elem ;
+  colon_list +> List.iter (fun (Colon xs, ii) -> 
+    ii +> List.iter pr_elem;
+    xs +> List.iter (fun (x,iicomma) -> 
+      assert ((List.length iicomma) <= 1);
+      iicomma +> List.iter pr_elem;
+      (match x with 
+      | ColonMisc, ii -> ii +> List.iter pr_elem;
+      | ColonExpr e, [istring;iopar;icpar] -> 
+          pr_elem istring;
+          pr_elem iopar;
+          pp_expression_gen pr_elem e;
+          pr_elem icpar
+      | _ -> raise Impossible
+      )
+    ))
+  
 
 (* ---------------------- *)
 and (pp_type_with_ident_gen: 
@@ -224,6 +253,7 @@ and (pp_base_type_gen:
         pr_elem_func -> fullType -> (storage * il) option -> unit) = 
   fun pr_elem -> 
     let pp_expression e = pp_expression_gen pr_elem e in
+
     let rec pp_base_type = 
       fun (qu, (ty, iity)) sto -> 
         let get_sto sto = 
@@ -394,6 +424,17 @@ and (pp_base_type_gen:
             assert (List.length iis = 1);  
             print_sto_qu_ty (sto, qu, iis);
 
+        | (Typeof (e), iis) -> 
+            print_sto_qu (sto, qu);
+            (match iis with
+            | [itypeof;iopar;icpar] -> 
+                pr_elem itypeof; pr_elem iopar;
+                pp_expression_gen pr_elem e;
+                pr_elem icpar;
+            | _ -> raise Impossible
+            )
+
+
         | x -> raise Impossible
     in
     pp_base_type
@@ -416,6 +457,7 @@ and (pp_type_with_ident_rest_gen:
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
       | (TypeName (s), iis)                     -> print_ident ident
+      | (Typeof (e), iis)                     -> print_ident ident
 
 
 
@@ -631,7 +673,19 @@ and pp_init_gen = fun pr_elem ->
     | InitGccIndex (expression, initialiser), [i1;i2;i3] -> 
         pr_elem i1; pp_expression expression; pr_elem i2; pr_elem i3;
         pp_init initialiser
-    | InitGccRange (expression, expression2, initialiser), _ -> pr "<<ini>>"
+    | InitGccRange (e1, e2, initialiser), ii -> 
+        (match ii with
+        | [iocro;iellipsis;iccro;ieq] -> 
+            pr_elem iocro; pp_expression e1; pr_elem iellipsis;
+            pp_expression e2; pr_elem iccro; pr_elem ieq;
+            pp_init initialiser
+        | _ -> raise Impossible
+        )
+    | InitGccIndexField (s, e, ini), [idot;ident;iocro;iccro;ieq] -> 
+        pr_elem idot; pr_elem ident; pr_elem iocro;
+        pp_expression e; pr_elem iccro; pr_elem ieq;
+        pp_init ini
+        
 
 
     | x -> raise Impossible
@@ -652,13 +706,15 @@ let pp_program_gen pr_elem progelem =
                          returnt;
          pr_elem is;
          pr_elem iifunc1;
-         
+
+        (* not anymore, cf tests/optional_name_parameter and 
+           macro_parameter_shortcut.c
          (match paramst with
          | [(((bool, None, t), ii_b_s), iicomma)] -> 
              assert 
                (match t with 
                | qu, (BaseType Void, ii) -> true
-               | _ -> false
+               | _ -> true 
                );
              assert (null iicomma);
              assert (null ii_b_s);
@@ -678,27 +734,62 @@ let pp_program_gen pr_elem progelem =
                   pr_elem (Some (s, i2)) None t;
 
             (* in definition we have name for params, except when f(void) *)
-            | _, None, _ -> raise Impossible 
+             | _, None, _ -> raise Impossible 
+            | false, None, [] -> 
+                
             | _ -> raise Impossible
             )
          );
-         );
-            
+           );
 
          (* normally ii represent the ",..." but it is also abused
             with the f(void) case *)
          (* assert (List.length iib <= 2);*)
          iib +> List.iter pr_elem;
 
+        *)
+         paramst +> List.iter (fun (param,iicomma) -> 
+           assert ((List.length iicomma) <= 1);
+           iicomma +> List.iter pr_elem;
+           
+           pp_param_gen pr_elem param;
+         );
+         iib +> List.iter pr_elem;
+            
+
          pr_elem iifunc2;
          pr_elem i1; 
          statxs +> List.iter (pp_statement_gen pr_elem);
          pr_elem i2;
 
-     | CPPInclude (s, [i1;i2]) -> 
+     | Include (s, [i1;i2]) -> 
          pr_elem i1; pr_elem i2
-     | CPPDefine ((s, body), [i1;i2;i3])  -> 
-         pr_elem i1; pr_elem i2; pr_elem i3
+    | Define ((s,[idefine;iident;ieol]), (def,defii)) -> 
+        pr_elem idefine;
+        pr_elem iident;
+        
+        let define_val = function
+          | DefineExpr _ -> raise Todo
+          | DefineStmt _ -> raise Todo
+          | DefineText (s, ii) -> List.iter pr_elem ii
+          | DefineEmpty -> ()
+        in
+        (match def, defii with
+        | DefineSimple defval, [] -> define_val defval
+        | DefineFunc (params, defval), [iopar;icpar] -> 
+            pr_elem iopar;
+            params +> List.iter (fun ((string,iistring), iicomma) -> 
+              assert ((List.length iicomma) <= 1);
+              iicomma +> List.iter pr_elem;
+
+              iistring +> List.iter pr_elem;
+            );
+            pr_elem icpar;
+            define_val defval
+        | _ -> raise Impossible
+        );
+        pr_elem ieol
+
 
      | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
          pr_elem i1;

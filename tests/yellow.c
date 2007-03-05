@@ -83,4 +83,7 @@ static void yellowfin_init_ring(struct net_device *dev)
 	return;
 }
 
-int foo () { return; }
+int foo () 
+{ 
+return; 
+}

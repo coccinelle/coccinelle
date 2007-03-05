@@ -26,6 +26,11 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Return        of statement * unit wrap
   | ReturnExpr    of statement * expression wrap
 
+
+  (* ------------------------ *)
+  | Include of string wrap
+  | Define  of string wrap * define
+
   (* ------------------------ *)
   (* no counter part in cocci *)
   | Label     of statement * string wrap
@@ -37,13 +42,13 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Continue  of statement * unit wrap
   | Break     of statement * unit wrap
 
-  | Asm
+
+
+  | Asm of statement * asmbody wrap
   | Macro of statement * unit wrap
 
-  | IfCpp of statement * unit wrap
+  | Ifdef of statement * unit wrap
 
-  | CPPInclude of string wrap
-  | CPPDefine  of (string * string) wrap
 
   (* ------------------------ *)
   (* some control nodes *)

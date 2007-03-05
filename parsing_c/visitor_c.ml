@@ -209,7 +209,7 @@ and vk_statement = fun bigf st ->
 
     | Selection  (If (e, st1, st2)) -> 
         vk_expr bigf e; statf st1; statf st2;
-    | Selection (IfCpp (st1s, st2s)) -> 
+    | Selection (Ifdef (st1s, st2s)) -> 
         st1s +> List.iter (vk_statement bigf);
         st2s +> List.iter (vk_statement bigf)
     | Selection  (Switch (e, st)) -> 
@@ -228,10 +228,26 @@ and vk_statement = fun bigf st ->
     | Jump (ReturnExpr e) -> vk_expr bigf e;
 
     | Decl decl -> vk_decl bigf decl 
-    | Asm -> ()
+    | Asm asmbody -> vk_asmbody bigf asmbody
     | MacroStmt -> ()
 
   in statf st
+
+and vk_asmbody = fun bigf (string_list, colon_list) -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
+  iif string_list;
+  colon_list +> List.iter (fun (Colon xs, ii)  -> 
+    iif ii;
+    xs +> List.iter (fun (x,iicomma) -> 
+      iif iicomma;
+      (match x with
+      | ColonMisc, ii -> iif ii 
+      | ColonExpr e, ii -> 
+          vk_expr bigf e;
+          iif ii
+      )
+    ))
 
 and vk_type = fun bigf t -> 
   let iif ii = List.iter (vk_info bigf) ii in
@@ -288,7 +304,7 @@ and vk_type = fun bigf t ->
     | TypeName (s) -> ()
 
     | ParenType t -> typef t
-
+    | Typeof e -> vk_expr bigf e
 
   in typef t
 
@@ -321,11 +337,15 @@ and vk_ini = fun bigf ini ->
         ) 
           
     | InitGcc (s, e) -> inif e
-    | InitGccIndex (e1, e) -> vk_expr bigf e1; inif e
+    | InitGccIndex (e1, e) 
+    | InitGccIndexAlt (e1, e) ->
+        vk_expr bigf e1; inif e
     | InitGccRange (e1, e2, e) -> 
         vk_expr bigf e1; 
         vk_expr bigf e2; 
         inif e
+    | InitGccIndexField (s, e1, e) ->
+        vk_expr bigf e1; inif e
   in inif ini
 
 and vk_def = fun bigf d -> 
@@ -403,9 +423,28 @@ and vk_node = fun bigf node ->
 
     | F.CaseNode i -> ()
 
-    | F.CPPDefine (s, ii) -> iif ii
-    | F.CPPInclude (s, ii) -> iif ii
-    | F.IfCpp (st, ((),ii)) -> iif ii
+    | F.Define ((s,ii), (def,defii)) -> 
+        iif ii;
+        iif defii;
+        let define_val = function
+          | DefineExpr _ -> raise Todo
+          | DefineStmt _ -> raise Todo
+          | DefineText (s, ii) -> iif ii
+          | DefineEmpty -> ()
+        in
+        (match def with
+        | DefineSimple defval -> define_val defval
+        | DefineFunc (params, defval) -> 
+            params +> List.iter (fun ((string,iistring), iicomma) -> 
+              iif iistring;
+              iif iicomma
+            );
+            define_val defval
+        )
+        
+
+    | F.Include (s, ii) -> iif ii
+    | F.Ifdef (st, ((),ii)) -> iif ii
 
     | F.Break    (st,((),ii)) -> iif ii
     | F.Continue (st,((),ii)) -> iif ii
@@ -420,11 +459,14 @@ and vk_node = fun bigf node ->
     | F.SeqStart (st, i, info) -> infof info
 
     | F.Macro (st, ((),ii)) -> iif ii
+    | F.Asm (st, (asmbody,ii)) -> 
+        iif ii;
+        vk_asmbody bigf asmbody
 
     | (
         F.ErrorExit|F.Exit|
         F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
-        F.Fake|F.Enter|F.Asm
+        F.Fake|F.Enter
       ) -> ()
 
 
@@ -585,8 +627,8 @@ and vk_statement_s = fun bigf st ->
       | ExprStatement (Some e) -> ExprStatement (Some ((vk_expr_s bigf) e))
       | Selection (If (e, st1, st2)) -> 
           Selection  (If ((vk_expr_s bigf) e, statf st1, statf st2))
-      | Selection (IfCpp (st1s, st2s)) -> 
-          Selection  (IfCpp 
+      | Selection (Ifdef (st1s, st2s)) -> 
+          Selection  (Ifdef 
                          (st1s +> List.map (vk_statement_s bigf),
                          st2s +> List.map (vk_statement_s bigf)))
       | Selection (Switch (e, st))   -> 
@@ -611,11 +653,29 @@ and vk_statement_s = fun bigf st ->
       | Jump (ReturnExpr e) -> Jump (ReturnExpr ((vk_expr_s bigf) e))
 
       | Decl decl -> Decl (vk_decl_s bigf decl)
-      | Asm -> Asm
+      | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | MacroStmt -> MacroStmt
     in
     st', List.map (vk_info_s bigf) ii
   in statf st
+
+and vk_asmbody_s = fun bigf (string_list, colon_list) -> 
+  let  infolistf ii = List.map (vk_info_s bigf) ii in
+
+  infolistf string_list,
+  colon_list +> List.map (fun (Colon xs, ii) -> 
+    Colon 
+      (xs +> List.map (fun (x, iicomma) -> 
+        (match x with
+        | ColonMisc, ii -> ColonMisc, infolistf ii 
+        | ColonExpr e, ii -> ColonExpr (vk_expr_s bigf e), infolistf ii
+        ), infolistf iicomma
+      )), 
+    infolistf ii 
+  )
+    
+  
+
 
 and vk_type_s = fun bigf t -> 
   let rec typef t = bigf.ktype_s (k,bigf) t
@@ -669,6 +729,7 @@ and vk_type_s = fun bigf t ->
       | TypeName s -> TypeName s
 
       | ParenType t -> ParenType (typef t)
+      | Typeof e -> Typeof (vk_expr_s bigf e)
     in
     (q', infolistf iiq), 
   (t', infolistf iit)
@@ -706,8 +767,12 @@ and vk_ini_s = fun bigf ini ->
       | InitGcc (s, e) -> InitGcc (s, inif e)
       | InitGccIndex (e1, e) -> 
           InitGccIndex (vk_expr_s bigf e1 , inif e)
+      | InitGccIndexAlt (e1, e) -> 
+          InitGccIndexAlt (vk_expr_s bigf e1 , inif e)
       | InitGccRange (e1, e2, e) -> 
           InitGccRange (vk_expr_s bigf e1, vk_expr_s bigf e2, inif e)
+      | InitGccIndexField (s, e1, e) -> 
+          InitGccIndexField (s, vk_expr_s bigf e1, inif e)
     in ini', List.map (vk_info_s bigf) ii
   in inif ini
 
@@ -734,6 +799,7 @@ and vk_def_s = fun bigf d ->
 and vk_program_s = fun bigf p -> 
   let f = bigf.kprogram_s in
   let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii =  infolistf ii in
   let rec k p = 
     match p with
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
@@ -747,8 +813,28 @@ and vk_program_s = fun bigf p ->
           ),
           infolistf ii
           )
-    | CPPInclude (s, ii) -> CPPInclude (s, infolistf ii)
-    | CPPDefine (ss, ii) -> CPPDefine (ss, infolistf ii)
+    | Include (s, ii) -> Include (s, infolistf ii)
+    | Define ((s,ii), (def,defii)) -> 
+
+        let define_val = function
+          | DefineExpr _ -> raise Todo
+          | DefineStmt _ -> raise Todo
+          | DefineText (s, ii) -> DefineText (s, iif ii)
+          | DefineEmpty -> DefineEmpty
+        in
+        let def = 
+          (match def with
+          | DefineSimple defval -> DefineSimple (define_val defval)
+          | DefineFunc (params, defval) -> 
+              DefineFunc 
+                (params +> List.map (fun ((string,iistring), iicomma) -> 
+                  ((string, iif iistring), iif iicomma)
+                ), define_val defval)
+        
+          )
+        in
+        Define ((s, iif ii), (def, iif defii))
+
     | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
   in f (k, bigf) p
@@ -807,11 +893,33 @@ and vk_node_s = fun bigf node ->
 
     | F.CaseNode i -> F.CaseNode i
 
-    | F.CPPDefine (s, ii) -> F.CPPDefine (s, iif ii)
-    | F.CPPInclude (s, ii) -> F.CPPInclude (s, iif ii)
-    | F.IfCpp (st, ((),ii)) -> F.IfCpp (st, ((),iif ii))
+    | F.Define ((s,ii), (def,defii)) -> 
+
+        let define_val = function
+          | DefineExpr _ -> raise Todo
+          | DefineStmt _ -> raise Todo
+          | DefineText (s, ii) -> DefineText (s, iif ii)
+          | DefineEmpty -> DefineEmpty
+        in
+        let def = 
+          (match def with
+          | DefineSimple defval -> DefineSimple (define_val defval)
+          | DefineFunc (params, defval) -> 
+              DefineFunc 
+                (params +> List.map (fun ((string,iistring), iicomma) -> 
+                  ((string, iif iistring), iif iicomma)
+                ), define_val defval)
+        
+          )
+        in
+        F.Define ((s, iif ii), (def, iif defii))
+
+
+    | F.Include (s, ii) -> F.Include (s, iif ii)
+    | F.Ifdef (st, ((),ii)) -> F.Ifdef (st, ((),iif ii))
 
     | F.Macro (st, ((),ii)) -> F.Macro (st, ((),iif ii))
+    | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))
 
     | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))
     | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))
@@ -826,7 +934,7 @@ and vk_node_s = fun bigf node ->
     | F.SeqStart (st, i, info) -> F.SeqStart (st, i, infof info)
 
     | ((F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
-       F.Fake|F.Exit|F.Enter|F.Asm) as x) -> x
+       F.Fake|F.Exit|F.Enter) as x) -> x
 
 
     )

@@ -348,8 +348,8 @@ let flow_to_ast2 flow =
   | [_, node] -> 
       (match Control_flow_c.unwrap node with
       | Control_flow_c.Decl decl -> Ast_c.Declaration decl
-      | Control_flow_c.CPPInclude x -> Ast_c.CPPInclude x
-      | Control_flow_c.CPPDefine x -> Ast_c.CPPDefine x
+      | Control_flow_c.Include x -> Ast_c.Include x
+      | Control_flow_c.Define (x, body) -> Ast_c.Define (x, body)
       | _ -> raise Impossible
       )
   | _ -> 
@@ -442,12 +442,12 @@ let build_maybe_info e =
           contain_loop = contain_loop def 
         }
       )
-  | Ast_c.Declaration _ | Ast_c.CPPInclude _ | Ast_c.CPPDefine _  -> 
+  | Ast_c.Declaration _ | Ast_c.Include _ | Ast_c.Define _  -> 
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.CPPInclude x -> (Control_flow_c.CPPInclude x), "#include"
-        | Ast_c.CPPDefine x -> (Control_flow_c.CPPDefine x), "#define"
+        | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
+        | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
         | _ -> raise Impossible
       in
       let flow = Ast_to_flow.simple_cfg elem str  in
@@ -459,7 +459,6 @@ let build_maybe_info e =
       }
 
   | _ -> None
-
 
 
 

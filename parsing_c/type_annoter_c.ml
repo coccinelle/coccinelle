@@ -166,6 +166,7 @@ let rec find_final_type ty env =
       )
       
   | ParenType t -> find_final_type t env
+  | Typeof e -> failwith "typeof"
   
 
 let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) = 

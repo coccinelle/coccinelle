@@ -222,6 +222,13 @@ let split_signb_baseb_ii (baseb, ii) =
           Some (B.Signed, i1), [i2;i3]
       | B.UnSigned, B.CLongLong, ["unsigned",i1;"long",i2;"long",i3] -> 
           Some (B.UnSigned, i1), [i2;i3]
+
+
+      | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2; "int", i3] -> 
+          Some (B.UnSigned, i1), [i2;i3]
+          
+
+
       | _ -> failwith "strange type1, maybe because of weird order"
       )
   | _ -> failwith "strange type2, maybe because of weird order"
@@ -1744,6 +1751,8 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
             (B.TypeName sb, [isb])
           ))
         else fail
+
+    | _, (B.Typeof e, ii) -> fail
           
     | _, _ -> fail
 
@@ -2164,7 +2173,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Include(incla,filea), F.CPPInclude (filebstr, ii) ->
+  | A.Include(incla,filea), F.Include (filebstr, ii) ->
       let (inclb, fileb) = tuple_of_list2 ii in 
       if ((term filea) =$= filebstr)
       then 
@@ -2172,46 +2181,57 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
         tokenf filea fileb >>= (fun filea fileb -> 
           return (
             A.Include(incla, filea),
-            F.CPPInclude (filebstr, [inclb;fileb])
+            F.Include (filebstr, [inclb;fileb])
           )))
       else fail
 
 
 
-  | A.Define(definea,ida,bodya), F.CPPDefine ((idb, bodyb), ii) ->
-      let (defineb, iidb, iibodyb) = tuple_of_list3 ii in
+  | A.Define(definea,ida,bodya), F.Define ((idb, ii), def) ->
+      let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
 (*      all_bound (A.get_inherited ida) >&&> *)
       tokenf definea defineb >>= (fun definea defineb -> 
-        (match A.unwrap bodya with
-        | A.DMetaId (idbodya, keep) -> 
-            let inherited = false (* TODO ? *) in
-            X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
-              (fun _s v -> 
-                match v with
-                | B.MetaTextVal sa -> 
-                    if (sa =$= bodyb)
-                    then 
-                      tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
-                        return (
-                          A.Define(definea,ida, 
-                                  (A.DMetaId (idbodya, keep)
-                                    +> A.rewrap bodya)),
-                          F.CPPDefine ((idb, bodyb), [defineb;iidb;iibodyb])
-                        ))
-                    else fail
-                | _ -> raise Impossible
-              )
+      (match A.unwrap bodya, def with
+      | A.DMetaId (idbodya, keep), 
+        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []) -> 
+
+         let inherited = false (* TODO ? *) in
+         X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
+          (fun _s v -> 
+            match v with
+            | B.MetaTextVal sa -> 
+                if (sa =$= bodyb)
+                then 
+                  tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
+                    return (
+                      A.Define
+                        (definea,ida, 
+                        (A.DMetaId (idbodya, keep) +> A.rewrap bodya)),
+                      F.Define 
+                        ((idb, [defineb;iidb;ieol]),
+                        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []))
+                    ))
+                else fail
+            | _ -> raise Impossible
+          )
 
 
                 
-        | A.Defdots (dots) -> 
-            tokenf dots iibodyb >>= (fun dots iibodyb -> 
-              return (
-                A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
-                F.CPPDefine ((idb, bodyb), [defineb;iidb;iibodyb])
-              ))
-        )))
+      | A.Defdots (dots),
+        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), [])->
+          tokenf dots iibodyb >>= (fun dots iibodyb -> 
+            return (
+              A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
+              F.Define 
+                ((idb, [defineb;iidb;ieol]),
+                (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []))
+            ))
+
+      | _, _ -> fail
+            
+          
+      )))
 
 
   | A.Default(def,colon), F.Default (st, ((),ii)) -> 
@@ -2242,8 +2262,8 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.Label _
   | _, F.CaseRange _  
-  | _, F.Asm
-  | _, F.IfCpp _
+  | _, F.Asm _
+  | _, F.Ifdef _
     -> fail2
 
 

@@ -134,7 +134,6 @@ let main () =
       "-show_SP_julia"       , Arg.Set Flag_parsing_cocci.show_SP,  " ";
 
 
-
       "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
       "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";
 

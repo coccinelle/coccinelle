@@ -1,5 +1,7 @@
 open Common open Commonop
 
+module TH = Token_helpers 
+
 open Parser_c 
 
 
@@ -87,7 +89,7 @@ let msg_declare_macro s =
       
 
 let msg_foreach s = 
-  pr2_cpp ("MACRO: certainly foreach, transforming: " ^ s)
+  pr2_cpp ("MACRO: found foreach: " ^ s)
 
 
 let msg_debug_macro s = 
@@ -95,11 +97,11 @@ let msg_debug_macro s =
 
 
 let msg_macro_noptvirg s = 
-  pr2_cpp ("MACRO: found macro with param " ^ s)
+  pr2_cpp ("MACRO: found macro with param noptvirg: " ^ s)
 
 
 let msg_macro_noptvirg_single s = 
-  pr2_cpp ("MACRO: found single-macro " ^ s)
+  pr2_cpp ("MACRO: found single-macro noptvirg: " ^ s)
 
 
 let msg_macro_higher_order s = 
@@ -166,9 +168,6 @@ let is_same_line line = function
   | (x, {line = line2}) when line2 = line -> true 
   | _ -> false 
 
-
-let str_of_token = Token_helpers.str_of_token
-let pos_of_token = Token_helpers.pos_of_token
 
 (* ------------------------------------------------------------------------- *)
 (* fuzzy parsing, different views over the same program *)
@@ -414,11 +413,15 @@ let keyword_table = Common.hash_of_list [
   "__must_check",                   (fun ii -> TCommentCpp ii);  
   "__unused",                   (fun ii -> TCommentCpp ii);  
 
-
+  "__read_mostly", (fun ii -> TCommentCpp ii);  
+  "__attribute_used__",         (fun ii -> TCommentCpp ii);  
 
   "__CS4231_INLINE__",                    (fun ii -> TCommentCpp ii);  
 
   "__init_or_module",                    (fun ii -> TCommentCpp ii);  
+
+  "__3xp_aligned",                    (fun ii -> TCommentCpp ii);  
+
 
 
 
@@ -431,6 +434,9 @@ let keyword_table = Common.hash_of_list [
   "DIVA_INIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
   "ACPI_SYSTEM_XFACE",                    (fun ii -> TCommentCpp ii);  
 
+  "ASC_INITDATA",                    (fun ii -> TCommentCpp ii);  
+  "in2000__INITDATA",                (fun ii -> TCommentCpp ii);  
+  "PACKED",                    (fun ii -> TCommentCpp ii);  
 
   "WPMINFO", (fun ii -> TCommentCpp ii);
 
@@ -486,6 +492,8 @@ let fix_tokens_annotation_and_stringification_part1 tokens =
 (* the pair is the status of '()' and '{)', ex: (-1,0) 
  * if too much ')' and good '{}' 
  * could do for [] too ? 
+ * could do for ,   if encounter , at "toplevel", not inside () or {}
+ * then if have ifdef, then certainly can lead to a problem.
  *)
 let (count_open_close_ifdef_clause: ifdef_grouped list -> (int * int)) = 
  fun xs -> 
@@ -501,13 +509,15 @@ let (count_open_close_ifdef_clause: ifdef_grouped list -> (int * int)) =
    );
    !cnt_paren, !cnt_brace
 
+
+let thresholdIfdefSizeMid = 6
+
 let find_and_tag_good_ifdef xs = 
   let (keep_ifdef  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
 
-  let debug_ifdef_zero = ref false in
-
   (* ---------------------------------------------------------------------- *)
+  (* #if 0, #if 1,  #if LINUX_VERSION handling *)
   let rec find_ifdef_zero xs = 
     xs +> List.iter (function 
     | NotIfdefLine _ -> ()
@@ -522,29 +532,22 @@ let find_and_tag_good_ifdef xs =
         | [] -> raise Impossible
         | firstclause::xxs -> 
 
-
             info_ifdef_stmt +> List.iter (fun (tok, x) ->
-              if !debug_ifdef_zero 
-              then pr2_cpp ("passing: " ^ str_of_token tok);
-              Hashtbl.add !put_comment (pos_of_token tok) true
+              Hashtbl.add !put_comment (TH.pos_of_token tok) true
             );
 
             if is_ifdef_positif
             then begin
               xxs +> List.iter (fun xs -> 
                 xs +> iter_token_ifdef (fun (tok, x) -> 
-                  if !debug_ifdef_zero 
-                  then pr2_cpp ("passing: " ^ str_of_token tok);
-                  Hashtbl.add !put_comment (pos_of_token tok) true
+                  Hashtbl.add !put_comment (TH.pos_of_token tok) true
                 )
               );
             end
             else begin
             
               firstclause +> iter_token_ifdef (fun (tok, x) -> 
-                if !debug_ifdef_zero 
-                then pr2_cpp ("passing: " ^ str_of_token tok);
-                Hashtbl.add !put_comment (pos_of_token tok) true
+                Hashtbl.add !put_comment (TH.pos_of_token tok) true
               ) ;
             
               (match List.rev xxs with
@@ -553,9 +556,7 @@ let find_and_tag_good_ifdef xs =
 
                   startxs +> List.iter (fun xs -> 
                     xs +> iter_token_ifdef (fun (tok, x) -> 
-                      if !debug_ifdef_zero 
-                      then pr2_cpp ("passing: " ^ str_of_token tok);
-                      Hashtbl.add !put_comment (pos_of_token tok) true
+                      Hashtbl.add !put_comment (TH.pos_of_token tok) true
                     )
                   );
            
@@ -571,6 +572,7 @@ let find_and_tag_good_ifdef xs =
 
 
   (* ---------------------------------------------------------------------- *)
+  (* infer ifdef involving not-closed expressions/statements *)
   let rec find_ifdef_mid xs = 
     xs +> List.iter (function 
     | NotIfdefLine _ -> ()
@@ -579,7 +581,9 @@ let find_and_tag_good_ifdef xs =
         | [] -> raise Impossible
         | [first] -> ()
         | first::second::rest -> 
-            if xxs +> List.for_all (fun xs -> List.length xs <= 3) && 
+            (* don't analyse big ifdef *)
+            if xxs +> List.for_all 
+              (fun xs -> List.length xs <= thresholdIfdefSizeMid) && 
               (* don't want nested ifdef *)
                xxs +> List.for_all (fun xs -> 
                  xs +> List.for_all 
@@ -599,11 +603,11 @@ let find_and_tag_good_ifdef xs =
               then begin
                 pr2_cpp "found ifdef-mid-something";
                 info_ifdef_stmt +> List.iter (fun (tok, x) ->
-                  Hashtbl.add !put_comment (pos_of_token tok) true
+                  Hashtbl.add !put_comment (TH.pos_of_token tok) true
                 );
                 (second::rest) +> List.iter (fun xs -> 
                     xs +> iter_token_ifdef (fun (tok, x) -> 
-                      Hashtbl.add !put_comment (pos_of_token tok) true
+                      Hashtbl.add !put_comment (TH.pos_of_token tok) true
                     )
                 );
               end
@@ -646,7 +650,7 @@ let find_and_tag_good_ifdef xs =
           )
         in
         all_toks +> List.iter (fun x -> 
-          Hashtbl.add !put_comment (pos_of_token x) true;
+          Hashtbl.add !put_comment (TH.pos_of_token x) true;
         )
 
     | Ifdef 
@@ -672,7 +676,7 @@ let find_and_tag_good_ifdef xs =
           )
         in
         all_toks +> List.iter (fun x -> 
-          Hashtbl.add !put_comment (pos_of_token x) true;
+          Hashtbl.add !put_comment (TH.pos_of_token x) true;
         )
 
 
@@ -694,7 +698,7 @@ let find_and_tag_good_ifdef xs =
         )
       in
       all_toks +> List.iter (fun x -> 
-        Hashtbl.add !put_comment (pos_of_token x) true;
+        Hashtbl.add !put_comment (TH.pos_of_token x) true;
       )
         
 
@@ -719,7 +723,7 @@ let find_and_tag_good_ifdef xs =
 
 let adjust_tokens_based_on_mark_ifdef (keep_ifdef, put_comments) tokens = 
   tokens +> List.map (fun tok -> 
-    let info = Token_helpers.info_from_token_fullstr tok in
+    let info = TH.info_from_token tok in
     let charpos = Ast_c.get_pos_of_info info in
 
     match tok with
@@ -747,11 +751,11 @@ let fix_tokens_ifdef tokens =
   (* une base plus pratique de travail *)
   let cleanxs = 
     tokens +> List.filter (fun x -> 
-      not (Token_helpers.is_comment x) (* could filter also #define/#include *)
+      not (TH.is_comment x) (* could filter also #define/#include *)
     ) 
   in
   let cleanxs_with_pos = List.map (fun x -> 
-    let (line, col) = Token_helpers.linecol_of_tok x in
+    let (line, col) = TH.linecol_of_tok x in
     x, { line = line; col = col}
   ) cleanxs 
   in
@@ -794,6 +798,24 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 
   (* ---------------------------------------------------------------------- *)
+  let rec find_macro_paren xs = 
+    match xs with
+    | [] -> ()
+    | NotParenToken ((TIdent (s,_),_) as id)::Parenthised (xxs,info_parens)::xs
+        when List.mem s ["FASTCALL"] -> 
+
+        pr2_cpp ("MACRO: FASTCALL detected: " ^ s);
+        xxs +> List.iter find_macro_paren;
+        (id::info_parens) +> List.iter (fun (tok, pos) -> 
+            Hashtbl.add !put_comment (TH.pos_of_token tok) true
+          );
+        find_macro_paren xs
+       
+       
+       
+   | x::xs -> find_macro_paren xs 
+  in
+  (* ---------------------------------------------------------------------- *)
   let rec find_macro xs = 
     match xs with
     | [] -> ()
@@ -810,7 +832,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
         ::xs when s ==~ regexp_macro -> 
         msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
-          Hashtbl.add !put_comment (pos_of_token tok) true
+          Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
         find_macro (xs)
 
@@ -829,7 +851,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
         msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
-          Hashtbl.add !put_comment (pos_of_token tok) true
+          Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
         find_macro (xs)
 
@@ -851,7 +873,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
         msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
-          Hashtbl.add !put_comment (pos_of_token tok) true
+          Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
         find_macro (xs)
 
@@ -868,10 +890,10 @@ let find_and_tag_good_macro cleanxs_with_pos =
           List.mem s debug_macros_list
       -> 
         msg_debug_macro s;
-        Hashtbl.add !keep_macro (pos_of_token macro) true;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
 
         iter_token_paren (fun (tok, x) -> 
-          Hashtbl.add !put_comment (pos_of_token tok) true
+          Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
         find_macro (xs)
 
@@ -885,9 +907,9 @@ let find_and_tag_good_macro cleanxs_with_pos =
         xs 
           when List.mem s ["GDTH_INITFUNC";"ASC_INITFUNC"]
       -> 
-        pr2_cpp "MACRO: XXX_INITFUNC detected";
+        pr2_cpp ("MACRO: XXX_INITFUNC detected: " ^ s);
         (ident::info_parens) +> List.iter (fun (tok, x) -> 
-          Hashtbl.add !put_comment (pos_of_token tok) true
+          Hashtbl.add !put_comment (TH.pos_of_token tok) true
         );
         find_macro xs
 
@@ -927,9 +949,9 @@ let find_and_tag_good_macro cleanxs_with_pos =
         if condition (* && s ==~ regexp_macro *)
         then begin
           msg_macro_noptvirg s;
-          Hashtbl.add !keep_macro (pos_of_token macro) true;
+          Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
           iter_token_paren (fun (tok, x) -> 
-            Hashtbl.add !put_comment (pos_of_token tok) true
+            Hashtbl.add !put_comment (TH.pos_of_token tok) true
           ) line1;
         end;
         find_macro (line2::xs)
@@ -968,10 +990,10 @@ let find_and_tag_good_macro cleanxs_with_pos =
         if condition
         then begin
           msg_macro_noptvirg_single s;
-          Hashtbl.add !keep_macro (pos_of_token macro) true;
+          Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
 
           iter_token_paren (fun (tok, x) -> 
-            Hashtbl.add !put_comment (pos_of_token tok) true
+            Hashtbl.add !put_comment (TH.pos_of_token tok) true
           ) line1
         end;
         find_macro (line2::xs)
@@ -996,6 +1018,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
   let paren_grouped = mk_parenthised  cleanxs_with_pos in
   let line_paren_grouped = mk_line_parenthised paren_grouped in
   find_macro line_paren_grouped;
+  find_macro_paren paren_grouped;
 
   !keep_macro, !put_comment
 
@@ -1003,7 +1026,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 let adjust_tokens_based_on_mark_macro (keep_macro, put_comments) tokens = 
   tokens +> List.map (fun tok -> 
-    let info = Token_helpers.info_from_token_fullstr tok in
+    let info = TH.info_from_token tok in
     let charpos = Ast_c.get_pos_of_info info in
 
     match tok with
@@ -1024,12 +1047,12 @@ let fix_tokens_macro tokens =
   (* une base plus pratique de travail *)
   let cleanxs = 
     tokens +> List.filter (fun x -> 
-      not (Token_helpers.is_comment x) && 
-      not (Token_helpers.is_cpp_instruction x)
+      not (TH.is_comment x) && 
+      not (TH.is_cpp_instruction x)
     )
   in
   let cleanxs_with_pos = List.map (fun x -> 
-    let (line, col) = Token_helpers.linecol_of_tok x in
+    let (line, col) = TH.linecol_of_tok x in
     x, { line = line; col = col}
   ) cleanxs 
   in
@@ -1042,15 +1065,6 @@ let fix_tokens_macro tokens =
 (* ------------------------------------------------------------------------- *)
 (* action *)
 (* ------------------------------------------------------------------------- *)
-
-let is_statement_token = function
-  | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
-  | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
-  | Tgoto _ 
-  | TPtVirg _
-      -> true
-  | _ -> false
-
 
 let find_and_tag_actions cleanxs_with_pos =
   let (put_actions : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
@@ -1071,10 +1085,12 @@ let find_and_tag_actions cleanxs_with_pos =
 
   and find_actions_params xxs = 
     xxs +> List.fold_left (fun acc xs -> 
-      if List.exists (fun (tok,_)-> is_statement_token tok)(tokens_of_paren xs)
+      if (tokens_of_paren xs) +> List.exists (fun (tok,_)-> 
+        TH.is_statement_token tok
+      )
       then begin
         xs +> iter_token_paren (fun (tok, pos) -> 
-          Hashtbl.add !put_actions (pos_of_token tok) true
+          Hashtbl.add !put_actions (TH.pos_of_token tok) true
         );
         true (* modified *)
       end
@@ -1090,7 +1106,7 @@ let find_and_tag_actions cleanxs_with_pos =
 
 let adjust_tokens_based_on_mark_action (put_actions) tokens = 
   tokens +> List.map (fun tok -> 
-    let info = Token_helpers.info_from_token_fullstr tok in
+    let info = TH.info_from_token tok in
     let charpos = Ast_c.get_pos_of_info info in
 
     match tok with
@@ -1107,12 +1123,11 @@ let fix_tokens_action tokens =
   (* une base plus pratique de travail *)
   let cleanxs = 
     tokens +> List.filter (fun x -> 
-      not (Token_helpers.is_comment x) && 
-      not (Token_helpers.is_cpp_instruction x)
+      not (TH.is_comment x) && not (TH.is_cpp_instruction x)
     )
   in
   let cleanxs_with_pos = List.map (fun x -> 
-    let (line, col) = Token_helpers.linecol_of_tok x in
+    let (line, col) = TH.linecol_of_tok x in
     x, { line = line; col = col}
   ) cleanxs 
   in
@@ -1131,9 +1146,14 @@ let fix_tokens_cpp tokens =
 
   if !Flag_parsing_c.next_gen_parsing 
   then 
-    let tokens = fix_tokens_action tokens in
+    (* the order is important, if put action first 
+     * then because of ifdef, can have not closed paren
+     * and so may believe that higher order macro 
+     * and it will eat too much tokens. 
+     *)
     let tokens = fix_tokens_ifdef tokens in
     let tokens = fix_tokens_macro tokens in
+    let tokens = fix_tokens_action tokens in
     tokens
   else 
     tokens
@@ -1148,6 +1168,9 @@ open Lexer_parser (* for the fields of lexer_hint type *)
 let not_struct_enum = function
   | (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
+
+let not_annot s = 
+  not (s ==~ regexp_annot)
 
 let merge_info_str x xs = 
   let (info, annot) = x in
@@ -1262,7 +1285,9 @@ let lookahead2 next before =
       TypedefIdent (s, i1)
 
   (* xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before -> 
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when 
+        not_struct_enum before (* lead to false positive  && not_annot s2 *)
+    -> 
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
       
       msg_typedef s; Lexer_parser.add_typedef_root s;
@@ -1433,20 +1458,9 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | TDefine (s, body, i1, i2, i3)::_, _ when 
-        not !Lexer_parser._lexer_hint.toplevel -> 
-      
-      pr2_cpp ("DEFINE: inside function, I treat it as comment");
-      TCommentCpp (merge_info_str i1 [i2;i3])
-
-  (* do same for include often found inside structdef *)
-  | TInclude (s, i1, i2)::_, _ when not !Lexer_parser._lexer_hint.toplevel -> 
-      pr2_cpp ("INCLUDE: inside function, I treat it as comment");
-      TCommentCpp (merge_info_str i1 [i2])
-
-  | (
-      (TIfdef ii | TIfdefelse ii | TIfdefelif ii | TEndif ii | 
-      TIfdefbool (_,ii)) as x)::_, _ -> 
+  | ((TIfdef ii |TIfdefelse ii |TIfdefelif ii |TEndif ii |TIfdefbool (_,ii))
+        as x)
+    ::_, _ -> 
       if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
       else 
         if not !Lexer_parser._lexer_hint.toplevel

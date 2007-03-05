@@ -2,6 +2,10 @@ open Common open Commonop
 
 open Parser_c
 
+(*****************************************************************************)
+(* Is_xxx, categories *)
+(*****************************************************************************)
+
 let is_comment = function
   | TComment _    | TCommentSpace _ 
   | TCommentCpp _ | TCommentMisc _ -> true
@@ -11,7 +15,7 @@ let is_not_comment x = not (is_comment x)
 
 
 let is_cpp_instruction = function
-  | TInclude _ | TDefine _
+  | TInclude _ | TDefineSimple _ | TDefineFunc _
   | TIfdef _   | TIfdefelse _ | TIfdefelif _
   | TEndif _ 
   | TIfdefbool _ 
@@ -20,6 +24,41 @@ let is_cpp_instruction = function
 
 
 
+let is_eof = function
+  | EOF x -> true
+  | _ -> false
+
+let is_statement_token = function
+  | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
+  | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
+  | Tgoto _ 
+  | TPtVirg _
+      -> true
+  | _ -> false
+
+(* would like to put TIdent or TDefine, TIfdef but they can be in the
+ * middle of a function, for instance with label:.
+ * 
+ * Could put Typedefident but fired ? it would work in error recovery
+ * on the already_passed tokens, which has been already gone in the
+ * Parsing_hacks.lookahead machinery, but it will not work on the
+ * "next" tokens. But because the namespace for labels is different
+ * from namespace for ident/typedef, we can use the name for a typedef
+ * for a label and so dangerous to put Typedefident at true here. *)
+
+let is_start_of_something = function
+  | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _ 
+  | Tunsigned _ | Tsigned _ | Tvoid _ 
+  | Tauto _ | Tregister _ | Textern _ | Tstatic _
+  | Tconst _ | Tvolatile _
+  | Ttypedef _
+  | Tstruct _ | Tunion _ | Tenum _ 
+    -> true
+  | _ -> false
+
+(*****************************************************************************)
+(* Visitors *)
+(*****************************************************************************)
 
 (* Because ocamlyacc force us to do it that way. The ocamlyacc token 
  * cant be a pair of a sum type, it must be directly a sum type.
@@ -33,11 +72,19 @@ let info_from_token = function
   | TypedefIdent  (s, i) -> i
   | TInt  (s, i) -> i
 
-  (* I take only the first info, the next one are fakeInfo *)
-  | TDefine (s, body, i1, i2, i3) -> 
-      i1
-  | TInclude (s, i1, i2) -> 
-      i1
+  | TDefineSimple (define, id, body, i1)         ->  i1
+  | TDefineFunc   (define, id, params, body, i1) ->  i1
+
+  | TInclude (includes, filename, i1) ->     i1
+
+  | TIncludeStart (i1) ->     i1
+  | TIncludeFilename (s, i1) ->     i1
+
+  | TDefineSimpleStart (i1) ->     i1
+  | TDefineFuncStart (i1) ->     i1
+  | TDefineText (s, i1) ->     i1
+  | TDefineEOL (i1) ->     i1
+  | TDefineParamVariadic (s, i1) ->     i1
 
   | TUnknown             (i) -> i
   | TMacro             (i) -> i
@@ -123,18 +170,19 @@ let info_from_token = function
   | Tasm                 (i) -> i
   | Tattribute           (i) -> i
   | Tinline              (i) -> i
+  | Ttypeof              (i) -> i
   | EOF                  (i) -> i
   
 
 
 (* used by tokens to complete the parse_info with filename, line, col infos *)
 let visitor_info_from_token f = function
-  | TString ((string, isWchar), i) -> 
-      TString ((string, isWchar), f i) 
-  | TChar  ((string, isWchar), i) -> 
-      TChar  ((string, isWchar), f i) 
-  | TFloat ((string, floatType), i) -> 
-      TFloat ((string, floatType), f i) 
+  | TString ((s, isWchar), i) -> 
+      TString ((s, isWchar), f i) 
+  | TChar  ((s, isWchar), i) -> 
+      TChar  ((s, isWchar), f i) 
+  | TFloat ((s, floatType), i) -> 
+      TFloat ((s, floatType), f i) 
   | TAssign  (assignOp, i) -> 
       TAssign  (assignOp, f i) 
 
@@ -145,11 +193,26 @@ let visitor_info_from_token f = function
   | TInt  (s, i) -> 
       TInt  (s, f i) 
 
-  (* Don't visit, fakeInfo cant have better line x col info *)
-  | TDefine (s, body, i1, i2, i3) -> 
-      TDefine (s, body, f i1, i2, i3)
-  | TInclude (s, i1, i2) -> 
-      TInclude (s, f i1, i2)
+  | TDefineSimple (define, ident, body, i1) -> 
+      TDefineSimple (define, ident, body, f i1)
+  | TDefineFunc (define, ident, params, body, i1) -> 
+      TDefineFunc (define, ident, params, body, f i1)
+
+  | TInclude (includes, filename, i1) -> 
+      TInclude (includes, filename, f i1)
+
+  | TIncludeStart (i1) -> 
+      TIncludeStart (f i1)
+  | TIncludeFilename (s, i1) -> 
+      TIncludeFilename (s, f i1)
+
+  | TDefineSimpleStart (i1) -> TDefineSimpleStart (f i1)
+  | TDefineFuncStart (i1) ->   TDefineFuncStart (f i1)
+  | TDefineText (s, i1) ->     TDefineText (s, f i1)
+  | TDefineEOL (i1) ->         TDefineEOL (f i1)
+
+  | TDefineParamVariadic (s, i1) ->     TDefineParamVariadic (s, f i1)
+
 
   | TUnknown             (i) -> TUnknown             (f i)
   | TMacro               (i) -> TMacro             (f i)
@@ -235,37 +298,30 @@ let visitor_info_from_token f = function
   | Tasm                 (i) -> Tasm                 (f i) 
   | Tattribute           (i) -> Tattribute           (f i) 
   | Tinline              (i) -> Tinline              (f i) 
+  | Ttypeof              (i) -> Ttypeof              (f i) 
   | EOF                  (i) -> EOF                  (f i) 
   
 
+(*****************************************************************************)
+(* Accessors *)
+(*****************************************************************************)
 
 let linecol_of_tok tok =
   let (parse_info,_cocci_info) = info_from_token tok in
   parse_info.Common.line, parse_info.Common.column
 
+let col_of_tok tok = 
+  snd (linecol_of_tok tok)
 
+let line_of_tok tok = 
+  fst (linecol_of_tok tok)
 
-
-
-let info_from_token_fullstr x = 
-
-  match x with 
-  | TDefine (s, body, i1, i2, i3) -> 
-      let (info, annot) = i1 in
-      { info with 
-        Common.str = (fst i1).str ^ (fst i2).str ^ (fst i3).str
-      }, annot
-  | TInclude (s, i1, i2) -> 
-      let (info, annot) = i1 in
-      { info with 
-        Common.str = (fst i1).str ^ (fst i2).str
-      }, annot
-  | x -> info_from_token x
 
 let pos_of_token x = 
-  Ast_c.get_pos_of_info (info_from_token_fullstr x)
+  Ast_c.get_pos_of_info (info_from_token x)
 
 let str_of_token x = 
-  Ast_c.get_str_of_info (info_from_token_fullstr x)
+  Ast_c.get_str_of_info (info_from_token x)
+
 
 

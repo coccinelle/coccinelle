@@ -83,6 +83,7 @@ and typeCbis =
   | TypeName   of string
  
   | ParenType of fullType (* forunparser: *)
+  | Typeof of expression (* gccext: *)
  
      (* -------------------------------------- *)    
      and  baseType = Void 
@@ -238,7 +239,7 @@ and statementbis =
   (* simplify cocci: only at the beginning of a compound normally *)
   | Decl  of declaration 
   (* gccext: *)
-  | Asm  
+  | Asm of asmbody
   (* cppext: *)
   | MacroStmt
 
@@ -263,7 +264,7 @@ and statementbis =
   and selection     = 
    | If     of expression * statement * statement
    | Switch of expression * statement 
-   | IfCpp of statement list * statement list    (* cppext: *)
+   | Ifdef of statement list * statement list    (* cppext: *)
 
   and iteration     = 
     | While   of expression * statement
@@ -275,6 +276,12 @@ and statementbis =
             | Continue | Break 
             | Return   | ReturnExpr of expression
 
+
+  (* gccext: *)
+  and asmbody = il (* string list *) * colon wrap (* : *) list
+      and colon = Colon of colon_option wrap2 list
+      and colon_option = colon_option_bis wrap
+          and colon_option_bis = ColonMisc | ColonExpr of expression
 
 
 (* ------------------------------------------------------------------------- *)
@@ -297,7 +304,7 @@ and declaration =
    DeclList of (((string * initialiser option) wrap (* s = *) option) * 
                  fullType * storage)
                 wrap2 (* , *) list wrap (* ; fakestart sto *)
-     and storage       = storagebis * bool (* inline or not *)
+     and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
 
@@ -308,6 +315,8 @@ and declaration =
           | InitGcc of string * initialiser  (* gccext: *)
           | InitGccIndex of expression * initialiser
           | InitGccRange of expression * expression * initialiser
+          | InitGccIndexAlt of expression * initialiser
+          | InitGccIndexField of string * expression * initialiser
 
 (* Normally we should define another type functionType2 because there 
  * are more restrictions on what can define a function than a pointer 
@@ -319,7 +328,19 @@ and declaration =
 and definition = (string * functionType * storage * compound) 
                  wrap (* s ( ) { } fakestart sto *)
 
- 
+(* cppext *) 
+and define = define_bis wrap
+ and define_bis = 
+   | DefineSimple of define_val
+   | DefineFunc   of (string wrap) wrap2 list (* params *) * define_val
+   and define_val = 
+     | DefineExpr of expression
+     | DefineStmt of statement
+     | DefineText of string wrap
+     | DefineEmpty
+      (* | DefineType ? *)
+
+
 (* ------------------------------------------------------------------------- *)
 and program = programElement list
    and programElement = 
@@ -327,8 +348,8 @@ and program = programElement list
      | Definition of definition
          
      (* cppext: *)
-     | CPPInclude of string wrap           (* #include s *)
-     | CPPDefine of (string * string) wrap (* #define s body *)
+     | Include of string wrap           (* #include s *)
+     | Define of string wrap * define   (* #define s *)
 
      | SpecialDeclMacro of string * argument wrap2 list * il 
          

@@ -44,13 +44,8 @@ let tokinfo lexbuf  =
   }, ref Ast_c.emptyAnnot (* must generate a new ref each time, otherwise share*)
 
 
-let tok_add_s s (info,annot) = {info with str = info.str ^ s}, annot
-
-let tok_set s (*pos*) (info, annot) =  
-  { info with 
-    (* Common.charpos = pos; *)
-    Common.str = s;
-  }, annot
+let tok_add_s s (info,annot) = {info with Common.str = info.str ^ s}, annot
+let tok_set s (info, annot) =  {info with Common.str = s;}, annot
     
 
 (* opti: less convenient, but using a hash is faster than using a match *)
@@ -106,6 +101,13 @@ let keyword_table = Common.hash_of_list [
   "_INLINE_",   (fun ii -> Tinline ii); 
 
   "__attribute__", (fun ii -> Tattribute ii);
+  "__attribute", (fun ii -> Tattribute ii);
+
+  "typeof", (fun ii -> Ttypeof ii);
+  "__typeof__", (fun ii -> Ttypeof ii);
+
+
+  (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
@@ -114,7 +116,6 @@ let keyword_table = Common.hash_of_list [
   "STATIC",        (fun ii -> Tstatic ii); 
   "_static",       (fun ii -> Tstatic ii); 
  
-  (* todo?  typeof, __typeof__  *)
   
  ]
 
@@ -211,77 +212,70 @@ rule token = parse
   | "#pragma GCC set_debug_pwd " [^'\n']* '\n'  
   | "#pragma alloc_text"         [^'\n']* '\n'  
 
+      { TCommentCpp (tokinfo lexbuf) }
+
   | "#" [' ' '\t']* "ident"   [' ' '\t']+  [^'\n']+ '\n' 
 
   | "#" [' ' '\t']* "error"   [' ' '\t']+  [^'\n']* '\n' 
   | "#" [' ' '\t']* "warning" [' ' '\t']+  [^'\n']* '\n'                     
   | "#" [' ' '\t']* "abort"   [' ' '\t']+  [^'\n']* '\n'
 
-  (* in drivers/char/tpqic02.c *)
-  | "#" [' ' '\t']* "error" 
-
       { TCommentCpp (tokinfo lexbuf) }
 
+  (* in drivers/char/tpqic02.c *)
+  | "#" [' ' '\t']* "error"     { TCommentCpp (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* '\n'                { TCommentCpp (tokinfo lexbuf) }
 
+  | "#" [' ' '\t']* '\n'        { TCommentCpp (tokinfo lexbuf) }
+
+  (* only in cpp directives ? *)
   | "\\" '\n' { TCommentSpace (tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #define, #undef *)
   (* ---------------------- *)
 
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as s1)
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as define)
     ( (letter (letter |digit)*) as ident) 
     { 
-      let i1 = tokinfo lexbuf in 
-      (*let pos = (fst i1).charpos in*)
+      let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
-      TDefine (ident, bodys, 
-              tok_set s1 (*pos*) i1, 
-              tok_set ident(* (pos + String.length s1)*)  (Ast_c.fakeInfo ()), 
-              tok_set bodys(* (pos + String.length (s1 ^ ident)) *)
-                (Ast_c.fakeInfo ())
-      )
+      TDefineSimple (define, ident, bodys, info +> tok_add_s bodys)
     }
 
-  (* todo: consider differently macro with arguments ? *)
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as s1)
-    ( (letter (letter |digit)*) as ident) 
-    ( ('(' [^ ')']* ')' ) as startbody) { 
-      let i1 = tokinfo lexbuf in 
-      (*let pos = (fst i1).charpos in*)
+  (* note that space here is important, the '(' must be just next to 
+   * the ident, otherwise it is a define-no-param that just lead to
+   * a paren expression
+   *)
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as define)
+    ( (letter (letter | digit)*) as ident) 
+    ( ('(' [^ ')']* ')' ) as params) { 
+      let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
-      TDefine (ident, bodys, 
-              tok_set s1(* pos*) i1, 
-              tok_set ident (*(pos + String.length s1)*) (Ast_c.fakeInfo()), 
-              tok_set (startbody ^ bodys) 
-                (*(pos + String.length (s1 ^ ident)) *)
-                (Ast_c.fakeInfo())
-      )
+      TDefineFunc (define, ident, params, bodys, info +> tok_add_s bodys)
     }
 
-  | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*) [' ''\t''\n']
-      { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*)
+      { let info = tokinfo lexbuf in 
+        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf))
+      }
 
+
+  | (letter (letter | digit) *  "...") as str
+      { TDefineParamVariadic (str, tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #include *)
   (* ---------------------- *)
 
-  | (("#" [' ''\t']* "include" [' ' '\t']*) as s1) 
+  | (("#" [' ''\t']* "include" [' ' '\t']*) as includes) 
     (('"' ([^ '"']+) '"' | 
      '<' [^ '>']+ '>' | 
       ['A'-'Z''_']+ 
     ) as filename)
       {
-        let i1 = tokinfo lexbuf in 
-        (*let pos = (fst i1).charpos in*)
-        TInclude (filename, 
-                 tok_set s1 (*pos*) i1, 
-                 tok_set filename (*(pos + String.length s1)*)
-                   (Ast_c.fakeInfo())
-        )
+        let info = tokinfo lexbuf in 
+        TInclude (includes, filename, info)
       }
 
    (* special_for_no_exn: in atm/ambassador.c *)
@@ -305,16 +299,16 @@ rule token = parse
 
 
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
-      [^'\n']* '\n' 
       { let info = tokinfo lexbuf in 
-        TIfdefbool (true, info) 
+        TIfdefbool (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+
       } 
 
   | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
   | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
-      [^'\n']* '\n' 
+      
       { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info) 
+        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
 
   (*
@@ -366,7 +360,8 @@ rule token = parse
 
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']   { TIfdefelse (tokinfo lexbuf) }
   (* there is a file in 2.6 that have this *)
-  | "##" [' ' '\t']* "else" [' ' '\t' '\n'] { TIfdefelse (tokinfo lexbuf) }
+  | "##" [' ' '\t']* "else" [' ' '\t' '\n']  { TIfdefelse (tokinfo lexbuf) }
+
 
 
 

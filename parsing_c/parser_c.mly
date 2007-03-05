@@ -19,6 +19,11 @@ let warning s v =
   then Common.warning ("PARSING: " ^ s) v
   else v
 
+
+let pr2 s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2 s
+
 (*****************************************************************************)
 (* Parse helpers functions *)
 (*****************************************************************************)
@@ -197,7 +202,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
           (params +> List.iter (function 
           | (((b, None, _),  ii1),ii2) -> 
               (* if majuscule, then certainly macro-parameter *)
-              raise (Semantic ("parameter name omitted", fake_pi)) 
+              pr2 ("SEMANTIC:parameter name omitted, but I continue"); 
 	  | _ -> ()
           );
            ty)
@@ -221,10 +226,11 @@ let fixFunc = function
       (match params with
       | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
       | params -> 
-        params +> List.iter (function 
-            | (((bool, Some s, fullt), _), _) -> ()
-	    | _ -> failwith "internal errror: fixOldCDecl not good"
-       ));
+          params +> List.iter (function 
+          | (((bool, Some s, fullt), _), _) -> ()
+	  | _ -> ()
+                (* failwith "internal errror: fixOldCDecl not good" *)
+          ));
       (* it must be nullQualif,cos parser construct only this*)
       (s, (fullt, (params, bool)), st, cp), 
       ([iis]++iifunc++iicp++[iistart]++iist) 
@@ -316,7 +322,9 @@ let fix_add_params_ident = function
         params +> List.iter (function 
          | (((bool, Some s, fullt), _), _) -> 
             Lexer_parser.add_ident s
-	 | _ -> failwith "internal errror: fixOldCDecl not good"
+	 | _ -> 
+             ()
+             (* failwith "internal errror: fixOldCDecl not good" *)
       )) 
   | _ -> ()
 
@@ -336,12 +344,28 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
  * generate them.
  */
 
+/* unrecognized token */
 %token <Ast_c.info> TUnknown
                            
 %token <Ast_c.info> TComment TCommentSpace 
 
-%token <(string * Ast_c.info * Ast_c.info)> TInclude
-%token <(string * string * Ast_c.info * Ast_c.info * Ast_c.info)> TDefine 
+
+/* used only in lexer_c, then transformed in comment or splitted in tokens */
+%token <(string * string * Ast_c.info)>                   TInclude
+%token <(string * string * string * Ast_c.info)>          TDefineSimple
+%token <(string * string * string * string * Ast_c.info)> TDefineFunc
+
+/* tokens coming from above, generated in parse_c from TInclude, etc */
+%token <(Ast_c.info)>          TIncludeStart
+%token <(string * Ast_c.info)> TIncludeFilename
+%token <(Ast_c.info)>          TDefineSimpleStart
+%token <(Ast_c.info)>          TDefineFuncStart
+%token <(string * Ast_c.info)> TDefineText
+%token <(Ast_c.info)>          TDefineEOL
+%token <(string * Ast_c.info)> TDefineParamVariadic
+
+
+
 %token <Ast_c.info> TIfdef TIfdefelse TIfdefelif TEndif
 %token <(bool * Ast_c.info)> TIfdefbool
 
@@ -380,14 +404,16 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
        Tauto Tregister Textern Tstatic 
+       Ttypedef 
        Tconst Tvolatile
-       Tstruct Tenum Ttypedef Tunion
+       Tstruct Tunion Tenum 
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof  
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
 %token <Ast_c.info> Tinline
+%token <Ast_c.info> Ttypeof
 
 %token <Ast_c.info> EOF
 
@@ -403,9 +429,9 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 %left TPlus TMinus
 %left TMul TDiv TMod 
 
-%start main external_declaration2 statement expr type_name
+%start main celem statement expr type_name
 %type <Ast_c.program> main
-%type <Ast_c.programElement> external_declaration2
+%type <Ast_c.programElement> celem
 
 %type <Ast_c.statement> statement
 %type <Ast_c.expression> expr
@@ -413,18 +439,29 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 
 %%
 /*****************************************************************************/
+/* TOC:
+expression
+statement
+declaration, types, initializers
+xxx_list, xxx_opt
+cpp directives
+celem (=~ main)
+*/
+/*****************************************************************************/
 
+/* no more used now that use error recovery */
 main:  translation_unit EOF     { $1 }
 
-/*****************************************************************************/
-/*
- TOC:
-  expression
-  statement
-  declaration
-  main
-*/
+translation_unit: 
+ | external_declaration                  
+     { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
+ | translation_unit external_declaration
+     { !Lexer_parser._lexer_hint.toplevel <- true; $1 ++ [$2] }
 
+
+
+/*****************************************************************************/
+/* expr */
 /*****************************************************************************/
 
 expr: 
@@ -568,6 +605,8 @@ tcpar2: TCPar { et "tcpar2" (); $1 (*TODO? et ? sure ? c pas dt plutot ? *) }
 
 
 /*****************************************************************************/
+/* statement */
+/*****************************************************************************/
 
 statement: 
  | labeled         { Labeled      (fst $1), snd $1 }
@@ -578,11 +617,13 @@ statement:
  | jump TPtVirg    { Jump         (fst $1), snd $1 ++ [$2] }
 
  /* gccext: */
- | Tasm TOPar asmbody TCPar TPtVirg             { Asm, [] }
- | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm, [] }
+ | Tasm TOPar asmbody TCPar TPtVirg             { Asm $3, [$1;$2;$4;$5] }
+ | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /* cppext: */
  | TMacro { MacroStmt, [$1] }
+
+
 
 /* note that case 1: case 2: i++;    would be correctly parsed, but with 
  * a Case  (1, (Case (2, i++)))  :(  
@@ -639,9 +680,9 @@ stat_or_decl:
  | statement { $1 }
   /* cppext: */
  | TIfdef stat_or_decl_list TIfdefelse stat_or_decl_list TEndif 
-     { Selection (IfCpp ($2, $4)), [$1;$3;$5;fakeInfo()] }
+     { Selection (Ifdef ($2, $4)), [$1;$3;$5;fakeInfo()] }
  | TIfdef stat_or_decl_list TEndif 
-     { Selection (IfCpp ($2, [])), [$1;$3;fakeInfo()] }
+     { Selection (Ifdef ($2, [])), [$1;$3;fakeInfo()] }
   /* gccext: */
  /* | function_definition { raise Todo } */
 
@@ -686,8 +727,8 @@ jump:
 /* gccext: */
 /*----------------------------*/
 asmbody: 
- | string_list colon_asm_list  { }
- | string_list { } /* in old kernel */
+ | string_list colon_asm_list  { $1, $2 }
+ | string_list { $1, [] } /* in old kernel */
 
  /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
  /* | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */
@@ -696,51 +737,55 @@ asmbody:
   */
 
 string_elem:
- | TString { snd $1 }
+ | TString { [snd $1] }
  /* cppext: can cause some strange behaviour ... */
- | TIdent                    { snd $1 } 
+ | TIdent                    { [snd $1] } 
  /* 2 s/r conflicts */
- | TIdent TOPar TIdent TCPar { snd $1 } 
+ | TIdent TOPar TIdent TCPar { [snd $1;$2;snd $3;$4] } 
  /* because lalr(k) can have already transformed the TIdent in TString */
- | TString TOPar TIdent TCPar { snd $1 }  
+ | TString TOPar TIdent TCPar { [snd $1;$2;snd $3;$4] }  
 
 
 
 
-colon_asm: TDotDot colon_option_list {}
+colon_asm: TDotDot colon_option_list { Colon $2, [$1]   }
 
 colon_option: 
- | TString                         {}
- | TString TOPar assign_expr TCPar {} 
- | /* empty */                     {}
+ | TString                      { ColonMisc, [snd $1] }
+ | TString TOPar asm_expr TCPar { ColonExpr $3, [snd $1; $2;$4] } 
+ | /* empty */                  { ColonMisc, [] }
 
+asm_expr: assign_expr { $1 }
+
+       
 
 /*****************************************************************************/
+/* declaration, types, initializers */
+/*****************************************************************************/
 
-/*---------------------------------------------------------------------------*/
 decl2: 
  | decl_spec TPtVirg
      { let (returnType,storage) = fixDeclSpecForDecl $1 in 
-     let iistart = Ast_c.fakeInfo () in
-     DeclList ([(None, returnType, unwrap storage),[]],  
-              ($2::iistart::snd storage))
+       let iistart = Ast_c.fakeInfo () in
+       DeclList ([(None, returnType, unwrap storage),[]],  
+                ($2::iistart::snd storage))
      } 
  | decl_spec init_declarator_list TPtVirg 
      { let (returnType,storage) = fixDeclSpecForDecl $1 in
-     let iistart = Ast_c.fakeInfo () in
-     DeclList (
-       ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
-         let ini, iini = 
-           match ini with
-           | None -> None, []
-           | Some (ini, iini) -> Some ini, [iini]
-         in
-	 if fst (unwrap storage) = StoTypedef 
-	 then Lexer_parser.add_typedef s;
-         (Some ((s, ini), iis::iini), f returnType, unwrap storage),
-         iivirg 
-       )
-       ),  ($3::iistart::snd storage))
+       let iistart = Ast_c.fakeInfo () in
+       DeclList (
+         ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
+           let ini, iini = 
+             match ini with
+             | None -> None, []
+             | Some (ini, iini) -> Some ini, [iini]
+           in
+	   if fst (unwrap storage) = StoTypedef 
+	   then Lexer_parser.add_typedef s;
+           (Some ((s, ini), iis::iini), f returnType, unwrap storage),
+           iivirg 
+         )
+         ),  ($3::iistart::snd storage))
      } 
 
 decl_spec2: 
@@ -782,8 +827,8 @@ type_spec2:
   * ambigue, generate lots of conflicts => we must 
   * use some tricks: we make the lexer and parser cooperate, cf lexerParser.ml.
   * 
-  * parse_typedef_fix2: this is not enough, and you must use parse_typedef_fix2
-  * to fully manage typedef problems in grammar.
+  * parse_typedef_fix2: this is not enough, and you must use 
+  * parse_typedef_fix2 to fully manage typedef problems in grammar.
   */                            
  | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
 
@@ -1023,6 +1068,8 @@ type_name:
      { let (returnType, _) = fixDeclSpecForDecl $1 in  returnType }
  | spec_qualif_list abstract_declarator 
      { let (returnType, _) = fixDeclSpecForDecl $1 in $2 returnType }
+ | Ttypeof TOPar assign_expr TCPar 
+     { nQ, (Typeof ($3), [$1;$2;$4]) }
 
 abstract_declarator: 
  | pointer                            { $1 }
@@ -1087,6 +1134,12 @@ initialize2:
  | TOCro const_expr TEllipsis const_expr TCCro TEq initialize2
      { InitGccRange ($2, $4, $7),  [$1;$3;$5;$6] }
 
+ /* old format ? */
+ | TOCro const_expr TCCro initialize2
+     { InitGccIndexAlt ($2, $4),    [$1;$3] }
+ | TDot ident TOCro const_expr TCCro TEq initialize2 
+     { InitGccIndexField (fst $2, $4, $7), [$1;snd $2; $3;$5;$6] }
+
 
 /*----------------------------*/
 /* workarounds */
@@ -1100,39 +1153,9 @@ gcc_comma_opt_struct:
 tobrace_ini: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
 
 /*****************************************************************************/
-
-translation_unit: 
- | external_declaration                  
-     { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
- | translation_unit external_declaration
-     { !Lexer_parser._lexer_hint.toplevel <- true; $1 ++ [$2] }
-
-external_declaration: 
- | function_definition               { Definition (fixFunc $1) }
- | decl                              { Declaration $1 }
-
-function_definition: start_fun compound      { del_scope(); ($1, $2) }
-
-start_fun2: decl_spec declaratorfd  
-     { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
-       (fst $2, fixOldCDecl ((snd $2) returnType) , storage) 
-     }
-
-
-/*----------------------------*/
-/* workarounds */
-/*----------------------------*/
-start_fun: start_fun2                        
-  { new_scope(); 
-    fix_add_params_ident $1; 
-    !Lexer_parser._lexer_hint.toplevel <- false;  
-    $1 
-  }
-
-declaratorfd: declarator { et "declaratorfd" (); $1 }
-
-
+/* xxx_list, xxx_opt */
 /*****************************************************************************/
+
 
 /*
 decl_list: 
@@ -1152,16 +1175,16 @@ stat_or_decl_list:
 
 
 string_list: 
- | string_elem { [$1] }
- | string_list string_elem { $1 ++ [$2] } 
+ | string_elem { $1 }
+ | string_list string_elem { $1 ++ $2 } 
 
 colon_asm_list: 
- | colon_asm {}
- | colon_asm_list colon_asm  {}
+ | colon_asm { [$1] }
+ | colon_asm_list colon_asm  { $1 ++ [$2] }
 
 colon_option_list: 
- | colon_option {} 
- | colon_option_list TComma colon_option {}
+ | colon_option { [$1, []] } 
+ | colon_option_list TComma colon_option { $1 ++ [$3, [$2]] }
 
 
 
@@ -1201,6 +1224,11 @@ taction_list:
  | TAction { [$1] }
  | taction_list TAction { $1 ++ [$2] }
 
+param_define_list: 
+ | /* empty */ { [] }
+ | param_define                           { [$1, []] }
+ | param_define_list TComma param_define  { $1 ++ [$3,   [$2]] }
+
 
 /* gccext:  which allow a trailing ',' in enum, as in perl */
 gcc_comma_opt: 
@@ -1216,17 +1244,63 @@ gcc_opt_expr:
  | /* empty */ { None  }
 
 
+
+/*****************************************************************************/
+/* cpp directives */
 /*****************************************************************************/
 
-external_declaration2: 
- | external_declaration                         { $1 }
-
+/* cppext: */
+cpp_directives: 
  | TIdent TOPar argument_list TCPar TPtVirg 
-     { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } /* cppext: */
+     { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
-/* seems dont work */
+ /* seems dont work */
  | TIdent TOPar argument_list TCPar         
      { EmptyDef [] } 
+
+ | TMacro { EmptyDef [$1] }
+
+ | TIncludeStart TIncludeFilename 
+     { Include (fst $2, [$1;snd $2]) }
+
+ | TDefineSimpleStart TIdent define_val TDefineEOL 
+     { Define ((fst $2, [$1; snd $2;$4]), (DefineSimple ($3), [])) }
+
+ | TDefineFuncStart TIdent TOPar param_define_list TCPar define_val TDefineEOL
+     { Define 
+         ((fst $2, [$1; snd $2;$7]), 
+         (DefineFunc ($4, $6) , [$3;$5])) 
+     }
+
+
+define_val: 
+ | TDefineText { DefineText (fst $1, [snd $1]) }
+
+param_define:
+ | TIdent               { fst $1, [snd $1] } 
+ | TDefineParamVariadic { fst $1, [snd $1] } 
+ | TEllipsis            { "...", [$1] }
+ | Tregister            { "register", [$1] }
+
+
+/*****************************************************************************/
+/* celem */
+/*****************************************************************************/
+
+external_declaration: 
+ | function_definition               { Definition (fixFunc $1) }
+ | decl                              { Declaration $1 }
+
+function_definition: start_fun compound      { del_scope(); ($1, $2) }
+
+start_fun2: decl_spec declaratorfd  
+     { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
+       (fst $2, fixOldCDecl ((snd $2) returnType) , storage) 
+     }
+
+celem: 
+ | external_declaration                         { $1 }
+ | cpp_directives                               { $1 }
 
  /* can have asm declaration at toplevel */
  | Tasm TOPar asmbody TCPar TPtVirg             { EmptyDef [] } 
@@ -1234,9 +1308,22 @@ external_declaration2:
  /* in ~/kernels/src/linux-2.5.2/drivers/isdn/hisax/isdnl3.c sometimes
   * the function ends with }; instead of just } 
   */
+
  | TPtVirg    { EmptyDef [$1] } 
 
- | TInclude { let (s, i1, i2) = $1       in CPPInclude (s,[i1;i2])  }
- | TDefine  { let (s,body,i1,i2,i3) = $1 in CPPDefine ((s, body), [i1;i2;i3]) }
-
  | EOF        { FinalDef $1 } 
+
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+start_fun: start_fun2                        
+  { new_scope(); 
+    fix_add_params_ident $1; 
+    !Lexer_parser._lexer_hint.toplevel <- false;  
+    $1 
+  }
+
+declaratorfd: declarator { et "declaratorfd" (); $1 }
+
+
