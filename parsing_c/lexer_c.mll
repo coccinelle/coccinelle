@@ -240,7 +240,7 @@ rule token = parse
     { 
       let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
-      TDefineSimple (define, ident, bodys, info +> tok_add_s bodys)
+      TDefVar (define, ident, bodys, info +> tok_add_s bodys)
     }
 
   (* note that space here is important, the '(' must be just next to 
@@ -252,7 +252,7 @@ rule token = parse
     ( ('(' [^ ')']* ')' ) as params) { 
       let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
-      TDefineFunc (define, ident, params, bodys, info +> tok_add_s bodys)
+      TDefFunc (define, ident, params, bodys, info +> tok_add_s bodys)
     }
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*)
@@ -262,7 +262,7 @@ rule token = parse
 
 
   | (letter (letter | digit) *  "...") as str
-      { TDefineParamVariadic (str, tokinfo lexbuf) }
+      { TDefParamVariadic (str, tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #include *)

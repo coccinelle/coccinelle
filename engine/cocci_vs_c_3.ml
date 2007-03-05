@@ -2192,6 +2192,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
 (*      all_bound (A.get_inherited ida) >&&> *)
       tokenf definea defineb >>= (fun definea defineb -> 
+
       (match A.unwrap bodya, def with
       | A.DMetaId (idbodya, keep), 
         (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []) -> 
@@ -2227,6 +2228,18 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
                 ((idb, [defineb;iidb;ieol]),
                 (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []))
             ))
+
+      | A.Defdots (dots),
+        (B.DefineSimple (B.DefineExpr (expb)), [])->
+
+
+          X.distrf_e dots expb >>= (fun dots expb -> 
+            return (
+              A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
+              F.Define 
+                ((idb, [defineb;iidb;ieol]),
+                (B.DefineSimple (B.DefineExpr (expb)), [])
+            )))
 
       | _, _ -> fail
             

@@ -15,7 +15,7 @@ let is_not_comment x = not (is_comment x)
 
 
 let is_cpp_instruction = function
-  | TInclude _ | TDefineSimple _ | TDefineFunc _
+  | TInclude _ | TDefVar _ | TDefFunc _
   | TIfdef _   | TIfdefelse _ | TIfdefelif _
   | TEndif _ 
   | TIfdefbool _ 
@@ -72,19 +72,20 @@ let info_from_token = function
   | TypedefIdent  (s, i) -> i
   | TInt  (s, i) -> i
 
-  | TDefineSimple (define, id, body, i1)         ->  i1
-  | TDefineFunc   (define, id, params, body, i1) ->  i1
+  | TDefVar (define, id, body, i1)         ->  i1
+  | TDefFunc   (define, id, params, body, i1) ->  i1
 
   | TInclude (includes, filename, i1) ->     i1
 
   | TIncludeStart (i1) ->     i1
   | TIncludeFilename (s, i1) ->     i1
 
-  | TDefineSimpleStart (i1) ->     i1
-  | TDefineFuncStart (i1) ->     i1
-  | TDefineText (s, i1) ->     i1
-  | TDefineEOL (i1) ->     i1
-  | TDefineParamVariadic (s, i1) ->     i1
+  | TDefVarStart (i1) ->     i1
+  | TDefFuncStart (i1) ->     i1
+  | TDefIdent (s, i1) ->     i1
+  | TDefText (s, i1) ->     i1
+  | TDefEOL (i1) ->     i1
+  | TDefParamVariadic (s, i1) ->     i1
 
   | TUnknown             (i) -> i
   | TMacro             (i) -> i
@@ -193,10 +194,10 @@ let visitor_info_from_token f = function
   | TInt  (s, i) -> 
       TInt  (s, f i) 
 
-  | TDefineSimple (define, ident, body, i1) -> 
-      TDefineSimple (define, ident, body, f i1)
-  | TDefineFunc (define, ident, params, body, i1) -> 
-      TDefineFunc (define, ident, params, body, f i1)
+  | TDefVar (define, ident, body, i1) -> 
+      TDefVar (define, ident, body, f i1)
+  | TDefFunc (define, ident, params, body, i1) -> 
+      TDefFunc (define, ident, params, body, f i1)
 
   | TInclude (includes, filename, i1) -> 
       TInclude (includes, filename, f i1)
@@ -206,12 +207,13 @@ let visitor_info_from_token f = function
   | TIncludeFilename (s, i1) -> 
       TIncludeFilename (s, f i1)
 
-  | TDefineSimpleStart (i1) -> TDefineSimpleStart (f i1)
-  | TDefineFuncStart (i1) ->   TDefineFuncStart (f i1)
-  | TDefineText (s, i1) ->     TDefineText (s, f i1)
-  | TDefineEOL (i1) ->         TDefineEOL (f i1)
+  | TDefVarStart (i1) ->    TDefVarStart (f i1)
+  | TDefFuncStart (i1) ->   TDefFuncStart (f i1)
+  | TDefIdent (s, i1) ->    TDefIdent (s, f i1)
+  | TDefText (s, i1) ->     TDefText (s, f i1)
+  | TDefEOL (i1) ->         TDefEOL (f i1)
 
-  | TDefineParamVariadic (s, i1) ->     TDefineParamVariadic (s, f i1)
+  | TDefParamVariadic (s, i1) ->     TDefParamVariadic (s, f i1)
 
 
   | TUnknown             (i) -> TUnknown             (f i)

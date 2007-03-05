@@ -104,11 +104,11 @@ let normal_form_token x =
     (* they must have been substitued, but they can be in
      *  NotParsedCorrectly zone 
      *)
-    | Parser_c.TDefineSimple _ 
-    | Parser_c.TDefineFunc _  ->
+    | Parser_c.TDefVar _ 
+    | Parser_c.TDefFunc _  ->
         x
 
-    | Parser_c.TDefineText (s, i1) ->    Parser_c.TDefineText ("", i1)
+    | Parser_c.TDefText (s, i1) ->    Parser_c.TDefText ("", i1)
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
     | x -> x
   in

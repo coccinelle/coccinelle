@@ -388,7 +388,7 @@ let tokens_define_val posadd bodys info =
     )
   with
   _ -> 
-    [Parser_c.TDefineText (bodys, (new_info posadd bodys info));]
+    [Parser_c.TDefText (bodys, (new_info posadd bodys info));]
 
 
 
@@ -401,10 +401,10 @@ let tokens_define_simple (info, define, ident, bodys) =
     tokens_define_val (String.length (define ^ ident)) bodys info 
   in
 
-  Parser_c.TDefineSimpleStart (tok_set define info),
-  [Parser_c.TIdent (ident, (new_info (String.length define) ident info))]
+  Parser_c.TDefVarStart (tok_set define info),
+  [Parser_c.TDefIdent (ident, (new_info (String.length define) ident info))]
   ++ tokens_body ++ 
-  [Parser_c.TDefineEOL
+  [Parser_c.TDefEOL
       (new_info (String.length (define ^ ident ^ bodys)) "" info)]
 
 
@@ -429,12 +429,12 @@ let tokens_define_func (info, define, ident, params, bodys) =
   in
 
 
-  Parser_c.TDefineFuncStart (tok_set define info),
-  [Parser_c.TIdent (ident, (new_info (String.length define) ident info))]
+  Parser_c.TDefFuncStart (tok_set define info),
+  [Parser_c.TDefIdent (ident, (new_info (String.length define) ident info))]
   ++ tokens_params
   ++ tokens_body 
   ++
-  [Parser_c.TDefineEOL
+  [Parser_c.TDefEOL
       (new_info (String.length (define ^ ident ^ params ^ bodys)) "" info)]
 
   
@@ -548,7 +548,7 @@ let parse_print_error_heuristic2 file =
               v
             end
             
-        | Parser_c.TDefineSimple (define, ident, bodys, info) -> 
+        | Parser_c.TDefVar (define, ident, bodys, info) -> 
             if not !LP._lexer_hint.LP.toplevel 
             then begin
               pr2 ("CPP-DEFINE: inside function, I treat it as comment");
@@ -571,7 +571,7 @@ let parse_print_error_heuristic2 file =
               v
             end
 
-        | Parser_c.TDefineFunc (define, ident, params, bodys, info) -> 
+        | Parser_c.TDefFunc (define, ident, params, bodys, info) -> 
             if not !LP._lexer_hint.LP.toplevel 
             then begin
               pr2 ("CPP-DEFINE: inside function, I treat it as comment");

@@ -352,17 +352,18 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 
 /* used only in lexer_c, then transformed in comment or splitted in tokens */
 %token <(string * string * Ast_c.info)>                   TInclude
-%token <(string * string * string * Ast_c.info)>          TDefineSimple
-%token <(string * string * string * string * Ast_c.info)> TDefineFunc
+%token <(string * string * string * Ast_c.info)>          TDefVar
+%token <(string * string * string * string * Ast_c.info)> TDefFunc
 
 /* tokens coming from above, generated in parse_c from TInclude, etc */
 %token <(Ast_c.info)>          TIncludeStart
 %token <(string * Ast_c.info)> TIncludeFilename
-%token <(Ast_c.info)>          TDefineSimpleStart
-%token <(Ast_c.info)>          TDefineFuncStart
-%token <(string * Ast_c.info)> TDefineText
-%token <(Ast_c.info)>          TDefineEOL
-%token <(string * Ast_c.info)> TDefineParamVariadic
+%token <(Ast_c.info)>          TDefVarStart
+%token <(Ast_c.info)>          TDefFuncStart
+%token <(string * Ast_c.info)> TDefIdent
+%token <(string * Ast_c.info)> TDefText
+%token <(Ast_c.info)>          TDefEOL
+%token <(string * Ast_c.info)> TDefParamVariadic
 
 
 
@@ -1263,10 +1264,10 @@ cpp_directives:
  | TIncludeStart TIncludeFilename 
      { Include (fst $2, [$1;snd $2]) }
 
- | TDefineSimpleStart TIdent define_val TDefineEOL 
+ | TDefVarStart TDefIdent define_val TDefEOL 
      { Define ((fst $2, [$1; snd $2;$4]), (DefineSimple ($3), [])) }
 
- | TDefineFuncStart TIdent TOPar param_define_list TCPar define_val TDefineEOL
+ | TDefFuncStart TDefIdent TOPar param_define_list TCPar define_val TDefEOL
      { Define 
          ((fst $2, [$1; snd $2;$7]), 
          (DefineFunc ($4, $6) , [$3;$5])) 
@@ -1274,13 +1275,14 @@ cpp_directives:
 
 
 define_val: 
- | TDefineText { DefineText (fst $1, [snd $1]) }
+ | TDefText { DefineText (fst $1, [snd $1]) }
  | assign_expr { DefineExpr $1 }
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 
- | TDefineParamVariadic { fst $1, [snd $1] } 
+ | TDefParamVariadic    { fst $1, [snd $1] } 
  | TEllipsis            { "...", [$1] }
+ /* they reuse keywords :(  */
  | Tregister            { "register", [$1] }
 
 
