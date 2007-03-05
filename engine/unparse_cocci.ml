@@ -545,6 +545,7 @@ in
 *)
 
 
+
 let rec pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
     Ast.FullTypeTag(x) -> fullType x
@@ -574,7 +575,10 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x
 
   | Ast.ConstVolTag(x) -> const_vol x
-  | Ast.Token(x) -> print_string x
+  | Ast.Token(x) -> 
+      print_string x;
+      if x ==~ Common.regexp_alpha then print_string " ";
+
   | Ast.Code(x) -> let _ = top_level x in ()
 
   (* this is not '...', but a list of expr/statement/params, and 

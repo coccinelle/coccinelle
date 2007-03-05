@@ -421,6 +421,7 @@ val split_on_char : char -> string -> string list
 
 val lowercase : string -> string
 
+val regexp_alpha: Str.regexp
 
 (*****************************************************************************)
 (* Regexp *)

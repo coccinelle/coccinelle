@@ -920,6 +920,8 @@ let is_lower = cbetween 'a' 'z'
 let is_alpha c = is_upper c || is_lower c
 let is_digit = cbetween '0' '9'
 
+
+
 (*****************************************************************************)
 (* Num *)
 (*****************************************************************************)
@@ -1273,6 +1275,10 @@ let (split_list_regexp: string -> string list -> (string * string list) list) =
   split_lr_aux ("__noheading__", []) xs 
   +> (fun xs -> if (List.hd xs) = ("__noheading__",[]) then List.tl xs else xs)
 
+
+
+let regexp_alpha =  Str.regexp
+  "^[a-zA-Z_][A-Za-z_0-9]*$"
 
 (*****************************************************************************)
 (* Filenames *)
