@@ -769,7 +769,7 @@ let pp_program_gen pr_elem progelem =
         pr_elem iident;
         
         let define_val = function
-          | DefineExpr _ -> raise Todo
+          | DefineExpr e -> pp_expression_gen pr_elem e
           | DefineStmt _ -> raise Todo
           | DefineText (s, ii) -> List.iter pr_elem ii
           | DefineEmpty -> ()

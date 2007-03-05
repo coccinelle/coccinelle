@@ -254,6 +254,7 @@ let parse_gen parsefunc s =
 
 let type_of_string      = parse_gen Parser_c.type_name
 let statement_of_string = parse_gen Parser_c.statement
+let expression_of_string = parse_gen Parser_c.expr
 
 (* ex: statement_of_string "(struct us_data* )psh->hostdata = NULL;" *)
 
@@ -368,8 +369,14 @@ let tokens_include (info, includes, filename) =
 
 
 let tokens_define_val beforestring bodys info = 
-   [Parser_c.TDefineText 
-     (bodys, (new_info (String.length (beforestring))) bodys info);]
+  try 
+    let _ = expression_of_string bodys in
+    Common.list_init (tokens_string bodys) 
+    +> List.map (fun tok -> adjust_pos (String.length (beforestring)) tok)
+  with
+  _ -> 
+    [Parser_c.TDefineText 
+        (bodys, (new_info (String.length (beforestring))) bodys info);]
 
 
 
@@ -399,7 +406,7 @@ let tokens_define_func (info, define, ident, params, bodys) =
   ++ tokens_body 
   ++
   [Parser_c.TDefineEOL
-      (new_info (String.length (define ^ ident ^ bodys)) "" info)]
+      (new_info (String.length (define ^ ident ^ params ^ bodys)) "" info)]
 
   
 (*****************************************************************************)

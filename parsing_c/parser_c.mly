@@ -1275,6 +1275,7 @@ cpp_directives:
 
 define_val: 
  | TDefineText { DefineText (fst $1, [snd $1]) }
+ | assign_expr { DefineExpr $1 }
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 

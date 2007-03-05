@@ -427,7 +427,8 @@ and vk_node = fun bigf node ->
         iif ii;
         iif defii;
         let define_val = function
-          | DefineExpr _ -> raise Todo
+          | DefineExpr e -> 
+              vk_expr bigf e
           | DefineStmt _ -> raise Todo
           | DefineText (s, ii) -> iif ii
           | DefineEmpty -> ()
@@ -817,7 +818,7 @@ and vk_program_s = fun bigf p ->
     | Define ((s,ii), (def,defii)) -> 
 
         let define_val = function
-          | DefineExpr _ -> raise Todo
+          | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
           | DefineStmt _ -> raise Todo
           | DefineText (s, ii) -> DefineText (s, iif ii)
           | DefineEmpty -> DefineEmpty
@@ -896,7 +897,7 @@ and vk_node_s = fun bigf node ->
     | F.Define ((s,ii), (def,defii)) -> 
 
         let define_val = function
-          | DefineExpr _ -> raise Todo
+          | DefineExpr e -> DefineExpr (vk_expr_s bigf e)
           | DefineStmt _ -> raise Todo
           | DefineText (s, ii) -> DefineText (s, iif ii)
           | DefineEmpty -> DefineEmpty
