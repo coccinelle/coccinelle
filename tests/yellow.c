@@ -82,3 +82,5 @@ static void yellowfin_init_ring(struct net_device *dev)
 	yp->tx_tail_desc = &yp->tx_status[0];
 	return;
 }
+
+int foo () { return; }
