@@ -222,6 +222,7 @@ val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
+val once : ('a -> unit) -> ('a -> unit)
 
 (*****************************************************************************)
 (* Error managment *)

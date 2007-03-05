@@ -822,6 +822,14 @@ let memoized h k f =
       Hashtbl.add h k v;
       v
     end
+
+let once f = 
+  let already = ref false in
+  (fun x -> 
+    if not !already
+    then begin already := true; f x end
+  )
+
     
 (*****************************************************************************)
 (* Error managment *)

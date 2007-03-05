@@ -6,6 +6,16 @@ module B = Ast_c
 module F = Control_flow_c
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+
+let pr2_memo = 
+  Common.once (fun s -> pr2 ("(MEMO)" ^ s))
+  
+     
+  
+
+(*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
 
@@ -424,7 +434,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
                 else fail
               )) fail
         | Some _, None -> 
-            pr2 ("I don't have the type information. Certainly a pb in " ^
+            pr2_memo ("I don't have the type information. Certainly a pb in " ^
                          "annotate_typer.ml");
             fail
       ) >>= (fun () () ->
