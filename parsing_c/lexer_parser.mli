@@ -20,6 +20,7 @@ type lexer_hint = {
     mutable structDefinition: bool;
     mutable statements: bool;
     mutable toplevel: bool;
+    mutable define: bool;
   }
 
 val _lexer_hint : lexer_hint ref

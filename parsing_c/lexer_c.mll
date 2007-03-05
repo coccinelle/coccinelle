@@ -90,7 +90,7 @@ let keyword_table = Common.hash_of_list [
   
   "sizeof", (fun ii -> Tsizeof ii);   
 
-  (* gccext: cppext: synonyms *)
+  (* gccext: cppext: linuxext: synonyms *)
   "asm",     (fun ii -> Tasm ii);
   "__asm__", (fun ii -> Tasm ii);
 
@@ -278,7 +278,7 @@ rule token = parse
         TInclude (includes, filename, info)
       }
 
-   (* special_for_no_exn: in atm/ambassador.c *)
+   (* linuxext: special_for_no_exn: in atm/ambassador.c *)
   | "#include UCODE(" [^'\n']+  '\n'    { TCommentCpp (tokinfo lexbuf) }
 
 
@@ -297,13 +297,13 @@ rule token = parse
         TIfdefbool (true, info) 
       } 
 
-
+  (* linuxext: *)
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
       { let info = tokinfo lexbuf in 
         TIfdefbool (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
 
       } 
-
+  (* linuxext: *)
   | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
   | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
       
@@ -425,6 +425,7 @@ rule token = parse
 
 
   (* TODO TO GENERALIZE *)
+  (* linuxext: *)
 
 
   | "ACPI_STATE_COMMON" { TCommentMisc (tokinfo lexbuf) }

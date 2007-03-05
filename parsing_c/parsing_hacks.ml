@@ -57,7 +57,9 @@ let msg_typedef s =
       | _ -> false 
       )
     )
-    (fun s -> pr2 ("TYPEDEF: promoting: " ^ s))
+    (fun s -> 
+      pr2 ("TYPEDEF: promoting: " ^ s)
+    )
     s
 
 let msg_declare_macro s = 
@@ -149,12 +151,15 @@ let msg_stringification s =
 let regexp_macro =  Str.regexp
   "^[A-Z_][A-Z_0-9]*$"
 
+(* linuxext: *)
 let regexp_annot =  Str.regexp
   "^__.*$"
 
+(* linuxext: *)
 let regexp_declare =  Str.regexp
   ".*DECLARE.*"
 
+(* linuxext: *)
 let regexp_foreach = Str.regexp_case_fold 
   ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|each\\|for\\)"
 
@@ -387,6 +392,7 @@ let rec mk_body_function_grouped xs =
 (* annotation and stringification part 1 *)
 (* ------------------------------------------------------------------------- *)
 
+(* linuxext: *)
 let keyword_table = Common.hash_of_list [
   (* attributes. could perhaps generalize via "__.*" *)
   "__init",                     (fun ii -> TCommentCpp ii); 
@@ -772,6 +778,7 @@ let fix_tokens_ifdef tokens =
 
 
 (* loop, macro without ';', single macro *)
+(* linuxext: *)
 let debug_macros_list = 
   ["ASSERT"; "IRDA_ASSERT";
    "CHECK_NULL";
@@ -801,6 +808,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
   let rec find_macro_paren xs = 
     match xs with
     | [] -> ()
+    (* linuxext: *)
     | NotParenToken ((TIdent (s,_),_) as id)::Parenthised (xxs,info_parens)::xs
         when List.mem s ["FASTCALL"] -> 
 
@@ -821,7 +829,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
     | [] -> ()
 
 
-    (* ex: static DEVICE_ATTR(); *)
+    (* linuxext: ex: static DEVICE_ATTR(); *)
     | (Line 
           ([NotParenToken (Tstatic _,_);
             NotParenToken (TIdent (s,_),_);
@@ -857,7 +865,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
 
 
 
-    (* ex: DECLARE_BITMAP(); 
+    (* linuxext: ex: DECLARE_BITMAP(); 
      * Here I use regexp_declare and not regexp_macro because
      * Sometimes it can be a FunCallMacro such as DEBUG(foo());
      * Here we don't have the preceding 'static' so only way to
@@ -878,7 +886,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
         find_macro (xs)
 
 
-    (* DEBUG(), because a known macro, can relax the condition
+    (* linuxext: ex: DEBUG(), because a known macro, can relax the condition
      * on the token we must have on the next line.
      *) 
     | (Line 
@@ -898,7 +906,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
         find_macro (xs)
 
         
-    (* special known macro around fun header *)
+    (* linuxext: special known macro around fun header *)
     | (Line 
           ([NotParenToken ((TIdent (s,ii),_) as ident);
             Parenthised (xxs,info_parens);
@@ -956,7 +964,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
         end;
         find_macro (line2::xs)
 
-    (* single macro 
+    (* linuxext:? single macro 
      * ex: LOCK
      *     foo();
      *     UNLOCK
@@ -1172,14 +1180,6 @@ let not_struct_enum = function
 
 let not_annot s = 
   not (s ==~ regexp_annot)
-
-let merge_info_str x xs = 
-  let (info, annot) = x in
-  { info with 
-    Common.str = 
-      (x::xs) +> List.map (fun (x,_annot) -> x.Common.str) +> Common.join ""
-  }, annot
-  
 
 
 let forLOOKAHEAD = 20

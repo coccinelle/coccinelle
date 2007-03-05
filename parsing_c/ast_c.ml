@@ -208,12 +208,12 @@ and expressionbis =
 
   and binaryOp = Arith of arithOp | Logical of logicalOp
 
-       and  arithOp   = 
+       and arithOp   = 
          | Plus | Minus | Mul | Div | Mod
          | DecLeft | DecRight 
          | And | Or | Xor
 
-       and  logicalOp = 
+       and logicalOp = 
          | Inf | Sup | InfEq | SupEq 
          | Eq | NotEq 
          | AndLog | OrLog

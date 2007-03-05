@@ -1280,6 +1280,7 @@ define_val:
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 
+ | TypedefIdent               { fst $1, [snd $1] } 
  | TDefParamVariadic    { fst $1, [snd $1] } 
  | TEllipsis            { "...", [$1] }
  /* they reuse keywords :(  */

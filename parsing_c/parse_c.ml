@@ -375,7 +375,11 @@ let tokens_include (info, includes, filename) =
   ]
 
 
+(* todo: if just one token which is a typedef ? 
+   have a DefineType ?
+*)
 let tokens_define_val posadd bodys info = 
+
   try 
     let _ = expression_of_string bodys in
     tokens_string bodys
@@ -568,6 +572,7 @@ let parse_print_error_heuristic2 file =
               remaining_tokens := new_tokens ++ !remaining_tokens;
               remaining_tokens_clean := 
                 new_tokens_clean ++ !remaining_tokens_clean;
+              !LP._lexer_hint.LP.define <- true;
               v
             end
 
@@ -591,13 +596,23 @@ let parse_print_error_heuristic2 file =
               remaining_tokens := new_tokens ++ !remaining_tokens;
               remaining_tokens_clean := 
                 new_tokens_clean ++ !remaining_tokens_clean;
+              !LP._lexer_hint.LP.define <- true;
               v
             end
-
-
-
+        | _ when !LP._lexer_hint.LP.define -> 
+            (* no processing for body of define, otherwise
+             * get some parse error with bad typedef inference
+             * or even good one that does not lead to an expression
+             * anymore whereas with expression_of_string it was 
+             * an expression.
+             *)
+            passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
+            passed_tokens := v::!passed_tokens;
+            v
 
         | _ -> 
+
+
             (* typedef_fix1 *)
             let v = match v with
               | Parser_c.TIdent (s, ii) -> 

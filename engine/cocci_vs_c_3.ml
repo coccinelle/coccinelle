@@ -1135,11 +1135,15 @@ and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
    * have an ident in the proto.
    * If have some plus on ida ? do nothing about ida ? 
    *)
+ (* not anymore !!! now that julia is handling the proto.
   | _, Right iihasreg -> 
       return (
         (idaopt, typa),
         ((hasreg, None, typb), iihasreg)
       )
+ *)
+
+  | Some _, Right _ -> fail
   | None, Left _ -> fail
   )
 
