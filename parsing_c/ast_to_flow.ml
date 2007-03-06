@@ -39,6 +39,7 @@ type error =
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
   | DuplicatedLabel of string
+  | NestedFunc
 
 exception Error of error
 
@@ -945,6 +946,12 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newi;
         Some newi
 
+
+    (* ------------------------- *)        
+    | Ast_c.NestedFunc def, ii -> 
+        raise (Error NestedFunc)
+        
+
   in
 
 
@@ -1099,3 +1106,6 @@ let report_error error =
       pr2 ("FLOW: cant jump to " ^ s ^ ": because we can't find this label")
   | DuplicatedLabel s -> 
       pr2 ("FLOW: duplicate label" ^ s)
+  | NestedFunc  -> 
+      pr2 ("FLOW: not handling yet nested function")
+

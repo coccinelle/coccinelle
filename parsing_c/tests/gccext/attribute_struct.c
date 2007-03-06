@@ -19,3 +19,5 @@ typedef struct {
 	unsigned	filemark 	:1;	/* Filemark */
  	__u32		information __attribute__ ((packed));
 }
+
+

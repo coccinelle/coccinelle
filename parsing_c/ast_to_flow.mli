@@ -14,6 +14,7 @@ type error =
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
   | DuplicatedLabel of string
+  | NestedFunc
 
 exception Error of error
 

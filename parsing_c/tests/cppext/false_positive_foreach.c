@@ -1,4 +1,12 @@
 
+void
+ahc_plaform_send_async(struct ahc_softc *ahc, char channel,
+	       u_int target, u_int lun, ac_code code, void *arg)
+{
+}
+
+
+
 // even if contain loop, even if have a { then, this is not a foreach
 static void loopback_enable(MGSLPC_INFO *info) 
 {

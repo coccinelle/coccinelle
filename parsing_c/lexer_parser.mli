@@ -17,8 +17,8 @@ val lexer_reset_typedef : unit -> unit
 
 type lexer_hint = { 
     mutable parameterDeclaration: bool;
-    mutable structDefinition: bool;
-    mutable statements: bool;
+    mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
+(*    mutable statements: bool; *)
     mutable toplevel: bool;
     mutable define: bool;
   }

@@ -1,6 +1,7 @@
 open Common open Commonop
 
 module TH = Token_helpers 
+module LP = Lexer_parser
 
 open Parser_c 
 
@@ -423,17 +424,29 @@ let keyword_table = Common.hash_of_list [
   "__attribute_used__",         (fun ii -> TCommentCpp ii);  
 
   "__CS4231_INLINE__",                    (fun ii -> TCommentCpp ii);  
+  "CCIO_INLINE",                     (fun ii -> TCommentCpp ii);  
+  "SBA_INLINE",                      (fun ii -> TCommentCpp ii);  
+
+  "INITSECTION",                     (fun ii -> TCommentCpp ii);  
+
+  "NORET_TYPE",                      (fun ii -> TCommentCpp ii);  
 
   "__init_or_module",                    (fun ii -> TCommentCpp ii);  
+  "__initdata_or_module",                (fun ii -> TCommentCpp ii);  
 
   "__3xp_aligned",                    (fun ii -> TCommentCpp ii);  
 
+  "__always_inline",                    (fun ii -> TCommentCpp ii);  
+  "noinline",                     (fun ii -> TCommentCpp ii);  
+
+  "__xipram",                     (fun ii -> TCommentCpp ii);  
+  "compat_init_data",             (fun ii -> TCommentCpp ii);  
 
   "fastcall",                (fun ii -> TCommentCpp ii);  
-
   "asmlinkage",                 (fun ii -> TCommentCpp ii);  
 
   "far",                    (fun ii -> TCommentCpp ii);  
+  "SK_FAR",                 (fun ii -> TCommentCpp ii);  
   "near",                    (fun ii -> TCommentCpp ii);  
 
   "DIVA_EXIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
@@ -445,8 +458,16 @@ let keyword_table = Common.hash_of_list [
   "PACKED",                    (fun ii -> TCommentCpp ii);  
 
   "WPMINFO", (fun ii -> TCommentCpp ii);
+  "CPMINFO", (fun ii -> TCommentCpp ii);
+  "PMINFO",  (fun ii -> TCommentCpp ii);
 
 
+  "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp ii);
+
+
+  "PNMI_STATIC", (fun ii -> Tstatic ii); 
+  "RLMT_STATIC", (fun ii -> Tstatic ii); 
+  "SISINITSTATIC", (fun ii -> Tstatic ii); 
 
 
   (* string macro. normally handle quite well by mu lalr(k), but
@@ -1202,6 +1223,7 @@ let rec is_really_foreach xs =
     | TCPar _::Twhile _::xs -> true, xs
     | TCPar _::Tfor _::xs -> true, xs
     | TCPar _::Tswitch _::xs -> true, xs
+
     | TCPar _::xs -> false, xs
     | TOPar _::xs -> 
         let (_, xs') = is_foreach_aux xs in
@@ -1236,15 +1258,6 @@ let lookahead2 next before =
   | (TIdent ("ANDP",i1)::TOPar _::_,   _)       ->  TComma i1
 
 
-  (* static void mtdblock_request(RQFUNC_ARG);
-   * but must put this before other rules otherwise the typedef
-   * transformer will catch before 
-   *)
-  | TIdent (s, i1)::TCPar _::rest, TOPar _::_ 
-      when !Lexer_parser._lexer_hint.parameterDeclaration -> 
-      pr2_cpp ("MACRO: a la RQFUNC_ARG: " ^ s);
-      TCommentCpp (i1)
-
   (*-------------------------------------------------------------*)
   (* stringification of ident *)
   (*-------------------------------------------------------------*)
@@ -1264,7 +1277,7 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   (* typedef inference *)
   (*-------------------------------------------------------------*)
-  (*  xx xx *)
+  (* xx xx *)
   | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
     -> 
@@ -1278,44 +1291,39 @@ let lookahead2 next before =
       if !Flag_parsing_c.debug_typedef 
       then pr2 ("TYPEDEF: disable typedef cos special case: " ^ s); 
 
-      Lexer_parser.disable_typedef();
+      LP.disable_typedef();
 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when 
-        not_struct_enum before (* lead to false positive  && not_annot s2 *)
-    -> 
-      (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
-      
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before ->
+         (* && not_annot s2 BUT lead to false positive*)
+
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (* xx inline *)
-  | (TIdent (s, i1)::Tinline i2::_  , _) when 
-        not_struct_enum before (* lead to false positive  && not_annot s2 *)
-    -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+  | (TIdent (s, i1)::Tinline i2::_  , _) when not_struct_enum before -> 
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (* [,(] xx [,)] AND param decl *)
   | (TIdent (s, i1)::(TComma _|TCPar _)::_ , (TComma _ |TOPar _)::_ )
-    when not_struct_enum before && 
-         !Lexer_parser._lexer_hint.parameterDeclaration
+    when not_struct_enum before && !LP._lexer_hint.parameterDeclaration
     -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx* [,)] *)
   (* specialcase:  [,(] xx* [,)] *)
   | (TIdent (s, i1)::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
-        (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
+        (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
     -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1323,9 +1331,50 @@ let lookahead2 next before =
   (* specialcase:  [,(] xx** [,)] *)
   | (TIdent (s, i1)::TMul _::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
-        (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
+      (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
     -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+
+
+  (* xx const * *)
+  | (TIdent (s, i1)::(Tconst _|Tvolatile _)::TMul _::_ , _ ) 
+      when not_struct_enum before ->
+      (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+
+  (* xx * const *)
+  | (TIdent (s, i1)::TMul _::(Tconst _ | Tvolatile _)::_ , _ ) 
+      when not_struct_enum before ->
+      (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+
+  (* ( const xx)  *)
+  | (TIdent (s, i1)::TCPar _::_,  (Tconst _ | Tvolatile _)::TOPar _::_) -> 
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+      
+
+
+  (* ( xx ) [sizeof, ~] *)
+  | (TIdent (s, i1)::TCPar _::(Tsizeof _|TTilde _)::_ , TOPar _::_ )
+    when not_struct_enum before
+    -> 
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (* [(,] xx [   AND parameterdeclaration *)
+  | (TIdent (s, i1)::TOCro _::_, (TComma _ |TOPar _)::_)
+      when !LP._lexer_hint.parameterDeclaration
+     -> 
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
   (*------------------------------------------------------------*)
@@ -1336,7 +1385,7 @@ let lookahead2 next before =
   (* static xx * yy  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , 
      (Tregister _|Tstatic _  |Tvolatile _|Tconst _)::_) -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
   (*  TODO  xx * yy ; AND in start of compound element  *)
@@ -1344,28 +1393,32 @@ let lookahead2 next before =
 
   (*  xx * yy,      AND  in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
-    when not_struct_enum before &&
-         !Lexer_parser._lexer_hint.parameterDeclaration -> 
+    when not_struct_enum before && !LP._lexer_hint.parameterDeclaration -> 
+
       msg_typedef s; Lexer_parser.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (*  xx * yy ;     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , _)
-    when not_struct_enum before && !Lexer_parser._lexer_hint.toplevel  -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+    when not_struct_enum before && !LP._lexer_hint.toplevel  -> 
+
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx * yy (     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOPar _::_ , _)
-    when not_struct_enum before  && !Lexer_parser._lexer_hint.toplevel -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+    when not_struct_enum before  && !LP._lexer_hint.toplevel -> 
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
   (* xx * yy [ *)
+  (* todo? enough ? cos in struct def we can have some expression ! *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOCro _::_ , _)
-    when not_struct_enum before && !Lexer_parser._lexer_hint.toplevel -> 
-      msg_typedef s;  Lexer_parser.add_typedef_root s;
+    when not_struct_enum before && 
+      (!LP._lexer_hint.structDefinition > 0 || !LP._lexer_hint.toplevel)
+      -> 
+      msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
 
@@ -1377,58 +1430,57 @@ let lookahead2 next before =
       when (take_safe 1 !passed_tok <> [Tstruct] &&
       (take_safe 1 !passed_tok <> [Tenum]))
       &&
-      !Lexer_parser._lexer_hint = Some Lexer_parser.Toplevel -> 
+      !LP._lexer_hint = Some LP.Toplevel -> 
       msg_typedef s; 
-      Lexer_parser.add_typedef_root s;
+      LP.add_typedef_root s;
       TypedefIdent s
      *)
 
   (*  xx * yy =  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TEq _::_ , _)
     when not_struct_enum before -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TCPar _::_ , _)
-      when not_struct_enum before &&
-           !Lexer_parser._lexer_hint.parameterDeclaration -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      when not_struct_enum before && !LP._lexer_hint.parameterDeclaration -> 
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
           
 
   (*  xx * yy; *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , 
      (TOBrace _| TPtVirg _)::_)  when not_struct_enum before ->
-      msg_typedef s;  Lexer_parser.add_typedef_root s;
+      msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (*  xx * yy,  and ';' before xx *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , 
      (TOBrace _| TPtVirg _)::_) ->
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (* xx_t * yy *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  when s =~ ".*_t$" ->
-      msg_typedef s;  Lexer_parser.add_typedef_root s;
+      msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** yy *)  (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
     when not_struct_enum before -> 
-        (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+        (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** ) *)
   | (TIdent (s, i1)::TMul _::TMul _::TCPar _::_ , _)
     when not_struct_enum before -> 
-        (* && !Lexer_parser._lexer_hint = Some Lexer_parser.ParameterDeclaration *)
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+        (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1438,30 +1490,30 @@ let lookahead2 next before =
   (*  (xx) yy *)
   | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
     when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TOPar info
 
   (*  (xx * ) yy *)
   | (TOPar info::TIdent (s, i1)::TMul _::TCPar _::TIdent (s2, i2)::_ , _) -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TOPar info
 
   (* (xx){ ... }  constructor *)
   | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::_)  when s =~ ".*_t$"->
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
         (* can have sizeof on expression
            | (Tsizeof::TOPar::TIdent s::TCPar::_,   _) -> 
            msg_typedef s; 
-           Lexer_parser.add_typedef_root s;
+           LP.add_typedef_root s;
            Tsizeof
          *)
    (* x ( *y )(params),  function pointer *)
   | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOPar _::_,  _) 
       when not_struct_enum before -> 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1473,7 +1525,7 @@ let lookahead2 next before =
     ::_, _ -> 
       if not !Flag_parsing_c.ifdef_to_if then TCommentCpp ii 
       else 
-        if not !Lexer_parser._lexer_hint.toplevel
+        if not !LP._lexer_hint.toplevel
         then x
         else begin
           pr2_cpp("IFDEF: or related outside function. I treat it as comment");
@@ -1482,14 +1534,14 @@ let lookahead2 next before =
 
 
 
-  | (TIdent (s, i1)::TOPar _::rest, _) 
-      when not !Lexer_parser._lexer_hint.toplevel -> 
+  | (TIdent (s, i1)::TOPar _::rest, _) when not !LP._lexer_hint.toplevel -> 
       (* otherwise a function such as static void loopback_enable(int i) { 
        * will be considered as a loop 
        *)
  
       if s ==~ regexp_foreach && 
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)
+   
       then begin
         msg_foreach s;
         Twhile i1

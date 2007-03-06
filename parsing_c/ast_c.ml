@@ -238,10 +238,14 @@ and statementbis =
 
   (* simplify cocci: only at the beginning of a compound normally *)
   | Decl  of declaration 
+
   (* gccext: *)
   | Asm of asmbody
+  | NestedFunc of definition
+
   (* cppext: *)
   | MacroStmt
+  
 
 
   and labeled = Label   of string * statement

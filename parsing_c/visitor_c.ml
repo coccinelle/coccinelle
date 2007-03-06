@@ -229,6 +229,7 @@ and vk_statement = fun bigf st ->
 
     | Decl decl -> vk_decl bigf decl 
     | Asm asmbody -> vk_asmbody bigf asmbody
+    | NestedFunc def -> vk_def bigf def
     | MacroStmt -> ()
 
   in statf st
@@ -655,6 +656,7 @@ and vk_statement_s = fun bigf st ->
 
       | Decl decl -> Decl (vk_decl_s bigf decl)
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
+      | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
     in
     st', List.map (vk_info_s bigf) ii

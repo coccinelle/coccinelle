@@ -1,6 +1,7 @@
 %{
 open Common open Commonop
-open Lexer_parser
+module LP = Lexer_parser
+open Lexer_parser (* for the fields *)
 
 open Ast_c
 open Semantic_c
@@ -306,11 +307,11 @@ let casse_initialisation xs =
 
 let dt s () = 
   if !Flag_parsing_c.debug_etdt then pr2 ("<" ^ s); 
-  Lexer_parser.disable_typedef ()
+  LP.disable_typedef ()
 
 let et s () = 
   if !Flag_parsing_c.debug_etdt then pr2 (">" ^ s);  
-  Lexer_parser.enable_typedef ()
+  LP.enable_typedef ()
 
 
 let fix_add_params_ident = function
@@ -321,7 +322,7 @@ let fix_add_params_ident = function
       | params -> 
         params +> List.iter (function 
          | (((bool, Some s, fullt), _), _) -> 
-            Lexer_parser.add_ident s
+            LP.add_ident s
 	 | _ -> 
              ()
              (* failwith "internal errror: fixOldCDecl not good" *)
@@ -443,7 +444,7 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 /* TOC:
 expression
 statement
-declaration, types, initializers
+declaration, types, initializers, struct, enum
 xxx_list, xxx_opt
 cpp directives
 celem (=~ main)
@@ -455,9 +456,9 @@ main:  translation_unit EOF     { $1 }
 
 translation_unit: 
  | external_declaration                  
-     { !Lexer_parser._lexer_hint.toplevel <- true;   [$1] }
+     { !LP._lexer_hint.toplevel <- true;   [$1] }
  | translation_unit external_declaration
-     { !Lexer_parser._lexer_hint.toplevel <- true; $1 ++ [$2] }
+     { !LP._lexer_hint.toplevel <- true; $1 ++ [$2] }
 
 
 
@@ -575,6 +576,8 @@ argument:
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro { Right (ArgAction $1) }
+ | Ttypeof TOPar assign_expr TCPar 
+     { Right (ArgType ((false, None, (nQ, (Typeof ($3), [$1;$2;$4]))), [])) }
 
 action_higherordermacro: 
  | taction_list 
@@ -685,7 +688,7 @@ stat_or_decl:
  | TIfdef stat_or_decl_list TEndif 
      { Selection (Ifdef ($2, [])), [$1;$3;fakeInfo()] }
   /* gccext: */
- /* | function_definition { raise Todo } */
+ | function_definition { NestedFunc $1, [] }
 
 
 
@@ -782,7 +785,7 @@ decl2:
              | Some (ini, iini) -> Some ini, [iini]
            in
 	   if fst (unwrap storage) = StoTypedef 
-	   then Lexer_parser.add_typedef s;
+	   then LP.add_typedef s;
            (Some ((s, ini), iis::iini), f returnType, unwrap storage),
            iivirg 
          )
@@ -848,107 +851,9 @@ decl:      decl2         { et "decl" (); $1 }
 decl_spec: decl_spec2    { dt "declspec" (); $1  }
 type_spec: type_spec2    { dt "type" (); $1   }
 
-/*---------------------------------------------------------------------------*/
-s_or_u_spec2: 
- | struct_or_union ident tobrace_struct struct_decl_list_gcc TCBrace
-     gcc_attr_opt 
-     { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
- | struct_or_union       tobrace_struct struct_decl_list_gcc TCBrace
-     gcc_attr_opt 
-     { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
- | struct_or_union ident       
-     { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
-
-struct_or_union2: 
- | Tstruct { Struct, $1 }
- | Tunion  { Union, $1 }
 
 
 
-struct_decl2: 
- | spec_qualif_list struct_declarator_list TPtVirg 
-     { 
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
-       if fst (unwrap storage) <> NoSto 
-       then internal_error "parsing dont allow this";
-       
-       FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->     
-         f returnType, iivirg))
-       ),    [$3]
-         (* dont need to check if typedef or func initialised cos
-            grammar dont allow typedef nor initialiser in struct 
-         *)
-     }
-
- |  spec_qualif_list TPtVirg 
-     { 
-       (* gccext: allow empty elements if it is a structdef or enumdef *)
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
-       if fst (unwrap storage) <> NoSto 
-       then internal_error "parsing dont allow this";
-       
-       FieldDeclList [(Simple (None, returnType), []) , []], [$2]
-     }
-
-
-
-struct_declarator: 
- | declarator                    
-     { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x), [snd (fst $1)]) }
- | dotdot const_expr2            
-     { (fun x -> BitField (None, x, $2),              [$1]) }
- | declarator dotdot const_expr2 
-     { (fun x -> BitField (Some (fst(fst $1)),
-                          ((snd $1) x), 
-                          $3),
-                          [snd (fst $1);$2]) 
-     }
-
-
-/*----------------------------*/
-/* workarounds */
-/*----------------------------*/
-tobrace_struct: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
-
-
-struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
-struct_or_union: struct_or_union2 { et "su" (); $1 }
-struct_decl: struct_decl2  { et "struct" (); $1 }
-
-dotdot: TDotDot  { et "dotdot" (); $1 }
-const_expr2: const_expr { dt "const_expr2" (); $1 }
-
-struct_decl_list_gcc: 
- | struct_decl_list gcc_opt_virg  { $1 } /* gccext: allow double ;; at end */
- | /* empty */                    { [] } /* gccext: allow empty struct */
-
-gcc_attr_opt: 
- | /* empty */ { }
- | Tattribute TOPar TOPar argument_list TCPar TCPar { }
-
-
-/*---------------------------------------------------------------------------*/
-enum_spec: 
- | Tenum        tobrace_enum enumerator_list gcc_comma_opt TCBrace 
-     { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
- | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt TCBrace
-     { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
- | Tenum ident                                                
-     { EnumName (fst $2),       [$1; snd $2] }
-
-enumerator: 
- | idente                 { (fst $1, None),      [snd $1]    }
- | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
-
-
-
-/*----------------------------*/
-/* workarounds */
-/*----------------------------*/
-
-idente: ident { Lexer_parser.add_ident (fst $1); $1 }
-
-tobrace_enum: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
 
 
 /*---------------------------------------------------------------------------*/
@@ -968,6 +873,8 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 init_declarator2:  
  | declaratori                  { ($1, None) }
  | declaratori teq initialize   { ($1, Some ($3, $2)) }
+ /* gccext: */
+ | declaratori gcc_asm_decl     { ($1, None) }
 
 
 
@@ -975,9 +882,25 @@ init_declarator2:
 /* workarounds */
 /*----------------------------*/
 declaratori: declarator gcc_attr_opt 
-  { Lexer_parser.add_ident (fst (fst $1)); $1 }
+  { LP.add_ident (fst (fst $1)); $1 }
 
 teq: TEq  { et "teq" (); $1 }
+
+
+
+/*----------------------------*/
+/* gccext: */
+/*----------------------------*/
+
+gcc_asm_decl: 
+ | Tasm TOPar asmbody TCPar              {  }
+ | Tasm Tvolatile TOPar asmbody TCPar   {  }
+
+
+gcc_attr_opt: 
+ | /* empty */ { }
+ | Tattribute TOPar TOPar argument_list TCPar TCPar { }
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -1052,16 +975,17 @@ tccro: TCCro { dt "tccro" ();$1 }
 
 topar: TOPar 
      { new_scope ();et "topar" (); 
-       !Lexer_parser._lexer_hint.parameterDeclaration <- true; $1  
+       !LP._lexer_hint.parameterDeclaration <- true; $1  
      }
 tcpar: TCPar 
      { del_scope ();dt "tcpar" (); 
-       !Lexer_parser._lexer_hint.parameterDeclaration <- false; $1  
+       !LP._lexer_hint.parameterDeclaration <- false; $1  
      }
 
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
-declaratorp: declarator { Lexer_parser.add_ident (fst (fst $1)); $1 }
+declaratorp: declarator gcc_attr_opt
+     { LP.add_ident (fst (fst $1)); $1 }
 
 
 /*---------------------------------------------------------------------------*/
@@ -1072,6 +996,7 @@ type_name:
      { let (returnType, _) = fixDeclSpecForDecl $1 in $2 returnType }
  | Ttypeof TOPar assign_expr TCPar 
      { nQ, (Typeof ($3), [$1;$2;$4]) }
+
 
 abstract_declarator: 
  | pointer                            { $1 }
@@ -1152,7 +1077,125 @@ gcc_comma_opt_struct:
  | /* */  {  [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
 
 
-tobrace_ini: TOBrace { !Lexer_parser._lexer_hint.toplevel <- false; $1 }
+tobrace_ini: TOBrace { !LP._lexer_hint.toplevel <- false; $1 }
+
+
+
+
+
+
+/*---------------------------------------------------------------------------*/
+s_or_u_spec2: 
+ | struct_or_union ident tobrace_struct struct_decl_list_gcc tcbrace_struct
+     gcc_attr_opt 
+     { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
+ | struct_or_union       tobrace_struct struct_decl_list_gcc tcbrace_struct
+     gcc_attr_opt 
+     { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
+ | struct_or_union ident       
+     { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
+
+struct_or_union2: 
+ | Tstruct { Struct, $1 }
+ | Tunion  { Union, $1 }
+
+
+
+struct_decl2: 
+ | spec_qualif_list struct_declarator_list TPtVirg 
+     { 
+       let (returnType,storage) = fixDeclSpecForDecl $1 in
+       if fst (unwrap storage) <> NoSto 
+       then internal_error "parsing dont allow this";
+       
+       FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->     
+         f returnType, iivirg))
+       ),    [$3]
+         (* dont need to check if typedef or func initialised cos
+            grammar dont allow typedef nor initialiser in struct 
+         *)
+     }
+
+ |  spec_qualif_list TPtVirg 
+     { 
+       (* gccext: allow empty elements if it is a structdef or enumdef *)
+       let (returnType,storage) = fixDeclSpecForDecl $1 in
+       if fst (unwrap storage) <> NoSto 
+       then internal_error "parsing dont allow this";
+       
+       FieldDeclList [(Simple (None, returnType), []) , []], [$2]
+     }
+
+
+
+struct_declarator: 
+ | declaratorsd                    
+     { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x), [snd (fst $1)]) }
+ | dotdot const_expr2            
+     { (fun x -> BitField (None, x, $2),              [$1]) }
+ | declaratorsd dotdot const_expr2 
+     { (fun x -> BitField (Some (fst(fst $1)),
+                          ((snd $1) x), 
+                          $3),
+                          [snd (fst $1);$2]) 
+     }
+
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+tobrace_struct: TOBrace 
+     { !LP._lexer_hint.toplevel <- false; 
+       !LP._lexer_hint.structDefinition <- !LP._lexer_hint.structDefinition +1;
+       $1 
+     }
+tcbrace_struct: TCBrace 
+     {
+       !LP._lexer_hint.structDefinition <- !LP._lexer_hint.structDefinition -1;
+       $1
+     }
+
+declaratorsd: declarator gcc_attr_opt 
+  { (*also ? LP.add_ident (fst (fst $1)); *) $1 }
+
+
+
+struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
+struct_or_union: struct_or_union2 { et "su" (); $1 }
+struct_decl: struct_decl2  { et "struct" (); $1 }
+
+dotdot: TDotDot  { et "dotdot" (); $1 }
+const_expr2: const_expr { dt "const_expr2" (); $1 }
+
+struct_decl_list_gcc: 
+ | struct_decl_list gcc_opt_virg  { $1 } /* gccext: allow double ;; at end */
+ | /* empty */                    { [] } /* gccext: allow empty struct */
+
+
+/*---------------------------------------------------------------------------*/
+enum_spec: 
+ | Tenum        tobrace_enum enumerator_list gcc_comma_opt TCBrace 
+     { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
+ | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt TCBrace
+     { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
+ | Tenum ident                                                
+     { EnumName (fst $2),       [$1; snd $2] }
+
+enumerator: 
+ | idente                 { (fst $1, None),      [snd $1]    }
+ | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
+
+
+
+/*----------------------------*/
+/* workarounds */
+/*----------------------------*/
+
+idente: ident { LP.add_ident (fst $1); $1 }
+
+tobrace_enum: TOBrace { !LP._lexer_hint.toplevel <- false; $1 }
+
+
 
 /*****************************************************************************/
 /* xxx_list, xxx_opt */
@@ -1296,10 +1339,12 @@ param_define:
 /*****************************************************************************/
 
 external_declaration: 
- | function_definition               { Definition (fixFunc $1) }
+ | function_definition               { Definition $1 }
  | decl                              { Declaration $1 }
 
-function_definition: start_fun compound      { del_scope(); ($1, $2) }
+function_definition: function_def    { fixFunc $1 }
+
+function_def: start_fun compound      { del_scope(); ($1, $2) }
 
 start_fun2: decl_spec declaratorfd  
      { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
@@ -1328,7 +1373,7 @@ celem:
 start_fun: start_fun2                        
   { new_scope(); 
     fix_add_params_ident $1; 
-    !Lexer_parser._lexer_hint.toplevel <- false;  
+    !LP._lexer_hint.toplevel <- false;  
     $1 
   }
 

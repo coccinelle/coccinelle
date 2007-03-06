@@ -189,7 +189,9 @@ and pp_statement_gen pr_elem =
         | _ -> raise Impossible
         )
 
-
+    | NestedFunc def, ii -> 
+        assert (null ii);
+        pp_def_gen pr_elem def
     | MacroStmt, ii -> 
         ii +> List.iter pr_elem ;
 
@@ -694,10 +696,10 @@ and pp_init_gen = fun pr_elem ->
 
 
 
-let pp_program_gen pr_elem progelem =
-  match progelem with
-  | Declaration decl -> pp_decl_gen pr_elem decl
-  | Definition ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
+(* ---------------------- *)
+and pp_def_gen pr_elem def = 
+  match def with 
+  | ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
                      is::iifunc1::iifunc2::i1::i2::ifakestart::isto) -> 
 
          pr_elem ifakestart;
@@ -761,55 +763,64 @@ let pp_program_gen pr_elem progelem =
          pr_elem i1; 
          statxs +> List.iter (pp_statement_gen pr_elem);
          pr_elem i2;
-
-     | Include (s, [i1;i2]) -> 
-         pr_elem i1; pr_elem i2
-    | Define ((s,[idefine;iident;ieol]), (def,defii)) -> 
-        pr_elem idefine;
-        pr_elem iident;
-        
-        let define_val = function
-          | DefineExpr e -> pp_expression_gen pr_elem e
-          | DefineStmt _ -> raise Todo
-          | DefineText (s, ii) -> List.iter pr_elem ii
-          | DefineEmpty -> ()
-        in
-        (match def, defii with
-        | DefineSimple defval, [] -> define_val defval
-        | DefineFunc (params, defval), [iopar;icpar] -> 
-            pr_elem iopar;
-            params +> List.iter (fun ((string,iistring), iicomma) -> 
-              assert ((List.length iicomma) <= 1);
-              iicomma +> List.iter pr_elem;
-
-              iistring +> List.iter pr_elem;
-            );
-            pr_elem icpar;
-            define_val defval
-        | _ -> raise Impossible
-        );
-        pr_elem ieol
-
-
-     | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
-         pr_elem i1;
-         pr_elem i2;
-         es +> List.iter (fun (e, opt) -> 
-           assert (List.length opt <= 1);
-           opt +> List.iter pr_elem;
-           pp_argument_gen pr_elem e;
-           );
-         pr_elem i3;
-         pr_elem i4;
-
-
-     | EmptyDef ii -> ii +> List.iter pr_elem
-     | NotParsedCorrectly ii -> 
-         assert (List.length ii >= 1);
-         ii +> List.iter pr_elem 
-     | FinalDef (ii,annot) -> pr_elem ({ii with str = ""},annot)
-
      | _ -> raise Impossible
+
+
+
+
+let pp_program_gen pr_elem progelem =
+  match progelem with
+  | Declaration decl -> pp_decl_gen pr_elem decl
+  | Definition def -> pp_def_gen pr_elem def
+
+  | Include (s, [i1;i2]) -> 
+      pr_elem i1; pr_elem i2
+  | Define ((s,[idefine;iident;ieol]), (def,defii)) -> 
+      pr_elem idefine;
+      pr_elem iident;
+        
+      let define_val = function
+        | DefineExpr e -> pp_expression_gen pr_elem e
+        | DefineStmt _ -> raise Todo
+        | DefineText (s, ii) -> List.iter pr_elem ii
+        | DefineEmpty -> ()
+      in
+      (match def, defii with
+      | DefineSimple defval, [] -> define_val defval
+      | DefineFunc (params, defval), [iopar;icpar] -> 
+          pr_elem iopar;
+          params +> List.iter (fun ((string,iistring), iicomma) -> 
+            assert ((List.length iicomma) <= 1);
+            iicomma +> List.iter pr_elem;
+            
+            iistring +> List.iter pr_elem;
+          );
+          pr_elem icpar;
+          define_val defval
+      | _ -> raise Impossible
+      );
+      pr_elem ieol
+          
+
+  | SpecialDeclMacro (s, es,   [i1;i2;i3;i4]) -> 
+      pr_elem i1;
+      pr_elem i2;
+      es +> List.iter (fun (e, opt) -> 
+        assert (List.length opt <= 1);
+        opt +> List.iter pr_elem;
+        pp_argument_gen pr_elem e;
+      );
+      pr_elem i3;
+      pr_elem i4;
+      
+
+  | EmptyDef ii -> ii +> List.iter pr_elem
+  | NotParsedCorrectly ii -> 
+      assert (List.length ii >= 1);
+      ii +> List.iter pr_elem 
+  | FinalDef (ii,annot) -> pr_elem ({ii with str = ""},annot)
+      
+  | _ -> raise Impossible
      
 
 

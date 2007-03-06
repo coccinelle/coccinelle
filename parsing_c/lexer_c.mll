@@ -93,6 +93,7 @@ let keyword_table = Common.hash_of_list [
   (* gccext: cppext: linuxext: synonyms *)
   "asm",     (fun ii -> Tasm ii);
   "__asm__", (fun ii -> Tasm ii);
+  "__asm",   (fun ii -> Tasm ii);
 
   "inline",     (fun ii -> Tinline ii);
   "__inline__", (fun ii -> Tinline ii);

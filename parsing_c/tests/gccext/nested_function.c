@@ -10,3 +10,12 @@ static int __init amb_talk (amb_dev * dev) {
 }
 
 
+
+static int __init amb_probe (void) {
+  struct pci_dev * pci_dev;
+  int devs;
+  
+   void __init do_pci_device (void) {
+    amb_dev * dev;
+   }
+}

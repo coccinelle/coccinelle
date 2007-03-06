@@ -80,16 +80,16 @@ let add_ident s    =
 
 type lexer_hint = { 
     mutable parameterDeclaration: bool;
-    mutable structDefinition: bool;
-    mutable statements: bool;
+    mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
+(*    mutable statements: bool; *)
     mutable toplevel: bool;
     mutable define: bool;
   }
 
 let default_hint () = { 
   parameterDeclaration = false;
-  structDefinition = false;
-  statements = false;
+  (* statements = false; *)
+  structDefinition = 0;
   toplevel = false;
   define = false;
 }
