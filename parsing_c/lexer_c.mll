@@ -296,7 +296,14 @@ rule token = parse
   | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
       { let info = tokinfo lexbuf in 
         TIfdefbool (true, info) 
+
       } 
+
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
+      { let info = tokinfo lexbuf in 
+        TIfdefbool (false, info) 
+      }
+
 
   (* linuxext: *)
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
@@ -351,8 +358,12 @@ rule token = parse
         TIfdef (info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
-  | "#" [' ' '\t']* "elif" [' ' '\t']+ [^'\n']+ '\n' 
-      { TIfdefelif (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "elif" [' ' '\t']+ 
+      { let info = tokinfo lexbuf in 
+        TIfdefelif (info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+
+      } 
+
 
   (* can have #endif LINUX *)
   | "#" [' ' '\t']* "endif" [^'\n']* '\n'    { TEndif     (tokinfo lexbuf) }

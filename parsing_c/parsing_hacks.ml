@@ -390,85 +390,92 @@ let rec mk_body_function_grouped xs =
 
 
 (* ------------------------------------------------------------------------- *)
-(* annotation and stringification part 1 *)
+(* annotation, static, if,  and stringification part 1 *)
 (* ------------------------------------------------------------------------- *)
 
 (* linuxext: *)
 let keyword_table = Common.hash_of_list [
   (* attributes. could perhaps generalize via "__.*" *)
-  "__init",                     (fun ii -> TCommentCpp ii); 
-  "__exit",                     (fun ii -> TCommentCpp ii); 
-  "__user",                     (fun ii -> TCommentCpp ii); 
-  "__iomem",                    (fun ii -> TCommentCpp ii); 
-  "__initdata",                 (fun ii -> TCommentCpp ii); 
-  "__exitdata",                 (fun ii -> TCommentCpp ii); 
-  "__cacheline_aligned",        (fun ii -> TCommentCpp ii); 
-  "____cacheline_aligned",      (fun ii -> TCommentCpp ii); 
-  "__cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
+  "__init",                       (fun ii -> TCommentCpp ii); 
+  "__exit",                       (fun ii -> TCommentCpp ii); 
+  "__user",                       (fun ii -> TCommentCpp ii); 
+  "__iomem",                      (fun ii -> TCommentCpp ii); 
+  "__initdata",                   (fun ii -> TCommentCpp ii); 
+  "__exitdata",                   (fun ii -> TCommentCpp ii); 
+  "__cacheline_aligned",          (fun ii -> TCommentCpp ii); 
+  "____cacheline_aligned",        (fun ii -> TCommentCpp ii); 
+  "__cacheline_aligned_in_smp",   (fun ii -> TCommentCpp ii);
   "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
-  "__devinit",                  (fun ii -> TCommentCpp ii); 
-  "__devexit",                  (fun ii -> TCommentCpp ii); 
-  "__devinitdata",              (fun ii -> TCommentCpp ii); 
-  "__ALIGNED__",                (fun ii -> TCommentCpp ii); 
+  "__devinit",                    (fun ii -> TCommentCpp ii); 
+  "__devexit",                    (fun ii -> TCommentCpp ii); 
+  "__devinitdata",                (fun ii -> TCommentCpp ii); 
+  "__ALIGNED__",                  (fun ii -> TCommentCpp ii); 
 
-  "__pmac",                    (fun ii -> TCommentCpp ii);  
-  "__force",                    (fun ii -> TCommentCpp ii);  
-  "__nocast",                    (fun ii -> TCommentCpp ii);  
+  "__pmac",                       (fun ii -> TCommentCpp ii);  
+  "__force",                      (fun ii -> TCommentCpp ii);  
+  "__nocast",                     (fun ii -> TCommentCpp ii);  
 
-  "__cpuinit",                   (fun ii -> TCommentCpp ii);  
-  "__cpuinitdata",                   (fun ii -> TCommentCpp ii);  
-  "__must_check",                   (fun ii -> TCommentCpp ii);  
-  "__unused",                   (fun ii -> TCommentCpp ii);  
+  "__cpuinit",                    (fun ii -> TCommentCpp ii);  
+  "__cpuinitdata",                (fun ii -> TCommentCpp ii);  
+  "__must_check",                 (fun ii -> TCommentCpp ii);  
+  "__unused",                     (fun ii -> TCommentCpp ii);  
 
-  "__read_mostly", (fun ii -> TCommentCpp ii);  
-  "__attribute_used__",         (fun ii -> TCommentCpp ii);  
+  "__read_mostly",                (fun ii -> TCommentCpp ii);  
+  "__attribute_used__",           (fun ii -> TCommentCpp ii);  
 
-  "__CS4231_INLINE__",                    (fun ii -> TCommentCpp ii);  
-  "CCIO_INLINE",                     (fun ii -> TCommentCpp ii);  
-  "SBA_INLINE",                      (fun ii -> TCommentCpp ii);  
+  "__CS4231_INLINE__",            (fun ii -> TCommentCpp ii);  
+  "CCIO_INLINE",                  (fun ii -> TCommentCpp ii);  
+  "SBA_INLINE",                   (fun ii -> TCommentCpp ii);  
 
-  "INITSECTION",                     (fun ii -> TCommentCpp ii);  
+  "INITSECTION",                  (fun ii -> TCommentCpp ii);  
 
-  "NORET_TYPE",                      (fun ii -> TCommentCpp ii);  
+  "NORET_TYPE",                   (fun ii -> TCommentCpp ii);  
 
-  "__init_or_module",                    (fun ii -> TCommentCpp ii);  
-  "__initdata_or_module",                (fun ii -> TCommentCpp ii);  
+  "__init_or_module",             (fun ii -> TCommentCpp ii);  
+  "__initdata_or_module",         (fun ii -> TCommentCpp ii);  
 
-  "__3xp_aligned",                    (fun ii -> TCommentCpp ii);  
+  "__3xp_aligned",                (fun ii -> TCommentCpp ii);  
 
-  "__always_inline",                    (fun ii -> TCommentCpp ii);  
+  "__always_inline",              (fun ii -> TCommentCpp ii);  
   "noinline",                     (fun ii -> TCommentCpp ii);  
 
-  "__xipram",                     (fun ii -> TCommentCpp ii);  
-  "compat_init_data",             (fun ii -> TCommentCpp ii);  
+  "__xipram",                (fun ii -> TCommentCpp ii);  
+  "compat_init_data",        (fun ii -> TCommentCpp ii);  
 
   "fastcall",                (fun ii -> TCommentCpp ii);  
-  "asmlinkage",                 (fun ii -> TCommentCpp ii);  
+  "asmlinkage",              (fun ii -> TCommentCpp ii);  
 
-  "far",                    (fun ii -> TCommentCpp ii);  
-  "SK_FAR",                 (fun ii -> TCommentCpp ii);  
+  "far",                     (fun ii -> TCommentCpp ii);  
+  "SK_FAR",                  (fun ii -> TCommentCpp ii);  
   "near",                    (fun ii -> TCommentCpp ii);  
 
-  "DIVA_EXIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
-  "DIVA_INIT_FUNCTION",                    (fun ii -> TCommentCpp ii);  
-  "ACPI_SYSTEM_XFACE",                    (fun ii -> TCommentCpp ii);  
+  "DIVA_EXIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
+  "DIVA_INIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
+  "ACPI_SYSTEM_XFACE",       (fun ii -> TCommentCpp ii);  
 
-  "ASC_INITDATA",                    (fun ii -> TCommentCpp ii);  
-  "in2000__INITDATA",                (fun ii -> TCommentCpp ii);  
-  "PACKED",                    (fun ii -> TCommentCpp ii);  
+  "ASC_INITDATA",            (fun ii -> TCommentCpp ii);  
+  "in2000__INITDATA",        (fun ii -> TCommentCpp ii);  
+  "PACKED",                  (fun ii -> TCommentCpp ii);  
 
-  "WPMINFO", (fun ii -> TCommentCpp ii);
-  "CPMINFO", (fun ii -> TCommentCpp ii);
-  "PMINFO",  (fun ii -> TCommentCpp ii);
+  "WPMINFO",                 (fun ii -> TCommentCpp ii);
+  "CPMINFO",                 (fun ii -> TCommentCpp ii);
+  "PMINFO",                  (fun ii -> TCommentCpp ii);
 
 
   "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp ii);
 
 
-  "PNMI_STATIC", (fun ii -> Tstatic ii); 
-  "RLMT_STATIC", (fun ii -> Tstatic ii); 
+
+
+
+  "PNMI_STATIC",   (fun ii -> Tstatic ii); 
+  "RLMT_STATIC",   (fun ii -> Tstatic ii); 
   "SISINITSTATIC", (fun ii -> Tstatic ii); 
 
+
+  (* IF *)
+  "BUGLVL", (fun ii -> Tif ii);
+  "IFDEBUG", (fun ii -> Tif ii);
 
   (* string macro. normally handle quite well by mu lalr(k), but
    * sometimes not enough, if have for instance the XX YY case, could
@@ -552,7 +559,7 @@ let find_and_tag_good_ifdef xs =
 
         if is_ifdef_positif
         then pr2_cpp "commenting parts of a #if 1 or #if LINUX_VERSION"
-        else pr2_cpp "commenting a #if 0 or #if LINUX_VERSION"
+        else pr2_cpp "commenting a #if 0 or #if LINUX_VERSION or __cplusplus"
         ;
 
         (match xxs with
@@ -818,6 +825,9 @@ let debug_macros_list =
    "KDBG";
   ]
 
+let declList =
+  ["decl_subsys";
+  ]
 
 
 let find_and_tag_good_macro cleanxs_with_pos = 
@@ -850,15 +860,24 @@ let find_and_tag_good_macro cleanxs_with_pos =
     | [] -> ()
 
 
-    (* linuxext: ex: static DEVICE_ATTR(); *)
+    (* linuxext: ex: static [const] DEVICE_ATTR(); *)
     | (Line 
-          ([NotParenToken (Tstatic _,_);
-            NotParenToken (TIdent (s,_),_);
-            Parenthised (xxs,info_parens);
-            NotParenToken (TPtVirg _,_);
-          ] as line1
+          (
+            ([NotParenToken (Tstatic _,_);
+             NotParenToken (TIdent (s,_),_);
+             Parenthised (xxs,info_parens);
+             NotParenToken (TPtVirg _,_);
+            ] 
+            | 
+            [NotParenToken (Tstatic _,_);
+             NotParenToken (Tconst _,_);
+             NotParenToken (TIdent (s,_),_);
+             Parenthised (xxs,info_parens);
+             NotParenToken (TPtVirg _,_);
+            ]) (* it could also be the same with a TEof en plus a la fin *)
+              as line1
           ))
-        ::xs when s ==~ regexp_macro -> 
+        ::xs when (s ==~ regexp_macro) || List.mem s declList -> 
         msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
@@ -898,7 +917,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
             NotParenToken (TPtVirg _,_);
           ] as line1
           ))
-        ::xs when s ==~ regexp_declare -> 
+        ::xs when (s ==~ regexp_declare) || List.mem s declList -> 
 
         msg_declare_macro s;
         iter_token_paren (fun (tok, x) -> 
