@@ -577,7 +577,13 @@ let rec pp_any = function
   | Ast.ConstVolTag(x) -> const_vol x
   | Ast.Token(x) -> 
       print_string x;
-      if x ==~ Common.regexp_alpha then print_string " ";
+      (* if x ==~ Common.regexp_alpha then print_string " "; *)
+      (match x with
+      | "return" 
+        -> print_string " "
+      | _ -> ()
+      )
+          
 
   | Ast.Code(x) -> let _ = top_level x in ()
 
