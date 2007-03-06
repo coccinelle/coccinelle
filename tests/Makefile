@@ -18,7 +18,7 @@ rule94 rule95 rule96 rule97 rule98 rule99 rule103
 
 all:
 	time set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i; done 
-	../spatch.opt -action rule_regression_info_failed xxx
+	../spatch.opt -action regression_info_failed xxx
 
 clean:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
