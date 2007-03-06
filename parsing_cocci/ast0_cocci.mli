@@ -344,7 +344,7 @@ val context_wrap : 'a -> 'a wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
-val copywrap : 'a wrap -> 'a -> 'a wrap
+val copywrap : 'a wrap -> 'b -> 'b wrap
 val get_info : 'a wrap -> info
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit

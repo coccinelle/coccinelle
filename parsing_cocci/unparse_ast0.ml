@@ -22,7 +22,7 @@ let mcodekind brackets fn x = function
       let (lb,rb) =
 	if !quiet
 	then ("","")
-	else match brackets with Some _ -> ("[","]") | None -> ("","") in
+	else match brackets with Some x -> ("[","]^"^(string_of_int x)) | None -> ("","") in
       let (plus_stream,_) = !plus_stream in
       if !quiet
       then fn x
@@ -51,7 +51,7 @@ let mcodekind brackets fn x = function
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
 
-let mcode fn (x,_,info,mc) = mcodekind None fn x mc
+let mcode fn (x,_,info,mc) = mcodekind (Some info.Ast0.line_start)(*None*) fn x mc
 
 let print_context (_,info,i,mc,ty,_) fn =
   mcodekind (Some info.Ast0.line_start) fn () !mc

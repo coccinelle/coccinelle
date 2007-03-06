@@ -130,7 +130,7 @@ let collect_minus_join_points root =
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
 	(* This was unfavored at one point, but I don't remember why *)
-	[(Favored,info,mc)]
+      [(Favored,info,mc)]
     | _ -> k e in
 
 (* don't want to attach to the outside of DOTS, because metavariables can't
@@ -237,7 +237,8 @@ bind to that; not good for isomorphisms *)
 let call_collect_minus context_nodes :
     (int * (minus_join_point * Ast0.info * Ast0.mcodekind) list) list =
   List.map
-    (function
+    (function e ->
+      match e with
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_expression_dots e)
@@ -711,6 +712,12 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   | ([],_) -> failwith "minus tree ran out before the plus tree"
 
 let merge minus_list plus_list =
+  Printf.printf "minus list %s\n"
+    (String.concat " "
+       (List.map (function (x,_) -> string_of_int x) minus_list));
+  Printf.printf "plus list %s\n"
+    (String.concat " "
+       (List.map (function (x,_) -> string_of_int x) plus_list));
   List.iter
     (function (index,minus_info) ->
       let plus_info = List.assoc index plus_list in

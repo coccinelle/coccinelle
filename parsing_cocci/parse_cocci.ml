@@ -367,6 +367,8 @@ let token2line (tok,_) =
 
   | PC.TPtrOp(clt) 
 
+  | PC.TDefine(clt) | PC.TInclude(_,clt)
+
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
       let (_,line,_,_) = clt in Some line
@@ -500,7 +502,8 @@ let drop_empty_nest =
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
 
-let get_s_starts (_, (s,_,(starts, ends))) = Printf.printf "%d %d\n" starts ends; (s, starts)
+let get_s_starts (_, (s,_,(starts, ends))) =
+  Printf.printf "%d %d\n" starts ends; (s, starts)
 
 let pop2 l = 
   let v = List.hd !l in
@@ -657,9 +660,9 @@ let process file isofile verbose =
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
-	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     let function_prototypes =
 	       Function_prototypes.process minus plus in
+	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     Insert_plus.insert_plus m p;
 	     Type_infer.type_infer minus;
 	     let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
@@ -667,9 +670,7 @@ let process file isofile verbose =
 	     let minus_ast = Ast0toast.ast0toast minus in
 	     match function_prototypes with
 	       None -> [(extra_meta@metavars, minus_ast)]
-	     | Some fp ->
-		 Pretty_print_cocci.unparse fp;
-		 [(extra_meta@metavars, minus_ast); ([], fp)])
+	     | Some fp -> [(extra_meta@metavars, minus_ast); ([], fp)])
 	 minus plus) in
   let (code,ua) = Free_vars.free_vars parsed in
   if !Flag_parsing_cocci.show_SP 

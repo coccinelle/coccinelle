@@ -849,7 +849,10 @@ let rebuild_mcode start_line =
       Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
     | Ast0.MINUS(mc) -> Ast0.MINUS(ref (!mc))
     | Ast0.MIXED(mc) -> Ast0.MIXED(ref (!mc))
-    | Ast0.PLUS -> failwith "rebuild_mcode: unexpected plus mcodekind" in
+    | Ast0.PLUS ->
+	(* this function is used elsewhere where we need to rebuild the
+	   indices, and so we allow PLUS code as well *)
+        Ast0.PLUS in
 
   let mcode (term,arity,info,mcodekind) =
     let info =

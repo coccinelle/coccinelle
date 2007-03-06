@@ -18,12 +18,12 @@ let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
     Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
       [(get_name name,
-	Ast0.rewrap stm
+	Ast0.copywrap stm
 	  (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
-		     Ast0.rewrap stm
+		     Ast0.copywrap stm
 		       (Ast0.UnInit
 			  (stg,
-			   Ast0.rewrap stm
+			   Ast0.copywrap stm
 			     (Ast0.FunctionType(ty,lp,params,rp)),
 			   name,brace_to_semi lbrace)))))]
   | _ -> []
@@ -37,13 +37,12 @@ let get_all_functions minus rule =
       Ast0.DECL(stmt) -> collect_function stmt
     | Ast0.CODE(rule_elem_dots) -> collect_functions rule_elem_dots
     | _ -> [] in
-  if minus
-  then
-    List.map
-      (function (nm,vl) ->
-	(nm,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl))
-      res
-  else res
+  List.map
+    (function (nm,vl) ->
+      (* for minus code need to rebuild index and mcodekind, for plus
+	 don't need to revuild mcodekind, but do need to rebuild index *)
+      (nm,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl))
+    res
 
 (* --------------------------------------------------------------------- *)
 (* try to match up the functions *)
@@ -177,19 +176,29 @@ let drop_names minus dec =
 
 let merge mproto pproto =
   let mproto =
-    Compute_lines.compute_lines [Ast0.rewrap mproto (Ast0.DECL mproto)] in
+    Compute_lines.compute_lines [Ast0.copywrap mproto (Ast0.DECL mproto)] in
   let pproto =
-    Compute_lines.compute_lines [Ast0.rewrap pproto (Ast0.DECL pproto)] in
-  Insert_plus.insert_plus mproto pproto
+    Compute_lines.compute_lines [Ast0.copywrap pproto (Ast0.DECL pproto)] in
+  let (m,p) = List.split(Context_neg.context_neg mproto pproto) in
+  Insert_plus.insert_plus m p;
+  (* convert to ast so that the + code will fall down to the tokens
+     and off the artificially added Ast0.DECL *)
+  let mproto = Ast0toast.ast0toast mproto in
+  (* clean up the wrapping added above *)
+  match mproto with
+    [mproto] ->
+      (match Ast.unwrap mproto with
+	Ast.DECL mproto -> mproto
+      |	_ -> failwith "not possible")
+  | _ -> failwith "not possible"
 
 let make_rule = function
     (mname,mproto,Some pproto) ->
       let no_name_mproto = drop_names true mproto in
       let no_name_pproto = drop_names false pproto in
-      merge mproto pproto;
-      merge no_name_mproto no_name_pproto;
-      [mproto;no_name_mproto]
-  | (mname,mproto,None) -> [mproto;drop_names true mproto]
+      [merge mproto pproto; merge no_name_mproto no_name_pproto]
+  | (mname,mproto,None) ->
+      [Ast0toast.statement mproto;Ast0toast.statement(drop_names true mproto)]
 
 let make_rules minus plus =
   let minus_functions =
@@ -200,9 +209,7 @@ let make_rules minus plus =
       let plus_functions =
 	List.concat (List.map (get_all_functions false) plus) in
       let protos = align minus_functions plus_functions in
-      let rules =
-	List.map Ast0toast.statement
-	  (List.concat (List.map make_rule protos)) in
+      let rules = List.concat (List.map make_rule protos) in
       match rules with
 	[] -> None
       | [x] ->
