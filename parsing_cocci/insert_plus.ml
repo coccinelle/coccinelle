@@ -712,12 +712,6 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   | ([],_) -> failwith "minus tree ran out before the plus tree"
 
 let merge minus_list plus_list =
-  Printf.printf "minus list %s\n"
-    (String.concat " "
-       (List.map (function (x,_) -> string_of_int x) minus_list));
-  Printf.printf "plus list %s\n"
-    (String.concat " "
-       (List.map (function (x,_) -> string_of_int x) plus_list));
   List.iter
     (function (index,minus_info) ->
       let plus_info = List.assoc index plus_list in
