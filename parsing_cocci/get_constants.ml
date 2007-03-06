@@ -27,11 +27,16 @@ let get_constants rules =
 	bind [Ast.unwrap_mcode sizeof] (k e)
     | _ -> k e in
 
+  let typeC r k e =
+    match Ast.unwrap e with
+      Ast.TypeName(ty) -> [Ast.unwrap_mcode ty]
+    | _ -> k e in
+
   let res =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      ident expression donothing donothing donothing donothing donothing
+      ident expression donothing typeC donothing donothing donothing
       donothing donothing donothing donothing donothing in
 
   let rule_fn tls =
