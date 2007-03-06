@@ -397,7 +397,7 @@ let main () =
               pr2 "--------------------------------";
               pr2 "regression testing  information";
               pr2 "--------------------------------";
-              Common.regression_testing newscore ("/tmp/score_rule.marshalled")
+              Common.regression_testing newscore ("score_rule.marshalled")
             end
                 
 
