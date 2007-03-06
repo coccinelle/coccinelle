@@ -370,7 +370,7 @@ let main () =
               false
 
 
-        | "rule_regression_info", _ -> 
+        | "regression_info_failed", _ -> 
             let newscore  = Common.empty_score () in
             let oks = 
               (Common.process_output_to_list ("find -name \"*.ok\"") 
@@ -397,7 +397,7 @@ let main () =
               pr2 "--------------------------------";
               pr2 "regression testing  information";
               pr2 "--------------------------------";
-              Common.regression_testing newscore ("score_rule.marshalled")
+              Common.regression_testing newscore ("score_failed.marshalled")
             end
                 
 

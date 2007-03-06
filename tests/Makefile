@@ -35,7 +35,7 @@ score:
 	find -name "*.failed" | wc -l
 
 regression:
-	../spatch.opt -action rule_regression_info xxx
+	../spatch.opt -action regression_info_failed xxx
 
 opt:	
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) SPATCH=../../spatch.opt -C $$i; done 
