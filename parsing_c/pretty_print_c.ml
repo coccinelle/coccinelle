@@ -675,6 +675,11 @@ and pp_init_gen = fun pr_elem ->
     | InitGccIndex (expression, initialiser), [i1;i2;i3] -> 
         pr_elem i1; pp_expression expression; pr_elem i2; pr_elem i3;
         pp_init initialiser
+
+    | InitGccIndexAlt (expression, initialiser), [i1;i2] -> 
+        pr_elem i1; pp_expression expression; pr_elem i2; 
+        pp_init initialiser
+
     | InitGccRange (e1, e2, initialiser), ii -> 
         (match ii with
         | [iocro;iellipsis;iccro;ieq] -> 
@@ -688,7 +693,6 @@ and pp_init_gen = fun pr_elem ->
         pp_expression e; pr_elem iccro; pr_elem ieq;
         pp_init ini
         
-
 
     | x -> raise Impossible
   in
