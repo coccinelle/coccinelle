@@ -963,7 +963,7 @@ spec_qualif_list2:
 spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }
  	     
 /*---------------------------------------------------------------------------*/
-init_declarator: init_declarator2 gcc_attr_opt  { dt "init" (); $1 }
+init_declarator: init_declarator2  { dt "init" (); $1 }
 
 init_declarator2:  
  | declaratori                  { ($1, None) }
@@ -974,7 +974,8 @@ init_declarator2:
 /*----------------------------*/
 /* workarounds */
 /*----------------------------*/
-declaratori: declarator  { Lexer_parser.add_ident (fst (fst $1)); $1 }
+declaratori: declarator gcc_attr_opt 
+  { Lexer_parser.add_ident (fst (fst $1)); $1 }
 
 teq: TEq  { et "teq" (); $1 }
 
@@ -1331,6 +1332,6 @@ start_fun: start_fun2
     $1 
   }
 
-declaratorfd: declarator { et "declaratorfd" (); $1 }
+declaratorfd: declarator gcc_attr_opt { et "declaratorfd" (); $1 }
 
 

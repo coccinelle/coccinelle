@@ -484,9 +484,6 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 
   | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
 
-  | A.MetaConst _, _ -> failwith "not handling MetaConst"
-  | A.MetaErr _, _ -> failwith "not handling MetaErr"
-
 
   | A.Ident ida,   ((B.Ident idb, typ),ii) ->
       let ib1 = tuple_of_list1 ii in
@@ -496,6 +493,9 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
           ((B.Ident idb, typ),[ib1])
         ))
           
+
+  | A.MetaConst _, _ -> failwith "not handling MetaConst"
+  | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
   (* todo?: handle some isomorphisms in int/float ? can have different
    * format : 1l can match a 1.

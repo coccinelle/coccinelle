@@ -429,7 +429,7 @@ let keyword_table = Common.hash_of_list [
   "__3xp_aligned",                    (fun ii -> TCommentCpp ii);  
 
 
-
+  "fastcall",                (fun ii -> TCommentCpp ii);  
 
   "asmlinkage",                 (fun ii -> TCommentCpp ii);  
 
@@ -1224,8 +1224,6 @@ let rec is_really_foreach xs =
  * Note that in next there is only "clean" tokens, there is no comment
  * or space tokens. This is done by the caller.
  * 
- * todo: but sometimes there is some __inline__ that prevent the transformation
- *  :( so perhaps could filter them from the next 10 tokens ?
  *)
 
 
@@ -1291,6 +1289,14 @@ let lookahead2 next before =
     -> 
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
       
+      msg_typedef s; Lexer_parser.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+
+  (* xx inline *)
+  | (TIdent (s, i1)::Tinline i2::_  , _) when 
+        not_struct_enum before (* lead to false positive  && not_annot s2 *)
+    -> 
       msg_typedef s; Lexer_parser.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1425,6 +1431,9 @@ let lookahead2 next before =
       msg_typedef s; Lexer_parser.add_typedef_root s;
       TypedefIdent (s, i1)
 
+
+
+  (* ----------------------------------- *)
 
   (*  (xx) yy *)
   | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
