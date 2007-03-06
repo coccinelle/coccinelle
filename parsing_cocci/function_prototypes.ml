@@ -31,7 +31,7 @@ let collect_function (stm : Ast0.statement) =
 let collect_functions stmt_dots =
   List.concat (List.map collect_function (Ast0.undots stmt_dots))
 
-let get_all_functions minus rule =
+let get_all_functions rule =
   let res =
     match Ast0.unwrap rule with
       Ast0.DECL(stmt) -> collect_function stmt
@@ -39,8 +39,6 @@ let get_all_functions minus rule =
     | _ -> [] in
   List.map
     (function (nm,vl) ->
-      (* for minus code need to rebuild index and mcodekind, for plus
-	 don't need to revuild mcodekind, but do need to rebuild index *)
       (nm,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl))
     res
 
@@ -142,11 +140,8 @@ let rec drop_param_name p =
     | Ast0.UniqueParam(p) -> Ast0.UniqueParam(p)
     | p -> p)
 
-let drop_names minus dec =
-  let dec =
-    if minus
-    then (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement dec
-    else dec in
+let drop_names dec =
+  let dec = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement dec in
   match Ast0.unwrap dec with
     Ast0.Decl(info,uninit) ->
       (match Ast0.unwrap uninit with
@@ -194,20 +189,19 @@ let merge mproto pproto =
 
 let make_rule = function
     (mname,mproto,Some pproto) ->
-      let no_name_mproto = drop_names true mproto in
-      let no_name_pproto = drop_names false pproto in
+      let no_name_mproto = drop_names mproto in
+      let no_name_pproto = drop_names pproto in
       [merge mproto pproto; merge no_name_mproto no_name_pproto]
   | (mname,mproto,None) ->
-      [Ast0toast.statement mproto;Ast0toast.statement(drop_names true mproto)]
+      [Ast0toast.statement mproto;Ast0toast.statement(drop_names mproto)]
 
 let make_rules minus plus =
-  let minus_functions =
-    List.concat (List.map (get_all_functions true) minus) in
+  let minus_functions = List.concat (List.map get_all_functions minus) in
   match minus_functions with
     [] -> None
   | _ ->
       let plus_functions =
-	List.concat (List.map (get_all_functions false) plus) in
+	List.concat (List.map get_all_functions plus) in
       let protos = align minus_functions plus_functions in
       let rules = List.concat (List.map make_rule protos) in
       match rules with

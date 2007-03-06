@@ -411,7 +411,8 @@ let collect_plus_nodes root =
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.anything) list) list =
   List.map
-    (function
+    (function e ->
+      match e with
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_expression_dots e)
@@ -712,6 +713,14 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   | ([],_) -> failwith "minus tree ran out before the plus tree"
 
 let merge minus_list plus_list =
+(*
+  Printf.printf "minus list %s\n"
+    (String.concat " "
+       (List.map (function (x,_) -> string_of_int x) minus_list));
+  Printf.printf "plus list %s\n"
+    (String.concat " "
+       (List.map (function (x,_) -> string_of_int x) plus_list));
+*)
   List.iter
     (function (index,minus_info) ->
       let plus_info = List.assoc index plus_list in

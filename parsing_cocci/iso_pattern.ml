@@ -866,7 +866,8 @@ let rebuild_mcode start_line =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
-    (term,info,ref !index,ref (copy_mcodekind !mcodekind),ty,dots) in
+    (term,info,ref !index,
+     ref (copy_mcodekind !mcodekind),ty,dots) in
 
   let donothing r k e = copy_one (k e) in
 
@@ -876,7 +877,9 @@ let rebuild_mcode start_line =
     copy_one
       (Ast0.rewrap s
 	 (match Ast0.unwrap s with
-	   Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
+	   Ast0.Decl((info,mc),decl) ->
+	     Ast0.Decl((info,copy_mcodekind mc),decl)
+	 | Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
 	     Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
 	 | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
 	     Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
@@ -886,6 +889,11 @@ let rebuild_mcode start_line =
 	 | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
 	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
 		      (info,copy_mcodekind mc))
+	 | Ast0.FunDecl
+	     ((info,mc),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	       Ast0.FunDecl
+		 ((info,copy_mcodekind mc),
+		  stg,ty,name,lp,params,rp,lbrace,body,rbrace)
 	 | s -> s)) in
 
   V0.rebuilder

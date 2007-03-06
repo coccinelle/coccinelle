@@ -88,7 +88,8 @@ branch, so the braces get added in oddly.
 *)
 
 let add_braces orig_s =
-  let s = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
+  let s =
+    (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
   let new_mcodekind =
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->
