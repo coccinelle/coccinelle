@@ -1,3 +1,6 @@
+-----------------------------------------------
+-----------------------------------------------
+
 3c574_cs.c
  * [status] spatch_ok
  param name not updated in prototype of detach function
@@ -20,11 +23,11 @@ atmel_cs.c
  param name not updated in prototype of detach function
 
 avma1_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 avm_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 axnet_cs.c
@@ -36,15 +39,16 @@ bluecard_cs.c
  param name not updated in prototype of detach function
 
 bt3c_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 btuart_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 cm4000_cs.c
  * [status] 
+ wierd initialization not supported by unparser
 
 cm4040_cs.c
  * [status] 
@@ -57,11 +61,11 @@ ds.c
  * [status] 
 
 dtl1_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 elsa_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 fdomain_stub.c
@@ -95,14 +99,14 @@ netwave_cs.c
  param name not updated in prototype of detach function
 
 nmclan_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 nsp_cs.c
  * [status] 
 
 orinoco_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 parport_cs.c
@@ -129,7 +133,7 @@ ray_cs.c
  param name not updated in prototype of detach function
 
 sedlbauer_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 serial_cs.c
@@ -154,7 +158,7 @@ synclink_cs.c
  prototype
 
 teles_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function
 
 vxpocket.c
@@ -167,5 +171,5 @@ wl3501_cs.c
  * [status] 
 
 xirc2ps_cs.c
- * [status] 
+ * [status] spatch_ok
  param name not updated in prototype of detach function

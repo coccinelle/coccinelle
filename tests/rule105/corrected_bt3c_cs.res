@@ -91,7 +91,7 @@ typedef struct bt3c_info_t {
 static void bt3c_config(struct pcmcia_device *link);
 static void bt3c_release(struct pcmcia_device *link);
 
-static void bt3c_detach(struct pcmcia_device *p_dev);
+static void bt3c_detach(struct pcmcia_device *link);
 
 
 /* Transmit states  */
