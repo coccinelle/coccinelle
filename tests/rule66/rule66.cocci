@@ -81,8 +81,9 @@ type T;
 + X = kmalloc(sizeof(*X)+B, C)
 
 @@
+text T
 @@
-- #define chip_t ...
+- #define chip_t T
 
 // 
 // //but julia will not detect that chip_t is a type
