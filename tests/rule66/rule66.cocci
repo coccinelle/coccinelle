@@ -81,7 +81,7 @@ type T;
 + X = kmalloc(sizeof(*X)+B, C)
 
 @@
-text T
+text T;
 @@
 - #define chip_t T
 
