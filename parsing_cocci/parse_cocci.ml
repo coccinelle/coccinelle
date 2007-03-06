@@ -377,6 +377,8 @@ let rec insert_line_end = function
     [] -> []
   | (((PC.TWhen(clt),q) as x)::xs) ->
       x::(find_line_end (token2line x) clt q xs)
+  | (((PC.TDefine(clt),q) as x)::xs) ->
+      x::(find_line_end (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 
 and find_line_end line clt q = function

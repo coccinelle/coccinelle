@@ -444,17 +444,9 @@ and parameterTypeDef p =
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,_) -> mcode print_string name
-  | Ast.Defdots(dots) -> mcode print_string dots
-
-(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rule_elem arity re =
+let rec rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,stg,ty,name,lp,params,rp) ->
       mcode (function _ -> ()) ((),(),bef);
@@ -532,7 +524,7 @@ let rule_elem arity re =
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
 
-let rec statement arity s =
+and statement arity s =
   match Ast.unwrap s with
     Ast.Seq(lbrace,decls,_,body,rbrace) ->
       rule_elem arity lbrace;
@@ -611,6 +603,15 @@ and case_line arity c =
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) code
   | Ast.OptCase(case) -> case_line "?" case
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+and define_body m =
+  match Ast.unwrap m with
+    Ast.DMetaId(name,_) -> mcode print_string name
+  | Ast.DStm(re) -> rule_elem "" re
+
 
 (* for export only *)
 let statement_dots l = dots force_newline (statement "") l

@@ -473,13 +473,13 @@ includes:
 	   (Ast0.wrap
 	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
 			    id2mcode $1)))) }
-| TDefine ident TEllipsis
+| TDefine ident pre_post_decl_statement_and_expression_opt TLineEnd
     { Ast0.wrap
 	(Ast0.DECL
 	   (Ast0.wrap
 	      (Ast0.Define(clt2mcode "#define" $1, $2,
-			   Ast0.wrap(Ast0.Defdots(clt2mcode "..." $3)))))) }
-| TDefine ident TMetaText
+			   Ast0.wrap(Ast0.DStm $3))))) }
+| TDefine ident TMetaText TLineEnd
     { let (nm,pure,clt) = $3 in
       Ast0.wrap
 	(Ast0.DECL

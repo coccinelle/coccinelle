@@ -355,12 +355,12 @@ let classify_variables metavars minirules used_after =
 	Ast.rewrap e (Ast.MetaParamList(name,unitary,inherited))
     | _ -> k e in
 
-  let define_body b =
+  let define_body r b =
     match Ast.unwrap b with
       Ast.DMetaId(name,_) ->
 	let (unitary,_) = classify name in
 	Ast.rewrap b (Ast.DMetaId(name,unitary))
-    | _ -> b in
+    | Ast.DStm(re) -> Ast.rewrap b (Ast.DStm(r.V.rebuilder_rule_elem re)) in
   
   let rule_elem r k e =
     match Ast.unwrap e with
@@ -371,7 +371,7 @@ let classify_variables metavars minirules used_after =
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
     | Ast.Define(def,id,body) ->
-	Ast.rewrap e (Ast.Define(def,id,define_body body))
+	Ast.rewrap e (Ast.Define(def,id,define_body r body))
     | _ -> k e in
 
   let fn = V.rebuilder

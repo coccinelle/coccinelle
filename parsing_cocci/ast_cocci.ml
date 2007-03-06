@@ -377,7 +377,7 @@ and case_line = base_case_line wrap
 
 and base_define_body =
     DMetaId of string mcode * keep_binding
-  | Defdots of string mcode (* ... *)
+  | DStm of rule_elem
 
 and define_body = base_define_body wrap
 

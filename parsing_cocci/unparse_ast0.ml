@@ -337,16 +337,6 @@ and parameterTypeDef p =
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body s =
-  print_context s
-    (function _ ->
-      match Ast0.unwrap s with
-	Ast0.DMetaId(name,_) -> mcode print_string name
-      | Ast0.Defdots(dots) -> mcode print_string dots)
-
-(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let rec statement arity s =
@@ -476,7 +466,17 @@ and case_line arity c =
 	  dots force_newline (statement arity) code
       | Ast0.OptCase(case) -> case_line "?" case)
 
-let statement_dots = dots (function _ -> ()) (statement "")
+and statement_dots l = dots (function _ -> ()) (statement "") l
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+and define_body s =
+  print_context s
+    (function _ ->
+      match Ast0.unwrap s with
+	Ast0.DMetaId(name,_) -> mcode print_string name
+      | Ast0.DStm(stmtdots) -> statement_dots stmtdots)
 
 (* --------------------------------------------------------------------- *)
 (* Top level code *)

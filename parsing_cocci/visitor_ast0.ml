@@ -403,7 +403,7 @@ let combiner bind option_default
   and define_body b =
     match Ast0.unwrap b with
       Ast0.DMetaId(name,_) -> string_mcode name
-    | Ast0.Defdots(d) -> string_mcode d
+    | Ast0.DStm(d) -> statement_dots d
 
   and top_level t =
     let k t =
@@ -800,7 +800,7 @@ let rebuilder = fun
     Ast0.rewrap b
       (match Ast0.unwrap b with
 	Ast0.DMetaId(name,pure) -> Ast0.DMetaId(string_mcode name,pure)
-      | Ast0.Defdots(d) -> Ast0.Defdots(string_mcode d))
+      | Ast0.DStm(d) -> Ast0.DStm(statement_dots d))
 
   and top_level t =
     let k t =

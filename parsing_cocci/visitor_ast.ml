@@ -394,7 +394,7 @@ let combiner bind option_default
   and define_body b =
     match Ast.unwrap b with
       Ast.DMetaId(name,_) -> string_mcode name
-    | Ast.Defdots(d) -> string_mcode d
+    | Ast.DStm(d) -> rule_elem d
 
   and top_level t =
     let k t =
@@ -849,7 +849,7 @@ let rebuilder
     Ast.rewrap b
       (match Ast.unwrap b with
 	Ast.DMetaId(name,keep) -> Ast.DMetaId(string_mcode name,keep)
-      | Ast.Defdots(d) -> Ast.Defdots(string_mcode d))
+      | Ast.DStm(d) -> Ast.DStm(rule_elem d))
 
   and top_level t =
     let k t =

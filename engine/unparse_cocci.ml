@@ -381,20 +381,20 @@ in
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-let define_body m =
+let rec define_body m =
   match Ast.unwrap m with
     Ast.DMetaId(name,_) -> 
-      handle_metavar name (function
-      | (Ast_c.MetaTextVal text) -> pr text
-      | _ -> raise Impossible
-      ) 
+      handle_metavar name
+	(function
+	    Ast_c.MetaTextVal text -> pr text
+	  | _ -> raise Impossible)
 
-  | Ast.Defdots(dots) -> mcode print_string dots in
+  | Ast.DStm(re) -> rule_elem "" re
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rule_elem arity re =
+and rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(_,_,stg,ty,name,lp,params,rp) ->
       print_string arity;

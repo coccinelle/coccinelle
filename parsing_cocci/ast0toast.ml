@@ -487,15 +487,6 @@ and parameterTypeDef p =
 and parameter_list l = dots parameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let define_body m =
-  rewrap m
-    (match Ast0.unwrap m with
-      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,Ast.Nonunitary)
-    | Ast0.Defdots(dots) -> Ast.Defdots(mcode dots))
-
-(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let ctr = ref 0
@@ -752,7 +743,23 @@ and case_line c =
 	Ast.CaseLine(rewrap c (Ast.Case(case,exp,colon)),code)
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
-let statement_dots l = dots statement l
+and statement_dots l = dots statement l
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+and define_body m =
+  rewrap m
+    (match Ast0.unwrap m with
+      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,Ast.Nonunitary)
+    | Ast0.DStm(stmtdots) ->
+	match Ast0.undots stmtdots with
+	  [x] ->
+	    let res = statement x in
+	    (match Ast.unwrap res with
+	      Ast.Atomic(x) -> Ast.DStm(x)
+	    | _ -> failwith "only a single rule_elem supported")
+	| _ -> failwith "only a single rule_elem supported")
     
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

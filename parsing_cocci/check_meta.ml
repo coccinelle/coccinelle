@@ -222,15 +222,15 @@ and parameter_list table minus = dots (parameterTypeDef table minus)
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-let define_body table minus s =
+let rec define_body table minus s =
   match Ast0.unwrap s with
     Ast0.DMetaId(name,_) -> check_table table minus name
-  | Ast0.Defdots(dots) -> ()
+  | Ast0.DStm(stmtdots) -> dots (statement table minus) stmtdots
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec statement table minus s =
+and statement table minus s =
   match Ast0.unwrap s with
     Ast0.Decl(_,decl) -> declaration ID table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement table minus) body

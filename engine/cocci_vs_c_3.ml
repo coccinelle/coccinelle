@@ -2231,29 +2231,13 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
             | _ -> raise Impossible
           )
 
-
-                
-      | A.Defdots (dots),
-        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), [])->
-          tokenf dots iibodyb >>= (fun dots iibodyb -> 
-            return (
-              A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
-              F.Define 
-                ((idb, [defineb;iidb;ieol]),
-                (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []))
-            ))
-
-      | A.Defdots (dots),
-        (B.DefineSimple (B.DefineExpr (expb)), [])->
-
-
-          X.distrf_e dots expb >>= (fun dots expb -> 
-            return (
-              A.Define(definea,ida, (A.Defdots (dots) +> A.rewrap bodya)),
-              F.Define 
-                ((idb, [defineb;iidb;ieol]),
-                (B.DefineSimple (B.DefineExpr (expb)), [])
-            )))
+      | A.DStm (re), b ->
+	  (match (A.unwrap re,b) with
+	    A.Exp(e), (B.DefineSimple (B.DefineExpr (expb)), []) ->
+	      failwith "fill in match on expressions"
+	  | A.Ty(t), _ ->
+	      failwith "fill in match on types"
+	  | _ -> failwith "only types and expressions supported")
 
       | _, _ -> fail
             

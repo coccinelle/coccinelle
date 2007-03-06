@@ -635,26 +635,6 @@ and parameterTypeDef tgt param =
 and parameter_list tgt = dots (parameterTypeDef tgt)
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-let make_define_body =
-  let no_arity x = failwith "specific arity not allowed" in
-  make_opt_unique no_arity no_arity no_arity
-
-let define_body tgt s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,pure) ->
-      let arity =
-	all_same false false tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_define_body s tgt arity (Ast0.DMetaId(name,pure))
-  | Ast0.Defdots(dots) ->
-      let arity =
-	all_same false false tgt (mcode2line dots) [mcode2arity dots] in
-      let dots = mcode dots in
-      make_define_body s tgt arity (Ast0.Defdots(dots))
-
-(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let make_rule_elem =
@@ -921,6 +901,24 @@ and case_line tgt c =
       let code = dots (statement false arity) code in
       make_case_line c tgt arity (Ast0.Case(case,exp,colon,code))
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
+
+(* --------------------------------------------------------------------- *)
+(* CPP code *)
+
+and make_define_body =
+  let no_arity x = failwith "specific arity not allowed" in
+  make_opt_unique no_arity no_arity no_arity
+
+and define_body tgt s =
+  match Ast0.unwrap s with
+    Ast0.DMetaId(name,pure) ->
+      let arity =
+	all_same false false tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_define_body s tgt arity (Ast0.DMetaId(name,pure))
+  | Ast0.DStm(stmtdots) ->
+      let new_stmtdots = dots (statement false tgt) stmtdots in
+      make_define_body s tgt tgt (Ast0.DStm(new_stmtdots))
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

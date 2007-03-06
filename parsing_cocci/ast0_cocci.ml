@@ -291,7 +291,7 @@ and meta = base_meta wrap
 
 and base_define_body =
     DMetaId of string mcode * pure
-  | Defdots of string mcode (* ... *)
+  | DStm of statement dots
 
 and define_body = base_define_body wrap
 

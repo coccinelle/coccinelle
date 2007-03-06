@@ -279,7 +279,7 @@ and case_line = base_case_line wrap
 
 and base_define_body =
     DMetaId of string mcode * pure
-  | Defdots of string mcode (* ... *)
+  | DStm of statement dots
 
 and define_body = base_define_body wrap
 
