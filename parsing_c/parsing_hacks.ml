@@ -472,6 +472,7 @@ let keyword_table = Common.hash_of_list [
   "RLMT_STATIC",   (fun ii -> Tstatic ii); 
   "SISINITSTATIC", (fun ii -> Tstatic ii); 
 
+  "SISIOMEMTYPE",  (fun ii -> TCommentCpp ii); 
 
   (* IF *)
   "BUGLVL", (fun ii -> Tif ii);
@@ -490,6 +491,7 @@ let keyword_table = Common.hash_of_list [
   "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
   "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
   "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
+  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
 
 ]
 
