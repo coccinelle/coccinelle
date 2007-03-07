@@ -98,7 +98,7 @@ let typeC t =
   | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.StructUnionName(kind,name) -> [51]
-  | Ast0.StructUnionDef(kind,name,lb,decls,rb) -> [117]
+  | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
   | Ast0.MetaType(name,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]

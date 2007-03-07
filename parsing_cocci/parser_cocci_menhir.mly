@@ -311,7 +311,7 @@ pure: TPure { true } | /* empty */ { false }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (function arity -> function name -> function pure ->
       !Data.add_exp_meta (Some vl) name pure; [Ast.MetaExpDecl(arity,name)]) }
-| TConstant ty=ioption(const_meta_exp_type)
+| TConstant ty=ioption(meta_exp_type)
     { (function arity -> function name -> function pure ->
       !Data.add_const_meta ty name pure; [Ast.MetaConstDecl(arity,name)]) }
 | TText
@@ -329,12 +329,6 @@ meta_exp_type:
 | TOBrace comma_list(ctype) TCBrace m=list(TMul)
     { List.map (function x -> ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
 	$2 }
-
-const_meta_exp_type:
-  mtype
-    { [Ast0_cocci.ast0_type_to_type $1] }
-| TOBrace comma_list(ctype) TCBrace
-    { List.map Ast0_cocci.ast0_type_to_type $2 }
 
 arity: TBang0 { Ast.UNIQUE }
      | TWhy0  { Ast.OPT }
@@ -361,8 +355,13 @@ generic_ctype:
      | s=struct_or_union i=ident
 	 { Ast0.wrap(Ast0.StructUnionName(s, i)) }
      | s=struct_or_union i=ident l=TOBrace d=struct_decl_list r=TCBrace
-	 { Ast0.wrap(Ast0.StructUnionDef(s, i, clt2mcode "{" l,
+	 { Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
+					 clt2mcode "{" l,
 					 d, clt2mcode "}" r)) }
+     | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
+	 { let (nm,pure,clt) = s in
+	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
+	 Ast0.wrap(Ast0.StructUnionDef(ty,clt2mcode "{" l,d,clt2mcode "}" r)) }
      | p=TTypeId
 	 { try let _ = Hashtbl.find metatypes (id2name p) in
 	 (* this is only possible when we are in a metavar decl which
@@ -370,6 +369,9 @@ generic_ctype:
 	    it will be represented already as a MetaType *)
 	 Ast0.wrap(Ast0.MetaType(id2mcode p,false (*will be ignored*)))
 	 with Not_found -> Ast0.wrap(Ast0.TypeName(id2mcode p)) }
+     | p=TMetaType
+	 { let (nm,pure,clt) = p in
+	 Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) }
 
 struct_or_union:
        s=Tstruct { clt2mcode Ast.Struct s }
@@ -409,25 +411,12 @@ continue_struct_decl_list2(dotter):
 | i=struct_decl r=continue_struct_decl_list(dotter)
     { (function dot_builder -> i)::r }
 
-mtype: // no metavariable, for constant metavariable declarations
-       cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { make_cv cv (pointerify ty m) }
-
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
 	 { pointerify (make_cv cv ty) m }
-     | cv=ioption(const_vol) ty=TMetaType m=list(TMul)
-	 { let (nm,pure,clt) = ty in
-	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
-	 pointerify (make_cv cv ty) m }
 
 fn_ctype: // allows metavariables
-       ty=generic_ctype m=list(TMul)
-	 { pointerify ty m }
-     | ty=TMetaType m=list(TMul)
-	 { let (nm,pure,clt) = ty in
-	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
-	 pointerify ty m }
+       ty=generic_ctype m=list(TMul) { pointerify ty m }
 
 ctype_qualif:
        Tunsigned   { clt2mcode Ast.Unsigned $1 }
@@ -1237,10 +1226,6 @@ aexpr:
       Ast0.wrap(Ast0.MetaExprList(clt2mcode nm clt,pure)) }
   | generic_ctype
       { Ast0.wrap(Ast0.TypeExp($1)) }
-  | TMetaType				(**)
-      { let (nm,pure,clt) = $1 in
-      Ast0.wrap
-	(Ast0.TypeExp(Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)))) }
 
 eexpr_list_start:
     aexpr { [$1] }

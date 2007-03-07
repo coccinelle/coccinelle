@@ -1898,9 +1898,12 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
         else fail
         
 
-    | A.StructUnionDef(sua, sa, lba, declsa, rba), 
+    | A.StructUnionDef(ty, lba, declsa, rba), 
      (B.StructUnion (sbopt, (sub, declsb)), ii) -> 
 
+       failwith "not supported"
+
+	 (*
         (match sbopt with
         | None -> 
             pr2 "warning: anonymous structDef not handled by ast_cocci";
@@ -1923,7 +1926,7 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
               
             else fail
             
-        )
+        ) *)
 
 
 

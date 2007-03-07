@@ -144,8 +144,8 @@ and typeC table minus t =
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC table minus) types
   | Ast0.StructUnionName(su,id) -> ident GLOBAL table minus id
-  | Ast0.StructUnionDef(su,id,lb,decls,rb) ->
-      ident ID table minus id;
+  | Ast0.StructUnionDef(ty,lb,decls,rb) ->
+      typeC table minus ty;
       dots (declaration GLOBAL table minus) decls
   | Ast0.OptType(ty) | Ast0.UniqueType(ty) | Ast0.MultiType(ty) ->
       failwith "unexpected code"

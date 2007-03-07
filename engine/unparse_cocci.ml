@@ -248,8 +248,8 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) -> print_array (ty,lb,size,rb) (function () -> ())
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; ident name; print_string " "
-  | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
-      mcode structUnion kind; ident name; print_string " ";
+  | Ast.StructUnionDef(ty,lb,decls,rb) ->
+      fullType ty;
       mcode print_string lb;
       dots force_newline declaration decls;
       mcode print_string rb

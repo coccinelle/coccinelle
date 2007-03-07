@@ -411,16 +411,15 @@ and top_typeC tgt opt_allowed typ =
       let kind = mcode kind in
       let name = ident false false arity name in
       make_typeC typ tgt arity (Ast0.StructUnionName(kind,name))
-  | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
+  | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       let arity =
-	all_same false opt_allowed tgt (mcode2line kind)
-	  ((mcode2arity kind) :: (List.map mcode2arity [lb;rb])) in
-      let kind = mcode kind in
-      let name = ident false false arity name in
+	all_same false opt_allowed tgt (mcode2line lb)
+	  (List.map mcode2arity [lb;rb]) in
+      let ty = typeC arity ty in
       let lb = mcode lb in
       let decls = dots (declaration false tgt) decls in
       let rb = mcode rb in
-      make_typeC typ tgt arity (Ast0.StructUnionDef(kind,name,lb,decls,rb))
+      make_typeC typ tgt arity (Ast0.StructUnionDef(ty,lb,decls,rb))
   | Ast0.TypeName(name) ->
       let arity =
 	all_same false opt_allowed tgt (mcode2line name) [mcode2arity name] in

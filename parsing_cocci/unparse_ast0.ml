@@ -214,9 +214,8 @@ and typeC t =
 	  print_array (ty,lb,size,rb) (function _ -> ())
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind; ident name; print_string " "
-      | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
-	  mcode U.structUnion kind; ident name; print_string " ";
-	  mcode print_string lb;
+      | Ast0.StructUnionDef(ty,lb,decls,rb) ->
+	  typeC ty; mcode print_string lb;
 	  dots force_newline declaration decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "

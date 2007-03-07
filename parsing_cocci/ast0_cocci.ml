@@ -125,7 +125,7 @@ and base_typeC =
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | StructUnionName of Ast.structUnion mcode * ident (* name *)
-  | StructUnionDef  of Ast.structUnion mcode * ident (* name *) *
+  | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of string mcode * pure
@@ -416,8 +416,7 @@ let rec ast0_type_to_type ty =
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
-  | StructUnionName(su,tag)
-  | StructUnionDef(su,tag,_,_,_) ->
+  | StructUnionName(su,tag) ->
       let tag =
 	match unwrap tag with
 	  Id(tag) -> tag
@@ -429,6 +428,7 @@ let rec ast0_type_to_type ty =
 	     tag)
 	| _ -> failwith "unexpected struct/union type name" in
       Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
+  | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       Type_cocci.MetaType(unwrap_mcode name,Type_cocci.Unitary,false)

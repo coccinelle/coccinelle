@@ -312,9 +312,8 @@ and typeC ty =
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; ident name; print_string " "
-  | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
-      mcode structUnion kind; ident name; print_string " ";
-      mcode print_string lb;
+  | Ast.StructUnionDef(ty,lb,decls,rb) ->
+      fullType ty; mcode print_string lb;
       dots force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "

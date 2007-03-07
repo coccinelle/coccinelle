@@ -384,9 +384,9 @@ let rec equal_typeC t1 t2 =
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
-  | (Ast0.StructUnionDef(kind1,_,lb1,_,rb1),
-     Ast0.StructUnionDef(kind2,_,lb2,_,rb2)) ->
-       equal_mcode kind1 kind2 && equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.StructUnionDef(_,lb1,_,rb1),
+     Ast0.StructUnionDef(_,lb2,_,rb2)) ->
+       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaType(name1,_),Ast0.MetaType(name2,_)) -> equal_mcode name1 name2
   | (Ast0.DisjType _,_) | (_,Ast0.DisjType _) ->

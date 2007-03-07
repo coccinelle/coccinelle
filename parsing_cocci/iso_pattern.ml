@@ -420,14 +420,11 @@ let match_maker context_required whencode_allowed =
 	       if mcode_equal kinda kindb
 	       then match_ident namea nameb
 	       else return false
-	  | (Ast0.StructUnionDef(kinda,namea,_,declsa,_),
-	     Ast0.StructUnionDef(kindb,nameb,_,declsb,_)) ->
-	       if mcode_equal kinda kindb
-	       then
-		 conjunct_bindings (match_ident namea nameb)
-		   (match_dots match_decl no_list do_nolist_match
-		      declsa declsb)
-	       else return false
+	  | (Ast0.StructUnionDef(tya,_,declsa,_),
+	     Ast0.StructUnionDef(tyb,_,declsb,_)) ->
+	       conjunct_bindings
+		 (match_typeC tya tyb)
+		 (match_dots match_decl no_list do_nolist_match declsa declsb)
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      return (mcode_equal namea nameb)
 	  | (Ast0.DisjType(_,typesa,_,_),Ast0.DisjType(_,typesb,_,_)) ->

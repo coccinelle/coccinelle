@@ -323,12 +323,11 @@ and typeC t =
   | Ast0.StructUnionName(kind,name) ->
       let name = ident name in
       mkres t (Ast0.StructUnionName(kind,name)) (promote_mcode kind) name
-  | Ast0.StructUnionDef(kind,name,lb,decls,rb) ->
-      let name = ident name in
+  | Ast0.StructUnionDef(ty,lb,decls,rb) ->
+      let ty = typeC ty in
       let decls =
 	dots is_decl_dots (Some(promote_mcode lb)) declaration decls in
-      mkres t (Ast0.StructUnionDef(kind,name,lb,decls,rb))
-	(promote_mcode kind) (promote_mcode rb)
+      mkres t (Ast0.StructUnionDef(ty,lb,decls,rb)) ty (promote_mcode rb)
   | Ast0.TypeName(name) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.MetaType(name,_) as ut ->

@@ -198,10 +198,10 @@ let combiner bind option_default
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       | Ast.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (ident name)
-      | Ast.StructUnionDef(kind,name,lb,decls,rb) ->
+      | Ast.StructUnionDef(ty,lb,decls,rb) ->
 	  multibind
-	    [struct_mcode kind; ident name; string_mcode lb;
-	      declaration_dots decls; string_mcode rb]
+	    [fullType ty; string_mcode lb; declaration_dots decls;
+	      string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.MetaType(name,_,_) -> string_mcode name in
     tyfn all_functions k ty
@@ -643,8 +643,8 @@ let rebuilder
 		      get_option expression size, string_mcode rb)
 	| Ast.StructUnionName(kind,name) ->
 	    Ast.StructUnionName (struct_mcode kind, ident name)
-	| Ast.StructUnionDef(kind,name,lb,decls,rb) ->
-	    Ast.StructUnionDef (struct_mcode kind, ident name,
+	| Ast.StructUnionDef(ty,lb,decls,rb) ->
+	    Ast.StructUnionDef (fullType ty,
 				string_mcode lb, declaration_dots decls,
 				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
