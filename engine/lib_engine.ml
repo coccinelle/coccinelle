@@ -16,7 +16,6 @@ type predicate =
   | Match of Ast_cocci.rule_elem
   | Label of string
   | PrefixLabel of string
-  | TypeOf of string(*expression metavariable name*) * string(*its type*)
 
 type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
 

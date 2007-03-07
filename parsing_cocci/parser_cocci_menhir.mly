@@ -330,13 +330,8 @@ meta_exp_type:
 	      (Printf.sprintf "%s: bad type for expression metavariable"
 		 name) in
       [ty_pointerify
-	(if !Data.in_iso
-	then
-	(* unbound type variables only allowed in isomorphisms *)
-	  try
-	    let _ = Hashtbl.find metatypes name in Type_cocci.MetaType name
-	  with Not_found -> fail()
-	else fail())
+	(try let _ = Hashtbl.find metatypes name in Type_cocci.MetaType name
+	with Not_found -> fail())
 	m] }
 | ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
@@ -377,7 +372,13 @@ generic_ctype:
      | s=struct_or_union i=ident l=TOBrace d=struct_decl_list r=TCBrace
 	 { Ast0.wrap(Ast0.StructUnionDef(s, i, clt2mcode "{" l,
 					 d, clt2mcode "}" r)) }
-     | p=TTypeId { Ast0.wrap(Ast0.TypeName(id2mcode p)) }
+     | p=TTypeId
+	 { try let _ = Hashtbl.find metatypes (id2name p) in
+	 (* this is only possible when we are in a metavar decl which
+	    has previously declared the type metavariable.  Otherwise,
+	    it will be represented already as a MetaType *)
+	 Ast0.wrap(Ast0.MetaType(id2mcode p,false (*will be ignored*)))
+	 with Not_found -> Ast0.wrap(Ast0.TypeName(id2mcode p)) }
 
 struct_or_union:
        s=Tstruct { clt2mcode Ast.Struct s }

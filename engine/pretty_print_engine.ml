@@ -29,8 +29,6 @@ let pp_predicate = function
   | Match re -> Pretty_print_cocci.print_rule_elem re
   | Label s -> pp "Label("; pp s; pp ")"
   | PrefixLabel s -> pp "PrefixLabel("; pp s; pp ")"
-  | TypeOf(metaexp,metaty) ->
-      pp "TypeOf("; pp metaexp; pp ","; pp metaty; pp ")"
 
 and pp_binding2 subst = 
   begin

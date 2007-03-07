@@ -301,29 +301,18 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let make_match n label guard code =
-  let main_code =
-    let v = fresh_var() in
-    if contains_modif code && not guard
-    then
-      wrapExists n true
-	(v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
-    else
-      match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
-	(true,_,[]) | (_,true,_) ->
-	  predmaker guard (Lib_engine.Match(code),CTL.Control) n label
-      | _ ->
-	  wrapExists n true
-	    (v,
-	     predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label) in
-  let typed_metaexps = Ast.get_typed_metaexps code in
-  List.fold_left
-    (function rest ->
-      function (metaexp,typevar) ->
-	wrapAnd n CTL.NONSTRICT
-	  (rest,
-	   predmaker guard (Lib_engine.TypeOf(metaexp,typevar),CTL.Control)
-	     n label))
-    main_code typed_metaexps
+  let v = fresh_var() in
+  if contains_modif code && not guard
+  then
+    wrapExists n true
+      (v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
+  else
+    match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
+      (true,_,[]) | (_,true,_) ->
+	predmaker guard (Lib_engine.Match(code),CTL.Control) n label
+    | _ ->
+	wrapExists n true
+	  (v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label)
 
 let make_raw_match n label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) n label
