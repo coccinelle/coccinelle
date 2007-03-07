@@ -197,11 +197,18 @@ let main () =
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
 
+
+    if !iso_file <> "" 
+    then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
+    if !cocci_file <> ""
+    then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
+
     let timeout_fn =
       match !timeout with
 	Some x -> Common.timeout_function x
       |	None -> (function f -> f()) in
     timeout_fn (fun () -> 
+
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
@@ -216,6 +223,8 @@ let main () =
           then Common.new_temp_file "cocci-output" ".c" 
           else !default_output_file
         in
+
+
         Testing.testone x !compare_with_expected !iso_file output_file
 
     | []  when !testall_mode -> 
@@ -285,9 +294,6 @@ let main () =
             if not (file =~ ".*\\.cocci") 
             then pr2 "warning: seems not a .cocci file";
 
-            if !iso_file <> "" 
-            then 
-              iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
             let iso_file = if !iso_file = "" then None else Some !iso_file in
 
             let (xs,_,_) = Cocci.sp_from_file file iso_file  in
@@ -420,11 +426,6 @@ let main () =
 
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -cocci_file <filename>";
-
-        cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
-
-        if !iso_file <> "" 
-        then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
 
 
         (* todo?: for iso could try to go back the parent dir recursively to

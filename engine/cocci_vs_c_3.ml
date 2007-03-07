@@ -432,9 +432,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
         | Some tas, Some tb -> 
             tas +> List.fold_left (fun acc ta ->  
               acc >||> (
-                if Types.compatible_type ta tb
-                then return ((),())
-                else fail
+                compatible_type ta tb
               )) fail
         | Some _, None -> 
             pr2_memo ("I don't have the type information. Certainly a pb in " ^
@@ -1946,6 +1944,104 @@ and fullType_optional_allminus allminus tya retb =
       fullType tya retb >>= (fun tya retb -> 
         return (Some tya, retb)
       )
+
+
+
+(*---------------------------------------------------------------------------*)
+and compatible_type a b = 
+  let ok  = return ((),()) in
+
+  match a, b with
+  | Type_cocci.BaseType (a, signa), (qua, (B.BaseType b,ii)) -> 
+      (match a, b with
+      | Type_cocci.VoidType, B.Void -> 
+          assert (signa = None);
+          ok
+      | Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
+          ok
+      | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
+          compatible_sign signa signb 
+      | Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) -> 
+          compatible_sign signa signb
+      | Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) -> 
+          compatible_sign signa signb
+      | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
+          compatible_sign signa signb
+      | _, B.IntType (B.Si (signb, B.CLongLong)) -> 
+          pr2 "no longlong in cocci";
+          fail
+      | Type_cocci.FloatType, B.FloatType B.CFloat -> assert (signa = None); 
+          ok
+      | Type_cocci.DoubleType, B.FloatType B.CDouble -> assert (signa = None); 
+          ok
+      | _, B.FloatType B.CLongDouble -> 
+          pr2 "no longdouble in cocci";
+          fail
+      | Type_cocci.BoolType, _ -> failwith "no booltype in C"
+      | _ -> fail
+  
+      )
+  | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
+      compatible_type a b
+  | Type_cocci.FunctionPointer a, _ ->
+      failwith
+	"TODO: function pointer type doesn't store enough information to determine compatability"
+  | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) -> (* no size info for cocci *)
+      compatible_type a b
+  | Type_cocci.StructUnionName (sua, sa), (qub, (B.StructUnionName (sub, sb),ii)) -> 
+      if equal_structUnion_type_cocci sua sub && sa = sb
+      then ok
+      else fail
+  | Type_cocci.TypeName sa, (qub, (B.TypeName sb, ii)) -> 
+      if sa = sb 
+      then ok
+      else fail
+
+  | Type_cocci.ConstVol (qua, a), (qub, b) -> 
+      if 
+        (match qua with 
+        | Type_cocci.Const -> (fst qub).B.const
+        | Type_cocci.Volatile -> (fst qub).B.volatile
+        )
+      then 
+        compatible_type a (qub, b)
+      else fail
+
+  | Type_cocci.MetaType        ida, typb -> 
+      let keep = Ast_cocci.Saved in
+      let inherited = false in
+      
+      X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  
+        ok
+      )
+
+
+
+  (* for metavariables of type expression *^* *)
+  | Type_cocci.Unknown , _ -> ok
+
+  | _ -> fail
+
+and compatible_sign signa signb = 
+  let ok  = return ((),()) in
+  match signa, signb with
+  | None, B.Signed 
+  | Some Type_cocci.Signed, B.Signed
+  | Some Type_cocci.Unsigned, B.UnSigned
+      -> ok
+  | _ -> fail
+
+
+and equal_structUnion_type_cocci a b = 
+  match a, b with
+  | Type_cocci.Struct, B.Struct -> true
+  | Type_cocci.Union,  B.Union -> true
+  | _, _ -> false
+
+
+
+
+
 
 (*****************************************************************************)
 (* Entry points *)

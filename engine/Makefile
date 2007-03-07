@@ -3,7 +3,7 @@ CTLTARGET=engine
 
 SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 	  check_exhaustive_pattern.ml \
-	  types.ml isomorphisms_c_c.ml \
+	  isomorphisms_c_c.ml \
 	  check_reachability.ml \
           cocci_vs_c_3.ml pattern3.ml sgrep.ml transformation3.ml  \
 	  unparse_cocci.ml unparse_c.ml \
