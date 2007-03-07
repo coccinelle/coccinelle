@@ -517,7 +517,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
         (match expr with
         | B.Constant cst -> Some (Left cst)
         | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
-            pr2 ("I consider " ^ idb ^ " as a constant");
+            pr2 ("warning: I consider " ^ idb ^ " as a constant");
             Some (Right idb)
         | _ -> None
         )
