@@ -145,8 +145,8 @@ let iso_adjust fn first rest =
     front::after -> (fn first::front)::after
   | _ -> failwith "not possible"
 
+(* used locally, because we can't access the real tables in the lexer *)
 let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
-let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %}
 
 
@@ -231,6 +231,9 @@ let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %left TPlus TMinus
 %left TMul TDiv TMod 
 
+%start reinit
+%type <unit> reinit
+
 %start minus_main 
 %type <Ast0_cocci.rule> minus_main
 
@@ -245,6 +248,7 @@ let typenames = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 
 %%
 
+reinit: { Hashtbl.clear metatypes }
 minus_main: minus_body EOF { $1 } | minus_body TArobArob { $1 }
 plus_main: plus_body EOF { $1 } | plus_body TArobArob { $1 }
 meta_main: metadec* TArobArob { List.concat($1) }
@@ -316,24 +320,11 @@ pure: TPure { true } | /* empty */ { false }
 | TTypedef
     { (function arity -> function name -> function pure ->
       if arity = Ast.NONE && pure = false
-      then (Hashtbl.add typenames name (); !Data.add_type_name name; [])
+      then (!Data.add_type_name name; [])
       else failwith "bad typedef") }
 
 meta_exp_type:
-  pure_ident m=list(TMul)
-    { let name = id2name $1 in
-      let fail _ =
-	try let _ = Hashtbl.find typenames name in Type_cocci.TypeName name
-	with
-	  Not_found ->
-	    failwith
-	      (Printf.sprintf "%s: bad type for expression metavariable"
-		 name) in
-      [ty_pointerify
-	(try let _ = Hashtbl.find metatypes name in Type_cocci.MetaType name
-	with Not_found -> fail())
-	m] }
-| ctype
+  ctype
     { [Ast0_cocci.ast0_type_to_type $1] }
 | TOBrace comma_list(ctype) TCBrace m=list(TMul)
     { List.map (function x -> ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)

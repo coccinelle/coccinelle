@@ -510,6 +510,11 @@ let pop2 l =
   l := List.tl !l;
   v
 
+let reinit _ =
+  PC.reinit (function _ -> PC.TArobArob (* a handy token *))
+    (Lexing.from_function
+       (function buf -> function n -> raise Common.Impossible))
+
 let parse_one parsefn file toks =
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
@@ -520,26 +525,26 @@ let parse_one parsefn file toks =
       v in
 
   let lexbuf_fake =
-    Lexing.from_function (function buf -> function n -> raise Common.Impossible)
+    Lexing.from_function
+      (function buf -> function n -> raise Common.Impossible)
   in
+
+  reinit();
 
   try parsefn lexer_function lexbuf_fake 
   with 
     Lexer_cocci.Lexical s ->
-      pr2
-	(pr "lexical error %s\n =%s\n" s
-	   (Common.error_message file (get_s_starts !cur_tok) ));
-      failwith ""
+      failwith
+	(Printf.sprintf "lexical error %s\n =%s\n" s
+	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Parser_cocci_menhir.Error ->
-      pr2
-	(pr "parse error \n = %s\n" 
-	   (Common.error_message file (get_s_starts !cur_tok) ));
-      failwith ""
+      failwith
+	(Printf.sprintf "parse error \n = %s\n" 
+	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Semantic_cocci.Semantic s ->
-      pr2
-	(pr "semantic error %s\n =%s\n" s
-	   (Common.error_message file (get_s_starts !cur_tok) ));
-      failwith ""
+      failwith
+	(Printf.sprintf "semantic error %s\n =%s\n" s
+	   (Common.error_message file (get_s_starts !cur_tok) ))
 
   | e -> raise e
 
@@ -547,7 +552,7 @@ let prepare_tokens tokens =
   insert_line_end (find_function_names (detect_types tokens))
 
 let parse file =
-  Lexer_cocci.init ();
+  Printf.printf "starting %s\n" file;
   let table = Common.full_charpos_to_pos file in
   let lexbuf = Lexing.from_channel (open_in file) in
   match tokens_all table file false lexbuf [PC.TArobArob] with 
@@ -559,6 +564,11 @@ let parse file =
 	  tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
 	let tokens = detect_types tokens in
+	(*
+	Printf.printf "meta tokens\n";
+	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+	Printf.printf "\n\n";
+	*)
 	let metavars = parse_one PC.meta_main file tokens in
 	(* get transformation rules *)
 	let (more,tokens) =
@@ -607,7 +617,6 @@ let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 let parse_iso = function
     None -> []
   | Some file ->
-      Lexer_cocci.init ();
       let table = Common.full_charpos_to_pos file in
       let lexbuf = Lexing.from_channel (open_in file) in
       (match tokens_all table file false lexbuf [PC.TArobArob] with
@@ -620,6 +629,11 @@ let parse_iso = function
 	      tokens_all table file true lexbuf [PC.TArobArob] in
 	    Data.in_meta := false;
 	    let tokens = detect_types tokens in
+            (*
+	    Printf.printf "iso meta tokens\n";
+	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+	    Printf.printf "\n\n";
+	    *)
 	    let iso_metavars = parse_one PC.meta_main file tokens in
 	    (* get the rule *)
 	    let (more,tokens) =
@@ -630,6 +644,11 @@ let parse_iso = function
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
 	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
+            (*
+	    Printf.printf "iso tokens\n";
+	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+	    Printf.printf "\n\n";
+	    *)
 	    let entry = parse_one PC.iso_main file tokens in
 	    if more
 	    then (* The code below allows a header like Statement list,
@@ -645,12 +664,12 @@ let parse_iso = function
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
+  Lexer_cocci.init ();
   let (minus,plus) = parse file in
-  (!Data.clear_meta)();
+  Lexer_cocci.init ();
   Data.in_iso := true;
   let isos = parse_iso isofile in
   Data.in_iso := false;
-  (!Data.clear_meta)();
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
     List.concat

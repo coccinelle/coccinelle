@@ -160,7 +160,7 @@ let init _ =
   line := 1;
   logical_line := 0;
   in_atat := false;
-  Data.clear_meta := (function _ -> Hashtbl.clear metavariables);
+  Hashtbl.clear metavariables; Hashtbl.clear type_names;
   Data.add_id_meta :=
     (function name -> function pure ->
       let fn clt = TMetaId(name,pure,clt) in
