@@ -368,7 +368,7 @@ let flow_to_ast a =
 (* --------------------------------------------------------------------- *)
 
 let fake_line = {Ast_cocci.line = -1; Ast_cocci.column = -1}
-let wrap ast = (ast, -1, [], [], [], [], [], Ast_cocci.NoDots)
+let wrap ast = (ast, -1, [], [], [], [], Ast_cocci.NoDots)
 
 let put_no_pos_everywhere decl =
   let mcode (x, info, mck) = 

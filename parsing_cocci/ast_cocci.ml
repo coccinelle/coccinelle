@@ -6,7 +6,6 @@ type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
        string list (*inherited vars*) * string list (*witness vars*) *
-       (string * string) list (*metavars (1) typed by metavars (2)*) *
        dots_bef_aft)
 
 and 'a befaft =
@@ -25,6 +24,9 @@ and 'a mcode = 'a * info * mcodekind
  and pos = NoPos | DontCarePos | FixPos of (int * int)
 
 and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
+
+and inherited = Type_cocci.inherited
+and keep_binding = Type_cocci.keep_binding
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -46,13 +48,6 @@ and metavar =
   | MetaFuncDecl of arity * string (* name *)
   | MetaLocalFuncDecl of arity * string (* name *)
   | MetaTextDecl of arity * string (* name *)
-
-and inherited = bool (* true if inherited from a previous rule *)
-
-(* true if a metavariable occurs more than once, and thus we need to keep
-track of its binding.  false otherwise *)
-and keep_binding = Unitary (* need no info *)
-  | Nonunitary (* need an env entry *) | Saved (* need a witness *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -427,30 +422,29 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,fresh,inherited,saved,tymetas,d) x =
-  (x,l,fvs,fresh,inherited,saved,tymetas,d)
-let unwrap (x,_,_,_,_,_,_,_) = x
+let rewrap (_,l,fvs,fresh,inherited,saved,d) x =
+  (x,l,fvs,fresh,inherited,saved,d)
+let unwrap (x,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
-let get_line (_,l,_,_,_,_,_,_) = l
+let get_line (_,l,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
-let get_fvs (_,_,fvs,_,_,_,_,_) = fvs
-let get_fresh (_,_,_,fresh,_,_,_,_) = fresh
-let get_inherited (_,_,_,_,inherited,_,_,_) = inherited
-let get_saved (_,_,_,_,_,saved,_,_) = saved
-let get_typed_metaexps (_,_,_,_,_,_,tymetas,_) = tymetas
-let get_dots_bef_aft (_,_,_,_,_,_,_,d) = d
-let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,tymetas,_) d =
-  (x,l,fvs,fresh,inherited,saved,tymetas,d)
+let get_fvs (_,_,fvs,_,_,_,_) = fvs
+let get_fresh (_,_,_,fresh,_,_,_) = fresh
+let get_inherited (_,_,_,_,inherited,_,_) = inherited
+let get_saved (_,_,_,_,_,saved,_) = saved
+let get_dots_bef_aft (_,_,_,_,_,_,d) = d
+let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,_) d =
+  (x,l,fvs,fresh,inherited,saved,d)
 
 (* --------------------------------------------------------------------- *)
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  (MetaRuleElem((s,{ line = 0; column = 0 },d),Unitary,false),
-   0, fvs, fresh, inh, [], [], NoDots)
+  (MetaRuleElem((s,{ line = 0; column = 0 },d),Type_cocci.Unitary,false),
+   0, fvs, fresh, inh, [], NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  (MetaDecl((s,{ line = 0; column = 0 },d),Unitary,false), 0, fvs, fresh, inh,
-   [], [], NoDots)
+  (MetaDecl((s,{ line = 0; column = 0 },d),Type_cocci.Unitary,false), 0,
+   fvs, fresh, inh, [], NoDots)
 
 (* --------------------------------------------------------------------- *)
 

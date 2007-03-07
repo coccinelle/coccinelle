@@ -121,9 +121,9 @@ let rec ident i =
   | Ast.MultiIdent(id) -> print_string "\\+"; ident id
 
 and print_unitary = function
-    Ast.Unitary -> print_string "unitary"
-  | Ast.Nonunitary -> print_string "nonunitary"
-  | Ast.Saved -> print_string "saved"
+    Type_cocci.Unitary -> print_string "unitary"
+  | Type_cocci.Nonunitary -> print_string "nonunitary"
+  | Type_cocci.Saved -> print_string "saved"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

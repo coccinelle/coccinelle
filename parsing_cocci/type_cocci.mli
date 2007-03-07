@@ -1,3 +1,7 @@
+type inherited = bool (* true if inherited *)
+type keep_binding = Unitary (* need no info *)
+  | Nonunitary (* need an env entry *) | Saved (* need a witness *)
+
 type typeC = 
     ConstVol        of const_vol * typeC
   | BaseType        of baseType * sign option
@@ -6,7 +10,7 @@ type typeC =
   | Array           of typeC (* drop size info *)
   | StructUnionName of structUnion * string
   | TypeName        of string
-  | MetaType        of string
+  | MetaType        of string * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 
 and tagged_string = string

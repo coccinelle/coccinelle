@@ -430,7 +430,8 @@ let rec ast0_type_to_type ty =
 	| _ -> failwith "unexpected struct/union type name" in
       Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
-  | MetaType(name,_) -> Type_cocci.MetaType(unwrap_mcode name)
+  | MetaType(name,_) ->
+      Type_cocci.MetaType(unwrap_mcode name,Type_cocci.Unitary,false)
   | DisjType(_,types,_,_) -> failwith "unexpected DisjType"
   | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
       ast0_type_to_type ty

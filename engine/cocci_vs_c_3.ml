@@ -2065,9 +2065,7 @@ and compatible_type a b =
         compatible_type a (qub, b)
       else fail
 
-  | Type_cocci.MetaType        ida, typb -> 
-      let keep = Ast_cocci.Unitary in
-      let inherited = false in
+  | Type_cocci.MetaType        (ida,keep,inherited), typb -> 
       
       X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  
         ok

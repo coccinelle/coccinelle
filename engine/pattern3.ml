@@ -206,7 +206,7 @@ module XMATCH = struct
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar *)
   let check_add_metavars_binding keep inherited = fun (k, valu) binding ->
-  if not (keep = Ast_cocci.Unitary)
+  if not (keep = Type_cocci.Unitary)
   then
     (match Common.optionise (fun () -> binding +> List.assoc k) with
     | Some (valu') ->

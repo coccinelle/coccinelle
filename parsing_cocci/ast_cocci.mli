@@ -6,7 +6,6 @@ type line = int
 type 'a wrap =
     ('a * line * string list (*free vars*) * string list (*fresh vars*) *
        string list (*inherited vars*) * string list (*witness vars*) *
-       (string * string) list (*metavars (1) typed by metavars (2)*) *
        dots_bef_aft)
 
 and 'a befaft =
@@ -25,6 +24,9 @@ and 'a mcode = 'a * info * mcodekind
  and pos = NoPos | DontCarePos | FixPos of (int * int)
 
 and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
+
+and inherited = Type_cocci.inherited
+and keep_binding = Type_cocci.keep_binding
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -46,9 +48,6 @@ and metavar =
   | MetaFuncDecl of arity * string (* name *)
   | MetaLocalFuncDecl of arity * string (* name *)
   | MetaTextDecl of arity * string (* name *)
-
-and inherited = bool
-and keep_binding = Unitary | Nonunitary | Saved
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -427,7 +426,6 @@ val get_fvs : 'a wrap -> string list
 val get_fresh : 'a wrap -> string list
 val get_inherited : 'a wrap -> string list
 val get_saved : 'a wrap -> string list
-val get_typed_metaexps : 'a wrap -> (string * string) list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 

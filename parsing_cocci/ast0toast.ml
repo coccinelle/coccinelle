@@ -7,6 +7,8 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
 
+let nonunitary = Type_cocci.Nonunitary
+
 (* --------------------------------------------------------------------- *)
 (* Move plus tokens from the MINUS and CONTEXT structured nodes to the
 corresponding leftmost and rightmost mcodes *)
@@ -213,9 +215,9 @@ let mcode(term,_,info,mcodekind) =
 (* Dots *)
 
 let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [], Ast.NoDots)
+  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], Ast.NoDots)
 let tokenwrap (_,info,_) ast =
-  (ast, info.Ast.line, [], [], [], [], [], Ast.NoDots)
+  (ast, info.Ast.line, [], [], [], [], Ast.NoDots)
 
 let dots fn d =
   rewrap d
@@ -231,10 +233,10 @@ let rec ident i =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,Ast.Nonunitary,false)
-    | Ast0.MetaFunc(name,_) -> Ast.MetaFunc(mcode name,Ast.Nonunitary,false)
+    | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,nonunitary,false)
+    | Ast0.MetaFunc(name,_) -> Ast.MetaFunc(mcode name,nonunitary,false)
     | Ast0.MetaLocalFunc(name,_) ->
-	Ast.MetaLocalFunc(mcode name,Ast.Nonunitary,false)
+	Ast.MetaLocalFunc(mcode name,nonunitary,false)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
     | Ast0.MultiIdent(id) -> Ast.MultiIdent(ident id))
@@ -287,12 +289,12 @@ let rec expression e =
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
     | Ast0.MetaConst(name,ty,_) ->
-	Ast.MetaConst(mcode name,Ast.Nonunitary,ty,false)
-    | Ast0.MetaErr(name,_)  -> Ast.MetaErr(mcode name,Ast.Nonunitary,false)
+	Ast.MetaConst(mcode name,nonunitary,ty,false)
+    | Ast0.MetaErr(name,_)  -> Ast.MetaErr(mcode name,nonunitary,false)
     | Ast0.MetaExpr(name,ty,_)  ->
-	Ast.MetaExpr(mcode name,Ast.Nonunitary,ty,false)
+	Ast.MetaExpr(mcode name,nonunitary,ty,false)
     | Ast0.MetaExprList(name,_) ->
-	Ast.MetaExprList(mcode name,Ast.Nonunitary,false)
+	Ast.MetaExprList(mcode name,nonunitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode) ->
@@ -357,7 +359,7 @@ and typeC t =
 				       dots declaration decls,mcode rb)))
     | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
     | Ast0.MetaType(name,_) ->
-	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,Ast.Nonunitary,false)))
+	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,nonunitary,false)))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
@@ -377,7 +379,7 @@ and base_typeC t =
 	Ast.StructUnionDef(mcode kind,ident name,
 			   mcode lb,dots declaration decls,mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-    | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,Ast.Nonunitary,false)
+    | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,nonunitary,false)
     | _ -> failwith "unexpected type")
     
 (* --------------------------------------------------------------------- *)
@@ -475,9 +477,9 @@ and parameterTypeDef p =
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
     | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
-    | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,Ast.Nonunitary,false)
+    | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,nonunitary,false)
     | Ast0.MetaParamList(name,_) ->
-	Ast.MetaParamList(mcode name,Ast.Nonunitary,false)
+	Ast.MetaParamList(mcode name,nonunitary,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)
@@ -498,13 +500,13 @@ let get_ctr _ =
 let rec statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
        match Ast0.get_dots_bef_aft s with
 	 Ast0.NoDots -> Ast.NoDots
        | Ast0.BetweenDots s ->
 	   Ast.BetweenDots (statement seqible s,get_ctr())) in
     let local_rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
        Ast.NoDots) in
     rewrap s
       (match Ast0.unwrap s with
@@ -584,10 +586,10 @@ let rec statement s =
 	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
 	  Ast.Atomic(local_rewrap s
-		       (Ast.MetaStmt(mcode name,Ast.Nonunitary,seqible,false)))
+		       (Ast.MetaStmt(mcode name,nonunitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
 	  Ast.Atomic(local_rewrap s
-		       (Ast.MetaStmtList(mcode name,Ast.Nonunitary,false)))
+		       (Ast.MetaStmtList(mcode name,nonunitary,false)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
       | Ast0.Ty(ty) ->
@@ -751,7 +753,7 @@ and statement_dots l = dots statement l
 and define_body m =
   rewrap m
     (match Ast0.unwrap m with
-      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,Ast.Nonunitary)
+      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,nonunitary)
     | Ast0.DStm(stmtdots) ->
 	match Ast0.undots stmtdots with
 	  [x] ->

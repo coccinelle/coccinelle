@@ -329,7 +329,7 @@ module XTRANS = struct
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
   let envf keep _inherited (s, value) = fun env -> 
-    if keep = Ast_cocci.Saved
+    if keep = Type_cocci.Saved
     then (
       try Some (s, List.assoc s env)
       with Not_found -> 
