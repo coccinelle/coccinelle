@@ -28,6 +28,11 @@ val vk_param : visitor_c -> parameterType -> unit
 val vk_params_splitted : 
   visitor_c -> (parameterType, il) Common.either list -> unit
 
+val vk_struct_fields : visitor_c -> field wrap list -> unit
+
+
+
+
 type 'a inout = 'a -> 'a
 type visitor_c_s = {
   kexpr_s      : expression     inout * visitor_c_s -> expression     inout;
@@ -67,3 +72,6 @@ val vk_params_splitted_s :
   (parameterType, il) Common.either list
 
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
+
+val vk_struct_fields_s : visitor_c_s -> 
+  field wrap list -> field wrap list

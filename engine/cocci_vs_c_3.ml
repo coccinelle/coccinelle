@@ -353,6 +353,9 @@ module type PARAM =
       (string A.mcode, Ast_c.parameterType) matcher
     val distrf_node : (string A.mcode, Control_flow_c.node) matcher
 
+    val distrf_struct_fields : 
+      (string A.mcode, B.field B.wrap list) matcher
+
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
@@ -409,7 +412,7 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
  *  - arguments
  *  - parameters
  *  - declaration
- *  - initializers
+ *  - initialisers
  *  - type       
  *  - node
  *)
@@ -846,7 +849,7 @@ and (arguments: sequence ->
  * in the Ecomma matching rule.
  * 
  * old: Must do some try, for instance when f(...,X,Y,...) have to
- * test the transfo for all the combinaitions (and if multiple transfo
+ * test the transfo for all the combinaitions    and if multiple transfo
  * possible ? pb ? => the type is to return a expression option ? use
  * some combinators to help ?
  * update: with the tag-SP approach, no more a problem.
@@ -1164,12 +1167,6 @@ and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
 and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
  fun (mckstart, allminus, decla) declb -> 
 
-(* XXX
- fun decla (B.DeclList (xs, _)) -> 
-   xs +> List.fold_left (fun acc var -> acc >||> match_re_onedecl decla var)
-     (return false)
-*)
-
    match declb with
   | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
@@ -1271,10 +1268,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          )))))))
            
 
-   | A.TyDecl (typa, _), _ ->
-      (* accept only '((None, typb, sto), _)' or do iso-by-absence here ?
-         allow typedecl and var ? *)
-       failwith "fill something in for a declaration that is just a type"
+   (* do iso-by-absence here ? allow typedecl and var ? *)
+   | A.TyDecl (typa, ptvirga), ((None, typb, stob), iivirg)  ->
+       if stob = (B.NoSto, false)
+       then
+         tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
+         fullType typa typb >>= (fun typa typb -> 
+           return (
+             (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
+             (((None, typb, stob), iivirg), iiptvirgb, iistob)
+           )))
+       else fail
+       
        
    | _, ((None, typb, sto), _) -> 
        (* old:   failwith "no variable in this declaration, wierd" *)
@@ -1285,8 +1290,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        declas +> List.fold_left (fun acc decla -> 
          acc >|+|> (onedecl allminus decla (declb,iiptvirgb, iistob))) fail
 
+   (* only in struct type decls *)
    | A.Ddots(dots,whencode), _ ->
-       failwith "to be filled in" (*matches fields in struct type decls only*)
+       raise Impossible
             
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
        failwith "not handling Opt/Unique/Multi Decl"
@@ -1436,6 +1442,94 @@ and initialisers2 = fun ias ibs ->
                 Common.insert_elem_pos (e, pos) rest
               ))))) fail
        
+
+(* ------------------------------------------------------------------------- *)
+and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
+ fun eas ebs -> 
+  match eas, ebs with
+  | [], [] -> return ([], [])
+  | [], eb::ebs -> fail
+  | ea::eas, ebs -> 
+      X.all_bound (A.get_inherited ea) >&&>
+      (match A.unwrap ea, ebs with
+      | A.Ddots (mcode, optwhen), ys -> 
+          if optwhen <> None then failwith "not handling when in argument";
+
+          (* '...' can take more or less the beginnings of the arguments *)
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> (
+              
+              (if startxs = []
+              then
+                if mcode_contain_plus (mcodekind mcode)
+                then fail 
+                  (* failwith "I have no token that I could accroche myself on" *)
+                else return (mcode, [])
+              else 
+                  X.distrf_struct_fields mcode startxs
+              ) >>= (fun mcode startxs ->
+                struct_fields eas endxs >>= (fun eas endxs -> 
+                  return (
+                    (A.Ddots (mcode, optwhen) +> A.rewrap ea) ::eas,
+                    startxs ++ endxs
+                  )))
+            )
+          ) fail 
+      | _unwrapx, eb::ebs -> 
+          struct_field ea eb >>= (fun ea eb -> 
+          struct_fields eas ebs >>= (fun eas ebs -> 
+            return (ea::eas, eb::ebs)
+          ))
+
+      | _unwrapx, [] -> fail
+      )
+
+and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb -> 
+  let (B.FieldDeclList onefield_multivars, ii) = fb in
+  let iiptvirgb = tuple_of_list1 ii in
+
+  match onefield_multivars with
+  | [] -> raise Impossible
+  | [onevar,iivirg] -> 
+      assert (null iivirg);
+      (match onevar with
+      | B.BitField (sopt, typb, expr), ii -> 
+          pr2 "warning: bitfield not handled by ast_cocci";
+          fail
+      | B.Simple (None, typb), ii -> 
+          pr2 "warning: unamed struct field not handled by ast_cocci";
+          fail
+      | B.Simple (Some idb, typb), ii -> 
+          let (iidb) = tuple_of_list1 ii in
+
+          (* build a declaration from a struct field *)
+          let allminus = false in
+          let iisto = [] in
+          let stob = B.NoSto, false in
+          let var = 
+            ((Some ((idb, None),[iidb]), typb, stob), iivirg)            
+          in
+          onedecl allminus fa (var,iiptvirgb,iisto) >>= 
+            (fun fa (var,iiptvirgb,iisto) -> 
+
+              match var with
+              | ((Some ((idb, None),[iidb]), typb, stob), iivirg) -> 
+                  let onevar = B.Simple (Some idb, typb), [iidb] in
+                  
+                  return (
+                    (fa),
+                    (B.FieldDeclList [onevar, iivirg], [iiptvirgb])
+                  )
+              | _ -> raise Impossible
+            )
+      )
+
+  | x::y::xs -> 
+      pr2 "PB: More that one variable in decl. Have to split";
+      fail
+
+
 
 (* ------------------------------------------------------------------------- *)
 and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) = 
@@ -1748,8 +1842,34 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
         else fail
         
 
-    | A.StructUnionDef(sua, sa, lb, decls, rb), _ -> 
-	failwith "to be filled in"
+    | A.StructUnionDef(sua, sa, lba, declsa, rba), 
+     (B.StructUnion (sbopt, (sub, declsb)), ii) -> 
+
+        (match sbopt with
+        | None -> 
+            pr2 "warning: anonymous structDef not handled by ast_cocci";
+            fail
+        | Some sb -> 
+            let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
+            if equal_structUnion (term sua) sub
+            then
+              ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) -> 
+              tokenf lba lbb >>= (fun lba lbb -> 
+              tokenf rba rbb >>= (fun rba rbb -> 
+              tokenf sua iisub >>= (fun sua iisub -> 
+              struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+                let declsa = redots declsa undeclsa in
+
+                return (
+                  (A.StructUnionDef(sua, sa, lba, declsa, rba)) +> A.rewrap ta,
+                  (B.StructUnion (sbopt, (sub, declsb)),[iisub;iisb;lbb;rbb])
+                ))))))
+              
+            else fail
+            
+        )
+
+
 
    (* todo? handle isomorphisms ? because Unsigned Int can be match on a 
     * uint in the C code. But some CEs consists in renaming some types,
@@ -2204,7 +2324,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.Define(definea,ida,bodya), F.Define ((idb, ii), def) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-(*      all_bound (A.get_inherited ida) >&&> *)
+(* pad:why in comment?      all_bound (A.get_inherited ida) >&&> *)
       tokenf definea defineb >>= (fun definea defineb -> 
 
       (match A.unwrap bodya, def with

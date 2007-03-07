@@ -285,19 +285,7 @@ and vk_type = fun bigf t ->
           );    
         
     | StructUnion (sopt, (_su, fields)) -> 
-
-       fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
-         iif ii;
-         onefield_multivars +> List.iter (fun (field, iicomma) ->
-           iif iicomma;
-           match field with
-           | Simple (s, t), ii -> iif ii; typef t;
-           | BitField (sopt, t, expr), ii -> 
-               iif ii;
-               vk_expr bigf expr;
-               typef t 
-         ))
-
+        vk_struct_fields bigf fields
 
     | StructUnionName (s, structunion) -> ()
     | EnumName  s -> ()
@@ -348,6 +336,25 @@ and vk_ini = fun bigf ini ->
     | InitGccIndexField (s, e1, e) ->
         vk_expr bigf e1; inif e
   in inif ini
+
+
+
+and vk_struct_fields = fun bigf fields -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+
+  fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
+    iif ii;
+    onefield_multivars +> List.iter (fun (field, iicomma) ->
+      iif iicomma;
+      match field with
+      | Simple (s, t), ii -> iif ii; vk_type bigf t;
+      | BitField (sopt, t, expr), ii -> 
+          iif ii;
+          vk_expr bigf expr;
+          vk_type bigf t 
+    ))
+
+
 
 and vk_def = fun bigf d -> 
   let iif ii = List.iter (vk_info bigf) ii in
@@ -504,6 +511,9 @@ let vk_params_splitted = fun bigf args_splitted ->
   | Left arg -> vk_param bigf arg
   | Right ii -> iif ii
   )
+
+
+
   
 
 (*****************************************************************************)
@@ -711,20 +721,7 @@ and vk_type_s = fun bigf t ->
                )
           )
       | StructUnion (sopt, (su, fields)) -> 
-          StructUnion (sopt, (su, 
-                             fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
-                               FieldDeclList (
-                                 onefield_multivars +> List.map (fun (field, iicomma) ->
-                                   (match field with
-                                   | Simple (s, t), iis -> Simple (s, typef t), infolistf iis
-                                   | BitField (sopt, t, expr), iis -> 
-                                       BitField (sopt, typef t, vk_expr_s bigf expr), 
-                                       infolistf iis
-                                   ), infolistf iicomma
-                                 )
-                               ), infolistf iiptvirg
-                             )
-          ))
+          StructUnion (sopt, (su, vk_struct_fields_s bigf fields))
 
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
@@ -778,6 +775,25 @@ and vk_ini_s = fun bigf ini ->
           InitGccIndexField (s, vk_expr_s bigf e1, inif e)
     in ini', List.map (vk_info_s bigf) ii
   in inif ini
+
+
+
+and vk_struct_fields_s = fun bigf fields -> 
+
+  let infolistf ii = List.map (vk_info_s bigf) ii in
+
+  fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
+    FieldDeclList (
+      onefield_multivars +> List.map (fun (field, iicomma) ->
+        (match field with
+        | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), infolistf iis
+        | BitField (sopt, t, expr), iis -> 
+            BitField (sopt, vk_type_s bigf t, vk_expr_s bigf expr), 
+            infolistf iis
+        ), infolistf iicomma
+      )
+    ), infolistf iiptvirg
+  )
 
 
 and vk_def_s = fun bigf d -> 

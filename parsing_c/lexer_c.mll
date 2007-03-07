@@ -2,7 +2,6 @@
 open Common open Commonop
 
 open Parser_c
-open Lexer_parser
 
 open Ast_c (* to factorise tokens, OpAssign, ... *)
 

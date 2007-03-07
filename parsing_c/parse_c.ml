@@ -195,6 +195,12 @@ let tokens_string string =
 (*****************************************************************************)
 (* Parsing, but very basic, no more used *)
 (*****************************************************************************)
+
+(*
+ * !!!Those function use refs, and are not reentrant !!! so take care.
+ * It use globals defined in Lexer_parser.
+ *)
+
 let parse file = 
   let lexbuf = Lexing.from_channel (open_in file) in
   let result = Parser_c.main Lexer_c.token lexbuf in
@@ -223,6 +229,12 @@ let parse_print_error file =
 (*****************************************************************************)
 (* Parsing subelements, useful to debug parser *)
 (*****************************************************************************)
+
+(*
+ * !!!Those function use refs, and are not reentrant !!! so take care.
+ * It use globals defined in Lexer_parser.
+ *)
+
 
 (* old: 
  * let parse_gen parsefunc s = 
@@ -341,6 +353,9 @@ and find_next_synchro_orig next already_passed =
 (* Include/Define hacks *)
 (*****************************************************************************)
 
+(* ------------------------------------------------------------------------- *)
+(* helpers *)
+(* ------------------------------------------------------------------------- *)
 let tok_set s (info, annot) =  {info with Common.str = s;}, annot
 
 (* used to generate new token from existing one *)
@@ -363,21 +378,14 @@ let adjust_tok posadd filename tok =
   )
       
 
+(* ------------------------------------------------------------------------- *)
+(* parsing #define body *)
+(* ------------------------------------------------------------------------- *)
 
+(* todo: if just one token which is a typedef ? have a DefineType ?
+ * todo: expression_of_string can do side effect on Lexer_parser and so
+ * screwd the rest of the parsing ? *)
 
-
-(* returns a pair (replaced token, list of next tokens) *)
-
-let tokens_include (info, includes, filename) = 
-  Parser_c.TIncludeStart (tok_set includes info), 
-  [Parser_c.TIncludeFilename 
-      (filename, (new_info (String.length includes) filename info))
-  ]
-
-
-(* todo: if just one token which is a typedef ? 
-   have a DefineType ?
-*)
 let tokens_define_val posadd bodys info = 
 
   try 
@@ -395,8 +403,15 @@ let tokens_define_val posadd bodys info =
     [Parser_c.TDefText (bodys, (new_info posadd bodys info));]
 
 
+(* ------------------------------------------------------------------------- *)
+(* returns a pair (replaced token, list of next tokens) *)
+(* ------------------------------------------------------------------------- *)
 
-
+let tokens_include (info, includes, filename) = 
+  Parser_c.TIncludeStart (tok_set includes info), 
+  [Parser_c.TIncludeFilename 
+      (filename, (new_info (String.length includes) filename info))
+  ]
 
 
 let tokens_define_simple (info, define, ident, bodys) = 
@@ -410,7 +425,6 @@ let tokens_define_simple (info, define, ident, bodys) =
   ++ tokens_body ++ 
   [Parser_c.TDefEOL
       (new_info (String.length (define ^ ident ^ bodys)) "" info)]
-
 
 
 
@@ -431,7 +445,6 @@ let tokens_define_func (info, define, ident, params, bodys) =
   let tokens_body = 
     tokens_define_val (String.length (define ^ ident ^ params)) bodys info 
   in
-
 
   Parser_c.TDefFuncStart (tok_set define info),
   [Parser_c.TDefIdent (ident, (new_info (String.length define) ident info))]
@@ -488,6 +501,9 @@ type program2 = programElement2 list
  *     at the and of the lexer_function call.
  * At the very beginning, cur_tok and remaining_tokens overlap, but not after.
  * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
+ * 
+ * !!!This function use refs, and is not reentrant !!! so take care.
+ * It use globals defined in Lexer_parser.
  *)
 
 
@@ -519,6 +535,8 @@ let parse_print_error_heuristic2 file =
     else begin
       let v = pop2 remaining_tokens in
       cur_tok := v;
+
+      if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);
 
       if TH.is_comment v
       then begin
@@ -612,7 +630,6 @@ let parse_print_error_heuristic2 file =
 
         | _ -> 
 
-
             (* typedef_fix1 *)
             let v = match v with
               | Parser_c.TIdent (s, ii) -> 
@@ -627,8 +644,6 @@ let parse_print_error_heuristic2 file =
             in
 
             passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-
-            if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);  
 
             (* the lookahead may have change the status of the token and
              * consider it as a comment, for instance some #include are
@@ -679,7 +694,7 @@ let parse_print_error_heuristic2 file =
         with e -> 
           begin
             (match e with
-            (* this one is no more launched I think *)
+            (* Lexical is no more launched I think *)
             | Lexer_c.Lexical s -> 
                 pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok file !cur_tok)
             | Parsing.Parse_error -> 
@@ -701,7 +716,8 @@ let parse_print_error_heuristic2 file =
             passed_tokens := [];           (* enough ? *)
 
             (* with error recovery, remaining_tokens and
-             * remaining_tokens_clean may not be in sync *)
+             * remaining_tokens_clean may not be in sync 
+             *)
             remaining_tokens_clean := 
               (!remaining_tokens +> List.filter TH.is_not_comment);
 
