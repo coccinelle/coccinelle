@@ -48,14 +48,9 @@ let collect_unitary_nonunitary free_usage =
 	  (x::unitary,non_unitary) in
   loop2 free_usage
 
-(* Reserve is included because we only want to include a type variable that
-if the type of a MetaExpr or a MetaConst if the variable is also used
-normally at least once.  The function unreserve then combines these results. *)
 let collect_all_refs =
-  let bind (x,resx) (y,resy) = (x @ y,resx @ resy) in
-  let return x = (x,[]) in
-  let return_res x = ([],x) in
-  let option_default = return [] in
+  let bind x y = x @ y in
+  let option_default = [] in
 
   let donothing recursor k e = k e in (* just combine in the normal way *)
 
@@ -64,42 +59,38 @@ let collect_all_refs =
      doing better seems to require a breadth-first traversal, which is
      perhaps better to avoid.  Also, unitarily is represented as occuring once,
      while nonunitarily is represented as twice - more is irrelevant *)
-  (* just throw in the reserves as is, because if they are used, they
-     necessarily occur more than once *)
   (* cases for disjs and metavars *)
   let bind_disj refs_branches =
-    let (refs,reserves) = List.split refs_branches in
     let (unitary,nonunitary) =
-      List.split (List.map collect_unitary_nonunitary refs) in
+      List.split (List.map collect_unitary_nonunitary refs_branches) in
     let unitary = nub (List.concat unitary) in
     let nonunitary = nub (List.concat nonunitary) in
     let unitary =
       List.filter (function x -> not (List.mem x nonunitary)) unitary in
-    (unitary@nonunitary@nonunitary, List.concat reserves) in
+    unitary@nonunitary@nonunitary in
 
   let metaid (x,_,_) = x in
 
   let astfvident recursor k i =
     match Ast.unwrap i with
       Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-    | Ast.MetaLocalFunc(name,_,_) -> return [metaid name]
+    | Ast.MetaLocalFunc(name,_,_) -> [metaid name]
     | _ -> k i in
 
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,_,_) -> tyname :: res
+    | TC.MetaType(tyname,_,_) -> bind [tyname] res
     | ty -> res in
 
   let astfvexpr recursor k e =
     match Ast.unwrap e with
       Ast.MetaExpr(name,_,Some type_list,_)
     | Ast.MetaConst(name,_,Some type_list,_) ->
-	let types = List.fold_left type_collect [] type_list in
-	bind (return [metaid name]) (return_res (List.rev types))
+	let types = List.fold_left type_collect option_default type_list in
+	bind [metaid name] types
     | Ast.MetaConst(name,_,_,_) | Ast.MetaErr(name,_,_)
-    | Ast.MetaExpr(name,_,_,_) | Ast.MetaExprList(name,_,_) ->
-	return [metaid name]
+    | Ast.MetaExpr(name,_,_,_) | Ast.MetaExprList(name,_,_) -> [metaid name]
     | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
     | _ -> k e in
 
@@ -115,27 +106,25 @@ let collect_all_refs =
 
   let astfvtypeC recursor k ty =
     match Ast.unwrap ty with
-      Ast.MetaType(name,_,_) -> return [metaid name]
+      Ast.MetaType(name,_,_) -> [metaid name]
     | _ -> k ty in
 
   let astfvparam recursor k p =
     match Ast.unwrap p with
-      Ast.MetaParam(name,_,_) | Ast.MetaParamList(name,_,_) ->
-	return [metaid name]
+      Ast.MetaParam(name,_,_) | Ast.MetaParamList(name,_,_) -> [metaid name]
     | _ -> k p in
 
   let astfvrule_elem recursor k re =
-    let (refs,reserves) =
-      match Ast.unwrap re with
+    (*within a rule_elem, pattern3 manages the coherence of the bindings*)
+    nub
+      (match Ast.unwrap re with
 	Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-      | Ast.MetaStmtList(name,_,_) -> return [metaid name]
+      | Ast.MetaStmtList(name,_,_) -> [metaid name]
       | Ast.Define(_,_,db) ->
 	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,_) -> return [metaid name]
+	    Ast.DMetaId(name,_) -> [metaid name]
 	  | _ -> k re)
-      | _ -> k re in
-    (*within a rule_elem, pattern3 manages the coherence of the bindings*)
-    (nub refs,reserves) in
+      | _ -> k re) in
 
   let astfvstatement recursor k s =
     match Ast.unwrap s with
@@ -143,7 +132,7 @@ let collect_all_refs =
 	bind_disj (List.map recursor.V.combiner_statement_dots stms)
     | _ -> k s in
 
-  let mcode r e = return [] in
+  let mcode r e = [] in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -151,19 +140,11 @@ let collect_all_refs =
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing
 
-let unreserve (refs,reserves) =
-  let reserve_refs =
-    List.filter (function reserve -> List.mem reserve refs) reserves in
-  reserve_refs @ refs
-
 let collect_all_rule_refs minirules =
   List.fold_left (@) []
-    (List.map
-       (function x -> unreserve(collect_all_refs.V.combiner_top_level x))
-       minirules)
+    (List.map collect_all_refs.V.combiner_top_level minirules)
 
-let collect_all_minirule_refs x =
-  unreserve (collect_all_refs.V.combiner_top_level x)
+let collect_all_minirule_refs = collect_all_refs.V.combiner_top_level
 
 (* ---------------------------------------------------------------- *)
 
@@ -231,7 +212,7 @@ let collect_in_plus_term =
 
   let mcodekind r mck =
     let process_anything_list_list anythings =
-      let astfvs x = unreserve (collect_all_refs.V.combiner_anything x) in
+      let astfvs = collect_all_refs.V.combiner_anything in
       List.fold_left bind []
 	(List.map (function l -> List.fold_left bind [] (List.map astfvs l))
 	   anythings) in
@@ -258,10 +239,8 @@ let collect_in_plus_term =
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,_,ret,nm,_,params,_) ->
 	let ret_metas =
-	  get_option
-	    (function x -> unreserve (collect_all_refs.V.combiner_fullType x))
-	    ret in
-	let nm_metas = unreserve (collect_all_refs.V.combiner_ident nm) in
+	  get_option collect_all_refs.V.combiner_fullType ret in
+	let nm_metas = collect_all_refs.V.combiner_ident nm in
 	let param_metas =
 	  match Ast.unwrap params with
 	    Ast.DOTS(params) | Ast.CIRCLES(params) ->
@@ -270,7 +249,7 @@ let collect_in_plus_term =
 		   (function p ->
 		     match Ast.unwrap p with
 		       Ast.VoidParam(t) | Ast.Param(t,_) ->
-			 unreserve (collect_all_refs.V.combiner_fullType t)
+			 collect_all_refs.V.combiner_fullType t
 		     | _ -> [])
 		   params)
 	  | _ -> failwith "not allowed for params" in
@@ -306,10 +285,7 @@ let collect_in_plus minirules =
 variables that occur only once and more than once in the minus code *)
 
 let collect_all_multirefs minirules =
-  let refs =
-    List.map
-      (function x -> unreserve (collect_all_refs.V.combiner_top_level x))
-      minirules in
+  let refs = List.map collect_all_refs.V.combiner_top_level minirules in
   collect_unitary_nonunitary (List.concat refs)
 
 (* ---------------------------------------------------------------- *)
@@ -446,7 +422,7 @@ let astfvs metavars bound =
   let astfvrule_elem recursor k re =
     let free =
       Common.union_set
-	(nub (unreserve (collect_all_refs.V.combiner_rule_elem re)))
+	(nub (collect_all_refs.V.combiner_rule_elem re))
 	(collect_in_plus_term.V.combiner_rule_elem re) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
@@ -456,7 +432,7 @@ let astfvs metavars bound =
   let astfvstatement recursor k s =
     let free =
       Common.union_set
-	(nub (unreserve (collect_all_refs.V.combiner_statement s)))
+	(nub (collect_all_refs.V.combiner_statement s))
 	(collect_in_plus_term.V.combiner_statement s) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
@@ -466,7 +442,7 @@ let astfvs metavars bound =
   let astfvstatement_dots recursor k sd =
     let free =
       Common.union_set
-	(nub (unreserve (collect_all_refs.V.combiner_statement_dots sd)))
+	(nub (collect_all_refs.V.combiner_statement_dots sd))
 	(collect_in_plus_term.V.combiner_statement_dots sd) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
