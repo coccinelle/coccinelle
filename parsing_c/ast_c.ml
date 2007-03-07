@@ -381,6 +381,7 @@ and metavars_binding = (string, metavar_binding_kind) assoc
   | MetaStmtVal      of statement
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list
+  | MetaConstVal     of (constant, string) either wrap
   | MetaTextVal         of string
 
 (*****************************************************************************)

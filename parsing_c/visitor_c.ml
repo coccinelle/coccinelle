@@ -513,6 +513,14 @@ let vk_params_splitted = fun bigf args_splitted ->
   )
 
 
+let vk_cst = fun bigf (cst, ii) -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+  iif ii;
+  (match cst with
+  | Left cst -> ()
+  | Right s -> ()
+  )
+
 
   
 
@@ -978,3 +986,10 @@ let vk_params_splitted_s = fun bigf args_splitted ->
   | Left arg -> Left (vk_param_s bigf arg)
   | Right ii -> Right (iif ii)
   )
+
+let vk_cst_s = fun bigf (cst, ii) -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  (match cst with
+  | Left cst -> Left cst 
+  | Right s -> Right s
+  ), iif ii

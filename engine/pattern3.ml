@@ -199,7 +199,7 @@ module XMATCH = struct
   let distrf_params = distrf (Lib_parsing_c.ii_of_params)
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
   let distrf_struct_fields   = distrf (Lib_parsing_c.ii_of_struct_fields)
-
+  let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
@@ -237,6 +237,10 @@ module XMATCH = struct
               failwith "not handling MetaParamVal"
           | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
               failwith "not handling MetaParamListVal"
+
+          | Ast_c.MetaConstVal a, Ast_c.MetaConstVal b -> 
+              Lib_parsing_c.al_cst a =*= Lib_parsing_c.al_cst b
+
           | Ast_c.MetaTextVal a, Ast_c.MetaTextVal b -> a =$= b
           | _ -> raise Impossible
           ) 
@@ -251,12 +255,20 @@ module XMATCH = struct
             | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
             | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
             | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
-            | Ast_c.MetaExprVal a -> Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
-            | Ast_c.MetaStmtVal a -> Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
-            | Ast_c.MetaTypeVal a -> Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
-            | Ast_c.MetaExprListVal a ->  failwith "not handling MetaExprListVal"
-            | Ast_c.MetaParamVal a ->     failwith "not handling MetaParamVal"
-            | Ast_c.MetaParamListVal a -> failwith "not handling MetaParamListVal"
+            | Ast_c.MetaExprVal a -> 
+                Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
+            | Ast_c.MetaStmtVal a -> 
+                Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
+            | Ast_c.MetaTypeVal a -> 
+                Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
+            | Ast_c.MetaExprListVal a ->  
+                failwith "not handling MetaExprListVal"
+            | Ast_c.MetaParamVal a ->     
+                failwith "not handling MetaParamVal"
+            | Ast_c.MetaParamListVal a -> 
+                failwith "not handling MetaParamListVal"
+            | Ast_c.MetaConstVal a -> 
+                Ast_c.MetaConstVal (Lib_parsing_c.al_cst a)
             | Ast_c.MetaTextVal s -> Ast_c.MetaTextVal s
             ) 
           in

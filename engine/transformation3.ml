@@ -268,6 +268,11 @@ module XTRANS = struct
       Visitor_c.vk_struct_fields_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
         x
 
+  let distribute_mck_cst (maxpos, minpos) = 
+    fun (lop,mop,rop,bop) ->fun x ->
+      Visitor_c.vk_cst_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+        x
+
 
    let get_pos mck = 
      match mck with
@@ -316,6 +321,8 @@ module XTRANS = struct
   let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
   let distrf_struct_fields = 
     distrf (Lib_parsing_c.ii_of_struct_fields, distribute_mck_struct_fields)
+  let distrf_cst = 
+    distrf (Lib_parsing_c.ii_of_cst, distribute_mck_cst)
 
 
   (* ------------------------------------------------------------------------*)

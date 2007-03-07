@@ -356,6 +356,9 @@ module type PARAM =
     val distrf_struct_fields : 
       (string A.mcode, B.field B.wrap list) matcher
 
+    val distrf_cst : 
+      (string A.mcode, (B.constant, string) either B.wrap) matcher
+
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
@@ -495,7 +498,62 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
         ))
           
 
-  | A.MetaConst _, _ -> failwith "not handling MetaConst"
+
+  | A.MetaConst (ida,keep,opttypa,inherited),(((expr, opttypb), ii)) ->
+      (match opttypa, opttypb with
+        | None, _ -> return ((),())
+        | Some tas, Some tb -> 
+            tas +> List.fold_left (fun acc ta ->  
+              acc >||> (
+                compatible_type ta tb
+              )) fail
+        | Some _, None -> 
+            pr2_memo ("I don't have the type information. Certainly a pb in " ^
+                         "annotate_typer.ml");
+            fail
+      ) >>= (fun () () ->
+        
+      let cst = 
+        (match expr with
+        | B.Constant cst -> Some (Left cst)
+        | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
+            pr2 ("I consider " ^ idb ^ " as a constant");
+            Some (Right idb)
+        | _ -> None
+        )
+      in
+        
+      match cst with
+      | None -> fail
+      | Some cstb -> 
+          X.envf keep inherited (term ida, Ast_c.MetaConstVal (cstb,ii))
+          >>= (fun _s v ->
+            match v with
+            | Ast_c.MetaConstVal csta -> 
+                (* do check ? 
+                   if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
+                   then 
+                *)
+                X.distrf_cst ida (cstb,ii) >>= (fun ida (cstb,ii) -> 
+                 match cstb with 
+                 | Left cstb -> 
+                     return (
+                       (A.MetaConst (ida,keep,opttypa,inherited)+>A.rewrap ea),
+                       ((B.Constant cstb, opttypb), ii)
+                     )
+                 | Right idb -> 
+                     return (
+                       (A.MetaConst (ida,keep,opttypa,inherited)+>A.rewrap ea),
+                       ((B.Ident idb, opttypb), ii)
+                     )
+                )
+            | _ -> raise Impossible
+          )
+          
+      )
+
+      
+
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
 
   (* todo?: handle some isomorphisms in int/float ? can have different
@@ -2008,7 +2066,7 @@ and compatible_type a b =
       else fail
 
   | Type_cocci.MetaType        ida, typb -> 
-      let keep = Ast_cocci.Saved in
+      let keep = Ast_cocci.Unitary in
       let inherited = false in
       
       X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  

@@ -21,6 +21,7 @@ let al_type      = Visitor_c.vk_type_s      strip_info_visitor
 
 let al_program  = List.map (Visitor_c.vk_program_s  strip_info_visitor)
 
+let al_cst = Visitor_c.vk_cst_s strip_info_visitor
 
 (*****************************************************************************)
 (* Extract infos *)
@@ -46,7 +47,7 @@ let ii_of_type = extract_info_visitor Visitor_c.vk_type
 let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
-
+let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
 
 let max_min_ii_by_pos xs = 
 

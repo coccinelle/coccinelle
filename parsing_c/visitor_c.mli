@@ -30,6 +30,8 @@ val vk_params_splitted :
 
 val vk_struct_fields : visitor_c -> field wrap list -> unit
 
+val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
+
 
 
 
@@ -75,3 +77,5 @@ val vk_param_s : visitor_c_s -> parameterType -> parameterType
 
 val vk_struct_fields_s : visitor_c_s -> 
   field wrap list -> field wrap list
+
+val vk_cst_s : visitor_c_s -> ((constant, string) Common.either wrap) inout 
