@@ -70,7 +70,7 @@ let inter l1 l2 = List.filter (function x -> List.mem x l1) l2
 
 let _ =
   if Array.length Sys.argv < 4
-  then failwith "arguments: -/+/@ pattern -/+/@ pattern ... version";
+  then failwith "arguments: -/+/@/C pattern -/+/@/C pattern ... version";
   let args = List.tl(Array.to_list Sys.argv) in
   let version = List.hd(List.rev args) in
   let pairs = List.rev(List.tl(List.rev args)) in
