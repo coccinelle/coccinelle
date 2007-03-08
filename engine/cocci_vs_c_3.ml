@@ -2516,7 +2516,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
                expression ea eb >>= (fun ea eb -> 
                  return (
                    A.Define
-                     (definea, ida,
+                     (definea, ida, params,
                      (A.DStm ((A.Exp ea) +> A.rewrap re) +> A.rewrap bodya)),
                    F.Define
                      ((idb, [defineb;iidb;ieol]),
@@ -2530,7 +2530,7 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
                  return (
                    A.Define
-                     (definea, ida,
+                     (definea, ida, params,
                      (A.DStm ((A.Ty ta) +> A.rewrap re) +> A.rewrap bodya)),
                    F.Define
                      ((idb, [defineb;iidb;ieol]),
