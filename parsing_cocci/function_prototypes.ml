@@ -169,6 +169,70 @@ let drop_names dec =
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 
+(* only fails if there are dots at both ends of the parameter list, because in
+that case names may be needed to identify the parameters unambiguously *)
+let no_dots param_list =
+  let param_list = List.map Ast0.unwrap param_list in
+  match param_list with
+    Ast0.Pdots(_)::_ ->
+      (match List.rev param_list with
+	Ast0.Pdots(_)::_ -> false
+      |	_ -> true)
+  | _ -> true
+
+let ct = ref 0
+
+let rename_param param =
+  match Ast0.unwrap param with
+    Ast0.Param(ty,Some id) ->
+      (match Ast0.unwrap id with
+	Ast0.MetaId((name,arity,info,mcodekind),pure) ->
+	  let new_name = name^"__"^(string_of_int !ct) in
+	  ct := !ct + 1;
+	  let new_id =
+	    Ast0.rewrap id
+	      (Ast0.MetaId((new_name,arity,info,mcodekind),true)) in
+	  ([Ast.MetaIdDecl(Ast.NONE,new_name)],
+	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
+      |	_ -> ([],param))
+  | _ -> ([],param)
+
+(* try to convert names in the - parameter list to new metavariables, to
+account for spelling mistakes on the part of the programmer *)
+let fresh_names dec =
+  let res = ([],dec) in
+  match Ast0.unwrap dec with
+    Ast0.Decl(info,uninit) ->
+      (match Ast0.unwrap uninit with
+	Ast0.UnInit(stg,typ,name,sem) ->
+	  (match Ast0.unwrap typ with
+	    Ast0.FunctionType(ty,lp,params,rp) ->
+	      (match Ast0.unwrap params with
+		Ast0.DOTS(l) ->
+		  if no_dots l
+		  then
+		    let (metavars,l) =
+		      List.split(List.map rename_param l) in
+		    (List.concat metavars,
+		     Ast0.rewrap dec
+		       (Ast0.Decl
+			  (info,
+			   Ast0.rewrap uninit
+			     (Ast0.UnInit
+				(stg,
+				 Ast0.rewrap typ
+				   (Ast0.FunctionType
+				      (ty,lp,
+				       Ast0.rewrap params (Ast0.DOTS(l)),
+				       rp)),
+				 name,sem)))))
+		  else res
+	      |	_ -> res)
+	  | _ -> res)
+      |	_ -> res)
+  | _ -> res
+	      
+
 let merge mproto pproto =
   let mproto =
     Compute_lines.compute_lines [Ast0.copywrap mproto (Ast0.DECL mproto)] in
@@ -189,11 +253,15 @@ let merge mproto pproto =
 
 let make_rule = function
     (mname,mproto,Some pproto) ->
+      let (metavars,mproto) = fresh_names mproto in
       let no_name_mproto = drop_names mproto in
       let no_name_pproto = drop_names pproto in
-      [merge mproto pproto; merge no_name_mproto no_name_pproto]
+      (metavars,
+       [merge mproto pproto; merge no_name_mproto no_name_pproto])
   | (mname,mproto,None) ->
-      [Ast0toast.statement mproto;Ast0toast.statement(drop_names mproto)]
+      let (metavars,mproto) = fresh_names mproto in
+      (metavars,
+       [Ast0toast.statement mproto;Ast0toast.statement(drop_names mproto)])
 
 let make_rules minus plus =
   let minus_functions = List.concat (List.map get_all_functions minus) in
@@ -203,20 +271,23 @@ let make_rules minus plus =
       let plus_functions =
 	List.concat (List.map get_all_functions plus) in
       let protos = align minus_functions plus_functions in
-      let rules = List.concat (List.map make_rule protos) in
+      let (metavars,rules) = List.split(List.map make_rule protos) in
+      let metavars = List.concat metavars in
+      let rules = List.concat rules in
       match rules with
 	[] -> None
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some [Ast.rewrap x (Ast.DECL x)]
+	  Some (metavars,[Ast.rewrap x (Ast.DECL x)])
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
-	  Some [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]
+	  Some
+	    (metavars,
+	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))])
 
 (* --------------------------------------------------------------------- *)
 (* entry point *)
 
 let process minus plus = make_rules minus plus
-

@@ -689,7 +689,7 @@ let process file isofile verbose =
 	     let minus_ast = Ast0toast.ast0toast minus in
 	     match function_prototypes with
 	       None -> [(extra_meta@metavars, minus_ast)]
-	     | Some fp -> [(extra_meta@metavars, minus_ast); ([], fp)])
+	     | Some mv_fp -> [(extra_meta@metavars, minus_ast); mv_fp])
 	 minus plus) in
   let (code,ua) = Free_vars.free_vars parsed in
   if !Flag_parsing_cocci.show_SP 
