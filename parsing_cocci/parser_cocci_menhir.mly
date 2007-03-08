@@ -454,6 +454,15 @@ includes:
 	   (Ast0.wrap
 	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
 			    id2mcode $1)))) }
+| TDefine ident ctype TLineEnd
+    { let ty = Ast0.wrap(Ast0.Ty($3)) in
+      Ast0.wrap
+	(Ast0.DECL
+	   (Ast0.wrap
+	      (Ast0.Define
+		 (clt2mcode "#define" $1, $2,
+		  Ast0.wrap
+		    (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty])))))))) }
 | TDefine ident b=statement_dots(TEllipsis) TLineEnd
     { Ast0.wrap
 	(Ast0.DECL
