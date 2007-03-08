@@ -402,9 +402,9 @@ let tokens_define_val posadd bodys info =
            tok)
        +> List.map (fun tok -> 
          match tok with 
-         (* can't use here Lexer_parser, not our heuristic on case 
-          * such as #define chip_t vortex_t
-          * so have to do inference checking only base on name information.
+         (* can't use here Lexer_parser, nor our heuristic because on case 
+          * such as #define chip_t vortex_t, we have no info on vortex_t yet
+          * so have to do inference checking only based on name information.
           * It is quite specific to rule66/ ...
           *)
          | Parser_c.TIdent (s,ii) -> 

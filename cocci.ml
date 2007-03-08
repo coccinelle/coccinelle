@@ -308,6 +308,34 @@ let sp_contain_typed_metavar toplevel_list_list =
 
 
 
+(* --------------------------------------------------------------------- *)
+(* Helpers for SpecialDeclMacro *)
+(* --------------------------------------------------------------------- *)
+
+let specialdeclmacro_to_stmt (s, args, ii) =
+  let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
+  let ident = (Ast_c.Ident s, Ast_c.noType), [iis] in
+  let f = (Ast_c.FunCall (ident, args), Ast_c.noType), [iiopar;iicpar] in
+  let stmt = Ast_c.ExprStatement (Some f), [iiptvirg] in
+  stmt,  (f, [iiptvirg])
+
+let stmt_to_specialdeclmacro (e, ii) = 
+  let iiptvirg = tuple_of_list1 ii in
+  match e with 
+  | Some 
+      (
+        (Ast_c.FunCall 
+            (((Ast_c.Ident s, _noType), [iis]), args), _noType2), 
+        [iiopar;iicpar]
+      )
+
+      -> raise Todo
+  | _ -> raise Impossible
+
+
+(* --------------------------------------------------------------------- *)
+(* Helpers for flow *)
+(* --------------------------------------------------------------------- *)
 
 let ast_to_flow_with_error_messages2 def =
   let flowopt = 
@@ -354,6 +382,10 @@ let flow_to_ast2 flow =
       | Control_flow_c.Decl decl -> Ast_c.Declaration decl
       | Control_flow_c.Include x -> Ast_c.Include x
       | Control_flow_c.Define (x, body) -> Ast_c.Define (x, body)
+      | Control_flow_c.ExprStatement (_st, (e, ii)) -> 
+          let (s,args,ii) = stmt_to_specialdeclmacro (e, ii) in
+          Ast_c.SpecialDeclMacro (s, args, ii)
+
       | _ -> raise Impossible
       )
   | _ -> 
@@ -446,12 +478,21 @@ let build_maybe_info e =
           contain_loop = contain_loop def 
         }
       )
-  | Ast_c.Declaration _ | Ast_c.Include _ | Ast_c.Define _  -> 
+  | Ast_c.Declaration _ 
+  | Ast_c.Include _ 
+  | Ast_c.Define _  
+  | Ast_c.SpecialDeclMacro _
+    -> 
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
         | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
         | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
+        | Ast_c.SpecialDeclMacro (s, args, ii) -> 
+            let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
+            (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
+
+
         | _ -> raise Impossible
       in
       let flow = Ast_to_flow.simple_cfg elem str  in
