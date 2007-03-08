@@ -53,7 +53,8 @@ let token2c (tok,_) =
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
   | PC.TInclude(s,clt) -> (pr "#include %s" s)^(line_type2c clt)
-  | PC.TDefine(clt) -> "#define"^(line_type2c clt)
+  | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)
+  | PC.TDefineParam(clt,_,_) -> "#define_param"^(line_type2c clt)
   | PC.TMinusFile(s,clt) -> (pr "--- %s" s)^(line_type2c clt)
   | PC.TPlusFile(s,clt) -> (pr "+++ %s" s)^(line_type2c clt)
 
@@ -217,7 +218,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
       split t clt
-  | PC.TDefine(clt) -> split t clt
+  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_) -> split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
@@ -367,7 +368,7 @@ let token2line (tok,_) =
 
   | PC.TPtrOp(clt) 
 
-  | PC.TDefine(clt) | PC.TInclude(_,clt)
+  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_) | PC.TInclude(_,clt)
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
@@ -379,7 +380,8 @@ let rec insert_line_end = function
     [] -> []
   | (((PC.TWhen(clt),q) as x)::xs) ->
       x::(find_line_end (token2line x) clt q xs)
-  | (((PC.TDefine(clt),q) as x)::xs) ->
+  | (((PC.TDefine(clt,_),q) as x)::xs)
+  | (((PC.TDefineParam(clt,_,_),q) as x)::xs) ->
       x::(find_line_end (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 

@@ -503,7 +503,8 @@ let rec equal_statement s1 s2 =
   | (Ast0.Stars(d1,_),Ast0.Stars(d2,_)) -> equal_mcode d1 d2
   | (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
       equal_mcode inc1 inc2 && equal_mcode name1 name2
-  | (Ast0.Define(def1,_,_),Ast0.Define(def2,_,_)) -> equal_mcode def1 def2
+  | (Ast0.Define(def1,_,params1,_),Ast0.Define(def2,_,params2,_)) ->
+      equal_mcode def1 def2 && equal_option params1 params2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | (Ast0.MultiStm(_),Ast0.MultiStm(_)) -> true

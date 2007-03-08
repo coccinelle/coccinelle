@@ -169,7 +169,7 @@ let statement s =
   | Ast0.Circles(d,whencode) -> [85]
   | Ast0.Stars(d,whencode) -> [86]
   | Ast0.Include(inc,name) -> [118]
-  | Ast0.Define(def,id,body) -> [119]
+  | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]
   | Ast0.MultiStm(re) -> [89]

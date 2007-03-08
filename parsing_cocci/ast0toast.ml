@@ -640,9 +640,11 @@ let rec statement s =
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(local_rewrap s (Ast.Include(mcode inc,mcode str)))
-      | Ast0.Define(def,id,body) ->
+      | Ast0.Define(def,id,params,body) ->
 	  Ast.Atomic
-	    (local_rewrap s (Ast.Define(mcode def,ident id,define_body body)))
+	    (local_rewrap s
+	       (Ast.Define(mcode def,ident id,get_option mcode params,
+			   define_body body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))

@@ -270,7 +270,7 @@ and statement table minus s =
       parameter_list table minus params;
       dots (statement table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
-  | Ast0.Define(def,id,body) ->
+  | Ast0.Define(def,id,_,body) ->
       ident GLOBAL table minus id; define_body table minus body
   | _ -> () (* no metavariable subterms *)
 

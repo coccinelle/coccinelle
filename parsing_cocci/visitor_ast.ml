@@ -327,8 +327,10 @@ let combiner bind option_default
       | Ast.Exp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
-      | Ast.Define(def,id,body) ->
-	  multibind [string_mcode def; ident id; define_body body]
+      | Ast.Define(def,id,params,body) ->
+	  multibind [string_mcode def; ident id;
+		      get_option string_mcode params;
+		      define_body body]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
 	  multibind [string_mcode case; expression exp; string_mcode colon] in
@@ -771,8 +773,10 @@ let rebuilder
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,string_mcode name)
-	| Ast.Define(def,id,body) ->
-	    Ast.Define(string_mcode def,ident id,define_body body)
+	| Ast.Define(def,id,params,body) ->
+	    Ast.Define(string_mcode def,ident id,
+		       get_option string_mcode params,
+		       define_body body)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->

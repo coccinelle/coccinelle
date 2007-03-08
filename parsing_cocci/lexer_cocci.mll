@@ -84,6 +84,13 @@ let type_names =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
+let check_var s linetype =
+  try (Hashtbl.find metavariables s) linetype
+  with
+    Not_found ->
+      (try (Hashtbl.find type_names s) linetype
+      with Not_found -> TIdent (s,linetype))
+
 let id_tokens lexbuf =
   let s = tok lexbuf in
   let linetype = get_current_line_type lexbuf in
@@ -146,12 +153,7 @@ let id_tokens lexbuf =
   | "Declaration"    -> TIsoDeclaration
   | "Type"           -> TIsoType
 
-  | s ->
-      (try (Hashtbl.find metavariables s) linetype
-      with
-	Not_found ->
-	  (try (Hashtbl.find type_names s) linetype
-	  with Not_found -> TIdent (s,linetype)))
+  | s -> check_var s linetype
 
 let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
@@ -385,8 +387,20 @@ rule token = parse
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor    (get_current_line_type lexbuf) }
 
-  | "#" [' ' '\t']* "define"
-      { start_line true; TDefine (get_current_line_type lexbuf) }
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
+    ( (letter (letter |digit)*) as ident) 
+      { start_line true;
+	let (arity,line,lline,offset) as lt = get_current_line_type lexbuf in
+	let off = String.length "#define " in
+	TDefine (lt,check_var ident (arity,line,lline,offset+off)) }
+  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
+    ( (letter (letter | digit)*) as ident) 
+    ( ('(' [^ ')']* ')' ) as params)
+      { start_line true;
+	let (arity,line,lline,offset) as lt = get_current_line_type lexbuf in
+	let off = String.length "#define " in
+	TDefineParam (lt,check_var ident (arity,line,lline,offset+off),
+		      params) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude
 	  (let str = tok lexbuf in

@@ -436,8 +436,9 @@ let rec statement arity s =
 	  whencode (dots force_newline (statement "")) (statement "") whn
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode print_string s
-      | Ast0.Define(def,id,body) ->
+      | Ast0.Define(def,id,params,body) ->
 	  mcode print_string def; print_string " "; ident id;
+	  print_option (mcode print_string) params;
 	  print_string " "; define_body body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re

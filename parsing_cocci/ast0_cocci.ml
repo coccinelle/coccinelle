@@ -257,7 +257,8 @@ and base_statement =
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
   | Include of string mcode (* #include *) * string mcode (* file *)
-  | Define of string mcode (* #define *) * ident (* name *) * define_body
+  | Define of string mcode (* #define *) * ident (* name *) *
+	string mcode option (*params*) * define_body
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
@@ -279,15 +280,6 @@ and case_line = base_case_line wrap
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
-
-and base_meta =
-    Include of string mcode (* #include *) * string mcode (* file *)
-  | Define of string mcode (* #define *) * ident (* name *) * define_body
-  | OptMeta        of meta
-  | UniqueMeta     of meta
-  | MultiMeta      of meta
-
-and meta = base_meta wrap
 
 and base_define_body =
     DMetaId of string mcode * pure

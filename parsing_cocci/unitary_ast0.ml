@@ -98,7 +98,8 @@ let get_free checker t =
       Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
-    | Ast0.Define(def,id,body) -> define_body body
+    | Ast0.Define(def,id,params,body) ->
+	bind (k s) (define_body body)
     | _ -> k s in
   
   let res = V0.combiner bind option_default 
@@ -167,8 +168,9 @@ let update_unitary unitary =
 	Ast0.rewrap s (Ast0.MetaStmt(name,is_unitary name))
     | Ast0.MetaStmtList(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmtList(name,is_unitary name))
-    | Ast0.Define(def,id,body) ->
-	Ast0.rewrap s (Ast0.Define(def,id,define_body body))
+    | Ast0.Define(def,id,params,body) ->
+	Ast0.rewrap s
+	  (Ast0.Define(def,r.V0.rebuilder_ident id,params,define_body body))
     | _ -> k s in
   
   let res = V0.rebuilder

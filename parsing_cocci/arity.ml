@@ -860,12 +860,14 @@ let rec statement in_nest tgt stm =
       let inc = mcode inc in
       let s = mcode s in
       make_rule_elem stm tgt arity (Ast0.Include(inc,s))
-  | Ast0.Define(def,id,body) ->
-      let arity = all_same true true tgt (mcode2line def) [mcode2arity def] in
+  | Ast0.Define(def,id,params,body) ->
+      let arity =
+	all_same true true tgt (mcode2line def) [mcode2arity def] in
       let def = mcode def in
       let id = ident false false arity id in
+      let params = get_option mcode params in
       let body = define_body arity body in
-      make_rule_elem stm tgt arity (Ast0.Define(def,id,body))
+      make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"	
 

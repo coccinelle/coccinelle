@@ -515,8 +515,9 @@ let rec rule_elem arity re =
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode print_string s
-  | Ast.Define(def,id,body) ->
-      mcode print_string def; print_string " "; ident id; print_string " ";
+  | Ast.Define(def,id,params,body) ->
+      mcode print_string def; print_string " "; ident id;
+      print_option (mcode print_string) params; print_string " ";
       define_body body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "

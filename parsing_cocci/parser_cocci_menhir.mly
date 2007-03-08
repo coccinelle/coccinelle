@@ -186,7 +186,8 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Data.clt> TMid0 TCPar TCPar0
 
 %token <string * Data.clt> TInclude
-%token <Data.clt> TDefine
+%token <Data.clt * token> TDefine
+%token <Data.clt * token * string> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
@@ -454,30 +455,53 @@ includes:
 	   (Ast0.wrap
 	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
 			    id2mcode $1)))) }
-| TDefine ident ctype TLineEnd
-    { let ty = Ast0.wrap(Ast0.Ty($3)) in
+| defineop ctype TLineEnd
+    { let ty = Ast0.wrap(Ast0.Ty($2)) in
       Ast0.wrap
 	(Ast0.DECL
-	   (Ast0.wrap
-	      (Ast0.Define
-		 (clt2mcode "#define" $1, $2,
-		  Ast0.wrap
-		    (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty])))))))) }
-| TDefine ident b=statement_dots(TEllipsis) TLineEnd
+	   ($1 (Ast0.wrap (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty]))))))) }
+| defineop b=statement_dots(TEllipsis) TLineEnd
     { Ast0.wrap
 	(Ast0.DECL
-	   (Ast0.wrap
-	      (Ast0.Define
-		 (clt2mcode "#define" $1, $2,
-		  Ast0.wrap
-		    (Ast0.DStm (Ast0.wrap(Ast0.DOTS(b (mkdots "..."))))))))) }
-| TDefine ident TMetaText TLineEnd
-    { let (nm,pure,clt) = $3 in
+	   ($1 (Ast0.wrap
+		  (Ast0.DStm (Ast0.wrap(Ast0.DOTS(b (mkdots "...")))))))) }
+| defineop TMetaText TLineEnd
+    { let (nm,pure,clt) = $2 in
       Ast0.wrap
-	(Ast0.DECL
-	   (Ast0.wrap
-	      (Ast0.Define(clt2mcode "#define" $1, $2,
-			   Ast0.wrap(Ast0.DMetaId(clt2mcode nm clt,pure)))))) }
+	(Ast0.DECL ($1 (Ast0.wrap(Ast0.DMetaId(clt2mcode nm clt,pure))))) }
+
+defineop:
+  TDefine
+    { let (clt,ident) = $1 in
+      function body ->
+	Ast0.wrap
+	  (Ast0.Define(clt2mcode "#define" clt,
+		       (match ident with
+			 TMetaId((nm,pure,clt)) ->
+			   Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure))
+		       | TIdent(nm_pure) ->
+			   Ast0.wrap(Ast0.Id(id2mcode nm_pure))
+		       | _ -> failwith "unexpected name for a #define"),
+		       None,
+		       body)) }
+| TDefineParam
+    { let (clt,ident,params) = $1 in
+      let (arity,line,lline,offset) = clt in
+      let off1 = String.length "#define " in
+      let off2 = off1 + 1 (*ident is at least 1 char, perhaps good enough*) in
+      function body ->
+	Ast0.wrap
+	  (Ast0.Define(clt2mcode "#define" clt,
+		       (match ident with
+			 TMetaId((nm,pure,clt)) ->
+			   Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure))
+		       | TIdent(nm_pure) ->
+			   Ast0.wrap(Ast0.Id(id2mcode nm_pure))
+		       | _ -> failwith "unexpected name for a #define"),
+		       Some
+			 (clt2mcode params
+			    (arity,line,lline,offset+off1+off2)),
+		       body)) }
 
 /*****************************************************************************/
 

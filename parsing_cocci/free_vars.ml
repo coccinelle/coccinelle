@@ -120,9 +120,9 @@ let collect_all_refs =
       (match Ast.unwrap re with
 	Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
       | Ast.MetaStmtList(name,_,_) -> [metaid name]
-      | Ast.Define(_,_,db) ->
+      | Ast.Define(_,id,_,db) ->
 	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,_) -> [metaid name]
+	    Ast.DMetaId(name,_) -> bind (k re) [metaid name]
 	  | _ -> k re)
       | _ -> k re) in
 
@@ -200,9 +200,9 @@ let collect_saved =
       (match Ast.unwrap re with
 	Ast.MetaRuleElem(name,TC.Saved,_) | Ast.MetaStmt(name,TC.Saved,_,_)
       | Ast.MetaStmtList(name,TC.Saved,_) -> [metaid name]
-      | Ast.Define(_,_,db) ->
+      | Ast.Define(_,id,_,db) ->
 	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,TC.Saved) -> [metaid name]
+	    Ast.DMetaId(name,TC.Saved) -> bind (k re) [metaid name]
 	  | _ -> k re)
       | _ -> k re) in
 
@@ -400,8 +400,8 @@ let classify_variables metavars minirules used_after =
     | Ast.MetaStmtList(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
-    | Ast.Define(def,id,body) ->
-	Ast.rewrap e (Ast.Define(def,id,define_body r body))
+    | Ast.Define(def,id,params,body) ->
+	Ast.rewrap e (Ast.Define(def,id,params,define_body r body))
     | _ -> k e in
 
   let fn = V.rebuilder
