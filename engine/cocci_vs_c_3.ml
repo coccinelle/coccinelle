@@ -1563,13 +1563,13 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
           let allminus = false in
           let iisto = [] in
           let stob = B.NoSto, false in
-          let var = 
+          let fake_var = 
             ((Some ((idb, None),[iidb]), typb, stob), iivirg)            
           in
-          onedecl allminus fa (var,iiptvirgb,iisto) >>= 
+          onedecl allminus fa (fake_var,iiptvirgb,iisto) >>= 
             (fun fa (var,iiptvirgb,iisto) -> 
 
-              match var with
+              match fake_var with
               | ((Some ((idb, None),[iidb]), typb, stob), iivirg) -> 
                   let onevar = B.Simple (Some idb, typb), [iidb] in
                   
@@ -1901,32 +1901,36 @@ and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) =
     | A.StructUnionDef(ty, lba, declsa, rba), 
      (B.StructUnion (sbopt, (sub, declsb)), ii) -> 
 
-       failwith "not supported"
-
-	 (*
         (match sbopt with
         | None -> 
             pr2 "warning: anonymous structDef not handled by ast_cocci";
             fail
         | Some sb -> 
             let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
-            if equal_structUnion (term sua) sub
-            then
-              ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) -> 
-              tokenf lba lbb >>= (fun lba lbb -> 
-              tokenf rba rbb >>= (fun rba rbb -> 
-              tokenf sua iisub >>= (fun sua iisub -> 
-              struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
-                let declsa = redots declsa undeclsa in
 
-                return (
-                  (A.StructUnionDef(sua, sa, lba, declsa, rba)) +> A.rewrap ta,
-                  (B.StructUnion (sbopt, (sub, declsb)),[iisub;iisb;lbb;rbb])
-                ))))))
-              
-            else fail
+
+            (* build a StructUnionName from a StructUnion *)
+            let fake_su = B.nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) in
             
-        ) *)
+            fullType ty fake_su >>= (fun ty fake_su -> 
+              match fake_su with
+              | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) -> 
+                  return (ty,  (iisub, iisb))
+              | _ -> raise Impossible
+            ) >>= (fun ty (iisub,iisb) -> 
+
+            tokenf lba lbb >>= (fun lba lbb -> 
+            tokenf rba rbb >>= (fun rba rbb -> 
+            struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+              let declsa = redots declsa undeclsa in
+
+              return (
+                (A.StructUnionDef(ty, lba, declsa, rba)) +> A.rewrap ta,
+                (B.StructUnion (sbopt, (sub, declsb)),[iisub;iisb;lbb;rbb])
+              )))))
+        )
+              
+        
 
 
 
