@@ -3,10 +3,10 @@
 //----------------------------------------------------------------------
 
 @@
-text T;
+identifier X;
 @@
 
-- #define DEVICE_INTR T
+- #define DEVICE_INTR X
 
 @@
 statement S;

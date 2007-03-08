@@ -80,19 +80,19 @@ type T;
 - X = snd_magic_kmalloc(T, B, C)
 + X = kmalloc(sizeof(*X)+B, C)
 
+
+//---------------------------------------------------------------------------
 @@
-text T;
+type T;
 @@
 - #define chip_t T
 
-// 
-// //but julia will not detect that chip_t is a type
-// //@@  @@
-// //- chip_t
-// //+ x
-// @@ expression X; identifier var; @@
-// - chip_t * var = X;
-// + x * var = X;
+@@
+typdef chip_t;
+@@
+
+- chip_t
++ T
 
 
 //---------------------------------------------------------------------------

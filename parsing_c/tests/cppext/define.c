@@ -91,73 +91,80 @@ static u32 __initdata ucode_start =
  if (CardServices(fn, args) != 0) goto next_entry
 
 
-bad: #define FOO1(s,a,b) \
-bad: 	    while(nlen > 1) {		\
-bad: 		    int ilen = p[1];	\
-bad: 		    if(nlen < ilen+2) {	\
-bad: 			    l3_debug(st, "FOO1  nlen < ilen+2"); \
-bad: 			    return;		\
-bad: 		    }			\
-bad: 		    nlen -= ilen+2;		\
-bad: 		    if((*p & 0xFF) == (a)) {	\
-bad: 			    int nlen = ilen;	\
-bad: 			    p += 2;		\
-bad: 			    b;		\
-bad: 		    } else {		\
-bad: 			    p += ilen+2;	\
-bad: 		    }			\
-bad: 	    }
-bad: 
-bad: 				switch (ident) {
-bad: 					case 0x22:	/* during */
-bad: 						FOO1("1A", 0x30, FOO1("1C", 0xA1, FOO1("1D", 0x30, FOO1("1E", 0x02, ( {
-bad: 							       ident = 0;
-bad: 							nlen = (nlen)?nlen:0; /* Make gcc happy */
-bad: 							while (ilen > 0) {
-bad: 														     ident = (ident << 8) | *p++;
-bad: 								  ilen--;
-bad: 									}
-bad: 														     if (ident > pc->para.chargeinfo) {
-bad: 														     pc->para.chargeinfo = ident;
-bad: 														     st->l3.l3l4(st, CC_CHARGE | INDICATION, pc);
-bad: 									}
-bad: 														     if (st->l3.debug & L3_DEB_CHARGE) {
-bad: 														     if (*(p + 2) == 0) {
-bad: 														     l3_debug(st, "charging info during %d", pc->para.chargeinfo);
-bad: 									}
-bad: 								   else {
-bad: 														     l3_debug(st, "charging info final %d", pc->para.chargeinfo);
-bad: 									}
-bad: 									}
-bad: 									}
-bad: 								    )))))
-BAD:!!!!! 							break;
-bad: 					case 0x24:	/* final */
-bad: 						FOO1("2A", 0x30, FOO1("2B", 0x30, FOO1("2C", 0xA1, FOO1("2D", 0x30, FOO1("2E", 0x02, ( {
-bad: 							       ident = 0;
-bad: 							nlen = (nlen)?nlen:0; /* Make gcc happy */
-bad: 							while (ilen > 0) {
-bad: 																      ident = (ident << 8) | *p++;
-bad: 								  ilen--;
-bad: 									}
-bad: 																      if (ident > pc->para.chargeinfo) {
-bad: 																      pc->para.chargeinfo = ident;
-bad: 																      st->l3.l3l4(st, CC_CHARGE | INDICATION, pc);
-bad: 									}
-bad: 																      if (st->l3.debug & L3_DEB_CHARGE) {
-bad: 																      l3_debug(st, "charging info final %d", pc->para.chargeinfo);
-bad: 									}
-bad: 									}
-bad: 								   ))))))
-bad: 							break;
-bad: 					default:
-bad:                                                        l3_debug(st, "invoke break invalid ident %02x",ident);
-bad: 						break;
-bad: 				}
-bad: #undef FOO1
+
+#define FOO1(s,a,b) \
+	    while(nlen > 1) {		\
+		    int ilen = p[1];	\
+		    if(nlen < ilen+2) {	\
+			    l3_debug(st, "FOO1  nlen < ilen+2"); \
+			    return;		\
+		    }			\
+		    nlen -= ilen+2;		\
+		    if((*p & 0xFF) == (a)) {	\
+			    int nlen = ilen;	\
+			    p += 2;		\
+			    b;		\
+		    } else {		\
+			    p += ilen+2;	\
+		    }			\
+	    }
+
+void main (int i)
+{
+
+
+				switch (ident) {
+					case 0x22:	/* during */
+						FOO1("1A", 0x30, FOO1("1C", 0xA1, FOO1("1D", 0x30, FOO1("1E", 0x02, ( {
+							       ident = 0;
+							nlen = (nlen)?nlen:0; /* Make gcc happy */
+							while (ilen > 0) {
+														     ident = (ident << 8) | *p++;
+								  ilen--;
+									}
+														     if (ident > pc->para.chargeinfo) {
+														     pc->para.chargeinfo = ident;
+														     st->l3.l3l4(st, CC_CHARGE | INDICATION, pc);
+									}
+														     if (st->l3.debug & L3_DEB_CHARGE) {
+														     if (*(p + 2) == 0) {
+														     l3_debug(st, "charging info during %d", pc->para.chargeinfo);
+									}
+								   else {
+														     l3_debug(st, "charging info final %d", pc->para.chargeinfo);
+									}
+									}
+									}
+								    )))))
+!!!! 							break;
+					case 0x24:	/* final */
+						FOO1("2A", 0x30, FOO1("2B", 0x30, FOO1("2C", 0xA1, FOO1("2D", 0x30, FOO1("2E", 0x02, ( {
+							       ident = 0;
+							nlen = (nlen)?nlen:0; /* Make gcc happy */
+							while (ilen > 0) {
+																      ident = (ident << 8) | *p++;
+								  ilen--;
+									}
+																      if (ident > pc->para.chargeinfo) {
+																      pc->para.chargeinfo = ident;
+																      st->l3.l3l4(st, CC_CHARGE | INDICATION, pc);
+									}
+																      if (st->l3.debug & L3_DEB_CHARGE) {
+																      l3_debug(st, "charging info final %d", pc->para.chargeinfo);
+									}
+									}
+								   ))))))
+							break;
+					default:
+                                                       l3_debug(st, "invoke break invalid ident %02x",ident);
+						break;
+				}
+#undef FOO1
 
 
 
+
+/*
 +static void (*do_hd)(void) = NULL;
  #define SET_HANDLER(x) \
 -if ((DEVICE_INTR = (x)) != NULL) \
@@ -208,3 +215,4 @@ bad: #undef FOO1
  		handler = unexpected_hd_interrupt;
 
 
+*/

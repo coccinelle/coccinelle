@@ -341,9 +341,9 @@ and define = define_bis wrap
    and define_val = 
      | DefineExpr of expression
      | DefineStmt of statement
+     | DefineType of fullType
      | DefineText of string wrap
      | DefineEmpty
-      (* | DefineType ? *)
 
 
 (* ------------------------------------------------------------------------- *)

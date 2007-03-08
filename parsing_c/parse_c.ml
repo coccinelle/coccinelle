@@ -388,19 +388,39 @@ let adjust_tok posadd filename tok =
 
 let tokens_define_val posadd bodys info = 
 
-  try 
-    let _ = expression_of_string bodys in
-    tokens_string bodys
-    +> Common.list_init 
-    +> List.map (fun tok -> 
-      adjust_tok  
-        (posadd + Ast_c.get_pos_of_info info)
-        (Ast_c.get_file_of_info info) 
-        tok
-    )
-  with
-  _ -> 
-    [Parser_c.TDefText (bodys, (new_info posadd bodys info));]
+    
+     if (try let _ = expression_of_string bodys in true with _ -> false) ||
+        (try let _ = type_of_string bodys       in true with _ -> false)
+     then 
+
+       tokens_string bodys
+       +> Common.list_init 
+       +> List.map (fun tok -> 
+         adjust_tok  
+           (posadd + Ast_c.get_pos_of_info info)
+           (Ast_c.get_file_of_info info) 
+           tok)
+       +> List.map (fun tok -> 
+         match tok with 
+         (* can't use here Lexer_parser, not our heuristic on case 
+          * such as #define chip_t vortex_t
+          * so have to do inference checking only base on name information.
+          * It is quite specific to rule66/ ...
+          *)
+         | Parser_c.TIdent (s,ii) -> 
+             if s =~ ".*_t" 
+             then begin
+               pr2 ("TYPEDEF: in #define, promoting" ^ s);
+               Parser_c.TypedefIdent (s, ii)
+             end
+             else 
+               tok
+         | _ -> tok
+       )
+           
+       
+     else 
+       [Parser_c.TDefText (bodys, (new_info posadd bodys info));]
 
 
 (* ------------------------------------------------------------------------- *)

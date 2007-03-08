@@ -786,6 +786,7 @@ let pp_program_gen pr_elem progelem =
       let define_val = function
         | DefineExpr e -> pp_expression_gen pr_elem e
         | DefineStmt _ -> raise Todo
+        | DefineType ty -> pp_type_gen pr_elem ty
         | DefineText (s, ii) -> List.iter pr_elem ii
         | DefineEmpty -> ()
       in

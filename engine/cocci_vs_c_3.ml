@@ -2512,10 +2512,32 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
 
       | A.DStm (re), b ->
 	  (match (A.unwrap re,b) with
-	    A.Exp(e), (B.DefineSimple (B.DefineExpr (expb)), []) ->
-	      failwith "fill in match on expressions"
-	  | A.Ty(t), _ ->
-	      failwith "fill in match on types"
+	  |  A.Exp(ea), (B.DefineSimple (B.DefineExpr (eb)), []) ->
+               expression ea eb >>= (fun ea eb -> 
+                 return (
+                   A.Define
+                     (definea, ida,
+                     (A.DStm ((A.Exp ea) +> A.rewrap re) +> A.rewrap bodya)),
+                   F.Define
+                     ((idb, [defineb;iidb;ieol]),
+                     (B.DefineSimple (B.DefineExpr (eb)), []))
+                 ))
+                     
+
+
+	  | A.Ty(ta), (B.DefineSimple (B.DefineType (tb)), []) -> 
+              fullType ta tb >>= (fun ta tb -> 
+
+                 return (
+                   A.Define
+                     (definea, ida,
+                     (A.DStm ((A.Ty ta) +> A.rewrap re) +> A.rewrap bodya)),
+                   F.Define
+                     ((idb, [defineb;iidb;ieol]),
+                     (B.DefineSimple (B.DefineType (tb)), []))
+                 ))
+
+
 	  | _ -> failwith "only types and expressions supported")
 
       | _, _ -> fail

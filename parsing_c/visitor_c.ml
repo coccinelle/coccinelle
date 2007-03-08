@@ -438,6 +438,7 @@ and vk_node = fun bigf node ->
           | DefineExpr e -> 
               vk_expr bigf e
           | DefineStmt _ -> raise Todo
+          | DefineType ty -> vk_type bigf ty
           | DefineText (s, ii) -> iif ii
           | DefineEmpty -> ()
         in
@@ -846,6 +847,7 @@ and vk_program_s = fun bigf p ->
         let define_val = function
           | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
           | DefineStmt _ -> raise Todo
+          | DefineType ty -> DefineType (vk_type_s bigf ty)
           | DefineText (s, ii) -> DefineText (s, iif ii)
           | DefineEmpty -> DefineEmpty
         in
@@ -925,6 +927,7 @@ and vk_node_s = fun bigf node ->
         let define_val = function
           | DefineExpr e -> DefineExpr (vk_expr_s bigf e)
           | DefineStmt _ -> raise Todo
+          | DefineType ty -> DefineType (vk_type_s bigf ty)
           | DefineText (s, ii) -> DefineText (s, iif ii)
           | DefineEmpty -> DefineEmpty
         in

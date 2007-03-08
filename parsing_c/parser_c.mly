@@ -1325,10 +1325,11 @@ cpp_directives:
 define_val: 
  | TDefText { DefineText (fst $1, [snd $1]) }
  | expr { DefineExpr $1 }
+ | type_name { DefineType $1 }
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 
- | TypedefIdent               { fst $1, [snd $1] } 
+ | TypedefIdent         { fst $1, [snd $1] } 
  | TDefParamVariadic    { fst $1, [snd $1] } 
  | TEllipsis            { "...", [$1] }
  /* they reuse keywords :(  */

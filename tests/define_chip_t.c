@@ -1,6 +1,6 @@
 #define chip_t vortex_t
 
-#define chip_t float
+//#define chip_t float
 
 static int
 snd_vortex_pcm_hw_params(snd_pcm_substream_t * substream,
