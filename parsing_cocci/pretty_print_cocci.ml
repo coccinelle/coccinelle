@@ -317,7 +317,8 @@ and typeC ty =
       dots force_newline declaration decls;
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
-  | Ast.MetaType(name,_,_) -> mcode print_string name; print_string " "
+  | Ast.MetaType(name,_,_) ->
+      mcode print_string name; print_string " "
 
 and baseType = function
     Ast.VoidType -> print_string "void "

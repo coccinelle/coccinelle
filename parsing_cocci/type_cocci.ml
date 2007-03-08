@@ -39,7 +39,18 @@ let rec typeC = function
   | StructUnionName(kind,name) ->
       structUnion kind; print_string name; print_string " "
   | TypeName(name) -> print_string name; print_string " "
-  | MetaType(name,_,_) -> print_string name; print_string " "
+  | MetaType(name,keep,inherited) ->
+      print_string name; print_string " ";
+      (*
+      let print_unitary = function
+	  Unitary -> print_string "unitary"
+	| Nonunitary -> print_string "nonunitary"
+	| Saved -> print_string "saved" in
+      print_string "/* ";
+      print_string "keep:"; print_unitary keep;
+      print_string " inherited:"; print_bool inherited;
+      print_string " */"
+      *)
   | Unknown -> print_string "unknown "
 
 and baseType = function

@@ -163,12 +163,26 @@ let collect_saved =
     | Ast.MetaLocalFunc(name,TC.Saved,_) -> [metaid name]
     | _ -> k i in
 
+  let rec type_collect res = function
+      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
+    | TC.Array(ty) -> type_collect res ty
+    | TC.MetaType(tyname,TC.Saved,_) -> bind [tyname] res
+    | ty -> res in
+
   let astfvexpr recursor k e =
-    match Ast.unwrap e with
-      Ast.MetaConst(name,TC.Saved,_,_) | Ast.MetaErr(name,TC.Saved,_)
-    | Ast.MetaExpr(name,TC.Saved,_,_) | Ast.MetaExprList(name,TC.Saved,_) ->
-	[metaid name]
-    | _ -> k e in
+    let tymetas =
+      match Ast.unwrap e with
+	Ast.MetaConst(name,_,Some type_list,_)
+      |	Ast.MetaExpr(name,_,Some type_list,_) ->
+	  List.fold_left type_collect option_default type_list	  
+      |	_ -> [] in
+    let vars =
+      match Ast.unwrap e with
+	Ast.MetaConst(name,TC.Saved,_,_) | Ast.MetaErr(name,TC.Saved,_)
+      | Ast.MetaExpr(name,TC.Saved,_,_) | Ast.MetaExprList(name,TC.Saved,_) ->
+	  [metaid name]
+      | _ -> k e in
+    bind tymetas vars in
 
   let astfvtypeC recursor k ty =
     match Ast.unwrap ty with
