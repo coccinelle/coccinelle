@@ -202,7 +202,8 @@ and expressionbis =
 
     and isWchar = IsWchar | IsChar
 
-  and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+  (* gccext: GetRefLabel, via &&label notation *)
+  and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not | GetRefLabel
   and assignOp = SimpleAssign | OpAssign of arithOp
   and fixOp    = Dec | Inc
 

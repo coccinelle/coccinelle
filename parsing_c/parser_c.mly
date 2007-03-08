@@ -529,11 +529,11 @@ unary_op:
  | TMinus { UnMinus,    $1 }
  | TTilde { Tilde,      $1 }
  | TBang  { Not,        $1 }
- /* ONLY OLD KERNEL, and also many 2.5.39->53 ? , generate s/r conflict, 
-  *  gccext: have that in old kernel to get address of local declared label?
-  *  UGLY 
-  * | TAndLog { GetRef }
+ /* gccext: have that a lot in old kernel to get address of local label.
+  * cf gcc manual "local labels as values".
   */
+ | TAndLog { GetRefLabel, $1 }
+
 
 
 postfix_expr: 
