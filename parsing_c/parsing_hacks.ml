@@ -913,6 +913,10 @@ let find_and_tag_good_macro cleanxs_with_pos =
      * Here we don't have the preceding 'static' so only way to
      * not have positive is to restrict to .*DECLARE.* macros.
     *)
+(* but there is a grammar rule for that, so don't need this case anymore
+unless the parameter of the DECLARE_xxx are wierd and can not be mapped
+on a argument_list
+
     | (Line 
           ([NotParenToken (TIdent (s,_),_);
             Parenthised (xxs,info_parens);
@@ -926,6 +930,7 @@ let find_and_tag_good_macro cleanxs_with_pos =
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
         find_macro (xs)
+*)
 
 
     (* linuxext: ex: DEBUG(), because a known macro, can relax the condition
