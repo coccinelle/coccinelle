@@ -329,7 +329,9 @@ let combiner bind option_default
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
       | Ast.Define(def,id,params,body) ->
 	  multibind [string_mcode def; ident id;
-		      get_option string_mcode params;
+		      get_option
+			(function x -> multibind (List.map string_mcode x))
+			params;
 		      define_body body]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
@@ -775,7 +777,7 @@ let rebuilder
 	    Ast.Include(string_mcode inc,string_mcode name)
 	| Ast.Define(def,id,params,body) ->
 	    Ast.Define(string_mcode def,ident id,
-		       get_option string_mcode params,
+		       get_option (List.map string_mcode) params,
 		       define_body body)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)

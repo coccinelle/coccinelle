@@ -187,7 +187,7 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 
 %token <string * Data.clt> TInclude
 %token <Data.clt * token> TDefine
-%token <Data.clt * token * string> TDefineParam
+%token <Data.clt * token * int * string> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
@@ -485,10 +485,25 @@ defineop:
 		       None,
 		       body)) }
 | TDefineParam
-    { let (clt,ident,params) = $1 in
+    { let (clt,ident,identlen,params) = $1 in
+      let param_list =
+	(* assume no spaces in the param list *)
+	Str.split (Str.regexp ",") params in
+      let param_list =
+	let rec loop = function
+	    [] -> [")"]
+	  | [x] -> [x;")"]
+	  | x::xs -> x::","::(loop xs) in
+	"(" :: (loop param_list) in
       let (arity,line,lline,offset) = clt in
-      let off1 = String.length "#define " in
-      let off2 = off1 + 1 (*ident is at least 1 char, perhaps good enough*) in
+      let starting_offset = (String.length "#define ") + identlen in
+      let (param_offsets,_) =
+	List.fold_left
+	  (function (offsets,prev_end) ->
+	    function cur ->
+	      ((prev_end::offsets),prev_end + (String.length cur)))
+	  ([],starting_offset) param_list in
+      let param_offsets = List.rev param_offsets in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define(clt2mcode "#define" clt,
@@ -499,8 +514,11 @@ defineop:
 			   Ast0.wrap(Ast0.Id(id2mcode nm_pure))
 		       | _ -> failwith "unexpected name for a #define"),
 		       Some
-			 (clt2mcode params
-			    (arity,line,lline,offset+off1+off2)),
+			 (List.map2
+			    (function param ->
+			      function offset ->
+				(clt2mcode param (arity,line,lline,offset)))
+			    param_list param_offsets),
 		       body)) }
 
 /*****************************************************************************/

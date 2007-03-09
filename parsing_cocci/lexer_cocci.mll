@@ -395,12 +395,12 @@ rule token = parse
 	TDefine (lt,check_var ident (arity,line,lline,offset+off)) }
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter | digit)*) as ident) 
-    ( ('(' [^ ')']* ')' ) as params)
+    ( ('(' ([^ ')']* as params) ')' ))
       { start_line true;
 	let (arity,line,lline,offset) as lt = get_current_line_type lexbuf in
 	let off = String.length "#define " in
 	TDefineParam (lt,check_var ident (arity,line,lline,offset+off),
-		      params) }
+		      String.length ident, params) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude
 	  (let str = tok lexbuf in

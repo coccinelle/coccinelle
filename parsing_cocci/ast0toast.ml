@@ -643,7 +643,8 @@ let rec statement s =
       | Ast0.Define(def,id,params,body) ->
 	  Ast.Atomic
 	    (local_rewrap s
-	       (Ast.Define(mcode def,ident id,get_option mcode params,
+	       (Ast.Define(mcode def,ident id,
+			   get_option (List.map mcode) params,
 			   define_body body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)

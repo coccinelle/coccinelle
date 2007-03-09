@@ -309,7 +309,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at top level *)
   | Include       of string mcode (*#include*) * string mcode (*file *)
   | Define of string mcode (* #define *) * ident (* name *) *
-	string mcode option (*params*) * define_body
+	string mcode list option (*params*) * define_body
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
 

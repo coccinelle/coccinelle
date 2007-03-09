@@ -379,7 +379,9 @@ let combiner bind option_default
       | Ast0.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
       | Ast0.Define(def,id,params,body) ->
 	  multibind [string_mcode def; ident id;
-		      get_option string_mcode params;
+		      get_option
+			(function x -> multibind (List.map string_mcode x))
+			params;
 		      define_body body]
       | Ast0.OptStm(re) -> statement re
       | Ast0.UniqueStm(re) -> statement re
@@ -774,7 +776,7 @@ let rebuilder = fun
 	    Ast0.Include(string_mcode inc,string_mcode name)
 	| Ast0.Define(def,id,params,body) ->
 	    Ast0.Define(string_mcode def,ident id,
-			get_option string_mcode params,
+			get_option (List.map string_mcode) params,
 			define_body body)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
