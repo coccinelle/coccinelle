@@ -11,8 +11,7 @@ let rec nub = function
   | (x::xs) -> x::(nub xs)
 
 (* ----------------------------------------------------------------------- *)
-(* Find the variables that occur free and occur free in a unitary way
-in a unitary way *)
+(* Find the variables that occur free and occur free in a unitary way *)
 
 (* take everything *)
 let minus_checker name = let id = Ast0.unwrap_mcode name in [id]

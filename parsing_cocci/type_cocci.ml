@@ -40,7 +40,7 @@ let rec typeC = function
       structUnion kind; print_string name; print_string " "
   | TypeName(name) -> print_string name; print_string " "
   | MetaType(name,keep,inherited) ->
-      print_string name; print_string " ";
+      print_string "<"; print_string name; print_string ">"; print_string " ";
       (*
       let print_unitary = function
 	  Unitary -> print_string "unitary"
@@ -77,6 +77,8 @@ and const_vol = function
 
 (* t1 should be less informative than t1, eg t1 = Pointer(Unknown) and t2 =
 Pointer(int) *)
+(* only used in iso *)
+(* needs to do something for MetaType *)
 let compatible t1 = function
     None -> t1 = Unknown
   | Some t2 ->

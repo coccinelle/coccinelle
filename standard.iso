@@ -367,15 +367,18 @@ unlikely(E) => E
 // or E is context code and has no attached + code
 // not really... pure means matches a unitary unplussed metavariable
 // but this rule doesn't work anyway
-Expression
-@@
-type T;
-pure T E;
-pure T *E1;
-identifier fld;
-@@
 
-E.fld => E1->fld
+// the following doesn't work because we need to support matching
+// metavariables in the metavariable declaration in iso_pattern
+//Expression
+//@@
+//type T;
+//pure T E;
+//pure T *E1;
+//identifier fld;
+//@@
+//
+//E.fld => E1->fld
 
 Expression
 @@
