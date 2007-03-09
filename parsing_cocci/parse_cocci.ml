@@ -31,6 +31,7 @@ let token2c (tok,_) =
   | PC.TFresh -> "fresh"
   | PC.TPure -> "pure"
   | PC.TTypedef -> "typedef"
+  | PC.TDeclarer -> "declarer"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -74,6 +75,7 @@ let token2c (tok,_) =
   | PC.TContinue(clt) -> "continue"^(line_type2c clt)
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
+  | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
 
   | PC.TSizeof(clt) -> "sizeof"^(line_type2c clt)
 
@@ -206,7 +208,7 @@ let split t = function
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
-  | PC.TFunction | PC.TText | PC.TTypedef
+  | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TError | PC.TWords -> ([t],[t])
 
@@ -224,7 +226,7 @@ let split_token ((tok,_) as t) =
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaExpList(_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
@@ -336,7 +338,7 @@ let token2line (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt) | PC.TSizeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 

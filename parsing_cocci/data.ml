@@ -57,6 +57,9 @@ let add_local_func_meta: (string -> bool -> unit) ref =
 let add_type_name: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_type") 
 
+let add_declarer_name: (string -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_decl") 
+
 (* ---------------------------------------------------------------------- *)
 
 (* types that clutter the .mly file *)

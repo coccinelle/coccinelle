@@ -45,6 +45,7 @@ let dumb_astcocci_decl = function
  | A.UnInit (stg, typa, sa, _)     -> ()
  | A.Init (stg, typa, sa, _, expa, _) -> ()
  | A.TyDecl (typa, _)     -> ()
+ | A.MacroDecl(fn, _, eas, _, _) -> ()
  | A.Ddots(dots,whencode) -> ()
  | A.MetaDecl _ -> ()
  | A.DisjDecl xs -> ()
@@ -53,6 +54,7 @@ let dumb_astcocci_decl = function
 let dumb_astcocci_initialiser = function
     A.Init(stg,ty,id,eq,ini,sem) -> ()
   | A.UnInit(stg,ty,id,sem) -> ()
+  | A.MacroDecl(fn, _, eas, _, _) -> ()
   | A.TyDecl(ty,sem) -> ()
   | A.DisjDecl(decls) -> ()
   | A.Ddots(dots,whencode) -> ()

@@ -162,6 +162,7 @@ let rec propagate_types env =
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(_,ty,id,_) ->
 		  [(strip id,Ast0.ast0_type_to_type ty)]
+	      | Ast0.MacroDecl(_,_,_,_,_) -> []
 	      | Ast0.TyDecl(ty,_) -> []
 	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)

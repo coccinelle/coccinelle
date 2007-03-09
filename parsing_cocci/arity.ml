@@ -479,6 +479,16 @@ and declaration in_nest tgt decl =
       let id = ident false false arity id in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
+  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      let arity =
+	all_same in_nest true tgt
+	  (mcode2line lp) (List.map mcode2arity [name;lp;rp;sem]) in
+      let name = mcode name in
+      let lp = mcode lp in
+      let args = dots (expression false arity) args in
+      let rp = mcode rp in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.MacroDecl(name,lp,args,rp,sem))
   | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same in_nest true tgt (mcode2line sem) [mcode2arity sem] in

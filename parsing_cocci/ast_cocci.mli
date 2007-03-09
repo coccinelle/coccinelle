@@ -199,6 +199,8 @@ and base_declaration =
 	initialiser * string mcode (*;*)
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
+  | MacroDecl of string mcode (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) * string mcode (* ; *)
   | DisjDecl   of declaration list
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 

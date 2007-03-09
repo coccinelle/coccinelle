@@ -452,6 +452,13 @@ let match_maker context_required whencode_allowed =
 	  if bool_match_option mcode_equal stga stgb
 	  then conjunct_bindings (match_typeC tya tyb) (match_ident ida idb)
 	  else return false
+      | (Ast0.MacroDecl(namea,_,argsa,_,_),
+	 Ast0.MacroDecl(nameb,_,argsb,_,_)) ->
+	   if mcode_equal namea nameb
+	   then
+	     match_dots match_expr is_elist_matcher do_elist_match
+	       argsa argsb
+	   else return false
       | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) -> match_typeC tya tyb
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"

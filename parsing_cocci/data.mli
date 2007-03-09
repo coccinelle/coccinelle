@@ -38,6 +38,8 @@ val add_local_func_meta: (string -> bool -> unit) ref
 
 val add_type_name: (string -> unit) ref
 
+val add_declarer_name: (string -> unit) ref
+
 (* ---------------------------------------------------------------------- *)
 
 (* types that clutter the .mly file *)

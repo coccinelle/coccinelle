@@ -411,6 +411,13 @@ and declaration d =
 				   parameter_list params,mcode rp1)))),
 		       ident id,mcode sem)
 	| _ -> Ast.UnInit(get_option mcode stg,typeC ty,ident id,mcode sem))
+    | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+	let name = mcode name in
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+	let sem = mcode sem in
+	Ast.MacroDecl(name,lp,args,rp,sem)
     | Ast0.TyDecl(ty,sem) -> Ast.TyDecl(typeC ty,mcode sem)
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.Ddots(dots,whencode) ->

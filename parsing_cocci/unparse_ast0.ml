@@ -261,6 +261,10 @@ and declaration d =
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
 	  mcode print_string sem
+      | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+	  mcode print_string name; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp; mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();

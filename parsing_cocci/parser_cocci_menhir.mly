@@ -154,7 +154,7 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0 TPure
-%token TTypedef
+%token TTypedef TDeclarer
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
 %token<Data.clt> Tvoid Tstruct Tunion
@@ -167,7 +167,7 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Data.clt> TBreak TContinue
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
-%token <string * Data.clt> TIdent TTypeId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId
 %token <string * Data.pure * Data.clt> TMetaId TMetaType TMetaErr
 %token <string * Data.pure * Data.clt> TMetaParam TMetaParamList
 %token <string * Data.pure * Data.clt> TMetaStm TMetaStmList
@@ -323,6 +323,11 @@ pure: TPure { true } | /* empty */ { false }
       if arity = Ast.NONE && pure = false
       then (!Data.add_type_name name; [])
       else failwith "bad typedef") }
+| TDeclarer
+    { (function arity -> function name -> function pure ->
+      if arity = Ast.NONE && pure = false
+      then (!Data.add_declarer_name name; [])
+      else failwith "bad declarer") }
 
 meta_exp_type:
   ctype
@@ -745,6 +750,9 @@ decl_var:
 	       (t,clt2mcode "(" lp1,clt2mcode "*" st,clt2mcode ")" rp1,
 		clt2mcode "(" lp2,p,clt2mcode ")" rp2)) in
         [Ast0.wrap(Ast0.UnInit(s,fn t,id,clt2mcode ";" pv))] }
+  | TDeclarerId TOPar eexpr_list_option TCPar TPtVirg
+      { [Ast0.wrap(Ast0.MacroDecl(id2mcode $1,clt2mcode "(" $2,$3,
+				  clt2mcode ")" $4,clt2mcode ";" $5))] } 
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar

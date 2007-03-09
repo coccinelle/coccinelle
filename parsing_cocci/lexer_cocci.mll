@@ -84,6 +84,10 @@ let type_names =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
+let declarer_names =
+  (Hashtbl.create(100) :
+     (string, D.line_type * int * int * int -> token) Hashtbl.t)
+
 let check_var s linetype =
   try (Hashtbl.find metavariables s) linetype
   with
@@ -109,6 +113,7 @@ let id_tokens lexbuf =
   | "list" when in_meta ->       check_arity_context_linetype s; Tlist
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
+  | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
   | "error" when in_meta ->      check_arity_context_linetype s; TError
@@ -218,7 +223,11 @@ let init _ =
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
-      Hashtbl.replace type_names name fn)
+      Hashtbl.replace type_names name fn);
+  Data.add_declarer_name :=
+    (function name ->
+      let fn clt = TDeclarerId(name,clt) in
+      Hashtbl.replace declarer_names name fn)
 
 let drop_spaces s =
   let len = String.length s in

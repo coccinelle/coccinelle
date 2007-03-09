@@ -229,6 +229,10 @@ let combiner bind option_default
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  bind (get_option storage_mcode stg)
 	    (bind (named_type ty id) (string_mcode sem))
+      | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+	  multibind
+	    [string_mcode name; string_mcode lp; expression_dots args;
+	      string_mcode rp; string_mcode sem]
       | Ast0.TyDecl(ty,sem) -> bind (typeC ty) (string_mcode sem)
       |	Ast0.DisjDecl(starter,decls,mids,ender) ->
 	  (match decls with
@@ -640,6 +644,10 @@ let rebuilder = fun
 	| Ast0.UnInit(stg,ty,id,sem) ->
 	    Ast0.UnInit(get_option storage_mcode stg,
 			typeC ty, ident id, string_mcode sem)
+	| Ast0.MacroDecl(name,lp,args,rp,sem) ->
+	    Ast0.MacroDecl(string_mcode name,string_mcode lp,
+			   expression_dots args,
+			   string_mcode rp,string_mcode sem)
 	| Ast0.TyDecl(ty,sem) -> Ast0.TyDecl(typeC ty, string_mcode sem)
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,

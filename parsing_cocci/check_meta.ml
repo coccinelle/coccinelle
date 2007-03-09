@@ -173,6 +173,8 @@ and declaration context table minus d =
 	     ident context table minus id; initialiser table minus ini))
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC table minus ty; ident context table minus id
+  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      dots (expression ID table minus) args
   | Ast0.TyDecl(ty,sem) -> typeC table minus ty
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID table minus) decls

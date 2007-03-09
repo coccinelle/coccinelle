@@ -147,6 +147,8 @@ and base_declaration =
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
+  | MacroDecl of string mcode (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) * string mcode (* ; *)
   | DisjDecl   of string mcode * declaration list *
                   string mcode list (* the |s *)  * string mcode
   (* Ddots is for a structure declaration *)

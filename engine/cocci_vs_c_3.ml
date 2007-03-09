@@ -1306,7 +1306,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (((Some ((idb,None),[iidb]),typb,stob),iivirg),iiptvirgb,iistob)
          )))))
 
-
+   | A.MacroDecl(name,lp,args,rp,sem), _ ->
+       failwith "fill in something for a macrodecl"
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
      ((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg)

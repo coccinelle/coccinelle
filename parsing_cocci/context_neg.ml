@@ -402,6 +402,9 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
+  | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2)) ->
+      equal_mcode nm1 nm2 && equal_mcode lp1 lp2 &&
+      equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true

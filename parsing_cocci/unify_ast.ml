@@ -254,6 +254,11 @@ and unify_declaration d1 d2 =
       if bool_unify_option unify_mcode stg1 stg2
       then conjunct_bindings (unify_fullType ft1 ft2) (unify_ident id1 id2)
       else return false
+  | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
+     Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
+       if unify_mcode n1 n2
+       then unify_dots unify_expression edots args1 args2
+       else return false
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.DisjDecl(d1),_) ->
       disjunct_all_bindings

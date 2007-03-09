@@ -323,6 +323,10 @@ and declaration d =
       print_option (mcode storage) stg;
       print_named_type ty id;
       mcode print_string sem
+  | Ast.MacroDecl(name,lp,args,rp,sem) ->
+      mcode print_string name; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_,_) -> raise CantBeInPlus
   | Ast.Ddots(_,_) -> raise CantBeInPlus

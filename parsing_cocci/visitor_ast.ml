@@ -229,6 +229,10 @@ let combiner bind option_default
       | Ast.UnInit(stg,ty,id,sem) ->
 	  bind (get_option storage_mcode stg)
 	    (bind (named_type ty id) (string_mcode sem))
+      | Ast.MacroDecl(name,lp,args,rp,sem) ->
+	  multibind
+	    [string_mcode name; string_mcode lp; expression_dots args;
+	      string_mcode rp; string_mcode sem]
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       |	Ast.Ddots(dots,whencode) ->
@@ -666,6 +670,10 @@ let rebuilder
 	| Ast.UnInit(stg,ty,id,sem) ->
 	    Ast.UnInit(get_option storage_mcode stg, fullType ty, ident id,
 		       string_mcode sem)
+	| Ast.MacroDecl(name,lp,args,rp,sem) ->
+	    Ast.MacroDecl(string_mcode name, string_mcode lp,
+			  expression_dots args,
+			  string_mcode rp,string_mcode sem)
 	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
 	| Ast.Ddots(dots,whencode) ->

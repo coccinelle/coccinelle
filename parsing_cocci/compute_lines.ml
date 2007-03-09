@@ -378,6 +378,10 @@ and declaration d =
       | Some x ->
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
+  | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      mkres d (Ast0.MacroDecl(name,lp,args,rp,sem))
+	(promote_mcode name) (promote_mcode sem)
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
