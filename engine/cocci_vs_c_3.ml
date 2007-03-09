@@ -2483,7 +2483,6 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
   | A.Define(definea,ida,params,bodya), F.Define ((idb, ii), def) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-(* pad:why in comment?      all_bound (A.get_inherited ida) >&&> *)
       tokenf definea defineb >>= (fun definea defineb -> 
 
       (match A.unwrap bodya, def with

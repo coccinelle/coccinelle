@@ -8,7 +8,7 @@ let debug_cpp     = ref false
 
 let debug_cfg = ref false
 
-let filter_msg = ref true
+let filter_msg = ref false
 
 
 let show_flow_labels = ref true

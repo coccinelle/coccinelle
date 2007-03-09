@@ -320,7 +320,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
   stmt,  (f, [iiptvirg])
 
 let stmt_to_specialdeclmacro (e, ii) = 
-  let iiptvirg = tuple_of_list1 ii in
+  let _iiptvirg = tuple_of_list1 ii in
   match e with 
   | Some 
       (
