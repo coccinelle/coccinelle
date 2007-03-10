@@ -90,10 +90,11 @@ let declarer_names =
 
 let check_var s linetype =
   try (Hashtbl.find metavariables s) linetype
-  with
-    Not_found ->
-      (try (Hashtbl.find type_names s) linetype
-      with Not_found -> TIdent (s,linetype))
+  with Not_found ->
+    (try (Hashtbl.find type_names s) linetype
+    with Not_found ->
+      (try (Hashtbl.find declarer_names s) linetype
+      with Not_found -> TIdent (s,linetype)))
 
 let id_tokens lexbuf =
   let s = tok lexbuf in
