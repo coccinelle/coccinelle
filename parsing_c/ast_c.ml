@@ -306,9 +306,12 @@ and statementbis =
  *)
 
 and declaration = 
-   DeclList of (((string * initialiser option) wrap (* s = *) option) * 
+  | DeclList of (((string * initialiser option) wrap (* s = *) option) * 
                  fullType * storage)
                 wrap2 (* , *) list wrap (* ; fakestart sto *)
+  (* cppext: *)
+  | MacroDecl of (string * argument wrap2 list * bool (* static*)) wrap
+
      and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
@@ -334,10 +337,10 @@ and definition = (string * functionType * storage * compound)
                  wrap (* s ( ) { } fakestart sto *)
 
 (* cppext *) 
-and define = define_bis wrap
- and define_bis = 
-   | DefineSimple of define_val
-   | DefineFunc   of (string wrap) wrap2 list (* params *) * define_val
+and define =
+   | DefineVar of define_val
+   | DefineFunc   of 
+       (string wrap) list (* ( param1, param2, etc ) *) * define_val
    and define_val = 
      | DefineExpr of expression
      | DefineStmt of statement
@@ -355,12 +358,12 @@ and program = programElement list
      (* cppext: *)
      | Include of string wrap           (* #include s *)
      | Define of string wrap * define   (* #define s *)
-
-     | SpecialDeclMacro of string * argument wrap2 list * il 
+     (* cppext: *)
+     | SpecialMacro of string * argument wrap2 list * il 
          
      | EmptyDef of il      (* gccext: allow redundant ';' *)
      | NotParsedCorrectly of il
-     | FinalDef of info
+     | FinalDef of info (* EOF *)
 
 
 

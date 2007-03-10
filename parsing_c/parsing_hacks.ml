@@ -169,10 +169,25 @@ type linecol = { line : int; col : int }
 
 type token_with_pos = Parser_c.token * linecol
 
-
+(* todo: except when EOF !! *)
 let is_same_line line = function 
   | (x, {line = line2}) when line2 = line -> true 
   | _ -> false 
+
+
+type macrokind = 
+  | MacroDecl
+  | MacroMisc
+  (* 
+  | MacroForeach 
+  | MacroString
+  | MacroStmtPtvirg
+  | MacroSingle
+  *)
+let trans_macro_token macrokind info = 
+  match macrokind with
+  | MacroDecl -> Parser_c.TMacroDecl (Ast_c.get_str_of_info info, info)
+  | MacroMisc -> Parser_c.TMacro info
 
 
 (* ------------------------------------------------------------------------- *)
@@ -834,7 +849,8 @@ let declList =
 
 let find_and_tag_good_macro cleanxs_with_pos = 
   let (put_comment : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
-  let (keep_macro  : (int, bool) Hashtbl.t ref) = ref (Hashtbl.create 101) in
+  let (keep_macro  : (int, macrokind) Hashtbl.t ref) = ref (Hashtbl.create 101)
+  in
 
 
   (* ---------------------------------------------------------------------- *)
@@ -865,25 +881,30 @@ let find_and_tag_good_macro cleanxs_with_pos =
     (* linuxext: ex: static [const] DEVICE_ATTR(); *)
     | (Line 
           (
-            ([NotParenToken (Tstatic _,_);
-             NotParenToken (TIdent (s,_),_);
-             Parenthised (xxs,info_parens);
-             NotParenToken (TPtVirg _,_);
-            ] 
+            (NotParenToken (Tstatic _,_)::
+             NotParenToken ((TIdent (s,_) as macro,_))::
+             Parenthised (xxs,info_parens)::
+             NotParenToken (TPtVirg _,_)::
+             _
+            ) 
             | 
-            [NotParenToken (Tstatic _,_);
-             NotParenToken (Tconst _,_);
-             NotParenToken (TIdent (s,_),_);
-             Parenthised (xxs,info_parens);
-             NotParenToken (TPtVirg _,_);
-            ]) (* it could also be the same with a TEof en plus a la fin *)
-              as line1
+            (NotParenToken (Tstatic _,_)::
+             NotParenToken (Tconst _,_)::
+             NotParenToken ((TIdent (s,_) as macro,_))::
+             Parenthised (xxs,info_parens)::
+             NotParenToken (TPtVirg _,_)::
+             _
+            ) (* it could also be the same with a TEof en plus a la fin *)
+              (*as line1*)
           ))
         ::xs when (s ==~ regexp_macro) || List.mem s declList -> 
         msg_declare_macro s;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroDecl;
+        (*
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
+        *)
         find_macro (xs)
 
 
@@ -893,16 +914,19 @@ let find_and_tag_good_macro cleanxs_with_pos =
      *)
     | (Line 
           ([NotParenToken (Tstatic _,_);
-            NotParenToken (TIdent (s,_),_);
+            NotParenToken (TIdent (s,_) as macro,_);
             Parenthised (xxs,info_parens);
-          ] as line1
+          ] (*as line1*)
           ))
         ::xs when s ==~ regexp_macro -> 
 
         msg_declare_macro s;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroDecl;
+        (*
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
-        ) line1;
+          ) line1;
+        *)
         find_macro (xs)
 
 
@@ -916,21 +940,25 @@ let find_and_tag_good_macro cleanxs_with_pos =
 (* but there is a grammar rule for that, so don't need this case anymore
 unless the parameter of the DECLARE_xxx are wierd and can not be mapped
 on a argument_list
+*)
 
     | (Line 
-          ([NotParenToken (TIdent (s,_),_);
+          ([NotParenToken (TIdent (s,_) as macro,_);
             Parenthised (xxs,info_parens);
             NotParenToken (TPtVirg _,_);
-          ] as line1
+          ] (*as line1*)
           ))
         ::xs when (s ==~ regexp_declare) || List.mem s declList -> 
 
         msg_declare_macro s;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroDecl;
+        (*
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
         ) line1;
+        *)
         find_macro (xs)
-*)
+
 
 
     (* linuxext: ex: DEBUG(), because a known macro, can relax the condition
@@ -945,7 +973,7 @@ on a argument_list
           List.mem s debug_macros_list
       -> 
         msg_debug_macro s;
-        Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroMisc;
 
         iter_token_paren (fun (tok, x) -> 
           Hashtbl.add !put_comment (TH.pos_of_token tok) true
@@ -1004,7 +1032,7 @@ on a argument_list
         if condition (* && s ==~ regexp_macro *)
         then begin
           msg_macro_noptvirg s;
-          Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
+          Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroMisc;
           iter_token_paren (fun (tok, x) -> 
             Hashtbl.add !put_comment (TH.pos_of_token tok) true
           ) line1;
@@ -1045,7 +1073,7 @@ on a argument_list
         if condition
         then begin
           msg_macro_noptvirg_single s;
-          Hashtbl.add !keep_macro (TH.pos_of_token macro) true;
+          Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroMisc;
 
           iter_token_paren (fun (tok, x) -> 
             Hashtbl.add !put_comment (TH.pos_of_token tok) true
@@ -1089,7 +1117,7 @@ let adjust_tokens_based_on_mark_macro (keep_macro, put_comments) tokens =
 
     | x -> 
         if Hashtbl.mem keep_macro charpos
-        then TMacro info
+        then trans_macro_token (Hashtbl.find keep_macro charpos) info
         else 
           if Hashtbl.mem put_comments charpos 
           then TCommentCpp info

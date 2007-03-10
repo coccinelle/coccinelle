@@ -175,7 +175,7 @@ let compare_ast filename1 filename2  =
         | Declaration a, Declaration b -> if not (a =*= b) then incr error
         | Definition a, Definition b ->   if not (a =*= b) then incr error
         | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
-        | SpecialDeclMacro (a1,b1,c1), SpecialDeclMacro (a2,b2,c2) -> 
+        | SpecialMacro (a1,b1,c1), SpecialMacro (a2,b2,c2) -> 
             if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
         | Include a, Include b -> if not (a =*= b) then incr error
         | Define _, Define _ ->   

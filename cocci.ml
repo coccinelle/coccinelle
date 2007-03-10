@@ -384,7 +384,7 @@ let flow_to_ast2 flow =
       | Control_flow_c.Define (x, body) -> Ast_c.Define (x, body)
       | Control_flow_c.ExprStatement (_st, (e, ii)) -> 
           let (s,args,ii) = stmt_to_specialdeclmacro (e, ii) in
-          Ast_c.SpecialDeclMacro (s, args, ii)
+          Ast_c.SpecialMacro (s, args, ii)
 
       | _ -> raise Impossible
       )
@@ -395,56 +395,6 @@ let flow_to_ast a =
 
 
 
-(* --------------------------------------------------------------------- *)
-(* Helpers for hack funheader *)
-(* --------------------------------------------------------------------- *)
-
-let fake_line = {Ast_cocci.line = -1; Ast_cocci.column = -1}
-let wrap ast = (ast, -1, [], [], [], [], Ast_cocci.NoDots)
-
-let put_no_pos_everywhere decl =
-  let mcode (x, info, mck) = 
-    x, info, 
-    (match mck with
-    | Ast_cocci.MINUS (pos, xxs) -> Ast_cocci.MINUS(Ast_cocci.NoPos, xxs)
-    | Ast_cocci.CONTEXT (pos, xxs) -> Ast_cocci.CONTEXT(Ast_cocci.NoPos, xxs)
-    | Ast_cocci.PLUS -> Ast_cocci.PLUS
-    )
-  in
-
-  let donothing r k e = k e in
-
-  let res = 
-  Visitor_ast.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
-  in
-  res.Visitor_ast.rebuilder_declaration decl
-
-
-let convert_funheader_for_proto (bef,allminus,stg,ty,name,lp,params,rp) env =
-  let proto = 
-    wrap (
-      Ast_cocci.Type 
-        (None, 
-        wrap (
-          Ast_cocci.FunctionType (allminus, ty, lp, params, rp))
-        ))
-  in
-  let ptvirg = 
-    if allminus
-    then (";",fake_line, Ast_cocci.MINUS (Ast_cocci.NoPos,[[]]))
-    else (";",fake_line, Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING))
-  in
-
-  let decl = wrap (Ast_cocci.UnInit (stg, proto, name, ptvirg)) in
-  let decl = put_no_pos_everywhere decl in
-  let mckstart = Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING) in
-  (mckstart, allminus, decl), env
-  
-  
                   
 (*****************************************************************************)
 (* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
@@ -481,14 +431,15 @@ let build_maybe_info e =
   | Ast_c.Declaration _ 
   | Ast_c.Include _ 
   | Ast_c.Define _  
-  | Ast_c.SpecialDeclMacro _
+  | Ast_c.SpecialMacro _
     -> 
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
         | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
         | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
-        | Ast_c.SpecialDeclMacro (s, args, ii) -> 
+        (* todo? still useful ? could consider as Decl instead *)
+        | Ast_c.SpecialMacro (s, args, ii) -> 
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
 
@@ -610,7 +561,6 @@ let (rebuild_info_program :
 
 
 let g_cprogram = ref [] 
-let g_hack_funheaders = ref []
 let g_contain_typedmetavar = ref false 
 
 (* --------------------------------------------------------------------- *)
@@ -653,9 +603,8 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
       | None -> 
           push2 None new_c_elems ;
           acc
-      | Some (elem, modified, newbindings, hacks) ->  
+      | Some (elem, modified, newbindings) ->  
           push2 (if modified then (Some elem) else None) new_c_elems;
-          hacks +>List.iter (fun x ->Common.push2 x g_hack_funheaders);
 	  List.fold_left
 	    (function acc ->
 	      function newbinding -> 
@@ -683,9 +632,9 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
 
 
 
-(* This function returns a triplet option. First the C element (modified),
+(* This function returns a pair option. First the C element (modified),
  * then a list of bindings because there is could be new info brought by 
- * the matching, and finally a hack_funheaders list. 
+ * the matching.
  * 
  * This function does not use the global, so could put it before,
  * but more logical to make it follows the other process_xxx functions.
@@ -711,15 +660,6 @@ and process_a_ctl_a_env_a_celem2 =
             
         ) in
 
-      (* modify also the proto if FunHeader was touched *)
-      let hack_funheaders = 
-        trans_info +> Common.map_filter (fun (_nodi, binding, rule_elem) ->
-          match Ast_cocci.unwrap rule_elem with
-          | Ast_cocci.FunHeader (a,b,c,d,e,f,g,h) -> 
-              Some (convert_funheader_for_proto (a,b,c,d,e,f,g,h) binding)
-          | _ -> None
-		)  
-      in
       
 
       if not returned_any_states
@@ -729,7 +669,7 @@ and process_a_ctl_a_env_a_celem2 =
         show_or_not_trans_info trans_info;
         List.iter (show_or_not_binding "out") newbindings;
         if (null trans_info)
-        then Some (celem, false, newbindings, hack_funheaders)
+        then Some (celem, false, newbindings)
         else 
 	  
               (* I do the transformation on flow, not fixed_flow, 
@@ -742,7 +682,7 @@ and process_a_ctl_a_env_a_celem2 =
             then celem (* done via side effect *)
             else flow_to_ast flow' 
           in
-          Some (celem', true, newbindings, hack_funheaders)
+          Some (celem', true, newbindings)
       end
 	  )
 and process_a_ctl_a_env_a_celem  a b c = 
@@ -750,43 +690,6 @@ and process_a_ctl_a_env_a_celem  a b c =
     (fun () -> process_a_ctl_a_env_a_celem2 a b c)
     
     
-(* --------------------------------------------------------------------- *)
- 
-(* Last fix.
- *
- * todo: what if the function is modified two times ? we should
- * modify the prototype as soon as possible, not wait until the end
- * of all the ctl rules 
- *)
-let process_hack_funheaders2 hack_funheaders = 
-  if !Flag.show_misc then pr2 ("hack headers");
-  
-  hack_funheaders +> List.iter (fun (sp, binding) ->
-    let cprogram' = 
-      !g_cprogram +> List.map (fun ((ebis, info_item), flow, env) -> 
-        let ebis', modified = 
-          match ebis with
-          | Ast_c.Declaration decl -> 
-              (match Pattern3.match_declaration sp decl binding with
-              | [sp', binding'] -> 
-                  let decl' = 
-                    Transformation3.transform_declaration sp' decl binding' 
-                  in
-                  (Ast_c.Declaration decl',  true)
-              | [] -> (ebis, false)
-              | _ -> failwith "multiple match for proto, wierd"
-              )
-          | ebis -> (ebis, false)
-        in
-        (((ebis', info_item), flow, env), modified)
-      ) 
-    in
-    g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
-  )
-
-let process_hack_funheaders a = 
-  Common.profile_code "hack_headers" (fun () -> process_hack_funheaders2 a)
-
 
 
 
@@ -825,7 +728,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     
    (* parsing and build CFG *)
     g_cprogram:= build_info_program cfile contain_typedmetavar TAC.initial_env;
-    g_hack_funheaders := [];
     g_contain_typedmetavar := contain_typedmetavar;
 
     flush stdout;
@@ -835,7 +737,6 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
     Common.pr_xxxxxxxxxxxxxxxxx();
 
     process_ctls (Common.index_list_1 ctls) [Ast_c.emptyMetavarsBinding];
-    (*process_hack_funheaders !g_hack_funheaders;*)
 
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr "Finished";

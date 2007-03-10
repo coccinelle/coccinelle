@@ -301,7 +301,17 @@ and vk_decl = fun bigf d ->
   let iif ii = List.iter (vk_info bigf) ii in
 
   let f = bigf.kdecl in 
-  let rec k (DeclList (xs,ii)) = iif ii; List.iter aux xs 
+  let rec k decl = 
+    match decl with 
+    | DeclList (xs,ii) -> iif ii; List.iter aux xs 
+    | MacroDecl ((s, args, b),ii) -> 
+        iif ii;
+        args +> List.iter (fun (e, ii) -> 
+          iif ii;
+          vk_argument bigf e
+          );
+
+        
   and aux ((var, t, sto), iicomma) = 
     iif iicomma;
     vk_type bigf t;
@@ -431,9 +441,8 @@ and vk_node = fun bigf node ->
 
     | F.CaseNode i -> ()
 
-    | F.Define ((s,ii), (def,defii)) -> 
+    | F.Define ((s,ii), (def)) -> 
         iif ii;
-        iif defii;
         let define_val = function
           | DefineExpr e -> 
               vk_expr bigf e
@@ -443,12 +452,9 @@ and vk_node = fun bigf node ->
           | DefineEmpty -> ()
         in
         (match def with
-        | DefineSimple defval -> define_val defval
+        | DefineVar defval -> define_val defval
         | DefineFunc (params, defval) -> 
-            params +> List.iter (fun ((string,iistring), iicomma) -> 
-              iif iistring;
-              iif iicomma
-            );
+            params +> List.iter (fun (s, ii) -> iif  ii);
             define_val defval
         )
         
@@ -749,7 +755,18 @@ and vk_type_s = fun bigf t ->
 and vk_decl_s = fun bigf d -> 
   let f = bigf.kdecl_s in 
   let infolistf ii = List.map (vk_info_s bigf) ii in
-  let rec k (DeclList (xs, ii)) = DeclList (List.map aux xs,   infolistf ii)
+  let rec k decl = 
+    match decl with
+    | DeclList (xs, ii) -> 
+        DeclList (List.map aux xs,   infolistf ii)
+    | MacroDecl ((s, args, b),ii) -> 
+        MacroDecl 
+          ((s, 
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, infolistf ii),
+           b),
+          infolistf ii)
+
+
   and aux ((var, t, sto), iicomma) = 
     ((var +> map_option (fun ((s, ini), ii_s_ini) -> 
       (s, ini +> map_option (fun init -> vk_ini_s bigf init)),
@@ -833,8 +850,8 @@ and vk_program_s = fun bigf p ->
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
     | Definition def -> Definition (vk_def_s bigf def)
     | EmptyDef ii -> EmptyDef (infolistf ii)
-    | SpecialDeclMacro (s, xs, ii) -> 
-        SpecialDeclMacro 
+    | SpecialMacro (s, xs, ii) -> 
+        SpecialMacro 
           (s, 
           xs +> List.map (fun (elem, iicomma) -> 
             vk_argument_s bigf elem, infolistf iicomma
@@ -842,7 +859,7 @@ and vk_program_s = fun bigf p ->
           infolistf ii
           )
     | Include (s, ii) -> Include (s, infolistf ii)
-    | Define ((s,ii), (def,defii)) -> 
+    | Define ((s,ii), (def)) -> 
 
         let define_val = function
           | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
@@ -853,16 +870,16 @@ and vk_program_s = fun bigf p ->
         in
         let def = 
           (match def with
-          | DefineSimple defval -> DefineSimple (define_val defval)
+          | DefineVar defval -> DefineVar (define_val defval)
           | DefineFunc (params, defval) -> 
               DefineFunc 
-                (params +> List.map (fun ((string,iistring), iicomma) -> 
-                  ((string, iif iistring), iif iicomma)
+                (params +> List.map (fun (string,iistring) -> 
+                  ((string, iif iistring))
                 ), define_val defval)
         
           )
         in
-        Define ((s, iif ii), (def, iif defii))
+        Define ((s, iif ii), (def))
 
     | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
@@ -922,7 +939,7 @@ and vk_node_s = fun bigf node ->
 
     | F.CaseNode i -> F.CaseNode i
 
-    | F.Define ((s,ii), (def,defii)) -> 
+    | F.Define ((s,ii), (def)) -> 
 
         let define_val = function
           | DefineExpr e -> DefineExpr (vk_expr_s bigf e)
@@ -933,16 +950,16 @@ and vk_node_s = fun bigf node ->
         in
         let def = 
           (match def with
-          | DefineSimple defval -> DefineSimple (define_val defval)
+          | DefineVar defval -> DefineVar (define_val defval)
           | DefineFunc (params, defval) -> 
               DefineFunc 
-                (params +> List.map (fun ((string,iistring), iicomma) -> 
-                  ((string, iif iistring), iif iicomma)
+                (params +> List.map (fun ((string,iistring)) -> 
+                  ((string, iif iistring))
                 ), define_val defval)
         
           )
         in
-        F.Define ((s, iif ii), (def, iif defii))
+        F.Define ((s, iif ii), (def))
 
 
     | F.Include (s, ii) -> F.Include (s, iif ii)

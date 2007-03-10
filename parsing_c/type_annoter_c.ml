@@ -393,16 +393,19 @@ let rec (annotate_program2 : environment -> programElement list ->
     );
     Visitor_c.kdecl_s = (fun (k, bigf) d -> 
       let d' = k d in
-      let (DeclList (xs, ii)) = d in
-      xs +> List.iter (fun ((var, t, sto), iicomma) -> 
+      (match d with
+      | (DeclList (xs, ii)) -> 
+          xs +> List.iter (fun ((var, t, sto), iicomma) -> 
         
-        var +> do_option (fun ((s, ini), ii_s_ini) -> 
-          match sto with 
-          | StoTypedef, _inline -> 
-              add_binding (TypeDef (s,Lib.al_type t)) true;
-          | _ -> 
-              add_binding (VarOrFunc (s, Lib.al_type t)) true;
-        );
+            var +> do_option (fun ((s, ini), ii_s_ini) -> 
+              match sto with 
+              | StoTypedef, _inline -> 
+                  add_binding (TypeDef (s,Lib.al_type t)) true;
+              | _ -> 
+                  add_binding (VarOrFunc (s, Lib.al_type t)) true;
+            );
+          );
+      | _ -> ()
       );
       d'
         

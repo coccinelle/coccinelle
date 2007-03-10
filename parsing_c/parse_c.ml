@@ -408,9 +408,9 @@ let tokens_define_val posadd bodys info =
           * It is quite specific to rule66/ ...
           *)
          | Parser_c.TIdent (s,ii) -> 
-             if s =~ ".*_t" 
+             if s =~ ".*_t$" 
              then begin
-               pr2 ("TYPEDEF: in #define, promoting" ^ s);
+               pr2 ("TYPEDEF: in #define, promoting:" ^ s);
                Parser_c.TypedefIdent (s, ii)
              end
              else 

@@ -373,7 +373,8 @@ let mk_e e ii = ((e, Ast_c.noType), ii)
 
 %token <Ast_c.info> TCommentCpp TCommentMisc
 
-%token <Ast_c.info> TMacro
+%token <Ast_c.info> TMacro 
+%token <(string * Ast_c.info)> TMacroDecl
 
 %token <Ast_c.info> TAction
 
@@ -792,6 +793,14 @@ decl2:
          )
          ),  ($3::iistart::snd storage))
      } 
+ /* cppext: */
+
+ | TMacroDecl TOPar argument_list TCPar TPtVirg 
+     { MacroDecl ((fst $1, $3, false), [snd $1;$2;$4;$5;fakeInfo()]) }
+ | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg 
+     { MacroDecl ((fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo();$1]) }
+
+
 
 decl_spec2: 
  | storage_class_spec      { {nullDecl with storageD = (fst $1, [snd $1]) } }
@@ -1273,8 +1282,8 @@ taction_list:
 
 param_define_list: 
  | /* empty */ { [] }
- | param_define                           { [$1, []] }
- | param_define_list TComma param_define  { $1 ++ [$3,   [$2]] }
+ | param_define                           { [$1] }
+ | param_define_list TComma param_define  { $1 ++ [",",[$2]] ++ [$3] }
 
 
 /* gccext:  which allow a trailing ',' in enum, as in perl */
@@ -1299,7 +1308,7 @@ gcc_opt_expr:
 /* cppext: */
 cpp_directives: 
  | TIdent TOPar argument_list TCPar TPtVirg 
-     { SpecialDeclMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } 
+     { SpecialMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
  /* seems dont work */
  | TIdent TOPar argument_list TCPar         
@@ -1311,12 +1320,12 @@ cpp_directives:
      { Include (fst $2, [$1;snd $2]) }
 
  | TDefVarStart TDefIdent define_val TDefEOL 
-     { Define ((fst $2, [$1; snd $2;$4]), (DefineSimple ($3), [])) }
+     { Define ((fst $2, [$1; snd $2;$4]), (DefineVar ($3))) }
 
  | TDefFuncStart TDefIdent TOPar param_define_list TCPar define_val TDefEOL
      { Define 
          ((fst $2, [$1; snd $2;$7]), 
-         (DefineFunc ($4, $6) , [$3;$5])) 
+         (DefineFunc ( ["(",[$3]] ++ $4 ++ [")",[$5]], $6))) 
      }
 
 

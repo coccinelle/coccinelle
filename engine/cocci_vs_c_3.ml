@@ -1222,9 +1222,27 @@ and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
 (* ------------------------------------------------------------------------- *)
 and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
  fun (mckstart, allminus, decla) declb -> 
+  X.all_bound (A.get_inherited decla) >&&>
+  match A.unwrap decla, declb with
 
-   match declb with
-  | (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
+  (* Un MetaDecl est introduit dans l'asttoctl pour sauter au dessus
+   * de toutes les declarations qui sont au debut d'un fonction et
+   * commencer le reste du match au premier statement. Alors, ca matche
+   * n'importe quelle declaration. On n'a pas besoin d'ajouter
+   * quoi que ce soit dans l'environnement. C'est une sorte de DDots.
+   * 
+   * When the SP want to remove the whole function, the minus is not
+   * on the MetaDecl but on the MetaRuleElem. So there should
+   * be no transform of MetaDecl, just matching are allowed.
+   *)
+
+  | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
+      (* todo: should not happen in transform mode *)
+      return ((mckstart, allminus, decla), declb)
+
+
+
+  | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) -> 
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
@@ -1233,7 +1251,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
           )))
         
-  | (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) -> 
+  | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) -> 
       if X.mode = PatternMode
       then
         xs +> List.fold_left (fun acc var -> 
@@ -1248,8 +1266,42 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           fail
       else 
         failwith "More that one variable in decl. Have to split to transform."
+
+  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,staticb),ii) ->
+      let (iisb, lpb, rpb, iiendb, iifakestart, iistob) = 
+        (match ii, staticb with
+        | [iisb;lpb;rpb;iiendb;iifakestart;iisto], true -> 
+            (iisb,lpb,rpb,iiendb, iifakestart,[iisto])
+        | [iisb;lpb;rpb;iiendb;iifakestart], false ->
+            (iisb,lpb,rpb,iiendb, iifakestart,[])
+        | _ -> raise Impossible
+        )
+      in
+      if term sa = sb 
+      then 
+        (if allminus 
+        then minusize_list iistob
+        else return ((), iistob)
+        ) >>= (fun () iistob ->
+
+        X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
+        tokenf sa iisb >>= (fun sa iisb -> 
+        tokenf lpa lpb >>= (fun lpa lpb -> 
+        tokenf rpa rpb >>= (fun rpa rpb -> 
+        tokenf enda iiendb >>= (fun enda iiendb -> 
+        arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
+        let eas = redots eas easundots in
+
+          return (
+            (mckstart, allminus, 
+            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla), 
+            (B.MacroDecl ((sb,ebs,staticb),
+                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+          ))))))))
+
+     else fail
   
-  | _ -> raise Impossible                
+  | _ -> fail
 
 
 and storage stoa stob =
@@ -1278,20 +1330,6 @@ and storage stoa stob =
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) -> 
   X.all_bound (A.get_inherited decla) >&&>
    match A.unwrap decla, declb with
-  (* Un MetaDecl est introduit dans l'asttoctl pour sauter au dessus
-   * de toutes les declarations qui sont au debut d'un fonction et
-   * commencer le reste du match au premier statement. Alors, ca matche
-   * n'importe quelle declaration. On n'a pas besoin d'ajouter
-   * quoi que ce soit dans l'environnement. C'est une sorte de DDots.
-   * 
-   * When the SP want to remove the whole function, the minus is not
-   * on the MetaDecl but on the MetaRuleElem. So there should
-   * be no transform of MetaDecl, just matching are allowed.
-   *)
-   | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
-       (* todo: should not happen in transform mode *)
-       return (decla, (declb, iiptvirgb, iistob))
-
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga), 
@@ -1305,9 +1343,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
            (((Some ((idb,None),[iidb]),typb,stob),iivirg),iiptvirgb,iistob)
          )))))
-
-   | A.MacroDecl(name,lp,args,rp,sem), _ ->
-       failwith "fill in something for a macrodecl"
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
      ((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg)
@@ -1343,16 +1378,24 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        fail
 
 
-   | A.DisjDecl declas, declb -> 
-       declas +> List.fold_left (fun acc decla -> 
-         acc >|+|> (onedecl allminus decla (declb,iiptvirgb, iistob))) fail
 
+  | A.DisjDecl declas, declb -> 
+      declas +> List.fold_left (fun acc decla -> 
+        acc >|+|> 
+            (* (declaration (mckstart, allminus, decla) declb) *)
+            (onedecl allminus decla (declb,iiptvirgb, iistob))
+      ) fail
+
+
+     
    (* only in struct type decls *)
    | A.Ddots(dots,whencode), _ ->
        raise Impossible
             
    | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
        failwith "not handling Opt/Unique/Multi Decl"
+
+
    | _, _ -> fail
 
 
@@ -2107,6 +2150,75 @@ and equal_structUnion_type_cocci a b =
 
 
 
+
+(*---------------------------------------------------------------------------*)
+and define_val bodya defvalb = 
+  match A.unwrap bodya, defvalb with
+  | A.DMetaId (idbodya, keep), B.DefineText (bodyb, [iibodyb]) -> 
+
+      let inherited = false (* TODO ? *) in
+      X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
+        (fun _s v -> 
+          match v with
+          | B.MetaTextVal sa -> 
+              if (sa =$= bodyb)
+              then 
+                tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
+                  return (
+                    (A.DMetaId (idbodya, keep) +> A.rewrap bodya),
+                    (B.DefineText (bodyb, [iibodyb]))
+                    ))
+              else fail
+          | _ -> raise Impossible
+        )
+
+  | A.DStm (re), b ->
+      (match (A.unwrap re,b) with
+      (* Here Exp have not the usual sense, we must not search subexp 
+       * inside eb. It's here to match exactly as-is the body of the #define.
+       * If we want to search/modify subexp inside this body, we don't
+       * use a DStm (Exp)  SP but instead we simply use Exp and let
+       * the visitor_c do its job by visiting also the body of the macros.
+       *)
+      |  A.Exp(ea), B.DefineExpr (eb) ->
+           expression ea eb >>= (fun ea eb -> 
+             return (
+               (A.DStm ((A.Exp ea) +> A.rewrap re) +> A.rewrap bodya),
+               (B.DefineExpr (eb))
+             ))
+      (* Same comment that previous here *)
+      | A.Ty(ta), B.DefineType (tb) -> 
+          fullType ta tb >>= (fun ta tb -> 
+            return (
+              (A.DStm ((A.Ty ta) +> A.rewrap re) +> A.rewrap bodya),
+              (B.DefineType (tb))
+            ))
+
+
+      | _ -> failwith "only types and expressions supported")
+
+  | _, _ -> fail
+
+
+and (define_params: (string A.mcode list, (string B.wrap list)) matcher) =
+ fun paramsa paramsb -> 
+   match paramsa, paramsb with
+   | [], [] -> return ([], [])
+   | x::xs, (y,ii)::ys -> 
+       define_params xs ys >>= (fun xs ys -> 
+         if term x = y 
+         then 
+           let (iiy) = tuple_of_list1 ii in
+           tokenf x iiy >>= (fun x iiy -> 
+             return (
+               x::xs,
+               (y,[iiy])::ys
+             ))
+         else fail
+       )
+   | _ -> fail
+          
+
 (*****************************************************************************)
 (* Entry points *)
 (*****************************************************************************)
@@ -2485,65 +2597,26 @@ let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) =
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
       tokenf definea defineb >>= (fun definea defineb -> 
-
-      (match A.unwrap bodya, def with
-      | A.DMetaId (idbodya, keep), 
-        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []) -> 
-
-         let inherited = false (* TODO ? *) in
-         X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
-          (fun _s v -> 
-            match v with
-            | B.MetaTextVal sa -> 
-                if (sa =$= bodyb)
-                then 
-                  tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
-                    return (
-                      A.Define
-                        (definea,ida,params,
-                        (A.DMetaId (idbodya, keep) +> A.rewrap bodya)),
-                      F.Define 
-                        ((idb, [defineb;iidb;ieol]),
-                        (B.DefineSimple (B.DefineText (bodyb, [iibodyb])), []))
-                    ))
-                else fail
-            | _ -> raise Impossible
-          )
-
-      | A.DStm (re), b ->
-	  (match (A.unwrap re,b) with
-	  |  A.Exp(ea), (B.DefineSimple (B.DefineExpr (eb)), []) ->
-               expression ea eb >>= (fun ea eb -> 
-                 return (
-                   A.Define
-                     (definea, ida, params,
-                     (A.DStm ((A.Exp ea) +> A.rewrap re) +> A.rewrap bodya)),
-                   F.Define
-                     ((idb, [defineb;iidb;ieol]),
-                     (B.DefineSimple (B.DefineExpr (eb)), []))
-                 ))
-                     
+        match params, def with
+        | None, (B.DefineVar defvalb) -> 
+            define_val bodya defvalb >>= (fun bodya defvalb -> 
+              return (
+                A.Define (definea, ida, params, bodya),
+                F.Define ((idb,[defineb;iidb;ieol]),(B.DefineVar defvalb))
+              ))
+        | Some paramsa, (B.DefineFunc (paramsb, defvalb)) -> 
+            define_val bodya defvalb >>= (fun bodya defvalb -> 
+            define_params paramsa paramsb >>= (fun paramsa paramsb -> 
+              return (
+                A.Define (definea, ida, Some paramsa, bodya),
+                F.Define 
+                  ((idb, [defineb;iidb;ieol]),
+                  (B.DefineFunc (paramsb, defvalb))
+                ))))
+        | _ -> fail
+      ))
 
 
-	  | A.Ty(ta), (B.DefineSimple (B.DefineType (tb)), []) -> 
-              fullType ta tb >>= (fun ta tb -> 
-
-                 return (
-                   A.Define
-                     (definea, ida, params,
-                     (A.DStm ((A.Ty ta) +> A.rewrap re) +> A.rewrap bodya)),
-                   F.Define
-                     ((idb, [defineb;iidb;ieol]),
-                     (B.DefineSimple (B.DefineType (tb)), []))
-                 ))
-
-
-	  | _ -> failwith "only types and expressions supported")
-
-      | _, _ -> fail
-            
-          
-      )))
 
 
   | A.Default(def,colon), F.Default (st, ((),ii)) -> 

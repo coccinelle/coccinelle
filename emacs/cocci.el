@@ -935,6 +935,9 @@ With prefix arg READ-SWITCHES, specify a value to override
       (list "identifier" "type" "parameter" "constant" "expression" "statement"
             "function" "local" "list" 
             "fresh" 
+
+            "declarer" "typedef" 
+            "pure"
             ;"error" "words"
 
             "char" "short" "int" "float" "double" "long" 
