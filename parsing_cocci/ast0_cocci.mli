@@ -31,7 +31,7 @@ and dots_bef_aft = NoDots | BetweenDots of statement
    metavariables
    for SP metavariables, true if the metavariable is unitary (valid up to
    isomorphism phase only) *)
-and pure = bool
+and pure = Impure | Pure | Context (* pure and only context *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -347,6 +347,7 @@ val context_wrap : 'a -> 'a wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
+val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
 val get_info : 'a wrap -> info
 val get_index : 'a wrap -> int
@@ -363,3 +364,8 @@ val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
+val reverse_type : Type_cocci.typeC -> base_typeC
+exception TyConv
+
+val lub_pure : pure -> pure -> pure
+

@@ -117,6 +117,8 @@ let id_tokens lexbuf =
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
+  | "context" when in_meta && in_iso ->
+      check_arity_context_linetype s; TContext
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
 
@@ -158,6 +160,7 @@ let id_tokens lexbuf =
   | "Statement"      -> TIsoStatement
   | "Declaration"    -> TIsoDeclaration
   | "Type"           -> TIsoType
+  | "TopLevel"       -> TIsoTopLevel
 
   | s -> check_var s linetype
 

@@ -153,7 +153,8 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0 TPure
+%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
+%token TPure TContext
 %token TTypedef TDeclarer
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -168,12 +169,12 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId
-%token <string * Data.pure * Data.clt> TMetaId TMetaType TMetaErr
-%token <string * Data.pure * Data.clt> TMetaParam TMetaParamList
-%token <string * Data.pure * Data.clt> TMetaStm TMetaStmList
-%token <string * Data.pure * Data.clt> TMetaFunc TMetaLocalFunc
-%token <string * Data.pure * Data.clt> TMetaExpList TMetaText
-%token <string * Data.pure * Type_cocci.typeC list option *
+%token <string * Ast0_cocci.pure * Data.clt> TMetaId TMetaType TMetaErr
+%token <string * Ast0_cocci.pure * Data.clt> TMetaParam TMetaParamList
+%token <string * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
+%token <string * Ast0_cocci.pure * Data.clt> TMetaFunc TMetaLocalFunc
+%token <string * Ast0_cocci.pure * Data.clt> TMetaExpList TMetaText
+%token <string * Ast0_cocci.pure * Type_cocci.typeC list option *
           Data.clt> TMetaExp TMetaConst
 %token TArobArob
 
@@ -214,6 +215,7 @@ let metatypes = (Hashtbl.create(10) : (string,unit) Hashtbl.t)
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
+%token TIsoTopLevel
 
 %token TInvalid
 
@@ -259,12 +261,15 @@ meta_main: metadec* TArobArob { List.concat($1) }
 *
 *****************************************************************************/
 
+pure:
+  TPure { Ast0.Pure }
+| TContext { Ast0.Context }
+| /* empty */ { Ast0.Impure }
+
 metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TPtVirg
   { List.concat (List.map (function nm -> kindfn ar nm ispure) ids) }
-
-pure: TPure { true } | /* empty */ { false }
 
 %inline metakind:
   TIdentifier
@@ -320,12 +325,12 @@ pure: TPure { true } | /* empty */ { false }
       !Data.add_text_meta name pure; [Ast.MetaTextDecl(arity,name)]) }
 | TTypedef
     { (function arity -> function name -> function pure ->
-      if arity = Ast.NONE && pure = false
+      if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else failwith "bad typedef") }
 | TDeclarer
     { (function arity -> function name -> function pure ->
-      if arity = Ast.NONE && pure = false
+      if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_declarer_name name; [])
       else failwith "bad declarer") }
 
@@ -373,7 +378,7 @@ generic_ctype:
 	 (* this is only possible when we are in a metavar decl which
 	    has previously declared the type metavariable.  Otherwise,
 	    it will be represented already as a MetaType *)
-	 Ast0.wrap(Ast0.MetaType(id2mcode p,false (*will be ignored*)))
+	 Ast0.wrap(Ast0.MetaType(id2mcode p,Ast0.Impure (*will be ignored*)))
 	 with Not_found -> Ast0.wrap(Ast0.TypeName(id2mcode p)) }
      | p=TMetaType
 	 { let (nm,pure,clt) = p in
@@ -387,6 +392,16 @@ struct_decl:
        t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,clt2mcode ";" pv)) }
+    | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+	pv=TPtVirg
+        { let (id,fn) = d in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,clt2mcode "(" lp1,clt2mcode "*" st,clt2mcode ")" rp1,
+		clt2mcode "(" lp2,p,clt2mcode ")" rp2)) in
+        Ast0.wrap(Ast0.UnInit(None,fn t,id,clt2mcode ";" pv)) }
      | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = make_cv cv (Ast0.wrap (Ast0.TypeName(id2mcode i))) in
@@ -1447,11 +1462,14 @@ no_dot_start_end(grammar,dotter):
 
 iso_main:
   TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
-  { iso_adjust (function x -> Ast0.ExprTag x) e1 el }
+    { iso_adjust (function x -> Ast0.ExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
     { iso_adjust (function x -> Ast0.TypeCTag x) t1 tl }
+| TIsoTopLevel e1=xstatement_dots(TEllipsis)
+    el=list(iso(xstatement_dots(TEllipsis))) EOF
+    { iso_adjust (function x -> Ast0.DotsStmtTag x) e1 el }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
 	[x] -> x
@@ -1466,6 +1484,9 @@ iso_main:
 	  | Common.Right x -> Common.Right(check_one x))
 	dl in
     iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
+
+xstatement_dots(dotter): b=statement_dots(dotter)
+    { Ast0.wrap(Ast0.DOTS(b (mkdots "..."))) }
 
 iso(term):
     TIso t=term { Common.Left t }

@@ -625,7 +625,8 @@ and process_a_ctl_a_env (ctl, used_after_list, rulenb) env =
   if not (null children_envs)
   then children_envs
   else begin
-    pr2 "Empty list of bindings, I will restart from old env";
+    if !Flag_ctl.partial_match
+    then Printf.printf "Empty list of bindings, I will restart from old env";
     [env +> List.filter (fun (s,v) -> List.mem s used_after_list)]
   end
 

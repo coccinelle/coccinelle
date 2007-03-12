@@ -88,6 +88,15 @@ let add_dot_binding var exp bindings =
 
 let init_env = []
 
+let debug str m binding =
+  let res = m binding in
+  (match res with
+    None -> Printf.printf "%s: failed\n" str
+  | Some binding ->
+      Printf.printf "%s: %s\n" str
+	(String.concat " " (List.map (function (x,_) -> x) binding)));
+  res
+
 let conjunct_bindings
     (m1 : 'binding -> 'binding option)
     (m2 : 'binding -> 'binding option)
@@ -149,15 +158,16 @@ let match_maker context_required whencode_allowed =
     | Ast0.STARS(_) -> Ast0.rewrap pattern (Ast0.STARS(data)) in
 
   let pure_sp_code =
-    let bind x y = x && y in
-    let option_default = true in
+    let bind = Ast0.lub_pure in
+    let option_default = Ast0.Context in
     let pure_mcodekind = function
 	Ast0.CONTEXT(mc) ->
-	  (match !mc with (Ast.NOTHING,_,_) -> true | _ -> false)
+	  (match !mc with (Ast.NOTHING,_,_) -> Ast0.Context | _ -> Ast0.Impure)
       | Ast0.MINUS(mc) ->
-	  (match !mc with ([],_) -> true | _ ->  false)
-      | _ -> false in
-    let donothing r k e = (pure_mcodekind (Ast0.get_mcodekind e)) && k e in
+	  (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
+      | _ -> Ast0.Impure in
+    let donothing r k e =
+      bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
 
     let mcode m = pure_mcodekind (Ast0.get_mcode_mcodekind m) in
 
@@ -165,36 +175,36 @@ let match_maker context_required whencode_allowed =
     (* pure is supposed to match only unitary metavars, not anything that
        contains only unitary metavars *)
     let ident r k i =
-      (pure_mcodekind (Ast0.get_mcodekind i)) && k i &&
-      match Ast0.unwrap i with
-	Ast0.MetaId(name,pure) | Ast0.MetaFunc(name,pure)
-      | Ast0.MetaLocalFunc(name,pure) -> pure
-      |	_ -> false in
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind i)) (k i))
+	(match Ast0.unwrap i with
+	  Ast0.MetaId(name,pure) | Ast0.MetaFunc(name,pure)
+	| Ast0.MetaLocalFunc(name,pure) -> pure
+	| _ -> Ast0.Impure) in
 
     let expression r k e =
-      (pure_mcodekind (Ast0.get_mcodekind e)) && k e &&
-      match Ast0.unwrap e with
-	Ast0.MetaConst(name,_,pure) | Ast0.MetaErr(name,pure) 
-      | Ast0.MetaExpr(name,_,pure) | Ast0.MetaExprList(name,pure) -> pure
-      |	_ -> false in
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
+	(match Ast0.unwrap e with
+	  Ast0.MetaConst(name,_,pure) | Ast0.MetaErr(name,pure) 
+	| Ast0.MetaExpr(name,_,pure) | Ast0.MetaExprList(name,pure) -> pure
+	| _ -> Ast0.Impure) in
 
     let typeC r k t =
-      (pure_mcodekind (Ast0.get_mcodekind t)) && k t &&
-      match Ast0.unwrap t with
-	Ast0.MetaType(name,pure) -> pure
-      |	_ -> false in
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
+	(match Ast0.unwrap t with
+	  Ast0.MetaType(name,pure) -> pure
+	| _ -> Ast0.Impure) in
 
     let param r k p =
-      (pure_mcodekind (Ast0.get_mcodekind p)) && k p &&
-      match Ast0.unwrap p with
-	Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,pure) -> pure
-      |	_ -> false in
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind p)) (k p))
+	(match Ast0.unwrap p with
+	  Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,pure) -> pure
+	| _ -> Ast0.Impure) in
 
     let stmt r k s =
-      (pure_mcodekind (Ast0.get_mcodekind s)) && k s &&
-      match Ast0.unwrap s with
-	Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
-      |	_ -> false in
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind s)) (k s))
+	(match Ast0.unwrap s with
+	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
+	| _ -> Ast0.Impure) in
 
     V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -203,18 +213,23 @@ let match_maker context_required whencode_allowed =
       donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
-    if pure
-    then
-      (match lst with
-	[x] ->
-	  if is_pure x then add_binding name (builder1 lst) else return false
-      | _ -> return false)
-    else add_binding name (builder2 lst) in
+    match pure with
+      Ast0.Pure | Ast0.Context ->
+	(match lst with
+	  [x] ->
+	    if (Ast0.lub_pure (is_pure x) pure) = pure
+	    then add_binding name (builder1 lst)
+	    else return false
+	| _ -> return false)
+    | Ast0.Impure -> add_binding name (builder2 lst) in
 
   let add_pure_binding name pure is_pure builder x =
-    if pure
-    then if is_pure x then add_binding name (builder x) else return false
-    else add_binding name (builder x) in
+    match pure with
+      Ast0.Pure | Ast0.Context ->
+	if (Ast0.lub_pure (is_pure x) pure) = pure
+	then add_binding name (builder x)
+	else return false
+    | Ast0.Impure ->  add_binding name (builder x) in
 
   let do_elist_match builder el lst =
     match Ast0.unwrap el with
@@ -280,12 +295,40 @@ let match_maker context_required whencode_allowed =
 	  expr
     | Ast0.MetaExpr(name,Some ts,pure) ->
 	let expty = Ast0.get_type expr in
-	if List.exists (function t -> Type_cocci.compatible t expty) ts
+	if List.exists
+	    (function Type_cocci.MetaType(_,_,_) -> true | _ -> false)
+	    ts
 	then
-	  add_pure_binding name pure pure_sp_code.V0.combiner_expression
-	    (function expr -> Ast0.ExprTag expr)
-	    expr
-	else return false
+	  (match ts with
+	    [Type_cocci.MetaType(tyname,_,_)] ->
+	      (match expty with
+		Some expty ->
+		  let tyname = Ast0.rewrap_mcode name tyname in
+		  (try
+		    conjunct_bindings
+		      (add_pure_binding tyname Ast0.Impure
+			 (function _ -> Ast0.Impure)
+			 (function ty -> Ast0.TypeCTag ty)
+			 (Ast0.rewrap expr (Ast0.reverse_type expty)))
+		      (add_pure_binding name pure
+			 pure_sp_code.V0.combiner_expression
+			 (function expr -> Ast0.ExprTag expr)
+			 expr)
+		  with Ast0.TyConv ->
+		    Printf.printf "warning: unconvertible type";
+		    return false)
+	      |	_ ->
+		  Printf.printf
+		    "warning: type metavar can only match one type";
+		  return false)
+	  | _ -> failwith "mixture of metatype and other types not supported")
+	else
+	  if List.exists (function t -> Type_cocci.compatible t expty) ts
+	  then
+	    add_pure_binding name pure pure_sp_code.V0.combiner_expression
+	      (function expr -> Ast0.ExprTag expr)
+	      expr
+	  else return false
     | Ast0.MetaConst(namea,_,pure) -> failwith "metaconst not supported"
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
@@ -341,8 +384,9 @@ let match_maker context_required whencode_allowed =
 	     Ast0.RecordAccess(expb,op,fieldb))
 	  | (Ast0.RecordPtAccess(expa,_,fielda),
 	     Ast0.RecordPtAccess(expb,op,fieldb)) ->
-	       conjunct_bindings (match_ident fielda fieldb)
+	       conjunct_bindings
 		 (match_expr expa expb)
+		 (match_ident fielda fieldb)
 	  | (Ast0.Cast(_,tya,_,expa),Ast0.Cast(lp,tyb,rp,expb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_expr expa expb)
@@ -684,45 +728,31 @@ let match_maker context_required whencode_allowed =
       |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
       |	_ -> return false
     else return false in
-(*
-  let match_top_level pattern t =
-    if not(context_required) or is_context t
-    then
-      match (Ast0.unwrap pattern,Ast0.unwrap t) with
-	(Ast0.INCLUDE(inca,namea),Ast0.INCLUDE(incb,nameb)) ->
-	  return (mcode_equal inca incb && mcode_equal namea nameb)
-      | (Ast0.FILEINFO(old_filea,new_filea),
-	 Ast0.FILEINFO(old_fileb,new_fileb)) ->
-	   return (mcode_equal old_filea old_fileb &&
-		   mcode_equal new_filea new_fileb)
-      | (Ast0.DECL(statementa),Ast0.DECL(statementb)) ->
-	  match_statement statementa statementb
-      | (Ast0.CODE(stmt_dotsa),Ast0.CODE(stmt_dotsb)) ->
-	  match_dots match_statement is_slist_matcher do_slist_match
-            stmt_dotsa stmt_dotsb
-      | (Ast0.ERRORWORDS(expsa),_) ->
-	  failwith "error words not supported in patterns"
-      | (Ast0.OTHER(_),_) -> failwith "unexpected code"
-      | (_,Ast0.OTHER(_)) -> failwith "unexpected code"
-      | _ -> return false
-    else return false in
-*)
-  (match_expr, match_decl, match_statement, match_typeC)
+
+  let match_statement_dots x y =
+    match_dots match_statement is_slist_matcher do_slist_match x y in
+  
+  (match_expr, match_decl, match_statement, match_typeC,
+   match_statement_dots)
 
 let match_expr context_required whencode_allowed =
-  let (fn,_,_,_) = match_maker context_required whencode_allowed in
+  let (fn,_,_,_,_) = match_maker context_required whencode_allowed in
   fn
 
 let match_decl context_required whencode_allowed =
-  let (_,fn,_,_) = match_maker context_required whencode_allowed in
+  let (_,fn,_,_,_) = match_maker context_required whencode_allowed in
   fn
 
 let match_statement context_required whencode_allowed =
-  let (_,_,fn,_) = match_maker context_required whencode_allowed in
+  let (_,_,fn,_,_) = match_maker context_required whencode_allowed in
   fn
 
 let match_typeC context_required whencode_allowed =
-  let (_,_,_,fn) = match_maker context_required whencode_allowed in
+  let (_,_,_,fn,_) = match_maker context_required whencode_allowed in
+  fn
+
+let match_statement_dots context_required whencode_allowed =
+  let (_,_,_,_,fn) = match_maker context_required whencode_allowed in
   fn
 
 (* --------------------------------------------------------------------- *)
@@ -1352,6 +1382,12 @@ let make_disj_type tl =
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
   Ast0.context_wrap (Ast0.DisjType(disj_starter,tl,mids,disj_ender))
+let make_disj_stmt_list tl =
+  let mids =
+    match tl with
+      [] -> failwith "bad disjunction"
+    | x::xs -> List.map disj_mid xs in
+  Ast0.context_wrap (Ast0.Disj(disj_starter,tl,mids,disj_ender))
 let make_disj_expr el =
   let mids =
     match el with
@@ -1395,6 +1431,7 @@ let transform_type (metavars,alts) e =
 	(rebuild_mcode start_line).V0.rebuilder_typeC
 	Unparse_ast0.typeC
   | _ -> ([],e)
+
 
 let transform_expr (metavars,alts) e =
   match alts with
@@ -1465,6 +1502,52 @@ let transform_stmt (metavars,alts) e =
 	(Unparse_ast0.statement "")
   | _ -> ([],e)
 
+(* sort of a hack, because there is no disj at top level *)
+let transform_top (metavars,alts) e =
+  match Ast0.unwrap e with
+    Ast0.DECL(declstm) ->
+      (try
+	let strip alts =
+	  List.map
+	    (List.map
+	       (function
+		   Ast0.DotsStmtTag(d) ->
+		     (match Ast0.unwrap d with
+		       Ast0.DOTS([s]) -> Ast0.StmtTag(s)
+		     | _ -> raise (Failure ""))
+		 | _ -> raise (Failure "")))
+	    alts in
+	let (mv,s) = transform_stmt (metavars,strip alts) declstm in
+	(mv,Ast0.rewrap e (Ast0.DECL(s)))
+      with Failure _ -> ([],e))
+  | Ast0.CODE(stmts) ->
+      let (mv,res) =
+	match alts with
+	  (Ast0.DotsStmtTag(_)::_)::_ ->
+	       (* start line is given to any leaves in the iso code *)
+	    let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+	    let alts =
+	      List.map
+		(List.map
+		   (function
+		       Ast0.DotsStmtTag(p) ->
+			 (p,count_edots.V0.combiner_statement_dots p,
+			  count_idots.V0.combiner_statement_dots p,
+			  count_dots.V0.combiner_statement_dots p)
+		     | _ -> failwith "invalid alt"))
+		alts in
+	    mkdisj match_statement_dots metavars alts
+	      (function b -> function mv_b ->
+		(instantiate b mv_b).V0.rebuilder_statement_dots) stmts
+	      (function x ->
+		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
+	      make_minus.V0.rebuilder_statement_dots
+	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
+	      Unparse_ast0.statement_dots
+	| _ -> ([],stmts) in
+      (mv,Ast0.rewrap e (Ast0.CODE res))
+  | _ -> ([],e)
+
 (* --------------------------------------------------------------------- *)
 
 let transform (alts : isomorphism) t =
@@ -1492,12 +1575,17 @@ let transform (alts : isomorphism) t =
     extra_meta_decls := extra_meta @ !extra_meta_decls;
     ty in
   
+  let topfn r k e =
+    let (extra_meta,ty) = transform_top alts (k e) in
+    extra_meta_decls := extra_meta @ !extra_meta_decls;
+    ty in
+  
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing
       donothing exprfn typefn donothing donothing declfn stmtfn
-      donothing donothing in
+      donothing topfn in
   let res = res.V0.rebuilder_top_level t in
   (!extra_meta_decls,res)
 

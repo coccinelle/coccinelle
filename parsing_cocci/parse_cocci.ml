@@ -30,6 +30,7 @@ let token2c (tok,_) =
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
   | PC.TPure -> "pure"
+  | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
   | PC.TError -> "error"
@@ -162,6 +163,7 @@ let token2c (tok,_) =
 
   | PC.TIso -> "<=>"
   | PC.TRightIso -> "=>"
+  | PC.TIsoTopLevel -> "TopLevel"
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
@@ -210,6 +212,7 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
+  | PC.TContext
   | PC.TError | PC.TWords -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -271,7 +274,8 @@ let split_token ((tok,_) as t) =
   | PC.EOF | PC.TInvalid -> ([t],[t])
 
   | PC.TIso | PC.TRightIso
-  | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType ->
+  | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType
+  | PC.TIsoTopLevel ->
       failwith "unexpected tokens"
 
 let split_token_stream tokens =
@@ -401,16 +405,26 @@ statement. *)
 
 (* bug: once a type, always a type, even if the same name is later intended
    to be used as a real identifier *)
-let detect_types l =
+let detect_types in_meta_decls l =
   let is_delim = function
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
     | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
-    | (PC.TComma(_),_) -> true
+    | (PC.TComma(_),_) | (PC.TPure,_) | (PC.TContext,_) -> true
     | _ -> false in
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_),_) -> true
+    | (PC.TMetaParam(_,_,clt),_)
+    | (PC.TMetaParamList(_,_,clt),_)
+    | (PC.TMetaConst(_,_,_,clt),_)
+    | (PC.TMetaErr(_,_,clt),_)
+    | (PC.TMetaExp(_,_,_,clt),_)
+    | (PC.TMetaExpList(_,_,clt),_)
+    | (PC.TMetaText(_,_,clt),_)
+    | (PC.TMetaType(_,_,clt),_)
+    | (PC.TMetaStm(_,_,clt),_)
+    | (PC.TMetaStmList(_,_,clt),_) -> in_meta_decls 
     | _ -> false in
   let rec loop start type_names = function
       [] -> []
@@ -553,7 +567,7 @@ let parse_one parsefn file toks =
   | e -> raise e
 
 let prepare_tokens tokens =
-  insert_line_end (find_function_names (detect_types tokens))
+  insert_line_end (find_function_names (detect_types false tokens))
 
 let parse file =
   Printf.printf "starting %s\n" file;
@@ -567,7 +581,7 @@ let parse file =
 	let (more,tokens) =
 	  tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
-	let tokens = detect_types tokens in
+	let tokens = detect_types true tokens in
 	(*
 	Printf.printf "meta tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
@@ -632,8 +646,8 @@ let parse_iso = function
 	    let (more,tokens) =
 	      tokens_all table file true lexbuf [PC.TArobArob] in
 	    Data.in_meta := false;
-	    let tokens = detect_types tokens in
-            (*
+	    let tokens = detect_types true tokens in
+	    (*
 	    Printf.printf "iso meta tokens\n";
 	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	    Printf.printf "\n\n";
@@ -643,7 +657,7 @@ let parse_iso = function
 	    let (more,tokens) =
 	      tokens_all table file false lexbuf
 		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration;
-		  PC.TIsoType] in
+		  PC.TIsoType;PC.TIsoTopLevel] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in

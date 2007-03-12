@@ -405,3 +405,14 @@ E1->fld => E1[E2].fld
 // -   set_bit(ev, &bcs->event);
 // |
 // -   bcs->event |= 1 << ev; // the only case that is used
+
+TopLevel
+@@
+type T;
+context T E;
+identifier I;
+identifier fld;
+expression E1;
+@@
+
+E.fld = E1; => T I = { .fld = E1, };

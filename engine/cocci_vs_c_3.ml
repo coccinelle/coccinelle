@@ -2095,9 +2095,11 @@ and compatible_type a b =
   | Type_cocci.FunctionPointer a, _ ->
       failwith
 	"TODO: function pointer type doesn't store enough information to determine compatability"
-  | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) -> (* no size info for cocci *)
+  | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
+      (* no size info for cocci *)
       compatible_type a b
-  | Type_cocci.StructUnionName (sua, sa), (qub, (B.StructUnionName (sub, sb),ii)) -> 
+  | Type_cocci.StructUnionName (sua, _, sa),
+      (qub, (B.StructUnionName (sub, sb),ii)) -> 
       if equal_structUnion_type_cocci sua sub && sa = sb
       then ok
       else fail

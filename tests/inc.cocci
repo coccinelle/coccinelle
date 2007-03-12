@@ -1,10 +1,11 @@
 @@
-text X;
+expression X;
 @@
 
 - #define foo X
 + #define foobar X
 
 @@
+expression T;
 @@
-- #define xxx ...
+- #define xxx T

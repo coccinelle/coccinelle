@@ -117,7 +117,10 @@ let update_unitary unitary =
   let donothing r k e = k e in
   let mcode x = x in
   
-  let is_unitary name = List.mem (Ast0.unwrap_mcode name) unitary in
+  let is_unitary name =
+    if List.mem (Ast0.unwrap_mcode name) unitary
+    then Ast0.Context
+    else Ast0.Impure in
 
   let ident r k i =
     match Ast0.unwrap i with

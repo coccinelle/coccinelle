@@ -34,7 +34,7 @@ and dots_bef_aft = NoDots | BetweenDots of statement
    all metavariables unitary
    for SP metavariables, true if the metavariable is unitary (valid up to
    isomorphism phase only) *)
-and pure = bool
+and pure = Impure | Pure | Context (* pure and only context *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -357,6 +357,7 @@ let unwrap (x,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
 let rewrap (_,info,index,mcodekind,ty,dots) x =
   (x,info,index,mcodekind,ty,dots)
+let rewrap_mcode (_,arity,info,mcodekind) x = (x,arity,info,mcodekind)
 let copywrap (_,info,index,mcodekind,ty,dots) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;
@@ -411,17 +412,16 @@ let rec ast0_type_to_type ty =
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
   | StructUnionName(su,tag) ->
-      let tag =
-	match unwrap tag with
-	  Id(tag) -> tag
-	| MetaId(tag,_) ->
-	    (Printf.printf
-	       "warning: struct/union with a metavariable name detected.\n";
-	     Printf.printf
-	       "For type checking assuming the name of the metavariable is the name of the type\n";
-	     tag)
-	| _ -> failwith "unexpected struct/union type name" in
-      Type_cocci.StructUnionName(structUnion su,unwrap_mcode tag)
+      (match unwrap tag with
+	Id(tag) ->
+	  Type_cocci.StructUnionName(structUnion su,false,unwrap_mcode tag)
+      | MetaId(tag,_) ->
+	  (Printf.printf
+	     "warning: struct/union with a metavariable name detected.\n";
+	   Printf.printf
+	     "For type checking assuming the name of the metavariable is the name of the type\n";
+	   Type_cocci.StructUnionName(structUnion su,true,unwrap_mcode tag))
+      | _ -> failwith "unexpected struct/union type name")
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
@@ -454,3 +454,71 @@ and const_vol t =
   match unwrap_mcode t with
     Ast.Const -> Type_cocci.Const
   | Ast.Volatile -> Type_cocci.Volatile
+
+(* --------------------------------------------------------------------- *)
+(* this function is a rather minimal attempt.  the problem is that information
+has been lost.  but since it is only used for metavariable types in the isos,
+perhaps it doesn't matter *)
+let ty_rewrap_mcode x = (x,NONE,default_info(),context_befaft())
+
+exception TyConv
+
+let rec reverse_type ty =
+  match ty with
+    Type_cocci.ConstVol(cv,ty) ->
+      ConstVol(reverse_const_vol cv,wrap(reverse_type ty))
+  | Type_cocci.BaseType(bty,None) ->
+      BaseType(reverse_baseType bty,None)
+  | Type_cocci.BaseType(bty,Some sgn) ->
+      BaseType(reverse_baseType bty,Some (reverse_sign sgn))
+  | Type_cocci.Pointer(ty) ->
+      Pointer(wrap(reverse_type ty),ty_rewrap_mcode "*")
+  | Type_cocci.StructUnionName(su,mv,tag) ->
+      if mv
+      then
+	StructUnionName(reverse_structUnion su,
+			wrap(MetaId(ty_rewrap_mcode tag,Impure)))
+      else
+	StructUnionName(reverse_structUnion su, wrap(Id(ty_rewrap_mcode tag)))
+  | Type_cocci.TypeName(name) -> TypeName(ty_rewrap_mcode name)
+  | Type_cocci.MetaType(name,_,_) ->
+      MetaType(ty_rewrap_mcode name,Impure(*not really right*))
+  | _ -> raise TyConv
+
+and reverse_baseType t =
+  ty_rewrap_mcode
+    (match t with
+      Type_cocci.VoidType -> Ast.VoidType
+    | Type_cocci.CharType -> Ast.CharType
+    | Type_cocci.BoolType -> Ast.IntType
+    | Type_cocci.ShortType -> Ast.ShortType
+    | Type_cocci.IntType -> Ast.IntType
+    | Type_cocci.DoubleType -> Ast.DoubleType
+    | Type_cocci.FloatType -> Ast.FloatType
+    | Type_cocci.LongType -> Ast.LongType)
+
+and reverse_structUnion t =
+  ty_rewrap_mcode
+    (match t with
+      Type_cocci.Struct -> Ast.Struct
+    | Type_cocci.Union -> Ast.Union)
+
+and reverse_sign t =
+  ty_rewrap_mcode
+    (match t with
+      Type_cocci.Signed -> Ast.Signed
+    | Type_cocci.Unsigned -> Ast.Unsigned)
+
+and reverse_const_vol t =
+  ty_rewrap_mcode
+    (match t with
+      Type_cocci.Const -> Ast.Const
+    | Type_cocci.Volatile -> Ast.Volatile)
+
+(* --------------------------------------------------------------------- *)
+
+let lub_pure x y =
+  match (x,y) with
+    (Impure,_) | (_,Impure) -> Impure
+  | (Pure,_) | (_,Pure) -> Pure
+  | _ -> Context

@@ -97,24 +97,24 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaId(nm,pure) -> Ast0.MetaId(nm,true)
-	 | Ast0.MetaFunc(nm,pure) -> Ast0.MetaFunc(nm,true)
-	 | Ast0.MetaLocalFunc(nm,pure) -> Ast0.MetaLocalFunc(nm,true)
+	   Ast0.MetaId(nm,pure) -> Ast0.MetaId(nm,Ast0.Pure)
+	 | Ast0.MetaFunc(nm,pure) -> Ast0.MetaFunc(nm,Ast0.Pure)
+	 | Ast0.MetaLocalFunc(nm,pure) -> Ast0.MetaLocalFunc(nm,Ast0.Pure)
 	 | e -> e)) in
 
   let typeC r k e =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaType(nm,pure) -> Ast0.MetaType(nm,true)
+	   Ast0.MetaType(nm,pure) -> Ast0.MetaType(nm,Ast0.Pure)
 	 | e -> e)) in
 
   let param r k e =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaParam(nm,pure) -> Ast0.MetaParam(nm,true)
-	 | Ast0.MetaParamList(nm,pure) -> Ast0.MetaParamList(nm,true)
+	   Ast0.MetaParam(nm,pure) -> Ast0.MetaParam(nm,Ast0.Pure)
+	 | Ast0.MetaParamList(nm,pure) -> Ast0.MetaParamList(nm,Ast0.Pure)
 	 | e -> e)) in
 
   V0.rebuilder
@@ -191,7 +191,7 @@ let rename_param param =
 	  ct := !ct + 1;
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((new_name,arity,info,mcodekind),true)) in
+	      (Ast0.MetaId((new_name,arity,info,mcodekind),Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,new_name)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))

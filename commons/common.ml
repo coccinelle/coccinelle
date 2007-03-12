@@ -2976,28 +2976,30 @@ let regression_testing newscore best_score_file =
       with
       | None, None -> raise Impossible
       | Some x, None -> 
-          pr2 ("new test file appeared: " ^ res);
+          Printf.printf "new test file appeared: %s\n" res;
           Hashtbl.add newbestscore res x;
       | None, Some x -> 
-          pr2 ("old test file disappeared: " ^ res);
+          Printf.printf "old test file disappeared: %s" res;
       | Some newone, Some bestone -> 
           (match newone, bestone with
           | Ok, Ok -> 
               Hashtbl.add newbestscore res Ok
           | Pb x, Ok -> 
-              pr2 ("PBBBBBBBB: a test file does not work anymore!!! : " ^ res);
-              pr2 ("Error : " ^ x);
+              Printf.printf
+		"PBBBBBBBB: a test file does not work anymore!!! : %s\n" res;
+              Printf.printf "Error : %s\n" x;
               Hashtbl.add newbestscore res Ok
           | Ok, Pb x -> 
-              pr2 ("Great: a test file now work: " ^ res);
+              Printf.printf "Great: a test file now works: %s\n" res;
               Hashtbl.add newbestscore res Ok
           | Pb x, Pb y -> 
               Hashtbl.add newbestscore res (Pb x);
               if not (x = y)
               then begin 
-                pr2 ("Semipb: still error but not same error : " ^ res);
-                pr2 (chop ("Old error: " ^ y));
-                pr2 ("New error: " ^ x);
+                Printf.printf
+		  "Semipb: still error but not same error : %s\n" res;
+                Printf.printf "%s\n" (chop ("Old error: " ^ y));
+                Printf.printf "New error: %s\n" x;
               end
           )
     );

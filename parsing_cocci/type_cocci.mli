@@ -8,7 +8,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
-  | StructUnionName of structUnion * string
+  | StructUnionName of structUnion * bool (* true if type metavar *) * string
   | TypeName        of string
   | MetaType        of string * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
