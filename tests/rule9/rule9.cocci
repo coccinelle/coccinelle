@@ -1,4 +1,10 @@
 @@
+identifier template_struct, proc_info_func;
+@@
+
+struct SHT template_struct = { ... .proc_info = proc_info_func, ...};
+
+@@
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
 identifier proc_info_func;
