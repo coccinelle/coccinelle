@@ -883,16 +883,18 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 init_declarator2:  
  | declaratori                  { ($1, None) }
  | declaratori teq initialize   { ($1, Some ($3, $2)) }
- /* gccext: */
- | declaratori gcc_asm_decl     { ($1, None) }
 
 
 
 /*----------------------------*/
 /* workarounds */
 /*----------------------------*/
-declaratori: declarator gcc_attr_opt 
-  { LP.add_ident (fst (fst $1)); $1 }
+declaratori: 
+ | declarator gcc_attr_opt 
+     { LP.add_ident (fst (fst $1)); $1 }
+ /* gccext: */
+ | declarator gcc_asm_decl     
+     { LP.add_ident (fst (fst $1)); $1 }
 
 teq: TEq  { et "teq" (); $1 }
 

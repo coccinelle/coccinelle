@@ -1,13 +1,25 @@
-@@
-identifier template_struct, proc_info_func;
-@@
+//@@ 
+//typedef Scsi_Host_Template;
+//{struct SHT, Scsi_Host_Template} fops;
+//@@
+//fops.proc_info = proc_info_func;
 
-struct SHT template_struct = { ... .proc_info = proc_info_func, ...};
+//@@
+//identifier template_struct, proc_info_func;
+//typedef Scsi_Host_Template;
+//@@
+//
+////struct SHT template_struct = {
+//Scsi_Host_Template template_struct = { 
+// ... 
+// .proc_info = proc_info_func, 
+// ...
+//};
 
 @@
+identifier proc_info_func; // comment if use above code
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
-identifier proc_info_func;
 @@
   proc_info_func (
 +      struct Scsi_Host *hostptr,

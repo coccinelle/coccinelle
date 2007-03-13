@@ -157,6 +157,7 @@ let sign = ['-' '+']
 let exp  = ['e''E'] sign? dec+
 let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
+let id = letter (letter | digit) *
 
 (*****************************************************************************)
 rule token = parse
@@ -473,6 +474,18 @@ rule token = parse
  | "I2C_CLIENT_INSMOD;"   { TCommentMisc (tokinfo lexbuf) }
 
 
+
+
+  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+  (* gccext: ##args for variadic macro *)
+  |  "##" [' ''\t']* id
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+       
 
   (* ----------------------------------------------------------------------- *)
   (* C keywords and ident *)

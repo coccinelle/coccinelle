@@ -1,3 +1,4 @@
+/* diamond example */
 void main(int i)
 {
 

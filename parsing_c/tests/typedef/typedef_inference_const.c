@@ -21,3 +21,18 @@ void main(int i)
 static void lmc_initcsrs(lmc_softc_t * const sc, lmc_csrptr_t csr_base, size_t csr_size);
 static void lmc_dec_reset(lmc_softc_t * const sc);
 
+void main(int i)
+{
+ 	u16 volatile data;
+}
+
+static void
+ a3dsrc_SetHrtfTarget(a3dsrc_t * a, a3d_Hrtf_t const aa, a3d_Hrtf_t const b)
+{
+}
+
+
+static xtalk_gains_t const asXtalkGains1Chan = {
+};
+
+

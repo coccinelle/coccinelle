@@ -164,7 +164,7 @@ let regexp_declare =  Str.regexp
 let regexp_foreach = Str.regexp_case_fold 
   ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|each\\|for\\)"
 
-
+(* todo: where: InToplevel | InFunction | InEnum | InStruct | InInit *)
 type linecol = { line : int; col : int }
 
 type token_with_pos = Parser_c.token * linecol
@@ -1392,8 +1392,16 @@ let lookahead2 next before =
 
 
 
-  (* xx const * *)
+  (* xx const *   USELESS because of next rule ? *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _)::TMul _::_ , _ ) 
+      when not_struct_enum before ->
+      (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+  
+  (* xx const *)
+  | (TIdent (s, i1)::(Tconst _|Tvolatile _)::_ , _ ) 
       when not_struct_enum before ->
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 
@@ -1519,7 +1527,10 @@ let lookahead2 next before =
 
 
   (* xx_t * yy *)
-  | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  when s =~ ".*_t$" ->
+  | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  
+      when s =~ ".*_t$" && not_struct_enum before 
+        (* struct user_info_t sometimes *) 
+        -> 
       msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
