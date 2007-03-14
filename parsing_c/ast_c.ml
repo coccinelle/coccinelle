@@ -140,7 +140,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 
 
 (* ------------------------------------------------------------------------- *)
-and expression = (expressionbis * fullType option (* semantic: *)) wrap
+and expression = (expressionbis * fullType list ref (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
@@ -395,7 +395,7 @@ let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
-let noType = None
+let noType () = ref [] (* old: None *)
 let noInstr = (ExprStatement (None), [])
 
 let emptyMetavarsBinding = ([]: metavars_binding)
@@ -411,9 +411,10 @@ let unwrap = fst
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
-let get_type_expr ((unwrap_e, typ), iie) = typ
-let rewrap_type_expr ((unwrap_e, _oldtyp), iie) newtyp =
-  (unwrap_e, newtyp), iie
+let get_types_expr ((unwrap_e, typ), iie) = !typ
+let set_types_expr ((unwrap_e, oldtyps), iie) newtyps =
+  oldtyps := newtyps
+  (* old: (unwrap_e, newtyp), iie *)
 
 
 let unwrap_typeC (qu, (typeC, ii)) = typeC
@@ -422,8 +423,8 @@ let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 let rewrap_str s (info, annot) =  { info with Common.str = s;}, annot
 
-let get_pos_of_info (info, annot) = info.Common.charpos
-let get_str_of_info (info, annot) = info.Common.str
+let get_pos_of_info  (info, annot) = info.Common.charpos
+let get_str_of_info  (info, annot) = info.Common.str
 let get_file_of_info (info, annot) = info.Common.file
 
 let mcode_of_info (info, annot)  = fst !annot 

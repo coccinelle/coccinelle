@@ -106,6 +106,7 @@ type visitor_c =
    kinfo: (info -> unit) * visitor_c -> info -> unit;
    
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
+   kprogram: (programElement -> unit) * visitor_c -> programElement -> unit;
  } 
 
 let default_visitor_c = 
@@ -117,6 +118,7 @@ let default_visitor_c =
     kini       = (fun (k,_) ie  -> k ie);
     kinfo      = (fun (k,_) ii  -> k ii);
     knode      = (fun (k,_) n  -> k n);
+    kprogram      = (fun (k,_) p  -> k p);
   } 
 
 
@@ -384,6 +386,52 @@ and vk_def = fun bigf d ->
   in f (k, bigf) d 
 
 
+
+
+and vk_program = fun bigf p -> 
+  let f = bigf.kprogram in
+  let infolistf ii = List.iter (vk_info bigf) ii in
+  let iif ii =  infolistf ii in
+  let rec k p = 
+    match p with
+    | Declaration decl -> (vk_decl bigf decl)
+    | Definition def -> (vk_def bigf def)
+    | EmptyDef ii -> (infolistf ii)
+    | SpecialMacro (s, xs, ii) -> 
+          xs +> List.iter (fun (elem, iicomma) -> 
+            vk_argument bigf elem; infolistf iicomma
+          );
+          infolistf ii
+          
+    | Include (s, ii) -> infolistf ii;
+    | Define ((s,ii), (def)) -> 
+        iif ii;
+        vk_define bigf def
+
+    | NotParsedCorrectly ii -> infolistf ii
+    | FinalDef info -> vk_info bigf info
+  in f (k, bigf) p
+
+
+and vk_define bigf def =
+  let iif ii =  List.iter (vk_info bigf) ii in
+  let define_val = function
+    | DefineExpr e -> 
+        vk_expr bigf e
+    | DefineStmt _ -> raise Todo
+    | DefineType ty -> vk_type bigf ty
+    | DefineText (s, ii) -> iif ii
+    | DefineEmpty -> ()
+  in
+  (match def with
+  | DefineVar defval -> define_val defval
+  | DefineFunc (params, defval) -> 
+      params +> List.iter (fun (s, ii) -> iif  ii);
+      define_val defval
+  )
+        
+
+
 (* Now keep fullstatement inside the control flow node, 
  * so that can then get in a MetaStmtVar the fullstatement to later
  * pp back when the S is in a +. But that means that 
@@ -443,21 +491,8 @@ and vk_node = fun bigf node ->
 
     | F.Define ((s,ii), (def)) -> 
         iif ii;
-        let define_val = function
-          | DefineExpr e -> 
-              vk_expr bigf e
-          | DefineStmt _ -> raise Todo
-          | DefineType ty -> vk_type bigf ty
-          | DefineText (s, ii) -> iif ii
-          | DefineEmpty -> ()
-        in
-        (match def with
-        | DefineVar defval -> define_val defval
-        | DefineFunc (params, defval) -> 
-            params +> List.iter (fun (s, ii) -> iif  ii);
-            define_val defval
-        )
-        
+        vk_define bigf def; 
+
 
     | F.Include (s, ii) -> iif ii
     | F.Ifdef (st, ((),ii)) -> iif ii

@@ -24,6 +24,12 @@ module Lib = Lib_parsing_c
  * the type ?
  * 
  * todo: define a new type ? like type_cocci ? where have a bool ?
+ * 
+ * How handle scope ? When search for type of field, we return 
+ * a type, but this type makes sense only in a certain scope.
+ * We could add a tag to each typedef, structUnionName to differentiate 
+ * them and also associate in ast_c to the type the scope
+ * of this type, the env that were used to define this type.
  *)
 
 (*****************************************************************************)
@@ -44,13 +50,13 @@ let pr2 s =
  * and enumeration constants that you declare or define within the
  * block. The other name space includes all enumeration, structure, and
  * union tags that you define within the block.
-
+ * 
  * You introduce a new member name space with every structure or union
  * whose content you define. You identify a member name space by the
  * type of left operand that you write for a member selection
  * operator, as in x.y or p->y. A member name space ends with the end
  * of the block in which you declare it.
-
+ * 
  * You introduce a new goto label name space with every function
  * definition you write. Each goto label name space ends with its
  * function definition.
@@ -72,7 +78,8 @@ type namedef =
   (* todo: EnumConstant *)
   (* todo: EnumDef *)
 
-type environment = namedef list list (* cos have nested scope, so nested list*)
+(* because have nested scope, have nested list, hence the list list *)
+type environment = namedef list list 
 
 let initial_env = [
   [VarOrFunc ("NULL", Lib.al_type (Parse_c.type_of_string "void *"))]
@@ -121,7 +128,12 @@ let member_env lookupf env =
 (* "type-lookup"  *)
 (*****************************************************************************)
 
-(* Because in C one can redefine in nested blocks some typedefs,
+(* find_final_type is used to know to what type a field correspond in
+ * x.foo. Sometimes the type of x is a typedef or a structName in which
+ * case we must look in environment to find the complete type, here
+ * structUnion that contains the information.
+ * 
+ * Because in C one can redefine in nested blocks some typedefs,
  * struct, or variables, we have a static scoping resolving process.
  * So, when we look for the type of a var, if this var is in an
  * enclosing block, then maybe its type refer to a typdef of this
@@ -130,7 +142,6 @@ let member_env lookupf env =
  * "resolving-type functions" take an env and also return an env from
  * where the next search must be performed. *)
 
-(* do pointfix *)
 let rec find_final_type ty env = 
 
   match Ast_c.unwrap_typeC ty with 
@@ -186,6 +197,15 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
     )
   
 
+let type_variations_typedef ty env = 
+  (* fix point *)
+  let rec aux xs = 
+    let ty' = find_final_type ty env in
+    if List.mem ty' xs then xs
+    else aux (ty'::xs) 
+  in
+  List.rev (aux [ty])
+
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style *)
 (*****************************************************************************)
@@ -207,7 +227,7 @@ let do_in_new_scope f =
     res
   end
 
-let add_env namedef =
+let add_in_scope namedef =
   let (current, older) = Common.uncons !_scoped_env in
   _scoped_env := (namedef::current)::older
   
@@ -221,7 +241,7 @@ let add_env namedef =
  * from a prototype and from a definition.
  *)
 let add_binding namedef warning = 
-  let (current, older) = Common.uncons !_scoped_env in
+  let (current_scope, _older_scope) = Common.uncons !_scoped_env in
 
   (match namedef with
   | VarOrFunc (s, typ) -> 
@@ -234,81 +254,83 @@ let add_binding namedef warning =
   let (memberf, s) = 
     (match namedef with
     | VarOrFunc (s, typ) -> member_env (lookup_var s), s
-    | TypeDef (s, typ) -> member_env (lookup_typedef s), s
+    | TypeDef   (s, typ) -> member_env (lookup_typedef s), s
     | StructUnionNameDef (s, (su, typ)) -> 
         member_env (lookup_structunion (su, s)), s
     ) in
 
-  if  memberf [current] && warning
+  if  memberf [current_scope] && warning
   then pr2 ("Type_annoter: warning, " ^ s ^ 
             " is already in current binding" ^ "\n" ^
            " so there is a wierd shadowing");
-  add_env namedef
+  add_in_scope namedef
   
 
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
-let try_set_type subexpr expr ffinalt = 
-  let defaulte = expr in
-  (try 
-      (match Ast_c.get_type_expr subexpr with 
-      | None -> defaulte
-      | Some t -> 
-          (* TODO don't work, don't have good env *)
-          let t' = find_final_type t !_scoped_env in
-          (*let typeC' = Ast_c.unwrap_typeC t' in *)
-          match ffinalt t' with
-          | Some result -> Ast_c.rewrap_type_expr expr (Some result)
-          | None -> defaulte
-      )
-    with Not_found -> defaulte
-  )
 
-let set_type_s expr s = 
-  Ast_c.rewrap_type_expr expr  (Some (Lib.al_type (Parse_c.type_of_string s)))
+let type_of_s s = 
+  Lib.al_type (Parse_c.type_of_string s)
+
+
+let noTypeHere = [] 
+
+(* it assumes that the first type is the "original" one *)
+let do_with_types f xs =
+  match xs with 
+  | [] -> []
+  | x::xs -> 
+      f x 
+(*
+  xs +> List.fold_left (fun acc e -> 
+    f e @ acc 
+  ) noTypeHere
+*)
+
+  
+
   
 (*****************************************************************************)
 (* Entry point *)
 (*****************************************************************************)
 (* catch all the decl to grow the environment *)
 
-let rec (annotate_program2 : environment -> programElement list -> 
- (programElement * environment Common.pair) list) = 
- fun env prog ->
+let rec (annotate_program2 : 
+ environment -> programElement list -> 
+ (programElement * environment Common.pair) list
+ ) = fun env prog ->
 
   (* globals (re)initialialisation *) 
   _scoped_env := env;
   _notyped_var := (Hashtbl.create 100);
 
 
-  let bigf = { Visitor_c.default_visitor_c_s with 
+  let bigf = { Visitor_c.default_visitor_c with 
 
-    Visitor_c.kexpr_s = (fun (k,bigf) expr -> 
-      let exprf e = Visitor_c.vk_expr_s bigf e in
+    Visitor_c.kexpr = (fun (k,bigf) expr -> 
+      k expr; (* recurse to set the types-ref of sub expressions *)
+      let ty = 
+        match Ast_c.unwrap_expr expr with
+        (* todo: should analyse the 's' for int to know if unsigned or not *)
+        | Constant (String (s,kind)) ->  [type_of_s "char *"]
+        | Constant (Char   (s,kind)) ->  [type_of_s "char"]
+        | Constant (Int (s)) ->          [type_of_s "int"]
+        | Constant (Float (s,kind)) -> 
+            let iinull = [] in
+            [(Ast_c.nQ, (BaseType (FloatType kind), iinull))]
 
-      match Ast_c.unwrap_expr expr with
-      | Constant (String (s,kind)) -> set_type_s expr "char *"
-      | Constant (Char   (s,kind)) -> set_type_s expr "char"
-      (* todo: should analyse the string to know if unsigned or not *)
-      | Constant (Int (s)) -> set_type_s expr "int"
-      | Constant (Float (s,kind)) -> 
-         let iinull = [] in
-         Ast_c.rewrap_type_expr expr 
-           (Some (Ast_c.nQ, (BaseType (FloatType kind), iinull)))
-
-      (* don't want a warning on the Ident that are a FunCall *)
-      | FunCall (((Ident f, typ), ii), args) -> 
-          Ast_c.rewrap_expr expr (
-            (FunCall (((Ident f, typ), ii), 
-                     args +> List.map (fun (e,ii) -> 
-                       Visitor_c.vk_argument_s bigf e, ii
-                     ))
-            ))
+        (* don't want a warning on the Ident that are a FunCall *)
+        | FunCall (((Ident f, typ), ii), args) -> 
+            args +> List.iter (fun (e,ii) -> 
+              Visitor_c.vk_argument bigf e
+            );
+            noTypeHere
             
       | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
-          | Some (typ,_nextenv) -> Ast_c.rewrap_type_expr expr (Some typ) 
+          | Some (typ,_nextenv) -> 
+              type_variations_typedef typ !_scoped_env 
           | None  -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
               then 
@@ -317,82 +339,64 @@ let rec (annotate_program2 : environment -> programElement list ->
                   pr2 ("Type_annoter: not finding type for " ^ s);
                   Hashtbl.add !_notyped_var s true;
                 end;
-              expr 
+              noTypeHere
           )
-      | Unary (e, DeRef)  -> 
-          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
-            match Ast_c.unwrap_typeC type_subexpr with
-            | Pointer x -> Some x
-            | Array (size, x) -> Some x
-            | _ -> None
+      | Unary (e, DeRef)  
+      | ArrayAccess (e, _) ->
+          (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
+            (* todo: maybe not good env !! *)
+            match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
+            | Pointer x  
+            | Array (_, x) -> 
+                type_variations_typedef x !_scoped_env
+            | _ -> noTypeHere
           )
-          
-      | ArrayAccess (e1, e2) ->
-          try_set_type (exprf e1) (k expr) (fun type_subexpr -> 
-            match Ast_c.unwrap_typeC type_subexpr with
-            | Pointer x -> Some x
-            | Array (size, x) -> Some x
-            | _ -> None
-          )
-         
 
       | RecordAccess  (e, fld) ->  
-          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
-            match Ast_c.unwrap_typeC type_subexpr with 
+          (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
+            match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
             | StructUnion (sopt, structtyp) -> 
-                let typefield = find_type_field fld structtyp in
-                Some typefield
-            | _ -> None
-              )
+                (* todo: type_variations_typedef ? which env ? *)
+                type_variations_typedef (find_type_field fld structtyp) 
+                  !_scoped_env
+            | _ -> noTypeHere
+          )
 
       | RecordPtAccess (e, fld) -> 
-          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
-            match Ast_c.unwrap_typeC type_subexpr with 
-            | Pointer (t) -> 
-                (match Ast_c.unwrap_typeC t with
-                | StructUnion (sopt, structtyp) -> 
-                    let typefield = find_type_field fld structtyp in
-                    Some typefield
-                | _ -> None
-                )
-            | _ -> None
+          (Ast_c.get_types_expr e) +> do_with_types (fun t ->
+          match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
+          | Pointer (t) -> 
+              (match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with
+              | StructUnion (sopt, structtyp) -> 
+                  (* todo: type_variations_typedef ? which env ? *)
+                  type_variations_typedef (find_type_field fld structtyp) 
+                    !_scoped_env
+              | _ -> noTypeHere
+              )
+          | _ -> noTypeHere
           )
       | Cast (t, e) -> 
-          let ((_, _oldtyp), iitop) = expr in
-
-          let ((e, typ_e), ii_e) = exprf e in
-          (match typ_e with 
-          | None -> 
-              (Cast (t,
-                    ((e, Some (Lib.al_type t)), ii_e)),
-               Some (Lib.al_type t)),
-              iitop
-          | Some tbis -> 
-              (* assert t = tbis ? *)
-              (Cast (t,  
-                   ((e, Some tbis), ii_e)), 
-              Some (Lib.al_type t)),
-              iitop
-          )
+          (* todo: type_variations_typedef ? *)
+          (* todo: add_types_expr [t] e ? *)
+          type_variations_typedef (Lib.al_type t) !_scoped_env
 
       | ParenExpr e -> 
-          try_set_type (exprf e) (k expr) (fun type_subexpr -> 
-            Some type_subexpr
-          )
+          Ast_c.get_types_expr e
 
-            
-          
-
-      | _ -> k expr
+      | _ -> noTypeHere
+      in
+      Ast_c.set_types_expr expr ty
+      
     );
-    Visitor_c.kstatement_s = (fun (k, bigf) st -> 
+
+    Visitor_c.kstatement = (fun (k, bigf) st -> 
       match st with 
       | Compound statxs, ii -> do_in_new_scope (fun () -> k st);
       | _ -> k st
 
     );
-    Visitor_c.kdecl_s = (fun (k, bigf) d -> 
-      let d' = k d in
+    Visitor_c.kdecl = (fun (k, bigf) d -> 
+      k d; (* to add possible definition in type found in Decl *)
       (match d with
       | (DeclList (xs, ii)) -> 
           xs +> List.iter (fun ((var, t, sto), iicomma) -> 
@@ -407,11 +411,10 @@ let rec (annotate_program2 : environment -> programElement list ->
           );
       | _ -> ()
       );
-      d'
         
     );
 
-    Visitor_c.ktype_s = (fun (k, bigf) typ -> 
+    Visitor_c.ktype = (fun (k, bigf) typ -> 
       let (q, t) = Lib.al_type typ in
       match t with 
       | StructUnion  ((Some s),  (su, structType)),ii -> 
@@ -421,7 +424,7 @@ let rec (annotate_program2 : environment -> programElement list ->
           
     );    
 
-    Visitor_c.kprogram_s = (fun (k, bigf) elem -> 
+    Visitor_c.kprogram = (fun (k, bigf) elem -> 
       _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def -> 
@@ -434,7 +437,9 @@ let rec (annotate_program2 : environment -> programElement list ->
             | _ -> raise Impossible
           in
 
-          let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
+          let typ' = 
+            Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) 
+          in
           add_binding (VarOrFunc (funcs, typ')) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 
@@ -445,7 +450,6 @@ let rec (annotate_program2 : environment -> programElement list ->
             k elem
           );
 
-
       | _ -> k elem
     );
   } 
@@ -453,9 +457,9 @@ let rec (annotate_program2 : environment -> programElement list ->
 
   prog +> List.map (fun elem -> 
     let beforeenv = !_scoped_env in
-    let elem' = Visitor_c.vk_program_s bigf elem in
+    Visitor_c.vk_program bigf elem;
     let afterenv = !_scoped_env in
-    (elem', (beforeenv, afterenv))
+    (elem, (beforeenv, afterenv))
   )
     
   

@@ -314,8 +314,8 @@ let sp_contain_typed_metavar toplevel_list_list =
 
 let specialdeclmacro_to_stmt (s, args, ii) =
   let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
-  let ident = (Ast_c.Ident s, Ast_c.noType), [iis] in
-  let f = (Ast_c.FunCall (ident, args), Ast_c.noType), [iiopar;iicpar] in
+  let ident = (Ast_c.Ident s, Ast_c.noType()), [iis] in
+  let f = (Ast_c.FunCall (ident, args), Ast_c.noType()), [iiopar;iicpar] in
   let stmt = Ast_c.ExprStatement (Some f), [iiptvirg] in
   stmt,  (f, [iiptvirg])
 

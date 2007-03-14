@@ -88,13 +88,17 @@ let rec pp_expression_gen pr_elem =
       ),_ -> raise Impossible
     );
     if !Flag_parsing_c.pretty_print_type_info
-    then
-      typ +> do_option (fun x -> 
-        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
-        pp_type_gen pr_elem x;
-        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
-
+    then begin
+      pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
+      Common.print_between (fun () -> 
+        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str " | ");
       )
+        (fun x -> 
+          pp_type_gen pr_elem x;
+        )
+        !typ;
+      pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
+    end
 
   in
   pp_expression

@@ -42,6 +42,7 @@ let cvs_compute_newstr s =
     "CVS_MAGIC_STRING" 
   ) s 
 
+(* todo: get rid of the type for expressions  ? *)
 let normal_form_program xs = 
   let bigf = { Visitor_c.default_visitor_c_s with 
 

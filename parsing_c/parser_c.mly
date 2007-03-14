@@ -267,11 +267,11 @@ let split_init_assign xs iivirg' =
                 (ExprStatement 
                     (Some (
                       (Assignment (
-                        ((Ident s, Ast_c.noType), [iis']),
+                        ((Ident s, Ast_c.noType()), [iis']),
                         SimpleAssign,
                         Lib_parsing_c.al_expr e
                       ), 
-                      Ast_c.noType),  iini'
+                      Ast_c.noType()),  iini'
                      )
                     ), [iivirg']
                 )::assigns
@@ -333,7 +333,7 @@ let fix_add_params_ident = function
 (* shortcuts *)
 (*-------------------------------------------------------------------------- *)
 
-let mk_e e ii = ((e, Ast_c.noType), ii)
+let mk_e e ii = ((e, Ast_c.noType()), ii)
     
 %}
 

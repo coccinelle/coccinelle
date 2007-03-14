@@ -10,6 +10,7 @@ type visitor_c = {
   kinfo      : (info        -> unit)  * visitor_c -> info        -> unit;
   knode      :      
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
+  kprogram: (programElement -> unit) * visitor_c -> programElement -> unit;
 }
 
 val default_visitor_c : visitor_c
@@ -22,6 +23,9 @@ val vk_ini       : visitor_c -> initialiser -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
 val vk_info      : visitor_c -> info -> unit
+val vk_program :   visitor_c -> programElement -> unit
+
+val vk_argument : visitor_c -> argument -> unit
 
 val vk_args_splitted : visitor_c -> (argument, il) Common.either list -> unit
 val vk_param : visitor_c -> parameterType -> unit

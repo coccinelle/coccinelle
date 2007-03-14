@@ -430,17 +430,22 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
   (* general case: a MetaExpr can match everything *)
   | A.MetaExpr (ida,keep,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
 
-      (match opttypa, opttypb with
+      (match opttypa, !opttypb with
         | None, _ -> return ((),())
-        | Some tas, Some tb -> 
-            tas +> List.fold_left (fun acc ta ->  
-              acc >||> (
-                compatible_type ta tb
-              )) fail
-        | Some _, None -> 
+        | Some _, [] -> 
             pr2_memo ("I don't have the type information. Certainly a pb in " ^
                          "annotate_typer.ml");
             fail
+
+        | Some tas, tbs -> 
+            tas +> List.fold_left (fun acc ta ->  
+              acc >||> (
+                tbs +> List.fold_left (fun acc tb -> 
+                  acc >|+|> (
+                    compatible_type ta tb
+                  )
+                ) acc
+              )) fail
       ) >>= (fun () () ->
 
 
@@ -500,17 +505,22 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 
 
   | A.MetaConst (ida,keep,opttypa,inherited),(((expr, opttypb), ii)) ->
-      (match opttypa, opttypb with
+      (match opttypa, !opttypb with
         | None, _ -> return ((),())
-        | Some tas, Some tb -> 
-            tas +> List.fold_left (fun acc ta ->  
-              acc >||> (
-                compatible_type ta tb
-              )) fail
-        | Some _, None -> 
+        | Some _, [] -> 
             pr2_memo ("I don't have the type information. Certainly a pb in " ^
                          "annotate_typer.ml");
             fail
+
+        | Some tas, tbs -> 
+            tas +> List.fold_left (fun acc ta ->  
+              acc >||> (
+                tbs +> List.fold_left (fun acc tb -> 
+                  acc >|+|> (
+                    compatible_type ta tb
+                  )
+                ) acc
+              )) fail
       ) >>= (fun () () ->
         
       let cst = 
