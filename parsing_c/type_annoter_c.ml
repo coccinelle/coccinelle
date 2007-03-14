@@ -356,9 +356,19 @@ let rec (annotate_program2 :
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
             match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
             | StructUnion (sopt, structtyp) -> 
-                (* todo: type_variations_typedef ? which env ? *)
-                type_variations_typedef (find_type_field fld structtyp) 
-                  !_scoped_env
+                (try 
+                  (* todo: type_variations_typedef ? which env ? *)
+                    type_variations_typedef (find_type_field fld structtyp) 
+                      !_scoped_env
+                with Not_found -> 
+                  pr2 
+                    ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
+                     " struct '"^(match sopt with Some s -> s |_ -> "<anon>")^
+                     "'");
+                  noTypeHere
+                )
+                      
+                        
             | _ -> noTypeHere
           )
 
@@ -368,9 +378,18 @@ let rec (annotate_program2 :
           | Pointer (t) -> 
               (match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with
               | StructUnion (sopt, structtyp) -> 
+                (try 
                   (* todo: type_variations_typedef ? which env ? *)
                   type_variations_typedef (find_type_field fld structtyp) 
                     !_scoped_env
+                  with Not_found -> 
+                  pr2 
+                    ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
+                     " struct '"^(match sopt with Some s -> s |_ -> "<anon>")^
+                     "'");
+                  noTypeHere
+                )
+
               | _ -> noTypeHere
               )
           | _ -> noTypeHere
