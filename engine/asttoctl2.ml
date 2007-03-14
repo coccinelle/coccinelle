@@ -52,8 +52,8 @@ let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 
-let aftret line label_var =
-  wrap line (CTL.Or(aftpred line label_var, exitpred line label_var))
+let aftret line label_var f =
+  wrap line (CTL.Or(aftpred line label_var, f(exitpred line label_var)))
 
 let letctr = ref 0
 let get_let_ctr _ =
@@ -1408,7 +1408,12 @@ and drop_dots x
 	None -> (* sequence should stop at goto *)
 	  wrap
 	    (CTL.Or
-	       (aftret,
+	       (aftret
+		  (function x ->
+		    wrap
+		      (CTL.And
+			 (CTL.NONSTRICT,truepred,
+			  bef_aft_builder x))),
 	       (* encoding of a goto-generated error exit *)
 		wrap
 		  (CTL.And
@@ -1424,7 +1429,12 @@ and drop_dots x
 					  (dir,
 					   wrap
 					     (CTL.EF(dir,gotomatch)))))))))))))
-    | Some _ -> aftret (* nest should keep going to exit or error exit *) in
+    | Some _ -> (aftret  (* nest should keep going to exit or error exit *)
+		   (function x ->
+		     wrap
+		       (CTL.And
+			  (CTL.NONSTRICT,truepred,
+			   bef_aft_builder x)))) in
     wrap(CTL.Or(rest,error_exiter)) in
   
   match (all,!Flag_parsing_cocci.sgrep_mode) with

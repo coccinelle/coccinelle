@@ -263,6 +263,7 @@ let classify all_marked table code =
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
+(*  Why? There is nothing there
 	(* cases for everyhing eith extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
@@ -272,6 +273,7 @@ let classify all_marked table code =
       | Ast0.While(_,_,_,_,_,(info,aft))
       | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
 	  bind (k s) (mcode ((),(),info,aft))
+*)
       |	_ -> k s) in
 
   let do_top builder r k e = compute_result builder e (k e) in
@@ -384,6 +386,8 @@ let rec equal_typeC t1 t2 =
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
+  | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
+      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
      Ast0.StructUnionDef(_,lb2,_,rb2)) ->
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2

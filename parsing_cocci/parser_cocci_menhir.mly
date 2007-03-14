@@ -393,8 +393,7 @@ struct_decl:
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,clt2mcode ";" pv)) }
     | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
-	pv=TPtVirg
+	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
         let t =
 	  Ast0.wrap
@@ -542,6 +541,17 @@ defineop:
 		       body)) }
 
 /*****************************************************************************/
+
+funproto:
+  s=ioption(storage) t=ctype
+  i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
+      { Ast0.wrap
+	  (Ast0.UnInit
+	     (s,
+	      Ast0.wrap
+		(Ast0.FunctionType(Some t,
+				   clt2mcode "(" lp, d, clt2mcode ")" rp)),
+	      i, clt2mcode ";" pt)) }
 
 fundecl:
   s=ioption(storage) t=option(fn_ctype)
@@ -735,6 +745,7 @@ decl_var:
 	  (function (id,fn) ->
 	    Ast0.wrap(Ast0.UnInit(s,fn t,id,clt2mcode ";" pv)))
 	  d }
+  | f=funproto { [f] }
   | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       [Ast0.wrap(Ast0.Init(s,fn t,id,clt2mcode "=" q,e,clt2mcode ";" pv))] }

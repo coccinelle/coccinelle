@@ -426,12 +426,18 @@ let match_maker context_required whencode_allowed =
 	  | _ -> return false
 	else return false
 
+(* the special case for function types prevents the eg T X; -> T X = E; iso
+from applying, which doesn't seem very relevant, but it also avoids a
+mysterious bug that is obtained with eg int attach(...); *)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
-	add_pure_binding name pure pure_sp_code.V0.combiner_typeC
-	  (function ty -> Ast0.TypeCTag ty)
-	  t
+	(match Ast0.unwrap t with
+	  Ast0.FunctionType(tya,lp1a,paramsa,rp1a) -> return false
+	| _ ->
+	    add_pure_binding name pure pure_sp_code.V0.combiner_typeC
+	      (function ty -> Ast0.TypeCTag ty)
+	      t)
     | up ->
 	if not(context_required) or is_context t
 	then
@@ -769,7 +775,7 @@ let make_minus =
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind") in
 
-  let update_mc mcodekind =
+  let update_mc mcodekind e =
     match !mcodekind with
       Ast0.CONTEXT(mc) ->
 	(match !mc with
@@ -777,11 +783,12 @@ let make_minus =
 	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
 	| _ -> failwith "make_minus: unexpected befaft")
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
+    | Ast0.PLUS -> failwith "make_minus donothing: unexpected plus mcodekind"
     | _ -> failwith "make_minus donothing: unexpected mcodekind" in
 
   let donothing r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
-    let e = k e in update_mc mcodekind; e in
+    let e = k e in update_mc mcodekind e; e in
 
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
@@ -791,15 +798,15 @@ let make_minus =
     match Ast0.unwrap e with
       Ast0.Edots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
     | Ast0.Ecircles(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Ecircles(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ecircles(mcode d,whencode))
     | Ast0.Estars(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
     | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
-	update_mc mcodekind;
+	update_mc mcodekind e;
 	Ast0.rewrap e
 	  (Ast0.NestExpr(mcode starter,
 			 r.V0.rebuilder_expression_dots expr_dots,
@@ -811,7 +818,7 @@ let make_minus =
     match Ast0.unwrap e with
       Ast0.Ddots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
     | _ -> donothing r k e in
 
   let statement r k e =
@@ -819,13 +826,13 @@ let make_minus =
     match Ast0.unwrap e with
       Ast0.Dots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
     | Ast0.Circles(d,whencode) ->
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
     | Ast0.Stars(d,whencode) ->
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Stars(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Stars(mcode d,whencode))
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
-	update_mc mcodekind;
+	update_mc mcodekind e;
 	Ast0.rewrap e
 	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
 		     mcode ender,whencode))
@@ -836,7 +843,7 @@ let make_minus =
     match Ast0.unwrap e with
       Ast0.Idots(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
-	update_mc mcodekind; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
     | _ -> donothing r k e in
 
   let dots r k e =
@@ -1259,6 +1266,13 @@ let copy_plus printer minusify model e =
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
 
+let copy_minus printer minusify model e =
+  match Ast0.get_mcodekind model with
+    Ast0.MINUS(mc) -> minusify e
+  | Ast0.CONTEXT(mc) -> e
+  | Ast0.MIXED(_) -> failwith "not possible 8"
+  | Ast0.PLUS -> failwith "not possible 9"
+
 let whencode_allowed prev_ecount prev_icount prev_dcount
     ecount icount dcount rest =
   (* actually, if ecount or dcount is 0, the flag doesn't matter, because it
@@ -1363,7 +1377,9 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	match inner_loop all_alts prev_ecount prev_icount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_icount, prev_dcount) ->
 	    outer_loop prev_ecount prev_icount prev_dcount rest
-	| Common.Right (new_metavars,res) -> (new_metavars,disj_maker res) in
+	| Common.Right (new_metavars,res) ->
+	    (new_metavars,
+	     copy_minus printer minusify e (disj_maker res)) in
   outer_loop 0 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)

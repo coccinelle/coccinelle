@@ -291,7 +291,7 @@ let split_token_stream tokens =
 (* Find function names *)
 (* This addresses a shift-reduce problem in the parser, allowing us to
 distinguish a function declaration from a function call even if the latter
-has no return typed.  Undoubtedly, this is not very nice, but it doesn't
+has no return type.  Undoubtedly, this is not very nice, but it doesn't
 seem very convenient to refactor the grammar to get around the problem. *)
 
 let rec find_function_names = function
@@ -412,6 +412,8 @@ let detect_types in_meta_decls l =
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TComma(_),_) | (PC.TPure,_) | (PC.TContext,_) -> true
     | _ -> false in
+  let is_choices_delim = function
+      (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_),_) -> true
@@ -428,6 +430,8 @@ let detect_types in_meta_decls l =
     | _ -> false in
   let rec loop start type_names = function
       [] -> []
+    | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
+	collect_choices type_names all
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
       when is_delim delim ->
 	!Data.add_type_name ident;
@@ -450,7 +454,15 @@ let detect_types in_meta_decls l =
 	(PC.TTypeId(ident,clt),v)::(loop false type_names rest)
     | ((PC.TIdent(ident,clt),v) as x)::rest ->
 	x::(loop false type_names rest)
-    | x::rest -> x::(loop false type_names rest) in
+    | x::rest -> x::(loop false type_names rest)
+  and collect_choices type_names = function
+      [] -> [] (* should happen, but let the parser detect that *)
+    | (PC.TCBrace(clt),v)::rest ->
+	(PC.TCBrace(clt),v)::(loop false type_names rest)
+    | delim::(PC.TIdent(ident,clt),v)::rest when is_choices_delim delim ->
+	delim::(PC.TTypeId(ident,clt),v)::
+	(collect_choices (ident::type_names) rest)
+    | x::rest -> x::(collect_choices type_names rest) in
   loop true [] l
 
 (* ----------------------------------------------------------------------- *)

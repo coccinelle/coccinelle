@@ -3,7 +3,7 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module U = Pretty_print_cocci
 
-let quiet = ref true (* false = no decoration on - context, etc *)
+let quiet = ref false (* false = no decoration on - context, etc *)
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0
@@ -220,12 +220,13 @@ and typeC t =
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_string name; print_string " "
-      | Ast0.DisjType(_,types,_,_) ->
-	  print_string "\n("; force_newline();
+      | Ast0.DisjType(lp,types,mids,rp) ->
+	  List.iter (mcode print_string) mids;
+	  print_string "\n"; mcode print_string lp; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
 	    typeC types;
-	  print_string "\n)"
+	  print_string "\n"; mcode print_string rp
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
       | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)
@@ -509,20 +510,62 @@ let unparse_anything x =
   let q = !quiet in
   quiet := true;
   (match x with
-    Ast0.DotsExprTag(d) -> expression_dots d
-  | Ast0.DotsParamTag(d) -> parameter_list d
-  | Ast0.DotsInitTag(d) -> initialiser_list d
-  | Ast0.DotsStmtTag(d) -> statement_dots d
-  | Ast0.DotsDeclTag(d) -> declaration_dots d
-  | Ast0.IdentTag(d) -> ident d
-  | Ast0.ExprTag(d) -> expression d
-  | Ast0.TypeCTag(d) -> typeC d
-  | Ast0.ParamTag(d) -> parameterTypeDef d
-  | Ast0.InitTag(d) -> initialiser d
-  | Ast0.DeclTag(d) -> declaration d
-  | Ast0.StmtTag(d) -> statement "" d
-  | Ast0.CaseLineTag(d) -> case_line "" d
-  | Ast0.TopTag(d) -> top_level d);
+    Ast0.DotsExprTag(d) ->
+      Format.print_string "dotsexpr";
+      Format.print_newline();
+      expression_dots d
+  | Ast0.DotsParamTag(d) ->
+      Format.print_string "dotsparam";
+      Format.print_newline();
+      parameter_list d
+  | Ast0.DotsInitTag(d) ->
+      Format.print_string "dotsinit";
+      Format.print_newline();
+      initialiser_list d
+  | Ast0.DotsStmtTag(d) ->
+      Format.print_string "dotsstmt";
+      Format.print_newline();
+      statement_dots d
+  | Ast0.DotsDeclTag(d) ->
+      Format.print_string "dotsdecl";
+      Format.print_newline();
+      declaration_dots d
+  | Ast0.IdentTag(d) ->
+      Format.print_string "ident";
+      Format.print_newline();
+      ident d
+  | Ast0.ExprTag(d) ->
+      Format.print_string "expr";
+      Format.print_newline();
+      expression d
+  | Ast0.TypeCTag(d) ->
+      Format.print_string "type";
+      Format.print_newline();
+      typeC d
+  | Ast0.ParamTag(d) ->
+      Format.print_string "param";
+      Format.print_newline();
+      parameterTypeDef d
+  | Ast0.InitTag(d) ->
+      Format.print_string "init";
+      Format.print_newline();
+      initialiser d
+  | Ast0.DeclTag(d) ->
+      Format.print_string "decl";
+      Format.print_newline();
+      declaration d
+  | Ast0.StmtTag(d) ->
+      Format.print_string "stmt";
+      Format.print_newline();
+      statement "" d
+  | Ast0.CaseLineTag(d) ->
+      Format.print_string "case";
+      Format.print_newline();
+      case_line "" d
+  | Ast0.TopTag(d) ->
+      Format.print_string "top";
+      Format.print_newline();
+      top_level d);
   quiet := q;
   print_newline()
 
