@@ -9,3 +9,18 @@ struct SHT template = {
 int my_proc_info(int i) 
 {
 }
+
+
+int foo(struct SHT * tpnt) 
+{
+  tpnt->proc_info = my_proc_info2;
+}
+
+int my_proc_info2(int i) 
+{
+}
+
+
+int not_proc_info(int i) 
+{
+}
