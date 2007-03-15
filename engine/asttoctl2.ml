@@ -1270,22 +1270,35 @@ and statement stmt after quantified label guard =
 		  quantify b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
+      let default_required =
+	if List.exists
+	    (function case ->
+	      match Ast.unwrap case with
+		Ast.CaseLine(header,_) ->
+		  (match Ast.unwrap header with
+		    Ast.Default(_,_) -> true
+		  | _ -> false)
+	      |	_ -> false)
+	    cases
+	then function x -> x
+	else (function x -> wrapOr(fallpred n label,x)) in
       quantify b1fvs
 	(make_seq
 	   [switch_header;
-	     quantify b2fvs
-	       (make_seq
-		  [lb;
-		    wrapAnd
-		    (List.fold_left
-		      (function prev -> function cur -> wrapOr(prev,cur))
-		      no_header case_code,
-		     List.fold_left
-		       (function prev ->
-			 function cur ->
-			   wrapAnd(prev,wrapEX n cur))
-		       (wrap n CTL.True)
-		       case_headers)])])
+	     default_required
+	       (quantify b2fvs
+		  (make_seq
+		     [wrapAnd(lb,
+			      List.fold_left
+				(function prev ->
+				  function cur ->
+				    wrapAnd(prev,wrapEX n cur))
+				(wrap n CTL.True)
+				case_headers);
+		       List.fold_left
+			 (function prev -> function cur ->
+			   wrapOr(prev,cur))
+			 no_header case_code]))])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
