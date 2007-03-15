@@ -43,7 +43,7 @@ let rec propagate_types env =
     let res = k e in
     let ty =
       match Ast0.unwrap e with
-	Ast0.Ident(id) -> res
+	Ast0.Ident(id) -> Ast0.set_type e res; res
       | Ast0.Constant(const) ->
 	  (match Ast0.unwrap_mcode const with
 	    Ast.String(_) -> Some (T.Pointer(T.BaseType(T.CharType,None)))
@@ -80,8 +80,10 @@ let rec propagate_types env =
       | Ast0.Binary(exp1,op,exp2) ->
 	  let same_type = function
 	      (None,None) -> Some (T.BaseType(T.IntType,None))
-	    | (Some (T.Pointer ty1),Some ty2) -> Some (T.Pointer ty1)
-	    | (Some ty1,Some (T.Pointer ty2)) -> Some (T.Pointer ty2)
+	    | (Some (T.Pointer ty1),Some ty2) ->
+		Some (T.Pointer ty1)
+	    | (Some ty1,Some (T.Pointer ty2)) ->
+		Some (T.Pointer ty2)
 	    | (t1,t2) ->
 		let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
@@ -214,11 +216,12 @@ let rec propagate_types env =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing statement_dots donothing
+    donothing donothing donothing statement_dots donothing donothing
     ident expression donothing donothing donothing donothing statement
     case_line donothing
 
 let type_infer code =
-  let fn = (propagate_types []).V0.combiner_top_level in
+  let fn =
+    (propagate_types [("NULL",T.Pointer(T.Unknown))]).V0.combiner_top_level in
   let _ = List.map fn code in
   ()

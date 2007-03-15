@@ -64,7 +64,7 @@ it *)
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
-      (donothing Ast0.dotsDecl)
+      (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
       (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl) statement
       (donothing Ast0.case_line) topfn in
@@ -97,6 +97,7 @@ let create_root_token_table minus =
 	  | Ast0.DotsParamTag(d) -> Ast0.get_index d
 	  | Ast0.DotsStmtTag(d) -> Ast0.get_index d
 	  | Ast0.DotsDeclTag(d) -> Ast0.get_index d
+	  | Ast0.DotsCaseTag(d) -> Ast0.get_index d
 	  | Ast0.IdentTag(d) -> Ast0.get_index d
 	  | Ast0.ExprTag(d) -> Ast0.get_index d
 	  | Ast0.TypeCTag(d) -> Ast0.get_index d
@@ -154,6 +155,7 @@ bind to that; not good for isomorphisms *)
   let pdots r k d = dots r.V0.combiner_parameter k d in
   let sdots r k d = dots r.V0.combiner_statement k d in
   let ddots r k d = dots r.V0.combiner_declaration k d in
+  let cdots r k d = dots r.V0.combiner_case_line k d in
 
   let statement r k s =
     let redo_branch branchres (ifinfo,aftmc) =
@@ -229,7 +231,7 @@ bind to that; not good for isomorphisms *)
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    edots idots pdots sdots ddots
+    edots idots pdots sdots ddots cdots
     do_nothing expression do_nothing initialiser do_nothing do_nothing
     statement do_nothing do_top
 
@@ -254,6 +256,9 @@ let call_collect_minus context_nodes :
       | Ast0.DotsDeclTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_declaration_dots e)
+      | Ast0.DotsCaseTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).V0.combiner_case_line_dots e)
       | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_ident e)
@@ -353,6 +358,7 @@ let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_decldots x  = Ast.DeclDotsTag (Ast0toast.declaration_dots x)
+let mk_casedots x  = failwith "+ case lines not supported"
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC x)
 let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
 let mk_param x     = Ast.ParamTag (Ast0toast.parameterTypeDef x)
@@ -403,6 +409,7 @@ let collect_plus_nodes root =
     (mcode mk_storage)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
+    (do_nothing mk_casedots)
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
@@ -428,6 +435,9 @@ let call_collect_plus context_nodes :
       | Ast0.DotsDeclTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_declaration_dots e)
+      | Ast0.DotsCaseTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).V0.combiner_case_line_dots e)
       | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_ident e)
@@ -753,6 +763,7 @@ let reevaluate_contextness =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
+      donothing
       donothing donothing donothing donothing donothing donothing donothing in
   res.V0.combiner_top_level
 
@@ -871,7 +882,7 @@ let insert_markers e =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing statement_dots donothing donothing
-      donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing top_level in
   res.V0.combiner_top_level e
 

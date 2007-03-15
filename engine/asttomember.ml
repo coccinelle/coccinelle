@@ -96,6 +96,17 @@ and statement tail stmt used_after optional =
       then optional [header]
       else extend optional header (statement tail branch used_after optional)
 
+  | Ast.Switch(header,lb,cases,rb) ->
+      let body_info = case_lines tail cases used_after optional in
+      if contains_modif header used_after or
+	contains_modif lb used_after or
+	contains_modif rb used_after
+      then
+	match body_info with
+	  Req(elems) -> body_info (* don't bother adding braces *)
+	| Opt(elems) -> lub (optional [header;lb;rb], body_info)
+      else body_info
+
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       if contains_modif ifheader used_after or mcode () ((),(),aft)
       then optional [ifheader]
@@ -143,6 +154,25 @@ and statement tail stmt used_after optional =
       statement tail stm used_after optional
 
   | _ -> failwith "not supported"
+
+and case_lines tail cases used_after optional =
+  match cases with
+    [] -> Opt []
+  | last::rest ->
+      List.fold_right
+	(function cur ->
+	  function rest ->
+	    lub (case_line false cur used_after optional, rest))
+	rest (case_line tail last used_after optional)
+
+and case_line tail case used_after optional =
+  match Ast.unwrap case with
+    Ast.CaseLine(header,code) ->
+      if contains_modif header used_after
+      then optional [header]
+      else
+	extend optional header (statement_list tail code used_after optional)
+  | Ast.OptCase(case) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

@@ -230,7 +230,7 @@ and base_statement =
 	             (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
-	             case_line list * string mcode (* } *)
+	             case_line dots * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
@@ -307,6 +307,7 @@ type anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
   | TypeCTag of typeC
@@ -322,6 +323,7 @@ val dotsInit : initialiser dots -> anything
 val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
+val dotsCase : case_line dots -> anything
 val ident : ident -> anything
 val expr : expression -> anything
 val typeC : typeC -> anything

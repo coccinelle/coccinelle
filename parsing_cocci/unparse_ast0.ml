@@ -364,23 +364,26 @@ let rec statement arity s =
 	  end_block(); print_string arity; mcode print_string rbrace
       | Ast0.ExprStatement(exp,sem) ->
 	  print_string arity; expression exp; mcode print_string sem
-      | Ast0.IfThen(iff,lp,exp,rp,branch1,_) ->
+      | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
-	  statement arity branch1
-      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,_) ->
+	  statement arity branch1;
+	  mcode (function _ -> ()) ((),(),info,aft)
+      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1;
 	  print_string arity; mcode print_string els; print_string " ";
-	  statement arity branch2
-      | Ast0.While(whl,lp,exp,rp,body,_) ->
+	  statement arity branch2;
+	  mcode (function _ -> ()) ((),(),info,aft)
+      | Ast0.While(whl,lp,exp,rp,body,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
-	  statement arity body
+	  statement arity body;
+	  mcode (function _ -> ()) ((),(),info,aft)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	  print_string arity; mcode print_string d; print_string " ";
 	  statement arity body;
@@ -388,19 +391,20 @@ let rec statement arity s =
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp;
 	  mcode print_string sem
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) ->
+      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string fr; mcode print_string_box lp;
 	  print_option expression e1; mcode print_string sem1;
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
-	  mcode print_string rp; print_string " "; statement arity body
+	  mcode print_string rp; print_string " "; statement arity body;
+	  mcode (function _ -> ()) ((),(),info,aft)
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp; print_string " "; mcode print_string lb;
-	  List.iter (function x -> case_line arity x; force_newline()) cases;
+	  dots force_newline (case_line arity) cases;
 	  mcode print_string rb
       | Ast0.Break(br,sem) ->
 	  print_string arity; mcode print_string br; mcode print_string sem
@@ -472,6 +476,7 @@ and case_line arity c =
       | Ast0.OptCase(case) -> case_line "?" case)
 
 and statement_dots l = dots (function _ -> ()) (statement "") l
+and case_dots l = dots (function _ -> ()) (case_line "") l
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
@@ -530,6 +535,10 @@ let unparse_anything x =
       Format.print_string "dotsdecl";
       Format.print_newline();
       declaration_dots d
+  | Ast0.DotsCaseTag(d) ->
+      Format.print_string "dotscase";
+      Format.print_newline();
+      case_dots d
   | Ast0.IdentTag(d) ->
       Format.print_string "ident";
       Format.print_newline();

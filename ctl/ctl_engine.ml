@@ -1557,6 +1557,11 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  let w = new_let () in
 	  let phi1ref = wrap(A.Ref v) in
 	  let phi2ref = wrap(A.Ref w) in
+	  Format.print_newline();
+	  Printf.printf "converting AU to AW\n";
+	  Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
+	    false phi;
+	  Format.print_newline();
 	  satv unchecked required required_states
 	    (wrap
 	       (A.LetR

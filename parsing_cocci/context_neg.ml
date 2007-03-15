@@ -19,6 +19,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -36,6 +37,7 @@ let set_index x index =
   | Ast0.DotsParamTag(d) -> Ast0.set_index d index
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
+  | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
@@ -52,6 +54,7 @@ let get_index = function
   | Ast0.DotsParamTag(d) -> Index.parameter_dots d
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
+  | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
   | Ast0.TypeCTag(d) -> Index.typeC d
@@ -283,7 +286,7 @@ let classify all_marked table code =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
-      (do_nothing Ast0.dotsDecl)
+      (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.ident) expression typeC initialiser
       (do_nothing Ast0.param) declaration
       statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
@@ -481,8 +484,8 @@ let rec equal_statement s1 s2 =
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
        equal_mcode rp1 rp2
-  | (Ast0.Switch(switch1,lp1,_,rp1,lb1,_,rb1),
-     Ast0.Switch(switch2,lp2,_,rp2,lb2,_,rb2)) ->
+  | (Ast0.Switch(switch1,lp1,_,rp1,lb1,case1,rb1),
+     Ast0.Switch(switch2,lp2,_,rp2,lb2,case2,rb2)) ->
        equal_mcode switch1 switch2 && equal_mcode lp1 lp2 &&
        equal_mcode rp1 rp2 && equal_mcode lb1 lb2 &&
        equal_mcode rb1 rb2
@@ -522,6 +525,15 @@ let rec equal_statement s1 s2 =
   | (Ast0.MultiStm(_),Ast0.MultiStm(_)) -> true
   | _ -> false
 
+let equal_case_line c1 c2 =
+  match (Ast0.unwrap c1,Ast0.unwrap c2) with
+    (Ast0.Default(def1,colon1,_),Ast0.Default(def2,colon2,_)) ->
+      equal_mcode def1 def2 && equal_mcode colon1 colon2
+  | (Ast0.Case(case1,_,colon1,_),Ast0.Case(case2,_,colon2,_)) ->
+      equal_mcode case1 case2 && equal_mcode colon1 colon2
+  | (Ast0.OptCase(_),Ast0.OptCase(_)) -> true
+  | _ -> false
+
 let rec equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.DECL(_),Ast0.DECL(_)) -> true
@@ -538,6 +550,7 @@ let root_equal e1 e2 =
       dots equal_parameterTypeDef d1 d2
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
+  | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) -> dots equal_case_line d1 d2
   | (Ast0.IdentTag(i1),Ast0.IdentTag(i2)) -> equal_ident i1 i2
   | (Ast0.ExprTag(e1),Ast0.ExprTag(e2)) -> equal_expression e1 e2
   | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
@@ -582,7 +595,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
+    do_nothing do_nothing do_nothing
 
 let contextify_whencode =
   let bind x y = () in
@@ -621,6 +634,7 @@ let contextify_whencode =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing
       expression
       do_nothing initialiser do_nothing do_nothing statement do_nothing
       do_nothing in

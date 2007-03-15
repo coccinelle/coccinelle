@@ -53,7 +53,7 @@ let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 
 let aftret line label_var f =
-  wrap line (CTL.Or(aftpred line label_var, f(exitpred line label_var)))
+  wrap line (CTL.Or(aftpred line label_var, f(retpred line)))
 
 let letctr = ref 0
 let get_let_ctr _ =
@@ -441,7 +441,17 @@ and get_before_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
+  | Ast.Switch(header,lb,cases,rb) ->
+      let cases =
+	List.map
+	  (function case_line ->
+	    match Ast.unwrap case_line with
+	      Ast.CaseLine(header,body) ->
+		let (body,_) = get_before body [] in
+		Ast.rewrap case_line (Ast.CaseLine(header,body))
+	    | Ast.OptCase(case_line) -> failwith "not supported")
+	  cases in
+      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
@@ -552,7 +562,17 @@ and get_after_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
+  | Ast.Switch(header,lb,cases,rb) ->
+      let cases =
+	List.map
+	  (function case_line ->
+	    match Ast.unwrap case_line with
+	      Ast.CaseLine(header,body) ->
+		let (body,_) = get_after body [] in
+		Ast.rewrap case_line (Ast.CaseLine(header,body))
+	    | Ast.OptCase(case_line) -> failwith "not supported")
+	  cases in
+      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (bd,bda) = get_after body [] in
       let (de,_) = get_after decls bda in
@@ -665,6 +685,7 @@ let ifthenelse ifheader branch1 els branch2 aft after quantified n label
       [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
     | _ -> failwith "not possible" in
   let (e2fvs,b2fvs,s2fvs) =
+    (* fvs on else? *)
     match seq_fvs quantified [Ast.get_fvs ifheader;Ast.get_fvs branch2] with
       [(e2fvs,b2fvs);(s2fvs,_)] -> (e2fvs,b2fvs,s2fvs)
     | _ -> failwith "not possible" in
@@ -1166,8 +1187,105 @@ and statement stmt after quantified label guard =
 	(function x -> statement x Tail quantified label true)
 	guard wrapDots (Ast.rewrap stmt)
 
-  | Ast.Switch(header,lb,cases,rb) -> failwith "switch not supported"
-
+  | Ast.Switch(header,lb,cases,rb) ->
+      (match after with
+	After(_) -> failwith "pattern code after switch not supported"
+      |	_ -> ());
+      let header_fvs = Ast.get_fvs header in
+      let lb_fvs = Ast.get_fvs lb in
+      let case_fvs = List.map Ast.get_fvs cases in
+      let rb_fvs = Ast.get_fvs rb in
+      let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
+	   all_casefvs,all_b3fvs,all_rbfvs) =
+	List.fold_left
+	  (function (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
+		     all_casefvs,all_b3fvs,all_rbfvs) ->
+	    function case_fvs ->
+	      match seq_fvs quantified [header_fvs;lb_fvs;case_fvs;rb_fvs] with
+		[(efvs,b1fvs);(lbfvs,b2fvs);(casefvs,b3fvs);(rbfvs,_)] ->
+		  (efvs::all_efvs,b1fvs::all_b1fvs,lbfvs::all_lbfvs,
+		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
+		   rbfvs::all_rbfvs)
+	      |	_ -> failwith "not possible")
+	  ([],[],[],[],[],[],[]) case_fvs in
+      let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
+	   all_casefvs,all_b3fvs,all_rbfvs) =
+	(List.rev all_efvs,List.rev all_b1fvs,List.rev all_lbfvs,
+	 List.rev all_b2fvs,List.rev all_casefvs,List.rev all_b3fvs,
+	 List.rev all_rbfvs) in
+      let rec intersect_all = function
+	  [] -> []
+	| [x] -> x
+	| x::xs -> intersect x (intersect_all xs) in
+      let rec union_all l = List.fold_left union [] l in
+      let exponlyfvs = intersect_all all_efvs in
+      let lbonlyfvs = intersect_all all_lbfvs in
+(* don't do anything with right brace.  Hope there is no + code on it *)
+(*      let rbonlyfvs = intersect_all all_rbfvs in*)
+      let b1fvs = union_all all_b1fvs in
+      let new1_quantified = union b1fvs quantified in
+      let b2fvs = union (union_all all_b1fvs) (intersect_all all_casefvs) in
+      let new2_quantified = union b2fvs new1_quantified in
+(*      let b3fvs = union_all all_b3fvs in*)
+      let switch_header = quantify exponlyfvs (make_match header) in
+      let lb = quantify lbonlyfvs (make_match lb) in
+(*      let rb = quantify rbonlyfvs (make_match rb) in*)
+      let case_headers =
+	List.map
+	  (function case_line ->
+	    match Ast.unwrap case_line with
+	      Ast.CaseLine(header,body) ->
+		let e1fvs =
+		  match seq_fvs new2_quantified [Ast.get_fvs header] with
+		    [(e1fvs,_)] -> e1fvs
+		  | _ -> failwith "not possible" in
+		quantify e1fvs (real_make_match n label true header)
+	    | Ast.OptCase(case_line) -> failwith "not supported")
+	  cases in
+      let no_header =
+	match case_headers with
+	  [] -> wrap n CTL.True
+	| [x] -> wrapNot x
+	| x::xs ->
+	    wrapNot
+	      (List.fold_left
+		 (function prev -> function cur -> wrapOr(prev,cur))
+		 x xs) in
+      let case_code =
+	List.map
+	  (function case_line ->
+	    match Ast.unwrap case_line with
+	      Ast.CaseLine(header,body) ->
+		  let (e1fvs,b1fvs,s1fvs) =
+		    let fvs = [Ast.get_fvs header;Ast.get_fvs body] in
+		    match seq_fvs new2_quantified fvs with
+		      [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
+		    | _ -> failwith "not possible" in
+		  let case_header =
+		    quantify e1fvs (make_match header) in
+		  let new3_quantified = union b1fvs new2_quantified in
+		  let body =
+		    statement_list body Tail new3_quantified label
+		      true(*?*) guard in
+		  quantify b1fvs (make_seq [case_header; body])
+	    | Ast.OptCase(case_line) -> failwith "not supported")
+	  cases in
+      quantify b1fvs
+	(make_seq
+	   [switch_header;
+	     quantify b2fvs
+	       (make_seq
+		  [lb;
+		    wrapAnd
+		    (List.fold_left
+		      (function prev -> function cur -> wrapOr(prev,cur))
+		      no_header case_code,
+		     List.fold_left
+		       (function prev ->
+			 function cur ->
+			   wrapAnd(prev,wrapEX n cur))
+		       (wrap n CTL.True)
+		       case_headers)])])
   | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
@@ -1401,6 +1519,22 @@ and drop_dots x
 			    is -.  Probably doesn't completely work - depends
 			    on the label associated with the dots *)
 		    wrap(CTL.AU(dir,CTL.NONSTRICT,x,wrap(CTL.Not(x)))))))) in
+  let build_aftret bef_aft_builder =
+    aftret
+      (* this gets the label of TrueBranch and associates it with the
+	 return.  we should probably do this for the goto case also. *)
+      (function x ->
+	let lv = get_label_ctr() in
+	let label_pred = wrapPred 0 (Lib_engine.Label lv,CTL.Control) in
+	wrap
+	  (CTL.Exists
+	     (lv,
+	      wrap
+		(CTL.And
+		   (CTL.NONSTRICT,
+		    wrap(CTL.And (CTL.NONSTRICT,truepred,label_pred)),
+		    bef_aft_builder (x (Some lv)))),
+	      true))) in
   let build_big_rest bef_aft_builder =
     (* rest v After v (TrueBranch & A[!all U (exit v error_exit)]) *)
     let error_exiter =
@@ -1408,12 +1542,7 @@ and drop_dots x
 	None -> (* sequence should stop at goto *)
 	  wrap
 	    (CTL.Or
-	       (aftret
-		  (function x ->
-		    wrap
-		      (CTL.And
-			 (CTL.NONSTRICT,truepred,
-			  bef_aft_builder x))),
+	       (build_aftret bef_aft_builder,
 	       (* encoding of a goto-generated error exit *)
 		wrap
 		  (CTL.And
@@ -1429,12 +1558,9 @@ and drop_dots x
 					  (dir,
 					   wrap
 					     (CTL.EF(dir,gotomatch)))))))))))))
-    | Some _ -> (aftret  (* nest should keep going to exit or error exit *)
-		   (function x ->
-		     wrap
-		       (CTL.And
-			  (CTL.NONSTRICT,truepred,
-			   bef_aft_builder x)))) in
+    | Some _ ->
+	(* nest should keep going to exit or error exit *)
+	build_aftret bef_aft_builder in
     wrap(CTL.Or(rest,error_exiter)) in
   
   match (all,!Flag_parsing_cocci.sgrep_mode) with

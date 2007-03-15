@@ -119,7 +119,7 @@ and strip =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing
     donothing donothing
 

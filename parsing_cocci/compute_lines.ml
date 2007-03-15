@@ -565,7 +565,8 @@ let rec statement s =
 	(promote_mcode fr) right
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       let exp = expression exp in
-      let cases = List.map case_line cases in
+      let cases =
+	dots (function _ -> false) (Some(promote_mcode lb)) case_line cases in
       mkres s
 	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
 	(promote_mcode switch) (promote_mcode rb)
@@ -671,6 +672,7 @@ and case_line c =
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Default(def,colon,code)) (promote_mcode def) code
   | Ast0.Case(case,exp,colon,code) ->
+      let exp = expression exp in
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
   | Ast0.OptCase(case) ->

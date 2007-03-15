@@ -744,7 +744,7 @@ let rec statement in_nest tgt stm =
       let exp = expression false arity exp in
       let rp = mcode rp in
       let lb = mcode lb in
-      let cases = List.map (case_line arity) cases in
+      let cases = dots (case_line arity) cases in
       let rb = mcode rb in
       make_rule_elem stm tgt arity
 	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))

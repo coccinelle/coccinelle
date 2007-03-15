@@ -68,7 +68,7 @@ and contains_only_minus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
 
@@ -185,7 +185,10 @@ let rec statement dots_before dots_after s =
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.Switch(switch,lp,exp,rp,lb,List.map case_line cases,rb)))
+	   (Ast0.Switch(switch,lp,exp,rp,lb,
+			Ast0.rewrap cases
+			  (Ast0.DOTS(List.map case_line (Ast0.undots cases))),
+			rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s

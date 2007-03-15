@@ -639,7 +639,8 @@ statement:
 | TSwitch TOPar eexpr TCPar TOBrace list(case_line) TCBrace
     { Ast0.wrap(Ast0.Switch(clt2mcode "switch" $1,
 			    clt2mcode "(" $2,$3,
-			    clt2mcode ")" $4,clt2mcode "{" $5,$6,
+			    clt2mcode ")" $4,clt2mcode "{" $5,
+			    Ast0.wrap(Ast0.DOTS($6)),
 			    clt2mcode "}" $7)) }
 | TReturn eexpr TPtVirg
     { Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" $1,$2,

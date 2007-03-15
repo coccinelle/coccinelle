@@ -23,7 +23,7 @@ let strip_info =
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -37,6 +37,8 @@ let anything_equal = function
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) ->
+      failwith "not a possible variable binding"
+  | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.IdentTag(d1),Ast0.IdentTag(d2)) ->
       (strip_info.V0.rebuilder_ident d1) = (strip_info.V0.rebuilder_ident d2)
@@ -208,7 +210,7 @@ let match_maker context_required whencode_allowed =
 
     V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing param donothing stmt donothing
       donothing in
 
@@ -666,7 +668,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (Ast0.Switch(_,_,expa,_,_,casesa,_),
 	     Ast0.Switch(_,_,expb,_,_,casesb,_)) ->
 	       conjunct_bindings (match_expr expa expb)
-		 (match_list match_case_line no_list do_nolist_match
+		 (match_dots match_case_line no_list do_nolist_match
 		    casesa casesb)
 	  | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
 	  | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
@@ -873,7 +875,7 @@ let make_minus =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    dots dots dots dots dots
+    dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
     statement donothing donothing
 
@@ -939,7 +941,7 @@ let rebuild_mcode start_line =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
 
@@ -961,7 +963,7 @@ let count_edots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -975,7 +977,7 @@ let count_idots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
 
@@ -991,7 +993,7 @@ let count_dots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
 
@@ -1199,7 +1201,7 @@ let instantiate bindings mv_bindings =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    (dots elist) donothing (dots plist) (dots slist) donothing
+    (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn donothing paramfn declfn stmtfn donothing donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1215,22 +1217,19 @@ let disj_fail bindings e =
   | None -> e
 
 (* isomorphism code is by default CONTEXT *)
-let copy_plus printer minusify model e =
-  match Ast0.get_mcodekind model with
+let merge_plus model_mcode e_mcode =
+  match model_mcode with
     Ast0.MINUS(mc) ->
-      (* minusify e *)
-      let e = minusify e in
       (* add the replacement information at the root *)
-      (match Ast0.get_mcodekind e with
+      (match e_mcode with
 	Ast0.MINUS(emc) ->
 	  emc :=
 	    (match (!mc,!emc) with
 	      (([],_),(x,t)) | ((x,_),([],t)) -> (x,t)
 	    | _ -> failwith "how can we combine minuses?")
-      |	_ -> failwith "not possible 6");
-      e
+      |	_ -> failwith "not possible 6")
   | Ast0.CONTEXT(mc) ->
-      (match Ast0.get_mcodekind e with
+      (match e_mcode with
 	Ast0.CONTEXT(emc) ->
 	  let (mba,_,_) = !mc in
 	  let (eba,tb,ta) = !emc in
@@ -1261,10 +1260,18 @@ let copy_plus printer minusify model e =
 	    | Ast.AFTER(a) -> (anythings@a,t)
 	    | Ast.BEFOREAFTER(b,a) -> (b@anythings@a,t)
 	    | Ast.NOTHING -> (anythings,t))
-      |	_ -> failwith "not possible 7");
-      e
+      |	_ -> failwith "not possible 7")
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
+
+let copy_plus printer minusify model e =
+  let e =
+    match Ast0.get_mcodekind model with
+      Ast0.MINUS(mc) -> minusify e
+    | Ast0.CONTEXT(mc) -> e
+    | _ -> failwith "not possible: copy_plus\n" in
+  merge_plus (Ast0.get_mcodekind model) (Ast0.get_mcodekind e);
+  e
 
 let copy_minus printer minusify model e =
   match Ast0.get_mcodekind model with
@@ -1288,6 +1295,32 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
       prev_dcount rest in
   (ecount = 0 or other_ecount = 0, icount = 0 or other_icount = 0,
    dcount = 0 or other_dcount = 0)
+
+(* copy the befores and afters to the instantiated code *)
+let extra_copy_stmt_plus model e =
+  (match Ast0.unwrap model with
+    Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
+  | Ast0.Decl((info,bef),_) ->
+      (match Ast0.unwrap e with
+	Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_)
+      | Ast0.Decl((info,bef1),_) ->
+	  merge_plus bef bef1
+      | _ ->  merge_plus bef (Ast0.get_mcodekind e))
+  | Ast0.IfThen(_,_,_,_,_,(info,aft))
+  | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
+  | Ast0.While(_,_,_,_,_,(info,aft))
+  | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
+      (match Ast0.unwrap e with
+	Ast0.IfThen(_,_,_,_,_,(info,aft1))
+      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
+      | Ast0.While(_,_,_,_,_,(info,aft1))
+      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1)) ->
+	  merge_plus aft aft1
+      | _ -> merge_plus aft (Ast0.get_mcodekind e))
+  | _ -> ());
+  e
+
+let extra_copy_other_plus model e = e
 
 (* --------------------------------------------------------------------- *)
 
@@ -1345,12 +1378,13 @@ let make_new_metavars metavars bindings =
 (* --------------------------------------------------------------------- *)
 
 let mkdisj matcher metavars alts instantiater e disj_maker minusify
-    rebuild_mcodes printer =
+    rebuild_mcodes printer extra_plus =
   let call_instantiate bindings mv_bindings alts =
     List.map
       (function (a,_,_,_) ->
 	copy_plus printer minusify e
-	  (instantiater bindings mv_bindings (rebuild_mcodes a)))
+	  (extra_plus e
+	     (instantiater bindings mv_bindings (rebuild_mcodes a))))
       alts in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
       [] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
@@ -1445,7 +1479,7 @@ let transform_type (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_typeC) e
 	make_disj_type make_minus.V0.rebuilder_typeC
 	(rebuild_mcode start_line).V0.rebuilder_typeC
-	Unparse_ast0.typeC
+	Unparse_ast0.typeC extra_copy_other_plus
   | _ -> ([],e)
 
 
@@ -1469,7 +1503,7 @@ let transform_expr (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_expression) e
 	make_disj_expr make_minus.V0.rebuilder_expression
 	(rebuild_mcode start_line).V0.rebuilder_expression
-	Unparse_ast0.expression
+	Unparse_ast0.expression extra_copy_other_plus
   | _ -> ([],e)
 
 let transform_decl (metavars,alts) e =
@@ -1492,7 +1526,7 @@ let transform_decl (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_declaration) e
 	make_disj_decl make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
-	Unparse_ast0.declaration
+	Unparse_ast0.declaration extra_copy_other_plus
   | _ -> ([],e)
 
 let transform_stmt (metavars,alts) e =
@@ -1515,7 +1549,7 @@ let transform_stmt (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_statement) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
-	(Unparse_ast0.statement "")
+	(Unparse_ast0.statement "") extra_copy_stmt_plus
   | _ -> ([],e)
 
 (* sort of a hack, because there is no disj at top level *)
@@ -1559,7 +1593,7 @@ let transform_top (metavars,alts) e =
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      make_minus.V0.rebuilder_statement_dots
 	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
-	      Unparse_ast0.statement_dots
+	      Unparse_ast0.statement_dots extra_copy_other_plus
 	| _ -> ([],stmts) in
       (mv,Ast0.rewrap e (Ast0.CODE res))
   | _ -> ([],e)
@@ -1599,7 +1633,7 @@ let transform (alts : isomorphism) t =
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing exprfn typefn donothing donothing declfn stmtfn
       donothing topfn in
   let res = res.V0.rebuilder_top_level t in
@@ -1613,7 +1647,7 @@ let rewrap =
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
 
@@ -1628,6 +1662,8 @@ let rewrap_anything = function
       Ast0.DotsStmtTag(rewrap.V0.rebuilder_statement_dots d)
   | Ast0.DotsDeclTag(d) ->
       Ast0.DotsDeclTag(rewrap.V0.rebuilder_declaration_dots d)
+  | Ast0.DotsCaseTag(d) ->
+      Ast0.DotsCaseTag(rewrap.V0.rebuilder_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)

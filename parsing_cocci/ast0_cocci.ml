@@ -233,7 +233,7 @@ and base_statement =
 	             (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
-	             case_line list * string mcode (* } *)
+	             case_line dots * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
@@ -310,6 +310,7 @@ type anything =
   | DotsParamTag of parameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
+  | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
   | TypeCTag of typeC
@@ -325,6 +326,7 @@ let dotsParam x = DotsParamTag x
 let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x
+let dotsCase x = DotsCaseTag x
 let ident x = IdentTag x
 let expr x = ExprTag x
 let typeC x = TypeCTag x

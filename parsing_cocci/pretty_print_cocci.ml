@@ -109,7 +109,7 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_string name; (*;
+  | Ast.MetaId(name,keep,inherited) -> mcode print_string name(*;
       print_string "/* ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;

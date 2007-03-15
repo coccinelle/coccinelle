@@ -299,6 +299,11 @@ Expression
 
 unlikely(E) => E
 
+Expression
+@@ expression E; @@
+
+likely(E) => E
+
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
 

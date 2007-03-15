@@ -26,7 +26,9 @@ type 'a combiner =
       combiner_statement_dots :
 	      Ast0.statement Ast0.dots -> 'a;
       combiner_declaration_dots :
-		  Ast0.declaration Ast0.dots -> 'a}
+		  Ast0.declaration Ast0.dots -> 'a;
+      combiner_case_line_dots :
+		  Ast0.case_line Ast0.dots -> 'a}
 
 
 type ('mc,'a) cmcode = 'mc Ast0.mcode -> 'a
@@ -35,7 +37,8 @@ type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 let combiner bind option_default 
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn identfn exprfn
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
+    identfn exprfn
     tyfn initfn paramfn declfn stmtfn casefn topfn =
   let multibind l =
     let rec loop = function
@@ -76,6 +79,12 @@ let combiner bind option_default
 	Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
 	  multibind (List.map declaration l) in
     dotsdeclfn all_functions k d
+  and case_line_dots d =
+    let k d =
+      match Ast0.unwrap d with
+	Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
+	  multibind (List.map case_line l) in
+    dotscasefn all_functions k d
   and ident i =
     let k i =
       match Ast0.unwrap i with
@@ -345,11 +354,10 @@ let combiner bind option_default
 	      get_option expression e3;
 	      string_mcode rp; statement body]
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
-	  bind
-	    (multibind
-	       [string_mcode switch; string_mcode lp; expression exp;
-		 string_mcode rp; string_mcode lb])
-	    (bind (multibind (List.map case_line cases)) (string_mcode rb))
+	  multibind
+	    [string_mcode switch; string_mcode lp; expression exp;
+	      string_mcode rp; string_mcode lb; case_line_dots cases;
+	      string_mcode rb]
       | Ast0.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast0.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
       | Ast0.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
@@ -436,7 +444,8 @@ let combiner bind option_default
       combiner_top_level = top_level;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
-      combiner_declaration_dots = declaration_dots} in
+      combiner_declaration_dots = declaration_dots;
+      combiner_case_line_dots = case_line_dots} in
   all_functions
 
 (* --------------------------------------------------------------------- *)
@@ -464,7 +473,10 @@ type rebuilder =
 	      Ast0.statement Ast0.dots;
 	  rebuilder_declaration_dots :
 	    Ast0.declaration Ast0.dots ->
-	      Ast0.declaration Ast0.dots}
+	      Ast0.declaration Ast0.dots;
+	  rebuilder_case_line_dots :
+	    Ast0.case_line Ast0.dots ->
+	      Ast0.case_line Ast0.dots}
 
 type 'mc rmcode = 'mc Ast0.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
@@ -472,7 +484,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder = fun
     string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
     cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn
+    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
   let get_option f = function
       Some x -> Some (f x)
@@ -517,6 +529,14 @@ let rebuilder = fun
 	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map declaration l)
 	| Ast0.STARS(l) -> Ast0.STARS(List.map declaration l)) in
     dotsdeclfn all_functions k d
+  and case_line_dots d =
+    let k d =
+      Ast0.rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) -> Ast0.DOTS(List.map case_line l)
+	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map case_line l)
+	| Ast0.STARS(l) -> Ast0.STARS(List.map case_line l)) in
+    dotscasefn all_functions k d
   and ident i =
     let k i =
       Ast0.rewrap i
@@ -751,7 +771,7 @@ let rebuilder = fun
 	| Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       	    Ast0.Switch(string_mcode switch,string_mcode lp,expression exp,
 			string_mcode rp,string_mcode lb,
-			List.map case_line cases, string_mcode rb)
+			case_line_dots cases, string_mcode rb)
 	| Ast0.Break(br,sem) ->
 	    Ast0.Break(string_mcode br,string_mcode sem)
 	| Ast0.Continue(cont,sem) ->
@@ -845,5 +865,6 @@ let rebuilder = fun
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
-      rebuilder_declaration_dots = declaration_dots} in
+      rebuilder_declaration_dots = declaration_dots;
+      rebuilder_case_line_dots = case_line_dots} in
   all_functions

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 137 *)
+(* current max is 140 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -44,6 +44,13 @@ let declaration_dots d =
     Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
+	
+let case_line_dots d =
+  let ln = (Ast0.get_info d).Ast0.line_start in
+  match Ast0.unwrap d with
+    Ast0.DOTS(l) -> 138::(if l = [] then [ln] else [0])
+  | Ast0.CIRCLES(l) -> 139::(if l = [] then [ln] else [0])
+  | Ast0.STARS(l) -> 140::(if l = [] then [ln] else [0])
 	
 let ident i =
   match Ast0.unwrap i with

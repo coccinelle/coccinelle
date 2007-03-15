@@ -252,7 +252,7 @@ and statement table minus s =
       get_opt (expression ID table minus) exp3;
       statement table minus body
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
-      expression ID table minus exp; List.iter (case_line table minus) cases
+      expression ID table minus exp; dots (case_line table minus) cases
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID table minus exp
   | Ast0.MetaStmt(name,_) -> if minus then check_table table minus name
   | Ast0.MetaStmtList(name,_) ->

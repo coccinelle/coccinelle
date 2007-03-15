@@ -136,7 +136,7 @@ let inline_mcodes =
     | Ast0.PLUS -> () in
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing
 
@@ -181,7 +181,7 @@ let check_allminus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
     
@@ -575,7 +575,7 @@ let rec statement s =
 	  let exp = expression exp in
 	  let rp = mcode rp in
 	  let lb = mcode lb in
-	  let cases = List.map case_line cases in
+	  let cases = List.map case_line (Ast0.undots cases) in
 	  let rb = mcode rb in
 	  Ast.Switch(local_rewrap s (Ast.SwitchHeader(switch,lp,exp,rp)),
 		     tokenwrap lb (Ast.SeqStart(lb)),cases,

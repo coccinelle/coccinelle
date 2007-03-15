@@ -58,7 +58,7 @@ type ('pred,'mvar,'anno) generic_ctl =
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) *
-	(((('pred,'mvar,'anno) generic_ctl) ->
+	(((string option -> (('pred,'mvar,'anno) generic_ctl)) ->
 	  (('pred,'mvar,'anno) generic_ctl)) ->
 	    (('pred,'mvar,'anno) generic_ctl)) *
 	(('pred,'mvar,'anno) generic_ctl) *
@@ -75,7 +75,7 @@ type ('pred,'mvar,'anno) generic_ctl =
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) option *
 	(('pred,'mvar,'anno) generic_ctl) *
-	(((('pred,'mvar,'anno) generic_ctl) ->
+	(((string option -> (('pred,'mvar,'anno) generic_ctl)) ->
 	  (('pred,'mvar,'anno) generic_ctl)) ->
 	    (('pred,'mvar,'anno) generic_ctl)) *
 	(('pred,'mvar,'anno) generic_ctl) *
