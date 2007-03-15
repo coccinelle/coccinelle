@@ -1137,8 +1137,32 @@ let instantiate bindings mv_bindings =
 	    Common.Left(Ast0.ExprTag(exp)) -> exp
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
+	      let new_types =
+		match x with
+		  None -> None
+		| Some types ->
+		    let rec renamer = function
+			Type_cocci.MetaType(name,keep,inherited) ->
+			  (match lookup (name,(),(),()) bindings mv_bindings
+			  with
+			    Common.Left(Ast0.TypeCTag(t)) ->
+			      Ast0.ast0_type_to_type t
+			  | Common.Left(_) -> failwith "unexpected type"
+			  | Common.Right(new_mv) ->
+			      Type_cocci.MetaType(new_mv,keep,inherited))
+		      |	Type_cocci.ConstVol(cv,ty) ->
+			  Type_cocci.ConstVol(cv,renamer ty)
+		      | Type_cocci.Pointer(ty) ->
+			  Type_cocci.Pointer(renamer ty)
+		      | Type_cocci.FunctionPointer(ty) ->
+			  Type_cocci.FunctionPointer(renamer ty)
+		      | Type_cocci.Array(ty) ->
+			  Type_cocci.Array(renamer ty)
+		      | t -> t in
+		    Some(List.map renamer types) in
 	      Ast0.rewrap e
-		(Ast0.MetaExpr(Ast0.set_mcode_data new_mv name,x,pure)))
+		(Ast0.MetaExpr
+		   (Ast0.set_mcode_data new_mv name,new_types,pure)))
     | Ast0.MetaConst(namea,_,pure) -> failwith "metaconst not supported"
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"

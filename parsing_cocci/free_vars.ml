@@ -518,7 +518,10 @@ let collect_top_level_used_after metavar_rule_list =
       metavar_rule_list ([],[]) in
   match used_after with
     [] -> used_after_lists
-  | _ -> failwith "collect_top_level_used_after: unbound variables"
+  | _ ->
+      failwith
+	(Printf.sprintf "collect_top_level_used_after: unbound variables %s"
+	   (String.concat " " used_after))
 	
 let collect_local_used_after metavars minirules used_after =
   let locally_defined = List.map get_names metavars in

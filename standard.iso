@@ -358,34 +358,6 @@ likely(E) => E
 // Pointer/Field isomorphisms
 // ---------------------------------------------------------------------------
 
-// x->f <=> *x.f
-
-// julia don't want a x->f<=> x.f, so have just =>
-
-//todo: normally if E is typed metavar, should have to change 
-//its type and remove the '*'. 
-//doesn't work, because the terms are not equivalent, so a problem if there
-//is + code
-//Expression
-//@@ expression E; identifier field; @@
-//E->field => E.field
-
-// pure means that either the whole field reference expression is dropped,
-// or E is context code and has no attached + code
-// not really... pure means matches a unitary unplussed metavariable
-// but this rule doesn't work anyway
-
-// the following doesn't work because we need to support matching
-// metavariables in the metavariable declaration in iso_pattern
-//Expression
-//@@
-//type T;
-//pure T E;
-//pure T *E1;
-//identifier fld;
-//@@
-//
-//E.fld => E1->fld
 
 Expression
 @@
@@ -423,3 +395,36 @@ expression E1;
 @@
 
 E.fld = E1; => T I = { .fld = E1, };
+
+// ---------------------------------------------------------------------------
+// more pointer field iso
+// ---------------------------------------------------------------------------
+
+// x->f <=> *x.f
+
+// julia don't want a x->f<=> x.f, so have just =>
+
+//todo: normally if E is typed metavar, should have to change 
+//its type and remove the '*'. 
+//doesn't work, because the terms are not equivalent, so a problem if there
+//is + code
+//Expression
+//@@ expression E; identifier field; @@
+//E->field => E.field
+
+// pure means that either the whole field reference expression is dropped,
+// or E is context code and has no attached + code
+// not really... pure means matches a unitary unplussed metavariable
+// but this rule doesn't work anyway
+
+// the following doesn't work because we need to support matching
+// metavariables in the metavariable declaration in iso_pattern
+Expression
+@@
+type T;
+pure T E;
+pure T *E1;
+identifier fld;
+@@
+
+E.fld => E1->fld
