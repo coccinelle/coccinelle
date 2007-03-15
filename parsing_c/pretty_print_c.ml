@@ -865,7 +865,7 @@ let rec pp_binding_kind = function
   | MetaLocalFuncVal s -> pp ("localfunc " ^ s)
   | MetaExprVal      expr -> pp_expression_simple expr
   | MetaExprListVal  expr_list -> pp "<<exprlist>>"
-  | MetaTypeVal      typ -> pp "<<type>>"
+  | MetaTypeVal      typ -> pp_type_gen pr_elem typ
   | MetaStmtVal      statement -> pp_statement_simple statement
   | MetaParamVal     params -> pp "<<param>>"
   | MetaParamListVal params -> pp "<<paramlist>>"
