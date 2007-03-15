@@ -161,7 +161,11 @@ type ppmethod = PPnormal | PPviastr
 let pp_program2 xs outfile  = 
   
   Common.with_open_outfile outfile (fun (pr,chan) -> 
-    let pr s = pr s ; flush chan in
+    let pr s = 
+      pr s ; 
+      flush chan;
+      (* Common.pr2 ("UNPARSING: >" ^ s ^ "<"); *)
+    in
 
     let (toks: Parser_c.token list ref) = ref [] in
     let _last_synced_token = 

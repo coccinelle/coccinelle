@@ -1,3 +1,4 @@
 @@
+type T;
 @@
-- #define chip_t ...
+- #define chip_t T

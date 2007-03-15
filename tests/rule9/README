@@ -17,6 +17,8 @@ cpqfcTSinit.c \
    for the parameter
  * [bug] maintainer forgot to remove the decl of hostptr, shadowing
      the one now given in parameter.
+ * initialize proc_info not via initializer but via 
+   tpnt->proc_info = etc.
 
 acornscsi.c \
  * [status] ok
@@ -56,6 +58,8 @@ in2000.c \
 ncr53c8xx.c \
  * [status] ok
  * can be made ok  by modifying SP.
+ * initialize proc_info field both with initializer and via a 
+   tpnt->proc_info = etc.
 
 nsp32.c \
  * [status] ok
@@ -82,6 +86,8 @@ sbp2.c \
 sym53c8xx.c \
  * [status] ok
  * space differences
+ * have an Scsi_Host_Template initializer but initialize proc_info 
+   via tpnt->proc_info = etc.
 
 sym_glue.c \
  * [status] ok
@@ -91,3 +97,4 @@ sym_glue.c \
 scsiglue.c 
  * [status] spatch-ok
  * unrelated, maintainer also remove the if containing one of the scsi_host_put
+ * use struct SHT instead of Scsi_Host_Template in the initializer

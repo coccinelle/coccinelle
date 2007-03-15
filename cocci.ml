@@ -502,7 +502,8 @@ let (rebuild_info_program :
          * if yes then must also reparse what follows even if not modified.
          * Do that only if contain_typedmetavar of course, so good opti.
          *)
-        Common.list_init xs (* get rid of the FinalDef *)
+        (* Common.list_init xs *) (* get rid of the FinalDef *)
+        xs
       end
       else [x]
   )

@@ -79,6 +79,14 @@ signed => signed int
 // ---------------------------------------------------------------------------
 // Dereferences
 
+
+// Those iso were introduced for the 'generic program matching' paper, 
+// with sgrep. The idea is that when we want to detect bugs, 
+// we want to detect something like  free(X) ... *X  
+// meaning that you try to access something that have been freed. 
+// But *X is not the only way to deference X, there is also 
+// X->fld,  hence those iso. 
+
 Expression
 @@
 expression E;

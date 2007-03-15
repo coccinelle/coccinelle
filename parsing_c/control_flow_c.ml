@@ -203,7 +203,7 @@ type node = node1 * string
 
   | ErrorExit
 
-type edge = Direct
+type edge = Direct (* Normal | Shadow *)
 
 type cflow = (node, edge) Ograph_extended.ograph_extended
 

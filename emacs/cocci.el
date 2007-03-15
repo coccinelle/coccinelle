@@ -929,6 +929,7 @@ With prefix arg READ-SWITCHES, specify a value to override
             "struct" "union"
             "static" "const" "volatile"
             "break" "continue"
+            "switch"
             ))
 
 (setq cocci-declaration-keywords-list 
