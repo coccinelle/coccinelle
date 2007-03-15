@@ -1,29 +1,9 @@
 @@ 
 typedef Scsi_Host_Template;
 {struct SHT, Scsi_Host_Template} fops;
-{struct SHT, Scsi_Host_Template} * fops2;
 identifier proc_info_func;
 @@
-
-//(
-// fops.proc_info = proc_info_func;
-//|
-// fops2->proc_info = proc_info_func;
-//)
-
-fops.proc_info = proc_info_func;
-
-//@@
-//identifier template_struct, proc_info_func;
-//typedef Scsi_Host_Template;
-//@@
-//
-////struct SHT template_struct = {
-//Scsi_Host_Template template_struct = { 
-// ... 
-// .proc_info = proc_info_func, 
-// ...
-//};
+ fops.proc_info = proc_info_func;
 
 @@
 //identifier proc_info_func; // comment if use above code

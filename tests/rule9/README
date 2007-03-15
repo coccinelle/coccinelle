@@ -67,11 +67,11 @@ nsp32.c \
    whereas maintainer remove it (as for the other parameter)
 
 nsp_cs.c \
- * [status] wrong
- * there is an loop over hostno, which was the old way to compute a hosptr, 
-   enclosed by an ifdef >= VERSION_xxx.  We transform the new version
-   correctly and leave the old code.  IN the version created by hand the
-   old code was left unchanged
+ * [status] spatch-ok
+ * there is a loop over hostno, which was the old way to compute a hosptr, 
+   in the else-branch of an ifdef >= VERSION_xxx. In the .res they 
+   removed the scsi_put in the then-branch, and removed also the whole ifdef
+   (which would have otherwise an empty then-branch).
 
 powertec.c \
  * [status] spatch-ok

@@ -3,11 +3,9 @@
 //struct SHT fops; // this one works
 identifier proc_info_func;
 @@
-(
+
  fops.proc_info = proc_info_func;
-|
- proc_info_func(0);
-)
+
 
 
 @@
