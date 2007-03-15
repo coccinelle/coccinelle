@@ -142,6 +142,7 @@ let member_env lookupf env =
  * "resolving-type functions" take an env and also return an env from
  * where the next search must be performed. *)
 
+(*
 let rec find_final_type ty env = 
 
   match Ast_c.unwrap_typeC ty with 
@@ -178,7 +179,47 @@ let rec find_final_type ty env =
       
   | ParenType t -> find_final_type t env
   | Typeof e -> failwith "typeof"
-  
+*)  
+
+
+
+
+let rec type_unfold_one_step ty env = 
+
+  match Ast_c.unwrap_typeC ty with 
+  | BaseType x  -> ty
+  | Pointer t -> ty
+  | Array (e, t) -> ty
+  | StructUnion (sopt, su) -> ty
+      
+  | FunctionType t -> ty
+  | Enum  (s, enumt) -> ty
+  | EnumName s -> ty
+      
+  | StructUnionName (su, s) -> 
+      (try 
+          let ((structtyp,ii), env') = lookup_structunion (su, s) env in
+          Ast_c.nQ, (StructUnion (Some s, structtyp), ii)
+          (* old: +> Ast_c.rewrap_typeC ty 
+           * but must wrap with good ii, otherwise pretty_print_c
+           * will be lost and raise some Impossible
+           *)
+       with Not_found -> 
+         ty
+      )
+      
+  | TypeName s -> 
+      (try 
+          let (t', env') = lookup_typedef s env in
+          type_unfold_one_step t' env'
+        with Not_found -> 
+          ty
+      )
+      
+  | ParenType t -> type_unfold_one_step t env
+  | Typeof e -> failwith "typeof"
+
+
 
 let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) = 
   fun fld (su, fields) -> 
@@ -219,13 +260,16 @@ let rec type_variations_step ty env =
       (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
   | EnumName s -> 
       (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
-      
+
+  (* we prefer StructUnionName to StructUnion when it comes to typed 
+   *  metavariable 
+   *)
   | StructUnionName (su, s) -> ty
       
   | TypeName s -> 
       (try 
           let (t', env') = lookup_typedef s env in
-          type_variations_step t' env'
+          t' (* maybe a TypeName too, but fixpoint will catch it next time *)
         with Not_found -> 
           ty
       )
@@ -382,7 +426,7 @@ let rec (annotate_program2 :
       | ArrayAccess (e, _) ->
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
             (* todo: maybe not good env !! *)
-            match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
+            match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | Pointer x  
             | Array (_, x) -> 
                 type_variations_typedef x !_scoped_env
@@ -391,7 +435,7 @@ let rec (annotate_program2 :
 
       | RecordAccess  (e, fld) ->  
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
-            match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
+            match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | StructUnion (sopt, structtyp) -> 
                 (try 
                   (* todo: type_variations_typedef ? which env ? *)
@@ -411,9 +455,10 @@ let rec (annotate_program2 :
 
       | RecordPtAccess (e, fld) -> 
           (Ast_c.get_types_expr e) +> do_with_types (fun t ->
-          match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with 
+          match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with 
           | Pointer (t) -> 
-              (match Ast_c.unwrap_typeC (find_final_type t !_scoped_env) with
+              (match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) 
+                with
               | StructUnion (sopt, structtyp) -> 
                 (try 
                   (* todo: type_variations_typedef ? which env ? *)
