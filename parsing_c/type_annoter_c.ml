@@ -195,12 +195,49 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
             )
           )
     )
-  
+
+
+
+
+
+
+let rec type_variations_step ty env = 
+
+  match Ast_c.unwrap_typeC ty with 
+  | BaseType x  -> ty
+      
+  | Pointer t -> 
+      Pointer (type_variations_step t env)  +> Ast_c.rewrap_typeC ty
+  | Array (e, t) -> 
+      Array (e, type_variations_step t env) +> Ast_c.rewrap_typeC ty
+      
+  | StructUnion (sopt, su) -> ty
+      
+  | FunctionType t -> 
+      (FunctionType t) (* todo ? *) +> Ast_c.rewrap_typeC ty
+  | Enum  (s, enumt) -> 
+      (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
+  | EnumName s -> 
+      (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
+      
+  | StructUnionName (su, s) -> ty
+      
+  | TypeName s -> 
+      (try 
+          let (t', env') = lookup_typedef s env in
+          type_variations_step t' env'
+        with Not_found -> 
+          ty
+      )
+      
+  | ParenType t -> type_variations_step t env
+  | Typeof e -> failwith "typeof"
+ 
 
 let type_variations_typedef ty env = 
   (* fix point *)
   let rec aux xs = 
-    let ty' = find_final_type ty env in
+    let ty' = type_variations_step ty env in
     if List.mem ty' xs then xs
     else aux (ty'::xs) 
   in
