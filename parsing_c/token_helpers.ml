@@ -11,6 +11,12 @@ let is_comment = function
   | TCommentCpp _ | TCommentMisc _ -> true
   | _ -> false
 
+
+let is_real_comment = function
+  | TComment _    | TCommentSpace _ 
+      -> true
+  | _ -> false
+
 let is_not_comment x = not (is_comment x)
 
 

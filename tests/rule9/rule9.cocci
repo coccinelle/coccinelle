@@ -1,3 +1,4 @@
+// the order of rules in standard.iso is important to makes this SP works.
 @@ 
 typedef Scsi_Host_Template;
 {struct SHT, Scsi_Host_Template} fops;

@@ -197,11 +197,17 @@ let pp_program2 xs outfile  =
         | _ -> pr2 ("pp_passing_token: " ^ (pinfo_from_tok tok).str);
             
       );
+      let pure_real_comment = 
+        commentsbefore +> List.for_all Token_helpers.is_real_comment 
+      in
+
       commentsbefore +> List.iter (fun tok -> 
         match tok with
         | Parser_c.TCommentSpace       (i,_) -> 
             update_current_tabbing i.str;
             if not (is_between_two_minus !_last_synced_token (pinfo,annot))
+              || 
+               not (pure_real_comment)
             then pr i.str;
 
         | Parser_c.TComment            (i,_) -> pr i.str

@@ -968,7 +968,7 @@ and vk_node_s = fun bigf node ->
     | F.ReturnExpr (st, (e,ii)) -> 
         F.ReturnExpr (st, (vk_expr_s bigf e, iif ii))
         
-    | F.Case  (st, (e,ii)) -> F.Case (st, (vk_expr_s bigf e, ii))
+    | F.Case  (st, (e,ii)) -> F.Case (st, (vk_expr_s bigf e, iif ii))
     | F.CaseRange (st, ((e1, e2),ii)) -> 
         F.CaseRange (st, ((vk_expr_s bigf e1, vk_expr_s bigf e2), iif ii))
 

@@ -1,5 +1,6 @@
 
 val is_comment             : Parser_c.token -> bool
+val is_real_comment        : Parser_c.token -> bool
 val is_not_comment         : Parser_c.token -> bool
 val is_cpp_instruction     : Parser_c.token -> bool
 val is_eof                 : Parser_c.token -> bool
