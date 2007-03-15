@@ -72,31 +72,50 @@ let term (var1,_,_,_) = var1
 let dot_term  (var1,_,info,_) =
   var1 ^ (string_of_int info.Ast0.offset)
 
+(* probably don't need option in return type, because [] is failure. but
+trying to be simple for the moment ... *)
 let add_binding var exp bindings =
   let var = term var in
-  try
-    let cur = List.assoc var bindings in
-    if anything_equal(exp,cur) then Some bindings else None
-  with Not_found -> Some ((var,exp)::bindings)
+  let attempt bindings =
+    try
+      let cur = List.assoc var bindings in
+      if anything_equal(exp,cur) then [bindings] else []
+    with Not_found -> [((var,exp)::bindings)] in
+  match List.concat(List.map attempt bindings) with
+    [] -> None
+  | x -> Some x
 
 let add_dot_binding var exp bindings =
   let var = dot_term var in
-  try
-    let cur = List.assoc var bindings in
-    if anything_equal(exp,cur) then Some bindings else None
-  with Not_found -> Some ((var,exp)::bindings)
+  let attempt bindings =
+    try
+      let cur = List.assoc var bindings in
+      if anything_equal(exp,cur) then [bindings] else []
+    with Not_found -> [((var,exp)::bindings)] in
+  match List.concat(List.map attempt bindings) with
+    [] -> None
+  | x -> Some x
+
+let rec nub ls =
+  match ls with
+    [] -> []
+  | (x::xs) when (List.mem x xs) -> nub xs
+  | (x::xs) -> x::(nub xs)
 
 (* --------------------------------------------------------------------- *)
 
-let init_env = []
+let init_env = [[]]
 
 let debug str m binding =
   let res = m binding in
   (match res with
     None -> Printf.printf "%s: failed\n" str
   | Some binding ->
-      Printf.printf "%s: %s\n" str
-	(String.concat " " (List.map (function (x,_) -> x) binding)));
+      List.iter
+	(function binding ->
+	  Printf.printf "%s: %s\n" str
+	    (String.concat " " (List.map (function (x,_) -> x) binding)))
+	binding);
   res
 
 let conjunct_bindings
@@ -296,35 +315,54 @@ let match_maker context_required whencode_allowed =
 	  (function expr -> Ast0.ExprTag expr)
 	  expr
     | Ast0.MetaExpr(name,Some ts,pure) ->
-	let expty = Ast0.get_type expr in
 	if List.exists
 	    (function Type_cocci.MetaType(_,_,_) -> true | _ -> false)
 	    ts
 	then
 	  (match ts with
 	    [Type_cocci.MetaType(tyname,_,_)] ->
+	      let expty =
+		match (Ast0.unwrap expr,Ast0.get_type expr) with
+		  (* easier than updating type inferencer to manage multiple
+		     types *)
+		  (Ast0.MetaExpr(_,Some tts,_),_) -> Some tts
+		| (_,Some ty) -> Some [ty]
+		| _ -> None in
 	      (match expty with
 		Some expty ->
 		  let tyname = Ast0.rewrap_mcode name tyname in
-		  (try
-		    conjunct_bindings
-		      (add_pure_binding tyname Ast0.Impure
-			 (function _ -> Ast0.Impure)
-			 (function ty -> Ast0.TypeCTag ty)
-			 (Ast0.rewrap expr (Ast0.reverse_type expty)))
-		      (add_pure_binding name pure
-			 pure_sp_code.V0.combiner_expression
-			 (function expr -> Ast0.ExprTag expr)
-			 expr)
-		  with Ast0.TyConv ->
-		    Printf.printf "warning: unconvertible type";
-		    return false)
+		  (function bindings ->
+		    let attempts =
+		      List.map
+			(function expty ->
+			  (try
+			    conjunct_bindings
+			      (add_pure_binding tyname Ast0.Impure
+				 (function _ -> Ast0.Impure)
+				 (function ty -> Ast0.TypeCTag ty)
+				 (Ast0.rewrap expr (Ast0.reverse_type expty)))
+			      (add_pure_binding name pure
+				 pure_sp_code.V0.combiner_expression
+				 (function expr -> Ast0.ExprTag expr)
+				 expr)
+			      bindings
+			  with Ast0.TyConv ->
+			    Printf.printf "warning: unconvertible type";
+			    return false bindings))
+			expty in
+		    match
+		      List.concat
+			(List.map (function None -> [] | Some x -> x) attempts)
+		    with
+		      [] -> None
+		    | x -> Some x)
 	      |	_ ->
 		  Printf.printf
 		    "warning: type metavar can only match one type";
 		  return false)
 	  | _ -> failwith "mixture of metatype and other types not supported")
 	else
+	  let expty = Ast0.get_type expr in
 	  if List.exists (function t -> Type_cocci.compatible t expty) ts
 	  then
 	    add_pure_binding name pure pure_sp_code.V0.combiner_expression
@@ -1380,12 +1418,16 @@ let make_new_metavars metavars bindings =
 let mkdisj matcher metavars alts instantiater e disj_maker minusify
     rebuild_mcodes printer extra_plus =
   let call_instantiate bindings mv_bindings alts =
-    List.map
-      (function (a,_,_,_) ->
-	copy_plus printer minusify e
-	  (extra_plus e
-	     (instantiater bindings mv_bindings (rebuild_mcodes a))))
-      alts in
+    List.concat
+      (List.map
+	 (function (a,_,_,_) ->
+	   List.map
+	     (function bindings ->
+	       copy_plus printer minusify e
+		 (extra_plus e
+		    (instantiater bindings mv_bindings (rebuild_mcodes a))))
+	     bindings)
+	 alts) in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
       [] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
     | ((pattern,ecount,icount,dcount)::rest) ->
@@ -1401,7 +1443,7 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
 		let (new_metavars,mv_bindings) =
-		  make_new_metavars metavars bindings in
+		  make_new_metavars metavars (nub(List.concat bindings)) in
 		Common.Right
 		  (new_metavars,
 		   call_instantiate bindings mv_bindings all_alts))) in
