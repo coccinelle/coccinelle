@@ -1,11 +1,12 @@
-void main() {
-  switch(3) {
-  case 1: printf("case1\n");break;
-  case 2: { printf("case1\n");break; }
-    //case 2: { printf("case1\n"); }
+void main(int i) 
+{
+
+  switch(0) {
+  case 0: break;
+  case 1: break;
+  default: break;
   }
 
-  printf("endswitch\n");
-
+  bar();
 
 }

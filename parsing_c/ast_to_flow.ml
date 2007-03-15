@@ -545,6 +545,9 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newswitchi;
 
         let newendswitch = add_node_g (EndStatement (Some iifakeend)) lbl "[endswitch]" in
+        let newafter = add_node_g FallThroughNode lbl "[switchfall]" in
+        !g#add_arc ((newafter, newendswitch), Direct) +> adjust_g;
+        !g#add_arc ((newswitchi, newafter), Direct) +> adjust_g;
 
     
         (* The newswitchi is for the labels to know where to attach.
@@ -636,21 +639,26 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
           * newendswitch has been used via a 'break;'  or because no 
           * 'default:')
           *)
-         (match finalthen with
-         | Some finalthen -> 
-             !g#add_arc ((finalthen, newendswitch), Direct) +> adjust_g;
-             Some newendswitch
-         | None -> 
-             if (!g#predecessors newendswitch)#null
-             then 
-               begin
-                 assert ((!g#successors newendswitch)#null);
-                 !g#del_node newendswitch +> adjust_g;
-                 None
-               end
-             else 
+         let res = 
+           (match finalthen with
+           | Some finalthen -> 
+               !g#add_arc ((finalthen, newendswitch), Direct) +> adjust_g;
                Some newendswitch
-         )
+           | None -> 
+               if (!g#predecessors newendswitch)#null
+               then 
+                 begin
+                   assert ((!g#successors newendswitch)#null);
+                   !g#del_node newendswitch +> adjust_g;
+                   None
+                 end
+               else 
+                 Some newendswitch
+                   
+           )
+         in
+         res
+         
 
     | Labeled (Ast_c.Case  (_, _)), _
     | Labeled (Ast_c.CaseRange  (_, _, _)), _ -> 
