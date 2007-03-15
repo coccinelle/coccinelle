@@ -545,9 +545,6 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
         attach_to_previous_node starti newswitchi;
 
         let newendswitch = add_node_g (EndStatement (Some iifakeend)) lbl "[endswitch]" in
-        let newafter = add_node_g FallThroughNode lbl "[switchfall]" in
-        !g#add_arc ((newafter, newendswitch), Direct) +> adjust_g;
-        !g#add_arc ((newswitchi, newafter), Direct) +> adjust_g;
 
     
         (* The newswitchi is for the labels to know where to attach.
@@ -613,8 +610,20 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
                    | (Labeled (Ast_c.Default _), _) -> true
                    | _ -> false
                     ))
-                 then
+                 then begin
+                   (* when there is no default, then a valid path is 
+                    * from the switchheader to the end. In between we
+                    * add a Fallthrough.
+                   *)
+
+                   let newafter = add_node_g FallThroughNode lbl "[switchfall]"
+                   in
+                   !g#add_arc ((newafter, newendswitch), Direct) +> adjust_g;
+                   !g#add_arc ((newswitchi, newafter), Direct) +> adjust_g;
+                   (* old:
                    !g#add_arc ((newswitchi, newendswitch), Direct) +> adjust_g;
+                   *)
+                 end;
 
                  attach_to_previous_node starti newi;
                  let starti = Some newi in
