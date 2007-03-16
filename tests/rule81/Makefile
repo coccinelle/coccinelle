@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace remap_page_range"
 SP=rule81.cocci
 
 SOURCES = ali5455.c \

@@ -1,3 +1,4 @@
+CEDESCRIPTION="remove snd_magic_cast/kmalloc/... calls"
 SP=rule66.cocci
 
 # the E:          memory.c sound.c

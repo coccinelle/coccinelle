@@ -1,3 +1,4 @@
+CEDESCRIPTION="add argument for dvb_usb_device_init"
 SP=rule88.cocci
 
 SOURCES = a800.c \

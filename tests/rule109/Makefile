@@ -1,3 +1,4 @@
+CEDESCRIPTION="raise fields up in BCState"
 SP=rule109.cocci
 
 SOURCES = avm_pci.c \

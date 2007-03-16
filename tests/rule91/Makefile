@@ -1,3 +1,4 @@
+CEDESCRIPTION="eliminate the pt_regs parameter"
 SP=rule91.cocci
 
 SOURCES = aircable.c \

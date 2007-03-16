@@ -1,3 +1,4 @@
+CEDESCRIPTION="change agp_(un)register_driver protocol"
 SP=rule21.cocci
 
 # backend.c contain the E, generic.c contain some collateral effect, but no

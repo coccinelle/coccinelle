@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace kcalloc(1,...) with kzalloc"
 SP=rule90.cocci
 
 SOURCES = a3d.c \

@@ -1,3 +1,4 @@
+CEDESCRIPTION="drop argument pnp_activate_dev"
 #
 # Make file for rule38
 #

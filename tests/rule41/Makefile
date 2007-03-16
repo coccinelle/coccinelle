@@ -1,3 +1,4 @@
+CEDESCRIPTION="change in arguments of usb_(de)register_dev"
 SP=rule41.cocci
 
 SOURCES = auerswald.c \

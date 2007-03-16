@@ -39,3 +39,6 @@ regression:
 
 opt:	
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) SPATCH=../../spatch.opt -C $$i; done 
+
+subdirs:
+	@echo $(MAKESUBDIRS)

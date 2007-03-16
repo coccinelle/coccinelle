@@ -1,3 +1,4 @@
+CEDESCRIPTION="tty_register_ldisc(...,NULL) becomes tty_unregister_ldisc(...)"
 SP=rule95.cocci
 
 SOURCES=6pack.c \

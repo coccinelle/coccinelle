@@ -1,3 +1,4 @@
+CEDESCRIPTION="add bt_cb around pkt_type field access"
 SP=rule101.cocci
 
 SOURCES=bfusb.c \

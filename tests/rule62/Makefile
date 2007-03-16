@@ -1,4 +1,6 @@
+CEDESCRIPTION="remove blk_clear() calls"
 SP=rule62.cocci
+
 
 # ll_rw_blk.c: related to the E (remove of blk_size global variable).
 

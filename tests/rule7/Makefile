@@ -1,3 +1,4 @@
+DESCRIPTION="reorganize i2c_client structure"
 SP=rule7.cocci
 
 SOURCES = adm1021.c \

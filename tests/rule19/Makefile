@@ -1,3 +1,4 @@
+CEDESCRIPTION="add lock in interrupt callbacks"
 SP=rule19.cocci
 
 SOURCES = asuscom.c \

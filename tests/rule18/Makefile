@@ -1,3 +1,4 @@
+CEDESCRIPTION="factorize code via sched_b_work function"
 SP=schedev.cocci
 
 SOURCES = avm_pci.c \

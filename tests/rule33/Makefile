@@ -1,3 +1,4 @@
+CEDESCRIPTION="drop major() test in current_valid functions"
 #
 # Make file for rule33
 #

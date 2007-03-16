@@ -1,3 +1,4 @@
+CEDESCRIPTION="adding .no_dynamic_id field in usb_driver intializers"
 SP=rule99.cocci
 
 SOURCES = airprime.c \

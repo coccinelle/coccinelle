@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename and reorganize calls to scsi_set_pci_device"
 SP=rule57.cocci
 
 SOURCES = 3w-xxxx.c \

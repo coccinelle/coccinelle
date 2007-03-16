@@ -13,7 +13,7 @@ ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 ARGS=-no_show_ctl_text -no_show_transinfo -no_parse_error_msg -no_show_misc \
 -no_type_error_msg
 
--include ../my_generic_makefile
+#-include ../my_generic_makefile # for the bench comment !!!
 
 SPATCHCMD=$(SPATCH) $(ISOFILE) -compare_with_expected -cocci_file $(SP) $(ARGS)
 
@@ -37,7 +37,7 @@ all: $(OBJS)
 	fi) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.spatch_ok) && \
 	test -e corrected_$(<:.c=.res) && test -e /tmp/output.c && \
-	$(RECOMPARE) corrected_$(<:.c=.res) 2> $(<:.c=.spatch_ok)) || \
+	$(RECOMPARE) corrected_$(<:.c=.res) 2>> $(<:.c=.spatch_ok)) || \
 	(test -e $(<:.c=.spatch_ok) && \
 		mv $(<:.c=.spatch_ok) $(<:.c=.failed)) || \
 	touch $(<:.c=.failed)
@@ -67,12 +67,13 @@ all: $(OBJS)
 
 
 clean::
-	rm -f *.ok *.spatch_ok *.failed
+	rm -f *.ok *.spatch_ok *.failed *.gave_up
 
 clean2::
 	find -name "*.ok" | xargs rm -f
 	find -name "*.spatch_ok" | xargs rm -f
 	find -name "*.failed" | xargs rm -f
+	find -name "*.gave_up" | xargs rm -f
 
 
 %.ok2: %.c $(SPATCH) $(SP)
@@ -85,6 +86,7 @@ score:
 	find -name "*.spatch_ok" | wc -l
 	find -name "*ok" | wc -l
 	find -name "*.failed" | wc -l
+	find -name "*.gave_up" | wc -l
 
 
 info_order:
@@ -102,4 +104,21 @@ info_ok:
 info_failed:
 	$(COCCIDIR)/scripts/extract_info_ok_failed.pl *.failed
 
+patch_size: 
+	~/coccinelle/scripts/patch_from_c_and_res.pl $(SOURCES)
 
+
+
+#-----------------------------------------------------------------------------
+# for stat_directory.pl
+#-----------------------------------------------------------------------------
+
+
+source_files: 
+	@echo $(SOURCES)
+
+sp_file: 
+	@echo $(SP)
+
+ce_descr:
+	@echo $(CEDESCRIPTION)

@@ -1,3 +1,4 @@
+CEDESCRIPTION="adding error return value to config()"
 SP=rule103.cocci
 
 SOURCES=3c574_cs.c \

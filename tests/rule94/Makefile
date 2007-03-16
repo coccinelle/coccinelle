@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace kmalloc/memset by kzalloc"
 SP=rule94.cocci
 
 SOURCES = auerswald.c \

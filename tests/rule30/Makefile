@@ -1,3 +1,4 @@
+CEDESCRIPTION="end_request(X) becomes end_request(CURRENT,X)"
 #
 # Make file for rule30
 #

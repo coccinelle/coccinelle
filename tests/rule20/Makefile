@@ -1,3 +1,4 @@
+CEDESCRIPTION="reorganize register_pccard_driver protocol"
 SP=rule20.cocci
 
 SOURCES = 3c574_cs.c \

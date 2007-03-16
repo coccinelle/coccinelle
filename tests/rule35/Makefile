@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename fields in PStack structure and getters introduction"
 SP=rule35.cocci
 
 # 2 new files:

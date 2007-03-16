@@ -1,3 +1,4 @@
+CEDESCRIPTION="factorize code via sg_address"
 SP=rule71.cocci
 
 SOURCES = debug.c \

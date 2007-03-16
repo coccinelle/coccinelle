@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace usb_storate_ functions"
 SP=rule70.cocci
 
 SOURCES = datafab.c \

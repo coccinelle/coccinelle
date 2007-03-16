@@ -1,3 +1,4 @@
+CEDESCRIPTION="reorganize mdk_rdev_t/mddev_t structures"
 SP=rule26.cocci
 
 SOURCES = linear.c \

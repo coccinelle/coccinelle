@@ -1,3 +1,4 @@
+CEDESCRIPTION="add argument to proc_handler callbacks"
 SP=rule86.cocci
 
 SOURCES = arlan-proc.c \

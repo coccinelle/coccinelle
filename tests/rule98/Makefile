@@ -1,3 +1,4 @@
+CEDESCRIPTION="new arguments to cpcmd"
 SP=rule98.cocci
 
 SOURCES=con3215.c \

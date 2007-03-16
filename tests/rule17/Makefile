@@ -1,3 +1,4 @@
+CEDESCRIPTION="change fieldname of IsdnCard/BCState structures"
 SP=rule17.cocci
 
 SOURCES = amd7930.c \

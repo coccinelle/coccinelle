@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename and reorganize calls to atomic_dec"
 SP=atomic_dec.cocci
 
 # fixed versions have the overlooked calls to atomic_dec fixed as they are

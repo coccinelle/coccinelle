@@ -51,7 +51,7 @@ BEGIN {
     }
 
   # Find corresponding .c file
-  gsub(/.(ok|failed)$/,".c",current_file);
+  gsub(/.(ok|failed|spatch_ok|gave_up)$/,".c",current_file);
 
   # Update file sizes (in lines)  
   ("wc -l " current_file) | getline;

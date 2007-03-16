@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename usb_serial_device_type structure"
 SP=rule92.cocci
 
 SOURCES=airprime.c \

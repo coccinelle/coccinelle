@@ -1,3 +1,4 @@
+CEDESCRIPTION="remove pci_pool_create sixth argument"
 SP=rule51.cocci
 
 SOURCES = amdtp.c \

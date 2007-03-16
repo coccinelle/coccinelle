@@ -1,3 +1,4 @@
+CEDESCRIPTION="eliminate fields in BCState structure"
 SP=rule27.cocci
 
 SOURCES = avm_pci.c \

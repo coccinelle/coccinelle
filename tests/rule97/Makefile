@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace some calls to sbk_queue_len by sbk_queue_empty"
 SP=rule97.cocci
 
 SOURCES=airo.c \

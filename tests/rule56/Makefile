@@ -1,3 +1,4 @@
+CEDESCRIPTION="remove pci_present() calls in conditions"
 SP=rule56.cocci
 
 SOURCES = 3w-xxxx.c \

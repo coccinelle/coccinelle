@@ -1,3 +1,4 @@
+CEDESCRIPTION="introduce getter for common.type field"
 SP=rule50.cocci
 
 SOURCES = dbcmds.c \

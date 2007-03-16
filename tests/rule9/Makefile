@@ -1,3 +1,4 @@
+CEDESCRIPTION="\fname{proc_info}"
 SP=rule9.cocci
 #SP=rule9_plos_updated.cocci
 
@@ -25,6 +26,3 @@ SOURCES = cciss_scsi.c \
 
 include ../generic_makefile
 
-
-patch_size: 
-	~/coccinelle/scripts/patch_from_c_and_res.pl $(SOURCES)

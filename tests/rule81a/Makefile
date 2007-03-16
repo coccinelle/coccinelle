@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace remap_page_range"
 SP=rule81a.cocci
 
 SOURCES = cpia.c \

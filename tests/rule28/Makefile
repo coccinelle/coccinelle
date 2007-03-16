@@ -1,3 +1,4 @@
+CEDESCRIPTION="factorize code via bc_open/close "
 SP=rule28.cocci
 
 SOURCES = avm_pci.c \

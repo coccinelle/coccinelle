@@ -1,3 +1,4 @@
+CEDESCRIPTION="drop CLEAR_INTR statement macro"
 #
 # Make file for rule31
 #

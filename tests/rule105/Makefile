@@ -1,3 +1,4 @@
+CEDESCRIPTION="change typedef dev_link_t to struct pcmcia_device"
 SP=rule105.cocci
 
 SOURCES = 3c574_cs.c \

@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename usb_inc/dec_dev_use"
 #
 # Make file for rule36
 #

@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename macro flags SA_xx"
 SP=rule107.cocci
 
 SOURCES = 1_sb_common.c \

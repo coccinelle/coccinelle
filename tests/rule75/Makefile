@@ -1,3 +1,4 @@
+CEDESCRIPTION="introducing pci_set_consistent_dma_mask"
 SP=rule75.cocci
 
 # ice1724.c, just remove pci_set_consistent_dma_mask

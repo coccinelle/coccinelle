@@ -1,3 +1,4 @@
+CEDESCRIPTION="remove argument pci_save/restore_state"
 #
 # Make file for rule 82
 #

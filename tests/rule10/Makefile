@@ -1,3 +1,4 @@
+CEDESCRIPTION="acpi_hw_...read/write lose arg"
 #
 # Make file for rule 10
 #

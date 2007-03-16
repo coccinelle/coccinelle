@@ -1,3 +1,4 @@
+CEDESCRIPTION="reorganize fields of input_dev/gameport structures"
 SP=rule52.cocci
 
 SOURCES = a3d.c \

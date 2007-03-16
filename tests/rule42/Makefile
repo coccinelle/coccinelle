@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename (Un)LockPage and related functions"
 #
 # Make file for rule 42
 #

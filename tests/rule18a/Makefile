@@ -1,3 +1,4 @@
+CEDESCRIPTION="factorize code via sched_d_work function"
 SP=schedev.cocci
 
 SOURCES = amd7930_fn.c \

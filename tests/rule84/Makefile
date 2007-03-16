@@ -1,3 +1,4 @@
+CEDESCRIPTION="add argument to scsi_cmd_ioctl"
 SP=rule84.cocci
 
 SOURCES = cdu31a.c \

@@ -1,3 +1,4 @@
+CEDESCRIPTION="factorize code via tty_wakeup"
 SP=tty_wakeup.cocci
 
 SOURCES = 68328serial.c \

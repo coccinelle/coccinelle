@@ -1,3 +1,4 @@
+CEDESCRIPTION="usb_submit_urb"
 SP=usu.cocci
 
 SOURCES = CDCEther.c \

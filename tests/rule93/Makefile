@@ -1,3 +1,4 @@
+CEDESCRIPTION="eliminating refrigerator calls"
 SP=rule93.cocci
 
 SOURCES = 8139too.c \

@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename mem_map_(un)reserve functions"
 SP=mem_map.cocci
 
 # normally cocci should detect a bug with cs46xx.c

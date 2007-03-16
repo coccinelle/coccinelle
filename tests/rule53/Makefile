@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename constant macro ATA_MAX_PRD"
 SP=rule53.cocci
 
 SOURCES = ata_piix.c \

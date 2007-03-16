@@ -1,3 +1,4 @@
+CEDESCRIPTION="change type of argument in 3 block-related functions"
 SP=rule24.cocci
 
 SOURCES = blkmtd.c \

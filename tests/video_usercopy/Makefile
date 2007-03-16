@@ -1,3 +1,4 @@
+CEDESCRIPTION="video_user_copy, ioctl functions"
 SP=aztech.cocci
 
 SOURCES = aztech_ver10_micropcm20-radio.c \

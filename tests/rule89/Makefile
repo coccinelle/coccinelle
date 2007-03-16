@@ -1,3 +1,4 @@
+CEDESCRIPTION="introducing __in_dev_get and its lock/unlock calls"
 SP=rule89.cocci
 
 SOURCES = bond_main.c \

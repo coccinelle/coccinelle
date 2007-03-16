@@ -1,3 +1,4 @@
+CEDESCRIPTION="rename pci_alloc/free_consistent functions"
 SP=rule96.cocci
 
 SOURCES=mthca_cq.c \

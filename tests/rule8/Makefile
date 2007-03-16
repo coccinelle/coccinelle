@@ -1,3 +1,4 @@
+CEDESCRIPTION="replace deg_get/set_drvdata"
 SP=rule8.cocci
 
 SOURCES = aiptek.c \
