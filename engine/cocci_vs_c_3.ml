@@ -1666,27 +1666,30 @@ and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
              (A.Type(None, ty1)) +> A.rewrap typa,
              fullty2
            ))
-       | Some x -> raise Todo
-(* XXX
-	let new_il todrop = List.filter (fun (pi,_) -> 
-          not (pi.Common.str = todrop)) 
-        in
-
-	| Some(A.Const,_,_) ->
-	    if qu.B.const
-	    then
-	      match_t_t ty1
-		(({qu with B.const = false},new_il "const" il),ty2)
-	    else return false
-	| Some(A.Volatile,_,_) ->
-	    if qu.B.volatile
-	    then
-	      match_t_t ty1
-		(({qu with B.volatile = false},new_il "volatile" il),ty2)
-	    else return false)
-*)
-
-
+       | Some x -> 
+          (* todo: can be __const__ ? can be const & volatile so 
+           * should filter instead ? 
+           *)
+           (match term x, il with 
+           | A.Const, [i1] when qu.B.const -> 
+               
+               tokenf x i1 >>= (fun x i1 -> 
+               fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) -> 
+                 return (
+                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   ((qu, [i1]), ty2)
+                 )))
+               
+           | A.Volatile, [i1] when qu.B.volatile -> 
+               tokenf x i1 >>= (fun x i1 -> 
+               fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) -> 
+                 return (
+                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   ((qu, [i1]), ty2)
+                 )))
+               
+           | _ -> fail
+           )
        )
 
   | A.DisjType typas, typb -> 

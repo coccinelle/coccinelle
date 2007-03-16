@@ -24,3 +24,7 @@ SOURCES = cciss_scsi.c \
 #SOURCES = scsiglue.c 53c700.c
 
 include ../generic_makefile
+
+
+patch_size: 
+	~/coccinelle/scripts/patch_from_c_and_res.pl $(SOURCES)
