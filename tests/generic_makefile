@@ -36,7 +36,7 @@ all: $(OBJS)
 	else (time $(SPATCHCMD) $<) 2> $(<:.c=.ok) ; \
 	fi) || \
 	(test -e $(<:.c=.ok) && mv $(<:.c=.ok) $(<:.c=.spatch_ok) && \
-	test -e corrected_$(<:.c=.res) && \
+	test -e corrected_$(<:.c=.res) && test -e /tmp/output.c && \
 	$(RECOMPARE) corrected_$(<:.c=.res) 2> $(<:.c=.spatch_ok)) || \
 	(test -e $(<:.c=.spatch_ok) && \
 		mv $(<:.c=.spatch_ok) $(<:.c=.failed)) || \
