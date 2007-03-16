@@ -357,8 +357,8 @@ let match_maker context_required whencode_allowed =
 		      [] -> None
 		    | x -> Some x)
 	      |	_ ->
-		  Printf.printf
-		    "warning: type metavar can only match one type";
+		  (*Printf.printf
+		    "warning: type metavar can only match one type";*)
 		  return false)
 	  | _ -> failwith "mixture of metatype and other types not supported")
 	else

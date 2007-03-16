@@ -435,3 +435,10 @@ identifier fld;
 @@
 
 E.fld => E1->fld
+
+Expression
+@@
+expression E;
+@@
+
+sizeof(E) => sizeof E

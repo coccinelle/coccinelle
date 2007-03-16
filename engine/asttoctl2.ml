@@ -53,7 +53,9 @@ let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 
 let aftret line label_var f =
-  wrap line (CTL.Or(aftpred line label_var, f(retpred line)))
+  wrap line
+    (CTL.Or
+       (aftpred line label_var, exitpred line label_var(*f(retpred line)*)))
 
 let letctr = ref 0
 let get_let_ctr _ =

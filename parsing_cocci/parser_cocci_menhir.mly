@@ -1183,6 +1183,12 @@ fun_exp_decl_statement_list:
          it to be ain a... sequence.  But it is not clear whether that makes
          sense, so for now it is here. */
       { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+  | TOPar0 midzero_list(ctype) TCPar0
+      /* more hacks */
+    { let (mids,code) = $2 in
+    let s =
+      Ast0.wrap(Ast0.DisjType(clt2mcode "(" $1,code,mids, clt2mcode ")" $3)) in
+    [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
   | expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     fun_exp_decl_statement_list

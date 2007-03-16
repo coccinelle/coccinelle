@@ -396,8 +396,11 @@ let rec equal_typeC t1 t2 =
        equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
   | (Ast0.MetaType(name1,_),Ast0.MetaType(name2,_)) -> equal_mcode name1 name2
-  | (Ast0.DisjType _,_) | (_,Ast0.DisjType _) ->
-      failwith "DisjDecl not expected here"
+  | (Ast0.DisjType(starter1,_,mids1,ender1),
+     Ast0.DisjType(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 && 
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
   | (Ast0.MultiType(_),Ast0.MultiType(_)) -> true
