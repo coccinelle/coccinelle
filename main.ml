@@ -196,6 +196,7 @@ let main () =
                      " [options] <path-to-c-file>\nOptions are:") 
     in
     Arg.parse options (fun file -> args := file::!args) usage_msg;
+    args := List.rev !args;
 
 
     if !iso_file <> "" 
@@ -248,7 +249,8 @@ let main () =
 
             let fullxs = 
               if !dir
-              then Common.process_output_to_list ("find " ^x^" -name \"*.c\"") 
+              then Common.process_output_to_list 
+                ("find " ^(join " " (x::xs)) ^" -name \"*.c\"") 
               else x::xs 
             in
             
@@ -359,7 +361,7 @@ let main () =
             Common.command2 ("cat " ^ !default_output_file);
 
         | "compare_c", xs -> 
-            (match List.rev xs with
+            (match xs with
             | [file1;file2] -> 
                 Testing.print_diff_expected_res_and_exit file1 file2 true
             | _ -> failwith "not enough argument for compare_c"
@@ -436,11 +438,13 @@ let main () =
 
         let fullxs = 
           if !dir 
-          then Common.process_output_to_list ("find " ^ x ^ " -name \"*.c\"")
+          then Common.process_output_to_list 
+            ("find " ^ (join " " (x::xs)) ^ " -name \"*.c\"")
           else x::xs 
         in
 
         fullxs +> List.iter (fun cfile -> 
+          pr2 ("HANDLING: " ^ cfile);
 
           let cfile = Common.adjust_extension_if_needed cfile ".c" in
 

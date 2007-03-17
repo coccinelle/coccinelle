@@ -35,3 +35,14 @@ wholekernel:
 
 #drivers/usb/storage
 #time find ~/kernels/git/history/ -name "*.c" -exec sh run_one {} \;
+
+wholekernel2:
+	../../spatch.opt -iso_file ../../standard.iso \
+	-no_show_ctl_text -no_show_transinfo \
+	-no_parse_error_msg -no_type_error_msg -no_show_misc \
+	-cocci_file rule9.cocci \
+	-dir ~/kernels/git/history/sound/ ~/kernels/git/history/drivers/ 
+
+nbdriver: 
+	find ~/kernels/git/history/sound/ ~/kernels/git/history/drivers/ \
+        -name "*.c" | wc -l

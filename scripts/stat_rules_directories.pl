@@ -10,10 +10,16 @@ chomp $subdirs;
 @subdirs = split /\s+/, $subdirs;
 
 
+my $i = 0;
 foreach my $dir (@subdirs) {
   if(-e "$dir/") {
-    print "RULE: $dir\n";
-    system("cd $dir; ~/mobile/coccinelle/scripts/stat_directory.pl");
+    #print "RULE: $dir\n";
+    my ($s) = 
+      `cd $dir; ~/mobile/coccinelle/scripts/stat_directory.pl | grep C:`;
+    chomp $s;
+    $i++;
+    $s =~ s/C:/C$i./;
+    print "$s\n";
   }
 
 }
