@@ -689,6 +689,7 @@ let format_to_string f =
     lines := cur :: !lines;
     loop() in
   (try loop() with End_of_file -> ());
+  close_in i;
   String.concat "\n" (List.rev !lines)
 
 
@@ -2840,7 +2841,10 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
         posl := !posl + slength s;
         charpos_to_pos_aux ();
       end
-  in charpos_to_pos_aux ()
+  in 
+  let res = charpos_to_pos_aux () in
+  close_in chan;
+  res
 
 let info_from_charpos a b = 
   profile_code "Common.info_from_charpos" (fun () -> info_from_charpos2 a b)

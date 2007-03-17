@@ -240,6 +240,18 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
 
 
 
+let structdef_to_struct_name ty = 
+  match ty with 
+  | qu, (StructUnion (sopt, (su, fields)), iis) -> 
+      (match sopt,iis with
+      | Some s , [i1;i2;i3;i4] -> 
+          qu, (StructUnionName (su, s), [i1;i2])
+      | None, _ -> 
+          ty
+          
+      | x -> raise Impossible
+      )
+  | _ -> raise Impossible
 
 
 let rec type_variations_step ty env = 
@@ -252,7 +264,9 @@ let rec type_variations_step ty env =
   | Array (e, t) -> 
       Array (e, type_variations_step t env) +> Ast_c.rewrap_typeC ty
       
-  | StructUnion (sopt, su) -> ty
+  | StructUnion (sopt, su) -> 
+      structdef_to_struct_name ty
+         
       
   | FunctionType t -> 
       (FunctionType t) (* todo ? *) +> Ast_c.rewrap_typeC ty
@@ -280,12 +294,12 @@ let rec type_variations_step ty env =
 
 let type_variations_typedef ty env = 
   (* fix point *)
-  let rec aux xs = 
+  let rec aux ty xs = 
     let ty' = type_variations_step ty env in
     if List.mem ty' xs then xs
-    else aux (ty'::xs) 
+    else aux ty' (ty'::xs) 
   in
-  List.rev (aux [ty])
+  List.rev (aux ty [ty])
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style *)

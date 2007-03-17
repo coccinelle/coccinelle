@@ -26,3 +26,12 @@ SOURCES = cciss_scsi.c \
 
 include ../generic_makefile
 
+
+#you have first to checkout to good branch in kernels/git/history/  !!
+#git checkout -b before_proc_info 5476e4625bb98b3e6b1c233a429140f6e624acf1^
+
+wholekernel:
+	time find ~/kernels/git/history/sound ~/kernels/git/history/drivers  -name "*.c" -exec sh run_one {} \;
+
+#drivers/usb/storage
+#time find ~/kernels/git/history/ -name "*.c" -exec sh run_one {} \;

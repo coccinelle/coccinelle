@@ -219,7 +219,7 @@ pure statement S2;
 
 if (E) S1 else S2 => if (E) S1
 
-// pad: does not work well. cf when use with rule9.cocci.
+// me: does not work well. cf when use with rule9.cocci.
 // Statement
 // @@
 // expression X;
@@ -315,7 +315,7 @@ likely(E) => E
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
 
-//pad: redundant ? 
+//me: redundant ? 
 //Statement
 //@@ expression E; @@
 //{ return E; } => return E;
@@ -407,7 +407,7 @@ E.fld = E1; => T I = { .fld = E1, };
 
 // x->f <=> *x.f
 
-// julia don't want a x->f<=> x.f, so have just =>
+// she: don't want a x->f<=> x.f, so have just =>
 
 //Expression
 //@@ expression E; identifier field; @@
@@ -417,7 +417,7 @@ E.fld = E1; => T I = { .fld = E1, };
 // normally if E is typed metavar, should have to change its type and
 // remove the '*'. It doesn't work, because the terms are not equivalent,
 // so a problem if there is some '+' code.
-// Fortunately, Julia have introduced 'pure' that helps.
+// Fortunately, she have introduced 'pure' that helps.
 
 // pure means that either the whole field reference expression is dropped,
 // or E is context code and has no attached + code

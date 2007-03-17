@@ -259,6 +259,19 @@ let show_or_not_diff a b  =
 let worth_trying cfile tokens = 
   if not !Flag.windows && not (null tokens)
   then
+    let tokens = tokens +> List.map (fun s -> 
+      match () with 
+      | _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" -> 
+          "\\b" ^ s ^ "\\b"
+
+      | _ when s =~ "^[A-Za-z_]" -> 
+          "\\b" ^ s
+
+      | _ when s =~ ".*[A-Za-z_]$" -> 
+          s ^ "\\b"
+      | _ -> s
+
+    ) in
     (match Sys.command (sprintf "egrep -q '(%s)' %s" (join "|" tokens) cfile)
     with
     | 0 (* success *) -> true

@@ -216,7 +216,7 @@ printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n",
  $cedescr, $ruleno, $pourcentcorrect, $nbfiles, $errors, $ratioPvsSP, $sumtime;
 
 
-printf "C: %40s & %5d & %3dl & %5dl (%5dl) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.1f\\%% \\\\\\hline%% SP: %s  \n", 
+printf "C: %40s & %5d & %3dl & %5dl (%5dl) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
  $cedescr, $nbfiles, $sizeSP, $sumlineP, $sumlinePchange, $ratioPvsSP,
  $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
 
