@@ -412,24 +412,12 @@ struct_decl_list:
 struct_decl_list_start:
   struct_decl                        { [$1] }
 | struct_decl struct_decl_list_start { $1::$2 }
-| d=edots_when(TEllipsis,struct_decl)
-      r=continue_struct_decl_list(edots_when(TEllipsis,struct_decl))
-    { (mkddots "..." d)::(List.map (function x -> x (mkddots "...")) r) }
+| d=edots_when(TEllipsis,struct_decl) r=continue_struct_decl_list
+    { (mkddots "..." d)::r }
 
-continue_struct_decl_list(dotter):
-  d=dotter r=continue_struct_decl_list2(dotter)
-    { (function dot_builder -> dot_builder d)::r }
-| i=struct_decl
-    { [function dot_builder -> i] }
-| i=struct_decl r=continue_struct_decl_list(dotter)
-    { (function dot_builder -> i)::r }
-
-continue_struct_decl_list2(dotter):
-  /* empty */  { [] }
-| i=struct_decl
-    { [function dot_builder -> i] }
-| i=struct_decl r=continue_struct_decl_list(dotter)
-    { (function dot_builder -> i)::r }
+continue_struct_decl_list:
+  /* empty */                        { [] }
+| struct_decl struct_decl_list_start { $1::$2 }
 
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)

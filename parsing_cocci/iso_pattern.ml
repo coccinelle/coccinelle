@@ -1445,12 +1445,14 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
     List.concat
       (List.map
 	 (function (a,_,_,_) ->
-	   List.map
-	     (function bindings ->
-	       copy_plus printer minusify e
-		 (extra_plus e
-		    (instantiater bindings mv_bindings (rebuild_mcodes a))))
-	     bindings)
+	   nub
+	   (* no need to create duplicates when the bindings have no effect *)
+	     (List.map
+		(function bindings ->
+		  copy_plus printer minusify e
+		    (extra_plus e
+		       (instantiater bindings mv_bindings (rebuild_mcodes a))))
+		bindings))
 	 alts) in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
       [] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
