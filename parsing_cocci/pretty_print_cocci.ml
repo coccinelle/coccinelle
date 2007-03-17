@@ -192,17 +192,17 @@ let rec expression e =
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_string name
   | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_string name(*;
-      print_string "/* ";
+      print_string "/* no type */";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
       print_string " */"*)
   | Ast.MetaExpr(name,keep,Some ty,inherited) ->
-      mcode print_string name (*; 
+      mcode print_string name ;
       print_string "/* ";
-      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
+      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
       print_string "keep:"; print_unitary keep;
-      print_string " inherited:"; print_bool inherited;
-      print_string " */"*)
+      print_string " inherited:"; print_bool inherited;*)
+      print_string " */"
   | Ast.MetaExprList(name,_,_) -> mcode print_string name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list

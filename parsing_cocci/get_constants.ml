@@ -12,7 +12,10 @@ let get_constants rules =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.Id(name) -> [Ast.unwrap_mcode name]
+      Ast.Id(name) ->
+	(match Ast.unwrap_mcode name with
+	  "NULL" -> [] (* special case, because this is too generic *)
+	| name -> [name])
     | _ -> k e in
 
   let expression r k e =
