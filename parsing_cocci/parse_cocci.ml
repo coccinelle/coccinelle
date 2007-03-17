@@ -584,7 +584,9 @@ let prepare_tokens tokens =
 let parse file =
   Printf.printf "starting %s\n" file;
   let table = Common.full_charpos_to_pos file in
-  let lexbuf = Lexing.from_channel (open_in file) in
+  let channel = open_in file in
+  let lexbuf = Lexing.from_channel channel in
+  let res =
   match tokens_all table file false lexbuf [PC.TArobArob] with 
     (true,[(PC.TArobArob,_)]) -> (* read over initial @@ *)
       let rec loop _ =
@@ -640,7 +642,9 @@ let parse file =
 	else ([minus_res, metavars],[plus_res, metavars]) in
       loop ()
   | (false,[(PC.TArobArob,_)]) -> ([],[])
-  | _ -> failwith "unexpected code before the first rule\n"
+  | _ -> failwith "unexpected code before the first rule\n" in
+  close_in channel;
+  res
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -648,8 +652,10 @@ let parse_iso = function
     None -> []
   | Some file ->
       let table = Common.full_charpos_to_pos file in
-      let lexbuf = Lexing.from_channel (open_in file) in
-      (match tokens_all table file false lexbuf [PC.TArobArob] with
+      let channel = open_in file in
+      let lexbuf = Lexing.from_channel channel in
+      let res =
+      match tokens_all table file false lexbuf [PC.TArobArob] with
 	(true,start) ->
 	  let rec loop start =
 	    (* get metavariable declarations - have to be read before the
@@ -690,7 +696,9 @@ let parse_iso = function
 	      |	_ -> failwith "isomorphism ends early"
 	    else [(iso_metavars,entry)] in
 	  loop start
-      | (false,_) -> [])
+      | (false,_) -> [] in
+      close_in channel;
+      res
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
