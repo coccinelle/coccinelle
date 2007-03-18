@@ -35,8 +35,8 @@ expression E;
 )
 
 @@
-struct i2c_client *x;
-struct i2c_client y;
+{struct i2c_client *, struct i2c_adapter *} x;
+{struct i2c_client, struct i2c_adapter} y;
 expression E;
 @@
 
@@ -59,6 +59,8 @@ expression E;
 @@
 struct i2c_client *x;
 struct i2c_client y;
+struct i2c_adapter *a;
+struct i2c_adapter b;
 type T;
 @@
 
@@ -68,6 +70,12 @@ type T;
 |
 - y.name
 + y.dev.name
+|
+- a->name
++ a->dev.name
+|
+- b.name
++ b.dev.name
 |
 - (T)x->data
 + i2c_get_clientdata(x)

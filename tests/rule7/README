@@ -51,7 +51,8 @@ saa7134-i2c.c
  * [status]
 
 saa7185.c
- * [status]
+ * [status] bug
+ programmer added a useless memset
 
 tda7432.c
  * [status]
