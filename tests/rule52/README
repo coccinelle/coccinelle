@@ -120,8 +120,8 @@ psmouse.c
 
 rpcmouse.c
  * [status]
- * [bug] programmer additionnaly rename rcpmouse_dev in rcpmouse, 
-   but not everywhere.
+ * [bug] programmer use rcpmouse instead of rcpmouse_dev and do bad
+   copy paste from initializer where forget to use ';' instead of ','.
 
 sermouse.c
  * [status] ok

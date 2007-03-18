@@ -75,10 +75,10 @@ static int __init rpcmouse_init(void)
 	}
 
 	input_register_device(&rpcmouse_dev);
-	rpcmouse_dev.id.bustype	=BUS_HOST,
-	rpcmouse_dev.id.vendor	=0x0005,
-	rpcmouse_dev.id.product	=0x0001,
-	rpcmouse_dev.id.version	=0x0100,
+	rpcmouse_dev.id.bustype	=BUS_HOST;
+	rpcmouse_dev.id.vendor	=0x0005;
+	rpcmouse_dev.id.product	=0x0001;
+	rpcmouse_dev.id.version	=0x0100;
 
 	printk(KERN_INFO "input: Acorn RiscPC mouse irq %d", IRQ_VSYNCPULSE);
 
