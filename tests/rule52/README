@@ -3,7 +3,8 @@ a3d.c
 
 adbhid.c
  * [status] wrong
- type inference doesn't work for an array reference
+ * old: type inference doesn't work for an array reference
+ * [bug] 
 
 adi.c
  * [status] ok
@@ -69,10 +70,12 @@ hid-input.c
  needed structure declaration not in the file
 
 iforce-main.c
- * [status]
+ * [status] wrong
+ needed structure declaration not in the file
+ 
 
 inport.c
- * [status]
+ * [status] ok
 
 input.c
  * [status] ok
@@ -84,7 +87,7 @@ lightning.c
  * [status] ok
 
 logibm.c
- * [status]
+ * [status] ok
 
 mac_hid.c
  * [status] ok
@@ -117,6 +120,8 @@ psmouse.c
 
 rpcmouse.c
  * [status]
+ * [bug] programmer additionnaly rename rcpmouse_dev in rcpmouse, 
+   but not everywhere.
 
 sermouse.c
  * [status] ok
@@ -146,15 +151,16 @@ twidjoy.c
  * [status] ok
 
 uinput.c
- * [status]
+ * [status] wrong
+ needed structure declaration not in the file
 
 usbkbd.c
  * [status] spatch_ok
- programmer converted idbus to id.bus, not to id.bustype
+ * [bug] programmer converted idbus to id.bus, not to id.bustype
 
 usbmouse.c
  * [status] spatch_ok
- programmer converted idbus to id.bus, not to id.bustype
+ * [bug] programmer converted idbus to id.bus, not to id.bustype
 
 vortex.c
  * [status] ok
