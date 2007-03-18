@@ -231,17 +231,24 @@ printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n",
 
 # Mega, Complex, Bluetooth
  
-printf "M: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
- $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP, $sumlinePchange, $ratioPvsSP,
- $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
-
-printf "C: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
- $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP2, $sumlinePchange, $ratioPvsSP2,
- $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
 
 
-printf "B: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
- $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP, $sumlinePchange, $ratioPvsSP,
+
+#printf "C: %60s & %5d & %5d(%d) %3d & & %6.1fx & %6.1fs(%.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+# $cedescr, $nbfiles, $sizeSP, $sumlineP2, $sumlinePchange, $ratioPvsSP2,
+# $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
+
+
+printf "C: %60s & %5d & %5d (%d) & %3d & %6.0fx & %6.1fs (%.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $nbfiles, $sumlineP2, $sumlinePchange, $sizeSP, $ratioPvsSP2,
  $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
+
+printf "M: %60s & %5d & %5d (%d) & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $errors, $sizeSP, $ratioPvsSP,
+ $avgtime, $maxtime, $pourcentcorrect, $spfile;
+
+printf "B: %60s & %5d & %5d (%d) & %3d & %6.0fx & %6.1fs (%.1fs) & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $sizeSP, $ratioPvsSP,
+ $avgtime, $maxtime, $pourcentcorrect, $spfile;
 
 
