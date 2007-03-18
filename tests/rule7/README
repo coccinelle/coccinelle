@@ -1,13 +1,19 @@
+---------------------------------------
+---------------------------------------
+
 adm1021.c
- * [status] bug
+ * [status] spatch_ok
+  * [old-status] bug
  programmer forgot to convert .name to .dev.name in one case
  programmer reordered some code in a more aesthetic way
  programmer didn't convert strcpy to strncpy
 
 adv7175.c
- * [status] bug
+ * [status] spatch_ok
+  * [old-status] bug
  programmer added a useless memset
  programmer dropped a kfree in the detach function
+ programmer added some code
 
 bt819.c
  * [status] failed
@@ -24,51 +30,57 @@ bt856.c
  programmer dropped a kfree in the detach function
 
 bttv-if.c
- * [status]
+ * [status] failed
+ missing type information
 
 lm75.c
- * [status]
+ * [status] spatch_ok
  programmer reordered some code in a more aesthetic way
  programmer didn't convert strcpy to strncpy
 
 msp3400.c
- * [status]
+ * [status] ok
 
 saa5249.c
- * [status]
+ * [status] spatch_ok
  programmer reorganized some code in a more aesthetic way
 
 saa7110.c
- * [status] bug
+ * [status] spatch_ok
+  * [old-status] bug
  programmer added a useless memset
  programmer forgot in three print statements to replace .name with dev.name
 
 saa7111.c
- * [status] bug
+ * [status] spatch_ok
+  * [old-status] bug
  programmer added a useless memset
 
 saa7134-i2c.c
- * [status]
+ * [status] failed
+ missing type information
 
 saa7185.c
- * [status] bug
+ * [status] spatch_ok
+  * [old-status] bug
  programmer added a useless memset
 
 tda7432.c
- * [status]
+ * [status] ok
 
 tda9875.c
- * [status]
+ * [status] ok
 
 tda9887.c
- * [status]
+ * [status] ok
 
 tuner-3036.c
- * [status]
+ * [status] ok
 
 tuner.c
- * [status]
+ * [status] spatch_ok
+ programmer reordered some code in a more aesthetic way
 
 tvaudio.c
- * [status]
+ * [status] ok
 

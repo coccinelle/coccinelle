@@ -52,6 +52,9 @@ expression E;
 - strcpy(x->name, E)
 + strncpy(x->name, E, DEVICE_NAME_SIZE)
 |
+- strncpy(x->name, E, sizeof(x->name))
++ strncpy(x->name, E, DEVICE_NAME_SIZE)
+|
 - strcpy(y.name, E)
 + strncpy(y.name, E, DEVICE_NAME_SIZE)
 )

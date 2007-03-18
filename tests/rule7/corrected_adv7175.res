@@ -193,7 +193,6 @@ static int adv717x_attach(struct i2c_adapter *adap, int addr, unsigned short fla
 	strncpy(client->dev.name, dname, DEVICE_NAME_SIZE);
 	init_MUTEX(&encoder->lock);
 	encoder->client = client;
-	i2c_set_clientdata(client, encoder);
 	encoder->addr = addr;
 	encoder->norm = VIDEO_MODE_PAL;
 	encoder->input = 0;
