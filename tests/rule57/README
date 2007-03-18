@@ -7,8 +7,9 @@
  programmer adjusted a ifdef >= KERNEL_VERSION to maintain the old call
 
 advansys.c
- * [status] wrong
- problem in code that doesn't parse
+ * [status] spatch-ok
+ * [irrelevant] he remove an enclosing #ifdef
+ * [cheat] not sure  really irrelevant in fact.
 
 aic79xx_osm.c
  * [status] spatch-ok
@@ -59,8 +60,8 @@ pci2000.c
  problem in code that doesn't parse
 
 pci2220i.c
- * [status] wrong
- problem in code that doesn't parse
+ * [status] spatch-ok
+ * [bug] forgot one code site (1/2)
 
 qla1280.c
  * [status] ok

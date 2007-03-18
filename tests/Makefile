@@ -32,7 +32,6 @@ clean2::
 	find -name "*.ok" | xargs rm -f
 	find -name "*.spatch_ok" | xargs rm -f
 	find -name "*.failed" | xargs rm -f
-	find -name "*.gave_up" | xargs rm -f
 
 score:
 	find -name "*.ok" | wc -l

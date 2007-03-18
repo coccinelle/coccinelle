@@ -96,7 +96,8 @@ audio.c
 
 cs46xx
  * [status] spatch-ok
- * [note] bugfix=2?
+ * [bug] bugfix=2? bad replace, subst cs4x_mem_map_reserve for 
+   cs4x_ClearPageReserved instead of ClearPageReserved.
 
 
 zr36067
@@ -104,5 +105,5 @@ zr36067
  * [comment] unrelated modifs
 
 cs4281_wrapper-24
- * [status] wrong
- * [comment] forget to remove a CPP macro
+ * [status] ok
+

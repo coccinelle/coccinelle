@@ -10,6 +10,8 @@ avm_pci.c
 
 callc.c
  * [status] wrong
+ * [bug] according to rules.tex, the code works but have not used the
+   abstaction everywhere.
  translation for _proto might be incorrect
 
 config.c
@@ -50,7 +52,7 @@ isdnl2.c
 
 isdnl3.c
  * [status] spatch_ok
- BUG: one case not updated by hand, other cases updated
+ * [bug] one case not updated by hand, other cases updated
 
 jade.c
  * [status] ok
@@ -60,6 +62,7 @@ l3_1tr6.c
 
 l3dss1.c
  * [status] error
+ * [bug] according to rules.tex
  transformation required in code that doesn't parse
 
 l3ni1.c

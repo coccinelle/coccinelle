@@ -134,6 +134,8 @@ teles_cs.c
 
 vxpocket.c
  * [status] error
+ * [bug] seems like it should be return 0 is written as return 9.
+
 
 wavelan_cs.c
  * [status] error

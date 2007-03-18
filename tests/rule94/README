@@ -11,7 +11,8 @@ evolution.
 USB files
 
 auerswald.c
- * [status] bugs, spatch-ok
+ * [status] spatch-ok
+ * [bug]
  by hand, two cases were updated and two were not.  all are updated by
  coccinelle
 
@@ -43,7 +44,8 @@ hc_crisv10.c
  * [status] ok
 
 io_edgeport.c
- * [status] bugs, spatch-ok
+ * [status] spatch-ok
+ * [bug]
  by hand, one case was updated and one was not.  all are update by coccinelle 
 
 io_ti.c
@@ -98,7 +100,8 @@ stv680.c
  * [status] ok
 
 ti_usb_3410_5052.c
- * [status] bugs, spatch_ok
+ * [status] spatch_ok
+ * [bug]
  by hand, one case was updated and one was not.  all are update by coccinelle 
 
 usblcd.c
@@ -116,7 +119,8 @@ visor.c
  * [status] ok
 
 zd1201.c
- * [status] bugs, spatch_ok
+ * [status] spatch_ok
+ * [bug]
  by hand, two cases was updated and one was not.  all are update by coccinelle 
  a pair of braces dropped around an if branch containing only one statement
  no connection to the collateral evolution
@@ -158,6 +162,7 @@ hci_ldisc.c
 
 hci_usb.c
  * [status] wrong
+ * [bug]
  both we and the person who did the collateral evolution missed a case
  where the call to kmalloc is in a variable initialization and the memset
  branch is in the then branch of a non-null testing if.

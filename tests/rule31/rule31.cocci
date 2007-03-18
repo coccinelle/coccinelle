@@ -8,6 +8,10 @@ identifier X;
 
 - #define DEVICE_INTR X
 
+
+// me: why not simply - CLEAR_INTR; ? why all those cases ?
+// to also remove sometimes the { } ?
+
 @@
 statement S;
 @@
@@ -25,3 +29,13 @@ statement S;
 -   CLEAR_INTR;
     ...
   }
+
+@@
+@@
+  if(blk_queue_empty(QUEUE)) {
+   ... when = \( printk(...); \| dbg(...); \)
+-   CLEAR_INTR;
+    ...
+  }
+
+

@@ -92,7 +92,8 @@ sbpcd.c
   * [exc] Fatal error: exception Common.Impossible
 
 sonycd535.c
-  * [status] fail
+  * [status] spatch-ok
+  * [bug] forgot to remove CLEAR_INTR
   * [exc] Fatal error: exception Common.Impossible
 
 swim3.c

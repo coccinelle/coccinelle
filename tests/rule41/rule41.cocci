@@ -19,6 +19,7 @@ expression E1, E2;
 -                                 &I
 +                                 fops_val, minor_val
                                   , E1, E2);
+(
 	if (retval) {
 -		if (retval != -ENODEV) {
 			...
@@ -26,6 +27,20 @@ expression E1, E2;
 -		}
 -		...
 	}
+|
+// after seen partial match for mdc800. perhaps should be an iso in the futur.
+	if (retval 
+-                  && (retval != -ENODEV)
+            ) {
+                ...
+                return ...;
+        
+        }       
+)
+
+
+
+
 
 @@
 expression E1, E2;

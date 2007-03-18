@@ -75,6 +75,7 @@ pdaudiocf.failed
 sa11xx-uda1341.failed
  * [status] spatch-ok
  * [semibug]
+ * [corrected_c]
  * There is a typo in the .c, the typedef name lack a x 
    (sa11x instead of sa11xx) and so sa11xx_uda1341_t is considered
    as an ident and the SP does not apply

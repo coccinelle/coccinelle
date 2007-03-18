@@ -11,12 +11,12 @@ amd-k8-agp.c
 
 hp-agp.c
  * [status] spatch_ok
- typo in the hand transformed file - ";" should be a "," in a structure
+ * [bug] typo in the hand transformed file - ";" should be a "," in a structure
  initialization
 
 i460-agp.c
  * [status] spatch_ok
- typo in the hand transformed file - ";" should be a "," in a structure
+ * [bug] typo in the hand transformed file - ";" should be a "," in a structure
  initialization
 
 i7x05-agp.c

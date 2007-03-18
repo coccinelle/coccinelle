@@ -1,3 +1,13 @@
+
+
 mthca_cq.c
+ * [status] ok
+
 mthca_eq.c
+ * [status] spatch-ok
+ * [bug] miss some code sites
+
+
 mthca_qp.c
+ * [status] spatch-ok
+ * [bug] miss some code sites

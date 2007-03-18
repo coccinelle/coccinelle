@@ -9,13 +9,17 @@ NOTE: "atomic_dec.c" is not included
 ----------------------------------------------------------------------
 multipath.c:
   * [status] spatch-ok
+  * [bug]
 
 raid1.c:
   * [status] spatch-ok
+  * [bug]
 
 raid5.c:
   * [status] spatch-ok
+  * [bug]
 
 raid6main.c:
   * [status] spatch-ok
+  * [bug]
 

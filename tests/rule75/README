@@ -38,6 +38,7 @@ sonicvibes.c
 
 trident_main.c
  * [status] spatch_ok
+ * [bug]
  spelling mistake in pci_set_dma_mask added by the programmer.
  a call to pci_set_consistent_dma_mask(pci, 0x3fffffff) without a test in the
  source code is converted into a test in this case.  In another case like this

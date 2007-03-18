@@ -1,6 +1,5 @@
 CEDESCRIPTION="\fname{proc_info}"
 SP=rule9.cocci
-#SP=rule9_plos_updated.cocci
 
 SOURCES = cciss_scsi.c \
           sbp2.c \

@@ -2,6 +2,14 @@
 //- #include <linux/wrapper.h>
 //- #include "drivers/sound/cs4281/cs4281\_wrapper.h"
 
+
+// must be first rule!
+@@ identifier page; @@
+- #define cs4x_mem_map_unreserve(page) mem_map_unreserve(page)
+
+@@ identifier page; @@
+- #define cs4x_mem_map_reserve(page) mem_map_reserve(page)
+
 @@
 expression E;
 @@
@@ -27,19 +35,18 @@ expression E;
 //+ SetPageReserved(E)
 
 
-// @@ identifier page; @@
-// 
-// - #define cs4x_mem_map_unreserve(page) mem_map_unreserve(page)
-// 
-// @@ @@
-// 
-// - #define cs4x_mem_map_reserve(page) mem_map_reserve(page)
-// 
-// // pourrait meme faire 
-// @@ @@
-// 
-// - #define     MAP_NR(x)       virt_to_page(x)
-// 
-// @@ expression X; @@ 
-// - MAP_NR(X)
-// + virt_to_page(X) 
+
+// -----------------------------------------------------------------------
+// shoud make corrected instead of this
+// -----------------------------------------------------------------------
+// pourrait meme faire 
+// no metavar on params on #define for the moment
+//@@ @@
+//- #define     MAP_NR(x)       virt_to_page(x)
+//
+//@@ @@
+//- #define     MAP_NR(v)       virt_to_page(v)
+//
+//@@ expression X; @@ 
+//- MAP_NR(X)
+//+ virt_to_page(X) 

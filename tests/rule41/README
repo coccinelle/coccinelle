@@ -11,7 +11,13 @@ hiddev.c
  * [status]
 
 mdc800.c
- * [status]
+ * [status] fail
+ * [bug] according to rules.tex. forget to remove the && retval = -ENOENT ...
+ * Second bug is that now that usb_register_dev make reference to fops_val, he
+   has to know this variable which is declared at the bottom of this,
+   and so he should move the definition of the variable at the top of the file,
+   but instead he declare another variable with the same name. forward
+   declaration works only for function, not for variable.
 
 printer.c
  * [status]

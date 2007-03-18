@@ -17,9 +17,7 @@ ataflop.c
 
 aztcd.c
   * [status] spatch-ok
-  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
-  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
-  * [bug] "end_request(0)" should be "end_request(CURRENT,0)"
+  * [bug] "end_request(0)" should be "end_request(CURRENT,0)", count=3
 
 cdu31a.c
   * [status] ok
@@ -29,13 +27,12 @@ cm206.c
   * [status] ok
 
 fd1772.c
-  * [status] wrong
-  * [rule] "end_request(CURRENT, 1)" should be "end_request(req, 1)"
-    this seems to be part of an independent CE?
-  * PBB...
+  * [status] spatch-ok
+  * he additionnaly stores the result of CURRENT in a local variable 
+    and then use this alias instead of CURRENT
 
 ftl.c
-  * [status] fail
+  * [status] ok
   * [exc] Fatal error: exception cant jump to leave: because we can't find
   this label
 
@@ -45,17 +42,17 @@ gscd.c
 
 hd.c
   * [status] fail
-  * [parser] unparseable code
+  * [corrected_c] unparseable code, but because real parse error :)
 
 jsflash.c
   * [status] ok
 
 mcd.c
-  * [status] fail
+  * [status] ok
   * [parser] unparseable code
 
 mcdx.c
-  * [status] fail
+  * [status] ok
   * [exc] Fatal error: exception Failure("pb in flow_to_ast, some
     nodes have not been visited") 
   * PBB...
@@ -64,7 +61,7 @@ mfmhd.c
   * [status] ok
 
 nftlcore.c
-  * [status] fail
+  * [status] ok
   * [exc] Fatal error: exception Ast_to_flow.DeadCode(_)
 
 optcd.c
@@ -100,7 +97,31 @@ swim3.c
 
 swim_iop.c
   * [status] spatch-ok
-  * [independent] similar CE of "swimiop_send_request"
+  * [bug] 
+    At first I thought that there was a related CE in
+    swim_iop.c, for swimiop_send_request, that this CE was
+    device specific.  something like 
+    //@@
+    //expression X;
+    //@@
+    //
+    //- swimiop_send_request(X)
+    //+ swimiop_send_request(CURRENT,X)
+    We can imagine that after reading the original SP proposed by the
+    library developer, the maintainer realized that he should also
+    do another related transformation, a device-specific transfo.
+    And that he should have extended the SP instead of doing it manually.
+    BUT in fact, it's just he use a naive regexp for end_request CE
+    that also touch swimiop_send_request :) because it's not related
+    at all. 
+    their naive regexp s/end_request(/end_request(CURRENT,  lack
+    the \b and so also modify calls to swimiop_send_request :) 
+    and also its proto and funheader as in 
+    swimiop_send_request(CURRENT, struct swim_iop_req *);
+    It was corrected before 2.6.10 according to julia.
+    Indeed, send_xx have no semantic related to end__xx.
+
+
 
 xd.c
   * [status] ok

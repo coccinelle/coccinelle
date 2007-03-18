@@ -120,4 +120,4 @@ sp_file:
 	@echo $(SP)
 
 ce_descr:
-	@echo $(CEDESCRIPTION)
+	@echo $(CEDESCRIPTION) $(DESCRIPTION)

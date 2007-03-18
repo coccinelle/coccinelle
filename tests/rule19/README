@@ -1,6 +1,6 @@
 asuscom.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 avm_a1.c
  * [status] ok
@@ -13,19 +13,19 @@ bkm_a4t.c
 
 bkm_a8.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 diva.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 elsa.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 gazel.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 hfc_2bds0.c
  * [status] failed
@@ -81,7 +81,7 @@ saphir.c
 
 sedlbauer.c
  * [status] spatch_ok
- some interrupt functions not transformed
+ * [bug] some interrupt functions not transformed
 
 sportster.c
  * [status] ok

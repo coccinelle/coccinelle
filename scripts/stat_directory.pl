@@ -32,7 +32,8 @@ my $sumlinefiles = 0;
 
 my $errors = 0;
 
-my $sumlineP = 0;
+my $sumlineP = 0; #whole git
+my $sumlineP2 = 0;
 my $sumlinePchange = 0;
 
 my $spfile = "";
@@ -98,6 +99,13 @@ while(<TMP>) { if (/\[bug\]/) { $errors++ } }
 # Size P (total)
 #------------------------------------------------------------------------------
 
+if(-e "gitinfo") { 
+  ($sumlineP) = `cat gitinfo |wc -l`;
+  chomp $sumlineP;
+} else {
+  print "NO GIT INFO!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+}
+
 #------------------------------------------------------------------------------
 # Size P (only change for .c in drivers/ or sounds/ (the test files))
 #------------------------------------------------------------------------------
@@ -123,7 +131,7 @@ foreach my $c (@cfiles) {
     if (/^\-[^-]/) { $onlychange++; }
   }
   $sumlinePchange += $onlychange;
-  $sumlineP += $count;
+  $sumlineP2 += $count;
 }
 
 #------------------------------------------------------------------------------
@@ -141,7 +149,7 @@ foreach my $c (@cfiles) {
   if(-e "$base.spatch_ok") { $so++; $diagnosefile = "$base.spatch_ok"; }
   if(-e "$base.gave_up")   { $gu++; $diagnosefile = "$base.gave_up"; }
 
-  open TMP, $diagnosefile;
+  open TMP, $diagnosefile or die "no diagnose $base: $diagnosefile";
   my $found = 0;
   my $time = 0;
   while(<TMP>) {
@@ -176,6 +184,7 @@ my $avgtime = $sumtime / $nbfiles;
 
 
 my $ratioPvsSP = $sumlineP / $sizeSP;
+my $ratioPvsSP2 = $sumlineP2 / $sizeSP;
 
 
 #------------------------------------------------------------------------------
@@ -212,11 +221,26 @@ my $totalstatus = $ok + $fa + $so + $gu;
 pr2 "----------------------------------------------------------------";
 pr2 "Sanity checks: nb files vs total status: $nbfiles =? $totalstatus";
 
+
+
+
+
 printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n", 
  $cedescr, $ruleno, $pourcentcorrect, $nbfiles, $errors, $ratioPvsSP, $sumtime;
 
 
+# Mega, Complex, Bluetooth
+ 
+printf "M: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP, $sumlinePchange, $ratioPvsSP,
+ $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
+
 printf "C: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP2, $sumlinePchange, $ratioPvsSP2,
+ $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
+
+
+printf "B: %60s (r%3s) & %5d & %3d & %5d(%d) & %6.1fx & %6.1fs(%6.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
  $cedescr, $ruleno, $nbfiles, $sizeSP, $sumlineP, $sumlinePchange, $ratioPvsSP,
  $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
 
