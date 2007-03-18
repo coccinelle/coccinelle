@@ -617,7 +617,7 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
 
 	tty->num_overrun++;
 	if (time_before(tty->overrun_time, jiffies - HZ)) {
-		printk(KERN_WARNING "%s: %d input overrun(s)\n", tty_name(tty, buf),
+		printk("%s: %d input overrun(s)\n", tty_name(tty, buf),
 		       tty->num_overrun);
 		tty->overrun_time = jiffies;
 		tty->num_overrun = 0;
@@ -1187,27 +1187,7 @@ extern ssize_t redirected_tty_write(struct file *,const char *,size_t,loff_t *);
  *	error code if action should be taken.
  */
  
-static int job_control(struct tty_struct *tty, struct file *file)
-{
-	/* Job control check -- must be done at start and after
-	   every sleep (POSIX.1 7.1.1.4). */
-	/* NOTE: not yet done after every sleep pending a thorough
-	   check of the logic of this change. -- jlc */
-	/* don't stop on /dev/console */
-	if (file->f_op->write != redirected_tty_write &&
-	    current->signal->tty == tty) {
-		if (tty->pgrp <= 0)
-			printk("read_chan: tty->pgrp <= 0!\n");
-		else if (process_group(current) != tty->pgrp) {
-			if (is_ignored(SIGTTIN) ||
-			    is_orphaned_pgrp(process_group(current)))
-				return -EIO;
-			kill_pg(process_group(current), SIGTTIN, 1);
-			return -ERESTARTSYS;
-		}
-	}
-	return 0;
-}
+
  
 
 /**

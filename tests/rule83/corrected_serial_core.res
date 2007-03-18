@@ -1237,7 +1237,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
 		state->count = 1;
 	}
 	if (--state->count < 0) {
-		printk("uart_close: bad serial port count for %s: %d\n",
+		printk("rs_close: bad serial port count for %s: %d\n",
 		       tty->name, state->count);
 		state->count = 0;
 	}
