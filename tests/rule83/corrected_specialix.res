@@ -2044,8 +2044,8 @@ static void do_softint(void *private_)
 	if(!(tty = port->tty)) 
 		return;
 
-	if (test_and_clear_bit(RS_EVENT_WRITE_WAKEUP, &port->event))
-		tty_wakeup(tty);
+	if (test_and_clear_bit(RS_EVENT_WRITE_WAKEUP, &port->event)) {
+		tty_wakeup(tty); }
 }
 
 static struct tty_operations sx_ops = {

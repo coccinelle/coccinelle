@@ -689,7 +689,7 @@ void gs_close(struct tty_struct * tty, struct file * filp)
 	unsigned long flags;
 	struct gs_port *port;
 	
-	func_enter ()
+	func_enter ();
 
 	if (!tty) return;
 

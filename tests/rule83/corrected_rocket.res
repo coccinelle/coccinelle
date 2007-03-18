@@ -253,13 +253,9 @@ static void rp_do_receive(struct r_port *info,
 	int ToRecv, wRecv, space, count;
 	unsigned char *cbuf;
 	char *fbuf;
-	struct tty_ldisc *ld;
-
-	ld = tty_ldisc_ref(tty);
 
 	ToRecv = sGetRxCnt(cp);
-	if (ld)
-		space = ld->receive_room(tty);
+	space = tty->ldisc.receive_room(tty);
 	if (space > 2 * TTY_FLIPBUF_SIZE)
 		space = 2 * TTY_FLIPBUF_SIZE;
 	cbuf = tty->flip.char_buf;
@@ -358,8 +354,7 @@ static void rp_do_receive(struct r_port *info,
 		count += ToRecv;
 	}
 	/*  Push the data up to the tty layer */
-	ld->receive_buf(tty, tty->flip.char_buf, tty->flip.flag_buf, count);
-	tty_ldisc_deref(ld);
+	tty->ldisc.receive_buf(tty, tty->flip.char_buf, tty->flip.flag_buf, count);
 }
 
 /*

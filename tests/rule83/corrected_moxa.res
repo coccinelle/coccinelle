@@ -951,7 +951,7 @@ static void moxa_poll(unsigned long ignored)
 				if (MoxaPortTxQueue(ch->port) <= WAKEUP_CHARS) {
 					if (!tp->stopped) {
 						ch->statusflags &= ~LOWWAIT;
-						tty_wakeup(tty);
+						tty_wakeup(tp);
 					}
 				}
 			}
