@@ -10,23 +10,73 @@ struct i2c_client I = {
 };
 
 @@
-struct i2c_client *x;
+identifier I;
 expression E;
 @@
 
-- x->data = E
-+ i2c_set_clientdata(x,E)
+struct i2c_adapter I = {
+- 	.name = E,
+...
++	.dev = { .name = E, },
+};
 
 @@
 struct i2c_client *x;
+struct i2c_client y;
+expression E;
+@@
+
+(
+- x->data = E
++ i2c_set_clientdata(x,E)
+|
+- y.data = E
++ i2c_set_clientdata(&y,E)
+)
+
+@@
+struct i2c_client *x;
+struct i2c_client y;
+expression E;
+@@
+
+(
+- sprintf(x->name,
++ snprintf(x->name, DEVICE_NAME_SIZE,
+          ...)
+|
+- sprintf(y.name,
++ snprintf(y.name, DEVICE_NAME_SIZE,
+          ...)
+|
+- strcpy(x->name, E)
++ strncpy(x->name, E, DEVICE_NAME_SIZE)
+|
+- strcpy(y.name, E)
++ strncpy(y.name, E, DEVICE_NAME_SIZE)
+)
+
+@@
+struct i2c_client *x;
+struct i2c_client y;
+type T;
 @@
 
 (
 - x->name
 + x->dev.name
 |
-- x->data
+- y.name
++ y.dev.name
+|
+- (T)x->data
 + i2c_get_clientdata(x)
+|
+- (T)y.data
++ i2c_get_clientdata(&y)
+|
+- (T)x->adapter->data
++ i2c_get_adapdata(x->adapter)
 )
 
 @@

@@ -1,32 +1,51 @@
 adm1021.c
- * [status]
+ * [status] bug
+ programmer forgot to convert .name to .dev.name in one case
+ programmer reordered some code in a more aesthetic way
+ programmer didn't convert strcpy to strncpy
 
 adv7175.c
- * [status]
+ * [status] bug
+ programmer added a useless memset
+ programmer dropped a kfree in the detach function
 
 bt819.c
- * [status]
+ * [status] failed
+ * [status] bug
+ parsing problem
+ programmer added a useless memset
+ programmer dropped a kfree in the detach function
 
 bt856.c
- * [status]
+ * [status] failed
+ * [status] bug
+ parsing problem
+ programmer added a useless memset
+ programmer dropped a kfree in the detach function
 
 bttv-if.c
  * [status]
 
 lm75.c
  * [status]
+ programmer reordered some code in a more aesthetic way
+ programmer didn't convert strcpy to strncpy
 
 msp3400.c
  * [status]
 
 saa5249.c
  * [status]
+ programmer reorganized some code in a more aesthetic way
 
 saa7110.c
- * [status]
+ * [status] bug
+ programmer added a useless memset
+ programmer forgot in three print statements to replace .name with dev.name
 
 saa7111.c
- * [status]
+ * [status] bug
+ programmer added a useless memset
 
 saa7134-i2c.c
  * [status]
