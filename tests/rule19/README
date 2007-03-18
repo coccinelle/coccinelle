@@ -28,25 +28,32 @@ gazel.c
  some interrupt functions not transformed
 
 hfc_2bds0.c
- * [status] 
+ * [status] failed
+ programmer used xmit_ready not xmit_ready_d
+ not enough information to identify fill_fifo function
 
 hfc_pci.c
- * [status] 
+ * [status] failed
+ not enough information to identify fill_fifo function
 
 hfc_sx.c
- * [status] 
+ * [status] failed
+ not enough information to identify fill_fifo function
 
 icc.c
- * [status] 
+ * [status] ok
 
 ipacx.c
- * [status] 
+ * [status] failed
+ not clear where to add Send_Data initialization
 
 isac.c
- * [status] 
+ * [status] failed
+ not enough information to detect the interrupt function
 
 isar.c
- * [status] 
+ * [status] failed
+ not enough information to detect the interrupt function
 
 isurf.c
  * [status] ok
@@ -55,13 +62,16 @@ ix1_micro.c
  * [status] ok
 
 jade_irq.c
- * [status] 
+ * [status] failed
+ not enough information to detect the interrupt function
 
 mic.c
  * [status] ok
 
 niccy.c
- * [status] 
+ * [status] spatch_ok
+ * [status] bug
+ programmer omitted an unlock before a return
 
 s0box.c
  * [status] ok
@@ -89,4 +99,5 @@ telespci.c
  * [status] ok
 
 w6692.c
- * [status] fail
+ * [status] failed
+ not clear where to add Send_Data initialization
