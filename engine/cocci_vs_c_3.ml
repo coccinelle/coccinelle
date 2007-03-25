@@ -1135,19 +1135,24 @@ and parameters_bis eas ebs =
             ) fail 
 
 
-      | A.VoidParam _, _ -> failwith "handling VoidParam"
-          (* XXX
-                  assert (null ys);
-                  assert (
-                    match typb with 
-                    | (_qua, (B.BaseType B.Void,_)) -> true
-                    | _ -> false
-                          );
-   
-                  return false
-              
-          *)
-
+      | A.VoidParam ta, ys -> 
+          (match eas, ebs with
+          | [], [Left eb] -> 
+              let ((hasreg, idbopt, tb), ii_b_s) = eb in
+              if idbopt = None && null ii_b_s 
+              then 
+                match tb with 
+                | (qub, (B.BaseType B.Void,_)) -> 
+                    fullType ta tb >>= (fun ta tb -> 
+                      return (
+                        [(A.VoidParam ta) +> A.rewrap ea],
+                        [Left 
+                            ((hasreg, idbopt, tb), ii_b_s)]
+                      ))
+                | _ -> fail
+              else fail
+          | _ -> fail
+          )
 
       | (A.OptParam _ | A.UniqueParam _), _ -> 
               failwith "handling Opt/Unique/Multi for Param"

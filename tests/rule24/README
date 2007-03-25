@@ -3,6 +3,7 @@ blkmtd.c
 
 blkpg.c
  * [status] 
+ * [bug] miss one site
 
 ide-cd.c
  * [status] 

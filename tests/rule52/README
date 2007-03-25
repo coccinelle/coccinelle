@@ -2,7 +2,7 @@ a3d.c
  * [status] ok
 
 adbhid.c
- * [status] wrong
+ * [status] spatch_ok
  * old: type inference doesn't work for an array reference
  * [bug] 
 

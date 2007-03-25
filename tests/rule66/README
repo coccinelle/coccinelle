@@ -103,7 +103,7 @@ uda1341.failed
 
 vx_core.failed
  * [status] spatch-ok
- * [bug] 
+ * [bug] sizeof(chip) instead of sizeof(*chip)!
 
 vx_entry.failed
  * [status] fail
