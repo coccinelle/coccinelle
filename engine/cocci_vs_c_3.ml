@@ -2215,7 +2215,7 @@ and define_val bodya defvalb =
             ))
 
 
-      | _ -> failwith "only types and expressions supported")
+      | _ -> fail (*failwith "only types and expressions supported"*))
 
   | _, _ -> fail
 

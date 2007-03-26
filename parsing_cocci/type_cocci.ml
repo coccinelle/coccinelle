@@ -11,7 +11,7 @@ type typeC =
   | Array           of typeC (* drop size info *)
   | StructUnionName of structUnion * bool (* true if a metaId *) * string
   | TypeName        of string
-  | MetaType        of string * keep_binding * inherited
+  | MetaType        of (string * string) * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 
 and tagged_string = string
@@ -39,7 +39,7 @@ let rec typeC = function
   | StructUnionName(kind,mv,name) ->
       structUnion kind; print_string name; print_string " "
   | TypeName(name) -> print_string name; print_string " "
-  | MetaType(name,keep,inherited) ->
+  | MetaType((rule,name),keep,inherited) ->
       print_string "<"; print_string name; print_string ">"; print_string " ";
       (*
       let print_unitary = function

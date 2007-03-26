@@ -10,7 +10,7 @@ type typeC =
   | Array           of typeC (* drop size info *)
   | StructUnionName of structUnion * bool (* true if type metavar *) * string
   | TypeName        of string
-  | MetaType        of string * keep_binding * inherited
+  | MetaType        of (string * string) * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 
 and tagged_string = string

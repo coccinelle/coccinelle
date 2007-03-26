@@ -406,7 +406,7 @@ and subexp f =
   let expr r k e = conjunct_bindings (f e) (k e) in
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
@@ -419,7 +419,7 @@ and subtype f =
   let fullType r k e = conjunct_bindings (f e) (k e) in
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in

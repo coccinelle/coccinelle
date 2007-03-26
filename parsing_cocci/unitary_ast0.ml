@@ -102,7 +102,7 @@ let get_free checker t =
     | _ -> k s in
   
   let res = V0.combiner bind option_default 
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter declaration statement
       donothing donothing in
@@ -176,7 +176,7 @@ let update_unitary unitary =
     | _ -> k s in
   
   let res = V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter donothing statement
       donothing donothing in
@@ -184,31 +184,26 @@ let update_unitary unitary =
   List.map res.V0.rebuilder_top_level
 
 (* ----------------------------------------------------------------------- *)
+
+let rec split3 = function
+    [] -> ([],[],[])
+  | (a,b,c)::xs -> let (l1,l2,l3) = split3 xs in (a::l1,b::l2,c::l3)
+
+let rec combine3 = function
+    ([],[],[]) -> []
+  | (a::l1,b::l2,c::l3) -> (a,b,c) :: combine3 (l1,l2,l3)
+  | _ -> failwith "not possible"
+
+(* ----------------------------------------------------------------------- *)
 (* process all rules *)
 
-let get_names = function
-    Ast.MetaIdDecl(ar,nm) -> nm
-  | Ast.MetaFreshIdDecl(ar,nm) -> nm
-  | Ast.MetaTypeDecl(ar,nm) -> nm
-  | Ast.MetaParamDecl(ar,nm) -> nm
-  | Ast.MetaParamListDecl(ar,nm) -> nm
-  | Ast.MetaConstDecl(ar,nm) -> nm
-  | Ast.MetaErrDecl(ar,nm) -> nm
-  | Ast.MetaExpDecl(ar,nm) -> nm
-  | Ast.MetaExpListDecl(ar,nm) -> nm
-  | Ast.MetaStmDecl(ar,nm) -> nm
-  | Ast.MetaStmListDecl(ar,nm) -> nm
-  | Ast.MetaFuncDecl(ar,nm) -> nm
-  | Ast.MetaLocalFuncDecl(ar,nm) -> nm
-  | Ast.MetaTextDecl(ar,nm) -> nm
-
 let do_unitary minus plus =
-  let (minus,metavars) = List.split minus in
+  let (minus,metavars,chosen_isos) = split3 minus in
   let (plus,_) = List.split plus in
   let rec loop = function
       ([],[],[]) -> ([],[])
     | (mm1::metavars,m1::minus,p1::plus) ->
-	let mm1 = List.map get_names mm1 in
+	let mm1 = List.map Ast.get_meta_name mm1 in
 	let (used_after,rest) = loop (metavars,minus,plus) in
 	let (m_unitary,m_nonunitary) = get_free minus_checker m1 in
 	let (p_unitary,p_nonunitary) = get_free plus_checker p1 in
@@ -225,4 +220,4 @@ let do_unitary minus plus =
 	 rebuilt::rest)
     | _ -> failwith "not possible" in
   let (_,rules) = loop (metavars,minus,plus) in
-  List.combine rules metavars
+  combine3 (rules,metavars,chosen_isos)

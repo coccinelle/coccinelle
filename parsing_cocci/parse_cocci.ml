@@ -33,6 +33,10 @@ let token2c (tok,_) =
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
+  | PC.TRuleNamer -> "Name:"
+  | PC.TRuleName str -> str
+  | PC.TIsoFile -> "Iso:"
+  | PC.TExtends -> "Extends:"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -212,7 +216,7 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
-  | PC.TContext
+  | PC.TContext | PC.TRuleNamer | PC.TRuleName(_) | PC.TIsoFile | PC.TExtends
   | PC.TError | PC.TWords -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -296,10 +300,10 @@ seem very convenient to refactor the grammar to get around the problem. *)
 
 let rec find_function_names = function
     [] -> []
-  | ((PC.TIdent(s,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaId(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaLocalFunc(s,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2)::rest
+  | ((PC.TIdent(_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaId(_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaFunc(_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMetaLocalFunc(_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2)::rest
     ->
       let rec skip level = function
 	  [] -> ([],false,[])
@@ -581,7 +585,61 @@ let parse_one parsefn file toks =
 let prepare_tokens tokens =
   insert_line_end (find_function_names (detect_types false tokens))
 
-let parse file =
+let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
+
+let parse_iso = function
+    None -> []
+  | Some file ->
+      let table = Common.full_charpos_to_pos file in
+      let channel = open_in file in
+      let lexbuf = Lexing.from_channel channel in
+      let res =
+      match tokens_all table file false lexbuf [PC.TArobArob] with
+	(true,start) ->
+	  let rec loop start =
+	    (* get metavariable declarations - have to be read before the
+	       rest *)
+	    Data.in_meta := true;
+	    let (more,tokens) =
+	      tokens_all table file true lexbuf [PC.TArobArob] in
+	    Data.in_meta := false;
+	    let tokens = detect_types true tokens in
+	    (*
+	    Printf.printf "iso meta tokens\n";
+	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+	    Printf.printf "\n\n";
+	    *)
+	    let iso_metavars = parse_one PC.iso_meta_main file tokens in
+	    (* get the rule *)
+	    let (more,tokens) =
+	      tokens_all table file false lexbuf
+		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration;
+		  PC.TIsoType;PC.TIsoTopLevel] in
+	    let next_start = List.hd(List.rev tokens) in
+	    let dummy_info = ("",(-1,-1),(-1,-1)) in
+	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
+	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
+            (*
+	    Printf.printf "iso tokens\n";
+	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+	    Printf.printf "\n\n";
+	    *)
+	    let entry = parse_one PC.iso_main file tokens in
+	    if more
+	    then (* The code below allows a header like Statement list,
+		    which is more than one word.  We don't have that any more,
+		    but the code is left here in case it is put back. *)
+	      match tokens_all table file true lexbuf [PC.TArobArob] with
+		(true,start) ->
+		  (iso_metavars,entry) :: (loop (next_start::start))
+	      |	_ -> failwith "isomorphism ends early"
+	    else [(iso_metavars,entry)] in
+	  loop start
+      | (false,_) -> [] in
+      close_in channel;
+      res
+
+let parse file default_isos =
   Printf.printf "starting %s\n" file;
   let table = Common.full_charpos_to_pos file in
   let channel = open_in file in
@@ -601,7 +659,19 @@ let parse file =
 	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	Printf.printf "\n\n";
 	*)
-	let metavars = parse_one PC.meta_main file tokens in
+	let (rule_name,iso,metavars) = parse_one PC.meta_main file tokens in
+	Hashtbl.add Data.all_metadecls rule_name metavars;
+	Hashtbl.add Lexer_cocci.all_metavariables rule_name
+	  (Hashtbl.fold (fun key v rest -> (key,v)::rest)
+	     Lexer_cocci.metavariables []);
+	let chosen_isos =
+	  match iso with
+	    None -> default_isos
+	  | Some isofile ->
+	      Data.in_iso := true;
+	      let isos = parse_iso (Some isofile) in
+	      Data.in_iso := false;
+	      isos in
 	(* get transformation rules *)
 	let (more,tokens) =
 	  tokens_all table file false lexbuf [PC.TArobArob] in
@@ -638,91 +708,40 @@ let parse file =
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop () in
-	  ((minus_res, metavars)::minus_ress,(plus_res, metavars)::plus_ress)
-	else ([minus_res, metavars],[plus_res, metavars]) in
+	  ((minus_res,metavars,(chosen_isos,rule_name))::minus_ress,
+	   (plus_res, metavars)::plus_ress)
+	else ([(minus_res,metavars,(chosen_isos,rule_name))],
+	      [(plus_res, metavars)]) in
       loop ()
   | (false,[(PC.TArobArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n" in
   close_in channel;
   res
 
-let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
-
-let parse_iso = function
-    None -> []
-  | Some file ->
-      let table = Common.full_charpos_to_pos file in
-      let channel = open_in file in
-      let lexbuf = Lexing.from_channel channel in
-      let res =
-      match tokens_all table file false lexbuf [PC.TArobArob] with
-	(true,start) ->
-	  let rec loop start =
-	    (* get metavariable declarations - have to be read before the
-	       rest *)
-	    Data.in_meta := true;
-	    let (more,tokens) =
-	      tokens_all table file true lexbuf [PC.TArobArob] in
-	    Data.in_meta := false;
-	    let tokens = detect_types true tokens in
-	    (*
-	    Printf.printf "iso meta tokens\n";
-	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
-	    Printf.printf "\n\n";
-	    *)
-	    let iso_metavars = parse_one PC.meta_main file tokens in
-	    (* get the rule *)
-	    let (more,tokens) =
-	      tokens_all table file false lexbuf
-		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration;
-		  PC.TIsoType;PC.TIsoTopLevel] in
-	    let next_start = List.hd(List.rev tokens) in
-	    let dummy_info = ("",(-1,-1),(-1,-1)) in
-	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
-	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
-            (*
-	    Printf.printf "iso tokens\n";
-	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
-	    Printf.printf "\n\n";
-	    *)
-	    let entry = parse_one PC.iso_main file tokens in
-	    if more
-	    then (* The code below allows a header like Statement list,
-		    which is more than one word.  We don't have that any more,
-		    but the code is left here in case it is put back. *)
-	      match tokens_all table file true lexbuf [PC.TArobArob] with
-		(true,start) ->
-		  (iso_metavars,entry) :: (loop (next_start::start))
-	      |	_ -> failwith "isomorphism ends early"
-	    else [(iso_metavars,entry)] in
-	  loop start
-      | (false,_) -> [] in
-      close_in channel;
-      res
-
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
-  Lexer_cocci.init ();
-  let (minus,plus) = parse file in
   Lexer_cocci.init ();
   Data.in_iso := true;
   let isos = parse_iso isofile in
   Data.in_iso := false;
+  Lexer_cocci.init ();
+  let (minus,plus) = parse file isos in
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
     List.concat
       (List.map2
-	 (function (minus, metavars) ->
+	 (function (minus, metavars, (chosen_isos, rule_name)) ->
 	   function (plus, metavars) ->
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let function_prototypes =
-	       Function_prototypes.process minus plus in
+	       Function_prototypes.process minus plus rule_name in
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     Insert_plus.insert_plus m p;
 	     Type_infer.type_infer minus;
-	     let (extra_meta,minus) = Iso_pattern.apply_isos isos minus in
+	     let (extra_meta,minus) =
+	       Iso_pattern.apply_isos chosen_isos minus rule_name in
 	     let minus = Single_statement.single_statement minus in
 	     let minus_ast = Ast0toast.ast0toast minus in
 	     match function_prototypes with

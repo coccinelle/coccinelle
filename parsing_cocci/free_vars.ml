@@ -11,21 +11,7 @@ let rec nub = function
   | (x::xs) when (List.mem x xs) -> nub xs
   | (x::xs) -> x::(nub xs)
 
-let get_names = function
-    Ast.MetaIdDecl(ar,nm) -> nm
-  | Ast.MetaFreshIdDecl(ar,nm) -> nm
-  | Ast.MetaTypeDecl(ar,nm) -> nm
-  | Ast.MetaParamDecl(ar,nm) -> nm
-  | Ast.MetaParamListDecl(ar,nm) -> nm
-  | Ast.MetaConstDecl(ar,nm) -> nm
-  | Ast.MetaErrDecl(ar,nm) -> nm
-  | Ast.MetaExpDecl(ar,nm) -> nm
-  | Ast.MetaExpListDecl(ar,nm) -> nm
-  | Ast.MetaStmDecl(ar,nm) -> nm
-  | Ast.MetaStmListDecl(ar,nm) -> nm
-  | Ast.MetaFuncDecl(ar,nm) -> nm
-  | Ast.MetaLocalFuncDecl(ar,nm) -> nm
-  | Ast.MetaTextDecl(ar,nm) -> nm
+let get_meta_name x = let (rule_name,name) = Ast.get_meta_name x in name
 
 (* Collect all variable references in a minirule.  For a disj, we collect
 the maximum number (2 is enough) of references in any branch. *)
@@ -135,7 +121,7 @@ let collect_all_refs =
   let mcode r e = [] in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing
@@ -174,7 +160,7 @@ let collect_saved =
       match Ast.unwrap e with
 	Ast.MetaConst(name,_,Some type_list,_)
       |	Ast.MetaExpr(name,_,Some type_list,_) ->
-	  List.fold_left type_collect option_default type_list	  
+	  List.fold_left type_collect option_default type_list
       |	_ -> [] in
     let vars =
       match Ast.unwrap e with
@@ -209,7 +195,7 @@ let collect_saved =
   let mcode r e = [] in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC donothing astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
@@ -283,7 +269,7 @@ let collect_in_plus_term =
     | _ -> k s in
 
   V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
@@ -308,7 +294,7 @@ let collect_all_multirefs minirules =
 (witness binding) *)
 
 let classify_variables metavars minirules used_after =
-  let metavars = List.map get_names metavars in
+  let metavars = List.map get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in
   
@@ -345,9 +331,9 @@ let classify_variables metavars minirules used_after =
     | TC.Pointer(ty) -> TC.Pointer(type_infos ty)
     | TC.FunctionPointer(ty) -> TC.FunctionPointer(type_infos ty)
     | TC.Array(ty) -> TC.Array(type_infos ty)
-    | TC.MetaType(name,_,_) ->
+    | TC.MetaType(((_,name) as nm),_,_) ->
 	let (unitary,inherited) = classify (name,(),()) in
-	Type_cocci.MetaType(name,unitary,inherited)
+	Type_cocci.MetaType(nm,unitary,inherited)
     | ty -> ty in
 
   let expression r k e =
@@ -405,7 +391,7 @@ let classify_variables metavars minirules used_after =
     | _ -> k e in
 
   let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing donothing in
@@ -427,7 +413,9 @@ let astfvs metavars bound =
   let fresh =
     List.fold_left
       (function prev ->
-	function Ast.MetaFreshIdDecl(arity,name) -> name::prev | _ -> prev)
+	function
+	    Ast.MetaFreshIdDecl(_,_) as x -> (get_meta_name x)::prev
+	  | _ -> prev)
       [] metavars in
 
   let collect_fresh = List.filter (function x -> List.mem x fresh) in
@@ -472,7 +460,7 @@ let astfvs metavars bound =
   let donothing r k e = k e in
 
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing astfvstatement_dots donothing
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement donothing astfvtoplevel donothing
@@ -481,9 +469,10 @@ let collect_astfvs rules =
   let rec loop bound = function
       [] -> []
     | (metavars,minirules)::rules ->
-	let bound = Common.minus_set bound (List.map get_names metavars) in
+	let bound =
+	  Common.minus_set bound (List.map get_meta_name metavars) in
 	(List.map (astfvs metavars bound).V.rebuilder_top_level minirules)::
-	(loop ((List.map get_names metavars)@bound) rules) in
+	(loop ((List.map get_meta_name metavars)@bound) rules) in
   loop [] rules
 
 (* ---------------------------------------------------------------- *)
@@ -503,7 +492,7 @@ let collect_top_level_used_after metavar_rule_list =
     List.fold_right
       (function (metavar_list,rule) ->
 	function (used_after,used_after_lists) ->
-	  let locally_defined = List.map get_names metavar_list in
+	  let locally_defined = List.map get_meta_name metavar_list in
 	  let continue_propagation =
 	    List.filter (function x -> not(List.mem x locally_defined))
 	      used_after in
@@ -524,7 +513,7 @@ let collect_top_level_used_after metavar_rule_list =
 	   (String.concat " " used_after))
 	
 let collect_local_used_after metavars minirules used_after =
-  let locally_defined = List.map get_names metavars in
+  let locally_defined = List.map get_meta_name metavars in
   let rec loop defined = function
       [] -> (used_after,[])
     | minirule::rest ->

@@ -24,6 +24,7 @@ type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 val combiner :
     ('a -> 'a -> 'a) -> 'a ->
+      (((string*string),'a) cmcode) ->
       ((string,'a) cmcode) ->
 	((Ast_cocci.constant,'a) cmcode) ->
 	  ((Ast_cocci.assignOp,'a) cmcode) ->
@@ -76,6 +77,7 @@ type 'mc rmcode = 'mc Ast_cocci.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 val rebuilder :
+    ((string*string) rmcode) ->
     (string rmcode) ->
       (Ast_cocci.constant rmcode) ->
 	(Ast_cocci.assignOp rmcode) ->

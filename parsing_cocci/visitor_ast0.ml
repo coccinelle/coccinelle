@@ -35,8 +35,8 @@ type ('mc,'a) cmcode = 'mc Ast0.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 let combiner bind option_default 
-    string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
-    cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
+    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn
     tyfn initfn paramfn declfn stmtfn casefn topfn =
@@ -89,9 +89,9 @@ let combiner bind option_default
     let k i =
       match Ast0.unwrap i with
 	Ast0.Id(name) -> string_mcode name
-      | Ast0.MetaId(name,_) -> string_mcode name
-      | Ast0.MetaFunc(name,_) -> string_mcode name
-      | Ast0.MetaLocalFunc(name,_) -> string_mcode name
+      | Ast0.MetaId(name,_) -> meta_mcode name
+      | Ast0.MetaFunc(name,_) -> meta_mcode name
+      | Ast0.MetaLocalFunc(name,_) -> meta_mcode name
       | Ast0.OptIdent(id) -> ident id
       | Ast0.UniqueIdent(id) -> ident id
       | Ast0.MultiIdent(id) -> ident id in
@@ -135,10 +135,10 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; typeC ty; string_mcode rp]
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaConst(name,ty,_) -> string_mcode name
-      | Ast0.MetaErr(name,_) -> string_mcode name
-      | Ast0.MetaExpr(name,ty,_) -> string_mcode name
-      | Ast0.MetaExprList(name,_) -> string_mcode name
+      | Ast0.MetaConst(name,ty,_) -> meta_mcode name
+      | Ast0.MetaErr(name,_) -> meta_mcode name
+      | Ast0.MetaExpr(name,ty,_) -> meta_mcode name
+      | Ast0.MetaExprList(name,_) -> meta_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	  (match expr_list with
@@ -199,7 +199,7 @@ let combiner bind option_default
 	  multibind
 	    [typeC ty;string_mcode lb;declaration_dots decls;string_mcode rb]
       | Ast0.TypeName(name) -> string_mcode name
-      | Ast0.MetaType(name,_) -> string_mcode name
+      | Ast0.MetaType(name,_) -> meta_mcode name
       |	Ast0.DisjType(starter,types,mids,ender) ->
 	  (match types with
 	    [] -> failwith "bad disjunction"
@@ -297,8 +297,8 @@ let combiner bind option_default
 	Ast0.VoidParam(ty) -> typeC ty
       | Ast0.Param(ty,Some id) -> named_type ty id
       | Ast0.Param(ty,None) -> typeC ty
-      | Ast0.MetaParam(name,_) -> string_mcode name
-      | Ast0.MetaParamList(name,_) -> string_mcode name
+      | Ast0.MetaParam(name,_) -> meta_mcode name
+      | Ast0.MetaParamList(name,_) -> meta_mcode name
       | Ast0.PComma(cm) -> string_mcode cm
       | Ast0.Pdots(dots) -> string_mcode dots
       | Ast0.Pcircles(dots) -> string_mcode dots
@@ -363,8 +363,8 @@ let combiner bind option_default
       | Ast0.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
-      | Ast0.MetaStmt(name,_) -> string_mcode name
-      | Ast0.MetaStmtList(name,_) -> string_mcode name
+      | Ast0.MetaStmt(name,_) -> meta_mcode name
+      | Ast0.MetaStmtList(name,_) -> meta_mcode name
       | Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	  (match statement_dots_list with
 	    [] -> failwith "bad disjunction"
@@ -417,7 +417,7 @@ let combiner bind option_default
 
   and define_body b =
     match Ast0.unwrap b with
-      Ast0.DMetaId(name,_) -> string_mcode name
+      Ast0.DMetaId(name,_) -> meta_mcode name
     | Ast0.DStm(d) -> statement_dots d
 
   and top_level t =
@@ -482,8 +482,8 @@ type 'mc rmcode = 'mc Ast0.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 let rebuilder = fun
-    string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
-    cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
+    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
   let get_option f = function
@@ -543,11 +543,11 @@ let rebuilder = fun
 	(match Ast0.unwrap i with
 	  Ast0.Id(name) -> Ast0.Id(string_mcode name)
 	| Ast0.MetaId(name,pure) ->
-	    Ast0.MetaId(string_mcode name,pure)
+	    Ast0.MetaId(meta_mcode name,pure)
 	| Ast0.MetaFunc(name,pure) ->
-	    Ast0.MetaFunc(string_mcode name,pure)
+	    Ast0.MetaFunc(meta_mcode name,pure)
 	| Ast0.MetaLocalFunc(name,pure) ->
-	    Ast0.MetaLocalFunc(string_mcode name,pure)
+	    Ast0.MetaLocalFunc(meta_mcode name,pure)
 	| Ast0.OptIdent(id) -> Ast0.OptIdent(ident id)
 	| Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)
 	| Ast0.MultiIdent(id) -> Ast0.MultiIdent(ident id)) in
@@ -591,13 +591,13 @@ let rebuilder = fun
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
 	| Ast0.MetaConst(name,ty,pure) ->
-	    Ast0.MetaConst(string_mcode name,ty,pure)
+	    Ast0.MetaConst(meta_mcode name,ty,pure)
 	| Ast0.MetaErr(name,pure) ->
-	    Ast0.MetaErr(string_mcode name,pure)
+	    Ast0.MetaErr(meta_mcode name,pure)
 	| Ast0.MetaExpr(name,ty,pure) ->
-	    Ast0.MetaExpr(string_mcode name,ty,pure)
+	    Ast0.MetaExpr(meta_mcode name,ty,pure)
 	| Ast0.MetaExprList(name,pure) ->
-	    Ast0.MetaExprList(string_mcode name,pure)
+	    Ast0.MetaExprList(meta_mcode name,pure)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
@@ -645,7 +645,7 @@ let rebuilder = fun
 				 string_mcode rb)
 	| Ast0.TypeName(name) -> Ast0.TypeName(string_mcode name)
 	| Ast0.MetaType(name,pure) ->
-	    Ast0.MetaType(string_mcode name,pure)
+	    Ast0.MetaType(meta_mcode name,pure)
 	| Ast0.DisjType(starter,types,mids,ender) ->
 	    Ast0.DisjType(string_mcode starter,List.map typeC types,
 			  List.map string_mcode mids,string_mcode ender)
@@ -714,9 +714,9 @@ let rebuilder = fun
 	  Ast0.VoidParam(ty) -> Ast0.VoidParam(typeC ty)
 	| Ast0.Param(ty,id) -> Ast0.Param(typeC ty, get_option ident id)
 	| Ast0.MetaParam(name,pure) ->
-	    Ast0.MetaParam(string_mcode name,pure)
+	    Ast0.MetaParam(meta_mcode name,pure)
 	| Ast0.MetaParamList(name,pure) ->
-	    Ast0.MetaParamList(string_mcode name,pure)
+	    Ast0.MetaParamList(meta_mcode name,pure)
 	| Ast0.PComma(cm) -> Ast0.PComma(string_mcode cm)
 	| Ast0.Pdots(dots) -> Ast0.Pdots(string_mcode dots)
 	| Ast0.Pcircles(dots) -> Ast0.Pcircles(string_mcode dots)
@@ -781,9 +781,9 @@ let rebuilder = fun
 	| Ast0.ReturnExpr(ret,exp,sem) ->
 	    Ast0.ReturnExpr(string_mcode ret,expression exp,string_mcode sem)
 	| Ast0.MetaStmt(name,pure) ->
-	    Ast0.MetaStmt(string_mcode name,pure)
+	    Ast0.MetaStmt(meta_mcode name,pure)
 	| Ast0.MetaStmtList(name,pure) ->
-	    Ast0.MetaStmtList(string_mcode name,pure)
+	    Ast0.MetaStmtList(meta_mcode name,pure)
 	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	    Ast0.Disj(string_mcode starter,
 		      List.map statement_dots statement_dots_list,
@@ -832,7 +832,7 @@ let rebuilder = fun
   and define_body b =
     Ast0.rewrap b
       (match Ast0.unwrap b with
-	Ast0.DMetaId(name,pure) -> Ast0.DMetaId(string_mcode name,pure)
+	Ast0.DMetaId(name,pure) -> Ast0.DMetaId(meta_mcode name,pure)
       | Ast0.DStm(d) -> Ast0.DStm(statement_dots d))
 
   and top_level t =

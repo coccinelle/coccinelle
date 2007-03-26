@@ -10,6 +10,8 @@ worth it.  The most obvious goal is to distinguish between test expressions
 that have pointer, integer, and boolean type when matching isomorphisms,
 but perhaps other needs will become apparent. *)
 
+type id = Id of string | Meta of (string * string)
+
 let rec lub_type t1 t2 =
   match (t1,t2) with
     (None,None) -> None
@@ -34,8 +36,11 @@ let rec propagate_types env =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.Id(id) | Ast0.MetaId(id,_) ->
-	(try Some(List.assoc (Ast0.unwrap_mcode id) env)
+      Ast0.Id(id) ->
+	(try Some(List.assoc (Id(Ast0.unwrap_mcode id)) env)
+	with Not_found -> None)
+    | Ast0.MetaId(id,_) ->
+	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
     | _ -> k i in
 
@@ -141,10 +146,10 @@ let rec propagate_types env =
 
   let rec strip id =
     match Ast0.unwrap id with
-      Ast0.Id(name)              -> Ast0.unwrap_mcode name
-    | Ast0.MetaId(name,_)        -> Ast0.unwrap_mcode name
-    | Ast0.MetaFunc(name,_)      -> Ast0.unwrap_mcode name
-    | Ast0.MetaLocalFunc(name,_) -> Ast0.unwrap_mcode name
+      Ast0.Id(name)              -> Id(Ast0.unwrap_mcode name)
+    | Ast0.MetaId(name,_)        -> Meta(Ast0.unwrap_mcode name)
+    | Ast0.MetaFunc(name,_)      -> Meta(Ast0.unwrap_mcode name)
+    | Ast0.MetaLocalFunc(name,_) -> Meta(Ast0.unwrap_mcode name)
     | Ast0.OptIdent(id)    -> strip id
     | Ast0.UniqueIdent(id) -> strip id
     | Ast0.MultiIdent(id)  -> strip id in
@@ -188,7 +193,8 @@ let rec propagate_types env =
       Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
-	    Ast0.Param(ty,Some id) -> [(strip id,Ast0.ast0_type_to_type ty)]
+	    Ast0.Param(ty,Some id) ->
+	      [(strip id,Ast0.ast0_type_to_type ty)]
 	  | Ast0.OptParam(param) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
@@ -215,13 +221,13 @@ let rec propagate_types env =
     | Ast0.OptCase(case) -> k c in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing statement_dots donothing donothing
     ident expression donothing donothing donothing donothing statement
     case_line donothing
 
 let type_infer code =
-  let fn =
-    (propagate_types [("NULL",T.Pointer(T.Unknown))]).V0.combiner_top_level in
+  let prop = propagate_types [(Id("NULL"),T.Pointer(T.Unknown))] in
+  let fn = prop.V0.combiner_top_level in
   let _ = List.map fn code in
   ()

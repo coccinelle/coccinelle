@@ -12,6 +12,8 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 
+let current_rule = ref ""
+
 (* --------------------------------------------------------------------- *)
 
 type isomorphism = Ast_cocci.metavar list * Ast0_cocci.anything list list
@@ -22,7 +24,7 @@ let strip_info =
     let (term,info,index,mc,ty,dots) = k e in
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
@@ -69,8 +71,7 @@ let anything_equal = function
   | _ -> false
 
 let term (var1,_,_,_) = var1
-let dot_term  (var1,_,info,_) =
-  var1 ^ (string_of_int info.Ast0.offset)
+let dot_term (var1,_,info,_) = ("", var1 ^ (string_of_int info.Ast0.offset))
 
 (* probably don't need option in return type, because [] is failure. but
 trying to be simple for the moment ... *)
@@ -228,7 +229,7 @@ let match_maker context_required whencode_allowed =
 	| _ -> Ast0.Impure) in
 
     V0.combiner bind option_default 
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing param donothing stmt donothing
       donothing in
@@ -912,7 +913,7 @@ let make_minus =
     | _ -> donothing r k e in
 
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
     statement donothing donothing
@@ -978,7 +979,7 @@ let rebuild_mcode start_line =
 	 | s -> s)) in
 
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
@@ -1000,7 +1001,7 @@ let count_edots =
   | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
@@ -1014,7 +1015,7 @@ let count_idots =
     match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
@@ -1030,7 +1031,7 @@ let count_dots =
   | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
@@ -1262,7 +1263,7 @@ let instantiate bindings mv_bindings =
     | _ -> k e in
 
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn donothing paramfn declfn stmtfn donothing donothing
 
@@ -1387,7 +1388,7 @@ let extra_copy_other_plus model e = e
 (* --------------------------------------------------------------------- *)
 
 let mv_count = ref 0
-let new_mv s =
+let new_mv (_,s) =
   let ct = !mv_count in
   mv_count := !mv_count + 1;
   "_"^s^"_"^(string_of_int ct)
@@ -1403,12 +1404,12 @@ let get_name = function
       (nm,function nm -> Ast.MetaParamDecl(ar,nm))
   | Ast.MetaParamListDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaParamListDecl(ar,nm))
-  | Ast.MetaConstDecl(ar,nm) ->
-      (nm,function nm -> Ast.MetaConstDecl(ar,nm))
+  | Ast.MetaConstDecl(ar,nm,ty) ->
+      (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaErrDecl(ar,nm))
-  | Ast.MetaExpDecl(ar,nm) ->
-      (nm,function nm -> Ast.MetaExpDecl(ar,nm))
+  | Ast.MetaExpDecl(ar,nm,ty) ->
+      (nm,function nm -> Ast.MetaExpDecl(ar,nm,ty))
   | Ast.MetaExpListDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm))
   | Ast.MetaStmDecl(ar,nm) ->
@@ -1433,7 +1434,7 @@ let make_new_metavars metavars bindings =
     (List.map
        (function mv ->
 	 let (s,rebuild) = get_name mv in
-	 let new_s = new_mv s in
+	 let new_s = (!current_rule,new_mv s) in
 	 (rebuild new_s, (s,new_s)))
        new_metavars)
 
@@ -1464,7 +1465,7 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	  None ->
 	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
 	      (prev_dcount + dcount) rest
-	| Some bindings ->
+	| Some (bindings : (((string * string) * 'a) list list)) ->
 	    (match List.concat all_alts with
 	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
@@ -1700,7 +1701,7 @@ let transform (alts : isomorphism) t =
   
   let res =
     V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing exprfn typefn donothing donothing declfn stmtfn
       donothing topfn in
@@ -1714,7 +1715,7 @@ let rewrap =
   let mcode (x,a,i,mc) = (x,a,i,Ast0.context_befaft()) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
@@ -1744,7 +1745,8 @@ let rewrap_anything = function
 
 (* --------------------------------------------------------------------- *)
 
-let apply_isos isos rule =
+let apply_isos isos rule rule_name =
+  current_rule := rule_name;
   let isos =
     List.map
       (function (metavars,iso) ->

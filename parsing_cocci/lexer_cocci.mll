@@ -80,6 +80,11 @@ let metavariables =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
+let all_metavariables =
+  (Hashtbl.create(100) :
+     (string,(string * (D.line_type * int * int * int -> token)) list)
+  Hashtbl.t)
+
 let type_names =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
@@ -88,13 +93,20 @@ let declarer_names =
   (Hashtbl.create(100) :
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
+let rule_names =
+  (Hashtbl.create(100) : (string, Ast_cocci.metavar list ref) Hashtbl.t)
+
 let check_var s linetype =
-  try (Hashtbl.find metavariables s) linetype
-  with Not_found ->
-    (try (Hashtbl.find type_names s) linetype
+  let fail _ =
+    try (Hashtbl.find metavariables s) linetype
     with Not_found ->
-      (try (Hashtbl.find declarer_names s) linetype
-      with Not_found -> TIdent (s,linetype)))
+      (try (Hashtbl.find type_names s) linetype
+      with Not_found ->
+	(try (Hashtbl.find declarer_names s) linetype
+	with Not_found -> TIdent (s,linetype))) in
+  if !Data.in_meta
+  then (try TRuleName s with Not_found -> fail())
+  else fail()
 
 let id_tokens lexbuf =
   let s = tok lexbuf in
@@ -121,6 +133,10 @@ let id_tokens lexbuf =
       check_arity_context_linetype s; TContext
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
+
+  | "Name:" when in_meta && not in_iso -> check_context_linetype s; TRuleNamer
+  | "Iso:" when in_meta && not in_iso ->  check_context_linetype s; TIsoFile
+  | "Extends:" when in_meta && not in_iso -> check_context_linetype s; TExtends
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -171,59 +187,62 @@ let init _ =
   line := 1;
   logical_line := 0;
   in_atat := false;
-  Hashtbl.clear metavariables; Hashtbl.clear type_names;
+  Hashtbl.clear all_metavariables;
+  Hashtbl.clear metavariables;
+  Hashtbl.clear type_names;
+  let get_name (_,x) = x in
   Data.add_id_meta :=
     (function name -> function pure ->
       let fn clt = TMetaId(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_text_meta :=
     (function name -> function pure ->
       let fn clt = TMetaText(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (function name -> function pure ->
       let fn clt = TMetaType(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
     (function name -> function pure ->
       let fn clt = TMetaParam(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_paramlist_meta :=
     (function name -> function pure ->
       let fn clt = TMetaParamList(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_const_meta :=
     (function tyopt -> function name -> function pure -> 
       let fn clt = TMetaConst(name,pure,tyopt,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_err_meta :=
     (function name -> function pure ->
       let fn clt = TMetaErr(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_exp_meta :=
     (function tyopt -> function name -> function pure ->
       let fn clt = TMetaExp(name,pure,tyopt,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function pure ->
       let fn clt = TMetaExpList(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->
       let fn clt = TMetaStm(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stmlist_meta :=
     (function name -> function pure ->
       let fn clt = TMetaStmList(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (function name -> function pure ->
       let fn clt = TMetaFunc(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_local_func_meta :=
     (function name -> function pure ->
       let fn clt = TMetaLocalFunc(name,pure,clt) in
-      Hashtbl.replace metavariables name fn);
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
@@ -231,7 +250,26 @@ let init _ =
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
-      Hashtbl.replace declarer_names name fn)
+      Hashtbl.replace declarer_names name fn);
+  Data.install_bindings :=
+    (function parents ->
+      Hashtbl.clear metavariables;
+      let all_bindings =
+	List.concat
+	  (List.map
+	     (function parent ->
+	       try Hashtbl.find all_metavariables parent
+	       with Not_found -> failwith ("unknown parent: "^parent))
+	     parents) in
+      let rec loop prev = function
+	  ([],[]) -> []
+	| ((name,binding)::bindings,_::names) ->
+	    if List.mem name names or List.mem name prev
+	    then loop (name::prev) (bindings,names)
+	    else (name,binding)::(loop (name::prev) (bindings,names))
+	| _ -> failwith "not possible" in
+      List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
+	(loop [] (all_bindings,List.map (function (x,_) -> x) all_bindings)))
 
 let drop_spaces s =
   let len = String.length s in

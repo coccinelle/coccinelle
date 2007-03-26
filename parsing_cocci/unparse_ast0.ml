@@ -22,7 +22,10 @@ let mcodekind brackets fn x = function
       let (lb,rb) =
 	if !quiet
 	then ("","")
-	else match brackets with Some x -> ("[","]^"^(string_of_int x)) | None -> ("","") in
+	else
+	  match brackets with
+	    Some x -> ("[","]^"^(string_of_int x))
+	  | None -> ("","") in
       let (plus_stream,_) = !plus_stream in
       if !quiet
       then fn x
@@ -51,10 +54,13 @@ let mcodekind brackets fn x = function
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams
 
-let mcode fn (x,_,info,mc) = mcodekind (Some info.Ast0.line_start)(*None*) fn x mc
+let mcode fn (x,_,info,mc) =
+  mcodekind (Some info.Ast0.line_start)(*None*) fn x mc
 
 let print_context (_,info,i,mc,ty,_) fn =
   mcodekind (Some info.Ast0.line_start) fn () !mc
+
+let print_meta (_,name) = print_string name
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -76,9 +82,9 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name,_) -> mcode print_string name
-      | Ast0.MetaFunc(name,_) -> mcode print_string name
-      | Ast0.MetaLocalFunc(name,_) -> mcode print_string name
+      | Ast0.MetaId(name,_) -> mcode print_meta name
+      | Ast0.MetaFunc(name,_) -> mcode print_meta name
+      | Ast0.MetaLocalFunc(name,_) -> mcode print_meta name
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.UniqueIdent(id) -> print_string "!"; ident id
       | Ast0.MultiIdent(id) -> print_string "\\+"; ident id)
@@ -133,22 +139,22 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaConst(name,None,_) -> mcode print_string name
+      | Ast0.MetaConst(name,None,_) -> mcode print_meta name
       | Ast0.MetaConst(name,Some ty,_) ->
-	  mcode print_string name; print_string "/* ";
+	  mcode print_meta name; print_string "/* ";
 	  Format.print_flush(); (* no idea why this is needed *)
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  Format.print_flush();
 	  print_string " */"
-      | Ast0.MetaErr(name,_) -> mcode print_string name
-      | Ast0.MetaExpr(name,None,_) -> mcode print_string name
+      | Ast0.MetaErr(name,_) -> mcode print_meta name
+      | Ast0.MetaExpr(name,None,_) -> mcode print_meta name
       | Ast0.MetaExpr(name,Some ty,_) ->
-	  mcode print_string name; print_string "/* ";
+	  mcode print_meta name; print_string "/* ";
 	  Format.print_flush();
 	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
 	  Format.print_flush();
 	  print_string " */"
-      | Ast0.MetaExprList(name,_) -> mcode print_string name
+      | Ast0.MetaExprList(name,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  print_string "\n("; force_newline();
@@ -219,7 +225,7 @@ and typeC t =
 	  dots force_newline declaration decls;
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
-      | Ast0.MetaType(name,_)-> mcode print_string name; print_string " "
+      | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(lp,types,mids,rp) ->
 	  List.iter (mcode print_string) mids;
 	  print_string "\n"; mcode print_string lp; force_newline();
@@ -330,8 +336,8 @@ and parameterTypeDef p =
 	Ast0.VoidParam(ty) -> typeC ty
       | Ast0.Param(ty,Some id) -> print_named_type ty id
       |	Ast0.Param(ty,None) -> typeC ty
-      | Ast0.MetaParam(name,_) -> mcode print_string name
-      | Ast0.MetaParamList(name,_) -> mcode print_string name
+      | Ast0.MetaParam(name,_) -> mcode print_meta name
+      | Ast0.MetaParamList(name,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.Pcircles(dots) -> mcode print_string dots
@@ -416,9 +422,9 @@ let rec statement arity s =
 	  print_string arity; mcode print_string ret; print_string " ";
 	  expression exp; mcode print_string sem
       | Ast0.MetaStmt(name,_) ->
-	  print_string arity; mcode print_string name
+	  print_string arity; mcode print_meta name
       | Ast0.MetaStmtList(name,_) ->
-	  print_string arity;  mcode print_string name
+	  print_string arity;  mcode print_meta name
       | Ast0.Disj(_,statement_dots_list,_,_) ->
 	  print_string arity;
 	  print_string "\n("; force_newline();
@@ -485,7 +491,7 @@ and define_body s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.DMetaId(name,_) -> mcode print_string name
+	Ast0.DMetaId(name,_) -> mcode print_meta name
       | Ast0.DStm(stmtdots) -> statement_dots stmtdots)
 
 (* --------------------------------------------------------------------- *)

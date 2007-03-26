@@ -34,20 +34,22 @@ and keep_binding = Type_cocci.keep_binding
 and arity = UNIQUE | OPT | MULTI | NONE
 
 and metavar =
-    MetaIdDecl of arity * string (* name *)
-  | MetaFreshIdDecl of arity * string (* name *)
-  | MetaTypeDecl of arity * string (* name *)
-  | MetaParamDecl of arity * string (* name *)
-  | MetaParamListDecl of arity * string (* name *)
-  | MetaConstDecl of arity * string (* name *)
-  | MetaErrDecl of arity * string (* name *)
-  | MetaExpDecl of arity * string (* name *)
-  | MetaExpListDecl of arity * string (* name *)
-  | MetaStmDecl of arity * string (* name *)
-  | MetaStmListDecl of arity * string (* name *)
-  | MetaFuncDecl of arity * string (* name *)
-  | MetaLocalFuncDecl of arity * string (* name *)
-  | MetaTextDecl of arity * string (* name *)
+    MetaIdDecl of arity * (string * string) (* name *)
+  | MetaFreshIdDecl of arity * (string * string) (* name *)
+  | MetaTypeDecl of arity * (string * string) (* name *)
+  | MetaParamDecl of arity * (string * string) (* name *)
+  | MetaParamListDecl of arity * (string * string) (* name *)
+  | MetaConstDecl of
+      arity * (string * string) (* name *) * Type_cocci.typeC list option
+  | MetaErrDecl of arity * (string * string) (* name *)
+  | MetaExpDecl of
+      arity * (string * string) (* name *) * Type_cocci.typeC list option
+  | MetaExpListDecl of arity * (string * string) (* name *)
+  | MetaStmDecl of arity * (string * string) (* name *)
+  | MetaStmListDecl of arity * (string * string) (* name *)
+  | MetaFuncDecl of arity * (string * string) (* name *)
+  | MetaLocalFuncDecl of arity * (string * string) (* name *)
+  | MetaTextDecl of arity * (string * string) (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -66,9 +68,9 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of string mcode * keep_binding * inherited
-  | MetaFunc      of string mcode * keep_binding * inherited
-  | MetaLocalFunc of string mcode * keep_binding * inherited
+  | MetaId        of (string * string) mcode * keep_binding * inherited
+  | MetaFunc      of (string * string) mcode * keep_binding * inherited
+  | MetaLocalFunc of (string * string) mcode * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -106,12 +108,12 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of string mcode * keep_binding *
+  | MetaConst      of (string * string) mcode * keep_binding *
 	              Type_cocci.typeC list option * inherited
-  | MetaErr        of string mcode * keep_binding * inherited
-  | MetaExpr       of string mcode * keep_binding *
+  | MetaErr        of (string * string) mcode * keep_binding * inherited
+  | MetaExpr       of (string * string) mcode * keep_binding *
 	              Type_cocci.typeC list option * inherited
-  | MetaExprList   of string mcode * keep_binding *
+  | MetaExprList   of (string * string) mcode * keep_binding *
 	              inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -175,7 +177,7 @@ and base_typeC =
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
 
-  | MetaType        of string mcode * keep_binding * inherited
+  | MetaType        of (string * string) mcode * keep_binding * inherited
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -204,7 +206,7 @@ and base_declaration =
   | DisjDecl   of declaration list
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
-  | MetaDecl of string mcode * keep_binding * inherited
+  | MetaDecl of (string * string) mcode * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -244,8 +246,8 @@ and base_parameterTypeDef =
     VoidParam     of fullType
   | Param         of fullType * ident option
 
-  | MetaParam     of string mcode * keep_binding * inherited
-  | MetaParamList of string mcode * keep_binding * inherited
+  | MetaParam     of (string * string) mcode * keep_binding * inherited
+  | MetaParamList of (string * string) mcode * keep_binding * inherited
 
   | PComma        of string mcode
 
@@ -303,9 +305,10 @@ and base_rule_elem =
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
 
-  | MetaRuleElem  of string mcode * keep_binding * inherited
-  | MetaStmt      of string mcode * keep_binding * metaStmtInfo * inherited
-  | MetaStmtList  of string mcode * keep_binding * inherited
+  | MetaRuleElem  of (string * string) mcode * keep_binding * inherited
+  | MetaStmt      of (string * string) mcode * keep_binding * metaStmtInfo *
+	             inherited
+  | MetaStmtList  of (string * string) mcode * keep_binding * inherited
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)
@@ -369,7 +372,7 @@ and base_case_line =
 and case_line = base_case_line wrap
 
 and base_define_body =
-    DMetaId of string mcode * keep_binding
+    DMetaId of (string * string) mcode * keep_binding
   | DStm of rule_elem
 
 and define_body = base_define_body wrap
@@ -431,6 +434,8 @@ val get_inherited : 'a wrap -> string list
 val get_saved : 'a wrap -> string list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
+
+val get_meta_name : metavar -> string * string
 
 val make_meta_rule_elem :
     string -> mcodekind -> (string list * string list * string list) ->

@@ -78,6 +78,8 @@ let print_mcodekind = function
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS -> print_string "PLUS"
 
+let print_meta (_,x) = print_string x
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -109,13 +111,13 @@ let nest_dots fn f d =
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_string name(*;
+  | Ast.MetaId(name,keep,inherited) -> mcode print_meta name(*;
       print_string "/* ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
       print_string " */"*)
-  | Ast.MetaFunc(name,_,_) -> mcode print_string name
-  | Ast.MetaLocalFunc(name,_,_) -> mcode print_string name
+  | Ast.MetaFunc(name,_,_) -> mcode print_meta name
+  | Ast.MetaLocalFunc(name,_,_) -> mcode print_meta name
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
   | Ast.MultiIdent(id) -> print_string "\\+"; ident id
@@ -184,26 +186,26 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaConst(name,_,None,_) -> mcode print_string name
+  | Ast.MetaConst(name,_,None,_) -> mcode print_meta name
   | Ast.MetaConst(name,_,Some ty,_) ->
-      mcode print_string name; 
+      mcode print_meta name; 
       print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
       print_string " */"
-  | Ast.MetaErr(name,_,_) -> mcode print_string name
-  | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_string name(*;
+  | Ast.MetaErr(name,_,_) -> mcode print_meta name
+  | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_meta name(*;
       print_string "/* no type */";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
       print_string " */"*)
   | Ast.MetaExpr(name,keep,Some ty,inherited) ->
-      mcode print_string name ;
+      mcode print_meta name ;
       print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;*)
       print_string " */"
-  | Ast.MetaExprList(name,_,_) -> mcode print_string name
+  | Ast.MetaExprList(name,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(expr_dots,Some whencode) ->
@@ -318,7 +320,7 @@ and typeC ty =
       mcode print_string rb
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.MetaType(name,_,_) ->
-      mcode print_string name; print_string " "
+      mcode print_meta name; print_string " "
 
 and baseType = function
     Ast.VoidType -> print_string "void "
@@ -389,7 +391,7 @@ and declaration d =
   | Ast.Ddots(dots,Some whencode) -> 
       mcode print_string dots; print_string "   when != "; declaration whencode
   | Ast.Ddots(dots,None) -> mcode print_string dots
-  | Ast.MetaDecl(name,_,_) -> mcode print_string name
+  | Ast.MetaDecl(name,_,_) -> mcode print_meta name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
   | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
@@ -437,8 +439,8 @@ and parameterTypeDef p =
     Ast.VoidParam(ty) -> fullType ty
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
-  | Ast.MetaParam(name,_,_) -> mcode print_string name
-  | Ast.MetaParamList(name,_,_) -> mcode print_string name
+  | Ast.MetaParam(name,_,_) -> mcode print_meta name
+  | Ast.MetaParamList(name,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.Pcircles(dots) -> mcode print_string dots
@@ -510,11 +512,11 @@ let rec rule_elem arity re =
       print_string arity; mcode print_string ret; print_string " ";
       expression exp; mcode print_string sem
   | Ast.MetaRuleElem(name,_,_) ->
-      print_string arity; mcode print_string name
+      print_string arity; mcode print_meta name
   | Ast.MetaStmt(name,_,_,_) ->
-      print_string arity; mcode print_string name
+      print_string arity; mcode print_meta name
   | Ast.MetaStmtList(name,_,_) ->
-      print_string arity;  mcode print_string name
+      print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
@@ -614,7 +616,7 @@ and case_line arity c =
 
 and define_body m =
   match Ast.unwrap m with
-    Ast.DMetaId(name,_) -> mcode print_string name
+    Ast.DMetaId(name,_) -> mcode print_meta name
   | Ast.DStm(re) -> rule_elem "" re
 
 

@@ -7,7 +7,7 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
 (* all fresh identifiers *)
-let fresh_table = (Hashtbl.create(50) : (string, unit) Hashtbl.t)
+let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
@@ -19,7 +19,7 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus ((name,_,info,_) : string Ast0.mcode) =
+let check_table table minus ((name,_,info,_) : (string * string) Ast0.mcode) =
   let rl = info.Ast0.line_start in
   if minus
   then
@@ -28,6 +28,7 @@ let check_table table minus ((name,_,info,_) : string Ast0.mcode) =
       Not_found ->
 	(try
 	  Hashtbl.find fresh_table name;
+	  let (_,name) = name in
 	  failwith
 	    (Printf.sprintf
 	       "%d: unexpected use of a fresh identifier %s" rl name)
@@ -303,32 +304,18 @@ let rule table minus rules = List.iter (top_level table minus) rules
 
 (* --------------------------------------------------------------------- *)
 
-let metavar2name = function
-    Ast.MetaIdDecl(arity,name) -> name
-  | Ast.MetaFreshIdDecl(arity,name) -> name
-  | Ast.MetaTypeDecl(arity,name) -> name
-  | Ast.MetaParamDecl(arity,name) -> name
-  | Ast.MetaParamListDecl(arity,name) -> name
-  | Ast.MetaConstDecl(arity,name) -> name
-  | Ast.MetaExpDecl(arity,name) -> name
-  | Ast.MetaErrDecl(arity,name) -> name
-  | Ast.MetaExpListDecl(arity,name) -> name
-  | Ast.MetaStmDecl(arity,name) -> name
-  | Ast.MetaStmListDecl(arity,name) -> name
-  | Ast.MetaFuncDecl(arity,name) -> name
-  | Ast.MetaLocalFuncDecl(arity,name) -> name
-  | Ast.MetaTextDecl(arity,name) -> name
-
 let make_table l =
-  let table = (Hashtbl.create(List.length l) : (string, bool ref) Hashtbl.t) in
+  let table =
+    (Hashtbl.create(List.length l) :
+       ((string * string), bool ref) Hashtbl.t) in
   List.iter
-    (function x -> Hashtbl.add table (metavar2name x) (ref false)) l;
+    (function x -> Hashtbl.add table (Ast.get_meta_name x) (ref false)) l;
   table
 
 let add_to_fresh_table l =
   List.iter
     (function x ->
-      let name = metavar2name x in Hashtbl.replace fresh_table name ())
+      let name = Ast.get_meta_name x in Hashtbl.replace fresh_table name ())
     l
 
 let check_all_marked err table after_err =
@@ -336,7 +323,9 @@ let check_all_marked err table after_err =
     (function name ->
       function (cell) ->
 	if not (!cell)
-	then warning (Printf.sprintf "%s %s not used %s" err name after_err))
+	then
+	  let (_,name) = name in
+	  warning (Printf.sprintf "%s %s not used %s" err name after_err))
     table
 
 let check_meta metavars minus plus =

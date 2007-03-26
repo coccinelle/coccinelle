@@ -67,7 +67,7 @@ and contains_only_minus =
     | _ -> k e in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
@@ -130,7 +130,8 @@ let add_braces orig_s =
 
 let is_dots x =
   match Ast0.unwrap x with
-    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
+    Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_)
+  | Ast0.Nest(_,_,_,_) -> true
   | _ -> false
 
 let all_minus s =

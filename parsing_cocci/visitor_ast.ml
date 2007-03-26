@@ -10,32 +10,29 @@ module Ast = Ast_cocci
 
 type 'a combiner =
     {combiner_ident : Ast.ident -> 'a;
-      combiner_expression : Ast.expression -> 'a;
-	combiner_fullType : Ast.fullType -> 'a;
-	  combiner_typeC : Ast.typeC -> 'a;
-	    combiner_declaration : Ast.declaration -> 'a;
-	      combiner_initialiser : Ast.initialiser -> 'a;
-	      combiner_parameter : Ast.parameterTypeDef -> 'a;
-	      combiner_parameter_list : Ast.parameter_list -> 'a;
-		combiner_rule_elem : Ast.rule_elem -> 'a;
-		  combiner_statement : Ast.statement -> 'a;
-		  combiner_case_line : Ast.case_line -> 'a;
-		    combiner_top_level : Ast.top_level -> 'a;
-		      combiner_anything : Ast.anything  -> 'a;
-			combiner_expression_dots :
-			  Ast.expression Ast.dots -> 'a;
-			    combiner_statement_dots :
-			      Ast.statement Ast.dots -> 'a;
-			    combiner_declaration_dots :
-			      Ast.declaration Ast.dots -> 'a}
+     combiner_expression : Ast.expression -> 'a;
+     combiner_fullType : Ast.fullType -> 'a;
+     combiner_typeC : Ast.typeC -> 'a;
+     combiner_declaration : Ast.declaration -> 'a;
+     combiner_initialiser : Ast.initialiser -> 'a;
+     combiner_parameter : Ast.parameterTypeDef -> 'a;
+     combiner_parameter_list : Ast.parameter_list -> 'a;
+     combiner_rule_elem : Ast.rule_elem -> 'a;
+     combiner_statement : Ast.statement -> 'a;
+     combiner_case_line : Ast.case_line -> 'a;
+     combiner_top_level : Ast.top_level -> 'a;
+     combiner_anything : Ast.anything  -> 'a;
+     combiner_expression_dots : Ast.expression Ast.dots -> 'a;
+     combiner_statement_dots : Ast.statement Ast.dots -> 'a;
+     combiner_declaration_dots : Ast.declaration Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 
 let combiner bind option_default 
-    string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn unary_mcodefn
-    binary_mcodefn
+    meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
+    unary_mcodefn binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
@@ -50,7 +47,8 @@ let combiner bind option_default
       Some x -> f x
     | None -> option_default in
 
-  let rec string_mcode x = string_mcodefn all_functions x
+  let rec meta_mcode x = meta_mcodefn all_functions x
+  and string_mcode x = string_mcodefn all_functions x
   and const_mcode x = const_mcodefn all_functions x
   and assign_mcode x = assign_mcodefn all_functions x
   and fix_mcode x = fix_mcodefn all_functions x
@@ -94,9 +92,9 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_) -> string_mcode name
-      | Ast.MetaFunc(name,_,_) -> string_mcode name
-      | Ast.MetaLocalFunc(name,_,_) -> string_mcode name
+      | Ast.MetaId(name,_,_) -> meta_mcode name
+      | Ast.MetaFunc(name,_,_) -> meta_mcode name
+      | Ast.MetaLocalFunc(name,_,_) -> meta_mcode name
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id
       | Ast.MultiIdent(id) -> ident id in
@@ -140,10 +138,10 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
       | Ast.TypeExp(ty) -> fullType ty
-      | Ast.MetaConst(name,_,_,_) -> string_mcode name
-      | Ast.MetaErr(name,_,_) -> string_mcode name
-      | Ast.MetaExpr(name,_,_,_) -> string_mcode name
-      | Ast.MetaExprList(name,_,_) -> string_mcode name
+      | Ast.MetaConst(name,_,_,_) -> meta_mcode name
+      | Ast.MetaErr(name,_,_) -> meta_mcode name
+      | Ast.MetaExpr(name,_,_,_) -> meta_mcode name
+      | Ast.MetaExprList(name,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
       | Ast.NestExpr(expr_dots,whencode) ->
@@ -203,7 +201,7 @@ let combiner bind option_default
 	    [fullType ty; string_mcode lb; declaration_dots decls;
 	      string_mcode rb]
       | Ast.TypeName(name) -> string_mcode name
-      | Ast.MetaType(name,_,_) -> string_mcode name in
+      | Ast.MetaType(name,_,_) -> meta_mcode name in
     tyfn all_functions k ty
 
   and named_type ty id =
@@ -237,7 +235,7 @@ let combiner bind option_default
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       |	Ast.Ddots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option declaration whencode)
-      | Ast.MetaDecl(name,_,_) -> string_mcode name
+      | Ast.MetaDecl(name,_,_) -> meta_mcode name
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl
       | Ast.MultiDecl(decl) -> declaration decl in
@@ -279,8 +277,8 @@ let combiner bind option_default
 	Ast.VoidParam(ty) -> fullType ty
       | Ast.Param(ty,Some id) -> named_type ty id
       | Ast.Param(ty,None) -> fullType ty
-      | Ast.MetaParam(name,_,_) -> string_mcode name
-      | Ast.MetaParamList(name,_,_) -> string_mcode name
+      | Ast.MetaParam(name,_,_) -> meta_mcode name
+      | Ast.MetaParamList(name,_,_) -> meta_mcode name
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
       | Ast.Pcircles(dots) -> string_mcode dots
@@ -325,9 +323,9 @@ let combiner bind option_default
       | Ast.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
-      | Ast.MetaStmt(name,_,_,_) -> string_mcode name
-      | Ast.MetaStmtList(name,_,_) -> string_mcode name
-      | Ast.MetaRuleElem(name,_,_) -> string_mcode name
+      | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
+      | Ast.MetaStmtList(name,_,_) -> meta_mcode name
+      | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
@@ -401,7 +399,7 @@ let combiner bind option_default
 
   and define_body b =
     match Ast.unwrap b with
-      Ast.DMetaId(name,_) -> string_mcode name
+      Ast.DMetaId(name,_) -> meta_mcode name
     | Ast.DStm(d) -> rule_elem d
 
   and top_level t =
@@ -494,8 +492,8 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 
 let rebuilder
-    string_mcode const_mcode assign_mcode fix_mcode unary_mcode binary_mcode
-    cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
+    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
@@ -544,11 +542,11 @@ let rebuilder
 	(match Ast.unwrap i with
 	  Ast.Id(name) -> Ast.Id(string_mcode name)
 	| Ast.MetaId(name,keep,inherited) ->
-	    Ast.MetaId(string_mcode name,keep,inherited)
+	    Ast.MetaId(meta_mcode name,keep,inherited)
 	| Ast.MetaFunc(name,keep,inherited) ->
-	    Ast.MetaFunc(string_mcode name,keep,inherited)
+	    Ast.MetaFunc(meta_mcode name,keep,inherited)
 	| Ast.MetaLocalFunc(name,keep,inherited) ->
-	    Ast.MetaLocalFunc(string_mcode name,keep,inherited)
+	    Ast.MetaLocalFunc(meta_mcode name,keep,inherited)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
 	| Ast.MultiIdent(id) -> Ast.MultiIdent(ident id)) in
@@ -593,13 +591,13 @@ let rebuilder
                            string_mcode rp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.MetaConst(name,keep,ty,inherited) ->
-	    Ast.MetaConst(string_mcode name,keep,ty,inherited)
+	    Ast.MetaConst(meta_mcode name,keep,ty,inherited)
 	| Ast.MetaErr(name,keep,inherited) ->
-	    Ast.MetaErr(string_mcode name,keep,inherited)
+	    Ast.MetaErr(meta_mcode name,keep,inherited)
 	| Ast.MetaExpr(name,keep,ty,inherited) ->
-	    Ast.MetaExpr(string_mcode name,keep,ty,inherited)
+	    Ast.MetaExpr(meta_mcode name,keep,ty,inherited)
 	| Ast.MetaExprList(name,keep,inherited) ->
-	    Ast.MetaExprList(string_mcode name,keep,inherited)
+	    Ast.MetaExprList(meta_mcode name,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
 	| Ast.NestExpr(expr_dots,whencode) ->
@@ -657,7 +655,7 @@ let rebuilder
 				string_mcode rb)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.MetaType(name,keep,inherited) ->
-	    Ast.MetaType(string_mcode name,keep,inherited)) in
+	    Ast.MetaType(meta_mcode name,keep,inherited)) in
     tyfn all_functions k ty
 	  
   and declaration d =
@@ -679,7 +677,7 @@ let rebuilder
 	| Ast.Ddots(dots,whencode) ->
 	    Ast.Ddots(string_mcode dots, get_option declaration whencode)
 	| Ast.MetaDecl(name,keep,inherited) ->
-	    Ast.MetaDecl(string_mcode name,keep,inherited)
+	    Ast.MetaDecl(meta_mcode name,keep,inherited)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
 	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
 	| Ast.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)) in
@@ -720,9 +718,9 @@ let rebuilder
 	  Ast.VoidParam(ty) -> Ast.VoidParam(fullType ty)
 	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
 	| Ast.MetaParam(name,keep,inherited) ->
-	    Ast.MetaParam(string_mcode name,keep,inherited)
+	    Ast.MetaParam(meta_mcode name,keep,inherited)
 	| Ast.MetaParamList(name,keep,inherited) ->
-	    Ast.MetaParamList(string_mcode name,keep,inherited)
+	    Ast.MetaParamList(meta_mcode name,keep,inherited)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
 	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)
@@ -774,11 +772,11 @@ let rebuilder
 	| Ast.ReturnExpr(ret,exp,sem) ->
 	    Ast.ReturnExpr(string_mcode ret, expression exp, string_mcode sem)
 	| Ast.MetaStmt(name,keep,seqible,inherited) ->
-	    Ast.MetaStmt(string_mcode name,keep,seqible,inherited)
+	    Ast.MetaStmt(meta_mcode name,keep,seqible,inherited)
 	| Ast.MetaStmtList(name,keep,inherited) ->
-	    Ast.MetaStmtList(string_mcode name,keep,inherited)
+	    Ast.MetaStmtList(meta_mcode name,keep,inherited)
 	| Ast.MetaRuleElem(name,keep,inherited) ->
-	    Ast.MetaRuleElem(string_mcode name,keep,inherited)
+	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
@@ -862,7 +860,7 @@ let rebuilder
   and define_body b =
     Ast.rewrap b
       (match Ast.unwrap b with
-	Ast.DMetaId(name,keep) -> Ast.DMetaId(string_mcode name,keep)
+	Ast.DMetaId(name,keep) -> Ast.DMetaId(meta_mcode name,keep)
       | Ast.DStm(d) -> Ast.DStm(rule_elem d))
 
   and top_level t =

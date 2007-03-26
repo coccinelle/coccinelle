@@ -52,9 +52,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of string mcode * pure
-  | MetaFunc      of string mcode * pure
-  | MetaLocalFunc of string mcode * pure
+  | MetaId        of (string * string) mcode * pure
+  | MetaFunc      of (string * string) mcode * pure
+  | MetaLocalFunc of (string * string) mcode * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -88,12 +88,12 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
-  | MetaConst      of string mcode *
+  | MetaConst      of (string * string) mcode *
 	              Type_cocci.typeC list option * pure
-  | MetaErr        of string mcode * pure
-  | MetaExpr       of string mcode *
+  | MetaErr        of (string * string) mcode * pure
+  | MetaExpr       of (string * string) mcode *
 	              Type_cocci.typeC list option * pure
-  | MetaExprList   of string mcode (* only in arg lists *) * pure
+  | MetaExprList   of (string * string) mcode (* only in arg lists *) * pure
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -128,7 +128,7 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of string mcode * pure
+  | MetaType        of (string * string) mcode * pure
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
@@ -192,8 +192,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
-  | MetaParam     of string mcode * pure
-  | MetaParamList of string mcode * pure
+  | MetaParam     of (string * string) mcode * pure
+  | MetaParamList of (string * string) mcode * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -239,8 +239,8 @@ and base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
-  | MetaStmt      of string mcode * pure
-  | MetaStmtList  of string mcode(*only in statement lists*) * pure
+  | MetaStmt      of (string * string) mcode * pure
+  | MetaStmtList  of (string * string) mcode(*only in statement lists*) * pure
   | Exp           of expression  (* only in dotted statement lists *)
   | Ty            of typeC (* only at top level *)
   | Disj          of string mcode * statement dots list *
@@ -284,7 +284,7 @@ and case_line = base_case_line wrap
 (* CPP code *)
 
 and base_define_body =
-    DMetaId of string mcode * pure
+    DMetaId of (string * string) mcode * pure
   | DStm of statement dots
 
 and define_body = base_define_body wrap
@@ -422,7 +422,8 @@ let rec ast0_type_to_type ty =
 	     "warning: struct/union with a metavariable name detected.\n";
 	   Printf.printf
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   Type_cocci.StructUnionName(structUnion su,true,unwrap_mcode tag))
+	   let (rule,tag) = unwrap_mcode tag in
+	   Type_cocci.StructUnionName(structUnion su,true,rule^tag))
       | _ -> failwith "unexpected struct/union type name")
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
@@ -478,8 +479,9 @@ let rec reverse_type ty =
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then
+	(* not right... *)
 	StructUnionName(reverse_structUnion su,
-			wrap(MetaId(ty_rewrap_mcode tag,Impure)))
+			wrap(MetaId(ty_rewrap_mcode ("",tag),Impure)))
       else
 	StructUnionName(reverse_structUnion su, wrap(Id(ty_rewrap_mcode tag)))
   | Type_cocci.TypeName(name) -> TypeName(ty_rewrap_mcode name)

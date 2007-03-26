@@ -2,10 +2,15 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
 
+let current_rule = ref ""
+
+type id = Id of string | Meta of (string * string)
+
 let rec get_name name =
   match Ast0.unwrap name with
-    Ast0.Id(nm) | Ast0.MetaId(nm,_) | Ast0.MetaFunc(nm,_)
-  | Ast0.MetaLocalFunc(nm,_) -> Ast0.unwrap_mcode nm
+    Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
+  | Ast0.MetaId(nm,_) | Ast0.MetaFunc(nm,_)
+  | Ast0.MetaLocalFunc(nm,_) -> Meta(Ast0.unwrap_mcode nm)
   | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) | Ast0.MultiIdent(id) ->
       get_name id
 
@@ -118,7 +123,7 @@ and strip =
 	 | e -> e)) in
 
   V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing
     donothing donothing
@@ -186,12 +191,13 @@ let rename_param param =
   match Ast0.unwrap param with
     Ast0.Param(ty,Some id) ->
       (match Ast0.unwrap id with
-	Ast0.MetaId((name,arity,info,mcodekind),pure) ->
-	  let new_name = name^"__"^(string_of_int !ct) in
+	Ast0.MetaId(((_,name),arity,info,mcodekind),pure) ->
+	  let new_name = (!current_rule,name^"__"^(string_of_int !ct)) in
 	  ct := !ct + 1;
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((new_name,arity,info,mcodekind),Ast0.Pure)) in
+	      (Ast0.MetaId((new_name,arity,info,mcodekind),
+			   Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,new_name)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))
@@ -290,4 +296,6 @@ let make_rules minus plus =
 (* --------------------------------------------------------------------- *)
 (* entry point *)
 
-let process minus plus = make_rules minus plus
+let process minus plus rule_name =
+  current_rule := rule_name;
+  make_rules minus plus
