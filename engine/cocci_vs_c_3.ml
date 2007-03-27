@@ -48,14 +48,14 @@ let mcodekind (s,i,mc) = mc
 
 
 let mcode_contain_plus = function
-  | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
-  | Ast_cocci.CONTEXT _ -> true
-  | Ast_cocci.MINUS (_,[]) -> false
-  | Ast_cocci.MINUS (_,x::xs) -> true
-  | Ast_cocci.PLUS -> raise Impossible
+  | A.CONTEXT (_,A.NOTHING) -> false
+  | A.CONTEXT _ -> true
+  | A.MINUS (_,[]) -> false
+  | A.MINUS (_,x::xs) -> true
+  | A.PLUS -> raise Impossible
 
 let mcode_simple_minus = function
-  | Ast_cocci.MINUS (_,[]) -> true
+  | A.MINUS (_,[]) -> true
   | _ -> false
 
 
@@ -69,18 +69,18 @@ let mcode_simple_minus = function
 
 let minusizer = 
   "fake", 
-  {Ast_cocci.line = 0; column =0},
-  (Ast_cocci.MINUS(Ast_cocci.DontCarePos, []))
+  {A.line = 0; column =0},
+  (A.MINUS(A.DontCarePos, []))
 
 let generalize_mcode ia = 
   let (s1, i, mck) = ia in
   (s1, i, 
   match mck with
-  | Ast_cocci.PLUS -> raise Impossible
-  | Ast_cocci.CONTEXT (Ast_cocci.NoPos,x) -> 
-      Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,x)
-  | Ast_cocci.MINUS   (Ast_cocci.NoPos,x) -> 
-      Ast_cocci.MINUS   (Ast_cocci.DontCarePos,x)
+  | A.PLUS -> raise Impossible
+  | A.CONTEXT (A.NoPos,x) -> 
+      A.CONTEXT (A.DontCarePos,x)
+  | A.MINUS   (A.NoPos,x) -> 
+      A.MINUS   (A.DontCarePos,x)
   | _ -> raise Impossible
   )
 
@@ -99,11 +99,11 @@ let equal_c_int s1 s2 =
 
 
 (*---------------------------------------------------------------------------*)
-(* Normally Ast_cocci should reuse some types of Ast_c, so those
+(* Normally A should reuse some types of Ast_c, so those
  * functions should not exist.
  * 
- * update: but now Ast_c depends on Ast_cocci, so can't make too
- * Ast_cocci depends on Ast_c, so have to stay with those equal_xxx
+ * update: but now Ast_c depends on A, so can't make too
+ * A depends on Ast_c, so have to stay with those equal_xxx
  * functions. 
  *)
 
@@ -343,21 +343,22 @@ module type PARAM =
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
 
-    val distrf_e : (string A.mcode, B.expression) matcher
+    val distrf_e : (A.meta_name A.mcode, B.expression) matcher
     val distrf_args : 
-      (string A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
-    val distrf_type : (string A.mcode, Ast_c.fullType) matcher
+      (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
+    val distrf_type : (A.meta_name A.mcode, Ast_c.fullType) matcher
     val distrf_params : 
-      (string A.mcode, (Ast_c.parameterType, Ast_c.il) either list) matcher
+      (A.meta_name A.mcode,
+       (Ast_c.parameterType, Ast_c.il) either list) matcher
     val distrf_param : 
-      (string A.mcode, Ast_c.parameterType) matcher
-    val distrf_node : (string A.mcode, Control_flow_c.node) matcher
+      (A.meta_name A.mcode, Ast_c.parameterType) matcher
+    val distrf_node : (A.meta_name A.mcode, Control_flow_c.node) matcher
 
     val distrf_struct_fields : 
-      (string A.mcode, B.field B.wrap list) matcher
+      (A.meta_name A.mcode, B.field B.wrap list) matcher
 
     val distrf_cst : 
-      (string A.mcode, (B.constant, string) either B.wrap) matcher
+      (A.meta_name A.mcode, (B.constant, string) either B.wrap) matcher
 
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
@@ -367,11 +368,11 @@ module type PARAM =
 
     val envf : 
       A.keep_binding -> A.inherited -> 
-      string * Ast_c.metavar_binding_kind ->
+      A.meta_name * Ast_c.metavar_binding_kind ->
       tin -> 
-      (string * Ast_c.metavar_binding_kind) tout
+      (A.meta_name * Ast_c.metavar_binding_kind) tout
 
-    val all_bound : string list -> (tin -> bool)
+    val all_bound : A.meta_name list -> (tin -> bool)
 
   end
 
@@ -408,6 +409,13 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
   | (None, None) -> return (None, None)
   | _ -> fail
 
+(* Dots are sometimes used as metavariables, since like metavariables they
+can match other things.  But they no longer have the same type.  Perhaps these
+functions could be avoided by introducing an appropriate level of polymorphism,
+but I don't know how to declare polymorphism across functors *)
+let dots2metavar (_,info,mcodekind) = (("","..."),info,mcodekind)
+let metavar2dots (_,info,mcodekind) = ("...",info,mcodekind)
+
 (*---------------------------------------------------------------------------*)
 (* toc: 
  *  - expression
@@ -421,7 +429,7 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
  *)
 
 (*---------------------------------------------------------------------------*)
-let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
+let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
@@ -484,9 +492,9 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
    * the Edots inside normal expression, not just in arg lists. in
    * 'x[...];' less: in if(<... x ... y ...>) *)
   | A.Edots (mcode, None), expb    -> 
-      X.distrf_e mcode expb >>= (fun mcode expb -> 
+      X.distrf_e (dots2metavar mcode) expb >>= (fun mcode expb -> 
         return (
-          A.Edots (mcode, None) +> A.rewrap ea , 
+          A.Edots (metavar2dots mcode, None) +> A.rewrap ea , 
           expb
         ))
 
@@ -823,7 +831,7 @@ let rec (expression: (Ast_cocci.expression, Ast_c.expression) matcher) =
 
 
 (* ------------------------------------------------------------------------- *)
-and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) = 
+and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida (idb, iib) -> 
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
@@ -900,7 +908,7 @@ and (ident: info_ident -> (Ast_cocci.ident, string * Ast_c.info) matcher) =
 
 (* ------------------------------------------------------------------------- *)
 and (arguments: sequence -> 
-      (Ast_cocci.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
+      (A.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) = 
  fun seqstyle eas ebs ->
   match seqstyle with
   | Unordered -> failwith "not handling ooo"
@@ -943,7 +951,7 @@ and arguments_bis = fun eas ebs ->
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
                   (* failwith "I have no token that I could accroche myself on" *)
-                else return (mcode, [])
+                else return (dots2metavar mcode, [])
               else 
                 (* subtil: we dont want the '...' to match until the
                  * comma. cf -test pb_params_iso. We would get at
@@ -954,10 +962,11 @@ and arguments_bis = fun eas ebs ->
                   (match Common.last startxs with
                   | Right _ -> fail
                   | Left _ -> 
-                      X.distrf_args mcode startxs
+                      X.distrf_args (dots2metavar mcode) startxs
                   )
               )
               >>= (fun mcode startxs ->
+		let mcode = metavar2dots mcode in
                 arguments_bis eas endxs >>= (fun eas endxs -> 
                   return (
                     (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
@@ -1046,7 +1055,7 @@ and argument arga argb =
 (* ------------------------------------------------------------------------- *)
 (* todo? facto code with argument ? *)
 and (parameters: sequence -> 
-      (Ast_cocci.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
+      (A.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
         matcher) = 
  fun seqstyle eas ebs ->
   match seqstyle with
@@ -1076,14 +1085,15 @@ and parameters_bis eas ebs =
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
                   (* failwith "I have no token that I could accroche myself on" *)
-                else return (mcode, [])
+                else return (dots2metavar mcode, [])
               else 
                 (match Common.last startxs with
                 | Right _ -> fail
                 | Left _ -> 
-                    X.distrf_params mcode startxs
+                    X.distrf_params (dots2metavar mcode) startxs
                 )
               ) >>= (fun mcode startxs ->
+		let mcode = metavar2dots mcode in
               parameters_bis eas endxs >>= (fun eas endxs -> 
                 return (
                   (A.Pdots (mcode) +> A.rewrap ea) ::eas,
@@ -1417,7 +1427,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 (* ------------------------------------------------------------------------- *)
 
-and (initialiser: (Ast_cocci.initialiser, Ast_c.initialiser) matcher)
+and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
   =  fun ia ib -> 
     X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
@@ -1580,10 +1590,11 @@ and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
                   (* failwith "I have no token that I could accroche myself on" *)
-                else return (mcode, [])
+                else return (dots2metavar mcode, [])
               else 
-                  X.distrf_struct_fields mcode startxs
+                  X.distrf_struct_fields (dots2metavar mcode) startxs
               ) >>= (fun mcode startxs ->
+		let mcode = metavar2dots mcode in
                 struct_fields eas endxs >>= (fun eas endxs -> 
                   return (
                     (A.Ddots (mcode, optwhen) +> A.rewrap ea) ::eas,
@@ -1647,7 +1658,7 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
 
 
 (* ------------------------------------------------------------------------- *)
-and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) = 
+and (fullType: (A.fullType, Ast_c.fullType) matcher) = 
  fun typa typb -> 
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
@@ -1707,13 +1718,13 @@ and (fullType: (Ast_cocci.fullType, Ast_c.fullType) matcher) =
  
 
 (*
- * Why not (Ast_cocci.typeC, Ast_c.typeC) matcher ?
+ * Why not (A.typeC, Ast_c.typeC) matcher ?
  * because when there is MetaType, we want that T record the whole type, 
  * including the qualifier, and so this type (and the new_il function in
  * preceding function).
 *)
 
-and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) = 
+and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) = 
   fun ta tb -> 
   X.all_bound (A.get_inherited ta) >&&> 
   match A.unwrap ta, tb with
@@ -1738,7 +1749,7 @@ and (fullTypebis: (Ast_cocci.typeC, Ast_c.fullType) matcher) =
       )
 
 
-and (typeC: (Ast_cocci.typeC, Ast_c.typeC) matcher) = 
+and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
   fun ta tb -> 
   match A.unwrap ta, tb with
   | A.BaseType (basea, signaopt), (B.BaseType baseb, ii) -> 
@@ -2243,7 +2254,7 @@ and (define_params: (string A.mcode list, (string B.wrap list)) matcher) =
 (* Entry points *)
 (*****************************************************************************)
 
-let (rule_elem_node: (Ast_cocci.rule_elem, Control_flow_c.node) matcher) = 
+let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) = 
  fun re node -> 
   let rewrap x = 
     x >>= (fun a b -> return (A.rewrap re a, F.rewrap node b))

@@ -295,7 +295,7 @@ module XMATCH = struct
    * a big deal. If it's a problem, could fix free_vars to distinguish
    * between + variables and the other ones. *)
 
-  let (all_bound : string list -> tin -> bool) = fun l binding ->
+  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l binding ->
     l +> List.for_all (fun inhvar -> 
       match Common.optionise (fun () -> binding +> List.assoc inhvar) with
       | Some _ -> true

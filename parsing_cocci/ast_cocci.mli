@@ -3,9 +3,10 @@
 
 type info = { line : int; column : int }
 type line = int
+type meta_name = string * string
 type 'a wrap =
-    ('a * line * string list (*free vars*) * string list (*fresh vars*) *
-       string list (*inherited vars*) * string list (*witness vars*) *
+    ('a * line * meta_name list (*free vars*) * meta_name list (*fresh vars*) *
+       meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
        dots_bef_aft)
 
 and 'a befaft =
@@ -428,19 +429,21 @@ val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
-val get_fvs : 'a wrap -> string list
-val get_fresh : 'a wrap -> string list
-val get_inherited : 'a wrap -> string list
-val get_saved : 'a wrap -> string list
+val get_fvs : 'a wrap -> meta_name list
+val get_fresh : 'a wrap -> meta_name list
+val get_inherited : 'a wrap -> meta_name list
+val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 
 val get_meta_name : metavar -> string * string
 
 val make_meta_rule_elem :
-    string -> mcodekind -> (string list * string list * string list) ->
+    string -> mcodekind ->
+      (meta_name list * meta_name list * meta_name list) ->
       rule_elem
 
 val make_meta_decl :
-    string -> mcodekind -> (string list * string list * string list) ->
+    string -> mcodekind ->
+      (meta_name list * meta_name list * meta_name list) ->
       declaration

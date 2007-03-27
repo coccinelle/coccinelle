@@ -374,7 +374,7 @@ and program = programElement list
  * we need to decorate each token with some cocci code AND the environment 
  * for this cocci code.
  *)
-and metavars_binding = (string, metavar_binding_kind) assoc
+and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   and metavar_binding_kind = 
   | MetaIdVal        of string
   | MetaFuncVal      of string

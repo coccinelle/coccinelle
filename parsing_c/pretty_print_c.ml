@@ -876,7 +876,7 @@ and pp_binding subst =
   begin
     pp "[";
     Common.print_between (fun () -> pp ";"; Format.print_cut() ) 
-      (fun (s, kind) -> pp s; pp " --> "; pp_binding_kind kind)
+      (fun ((_,s), kind) -> pp s; pp " --> "; pp_binding_kind kind)
       subst;
     pp "]";
   end

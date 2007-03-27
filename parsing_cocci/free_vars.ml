@@ -11,8 +11,6 @@ let rec nub = function
   | (x::xs) when (List.mem x xs) -> nub xs
   | (x::xs) -> x::(nub xs)
 
-let get_meta_name x = let (rule_name,name) = Ast.get_meta_name x in name
-
 (* Collect all variable references in a minirule.  For a disj, we collect
 the maximum number (2 is enough) of references in any branch. *)
 
@@ -294,7 +292,7 @@ let collect_all_multirefs minirules =
 (witness binding) *)
 
 let classify_variables metavars minirules used_after =
-  let metavars = List.map get_meta_name metavars in
+  let metavars = List.map Ast.get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in
   
@@ -331,9 +329,9 @@ let classify_variables metavars minirules used_after =
     | TC.Pointer(ty) -> TC.Pointer(type_infos ty)
     | TC.FunctionPointer(ty) -> TC.FunctionPointer(type_infos ty)
     | TC.Array(ty) -> TC.Array(type_infos ty)
-    | TC.MetaType(((_,name) as nm),_,_) ->
+    | TC.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify (name,(),()) in
-	Type_cocci.MetaType(nm,unitary,inherited)
+	Type_cocci.MetaType(name,unitary,inherited)
     | ty -> ty in
 
   let expression r k e =
@@ -414,7 +412,7 @@ let astfvs metavars bound =
     List.fold_left
       (function prev ->
 	function
-	    Ast.MetaFreshIdDecl(_,_) as x -> (get_meta_name x)::prev
+	    Ast.MetaFreshIdDecl(_,_) as x -> (Ast.get_meta_name x)::prev
 	  | _ -> prev)
       [] metavars in
 
@@ -470,9 +468,9 @@ let collect_astfvs rules =
       [] -> []
     | (metavars,minirules)::rules ->
 	let bound =
-	  Common.minus_set bound (List.map get_meta_name metavars) in
+	  Common.minus_set bound (List.map Ast.get_meta_name metavars) in
 	(List.map (astfvs metavars bound).V.rebuilder_top_level minirules)::
-	(loop ((List.map get_meta_name metavars)@bound) rules) in
+	(loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
 (* ---------------------------------------------------------------- *)
@@ -492,7 +490,7 @@ let collect_top_level_used_after metavar_rule_list =
     List.fold_right
       (function (metavar_list,rule) ->
 	function (used_after,used_after_lists) ->
-	  let locally_defined = List.map get_meta_name metavar_list in
+	  let locally_defined = List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
 	    List.filter (function x -> not(List.mem x locally_defined))
 	      used_after in
@@ -510,10 +508,10 @@ let collect_top_level_used_after metavar_rule_list =
   | _ ->
       failwith
 	(Printf.sprintf "collect_top_level_used_after: unbound variables %s"
-	   (String.concat " " used_after))
+	   (String.concat " " (List.map (function (_,x) -> x) used_after)))
 	
 let collect_local_used_after metavars minirules used_after =
-  let locally_defined = List.map get_meta_name metavars in
+  let locally_defined = List.map Ast.get_meta_name metavars in
   let rec loop defined = function
       [] -> (used_after,[])
     | minirule::rest ->
