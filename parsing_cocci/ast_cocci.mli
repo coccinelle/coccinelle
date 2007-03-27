@@ -360,7 +360,7 @@ and ('a,'b) whencode =
   | WhenAlways of 'b
 
 and dots_whencode =
-    WParen of rule_elem * string (*pren_var*)
+    WParen of rule_elem * meta_name (*pren_var*)
   | Other of statement
   | Other_dots of statement dots
 
@@ -436,7 +436,7 @@ val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 
-val get_meta_name : metavar -> string * string
+val get_meta_name : metavar -> meta_name
 
 val make_meta_rule_elem :
     string -> mcodekind ->

@@ -365,7 +365,7 @@ and ('a,'b) whencode =
 
 (* only used with asttoctl *)
 and dots_whencode =
-    WParen of rule_elem * string (*pren_var*)
+    WParen of rule_elem * meta_name (*pren_var*)
   | Other of statement
   | Other_dots of statement dots
 

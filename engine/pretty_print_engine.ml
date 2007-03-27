@@ -5,8 +5,10 @@ open Lib_engine
 
 let pp = Common.pp 
 
+let pp_meta (_,x) = pp x
+
 let pp_binding_kind2 = function
-  | ParenVal s -> pp ("pv(" ^ s ^ ")")
+  | ParenVal s -> pp "pv("; pp_meta s; pp ")"
   | NormalMetaVal x -> Pretty_print_c.pp_binding_kind x
   | LabelVal xs -> 
       begin
@@ -17,7 +19,7 @@ let pp_binding_kind2 = function
       end
 
   
-let pp_predicate = function 
+let rec pp_predicate = function 
   | TrueBranch -> pp "TrueBranch"
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
@@ -25,10 +27,10 @@ let pp_predicate = function
   | Return -> pp "Return"
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
-  | Paren s -> pp "Paren("; pp s; pp ")"
+  | Paren s -> pp "Paren("; pp_meta s; pp ")"
   | Match re -> Pretty_print_cocci.print_rule_elem re
-  | Label s -> pp "Label("; pp s; pp ")"
-  | PrefixLabel s -> pp "PrefixLabel("; pp s; pp ")"
+  | Label s -> pp "Label("; pp_meta s; pp ")"
+  | PrefixLabel s -> pp "PrefixLabel("; pp_meta s; pp ")"
 
 and pp_binding2 subst = 
   begin

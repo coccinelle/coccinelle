@@ -1592,6 +1592,7 @@ and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
                   (* failwith "I have no token that I could accroche myself on" *)
                 else return (dots2metavar mcode, [])
               else 
+
                   X.distrf_struct_fields (dots2metavar mcode) startxs
               ) >>= (fun mcode startxs ->
 		let mcode = metavar2dots mcode in

@@ -9,8 +9,9 @@ module CTL = Ast_ctl
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
-type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
-type formula = (cocci_predicate,string, Wrapper_ctl.info) Ast_ctl.generic_ctl
+type cocci_predicate = Lib_engine.predicate * Ast.meta_name Ast_ctl.modif
+type formula =
+    (cocci_predicate,Ast.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
 
 let union = Common.union_set
 let intersect l1 l2 = List.filter (function x -> List.mem x l2) l1
@@ -20,10 +21,12 @@ let foldl1 f xs = List.fold_left f (List.hd xs) (List.tl xs)
 let foldr1 f xs =
   let xs = List.rev xs in List.fold_left f (List.hd xs) (List.tl xs)
 
-let used_after = ref ([] : string list)
+let used_after = ref ([] : Ast.meta_name list)
 let guard_to_strict guard = if guard then CTL.NONSTRICT else CTL.STRICT
 
-let saved = ref ([] : string list)
+let saved = ref ([] : Ast.meta_name list)
+
+let string2var x = ("",x)
 
 (* --------------------------------------------------------------------- *)
 (* predicates matching various nodes in the graph *)
@@ -200,7 +203,7 @@ let elim_opt =
       | Ast.STARS(l) -> failwith "elimopt: not supported") in
   
   V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -228,7 +231,7 @@ let a2n = function After x -> Guard x | a -> a
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let fresh_var _ = "_v"
+let fresh_var _ = string2var "_v"
 
 let fresh_metavar _ = "_S"
 
@@ -286,7 +289,7 @@ let contains_modif =
     | _ -> res in
   let recursor =
     V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -348,18 +351,18 @@ let count_nested_braces s =
   let donothing r k e = k e in
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
-  "p"^res
+  string2var ("p"^res)
 
 let labelctr = ref 0
 let get_label_ctr _ =
   let cur = !labelctr in
   labelctr := cur + 1;
-  Printf.sprintf "l%d" cur
+  string2var (Printf.sprintf "l%d" cur)
 
 (* --------------------------------------------------------------------- *)
 (* annotate dots with before and after neighbors *)
@@ -757,7 +760,7 @@ let sequencibility body n label_pred process_bef_aft = function
 
 let svar_context_with_add_after s n label quantified d ast
     seqible after process_bef_aft guard fvinfo =
-  let label_var = (*fresh_label_var*) "_lab" in
+  let label_var = (*fresh_label_var*) string2var "_lab" in
   let label_pred =
     wrapPred n (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
@@ -808,7 +811,7 @@ let svar_context_with_add_after s n label quantified d ast
 
 let svar_minus_or_no_add_after s n label quantified d ast
     seqible after process_bef_aft guard fvinfo =
-  let label_var = (*fresh_label_var*) "_lab" in
+  let label_var = (*fresh_label_var*) string2var "_lab" in
   let label_pred =
     wrapPred n (Lib_engine.Label(label_var),CTL.Control) in
   let prelabel_pred =
