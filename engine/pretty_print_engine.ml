@@ -46,8 +46,10 @@ and pp_binding2_ctlsubst subst =
     pp "[";
     Common.print_between (fun () -> pp ";"; Format.print_cut(); ) 
       (function
-       | Ast_ctl.Subst (s, kind) ->    pp s; pp " --> ";  pp_binding_kind2 kind;
-       | Ast_ctl.NegSubst (s, kind) -> pp s; pp " -/-> "; pp_binding_kind2 kind;
+          Ast_ctl.Subst (s, kind) ->
+	    pp_meta s; pp " --> ";  pp_binding_kind2 kind;
+       | Ast_ctl.NegSubst (s, kind) ->
+	   pp_meta s; pp " -/-> "; pp_binding_kind2 kind;
       )
       subst;
     pp "]";
@@ -81,7 +83,7 @@ let pp_ctlcocci show_plus inline_let_def ctl =
       Pretty_print_cocci.print_minus_flag := false;
     end;
     Common.pp_do_in_box (fun () -> 
-      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp s)) 
+      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp_meta s)) 
         inline_let_def ctl;
       );
   end

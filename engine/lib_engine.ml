@@ -3,7 +3,7 @@ open Ograph_extended
 (*****************************************************************************)
 (* the different ctl formula related types *)
 (*****************************************************************************)
-type mvar = string
+type mvar = Ast_cocci.meta_name
 
 type predicate =
     TrueBranch | FalseBranch
@@ -17,7 +17,7 @@ type predicate =
   | Label of Ast_cocci.meta_name
   | PrefixLabel of Ast_cocci.meta_name
 
-type ctlcocci = (predicate, string) Wrapper_ctl.wrapped_ctl
+type ctlcocci = (predicate, Ast_cocci.meta_name) Wrapper_ctl.wrapped_ctl
 
 
 (*****************************************************************************)

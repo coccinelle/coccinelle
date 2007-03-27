@@ -133,9 +133,9 @@ let rec ctl2c ct pp pv x =
       let (res2,ct) = existswrap (ct+3) pp pv f2 in
       ("\\E"^diamond^"["^res1^" \\U "^res2^"]\n",ct)
   | CTL.Ref(v) ->
-      let (v,len) = texify(pv v) in (v,len+ct)
+      let (v,len) = texify(pv (make_var v)) in (v,len+ct)
   | CTL.Let(v,f1,f2) ->
-      let (v,len) = texify (pv v) in
+      let (v,len) = texify (pv (make_var v)) in
       let (res1,ct) = letwrap (ct+len+5) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = letwrap (ct+3) pp pv f2 in
@@ -145,7 +145,7 @@ let rec ctl2c ct pp pv x =
 	 v res1 res2, ct)
   | CTL.LetR(d,v,f1,f2) ->
       let (diamond,ct) = print_diamond (ct+2) d in
-      let (v,len) = texify (pv v) in
+      let (v,len) = texify (pv (make_var v)) in
       let (res1,ct) = letwrap (ct+len+5) pp pv f1 in
       let (res1,ct) = check_ct ct res1 in
       let (res2,ct) = letwrap (ct+3) pp pv f2 in
@@ -158,6 +158,8 @@ let rec ctl2c ct pp pv x =
       in (res^"^u",ct+1)
   | CTL.Dots _ -> failwith "unexpected Dots"
   | CTL.PDots _ -> failwith "unexpected PDots"
+
+and make_var x = ("",x)
 
 and wrap ct pp pv x =
   match CTL.unwrap x with
@@ -225,6 +227,8 @@ let make_postlude o = Printf.fprintf o "%s\n" postlude
 
 (* ----------------------------------------------------------------------- *)
 
+let meta2c (_,s) = s
+
 let pred2c = function
     Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
   | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
@@ -233,9 +237,14 @@ let pred2c = function
   | Lib_engine.Return -> ("\\msf{Return}",6)
   | Lib_engine.Exit -> ("\\msf{Exit}",4)
   | Lib_engine.ErrorExit -> ("\\msf{ErrorExit}",9)
-  | Lib_engine.Paren(s) -> ("\\msf{Paren}("^s^")",7+(String.length s))
-  | Lib_engine.Label(s) -> ("\\msf{Label}("^s^")",7+(String.length s))
+  | Lib_engine.Paren(s) ->
+      let s = meta2c s in
+      ("\\msf{Paren}("^s^")",7+(String.length s))
+  | Lib_engine.Label(s) ->
+      let s = meta2c s in
+      ("\\msf{Label}("^s^")",7+(String.length s))
   | Lib_engine.PrefixLabel(s) ->
+      let s = meta2c s in
       ("\\msf{PrefixLabel}("^s^")",13+(String.length s))
   | Lib_engine.Match(re) ->
       let s = Pretty_print_cocci.rule_elem_to_string re in
@@ -249,7 +258,7 @@ let totex out_file rules ctls =
     (function ast_list ->
       function ctls ->
 	let (ctls,_) = List.split ctls in
-	ctltotex ast_list pred2c (function x -> x) ctls o)
+	ctltotex ast_list pred2c (function (_,x) -> x) ctls o)
     rules ctls;
   make_postlude o;
   close_out o

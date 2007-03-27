@@ -14,7 +14,7 @@ val model_for_ctl :
   Control_flow_c.cflow -> Lib_engine.metavars_binding -> Lib_engine.model
 
 
-type pred = Lib_engine.predicate * string Ast_ctl.modif
+type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 
 val mysat :
   Lib_engine.model -> 

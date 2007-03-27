@@ -57,9 +57,11 @@ let (labels_for_ctl:
       (* todo? put part of this code in pattern ? *)
       (match p, Control_flow_c.unwrap node with
       | Lib_engine.Paren s,  (Control_flow_c.SeqStart (_, bracelevel, _)) -> 
-          [(nodei, (p,[(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))]))]
+	  let make_var x = ("",i_to_s x) in
+          [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
       | Lib_engine.Paren s,  (Control_flow_c.SeqEnd (bracelevel, _)) -> 
-          [(nodei, (p,[(s --> (Lib_engine.ParenVal (i_to_s bracelevel)))]))]
+	  let make_var x = ("",i_to_s x) in
+          [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
       | Lib_engine.Paren _, _ -> []
 
       | Lib_engine.Label s, _ -> 
@@ -291,12 +293,12 @@ module PRED =
 module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
-    type mvar = string
+    type mvar = Ast_cocci.meta_name
     let eq_mvar x x' = x = x'
     let eq_val v v' = v = v'
     let merge_val v v' = v	       
 
-    let print_mvar s = Format.print_string s
+    let print_mvar (_,s) = Format.print_string s
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
   end
 
@@ -317,7 +319,7 @@ module WRAPPED_ENGINE = Wrapper_ctl.CTL_ENGINE_BIS (ENV) (CFG) (PRED)
 
 let print_bench _ = WRAPPED_ENGINE.print_bench()
 
-type pred = Lib_engine.predicate * string Ast_ctl.modif
+type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 
 (*****************************************************************************)
 let metavars_binding2_to_binding   binding2 = 

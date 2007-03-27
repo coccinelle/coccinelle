@@ -22,7 +22,7 @@ LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma \
 
 
 # The Caml compilers.
-CAMLC =ocamlc$(OPTBIN) -g -dtypes
+CAMLC =ocamlc$(OPTBIN) -g -dtypes 
 CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc -v

@@ -30,8 +30,8 @@ let process_tree inherited_env l =
   let new_triples = List.rev new_triples in
   let fresh_env =
     List.map
-      (function fresh ->
-	Printf.printf "name for %s: " fresh; (* not debugging code!!! *)
+      (function ((r,n) as fresh) ->
+	Printf.printf "%s: name for %s: " r n; (* not debugging code!!! *)
 	flush stdout;
 	(fresh,string2val(read_line())))
       all_fresh in
@@ -53,7 +53,7 @@ let process_tree inherited_env l =
 (* needs to follow the same strategy as the function with the same name in
 wrapper_ctl.ml *)
 let collect_used_after used_after envs =
-  let print_var var = Printf.printf "%s" var in
+  let print_var (_,var) = Printf.printf "%s" var in
   List.concat
     (List.map
        (function used_after_var ->

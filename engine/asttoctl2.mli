@@ -1,8 +1,8 @@
-type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
+type cocci_predicate = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 type formula =
-    (cocci_predicate,string, Wrapper_ctl.info) Ast_ctl.generic_ctl
+    (cocci_predicate,Ast_cocci.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
 
-val asttoctl : Ast_cocci.rule -> string list list -> formula list
+val asttoctl : Ast_cocci.rule -> Ast_cocci.meta_name list list -> formula list
 
 val pp_cocci_predicate : cocci_predicate -> unit
 

@@ -41,7 +41,7 @@ let label_pred_maker line = function
 
 let predmaker guard pred line = function
     None -> wrap line (CTL.Pred pred)
-  | Some label_var ->
+  | Some (label_var : Ast.meta_name) ->
       let label_pred = (Lib_engine.PrefixLabel(label_var),CTL.Control) in
       wrap line
 	(CTL.And(guard_to_strict guard,
@@ -1704,4 +1704,3 @@ let pp_cocci_predicate (pred,modif) =
 
 let cocci_predicate_to_string (pred,modif) =
   Pretty_print_engine.predicate_to_string pred
-
