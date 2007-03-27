@@ -343,22 +343,22 @@ module type PARAM =
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
 
-    val distrf_e : (A.meta_name A.mcode, B.expression) matcher
+    val distrf_e : ('meta_name A.mcode, B.expression) matcher
     val distrf_args : 
-      (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
-    val distrf_type : (A.meta_name A.mcode, Ast_c.fullType) matcher
+      ('meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
+    val distrf_type : ('meta_name A.mcode, Ast_c.fullType) matcher
     val distrf_params : 
-      (A.meta_name A.mcode,
+      ('meta_name A.mcode,
        (Ast_c.parameterType, Ast_c.il) either list) matcher
     val distrf_param : 
-      (A.meta_name A.mcode, Ast_c.parameterType) matcher
-    val distrf_node : (A.meta_name A.mcode, Control_flow_c.node) matcher
+      ('meta_name A.mcode, Ast_c.parameterType) matcher
+    val distrf_node : ('meta_name A.mcode, Control_flow_c.node) matcher
 
     val distrf_struct_fields : 
-      (A.meta_name A.mcode, B.field B.wrap list) matcher
+      ('meta_name A.mcode, B.field B.wrap list) matcher
 
     val distrf_cst : 
-      (A.meta_name A.mcode, (B.constant, string) either B.wrap) matcher
+      ('meta_name A.mcode, (B.constant, string) either B.wrap) matcher
 
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
