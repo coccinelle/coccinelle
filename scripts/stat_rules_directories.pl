@@ -18,9 +18,9 @@ foreach my $dir (@subdirs) {
       `cd $dir; ~/mobile/coccinelle/scripts/stat_directory.pl | grep M:`;
     chomp $s;
     $i++;
-    print "M$i.$s\n";
-    #$s =~ s/C:/C$i./;
-    #print "$s\n";
+    #print "M$i.$s\n";
+    $s =~ s/C:/C$i./;
+    print "$s\n";
   }
 
 }

@@ -328,12 +328,17 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
+  let meta_name_to_str (s1, s2) = 
+    s1 ^ "." ^ s2
+
   let envf keep _inherited (s, value) = fun env -> 
     if keep = Type_cocci.Saved
     then (
       try Some (s, List.assoc s env)
       with Not_found -> 
-        pr2 ("Don't find value for metavariable " ^ s ^ " in the environment");
+        pr2 ("Don't find value for metavariable " ^ 
+             meta_name_to_str s ^ 
+             " in the environment");
         None
     )
     else 
@@ -343,7 +348,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 
   (* ------------------------------------------------------------------------*)
-  let (all_bound : string list -> tin -> bool) = fun l binding ->
+  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l binding ->
     true (* in transform we don't care ? *)
 
 end
