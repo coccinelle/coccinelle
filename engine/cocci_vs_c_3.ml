@@ -12,8 +12,6 @@ module F = Control_flow_c
 let pr2_memo = 
   Common.once (fun s -> pr2 ("(MEMO)" ^ s))
   
-     
-  
 
 (*****************************************************************************)
 (* Helpers *)
@@ -87,7 +85,6 @@ let generalize_mcode ia =
 
 
 (*---------------------------------------------------------------------------*)
-
 
 (* 0x0 is equivalent to 0,  value format isomorphism *)
 let equal_c_int s1 s2 = 
@@ -316,6 +313,12 @@ module type PARAM =
   sig 
     type tin
     type 'x tout
+
+
+    type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
+
+    val mode : mode
+
     val (>>=): 
       (tin -> ('a * 'b) tout)  -> 
       ('a -> 'b -> (tin -> ('c * 'd) tout)) -> 
@@ -336,9 +339,7 @@ module type PARAM =
 
     val (>&&>) : (tin -> bool) -> (tin -> 'x tout) -> (tin -> 'x tout)
 
-    type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
-    val mode : mode
 
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher

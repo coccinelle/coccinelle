@@ -21,9 +21,17 @@ open Ast_c
  * I don't want in the end to print it.
  *)
 
+let mcode_contain_plus = function
+  | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
+  | Ast_cocci.CONTEXT _ -> true
+  | Ast_cocci.MINUS (_,[]) -> false
+  | Ast_cocci.MINUS (_,x::xs) -> true
+  | Ast_cocci.PLUS -> raise Impossible
+
+
 let contain_plus info = 
   let mck = Ast_c.mcode_of_info info in
-  Cocci_vs_c_3.mcode_contain_plus mck
+  mcode_contain_plus mck
 
 let lastfix program = 
   let bigf = { 

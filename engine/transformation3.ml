@@ -358,16 +358,11 @@ end
 (*****************************************************************************)
 module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
 
-let transform_declaration a b binding = 
-  match TRANS.declaration a b binding with
-  | None -> raise Impossible
-  | Some (_sp, b') -> b'
 
 let transform_re_node a b binding = 
   match TRANS.rule_elem_node a b binding with 
   | None -> raise Impossible
   | Some (_sp, b') -> b'
-
 
 
 let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
@@ -408,4 +403,12 @@ let transform a b =
 
 
 
+
+
+(*
+let transform_declaration a b binding = 
+  match TRANS.declaration a b binding with
+  | None -> raise Impossible
+  | Some (_sp, b') -> b'
+*)
 
