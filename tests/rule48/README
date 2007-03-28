@@ -1,3 +1,0 @@
-Linux 2.5.26
-Old files call acpi_evaluate, new ones call acpi_evaluate_object.
-drivers/acpi directory
