@@ -94,7 +94,7 @@ let declarer_names =
      (string, D.line_type * int * int * int -> token) Hashtbl.t)
 
 let rule_names =
-  (Hashtbl.create(100) : (string, Ast_cocci.metavar list ref) Hashtbl.t)
+  (Hashtbl.create(100) : (string, unit) Hashtbl.t)
 
 let check_var s linetype =
   let fail _ =
@@ -105,7 +105,7 @@ let check_var s linetype =
 	(try (Hashtbl.find declarer_names s) linetype
 	with Not_found -> TIdent (s,linetype))) in
   if !Data.in_meta
-  then (try TRuleName s with Not_found -> fail())
+  then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
 
 let id_tokens lexbuf =
@@ -134,9 +134,9 @@ let id_tokens lexbuf =
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
 
-  | "Name:" when in_meta && not in_iso -> check_context_linetype s; TRuleNamer
-  | "Iso:" when in_meta && not in_iso ->  check_context_linetype s; TIsoFile
-  | "Extends:" when in_meta && not in_iso -> check_context_linetype s; TExtends
+  | "Name" when in_meta && not in_iso -> check_context_linetype s; TRuleNamer
+  | "Iso" when in_meta && not in_iso ->  check_context_linetype s; TIsoFile
+  | "Extends" when in_meta && not in_iso -> check_context_linetype s; TExtends
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -251,25 +251,11 @@ let init _ =
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
       Hashtbl.replace declarer_names name fn);
+  Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
-    (function parents ->
-      Hashtbl.clear metavariables;
-      let all_bindings =
-	List.concat
-	  (List.map
-	     (function parent ->
-	       try Hashtbl.find all_metavariables parent
-	       with Not_found -> failwith ("unknown parent: "^parent))
-	     parents) in
-      let rec loop prev = function
-	  ([],[]) -> []
-	| ((name,binding)::bindings,_::names) ->
-	    if List.mem name names or List.mem name prev
-	    then loop (name::prev) (bindings,names)
-	    else (name,binding)::(loop (name::prev) (bindings,names))
-	| _ -> failwith "not possible" in
+    (function parent ->
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
-	(loop [] (all_bindings,List.map (function (x,_) -> x) all_bindings)))
+	(Hashtbl.find all_metavariables parent))
 
 let drop_spaces s =
   let len = String.length s in
@@ -386,22 +372,22 @@ rule token = parse
 	     TCPar0 (get_current_line_type lexbuf))}
   | "\\)" { start_line true; TCPar0 (get_current_line_type lexbuf) }
 
-  | '[' { start_line true; TOCro (get_current_line_type lexbuf) }
-  | ']' { start_line true; TCCro (get_current_line_type lexbuf) }
+  | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
+  | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
   | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
   | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
 
-  | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf) }
-  | '.'            { start_line true; TDot (get_current_line_type lexbuf) }
-  | ','            { start_line true; TComma (get_current_line_type lexbuf) }
+  | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
+  | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
+  | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
   | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
 
   
-  | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }     
+  | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }
   | '/'            { start_line true;  TDiv (get_current_line_type lexbuf) } 
   | '%'            { start_line true;  TMod (get_current_line_type lexbuf) } 
   
-  | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }    
+  | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }
   | "--"           { start_line true;  TDec (get_current_line_type lexbuf) }
   
   | "="            { start_line true; TEq (get_current_line_type lexbuf) } 
@@ -422,7 +408,7 @@ rule token = parse
 
   | ":"            { start_line true; TDotDot (get_current_line_type lexbuf) }
   
-  | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }   
+  | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }
   | "!="           { start_line true; TNotEq  (get_current_line_type lexbuf) } 
   | ">="           { start_line true; TInfEq  (get_current_line_type lexbuf) } 
   | "<="           { start_line true; TSupEq  (get_current_line_type lexbuf) } 

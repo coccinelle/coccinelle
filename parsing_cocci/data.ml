@@ -63,7 +63,10 @@ let add_type_name: (string -> unit) ref =
 let add_declarer_name: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_decl") 
 
-let install_bindings: (string list -> unit) ref =
+let init_rule: (unit -> unit) ref =
+  ref (fun _ -> failwith "uninitialized install_bindings") 
+
+let install_bindings: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized install_bindings") 
 
 (* ---------------------------------------------------------------------- *)

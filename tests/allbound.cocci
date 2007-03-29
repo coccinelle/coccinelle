@@ -1,4 +1,5 @@
 @@
+Name: rule1;
 expression E, E1;
 @@
 
@@ -9,6 +10,7 @@ bar(E)
 )
 
 @@
+Extends: rule1;
 @@
 
 - xxx(E1)

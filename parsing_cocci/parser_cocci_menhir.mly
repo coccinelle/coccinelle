@@ -350,16 +350,15 @@ pure:
 
 rule_name:
   /* empty */                      { make_name() }
-| TRuleNamer nm=pure_ident TPtVirg { id2name nm }
+| TRuleNamer TDotDot nm=pure_ident TPtVirg { id2name nm }
 
 extends:
   /* empty */                                     { () }
-| TExtends parents=comma_list(pure_ident) TPtVirg
-    { let parents = List.map id2name parents in
-      !Data.install_bindings parents }
+| TExtends TDotDot parent=pure_ident TPtVirg
+    { !Data.install_bindings (id2name parent) }
 
 choose_iso:
-  TIsoFile TString TPtVirg     { id2name $2 }
+  TIsoFile TDotDot TString TPtVirg     { id2name $3 }
 
 metadec:
   ar=arity ispure=pure

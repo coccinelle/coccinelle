@@ -33,10 +33,10 @@ let token2c (tok,_) =
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
-  | PC.TRuleNamer -> "Name:"
+  | PC.TRuleNamer -> "Name"
   | PC.TRuleName str -> str
-  | PC.TIsoFile -> "Iso:"
-  | PC.TExtends -> "Extends:"
+  | PC.TIsoFile -> "Iso"
+  | PC.TExtends -> "Extends"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -654,13 +654,14 @@ let parse file default_isos =
 	  tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
 	let tokens = detect_types true tokens in
-	(*
+
 	Printf.printf "meta tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	Printf.printf "\n\n";
-	*)
+
 	let (rule_name,iso,metavars) = parse_one PC.meta_main file tokens in
 	Hashtbl.add Data.all_metadecls rule_name metavars;
+	Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	  (Hashtbl.fold (fun key v rest -> (key,v)::rest)
 	     Lexer_cocci.metavariables []);

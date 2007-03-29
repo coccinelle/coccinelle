@@ -42,7 +42,9 @@ val add_type_name: (string -> unit) ref
 
 val add_declarer_name: (string -> unit) ref
 
-val install_bindings: (string list -> unit) ref
+val init_rule: (unit -> unit) ref
+
+val install_bindings: (string -> unit) ref
 
 (* ---------------------------------------------------------------------- *)
 
