@@ -255,10 +255,10 @@ let show_or_not_diff a b  =
 (*****************************************************************************)
 (* Some  helpers functions *)
 (*****************************************************************************)
-
 let worth_trying cfile tokens = 
   if not !Flag.windows && not (null tokens)
   then
+   (* could also modify the code in get_constants.ml *)
     let tokens = tokens +> List.map (fun s -> 
       match () with 
       | _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" -> 
