@@ -1,4 +1,5 @@
 @@
+rule1:
 identifier x;
 //local function func;
 identifier func;
@@ -10,6 +11,7 @@ identifier func;
 
 @@
 // type T;
+identifier rule1.func;
 @@
 
 - int func(int i) {

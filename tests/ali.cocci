@@ -1,5 +1,5 @@
 @@
-Name: rule1;
+rule1:
 fresh identifier agp_driver_struct;
 function fn;
 identifier ent,dev;
@@ -28,7 +28,7 @@ fn (struct pci_dev *dev, struct pci_device_id *ent) {
   }
 
 @@
-Extends: rule1;
+rule2 extends rule1:
 @@
 -   agp_unregister_driver();
 +   agp_unregister_driver(&agp_driver_struct);

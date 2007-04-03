@@ -1,4 +1,5 @@
 @@
+rule1:
 identifier init;
 identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
 @@
@@ -10,6 +11,7 @@ identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
   }
 
 @@
+rule2 extends rule1:
 @@
 
   init (...) {
@@ -20,6 +22,7 @@ identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
   }
 
 @@
+rule3 extends rule1:
 identifier exit;
 @@
 

@@ -1,4 +1,5 @@
 @@
+rule1:
 expression E;
 @@
 
@@ -7,6 +8,7 @@ expression E;
 + bar();
 
 @@
+rule2 extends rule1:
 @@
 
 - goo(E);

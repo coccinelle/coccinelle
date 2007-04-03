@@ -22,8 +22,6 @@ identifier fld;
 @@
 expression x;
 expression E;
-expression f;
-identifier fld;
 @@
 
 (
@@ -43,7 +41,6 @@ identifier fld;
 @@
 expression x;
 expression E;
-expression f;
 identifier fld;
 @@
 

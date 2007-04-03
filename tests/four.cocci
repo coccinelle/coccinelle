@@ -10,14 +10,14 @@ expression rule1.E;
 
 - g(E);
 
-@ rule3 @
+@ rule2 @
 expression E;
 @@
 
 - h(E);
 
 @@
-expression rule3.E;
+expression rule2.E;
 @@
 
 - i(E);

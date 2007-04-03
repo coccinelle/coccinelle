@@ -1,4 +1,5 @@
 @@
+rule1:
 expression X;
 @@
 
@@ -9,6 +10,7 @@ expression X;
 )
 
 @@
+expression rule1.X;
 @@
 
 - h(X);
@@ -16,6 +18,7 @@ expression X;
 
 
 @@
+expression rule1.X;
 @@
 - h2(X);
 + hh22(X);

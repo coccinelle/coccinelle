@@ -1,4 +1,5 @@
 @@
+rule1:
 identifier proc_info_func, proc_info_func2;
 @@
 
@@ -28,6 +29,7 @@ struct SHT usb_stor_host_template = {
 //};
 
 @@
+rule2 extends rule1:
 @@
 
 proc_info_func(...) {
@@ -36,6 +38,7 @@ proc_info_func(...) {
 }
 
 @@
+rule3 extends rule1:
 @@
 
 proc_info_func2(...) {

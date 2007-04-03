@@ -1,4 +1,5 @@
 @@
+rule1:
 expression req8_reg_arg2;
 expression E;
 identifier fn1;
@@ -23,6 +24,7 @@ fn2(...) {
 }
 
 @@
+rule2 extends rule1:
 statement S;
 @@
 

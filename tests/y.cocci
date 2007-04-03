@@ -1,4 +1,5 @@
 @@
+rule1:
 expression E;
 @@
 
@@ -12,6 +13,7 @@ expression F;
   xxx(F);
 
 @@
+expression rule1.E;
 @@
 
   foo(E);

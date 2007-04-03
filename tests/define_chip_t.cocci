@@ -1,5 +1,5 @@
 @@
-Name: rule1;
+rule1:
 type T;
 @@
 

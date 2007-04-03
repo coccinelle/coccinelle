@@ -1,4 +1,5 @@
 @@
+rule1:
 identifier I;
 identifier f;
 @@
@@ -8,6 +9,7 @@ struct block_device_operations I = {
 };
 
 @@
+identifier rule1.f;
 expression A, B, C;
 identifier inodename, filename, cmd, arg;
 @@

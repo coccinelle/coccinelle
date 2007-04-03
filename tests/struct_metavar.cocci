@@ -1,4 +1,5 @@
 @@
+rule1:
 type T;
 identifier X, Y;
 @@
@@ -12,13 +13,15 @@ T {
 };
 
 @@
-T *a;
+rule1.T *a;
+identifier rule1.X;
 @@
 
 - f(a->X);
 
 @@
-T *a;
+rule1.T *a;
+identifier rule1.Y;
 @@
 
 - f(a->Y);

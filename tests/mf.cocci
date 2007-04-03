@@ -1,4 +1,5 @@
 @@
+rule1:
 identifier fn1, fn2;
 expression A, B;
 @@
@@ -14,6 +15,7 @@ fn2(...) {
 }
 
 @@
+rule2 extends rule1:
 @@
 
 fn1(...) {
