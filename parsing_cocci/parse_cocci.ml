@@ -674,6 +674,7 @@ let parse file default_isos =
     (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
       let rec loop starts_with_name =
 	(!Data.init_rule)();
+	Data.in_meta := true;
 	let (rule_name,iso) =
 	  if starts_with_name
 	  then
@@ -684,7 +685,6 @@ let parse file default_isos =
 	  else (make_name(),None) in
 	Ast0_cocci.rule_name := rule_name;
 	(* get metavariable declarations *)
-	Data.in_meta := true;
 	let (_,tokens) = tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
 	let tokens = detect_types true tokens in
