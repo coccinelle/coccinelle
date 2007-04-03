@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 expression E, E1;
 @@
 
@@ -9,8 +8,7 @@ foo(E1)
 bar(E)
 )
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 @@
 
 - xxx(E1)

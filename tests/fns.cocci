@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 expression req8_reg_arg2;
 expression E;
 identifier fn1;
@@ -23,8 +22,7 @@ fn2(...) {
 -   request_region(req8_reg_arg1, req8_reg_arg2, req8_reg_arg3);
 }
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 statement S;
 @@
 

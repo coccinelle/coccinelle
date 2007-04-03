@@ -1,12 +1,10 @@
-@@
-rule1:
+@ rule1 @
 expression E;
 @@
 
 h(E);
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 @@
 
 - i(E);

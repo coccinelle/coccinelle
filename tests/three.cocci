@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 identifier init;
 identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
 @@
@@ -10,8 +9,7 @@ identifier XXX_attach, XXX_detach; // pad: XXX_detach useful ?
     ...
   }
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 @@
 
   init (...) {
@@ -21,8 +19,7 @@ rule2 extends rule1:
 +   return pcmcia_register_driver(&ZZZ_driver);
   }
 
-@@
-rule3 extends rule1:
+@ rule3 extends rule1 @
 identifier exit;
 @@
 

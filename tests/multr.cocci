@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 expression x;
 @@
 

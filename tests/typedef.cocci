@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 type T;
 identifier link;
 @@
@@ -11,8 +10,7 @@ T {
   ...
 }
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 T *s;
 identifier fld;
 @@

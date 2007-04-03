@@ -1,4 +1,4 @@
-@@ 
+@@
 identifier x;
 @@
 

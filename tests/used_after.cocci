@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 identifier x;
 //local function func;
 identifier func;

@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 identifier fn1, fn2;
 expression A, B;
 @@
@@ -14,8 +13,7 @@ fn2(...) {
 + xxx(A);
 }
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 @@
 
 fn1(...) {

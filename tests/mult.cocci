@@ -1,5 +1,4 @@
-@@
-rule1:
+@ rule1 @
 expression E;
 @@
 
@@ -7,8 +6,7 @@ expression E;
 - yyy();
 + bar();
 
-@@
-rule2 extends rule1:
+@ rule2 extends rule1 @
 @@
 
 - goo(E);
