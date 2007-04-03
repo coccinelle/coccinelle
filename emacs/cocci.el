@@ -104,6 +104,7 @@
       
 (setq cocci-font-lock-keywords 
  `(
+
    ; blink possible errors, when - or + is not in first column
    ("^[ \t]+[-+]" . 'cocci-problem-face)
 
@@ -118,6 +119,9 @@
 
    ; comments
    ("//.*" . 'font-lock-comment-face)
+
+   ; strings
+   ("\"[^\"]*\"" . 'font-lock-string-face)
 
    ; rule header
    ("@@" . 'cocci-special-face)
@@ -177,7 +181,6 @@
         (list "(" ")" ";" "," "{" "}" "\\[" "\\]")) .  'cocci-punctuation-face)
    ; . ->   * + etc
 
-   ("\"[^\"]*\"" . 'font-lock-string-face)
 
    ; c keywords
    (,(concat "\\b\\(" (regexp-opt cocci-c-keywords-list) "\\)\\b") . 
@@ -209,7 +212,12 @@
   "Syntax table used while in cocci mode.")
 (unless cocci-mode-syntax-table
   (setq cocci-mode-syntax-table (make-syntax-table))
-  (modify-syntax-entry ?\_ "w"  cocci-mode-syntax-table) ; _ is part of a word.
+
+  ; _ is part of a word.
+  (modify-syntax-entry ?\_ "w"  cocci-mode-syntax-table) 
+
+  ; change mode for ", bad interaction with font-lock
+  (modify-syntax-entry ?\" "w"  cocci-mode-syntax-table) 
   )
 
 
