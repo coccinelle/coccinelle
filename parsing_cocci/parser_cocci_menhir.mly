@@ -154,72 +154,62 @@ let check_meta tok =
   match tok with
     Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaIdDecl(_,_) -> tok
+	Ast.MetaIdDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaFreshIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaFreshIdDecl(_,_) -> tok
+	Ast.MetaFreshIdDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaTypeDecl(_,_) -> tok
+	Ast.MetaTypeDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaParamDecl(_,_) -> tok
+	Ast.MetaParamDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaParamListDecl(_,_) -> tok
+	Ast.MetaParamListDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaErrDecl(_,_) -> tok
+	Ast.MetaErrDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when ty = ty1 -> tok
+	Ast.MetaExpDecl(_,_,ty1) when ty = ty1 -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaExpListDecl(_,_) -> tok
+	Ast.MetaExpListDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaStmDecl(_,_) -> tok
+	Ast.MetaStmDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaStmListDecl(_,_) -> tok
+	Ast.MetaStmListDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaFuncDecl(_,_) -> tok
+	Ast.MetaFuncDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaLocalFuncDecl(_,_) -> tok
+	Ast.MetaLocalFuncDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when ty = ty1 -> tok
+	Ast.MetaConstDecl(_,_,ty1) when ty = ty1 -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaTextDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaTextDecl(_,_) -> tok
+	Ast.MetaTextDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | _ -> failwith ("arity not allowed on imported declaration")
-	  
-(* used locally, because we can't access the real tables in the lexer *)
-let metatypes = (Hashtbl.create(10) : (string,string*string) Hashtbl.t)
-
-let name_ctr = ref 0
-let make_name _ =
-  let c = !name_ctr in
-  name_ctr := !name_ctr + 1;
-  Printf.sprintf "__rule__%d" c
 %}
-
 
 %token EOF
 
@@ -227,7 +217,7 @@ let make_name _ =
 %token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer
-%token TRuleNamer TIsoFile TExtends
+%token TUsing TExtends
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -241,7 +231,7 @@ let make_name _ =
 %token <Data.clt> TBreak TContinue
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId
+%token <string * Data.clt> TIdent TMetaTypeId TTypeId TDeclarerId
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaErr
 %token <(string * string) * Ast0_cocci.pure * Data.clt>
@@ -252,7 +242,7 @@ let make_name _ =
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaExpList TMetaText
 %token <(string * string) * Ast0_cocci.pure * Type_cocci.typeC list option *
           Data.clt> TMetaExp TMetaConst
-%token TArobArob
+%token TArob TArobArob
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis
 %token <Data.clt> TWhen TLineEnd
@@ -319,8 +309,11 @@ let make_name _ =
 %start plus_main 
 %type <Ast0_cocci.rule> plus_main
 
+%start rule_name
+%type <string * string option> rule_name
+
 %start meta_main
-%type <string * string option * Ast_cocci.metavar list> meta_main
+%type <Ast_cocci.metavar list> meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -330,11 +323,11 @@ let make_name _ =
 
 %%
 
-reinit: { Hashtbl.clear metatypes }
-minus_main: minus_body EOF { $1 } | minus_body TArobArob { $1 }
-plus_main: plus_body EOF { $1 } | plus_body TArobArob { $1 }
-meta_main: n=rule_name extends i=ioption(choose_iso) m=metadec* TArobArob
-  { (n,i,List.concat(List.map (function m -> m n) m)) }
+reinit: { }
+minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m } | m=minus_body TArob { m }
+plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p } | p=plus_body TArob { p }
+meta_main: m=metadec* TArobArob
+  { List.concat(List.map (function m -> m (!Ast0.rule_name)) m) }
 iso_meta_main: metadec* TArobArob
   { List.concat(List.map (function m -> m "") $1) }
 
@@ -349,16 +342,20 @@ pure:
 | /* empty */ { Ast0.Impure }
 
 rule_name:
-  /* empty */                      { make_name() }
-| TRuleNamer TDotDot nm=pure_ident TPtVirg { id2name nm }
+  nm=pure_ident extends i=ioption(choose_iso) TArob
+    { let n = id2name nm in
+    (try let _ =  Hashtbl.find Data.all_metadecls n in
+    failwith "repeated rule name"
+    with Not_found -> ());
+    (n,i) }
 
 extends:
   /* empty */                                     { () }
-| TExtends TDotDot parent=pure_ident TPtVirg
-    { !Data.install_bindings (id2name parent) }
+| TExtends parent=TRuleName
+    { !Data.install_bindings (parent) }
 
 choose_iso:
-  TIsoFile TDotDot TString TPtVirg     { id2name $3 }
+  TUsing TString     { id2name $2 }
 
 metadec:
   ar=arity ispure=pure
@@ -369,8 +366,8 @@ metadec:
 	   (function (rule,nm) ->
 	     let (rule,checker) =
 	       match rule with
-		 None -> ((current_rule,nm),function x -> x)
-	       | Some rule -> ((rule,nm),check_meta) in
+		 None -> ((current_rule,nm),function x -> [x])
+	       | Some rule -> ((rule,nm),function x -> check_meta x; []) in
 	     kindfn ar rule ispure checker)
 	   ids) }
 
@@ -378,72 +375,70 @@ metadec:
   TIdentifier
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
-      !Data.add_id_meta name pure; [tok]) }
+      !Data.add_id_meta name pure; tok) }
 | TFresh TIdentifier
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaFreshIdDecl(arity,name)) in
-      !Data.add_id_meta name pure; [tok]) }
+      !Data.add_id_meta name pure; tok) }
 | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      let (_,nm) = name in
-      Hashtbl.add metatypes nm name;
-      !Data.add_type_meta name pure; [tok]) } 
+      !Data.add_type_meta name pure; tok) } 
 | TParameter
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
-      !Data.add_param_meta name pure; [tok]) }
+      !Data.add_param_meta name pure; tok) }
 | TParameter Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamListDecl(arity,name)) in
-      !Data.add_paramlist_meta name pure;[tok])} 
+      !Data.add_paramlist_meta name pure; tok)} 
 | TError
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
-      !Data.add_err_meta name pure; [tok]) }
+      !Data.add_err_meta name pure; tok) }
 | TExpression
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name pure; [tok]) }
+      !Data.add_exp_meta None name pure; tok) }
 | TExpression Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpListDecl(arity,name)) in
-      !Data.add_explist_meta name pure; [tok]) }
+      !Data.add_explist_meta name pure; tok) }
 | TExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta ->
       let ty = Some [ty_pointerify Type_cocci.Unknown m] in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name pure; [tok]) }
+      !Data.add_exp_meta ty name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
-      !Data.add_stm_meta name pure; [tok]) }
+      !Data.add_stm_meta name pure; tok) }
 | TStatement Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
-      !Data.add_stmlist_meta name pure; [tok]) }
+      !Data.add_stmlist_meta name pure; tok) }
 | TFunction
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
-      !Data.add_func_meta name pure; [tok]) }
+      !Data.add_func_meta name pure; tok) }
 | TLocal TFunction
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
       !Data.add_local_func_meta name pure;
-      [tok]) }
+      tok) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (fun arity name pure check_meta ->
       let ty = Some vl in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name pure; [tok]) }
+      !Data.add_exp_meta ty name pure; tok) }
 | TConstant ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
-      !Data.add_const_meta ty name pure; [tok]) }
+      !Data.add_const_meta ty name pure; tok) }
 | TText
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTextDecl(arity,name)) in
-      !Data.add_text_meta name pure; [tok]) }
+      !Data.add_text_meta name pure; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
@@ -492,14 +487,22 @@ generic_ctype:
 	 { let (nm,pure,clt) = s in
 	 let ty = Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) in
 	 Ast0.wrap(Ast0.StructUnionDef(ty,clt2mcode "{" l,d,clt2mcode "}" r)) }
-     | p=TTypeId
-	 { try let nm = Hashtbl.find metatypes (id2name p) in
+     | r=TRuleName TDot p=TIdent
+	 { let nm = (r,id2name p) in
+	 (* this is only possible when we are in a metavar decl.  Otherwise,
+	    it will be represented already as a MetaType *)
+	 let _ = check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
+	 Ast0.wrap(Ast0.MetaType(clt2mcode nm (id2clt p),
+				 Ast0.Impure (*will be ignored*))) }
+     | p=TMetaTypeId
+	 { let nm = (!Ast0.rule_name,id2name p) in
 	 (* this is only possible when we are in a metavar decl which
 	    has previously declared the type metavariable.  Otherwise,
 	    it will be represented already as a MetaType *)
 	 Ast0.wrap(Ast0.MetaType(clt2mcode nm (id2clt p),
-				 Ast0.Impure (*will be ignored*)))
-	 with Not_found -> Ast0.wrap(Ast0.TypeName(id2mcode p)) }
+				 Ast0.Impure (*will be ignored*))) }
+     | p=TTypeId
+	 { Ast0.wrap(Ast0.TypeName(id2mcode p)) }
      | p=TMetaType
 	 { let (nm,pure,clt) = p in
 	 Ast0.wrap(Ast0.MetaType(clt2mcode nm clt,pure)) }
@@ -548,7 +551,7 @@ ctype:
 
 fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul) { pointerify ty m }
-     | t=Tvoid m=nonempty_list(TMul)
+     | t=Tvoid m=list(TMul)
          { pointerify
 	     (Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t, None)))
 	     m }

@@ -371,3 +371,6 @@ exception TyConv
 
 val lub_pure : pure -> pure -> pure
 
+(* --------------------------------------------------------------------- *)
+
+val rule_name : string ref (* for the convenience of the parser *)

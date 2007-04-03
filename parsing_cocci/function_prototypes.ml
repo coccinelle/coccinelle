@@ -2,8 +2,6 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
 
-let current_rule = ref ""
-
 type id = Id of string | Meta of (string * string)
 
 let rec get_name name =
@@ -192,7 +190,7 @@ let rename_param param =
     Ast0.Param(ty,Some id) ->
       (match Ast0.unwrap id with
 	Ast0.MetaId(((_,name),arity,info,mcodekind),pure) ->
-	  let new_name = (!current_rule,name^"__"^(string_of_int !ct)) in
+	  let new_name = ("__no_name__",name^"__"^(string_of_int !ct)) in
 	  ct := !ct + 1;
 	  let new_id =
 	    Ast0.rewrap id
@@ -296,6 +294,5 @@ let make_rules minus plus =
 (* --------------------------------------------------------------------- *)
 (* entry point *)
 
-let process minus plus rule_name =
-  current_rule := rule_name;
+let process minus plus =
   make_rules minus plus

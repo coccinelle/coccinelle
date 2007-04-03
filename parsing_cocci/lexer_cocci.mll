@@ -15,8 +15,6 @@ let logical_line = ref 0
 type line_type = MINUS | OPTMINUS | UNIQUEMINUS | PLUS | CONTEXT | UNIQUE | OPT
 *)
 
-let in_atat = ref false
-
 let current_line_type = ref (D.CONTEXT,!line,!logical_line)
 let get_current_line_type lexbuf =
   let (c,l,ll) = !current_line_type in (c,l,ll,Lexing.lexeme_start lexbuf)
@@ -134,9 +132,8 @@ let id_tokens lexbuf =
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
 
-  | "Name" when in_meta && not in_iso -> check_context_linetype s; TRuleNamer
-  | "Iso" when in_meta && not in_iso ->  check_context_linetype s; TIsoFile
-  | "Extends" when in_meta && not in_iso -> check_context_linetype s; TExtends
+  | "using" when in_meta && not in_iso ->  check_context_linetype s; TUsing
+  | "extends" when in_meta && not in_iso -> check_context_linetype s; TExtends
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -186,10 +183,11 @@ let mkassign op lexbuf =
 let init _ =
   line := 1;
   logical_line := 0;
-  in_atat := false;
   Hashtbl.clear all_metavariables;
+  Hashtbl.clear Data.all_metadecls;
   Hashtbl.clear metavariables;
   Hashtbl.clear type_names;
+  Hashtbl.clear rule_names;
   let get_name (_,x) = x in
   Data.add_id_meta :=
     (function name -> function pure ->
@@ -297,7 +295,8 @@ rule token = parse
 
   | "//" [^ '\n']* { start_line false; token lexbuf }
 
-  | "@@" { start_line true; in_atat := not(!in_atat); TArobArob }
+  | "@@" { start_line true; TArobArob }
+  | "@"  { start_line true; TArob }
 
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
@@ -335,22 +334,22 @@ rule token = parse
           else (add_current_line_type D.MINUS; token lexbuf) }
   | "+" { if !current_line_started
 	  then (start_line true; TPlus (get_current_line_type lexbuf))
-          else if !in_atat
+          else if !Data.in_meta
 	  then TPlus0
           else (add_current_line_type D.PLUS; token lexbuf) }
   | "\\+" { if !current_line_started
 	  then failwith "Illegal use of \\+"
-          else if !in_atat
+          else if !Data.in_meta
 	  then TPlus0
           else (add_current_line_type D.MULTI; token lexbuf) }
   | "?" { if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
-          else if !in_atat
+          else if !Data.in_meta
 	  then TWhy0
           else (add_current_line_type D.OPT; token lexbuf) }
   | "!" { if !current_line_started
 	  then (start_line true; TBang (get_current_line_type lexbuf))
-          else if !in_atat
+          else if !Data.in_meta
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
   | "(" { if !current_line_started

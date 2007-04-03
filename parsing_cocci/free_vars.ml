@@ -292,6 +292,9 @@ let collect_all_multirefs minirules =
 (witness binding) *)
 
 let classify_variables metavars minirules used_after =
+  Printf.printf "used after: %s\n"
+    (String.concat " "
+       (List.map (function (r,n) -> r^"."^n) used_after));
   let metavars = List.map Ast.get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in
@@ -485,7 +488,7 @@ are inherited, ie used but not defined.  These are accumulated back to
 their point of definition. *)
 
 
-let collect_top_level_used_after metavar_rule_list =
+let collect_top_level_used_after name_metavar_rule_list =
   let (used_after,used_after_lists) =
     List.fold_right
       (function (metavar_list,rule) ->
@@ -502,7 +505,7 @@ let collect_top_level_used_after metavar_rule_list =
 	      free_vars in
 	  (Common.union_set inherited continue_propagation,
 	   used_after::used_after_lists))
-      metavar_rule_list ([],[]) in
+      name_metavar_rule_list ([],[]) in
   match used_after with
     [] -> used_after_lists
   | _ ->
@@ -530,20 +533,20 @@ let collect_local_used_after metavars minirules used_after =
   let (_,used_after_lists) = loop [] minirules in
   used_after_lists
 
-let collect_used_after metavar_rule_list =
-  let used_after_lists = collect_top_level_used_after metavar_rule_list in
+let collect_used_after name_metavar_rule_list =
+  let used_after_lists = collect_top_level_used_after name_metavar_rule_list in
   List.map2
     (function (metavars,minirules) ->
       function used_after ->
 	collect_local_used_after metavars minirules used_after)
-    metavar_rule_list used_after_lists
+    name_metavar_rule_list used_after_lists
 
 (* ---------------------------------------------------------------- *)
 
 (* entry point *)
 
 let free_vars rules =
-  let (metavars,_) = List.split rules in
+  let metavars = List.map (function (mv,_) -> mv) rules in
   let used_after_lists = collect_used_after rules in
   let new_rules =
     List.map2

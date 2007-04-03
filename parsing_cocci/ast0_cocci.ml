@@ -526,3 +526,7 @@ let lub_pure x y =
     (Impure,_) | (_,Impure) -> Impure
   | (Pure,_) | (_,Pure) -> Pure
   | _ -> Context
+
+(* --------------------------------------------------------------------- *)
+
+let rule_name = ref "" (* for the convenience of the parser *)

@@ -78,7 +78,7 @@ let print_mcodekind = function
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS -> print_string "PLUS"
 
-let print_meta (_,x) = print_string x
+let print_meta (r,x) = print_string r; print_string "."; print_string x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -194,17 +194,17 @@ let rec expression e =
       print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_meta name
   | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_meta name(*;
-      print_string "/* no type */";
+      print_string "/* no type ";
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;
       print_string " */"*)
   | Ast.MetaExpr(name,keep,Some ty,inherited) ->
-      mcode print_meta name ;
+      mcode print_meta name(*;
       print_string "/* ";
       print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
       print_string "keep:"; print_unitary keep;
       print_string " inherited:"; print_bool inherited;*)
-      print_string " */"
+      print_string " */"*)
   | Ast.MetaExprList(name,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list

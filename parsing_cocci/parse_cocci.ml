@@ -33,10 +33,9 @@ let token2c (tok,_) =
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
-  | PC.TRuleNamer -> "Name"
   | PC.TRuleName str -> str
-  | PC.TIsoFile -> "Iso"
-  | PC.TExtends -> "Extends"
+  | PC.TUsing -> "using"
+  | PC.TExtends -> "extends"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -79,6 +78,7 @@ let token2c (tok,_) =
   | PC.TBreak(clt) -> "break"^(line_type2c clt)
   | PC.TContinue(clt) -> "continue"^(line_type2c clt)
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
+  | PC.TMetaTypeId(s,clt) -> (pr "metatypename-%s" s)^(line_type2c clt)
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
   | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
 
@@ -122,6 +122,7 @@ let token2c (tok,_) =
   | PC.TMetaFunc(_,_,clt)  -> "funcmeta"^(line_type2c clt)
   | PC.TMetaLocalFunc(_,_,clt) -> "funcmeta"^(line_type2c clt)
   | PC.TArobArob -> "@@"
+  | PC.TArob -> "@"
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
   | PC.TEllipsis(clt) -> "..."^(line_type2c clt)
@@ -174,6 +175,14 @@ let token2c (tok,_) =
   | PC.TIsoType -> "Type"
 
 (* ----------------------------------------------------------------------- *)
+
+let name_ctr = ref 0
+let make_name _ =
+  let c = !name_ctr in
+  name_ctr := !name_ctr + 1;
+  Printf.sprintf "__rule__%d" c
+
+(* ----------------------------------------------------------------------- *)
 (* Read tokens *)
 
 let wrap_lexbuf_info lexbuf =
@@ -216,7 +225,7 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
-  | PC.TContext | PC.TRuleNamer | PC.TRuleName(_) | PC.TIsoFile | PC.TExtends
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TExtends
   | PC.TError | PC.TWords -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -233,14 +242,14 @@ let split_token ((tok,_) as t) =
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TMetaTypeId(_,clt) | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaExpList(_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
   | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,clt)
   | PC.TMetaFunc(_,_,clt) | PC.TMetaLocalFunc(_,_,clt) -> split t clt
-  | PC.TArobArob -> ([t],[t])
+  | PC.TArob | PC.TArobArob -> ([t],[t])
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TLineEnd(clt)
@@ -315,7 +324,8 @@ let rec find_function_names = function
 	| ((PC.TOPar(_),_) as t)::rest ->
 	    let level = level + 1 in
 	    let (pre,found,post) = skip level rest in (t::pre,found,post)
-	| ((PC.TArobArob,_) as t)::rest -> ([t],false,rest)
+	| ((PC.TArobArob,_) as t)::rest
+	| ((PC.TArob,_) as t)::rest
 	| ((PC.EOF,_) as t)::rest -> ([t],false,rest)
 	| t::rest ->
       	    let (pre,found,post) = skip level rest in (t::pre,found,post) in
@@ -346,7 +356,7 @@ let token2line (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt) | PC.TSizeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TMetaTypeId(_,clt) | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 
@@ -415,6 +425,7 @@ let detect_types in_meta_decls l =
     | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TComma(_),_) | (PC.TPure,_) | (PC.TContext,_) -> true
+    | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
@@ -432,42 +443,55 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStm(_,_,clt),_)
     | (PC.TMetaStmList(_,_,clt),_) -> in_meta_decls 
     | _ -> false in
-  let rec loop start type_names = function
+  let redo_id ident clt v meta_names =
+    if List.mem ident meta_names
+    then (PC.TMetaTypeId(ident,clt),v)
+    else
+      begin
+	!Data.add_type_name ident;
+	(PC.TTypeId(ident,clt),v)
+      end in
+  let rec loop start type_names meta_names = function
       [] -> []
+    | ((PC.TIdent(ident,clt),v) as a)::(((PC.TComma(_),_)) as b)::rest
+      when in_meta_decls ->
+	a::b::(loop false type_names (ident::meta_names) rest)
+    | ((PC.TIdent(ident,clt),v) as a)::(((PC.TPtVirg(_),_)) as b)::rest
+      when in_meta_decls ->
+	a::(loop false type_names (ident::meta_names) (b::rest))
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
-	collect_choices type_names all
+	collect_choices type_names meta_names all
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
       when is_delim delim ->
+	let newid = redo_id ident clt v meta_names in
 	!Data.add_type_name ident;
-	delim::(PC.TTypeId(ident,clt),v)::x::
-	(loop false (ident::type_names) rest)
+	delim::newid::x::(loop false (ident::type_names) meta_names rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
       when is_delim delim && is_id id ->
-	!Data.add_type_name ident;
-	delim::(PC.TTypeId(ident,clt),v)::id::
-	(loop false (ident::type_names) rest)
-    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when start ->
-	!Data.add_type_name ident;
-	(PC.TTypeId(ident,clt),v)::x::(loop false (ident::type_names) rest)
+	let newid = redo_id ident clt v meta_names in
+	delim::newid::id::(loop false (ident::type_names) meta_names rest)
+    | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
+	let newid = redo_id ident clt v meta_names in
+	newid::x::(loop false (ident::type_names) meta_names rest)
     | (PC.TIdent(ident,clt),v)::id::rest
       when start && is_id id ->
-	!Data.add_type_name ident;
-	(PC.TTypeId(ident,clt),v)::id::(loop false (ident::type_names) rest)
+	let newid = redo_id ident clt v meta_names in
+	newid::id::(loop false (ident::type_names) meta_names rest)
     | (PC.TIdent(ident,clt),v)::rest when List.mem ident type_names ->
-	(PC.TTypeId(ident,clt),v)::(loop false type_names rest)
+	(PC.TTypeId(ident,clt),v)::(loop false type_names meta_names rest)
     | ((PC.TIdent(ident,clt),v) as x)::rest ->
-	x::(loop false type_names rest)
-    | x::rest -> x::(loop false type_names rest)
-  and collect_choices type_names = function
+	x::(loop false type_names meta_names rest)
+    | x::rest -> x::(loop false type_names meta_names rest)
+  and collect_choices type_names meta_names = function
       [] -> [] (* should happen, but let the parser detect that *)
     | (PC.TCBrace(clt),v)::rest ->
-	(PC.TCBrace(clt),v)::(loop false type_names rest)
-    | delim::(PC.TIdent(ident,clt),v)::rest when is_choices_delim delim ->
-	delim::(PC.TTypeId(ident,clt),v)::
-	(collect_choices (ident::type_names) rest)
-    | x::rest -> x::(collect_choices type_names rest) in
-  loop true [] l
+	(PC.TCBrace(clt),v)::(loop false type_names meta_names rest)
+    | delim::(PC.TIdent(ident,clt),v)::rest
+      when is_choices_delim delim ->
+	let newid = redo_id ident clt v meta_names in
+	delim::newid::(collect_choices (ident::type_names) meta_names rest)
+    | x::rest -> x::(collect_choices type_names meta_names rest) in
+  loop true [] [] l
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -597,6 +621,7 @@ let parse_iso = function
       match tokens_all table file false lexbuf [PC.TArobArob] with
 	(true,start) ->
 	  let rec loop start =
+	    (!Data.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
 	    Data.in_meta := true;
@@ -640,26 +665,36 @@ let parse_iso = function
       res
 
 let parse file default_isos =
-  Printf.printf "starting %s\n" file;
   let table = Common.full_charpos_to_pos file in
   let channel = open_in file in
   let lexbuf = Lexing.from_channel channel in
   let res =
-  match tokens_all table file false lexbuf [PC.TArobArob] with 
-    (true,[(PC.TArobArob,_)]) -> (* read over initial @@ *)
-      let rec loop _ =
+  match tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] with 
+    (* read over initial @@ *)
+    (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
+      let rec loop starts_with_name =
+	(!Data.init_rule)();
+	let (rule_name,iso) =
+	  if starts_with_name
+	  then
+	    begin
+	      let (_,tokens) = tokens_all table file true lexbuf [PC.TArob] in
+	      parse_one PC.rule_name file tokens
+	    end
+	  else (make_name(),None) in
+	Ast0_cocci.rule_name := rule_name;
 	(* get metavariable declarations *)
 	Data.in_meta := true;
-	let (more,tokens) =
-	  tokens_all table file true lexbuf [PC.TArobArob] in
+	let (_,tokens) = tokens_all table file true lexbuf [PC.TArobArob] in
 	Data.in_meta := false;
 	let tokens = detect_types true tokens in
-
+	(*
 	Printf.printf "meta tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	Printf.printf "\n\n";
-
-	let (rule_name,iso,metavars) = parse_one PC.meta_main file tokens in
+        flush stdout;
+        *)
+	let metavars = parse_one PC.meta_main file tokens in
 	Hashtbl.add Data.all_metadecls rule_name metavars;
 	Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	Hashtbl.add Lexer_cocci.all_metavariables rule_name
@@ -675,7 +710,13 @@ let parse file default_isos =
 	      isos in
 	(* get transformation rules *)
 	let (more,tokens) =
-	  tokens_all table file false lexbuf [PC.TArobArob] in
+	  tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] in
+	let starts_with_name =
+	  more &&
+	  (match List.hd (List.rev tokens) with
+	    (PC.TArobArob,_) -> false
+	  | (PC.TArob,_) -> true
+	  | _ -> failwith "unexpected token") in
 	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	let minus_tokens = prepare_tokens minus_tokens in
 	let plus_tokens = prepare_tokens plus_tokens in
@@ -708,13 +749,13 @@ let parse file default_isos =
 	Check_meta.check_meta metavars minus_res plus_res;
 	if more
 	then
-	  let (minus_ress,plus_ress) = loop () in
+	  let (minus_ress,plus_ress) = loop starts_with_name in
 	  ((minus_res,metavars,(chosen_isos,rule_name))::minus_ress,
 	   (plus_res, metavars)::plus_ress)
 	else ([(minus_res,metavars,(chosen_isos,rule_name))],
 	      [(plus_res, metavars)]) in
-      loop ()
-  | (false,[(PC.TArobArob,_)]) -> ([],[])
+      loop (x = PC.TArob)
+  | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n" in
   close_in channel;
   res
@@ -737,7 +778,7 @@ let process file isofile verbose =
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let function_prototypes =
-	       Function_prototypes.process minus plus rule_name in
+	       Function_prototypes.process minus plus in
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     Insert_plus.insert_plus m p;
 	     Type_infer.type_infer minus;
@@ -746,7 +787,7 @@ let process file isofile verbose =
 	     let minus = Single_statement.single_statement minus in
 	     let minus_ast = Ast0toast.ast0toast minus in
 	     match function_prototypes with
-	       None -> [(extra_meta@metavars, minus_ast)]
+	       None ->       [(extra_meta@metavars, minus_ast)]
 	     | Some mv_fp -> [(extra_meta@metavars, minus_ast); mv_fp])
 	 minus plus) in
   let (code,ua) = Free_vars.free_vars parsed in
