@@ -96,6 +96,7 @@ let info_from_token = function
   | TUnknown             (i) -> i
   | TMacro             (i) -> i
   | TMacroDecl             (s, i) -> i
+  | TMacroDeclConst             (i) -> i
   | TAction             (i) -> i
 
   | TComment             (i) -> i
@@ -226,6 +227,7 @@ let visitor_info_from_token f = function
   | TUnknown             (i) -> TUnknown             (f i)
   | TMacro               (i) -> TMacro             (f i)
   | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
+  | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
   | TAction               (i) -> TAction             (f i)
 
   | TComment             (i) -> TComment             (f i) 

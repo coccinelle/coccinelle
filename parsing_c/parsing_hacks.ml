@@ -177,6 +177,7 @@ let is_same_line line = function
 
 type macrokind = 
   | MacroDecl
+  | MacroDeclConst
   | MacroMisc
   (* 
   | MacroForeach 
@@ -187,7 +188,9 @@ type macrokind =
 let trans_macro_token macrokind info = 
   match macrokind with
   | MacroDecl -> Parser_c.TMacroDecl (Ast_c.get_str_of_info info, info)
+  | MacroDeclConst -> Parser_c.TMacroDeclConst (info)
   | MacroMisc -> Parser_c.TMacro info
+  
 
 
 (* ------------------------------------------------------------------------- *)
@@ -887,24 +890,36 @@ let find_and_tag_good_macro cleanxs_with_pos =
              NotParenToken (TPtVirg _,_)::
              _
             ) 
-            | 
+          ))
+        ::xs when (s ==~ regexp_macro) || List.mem s declList -> 
+        msg_declare_macro s;
+        Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroDecl;
+        find_macro (xs)
+
+    | (Line 
+          (
             (NotParenToken (Tstatic _,_)::
-             NotParenToken (Tconst _,_)::
+             NotParenToken (Tconst _ as const,_)::
              NotParenToken ((TIdent (s,_) as macro,_))::
              Parenthised (xxs,info_parens)::
              NotParenToken (TPtVirg _,_)::
              _
             ) (* it could also be the same with a TEof en plus a la fin *)
               (*as line1*)
+
           ))
         ::xs when (s ==~ regexp_macro) || List.mem s declList -> 
         msg_declare_macro s;
         Hashtbl.add !keep_macro (TH.pos_of_token macro) MacroDecl;
-        (*
-        iter_token_paren (fun (tok, x) -> 
-          Hashtbl.add !put_comment (TH.pos_of_token tok) true
-        ) line1;
+
+        (* need retag this const, otherwise ambiguity in grammar 
+           21: shift/reduce conflict (shift 121, reduce 137) on Tconst
+  	   decl2 : Tstatic . TMacroDecl TOPar argument_list TCPar ...
+	   decl2 : Tstatic . Tconst TMacroDecl TOPar argument_list TCPar ...
+	    storage_class_spec : Tstatic .  (137)
         *)
+        Hashtbl.add !keep_macro (TH.pos_of_token const) MacroDeclConst;
+
         find_macro (xs)
 
 

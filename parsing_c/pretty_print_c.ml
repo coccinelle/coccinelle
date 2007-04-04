@@ -650,9 +650,9 @@ and pp_decl_gen pr_elem = function
 
       pr_elem iivirg;
 
-  | MacroDecl ((s, es, bool), iis::lp::rp::iiend::ifakestart::iisto) -> 
+  | MacroDecl ((s, es), iis::lp::rp::iiend::ifakestart::iisto) -> 
       pr_elem ifakestart;
-      iisto +> List.iter pr_elem;
+      iisto +> List.iter pr_elem; (* static and const *)
       pr_elem iis;
       pr_elem lp;
       es +> List.iter (fun (e, opt) -> 
@@ -683,38 +683,36 @@ and pp_init_gen = fun pr_elem ->
         iicommaopt +> List.iter pr_elem;
         pr_elem i2;
 
-    | InitGcc (string, initialiser), [i1;i2;i3] -> (* .label: *)
+    | InitDesignators (xs, initialiser), [i1] -> (* : *)
+        xs +> List.iter (pp_designator pr_elem);
         pr_elem i1;
-        pr_elem i2; 
-        pr_elem i3;
-        pp_init initialiser
-    | InitGcc (string, initialiser), [i1;i2] -> (* label:   in oldgcc *)
-        pr_elem i1; pr_elem i2; pp_init initialiser
-    | InitGccIndex (expression, initialiser), [i1;i2;i3] -> 
-        pr_elem i1; pp_expression expression; pr_elem i2; pr_elem i3;
         pp_init initialiser
 
-    | InitGccIndexAlt (expression, initialiser), [i1;i2] -> 
+    (* no use of '=' in the "Old" style *)
+    | InitFieldOld (string, initialiser), [i1;i2] -> (* label:   in oldgcc *)
+        pr_elem i1; pr_elem i2; pp_init initialiser
+    | InitIndexOld (expression, initialiser), [i1;i2] -> (* [1] in oldgcc *)
         pr_elem i1; pp_expression expression; pr_elem i2; 
         pp_init initialiser
-
-    | InitGccRange (e1, e2, initialiser), ii -> 
-        (match ii with
-        | [iocro;iellipsis;iccro;ieq] -> 
-            pr_elem iocro; pp_expression e1; pr_elem iellipsis;
-            pp_expression e2; pr_elem iccro; pr_elem ieq;
-            pp_init initialiser
-        | _ -> raise Impossible
-        )
-    | InitGccIndexField (s, e, ini), [idot;ident;iocro;iccro;ieq] -> 
-        pr_elem idot; pr_elem ident; pr_elem iocro;
-        pp_expression e; pr_elem iccro; pr_elem ieq;
-        pp_init ini
-        
-
     | x -> raise Impossible
   in
   pp_init
+
+
+
+and pp_designator pr_elem design = 
+  let pp_expression e = pp_expression_gen pr_elem e in
+  match design with 
+  | DesignatorField (s), [i1; i2] -> 
+      pr_elem i1; pr_elem i2; 
+  | DesignatorIndex (expression), [i1;i2] -> 
+      pr_elem i1; pp_expression expression; pr_elem i2; 
+
+  | DesignatorRange (e1, e2), [iocro;iellipsis;iccro] -> 
+      pr_elem iocro; pp_expression e1; pr_elem iellipsis;
+      pp_expression e2; pr_elem iccro; 
+  | x -> raise Impossible
+     
 
 
 

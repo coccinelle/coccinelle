@@ -310,7 +310,7 @@ and declaration =
                  fullType * storage)
                 wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
-  | MacroDecl of (string * argument wrap2 list * bool (* static*)) wrap
+  | MacroDecl of (string * argument wrap2 list) wrap
 
      and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
@@ -320,12 +320,17 @@ and declaration =
        and initialiserbis = 
           | InitExpr of expression 
           | InitList of initialiser wrap2 (* , *) list 
-          | InitGcc of string * initialiser  (* gccext: *)
-          | InitGccIndex of expression * initialiser
-          | InitGccRange of expression * expression * initialiser
-          | InitGccIndexAlt of expression * initialiser
-          | InitGccIndexField of string * expression * initialiser
+          (* gccext: *)
+          | InitDesignators of designator list * initialiser
+          | InitFieldOld  of string * initialiser
+          | InitIndexOld  of expression * initialiser
 
+       and designator = designatorbis wrap 
+        and designatorbis = 
+            | DesignatorField of string 
+            | DesignatorIndex of expression
+            | DesignatorRange of expression * expression
+        
 (* Normally we should define another type functionType2 because there 
  * are more restrictions on what can define a function than a pointer 
  * function. For instance a function declaration can omit the name of the

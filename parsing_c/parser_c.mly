@@ -375,6 +375,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %token <Ast_c.info> TMacro 
 %token <(string * Ast_c.info)> TMacroDecl
+%token <Ast_c.info> TMacroDeclConst 
 
 %token <Ast_c.info> TAction
 
@@ -796,9 +797,11 @@ decl2:
  /* cppext: */
 
  | TMacroDecl TOPar argument_list TCPar TPtVirg 
-     { MacroDecl ((fst $1, $3, false), [snd $1;$2;$4;$5;fakeInfo()]) }
+     { MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
  | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg 
-     { MacroDecl ((fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo();$1]) }
+     { MacroDecl ((fst $2, $4), [snd $2;$3;$5;$6;fakeInfo();$1]) }
+ | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar TPtVirg 
+     { MacroDecl ((fst $3, $5), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
 
 
 
@@ -1063,21 +1066,23 @@ initialize2:
  | tobrace_ini TCBrace
      { InitList [],  [$1;$2]  }
 
- /* gccext:, labeled elements */
- | TDot ident TEq initialize2
-     { InitGcc (fst $2, $4),     [$1;snd $2; $3] } 
+ /* gccext: labeled elements */
+ | designator_list TEq initialize2 
+     { InitDesignators ($1, $3), [$2] }
+ /* gccext: old format */
  | ident TDotDot initialize2
-     { InitGcc (fst $1, $3),     [snd $1; $2] } /* in old kernel */
- | TOCro const_expr TCCro TEq initialize2
-     { InitGccIndex ($2, $5),    [$1;$3;$4] }
- | TOCro const_expr TEllipsis const_expr TCCro TEq initialize2
-     { InitGccRange ($2, $4, $7),  [$1;$3;$5;$6] }
-
- /* old format ? */
+     { InitFieldOld (fst $1, $3),     [snd $1; $2] } /* in old kernel */
  | TOCro const_expr TCCro initialize2
-     { InitGccIndexAlt ($2, $4),    [$1;$3] }
- | TDot ident TOCro const_expr TCCro TEq initialize2 
-     { InitGccIndexField (fst $2, $4, $7), [$1;snd $2; $3;$5;$6] }
+     { InitIndexOld ($2, $4),    [$1;$3] }
+
+
+designator: 
+ | TDot ident 
+     { DesignatorField (fst $2), [$1;snd $2] } 
+ | TOCro const_expr TCCro 
+     { DesignatorIndex ($2),  [$1;$3] }
+ | TOCro const_expr TEllipsis const_expr TCCro 
+     { DesignatorRange ($2, $4),  [$1;$3;$5] }
 
 
 /*----------------------------*/
@@ -1286,6 +1291,10 @@ param_define_list:
  | /* empty */ { [] }
  | param_define                           { [$1] }
  | param_define_list TComma param_define  { $1 ++ [",",[$2]] ++ [$3] }
+
+designator_list: 
+ | designator { [$1] }
+ | designator_list designator { $1 ++ [$2] }
 
 
 /* gccext:  which allow a trailing ',' in enum, as in perl */

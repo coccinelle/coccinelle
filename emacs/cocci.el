@@ -101,6 +101,11 @@
             "void"
             "signed" "unsigned" 
             ))
+(setq c-preprocessor-directives-list
+      (list "define"  "elif" "else" "endif" "error" "file" "if" "ifdef"
+            "ifndef" "include" "line" "pragma" "undef"
+            ))
+
       
 (setq cocci-font-lock-keywords 
  `(
@@ -189,6 +194,12 @@
    ; cocci declaration keywords
    (,(concat "\\b\\(" (regexp-opt cocci-declaration-keywords-list) "\\)\\b") . 
       'font-lock-type-face)
+
+   ; cpp directives
+   (,(concat "^#[ \t]*\\(" (regexp-opt c-preprocessor-directives-list)
+	    "\\)\\>[ \t!]*\\(\\sw+\\)?")
+    (1 'font-lock-builtin-face))
+
 
   ))
 ;  "Expressions to highlight in cocci-mode.")

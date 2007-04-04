@@ -1293,13 +1293,11 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
       else 
         failwith "More that one variable in decl. Have to split to transform."
 
-  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,staticb),ii) ->
+  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) = 
-        (match ii, staticb with
-        | [iisb;lpb;rpb;iiendb;iifakestart;iisto], true -> 
-            (iisb,lpb,rpb,iiendb, iifakestart,[iisto])
-        | [iisb;lpb;rpb;iiendb;iifakestart], false ->
-            (iisb,lpb,rpb,iiendb, iifakestart,[])
+        (match ii with
+        | iisb::lpb::rpb::iiendb::iifakestart::iisto -> 
+            (iisb,lpb,rpb,iiendb, iifakestart,iisto)
         | _ -> raise Impossible
         )
       in
@@ -1321,7 +1319,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           return (
             (mckstart, allminus, 
             (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla), 
-            (B.MacroDecl ((sb,ebs,staticb),
+            (B.MacroDecl ((sb,ebs),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
 
@@ -1459,39 +1457,28 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
         failwith "TODO: not handling whencode in initialisers"
 
 
-    | (A.InitGccDotName (ia1, ida, ia2, inia), (B.InitGcc (idb, inib), ii)) -> 
-        (match ii with 
-        | [iidot;iidb;iieq] -> 
-            tokenf ia1 iidot >>= (fun ia1 iidot -> 
-            tokenf ia2 iieq >>= (fun ia2 iieq -> 
-            ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-            initialiser inia inib >>= (fun inia inib -> 
-              return (
-                (A.InitGccDotName (ia1, ida, ia2, inia)) +> A.rewrap ia,
-                (B.InitGcc (idb, inib), [iidot;iidb;iieq])
-              )))))
-        | _ -> fail
-        )
+    | (A.InitGccDotName (ia1, ida, ia2, inia), 
+      (B.InitDesignators ([B.DesignatorField idb,ii1], inib), ii2))->
+
+        let (iidot, iidb) = tuple_of_list2 ii1 in
+        let iieq = tuple_of_list1 ii2 in
+
+        tokenf ia1 iidot >>= (fun ia1 iidot -> 
+        tokenf ia2 iieq >>= (fun ia2 iieq -> 
+        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+        initialiser inia inib >>= (fun inia inib -> 
+          return (
+            (A.InitGccDotName (ia1, ida, ia2, inia)) +> A.rewrap ia,
+            (B.InitDesignators 
+                ([B.DesignatorField idb, [iidot;iidb]], inib), [iieq])
+          )))))
 
 
-
-    | (A.InitGccName (ida, ia1, inia), (B.InitGcc (idb, inib), ii)) -> 
-        (match ii with 
-        | [iidb;iicolon] -> 
-            ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-            initialiser inia inib >>= (fun inia inib -> 
-            tokenf ia1 iicolon >>= (fun ia1 iicolon -> 
-              return (
-                (A.InitGccName (ida, ia1, inia)) +> A.rewrap ia,
-                (B.InitGcc (idb, inib), [iidb;iicolon])
-              ))))
-        | _ -> fail
-        )
-
-
-
-    | (A.InitGccIndex (ia1,ea,ia2,ia3,inia),(B.InitGccIndex (eb, inib),ii)) ->
-        let (ib1, ib2, ib3) = tuple_of_list3 ii in
+    | (A.InitGccIndex (ia1,ea,ia2,ia3,inia), 
+      (B.InitDesignators ([B.DesignatorIndex eb, ii1], inib), ii2)) -> 
+        
+        let (ib1, ib2) = tuple_of_list2 ii1 in
+        let ib3 = tuple_of_list1 ii2 in
         tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
         tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
         tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
@@ -1499,13 +1486,16 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
         initialiser inia inib >>= (fun inia inib -> 
           return (
             (A.InitGccIndex (ia1,ea,ia2,ia3,inia)) +> A.rewrap ia,
-            (B.InitGccIndex (eb, inib),[ib1;ib2;ib3])
+            (B.InitDesignators 
+                ([B.DesignatorIndex eb, [ib1;ib2]], inib), [ib3])
           ))))))
 
-    | (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia), 
-      (B.InitGccRange (e1b, e2b, inib), ii)) -> 
 
-        let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+    | (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia), 
+      (B.InitDesignators ([B.DesignatorRange (e1b, e2b), ii1], inib), ii2)) -> 
+
+        let (ib1, ib2, ib3) = tuple_of_list3 ii1 in
+        let (ib4) = tuple_of_list1 ii2 in
         tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
         tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
         tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
@@ -1515,8 +1505,27 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
         initialiser inia inib >>= (fun inia inib -> 
           return (
             (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia)) +> A.rewrap ia,
-            (B.InitGccRange (e1b, e2b, inib), [ib1;ib2;ib3;ib4])
+            (B.InitDesignators 
+                ([B.DesignatorRange (e1b, e2b),[ib1;ib2;ib3]], inib), [ib4])
           ))))))))
+
+
+
+
+    | (A.InitGccName (ida, ia1, inia), (B.InitFieldOld (idb, inib), ii)) -> 
+        (match ii with 
+        | [iidb;iicolon] -> 
+            ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+            initialiser inia inib >>= (fun inia inib -> 
+            tokenf ia1 iicolon >>= (fun ia1 iicolon -> 
+              return (
+                (A.InitGccName (ida, ia1, inia)) +> A.rewrap ia,
+                (B.InitFieldOld (idb, inib), [iidb;iicolon])
+              ))))
+        | _ -> fail
+        )
+
+
 
     | A.IComma(comma), _ ->
         raise Impossible

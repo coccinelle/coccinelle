@@ -306,7 +306,7 @@ and vk_decl = fun bigf d ->
   let rec k decl = 
     match decl with 
     | DeclList (xs,ii) -> iif ii; List.iter aux xs 
-    | MacroDecl ((s, args, b),ii) -> 
+    | MacroDecl ((s, args),ii) -> 
         iif ii;
         args +> List.iter (fun (e, ii) -> 
           iif ii;
@@ -336,20 +336,25 @@ and vk_ini = fun bigf ini ->
           inif ini;
           List.iter (vk_info bigf) ii
         ) 
-          
-    | InitGcc (s, e) -> inif e
-    | InitGccIndex (e1, e) 
-    | InitGccIndexAlt (e1, e) ->
-        vk_expr bigf e1; inif e
-    | InitGccRange (e1, e2, e) -> 
-        vk_expr bigf e1; 
-        vk_expr bigf e2; 
+    | InitDesignators (xs, e) -> 
+        xs +> List.iter (vk_designator bigf);
         inif e
-    | InitGccIndexField (s, e1, e) ->
+
+    | InitFieldOld (s, e) -> inif e
+    | InitIndexOld (e1, e) ->
         vk_expr bigf e1; inif e
+
   in inif ini
 
 
+and vk_designator = fun bigf design -> 
+  let iif ii = List.iter (vk_info bigf) ii in
+  let (designator, ii) = design in
+  iif ii;
+  match designator with
+  | DesignatorField s -> ()
+  | DesignatorIndex e -> vk_expr bigf e
+  | DesignatorRange (e1, e2) -> vk_expr bigf e1; vk_expr bigf e2
 
 and vk_struct_fields = fun bigf fields -> 
   let iif ii = List.iter (vk_info bigf) ii in
@@ -794,11 +799,11 @@ and vk_decl_s = fun bigf d ->
     match decl with
     | DeclList (xs, ii) -> 
         DeclList (List.map aux xs,   infolistf ii)
-    | MacroDecl ((s, args, b),ii) -> 
+    | MacroDecl ((s, args),ii) -> 
         MacroDecl 
           ((s, 
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, infolistf ii),
-           b),
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, infolistf ii)
+           ),
           infolistf ii)
 
 
@@ -825,17 +830,31 @@ and vk_ini_s = fun bigf ini ->
           InitList (initxs +> List.map (fun (ini, ii) -> 
             inif ini, List.map (vk_info_s bigf) ii) 
           )
-      | InitGcc (s, e) -> InitGcc (s, inif e)
-      | InitGccIndex (e1, e) -> 
-          InitGccIndex (vk_expr_s bigf e1 , inif e)
-      | InitGccIndexAlt (e1, e) -> 
-          InitGccIndexAlt (vk_expr_s bigf e1 , inif e)
-      | InitGccRange (e1, e2, e) -> 
-          InitGccRange (vk_expr_s bigf e1, vk_expr_s bigf e2, inif e)
-      | InitGccIndexField (s, e1, e) -> 
-          InitGccIndexField (s, vk_expr_s bigf e1, inif e)
+
+
+      | InitDesignators (xs, e) -> 
+          InitDesignators 
+            (xs +> List.map (vk_designator_s bigf),
+            inif e 
+            )
+
+    | InitFieldOld (s, e) -> InitFieldOld (s, inif e)
+    | InitIndexOld (e1, e) -> InitIndexOld (vk_expr_s bigf e1, inif e)
+
     in ini', List.map (vk_info_s bigf) ii
   in inif ini
+
+
+and vk_designator_s = fun bigf design -> 
+  let iif ii = List.map (vk_info_s bigf) ii in
+  let (designator, ii) = design in
+  (match designator with
+  | DesignatorField s -> DesignatorField s
+  | DesignatorIndex e -> DesignatorIndex (vk_expr_s bigf e)
+  | DesignatorRange (e1, e2) -> 
+      DesignatorRange (vk_expr_s bigf e1, vk_expr_s bigf e2)
+  ), iif ii
+
 
 
 
