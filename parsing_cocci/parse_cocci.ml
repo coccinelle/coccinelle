@@ -611,6 +611,15 @@ let prepare_tokens tokens =
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
+let partition_either l =
+  let rec part_either left right = function
+  | [] -> (List.rev left, List.rev right)
+  | x :: l -> 
+      (match x with
+      | Common.Left  e -> part_either (e :: left) right l
+      | Common.Right e -> part_either left (e :: right) l) in
+  part_either [] [] l
+
 let parse_iso = function
     None -> []
   | Some file ->
@@ -635,6 +644,10 @@ let parse_iso = function
 	    Printf.printf "\n\n";
 	    *)
 	    let iso_metavars = parse_one PC.iso_meta_main file tokens in
+	    let iso_metavars =
+	      match partition_either iso_metavars with
+		(iso_metavars,[]) -> iso_metavars
+	      |	_ -> failwith "unexpected inheritance in iso" in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      tokens_all table file false lexbuf
@@ -695,6 +708,7 @@ let parse file default_isos =
         flush stdout;
         *)
 	let metavars = parse_one PC.meta_main file tokens in
+	let (metavars,inherited_metavars) = partition_either metavars in
 	Hashtbl.add Data.all_metadecls rule_name metavars;
 	Hashtbl.add Lexer_cocci.rule_names rule_name ();
 	Hashtbl.add Lexer_cocci.all_metavariables rule_name
@@ -746,7 +760,7 @@ let parse file default_isos =
 	(*
 	Printf.printf "after plus parse\n";
 	*)
-	Check_meta.check_meta metavars minus_res plus_res;
+	Check_meta.check_meta (inherited_metavars@metavars) minus_res plus_res;
 	if more
 	then
 	  let (minus_ress,plus_ress) = loop starts_with_name in

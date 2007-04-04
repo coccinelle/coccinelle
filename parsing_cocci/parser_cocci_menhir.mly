@@ -154,12 +154,10 @@ let check_meta tok =
   match tok with
     Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaIdDecl(_,_) -> ()
+	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | _ -> failwith ("incompatible inheritance declaration "^name))
   | Ast.MetaFreshIdDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
-	Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      failwith "can't inherit the freshness of an identifier"
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
@@ -313,19 +311,21 @@ let check_meta tok =
 %type <string * string option> rule_name
 
 %start meta_main
-%type <Ast_cocci.metavar list> meta_main
+%type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
 
 %start iso_meta_main
-%type <Ast_cocci.metavar list> iso_meta_main
+%type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> iso_meta_main
 
 %%
 
 reinit: { }
-minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m } | m=minus_body TArob { m }
-plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p } | p=plus_body TArob { p }
+minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
+| m=minus_body TArob { m }
+plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
+| p=plus_body TArob { p }
 meta_main: m=metadec* TArobArob
   { List.concat(List.map (function m -> m (!Ast0.rule_name)) m) }
 iso_meta_main: metadec* TArobArob
@@ -366,8 +366,9 @@ metadec:
 	   (function (rule,nm) ->
 	     let (rule,checker) =
 	       match rule with
-		 None -> ((current_rule,nm),function x -> [x])
-	       | Some rule -> ((rule,nm),function x -> check_meta x; []) in
+		 None -> ((current_rule,nm),function x -> [Common.Left x])
+	       | Some rule ->
+		   ((rule,nm),function x -> check_meta x; [Common.Right x]) in
 	     kindfn ar rule ispure checker)
 	   ids) }
 
