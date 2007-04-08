@@ -150,63 +150,110 @@ let check_meta tok =
     try
       let info = Hashtbl.find Data.all_metadecls rule in
       List.find (function mv -> Ast.get_meta_name mv = (rule,name)) info
-    with Not_found -> failwith ("bad rule "^rule^" or bad variable "^name) in
+    with
+      Not_found ->
+	raise
+	  (Semantic_cocci.Semantic
+	     ("bad rule "^rule^" or bad variable "^name)) in
   match tok with
     Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaFreshIdDecl(Ast.NONE,(rule,name)) ->
-      failwith "can't inherit the freshness of an identifier"
+      raise
+	(Semantic_cocci.Semantic
+	   "can't inherit the freshness of an identifier")
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamListDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaErrDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaErrDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaExpDecl(_,_,ty1) when ty = ty1 -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaStmListDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmListDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaFuncDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
 	Ast.MetaConstDecl(_,_,ty1) when ty = ty1 -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaTextDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTextDecl(_,_) -> ()
-      | _ -> failwith ("incompatible inheritance declaration "^name))
-  | _ -> failwith ("arity not allowed on imported declaration")
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | _ ->
+      raise
+	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
 %}
 
 %token EOF
@@ -222,8 +269,9 @@ let check_meta tok =
 %token<Data.clt> Tvoid Tstruct Tunion
 %token<Data.clt> Tunsigned Tsigned
 
-%token<Data.clt> Tstatic Tauto Tregister Textern
+%token<Data.clt> Tstatic Tauto Tregister Textern Tinline
 %token<Data.clt> Tconst Tvolatile
+%token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue
@@ -345,7 +393,7 @@ rule_name:
   nm=pure_ident extends i=ioption(choose_iso) TArob
     { let n = id2name nm in
     (try let _ =  Hashtbl.find Data.all_metadecls n in
-    failwith "repeated rule name"
+    raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
     (n,i) }
 
@@ -444,12 +492,12 @@ metadec:
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
-      else failwith "bad typedef") }
+      else raise (Semantic_cocci.Semantic "bad typedef")) }
 | TDeclarer
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_declarer_name name; [])
-      else failwith "bad declarer") }
+      else raise (Semantic_cocci.Semantic "bad declarer")) }
 
 meta_exp_type:
   ctype
@@ -571,7 +619,7 @@ minus_body:
     b=loption(minus_function_decl_statement_or_expression)
     ew=loption(error_words)
     { match f@i@b@ew with
-      [] -> failwith "minus slice can't be empty"
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_body: 
@@ -619,7 +667,10 @@ defineop:
 			   Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure))
 		       | TIdent(nm_pure) ->
 			   Ast0.wrap(Ast0.Id(id2mcode nm_pure))
-		       | _ -> failwith "unexpected name for a #define"),
+		       | _ ->
+			   raise
+			     (Semantic_cocci.Semantic
+				"unexpected name for a #define")),
 		       None,
 		       body)) }
 | TDefineParam
@@ -644,20 +695,24 @@ defineop:
       let param_offsets = List.rev param_offsets in
       function body ->
 	Ast0.wrap
-	  (Ast0.Define(clt2mcode "#define" clt,
-		       (match ident with
-			 TMetaId((nm,pure,clt)) ->
-			   Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure))
-		       | TIdent(nm_pure) ->
-			   Ast0.wrap(Ast0.Id(id2mcode nm_pure))
-		       | _ -> failwith "unexpected name for a #define"),
-		       Some
-			 (List.map2
-			    (function param ->
-			      function offset ->
-				(clt2mcode param (arity,line,lline,offset)))
-			    param_list param_offsets),
-		       body)) }
+	  (Ast0.Define
+	     (clt2mcode "#define" clt,
+	      (match ident with
+		TMetaId((nm,pure,clt)) ->
+		  Ast0.wrap(Ast0.MetaId(clt2mcode nm clt,pure))
+	      | TIdent(nm_pure) ->
+		  Ast0.wrap(Ast0.Id(id2mcode nm_pure))
+	      | _ ->
+		  raise
+		    (Semantic_cocci.Semantic
+		       "unexpected name for a #define")),
+	      Some
+		(List.map2
+		   (function param ->
+		     function offset ->
+		       (clt2mcode param (arity,line,lline,offset)))
+		   param_list param_offsets),
+	      body)) }
 
 /*****************************************************************************/
 
@@ -673,15 +728,59 @@ funproto:
 	      i, clt2mcode ";" pt)) }
 
 fundecl:
-  s=ioption(storage) t=option(fn_ctype)
+  f=fninfo
   TFunDecl i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
       { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
-			       s, t, i,
+			       f, i,
 			       clt2mcode "(" lp, d,
 			       clt2mcode ")" rp,
 			       clt2mcode "{" lb, b,
 			       clt2mcode "}" rb)) }
+
+fninfo:
+    storage          { [Ast0.FStorage($1)] }
+  | fn_ctype         { [Ast0.FType($1)] }
+  | Tinline          { [Ast0.FInline(clt2mcode "inline" $1)] }
+  | Tattr            { [Ast0.FAttr(id2mcode $1)] }
+  | storage  fninfo
+      { try
+	let _ =
+	  List.find (function Ast0.FStorage(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "duplicate storage")
+      with Not_found -> (Ast0.FStorage($1))::$2 }
+  | fn_ctype fninfo_nt { (Ast0.FType($1))::$2 }
+  | Tinline  fninfo
+      { try
+	let _ = List.find (function Ast0.FInline(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "duplicate inline")
+      with Not_found -> (Ast0.FInline(clt2mcode "inline" $1))::$2 }
+  | Tattr    fninfo
+      { try
+	let _ = List.find (function Ast0.FAttr(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "multiple attributes")
+      with Not_found -> (Ast0.FAttr(id2mcode $1))::$2 }
+
+fninfo_nt:
+    storage          { [Ast0.FStorage($1)] }
+  | Tinline          { [Ast0.FInline(clt2mcode "inline" $1)] }
+  | Tattr            { [Ast0.FInit(clt2mcode "__init" $1)] }
+  | storage  fninfo_nt
+      { try
+	let _ =
+	  List.find (function Ast0.FStorage(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "duplicate storage")
+      with Not_found -> (Ast0.FStorage($1))::$2 }
+  | Tinline  fninfo_nt
+      { try
+	let _ = List.find (function Ast0.FInline(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "duplicate inline")
+      with Not_found -> (Ast0.FInline(clt2mcode "inline" $1))::$2 }
+  | Tattr    fninfo_nt
+      { try
+	let _ = List.find (function Ast0.FInit(_) -> true | _ -> false) $2 in
+	raise (Semantic_cocci.Semantic "duplicate init")
+      with Not_found -> (Ast0.FInit(clt2mcode "__init" $1))::$2 }
 
 storage:
          s=Tstatic      { clt2mcode Ast.Static s }
@@ -1020,7 +1119,7 @@ eexpr: basic_expr(eexpr,dot_expressions) { $1 }
 dexpr: basic_expr(eexpr,nest_expressions) { $1 }
 
 invalid:
-  TInvalid { failwith "not matchable" }
+  TInvalid { raise (Semantic_cocci.Semantic "not matchable") }
 
 dot_expressions:
   TEllipsis { Ast0.wrap(Ast0.Edots(clt2mcode "..." $1,None)) }
@@ -1602,8 +1701,9 @@ iso_main:
     { let check_one = function
 	[x] -> x
       | _ ->
-	  failwith
-	    "only one variable per declaration in an isomorphism rule" in
+	  raise
+	    (Semantic_cocci.Semantic
+	       "only one variable per declaration in an isomorphism rule") in
     let d1 = check_one d1 in
     let dl =
       List.map

@@ -235,7 +235,7 @@ let collect_in_plus_term =
 
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,_,ret,nm,_,params,_) ->
+      Ast.FunHeader(bef,_,ret,nm,_,params,_) ->
 	let ret_metas =
 	  get_option collect_all_refs.V.combiner_fullType ret in
 	let nm_metas = collect_all_refs.V.combiner_ident nm in
@@ -292,9 +292,6 @@ let collect_all_multirefs minirules =
 (witness binding) *)
 
 let classify_variables metavars minirules used_after =
-  Printf.printf "used after: %s\n"
-    (String.concat " "
-       (List.map (function (r,n) -> r^"."^n) used_after));
   let metavars = List.map Ast.get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in

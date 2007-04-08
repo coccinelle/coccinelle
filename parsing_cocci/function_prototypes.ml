@@ -19,15 +19,15 @@ let brace_to_semi (_,arity,info,mcodekind) = (";",Ast0.NONE,info,mcodekind)
 
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
-    Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
       [(get_name name,
 	Ast0.copywrap stm
 	  (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
 		     Ast0.copywrap stm
 		       (Ast0.UnInit
-			  (stg,
+			  (None,
 			   Ast0.copywrap stm
-			     (Ast0.FunctionType(ty,lp,params,rp)),
+			     (Ast0.FunctionType(fninfo,lp,params,rp)),
 			   name,brace_to_semi lbrace)))))]
   | _ -> []
 

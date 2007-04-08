@@ -847,13 +847,19 @@ let rec statement in_nest tgt stm =
 	whencode (concat_dots (statement false Ast0.NONE))
 	  (statement false Ast0.NONE) whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
 	all_same false true tgt (mcode2line lp)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [lp;rp;lbrace;rbrace])) in
-      let stg = get_option mcode stg in
-      let ty = get_option (typeC arity) ty in
+      let fninfo =
+	List.map
+	  (function
+	      Ast0.Storage(stg) -> mcode stg
+	    | Ast0.FType(ty) -> typeC arity ty
+	    | Ast0.Inline(inline) -> mcode inline
+	    | Ast0.Init(init) -> mcode init)
+	  fninfo in
       let name = ident false false arity name in
       let lp = mcode lp in
       let params = parameter_list arity params in
@@ -862,7 +868,7 @@ let rec statement in_nest tgt stm =
       let body = dots (statement false arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace))
   | Ast0.Include(inc,s) -> 
       let arity =
 	all_same true true tgt (mcode2line inc)

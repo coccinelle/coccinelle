@@ -193,8 +193,8 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option typeC ty; fn(); mcode print_string lp1;
+and print_function_type (fninfo,lp1,params,rp1) fn =
+  List.iter print_fninfo fninfo; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
 and print_array (ty,lb,size,rb) fn =
@@ -214,8 +214,8 @@ and typeC t =
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> ())
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
+      | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
+	  print_function_type (fninfo,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
 	  print_array (ty,lb,size,rb) (function _ -> ())
       | Ast0.StructUnionName(kind,name) ->
@@ -349,14 +349,13 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec statement arity s =
+and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	  print_string arity;
-	  print_option (mcode U.storage) stg;
-	  print_option typeC ty;
+	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;
 	  parameter_list params; close_box(); mcode print_string rp;
 	  print_string " ";
@@ -458,6 +457,12 @@ let rec statement arity s =
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.MultiStm(re) -> statement "\\+" re)
+
+and print_fninfo = function
+    Ast0.FStorage(stg) -> mcode U.storage stg
+  | Ast0.FType(ty) -> typeC ty
+  | Ast0.FInline(inline) -> mcode print_string inline
+  | Ast0.FAttr(attr) -> mcode print_string attr
 
 and whencode notfn alwaysfn = function
     Ast0.NoWhen -> ()

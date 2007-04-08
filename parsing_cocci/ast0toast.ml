@@ -340,12 +340,12 @@ and typeC t =
 		   (Ast.FunctionPointer
 		      (typeC ty,mcode lp1,mcode star,mcode rp1,
 		       mcode lp2,parameter_list params,mcode rp2)))
-    | Ast0.FunctionType(ty,lp1,params,rp1) ->
+    | Ast0.FunctionType(fi,lp1,params,rp1) ->
 	let allminus = check_allminus.V0.combiner_typeC t in
 	Ast.Type(None,
 		 rewrap t
 		   (Ast.FunctionType
-		      (allminus,get_option typeC ty,mcode lp1,
+		      (allminus,fninfo fi,mcode lp1,
 		       parameter_list params,mcode rp1)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
@@ -630,9 +630,8 @@ let rec statement s =
 	    whencode (statement_dots Ast.Sequencible)
 	      (statement Ast.NotSequencible) whn in
 	  Ast.Stars(d,whn,[])
-      | Ast0.FunDecl((_,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-	  let stg = get_option mcode stg in
-	  let ty = get_option typeC ty in
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	  let fi = List.map fninfo fi in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
@@ -643,7 +642,7 @@ let rec statement s =
 	  let allminus = check_allminus.V0.combiner_statement s in
 	  Ast.FunDecl(local_rewrap s
 			(Ast.FunHeader(convert_mcodekind bef,
-				       allminus,stg,ty,name,lp,params,rp)),
+				       allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
 		      decls,dots,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
@@ -658,6 +657,12 @@ let rec statement s =
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
+
+  and fninfo = function
+      Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
+    | Ast0.FType(ty) -> Ast.FType(typeC ty)
+    | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
+    | Ast0.FAttr(attr) -> Ast.FAttr(mcode attr)
 
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> Ast.NoWhen

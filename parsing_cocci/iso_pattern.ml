@@ -656,22 +656,19 @@ mysterious bug that is obtained with eg int attach(...); *)
 	if not(context_required) or is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(_,stga,tya,namea,_,paramsa,_,_,bodya,_),
-	     Ast0.FunDecl(_,stgb,tyb,nameb,_,paramsb,_,_,bodyb,_)) ->
-	       if bool_match_option mcode_equal stga stgb
-	       then
-		 conjunct_bindings
-		   (match_option match_typeC tya tyb)
-		   (conjunct_bindings
-		      (match_ident namea nameb)
-		      (conjunct_bindings
-			 (match_dots
-			    match_param is_plist_matcher do_plist_match
-			    paramsa paramsb)
-			 (match_dots
-			    match_statement is_slist_matcher do_slist_match
-			    bodya bodyb)))
-	       else return false
+	    (Ast0.FunDecl(_,fninfoa,namea,_,paramsa,_,_,bodya,_),
+	     Ast0.FunDecl(_,fninfob,nameb,_,paramsb,_,_,bodyb,_)) ->
+	       conjunct_bindings
+		 (match_fninfo fninfoa fninfob)
+		 (conjunct_bindings
+		    (match_ident namea nameb)
+		    (conjunct_bindings
+		       (match_dots
+			  match_param is_plist_matcher do_plist_match
+			  paramsa paramsb)
+		       (match_dots
+			  match_statement is_slist_matcher do_slist_match
+			  bodya bodyb)))
 	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
 	      match_dots match_statement is_slist_matcher do_slist_match
@@ -759,6 +756,27 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return false
+
+  (* first should provide a subset of the information in the second *)
+  and match_fninfo patterninfo cinfo =
+    let patterninfo = List.sort compare patterninfo in
+    let cinfo = List.sort compare cinfo in
+    let rec loop = function
+	(Ast0.FStorage(sta)::resta,Ast0.FStorage(stb)::restb)
+	  if mcode_equal sta stb then loop resta restb else return false
+      |	(Ast0.FType(tya)::resta,Ast0.FType(tyb)::restb) ->
+	  conjunct_bindings (match_typeC tya tyb) (loop resta restb)
+      |	(Ast0.FInline(ia)::resta,Ast0.FInline(ib)::restb) ->
+	  if mcode_equal ia ib then loop resta restb else return false
+      |	(Ast0.FAttr(ia)::resta,Ast0.FAttr(ib)::restb) ->
+	  if mcode_equal ia ib then loop resta restb else return false
+      |	(x::resta,((y::_) as restb)) ->
+	  (match compare x y with
+	    -1 -> return false
+	  | 1 -> loop resta restb
+	  | _ -> failwith "not possible")
+      |	_ -> return false in
+    loop (patterninfo cinfo)
 
   and match_case_line pattern c =
     if not(context_required) or is_context c

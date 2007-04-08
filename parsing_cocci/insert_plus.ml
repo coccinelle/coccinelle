@@ -204,7 +204,7 @@ bind to that; not good for isomorphisms *)
 	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
 	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
 	@ bodyres
-    | Ast0.FunDecl((info,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)
     | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)
     | Ast0.Nest(starter,stmt_dots,ender,whencode) ->

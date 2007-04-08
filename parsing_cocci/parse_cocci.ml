@@ -51,6 +51,8 @@ let token2c (tok,_) =
   | PC.Tunsigned(clt) -> "unsigned"^(line_type2c clt)
   | PC.Tsigned(clt) -> "signed"^(line_type2c clt)
   | PC.Tstatic(clt) -> "static"^(line_type2c clt)
+  | PC.Tinline(clt) -> "inline"^(line_type2c clt)
+  | PC.Tinit(clt) -> "__init"^(line_type2c clt)
   | PC.Tauto(clt) -> "auto"^(line_type2c clt)
   | PC.Tregister(clt) -> "register"^(line_type2c clt)
   | PC.Textern(clt) -> "extern"^(line_type2c clt)
@@ -232,6 +234,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
+  | PC.Tinline(clt) | PC.Tinit(clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
@@ -349,7 +352,7 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt) 
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt) 
-  | PC.Tconst(clt) | PC.Tvolatile(clt) 
+  | PC.Tinline(clt) | PC.Tinit(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) 
 
   | PC.TInc(clt) | PC.TDec(clt) 
 	
@@ -424,7 +427,8 @@ let detect_types in_meta_decls l =
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
     | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
-    | (PC.TComma(_),_) | (PC.TPure,_) | (PC.TContext,_) -> true
+    | (PC.TComma(_),_) | (PC.TPure,_)
+    | (PC.TContext,_) -> true
     | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
@@ -470,6 +474,16 @@ let detect_types in_meta_decls l =
       when is_delim delim && is_id id ->
 	let newid = redo_id ident clt v meta_names in
 	delim::newid::id::(loop false (ident::type_names) meta_names rest)
+    | ((PC.TFunDecl(_),_) as fn)::nm::lp::
+      (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest ->
+	let newid = redo_id ident clt v meta_names in
+	!Data.add_type_name ident;
+	fn::nm::lp::newid::x::(loop false (ident::type_names) meta_names rest)
+    | ((PC.TFunDecl(_),_) as fn)::nm::lp::
+      (PC.TIdent(ident,clt),v)::id::rest
+      when is_id id ->
+	let newid = redo_id ident clt v meta_names in
+	fn::nm::lp::newid::id::(loop false (ident::type_names) meta_names rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
 	let newid = redo_id ident clt v meta_names in
 	newid::x::(loop false (ident::type_names) meta_names rest)
@@ -607,7 +621,7 @@ let parse_one parsefn file toks =
   | e -> raise e
 
 let prepare_tokens tokens =
-  insert_line_end (find_function_names (detect_types false tokens))
+  insert_line_end (detect_types false (find_function_names tokens))
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 

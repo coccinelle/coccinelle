@@ -623,20 +623,25 @@ let rec statement s =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres s (Ast0.Stars(dots,whencode)) ln ln
-  | Ast0.FunDecl((_,bef),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-      let ty = get_option typeC ty in
+  | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+      let fninfo =
+	List.map (function Ast0.FType(ty) -> typeC ty | x -> x) fninfo in
       let name = ident name in
       let params = parameter_list (Some(promote_mcode lp)) params in
       let body =
 	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
       let left =
 	(* cases on what is leftmost *)
-	match stg with
-	  None ->
-	    (match ty with
-	      None -> promote_to_statement_start name bef
-	    | Some x -> promote_to_statement_start x bef)
-	| Some st -> promote_to_statement_start (promote_mcode st) bef in
+	match fninfo with
+	  [] -> promote_to_statement_start name bef
+	| Ast0.Storage(stg)::_ ->
+	    promote_to_statement_start (promote_mcode stg) bef
+	| Ast0.FType(ty)::_ ->
+	    promote_to_statement_start ty bef
+	| Ast0.Inline(inline) ->
+	    promote_to_statement_start (promote_mcode inline) bef
+	| Ast0.Init(init) ->
+	    promote_to_statement_start (promote_mcode init) bef in
       (* pretend it is one line before the start of the function, so that it
 	 will catch things defined at top level.  We assume that these will not
 	 be defined on the same line as the function.  This is a HACK.
@@ -644,16 +649,19 @@ let rec statement s =
 	 and other things to the node after, but that would complicate
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
       let res =
-	Ast0.FunDecl((Ast0.get_info left,bef),stg,ty,name,lp,params,rp,lbrace,
+	Ast0.FunDecl((Ast0.get_info left,bef),fninfo,name,lp,params,rp,lbrace,
 		     body,rbrace) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)
-      (match stg with
-	None ->
-	  (match ty with
-	    None -> mkres s res name (promote_mcode rbrace)
-	  | Some x -> mkres s res x (promote_mcode rbrace))
-      | Some st -> mkres s res (promote_mcode st) (promote_mcode rbrace))
+      (match fninfo with
+	[] -> mkres s res name (promote_mcode rbrace)
+      | Ast0.FStorage(stg)::_ ->
+	  mkres s res (promote_mcode stg) (promote_mcode rbrace)
+      | Ast0.FType(ty)::_ -> mkres s res x (promote_mcode rbrace)
+      | Ast0.FInline(inline) ->
+	  mkres s res (promote_mcode inline) (promote_mcode rbrace)
+      | Ast0.FAttr(attr) ->
+	  mkres s res (promote_mcode attr) (promote_mcode rbrace))
 
   | Ast0.Include(inc,stm) ->
       mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)

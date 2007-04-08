@@ -119,7 +119,7 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType    of typeC option *
+  | FunctionType    of fninfo list *
 	               string mcode (* ( *) * parameter_list *
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
@@ -254,7 +254,7 @@ and base_statement =
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode
   | FunDecl of (info * mcodekind) (* before the function decl *) *
-	Ast.storage mcode option * typeC option * ident (* name *) *
+	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
@@ -264,6 +264,12 @@ and base_statement =
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
+
+and fninfo =
+    FStorage of Ast.storage mcode
+  | FType of typeC
+  | FInline of string mcode
+  | FAttr of string mcode
 
 and ('a,'b) whencode =
     NoWhen

@@ -274,6 +274,15 @@ and constant = function
   | Ast.Float(s) -> print_string s
 
 (* --------------------------------------------------------------------- *)
+(* Declarations *)
+
+and storage = function
+    Ast.Static -> print_string "static "
+  | Ast.Auto -> print_string "auto "
+  | Ast.Register -> print_string "register "
+  | Ast.Extern -> print_string "extern "
+
+(* --------------------------------------------------------------------- *)
 (* Types *)
 
 and fullType ft =
@@ -291,13 +300,19 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp1;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (ty,lp1,params,rp1) fn =
-  print_option fullType ty; fn(); mcode print_string lp1;
+and print_function_type (fninfo,lp1,params,rp1) fn =
+  List.iter print_fninfo fninfo; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
 and print_array (ty,lb,size,rb) fn =
   fullType ty; fn(); mcode print_string lb; print_option expression size;
   mcode print_string rb
+
+and print_fninfo = function
+    Ast.FStorage(stg) -> mcode storage stg
+  | Ast.FType(ty) -> fullType ty
+  | Ast.FInline(inline) -> mcode print_string inline
+  | Ast.FAttr(attr) -> mcode print_string attr
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -307,8 +322,8 @@ and typeC ty =
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
-  | Ast.FunctionType (_,ty,lp1,params,rp1) ->
-      print_function_type (ty,lp1,params,rp1) (function _ -> ())
+  | Ast.FunctionType (_,fninfo,lp1,params,rp1) ->
+      print_function_type (fninfo,lp1,params,rp1) (function _ -> ())
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -344,15 +359,6 @@ and const_vol = function
   | Ast.Volatile -> print_string "volatile"
 
 (* --------------------------------------------------------------------- *)
-(* Declarations *)
-
-and storage = function
-    Ast.Static -> print_string "static "
-  | Ast.Auto -> print_string "auto "
-  | Ast.Register -> print_string "register "
-  | Ast.Extern -> print_string "extern "
-
-(* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
@@ -364,8 +370,8 @@ and print_named_type ty id =
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> print_string " "; ident id)
-      | Ast.FunctionType(_,ty,lp1,params,rp1) ->
-	  print_function_type (ty,lp1,params,rp1)
+      | Ast.FunctionType(_,fninfo,lp1,params,rp1) ->
+	  print_function_type (fninfo,lp1,params,rp1)
 	    (function _ -> print_string " "; ident id)
       | Ast.Array(ty,lb,size,rb) ->
 	  print_array (ty,lb,size,rb)
@@ -454,11 +460,9 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 let rec rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,stg,ty,name,lp,params,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
       mcode (function _ -> ()) ((),(),bef);
-      print_string arity;
-      print_option (mcode storage) stg;
-      print_option fullType ty;
+      print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "

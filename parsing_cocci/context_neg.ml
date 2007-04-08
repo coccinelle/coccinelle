@@ -268,7 +268,7 @@ let classify all_marked table code =
 	    ender
 (*  Why? There is nothing there
 	(* cases for everyhing eith extra mcode *)
-      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
+      |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (mcode ((),(),info,bef)) (k s)
       | Ast0.IfThen(_,_,_,_,_,(info,aft))
@@ -462,9 +462,10 @@ let equal_parameterTypeDef p1 p2 =
 
 let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
-    (Ast0.FunDecl(_,stg1,_,_,lp1,_,rp1,lbrace1,_,rbrace1),
-     Ast0.FunDecl(_,stg2,_,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
-       equal_option stg1 stg2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
+    (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1),
+     Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
+       equal_fninfo fninfo1 fninfo2 &&
+       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
        equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
   | (Ast0.Decl(_,_),Ast0.Decl(_,_)) -> true
   | (Ast0.Seq(lbrace1,_,rbrace1),Ast0.Seq(lbrace2,_,rbrace2)) ->
@@ -527,6 +528,16 @@ let rec equal_statement s1 s2 =
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
   | (Ast0.MultiStm(_),Ast0.MultiStm(_)) -> true
   | _ -> false
+
+and equal_fninfo x y =
+  match (x,y) with
+    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_storage s1 s2
+  | (Ast0.FType(_),Ast0.FType(_)) -> true
+  | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
+  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
+  | _ -> false
+
+
 
 let equal_case_line c1 c2 =
   match (Ast0.unwrap c1,Ast0.unwrap c2) with

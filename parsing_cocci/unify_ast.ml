@@ -214,11 +214,11 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
-  | (Ast.FunctionType(_,tya,lp1a,paramsa,rp1a),
-     Ast.FunctionType(_,tyb,lp1b,paramsb,rp1b)) ->
+  | (Ast.FunctionType(_,fia,lp1a,paramsa,rp1a),
+     Ast.FunctionType(_,fib,lp1b,paramsb,rp1b)) ->
        if List.for_all2 unify_mcode [lp1a;rp1a] [lp1b;rp1b]
        then
-	 conjunct_bindings (unify_option unify_fullType tya tyb)
+	 conjunct_bindings (unify_fninfo fia fib)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
   | (Ast.FunctionType _ , _) -> failwith "not supported"
@@ -344,14 +344,11 @@ and unify_parameterTypeDef p1 p2 =
 
 let rec unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
-    (Ast.FunHeader(_,_,stg1,ty1,nm1,lp1,params1,rp1),
-     Ast.FunHeader(_,_,stg2,ty2,nm2,lp2,params2,rp2)) ->
-      if bool_unify_option unify_mcode stg1 stg2
-      then
-	conjunct_bindings (unify_true_option unify_fullType ty1 ty2)
-	  (conjunct_bindings (unify_ident nm1 nm2)
-	     (unify_dots unify_parameterTypeDef pdots params1 params2))
-      else return false
+    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,rp1),
+     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,rp2)) ->
+       conjunct_bindings (unify_fninfo fi1 fi2)
+	 (conjunct_bindings (unify_ident nm1 nm2)
+	    (unify_dots unify_parameterTypeDef pdots params1 params2))
   | (Ast.Decl(_,_,d1),Ast.Decl(_,_,d2)) -> unify_declaration d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> return true
@@ -398,6 +395,26 @@ let rec unify_rule_elem re1 re2 =
   | (Ast.Ty(t1),_) -> subtype (unify_fullType t1) re2
   | (_,Ast.Ty(t2)) -> subtype (unify_fullType t2) re1
   | _ -> return false
+
+and unify_fninfo patterninfo cinfo =
+  let patterninfo = List.sort compare patterninfo in
+  let cinfo = List.sort compare cinfo in
+  let rec loop = function
+      (Ast0.Storage(sta)::resta,Ast0.Storage(stb)::restb)
+      if mcode_equal sta stb then loop resta restb else return false
+    | (Ast0.Type(tya)::resta,Ast0.Type(tyb)::restb) ->
+	conjunct_bindings (match_typeC tya tyb) (loop resta restb)
+    | (Ast0.Inline(ia)::resta,Ast0.Inline(ib)::restb) ->
+	if mcode_equal ia ib then loop resta restb else return false
+    | (Ast0.Init(ia)::resta,Ast0.Init(ib)::restb) ->
+	if mcode_equal ia ib then loop resta restb else return false
+    | (x::resta,((y::_) as restb)) ->
+	(match compare x y with
+	  -1 -> return false
+	| 1 -> loop resta restb
+	| _ -> failwith "not possible")
+    | _ -> return false in
+  loop (patterninfo cinfo)
 
 and subexp f =
   let bind = conjunct_bindings in

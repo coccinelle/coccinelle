@@ -171,9 +171,9 @@ let combiner bind option_default
       ([typeC ty; string_mcode lp1; string_mcode star] @ extra @
        [string_mcode rp1;
 	 string_mcode lp2; parameter_dots params; string_mcode rp2])
-  and function_type (ty,lp1,params,rp1) extra =
+  and function_type (fi,lp1,params,rp1) extra =
     (* have to put the treatment of the identifier into the right position *)
-    multibind ([get_option typeC ty] @ extra @
+    multibind ((List.map fninfo fi) @ extra @
 	       [string_mcode lp1; parameter_dots params; string_mcode rp1])
   and array_type (ty,lb,size,rb) extra =
     multibind
@@ -189,8 +189,8 @@ let combiner bind option_default
       | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	  function_type (ty,lp1,params,rp1) []
+      | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
+	  function_type (fninfo,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) ->
 	  array_type (ty,lb,size,rb) []
       | Ast0.StructUnionName(kind,name) ->
@@ -222,8 +222,8 @@ let combiner bind option_default
     match Ast0.unwrap ty with
       Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
-    | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	function_type (ty,lp1,params,rp1) [ident id]
+    | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
+	function_type (fninfo,lp1,params,rp1) [ident id]
     | Ast0.Array(ty,lb,size,rb) ->
 	array_type (ty,lb,size,rb) [ident id]
     | _ -> bind (typeC ty) (ident id)
@@ -317,12 +317,12 @@ let combiner bind option_default
     process_bef_aft s;
     let k s =
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace) ->
 	  multibind
-	    [get_option storage_mcode stg; get_option typeC ty;
-	      ident name; string_mcode lp;
-	      parameter_dots params; string_mcode rp; string_mcode lbrace;
-	      statement_dots body; string_mcode rbrace]
+	    ((List.map fninfo fi) @
+	     [ident name; string_mcode lp;
+	       parameter_dots params; string_mcode rp; string_mcode lbrace;
+	       statement_dots body; string_mcode rbrace])
       | Ast0.Decl(_,decl) -> declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  multibind
@@ -399,6 +399,13 @@ let combiner bind option_default
       | Ast0.UniqueStm(re) -> statement re
       | Ast0.MultiStm(re) -> statement re in
     stmtfn all_functions k s
+
+  and fninfo = function
+      Ast0.FStorage(stg) -> storage_mcode stg
+    | Ast0.FType(ty) -> typeC ty
+    | Ast0.FInline(inline) -> string_mcode inline
+    | Ast0.FAttr(init) -> string_mcode init
+
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> option_default
     | Ast0.WhenNot a -> notfn a
@@ -630,8 +637,8 @@ let rebuilder = fun
 				 string_mcode rp1,string_mcode lp2,
 				 parameter_list params,
 				 string_mcode rp2)
-	| Ast0.FunctionType(ty,lp1,params,rp1) ->
-	    Ast0.FunctionType(get_option typeC ty,
+	| Ast0.FunctionType(fi,lp1,params,rp1) ->
+	    Ast0.FunctionType(List.map fninfo fi,
 			      string_mcode lp1,parameter_list params,
 			      string_mcode rp1)
 	| Ast0.Array(ty,lb,size,rb) ->
@@ -736,9 +743,8 @@ let rebuilder = fun
     let k s =
       Ast0.rewrap s
 	(match Ast0.unwrap s with
-	  Ast0.FunDecl(bef,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
-	    Ast0.FunDecl(bef,get_option storage_mcode stg,
-			 get_option typeC ty, ident name,
+	  Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	    Ast0.FunDecl(bef,List.map fninfo fi, ident name,
 			 string_mcode lp, parameter_list params,
 			 string_mcode rp, string_mcode lbrace,
 			 statement_dots body, string_mcode rbrace)
@@ -811,6 +817,13 @@ let rebuilder = fun
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
     let s = stmtfn all_functions k s in
     process_bef_aft s
+
+  and fninfo = function
+      Ast0.FStorage(stg) -> Ast0.FStorage(storage_mcode stg)
+    | Ast0.FType(ty) -> Ast0.FType(typeC ty)
+    | Ast0.FInline(inline) -> Ast0.FInline(string_mcode inline)
+    | Ast0.FAttr(init) -> Ast0.FAttr(string_mcode init)
+
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> Ast0.NoWhen
     | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)

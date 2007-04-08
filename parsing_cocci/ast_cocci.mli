@@ -168,7 +168,7 @@ and base_typeC =
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
   | FunctionType     of bool (* true if all minus for dropping return type *) *
-                   fullType option *
+                   fninfo list *
 	           string mcode (* ( *) * parameter_list *
                    string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
@@ -273,8 +273,7 @@ and storage = Static | Auto | Register | Extern
 and base_rule_elem =
     FunHeader     of mcodekind (* before the function header *) *
 	             bool (* true if all minus, for dropping static, etc *) *
-	             storage mcode option * fullType option *
-	             ident (* name *) *
+	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
   | Decl          of mcodekind (* before the decl *) * 
@@ -318,6 +317,12 @@ and base_rule_elem =
 	string mcode list option (*params*) * define_body
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
+
+and fninfo =
+    FStorage of storage mcode
+  | FType of fullType
+  | FInline of string mcode
+  | FAttr of string mcode
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible

@@ -267,9 +267,15 @@ and statement table minus s =
       get_opt (dots (statement table minus)) w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
       whencode (dots (statement table minus)) (statement table minus) x
-  | Ast0.FunDecl(_,stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN table minus name;
-      get_opt (typeC table minus) ty;
+      List.iter
+	(function
+	    Ast0.Storage(stg) -> ()
+	  | Ast0.Type(ty) -> typeC table minus ty
+	  | Ast0.Inline(inline) -> ()
+	  | Ast0.Init(init) -> ())
+	fninfo;
       parameter_list table minus params;
       dots (statement table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
