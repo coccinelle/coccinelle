@@ -52,7 +52,7 @@ let token2c (tok,_) =
   | PC.Tsigned(clt) -> "signed"^(line_type2c clt)
   | PC.Tstatic(clt) -> "static"^(line_type2c clt)
   | PC.Tinline(clt) -> "inline"^(line_type2c clt)
-  | PC.Tinit(clt) -> "__init"^(line_type2c clt)
+  | PC.Tattr(s,clt) -> s^(line_type2c clt)
   | PC.Tauto(clt) -> "auto"^(line_type2c clt)
   | PC.Tregister(clt) -> "register"^(line_type2c clt)
   | PC.Textern(clt) -> "extern"^(line_type2c clt)
@@ -234,7 +234,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
-  | PC.Tinline(clt) | PC.Tinit(clt)
+  | PC.Tinline(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
@@ -352,7 +352,7 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt) 
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt) 
-  | PC.Tinline(clt) | PC.Tinit(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) 
+  | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tconst(clt) | PC.Tvolatile(clt) 
 
   | PC.TInc(clt) | PC.TDec(clt) 
 	
@@ -587,7 +587,7 @@ let reinit _ =
     (Lexing.from_function
        (function buf -> function n -> raise Common.Impossible))
 
-let parse_one parsefn file toks =
+let parse_one str parsefn file toks =
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
 
@@ -607,15 +607,15 @@ let parse_one parsefn file toks =
   with 
     Lexer_cocci.Lexical s ->
       failwith
-	(Printf.sprintf "lexical error %s\n =%s\n" s
+	(Printf.sprintf "%s: lexical error %s\n =%s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Parser_cocci_menhir.Error ->
       failwith
-	(Printf.sprintf "parse error \n = %s\n" 
+	(Printf.sprintf "%s: parse error \n = %s\n" str
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Semantic_cocci.Semantic s ->
       failwith
-	(Printf.sprintf "semantic error %s\n =%s\n" s
+	(Printf.sprintf "%s: semantic error %s\n =%s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
 
   | e -> raise e
@@ -657,7 +657,8 @@ let parse_iso = function
 	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	    Printf.printf "\n\n";
 	    *)
-	    let iso_metavars = parse_one PC.iso_meta_main file tokens in
+	    let iso_metavars =
+	      parse_one "iso meta" PC.iso_meta_main file tokens in
 	    let iso_metavars =
 	      match partition_either iso_metavars with
 		(iso_metavars,[]) -> iso_metavars
@@ -676,7 +677,7 @@ let parse_iso = function
 	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	    Printf.printf "\n\n";
 	    *)
-	    let entry = parse_one PC.iso_main file tokens in
+	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    if more
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,
@@ -707,7 +708,7 @@ let parse file default_isos =
 	  then
 	    begin
 	      let (_,tokens) = tokens_all table file true lexbuf [PC.TArob] in
-	      parse_one PC.rule_name file tokens
+	      parse_one "rule name" PC.rule_name file tokens
 	    end
 	  else (make_name(),None) in
 	Ast0_cocci.rule_name := rule_name;
@@ -721,7 +722,7 @@ let parse file default_isos =
 	Printf.printf "\n\n";
         flush stdout;
         *)
-	let metavars = parse_one PC.meta_main file tokens in
+	let metavars = parse_one "meta" PC.meta_main file tokens in
 	let (metavars,inherited_metavars) = partition_either metavars in
 	Hashtbl.add Data.all_metadecls rule_name metavars;
 	Hashtbl.add Lexer_cocci.rule_names rule_name ();
@@ -748,14 +749,14 @@ let parse file default_isos =
 	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	let minus_tokens = prepare_tokens minus_tokens in
 	let plus_tokens = prepare_tokens plus_tokens in
-	(*
+
 	Printf.printf "minus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
 	Printf.printf "\n\n";
 	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
 	Printf.printf "\n\n";
-	*)
+
 	let plus_tokens =
 	  fix (function x -> drop_double_dots (drop_empty_or x))
 	    (drop_when plus_tokens) in
@@ -765,12 +766,12 @@ let parse file default_isos =
 	Printf.printf "\n\n";
 	Printf.printf "before minus parse\n";
 	*)
-	let minus_res = parse_one PC.minus_main file minus_tokens in
+	let minus_res = parse_one "minus" PC.minus_main file minus_tokens in
 	(*
 	Unparse_ast0.unparse minus_res;
 	Printf.printf "before plus parse\n";
 	*)
-	let plus_res = parse_one PC.plus_main file plus_tokens in
+	let plus_res = parse_one "plus" PC.plus_main file plus_tokens in
 	(*
 	Printf.printf "after plus parse\n";
 	*)

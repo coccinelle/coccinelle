@@ -464,7 +464,8 @@ let rec equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
     (Ast0.FunDecl(_,fninfo1,_,lp1,_,rp1,lbrace1,_,rbrace1),
      Ast0.FunDecl(_,fninfo2,_,lp2,_,rp2,lbrace2,_,rbrace2)) ->
-       equal_fninfo fninfo1 fninfo2 &&
+       (List.length fninfo1) = (List.length fninfo2) &&
+       List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 &&
        equal_mcode lbrace1 lbrace2 && equal_mcode rbrace1 rbrace2
   | (Ast0.Decl(_,_),Ast0.Decl(_,_)) -> true
@@ -531,13 +532,11 @@ let rec equal_statement s1 s2 =
 
 and equal_fninfo x y =
   match (x,y) with
-    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_storage s1 s2
+    (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
   | (Ast0.FType(_),Ast0.FType(_)) -> true
   | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
   | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
   | _ -> false
-
-
 
 let equal_case_line c1 c2 =
   match (Ast0.unwrap c1,Ast0.unwrap c2) with

@@ -193,8 +193,8 @@ and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   mcode print_string rp1; mcode print_string lp2;
   parameter_list params; mcode print_string rp2
 
-and print_function_type (fninfo,lp1,params,rp1) fn =
-  List.iter print_fninfo fninfo; fn(); mcode print_string lp1;
+and print_function_type (ty,lp1,params,rp1) fn =
+  print_option typeC ty; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
 and print_array (ty,lb,size,rb) fn =
@@ -214,8 +214,8 @@ and typeC t =
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	    (function _ -> ())
-      | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
-	  print_function_type (fninfo,lp1,params,rp1) (function _ -> ())
+      | Ast0.FunctionType(ty,lp1,params,rp1) ->
+	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
 	  print_array (ty,lb,size,rb) (function _ -> ())
       | Ast0.StructUnionName(kind,name) ->

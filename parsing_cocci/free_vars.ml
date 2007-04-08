@@ -229,15 +229,18 @@ let collect_in_plus_term =
 
   let mcode r (_,_,mck) = mcodekind r mck in
 
-  let get_option f = function Some x -> f x | None -> [] in
-
   (* case for things with bef/aft mcode *)
 
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,ret,nm,_,params,_) ->
-	let ret_metas =
-	  get_option collect_all_refs.V.combiner_fullType ret in
+      Ast.FunHeader(bef,_,fi,nm,_,params,_) ->
+	let fi_metas =
+	  List.concat
+	    (List.map
+	       (function
+		   Ast.FType(ty) -> collect_all_refs.V.combiner_fullType ty
+		 | _ -> [])
+	       fi) in
 	let nm_metas = collect_all_refs.V.combiner_ident nm in
 	let param_metas =
 	  match Ast.unwrap params with
@@ -251,7 +254,7 @@ let collect_in_plus_term =
 		     | _ -> [])
 		   params)
 	  | _ -> failwith "not allowed for params" in
-	bind ret_metas
+	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
 		(bind (mcodekind recursor bef) (k re))))

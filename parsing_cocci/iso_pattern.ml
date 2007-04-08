@@ -762,21 +762,21 @@ mysterious bug that is obtained with eg int attach(...); *)
     let patterninfo = List.sort compare patterninfo in
     let cinfo = List.sort compare cinfo in
     let rec loop = function
-	(Ast0.FStorage(sta)::resta,Ast0.FStorage(stb)::restb)
-	  if mcode_equal sta stb then loop resta restb else return false
+	(Ast0.FStorage(sta)::resta,Ast0.FStorage(stb)::restb) ->
+	  if mcode_equal sta stb then loop (resta,restb) else return false
       |	(Ast0.FType(tya)::resta,Ast0.FType(tyb)::restb) ->
-	  conjunct_bindings (match_typeC tya tyb) (loop resta restb)
+	  conjunct_bindings (match_typeC tya tyb) (loop (resta,restb))
       |	(Ast0.FInline(ia)::resta,Ast0.FInline(ib)::restb) ->
-	  if mcode_equal ia ib then loop resta restb else return false
+	  if mcode_equal ia ib then loop (resta,restb) else return false
       |	(Ast0.FAttr(ia)::resta,Ast0.FAttr(ib)::restb) ->
-	  if mcode_equal ia ib then loop resta restb else return false
+	  if mcode_equal ia ib then loop (resta,restb) else return false
       |	(x::resta,((y::_) as restb)) ->
 	  (match compare x y with
 	    -1 -> return false
-	  | 1 -> loop resta restb
+	  | 1 -> loop (resta,restb)
 	  | _ -> failwith "not possible")
       |	_ -> return false in
-    loop (patterninfo cinfo)
+    loop (patterninfo,cinfo)
 
   and match_case_line pattern c =
     if not(context_required) or is_context c
@@ -990,10 +990,10 @@ let rebuild_mcode start_line =
 	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
 		      (info,copy_mcodekind mc))
 	 | Ast0.FunDecl
-	     ((info,mc),stg,ty,name,lp,params,rp,lbrace,body,rbrace) ->
+	     ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	       Ast0.FunDecl
 		 ((info,copy_mcodekind mc),
-		  stg,ty,name,lp,params,rp,lbrace,body,rbrace)
+		  fninfo,name,lp,params,rp,lbrace,body,rbrace)
 	 | s -> s)) in
 
   V0.rebuilder
@@ -1380,10 +1380,10 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
 (* copy the befores and afters to the instantiated code *)
 let extra_copy_stmt_plus model e =
   (match Ast0.unwrap model with
-    Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_)
+    Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
   | Ast0.Decl((info,bef),_) ->
       (match Ast0.unwrap e with
-	Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_)
+	Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef1),_) ->
 	  merge_plus bef bef1
       | _ ->  merge_plus bef (Ast0.get_mcodekind e))

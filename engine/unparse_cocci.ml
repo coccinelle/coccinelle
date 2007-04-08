@@ -404,10 +404,8 @@ let rec define_body m =
 
 and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(_,_,stg,ty,name,lp,params,rp) ->
-      print_string arity;
-      print_option (mcode storage) stg;
-      print_option fullType ty;
+    Ast.FunHeader(_,_,fninfo,name,lp,params,rp) ->
+      print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
@@ -489,7 +487,13 @@ and rule_elem arity re =
                            )
   | Ast.MetaStmtList(name,_,_) ->
       failwith
-	"MetaStmtList not supported (not even in ast_c metavars binding)" in
+	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and print_fninfo = function
+    Ast.FStorage(stg) -> mcode storage stg
+  | Ast.FType(ty) -> fullType ty
+  | Ast.FInline(inline) -> mcode print_string inline; print_string " "
+  | Ast.FAttr(attr) -> mcode print_string attr; print_string " " in
 
 let rec statement arity s =
   match Ast.unwrap s with

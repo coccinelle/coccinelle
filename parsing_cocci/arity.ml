@@ -646,13 +646,14 @@ and parameter_list tgt = dots (parameterTypeDef tgt)
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let make_rule_elem =
+and make_rule_elem x =
   make_opt_unique
     (function x -> Ast0.OptStm x)
     (function x -> Ast0.UniqueStm x)
     (function x -> Ast0.MultiStm x)
+    x
 
-let rec statement in_nest tgt stm =
+and statement in_nest tgt stm =
   let stm_same = all_same in_nest true tgt in
   match Ast0.unwrap stm with
     Ast0.Decl(bef,decl) ->
@@ -847,19 +848,11 @@ let rec statement in_nest tgt stm =
 	whencode (concat_dots (statement false Ast0.NONE))
 	  (statement false Ast0.NONE) whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
-  | Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+  | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
 	all_same false true tgt (mcode2line lp)
-	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
-	   (List.map mcode2arity [lp;rp;lbrace;rbrace])) in
-      let fninfo =
-	List.map
-	  (function
-	      Ast0.Storage(stg) -> mcode stg
-	    | Ast0.FType(ty) -> typeC arity ty
-	    | Ast0.Inline(inline) -> mcode inline
-	    | Ast0.Init(init) -> mcode init)
-	  fninfo in
+	  ((List.map mcode2arity [lp;rp;lbrace;rbrace]) @ (fninfo2arity fi)) in
+      let fi = List.map (fninfo arity) fi in
       let name = ident false false arity name in
       let lp = mcode lp in
       let params = parameter_list arity params in
@@ -868,7 +861,7 @@ let rec statement in_nest tgt stm =
       let body = dots (statement false arity) body in
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
-	(Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace))
+	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
   | Ast0.Include(inc,s) -> 
       let arity =
 	all_same true true tgt (mcode2line inc)
@@ -885,7 +878,23 @@ let rec statement in_nest tgt stm =
       let body = define_body arity body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
-      failwith "unexpected code"	
+      failwith "unexpected code"
+
+and fninfo arity = function
+    Ast0.FStorage(stg) -> Ast0.FStorage(mcode stg)
+  | Ast0.FType(ty) -> Ast0.FType(typeC arity ty)
+  | Ast0.FInline(inline) -> Ast0.FInline(mcode inline)
+  | Ast0.FAttr(attr) -> Ast0.FAttr(mcode attr)
+
+and fninfo2arity fninfo =
+  List.concat
+    (List.map
+       (function
+	   Ast0.FStorage(stg) -> [mcode2arity stg]
+	 | Ast0.FType(ty) -> []
+	 | Ast0.FInline(inline) -> [mcode2arity inline]
+	 | Ast0.FAttr(attr) -> [mcode2arity attr])
+       fninfo)
 
 and whencode notfn alwaysfn = function
     Ast0.NoWhen -> Ast0.NoWhen

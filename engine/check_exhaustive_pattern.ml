@@ -19,7 +19,7 @@ let dumb_astcocci_rule_elem = function
  | A.MetaStmtList _ -> ()
  | A.Exp expr -> ()
  | A.Ty ty -> ()
- | A.FunHeader (bef,allminus, stoa, tya, ida, _, paramsa, _) -> ()
+ | A.FunHeader (bef,allminus, fninfo, ida, _, paramsa, _) -> ()
  | A.Decl (bef,allminus,decla) -> ()
  | A.SeqStart _ -> ()
  | A.SeqEnd _ -> ()

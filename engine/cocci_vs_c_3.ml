@@ -2413,8 +2413,25 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       )
 
 
-  | A.FunHeader (mckstart, allminus, stoa, tya, ida, oparen, paramsa, cparen),
+  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, cparen),
     F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
+
+      (* fninfoa records the order in which the SP specified the various
+	 information, but this isn't taken into account in the matching.
+	 Could this be a problem for transformation? *)
+      let stoa =
+	match
+	  List.filter (function A.FStorage(s) -> true | _ -> false) fninfoa
+	with [A.FStorage(s)] -> Some s | _ -> None in
+      let tya = 
+	match List.filter (function A.FType(s) -> true | _ -> false) fninfoa
+	with [A.FType(t)] -> Some t | _ -> None in
+
+      (match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
+      with [A.FInline(i)] -> failwith "not checking inline" | _ -> ());
+
+      (match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
+      with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
 
       (match ii with
       | iidb::ioparenb::icparenb::iifakestart::iistob -> 
@@ -2446,7 +2463,7 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             
            fullType_optional_allminus allminus tya retb >>= (fun tya retb -> 
              return (
-               A.FunHeader(mckstart,allminus,stoa,tya,ida,oparen,
+               A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
                           paramsa,cparen),
                F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), 
                             stob), 

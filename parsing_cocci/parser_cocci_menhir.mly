@@ -500,11 +500,11 @@ metadec:
       else raise (Semantic_cocci.Semantic "bad declarer")) }
 
 meta_exp_type:
-  ctype
-    { [Ast0_cocci.ast0_type_to_type $1] }
-| TOBrace comma_list(ctype) TCBrace m=list(TMul)
+  t=ctype
+    { [Ast0_cocci.ast0_type_to_type t] }
+| TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map (function x -> ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
-	$2 }
+	t }
 
 arity: TBang0 { Ast.UNIQUE }
      | TWhy0  { Ast.OPT }
@@ -641,11 +641,11 @@ includes:
 	   (Ast0.wrap
 	      (Ast0.Include(clt2mcode "#include" (id2clt $1),
 			    id2mcode $1)))) }
-| defineop ctype TLineEnd
-    { let ty = Ast0.wrap(Ast0.Ty($2)) in
+| d=defineop t=ctype TLineEnd
+    { let ty = Ast0.wrap(Ast0.Ty(t)) in
       Ast0.wrap
 	(Ast0.DECL
-	   ($1 (Ast0.wrap (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty]))))))) }
+	   (d (Ast0.wrap (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty]))))))) }
 | defineop b=statement_dots(TEllipsis) TLineEnd
     { Ast0.wrap
 	(Ast0.DECL
@@ -718,14 +718,25 @@ defineop:
 
 funproto:
   s=ioption(storage) t=ctype
-  i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
+  id=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
       { Ast0.wrap
 	  (Ast0.UnInit
 	     (s,
 	      Ast0.wrap
 		(Ast0.FunctionType(Some t,
 				   clt2mcode "(" lp, d, clt2mcode ")" rp)),
-	      i, clt2mcode ";" pt)) }
+	      id, clt2mcode ";" pt)) }
+| s=ioption(storage) t=Tvoid
+  id=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
+    { let t = Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t, None)) in
+      Ast0.wrap
+        (Ast0.UnInit
+	   (s,
+	    Ast0.wrap
+	      (Ast0.FunctionType(Some t,
+				 clt2mcode "(" lp, d, clt2mcode ")" rp)),
+	    id, clt2mcode ";" pt)) }
+
 
 fundecl:
   f=fninfo
@@ -739,17 +750,14 @@ fundecl:
 			       clt2mcode "}" rb)) }
 
 fninfo:
-    storage          { [Ast0.FStorage($1)] }
-  | fn_ctype         { [Ast0.FType($1)] }
-  | Tinline          { [Ast0.FInline(clt2mcode "inline" $1)] }
-  | Tattr            { [Ast0.FAttr(id2mcode $1)] }
+    /* empty */ { [] }
   | storage  fninfo
       { try
 	let _ =
 	  List.find (function Ast0.FStorage(_) -> true | _ -> false) $2 in
 	raise (Semantic_cocci.Semantic "duplicate storage")
       with Not_found -> (Ast0.FStorage($1))::$2 }
-  | fn_ctype fninfo_nt { (Ast0.FType($1))::$2 }
+  | t=fn_ctype r=fninfo_nt { (Ast0.FType(t))::r }
   | Tinline  fninfo
       { try
 	let _ = List.find (function Ast0.FInline(_) -> true | _ -> false) $2 in
@@ -762,9 +770,7 @@ fninfo:
       with Not_found -> (Ast0.FAttr(id2mcode $1))::$2 }
 
 fninfo_nt:
-    storage          { [Ast0.FStorage($1)] }
-  | Tinline          { [Ast0.FInline(clt2mcode "inline" $1)] }
-  | Tattr            { [Ast0.FInit(clt2mcode "__init" $1)] }
+    /* empty */ { [] }
   | storage  fninfo_nt
       { try
 	let _ =
@@ -778,9 +784,9 @@ fninfo_nt:
       with Not_found -> (Ast0.FInline(clt2mcode "inline" $1))::$2 }
   | Tattr    fninfo_nt
       { try
-	let _ = List.find (function Ast0.FInit(_) -> true | _ -> false) $2 in
+	let _ = List.find (function Ast0.FAttr(_) -> true | _ -> false) $2 in
 	raise (Semantic_cocci.Semantic "duplicate init")
-      with Not_found -> (Ast0.FInit(clt2mcode "__init" $1))::$2 }
+      with Not_found -> (Ast0.FAttr(id2mcode $1))::$2 }
 
 storage:
          s=Tstatic      { clt2mcode Ast.Static s }
@@ -788,15 +794,16 @@ storage:
        | s=Tregister    { clt2mcode Ast.Register s }
        | s=Textern      { clt2mcode Ast.Extern s }
 
-decl: ctype ident
-	{ Ast0.wrap(Ast0.Param($1, Some $2)) }
-    | ctype TOPar TMul ident TCPar TOPar decl_list(name_opt_decl) TCPar
+decl: t=ctype i=ident
+	{ Ast0.wrap(Ast0.Param(t, Some i)) }
+    | t=ctype lp=TOPar s=TMul i=ident rp=TCPar
+	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
 	    (Ast0.FunctionPointer
-	       ($1,clt2mcode "(" $2,clt2mcode "*" $3,clt2mcode ")" $5,
-		clt2mcode "(" $6,$7,clt2mcode ")" $8)) in
-	Ast0.wrap(Ast0.Param(fnptr, Some $4)) }
+	       (t,clt2mcode "(" lp,clt2mcode "*" s,clt2mcode ")" rp,
+		clt2mcode "(" lp1,d,clt2mcode ")" rp1)) in
+	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
     | t=Tvoid
 	{ let ty = Ast0.wrap(Ast0.BaseType(clt2mcode Ast.VoidType t, None)) in
           Ast0.wrap(Ast0.VoidParam(ty)) }
@@ -806,13 +813,14 @@ decl: ctype ident
 
 name_opt_decl:
       decl  { $1 }
-    | ctype { Ast0.wrap(Ast0.Param($1, None)) }
-    | ctype TOPar TMul TCPar TOPar decl_list(name_opt_decl) TCPar
+    | t=ctype { Ast0.wrap(Ast0.Param(t, None)) }
+    | t=ctype lp=TOPar s=TMul rp=TCPar
+	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
 	    (Ast0.FunctionPointer
-	       ($1,clt2mcode "(" $2,clt2mcode "*" $3,clt2mcode ")" $4,
-		clt2mcode "(" $5,$6,clt2mcode ")" $7)) in
+	       (t,clt2mcode "(" lp,clt2mcode "*" s,clt2mcode ")" rp,
+		clt2mcode "(" lp1,d,clt2mcode ")" rp1)) in
 	Ast0.wrap(Ast0.Param(fnptr, None)) }
 
 const_vol:
@@ -1211,9 +1219,9 @@ arith_expr(r,pe):
 
 cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
-  | TOPar ctype TCPar cast_expr(r,pe)
-      { Ast0.wrap(Ast0.Cast (clt2mcode "(" $1, $2,
-			     clt2mcode ")" $3, $4)) }
+  | lp=TOPar t=ctype rp=TCPar e=cast_expr(r,pe)
+      { Ast0.wrap(Ast0.Cast (clt2mcode "(" lp, t,
+			     clt2mcode ")" rp, e)) }
 
 unary_expr(r,pe):
     postfix_expr(r,pe)                   { $1 }
@@ -1225,11 +1233,11 @@ unary_expr(r,pe):
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr(r,pe)
       { Ast0.wrap(Ast0.SizeOfExpr (clt2mcode "sizeof" $1, $2)) }
-  | TSizeof TOPar ctype TCPar 
-      { Ast0.wrap(Ast0.SizeOfType (clt2mcode "sizeof" $1,
-                                   clt2mcode "(" $2,
-                                   $3,
-                                   clt2mcode ")" $4)) }
+  | s=TSizeof lp=TOPar t=ctype rp=TCPar
+      { Ast0.wrap(Ast0.SizeOfType (clt2mcode "sizeof" s,
+                                   clt2mcode "(" lp,
+                                   t,
+                                   clt2mcode ")" rp)) }
                                    
 
 unary_op: TAnd   { clt2mcode Ast.GetRef $1 }
@@ -1387,16 +1395,16 @@ exp_decl_statement_list:
   | pure_decl_statement_list                { $1 }
 
 fun_exp_decl_statement_list:
-    ctype
+    t=ctype
       /* This rule could be in exp_decl_statement_list, which would allow
          it to be ain a... sequence.  But it is not clear whether that makes
          sense, so for now it is here. */
-      { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
-  | TOPar0 midzero_list(ctype) TCPar0
+      { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(t))))] }
+  | lp=TOPar0 t=midzero_list(ctype) rp=TCPar0
       /* more hacks */
-    { let (mids,code) = $2 in
+    { let (mids,code) = t in
     let s =
-      Ast0.wrap(Ast0.DisjType(clt2mcode "(" $1,code,mids, clt2mcode ")" $3)) in
+      Ast0.wrap(Ast0.DisjType(clt2mcode "(" lp,code,mids, clt2mcode ")" rp)) in
     [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
   | expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
@@ -1563,11 +1571,11 @@ comma_list(elem):
   separated_nonempty_list(TComma,elem) { $1 }
 
 midzero_list(elem):
-  elem list(mzl(elem))
-     { let (mids,code) = List.split $2 in (mids,($1::code)) }
+  a=elem b=list(mzl(elem))
+     { let (mids,code) = List.split b in (mids,(a::code)) }
 
 mzl(elem):
-  TMid0 elem { (clt2mcode "|" $1, $2) }
+  a=TMid0 b=elem { (clt2mcode "|" a, b) }
 
 // SEQ1
 // at least one instance of grammar/ender

@@ -171,9 +171,9 @@ let combiner bind option_default
       ([typeC ty; string_mcode lp1; string_mcode star] @ extra @
        [string_mcode rp1;
 	 string_mcode lp2; parameter_dots params; string_mcode rp2])
-  and function_type (fi,lp1,params,rp1) extra =
+  and function_type (ty,lp1,params,rp1) extra =
     (* have to put the treatment of the identifier into the right position *)
-    multibind ((List.map fninfo fi) @ extra @
+    multibind ([get_option typeC ty] @ extra @
 	       [string_mcode lp1; parameter_dots params; string_mcode rp1])
   and array_type (ty,lb,size,rb) extra =
     multibind
@@ -189,8 +189,8 @@ let combiner bind option_default
       | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
-	  function_type (fninfo,lp1,params,rp1) []
+      | Ast0.FunctionType(ty,lp1,params,rp1) ->
+	  function_type (ty,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) ->
 	  array_type (ty,lb,size,rb) []
       | Ast0.StructUnionName(kind,name) ->
@@ -222,8 +222,8 @@ let combiner bind option_default
     match Ast0.unwrap ty with
       Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
-    | Ast0.FunctionType(fninfo,lp1,params,rp1) ->
-	function_type (fninfo,lp1,params,rp1) [ident id]
+    | Ast0.FunctionType(ty,lp1,params,rp1) ->
+	function_type (ty,lp1,params,rp1) [ident id]
     | Ast0.Array(ty,lb,size,rb) ->
 	array_type (ty,lb,size,rb) [ident id]
     | _ -> bind (typeC ty) (ident id)
@@ -637,8 +637,8 @@ let rebuilder = fun
 				 string_mcode rp1,string_mcode lp2,
 				 parameter_list params,
 				 string_mcode rp2)
-	| Ast0.FunctionType(fi,lp1,params,rp1) ->
-	    Ast0.FunctionType(List.map fninfo fi,
+	| Ast0.FunctionType(ty,lp1,params,rp1) ->
+	    Ast0.FunctionType(get_option typeC ty,
 			      string_mcode lp1,parameter_list params,
 			      string_mcode rp1)
 	| Ast0.Array(ty,lb,size,rb) ->

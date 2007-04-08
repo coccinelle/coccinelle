@@ -9,6 +9,12 @@ module V0 = Visitor_ast0
 
 let unitary = Type_cocci.Unitary
 
+let ctr = ref 0
+let get_ctr _ =
+  let c = !ctr in
+  ctr := !ctr + 1;
+  c
+
 (* --------------------------------------------------------------------- *)
 (* Move plus tokens from the MINUS and CONTEXT structured nodes to the
 corresponding leftmost and rightmost mcodes *)
@@ -340,12 +346,12 @@ and typeC t =
 		   (Ast.FunctionPointer
 		      (typeC ty,mcode lp1,mcode star,mcode rp1,
 		       mcode lp2,parameter_list params,mcode rp2)))
-    | Ast0.FunctionType(fi,lp1,params,rp1) ->
+    | Ast0.FunctionType(ty,lp1,params,rp1) ->
 	let allminus = check_allminus.V0.combiner_typeC t in
 	Ast.Type(None,
 		 rewrap t
 		   (Ast.FunctionType
-		      (allminus,fninfo fi,mcode lp1,
+		      (allminus,get_option typeC ty,mcode lp1,
 		       parameter_list params,mcode rp1)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
@@ -499,13 +505,7 @@ and parameter_list l = dots parameterTypeDef l
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let ctr = ref 0
-let get_ctr _ =
-  let c = !ctr in
-  ctr := !ctr + 1;
-  c
-
-let rec statement s =
+and statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
       (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
@@ -658,12 +658,6 @@ let rec statement s =
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
 
-  and fninfo = function
-      Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
-    | Ast0.FType(ty) -> Ast.FType(typeC ty)
-    | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
-    | Ast0.FAttr(attr) -> Ast.FAttr(mcode attr)
-
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> Ast.NoWhen
     | Ast0.WhenNot a -> Ast.WhenNot (notfn a)
@@ -739,7 +733,12 @@ let rec statement s =
     | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x) in
 
   statement Ast.Sequencible s
-    
+
+and fninfo = function
+    Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
+  | Ast0.FType(ty) -> Ast.FType(typeC ty)
+  | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
+  | Ast0.FAttr(attr) -> Ast.FAttr(mcode attr)
 
 and option_to_list = function
     Some x -> [x]

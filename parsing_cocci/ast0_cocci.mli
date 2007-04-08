@@ -116,7 +116,7 @@ and base_typeC =
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
                   string mcode (* ( *)*parameter_list*string mcode(* ) *)
-  | FunctionType    of fninfo list *
+  | FunctionType    of typeC option *
 	               string mcode (* ( *) * parameter_list *
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *

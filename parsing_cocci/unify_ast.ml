@@ -214,11 +214,11 @@ and unify_typeC t1 t2 =
 	 conjunct_bindings (unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
-  | (Ast.FunctionType(_,fia,lp1a,paramsa,rp1a),
-     Ast.FunctionType(_,fib,lp1b,paramsb,rp1b)) ->
+  | (Ast.FunctionType(_,tya,lp1a,paramsa,rp1a),
+     Ast.FunctionType(_,tyb,lp1b,paramsb,rp1b)) ->
        if List.for_all2 unify_mcode [lp1a;rp1a] [lp1b;rp1b]
        then
-	 conjunct_bindings (unify_fninfo fia fib)
+	 conjunct_bindings (unify_option unify_fullType tya tyb)
 	   (unify_dots unify_parameterTypeDef pdots paramsa paramsb)
        else return false
   | (Ast.FunctionType _ , _) -> failwith "not supported"
@@ -342,7 +342,7 @@ and unify_parameterTypeDef p1 p2 =
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-let rec unify_rule_elem re1 re2 =
+and unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
     (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,rp1),
      Ast.FunHeader(_,_,fi2,nm2,lp2,params2,rp2)) ->
@@ -400,21 +400,21 @@ and unify_fninfo patterninfo cinfo =
   let patterninfo = List.sort compare patterninfo in
   let cinfo = List.sort compare cinfo in
   let rec loop = function
-      (Ast0.Storage(sta)::resta,Ast0.Storage(stb)::restb)
-      if mcode_equal sta stb then loop resta restb else return false
-    | (Ast0.Type(tya)::resta,Ast0.Type(tyb)::restb) ->
-	conjunct_bindings (match_typeC tya tyb) (loop resta restb)
-    | (Ast0.Inline(ia)::resta,Ast0.Inline(ib)::restb) ->
-	if mcode_equal ia ib then loop resta restb else return false
-    | (Ast0.Init(ia)::resta,Ast0.Init(ib)::restb) ->
-	if mcode_equal ia ib then loop resta restb else return false
+      (Ast.FStorage(sta)::resta,Ast.FStorage(stb)::restb) ->
+      if unify_mcode sta stb then loop (resta,restb) else return false
+    | (Ast.FType(tya)::resta,Ast.FType(tyb)::restb) ->
+	conjunct_bindings (unify_fullType tya tyb) (loop (resta,restb))
+    | (Ast.FInline(ia)::resta,Ast.FInline(ib)::restb) ->
+	if unify_mcode ia ib then loop (resta,restb) else return false
+    | (Ast.FAttr(ia)::resta,Ast.FAttr(ib)::restb) ->
+	if unify_mcode ia ib then loop (resta,restb) else return false
     | (x::resta,((y::_) as restb)) ->
 	(match compare x y with
 	  -1 -> return false
-	| 1 -> loop resta restb
+	| 1 -> loop (resta,restb)
 	| _ -> failwith "not possible")
     | _ -> return false in
-  loop (patterninfo cinfo)
+  loop (patterninfo,cinfo)
 
 and subexp f =
   let bind = conjunct_bindings in

@@ -312,12 +312,12 @@ and typeC t =
   | Ast0.FunctionType(Some ty,lp1,params,rp1) ->
       let ty = typeC ty in
       let params = parameter_list (Some(promote_mcode lp1)) params in
-      mkres t (Ast0.FunctionType(Some ty,lp1,params,rp1))
-	ty (promote_mcode rp1)
+      let res = Ast0.FunctionType(Some ty,lp1,params,rp1) in
+      mkres t res ty (promote_mcode rp1)
   | Ast0.FunctionType(None,lp1,params,rp1) ->
       let params = parameter_list (Some(promote_mcode lp1)) params in
-      mkres t (Ast0.FunctionType(None,lp1,params,rp1))
-	(promote_mcode lp1) (promote_mcode rp1)
+      let res = Ast0.FunctionType(None,lp1,params,rp1) in
+      mkres t res (promote_mcode lp1) (promote_mcode rp1)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
@@ -625,7 +625,9 @@ let rec statement s =
       mkres s (Ast0.Stars(dots,whencode)) ln ln
   | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
       let fninfo =
-	List.map (function Ast0.FType(ty) -> typeC ty | x -> x) fninfo in
+	List.map
+	  (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
+	  fninfo in
       let name = ident name in
       let params = parameter_list (Some(promote_mcode lp)) params in
       let body =
@@ -634,14 +636,14 @@ let rec statement s =
 	(* cases on what is leftmost *)
 	match fninfo with
 	  [] -> promote_to_statement_start name bef
-	| Ast0.Storage(stg)::_ ->
+	| Ast0.FStorage(stg)::_ ->
 	    promote_to_statement_start (promote_mcode stg) bef
 	| Ast0.FType(ty)::_ ->
 	    promote_to_statement_start ty bef
-	| Ast0.Inline(inline) ->
+	| Ast0.FInline(inline)::_ ->
 	    promote_to_statement_start (promote_mcode inline) bef
-	| Ast0.Init(init) ->
-	    promote_to_statement_start (promote_mcode init) bef in
+	| Ast0.FAttr(attr)::_ ->
+	    promote_to_statement_start (promote_mcode attr) bef in
       (* pretend it is one line before the start of the function, so that it
 	 will catch things defined at top level.  We assume that these will not
 	 be defined on the same line as the function.  This is a HACK.
@@ -657,10 +659,10 @@ let rec statement s =
 	[] -> mkres s res name (promote_mcode rbrace)
       | Ast0.FStorage(stg)::_ ->
 	  mkres s res (promote_mcode stg) (promote_mcode rbrace)
-      | Ast0.FType(ty)::_ -> mkres s res x (promote_mcode rbrace)
-      | Ast0.FInline(inline) ->
+      | Ast0.FType(ty)::_ -> mkres s res ty (promote_mcode rbrace)
+      | Ast0.FInline(inline)::_ ->
 	  mkres s res (promote_mcode inline) (promote_mcode rbrace)
-      | Ast0.FAttr(attr) ->
+      | Ast0.FAttr(attr)::_ ->
 	  mkres s res (promote_mcode attr) (promote_mcode rbrace))
 
   | Ast0.Include(inc,stm) ->

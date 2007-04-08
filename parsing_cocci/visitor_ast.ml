@@ -170,10 +170,10 @@ let combiner bind option_default
        [string_mcode rp1;
 	 string_mcode lp2; parameter_dots params; string_mcode rp2])
 	  
-  and function_type (fi,lp1,params,rp1) extra =
+  and function_type (ty,lp1,params,rp1) extra =
     (* have to put the treatment of the identifier into the right position *)
     multibind
-      ((List.map fninfo fi) @ extra @
+      ([get_option fullType ty] @ extra @
        [string_mcode lp1; parameter_dots params; string_mcode rp1])
 
   and array_type (ty,lb,size,rb) extra =
@@ -191,8 +191,8 @@ let combiner bind option_default
 	  bind (fullType ty) (string_mcode star)
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
-      |	Ast.FunctionType (_,fninfo,lp1,params,rp1) ->
-	  function_type (fninfo,lp1,params,rp1) []
+      |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
+	  function_type (ty,lp1,params,rp1) []
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       | Ast.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (ident name)
@@ -210,8 +210,8 @@ let combiner bind option_default
 	(match Ast.unwrap ty1 with
 	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	    function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
-	| Ast.FunctionType(_,fninfo,lp1,params,rp1) ->
-	    function_type (fninfo,lp1,params,rp1) [ident id]
+	| Ast.FunctionType(_,ty,lp1,params,rp1) ->
+	    function_type (ty,lp1,params,rp1) [ident id]
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) [ident id]
 	| _ -> bind (fullType ty) (ident id))
     | _ -> bind (fullType ty) (ident id)
@@ -646,8 +646,8 @@ let rebuilder
 				string_mcode rp1,string_mcode lp2,
 				parameter_dots params,
 				string_mcode rp2)
-	| Ast.FunctionType(allminus,fi,lp,params,rp) ->
-	    Ast.FunctionType(allminus,List.map fninfo fi,string_mcode lp,
+	| Ast.FunctionType(allminus,ty,lp,params,rp) ->
+	    Ast.FunctionType(allminus,get_option fullType ty,string_mcode lp,
 			     parameter_dots params,string_mcode rp)
 	| Ast.Array(ty,lb,size,rb) ->
 	    Ast.Array(fullType ty, string_mcode lb,
@@ -851,7 +851,7 @@ let rebuilder
       Ast.FStorage(stg) -> Ast.FStorage(storage_mcode stg)
     | Ast.FType(ty) -> Ast.FType(fullType ty)
     | Ast.FInline(inline) -> Ast.FInline(string_mcode inline)
-    | Ast.FInit(init) -> Ast.FInit(string_mcode init)
+    | Ast.FAttr(attr) -> Ast.FAttr(string_mcode attr)
 
   and whencode notfn alwaysfn = function
       Ast.NoWhen -> Ast.NoWhen

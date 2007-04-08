@@ -137,8 +137,7 @@ and typeC table minus t =
       typeC table minus ty;
       parameter_list table minus params
   | Ast0.FunctionType(ty,lp1,params,rp1) ->
-      get_opt (typeC table minus) ty;
-      parameter_list table minus params
+      get_opt (typeC table minus) ty; parameter_list table minus params
   | Ast0.Array(ty,lb,size,rb) ->
       typeC table minus ty; get_opt (expression ID table minus) size
   | Ast0.MetaType(name,_) -> if minus then check_table table minus name
@@ -225,7 +224,7 @@ and parameter_list table minus = dots (parameterTypeDef table minus)
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-let rec define_body table minus s =
+and define_body table minus s =
   match Ast0.unwrap s with
     Ast0.DMetaId(name,_) -> check_table table minus name
   | Ast0.DStm(stmtdots) -> dots (statement table minus) stmtdots
@@ -267,21 +266,20 @@ and statement table minus s =
       get_opt (dots (statement table minus)) w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
       whencode (dots (statement table minus)) (statement table minus) x
-  | Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-      ident FN table minus name;
-      List.iter
-	(function
-	    Ast0.Storage(stg) -> ()
-	  | Ast0.Type(ty) -> typeC table minus ty
-	  | Ast0.Inline(inline) -> ()
-	  | Ast0.Init(init) -> ())
-	fninfo;
+  | Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+      ident FN table minus name; List.iter (fninfo table minus) fi;
       parameter_list table minus params;
       dots (statement table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
   | Ast0.Define(def,id,_,body) ->
       ident GLOBAL table minus id; define_body table minus body
   | _ -> () (* no metavariable subterms *)
+
+and fninfo table minus = function
+    Ast0.FStorage(stg) -> ()
+  | Ast0.FType(ty) -> typeC table minus ty
+  | Ast0.FInline(inline) -> ()
+  | Ast0.FAttr(attr) -> ()
 
 and whencode notfn alwaysfn = function
     Ast0.NoWhen -> ()

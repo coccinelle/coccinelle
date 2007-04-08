@@ -169,7 +169,7 @@ and base_typeC =
 
   (* used for the automatic managment of prototypes *)
   | FunctionType     of bool (* true if all minus for dropping return type *) *
-                   fninfo list *
+                   fullType option *
 	           string mcode (* ( *) * parameter_list *
                    string mcode (* ) *)
 
