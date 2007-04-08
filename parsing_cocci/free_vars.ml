@@ -488,7 +488,7 @@ are inherited, ie used but not defined.  These are accumulated back to
 their point of definition. *)
 
 
-let collect_top_level_used_after name_metavar_rule_list =
+let collect_top_level_used_after metavar_rule_list =
   let (used_after,used_after_lists) =
     List.fold_right
       (function (metavar_list,rule) ->
@@ -505,7 +505,7 @@ let collect_top_level_used_after name_metavar_rule_list =
 	      free_vars in
 	  (Common.union_set inherited continue_propagation,
 	   used_after::used_after_lists))
-      name_metavar_rule_list ([],[]) in
+      metavar_rule_list ([],[]) in
   match used_after with
     [] -> used_after_lists
   | _ ->
@@ -533,13 +533,13 @@ let collect_local_used_after metavars minirules used_after =
   let (_,used_after_lists) = loop [] minirules in
   used_after_lists
 
-let collect_used_after name_metavar_rule_list =
-  let used_after_lists = collect_top_level_used_after name_metavar_rule_list in
+let collect_used_after metavar_rule_list =
+  let used_after_lists = collect_top_level_used_after metavar_rule_list in
   List.map2
     (function (metavars,minirules) ->
       function used_after ->
 	collect_local_used_after metavars minirules used_after)
-    name_metavar_rule_list used_after_lists
+    metavar_rule_list used_after_lists
 
 (* ---------------------------------------------------------------- *)
 

@@ -459,10 +459,13 @@ let detect_types in_meta_decls l =
       [] -> []
     | ((PC.TIdent(ident,clt),v) as a)::(((PC.TComma(_),_)) as b)::rest
       when in_meta_decls ->
-	a::b::(loop false type_names (ident::meta_names) rest)
-    | ((PC.TIdent(ident,clt),v) as a)::(((PC.TPtVirg(_),_)) as b)::rest
-      when in_meta_decls ->
 	a::(loop false type_names (ident::meta_names) (b::rest))
+    | (((PC.TType,_)) as x)::
+      ((PC.TIdent(ident,clt),v) as a)::(((PC.TPtVirg(_),_)) as b)::rest
+    | (((PC.TComma(_),_)) as x)::
+      ((PC.TIdent(ident,clt),v) as a)::(((PC.TPtVirg(_),_)) as b)::rest
+      when in_meta_decls ->
+	x::a::(loop false type_names (ident::meta_names) (b::rest))
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names meta_names all
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
@@ -700,7 +703,7 @@ let parse file default_isos =
   match tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] with 
     (* read over initial @@ *)
     (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
-      let rec loop starts_with_name =
+      let rec loop old_metas starts_with_name =
 	(!Data.init_rule)();
 	Data.in_meta := true;
 	let (rule_name,iso) =
@@ -749,14 +752,14 @@ let parse file default_isos =
 	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	let minus_tokens = prepare_tokens minus_tokens in
 	let plus_tokens = prepare_tokens plus_tokens in
-
+	(*
 	Printf.printf "minus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
 	Printf.printf "\n\n";
 	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
 	Printf.printf "\n\n";
-
+	*)
 	let plus_tokens =
 	  fix (function x -> drop_double_dots (drop_empty_or x))
 	    (drop_when plus_tokens) in
@@ -775,15 +778,17 @@ let parse file default_isos =
 	(*
 	Printf.printf "after plus parse\n";
 	*)
-	Check_meta.check_meta (inherited_metavars@metavars) minus_res plus_res;
+	Check_meta.check_meta old_metas inherited_metavars metavars
+	  minus_res plus_res;
 	if more
 	then
-	  let (minus_ress,plus_ress) = loop starts_with_name in
+	  let (minus_ress,plus_ress) =
+	    loop (metavars@old_metas) starts_with_name in
 	  ((minus_res,metavars,(chosen_isos,rule_name))::minus_ress,
 	   (plus_res, metavars)::plus_ress)
 	else ([(minus_res,metavars,(chosen_isos,rule_name))],
 	      [(plus_res, metavars)]) in
-      loop (x = PC.TArob)
+      loop [] (x = PC.TArob)
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n" in
   close_in channel;
