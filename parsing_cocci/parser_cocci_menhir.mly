@@ -590,6 +590,7 @@ struct_decl_list_start:
 continue_struct_decl_list:
   /* empty */                        { [] }
 | struct_decl struct_decl_list_start { $1::$2 }
+| struct_decl                        { [$1] }
 
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)

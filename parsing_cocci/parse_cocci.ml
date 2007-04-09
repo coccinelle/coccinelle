@@ -33,7 +33,7 @@ let token2c (tok,_) =
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
-  | PC.TRuleName str -> str
+  | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
   | PC.TExtends -> "extends"
   | PC.TError -> "error"
@@ -724,7 +724,7 @@ let parse file default_isos =
 	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
 	Printf.printf "\n\n";
         flush stdout;
-        *)
+	*)
 	let metavars = parse_one "meta" PC.meta_main file tokens in
 	let (metavars,inherited_metavars) = partition_either metavars in
 	Hashtbl.add Data.all_metadecls rule_name metavars;
@@ -759,7 +759,7 @@ let parse file default_isos =
 	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
 	Printf.printf "\n\n";
-	*)
+        *)
 	let plus_tokens =
 	  fix (function x -> drop_double_dots (drop_empty_or x))
 	    (drop_when plus_tokens) in
