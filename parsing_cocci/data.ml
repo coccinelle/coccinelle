@@ -76,4 +76,4 @@ let install_bindings: (string -> unit) ref =
    metavariables *)
 type fresh = bool
 
-type clt = line_type * int * int * int
+type clt = line_type * int * int * int * int (* starting spaces *)

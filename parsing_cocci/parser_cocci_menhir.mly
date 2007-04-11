@@ -17,44 +17,45 @@ module Ast = Ast_cocci
   then Common.warning s v
   else v*)
 
-let make_info line logical_line offset =
+let make_info line logical_line offset col =
   { Ast0.line_start = line; Ast0.line_end = line;
     Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
-    Ast0.column = -1; Ast0.offset = offset }
+    Ast0.column = col; Ast0.offset = offset }
 
-let clt2info (_,line,logical_line,offset) = make_info line logical_line offset
+let clt2info (_,line,logical_line,offset,col) =
+  make_info line logical_line offset col
 
 let clt2mcode str = function
-    (Data.MINUS,line,lline,offset)       ->
-      (str,Ast0.NONE,make_info line lline offset,
+    (Data.MINUS,line,lline,offset,col)       ->
+      (str,Ast0.NONE,make_info line lline offset col,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.OPTMINUS,line,lline,offset)    ->
-      (str,Ast0.OPT,make_info line lline offset,
+  | (Data.OPTMINUS,line,lline,offset,col)    ->
+      (str,Ast0.OPT,make_info line lline offset col,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.UNIQUEMINUS,line,lline,offset) ->
-      (str,Ast0.UNIQUE,make_info line lline offset,
+  | (Data.UNIQUEMINUS,line,lline,offset,col) ->
+      (str,Ast0.UNIQUE,make_info line lline offset col,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.MULTIMINUS,line,lline,offset) ->
-      (str,Ast0.MULTI,make_info line lline offset,
+  | (Data.MULTIMINUS,line,lline,offset,col) ->
+      (str,Ast0.MULTI,make_info line lline offset col,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.PLUS,line,lline,offset)        ->
-      (str,Ast0.NONE,make_info line lline offset,Ast0.PLUS)
-  | (Data.CONTEXT,line,lline,offset)     ->
-      (str,Ast0.NONE,make_info line lline offset,
+  | (Data.PLUS,line,lline,offset,col)        ->
+      (str,Ast0.NONE,make_info line lline offset col,Ast0.PLUS)
+  | (Data.CONTEXT,line,lline,offset,col)     ->
+      (str,Ast0.NONE,make_info line lline offset col,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.OPT,line,lline,offset)         ->
-      (str,Ast0.OPT,make_info line lline offset,
+  | (Data.OPT,line,lline,offset,col)         ->
+      (str,Ast0.OPT,make_info line lline offset col,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.UNIQUE,line,lline,offset)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset,
+  | (Data.UNIQUE,line,lline,offset,col)      ->
+      (str,Ast0.UNIQUE,make_info line lline offset col,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.MULTI,line,lline,offset)      ->
-      (str,Ast0.MULTI,make_info line lline offset,
+  | (Data.MULTI,line,lline,offset,col)      ->
+      (str,Ast0.MULTI,make_info line lline offset col,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
 
@@ -316,7 +317,7 @@ let check_meta tok =
 %token <Data.clt> TInf TSup TInfEq TSupEq 
 %token <Data.clt> TShl TShr
 %token <Data.clt> TPlus TMinus
-%token <Data.clt> TMul TDiv TMod 
+%token <Data.clt> TMul TDiv TMod TTilde
 
 %token <Data.clt> TOBrace TCBrace
 %token <Data.clt> TOCro TCCro
@@ -685,7 +686,7 @@ defineop:
 	  | [x] -> [x;")"]
 	  | x::xs -> x::","::(loop xs) in
 	"(" :: (loop param_list) in
-      let (arity,line,lline,offset) = clt in
+      let (arity,line,lline,offset,col) = clt in
       let starting_offset = (String.length "#define ") + identlen in
       let (param_offsets,_) =
 	List.fold_left
@@ -711,7 +712,7 @@ defineop:
 		(List.map2
 		   (function param ->
 		     function offset ->
-		       (clt2mcode param (arity,line,lline,offset)))
+		       (clt2mcode param (arity,line,lline,offset,col)))
 		   param_list param_offsets),
 	      body)) }
 
@@ -1241,11 +1242,12 @@ unary_expr(r,pe):
                                    clt2mcode ")" rp)) }
                                    
 
-unary_op: TAnd   { clt2mcode Ast.GetRef $1 }
-	| TMul   { clt2mcode Ast.DeRef $1 }
-	| TPlus  { clt2mcode Ast.UnPlus $1 }
-	| TMinus { clt2mcode Ast.UnMinus $1 }
-	| TBang  { clt2mcode Ast.Not $1 }
+unary_op: TAnd    { clt2mcode Ast.GetRef $1 }
+	| TMul    { clt2mcode Ast.DeRef $1 }
+	| TPlus   { clt2mcode Ast.UnPlus $1 }
+	| TMinus  { clt2mcode Ast.UnMinus $1 }
+	| TTilde  { clt2mcode Ast.Tilde $1 }
+	| TBang   { clt2mcode Ast.Not $1 }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }

@@ -45,7 +45,10 @@ in
 
 (* --------------------------------------------------------------------- *)
 (* Here we don't care about the annotation on s. *)
-let mcode fn = function ((s,_,_)) -> fn s in
+let mcode fn (s,info,_) =
+  if info.Ast.column > 0
+  then (print_string "\n"; print_string (String.make info.Ast.column ' '));
+  fn s in
 
 (* --------------------------------------------------------------------- *)
 let dots between fn d =

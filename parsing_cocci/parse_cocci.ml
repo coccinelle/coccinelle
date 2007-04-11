@@ -10,7 +10,7 @@ let pr2 s = Printf.printf "%s\n" s
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type2c (d,_,_,_) =
+let line_type2c (d,_,_,_,_) =
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS | D.MULTIMINUS -> ":-"
   | D.PLUS -> ":+"
@@ -39,7 +39,7 @@ let token2c (tok,_) =
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
-  | PC.Tchar(clt) -> "char"^(line_type2c clt)
+  | PC.Tchar(clt) -> "char"^(line_type2c  clt)
   | PC.Tshort(clt) -> "short"^(line_type2c clt)
   | PC.Tint(clt) -> "int"^(line_type2c clt)
   | PC.Tdouble(clt) -> "double"^(line_type2c clt)
@@ -109,6 +109,7 @@ let token2c (tok,_) =
   | PC.TMul(clt) -> "*"^(line_type2c clt)
   | PC.TDiv(clt) -> "/"^(line_type2c clt)
   | PC.TMod (clt) -> "%"^(line_type2c clt)
+  | PC.TTilde (clt) -> "~"^(line_type2c clt)
 
   | PC.TMetaParam(_,_,clt) -> "parammeta"^(line_type2c clt)
   | PC.TMetaParamList(_,_,clt) -> "paramlistmeta"^(line_type2c clt)
@@ -216,11 +217,11 @@ let tokens_all table file get_ats lexbuf end_markers :
 (* Split tokens into minus and plus fragments *)
 
 let split t = function
-    (D.MINUS,_,_,_) | (D.OPTMINUS,_,_,_) | (D.UNIQUEMINUS,_,_,_)
-  | (D.MULTIMINUS,_,_,_) -> ([t],[])
-  | (D.PLUS,_,_,_) -> ([],[t])
-  | (D.CONTEXT,_,_,_) | (D.UNIQUE,_,_,_)
-  | (D.OPT,_,_,_) | (D.MULTI,_,_,_) -> ([t],[t])
+    (D.MINUS,_,_,_,_) | (D.OPTMINUS,_,_,_,_) | (D.UNIQUEMINUS,_,_,_,_)
+  | (D.MULTIMINUS,_,_,_,_) -> ([t],[])
+  | (D.PLUS,_,_,_,_) -> ([],[t])
+  | (D.CONTEXT,_,_,_,_) | (D.UNIQUE,_,_,_,_)
+  | (D.OPT,_,_,_,_) | (D.MULTI,_,_,_,_) -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -277,7 +278,7 @@ let split_token ((tok,_) as t) =
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
   | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
   | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDiv(clt) | PC.TMod (clt) -> split t clt
+  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt) -> split t clt
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) -> split t clt
   | PC.TOCro(clt) | PC.TCCro(clt) -> split t clt
@@ -367,7 +368,7 @@ let token2line (tok,_) =
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt) 
   | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt) 
   | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt) 
-  | PC.TDiv(clt) | PC.TMod (clt) 
+  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt) 
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt) 
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
@@ -395,7 +396,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
-      let (_,line,_,_) = clt in Some line
+      let (_,line,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -427,9 +428,10 @@ let detect_types in_meta_decls l =
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
     | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
-    | (PC.TComma(_),_) | (PC.TPure,_)
-    | (PC.TContext,_) -> true
-    | (PC.TDotDot(_),_) when in_meta_decls -> true
+    | (PC.TPure,_) | (PC.TContext,_)
+    | (PC.Tstatic(_),_) | (PC.Textern(_),_)
+    | (PC.Tinline(_),_) | (PC.Tattr(_),_) -> true
+    | (PC.TComma(_),_) | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in

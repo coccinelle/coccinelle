@@ -16,25 +16,35 @@ type line_type = MINUS | OPTMINUS | UNIQUEMINUS | PLUS | CONTEXT | UNIQUE | OPT
 *)
 
 let current_line_type = ref (D.CONTEXT,!line,!logical_line)
+
+let prev_plus = ref false
+let line_start = ref 0 (* offset of the beginning of the line *)
 let get_current_line_type lexbuf =
-  let (c,l,ll) = !current_line_type in (c,l,ll,Lexing.lexeme_start lexbuf)
+  let (c,l,ll) = !current_line_type in
+  let lex_start = Lexing.lexeme_start lexbuf in
+  let preceeding_spaces =
+    if !line_start < 0 then 0 else lex_start - !line_start in
+  line_start := -1;
+  prev_plus := (c = D.PLUS);
+  (c,l,ll,lex_start,preceeding_spaces)
 let current_line_started = ref false
 
-let reset_line _ =
+let reset_line lexbuf =
   line := !line + 1;
   current_line_type := (D.CONTEXT,!line,!logical_line);
-  current_line_started := false
+  current_line_started := false;
+  line_start := Lexing.lexeme_start lexbuf + 1
 
 let started_line = ref (-1)
 
 let start_line seen_char =
   current_line_started := true;
-  if seen_char && not(!line = !started_line)
+  (if seen_char && not(!line = !started_line)
   then
     begin
       started_line := !line;
       logical_line := !logical_line + 1
-    end
+    end)
 
 let add_current_line_type x =
   match (x,!current_line_type) with
@@ -76,20 +86,20 @@ let check_arity_context_linetype s =
 
 let metavariables =
   (Hashtbl.create(100) :
-     (string, D.line_type * int * int * int -> token) Hashtbl.t)
+     (string, D.line_type * int * int * int * int -> token) Hashtbl.t)
 
 let all_metavariables =
   (Hashtbl.create(100) :
-     (string,(string * (D.line_type * int * int * int -> token)) list)
+     (string,(string * (D.line_type * int * int * int * int -> token)) list)
   Hashtbl.t)
 
 let type_names =
   (Hashtbl.create(100) :
-     (string, D.line_type * int * int * int -> token) Hashtbl.t)
+     (string, D.line_type * int * int * int * int -> token) Hashtbl.t)
 
 let declarer_names =
   (Hashtbl.create(100) :
-     (string, D.line_type * int * int * int -> token) Hashtbl.t)
+     (string, D.line_type * int * int * int * int -> token) Hashtbl.t)
 
 let rule_names =
   (Hashtbl.create(100) : (string, unit) Hashtbl.t)
@@ -187,6 +197,8 @@ let mkassign op lexbuf =
 let init _ =
   line := 1;
   logical_line := 0;
+  prev_plus := false;
+  line_start := 0;
   Hashtbl.clear all_metavariables;
   Hashtbl.clear Data.all_metadecls;
   Hashtbl.clear metavariables;
@@ -295,7 +307,7 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
 rule token = parse
   | [' ' '\t'  ]+             { start_line false; token lexbuf }
-  | ['\n' '\r' '\011' '\012'] { reset_line(); token lexbuf }
+  | ['\n' '\r' '\011' '\012'] { reset_line lexbuf; token lexbuf }
 
   | "//" [^ '\n']* { start_line false; token lexbuf }
 
@@ -389,6 +401,7 @@ rule token = parse
   | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }
   | '/'            { start_line true;  TDiv (get_current_line_type lexbuf) } 
   | '%'            { start_line true;  TMod (get_current_line_type lexbuf) } 
+  | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) } 
   
   | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }
   | "--"           { start_line true;  TDec (get_current_line_type lexbuf) }
@@ -430,16 +443,19 @@ rule token = parse
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter |digit)*) as ident) 
       { start_line true;
-	let (arity,line,lline,offset) as lt = get_current_line_type lexbuf in
+	let (arity,line,lline,offset,col) as lt =
+	  get_current_line_type lexbuf in
 	let off = String.length "#define " in
-	TDefine (lt,check_var ident (arity,line,lline,offset+off)) }
+	(* -1 in the code below because the ident is not at the line start *)
+	TDefine (lt,check_var ident (arity,line,lline,offset+off,(-1))) }
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter | digit)*) as ident) 
     ( ('(' ([^ ')']* as params) ')' ))
       { start_line true;
-	let (arity,line,lline,offset) as lt = get_current_line_type lexbuf in
+	let (arity,line,lline,offset,col) as lt =
+	  get_current_line_type lexbuf in
 	let off = String.length "#define " in
-	TDefineParam (lt,check_var ident (arity,line,lline,offset+off),
+	TDefineParam (lt,check_var ident (arity,line,lline,offset+off,(-1)),
 		      String.length ident, params) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TInclude

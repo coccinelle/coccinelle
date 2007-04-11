@@ -468,7 +468,9 @@ let rec rule_elem arity re =
       print_string " "
   | Ast.Decl(bef,allminus,decl) ->
       mcode (function _ -> ()) ((),(),bef);
-      print_string arity; declaration decl
+      print_string arity;
+      print_string "/* "; print_bool allminus; print_string " */ ";
+      declaration decl
   | Ast.SeqStart(brace) ->
       print_string arity; mcode print_string brace;
       if !print_newlines_disj then start_block()
