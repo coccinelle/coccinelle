@@ -565,7 +565,7 @@ struct_decl:
        t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,clt2mcode ";" pv)) }
-    | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    | t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
         let t =
@@ -798,7 +798,7 @@ storage:
 
 decl: t=ctype i=ident
 	{ Ast0.wrap(Ast0.Param(t, Some i)) }
-    | t=ctype lp=TOPar s=TMul i=ident rp=TCPar
+    | t=fn_ctype lp=TOPar s=TMul i=ident rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
@@ -816,7 +816,7 @@ decl: t=ctype i=ident
 name_opt_decl:
       decl  { $1 }
     | t=ctype { Ast0.wrap(Ast0.Param(t, None)) }
-    | t=ctype lp=TOPar s=TMul rp=TCPar
+    | t=fn_ctype lp=TOPar s=TMul rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
@@ -998,7 +998,7 @@ decl_var:
 			   clt2mcode ";" pv))] }
   /* function pointer type */
   | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     pv=TPtVirg
       { let (id,fn) = d in
@@ -1012,7 +1012,7 @@ decl_var:
       { [Ast0.wrap(Ast0.MacroDecl(id2mcode $1,clt2mcode "(" $2,$3,
 				  clt2mcode ")" $4,clt2mcode ";" $5))] } 
   | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
