@@ -10,8 +10,10 @@ let pr2 s = Printf.printf "%s\n" s
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type2c (d,_,_,_,_) =
-  match d with
+let line_type (d,_,_,_,_,_,_) = d
+
+let line_type2c tok =
+  match line_type tok with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS | D.MULTIMINUS -> ":-"
   | D.PLUS -> ":+"
   | D.CONTEXT | D.UNIQUE | D.OPT | D.MULTI -> ""
@@ -59,6 +61,7 @@ let token2c (tok,_) =
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
+  | PC.TPragma(s) -> s
   | PC.TInclude(s,clt) -> (pr "#include %s" s)^(line_type2c clt)
   | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)
   | PC.TDefineParam(clt,_,_,_) -> "#define_param"^(line_type2c clt)
@@ -177,6 +180,245 @@ let token2c (tok,_) =
   | PC.TIsoDeclaration -> "Declaration"
   | PC.TIsoType -> "Type"
 
+type plus = PLUS | NOTPLUS | SKIP
+
+let plus_attachable (tok,_) =
+  match tok with
+    PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt)
+  | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
+
+  | PC.TInclude(_,clt) | PC.TDefine(clt,_)
+  | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
+
+  | PC.TInc(clt) | PC.TDec(clt)
+	
+  | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
+  | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TMetaTypeId(_,clt) | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+
+  | PC.TSizeof(clt)
+
+  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+
+  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
+  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
+  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt)
+
+  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
+  | PC.TMetaConst(_,_,_,clt) | PC.TMetaErr(_,_,clt)
+  | PC.TMetaExp(_,_,_,clt) | PC.TMetaExpList(_,_,clt)
+  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt)   
+  | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)  
+  | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
+  | PC.TMetaLocalFunc(_,_,clt)
+
+  | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)   
+
+  | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
+  | PC.TCPar(clt)
+
+  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+
+  | PC.TPtrOp(clt)
+
+  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TPtVirg(clt) ->
+      if line_type clt = D.PLUS then PLUS else NOTPLUS
+
+  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) -> NOTPLUS
+
+  | _ -> SKIP
+
+let get_clt (tok,_) =
+  match tok with
+    PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt)
+  | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
+
+  | PC.TInclude(_,clt) | PC.TDefine(clt,_)
+  | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
+
+  | PC.TInc(clt) | PC.TDec(clt)
+	
+  | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
+  | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TMetaTypeId(_,clt) | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+
+  | PC.TSizeof(clt)
+
+  | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
+
+  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
+  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
+  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt)
+
+  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
+  | PC.TMetaConst(_,_,_,clt) | PC.TMetaErr(_,_,clt)
+  | PC.TMetaExp(_,_,_,clt) | PC.TMetaExpList(_,_,clt)
+  | PC.TMetaId(_,_,clt) | PC.TMetaText(_,_,clt)   
+  | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)  
+  | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
+  | PC.TMetaLocalFunc(_,_,clt)
+
+  | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)   
+
+  | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
+  | PC.TCPar(clt)
+
+  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+
+  | PC.TPtrOp(clt)
+
+  | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TPtVirg(clt)
+
+  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) -> clt
+
+  | _ -> failwith "no clt"
+
+let update_clt (tok,x) clt =
+  match tok with
+    PC.Tchar(_) -> (PC.Tchar(clt),x)
+  | PC.Tshort(_) -> (PC.Tshort(clt),x)
+  | PC.Tint(_) -> (PC.Tint(clt),x)
+  | PC.Tdouble(_) -> (PC.Tdouble(clt),x)
+  | PC.Tfloat(_) -> (PC.Tfloat(clt),x)
+  | PC.Tlong(_) -> (PC.Tlong(clt),x)
+  | PC.Tvoid(_) -> (PC.Tvoid(clt),x)
+  | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
+  | PC.Tunion(_) -> (PC.Tunion(clt),x)
+  | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
+  | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
+  | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
+  | PC.Tinline(_) -> (PC.Tinline(clt),x)
+  | PC.Tattr(s,_) -> (PC.Tattr(s,clt),x)
+  | PC.Tauto(_) -> (PC.Tauto(clt),x)
+  | PC.Tregister(_) -> (PC.Tregister(clt),x)
+  | PC.Textern(_) -> (PC.Textern(clt),x)
+  | PC.Tconst(_) -> (PC.Tconst(clt),x)
+  | PC.Tvolatile(_) -> (PC.Tvolatile(clt),x)
+
+  | PC.TInclude(s,_) -> (PC.TInclude(s,clt),x)
+  | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
+  | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
+  | PC.TMinusFile(s,_) -> (PC.TMinusFile(s,clt),x)
+  | PC.TPlusFile(s,_) -> (PC.TPlusFile(s,clt),x)
+
+  | PC.TInc(_) -> (PC.TInc(clt),x)
+  | PC.TDec(_) -> (PC.TDec(clt),x)
+	
+  | PC.TIf(_) -> (PC.TIf(clt),x)
+  | PC.TElse(_) -> (PC.TElse(clt),x)
+  | PC.TWhile(_) -> (PC.TWhile(clt),x)
+  | PC.TFor(_) -> (PC.TFor(clt),x)
+  | PC.TDo(_) -> (PC.TDo(clt),x)
+  | PC.TSwitch(_) -> (PC.TSwitch(clt),x)
+  | PC.TCase(_) -> (PC.TCase(clt),x)
+  | PC.TDefault(_) -> (PC.TDefault(clt),x)
+  | PC.TReturn(_) -> (PC.TReturn(clt),x)
+  | PC.TBreak(_) -> (PC.TBreak(clt),x)
+  | PC.TContinue(_) -> (PC.TContinue(clt),x)
+  | PC.TIdent(s,_) -> (PC.TIdent(s,clt),x)
+  | PC.TMetaTypeId(s,_) -> (PC.TMetaTypeId(s,clt),x)
+  | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
+  | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
+
+  | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
+
+  | PC.TString(s,_) -> (PC.TString(s,clt),x)
+  | PC.TChar(s,_) -> (PC.TChar(s,clt),x)
+  | PC.TFloat(s,_) -> (PC.TFloat(s,clt),x)
+  | PC.TInt(s,_) -> (PC.TInt(s,clt),x)
+
+  | PC.TOrLog(_) -> (PC.TOrLog(clt),x)
+  | PC.TAndLog(_) -> (PC.TAndLog(clt),x)
+  | PC.TOr(_) -> (PC.TOr(clt),x)
+  | PC.TXor(_) -> (PC.TXor(clt),x)
+  | PC.TAnd (_) -> (PC.TAnd (clt),x)
+  | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
+  | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
+  | PC.TInf(_) -> (PC.TInf(clt),x)
+  | PC.TSup(_) -> (PC.TSup(clt),x)
+  | PC.TInfEq(_) -> (PC.TInfEq(clt),x)
+  | PC.TSupEq (_) -> (PC.TSupEq (clt),x)
+  | PC.TShl(_) -> (PC.TShl(clt),x)
+  | PC.TShr(_) -> (PC.TShr(clt),x)
+  | PC.TPlus(_) -> (PC.TPlus(clt),x)
+  | PC.TMinus(_) -> (PC.TMinus(clt),x)
+  | PC.TMul(_) -> (PC.TMul(clt),x)
+  | PC.TDiv(_) -> (PC.TDiv(clt),x)
+  | PC.TMod (_) -> (PC.TMod (clt),x)
+  | PC.TTilde (_) -> (PC.TTilde (clt),x)
+
+  | PC.TMetaParam(a,b,_) -> (PC.TMetaParam(a,b,clt),x)
+  | PC.TMetaParamList(a,b,_) -> (PC.TMetaParamList(a,b,clt),x)
+  | PC.TMetaConst(a,b,c,_) -> (PC.TMetaConst(a,b,c,clt),x)
+  | PC.TMetaErr(a,b,_) -> (PC.TMetaErr(a,b,clt),x)
+  | PC.TMetaExp(a,b,c,_) -> (PC.TMetaExp(a,b,c,clt),x)
+  | PC.TMetaExpList(a,b,_) -> (PC.TMetaExpList(a,b,clt),x)
+  | PC.TMetaId(a,b,_)    -> (PC.TMetaId(a,b,clt),x)
+  | PC.TMetaText(a,b,_)    -> (PC.TMetaText(a,b,clt),x)
+  | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
+  | PC.TMetaStm(a,b,_)   -> (PC.TMetaStm(a,b,clt),x)
+  | PC.TMetaStmList(a,b,_)   -> (PC.TMetaStmList(a,b,clt),x)
+  | PC.TMetaFunc(a,b,_)  -> (PC.TMetaFunc(a,b,clt),x)
+  | PC.TMetaLocalFunc(a,b,_) -> (PC.TMetaLocalFunc(a,b,clt),x)
+
+  | PC.TWhen(_) -> (PC.TWhen(clt),x)
+  | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
+  | PC.TCircles(_)  -> (PC.TCircles(clt),x)
+  | PC.TStars(_)    -> (PC.TStars(clt),x)
+
+  | PC.TOEllipsis(_) -> (PC.TOEllipsis(clt),x)
+  | PC.TCEllipsis(_) -> (PC.TCEllipsis(clt),x)
+  | PC.TOCircles(_)  -> (PC.TOCircles(clt),x)
+  | PC.TCCircles(_)  -> (PC.TCCircles(clt),x)
+  | PC.TOStars(_)    -> (PC.TOStars(clt),x)
+  | PC.TCStars(_)    -> (PC.TCStars(clt),x)
+
+  | PC.TWhy(_)   -> (PC.TWhy(clt),x)
+  | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
+  | PC.TBang(_)  -> (PC.TBang(clt),x)
+  | PC.TOPar(_)  -> (PC.TOPar(clt),x)
+  | PC.TOPar0(_) -> (PC.TOPar0(clt),x)
+  | PC.TMid0(_)  -> (PC.TMid0(clt),x)
+  | PC.TCPar(_)  -> (PC.TCPar(clt),x)
+  | PC.TCPar0(_) -> (PC.TCPar0(clt),x)
+
+  | PC.TOBrace(_) -> (PC.TOBrace(clt),x)
+  | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
+  | PC.TOCro(_) -> (PC.TOCro(clt),x)
+  | PC.TCCro(_) -> (PC.TCCro(clt),x)
+
+  | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
+
+  | PC.TEq(_) -> (PC.TEq(clt),x)
+  | PC.TAssign(s,_) -> (PC.TAssign(s,clt),x)
+  | PC.TDot(_) -> (PC.TDot(clt),x)
+  | PC.TComma(_) -> (PC.TComma(clt),x)
+  | PC.TPtVirg(_) -> (PC.TPtVirg(clt),x)
+
+  | PC.TLineEnd(_) -> (PC.TLineEnd(clt),x)
+  | PC.TFunDecl(_) -> (PC.TFunDecl(clt),x)
+
+  | _ -> failwith "no clt"
+
+
 (* ----------------------------------------------------------------------- *)
 
 let name_ctr = ref 0
@@ -217,11 +459,11 @@ let tokens_all table file get_ats lexbuf end_markers :
 (* Split tokens into minus and plus fragments *)
 
 let split t = function
-    (D.MINUS,_,_,_,_) | (D.OPTMINUS,_,_,_,_) | (D.UNIQUEMINUS,_,_,_,_)
-  | (D.MULTIMINUS,_,_,_,_) -> ([t],[])
-  | (D.PLUS,_,_,_,_) -> ([],[t])
-  | (D.CONTEXT,_,_,_,_) | (D.UNIQUE,_,_,_,_)
-  | (D.OPT,_,_,_,_) | (D.MULTI,_,_,_,_) -> ([t],[t])
+    (D.MINUS,_,_,_,_,_,_) | (D.OPTMINUS,_,_,_,_,_,_)
+  | (D.UNIQUEMINUS,_,_,_,_,_,_) | (D.MULTIMINUS,_,_,_,_,_,_) -> ([t],[])
+  | (D.PLUS,_,_,_,_,_,_) -> ([],[t])
+  | (D.CONTEXT,_,_,_,_,_,_) | (D.UNIQUE,_,_,_,_,_,_)
+  | (D.OPT,_,_,_,_,_,_) | (D.MULTI,_,_,_,_,_,_) -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -238,6 +480,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
+  | PC.TPragma(s) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt) | PC.TInclude(s,clt) ->
       split t clt
   | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_) -> split t clt
@@ -396,7 +639,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
-      let (_,line,_,_,_) = clt in Some line
+      let (_,line,_,_,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -511,6 +754,53 @@ let detect_types in_meta_decls l =
 	delim::newid::(collect_choices (ident::type_names) meta_names rest)
     | x::rest -> x::(collect_choices type_names meta_names rest) in
   loop true [] [] l
+
+(* ----------------------------------------------------------------------- *)
+(* process pragmas: they can only be used in + code, and adjacent to
+another + token.  They are concatenated to the string representation of
+that other token. *)
+
+let rec collect_all_pragmas collected = function
+    (PC.TPragma(s),_)::rest -> collect_all_pragmas (s::collected) rest
+  | l -> (List.rev collected,l)
+
+let rec collect_up_to_pragmas skipped = function
+    [] -> None (* didn't reach a pragma, so nothing to do *)
+  | ((PC.TPragma(s),_) as t)::rest ->
+      let (pragmas,rest) = collect_all_pragmas [] (t::rest) in
+      Some (List.rev skipped,pragmas,rest)
+  | x::xs ->
+      match plus_attachable x with
+	PLUS -> None
+      |	NOTPLUS -> None
+      |	SKIP -> collect_up_to_pragmas (x::skipped) xs
+
+let rec collect_up_to_plus skipped = function
+    [] -> failwith "nothing to attach a pragma to"
+  | x::xs ->
+      match plus_attachable x with
+	PLUS -> (List.rev skipped,x,xs)
+      |	NOTPLUS -> failwith "nothing to attach a pragma to"
+      |	SKIP -> collect_up_to_plus (x::skipped) xs
+
+let rec process_pragmas = function
+    [] -> []
+  | ((PC.TPragma(s),_)::_) as l ->
+      let (pragmas,rest) = collect_all_pragmas [] l in
+      let (skipped,aft,rest) = collect_up_to_plus [] rest in
+      let (a,b,c,d,e,strbef,straft) = get_clt aft in
+      skipped@
+      (process_pragmas ((update_clt aft (a,b,c,d,e,pragmas,straft))::rest))
+  | bef::xs ->
+      (match plus_attachable bef with
+	PLUS ->
+	  (match collect_up_to_pragmas [] xs with
+	    Some(skipped,pragmas,rest) ->
+	      let (a,b,c,d,e,strbef,straft) = get_clt bef in
+	      (update_clt bef (a,b,c,d,e,strbef,pragmas))::
+	      skipped@(process_pragmas rest)
+	  | None -> bef::(process_pragmas xs))
+      |	_ -> bef::(process_pragmas xs))
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -763,8 +1053,9 @@ let parse file default_isos =
 	Printf.printf "\n\n";
         *)
 	let plus_tokens =
-	  fix (function x -> drop_double_dots (drop_empty_or x))
-	    (drop_when plus_tokens) in
+	  process_pragmas
+	    (fix (function x -> drop_double_dots (drop_empty_or x))
+	       (drop_when plus_tokens)) in
 	(*
 	Printf.printf "plus tokens\n";
 	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;

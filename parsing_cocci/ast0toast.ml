@@ -205,7 +205,9 @@ let get_option fn = function
 (* Mcode *)
 	
 let convert_info info =
-  { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column }
+  { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column;
+    Ast.strbef = info.Ast0.strings_before;
+    Ast.straft = info.Ast0.strings_after; }
 
 let convert_mcodekind = function
     Ast0.MINUS(replacements) ->

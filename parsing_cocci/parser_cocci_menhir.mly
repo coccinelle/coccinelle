@@ -17,45 +17,46 @@ module Ast = Ast_cocci
   then Common.warning s v
   else v*)
 
-let make_info line logical_line offset col =
+let make_info line logical_line offset col strbef straft =
   { Ast0.line_start = line; Ast0.line_end = line;
     Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
-    Ast0.column = col; Ast0.offset = offset }
+    Ast0.column = col; Ast0.offset = offset;
+    Ast0.strings_before = strbef; Ast0.strings_after = straft; }
 
-let clt2info (_,line,logical_line,offset,col) =
-  make_info line logical_line offset col
+let clt2info (_,line,logical_line,offset,col,strbef,straft) =
+  make_info line logical_line offset col strbef straft
 
 let clt2mcode str = function
-    (Data.MINUS,line,lline,offset,col)       ->
-      (str,Ast0.NONE,make_info line lline offset col,
+    (Data.MINUS,line,lline,offset,col,strbef,straft)       ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.OPTMINUS,line,lline,offset,col)    ->
-      (str,Ast0.OPT,make_info line lline offset col,
+  | (Data.OPTMINUS,line,lline,offset,col,strbef,straft)    ->
+      (str,Ast0.OPT,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.UNIQUEMINUS,line,lline,offset,col) ->
-      (str,Ast0.UNIQUE,make_info line lline offset col,
+  | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft) ->
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.MULTIMINUS,line,lline,offset,col) ->
-      (str,Ast0.MULTI,make_info line lline offset col,
+  | (Data.MULTIMINUS,line,lline,offset,col,strbef,straft) ->
+      (str,Ast0.MULTI,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.PLUS,line,lline,offset,col)        ->
-      (str,Ast0.NONE,make_info line lline offset col,Ast0.PLUS)
-  | (Data.CONTEXT,line,lline,offset,col)     ->
-      (str,Ast0.NONE,make_info line lline offset col,
+  | (Data.PLUS,line,lline,offset,col,strbef,straft)        ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS)
+  | (Data.CONTEXT,line,lline,offset,col,strbef,straft)     ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.OPT,line,lline,offset,col)         ->
-      (str,Ast0.OPT,make_info line lline offset col,
+  | (Data.OPT,line,lline,offset,col,strbef,straft)         ->
+      (str,Ast0.OPT,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.UNIQUE,line,lline,offset,col)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset col,
+  | (Data.UNIQUE,line,lline,offset,col,strbef,straft)      ->
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.MULTI,line,lline,offset,col)      ->
-      (str,Ast0.MULTI,make_info line lline offset col,
+  | (Data.MULTI,line,lline,offset,col,strbef,straft)      ->
+      (str,Ast0.MULTI,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
 
@@ -299,6 +300,7 @@ let check_meta tok =
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
 
+%token <string>  TPragma
 %token <string * Data.clt> TInclude
 %token <Data.clt * token> TDefine
 %token <Data.clt * token * int * string> TDefineParam
@@ -367,6 +369,9 @@ let check_meta tok =
 
 %start iso_meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> iso_meta_main
+
+%start never_used
+%type <unit> never_used
 
 %%
 
@@ -686,7 +691,7 @@ defineop:
 	  | [x] -> [x;")"]
 	  | x::xs -> x::","::(loop xs) in
 	"(" :: (loop param_list) in
-      let (arity,line,lline,offset,col) = clt in
+      let (arity,line,lline,offset,col,strbef,straft) = clt in
       let starting_offset = (String.length "#define ") + identlen in
       let (param_offsets,_) =
 	List.fold_left
@@ -712,7 +717,8 @@ defineop:
 		(List.map2
 		   (function param ->
 		     function offset ->
-		       (clt2mcode param (arity,line,lline,offset,col)))
+		       (clt2mcode param
+			  (arity,line,lline,offset,col,strbef,straft)))
 		   param_list param_offsets),
 	      body)) }
 
@@ -1730,3 +1736,10 @@ xstatement_dots(dotter): b=statement_dots(dotter)
 iso(term):
     TIso t=term { Common.Left t }
   | TRightIso t=term { Common.Right t }
+
+/*****************************************************************************
+*
+*
+*****************************************************************************/
+
+never_used: TPragma { () }

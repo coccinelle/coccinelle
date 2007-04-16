@@ -46,9 +46,14 @@ in
 (* --------------------------------------------------------------------- *)
 (* Here we don't care about the annotation on s. *)
 let mcode fn (s,info,_) =
+  List.iter (function str -> print_string str; print_string "\n")
+    info.Ast.strbef;
   if info.Ast.column > 0
   then (print_string "\n"; print_string (String.make info.Ast.column ' '));
-  fn s in
+  fn s;
+  List.iter (function str -> print_string str; print_string "\n")
+    info.Ast.straft
+in
 
 (* --------------------------------------------------------------------- *)
 let dots between fn d =

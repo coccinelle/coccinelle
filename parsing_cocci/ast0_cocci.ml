@@ -20,7 +20,9 @@ type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
-	      column : int; offset : int }
+	      column : int; offset : int;
+	      (* the following are only for + code *)
+	      strings_before : string list; strings_after : string list }
 
 type 'a mcode = 'a * arity * info * mcodekind
 (* int ref is an index *)
@@ -351,7 +353,7 @@ let default_info _ = (* why is this a function? *)
     logical_start = -1; logical_end = -1;
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
-    column = -1; offset = -1 }
+    column = -1; offset = -1; strings_before = []; strings_after = [] }
 
 let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
@@ -373,7 +375,9 @@ let copywrap (_,info,index,mcodekind,ty,dots) x =
      attachable_start = info.attachable_start;
      attachable_end = info.attachable_end;
      mcode_start = info.mcode_start; mcode_end = info.mcode_end;
-     column = info.column; offset = info.offset },
+     column = info.column; offset = info.offset;
+     strings_before = info.strings_before;
+     strings_after = info.strings_after },
    ref !index,ref !mcodekind,ref !ty,dots)
 let get_info (_,info,_,_,_,_) = info
 let get_index (_,_,index,_,_,_) = !index

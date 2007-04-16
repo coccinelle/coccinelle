@@ -1,7 +1,8 @@
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type info = { line : int; column : int }
+type info = { line : int; column : int;
+	      strbef : string list; straft : string list }
 type line = int
 type meta_name = string * string
 type 'a wrap =

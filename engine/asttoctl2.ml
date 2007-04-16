@@ -185,7 +185,9 @@ let elim_opt =
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
 	let dots =
-	  Ast.Dots(("...",{ Ast.line = 0; Ast.column = 0 },
+	  Ast.Dots(("...",
+		    {Ast.line = 0;Ast.column = 0;
+		      Ast.strbef = [];Ast.straft = []},
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   Ast.NoWhen,[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
@@ -940,6 +942,8 @@ and statement stmt after quantified label guard =
   let quantify   = quantify n in
   let real_make_match = make_match in
   let make_match = make_match n label guard in
+  let new_info =
+    {Ast.line = (-1);Ast.column = (-1);Ast.strbef = []; Ast.straft = []} in
 
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
@@ -998,14 +1002,13 @@ and statement stmt after quantified label guard =
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l)))
 		| _ -> None in
-	      let ret = ("return",{Ast.line = (-1);Ast.column = (-1)},
+	      let ret = ("return",new_info,
 			 Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
 	      let edots =
 		Ast.rewrap ast
-		  (Ast.Edots(("...",{Ast.line = (-1);Ast.column = (-1)},
+		  (Ast.Edots(("...",new_info,
 			     Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),None)) in
-	      let semi = (";",{Ast.line = (-1);Ast.column = (-1)},
-			 Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
+	      let semi = (";",new_info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
 	      let simple_return =
 		make_match(Ast.rewrap ast (Ast.Return(ret,semi))) in
 	      let return_expr =

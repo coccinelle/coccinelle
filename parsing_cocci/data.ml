@@ -32,14 +32,16 @@ let add_paramlist_meta: ((string * string) -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_const_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit) ref =
+    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit)
+    ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_err_meta: ((string * string) -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_exp_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit) ref =
+    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit)
+    ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_explist_meta: ((string * string) -> Ast0.pure -> unit) ref = 
@@ -76,4 +78,6 @@ let install_bindings: (string -> unit) ref =
    metavariables *)
 type fresh = bool
 
-type clt = line_type * int * int * int * int (* starting spaces *)
+type clt =
+    line_type * int * int * int * int (* starting spaces *) *
+      string list (* code before *) * string list (* code after *)

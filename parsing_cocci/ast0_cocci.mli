@@ -18,7 +18,9 @@ type info = { line_start : int; line_end : int;
 	      logical_start : int; logical_end : int;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
-	      column : int; offset : int }
+	      column : int; offset : int;
+	      (* the following are only for + code *)
+	      strings_before : string list; strings_after : string list }
 
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref

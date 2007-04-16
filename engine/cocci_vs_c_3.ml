@@ -67,7 +67,7 @@ let mcode_simple_minus = function
 
 let minusizer = 
   ("fake","fake"), 
-  {A.line = 0; column =0},
+  {A.line = 0; column =0; A.strbef=[]; A.straft=[];},
   (A.MINUS(A.DontCarePos, []))
 
 let generalize_mcode ia = 

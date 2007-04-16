@@ -19,7 +19,9 @@ let mkres (_,_,index,mcodekind,ty,d) e
       Ast0.mcode_start = lstart.Ast0.mcode_start;
       Ast0.mcode_end = lend.Ast0.mcode_end;
       Ast0.column = lstart.Ast0.column;
-      Ast0.offset = lstart.Ast0.offset } in
+      Ast0.offset = lstart.Ast0.offset;
+      (* only for tokens, not inherited upwards *)
+      Ast0.strings_before = []; Ast0.strings_after = []} in
   (e,info,index,mcodekind,ty,d)
 
 let mkmultires (_,_,index,mcodekind,ty,d) e
@@ -35,7 +37,9 @@ let mkmultires (_,_,index,mcodekind,ty,d) e
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
       Ast0.column = lstart.Ast0.column;
-      Ast0.offset = lstart.Ast0.offset } in
+      Ast0.offset = lstart.Ast0.offset;
+      (* only for tokens, not inherited upwards *)
+      Ast0.strings_before = []; Ast0.strings_after = [] } in
   (e,info,index,mcodekind,ty,d)
 
 (* --------------------------------------------------------------------- *)
