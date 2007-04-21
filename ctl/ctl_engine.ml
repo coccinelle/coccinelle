@@ -1246,14 +1246,21 @@ let rec satloop unchecked required required_states
 	    | (_,phi2res) ->
 		(match phi1res with
 		  [] -> (* !Flag_ctl.partial_match must be true *)
-		    strict_triples_conj strict
-		      (mkstates states required_states)
-		      phi1res phi2res
+		    if phi2res = []
+		    then []
+		    else
+		      let s = mkstates states required_states in
+		      List.fold_left
+			(function a -> function b ->
+			  strict_triples_conj strict s a [b])
+			[List.hd phi2res] (List.tl phi2res)
 		| [(state,_,_)] ->
 		    let phi2res =
-		      List.map (function (s,e,w) -> (state,e,w)) phi2res in
-		    strict_triples_conj strict
-		      (mkstates states required_states)
+		      List.map (function (s,e,w) -> [(state,e,w)]) phi2res in
+		    let s = mkstates states required_states in
+		    List.fold_left
+		      (function a -> function b ->
+			strict_triples_conj strict s a b)
 		      phi1res phi2res
 		| _ ->
 		    failwith
@@ -1456,18 +1463,25 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    | (_,(child2,res2)) ->
 		(match res1 with
 		  [] -> (* !Flag_ctl.partial_match must be true *)
-		    let res =
-		      strict_triples_conj strict
-			(mkstates states required_states)
-			res1 res2 in
-		    anno res [child1; child2]
+		    if res2 = []
+		    then anno [] [child1; child2]
+		    else 
+		      let res =
+			let s = mkstates states required_states in
+			List.fold_left
+			  (function a -> function b ->
+			    strict_triples_conj strict s a [b])
+			  [List.hd res2] (List.tl res2) in
+		      anno res [child1; child2]
 		| [(state,_,_)] ->
 		    let res2 =
-		      List.map (function (s,e,w) -> (state,e,w)) res2 in
+		      List.map (function (s,e,w) -> [(state,e,w)]) res2 in
 		    Printf.printf "andany\n"; flush stdout;
 		    let res =
-		      strict_triples_conj strict
-			(mkstates states required_states)
+		      let s = mkstates states required_states in
+		      List.fold_left
+			(function a -> function b ->
+			  strict_triples_conj strict s a b)
 			res1 res2 in
 		    anno res [child1; child2]
 		| _ ->

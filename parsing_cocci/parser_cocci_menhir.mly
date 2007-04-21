@@ -279,7 +279,7 @@ let check_meta tok =
 %token <Data.clt> TBreak TContinue
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
-%token <string * Data.clt> TIdent TMetaTypeId TTypeId TDeclarerId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaErr
 %token <(string * string) * Ast0_cocci.pure * Data.clt>
@@ -326,6 +326,7 @@ let check_meta tok =
 
 %token <Data.clt> TPtrOp
 
+%token TMPtVirg
 %token <Data.clt> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
@@ -380,10 +381,8 @@ minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
 | m=minus_body TArob { m }
 plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
 | p=plus_body TArob { p }
-meta_main: m=metadec* TArobArob
-  { List.concat(List.map (function m -> m (!Ast0.rule_name)) m) }
-iso_meta_main: metadec* TArobArob
-  { List.concat(List.map (function m -> m "") $1) }
+meta_main: m=metadec   { m (!Ast0.rule_name) }
+iso_meta_main: m=metadec { m "" }
 
 /*****************************************************************************
 *
@@ -413,7 +412,7 @@ choose_iso:
 
 metadec:
   ar=arity ispure=pure
-  kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TPtVirg
+  kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { function current_rule ->
       List.concat
 	(List.map
@@ -547,13 +546,6 @@ generic_ctype:
 	 (* this is only possible when we are in a metavar decl.  Otherwise,
 	    it will be represented already as a MetaType *)
 	 let _ = check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
-	 Ast0.wrap(Ast0.MetaType(clt2mcode nm (id2clt p),
-				 Ast0.Impure (*will be ignored*))) }
-     | p=TMetaTypeId
-	 { let nm = (!Ast0.rule_name,id2name p) in
-	 (* this is only possible when we are in a metavar decl which
-	    has previously declared the type metavariable.  Otherwise,
-	    it will be represented already as a MetaType *)
 	 Ast0.wrap(Ast0.MetaType(clt2mcode nm (id2clt p),
 				 Ast0.Impure (*will be ignored*))) }
      | p=TTypeId

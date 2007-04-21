@@ -11,6 +11,8 @@ let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
+let promote name = (name,(),Ast0.default_info(),())
+
 (* --------------------------------------------------------------------- *)
 
 let find_loop table name =
@@ -19,7 +21,7 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus ((name,_,info,_) : (string * string) Ast0.mcode) =
+let check_table table minus (name,_,info,_) =
   let rl = info.Ast0.line_start in
   if minus
   then
@@ -125,7 +127,23 @@ let rec expression context old_metas table minus e =
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
+  | Ast0.MetaConst(name,Some tys,_) ->
+      List.iter
+	(function x ->
+	  match get_type_name x with
+	    Some(ty) -> check_table table minus (promote ty)
+	  | None -> ())
+	tys;
+      check_table table minus name
   | Ast0.MetaConst(name,ty,_) ->
+      check_table table minus name
+  | Ast0.MetaExpr(name,Some tys,_)  ->
+      List.iter
+	(function x ->
+	  match get_type_name x with
+	    Some(ty) -> check_table table minus (promote ty)
+	  | None -> ())
+	tys;
       check_table table minus name
   | Ast0.MetaExpr(name,ty,_)  ->
       check_table table minus name
@@ -141,6 +159,12 @@ let rec expression context old_metas table minus e =
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
+
+and get_type_name = function
+    Type_cocci.ConstVol(_,ty) | Type_cocci.Pointer(ty)
+  | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
+  | Type_cocci.MetaType(nm,_,_) -> Some nm
+  | _ -> None
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -360,17 +384,18 @@ let add_to_fresh_table l =
       let name = Ast.get_meta_name x in Hashtbl.replace fresh_table name ())
     l
 
-let check_all_marked err table after_err =
+let check_all_marked rname err table after_err =
   Hashtbl.iter
     (function name ->
       function (cell) ->
 	if not (!cell)
 	then
 	  let (_,name) = name in
-	  warning (Printf.sprintf "%s %s not used %s" err name after_err))
+	  warning
+	    (Printf.sprintf "%s: %s %s not used %s" rname err name after_err))
     table
 
-let check_meta old_metas inherited_metavars metavars minus plus =
+let check_meta rname old_metas inherited_metavars metavars minus plus =
   let old_metas =
     List.map (function (_,x) -> x) (List.map Ast.get_meta_name old_metas) in
   let (fresh,other) =
@@ -388,9 +413,9 @@ let check_meta old_metas inherited_metavars metavars minus plus =
   let iother_table = make_table iother in
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
-  check_all_marked "metavariable" other_table "in the - or context code";
+  check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
-  check_all_marked "fresh identifier metavariable" iother_table
+  check_all_marked rname "fresh identifier metavariable" iother_table
     "in the -, +, or context code";
-  check_all_marked "metavariable" fresh_table "in the + code";
-  check_all_marked "error metavariable" err_table ""
+  check_all_marked rname "metavariable" fresh_table "in the + code";
+  check_all_marked rname "error metavariable" err_table ""

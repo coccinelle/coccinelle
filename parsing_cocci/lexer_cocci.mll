@@ -391,7 +391,10 @@ rule token = parse
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
   | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
-  | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
+  | ";"            { start_line true;
+		     if !Data.in_meta
+		     then TMPtVirg (* works better with tokens_all *)
+		     else TPtVirg (get_current_line_type lexbuf) }
 
   
   | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }
