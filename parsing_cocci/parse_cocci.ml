@@ -580,6 +580,25 @@ let rec find_function_names = function
   | t :: rest -> t :: find_function_names rest
 
 (* ----------------------------------------------------------------------- *)
+(* an attribute is an identifier that preceeds another identifier and
+   begins with __ *)
+
+let rec detect_attr l =
+  let is_id = function
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
+    | (PC.TMetaLocalFunc(_,_,_),_) -> true
+    | _ -> false in    
+  let rec loop = function
+      [] -> []
+    | [x] -> [x]
+    | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
+	if String.length nm > 2 && String.sub nm 0 2 = "__"
+	then (PC.Tattr(nm,clt),info)::(loop (id::rest))
+	else t1::(loop (id::rest))
+    | x::xs -> x::(loop xs) in
+  loop l
+
+(* ----------------------------------------------------------------------- *)
 (* Look for variable declarations where the name is a typedef name.
 We assume that C code does not contain a multiplication as a top-level
 statement. *)
@@ -901,7 +920,8 @@ let parse_one str parsefn file toks =
   | e -> raise e
 
 let prepare_tokens tokens =
-  insert_line_end (detect_types false (find_function_names tokens))
+  insert_line_end
+    (detect_types false (find_function_names (detect_attr tokens)))
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 

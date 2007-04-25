@@ -108,12 +108,9 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find declarer_names s) linetype
 	with Not_found -> TIdent (s,linetype))) in
-  if String.length s > 2 && String.sub s 0 2 = "__"
-  then Tattr (s,linetype)
-  else
-    if !Data.in_meta
-    then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
-    else fail()
+  if !Data.in_meta
+  then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
+  else fail()
 
 let id_tokens lexbuf =
   let s = tok lexbuf in
