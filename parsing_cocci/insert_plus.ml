@@ -158,52 +158,29 @@ bind to that; not good for isomorphisms *)
   let cdots r k d = dots r.V0.combiner_case_line k d in
 
   let statement r k s =
-    let redo_branch branchres (ifinfo,aftmc) =
-      match List.rev branchres with
-	[] -> failwith "empty branch not allowed"
+    let redo_branched res (ifinfo,aftmc) =
+      let redo fv info mc rest =
+	let new_info = {info with Ast0.attachable_end = false} in
+	List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest) in
+      match List.rev res with
+	[(fv,info,mc)] ->
+	  (match mc with
+	    Ast0.MINUS(_) | Ast0.CONTEXT(_) ->
+		(* even for -, better for isos not to integrate code after an
+		   if into the if body *)
+	      redo fv info mc []
+	  | _ -> res)
       | (fv,info,mc)::rest ->
 	  (match mc with
-	    Ast0.MINUS(_) -> branchres
-	  |	Ast0.CONTEXT(_) ->
-	      let new_info = {info with Ast0.attachable_end = false} in
-	      List.rev ((Favored,ifinfo,aftmc)::(fv,new_info,mc)::rest)
-	  | _ -> failwith "unexpected mc in branch res") in
+	    Ast0.CONTEXT(_) -> redo fv info mc rest
+	  | _ -> res)
+      | _ -> failwith "unexpected empty code" in
     match Ast0.unwrap s with
-      Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->
-	let iffres = mcode iff in
-	let lpres = mcode lp in
-	let expres = r.V0.combiner_expression exp in
-	let rpres = mcode rp in
-	let branchres = redo_branch (r.V0.combiner_statement branch) aft in
-	iffres @ lpres @ expres @ rpres @ branchres
-    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	let iffres = mcode iff in
-	let lpres = mcode lp in
-	let expres = r.V0.combiner_expression exp in
-	let rpres = mcode rp in
-	let branch1res = r.V0.combiner_statement branch1 in
-	let elseres = mcode els in
-	let branch2res = redo_branch (r.V0.combiner_statement branch2) aft in
-	iffres @ lpres @ expres @ rpres @ branch1res @ elseres @ branch2res
-    | Ast0.While(whl,lp,exp,rp,body,aft) ->
-	let whlres = mcode whl in
-	let lpres = mcode lp in
-	let expres = r.V0.combiner_expression exp in
-	let rpres = mcode rp in
-	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
-	whlres @ lpres @ expres @ rpres @ bodyres
-    | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
-	let frres = mcode fr in
-	let lpres = mcode lp in
-	let e1res = get_option r.V0.combiner_expression e1 in
-	let sem1res = mcode sem1 in
-	let e2res = get_option r.V0.combiner_expression e2 in
-	let sem2res = mcode sem2 in
-	let e3res = get_option r.V0.combiner_expression e3 in
-	let rpres = mcode rp in
-	let bodyres = redo_branch (r.V0.combiner_statement body) aft in
-	frres @ lpres @ e1res @ sem1res @ e2res @ sem2res @ e3res @ rpres
-	@ bodyres
+      Ast0.IfThen(_,_,_,_,_,aft)
+    | Ast0.IfThenElse(_,_,_,_,_,_,_,aft)
+    | Ast0.While(_,_,_,_,_,aft)
+    | Ast0.For(_,_,_,_,_,_,_,_,_,aft) ->
+	redo_branched (do_nothing r k s) aft
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)
     | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)

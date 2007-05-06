@@ -35,7 +35,9 @@ and dots_bef_aft = NoDots | BetweenDots of statement
 (* for iso metavariables, true if they can only match nonmodified terms with
    all metavariables unitary
    for SP metavariables, true if the metavariable is unitary (valid up to
-   isomorphism phase only) *)
+   isomorphism phase only)
+   In SP, the only options are impure and context
+*)
 and pure = Impure | Pure | Context (* pure and only context *)
 
 (* --------------------------------------------------------------------- *)

@@ -141,8 +141,20 @@ let bool_match_option f t1 t2 =
   | (None, None) -> true
   | _ -> false
 
+(* context_required is for the example
+   if (
++      (int * )
+       x == NULL)
+  where we can't change x == NULL to eg NULL == x.  So there can either be
+  nothing attached to the root or the term has to be all removed.
+  if would be nice if we knew more about the relationship between the - and +
+  code, because in the case where the + code is a separate statement in a
+  sequence, this is not a problem.  Perhaps something could be done in
+  insert_plus *)
 let is_context e =
-  match Ast0.get_mcodekind e with Ast0.CONTEXT(cell) -> true | _ -> false
+  match Ast0.get_mcodekind e with
+    Ast0.CONTEXT(cell) -> true
+  | _ -> false
 
 let match_list matcher is_list_matcher do_list_match la lb =
   let rec loop = function
@@ -288,10 +300,8 @@ let match_maker context_required whencode_allowed =
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
       Ast0.MetaId(name,pure) ->
-	add_pure_binding name pure
-	  pure_sp_code.V0.combiner_ident
-	  (function id -> Ast0.IdentTag id)
-	  id
+	add_pure_binding name pure pure_sp_code.V0.combiner_ident
+	  (function id -> Ast0.IdentTag id) id
     | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
     | up ->
@@ -1082,7 +1092,7 @@ let instantiate bindings mv_bindings =
     | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
-  (* cas for list metavariables *)
+  (* case for list metavariables *)
   let rec elist r same_dots = function
       [] -> []
     | [x] ->

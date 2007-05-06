@@ -3,7 +3,7 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module U = Pretty_print_cocci
 
-let quiet = ref true (* false = no decoration on - context, etc *)
+let quiet = ref false (* false = no decoration on - context, etc *)
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0
@@ -29,7 +29,9 @@ let mcodekind brackets fn x = function
       let (plus_stream,_) = !plus_stream in
       if !quiet
       then fn x
-      else (print_string "-"; print_string lb; fn x; print_string rb);
+      else (print_string "-";
+	    print_int (List.length plus_stream);
+	    print_string lb; fn x; print_string rb);
       U.print_anything ">>> " plus_stream
   | Ast0.CONTEXT(plus_streams) ->
       let (lb,rb) =
@@ -39,7 +41,9 @@ let mcodekind brackets fn x = function
 	  match brackets with
 	    Some x -> ("[",("]^"^(string_of_int x))) | None -> ("","") in
       let (plus_streams,_,_) = !plus_streams in
-      U.print_around (function x -> print_string lb; fn x; print_string rb)
+      U.print_around
+	(function x ->
+	  print_string lb; fn x; print_string rb)
 	x plus_streams
   | Ast0.PLUS -> fn x
   | Ast0.MIXED(plus_streams) ->
@@ -420,8 +424,13 @@ and statement arity s =
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  print_string arity; mcode print_string ret; print_string " ";
 	  expression exp; mcode print_string sem
-      | Ast0.MetaStmt(name,_) ->
-	  print_string arity; mcode print_meta name
+      | Ast0.MetaStmt(name,pure) ->
+	  print_string arity; mcode print_meta name;
+	  print_string "^";
+	  (match pure with
+	    Ast0.Pure -> print_string "pure"
+	  | Ast0.Impure -> print_string "impure"
+	  | Ast0.Context -> print_string "context")
       | Ast0.MetaStmtList(name,_) ->
 	  print_string arity;  mcode print_meta name
       | Ast0.Disj(_,statement_dots_list,_,_) ->
