@@ -167,7 +167,17 @@ bind to that; not good for isomorphisms *)
 	  (match mc with
 	    Ast0.MINUS(_) | Ast0.CONTEXT(_) ->
 		(* even for -, better for isos not to integrate code after an
-		   if into the if body *)
+		   if into the if body.
+		   but the problem is that this can extend the region in
+		   which a variable is bound, because a variable bound in the
+		   aft node would seem to have to be live in the whole if,
+		   whereas we might like it to be live in only one branch.
+		   ie ideally, if we can keep the minus code in the right
+		   order, we would like to drop it as close to the bindings
+		   of its free variables.  This could be anywhere in the minus
+		   code.  Perhaps we would like to do this after the
+		   application of isomorphisms, though.
+		*)
 	      redo fv info mc []
 	  | _ -> res)
       | (fv,info,mc)::rest ->
