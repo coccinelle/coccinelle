@@ -203,31 +203,30 @@ let collect_saved =
 (* For the rules under a given metavariable declaration, collect all of the
 variables that occur in the plus code *)
 
+let cip_mcodekind r mck =
+  let process_anything_list_list anythings =
+    let astfvs = collect_all_refs.V.combiner_anything in
+    List.fold_left (@) []
+      (List.map (function l -> List.fold_left (@) [] (List.map astfvs l))
+	 anythings) in
+  match mck with
+    Ast.MINUS(_,anythings) -> process_anything_list_list anythings
+  | Ast.CONTEXT(_,befaft) ->
+      (match befaft with
+	Ast.BEFORE(ll) -> process_anything_list_list ll
+      | Ast.AFTER(ll) -> process_anything_list_list ll
+      | Ast.BEFOREAFTER(llb,lla) ->
+	  (process_anything_list_list lla) @
+	  (process_anything_list_list llb)
+      | Ast.NOTHING -> [])
+  | Ast.PLUS -> []
+
 let collect_in_plus_term =
   let bind x y = x @ y in
   let option_default = [] in
   let donothing r k e = k e in
 
-  let mcodekind r mck =
-    let process_anything_list_list anythings =
-      let astfvs = collect_all_refs.V.combiner_anything in
-      List.fold_left bind []
-	(List.map (function l -> List.fold_left bind [] (List.map astfvs l))
-	   anythings) in
-    match mck with
-      Ast.MINUS(_,anythings) -> process_anything_list_list anythings
-    | Ast.CONTEXT(_,befaft) ->
-	(match befaft with
-	  Ast.BEFORE(ll) -> process_anything_list_list ll
-	| Ast.AFTER(ll) -> process_anything_list_list ll
-	| Ast.BEFOREAFTER(llb,lla) ->
-	    bind
-	      (process_anything_list_list lla)
-	      (process_anything_list_list llb)
-	| Ast.NOTHING -> option_default)
-    | Ast.PLUS -> option_default in
-
-  let mcode r (_,_,mck) = mcodekind r mck in
+  let mcode r (_,_,mck) = cip_mcodekind r mck in
 
   (* case for things with bef/aft mcode *)
 
@@ -257,16 +256,16 @@ let collect_in_plus_term =
 	bind fi_metas
 	  (bind nm_metas
 	     (bind param_metas
-		(bind (mcodekind recursor bef) (k re))))
+		(bind (cip_mcodekind recursor bef) (k re))))
     | Ast.Decl(bef,_,_) ->
-	bind (mcodekind recursor bef) (k re)
+	bind (cip_mcodekind recursor bef) (k re)
     | _ -> k re in
 
   let astfvstatement recursor k s =
     match Ast.unwrap s with
-      Ast.IfThen(_,_,aft) | Ast.IfThenElse(_,_,_,_,aft)
-    | Ast.While(_,_,aft) | Ast.For(_,_,aft) ->
-	bind (k s) (mcodekind recursor aft)
+      Ast.IfThen(_,_,(_,_,_,aft)) | Ast.IfThenElse(_,_,_,_,(_,_,_,aft))
+    | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft)) ->
+	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in
 
   V.combiner bind option_default
@@ -437,9 +436,32 @@ let astfvs metavars bound =
       Common.union_set
 	(nub (collect_all_refs.V.combiner_statement s))
 	(collect_in_plus_term.V.combiner_statement s) in
-    let (unbound,inherited) =
-      List.partition (function x -> not(List.mem x bound)) free in
+    let classify free =
+      let (unbound,inherited) =
+	List.partition (function x -> not(List.mem x bound)) free in
+      (unbound,collect_fresh unbound,inherited) in
     let (s,l,_,_,_,_,d) = k s in
+    let s =
+      match s with
+	Ast.IfThen(header,branch,(_,_,_,aft)) ->
+	  let (unbound,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  Ast.IfThen(header,branch,(unbound,fresh,inherited,aft))
+      | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
+	  let (unbound,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  Ast.IfThenElse(header,branch1,els,branch2,
+			 (unbound,fresh,inherited,aft))
+      | Ast.While(header,body,(_,_,_,aft)) ->
+	  let (unbound,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  Ast.While(header,body,(unbound,fresh,inherited,aft))
+      | Ast.For(header,body,(_,_,_,aft)) ->
+	  let (unbound,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  Ast.For(header,body,(unbound,fresh,inherited,aft))
+      |	_ -> s in
+    let (unbound,fresh,inherited) = classify free in
     (s,l,unbound,collect_fresh unbound,inherited,[],d) in
 
   let astfvstatement_dots recursor k sd =

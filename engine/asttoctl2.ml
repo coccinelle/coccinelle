@@ -622,7 +622,7 @@ let rec ends_in_return stmt_list =
 (* control structures *)
 
 let end_control_structure fvs header body after_pred
-    after_checks no_after_checks aft after n label guard aftfvinfo =
+    after_checks no_after_checks (afvs,afresh,ainh,aft) after n label guard =
   (* aft indicates what is added after the whole if, which has to be added
      to the endif node *)
   let (aft_needed,after_branch) =
@@ -631,7 +631,8 @@ let end_control_structure fvs header body after_pred
 	(false,make_seq_after2 n guard after_pred after)
     | _ ->
 	let match_endif =
-	  make_match n label guard (make_meta_rule_elem aft aftfvinfo) in
+	  make_match n label guard
+	    (make_meta_rule_elem aft (afvs,afresh,ainh)) in
 	(true,
 	 make_seq_after n guard after_pred
 	   (After(make_seq_after n guard match_endif after))) in
@@ -647,8 +648,8 @@ let end_control_structure fvs header body after_pred
 	  | _ -> no_after_checks)
 	  (wrapAX_absolute n s body)))
 
-let ifthen ifheader branch aft after quantified n label recurse make_match
-    guard aftfvinfo =
+let ifthen ifheader branch ((afvs,_,_,_) as aft) after quantified n label
+    recurse make_match guard =
 (* "if (test) thn" becomes:
     if(test) & AX((TrueBranch & AX thn) v FallThrough v After)
 
@@ -658,7 +659,10 @@ let ifthen ifheader branch aft after quantified n label recurse make_match
 *)
   (* free variables *) 
   let (efvs,bfvs) =
-    List.hd(seq_fvs quantified [Ast.get_fvs ifheader;Ast.get_fvs branch]) in
+    match seq_fvs quantified
+	[Ast.get_fvs ifheader;Ast.get_fvs branch;afvs] with
+      [(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
+    | _ -> failwith "not possible" in
   let new_quantified = Common.union_set bfvs quantified in
   (* if header *)
   let if_header = quantify n efvs (make_match ifheader) in
@@ -670,10 +674,10 @@ let ifthen ifheader branch aft after quantified n label recurse make_match
   let or_cases after_branch =
     wrapOr n (true_branch,wrapOr n (fallpred n label,after_branch)) in
   end_control_structure bfvs if_header or_cases after_pred
-      (Some(wrapEX n after_pred)) None aft after n label guard aftfvinfo
+      (Some(wrapEX n after_pred)) None aft after n label guard
 
-let ifthenelse ifheader branch1 els branch2 aft after quantified n label
-    recurse make_match guard aftfvinfo =
+let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
+    quantified n label recurse make_match guard =
 (*  "if (test) thn else els" becomes:
     if(test) & AX((TrueBranch & AX thn) v
                   (FalseBranch & AX (else & AX els)) v After)
@@ -688,13 +692,17 @@ let ifthenelse ifheader branch1 els branch2 aft after quantified n label
 *)
   (* free variables *)
   let (e1fvs,b1fvs,s1fvs) =
-    match seq_fvs quantified [Ast.get_fvs ifheader;Ast.get_fvs branch1] with
-      [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
+    match seq_fvs quantified
+	[Ast.get_fvs ifheader;Ast.get_fvs branch1;afvs] with
+      [(e1fvs,b1fvs);(s1fvs,b1afvs);_] ->
+	(e1fvs,Common.union_set b1fvs b1afvs,s1fvs)
     | _ -> failwith "not possible" in
   let (e2fvs,b2fvs,s2fvs) =
     (* fvs on else? *)
-    match seq_fvs quantified [Ast.get_fvs ifheader;Ast.get_fvs branch2] with
-      [(e2fvs,b2fvs);(s2fvs,_)] -> (e2fvs,b2fvs,s2fvs)
+    match seq_fvs quantified
+	[Ast.get_fvs ifheader;Ast.get_fvs branch2;afvs] with
+      [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
+	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
     | _ -> failwith "not possible" in
   let bothfvs        = union (union b1fvs b2fvs) (intersect s1fvs s2fvs) in
   let exponlyfvs     = intersect e1fvs e2fvs in
@@ -716,14 +724,16 @@ let ifthenelse ifheader branch1 els branch2 aft after quantified n label
   end_control_structure bothfvs if_header or_cases after_pred
       (Some(wrapAnd n s (wrapEX n (falsepred n label),wrapEX n after_pred)))
       (Some(wrapEX n (falsepred n label)))
-      aft after n label guard aftfvinfo
+      aft after n label guard
 
-let forwhile header body aft after quantified n label recurse make_match
-    guard aftfvinfo =
+let forwhile header body ((afvs,_,_,_) as aft) after quantified n label
+    recurse make_match guard =
   (* the translation in this case is similar to that of an if with no else *)
   (* free variables *) 
   let (efvs,bfvs) =
-    List.hd(seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]) in
+    match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body;afvs] with
+      [(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
+    | _ -> failwith "not possible" in
   let new_quantified = Common.union_set bfvs quantified in
   (* loop header *)
   let header = quantify n efvs (make_match header) in
@@ -733,7 +743,7 @@ let forwhile header body aft after quantified n label recurse make_match
   let after_pred = fallpred n label in
   let or_cases after_branch = wrapOr n (body,after_branch) in
   end_control_structure bfvs header or_cases after_pred
-    (Some(wrapEX n after_pred)) None aft after n label guard aftfvinfo
+    (Some(wrapEX n after_pred)) None aft after n label guard
   
 (* --------------------------------------------------------------------- *)
 (* statement metavariables *)
@@ -1141,16 +1151,14 @@ and statement stmt after quantified label guard =
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified n label statement
 	  make_match guard
-	  (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 	 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       ifthenelse ifheader branch1 els branch2 aft after quantified n label
 	  statement make_match guard
-	  (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
       forwhile header body aft after quantified n label statement make_match
-	guard (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
+	guard
 
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
       List.fold_left

@@ -538,7 +538,7 @@ and statement s =
 	  Ast.IfThen
 	    (local_rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	     statement Ast.NotSequencible branch,convert_mcodekind aft)
+	     statement Ast.NotSequencible branch,([],[],[],convert_mcodekind aft))
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
@@ -547,12 +547,13 @@ and statement s =
 	     statement Ast.NotSequencible branch1,
 	     tokenwrap els (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
-	     convert_mcodekind aft)
+	     ([],[],[],convert_mcodekind aft))
       | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
 	  Ast.While(local_rewrap s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
-		    statement Ast.NotSequencible body,convert_mcodekind aft)
+		    statement Ast.NotSequencible body,
+		    ([],[],[],convert_mcodekind aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
 	  Ast.Do(local_rewrap s (Ast.DoHeader(mcode d)),
@@ -572,7 +573,7 @@ and statement s =
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(local_rewrap s
 		    (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
-		  body,convert_mcodekind aft)
+		  body,([],[],[],convert_mcodekind aft))
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  let switch = mcode switch in
 	  let lp = mcode lp in

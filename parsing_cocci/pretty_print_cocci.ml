@@ -544,20 +544,20 @@ and statement arity s =
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
-  | Ast.IfThen(header,branch,aft) ->
+  | Ast.IfThen(header,branch,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch;
       mcode (function _ -> ()) ((),(),aft)
-  | Ast.IfThenElse(header,branch1,els,branch2,aft) ->
+  | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2;
       mcode (function _ -> ()) ((),(),aft)
-  | Ast.While(header,body,aft) ->
+  | Ast.While(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),(),aft)
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
-  | Ast.For(header,body,aft) ->
+  | Ast.For(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),(),aft)
   | Ast.Switch(header,lb,cases,rb) ->

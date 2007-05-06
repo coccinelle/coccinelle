@@ -91,8 +91,9 @@ and statement tail stmt used_after optional =
 	| Opt(elems) -> lub (optional [lbrace;rbrace], body_info)
       else body_info
 
-  | Ast.IfThen(header,branch,aft)
-  | Ast.While(header,branch,aft) | Ast.For(header,branch,aft) ->
+  | Ast.IfThen(header,branch,(_,_,_,aft))
+  | Ast.While(header,branch,(_,_,_,aft))
+  | Ast.For(header,branch,(_,_,_,aft)) ->
       if contains_modif header used_after or mcode () ((),(),aft)
       then optional [header]
       else extend optional header (statement tail branch used_after optional)
@@ -108,7 +109,7 @@ and statement tail stmt used_after optional =
 	| Opt(elems) -> lub (optional [header;lb;rb], body_info)
       else body_info
 
-  | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
+  | Ast.IfThenElse(ifheader,branch1,els,branch2,(_,_,_,aft)) ->
       if contains_modif ifheader used_after or mcode () ((),(),aft)
       then optional [ifheader]
       else

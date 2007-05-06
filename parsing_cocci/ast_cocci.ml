@@ -30,6 +30,10 @@ and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
 and inherited = Type_cocci.inherited
 and keep_binding = Type_cocci.keep_binding
 
+and end_info =
+    meta_name list (*free vars*) * meta_name list (*inherited vars*) *
+      meta_name list (*witness vars*) * mcodekind
+
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
 
@@ -337,12 +341,12 @@ and rule_elem = base_rule_elem wrap
 and base_statement =
     Seq           of rule_elem (* { *) * statement dots * bool *
 	             statement dots * rule_elem (* } *)
-  | IfThen        of rule_elem (* header *) * statement * mcodekind (* endif *)
+  | IfThen        of rule_elem (* header *) * statement * end_info (* endif *)
   | IfThenElse    of rule_elem (* header *) * statement *
-	             rule_elem (* else *) * statement * mcodekind (* endif *)
-  | While         of rule_elem (* header *) * statement * mcodekind(*endwhile*)
+	             rule_elem (* else *) * statement * end_info (* endif *)
+  | While         of rule_elem (* header *) * statement * end_info (*endwhile*)
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
-  | For           of rule_elem (* header *) * statement * mcodekind (*endfor*)
+  | For           of rule_elem (* header *) * statement * end_info (*endfor*)
   | Switch        of rule_elem (* header *) * rule_elem (* { *) *
 	             case_line list * rule_elem (* } *)
   | Atomic        of rule_elem
