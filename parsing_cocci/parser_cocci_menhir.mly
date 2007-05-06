@@ -265,6 +265,7 @@ let check_meta tok =
 %token TPure TContext
 %token TTypedef TDeclarer
 %token TUsing TExtends
+%token TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -1377,7 +1378,8 @@ pure_decl_statement_list:
 
 /* as above, but allows a single expression - for "or" case */
 exp_decl_statement_list:
-    expr                                    { [Ast0.wrap(Ast0.Exp($1))] }
+    TNothing { [] } /* only in + code, between dots */
+  | expr                                    { [Ast0.wrap(Ast0.Exp($1))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     exp_decl_statement_list
       /* HACK!!! */
@@ -1396,7 +1398,8 @@ exp_decl_statement_list:
   | pure_decl_statement_list                { $1 }
 
 fun_exp_decl_statement_list:
-    t=ctype
+    TNothing { [] } /* only in + code, between dots */
+  | t=ctype
       /* This rule could be in exp_decl_statement_list, which would allow
          it to be ain a... sequence.  But it is not clear whether that makes
          sense, so for now it is here. */

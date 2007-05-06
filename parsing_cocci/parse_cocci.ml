@@ -41,6 +41,8 @@ let token2c (tok,_) =
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
+  | PC.TNothing -> "nothing"
+
   | PC.Tchar(clt) -> "char"^(line_type2c  clt)
   | PC.Tshort(clt) -> "short"^(line_type2c clt)
   | PC.Tint(clt) -> "int"^(line_type2c clt)
@@ -466,7 +468,7 @@ let split_token ((tok,_) as t) =
   | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TExtends
-  | PC.TError | PC.TWords -> ([t],[t])
+  | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -822,6 +824,11 @@ let rec drop_when = function
       loop xs
   | x::xs -> x::drop_when xs
 
+(* instead of dropping the double dots, we put TNothing in between them.
+these vanish after the parser, but keeping all the ...s in the + code makes
+it easier to align the + and - code in context_neg and in preparation for the
+isomorphisms.  This shouldn't matter because the context code of the +
+slice is mostly ignored anyway *)
 let rec drop_double_dots l =
   let start = function
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_) -> true
@@ -832,14 +839,16 @@ let rec drop_double_dots l =
   let final = function
       (PC.TCEllipsis(_),_) | (PC.TCCircles(_),_) | (PC.TCStars(_),_) -> true
     | _ -> false in
-  let rec loop = function
+  let rec loop ((_,i) as prev) = function
       [] -> []
-    | x::y::rest when middle x && middle y -> loop (x::rest)
-    | x::y::rest when start x && middle y -> loop (x::rest)
-    | x::y::rest when start x && final y -> loop rest
-    | x::y::rest when middle x && final y -> y::(loop rest)
-    | x::rest -> x :: (loop rest) in
-  loop l
+    | x::rest when middle prev && middle x -> (PC.TNothing,i)::x::(loop x rest)
+    | x::rest when start prev && middle x ->  (PC.TNothing,i)::x::(loop x rest)
+    | x::rest when start prev && final x ->   (PC.TNothing,i)::x::(loop x rest)
+    | x::rest when middle prev && final x ->  (PC.TNothing,i)::x::(loop x rest)
+    | x::rest -> x :: (loop x rest) in
+  match l with
+    [] -> []
+  | (x::xs) -> x :: loop x xs
 
 let rec fix f l =
   let cur = f l in
