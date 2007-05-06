@@ -4,4 +4,4 @@ fresh identifier A;
 @@
 
 - if (foo()) S
-+ S;
++ S
