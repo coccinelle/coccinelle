@@ -275,7 +275,10 @@ let make_rule = function
       (metavars,
        [Ast0toast.statement mproto;Ast0toast.statement(drop_names mproto)])
 
-let make_rules minus plus =
+(* --------------------------------------------------------------------- *)
+(* entry point *)
+
+let process rule_name minus plus =
   let minus_functions = List.concat (List.map get_all_functions minus) in
   match minus_functions with
     [] -> None
@@ -291,16 +294,10 @@ let make_rules minus plus =
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some (metavars,[Ast.rewrap x (Ast.DECL x)])
+	  Some ("",[rule_name],metavars,[Ast.rewrap x (Ast.DECL x)])
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
 	  Some
-	    (metavars,
+	    ("",[rule_name],metavars,
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))])
-
-(* --------------------------------------------------------------------- *)
-(* entry point *)
-
-let process minus plus =
-  make_rules minus plus

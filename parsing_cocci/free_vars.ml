@@ -513,7 +513,7 @@ their point of definition. *)
 let collect_top_level_used_after metavar_rule_list =
   let (used_after,used_after_lists) =
     List.fold_right
-      (function (metavar_list,rule) ->
+      (function (name,dependencies,metavar_list,rule) ->
 	function (used_after,used_after_lists) ->
 	  let locally_defined = List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
@@ -558,7 +558,7 @@ let collect_local_used_after metavars minirules used_after =
 let collect_used_after metavar_rule_list =
   let used_after_lists = collect_top_level_used_after metavar_rule_list in
   List.map2
-    (function (metavars,minirules) ->
+    (function (name,dependencies,metavars,minirules) ->
       function used_after ->
 	collect_local_used_after metavars minirules used_after)
     metavar_rule_list used_after_lists
@@ -568,11 +568,13 @@ let collect_used_after metavar_rule_list =
 (* entry point *)
 
 let free_vars rules =
-  let metavars = List.map (function (mv,_) -> mv) rules in
+  let names = List.map (function (nm,dep,mv,rule) -> nm) rules in
+  let dependencies = List.map (function (nm,dep,mv,rule) -> dep) rules in
+  let metavars = List.map (function (nm,dep,mv,rule) -> mv) rules in
   let used_after_lists = collect_used_after rules in
   let new_rules =
     List.map2
-      (function (mv,r) ->
+      (function (nm,dep,mv,r) ->
 	function ua ->
 	  classify_variables mv r (List.concat ua))
       rules used_after_lists in
@@ -581,4 +583,4 @@ let free_vars rules =
     (List.iter
        (function l -> Printf.printf "one rule: %s\n" (String.concat " " l)))
     used_after_lists;*)
-  (new_rules,used_after_lists)
+  (names,dependencies,new_rules,used_after_lists)

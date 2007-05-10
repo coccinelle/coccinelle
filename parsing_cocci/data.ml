@@ -2,6 +2,7 @@ module Ast0 = Ast0_cocci
 
 (* Things that need to be seen by the lexer and parser. *)
 
+let in_rule_name = ref false
 let in_meta = ref false
 let in_iso = ref false
 

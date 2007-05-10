@@ -38,6 +38,8 @@ let token2c (tok,_) =
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
   | PC.TExtends -> "extends"
+  | PC.TDepends -> "depends"
+  | PC.TOn -> "on"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -468,7 +470,7 @@ let split_token ((tok,_) as t) =
   | PC.TFunction | PC.TText | PC.TTypedef | PC.TDeclarer
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TExtends
-  | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
+  | PC.TDepends | PC.TOn | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -1018,17 +1020,19 @@ let parse file default_isos =
     (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
       let rec loop old_metas starts_with_name =
 	(!Data.init_rule)();
-	Data.in_meta := true;
-	let (rule_name,iso) =
+	Data.in_rule_name := true;
+	let (rule_name,dependencies,iso) =
 	  if starts_with_name
 	  then
 	    begin
 	      let (_,tokens) = tokens_all table file true lexbuf [PC.TArob] in
 	      parse_one "rule name" PC.rule_name file tokens
 	    end
-	  else (make_name (!Lexer_cocci.line),None) in
+	  else (make_name (!Lexer_cocci.line),[],None) in
+	Data.in_rule_name := false;
 	Ast0_cocci.rule_name := rule_name;
 	(* get metavariable declarations *)
+	Data.in_meta := true;
 	let (metavars,inherited_metavars) =
 	  get_metavars PC.meta_main table file lexbuf in
 	Data.in_meta := false;
@@ -1090,9 +1094,10 @@ let parse file default_isos =
 	then
 	  let (minus_ress,plus_ress) =
 	    loop (metavars@old_metas) starts_with_name in
-	  ((minus_res,metavars,(chosen_isos,rule_name))::minus_ress,
+	  ((minus_res,metavars,(chosen_isos,dependencies,rule_name))::
+	   minus_ress,
 	   (plus_res, metavars)::plus_ress)
-	else ([(minus_res,metavars,(chosen_isos,rule_name))],
+	else ([(minus_res,metavars,(chosen_isos,dependencies,rule_name))],
 	      [(plus_res, metavars)]) in
       loop [] (x = PC.TArob)
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
@@ -1112,13 +1117,13 @@ let process file isofile verbose =
   let parsed =
     List.concat
       (List.map2
-	 (function (minus, metavars, (chosen_isos, rule_name)) ->
+	 (function (minus, metavars, (chosen_isos, dependencies, rule_name)) ->
 	   function (plus, metavars) ->
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let function_prototypes =
-	       Function_prototypes.process minus plus in
+	       Function_prototypes.process rule_name minus plus in
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     Insert_plus.insert_plus m p;
 	     Type_infer.type_infer minus;
@@ -1127,12 +1132,15 @@ let process file isofile verbose =
 	     let minus = Single_statement.single_statement minus in
 	     let minus_ast = Ast0toast.ast0toast minus in
 	     match function_prototypes with
-	       None ->       [(extra_meta@metavars, minus_ast)]
-	     | Some mv_fp -> [(extra_meta@metavars, minus_ast); mv_fp])
+	       None ->
+		 [(rule_name, dependencies, extra_meta@metavars, minus_ast)]
+	     | Some mv_fp ->
+		 [(rule_name, dependencies, extra_meta@metavars, minus_ast);
+		   mv_fp])
 	 minus plus) in
-  let (code,ua) = Free_vars.free_vars parsed in
+  let (nm,dep,code,ua) = Free_vars.free_vars parsed in
   if !Flag_parsing_cocci.show_SP 
   then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
-  (code,ua,tokens)
+  (nm,dep,code,ua,tokens)
 

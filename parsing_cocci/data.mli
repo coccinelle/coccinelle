@@ -3,6 +3,7 @@ type line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT | MULTI
 
+val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref (* true if parsing the metavariable decls *)
 val in_iso : bool ref  (* true if parsing the isomorphisms *)
 

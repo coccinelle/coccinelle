@@ -264,7 +264,7 @@ let check_meta tok =
 %token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer
-%token TUsing TExtends
+%token TUsing TExtends TDepends TOn
 %token TNothing
 %token<string> TRuleName
 
@@ -361,7 +361,7 @@ let check_meta tok =
 %type <Ast0_cocci.rule> plus_main
 
 %start rule_name
-%type <string * string option> rule_name
+%type <string * string list * string option> rule_name
 
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
@@ -396,17 +396,21 @@ pure:
 | /* empty */ { Ast0.Impure }
 
 rule_name:
-  nm=pure_ident extends i=ioption(choose_iso) TArob
+  nm=pure_ident extends d=depends i=ioption(choose_iso) TArob
     { let n = id2name nm in
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (n,i) }
+    (n,d,i) }
 
 extends:
   /* empty */                                     { () }
 | TExtends parent=TRuleName
     { !Data.install_bindings (parent) }
+
+depends:
+  /* empty */                                     { [] }
+| TDepends TOn parents=comma_list(TRuleName)      { parents }
 
 choose_iso:
   TUsing TString     { id2name $2 }

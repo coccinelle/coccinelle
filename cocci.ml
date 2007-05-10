@@ -64,7 +64,7 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
+    let (_,_,astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +> List.hd +> List.hd +> (function x ->
 	match Ast_cocci.unwrap x with
@@ -719,7 +719,8 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
   let (ctls, error_words_julia, contain_typedmetavar) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
-        let (astcocci,used_after_lists,toks)= sp_from_file coccifile isofile in
+        let (nms,deps,astcocci,used_after_lists,toks) =
+	  sp_from_file coccifile isofile in
         let ctls = ctls astcocci used_after_lists in
         let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in
 

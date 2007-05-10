@@ -18,7 +18,8 @@ val cexpression_from_string : string -> Ast_c.expression
 (* sp_from_file coccifile isofile *)
 val sp_from_file :
     filename  -> filename option ->
-    Ast_cocci.rule list * Ast_cocci.meta_name list list list * string list
+      string list (* rule names *) * string list list (* dependencies *) *
+	Ast_cocci.rule list * Ast_cocci.meta_name list list list * string list
 val rule_elem_from_string : string -> filename option -> Ast_cocci.rule_elem
 
 

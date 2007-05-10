@@ -298,7 +298,7 @@ let main () =
 
             let iso_file = if !iso_file = "" then None else Some !iso_file in
 
-            let (xs,_,_) = Cocci.sp_from_file file iso_file  in
+            let (_,_,xs,_,_) = Cocci.sp_from_file file iso_file  in
             xs +> List.iter Pretty_print_cocci.unparse
 
 

@@ -115,6 +115,7 @@ let check_var s linetype =
 let id_tokens lexbuf =
   let s = tok lexbuf in
   let linetype = get_current_line_type lexbuf in
+  let in_rule_name = !Data.in_rule_name in
   let in_meta = !Data.in_meta in
   let in_iso = !Data.in_iso in
   match s with
@@ -138,8 +139,10 @@ let id_tokens lexbuf =
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
 
-  | "using" when in_meta && not in_iso ->  check_context_linetype s; TUsing
-  | "extends" when in_meta && not in_iso -> check_context_linetype s; TExtends
+  | "using" when in_rule_name ->  check_context_linetype s; TUsing
+  | "extends" when in_rule_name -> check_context_linetype s; TExtends
+  | "depends" when in_rule_name -> check_context_linetype s; TDepends
+  | "on" when in_rule_name -> check_context_linetype s; TOn
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
