@@ -1130,17 +1130,15 @@ let process file isofile verbose =
 	     let (extra_meta,minus) =
 	       Iso_pattern.apply_isos chosen_isos minus rule_name in
 	     let minus = Single_statement.single_statement minus in
-	     let minus_ast = Ast0toast.ast0toast minus in
+	     let minus_ast =
+	       Ast0toast.ast0toast rule_name dependencies minus in
 	     match function_prototypes with
-	       None ->
-		 [(rule_name, dependencies, extra_meta@metavars, minus_ast)]
-	     | Some mv_fp ->
-		 [(rule_name, dependencies, extra_meta@metavars, minus_ast);
-		   mv_fp])
+	       None -> [(extra_meta@metavars, minus_ast)]
+	     | Some mv_fp -> [(extra_meta@metavars, minus_ast);mv_fp])
 	 minus plus) in
-  let (nm,dep,code,ua) = Free_vars.free_vars parsed in
+  let (code,ua) = Free_vars.free_vars parsed in
   if !Flag_parsing_cocci.show_SP 
   then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
-  (nm,dep,code,ua,tokens)
+  (code,ua,tokens)
 

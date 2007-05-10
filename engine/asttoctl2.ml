@@ -1699,7 +1699,7 @@ let top_level ua t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctl l used_after =
+let asttoctl (_,_,l) used_after =
   letctr := 0;
   labelctr := 0;
   let (l,used_after) =

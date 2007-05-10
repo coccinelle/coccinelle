@@ -193,7 +193,7 @@ let top_level ua t =
 
 let debug = false
 
-let asttomember l used_after =
+let asttomember (_,_,l) used_after =
   List.map
     (function
 	Req x ->

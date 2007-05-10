@@ -678,11 +678,19 @@ let _ =
     | Ast.SgrepStartTag(x) -> print_string x
     | Ast.SgrepEndTag(x) -> print_string x
 
-let unparse x =
+let unparse (nm,deps,x) =
   print_string "@@";
   force_newline();
+  print_string nm;
+  (match deps with
+    [] -> ()
+  | _ ->
+      print_string " depends on ";
+      print_string (String.concat ", " deps));
+  (*
   print_string "line ";
   print_int (Ast.get_line (List.hd x));
+  *)
   force_newline();
   print_string "@@";
   print_newlines_disj := true;

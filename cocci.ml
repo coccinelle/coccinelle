@@ -64,9 +64,9 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (_,_,astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
+    let (astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
     let stmt =
-      astcocci +> List.hd +> List.hd +> (function x ->
+      astcocci +> List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
 	match Ast_cocci.unwrap x with
 	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
 	| _ -> raise Not_found)
@@ -316,7 +316,9 @@ let sp_contain_typed_metavar toplevel_list_list =
       donothing donothing donothing donothing donothing 
   in
   toplevel_list_list +> 
-    List.exists (List.exists combiner.Visitor_ast.combiner_top_level)
+    List.exists
+    (function (nm,deps,rule) ->
+      (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
 
 
@@ -582,7 +584,8 @@ let rec process_ctls ctls envs =
   match ctls with
   | [] -> ()
   | ctl::ctls_remaining -> 
-      let ((ctl_toplevel_list,ast),used_after_list), rulenb = ctl in
+      let ((ctl_toplevel_list,ast),used_after_list), rulenb =
+	ctl in
 
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
@@ -719,7 +722,7 @@ let full_engine2 cfile coccifile_and_iso_or_ctl outfile =
   let (ctls, error_words_julia, contain_typedmetavar) = 
     (match coccifile_and_iso_or_ctl with
     | Left (coccifile, isofile) -> 
-        let (nms,deps,astcocci,used_after_lists,toks) =
+        let (astcocci,used_after_lists,toks) =
 	  sp_from_file coccifile isofile in
         let ctls = ctls astcocci used_after_lists in
         let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in

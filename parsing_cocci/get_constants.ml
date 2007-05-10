@@ -50,5 +50,7 @@ let get_constants rules =
       [] tls in
       
   List.fold_left
-    (function rest -> function cur -> Common.union_set (rule_fn cur) rest)
+    (function rest ->
+      function (nm,dep,cur) ->
+	Common.union_set (rule_fn cur) rest)
     [] rules

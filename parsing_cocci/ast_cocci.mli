@@ -396,9 +396,9 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and rule = top_level list
+and rule = string * string list * top_level list
 
-and rule_with_metavars = string * string list * metavar list * rule
+and rule_with_metavars = metavar list * rule
 
 and anything =
     FullTypeTag         of fullType

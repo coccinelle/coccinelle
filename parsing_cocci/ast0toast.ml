@@ -798,6 +798,6 @@ let top_level t =
 (* --------------------------------------------------------------------- *)
 (* Entry point for minus code *)
 
-let ast0toast x =
+let ast0toast name deps x =
   List.iter inline_mcodes.V0.combiner_top_level x;
-  List.map top_level x
+  (name,deps,List.map top_level x)

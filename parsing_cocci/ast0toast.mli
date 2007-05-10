@@ -1,4 +1,5 @@
-val ast0toast : Ast0_cocci.rule -> Ast_cocci.rule
+val ast0toast :
+    string -> string list -> Ast0_cocci.rule -> Ast_cocci.rule
 
 val ident : Ast0_cocci.ident -> Ast_cocci.ident
 val expression : Ast0_cocci.expression -> Ast_cocci.expression
