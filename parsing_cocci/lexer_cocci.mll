@@ -108,7 +108,7 @@ let check_var s linetype =
       with Not_found ->
 	(try (Hashtbl.find declarer_names s) linetype
 	with Not_found -> TIdent (s,linetype))) in
-  if !Data.in_meta
+  if !Data.in_meta or !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
 
