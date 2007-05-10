@@ -794,8 +794,18 @@ let rec collect_up_to_plus skipped = function
 let rec process_pragmas = function
     [] -> []
   | ((PC.TPragma(s),_)::_) as l ->
+      Printf.printf "have a pragma:\n";
+      List.iter (function x -> Printf.printf "%s " (token2c x)) l;
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (skipped,aft,rest) = collect_up_to_plus [] rest in
+      Printf.printf "\npragmas:\n";
+      List.iter (function x -> Printf.printf "%s " x) pragmas;
+      Printf.printf "\nskipped:\n";
+      List.iter (function x -> Printf.printf "%s " (token2c x)) skipped;
+      Printf.printf "\naft:\n";
+      (function x -> Printf.printf "%s " (token2c x)) aft;
+      Printf.printf "\nrest:\n";
+      List.iter (function x -> Printf.printf "%s " (token2c x)) rest;
       let (a,b,c,d,e,strbef,straft) = get_clt aft in
       skipped@
       (process_pragmas ((update_clt aft (a,b,c,d,e,pragmas,straft))::rest))
@@ -804,6 +814,13 @@ let rec process_pragmas = function
 	PLUS ->
 	  (match collect_up_to_pragmas [] xs with
 	    Some(skipped,pragmas,rest) ->
+	      Printf.printf "\nafter:\n";
+	      (function x -> Printf.printf "%s " (token2c x)) bef;
+	      Printf.printf "\nskipped:\n";
+	      List.iter (function x -> Printf.printf "%s " (token2c x))
+		skipped;
+	      Printf.printf "\npragmas:\n";
+	      List.iter (function x -> Printf.printf "%s " x) pragmas;
 	      let (a,b,c,d,e,strbef,straft) = get_clt bef in
 	      (update_clt bef (a,b,c,d,e,strbef,pragmas))::
 	      skipped@(process_pragmas rest)

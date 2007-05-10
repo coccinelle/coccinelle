@@ -3,7 +3,7 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module U = Pretty_print_cocci
 
-let quiet = ref false (* false = no decoration on - context, etc *)
+let quiet = ref true (* true = no decoration on - context, etc *)
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0
@@ -17,7 +17,7 @@ let print_between = Common.print_between
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-let mcodekind brackets fn x = function
+let mcodekind brackets fn x info = function
     Ast0.MINUS(plus_stream) ->
       let (lb,rb) =
 	if !quiet
@@ -45,7 +45,12 @@ let mcodekind brackets fn x = function
 	(function x ->
 	  print_string lb; fn x; print_string rb)
 	x plus_streams
-  | Ast0.PLUS -> fn x
+  | Ast0.PLUS ->
+      List.iter (function s -> print_string s; force_newline())
+	info.Ast0.strings_before;
+      fn x;
+      List.iter (function s -> force_newline(); print_string s)
+	info.Ast0.strings_after
   | Ast0.MIXED(plus_streams) ->
       let (lb,rb) =
 	if !quiet
@@ -59,10 +64,10 @@ let mcodekind brackets fn x = function
 	x plus_streams
 
 let mcode fn (x,_,info,mc) =
-  mcodekind (Some info.Ast0.line_start)(*None*) fn x mc
+  mcodekind (Some info.Ast0.line_start)(*None*) fn x info mc
 
 let print_context (_,info,i,mc,ty,_) fn =
-  mcodekind (Some info.Ast0.line_start) fn () !mc
+  mcodekind (Some info.Ast0.line_start) fn () info !mc
 
 let print_meta (_,name) = print_string name
 
@@ -212,7 +217,7 @@ and typeC t =
 	Ast0.ConstVol(cv,ty) ->
 	  mcode U.const_vol cv; print_string " "; typeC ty
       |	Ast0.BaseType(ty,sgn) ->
-	  mcode U.baseType ty; print_option (mcode U.sign) sgn
+	  print_option (mcode U.sign) sgn; mcode U.baseType ty
       |	Ast0.ImplicitInt(sgn) -> mcode U.sign sgn
       | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->

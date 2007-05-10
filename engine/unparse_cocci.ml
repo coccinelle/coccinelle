@@ -51,7 +51,7 @@ let mcode fn (s,info,_) =
   if info.Ast.column > 0
   then (print_string "\n"; print_string (String.make info.Ast.column ' '));
   fn s;
-  List.iter (function str -> print_string str; print_string "\n")
+  List.iter (function str -> print_string "\n"; print_string str)
     info.Ast.straft
 in
 
@@ -246,7 +246,7 @@ and print_array (ty,lb,size,rb) fn =
 
 and typeC ty =
   match Ast.unwrap ty with
-    Ast.BaseType(ty,sgn) -> mcode baseType ty; print_option (mcode sign) sgn
+    Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
   | Ast.ImplicitInt(sgn) -> mcode sign sgn
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->

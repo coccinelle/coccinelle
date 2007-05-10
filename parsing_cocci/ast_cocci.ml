@@ -473,14 +473,14 @@ let get_meta_name = function
 
 (* --------------------------------------------------------------------- *)
 
+let no_info = { line = 0; column = 0; strbef = []; straft = [] }
+
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  let info = { line = 0; column = 0; strbef = []; straft = [] } in
-  (MetaRuleElem((("",s),info,d),Type_cocci.Unitary,false),
+  (MetaRuleElem((("",s),no_info,d),Type_cocci.Unitary,false),
    0, fvs, fresh, inh, [], NoDots)
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  let info = { line = 0; column = 0; strbef = []; straft = [] } in
-  (MetaDecl((("",s),info,d),Type_cocci.Unitary,false), 0,
+  (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false), 0,
    fvs, fresh, inh, [], NoDots)
 
 (* --------------------------------------------------------------------- *)

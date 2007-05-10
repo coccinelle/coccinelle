@@ -68,7 +68,12 @@ let mcode fn = function
       if !print_plus_flag
       then print_around fn x plus_streams
       else fn x
-  | (x, _, Ast.PLUS) -> fn x
+  | (x, info, Ast.PLUS) ->
+      List.iter (function s -> print_string s; force_newline())
+	info.Ast.strbef;
+      fn x;
+      List.iter (function s -> force_newline(); print_string s)
+	info.Ast.straft
 
 let print_mcodekind = function 
     Ast.MINUS(_,plus_stream) ->
@@ -461,13 +466,13 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 let rec rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
-      mcode (function _ -> ()) ((),(),bef);
+      mcode (function _ -> ()) ((),Ast.no_info,bef);
       print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
   | Ast.Decl(bef,allminus,decl) ->
-      mcode (function _ -> ()) ((),(),bef);
+      mcode (function _ -> ()) ((),Ast.no_info,bef);
       print_string arity;
       print_string "/* "; print_bool allminus; print_string " */ ";
       declaration decl
@@ -546,20 +551,20 @@ and statement arity s =
       rule_elem arity rbrace
   | Ast.IfThen(header,branch,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch;
-      mcode (function _ -> ()) ((),(),aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft)
   | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2;
-      mcode (function _ -> ()) ((),(),aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft)
   | Ast.While(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),(),aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft)
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
   | Ast.For(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),(),aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft)
   | Ast.Switch(header,lb,cases,rb) ->
       rule_elem arity header; rule_elem arity lb;
       List.iter (function x -> case_line arity x; force_newline()) cases;

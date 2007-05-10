@@ -448,6 +448,8 @@ val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 
 val get_meta_name : metavar -> meta_name
 
+val no_info : info
+
 val make_meta_rule_elem :
     string -> mcodekind ->
       (meta_name list * meta_name list * meta_name list) ->
