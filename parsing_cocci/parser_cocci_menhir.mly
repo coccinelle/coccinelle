@@ -477,8 +477,7 @@ defineop:
 		(List.map2
 		   (function param ->
 		     function offset ->
-		       (P.clt2mcode param
-			  (arity,line,lline,offset,col,strbef,straft)))
+		       (P.clt2mcode param (arity,line,lline,offset,0,[],[])))
 		   param_list param_offsets),
 	      body)) }
 
