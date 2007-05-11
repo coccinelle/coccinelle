@@ -338,8 +338,8 @@ let mk_storage x          = Ast.StorageTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
-let mk_token x            = Ast.Token x
-let mk_meta (_,x)         = Ast.Token x
+let mk_token x info       = Ast.Token (x,Some info)
+let mk_meta (_,x) info    = Ast.Token (x,Some info)
 let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
@@ -359,6 +359,11 @@ let collect_plus_nodes root =
 
   let mcode fn (term,_,info,mcodekind) =
     match mcodekind with Ast0.PLUS -> [(info,fn term)] | _ -> [] in
+
+  let imcode fn (term,_,info,mcodekind) =
+    match mcodekind with
+      Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
+    | _ -> [] in
 
   let do_nothing fn r k ((term,info,index,mcodekind,ty,dots) as e) =
     match !mcodekind with
@@ -391,7 +396,7 @@ let collect_plus_nodes root =
   let initdots r k e = k e in
 
   V0.combiner bind option_default
-    (mcode mk_meta) (mcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
+    (imcode mk_meta) (imcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
     (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
     (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)

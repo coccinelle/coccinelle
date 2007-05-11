@@ -538,7 +538,8 @@ and statement s =
 	  Ast.IfThen
 	    (local_rewrap s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
-	     statement Ast.NotSequencible branch,([],[],[],convert_mcodekind aft))
+	     statement Ast.NotSequencible branch,
+	     ([],[],[],convert_mcodekind aft))
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
@@ -797,6 +798,13 @@ let top_level t =
 
 (* --------------------------------------------------------------------- *)
 (* Entry point for minus code *)
+
+(* Inline_mcodes is very important - sends + code attached to the - code
+down to the mcodes.  The functions above can only be used when there is no
+attached + code, eg in + code itself. *)
+let ast0toast_toplevel x =
+  inline_mcodes.V0.combiner_top_level x;
+  top_level x
 
 let ast0toast name deps x =
   List.iter inline_mcodes.V0.combiner_top_level x;

@@ -42,10 +42,10 @@ and print_anything_list = function
 	(match bef with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
-	| Ast.Token("if") | Ast.Token("while") -> true | _ -> false) or
+	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) or
 	(match aft with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
-	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{") -> true
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
 	| _ -> false) in
       if space then print_string " ";
       print_anything_list rest
@@ -56,6 +56,13 @@ let print_around printer term = function
   | Ast.AFTER(aft) -> printer term; print_anything ">>> " aft
   | Ast.BEFOREAFTER(bef,aft) ->
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
+
+let print_string_befaft fn x info =
+  List.iter (function s -> print_string s; force_newline())
+    info.Ast.strbef;
+  fn x;
+  List.iter (function s -> force_newline(); print_string s)
+    info.Ast.straft
 
 let mcode fn = function
     (x, _, Ast.MINUS(_,plus_stream)) ->
@@ -68,12 +75,7 @@ let mcode fn = function
       if !print_plus_flag
       then print_around fn x plus_streams
       else fn x
-  | (x, info, Ast.PLUS) ->
-      List.iter (function s -> print_string s; force_newline())
-	info.Ast.strbef;
-      fn x;
-      List.iter (function s -> force_newline(); print_string s)
-	info.Ast.straft
+  | (x, info, Ast.PLUS) -> print_string_befaft fn x info
 
 let print_mcodekind = function 
     Ast.MINUS(_,plus_stream) ->
@@ -672,7 +674,9 @@ let _ =
     | Ast.StatementTag(x) -> statement "" x
     | Ast.CaseLineTag(x) -> case_line "" x
     | Ast.ConstVolTag(x) -> const_vol x
-    | Ast.Token(x) -> print_string x
+    | Ast.Token(x,Some info) ->
+	print_string_befaft print_string x info
+    | Ast.Token(x,None) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x

@@ -442,7 +442,7 @@ let combiner bind option_default
       | Ast.StatementTag(rule) -> statement rule
       | Ast.CaseLineTag(case) -> case_line case
       | Ast.ConstVolTag(cv) -> option_default
-      | Ast.Token(tok) -> option_default
+      | Ast.Token(tok,info) -> option_default
       | Ast.Code(cd) -> top_level cd
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
@@ -907,7 +907,7 @@ let rebuilder
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
       | Ast.ConstVolTag(cv) as x -> x
-      | Ast.Token(tok) as x -> x
+      | Ast.Token(tok,info) as x -> x
       | Ast.Code(cd) -> Ast.Code(top_level cd)
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)

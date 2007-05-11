@@ -88,38 +88,37 @@ branch, so the braces get added in oddly.
 *)
 
 let add_braces orig_s =
-  let s =
-    (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
+  let s = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
   let new_mcodekind =
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->
 	let (text,tinfo) = !mc in
-	Ast0.MINUS(ref([Ast.Token "{"]::text@[[Ast.Token "}"]],tinfo))
+	Ast0.MINUS(ref([Ast.mkToken "{"]::text@[[Ast.mkToken "}"]],tinfo))
     | Ast0.CONTEXT(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
 	let new_text =
 	  match text with
 	    Ast.BEFORE(bef) ->
-	      Ast.BEFOREAFTER([Ast.Token "{"]::bef,[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]])
 	  | Ast.AFTER(aft) ->
-	      Ast.BEFOREAFTER([[Ast.Token "{"]],aft@[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]])
 	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER([Ast.Token "{"]::bef,aft@[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]])
 	  | Ast.NOTHING ->
-	      Ast.BEFOREAFTER([[Ast.Token "{"]],[[Ast.Token "}"]]) in
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]]) in
 	Ast0.CONTEXT(ref(new_text,tinfo1,tinfo2))
     | Ast0.MIXED(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
 	let new_text =
 	  match text with
 	    Ast.BEFORE(bef) ->
-	      Ast.BEFOREAFTER([Ast.Token "{"]::bef,[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]])
 	  | Ast.AFTER(aft) ->
-	      Ast.BEFOREAFTER([[Ast.Token "{"]],aft@[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]])
 	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER([Ast.Token "{"]::bef,aft@[[Ast.Token "}"]])
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]])
 	  | Ast.NOTHING ->
-	      Ast.BEFOREAFTER([[Ast.Token "{"]],[[Ast.Token "}"]]) in
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]]) in
 	Ast0.MIXED(ref(new_text,tinfo1,tinfo2))
     | _ -> failwith "unexpected plus code" in
   Ast0.set_mcodekind s new_mcodekind;

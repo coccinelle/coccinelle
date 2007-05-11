@@ -254,7 +254,7 @@ let merge mproto pproto =
   Insert_plus.insert_plus m p;
   (* convert to ast so that the + code will fall down to the tokens
      and off the artificially added Ast0.DECL *)
-  let mproto = Ast0toast.top_level (List.hd mproto) in
+  let mproto = Ast0toast.ast0toast_toplevel (List.hd mproto) in
   (* clean up the wrapping added above *)
   match Ast.unwrap mproto with
     Ast.DECL mproto -> mproto
@@ -296,7 +296,7 @@ let process rule_name minus plus =
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
-	  Some
-	    (metavars,
-	     ("proto for "^rule_name,[rule_name],
-	      [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]))
+	  let res =
+	    ("proto for "^rule_name,[rule_name],
+	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
+	  Some(metavars,res)

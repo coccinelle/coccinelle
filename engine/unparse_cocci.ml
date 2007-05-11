@@ -51,8 +51,11 @@ let mcode fn (s,info,_) =
   if info.Ast.column > 0
   then (print_string "\n"; print_string (String.make info.Ast.column ' '));
   fn s;
-  List.iter (function str -> print_string "\n"; print_string str)
-    info.Ast.straft
+  match info.Ast.straft with
+    [] -> ()
+  | aft ->
+      List.iter (function str -> print_string "\n"; print_string str) aft;
+      print_string "\n"; pr current_tabbing
 in
 
 (* --------------------------------------------------------------------- *)
@@ -596,14 +599,16 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x
 
   | Ast.ConstVolTag(x) -> const_vol x
-  | Ast.Token(x) -> 
-      print_string x;
-      (* if x ==~ Common.regexp_alpha then print_string " "; *)
-      (match x with
-      | "return" 
-        -> print_string " "
-      | _ -> ()
-      )
+  | Ast.Token(x,None) -> print_string x
+  | Ast.Token(x,Some info) -> 
+      mcode
+	(function x ->
+	  print_string x;
+	  (* if x ==~ Common.regexp_alpha then print_string " "; *)
+	  (match x with
+	    "return" -> print_string " "
+	  | _ -> ()))
+	(x,info,())
           
 
   | Ast.Code(x) -> let _ = top_level x in ()

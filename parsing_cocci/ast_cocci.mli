@@ -421,7 +421,7 @@ and anything =
   | StatementTag        of statement
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
-  | Token               of string
+  | Token               of string * info option
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
@@ -431,6 +431,8 @@ and anything =
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
   | SgrepEndTag         of string
+
+val mkToken : string -> anything
 
 val undots : 'a dots -> 'a list
 
