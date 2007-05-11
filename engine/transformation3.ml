@@ -89,7 +89,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
   (* Tokens *) 
   (* ------------------------------------------------------------------------*)
-   let check_pos mck pos = 
+   let check_pos info mck pos = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
@@ -98,7 +98,15 @@ module XTRANS = struct
      | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
      | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
          true
-     | _ -> failwith "wierd: dont have position info for the mcodekind"      
+     | _ ->
+	 match info with
+	   Some info ->
+	     failwith
+	       (Printf.sprintf
+		  "wierd: dont have position info for the mcodekind in line %d column %d"
+		  info.Ast_cocci.line info.Ast_cocci.column)
+	 | None ->
+	     failwith "wierd: dont have position info for the mcodekind"
 
 
   let tag_with_mck mck ib = fun binding -> 
@@ -150,13 +158,13 @@ module XTRANS = struct
   let tokenf ia ib = fun binding -> 
     let (s1, i, mck) = ia in
     let pos = Ast_c.get_pos_of_info ib in
-    if check_pos mck pos 
+    if check_pos (Some i) mck pos 
     then return (ia, tag_with_mck mck ib binding) binding
     else fail binding
 
   let tokenf_mck mck ib = fun binding -> 
     let pos = Ast_c.get_pos_of_info ib in
-    if check_pos mck pos 
+    if check_pos None mck pos 
     then return (mck, tag_with_mck mck ib binding) binding
     else fail binding
 
