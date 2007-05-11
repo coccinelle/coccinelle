@@ -474,7 +474,13 @@ rule token = parse
 	  start_line true;
 	  (String.sub str start (finish - start + 1),
 	   (get_current_line_type lexbuf)))}
-  | "#" [^'\n']*
+  | "#" [' ' '\t']* "if" [^'\n']*
+  | "#" [' ' '\t']* "ifdef" [^'\n']*
+  | "#" [' ' '\t']* "ifndef" [^'\n']*
+  | "#" [' ' '\t']* "else" [^'\n']*
+  | "#" [' ' '\t']* "elif" [^'\n']*
+  | "#" [' ' '\t']* "endif" [^'\n']*
+  | "#" [' ' '\t']* "error" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TPragma (tok lexbuf) }
   | "---" [^'\n']*
