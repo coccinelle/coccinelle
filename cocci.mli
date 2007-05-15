@@ -1,10 +1,7 @@
 open Common
 
-(* full_engine cfile (coccifile, isofile) -> output in outfile *)
-val full_engine : 
-  filename -> (filename * filename option, Lib_engine.ctlcocci) either ->  
-  filename -> unit
-  
+(* full_engine : cinfile (coccifile, isofile) -> coutfile -> unit *)
+val full_engine : filename -> (filename * filename option) -> filename -> unit
 
 
 (* --------------------------------------------------------------------- *)
@@ -15,7 +12,7 @@ val cprogram_from_file : filename -> Parse_c.program2
 val cstatement_from_string  : string -> Ast_c.statement
 val cexpression_from_string : string -> Ast_c.expression
 
-(* sp_from_file coccifile isofile *)
+(* sp_from_file : coccifile isofile *)
 val sp_from_file :
     filename  -> filename option ->
       Ast_cocci.rule list * Ast_cocci.meta_name list list list * string list

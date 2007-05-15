@@ -15,7 +15,6 @@ let dir = ref false
 
 let test_mode = ref false
 let testall_mode = ref false
-let test_ctl_foo = ref false
 
 let compare_with_expected = ref false
 
@@ -63,10 +62,10 @@ let quiet_profile = (
 let main () = 
   begin
     let args = ref [] in
-    let shortOptionNumber = 5 in 
+    let short_option_number = 5 in 
     let options = Arg.align [ 
       (* --------------------------------------------------------------- *)
-      (* The first shortOptionNumber options will be printed when use
+      (* The first short_option_number options will be printed when use
        * only ./spatch. For the rest you have to use -help to see them.  
        *)
 
@@ -99,8 +98,6 @@ let main () =
          " automatically find the corresponding c and cocci file";
       "-testall", Arg.Set testall_mode, 
          " ";
-      "-test_ctl_foo", Arg.Set test_ctl_foo, 
-         " test the engine with the foo ctl in test.ml";
 
       "-compare_with_expected", Arg.Set compare_with_expected, " "; 
       "-save_output_file",  Arg.Set save_output_file, " ";
@@ -204,15 +201,23 @@ let main () =
     if !cocci_file <> ""
     then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
 
+    Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
+      pr2 "C-c intercepted, will do some cleaning before exiting";
+      raise (Common.UnixExit (-1))
+    ));
+
     let timeout_fn =
       match !timeout with
 	Some x -> Common.timeout_function x
-      |	None -> (function f -> f()) in
+      |	None -> (function f -> f()) 
+    in
+
     timeout_fn (fun () -> 
 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
+
     (match (!args) with
 
     (* --------------------------------------------------------- *)
@@ -225,13 +230,10 @@ let main () =
           else !default_output_file
         in
 
-
         Testing.testone x !compare_with_expected !iso_file output_file
 
     | []  when !testall_mode -> 
         Testing.testall !iso_file
-    | [x] when !test_ctl_foo -> 
-        Cocci.full_engine x (Right (Test.foo_ctl ())) !default_output_file
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
@@ -254,7 +256,7 @@ let main () =
               else x::xs 
             in
             
-            let _stat_list = ref [] in
+            let stat_list = ref [] in
             let newscore  = Common.empty_score () in
 
             fullxs +> List.iter (fun file -> 
@@ -266,7 +268,7 @@ let main () =
               let (_x, stat) = Parse_c.parse_print_error_heuristic file 
               in
 
-              Common.push2 stat _stat_list;
+              Common.push2 stat stat_list;
               let s = 
                 sprintf "bad = %d, timeout = %B" 
                   stat.Parse_c.bad stat.Parse_c.have_timeout
@@ -276,8 +278,8 @@ let main () =
               else Hashtbl.add newscore file (Common.Pb s)
 
             );
-            if not (null !_stat_list) 
-            then Parse_c.print_parsing_stat_list !_stat_list;
+            if not (null !stat_list) 
+            then Parse_c.print_parsing_stat_list !stat_list;
 
             if !dir
             then begin 
@@ -325,7 +327,7 @@ let main () =
                                                    
                     with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
                     )
-                  | _ -> ()
+              | _ -> ()
             )
 
         | "parse_unparse", [file] -> 
@@ -383,7 +385,7 @@ let main () =
             let oks = 
               (Common.process_output_to_list ("find -name \"*.ok\"") 
                 ++
-                Common.process_output_to_list ("find -name \"*.spatch_ok\"")
+               Common.process_output_to_list ("find -name \"*.spatch_ok\"")
               )
             in
             let failed = 
@@ -459,10 +461,8 @@ let main () =
           let expected_res = base ^ ".res" in
           let saved = cfile ^ ".cocci_res" in
 
-          (try 
-              Cocci.full_engine cfile (Left (cocci_file, iso_file)) 
-                generated_file
-            with e -> 
+          (try Cocci.full_engine cfile (cocci_file, iso_file) generated_file
+           with e -> 
               if !dir 
               then pr2 ("EXN:" ^ Printexc.to_string e)
               else raise e
@@ -479,7 +479,7 @@ let main () =
         ) (* iter *)
 
     | [] -> 
-        Arg.usage (Common.take shortOptionNumber options) usage_msg; 
+        Arg.usage (Common.take short_option_number options) usage_msg; 
         pr2 "To get the full list of options, use -help";
         pr2 "Example of use:";
         pr2 "  ./spatch -cocci_file foo.cocci foo.c";

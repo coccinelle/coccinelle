@@ -2,7 +2,7 @@ open Common open Commonop
 
 let default_output_file = "/tmp/output_testall.c"
 
-let _Best_score_file = "/tmp/score_cocci_best.marshalled"
+let best_score_file = "/tmp/score_cocci_best.marshalled"
 
 (*****************************************************************************)
 let print_diff_expected_res_and_exit generated_file expected_res doexit = 
@@ -45,7 +45,7 @@ let testone x compare_with_expected iso_file outfile =
 
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
-    Cocci.full_engine cfile (Left (cocci_file, iso_file)) outfile;
+    Cocci.full_engine cfile (cocci_file, iso_file) outfile;
 
     if compare_with_expected 
     then print_diff_expected_res_and_exit outfile expected_res true;
@@ -81,7 +81,7 @@ let testall iso_file =
       try (
         Common.timeout_function timeout_value (fun () -> 
           
-          Cocci.full_engine cfile (Left (cocci_file, iso_file)) generated;
+          Cocci.full_engine cfile (cocci_file, iso_file) generated;
 
           let (correct, diffxs)= Compare_c.compare_token generated expected in
 	  pr2 res;
@@ -130,7 +130,7 @@ let testall iso_file =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
-    Common.regression_testing newscore _Best_score_file;
+    Common.regression_testing newscore best_score_file;
 
 
     pr2 "--------------------------------";

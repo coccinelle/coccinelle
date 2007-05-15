@@ -2462,6 +2462,13 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
               ) >>= (fun () iidotsb -> 
             
            fullType_optional_allminus allminus tya retb >>= (fun tya retb -> 
+
+             let fninfoa = 
+               (match stoa with Some st -> [A.FStorage st] | None -> []) ++
+               (match tya  with Some t -> [A.FType t] | None -> [])
+
+             in
+
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
                           paramsa,cparen),

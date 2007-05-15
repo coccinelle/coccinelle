@@ -19,6 +19,9 @@ module TAC = Type_annoter_c
 (* C related *)
 (* --------------------------------------------------------------------- *)
 let cprogram_from_file file = 
+  if not (Common.lfile_exists file)
+  then failwith (Printf.sprintf "can't find file %s" file);
+
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 
@@ -714,31 +717,24 @@ and process_a_ctl_a_env_a_celem  a b c =
 (* --------------------------------------------------------------------- *)
 
 (* Returns nothing. The output is in the file outfile *)
-let full_engine2 cfile coccifile_and_iso_or_ctl outfile = 
-  if not (Common.lfile_exists cfile)
-  then failwith (Printf.sprintf "can't find file %s" cfile);
+let full_engine2 cfile (coccifile, isofile) outfile = 
 
-  (* preparing the inputs (c, cocci, ctl) *)
-  let (ctls, error_words_julia, contain_typedmetavar) = 
-    (match coccifile_and_iso_or_ctl with
-    | Left (coccifile, isofile) -> 
-        let (astcocci,used_after_lists,toks) =
-	  sp_from_file coccifile isofile in
-        let ctls = ctls astcocci used_after_lists in
-        let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in
+  show_or_not_cfile   cfile;
+  show_or_not_cocci   coccifile isofile;
 
-        show_or_not_cfile   cfile;
-        show_or_not_cocci   coccifile isofile;
-        show_or_not_ctl_tex astcocci ctls;
 
-        (zip ctls_asts used_after_lists,
-         toks,
-         sp_contain_typed_metavar astcocci
-        )
+  let (astcocci,used_after_lists,toks) = sp_from_file coccifile isofile in
+  let ctls = ctls astcocci used_after_lists in
+  let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in
+  show_or_not_ctl_tex astcocci ctls;
 
-    | Right ctl ->([([(ctl,([],[]))],None), []]), [], true (* typed metavar *)
-    )
-  in
+  let error_words_julia = toks in
+  let contain_typedmetavar = sp_contain_typed_metavar astcocci in
+
+
+  let ctls = zip ctls_asts used_after_lists in
+
+
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if not (worth_trying cfile error_words_julia)

@@ -4,7 +4,7 @@
 
 ;; Emacs Lisp Archive Entry
 ;; Author: Padioleau Yoann <padator@wanadoo.fr>, 
-;; Version: 0.1
+;; Version: 0.2
 ;; Keywords: coccinelle patch refactoring program transformation
 ;; URL: http://www.emn.fr/x-info/coccinelle/
 
@@ -19,24 +19,22 @@
 ;;  (autoload 'cocci-mode "cocci" 
 ;;          "Major mode for editing cocci code." t)
 ;;
-;; You can also use cocci-mode to edit the files containing the isomorphisms
-;; with: 
+;; You can also use cocci-mode to edit the files containing the 
+;; isomorphisms with: 
 ;;  (setq auto-mode-alist 
 ;;           (cons '("\\.iso$" . cocci-mode) auto-mode-alist))
 ;;
 
 
-;;; Todo:
-;; good compile command based on name of buffer.
-;; support to show ctl, ... enhance semantic-patch debugging experience
-;; sgrep support ?
-
-;;; Code:
-
-;; utilities 
+;;; utilities 
 
 (defun join-sep (sep xs) 
   (mapconcat 'identity xs sep))
+
+
+;;; Variables 
+
+(defvar cocci-menu)
 
 
 ;; new (color) faces
@@ -64,7 +62,7 @@
 (defface cocci-rulename-face
   '((((background light)) (:foreground "DarkSlateGray"))
     (((background dark)) (:foreground "DarkSlateGray4")))
-  "")
+  "Highlighting the rule names")
 
 (defface cocci-minus-face
   '((((background light)) (:foreground "SeaGreen4"))
@@ -79,32 +77,36 @@
 
 ;; can look in lexer_cocci.mll for new identifiers
 
-(setq cocci-c-keywords-list 
-      (list "if" "else" "while" "do" "for" "return" 
-            "sizeof"
-            "struct" "union"
-            "static" "const" "volatile"
-            "break" "continue"
-            "switch"
-            ))
+(defconst cocci-c-keywords-list 
+  '("if" "else" "while" "do" "for" "return" 
+    "sizeof"
+    "struct" "union"
+    "static" "const" "volatile"
+    "break" "continue"
+    "switch"
+    ))
 
-(setq cocci-declaration-keywords-list 
-      (list "identifier" "type" "parameter" "constant" "expression" "statement"
-            "function" "local" "list" 
-            "fresh" 
+(defconst cocci-declaration-keywords-list 
+  '("identifier" "type" "parameter" "constant" "expression" "statement"
+    "function" "local" "list" 
+    "fresh" 
 
-            "declarer" "typedef" 
-            "pure"
-            ;"error" "words"
+    "declarer" "typedef" 
+    "pure"
+    ;"error" "words"
+    
+    "char" "short" "int" "float" "double" "long" 
+    "void"
+    "signed" "unsigned" 
+    ))
 
-            "char" "short" "int" "float" "double" "long" 
-            "void"
-            "signed" "unsigned" 
-            ))
-(setq c-preprocessor-directives-list
-      (list "define"  "elif" "else" "endif" "error" "file" "if" "ifdef"
-            "ifndef" "include" "line" "pragma" "undef"
-            ))
+(defconst c-preprocessor-directives-list
+  '("define" "undef"
+    "if" "ifdef" "elif" "else" "endif" "ifndef"
+    "include"
+    "error" "pragma" 
+    "file" "line" 
+    ))
 
       
 (setq cocci-font-lock-keywords 
@@ -129,21 +131,28 @@
    ("\"[^\"]*\"" . 'font-lock-string-face)
 
    ; rule header
-   ("@@" . 'cocci-special-face)
-   ("@[ \t]+@" . 'cocci-special-face)
-   ("\\(@\\)[ \t]*\\(\\w+\\)[ \t]*\\(@\\)" 
+   ("@[ \t]*@" . 'cocci-special-face) 
+   ; this rule may seems redundant with the following one, but 
+   ; without it, @@ int x; @@ would color the int x with rulename-face.
+   ; by using this rule, we color the @@ and so prevent the 
+   ; next rule to be applied (cf font-lock semantic when have not the
+   ; OVERRIDE flag).
+
+   ("\\(@\\)\\(.*\\)\\(@\\)" 
     (1 'cocci-special-face)
     (2 'cocci-rulename-face)
     (3 'cocci-special-face)
     )
 
-   ("\\(@\\)[ \t]*\\(\\w+\\)[ \t]+\\(extends\\)[ \t]+\\(\\w+\\)[ \t]*\\(@\\)" 
-    (1 'cocci-special-face)
-    (2 'cocci-rulename-face)
-    (3 'cocci-special-face)
-    (4 'cocci-rulename-face)
-    (5 'cocci-special-face)
-    )
+   ("@.*\\b\\(extends\\|\\(depends[ \t]*on\\)\\)\\b.*@"
+    (1 'cocci-special-face t))
+
+   ;old: does not work, not easy to handle the   rule1, rule2, rule3  list.
+   ;   ("@[ \t]*\\(\\(\\w+\\)[ \t,]*\\)*[ \t]*@"
+   ;   ("\\(@\\)[ \t]*\\(\\w+\\)[ \t]*\\(@\\)" 
+   ;   ("\\(@\\)[ \t]*\\(\\w+\\)[ \t]+\\(extends\\)[ \t]+\\(\\w+\\)[ \t]*\\(@\\)" 
+   ;   ("\\(@\\)[ \t]*\\(\\w+\\)[ \t]+\\(depends\\)[ \t]+\\(on\\)[ \t]+\\(\\(\\w+\\)[ ,\t]*\\)+\\(@\\)" 
+
 
    ; inherited variable, fontifying rulename
    (,(concat "^"
@@ -158,13 +167,15 @@
 
    ; just for pad, metavariables in maj
    ("\\b[A-Z][0-9]?\\b" . font-lock-variable-name-face)
+
    ; todo: do also for other variable, do as in font-lock.el
    ; with font-lock-match-c-style-declaration-item-and-skip-to-next
 
    ; special cocci operators
    ("\\.\\.\\." . 'font-lock-keyword-face)
    ("^[()|]" . 'font-lock-keyword-face)
-   ; escaped version
+
+   ; escaped version of cocci operators
    ("\\\\[()|]" . 'font-lock-keyword-face)
 
    ("\\bwhen[ \t]+!=" . 'font-lock-keyword-face)
@@ -186,7 +197,6 @@
         (list "(" ")" ";" "," "{" "}" "\\[" "\\]")) .  'cocci-punctuation-face)
    ; . ->   * + etc
 
-
    ; c keywords
    (,(concat "\\b\\(" (regexp-opt cocci-c-keywords-list) "\\)\\b") . 
      'font-lock-keyword-face)
@@ -200,9 +210,9 @@
 	    "\\)\\>[ \t!]*\\(\\sw+\\)?")
     (1 'font-lock-builtin-face))
 
-
   ))
 ;  "Expressions to highlight in cocci-mode.")
+
 
     
 ;; define a mode-specific abbrev table for those who use such things
@@ -215,6 +225,9 @@
   "Keymap used in `cocci-mode'.")
 (unless cocci-mode-map
   (setq cocci-mode-map (make-sparse-keymap))
+  (define-key cocci-mode-map [(meta control *)] 'switch-between-cocci-c)
+  (define-key cocci-mode-map "%" 'cocci-replace-modifiers)
+  
   ;(define-key cocci-mode-map "\C-c" 'compile)
   )
 
@@ -232,11 +245,24 @@
   )
 
 
+;;; Code
 
+;; Helper functions for the cocci programmeur 
 
-;; Used internally while developping coccinelle.
-;; Allow to switch between the corresponding SP and C file.
-;; todo: handle the _verxxx naming convention.
+(defun cocci-replace-modifiers (beg end str)
+  "TODO"
+  (interactive
+   (let ((str (read-string "New modifier string (+, -, space): " 
+                           nil 'my-history)))
+     (list (region-beginning) (region-end) str)))
+
+  ;(interactive "rsNew modifier string (+, -, space): ")
+  (replace-regexp "^[-+]?" str nil beg end)
+  )
+
+;Used internally while developping coccinelle.
+;Allow to switch between the corresponding SP and C file.
+;todo: handle the _verxxx naming convention.
 (defun switch-between-cocci-c ()
   (interactive)
   (let ((target
@@ -251,7 +277,6 @@
       (find-file 
        (read-file-name "file: " nil nil t target)))))
 
-(define-key cocci-mode-map [(meta control *)] 'switch-between-cocci-c)
 (eval-after-load "cc-mode"
   '(progn
      (define-key c-mode-map [(meta control *)] 'switch-between-cocci-c))
@@ -261,6 +286,9 @@
                
 (defvar cocci-mode-hook nil
   "Hook called by  `cocci-mode'")
+
+
+
 
 ;;;###autoload
 (defun cocci-mode ()
@@ -283,9 +311,22 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
 	comment-start          "//"
 	comment-end            ""
    )
+  (easy-menu-add cocci-menu)
+
   (run-hooks 'cocci-mode-hook)
 )
 
+
+;; Menu 
+
+(easy-menu-define cocci-menu cocci-mode-map "Cocci menu"
+  '("Cocci"
+    ["Switch to corresponding C file" switch-between-cocci-c t]
+    ["Replace modifiers" cocci-replace-modifiers t]
+    ))
+
+
+;; Provide
 
 (provide 'cocci-mode)
 

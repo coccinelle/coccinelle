@@ -46,6 +46,7 @@ open Commonop
 
  Take common.ml2
  Y, memo, ... cf dir hack and fun
+  let rec y fact = fun x -> fact (y fact) x
 
 
 
