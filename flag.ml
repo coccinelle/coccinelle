@@ -15,7 +15,6 @@ let show_binding_in_out = ref false
 let show_diff = ref true
 let show_misc = ref true
 
-
-
-
 let windows = ref false
+
+let popl = ref false

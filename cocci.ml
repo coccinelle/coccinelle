@@ -111,7 +111,10 @@ let ctls ast ua  =
   List.map2
     (function ast -> function ua ->
       List.combine
-	(Asttoctl2.asttoctl ast ua) (Asttomember.asttomember ast ua))
+	(if !Flag.popl
+	then Popl.popl ast
+	else Asttoctl2.asttoctl ast ua)
+	(Asttomember.asttomember ast ua))
     ast ua
 
 let one_ctl ctls = List.hd (List.hd ctls)

@@ -415,7 +415,9 @@ and get_before_e s a =
       (Ast.rewrap s (Ast.Nest(sd,w,a@t)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       (* put the result of processing each branch in the whencode of the
-	 subsequent branches.  acc_dsl collects these extra whencodes *)
+	 subsequent branches.  acc_dsl collects these extra whencodes
+	 not sure what the point of this is...
+      *)
       let (dsl,_,dsla) =
 	List.fold_left
 	  (function (dsl,acc_dsl,dsla) ->

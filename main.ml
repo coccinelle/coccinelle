@@ -184,9 +184,9 @@ let main () =
                typeur
                compare_c
 
-         so to test C parser, do -action parse_c ...
-                "
+         so to test C parser, do -action parse_c ..."
        );
+       "-popl", Arg.Set Flag.popl, "Simplified SmPL, for the popl paper";
 
     ] in 
     let usage_msg = ("Usage: " ^ basename Sys.argv.(0) ^ 

@@ -6,10 +6,10 @@ SRC = flag.ml cocci.ml testing.ml test.ml main.ml
 SYSLIBS = str.cma unix.cma
 LIBS=commons/commons.cma ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
-     engine/cocciengine.cma
+     engine/cocciengine.cma popl/popl.cma
 
-MAKESUBDIRS=commons ctl parsing_cocci parsing_c  engine
-ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci  -I engine
+MAKESUBDIRS=commons ctl parsing_cocci parsing_c engine popl
+ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci -I engine -I popl
 
 
 #for warning:  -w A 
