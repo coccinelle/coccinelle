@@ -1,33 +1,10 @@
 open Common open Commonop 
 
-let default_output_file = "/tmp/output_testall.c"
+let default_output_file_testall = "/tmp/output_testall.c"
 
 let best_score_file = "/tmp/score_cocci_best.marshalled"
 
-(*****************************************************************************)
-let print_diff_expected_res_and_exit generated_file expected_res doexit = 
-  if not (Common.lfile_exists expected_res)
-  then failwith ("no such .res file: " ^ expected_res);
-
-  let (correct, diffxs) =  
-    Compare_c.compare_token  generated_file  expected_res
-  in
-  match correct with
-  | Compare_c.Correct -> 
-      pr2 ("seems correct (comparing to " ^ expected_res ^ ")");
-      if doexit then raise (Common.UnixExit 0)
-  | Compare_c.Pb s -> 
-      pr2 ("seems incorrect: " ^ s);
-      pr2 "diff (result(-) vs expected_result(+)) = ";
-      diffxs +> List.iter pr2;
-      if doexit then raise (Common.UnixExit (-1))
-  | Compare_c.PbOnlyInNotParsedCorrectly s -> 
-      pr2 "seems incorrect, but only because of code that was not parsable";
-      pr2 ("explanation:" ^ s);
-      pr2 "diff (result(-) vs expected_result(+)) = ";
-      diffxs +> List.iter pr2;
-      if doexit then raise (Common.UnixExit (-1))
-  
+let timeout_value = 30
 
 
 (*****************************************************************************)
@@ -48,7 +25,9 @@ let testone x compare_with_expected iso_file outfile =
     Cocci.full_engine cfile (cocci_file, iso_file) outfile;
 
     if compare_with_expected 
-    then print_diff_expected_res_and_exit outfile expected_res true;
+    then 
+      Compare_c.compare_default outfile expected_res +>
+        Compare_c.compare_result_to_string +> pr2
   end
           
 
@@ -73,20 +52,23 @@ let testall iso_file =
       let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) 
       in
 
-      let generated = default_output_file in
+      let generated = default_output_file_testall in
       let expected = "tests/" ^ res in
-
-      let timeout_value = 30 in
 
       try (
         Common.timeout_function timeout_value (fun () -> 
           
           Cocci.full_engine cfile (cocci_file, iso_file) generated;
 
-          let (correct, diffxs)= Compare_c.compare_token generated expected in
+          let (correct, diffxs)= Compare_c.compare_default generated expected 
+          in
+
 	  pr2 res;
 	  Ctlcocci_integration.print_bench();
 
+          (* I don't use Compare_c.compare_result_to_string because
+           *  I want to indent a little more the message 
+           *)
           (match correct with
           | Compare_c.Correct -> Hashtbl.add newscore res Common.Ok;
           | Compare_c.Pb s -> 
@@ -112,6 +94,7 @@ let testall iso_file =
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
         Hashtbl.add newscore res (Common.Pb s)
     );
+
 
     pr2 "--------------------------------";
     pr2 "statistics";

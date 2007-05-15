@@ -1,73 +1,110 @@
+##############################################################################
+# Variables
+##############################################################################
 TARGET=spatch
 
-SRC = flag.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag.ml cocci.ml testing.ml test.ml main.ml
 
-
-SYSLIBS = str.cma unix.cma
-LIBS=commons/commons.cma ctl/ctl.cma \
+SYSLIBS=str.cma unix.cma
+LIBS=commons/commons.cma \
+     ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
      engine/cocciengine.cma popl/popl.cma
 
 MAKESUBDIRS=commons ctl parsing_cocci parsing_c engine popl
-ADDONSPATH = -I commons -I ctl -I parsing_c -I parsing_cocci -I engine -I popl
+INCLUDEDIRS=commons ctl parsing_cocci parsing_c engine popl
 
+##############################################################################
+# Generic variables
+##############################################################################
 
-#for warning:  -w A 
-#for profiling:  -p -inline 0   with OCAMLOPT
-#pad: 'make forprofiling' below does that for you.
-#for better understand the lexer, ocamllex -ml (but slightly slower)
+INCLUDES=$(INCLUDEDIRS:%=-I %)
 
-#the OPTBIN variable is here to allow to use ocamlc.opt instead of 
-#ocaml, when it is available, which speeds up compilation. So
-#if you want the fast version of the ocaml chain tools, setenv OPTBIN
-#to ".opt" in your startup script.
-
-#OCAMLC=ocamlc$(OPTBIN) -g   $(ADDONSPATH) -custom      -- for C code
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) -custom
-OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
-OCAMLLEX=ocamllex$(OPTBIN)
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
-
+OBJS=    $(SRC:.ml=.cmo)
+OPTOBJS= $(SRC:.ml=.cmx)
 
 EXEC=$(TARGET)
-OPTEXEC=$(TARGET).opt
 
-OBJS = $(SRC:.ml=.cmo)
-OPTOBJS = $(SRC:.ml=.cmx)
+##############################################################################
+# Generic ocaml variables
+##############################################################################
 
+OCAMLCFLAGS=-g -dtypes -custom # -w A
+
+# for profiling add  -p -inline 0
+# but 'make forprofiling' below does that for you.
+# OPTFLAGS is also used in subdirectories so don't change its name here.
+OPTFLAGS=
+
+# the OPTBIN variable is here to allow to use ocamlc.opt instead of 
+# ocaml, when it is available, which speeds up compilation. So
+# if you want the fast version of the ocaml chain tools, setenv OPTBIN
+# to ".opt" in your startup script.
+
+OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES) 
+OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
+OCAMLYACC=ocamlyacc -v
+OCAMLDEP=ocamldep $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+
+
+##############################################################################
+# Top rules
+##############################################################################
 
 all: rec $(EXEC)
-opt: rec.opt $(OPTEXEC)
+opt: rec.opt $(EXEC).opt
 
+rec:
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
+rec.opt:
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
+
+$(EXEC): $(LIBS) $(OBJS)
+	$(OCAMLC) -o $@ $(SYSLIBS) $^
+
+$(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
+	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $^
+
+$(EXEC).top: $(LIBS) $(OBJS) 
+	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
+
+clean::
+	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
+
+clean::
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
+
+
+##############################################################################
+# Developer rules
+##############################################################################
 
 test: $(TARGET)
 	./$(TARGET) -testall
 
-#can add -inline 0  to see all the functions in the profile.
+# -inline 0  to see all the functions in the profile.
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
+
+clean::
+	rm -f gmon.out 
 
 tags:
 	otags -no-mli-tags -r  .
 
+##############################################################################
+# Misc rules
+##############################################################################
 
-rec:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
+# each member of the project can have its own test.ml. this file is 
+# not under CVS.
+test.ml: 
+	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
+	  > test.ml
 
-rec.opt:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
-
-$(EXEC): $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS)
-
-$(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
-
-$(OPTEXEC): $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -o $(OPTEXEC) $(SYSLIBS:.cma=.cmxa) \
-	  $(LIBS:.cma=.cmxa) $(OPTOBJS)
+beforedepend:: test.ml
 
 
 #INC=$(dir $(shell which ocaml))
@@ -79,20 +116,9 @@ $(OPTEXEC): $(OPTOBJS) $(LIBS:.cma=.cmxa)
 #	gcc -c -o prim.o -I $(INCZ) prim.c
 
 
-clean::
-	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
-clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
-
-
-test.ml: 
-	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
-	  > test.ml
-
-beforedepend:: test.ml
-
-
+##############################################################################
+# Generic ocaml rules
+##############################################################################
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -111,7 +137,7 @@ clean::
 	rm -f *.cm[iox] *.o *.annot
 
 clean::
-	rm -f *~ .*~ gmon.out *.exe #*#
+	rm -f *~ .*~ *.exe #*#
 
 beforedepend::
 

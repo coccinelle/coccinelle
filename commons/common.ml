@@ -7,24 +7,25 @@ open Commonop
 (* 
 
  A tracer/logger/profiler. An assert/raise/... that print the backtrace.
- Would also like to see the value of the arguments as in Perl.
- Ocamldebug is not enough. When the program loops, ocamldebug loop, 
+ Would like to see the value of the arguments as in Perl.
+ ocamldebug is not enough. When the program loops, ocamldebug loops, 
  and only some tracing information can help. Tracing often helps
  me to find the error faster than ocamldebug.
- 
- debug, tywith, fix_caml tracing, 
- try and printexn and camlp4 => better trace of exception
- fix_caml  (use camlp4 ?)
  Sux to put let _ = pr Here in, ou les Timing.
- 
  How avoid to put all those ugly printf in my code
   let action = Assisted_trajectory.assisted state t_state trajectory oracle in
   let _ = Printf.printf "\n XXX action = %s\n" (string_of_action action) in 
  Can do a trace (but will not have the "action =") => with a fix_caml tricks
  how infer good func to call (we have not a generic show)
 
+ debug, tywith, fix_caml tracing, 
+ try and printexn and camlp4 => better trace of exception
+ fix_caml  (use camlp4 ?)
+ 
+
  CIL seems to have good trace, profiling  utilities functions (in ocamlutil/).
  Unison has also good functions (in ubase/).
+
 
 
  Advanced invariant weaving.
@@ -134,27 +135,24 @@ visual:
 (*****************************************************************************)
 (* We use *)
 (*****************************************************************************)
-(* functions:
-    =, <=, max min,  ... 
-    List.rev, List.mem, List.partition, List.fold*, List.concat, ...
-*)
-
-(* let gsubst = global_replace *)
-
 (* 
-   Format can be useful. Allow to hide passing an indent_level variable.
-   You use as usual the print_string function except that there is this
-   automatic indent_level variable handled for you (and maybe more services).
-   src: julia in coccinelle unparse_cocci
+   functions:
+    * =, <=, max min,  ... 
+    * List.rev, List.mem, List.partition, List.fold*, List.concat, ...
+   
+   The Format library can be useful. It allows to hide passing an indent_level
+   variable. You use as usual the print_string function except that
+   there is this automatic indent_level variable handled for you (and
+   maybe more services). src: julia in coccinelle unparse_cocci
 
    Other useful techniques:
-    - ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
-    - continuation visitor (src: douence),
-    - aspect-like fonction via add-hook with continuation (src: pad)
-    - forbid polymorphic  '='  by redefining it.
-    - functor like function by using nested function.
-    - use better Set/Map (binary tree or hashtbl).
-    - hashsons, memoize (cache), lazyize.
+   - ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
+   - continuation visitor (src: douence),
+   - aspect-like fonction via add-hook with continuation (src: pad)
+   - forbid polymorphic  '='  by redefining it.
+   - functor like function by using nested function.
+   - use better Set/Map (binary tree or hashtbl).
+   - hashsons, memoize (cache), lazyize.
 *)
 
 (*****************************************************************************)
@@ -225,7 +223,9 @@ let pr_no_nl s =
   flush stdout
 
 
-
+(* the use of 2 is because 2 is under UNIX the second descriptor
+ * which corresponds to stderr.
+ *)
 let pr2 s = 
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
@@ -1215,6 +1215,8 @@ let lowercase = String.lowercase
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
+
+(* let gsubst = global_replace *)
 
 (* Different from Perl a little. Must match the entire way. 
  *  So  "testBee" =~ "Bee" is wrong  

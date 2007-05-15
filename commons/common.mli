@@ -2,18 +2,20 @@
 (* Debugging/logging *)
 (*****************************************************************************)
 
+val _tab_level_print: int ref
+val indent_do : (unit -> 'a) -> 'a
+val reset_pr_indent : unit -> unit
+
+(* the following functions all use the _tab_level_print functions *)
 val pr : string -> unit
 val pr2 : string -> unit
+val pr_no_nl : string -> unit
+val pr2_no_nl : string -> unit
+val pr_xxxxxxxxxxxxxxxxx : unit -> unit
+val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val pr2gen: 'a -> unit
 
-val indent_do : (unit -> 'a) -> 'a
-val pr_no_nl : string -> unit
-val pr2_no_nl : string -> unit
-val reset_pr_indent : unit -> unit
-
-val pr_xxxxxxxxxxxxxxxxx : unit -> unit
-val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -90,18 +92,21 @@ val assert_equal : 'a -> 'a -> unit
 
 
 type score_result = Ok | Pb of string 
-type score = (string (* filename *), score_result) Hashtbl.t
-
+type score = (string (* usually a filename *), score_result) Hashtbl.t
 val empty_score : unit -> score
-val regression_testing : score -> string (* filename *) -> unit
+val regression_testing : 
+  score -> string (* filename of old score file on disk (usually in /tmp) *) ->
+  unit
 
 
 val _list_bool : (string * bool) list ref
-
 val example2 : string -> bool -> unit
-
 val test_all : unit -> unit
 
+
+
+
+(* quickcheck spirit *)
 type 'a gen = unit -> 'a
 
 val ig : int gen

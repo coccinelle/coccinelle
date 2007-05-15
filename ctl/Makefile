@@ -1,24 +1,24 @@
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
-TARGET = ctl
+TARGET=ctl
 
-SRC = flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
+SRC=flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma
 
-ADDONSPATH = -I ../commons
+INCLUDES=-I ../commons
 
 
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc$(OPTBIN) -dtypes -g $(ADDONSPATH)
-CAMLOPT=ocamlopt$(OPTBIN)  $(ADDONSPATH) $(OPTFLAGS)
+CAMLC =ocamlc$(OPTBIN) -dtypes -g $(INCLUDES)
+CAMLOPT=ocamlopt$(OPTBIN)  $(INCLUDES) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep$(OPTBIN) $(ADDONSPATH)
-CAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+CAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+CAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 
 
@@ -37,16 +37,11 @@ $(TARGET).top: $(LIB) test_ctl.cmo
 $(LIB):  $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)
 
-clean::
-	rm -f $(LIB) $(TARGET).top
-
-
 $(OPTLIB): $(OPTOBJS)
 	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
-# clean rule for LIB.opt
 clean::
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
+	rm -f $(LIB)  $(OPTLIB) $(LIB:.cma=.a) $(TARGET).top
 
 
 .SUFFIXES:
@@ -72,8 +67,8 @@ clean::
 depend: 
 	$(CAMLDEP) *.mli *.ml > .depend
 
-#clean::
-#	rm -f .depend
+distclean::
+	rm -f .depend
 
 .depend:
 	$(CAMLDEP) *.mli *.ml > .depend

@@ -42,6 +42,9 @@ let cvs_compute_newstr s =
     "CVS_MAGIC_STRING" 
   ) s 
 
+
+
+
 (* todo: get rid of the type for expressions  ? *)
 let normal_form_program xs = 
   let bigf = { Visitor_c.default_visitor_c_s with 
@@ -147,6 +150,7 @@ let compare_ast filename1 filename2  =
   let xs = 
     process_output_to_list ("diff -u -b -B " ^  filename1 ^ " "  ^ filename2) 
   in
+
   (* get rid of the --- and +++ lines *)
   let xs = 
     if null xs 
@@ -336,3 +340,27 @@ let compare_token filename1 filename2 =
   res, xs
 
 
+
+
+(*****************************************************************************)
+
+let compare_default = compare_token 
+
+
+let compare_result_to_string (correct, diffxs) =
+  match correct with
+  | Correct -> 
+      "seems correct" ^ "\n"
+  | Pb s -> 
+      ("seems incorrect: " ^ s) ^ "\n" ^
+        "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
+        (diffxs +> Common.join "\n") ^ "\n"
+  | PbOnlyInNotParsedCorrectly s -> 
+      "seems incorrect, but only because of code that was not parsable" ^ "\n"^
+        ("explanation:" ^ s) ^ "\n" ^
+        "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
+        (diffxs +> Common.join "\n") ^ "\n"
+
+
+let compare_result_to_bool correct = 
+  correct = Correct
