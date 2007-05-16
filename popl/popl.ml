@@ -7,6 +7,7 @@ let popl (_,_,ast) =
     [ast] ->
       let ast = Asttopopl.top ast in
       let ba = Insert_befaft.insert_befaft ast in
+      Pretty_print_popl.pretty_print ba;
       let qt = Insert_quantifiers.insert_quantifiers ba in
       [Popltoctl.toctl qt]
   | _ -> failwith "only one rule allowed"

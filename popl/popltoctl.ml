@@ -14,25 +14,40 @@ type formula =
 
 let wrap n ctl = (ctl,n)
 
+let is_true c =
+  match CTL.unwrap c with CTL.True -> true | _ -> false
+
+let is_false c =
+  match CTL.unwrap c with CTL.False -> true | _ -> false
+
 let ctl_true       = wrap 0 CTL.True
 
 let ctl_false      = wrap 0 CTL.False
 
-let ctl_and x y    = wrap 0 (CTL.And(CTL.STRICT,x,y))
+let ctl_and x y    =
+  if is_true x then y
+  else if is_true y then x else wrap 0 (CTL.And(CTL.STRICT,x,y))
 
-let ctl_or x y     = wrap 0 (CTL.Or(x,y))
+let ctl_or x y     =
+  if is_false x then y
+  else if is_false y then x else wrap 0 (CTL.Or(x,y))
 
 let ctl_seqor x y  = wrap 0 (CTL.SeqOr(x,y))
 
 let ctl_not x      = wrap 0 (CTL.Not(x))
 
-let ctl_ax x       = wrap 0 (CTL.AX(CTL.FORWARD,CTL.STRICT,x))
+let ctl_ax x       =
+  if is_true x then wrap 0 CTL.True
+  else wrap 0 (CTL.AX(CTL.FORWARD,CTL.STRICT,x))
 
 let after          = wrap 0 (CTL.Pred(Lib_engine.After, CTL.Control))
+let exit           = wrap 0 (CTL.Pred(Lib_engine.Exit, CTL.Control))
 
 let ctl_au x y     = wrap 0 (CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y after))
 
 let ctl_exists v x = wrap 0 (CTL.Exists(v,x,true))
+
+let ctl_uncheck x  = wrap 0 (CTL.Uncheck(x))
 
 let contains_modif =
   let bind x y = x or y in
@@ -67,31 +82,57 @@ let predmaker guard term =
 
 (* --------------------------------------------------------------------- *)
 
-let rec ctl_seq guard a = function
-    Past.Seq(elem,seq) ->
-      ctl_element guard (ctl_seq guard a seq) elem
-  | Past.Empty -> ctl_true
-  | Past.SExists(var,seq) -> ctl_exists var (ctl_seq guard a seq)
+let rec ctl_seq unchecked a = function
+    Past.Seq(elem,Past.Empty) -> ctl_element unchecked a elem
+  | Past.Seq(elem,seq) ->
+      ctl_element unchecked (ctl_seq unchecked a seq) elem
+  | Past.Empty -> a
+  | Past.SExists(var,seq) -> ctl_exists var (ctl_seq unchecked a seq)
 
-and ctl_element guard a = function
-    Past.Term(term) -> ctl_and (predmaker guard term) (ctl_ax a)
+and ctl_element unchecked a = function
+    Past.Term(term) -> ctl_and (predmaker unchecked term) (ctl_ax a)
   | Past.Or(seq1,seq2) ->
-      ctl_seqor (ctl_seq guard a seq1) (ctl_seq guard a seq2)
+      ctl_seqor (ctl_seq unchecked a seq1) (ctl_seq unchecked a seq2)
   | Past.DInfo(dots,seq_bef,seq_aft) ->
       let shortest =
 	List.fold_left ctl_or ctl_false
-	  (List.map (ctl_element true ctl_true) (seq_bef@seq_aft)) in
-      ctl_au (ctl_and (ctl_dots guard dots) (ctl_not shortest)) a
-  | Past.EExists(var,elem) -> ctl_exists var (ctl_element guard a elem)
+	  (List.map (ctl_element true ctl_true)
+	     (Common.union_set seq_bef seq_aft)) in
+      ctl_au (ctl_and (guard_ctl_dots unchecked dots) (ctl_not shortest)) a
+  | Past.EExists(var,elem) -> ctl_exists var (ctl_element unchecked a elem)
 
-and ctl_dots guard = function
+(* --------------------------------------------------------------------- *)
+
+and guard_ctl_seq unchecked = function
+    Past.Seq(elem,Past.Empty) -> guard_ctl_element unchecked elem
+  | Past.Seq(elem,seq) ->
+      ctl_element unchecked (guard_ctl_seq unchecked seq) elem
+  | Past.Empty -> ctl_true
+  | Past.SExists(var,seq) -> ctl_exists var (guard_ctl_seq unchecked seq)
+
+and guard_ctl_element unchecked = function
+    Past.Term(term) -> predmaker unchecked term
+  | Past.Or(seq1,seq2) ->
+      ctl_seqor (guard_ctl_seq unchecked seq1) (guard_ctl_seq unchecked seq2)
+  | Past.DInfo(dots,seq_bef,seq_aft) ->
+      let shortest =
+	List.fold_left ctl_or ctl_false
+	  (List.map (ctl_element true ctl_true)
+	     (Common.union_set seq_bef seq_aft)) in
+      let aft = ctl_or shortest exit in
+      ctl_au (ctl_and (guard_ctl_dots unchecked dots) (ctl_not shortest)) aft
+  | Past.EExists(var,elem) -> ctl_exists var (guard_ctl_element unchecked elem)
+
+and guard_ctl_dots unchecked = function
     Past.Dots -> ctl_true
-  | Past.Nest(_) when guard -> ctl_true
+  | Past.Nest(_) when unchecked -> ctl_true
   | Past.Nest(seq) ->
-      ctl_or (ctl_seq false ctl_true seq) (ctl_not (ctl_seq true ctl_true seq))
+      ctl_or (guard_ctl_seq false seq) (ctl_not (guard_ctl_seq true seq))
   | Past.When(dots,seq) ->
-      ctl_and (ctl_dots guard dots) (ctl_not (ctl_seq true ctl_true seq))
-  | Past.DExists(var,dots) -> ctl_exists var (ctl_dots guard dots)
+      ctl_and
+	(guard_ctl_dots unchecked dots)
+	(ctl_not (ctl_seq true ctl_true seq))
+  | Past.DExists(var,dots) -> ctl_exists var (guard_ctl_dots unchecked dots)
 
 (* --------------------------------------------------------------------- *)
 

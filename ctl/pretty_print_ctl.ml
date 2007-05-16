@@ -110,7 +110,7 @@ let rec (pp_ctl:
 	   pp s 
            (* pp ")" *)
      | Uncheck(phi1) ->
-	 pp "Uncheck(...)"(*; pp_arg_paren env phi1; *)
+	 pp "Uncheck"; pp_arg_paren env phi1
 
      | Dots _ -> failwith "should not occur"
      | PDots _ -> failwith "should not occur"
