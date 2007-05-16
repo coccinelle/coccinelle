@@ -8,19 +8,18 @@ pretty_print_popl.ml popltoctl.ml popl.ml
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma
 
-ADDONSPATH = -I ../commons
 INCLUDE_PATH = -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci \
   -I ../engine
 
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc$(OPTBIN) -dtypes -g $(ADDONSPATH)
-CAMLOPT=ocamlopt$(OPTBIN)  $(ADDONSPATH) $(OPTFLAGS)
+CAMLC =ocamlc$(OPTBIN) -dtypes -g 
+CAMLOPT=ocamlopt$(OPTBIN)   $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
 CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep$(OPTBIN) $(ADDONSPATH)
-CAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+CAMLDEP = ocamldep$(OPTBIN) 
+CAMLMKTOP=ocamlmktop -g -custom
 
 
 
@@ -72,12 +71,12 @@ clean::
 	rm -f *~ .*~ #*# 
 
 depend: 
-	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 #clean::
 #	rm -f .depend
 
 .depend:
-	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 -include .depend

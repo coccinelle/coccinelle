@@ -147,9 +147,7 @@ let normal_form_token x =
  *)
 let compare_ast filename1 filename2  =
 
-  let xs = 
-    process_output_to_list ("diff -u -b -B " ^  filename1 ^ " "  ^ filename2) 
-  in
+  let xs = Common.cmd_to_list ("diff -u -b -B " ^filename1^" "^ filename2) in
 
   (* get rid of the --- and +++ lines *)
   let xs = 
@@ -322,16 +320,14 @@ let compare_token filename1 filename2 =
           (Correct)
   in
 
-  let xs =
-    process_output_to_list ("diff -u -b -B " ^  filename1 ^ " "  ^ filename2) 
-  in
+  let xs = Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2) in
+
   (* get rid of the --- and +++ lines *)
   let xs = 
     if null xs 
     then xs 
     else Common.drop 2 xs
   in
-
 
   if null xs && (res <> Correct) 
   then failwith 

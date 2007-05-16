@@ -435,7 +435,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %start main celem statement expr type_name
 %type <Ast_c.program> main
-%type <Ast_c.programElement> celem
+%type <Ast_c.toplevel> celem
 
 %type <Ast_c.statement> statement
 %type <Ast_c.expression> expr

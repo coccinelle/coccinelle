@@ -1,3 +1,5 @@
+type filename = string
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -6,7 +8,9 @@ val _tab_level_print: int ref
 val indent_do : (unit -> 'a) -> 'a
 val reset_pr_indent : unit -> unit
 
-(* the following functions all use the _tab_level_print functions *)
+(* The following functions first indent _tab_level_print spaces. The
+ * use of 2 in pr2 is because 2 is under UNIX the second descriptor
+ * which corresponds to stderr. *)
 val pr : string -> unit
 val pr2 : string -> unit
 val pr_no_nl : string -> unit
@@ -24,17 +28,16 @@ val sprintf : ('a, unit, string) format -> 'a
 val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 
-val _chan : out_channel ref
-val start_log_file : unit -> unit
-
+val _chan : out_channel ref (* default = stderr *)
+val start_log_file : unit -> unit (* generate & use a /tmp/debugml-xxx file *)
 val verbose_level : int ref
-
 val log : string -> unit
 val log2 : string -> unit
 val log3 : string -> unit
 
 val pause : unit -> unit
 
+(* was used by fix_caml *)
 val _trace_var : int ref
 val add_var : unit -> unit
 val dec_var : unit -> unit
@@ -43,17 +46,13 @@ val get_var : unit -> int
 val print_n : int -> string -> unit
 val printerr_n : int -> string -> unit
 
-val showCodeHex : int list -> unit
-
 val _debug : bool ref
 val debugon : unit -> unit
 val debugoff : unit -> unit
 val debug : (unit -> unit) -> unit
 
-val debugger : bool ref
-
 (*****************************************************************************)
-(* Profiling *)
+(* Profiling (cpu/mem) *)
 (*****************************************************************************)
 
 val get_mem : unit -> unit
@@ -66,20 +65,18 @@ val _count2 : int ref
 val _count3 : int ref
 val _count4 : int ref
 val _count5 : int ref
-
 val count1 : unit -> unit
 val count2 : unit -> unit
 val count3 : unit -> unit
 val count4 : unit -> unit
 val count5 : unit -> unit
-
-val profiling_diagnostic : unit -> string
+val profile_diagnostic_basic : unit -> string
 
 val time_func : (unit -> 'a) -> 'a
 
+val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
 val profile : bool ref
 val profile_code : string -> (unit -> 'a) -> 'a
-
 val profile_diagnostic : unit -> unit
 
 (*****************************************************************************)
@@ -87,28 +84,25 @@ val profile_diagnostic : unit -> unit
 (*****************************************************************************)
 
 val example : bool -> unit
+val example2 : string -> bool -> unit (* generate failwith <string> when pb *)
+val assert_equal : 'a -> 'a -> unit (* use Dumper to report when pb *)
 
-val assert_equal : 'a -> 'a -> unit
-
+val _list_bool : (string * bool) list ref
+val example3 : string -> bool -> unit
+val test_all : unit -> unit
 
 type score_result = Ok | Pb of string 
 type score = (string (* usually a filename *), score_result) Hashtbl.t
 val empty_score : unit -> score
 val regression_testing : 
-  score -> string (* filename of old score file on disk (usually in /tmp) *) ->
-  unit
-
-
-val _list_bool : (string * bool) list ref
-val example2 : string -> bool -> unit
-val test_all : unit -> unit
-
+  score -> filename (* old score file on disk (usually in /tmp) *) -> unit
 
 
 
 (* quickcheck spirit *)
 type 'a gen = unit -> 'a
 
+(* quickcheck random generators *)
 val ig : int gen
 val lg : 'a gen -> 'a list gen
 val pg : 'a gen -> 'b gen -> ('a * 'b) gen
@@ -123,8 +117,13 @@ val frequencyl : (int * 'a) list -> 'a gen
 
 val laws : string -> ('a -> bool) -> 'a gen -> 'a option
 
+(* example of use: 
+ * let b = laws "unit" (fun x -> reverse [x] = [x])    ig
+ *)
+
 val statistic_number : 'a list -> (int * 'a) list
 val statistic : 'a list -> (int * 'a) list
+
 val laws2 :
   string -> ('a -> bool * 'b) -> 'a gen -> 'a option * (int * 'b) list
 
@@ -132,18 +131,19 @@ val laws2 :
 (* Persistence *)
 (*****************************************************************************)
 
-val get_value : string -> 'a
-val write_value : 'a -> string -> unit
-val write_back : ('a -> 'b) -> string -> unit
+val get_value : filename -> 'a
+val write_value : 'a -> filename -> unit
+val write_back : ('a -> 'b) -> filename -> unit
 
 (*****************************************************************************)
 (* Counter *)
 (*****************************************************************************)
 val _counter : int ref
-val counter : unit -> int
 val _counter2 : int ref
-val counter2 : unit -> int
 val _counter3 : int ref
+
+val counter : unit -> int
+val counter2 : unit -> int
 val counter3 : unit -> int
 
 type timestamp = int
@@ -163,17 +163,20 @@ val print_option : ('a -> 'b) -> 'a option -> unit
 val print_list : ('a -> 'b) -> 'a list -> unit
 val print_between : (unit -> unit) -> ('a -> unit) -> 'a list -> unit
 
-
+(* use Format internally *)
 val pp_do_in_box : (unit -> unit) -> unit
 val pp_f_in_box : (unit -> 'a) -> 'a
 val pp_do_in_zero_box : (unit -> unit) -> unit
 val pp : string -> unit
 
-(* convert something printed using format to print into a string *)
+(* convert something printed using Format to print into a string *)
 val format_to_string : (unit -> unit) (* printer *) -> string
 
+(* works with _tab_level_print enabling to mix some calls to pp, pr2
+ * and indent_do to sometimes use advanced indentation pretty printing
+ * (with the pp* functions) and sometimes explicit and simple indendation
+ * printing (with pr* and indent_do) *)
 val adjust_pp_with_indent : (unit -> unit) -> unit
-
 val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
 
 (*****************************************************************************)
@@ -186,7 +189,7 @@ val macro_expand : string -> unit
 (* Composition/Control *)
 (*****************************************************************************)
 
-(*-val ( +> ) : 'a -> ('a -> 'b) -> 'b*)
+(* now in commonop: val ( +> ) : 'a -> ('a -> 'b) -> 'b *)
 val ( +!> ) : 'a ref -> ('a -> 'a) -> unit
 val ( $ ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
 
@@ -247,6 +250,17 @@ val error_cant_have : 'a -> 'b
 (* Equality *)
 (*****************************************************************************)
 
+(* Using the generic (=) is tempting, but it backfires, so better avoid it *)
+
+(* To infer all the code that use an equal, and that should be
+ * transformed, is not that easy, because (=) is used by many
+ * functions, such as List.find, List.mem, and so on, so the strategy
+ * is to turn what you were previously using into a function, because
+ * (=) return an exception when applied to a function, then you simply
+ * use ocamldebug to infer where the code has to be transformed by
+ * finding where the exception was launched from.
+ *)
+
 val (=|=) : int    -> int    -> bool
 val (=<=) : char   -> char   -> bool
 val (=$=) : string -> string -> bool
@@ -254,7 +268,7 @@ val (=:=) : bool   -> bool   -> bool
 
 val (=*=): 'a -> 'a -> bool
 
-(*
+(* if want to restrict the use of '=', uncomment this:
 val (=): int -> int -> bool
 *)
 
@@ -346,7 +360,7 @@ val mul : 'a numdict -> 'a -> 'a -> 'a
 val div : 'a numdict -> 'a -> 'a -> 'a
 val neg : 'a numdict -> 'a -> 'a
 
-val numd_int : int numdict
+val numd_int   : int   numdict
 val numd_float : float numdict
 
 val testd : 'a numdict -> 'a -> 'a
@@ -388,10 +402,11 @@ type ('a, 'b) either = Left of 'a | Right of 'b
 type ('a, 'b, 'c) either3 = Left3 of 'a | Middle3 of 'b | Right3 of 'c
 
 val just : 'a option -> 'a
-val some : 'a option -> 'a
+val some : 'a option -> 'a (* alias *)
 
-val fmap : ('a -> 'b) -> 'a option -> 'b option
-val map_option : ('a -> 'b) -> 'a option -> 'b option
+val fmap :       ('a -> 'b) -> 'a option -> 'b option
+val map_option : ('a -> 'b) -> 'a option -> 'b option (* alias *)
+
 val do_option : ('a -> unit) -> 'a option -> unit
 
 val optionise : (unit -> 'a) -> 'a option
@@ -415,6 +430,9 @@ val concat : string -> string list -> string
 val i_to_s : int -> string
 val s_to_i : string -> int
 
+(* strings take space in memory. Better when can share the space used by
+ * similar strings.
+ *)
 val _shareds : (string, string) Hashtbl.t
 val shared_string : string -> string
 
@@ -427,16 +445,17 @@ val split_on_char : char -> string -> string list
 
 val lowercase : string -> string
 
-val regexp_alpha: Str.regexp
+val regexp_alpha : Str.regexp
 
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
-(*
--val ( =~ ) : string -> string -> bool
--val ( ==~ ) : string -> Str.regexp -> bool
-*)
 
+(* now in commonop
+ val ( =~ ) : string -> string -> bool
+ val ( ==~ ) : string -> Str.regexp -> bool
+*)
+val _memo_compiled_regexp : (string, Str.regexp) Hashtbl.t
 
 val regexp_match : string -> string -> string
 
@@ -452,7 +471,6 @@ val matched6 : string -> string * string * string * string * string * string
 val string_match_substring : Str.regexp -> string -> bool
 
 val split : string -> string -> string list
-
 val join : string -> string list -> string
 
 val split_list_regexp : string -> string list -> (string * string list) list
@@ -461,13 +479,12 @@ val split_list_regexp : string -> string list -> (string * string list) list
 (* Filenames *)
 (*****************************************************************************)
 
+(* now at beginning of this file: type filename = string *)
 val dirname : string -> string
 val basename : string -> string
 
-type filename = string
-
 val filesuffix : filename -> string
-val fileprefix : filename -> filename
+val fileprefix : filename -> string
 
 val adjust_extension_if_needed : filename -> string -> filename
 
@@ -494,9 +511,8 @@ val unwords : string list -> string
 (*****************************************************************************)
 (* Process/Files *)
 (*****************************************************************************)
-val cat_orig : string -> string list
-
-val cat : string -> string list
+val cat :      filename -> string list
+val cat_orig : filename -> string list
 
 val interpolate : string -> string list
 
@@ -505,16 +521,18 @@ val echo : string -> string
 val usleep : int -> unit
 
 val process_output_to_list : string -> string list
+val cmd_to_list :            string -> string list (* alias *)
 
 val command2 : string -> unit
 
 val do_in_fork : (unit -> unit) -> int
 
-val read_file : string -> string
-val write_file : string -> string -> unit
+val read_file : filename -> string
+val write_file : filename -> string -> unit
 
-val filesize : string -> int
-val lfile_exists : string -> bool
+val filesize : filename -> int
+
+val lfile_exists : filename -> bool
 
 val capsule_unix : ('a -> unit) -> 'a -> unit
 
@@ -529,29 +547,41 @@ val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
 
 val has_env : string -> bool
 
+(* scheme spirit *)
 val with_open_outfile : 
-     filename -> ((string -> unit) * out_channel -> 'a) -> 'a
+  filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 val with_open_infile : 
-      filename -> (in_channel -> 'a) -> 'a
+  filename -> (in_channel -> 'a) -> 'a
 
 exception Timeout
 
+(* subtil: have to make sure that timeout is not intercepted before here, so 
+ * avoid exn handle such as try (...) with _ -> cos timeout will not bubble up
+ * enough. In such case, add a case before such as  
+ * with Timeout -> raise Timeout | _ -> ... 
+ *)
 val timeout_function : int -> (unit -> 'a) -> 'a
 
-(* new_temp_file prefix suffix. *)
-val new_temp_file : string -> string -> string
+(* creation of /tmp files, a la gcc 
+ * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" 
+ *)
+val _temp_files_created : string list ref
+val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
 
+(* subtil: same problem than with Timeout. Do not intercept such exception
+ * with some blind try (...) with _ -> ...
+ *)
 exception UnixExit of int 
-val exn_to_unixexit : (unit -> 'a) -> 'a
+val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 (*****************************************************************************)
 (* List *)
 (*****************************************************************************)
 
-val uncons : 'a list -> 'a * 'a list
+(* tail recursive map (but that also reverse the element) *)
+val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
 
-val safe_tl : 'a list -> 'a list
 
 val zip : 'a list -> 'b list -> ('a * 'b) list
 val zip_safe : 'a list -> 'b list -> ('a * 'b) list
@@ -570,94 +600,100 @@ val span : ('a -> bool) -> 'a list -> 'a list * 'a list
 val skip_until : ('a list -> bool) -> 'a list -> 'a list
 val skipfirst : 'a -> 'a list -> 'a list
 
-val enum : int -> int -> int list
+val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
-val index_list              : 'a list -> ('a * int) list
+val splitAt : int -> 'a list -> 'a list * 'a list
+
+val pack : int -> 'a list -> 'a list list
+
+
+val enum : int -> int -> int list
+val repeat : 'a -> int -> 'a list
+val generate : int -> 'a -> 'a list
+
+
+
+val index_list   : 'a list -> ('a * int) list
 val index_list_1 : 'a list -> ('a * int) list
+
+val iter_index : ('a -> int -> 'b) -> 'a list -> unit
+val map_index : ('a -> int -> 'b) -> 'a list -> 'b list
+val filter_index : (int -> 'a -> bool) -> 'a list -> 'a list
+val fold_left_with_index : ('a -> 'b -> int -> 'a) -> 'a -> 'b list -> 'a
+
+val nth : 'a list -> int -> 'a
+val rang : 'a -> 'a list -> int
+
+val last_n : int -> 'a list -> 'a list
+
+
 
 val snoc : 'a -> 'a list -> 'a list
 val cons : 'a -> 'a list -> 'a list
-
+val uncons : 'a list -> 'a * 'a list
+val safe_tl : 'a list -> 'a list
 val head_middle_tail : 'a list -> 'a * 'a list * 'a
+val last : 'a list -> 'a
+val list_init : 'a list -> 'a list
+val list_last : 'a list -> 'a
+val removelast : 'a list -> 'a list
+
+val inits : 'a list -> 'a list list
+val tails : 'a list -> 'a list list
 
 
 val ( ++ ) : 'a list -> 'a list -> 'a list
 
 val foldl1 : ('a -> 'a -> 'a) -> 'a list -> 'a
-
 val fold_k : ('a -> 'b -> ('a -> 'a) -> 'a) -> ('a -> 'a) -> 'a -> 'b list -> 'a
+val fold_right1 : ('a -> 'a -> 'a) -> 'a list -> 'a
+val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 
-val list_init : 'a list -> 'a list
-val list_last : 'a list -> 'a
-
-val last_n : int -> 'a list -> 'a list
-val last : 'a list -> 'a
+val rev_map : ('a -> 'b) -> 'a list -> 'b list
 
 val join_gen : 'a -> 'a list -> 'a list
 
-val iter_index : ('a -> int -> 'b) -> 'a list -> unit
-val map_index : ('a -> int -> 'b) -> 'a list -> 'b list
-val filter_index : (int -> 'a -> bool) -> 'a list -> 'a list
-
 val do_withenv :
   (('a -> 'b) -> 'c -> 'd) -> ('e -> 'a -> 'b * 'e) -> 'e -> 'c -> 'd * 'e
-
-val fold_left_with_index : ('a -> 'b -> int -> 'a) -> 'a -> 'b list -> 'a
-
 val map_withenv : ('a -> 'b -> 'c * 'a) -> 'a -> 'b list -> 'c list * 'a
 
 val collect_accu : ('a -> 'b list) -> 'b list -> 'a list -> 'b list
 val collect : ('a -> 'b list) -> 'a list -> 'b list
 
-val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
-
-val removelast : 'a list -> 'a list
 val remove : 'a -> 'a list -> 'a list
 
-val inits : 'a list -> 'a list list
-val tails : 'a list -> 'a list list
+val uniq : 'a list -> 'a list
+val doublon : 'a list -> bool
 
 val reverse : 'a list -> 'a list
 val rev : 'a list -> 'a list
+val rotate : 'a list -> 'a list
 
-val nth : 'a list -> int -> 'a
+val map_flatten : ('a -> 'b list) -> 'a list -> 'b list
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-val rev_map : ('a -> 'b) -> 'a list -> 'b list
+val map2 : ('a -> 'b) -> 'a list -> 'b list
+val map3 : ('a -> 'b) -> 'a list -> 'b list
 
-val fold_right1 : ('a -> 'a -> 'a) -> 'a list -> 'a
 
 val maximum : 'a list -> 'a
 val minimum : 'a list -> 'a
 
-val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
-
-val generate : int -> 'a -> 'a list
-
-val uniq : 'a list -> 'a list
+val min_with : ('a -> 'b) -> 'a list -> 'a
+val two_mins_with : ('a -> 'b) -> 'a list -> 'a * 'a
 
 val all_assoc : 'a -> ('a * 'b) list -> 'b list
 val prepare_want_all_assoc : ('a * 'b) list -> ('a * 'b list) list
-
-val rotate : 'a list -> 'a list
 
 val or_list : bool list -> bool
 val and_list : bool list -> bool
 
 val return_when : ('a -> 'b option) -> 'a list -> 'b
 
-val splitAt : int -> 'a list -> 'a list * 'a list
-val pack : int -> 'a list -> 'a list list
-
-val min_with : ('a -> 'b) -> 'a list -> 'a
-val two_mins_with : ('a -> 'b) -> 'a list -> 'a * 'a
 
 val grep_with_previous : ('a -> 'a -> bool) -> 'a list -> 'a list
 val iter_with_previous : ('a -> 'a -> 'b) -> 'a list -> unit
 
 val get_pair : 'a list -> ('a * 'a) list
-val rang : 'a -> 'a list -> int
-val doublon : 'a list -> bool
 
 val inseredans : 'a -> 'a list -> 'a list list
 val permutation : 'a list -> 'a list list
@@ -667,18 +703,7 @@ val insert_elem_pos : ('a * int) -> 'a list -> 'a list
 val uncons_permut :   'a list -> (('a * int) * 'a list) list
 
 
-val map_flatten : ('a -> 'b list) -> 'a list -> 'b list
-
-val repeat : 'a -> int -> 'a list
-
-val map2 : ('a -> 'b) -> 'a list -> 'b list
-val map3 : ('a -> 'b) -> 'a list -> 'b list
-
 val pack_sorted : ('a -> 'a -> bool) -> 'a list -> 'a list list
-
-val test : int list list
-
-val uniq2 : 'a list -> 'a list
 
 val keep_best : ('a * 'a -> 'a option) -> 'a list -> 'a list
 val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
@@ -696,20 +721,15 @@ val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
 (* Arrays *)
 (*****************************************************************************)
 
-
 val array_find_index : ('a -> bool) -> 'a array -> int
 
 (*****************************************************************************)
 (* Fast array *)
 (*****************************************************************************)
 
-val b_array_string_of_t : 'a -> 'b -> string
-val bigarray_string_of_int16_unsigned_elt : 'a -> string
-val bigarray_string_of_c_layout : 'a -> string
-
 
 (*****************************************************************************)
-(* Set. Have a look too at set*.mli *)
+(* Set. But have a look too at set*.mli. It's better *)
 (*****************************************************************************)
 
 type 'a set = 'a list
@@ -799,7 +819,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 (*****************************************************************************)
-(* Assoc. Have a look too at Mapb.mli *)
+(* Assoc. But have a look too at Mapb.mli. It's better *)
 (*****************************************************************************)
 
 module IntMap :
@@ -890,7 +910,7 @@ val pop2 : 'a stack ref -> 'a
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 
 (*****************************************************************************)
-(* Graph. Have a look too at Ograph_*.mli *)
+(* Graph. But have a look too at Ograph_*.mli. It's better *)
 (*****************************************************************************)
 
 type 'a graph = 'a set * ('a * 'a) set
@@ -974,7 +994,7 @@ val sum_vector : vector list -> vector
 (* Pics (raytracer) *)
 (*****************************************************************************)
 type pixel = int * int * int
-val write_ppm : int -> int -> pixel list -> string -> unit
+val write_ppm : int -> int -> pixel list -> filename -> unit
 val test1 : unit -> unit
 
 (*****************************************************************************)
@@ -994,8 +1014,18 @@ val getDoubleParser :
   ('a -> Lexing.lexbuf -> 'b) -> 'a -> (string -> 'b) * (string -> 'b)
 
 (*****************************************************************************)
-(* parser related (cocci) *)
+(* Parsers (cocci) *)
 (*****************************************************************************)
+
+
+(* Currently lexing.ml does not handle the line number position:
+ * even if there is some fields in the lexing structure, they are not 
+ * maintained by the lexing engine :( So the following code does not work:
+ *   let pos = Lexing.lexeme_end_p lexbuf in 
+ *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
+ *      (pos.pos_cnum - pos.pos_bol) in 
+ * Hence those functions to overcome the previous limitation.
+ *)
 
 type parse_info = {
     str: string;
@@ -1007,6 +1037,8 @@ type parse_info = {
 
 val fake_parse_info : parse_info
 
+
+(* array[i] will contain the (line x col) of the i char position *)
 val full_charpos_to_pos : filename -> (int * int) array
 
 val complete_parse_info : 
@@ -1014,16 +1046,20 @@ val complete_parse_info :
 
 val info_from_charpos : int -> filename -> (int * int * string)
 
-val error_messagebis : filename -> (string * int) -> int -> string
-val error_message : filename -> (string * int) -> string
-
+val error_message :       filename -> (string * int) -> string
 val error_message_short : filename -> (string * int) -> string
+
+(* add a 'decalage' argument to handle stuff such as cpp which includes 
+ * files and who can make shift.
+ *)
+val error_messagebis : filename -> (string * int) -> int -> string
 
 
 (*****************************************************************************)
 (* Misc/test *)
 (*****************************************************************************)
 
+val showCodeHex : int list -> unit
 val size_mo_ko : int -> string
 val plural : int -> string -> string
 val sec_to_days : int -> string

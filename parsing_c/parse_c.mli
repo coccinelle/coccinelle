@@ -17,8 +17,8 @@ val statement_of_string : string -> Ast_c.statement
 (* the token list contain also the comment-tokens  *)
 type info_item = (string * Parser_c.token list)
 
-type program2 = programElement2 list
-     and programElement2 = Ast_c.programElement * info_item
+type program2 = toplevel2 list
+     and toplevel2 = Ast_c.toplevel * info_item
 
 type parsing_stat = {
     filename: filename;
@@ -30,7 +30,6 @@ type parsing_stat = {
 
 (* this is the main function *)
 val parse_print_error_heuristic:  filename -> (program2 * parsing_stat)
-
 
 
 val print_parsing_stat_list: parsing_stat list -> unit

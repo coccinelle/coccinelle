@@ -1,7 +1,13 @@
 open Common open Commonop
 
+
 open Ast_c
 module F = Control_flow_c
+
+(*****************************************************************************)
+(* Functions to visit both the Ast and the CFG *)
+(*****************************************************************************)
+
 
 (*****************************************************************************)
 (* Visitor based on continuation. Cleaner than the one based on mutable 
@@ -37,7 +43,7 @@ module F = Control_flow_c
  * And with the record she gets, she does not have to do my
  * multiple defs of function such as 'let al_type = V0.vk_type_s bigf'
  * 
- * The code of visitor.ml is cleaner with julia, because mutual recursive calls
+ * The code of visitor.ml is cleaner with julia because mutual recursive calls
  * are clean such as ... 'expression e' ... and not  'f (k, bigf) e'
  * or 'vk_expr bigf e'.
  * 
@@ -104,9 +110,11 @@ type visitor_c =
    kini:       (initialiser  -> unit) * visitor_c -> initialiser  -> unit; 
 
    kinfo: (info -> unit) * visitor_c -> info -> unit;
-   
+
+   (* CFG *)
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
-   kprogram: (programElement -> unit) * visitor_c -> programElement -> unit;
+   (* Ast *)
+   kprogram: (toplevel -> unit) * visitor_c -> toplevel -> unit;
  } 
 
 let default_visitor_c = 
@@ -436,7 +444,7 @@ and vk_define bigf def =
   )
         
 
-
+(* ------------------------------------------------------------------------ *)
 (* Now keep fullstatement inside the control flow node, 
  * so that can then get in a MetaStmtVar the fullstatement to later
  * pp back when the S is in a +. But that means that 
@@ -530,6 +538,7 @@ and vk_node = fun bigf node ->
   in
   f (k, bigf) node
 
+(* ------------------------------------------------------------------------ *)
 and vk_info = fun bigf info -> 
   let rec infof ii = bigf.kinfo (k, bigf) ii
   and k i = ()
@@ -586,7 +595,7 @@ type visitor_c_s = {
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout; 
 
-  kprogram_s: (programElement inout * visitor_c_s) -> programElement inout;
+  kprogram_s: (toplevel inout * visitor_c_s) -> toplevel inout;
   knode_s: (F.node inout * visitor_c_s) -> F.node inout;
 
   kinfo_s: (info inout * visitor_c_s) -> info inout;
@@ -947,6 +956,7 @@ and vk_info_s = fun bigf info ->
   infof info
 
 
+(* ------------------------------------------------------------------------ *)
 and vk_node_s = fun bigf node -> 
   let iif ii = List.map (vk_info_s bigf) ii in
   let infof info = vk_info_s bigf info  in
@@ -1042,6 +1052,7 @@ and vk_node_s = fun bigf node ->
   in
   nodef node
   
+(* ------------------------------------------------------------------------ *)
 and vk_param_s = fun bigf ((b, s, t), ii_b_s) -> 
   let iif ii = List.map (vk_info_s bigf) ii in
   ((b, s, vk_type_s bigf t), iif ii_b_s)

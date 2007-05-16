@@ -1,170 +1,38 @@
 open Commonop
 
 (*****************************************************************************)
-(* Todo *)
-(*****************************************************************************)
-
-(* 
-
- A tracer/logger/profiler. An assert/raise/... that print the backtrace.
- Would like to see the value of the arguments as in Perl.
- ocamldebug is not enough. When the program loops, ocamldebug loops, 
- and only some tracing information can help. Tracing often helps
- me to find the error faster than ocamldebug.
- Sux to put let _ = pr Here in, ou les Timing.
- How avoid to put all those ugly printf in my code
-  let action = Assisted_trajectory.assisted state t_state trajectory oracle in
-  let _ = Printf.printf "\n XXX action = %s\n" (string_of_action action) in 
- Can do a trace (but will not have the "action =") => with a fix_caml tricks
- how infer good func to call (we have not a generic show)
-
- debug, tywith, fix_caml tracing, 
- try and printexn and camlp4 => better trace of exception
- fix_caml  (use camlp4 ?)
- 
-
- CIL seems to have good trace, profiling  utilities functions (in ocamlutil/).
- Unison has also good functions (in ubase/).
-
-
-
- Advanced invariant weaving.
- cf fixed_int => call the invariant func
- type filename = string   TODO could check that exist :) type sux  
-
- better pre/post/... sugar
-  (ca sux c explicit inv_fixed, et c let sinx_aux, ...
-
-
-
- Try extract all the quite generic function from LFS
- execute_and_show_progress, timeout_func, ...
- Make a generic timeout function in caml (or call timeout(1))
-
- let _ = if _Update then try Trajectory.doit map_name with _ -> () in
- Do via sandbox (either special form of secure(fun() -> ...).
- Sandbox time fcts check_better.
-
- Take common.ml2
- Y, memo, ... cf dir hack and fun
-  let rec y fact = fun x -> fact (y fact) x
-
-
-
-
- Lourd les
- when (((match take_safe 1 !passed_tok with [Tstruct _] -> false| _ -> true)) &&
-       ((match take_safe 1 !passed_tok with [Tenum _] -> false | _ -> true))) 
-  des que ajoute des infos au token.
- De meme quand veut extraire les infos, obliger de faire une fonction qui 
- traite chacun des cas (If _,info -> info | While _,_,_,info > info ...)
-
- return/when/unless/ a la Perl ... sux those ifthenelse
-        if depth <= 0 then (print_string "fail but run"; [])
-        else if t_state > (times.((Array.length times) - 2)) 
-             then (print_string "no more spline"; [])
-        else 
-  Ca sux ca, why ? cos dont visually see what is algorithm from error/special
-  case handling.
-  For me if then else mean an algorithm whereas raise when ... mean handle 
-  the fucking special case (that could be filtered after by pof).
-
-
- Special form via macro (as the || die that just do a try around the call).
-
-
- let  (run_to_states_run: state -> run -> states_run) = 
-  let rec aux here = function
-    | [] -> []
-    | act::xs -> 
-        let next = next_state here x act in
-        next::(run_to_states_run next xs)
-                in
-  aux
- => Peut faire mieux, combinator general.
-
-
- less: y'a des binary methods now in ocaml (cf manual caml) so perhaps can 
- do inter/union/... of seti/set/.. cleanly
-
-
- read_bool.
-
- On lisp: graham   
- complement 
- !
- fif?
-
- Apply fcts in turn while having the time
-
-
-pof:
-  what is algo, error handling (cf below, need a raise ... when ...)
-  what is debugging (either printf, or Graphics, ...)
-
-visual:
- - as in perl, map, fold, ... in special color
- - look at all the open, then assign a color per module, then
-   parse the file to extract the func, then print good color when func
- - or simply put each time explicit name
- - ref and := and {contents = } and mutable in a special color,  they are
-   dangerous !!
- - the types in lib.ml should be in a special color (or special symbol)
- - use inference info to colorify more (=> give feedback, as for indentation)
-   related: automatically infer code (use inference feedback).
- - fix comment diezedieze cos fout en l'air l'indentation, color => need 
-   emacs mode fix.
-
- solved:  style
-
- let (fixed_int_to_posmap: fixed_int -> posmap) = fun fixed -> 
-  let v = ((fix_to_i fixed) / (power 2 16)) in
-  let _ = Printf.printf "coord xy = %d\n" v in
-  v
- The need for printf make me force to name stuff => :(
- How avoid ? use 'it' special keyword ?
- update: in fact dont have to name it, use +> (fun v -> ...)  so when want
-  erase debug just have to erase one line.
-
- Un fichier option.ml qui contient toutes les constantes/... qui peuvent etre
- modifier a runtime et un main.ml avec un getopt qui les modifie.
- update: just need call the Arg. module and have a flag.ml file
-
-*)
-
-(*****************************************************************************)
 (* We use *)
 (*****************************************************************************)
-(* 
-   functions:
-    * =, <=, max min,  ... 
-    * List.rev, List.mem, List.partition, List.fold*, List.concat, ...
-   
-   The Format library can be useful. It allows to hide passing an indent_level
-   variable. You use as usual the print_string function except that
-   there is this automatic indent_level variable handled for you (and
-   maybe more services). src: julia in coccinelle unparse_cocci
-
-   Other useful techniques:
-   - ExprAt technique (src: norman ramsey), or unwrap/rewrap with tuples.
-   - continuation visitor (src: douence),
-   - aspect-like fonction via add-hook with continuation (src: pad)
-   - forbid polymorphic  '='  by redefining it.
-   - functor like function by using nested function.
-   - use better Set/Map (binary tree or hashtbl).
-   - hashsons, memoize (cache), lazyize.
+(* functions: 
+ *   - =, <=, max min, ... 
+ *   - List.rev, List.mem, List.partition,
+ *   - List.fold*, List.concat, ... 
+ *   - Str.global_replace
+ * 
+ * modules:
+ *   - Hashtbl
+ *   - Arg
+ *   - Format 
+ * 
+ * The Format library allows to hide passing an indent_level variable.
+ * You use as usual the print_string function except that there is
+ * this automatic indent_level variable handled for you (and maybe
+ * more services). src: julia in coccinelle unparse_cocci.
 *)
 
 (*****************************************************************************)
 (* Prelude *)
 (*****************************************************************************)
-
-(* only relevant in bytecode, in native the stacklimit is the os stacklimit
-   (adjustable by ulimit -s) *)
-let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
+(* The following functions should be in their respective sections but
+ * because some functions in some sections use functions in other
+ * sections, and because I don't want to take care of the order of
+ * those sections, of those dependencies, I put the functions causing
+ * dependency problem here. C is better than caml on this with the
+ * ability to declare prototype, enabling some form of forward
+ * reference. *)
 
 (* now in Commonop
-  let (+>) o f = f o
+   let (+>) o f = f o
 *)
 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
@@ -181,8 +49,9 @@ let fold_left_with_index f acc =
   in fold_lwi_aux acc 0
 
 
-(* let rec enum x n = if x = n then [n] else x::enum (x+1)  n *)
-let rec enum x n = 
+let rec enum_orig x n = if x = n then [n] else x::enum_orig (x+1)  n
+
+let enum x n = 
   if not(x <= n)
   then failwith (Printf.sprintf "bad values in enum, expect %d <= %d" x n);
   let rec enum_aux acc x n = 
@@ -198,11 +67,11 @@ let push2 v l =
 
 let command2 s = ignore(Sys.command s)
 
+let (++) = (@)
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
-
-
 
 let _tab_level_print = ref 0
 
@@ -223,9 +92,6 @@ let pr_no_nl s =
   flush stdout
 
 
-(* the use of 2 is because 2 is under UNIX the second descriptor
- * which corresponds to stderr.
- *)
 let pr2 s = 
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
@@ -236,6 +102,13 @@ let pr2_no_nl s =
   prerr_string s;
   flush stderr
 
+let pr_xxxxxxxxxxxxxxxxx () = 
+  pr "-----------------------------------------------------------------------"
+
+let pr2_xxxxxxxxxxxxxxxxx () = 
+  pr2 "-----------------------------------------------------------------------"
+
+
 let reset_pr_indent () =
   _tab_level_print := 0
 
@@ -243,6 +116,9 @@ let reset_pr_indent () =
 (* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 
 let pr2gen x = pr2 (Dumper.dump x)
+
+
+
 
 include Printf
 
@@ -261,7 +137,7 @@ let log3 s = if !verbose_level >= 3 then dolog s
 
 let pause () = (pr2 "pause: type return"; ignore(read_line ()))
 
-(*  used by fix_caml *)
+(* was used by fix_caml *)
 let _trace_var = ref 0
 let add_var() = incr _trace_var
 let dec_var() = decr _trace_var
@@ -272,21 +148,10 @@ let (print_n: int -> string -> unit) = fun i s ->
 let (printerr_n: int -> string -> unit) = fun i s -> 
   do_n i (fun () -> prerr_string s)
 
-let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
-
 let _debug = ref true
 let debugon  () = _debug := true
 let debugoff () = _debug := false
 let debug f = if !_debug then f () else ()
-
-(* log4j: 
- trace, debug, info, warn, error, fatal,    and  "all" and "off"
- hierarchy of loggers, config file,  different target (console, file, ...)
- also show the function you are in.
-*)
-
-(* used to tell if want to run from debuger *)
-let debugger = ref false 
 
 (*****************************************************************************)
 (* Profiling *)
@@ -322,10 +187,12 @@ let count3 () = incr _count3
 let count4 () = incr _count4
 let count5 () = incr _count5
 
-let profiling_diagnostic () = 
+let profile_diagnostic_basic () = 
   Printf.sprintf 
     "count1 = %d\ncount2 = %d\ncount3 = %d\ncount4 = %d\ncount5 = %d\n" 
     !_count1 !_count2 !_count3 !_count4 !_count5
+
+
 
 let time_func f = 
   (*   let _ = Timing () in *)
@@ -340,7 +207,9 @@ let profile_start category = failwith "todo"
 let profile_end category = failwith "todo"
   
 let profile_code category f = 
-  if not !profile then f() else begin
+  if not !profile 
+  then f() 
+  else begin
   let t = Unix.gettimeofday () in
   let res = f () in
   let t' = Unix.gettimeofday () in
@@ -386,33 +255,44 @@ let assert_equal a b =
   then failwith ("assert_equal: those 2 values are not equal:\n\t" ^ 
                  (dump a) ^ "\n\t" ^ (dump b) ^ "\n")
 
-(*-------------------------------------------------------------------*)
-(* Regression testing *)
-(*-------------------------------------------------------------------*)
-
-(* cf end of file *)
-
+let (example2: string -> bool -> unit) = fun s b -> 
+  try assert b with x -> failwith s
 
 (*-------------------------------------------------------------------*)
 let _list_bool = ref []
 
-(* introduce a fun () ??, otherwise the calculus is made at compile time and this can be long *)
-(* let (example: string -> (unit -> bool) -> unit) = fun s func -> 
-  _list_bool := (s,func):: (!_list_bool)
-  would like to do as a func that take 2 terms, and make an = over it
-  avoid to add this ugly fun (), but pb of type, cant do that :(
-*)
-let (example2: string -> bool -> unit) = fun s b -> 
-(* _list_bool := (s,b)::(!_list_bool) *)
-  try assert b with x -> failwith s
+let (example3: string -> bool -> unit) = fun s b -> 
+ _list_bool := (s,b)::(!_list_bool)
+
+(* could introduce a fun () otherwise the calculus is made at compile time
+ * and this can be long. This would require to redefine test_all.
+ *   let (example3: string -> (unit -> bool) -> unit) = fun s func -> 
+ *   _list_bool := (s,func):: (!_list_bool)
+ * 
+ * I would like to do as a func that take 2 terms, and make an = over it
+ * avoid to add this ugly fun (), but pb of type, cant do that :(
+ *)
+
 
 let (test_all: unit -> unit) = fun () -> 
-  List.iter (fun (s, b) -> Printf.printf "%s: %s\n" s (if b then "passed" else "failed")
-	    ) !_list_bool
+  List.iter (fun (s, b) -> 
+    Printf.printf "%s: %s\n" s (if b then "passed" else "failed")
+  ) !_list_bool
 
 let (test: string -> unit) = fun s -> 
-  Printf.printf "%s: %s\n" s (if (List.assoc s (!_list_bool)) then "passed" else "failed")
-(* ex: let _ = example "++" ([1;2]++[3;4;5] = [1;2;3;4;5]) *)
+  Printf.printf "%s: %s\n" s 
+    (if (List.assoc s (!_list_bool)) then "passed" else "failed")
+
+let _ = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
+
+(*-------------------------------------------------------------------*)
+(* Regression testing *)
+(*-------------------------------------------------------------------*)
+
+(* cf end of file. It uses too many other common functions so I 
+ * have put the code at the end of this file.
+ *)
+
 
 
 
@@ -442,7 +322,7 @@ let (test: string -> unit) = fun s ->
  *)
 
 (*---------------------------------------------------------------------------*)
-(* generator *)
+(* generators *)
 (*---------------------------------------------------------------------------*)
 type 'a gen = unit -> 'a
 
@@ -468,57 +348,58 @@ let (always: 'a -> 'a gen) = fun e () -> e
 let (frequency: ((int * ('a gen)) list) -> 'a gen) = fun xs -> 
   let sums = sum_int (List.map fst xs) in
   let i = Random.int sums in
-  let rec freq_aux acc = function ((x,g)::xs) -> if i < acc+x then g else freq_aux (acc+x) xs | _ -> failwith "frequency" in
+  let rec freq_aux acc = function 
+    | (x,g)::xs -> if i < acc+x then g else freq_aux (acc+x) xs 
+    | _ -> failwith "frequency" 
+  in
   freq_aux 0 xs
 let frequencyl l = frequency (List.map (fun (i,e) -> (i,always e)) l)
-
 
 (* 
 let b = oneof [always true; always false] ()
 let b = frequency [3, always true; 2, always false] ()
-
-cant do this:
- let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneofl [[]; lg gen ()] 
- nor
- let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneof [always []; lg gen] 
- cos caml is not as lazy as haskell :(
- fix the pb by introducing a size limit
- take the bounds/size as parameter
- morover this is needed for more complex type, how make a bintreeg ??
-  we need recursion 
-
-let rec (bintreeg: ('a gen) -> ('a bintree) gen) = fun gen () -> 
-  let rec aux n = 
-    if n = 0 then (Leaf (gen ()))
-    else frequencyl [1, Leaf (gen ()); 4, Branch ((aux (n / 2)), aux (n / 2))] ()
-  in aux 20
-
 *)
+
+(* cant do this:
+ *    let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneofl [[]; lg gen ()]
+ * nor
+ *    let rec (lg: ('a gen) -> ('a list) gen) = fun gen -> oneof [always []; lg gen]
+ * 
+ * because caml is not as lazy as haskell :( fix the pb by introducing a size
+ * limit. take the bounds/size as parameter. morover this is needed for
+ * more complex type.
+ * 
+ * how make a bintreeg ?? we need recursion
+ * 
+ * let rec (bintreeg: ('a gen) -> ('a bintree) gen) = fun gen () -> 
+ * let rec aux n = 
+ * if n = 0 then (Leaf (gen ()))
+ * else frequencyl [1, Leaf (gen ()); 4, Branch ((aux (n / 2)), aux (n / 2))]
+ * ()
+ * in aux 20
+ * 
+ *)
 
 
 (*---------------------------------------------------------------------------*)
 (* property *)
 (*---------------------------------------------------------------------------*)
 
-(* todo, a test_all_laws, better syntax (done already a little with ig in place of intg *)
-(* en cas d'erreur, print the arg that not respect *)
+(* todo: a test_all_laws, better syntax (done already a little with ig in
+ * place of intg. En cas d'erreur, print the arg that not respect 
+ * 
+ * todo: with monitoring, as in haskell, laws = laws2, no need for 2 func,
+ * but hard i found
+ * 
+ * todo classify, collect, forall 
+ *)
 
-(* return None kan cool, et Just the_case_that_produce_the_error kan pas cool *)
+
+(* return None when good, and Just the_problematic_case when bad *)
 let (laws: string -> ('a -> bool) -> ('a gen) -> 'a option) = fun s func gen ->
   let res = foldn (fun acc i -> let n = gen() in (n, func n)::acc) [] 1000 in
   let res = List.filter (fun (x,b) -> not b) res in
   if res = [] then None else Some (fst (List.hd res))
-
-(*
-let b = laws "unit" (fun x       -> reverse [x]          = [x]                   )ig
-let b = laws "app " (fun (xs,ys) -> reverse (xs++ys)     = reverse ys++reverse xs)(pg (lg ig)(lg ig))
-let b = laws "rev " (fun xs      -> reverse (reverse xs) = xs                    )(lg ig)
-let b = laws "appb" (fun (xs,ys) -> reverse (xs++ys)     = reverse xs++reverse ys)(pg (lg ig)(lg ig))
-let b = laws "max"  (fun (x,y)   -> x <= y ==> (max x y  = y)                       )(pg ig ig)
-*)
-
-(* with monitoring, TODO as in haskell, laws = laws2, no need for 2 func, but hard i found *)
-(* todo classify, collect,forall *)
 
 let rec (statistic_number: ('a list) -> (int * 'a) list) = function
   | []    -> []
@@ -531,23 +412,37 @@ let (statistic: ('a list) -> (int * 'a) list) = fun xs ->
   let totals = sum_int (List.map fst stat_num) in
   List.map (fun (i, v) -> ((i * 100) / totals), v) stat_num 
   
-let (laws2: string -> ('a -> (bool * 'b)) -> ('a gen) -> ('a option * ((int * 'b) list ))) = 
+let (laws2: 
+        string -> ('a -> (bool * 'b)) -> ('a gen) -> 
+        ('a option * ((int * 'b) list ))) = 
   fun s func gen ->
   let res = foldn (fun acc i -> let n = gen() in (n, func n)::acc) [] 1000 in
   let stat = statistic (List.map (fun (x,(b,v)) -> v) res) in
   let res = List.filter (fun (x,(b,v)) -> not b) res in
   if res = [] then (None, stat) else (Some (fst (List.hd res)), stat)
 
-(* let b = laws2 "max"  (fun (x,y)   -> ((x <= y ==> (max x y  = y)), x <= y))(pg ig ig) *)
 
+(*
+let b = laws "unit" (fun x       -> reverse [x]          = [x]                   )ig
+let b = laws "app " (fun (xs,ys) -> reverse (xs++ys)     = reverse ys++reverse xs)(pg (lg ig)(lg ig))
+let b = laws "rev " (fun xs      -> reverse (reverse xs) = xs                    )(lg ig)
+let b = laws "appb" (fun (xs,ys) -> reverse (xs++ys)     = reverse xs++reverse ys)(pg (lg ig)(lg ig))
+let b = laws "max"  (fun (x,y)   -> x <= y ==> (max x y  = y)                       )(pg ig ig)
+
+let b = laws2 "max"  (fun (x,y)   -> ((x <= y ==> (max x y  = y)), x <= y))(pg ig ig) 
+*)
 
 
 (* todo, do with coarbitrary ?? idea is that given a 'a, generate a 'b
-   depending of 'a and gen 'b, that is modify gen 'b, what is important is
-   that each time given the same 'a, we must get the same 'b !!!
+ * depending of 'a and gen 'b, that is modify gen 'b, what is important is
+ * that each time given the same 'a, we must get the same 'b !!!
+ *)
+
+(*
 let (fg: ('a gen) -> ('b gen) -> ('a -> 'b) gen) = fun gen1 gen2 () ->
 let b = laws "funs" (fun (f,g,h) -> x <= y ==> (max x y  = y)       )(pg ig ig)
  *)
+
 (*
 let one_of xs = List.nth xs (Random.int (List.length xs)) 
 let take_one xs =
@@ -555,7 +450,7 @@ let take_one xs =
   else 
     let i = Random.int (List.length xs) in
     List.nth xs i, filter_index (fun j _ -> i <> j) xs
-  *)    
+*)    
 
 (*****************************************************************************)
 (* Persistence *)
@@ -614,6 +509,8 @@ let string_of_option f = function
   | Some x -> "Some " ^ (f x)
 
 
+
+
 let print_bool x = print_string (if x then  "True" else "False")
 
 let print_option pr = function
@@ -638,11 +535,7 @@ let rec print_between between fn = function
   | [x] -> fn x
   | x::xs -> fn x; between(); print_between between fn xs
 
-let pr_xxxxxxxxxxxxxxxxx () = 
-  pr "-----------------------------------------------------------------------"
 
-let pr2_xxxxxxxxxxxxxxxxx () = 
-  pr2 "-----------------------------------------------------------------------"
 
 
 let adjust_pp_with_indent f = 
@@ -701,17 +594,17 @@ let format_to_string f =
 
 (* put your macro in macro.ml4, and you can test it interactivly as in lisp *)
 let macro_expand s = 
-  let c = open_out "ttttt.ml" in
+  let c = open_out "/tmp/ttttt.ml" in
   begin
     output_string c s; close_out c;
     command2 ("ocamlc -c -pp 'camlp4o pa_extend.cmo q_MLast.cmo -impl' " ^
              "-I +camlp4 -impl macro.ml4");
-    command2 "camlp4o ./macro.cmo pr_o.cmo ttttt.ml";
-    command2 "rm -f ttttt.ml";
+    command2 "camlp4o ./macro.cmo pr_o.cmo /tmp/ttttt.ml";
+    command2 "rm -f /tmp/ttttt.ml";
   end
 
 (*
-let t = macro_expand "{ x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x > 2 and y < 3}"
+let t = macro_expand "{ x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x>2 and y<3}"
 let x = { x + y | (x,y) <- [(1,1);(2,2);(3,3)] and x > 2 and y < 3}
 let t = macro_expand "{1 .. 10}"
 let x = {1 .. 10} +> List.map (fun i -> i)
@@ -728,14 +621,17 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (*****************************************************************************)
 
 (* I like the list@func notation, object reminescence *)
-(* let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a *)
-(* let o f g x = f (g x) *)
+
 let (+>) o f = f o
 let (+!>) refo f = refo := f !refo 
+(* alternatives: 
+ *  let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a
+ *  let o f g x = f (g x) 
+ *)
 
 let ($)     f g x = g (f x)
-(* dont work :( let ( ° ) f g x = f(g(x)) *)
 let compose f g x = f (g x)
+(* dont work :( let ( ° ) f g x = f(g(x)) *)
 
 (* trick to have something similar to the   1 `max` 4   haskell infix notation.
    by Keisuke Nakano on the caml mailing list.
@@ -756,11 +652,6 @@ let uncurry f (a,b) = f a b
 let id = fun x -> x
 
 let rec applyn n f o = if n = 0 then o else applyn (n-1) f (f o)
-
-(* now in prelude 
-let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
-  if i = 0 then () else (f(); do_n (i-1) f)
-*)
 
 
 class ['a] shared_variable_hook (x:'a) = 
@@ -808,6 +699,7 @@ let (run_hooks_action: 'a -> ('a -> unit) list ref -> unit) =
 
 type 'a mylazy = (unit -> 'a)
 
+(* a la emacs *)
 let save_excursion reference f = 
   let old = !reference in
   let res = f() in
@@ -847,9 +739,7 @@ exception ReturnExn
 open Dumper
 let internal_error s = failwith ("internal error: "^s)
 let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
-
 let myassert cond = if cond then () else failwith "assert error"
-
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
 
@@ -899,7 +789,7 @@ let (=:=) : bool   -> bool   -> bool = (=)
  *)
 let (=*=) = (=)
 
-(* If really want to forbid to use '='
+(* if really want to forbid to use '='
 let (=) = (=|=)
 *)
 
@@ -939,8 +829,10 @@ let is_digit = cbetween '0' '9'
 (* since 3.08, div by 0 raise Div_by_rezo, and not anymore a hardware trap :)*)
 let (/!) x y = if y = 0 then (log "common.ml: div by 0"; 0) else x / y
 
+(* now in prelude 
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
   if i = 0 then () else (f(); do_n (i-1) f)
+*)
 
 (* now in prelude
 let rec (foldn: ('a -> int -> 'a) -> 'a -> int -> 'a) = fun f acc i ->
@@ -1430,6 +1322,7 @@ let interpolate str =
     command2 ("printf \"%s\\n\" " ^ str ^ ">/tmp/caml");
     cat "/tmp/caml"
   end
+
 (* could do a print_string but printf dont like print_string *)
 let echo s = printf "%s" s; flush stdout; s 
 
@@ -1463,6 +1356,7 @@ let process_output_to_list = fun command ->
       e::process_otl_aux()
     with End_of_file -> begin ignore(Unix.close_process_in chan); [] end
   in process_otl_aux ()
+let cmd_to_list = process_output_to_list
 
 let read_file file = cat file +> unlines
 
@@ -1624,7 +1518,7 @@ let erase_temp_files () =
   end
 
 exception UnixExit of int 
-let exn_to_unixexit f = 
+let exn_to_real_unixexit f = 
   try f() 
   with UnixExit x -> exit x
 
@@ -1750,7 +1644,9 @@ let head_middle_tail xs =
 
 let _ = assert_equal (head_middle_tail [1;2;3]) (1, [2], 3)
 
-let (++) = (@)
+(* now in prelude 
+   let (++) = (@) 
+*)
 
 (* let (++) = (@), could do that, but if load many times the common, then pb *)
 (* let (++) l1 l2 = List.fold_right (fun x acc -> x::acc) l1 l2 *)
@@ -2086,9 +1982,6 @@ let pack_sorted same xs =
     in pack_s_aux ([List.hd xs],[]) (List.tl xs) +> List.rev
 let test = pack_sorted (=) [1;1;1;2;2;3;4]
 
-let rec uniq2 = function
-  | [] -> []
-  | e::l -> if List.mem e l then uniq2 l else e :: uniq2 l
 
 let rec keep_best f = 
   let rec partition e = function
@@ -2207,9 +2100,17 @@ open B_Array
 open Bigarray
 *)
 
+
+(* for the string_of auto generation of camlp4 
+val b_array_string_of_t : 'a -> 'b -> string
+val bigarray_string_of_int16_unsigned_elt : 'a -> string
+val bigarray_string_of_c_layout : 'a -> string
 let b_array_string_of_t f a = "<>"
 let bigarray_string_of_int16_unsigned_elt a = "<>"
 let bigarray_string_of_c_layout a = "<>"
+
+*)
+
 
 (*****************************************************************************)
 (* Set. Have a look too at set*.mli  *)
@@ -2420,7 +2321,8 @@ let intintmap_string_of_t f a = "<Not Yet>"
 (* Hash *)
 (*****************************************************************************)
 
-let hcreate () = Hashtbl.create 401 (* il parait que better  when choose a prime *)
+(* il parait que better  when choose a prime *)
+let hcreate () = Hashtbl.create 401 
 let hadd (k,v) h = Hashtbl.add h k v
 let hmem k h = Hashtbl.mem h k
 let hfind k h = Hashtbl.find h k
@@ -2498,7 +2400,7 @@ type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 (*****************************************************************************)
 (* todo: generalise to put in common (need 'edge (and 'c ?), 
  * and take in param a display func, cos caml sux, no overloading of show :( 
- * Simple impelemntation. Can do also matrix, or adjacent list, or pointer (ref)
+ * Simple impelemntation. Can do also matrix, or adjacent list, or pointer(ref)
  * todo: do some check (dont exist already, ...)
  *)
 
@@ -2509,7 +2411,8 @@ let (add_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) ->
 
 let (del_node: 'a -> 'a graph -> 'a graph) = fun node (nodes, arcs) -> 
   (nodes $-$ set [node], arcs) 
-(* could do more job:   let _ = assert (successors node (nodes, arcs) = empty) in
+(* could do more job:   
+  let _ = assert (successors node (nodes, arcs) = empty) in
    +> List.filter (fun (src, dst) -> dst != node))
 *)
 let (add_arc: ('a * 'a) -> 'a graph -> 'a graph) = fun arc (nodes, arcs) -> 
@@ -2541,26 +2444,31 @@ let empty_graph = ([], [])
 
 
 (*
-let (add_arcs_toward: int -> (int list) -> 'a graph -> 'a graph) = fun i xs -> function
+let (add_arcs_toward: int -> (int list) -> 'a graph -> 'a graph) = fun i xs -> 
+  function
     (nodes, arcs) -> (nodes, (List.map (fun j -> (j,i) ) xs)++arcs)
-let (del_arcs_toward: int -> (int list) -> 'a graph -> 'a graph) = fun i xs g ->
+let (del_arcs_toward: int -> (int list) -> 'a graph -> 'a graph)= fun i xs g ->
     List.fold_left (fun acc el -> del_arc (el, i) acc) g xs
-let (add_arcs_from: int -> (int list) -> 'a graph -> 'a graph) = fun i xs -> function
+let (add_arcs_from: int -> (int list) -> 'a graph -> 'a graph) = fun i xs -> 
+ function
     (nodes, arcs) -> (nodes, (List.map (fun j -> (i,j) ) xs)++arcs)
 
 
-let (del_node: (int * 'node) -> 'node graph -> 'node graph) = fun node -> function
-    (nodes, arcs) -> let newnodes = List.filter (fun a -> not (node = a)) nodes in
+let (del_node: (int * 'node) -> 'node graph -> 'node graph) = fun node -> 
+ function (nodes, arcs) -> 
+  let newnodes = List.filter (fun a -> not (node = a)) nodes in
     if newnodes = nodes then (raise Not_found) else (newnodes, arcs)
-let (replace_node: int -> 'node -> 'node graph -> 'node graph) = fun i n -> function
-    (nodes, arcs) -> let newnodes = List.filter (fun (j,_) -> not (i = j)) nodes in
+let (replace_node: int -> 'node -> 'node graph -> 'node graph) = fun i n -> 
+ function (nodes, arcs) -> 
+  let newnodes = List.filter (fun (j,_) -> not (i = j)) nodes in
     ((i,n)::newnodes, arcs)
 let (get_node: int -> 'node graph -> 'node) = fun i -> function
     (nodes, arcs) -> List.assoc i nodes
 
 let (get_free: 'a graph -> int) = function
     (nodes, arcs) -> (maximum (List.map fst nodes))+1
-(* require no cycle !! TODO if cycle check that we have already visited a node *)
+(* require no cycle !! 
+  TODO if cycle check that we have already visited a node *)
 let rec (succ_all: int -> 'a graph -> (int list)) = fun i -> function
     (nodes, arcs) as g -> 
       let direct = succ i g in
@@ -2573,23 +2481,28 @@ let rec (pred_all: int -> 'a graph -> (int list)) = fun i -> function
 let rec (equal: 'a graph -> 'a graph -> bool) = fun g1 g2 ->
   let ((nodes1, arcs1),(nodes2, arcs2)) = (g1,g2) in
   try 
-    let conv = assoc_map nodes1 nodes2 in (* do 2 things, check same length and to assoc *)
-    List.for_all (fun (i1,i2) -> List.mem (List.assoc i1 conv, List.assoc i2 conv) arcs2) arcs1 
+   (* do 2 things, check same length and to assoc *)
+    let conv = assoc_map nodes1 nodes2 in 
+    List.for_all (fun (i1,i2) -> 
+       List.mem (List.assoc i1 conv, List.assoc i2 conv) arcs2)
+     arcs1 
       && (List.length arcs1 = List.length arcs2)
-    (* could think that only forall is needed, but need check same lenth too !!*)
+    (* could think that only forall is needed, but need check same lenth too*)
   with _ -> false
 
 let (display: 'a graph -> ('a -> unit) -> unit) = fun g display_func -> 
   let rec aux depth i = 
     print_n depth " ";
-    print_int i; print_string "->"; display_func (get_node i g); print_string "\n";
+    print_int i; print_string "->"; display_func (get_node i g); 
+    print_string "\n";
     List.iter (aux (depth+2)) (succ i g)
   in aux 0 1
 
-let (display_dot: 'a graph -> ('a -> string) -> unit) = fun (nodes, arcs) func ->
+let (display_dot: 'a graph -> ('a -> string) -> unit)= fun (nodes,arcs) func ->
   let file = open_out "test.dot" in
   output_string file "digraph misc {\n" ;
-  List.iter (fun (n, node) -> output_int file n; output_string file " [label=\"";
+  List.iter (fun (n, node) -> 
+    output_int file n; output_string file " [label=\"";
     output_string file (func node); output_string file " \"];\n"; ) nodes;
   List.iter (fun (i1,i2) ->  output_int file i1 ; output_string file " -> " ; 
     output_int file i2 ; output_string file " ;\n"; ) arcs;
@@ -2608,17 +2521,22 @@ let (display_dot2: 'a graph -> 'a graph -> ('a -> string) -> unit) =
   output_string file "digraph misc {\n" ;
   output_string file "rotate = 90;\n";
   List.iter (fun (n, node) ->
-    output_string file "100"; output_int file n; output_string file " [label=\"";
+    output_string file "100"; output_int file n; 
+    output_string file " [label=\"";
     output_string file (func node); output_string file " \"];\n"; ) nodes1;
   List.iter (fun (n, node) ->
-    output_string file "200"; output_int file n; output_string file " [label=\"";
+    output_string file "200"; output_int file n; 
+    output_string file " [label=\"";
     output_string file (func node); output_string file " \"];\n"; ) nodes2;
   List.iter (fun (i1,i2) -> 
     output_string file "100"; output_int file i1 ; output_string file " -> " ; 
-    output_string file "100"; output_int file i2 ; output_string file " ;\n"; ) arcs1;
+    output_string file "100"; output_int file i2 ; output_string file " ;\n"; 
+    ) 
+   arcs1;
   List.iter (fun (i1,i2) -> 
     output_string file "200"; output_int file i1 ; output_string file " -> " ;
-    output_string file "200"; output_int file i2 ; output_string file " ;\n"; ) arcs2;
+    output_string file "200"; output_int file i2 ; output_string file " ;\n"; )
+   arcs2;
 (*  output_string file "500 -> 1001; 500 -> 2001}\n" ; *)
   output_string file "}\n" ;
   close_out file;
@@ -2735,13 +2653,15 @@ let _ =
   diff 
     ["0";"a";"b";"c";"d";    "f";"g";"h";"j";"q";            "z"]
     [    "a";"b";"c";"d";"e";"f";"g";"i";"j";"k";"r";"x";"y";"z"]  
-   (fun x y -> pr "match") (fun x y -> pr "a_not_in_b") (fun x y -> pr "b_not_in_a") 
+   (fun x y -> pr "match") 
+   (fun x y -> pr "a_not_in_b") 
+   (fun x y -> pr "b_not_in_a") 
 *)
 
 let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) = 
- fun f (xs,ys) -> 
-    write_file "/tmp/diff1" xs;
-    write_file "/tmp/diff2" ys;
+ fun f (xstr,ystr) -> 
+    write_file "/tmp/diff1" xstr;
+    write_file "/tmp/diff2" ystr;
     command2 
      ("diff --side-by-side --left-column -W 1 " ^ 
       "/tmp/diff1 /tmp/diff2 > /tmp/diffresult");
@@ -2759,7 +2679,7 @@ let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) =
 
 
 (*****************************************************************************)
-(* Parsers (aop-colcombet)                                                 *)
+(* Parsers (aop-colcombet) *)
 (*****************************************************************************)
 
 let parserCommon lexbuf parserer lexer =
@@ -2868,7 +2788,8 @@ let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
        let s = (input_line chan) in
        let _ = incr line in
 
-       for i = 0 to (slength s - 1) + 1 do (*  +1 cos input_line dont return the trailing \n *)
+       (* '... +1 do'  cos input_line dont return the trailing \n *)
+       for i = 0 to (slength s - 1) + 1 do 
          arr.(!charpos + i) <- (!line, i);
        done;
        charpos := !charpos + slength s + 1;
@@ -2954,7 +2875,7 @@ let error_message_short = fun filename (lexeme, lexstart) ->
  *)
 
 type score_result = Ok | Pb of string 
-type score = (string (* filename *), score_result) Hashtbl.t
+type score = (string (* usually a filename *), score_result) Hashtbl.t
 
 let empty_score () = (Hashtbl.create 101 : score)
 
@@ -3017,6 +2938,17 @@ let regression_testing newscore best_score_file =
 (* Misc/test *)
 (*****************************************************************************)
 
+(* only relevant in bytecode, in native the stacklimit is the os stacklimit
+ *  (adjustable by ulimit -s) 
+ *)
+let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
+
+let _ = Random.self_init ()
+
+
+let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
+
+
 let size_mo_ko i = 
   let ko = (i / 1024) mod 1024 in
   let mo = (i / 1024) / 1024 in
@@ -3044,7 +2976,6 @@ let sec_to_days sec =
   (if mins > 0  then plural mins "min"   ^ " " else "") ^
   ""
 
-let _ = Random.self_init ()
 
 (*
 let random_insert i l = 

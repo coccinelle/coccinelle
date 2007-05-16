@@ -392,8 +392,7 @@ let do_with_types f xs =
 (* catch all the decl to grow the environment *)
 
 let rec (annotate_program2 : 
- environment -> programElement list -> 
- (programElement * environment Common.pair) list
+ environment -> toplevel list -> (toplevel * environment Common.pair) list
  ) = fun env prog ->
 
   (* globals (re)initialialisation *) 

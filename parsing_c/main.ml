@@ -2,11 +2,11 @@ open Fullcommon
 
 open Ast_c
 
-(* 
-This module handle the IO, the special name of info files, ... and the pure algorithmic stuff is in ?
-*)
+(* This module handle the IO, the special name of info files. 
+ *  the pure algorithmic stuff is in ?
+ *)
 
-(******************************************************************************)
+(*****************************************************************************)
 let main () = 
   begin
     let args = ref [] in

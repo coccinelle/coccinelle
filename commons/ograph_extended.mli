@@ -1,20 +1,36 @@
+open Common
+
 type nodei = int
 
-class ['a, 'b] ograph_extended :
-  object ('c)
-    method add_node : 'a -> 'c * nodei
-    method add_nodei : nodei -> 'a -> 'c * nodei
-    method replace_node : nodei * 'a -> 'c
-    method del_node : nodei -> 'c
+(* graph structure: 
+ *  - node: index -> nodevalue 
+ *  - arc: (index * index) * edgevalue
+ * 
+ * How ? matrix ? but no growing array :(
+ * 
+ * When need index ? Must have an index when can't just use nodevalue
+ * as a key, cos sometimes may have 2 times the same key, but it must
+ * be 2 different nodes. For instance in program f(); f(); we want 2
+ * nodes, one per f(); hence the index. If each node is different, then
+ * no problem, can omit index. 
+ *)
 
-    method add_arc : (nodei * nodei) * 'b -> 'c
-    method del_arc : (nodei * nodei) * 'b -> 'c
+class ['node, 'edge] ograph_extended :
+object ('o)
+  method add_node : 'node -> 'o * nodei
+  method add_nodei : nodei -> 'node -> 'o * nodei
+  method replace_node : nodei * 'node -> 'o
+  method del_node : nodei -> 'o
 
-    method nodes : (nodei, 'a) Oassocb.oassocb
+  method add_arc : (nodei * nodei) * 'edge -> 'o
+  method del_arc : (nodei * nodei) * 'edge -> 'o
 
-    method successors : nodei -> (nodei * 'b) Osetb.osetb
-    method predecessors : nodei -> (nodei * 'b) Osetb.osetb
-    method allsuccessors : (nodei, (nodei * 'b) Osetb.osetb) Oassocb.oassocb
-  end
+  method nodes : (nodei, 'node) Oassocb.oassocb
 
-val print_ograph_extended : string -> ('a * string, 'b) ograph_extended -> unit
+  method successors : nodei -> (nodei * 'edge) Osetb.osetb
+  method predecessors : nodei -> (nodei * 'edge) Osetb.osetb
+  method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
+end
+
+val print_ograph_extended : 
+  ('node * string, 'edge) ograph_extended -> filename (* output file *) -> unit

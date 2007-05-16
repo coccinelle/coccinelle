@@ -130,7 +130,7 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let print_ograph_extended filename g =
+let print_ograph_extended g filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in

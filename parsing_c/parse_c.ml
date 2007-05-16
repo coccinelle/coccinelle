@@ -481,8 +481,8 @@ let tokens_define_func (info, define, ident, params, bodys) =
 
 type info_item =  string * Parser_c.token list
 
-type program2 = programElement2 list
-     and programElement2 = Ast_c.programElement * info_item
+type program2 = toplevel2 list
+     and toplevel2 = Ast_c.toplevel * info_item
 
 
 (* note: as now go in 2 pass, there is first all the error message of

@@ -16,16 +16,23 @@ let save_output_file = ref false (* if true, stores output in file.cocci_res *)
 
 let dir = ref false
 
+(* test mode *)
 let test_mode = ref false
 let testall_mode = ref false
 
+(* action mode *)
+let action = ref "" 
+
+(* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
+
 
 let save_tmp_files = ref false
 
-let action = ref "" 
-
 let timeout = ref (None : int option)
+
+(* if set then will not do certain finalize so faster to go back in replay *)
+let debugger = ref false
 
 (*****************************************************************************)
 (* Profiles *)
@@ -68,7 +75,11 @@ let short_usage_func = ref (fun () -> ())
 let long_usage_func  = ref (fun () -> ())
 
 
-
+(* The short_options are user-oriented. The other options are for
+ * the developers of coccinelle or advanced-users that know
+ * quite well the underlying semantics of coccinelle.
+ *)
+   
 (* will be printed when use only ./spatch. For the rest you have to
  * use -longhelp to see them. 
  *)
@@ -91,7 +102,6 @@ let short_options = [
     pr2 "version: $Date$";
     raise (Common.UnixExit 0)
     ), " ";
-
   "-longhelp", Arg.Unit (fun () -> 
     !long_usage_func();
     raise (Common.UnixExit 0)
@@ -106,8 +116,8 @@ let short_options = [
 ]
 
 (* the format is a list of triples:
-    (title of section * (optional) explanation of sections * option list
-*)
+ *  (title of section * (optional) explanation of sections * option list
+ *)
 let other_options = [
   "output file options",
   "",
@@ -131,21 +141,21 @@ let other_options = [
   "most useful show options", 
   "",
   [
+    "-no_show_diff"           , Arg.Clear Flag.show_diff, " ";
     "-show_flow"              , Arg.Set Flag.show_flow,        " ";
-    "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
     "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
     (* works in conjunction with -show_ctl *)
     "-ctl_inline_let",        Arg.Set Flag.inline_let_ctl, " ";
     "-ctl_show_mcodekind",    Arg.Set Flag.show_mcodekind_in_ctl, " ";
+    "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
     "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
-    "-no_show_diff"           , Arg.Clear Flag.show_diff, " ";
     "-no_show_misc",   Arg.Unit (fun () -> 
       Flag.show_misc := false;
       Flag_engine.show_misc := false;
     ), " ";
   ];
 
-  "verbose options",  
+  "verbose subsystems options",  
   "",
   [
     "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
@@ -161,7 +171,7 @@ let other_options = [
     "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
     "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
     "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
-    "-show_SP_julia"       , Arg.Set Flag_parsing_cocci.show_SP,  " ";
+    "-show_SP_julia"       ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
 
   "debug C parsing",
@@ -194,7 +204,7 @@ let other_options = [
     "-bench", Arg.Int (function x -> Flag_ctl.bench := x), 
     "   <level> for profiling the CTL engine";
     "-timeout",              Arg.Int (fun x -> timeout := Some x), 
-    "   timeout, in seconds";
+    "   <sec> timeout in seconds";
   ];
 
 
@@ -207,20 +217,19 @@ let other_options = [
 
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-    "-no_ref",            Arg.Clear Flag_engine.use_ref,    " ";
     "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
-    "-ifdef", Arg.Set Flag_parsing_c.ifdef_to_if, 
+    "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
-    "-add_typedef_root", Arg.Set Flag_parsing_c.add_typedef_root, " ";
-    "-nong", Arg.Clear Flag_parsing_c.next_gen_parsing,
-    "   not next gen parsing";
+    "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";
+    "-nong",               Arg.Clear Flag_parsing_c.next_gen_parsing,
+    "   don't use the next-gen parsing";
   ];
 
   "misc options",
   "",
   [
-    "-save_tmp_files",    Arg.Set save_tmp_files,   " ";
-    "-debugger",         Arg.Set  Common.debugger , 
+    "-save_tmp_files",   Arg.Set save_tmp_files,   " ";
+    "-debugger",         Arg.Set debugger , 
     "   option to set if launch spatch in ocamldebug";
   ];
 
@@ -229,18 +238,18 @@ let other_options = [
   "test mode and test options (works with tests/)",
   "The test options don't work with the -sp_file and so on.",
   [
-    "-test", Arg.Set test_mode, 
+    "-test",    Arg.Set test_mode, 
     "   <file> launch spatch on tests/file.[c,cocci]";
     "-testall", Arg.Set testall_mode, 
     "   launch spatch on all files in tests/ having a .res";
     "-compare_with_expected", Arg.Set compare_with_expected, 
-    "   use also tests/file.res"; 
+    "   use also file.res"; 
   ];
 
   "action mode",
   ("The action options don't work with the -sp_file and so on." ^ "\n" ^
-  "It's for the other (internal) uses of the spatch program." ^ "\n" ^
-  "possibles actions are:
+   "It's for the other (internal) uses of the spatch program." ^ "\n" ^
+   "possibles actions are:
      tokens <file> 
      parse_c <file> 
      parse_cocci <file> 
@@ -248,14 +257,12 @@ let other_options = [
      parse_unparse <file>
      typeur <file> 
      compare_c <file1> <file2>" ^ "\n" ^
-  "so to test the C parser, do -action parse_c foo.c"
+   "so to test the C parser, do -action parse_c foo.c"
   ),
   [ 
     "-action", Arg.Set_string action , 
     "   <action> [args]  (default_value = " ^ !action ^")"
   ];
-
-
 
 ]
 
@@ -264,18 +271,19 @@ let all_options =
   short_options ++ List.concat (List.map Common.thd3 other_options)
  
 
-(* I don't want the -help and --help to be appended *)
+(* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
   
 
 let short_usage () =
+ begin
   Arg.usage (Arg.align short_options) usage_msg; 
   pr2 "";
   pr2 "Example of use:";
   pr2 "  ./spatch -sp_file foo.cocci foo.c -o /tmp/newfoo.c";
   pr2 "";
-  raise (UnixExit (-1))
+ end
 
 let long_usage () = 
  begin
@@ -287,10 +295,7 @@ let long_usage () =
       pr2_xxxxxxxxxxxxxxxxx();
       if explanations <> "" 
       then begin pr2 explanations; pr2 "" end;
-      let xs = arg_align2 xs  in 
-      xs +> List.iter (fun (key, action, s) -> 
-        pr2 ("  " ^ key ^ s);
-      );
+      arg_align2 xs +> List.iter (fun (key,action,s) -> pr2 ("  " ^ key ^ s));
       pr2 "";
     );
  end
@@ -321,8 +326,7 @@ let actions_dispatch action xs =
 
       let fullxs = 
         if !dir
-        then Common.process_output_to_list 
-          ("find " ^(join " " (x::xs)) ^" -name \"*.c\"") 
+        then Common.cmd_to_list ("find " ^(join " " (x::xs)) ^" -name \"*.c\"")
         else x::xs 
       in
       
@@ -335,8 +339,7 @@ let actions_dispatch action xs =
 
         pr2 ("PARSING: " ^ file);
 
-        let (_x, stat) = Parse_c.parse_print_error_heuristic file 
-        in
+        let (_x, stat) = Parse_c.parse_print_error_heuristic file in
 
         Common.push2 stat stat_list;
         let s = 
@@ -346,8 +349,8 @@ let actions_dispatch action xs =
         if stat.Parse_c.bad = 0 && not stat.Parse_c.have_timeout
         then Hashtbl.add newscore file (Common.Ok)
         else Hashtbl.add newscore file (Common.Pb s)
-
       );
+
       if not (null !stat_list) 
       then Parse_c.print_parsing_stat_list !stat_list;
 
@@ -370,7 +373,7 @@ let actions_dispatch action xs =
 
       let iso_file = if !iso_file = "" then None else Some !iso_file in
 
-      let (xs,_,_) = Cocci.sp_from_file file iso_file  in
+      let (xs,_,_) = Parse_cocci.process file iso_file false in
       xs +> List.iter Pretty_print_cocci.unparse
 
 
@@ -388,6 +391,7 @@ let actions_dispatch action xs =
       then pr2 "warning: seems not a .c file";
 
       let (program, _stat) = Parse_c.parse_print_error_heuristic file in
+
       program +> List.iter (fun (e,_) -> 
         match e with
         | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
@@ -405,8 +409,8 @@ let actions_dispatch action xs =
                   let flow = Ast_to_flow.ast_to_control_flow def in
                   Ast_to_flow.deadcode_detection flow;
                   let fixed = Ctlcocci_integration.fix_flow_ctl flow in
-                  Ograph_extended.print_ograph_extended 
-                    ("/tmp/" ^ funcs ^ ".dot") fixed;
+                  Ograph_extended.print_ograph_extended fixed
+                    ("/tmp/" ^ funcs ^ ".dot")
                   
                with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
               )
@@ -429,8 +433,9 @@ let actions_dispatch action xs =
       if not (file =~ ".*\\.c") 
       then pr2 "warning: seems not a .c file";
 
-      let (program2, _stat) =  Parse_c.parse_print_error_heuristic file
-      in
+      Flag_parsing_c.pretty_print_type_info := true;
+
+      let (program2, _stat) =  Parse_c.parse_print_error_heuristic file in
       let program2 =
         program2 
         +> Common.unzip 
@@ -444,7 +449,6 @@ let actions_dispatch action xs =
       let program2_with_ppmethod = 
         program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
       in
-      Flag_parsing_c.pretty_print_type_info := true;
       Unparse_c.pp_program program2_with_ppmethod !default_output_file;
       Common.command2 ("cat " ^ !default_output_file);
 
@@ -468,18 +472,14 @@ let actions_dispatch action xs =
       +> pr2
 
 
-
   | "regression_info_failed", [] -> 
       let newscore  = Common.empty_score () in
       let oks = 
-        (Common.process_output_to_list ("find -name \"*.ok\"") 
-          ++
-         Common.process_output_to_list ("find -name \"*.spatch_ok\"")
-        )
+        Common.cmd_to_list ("find -name \"*.ok\"") 
+        ++
+        Common.cmd_to_list ("find -name \"*.spatch_ok\"")
       in
-      let failed = 
-        Common.process_output_to_list ("find -name \"*.failed\"") 
-      in
+      let failed = Common.cmd_to_list ("find -name \"*.failed\"") in
 
       if null (oks ++ failed) 
       then failwith "no ok/failed file, you certainly did a make clean"
@@ -569,8 +569,7 @@ let main () =
 
         let fullxs = 
           if !dir 
-          then Common.process_output_to_list 
-            ("find " ^ (join " " (x::xs)) ^ " -name \"*.c\"")
+          then Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
           else x::xs 
         in
 
@@ -629,7 +628,7 @@ let main () =
 (*****************************************************************************)
 let _ =
   if not (!Sys.interactive) then 
-    Common.exn_to_unixexit (fun () -> 
+    Common.exn_to_real_unixexit (fun () -> 
 
       Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
         pr2 "C-c intercepted, will do some cleaning before exiting";
@@ -641,12 +640,13 @@ let _ =
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
       then main ()
       else 
+
         Common.finalize          (fun ()-> 
          Common.pp_do_in_zero_box (fun () -> 
            main ();
            Ctlcocci_integration.print_bench();
            Common.profile_diagnostic ();
          ))
-          (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
       

@@ -19,9 +19,6 @@ module TAC = Type_annoter_c
 (* C related *)
 (* --------------------------------------------------------------------- *)
 let cprogram_from_file file = 
-  if not (Common.lfile_exists file)
-  then failwith (Printf.sprintf "can't find file %s" file);
-
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 
@@ -102,7 +99,7 @@ let flows astc =
 let one_flow flows = List.hd flows
 
 let print_flow flow = 
-  Ograph_extended.print_ograph_extended "/tmp/test.dot" flow
+  Ograph_extended.print_ograph_extended flow "/tmp/test.dot" 
 
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
@@ -126,6 +123,8 @@ let one_ctl ctls = List.hd (List.hd ctls)
 (* Some  debugging functions *)
 (*****************************************************************************)
 
+(* the inputs *)
+
 let show_or_not_cfile2 cfile =
   if !Flag.show_c then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
@@ -148,6 +147,20 @@ let show_or_not_cocci2 coccifile isofile =
 let show_or_not_cocci a b = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_cocci2 a b)
 
+
+(* the output *)
+
+let show_or_not_diff2 cfile outfile = 
+  if !Flag.show_diff then begin
+    (* may need --strip-trailing-cr under windows *)
+    pr2 "diff = ";
+    Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
+  end
+let show_or_not_diff a b  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
+
+
+(* the derived input *)
 
 let show_or_not_ctl_tex2 astcocci ctls =
   if !Flag.show_ctl_tex then begin
@@ -190,6 +203,8 @@ let show_or_not_ctl_text a b c =
 
 
 
+(* running information *)
+
 let show_or_not_celem2 prelude celem = 
   if !Flag.show_misc then 
   (match celem with 
@@ -202,7 +217,6 @@ let show_or_not_celem2 prelude celem =
   )
 let show_or_not_celem a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
-
 
 
 let show_or_not_trans_info2 trans_info = 
@@ -244,17 +258,6 @@ let show_or_not_binding2 s binding =
   end
 let show_or_not_binding a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_binding2 a b)
-
-
-
-let show_or_not_diff2 cfile outfile = 
-  if !Flag.show_diff then begin
-    (* may need --strip-trailing-cr under windows *)
-    pr2 "diff = ";
-    Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
-  end
-let show_or_not_diff a b  = 
-  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
 
 
 
@@ -362,15 +365,7 @@ let ast_to_flow_with_error_messages2 def =
   let flowopt = 
     try Some (Ast_to_flow.ast_to_control_flow def)
     with Ast_to_flow.Error x -> 
-      (* pr2 "PBBBBBBBBBBBBBBBBBB"; *)
       Ast_to_flow.report_error x;
-      (*
-      pr2
-        ("At least 1 DEADCODE detected (there may be more)," ^
-            "but I can't continue :(" ^ 
-            "Maybe because of cpp #ifdef side effects."
-        );
-      *)
       None
   in
   flowopt +> do_option (fun flow -> 
@@ -380,42 +375,48 @@ let ast_to_flow_with_error_messages2 def =
      *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-      (* pr2 "PBBBBBBBBBBBBBBBBBB"; *)
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-      (*
-      pr2 ("At least 1 DEADCODE detected (there may be more)," ^
-              "but I continue.");
-      *)
-      (* not a failwith this time *)
-      (* pr2 "Maybe because of cpp #ifdef side effects."; *)
   );
   flowopt
 let ast_to_flow_with_error_messages a = 
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
 
-(* obsolete with -use_ref *)
-let flow_to_ast2 flow = 
-  let nodes = flow#nodes#tolist in
-  match nodes with
-  | [_, node] -> 
-      (match Control_flow_c.unwrap node with
-      | Control_flow_c.Decl decl -> Ast_c.Declaration decl
-      | Control_flow_c.Include x -> Ast_c.Include x
-      | Control_flow_c.Define (x, body) -> Ast_c.Define (x, body)
-      | Control_flow_c.ExprStatement (_st, (e, ii)) -> 
-          let (s,args,ii) = stmt_to_specialdeclmacro (e, ii) in
-          Ast_c.SpecialMacro (s, args, ii)
 
-      | _ -> raise Impossible
-      )
-  | _ -> 
-      Ast_c.Definition (Flow_to_ast.control_flow_to_ast flow)
-let flow_to_ast a = 
-  Common.profile_code "unflow" (fun () -> flow_to_ast2 a)
+(*****************************************************************************)
+(* All the information needed around the C elements and Cocci rule *)
+(*****************************************************************************)
 
+type toplevel_c_info = { 
+  ast_c: Ast_c.toplevel;
+  tokens_c: Parser_c.token list;
+  fullstring: string;
 
+  fixed_flow: Control_flow_c.cflow option;
+  contain_loop: bool;
+  
+  envbefore: TAC.environment;
+  envafter:  TAC.environment;
 
+  was_modified: bool;
+
+  (* id: int *)
+}
+
+type toplevel_cocci_info = {
+  ctl: Lib_engine.ctlcocci * (CCI.pred list * CCI.pred list);
+  ast_rule: Ast_cocci.rule;
+
+  rulename: string;
+  dependencies: string list;
+  used_after: Ast_cocci.meta_name list;
+
+  (* id: int *)
+}
+
+let prepare_cocci () = raise Todo
+
+let prepare_c () = raise Todo
                   
 (*****************************************************************************)
 (* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
@@ -428,7 +429,7 @@ type celem_info = {
 }
 
 type celem_with_info = 
-  Parse_c.programElement2 * celem_info option * (TAC.environment Common.pair)
+  Parse_c.toplevel2 * celem_info option * (TAC.environment Common.pair)
 
 
 let build_maybe_info e = 
@@ -695,18 +696,11 @@ and process_a_ctl_a_env_a_celem2 =
         if (null trans_info)
         then Some (celem, false, newbindings)
         else 
-	  
-              (* I do the transformation on flow, not fixed_flow, 
-                 because the flow_to_ast need my extra information. *)
-          let flow' = (* can do via side effect now *)
-                Transformation3.transform trans_info info.flow
-          in
-          let celem' = 
-            if !Flag_engine.use_ref
-            then celem (* done via side effect *)
-            else flow_to_ast flow' 
-          in
-          Some (celem', true, newbindings)
+	  begin
+            ignore(Transformation3.transform trans_info info.flow);
+            let celem' = celem (* done via side effect *) in
+            Some (celem', true, newbindings)
+          end
       end
 	  )
 and process_a_ctl_a_env_a_celem  a b c = 
@@ -718,7 +712,6 @@ and process_a_ctl_a_env_a_celem  a b c =
 
 
 (* --------------------------------------------------------------------- *)
-
 (* Returns nothing. The output is in the file outfile *)
 let full_engine2 cfile (coccifile, isofile) outfile = 
 

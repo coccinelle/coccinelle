@@ -1,16 +1,9 @@
 open Common open Commonop 
 
-let default_output_file_testall = "/tmp/output_testall.c"
-
-let best_score_file = "/tmp/score_cocci_best.marshalled"
-
-let timeout_value = 30
-
-
 (*****************************************************************************)
 (* There can have multiple .c for the same cocci file. The convention
- * is to have one base.cocci and a base.c and optional multiple
- * base_vernn.c and base_vernn.res 
+ * is to have one base.cocci and a base.c and some optional
+ * base_vernn.[c,res].
  *)
 let testone x compare_with_expected iso_file outfile = 
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
@@ -26,12 +19,19 @@ let testone x compare_with_expected iso_file outfile =
 
     if compare_with_expected 
     then 
-      Compare_c.compare_default outfile expected_res +>
-        Compare_c.compare_result_to_string +> pr2
+      Compare_c.compare_default outfile expected_res 
+      +> Compare_c.compare_result_to_string 
+      +> pr2
   end
           
 
 (*****************************************************************************)
+let default_output_file_testall = "/tmp/output_testall.c"
+let best_score_file = "/tmp/score_cocci_best.marshalled"
+
+let timeout_value = 30
+
+
 let testall iso_file =
 
   let newscore  = empty_score () in
@@ -64,10 +64,8 @@ let testall iso_file =
           in
 
 	  pr2 res;
-	  Ctlcocci_integration.print_bench();
-
           (* I don't use Compare_c.compare_result_to_string because
-           *  I want to indent a little more the message 
+           * I want to indent a little more the messages.
            *)
           (match correct with
           | Compare_c.Correct -> Hashtbl.add newscore res Common.Ok;
@@ -119,11 +117,9 @@ let testall iso_file =
     pr2 "--------------------------------";
     pr2 "total score";
     pr2 "--------------------------------";
-    let total = 
-      Common.hash_to_list newscore +> List.length in
-    let good  = 
-      Common.hash_to_list newscore +> List.filter (fun (s, v) -> v = Ok) +> 
-        List.length 
+    let total = Common.hash_to_list newscore +> List.length in
+    let good  = Common.hash_to_list newscore +> List.filter 
+      (fun (s, v) -> v = Ok) +> List.length 
     in
     
     pr2 (sprintf "good = %d/%d" good total);

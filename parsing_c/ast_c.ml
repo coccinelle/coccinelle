@@ -331,6 +331,7 @@ and declaration =
             | DesignatorIndex of expression
             | DesignatorRange of expression * expression
         
+(* ------------------------------------------------------------------------- *)
 (* Normally we should define another type functionType2 because there 
  * are more restrictions on what can define a function than a pointer 
  * function. For instance a function declaration can omit the name of the
@@ -341,6 +342,7 @@ and declaration =
 and definition = (string * functionType * storage * compound) 
                  wrap (* s ( ) { } fakestart sto *)
 
+(* ------------------------------------------------------------------------- *)
 (* cppext *) 
 and define =
    | DefineVar of define_val
@@ -355,21 +357,22 @@ and define =
 
 
 (* ------------------------------------------------------------------------- *)
-and program = programElement list
-   and programElement = 
-     | Declaration of declaration
-     | Definition of definition
+and toplevel =
+  | Declaration of declaration
+  | Definition of definition
          
      (* cppext: *)
-     | Include of string wrap           (* #include s *)
-     | Define of string wrap * define   (* #define s *)
-     (* cppext: *)
-     | SpecialMacro of string * argument wrap2 list * il 
+  | Include of string wrap           (* #include s *)
+  | Define of string wrap * define   (* #define s *)
+      (* cppext: *)
+  | SpecialMacro of string * argument wrap2 list * il 
          
-     | EmptyDef of il      (* gccext: allow redundant ';' *)
-     | NotParsedCorrectly of il
-     | FinalDef of info (* EOF *)
+  | EmptyDef of il      (* gccext: allow redundant ';' *)
+  | NotParsedCorrectly of il
+  | FinalDef of info (* EOF *)
 
+(* ------------------------------------------------------------------------- *)
+and program = toplevel list
 
 
 (*****************************************************************************)

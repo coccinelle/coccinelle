@@ -10,7 +10,7 @@ type visitor_c = {
   kinfo      : (info        -> unit)  * visitor_c -> info        -> unit;
   knode      :      
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
-  kprogram: (programElement -> unit) * visitor_c -> programElement -> unit;
+  kprogram: (toplevel -> unit) * visitor_c -> toplevel -> unit;
 }
 
 val default_visitor_c : visitor_c
@@ -23,7 +23,7 @@ val vk_ini       : visitor_c -> initialiser -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
 val vk_info      : visitor_c -> info -> unit
-val vk_program :   visitor_c -> programElement -> unit
+val vk_program :   visitor_c -> toplevel -> unit
 
 val vk_argument : visitor_c -> argument -> unit
 
@@ -47,7 +47,7 @@ type visitor_c_s = {
   kini_s       : initialiser    inout * visitor_c_s -> initialiser    inout;
   kdecl_s      : declaration    inout * visitor_c_s -> declaration    inout;
   kdef_s       : definition     inout * visitor_c_s -> definition     inout;
-  kprogram_s   : programElement inout * visitor_c_s -> programElement inout;
+  kprogram_s   : toplevel inout * visitor_c_s -> toplevel inout;
   knode_s      : 
     Control_flow_c.node inout * visitor_c_s -> Control_flow_c.node    inout;
   kinfo_s      : info           inout * visitor_c_s -> info           inout;
@@ -62,7 +62,7 @@ val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
 val vk_ini_s : visitor_c_s -> initialiser -> initialiser
 val vk_def_s : visitor_c_s -> definition -> definition
-val vk_program_s : visitor_c_s -> programElement -> programElement
+val vk_program_s : visitor_c_s -> toplevel -> toplevel
 val vk_info_s : visitor_c_s -> info -> info
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
 

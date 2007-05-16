@@ -8,7 +8,9 @@ type environment = namedef list list (* cos have nested scope, so nested list*)
 
 val initial_env : environment
 
-(* Fill in the type information that was put to None during parsing *)
+(* In fact do via side effects. Fill in the type information that was put
+ * to None during parsing 
+ *)
 val annotate_program : 
-  environment -> Ast_c.programElement list -> 
-  (Ast_c.programElement * environment Common.pair) list
+  environment -> Ast_c.toplevel list -> 
+  (Ast_c.toplevel * environment Common.pair) list
