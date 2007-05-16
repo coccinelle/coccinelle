@@ -79,7 +79,7 @@ and get_first_element a = function
     Past.Term(term) as s -> [s]
   | Past.Or(seq1,seq2) ->
       Common.union_set (get_first a seq1) (get_first a seq2)
-  | Past.DInfo(dots,seq_bef,_) -> a
+  | Past.DInfo(dots,_,_) -> a
   | Past.EExists(var,seq) -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)

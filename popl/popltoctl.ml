@@ -83,8 +83,7 @@ let predmaker guard term =
 (* --------------------------------------------------------------------- *)
 
 let rec ctl_seq unchecked a = function
-    Past.Seq(elem,Past.Empty) -> ctl_element unchecked a elem
-  | Past.Seq(elem,seq) ->
+    Past.Seq(elem,seq) ->
       ctl_element unchecked (ctl_seq unchecked a seq) elem
   | Past.Empty -> a
   | Past.SExists(var,seq) -> ctl_exists var (ctl_seq unchecked a seq)
