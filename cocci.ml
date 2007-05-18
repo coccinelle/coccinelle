@@ -177,17 +177,15 @@ let show_or_not_ctl_tex a b  =
 let show_or_not_ctl_text2 ctl ast rulenb =
   if !Flag.show_ctl_text then begin
 
-    ast +> do_option (fun ast -> 
-      Common.pr_xxxxxxxxxxxxxxxxx ();
-      pr ("rule " ^ i_to_s rulenb ^ " = ");
-      Common.pr_xxxxxxxxxxxxxxxxx ();
+    Common.pr_xxxxxxxxxxxxxxxxx ();
+    pr ("rule " ^ i_to_s rulenb ^ " = ");
+    Common.pr_xxxxxxxxxxxxxxxxx ();
       adjust_pp_with_indent (fun () -> 
         Format.force_newline();
         Pretty_print_cocci.print_plus_flag := true;
         Pretty_print_cocci.print_minus_flag := true;
         Pretty_print_cocci.unparse ast;
       );
-    );
 
     pr "CTL = ";
     let (ctl,_) = ctl in
@@ -289,6 +287,8 @@ let worth_trying cfile tokens =
   else true
 
 
+let extract_local_includes () = raise Todo
+
 
 let contain_loop def = 
   let res = ref false in
@@ -384,21 +384,21 @@ let ast_to_flow_with_error_messages a =
 
 
 (*****************************************************************************)
-(* All the information needed around the C elements and Cocci rule *)
+(* All the information needed around the C elements and Cocci rules *)
 (*****************************************************************************)
 
 type toplevel_c_info = { 
-  ast_c: Ast_c.toplevel;
+  ast_c: Ast_c.toplevel; (* contain refs so can be modified *)
   tokens_c: Parser_c.token list;
   fullstring: string;
 
-  fixed_flow: Control_flow_c.cflow option;
+  flow: Control_flow_c.cflow option; (* it's the "fixed" flow *)
   contain_loop: bool;
   
-  envbefore: TAC.environment;
-  envafter:  TAC.environment;
+  env_typing_before: TAC.environment;
+  env_typing_after:  TAC.environment;
 
-  was_modified: bool;
+  was_modified: bool ref;
 
   (* id: int *)
 }
@@ -411,28 +411,44 @@ type toplevel_cocci_info = {
   dependencies: string list;
   used_after: Ast_cocci.meta_name list;
 
-  (* id: int *)
+  ruleid: int;
+
+  was_matched: bool ref;
 }
 
-let prepare_cocci () = raise Todo
+let g_contain_typedmetavar = ref false 
 
-let prepare_c () = raise Todo
-                  
-(*****************************************************************************)
-(* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
-(*****************************************************************************)
-
-type celem_info = { 
-  flow: Control_flow_c.cflow; (* obsolete with -use_ref *)
-  fixed_flow: Control_flow_c.cflow;
-  contain_loop: bool;
-}
-
-type celem_with_info = 
-  Parse_c.toplevel2 * celem_info option * (TAC.environment Common.pair)
+let fake_env = TAC.initial_env
 
 
-let build_maybe_info e = 
+
+(* --------------------------------------------------------------------- *)
+let prepare_cocci ctls used_after_lists astcocci = 
+
+  let gathered = Common.index_list_1 (zip (zip ctls astcocci) used_after_lists)
+  in
+  gathered +> List.map 
+    (fun (((ctl_toplevel_list,ast),used_after_list),rulenb) -> 
+      
+      if not (List.length ctl_toplevel_list = 1)
+      then failwith "not handling multiple minirules";
+
+      let (rulename, dependencies, restast) = ast in
+      { 
+        ctl = List.hd ctl_toplevel_list;
+        ast_rule = ast;
+        rulename = rulename;
+        dependencies = dependencies;
+        used_after = List.hd used_after_list;
+        ruleid = rulenb;
+        was_matched = ref false;
+      }
+    )
+
+
+(* --------------------------------------------------------------------- *)
+(* return Some flow, contain_loop *)
+let flow_and_loop_info e = 
   match e with 
   | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
@@ -445,11 +461,10 @@ let build_maybe_info e =
 
         if !Flag.show_flow then print_flow fixed_flow;
         if !Flag.show_before_fixed_flow then print_flow flow;
-        { flow = flow; 
-          fixed_flow = fixed_flow; 
-          contain_loop = contain_loop def 
-        }
-      )
+
+        fixed_flow
+
+      ), contain_loop def
   | Ast_c.Declaration _ 
   | Ast_c.Include _ 
   | Ast_c.Define _  
@@ -470,72 +485,69 @@ let build_maybe_info e =
       in
       let flow = Ast_to_flow.simple_cfg elem str  in
       let fixed_flow = CCI.fix_simple_flow_ctl flow in
-      Some { 
-        flow = flow;
-        fixed_flow = fixed_flow;
-        contain_loop = false;
-      }
-
-  | _ -> None
+      Some fixed_flow, false
+  | _ -> None, false
 
 
-
-
-
-let fakeEnv = (TAC.initial_env, TAC.initial_env)
-
-let (build_info_program: 
- filename -> bool -> TAC.environment -> celem_with_info list) = 
- fun cfile contain_typedmetavar env -> 
-  let cprogram = cprogram_from_file cfile in
-  let cprogram' = 
-    if contain_typedmetavar
-    then
-      cprogram
-      +> Common.unzip 
-      +> (fun (program, infos) -> 
-        TAC.annotate_program env program, infos)
-      +> Common.uncurry Common.zip
-    else 
-      cprogram +> List.map (fun (e, info_item) -> ((e,fakeEnv),  info_item))
+let build_info_program file env = 
+  let cprogram = cprogram_from_file file in
+  let (cs, parseinfos) = Common.unzip cprogram in
+  let (cs, envs) = 
+    if !g_contain_typedmetavar 
+    then Common.unzip (TAC.annotate_program env cs)
+    else Common.unzip (cs +> List.map (fun c -> c, (fake_env, fake_env)))
   in
-  cprogram' +> List.map (fun ((e, beforeafterenv), info_item) -> 
-    (e, info_item), build_maybe_info e, beforeafterenv
-  )
+
+  zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
+    let (flow, contain_loop) = flow_and_loop_info c in
+    let (fullstr, tokens) = parseinfo in
+
+    {
+      ast_c = c; (* contain refs so can be modified *)
+      tokens_c =  tokens;
+      fullstring = fullstr;
+
+      flow = flow; (* it's the "fixed" flow *)
+      contain_loop = contain_loop;
   
-    
-        
+      env_typing_before = enva;
+      env_typing_after = envb;
 
-(* bool is wether or not have to unparse and reparse the c element *)
-let (rebuild_info_program : 
-  (celem_with_info * bool) list -> bool -> celem_with_info list) = 
- fun xs contain_typedmetavar ->
-  let xxs = xs +> List.map 
-    (fun (x, modified) ->
-      if modified 
-      then begin
-        let ((elem, info_item), flow, (beforeenv, afterenvTOUSE)) = x in
-        let file = Common.new_temp_file "cocci_small_output" ".c" in
-
-        cfile_from_program [(elem, info_item), Unparse_c.PPnormal]  file;
-        (* Common.command2 ("cat " ^ file); *)
-        let xs = build_info_program file contain_typedmetavar beforeenv in
-        (* TODO: assert env has not changed,
-         * if yes then must also reparse what follows even if not modified.
-         * Do that only if contain_typedmetavar of course, so good opti.
-         *)
-        (* Common.list_init xs *) (* get rid of the FinalDef *)
-        xs
-      end
-      else [x]
+      was_modified = ref false;
+    }
   )
-  in
-  List.concat xxs
 
+
+
+(* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
+let rebuild_info_program cs = 
+  cs +> List.map (fun c ->
+    if !(c.was_modified)
+    then begin
+      let file = Common.new_temp_file "cocci_small_output" ".c" in
+      cfile_from_program 
+        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] file;
+
+      (* Common.command2 ("cat " ^ file); *)
+      let xs = build_info_program file c.env_typing_before in
+
+      (* TODO: assert env has not changed,
+       * if yes then must also reparse what follows even if not modified.
+       * Do that only if contain_typedmetavar of course, so good opti.
+       *)
+      (* Common.list_init xs *) (* get rid of the FinalDef *)
+      xs
+    end
+    else [c]
+  ) +> List.concat
+
+
+let prepare_c file = 
+  build_info_program file TAC.initial_env
 
 
 (*****************************************************************************)
-(* The main functions *)
+(* Processing the ctls and toplevel C elements *)
 (*****************************************************************************)
 
 (* The main algorithm =~
@@ -547,7 +559,7 @@ let (rebuild_info_program :
  *         match control flow of function vs minirule 
  *         with the binding and update the set of possible 
  *         bindings, and returned the possibly modified function.
- *      pretty print modified C elements and reparse it.
+ *   pretty print modified C elements and reparse it.
  *
  * 
  * On ne prends que les newbinding ou returned_any_state est vrai.
@@ -583,181 +595,149 @@ let (rebuild_info_program :
  *)
 
 
-let g_cprogram = ref [] 
-let g_contain_typedmetavar = ref false 
+(* r(ule), c(element), e(nvironment) *)
 
-(* --------------------------------------------------------------------- *)
-let rec process_ctls ctls envs = 
-  match ctls with
-  | [] -> ()
-  | ctl::ctls_remaining -> 
-      let ((ctl_toplevel_list,ast),used_after_list), rulenb =
-	ctl in
+let rec bigloop rs cs = 
+  let es = ref [Ast_c.emptyMetavarsBinding] in
+  let cs = ref cs in
+  let rules_that_have_matched = ref [] in
 
-      if not (List.length ctl_toplevel_list = 1)
-      then failwith "not handling multiple minirules";
+  (* looping over the rules *)
+  rs +> List.iter (fun r -> 
+   show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
-      let ctl = List.hd ctl_toplevel_list in
-      let used_after_list = List.hd used_after_list in
-      show_or_not_ctl_text ctl ast rulenb;
+   if not (Common.include_set r.dependencies !rules_that_have_matched)
+   then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
+   else begin
 
-      let newenvs = process_a_ctl (ctl, used_after_list, rulenb) envs in
-      process_ctls ctls_remaining newenvs
+    let newes = ref [] in (* envs for next round/rule *)
 
+    (* looping over the environments *)
+    !es +> List.iter (fun e -> 
+      show_or_not_binding "in" e;
 
-and process_a_ctl ctl envs = 
-  match envs with
-  | [] -> []
-  | env::envs_remaining -> 
-        let children_envs = process_a_ctl_a_env ctl env in
-        Common.union_set children_envs (process_a_ctl ctl envs_remaining)
-
-
-and process_a_ctl_a_env (ctl, used_after_list, rulenb) env = 
-
-  let new_c_elems = ref [] in
-  show_or_not_binding "in" env;
-
-  let children_envs = !g_cprogram +> List.fold_left 
-    (fun acc ((elem,info_item),info,_env) ->
-
-      match process_a_ctl_a_env_a_celem
-        (elem,info) (ctl,used_after_list, rulenb) env
-      with
-      | None -> 
-          push2 None new_c_elems ;
-          acc
-      | Some (elem, modified, newbindings) ->  
-          push2 (if modified then (Some elem) else None) new_c_elems;
-	  List.fold_left
-	    (function acc ->
-	      function newbinding -> 
-		Common.insert_set newbinding acc)
-	    acc newbindings
-    ) []
-  in
-  let new_c_elems = List.rev !new_c_elems in
-  let cprogram' = zip new_c_elems !g_cprogram  +> List.map 
-    (fun (optnewelem, ((elem, info_item), flow, env))  -> 
-      match optnewelem with 
-      | None ->         ((elem, info_item),    flow, env), false
-      | Some newelem -> ((newelem, info_item), flow, env), true
-    )
-  in
-  g_cprogram := rebuild_info_program cprogram' !g_contain_typedmetavar;
-
-  if not (null children_envs)
-  then children_envs
-  else begin
-    if !Flag_ctl.partial_match
-    then Printf.printf "Empty list of bindings, I will restart from old env";
-    [env +> List.filter (fun (s,v) -> List.mem s used_after_list)]
-  end
-
-
-
-
-(* This function returns a pair option. First the C element (modified),
- * then a list of bindings because there is could be new info brought by 
- * the matching.
- * 
- * This function does not use the global, so could put it before,
- * but more logical to make it follows the other process_xxx functions.
- *)
-and process_a_ctl_a_env_a_celem2 = 
- fun (celem, info) (ctl, used_after_list, rulenb) binding -> 
-  indent_do (fun () -> 
-  match info with
-  | None -> None
-  | Some info -> 
-
-      let (trans_info, returned_any_states, newbindings) = 
-        Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
-          Flag_ctl.loop_in_src_code := 
-            !Flag_ctl.loop_in_src_code || info.contain_loop;
-              
-          (***************************************)
-          (* !Main point! The call to the engine *)
-          (***************************************)
-          (* model_ctl internally build a fixed_flow *)
-          let model_ctl  = CCI.model_for_ctl info.fixed_flow binding in
-	  CCI.mysat model_ctl ctl (used_after_list, binding)
-            
-        ) in
-
+      let children_e = ref [] in
       
+      (* looping over the functions *)
+      !cs +> List.iter (fun c -> 
+        if c.flow <> None 
+        then
+          (* does also some side effects on c and r *)
+          match process_a_ctl_a_env_a_toplevel r e c with
+          | None -> ()
+          | Some newbindings -> 
+              newbindings +> List.iter (fun newbinding -> 
+                children_e := Common.insert_set newbinding !children_e;
+              )
+      ); (* end iter cs *)
 
-      if not returned_any_states
-      then None
-      else begin
-        show_or_not_celem "found match in" celem;
-        show_or_not_trans_info trans_info;
-        List.iter (show_or_not_binding "out") newbindings;
-        if (null trans_info)
-        then Some (celem, false, newbindings)
-        else 
-	  begin
-            ignore(Transformation3.transform trans_info info.flow);
-            let celem' = celem (* done via side effect *) in
-            Some (celem', true, newbindings)
-          end
-      end
-	  )
-and process_a_ctl_a_env_a_celem  a b c = 
-  Common.profile_code "process_a_ctl_a_env_a_celem" 
-    (fun () -> process_a_ctl_a_env_a_celem2 a b c)
-    
-    
+      let children_e_final = 
+        if not (null !children_e)
+        then !children_e
+        else begin
+          if !Flag_ctl.partial_match
+          then printf "Empty list of bindings, I will restart from old env";
+          [e +> List.filter (fun (s,v) -> List.mem s r.used_after)]
+        end
+      in
+          
+      newes := Common.union_set !newes children_e_final;
+      
+    ); (* end iter es *)
+    es := !newes;
+    cs := rebuild_info_program !cs;
+    if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
+   end
+  ); (* end iter rs *)
+
+  !cs (* return final C asts *)
 
 
 
-(* --------------------------------------------------------------------- *)
+
+
+(* does side effects on C ast and on Cocci info rule *)
+and process_a_ctl_a_env_a_toplevel2 r e c = 
+ indent_do (fun () -> 
+
+  let (trans_info, returned_any_states, newbindings) = 
+    Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
+      Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
+      
+      (***************************************)
+      (* !Main point! The call to the engine *)
+      (***************************************)
+      let model_ctl  = CCI.model_for_ctl (Common.some c.flow) e in
+      CCI.mysat model_ctl r.ctl (r.used_after, e)
+    ) 
+  in
+  if not returned_any_states 
+  then None
+  else begin
+    show_or_not_celem "found match in" c.ast_c;
+    show_or_not_trans_info trans_info;
+    List.iter (show_or_not_binding "out") newbindings;    
+
+    r.was_matched := true;
+
+    if not (null trans_info)
+    then begin
+      c.was_modified := true;
+      (* modify ast via side effect *)
+      ignore(Transformation3.transform trans_info (some c.flow));
+    end;
+
+    Some newbindings
+  end
+ )
+   
+and process_a_ctl_a_env_a_toplevel  a b c = 
+  Common.profile_code "process_a_ctl_a_env_a_toplevel" 
+    (fun () -> process_a_ctl_a_env_a_toplevel2 a b c)
+   
+
+
+(*****************************************************************************)
+(* The main function *)
+(*****************************************************************************)
+
 (* Returns nothing. The output is in the file outfile *)
 let full_engine2 cfile (coccifile, isofile) outfile = 
 
   show_or_not_cfile   cfile;
   show_or_not_cocci   coccifile isofile;
 
-
   let (astcocci,used_after_lists,toks) = sp_from_file coccifile isofile in
   let ctls = ctls astcocci used_after_lists in
-  let ctls_asts = zip ctls (List.map (fun x -> Some x) astcocci) in
-  show_or_not_ctl_tex astcocci ctls;
-
-  let error_words_julia = toks in
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
-
-  let ctls = zip ctls_asts used_after_lists in
-
-
-
   (* optimisation allowing to launch coccinelle on all the drivers *)
-  if not (worth_trying cfile error_words_julia)
+  if not (worth_trying cfile toks)
   then Common.command2 ("cp " ^ cfile ^ " " ^ outfile)
   else begin
-    
-   (* parsing and build CFG *)
-    g_cprogram:= build_info_program cfile contain_typedmetavar TAC.initial_env;
-    g_contain_typedmetavar := contain_typedmetavar;
 
-    flush stdout;
-    flush stderr;
     Common.pr_xxxxxxxxxxxxxxxxx();
     pr "let's go";
     Common.pr_xxxxxxxxxxxxxxxxx();
 
-    process_ctls (Common.index_list_1 ctls) [Ast_c.emptyMetavarsBinding];
+    g_contain_typedmetavar := contain_typedmetavar;
+    let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
+    let c_infos     = prepare_c cfile in
+
+    show_or_not_ctl_tex astcocci ctls;
+
+    let c_infos' = bigloop cocci_infos c_infos in
 
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr "Finished";
     Common.pr_xxxxxxxxxxxxxxxxx();
 
     (* and now unparse everything *)
-    let cprogram' = !g_cprogram +> List.map (fun ((ebis,info_item),_cfg,_e) ->
-      (ebis, info_item), Unparse_c.PPviastr) 
+    let xs = c_infos' +> List.map (fun x -> 
+      (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
+    )
     in
-    cfile_from_program cprogram' outfile;
+    cfile_from_program xs outfile;
 
     show_or_not_diff cfile outfile;
   end
@@ -765,4 +745,3 @@ let full_engine2 cfile (coccifile, isofile) outfile =
 
 let full_engine a b c = 
   Common.profile_code "full_engine" (fun () -> full_engine2 a b c)
-

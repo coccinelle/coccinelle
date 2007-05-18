@@ -2932,6 +2932,7 @@ let regression_testing newscore best_score_file =
           )
     );
     write_value newbestscore best_score_file;
+    flush stdout; flush stderr;
   end
 
 (*****************************************************************************)

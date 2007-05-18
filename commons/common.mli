@@ -729,7 +729,7 @@ val array_find_index : ('a -> bool) -> 'a array -> int
 
 
 (*****************************************************************************)
-(* Set. But have a look too at set*.mli. It's better *)
+(* Set. But have a look too at set*.mli. It's better. Or use Hashtbl. *)
 (*****************************************************************************)
 
 type 'a set = 'a list
@@ -819,7 +819,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 (*****************************************************************************)
-(* Assoc. But have a look too at Mapb.mli. It's better *)
+(* Assoc. But have a look too at Mapb.mli. It's better. Or use Hashtbl. *)
 (*****************************************************************************)
 
 module IntMap :

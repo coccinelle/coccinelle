@@ -18,10 +18,11 @@ let dir = ref false
 
 (* test mode *)
 let test_mode = ref false
-let testall_mode = ref false
+let test_all = ref false
+let test_regression_okfailed = ref false
 
 (* action mode *)
-let action = ref "" 
+let action = ref ""
 
 (* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
@@ -182,7 +183,10 @@ let other_options = [
     "-debug_etdt",         Arg.Set  Flag_parsing_c.debug_etdt , "  ";
     "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
 
+    "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
+    "  filter some cpp message when the macro is a \"known\" macro";
     "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
+
   ];
 
   "shortcut for enabling/disabling a set of debugging options at once",
@@ -235,35 +239,42 @@ let other_options = [
 
 
 
-  "test mode and test options (works with tests/)",
+  "test mode and test options (works with tests/ or .ok files)",
   "The test options don't work with the -sp_file and so on.",
   [
     "-test",    Arg.Set test_mode, 
     "   <file> launch spatch on tests/file.[c,cocci]";
-    "-testall", Arg.Set testall_mode, 
+    "-testall", Arg.Set test_all, 
     "   launch spatch on all files in tests/ having a .res";
+    "-test_regression_okfailed", Arg.Set test_regression_okfailed,
+    "    process the .ok .failed files in current dir";
     "-compare_with_expected", Arg.Set compare_with_expected, 
     "   use also file.res"; 
+    
   ];
 
   "action mode",
   ("The action options don't work with the -sp_file and so on." ^ "\n" ^
-   "It's for the other (internal) uses of the spatch program." ^ "\n" ^
-   "possibles actions are:
-     tokens <file> 
-     parse_c <file> 
-     parse_cocci <file> 
-     control_flow <file> or <file:function>
-     parse_unparse <file>
-     typeur <file> 
-     compare_c <file1> <file2>" ^ "\n" ^
-   "so to test the C parser, do -action parse_c foo.c"
+   "It's for the other (internal) uses of the spatch program."
   ),
-  [ 
-    "-action", Arg.Set_string action , 
-    "   <action> [args]  (default_value = " ^ !action ^")"
+  [
+    (let s = "-tokens_c" in s, Arg.Unit (fun () -> action := s),
+    "   <file>");
+    (let s = "-parse_c"  in s, Arg.Unit (fun () -> action := s),
+    "   <file or dir> works with -dir");
+    (let s = "-parse_cocci"  in s, Arg.Unit (fun () -> action := s),
+    "   <file>");
+    (let s = "-show_flow"  in s, Arg.Unit (fun () -> action := s),
+    "   <file> or <file:function>");
+    (let s = "-control_flow"  in s, Arg.Unit (fun () -> action := s),
+    "   <file> or <file:function>");
+    (let s = "-parse_unparse"  in s, Arg.Unit (fun () -> action := s),
+    "   <file>");
+    (let s = "-typeur"  in s, Arg.Unit (fun () -> action := s),
+    "   <file>");
+    (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
+    "  <file1> <file2>");
   ];
-
 ]
 
 
@@ -305,205 +316,6 @@ let _ = short_usage_func := short_usage
 let _ = long_usage_func := long_usage
 
 
-(*****************************************************************************)
-(* The actions *)
-(*****************************************************************************)
-
-let actions_dispatch action xs = 
-  match action, xs with
-  | "tokens_c", [file] -> 
-      if not (file =~ ".*\\.c") 
-      then pr2 "warning: seems not a .c file";
-
-      Flag_parsing_c.debug_lexer := true; 
-      Flag_parsing_c.verbose_parsing := true;
-
-      Parse_c.tokens file +> Common.pr2gen
-        
-  | "parse_c", x::xs -> 
-      Flag_parsing_c.debug_cpp := true;
-      Flag_parsing_c.debug_typedef := true;
-
-      let fullxs = 
-        if !dir
-        then Common.cmd_to_list ("find " ^(join " " (x::xs)) ^" -name \"*.c\"")
-        else x::xs 
-      in
-      
-      let stat_list = ref [] in
-      let newscore  = Common.empty_score () in
-
-      fullxs +> List.iter (fun file -> 
-        if not (file =~ ".*\\.c") 
-        then pr2 "warning: seems not a .c file";
-
-        pr2 ("PARSING: " ^ file);
-
-        let (_x, stat) = Parse_c.parse_print_error_heuristic file in
-
-        Common.push2 stat stat_list;
-        let s = 
-          sprintf "bad = %d, timeout = %B" 
-            stat.Parse_c.bad stat.Parse_c.have_timeout
-        in
-        if stat.Parse_c.bad = 0 && not stat.Parse_c.have_timeout
-        then Hashtbl.add newscore file (Common.Ok)
-        else Hashtbl.add newscore file (Common.Pb s)
-      );
-
-      if not (null !stat_list) 
-      then Parse_c.print_parsing_stat_list !stat_list;
-
-      if !dir
-      then begin 
-        pr2 "--------------------------------";
-        pr2 "regression testing  information";
-        pr2 "--------------------------------";
-        let file = Str.global_replace (Str.regexp "/") "__" x in
-        Common.regression_testing newscore 
-          ("/tmp/score_parsing__" ^ file ^ ".marshalled");
-      end
-        
-
-
-
-  | "parse_cocci", [file] -> 
-      if not (file =~ ".*\\.cocci") 
-      then pr2 "warning: seems not a .cocci file";
-
-      let iso_file = if !iso_file = "" then None else Some !iso_file in
-
-      let (xs,_,_) = Parse_cocci.process file iso_file false in
-      xs +> List.iter Pretty_print_cocci.unparse
-
-
-  (* file can be   "foo.c"  or "foo.c:main" *)
-  | "show_flow", [file] 
-  | "control_flow", [file] -> 
-
-      let (file, specific_func) = 
-        if file =~ "\\(.*\\.c\\):\\(.*\\)"
-        then let (a,b) = matched2 file in a, Some b
-        else file, None
-      in
-
-      if not (file =~ ".*\\.c") 
-      then pr2 "warning: seems not a .c file";
-
-      let (program, _stat) = Parse_c.parse_print_error_heuristic file in
-
-      program +> List.iter (fun (e,_) -> 
-        match e with
-        | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
-            pr2 funcs;
-            let relevant_function = 
-              match specific_func with
-              | None -> true
-              | Some s -> s = funcs
-            in
-                
-            if relevant_function
-            then 
-              (* old: Flow_to_ast.test !Flag.show_flow def *)
-              (try 
-                  let flow = Ast_to_flow.ast_to_control_flow def in
-                  Ast_to_flow.deadcode_detection flow;
-                  let fixed = Ctlcocci_integration.fix_flow_ctl flow in
-                  Ograph_extended.print_ograph_extended fixed
-                    ("/tmp/" ^ funcs ^ ".dot")
-                  
-               with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
-              )
-        | _ -> ()
-      )
-
-  | "parse_unparse", [file] -> 
-      if not (file =~ ".*\\.c") 
-      then pr2 "warning: seems not a .c file";
-
-      let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
-      let program2_with_ppmethod = 
-        program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
-      in
-      Unparse_c.pp_program program2_with_ppmethod !default_output_file;
-      Common.command2 ("cat " ^ !default_output_file);
-
-
-  | "typeur", [file] -> 
-      if not (file =~ ".*\\.c") 
-      then pr2 "warning: seems not a .c file";
-
-      Flag_parsing_c.pretty_print_type_info := true;
-
-      let (program2, _stat) =  Parse_c.parse_print_error_heuristic file in
-      let program2 =
-        program2 
-        +> Common.unzip 
-        +> (fun (program, infos) -> 
-          Type_annoter_c.annotate_program Type_annoter_c.initial_env
-            program +> List.map fst,
-          infos
-        )
-        +> Common.uncurry Common.zip
-      in
-      let program2_with_ppmethod = 
-        program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
-      in
-      Unparse_c.pp_program program2_with_ppmethod !default_output_file;
-      Common.command2 ("cat " ^ !default_output_file);
-
-  (* used by generic_makefile now *)
-  | "compare_c", [file1;file2] -> 
-      let (correct, diffxs) = Compare_c.compare_default file1 file2 in
-      let res = Compare_c.compare_result_to_bool correct in
-      if res 
-      then raise (Common.UnixExit 0)
-      else raise (Common.UnixExit (-1))
-
-  | "compare_c_hardcoded", _ -> 
-      Compare_c.compare_default 
-        "parsing_c/tests/compare1.c" 
-        "parsing_c/tests/compare2.c" 
-        (*
-          "parsing_c/tests/equal_modulo1.c" 
-          "parsing_c/tests/equal_modulo2.c" 
-        *)
-      +> Compare_c.compare_result_to_string 
-      +> pr2
-
-
-  | "regression_info_failed", [] -> 
-      let newscore  = Common.empty_score () in
-      let oks = 
-        Common.cmd_to_list ("find -name \"*.ok\"") 
-        ++
-        Common.cmd_to_list ("find -name \"*.spatch_ok\"")
-      in
-      let failed = Common.cmd_to_list ("find -name \"*.failed\"") in
-
-      if null (oks ++ failed) 
-      then failwith "no ok/failed file, you certainly did a make clean"
-      else begin
-        oks +> List.iter (fun s -> 
-          Hashtbl.add newscore (Filename.chop_extension s)  Common.Ok
-        );
-        failed +> List.iter (fun s -> 
-          Hashtbl.add newscore (Filename.chop_extension s) (Common.Pb "fail")
-        );
-        pr2 "--------------------------------";
-        pr2 "regression testing  information";
-        pr2 "--------------------------------";
-        Common.regression_testing newscore ("score_failed.marshalled")
-      end
-
-
-  | "xxx", _ -> 
-      Format.print_newline();
-      Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";
-      Format.print_newline();
-      Format.printf "@[<v>(---@[<v>(---@[<v>(---@,)@]@,)@]@,)@]";
-
-  | _ -> failwith "no action for this or too few arguments for this action"
 
   
 (*****************************************************************************)
@@ -534,7 +346,7 @@ let main () =
     (match (!args) with
 
     (* --------------------------------------------------------- *)
-    (* The test framework. Works with tests/  *)
+    (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
         let output_file =
@@ -544,13 +356,33 @@ let main () =
         in
         Testing.testone x !compare_with_expected !iso_file output_file
 
-    | []  when !testall_mode -> 
+    | []  when !test_all -> 
         Testing.testall !iso_file
+
+    | [] when !test_regression_okfailed -> 
+        Testing.test_regression_okfailed ()
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
     (* --------------------------------------------------------- *)
-    | xs when !action <> "" -> actions_dispatch !action xs
+    | [file] when !action = "-tokens_c" -> 
+        Testing.test_tokens_c file
+    | x::xs when  !action = "-parse_c" -> 
+        Testing.test_parse_c  (x::xs) !dir 
+    | [file] when !action = "-parse_cocci" -> 
+        Testing.test_parse_cocci file !iso_file
+    | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 
+        Testing.test_cfg filefunc
+    | [file] when !action = "-parse_unparse" -> 
+       Testing.test_parse_unparse file !default_output_file
+    | [file] when !action = "-typeur" -> 
+        Testing.test_typeur file !default_output_file
+    | [file1;file2] when !action = "-compare_c" -> 
+       Testing.test_compare_c file1 file2 (* result is in unix code *)
+    | [] when !action = "-compare_c_hardcoded" -> 
+        Testing.test_compare_c_hardcoded ()
+    | [] when !action = "-xxx" -> 
+        Testing.test_xxx ()
 
     (* --------------------------------------------------------- *)
     (* This is the main entry *)
