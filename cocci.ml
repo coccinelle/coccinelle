@@ -287,12 +287,10 @@ let worth_trying cfile tokens =
   else true
 
 
-let extract_local_includes () = raise Todo
 
-
-let contain_loop def = 
+let contain_loop top = 
   let res = ref false in
-  def +> Visitor_c.vk_def { Visitor_c.default_visitor_c with
+  top +> Visitor_c.vk_program { Visitor_c.default_visitor_c with
    Visitor_c.kstatement = (fun (k, bigf) stat -> 
      match stat with 
      | Ast_c.Iteration _, ii
@@ -330,6 +328,36 @@ let sp_contain_typed_metavar toplevel_list_list =
       (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
 
+(* --------------------------------------------------------------------- *)
+(* local includes and typing environment *)
+(* --------------------------------------------------------------------- *)
+
+let extract_local_includes cs = 
+  cs +> Common.map_filter (fun (c,_info_item) -> 
+    match c with
+    | Ast_c.Include (s,_) -> 
+        if s=~ "^\"\\(.*\\)\"$"
+        then Some (matched1 s)
+        else None
+    | _ -> None
+  )
+
+
+let env_after_local_includes hs dir = 
+  hs +> List.fold_left (fun accenv h -> 
+    let realh = Filename.concat dir h in 
+    if not (Common.lfile_exists realh) 
+    then begin
+      pr2 ("TYPE: local header " ^ realh ^ " not found");
+      accenv
+    end
+    else 
+      let cprogram = cprogram_from_file realh in
+      let (cs, parseinfos) = Common.unzip cprogram in
+      let (cs, envs) = Common.unzip (TAC.annotate_program accenv cs) in
+      Common.last (accenv::(List.map snd envs))
+
+  ) TAC.initial_env
 
 
 (* --------------------------------------------------------------------- *)
@@ -380,6 +408,48 @@ let ast_to_flow_with_error_messages2 def =
   flowopt
 let ast_to_flow_with_error_messages a = 
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
+
+
+
+let flow_info e = 
+  match e with 
+  | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
+      
+      let flowopt = ast_to_flow_with_error_messages def in
+      flowopt +> map_option (fun flow -> 
+      
+        (* remove the fake nodes for julia *)
+        let fixed_flow = CCI.fix_flow_ctl flow in
+
+        if !Flag.show_flow then print_flow fixed_flow;
+        if !Flag.show_before_fixed_flow then print_flow flow;
+
+        fixed_flow
+
+      )
+  | Ast_c.Declaration _ 
+  | Ast_c.Include _ 
+  | Ast_c.Define _  
+  | Ast_c.SpecialMacro _
+    -> 
+      let (elem, str) = 
+        match e with 
+        | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
+        | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
+        | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
+        (* todo? still useful ? could consider as Decl instead *)
+        | Ast_c.SpecialMacro (s, args, ii) -> 
+            let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
+            (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
+
+
+        | _ -> raise Impossible
+      in
+      let flow = Ast_to_flow.simple_cfg elem str  in
+      let fixed_flow = CCI.fix_simple_flow_ctl flow in
+      Some fixed_flow
+  | _ -> None
 
 
 
@@ -447,50 +517,8 @@ let prepare_cocci ctls used_after_lists astcocci =
 
 
 (* --------------------------------------------------------------------- *)
-(* return Some flow, contain_loop *)
-let flow_and_loop_info e = 
-  match e with 
-  | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
-      
-      let flowopt = ast_to_flow_with_error_messages def in
-      flowopt +> map_option (fun flow -> 
-      
-        (* remove the fake nodes for julia *)
-        let fixed_flow = CCI.fix_flow_ctl flow in
 
-        if !Flag.show_flow then print_flow fixed_flow;
-        if !Flag.show_before_fixed_flow then print_flow flow;
-
-        fixed_flow
-
-      ), contain_loop def
-  | Ast_c.Declaration _ 
-  | Ast_c.Include _ 
-  | Ast_c.Define _  
-  | Ast_c.SpecialMacro _
-    -> 
-      let (elem, str) = 
-        match e with 
-        | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
-        | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
-        (* todo? still useful ? could consider as Decl instead *)
-        | Ast_c.SpecialMacro (s, args, ii) -> 
-            let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
-            (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
-
-
-        | _ -> raise Impossible
-      in
-      let flow = Ast_to_flow.simple_cfg elem str  in
-      let fixed_flow = CCI.fix_simple_flow_ctl flow in
-      Some fixed_flow, false
-  | _ -> None, false
-
-
-let build_info_program file env = 
-  let cprogram = cprogram_from_file file in
+let build_info_program cprogram env = 
   let (cs, parseinfos) = Common.unzip cprogram in
   let (cs, envs) = 
     if !g_contain_typedmetavar 
@@ -499,7 +527,6 @@ let build_info_program file env =
   in
 
   zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
-    let (flow, contain_loop) = flow_and_loop_info c in
     let (fullstr, tokens) = parseinfo in
 
     {
@@ -507,8 +534,8 @@ let build_info_program file env =
       tokens_c =  tokens;
       fullstring = fullstr;
 
-      flow = flow; (* it's the "fixed" flow *)
-      contain_loop = contain_loop;
+      flow = flow_info c; (* it's the "fixed" flow *)
+      contain_loop = contain_loop c;
   
       env_typing_before = enva;
       env_typing_after = envb;
@@ -529,7 +556,8 @@ let rebuild_info_program cs =
         [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] file;
 
       (* Common.command2 ("cat " ^ file); *)
-      let xs = build_info_program file c.env_typing_before in
+      let cprogram = cprogram_from_file file in
+      let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,
        * if yes then must also reparse what follows even if not modified.
@@ -543,7 +571,16 @@ let rebuild_info_program cs =
 
 
 let prepare_c file = 
-  build_info_program file TAC.initial_env
+  let cprogram = cprogram_from_file file in
+  let env = 
+    if !g_contain_typedmetavar 
+    then
+      let local_includes = extract_local_includes cprogram in
+      env_after_local_includes local_includes (Common.dirname file)
+    else TAC.initial_env
+  in
+
+  build_info_program cprogram env
 
 
 (*****************************************************************************)
