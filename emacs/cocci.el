@@ -26,7 +26,7 @@
 ;;
 
 
-;;; utilities 
+;;; Utilities 
 
 (defun join-sep (sep xs) 
   (mapconcat 'identity xs sep))
@@ -247,7 +247,7 @@
 
 ;;; Code
 
-;; Helper functions for the cocci programmeur 
+;; helper functions for the cocci programmeur 
 
 (defun cocci-replace-modifiers (beg end str)
   "TODO"
@@ -283,12 +283,10 @@
   )
 
 
+
                
 (defvar cocci-mode-hook nil
   "Hook called by  `cocci-mode'")
-
-
-
 
 ;;;###autoload
 (defun cocci-mode ()
@@ -326,7 +324,17 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
     ))
 
 
+
+; put cursor before a parse error coccinelle message and it will
+; open the corresponding file and go to corresponding line.
+(fset 'cocci-goto-next-error
+   [?\C-s ?F ?i ?l ?e right right ?\C-  ?\C-s ?" left ?\M-w ?\C-x ?\C-f S-insert return ?\C-\M-l C-right right C-S-right C-insert ?\C-\M-l ?\M-g S-insert return])
+;"
+
 ;; Provide
+
+
+
 
 (provide 'cocci-mode)
 
