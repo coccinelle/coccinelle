@@ -343,23 +343,6 @@ let extract_local_includes cs =
   )
 
 
-let env_after_local_includes hs dir = 
-  hs +> List.fold_left (fun accenv h -> 
-    let realh = Filename.concat dir h in 
-    if not (Common.lfile_exists realh) 
-    then begin
-      pr2 ("TYPE: local header " ^ realh ^ " not found");
-      accenv
-    end
-    else 
-      let cprogram = cprogram_from_file realh in
-      let (cs, parseinfos) = Common.unzip cprogram in
-      let (cs, envs) = Common.unzip (TAC.annotate_program accenv cs) in
-      Common.last (accenv::(List.map snd envs))
-
-  ) TAC.initial_env
-
-
 (* --------------------------------------------------------------------- *)
 (* Helpers for SpecialDeclMacro *)
 (* --------------------------------------------------------------------- *)
@@ -486,11 +469,24 @@ type toplevel_cocci_info = {
   was_matched: bool ref;
 }
 
+type header_info = { 
+  header_name : string;
+  was_modified_once: bool ref;
+  header_content: toplevel_c_info list;
+  header_path : string;
+}
+
 let g_contain_typedmetavar = ref false 
 
 let fake_env = TAC.initial_env
 
 
+
+let last_env_toplevel_c_info xs =
+  (Common.last xs).env_typing_after
+
+let concat_headers_and_c hss cs = 
+  (List.concat (hss +> List.map (fun x -> x.header_content))) ++ cs
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls used_after_lists astcocci = 
@@ -570,17 +566,53 @@ let rebuild_info_program cs =
   ) +> List.concat
 
 
+let rebuild_info_c_and_headers (cs, hss) = 
+
+  hss +> List.iter (fun hi -> 
+    if hi.header_content +> List.exists (fun c -> !(c.was_modified))
+    then hi.was_modified_once := true;
+  );
+  let hss' = 
+    hss +> List.map (fun hi -> 
+      { hi with header_content = rebuild_info_program hi.header_content }
+    )
+  in
+  let cs' = rebuild_info_program cs in
+  cs', hss'
+
+
+
+
 let prepare_c file = 
   let cprogram = cprogram_from_file file in
-  let env = 
-    if !g_contain_typedmetavar 
-    then
-      let local_includes = extract_local_includes cprogram in
-      env_after_local_includes local_includes (Common.dirname file)
-    else TAC.initial_env
-  in
+  let local_includes = extract_local_includes cprogram in
+  let dir = (Common.dirname file) in
 
-  build_info_program cprogram env
+  let env = ref TAC.initial_env in
+
+  let hss = local_includes +> Common.map_filter (fun h -> 
+    let realh = Filename.concat dir h in 
+
+    if not (Common.lfile_exists realh) 
+    then begin pr2 ("TYPE: local header " ^ realh ^ " not found"); None end
+    else 
+      let h_cs = cprogram_from_file realh in
+      let info_h_cs = build_info_program h_cs !env in
+      env := 
+        if null info_h_cs
+        then !env
+        else last_env_toplevel_c_info info_h_cs
+      ;
+
+      Some { 
+        header_name = h;
+        header_content = info_h_cs;
+        was_modified_once = ref false;
+        header_path = realh;
+      }
+  ) in
+  build_info_program cprogram !env,
+  hss
 
 
 (*****************************************************************************)
@@ -590,7 +622,7 @@ let prepare_c file =
 (* The main algorithm =~
  * The algorithm is roughly: 
  *  for_all ctl rules in SP
- *   for_all minirule in rule
+ *   for_all minirule in rule (no more)
  *    for_all binding (computed during previous phase)
  *      for_all C elements
  *         match control flow of function vs minirule 
@@ -634,9 +666,10 @@ let prepare_c file =
 
 (* r(ule), c(element), e(nvironment) *)
 
-let rec bigloop rs cs = 
+let rec bigloop rs (cs,hss) = 
   let es = ref [Ast_c.emptyMetavarsBinding] in
   let cs = ref cs in
+  let hss = ref hss in
   let rules_that_have_matched = ref [] in
 
   (* looping over the rules *)
@@ -655,8 +688,8 @@ let rec bigloop rs cs =
 
       let children_e = ref [] in
       
-      (* looping over the functions *)
-      !cs +> List.iter (fun c -> 
+      (* looping over the functions and toplevel elements in .h and .h *)
+      concat_headers_and_c !hss !cs +> List.iter (fun c -> 
         if c.flow <> None 
         then
           (* does also some side effects on c and r *)
@@ -682,12 +715,13 @@ let rec bigloop rs cs =
       
     ); (* end iter es *)
     es := !newes;
-    cs := rebuild_info_program !cs;
+    let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
+    cs := newcs; hss := newhss;
     if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
    end
   ); (* end iter rs *)
 
-  !cs (* return final C asts *)
+  !cs, !hss (* return final C asts *)
 
 
 
@@ -759,24 +793,34 @@ let full_engine2 cfile (coccifile, isofile) outfile =
 
     g_contain_typedmetavar := contain_typedmetavar;
     let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
-    let c_infos     = prepare_c cfile in
+    let (c_infos, hs_infos)     = prepare_c cfile in
 
     show_or_not_ctl_tex astcocci ctls;
 
-    let c_infos' = bigloop cocci_infos c_infos in
+    let (c_infos', hs_infos') = bigloop cocci_infos (c_infos, hs_infos) in
 
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr "Finished";
     Common.pr_xxxxxxxxxxxxxxxxx();
 
     (* and now unparse everything *)
-    let xs = c_infos' +> List.map (fun x -> 
+    let for_unparser xs = xs +> List.map (fun x -> 
       (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
     )
     in
-    cfile_from_program xs outfile;
+    cfile_from_program (for_unparser c_infos') outfile;
 
     show_or_not_diff cfile outfile;
+
+    hs_infos' +> List.iter (fun hi -> 
+      let outheader = outfile ^ "." ^ hi.header_name ^ ".h" in
+      if !(hi.was_modified_once)
+      then begin
+        pr2 ("a header file was modified: " ^ hi.header_name);
+        cfile_from_program (for_unparser hi.header_content) outheader;
+        show_or_not_diff hi.header_path outheader;
+      end
+    );
   end
 
 
