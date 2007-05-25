@@ -1,4 +1,4 @@
-@@
+@ rule1 @
 identifier C;
 @@
  int C(int i) {
@@ -16,6 +16,7 @@ identifier C;
 identifier TestMethod;
 expression name; 
 statement S1,S2;
+identifier rule1.C;
 // if put identifier name; then cocci does not help
 // to say that there is a partial match :( 
 @@
@@ -63,7 +64,9 @@ statement S1,S2;
 //  <...  UnitTestEntry(name); if(TestMethod()) { ... }  ...>
   }
 
- @@ @@
+@@
+identifier rule1.C;
+@@
  int C(int i) {
   ...
   if(UnitTest()) {

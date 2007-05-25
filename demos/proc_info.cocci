@@ -1,4 +1,4 @@
-@@
+@ rule1 @
 identifier buffer, start, offset, length, inout, hostno;
 identifier hostptr;
 identifier proc_info_func;
@@ -22,7 +22,10 @@ identifier proc_info_func;
 
 
 
-@@ @@
+@@
+identifier rule1.proc_info_func;
+identifier rule1.hostno;
+@@
   proc_info_func(...) {
     <...
 -   hostno
@@ -34,6 +37,7 @@ identifier proc_info_func;
 identifier func; 
 expression buffer, start, offset, length, inout, hostno;
 identifier hostptr;
+identifier rule1.proc_info_func;
 @@
 
  func(..., struct Scsi_Host *hostptr, ...) {

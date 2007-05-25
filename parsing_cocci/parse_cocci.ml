@@ -610,14 +610,15 @@ statement. *)
 (* bug: once a type, always a type, even if the same name is later intended
    to be used as a real identifier *)
 let detect_types in_meta_decls l =
-  let is_delim = function
+  let is_delim infn = function
       (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
     | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
     | (PC.Tinline(_),_) | (PC.Tattr(_),_) -> true
-    | (PC.TComma(_),_) | (PC.TDotDot(_),_) when in_meta_decls -> true
+    | (PC.TComma(_),_) when infn > 0 or in_meta_decls -> true
+    | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
@@ -639,36 +640,31 @@ let detect_types in_meta_decls l =
     !Data.add_type_name ident;
     (PC.TTypeId(ident,clt),v) in
   let rec loop start infn type_names = function
+      (* infn: 0 means not in a function header
+	 > 0 means in a function header, after infn - 1 unmatched open parens*)
       [] -> []
     | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names all (* never a function header *)
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest
-      when is_delim delim ->
+      when is_delim infn delim ->
 	let newid = redo_id ident clt v in
-	!Data.add_type_name ident;
 	delim::newid::x::(loop false infn (ident::type_names) rest)
     | delim::(PC.TIdent(ident,clt),v)::id::rest
-      when is_delim delim && is_id id ->
+      when is_delim infn delim && is_id id ->
 	let newid = redo_id ident clt v in
 	delim::newid::id::(loop false infn (ident::type_names) rest)
-    | ((PC.TFunDecl(_),_) as fn)::nm::lp::
-      (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest ->
-	let newid = redo_id ident clt v in
-	!Data.add_type_name ident;
-	fn::nm::lp::newid::x::(loop false true (ident::type_names) rest)
-    | ((PC.TFunDecl(_),_) as fn)::nm::lp::(PC.TIdent(ident,clt),v)::id::rest
-      when is_id id ->
-	let newid = redo_id ident clt v in
-	fn::nm::lp::newid::id::(loop false true (ident::type_names) rest)
-    | ((PC.TFunDecl(_),_) as fn)::nm::lp::rest ->
-	fn::nm::lp::(loop false true type_names rest)
-    | ((PC.TCPar(_),_) as rp)::rest ->
-	rp::(loop false false type_names rest)
+    | ((PC.TFunDecl(_),_) as fn)::rest ->
+	fn::(loop false 1 type_names rest)
+    | ((PC.TOPar(_),_) as lp)::rest when infn > 0 ->
+	lp::(loop false (infn + 1) type_names rest)
+    | ((PC.TCPar(_),_) as rp)::rest when infn > 0 ->
+	if infn - 1 = 1
+	then rp::(loop false 0 type_names rest) (* 0 means not in fn header *)
+	else rp::(loop false (infn - 1) type_names rest)
     | (PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::rest when start ->
 	let newid = redo_id ident clt v in
 	newid::x::(loop false infn (ident::type_names) rest)
-    | (PC.TIdent(ident,clt),v)::id::rest
-      when start && is_id id ->
+    | (PC.TIdent(ident,clt),v)::id::rest when start && is_id id ->
 	let newid = redo_id ident clt v in
 	newid::id::(loop false infn (ident::type_names) rest)
     | (PC.TIdent(ident,clt),v)::rest when List.mem ident type_names ->
@@ -679,13 +675,13 @@ let detect_types in_meta_decls l =
   and collect_choices type_names = function
       [] -> [] (* should happen, but let the parser detect that *)
     | (PC.TCBrace(clt),v)::rest ->
-	(PC.TCBrace(clt),v)::(loop false false type_names rest)
+	(PC.TCBrace(clt),v)::(loop false 0 type_names rest)
     | delim::(PC.TIdent(ident,clt),v)::rest
       when is_choices_delim delim ->
 	let newid = redo_id ident clt v in
 	delim::newid::(collect_choices (ident::type_names) rest)
     | x::rest -> x::(collect_choices type_names rest) in
-  loop true false [] l
+  loop true 0 [] l
 
 
 (* ----------------------------------------------------------------------- *)

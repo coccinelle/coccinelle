@@ -38,12 +38,12 @@ let ctl_not x      = wrap 0 (CTL.Not(x))
 
 let ctl_ax x       =
   if is_true x then wrap 0 CTL.True
-  else wrap 0 (CTL.AX(CTL.FORWARD,CTL.STRICT,x))
+  else wrap 0 (CTL.EX(CTL.FORWARD,x))
 
 let after          = wrap 0 (CTL.Pred(Lib_engine.After, CTL.Control))
 let exit           = wrap 0 (CTL.Pred(Lib_engine.Exit, CTL.Control))
 
-let ctl_au x y     = wrap 0 (CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y after))
+let ctl_au x y     = wrap 0 (CTL.EU(CTL.FORWARD,ctl_and x (ctl_not after),y))
 
 let ctl_exists v x keep_wit = wrap 0 (CTL.Exists(v,x,keep_wit))
 

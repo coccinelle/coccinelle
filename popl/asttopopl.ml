@@ -8,6 +8,8 @@ let rec stm s =
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.ExprStatement(_,_) -> Past.Term ast
+      |	Ast.Exp(_) -> Past.Term ast
+      |	Ast.Decl(_,_,_) -> Past.Term ast
       |	_ -> failwith "complex statements not supported")
   | Ast.Disj([sd1;sd2]) ->
       Past.Or (stm_list sd1,stm_list sd2)
