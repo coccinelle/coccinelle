@@ -664,7 +664,7 @@ let triples_union trips trips' =
       if trips = trips'
       then trips
       else
-	let subsumes (s1,th1,wit1) (s2,th2,wit2) = 0 (*
+	let subsumes (s1,th1,wit1) (s2,th2,wit2) =
 	  if s1 = s2
 	  then
 	    (match conj_subst th1 th2 with
@@ -676,7 +676,7 @@ let triples_union trips trips' =
 		  then if subseteq wit1 wit2 then (-1) else 0
 		  else 0
 	    | None -> 0)
-	  else 0 *) in
+	  else 0 in
 	let rec first_loop second = function
 	    [] -> second
 	  | x::xs -> first_loop (second_loop x second) xs
