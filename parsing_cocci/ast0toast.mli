@@ -1,5 +1,5 @@
 val ast0toast :
-    string -> string list -> Ast0_cocci.rule -> Ast_cocci.rule
+    string -> Ast_cocci.dependency list -> Ast0_cocci.rule -> Ast_cocci.rule
 val ast0toast_toplevel : Ast0_cocci.top_level -> Ast_cocci.top_level
 
 val ident : Ast0_cocci.ident -> Ast_cocci.ident

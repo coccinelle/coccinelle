@@ -262,7 +262,7 @@ and base_statement =
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
-  | Include of string mcode (* #include *) * string mcode (* file *)
+  | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	string mcode list option (*params*) * define_body
   | OptStm   of statement

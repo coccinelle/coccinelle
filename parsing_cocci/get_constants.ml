@@ -38,6 +38,7 @@ let get_constants rules =
   let res =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing
       ident expression donothing typeC donothing donothing donothing
       donothing donothing donothing donothing donothing in

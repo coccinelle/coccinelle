@@ -206,6 +206,7 @@ let elim_opt =
   
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing stmtdotsfn donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -292,6 +293,7 @@ let contains_modif =
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -354,6 +356,7 @@ let count_nested_braces s =
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in

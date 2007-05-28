@@ -142,7 +142,7 @@ let inline_mcodes =
     | Ast0.PLUS -> () in
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
+    mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing
@@ -188,7 +188,7 @@ let check_allminus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
+    mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing

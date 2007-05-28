@@ -21,6 +21,7 @@ val sign : Ast_cocci.sign -> unit
 val structUnion : Ast_cocci.structUnion -> unit
 val storage : Ast_cocci.storage -> unit
 val baseType : Ast_cocci.baseType -> unit
+val inc_file : Ast_cocci.inc_file -> unit
 
 val print_around :
     ('a -> unit) -> 'a -> Ast_cocci.anything Ast_cocci.befaft -> unit

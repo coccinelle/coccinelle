@@ -130,6 +130,7 @@ and strip =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing
     donothing donothing
@@ -291,12 +292,12 @@ let process rule_name minus plus =
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some (metavars,("proto for "^rule_name,[rule_name],
+	  Some (metavars,("proto for "^rule_name,[Ast.Dep rule_name],
 			  [Ast.rewrap x (Ast.DECL x)]))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
 	  let res =
-	    ("proto for "^rule_name,[rule_name],
+	    ("proto for "^rule_name,[Ast.Dep rule_name],
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
 	  Some(metavars,res)

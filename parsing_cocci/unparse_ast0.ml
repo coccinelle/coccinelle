@@ -1,6 +1,5 @@
 open Format
 module Ast0 = Ast0_cocci
-module Ast = Ast_cocci
 module U = Pretty_print_cocci
 
 let quiet = ref true (* true = no decoration on - context, etc *)
@@ -463,7 +462,7 @@ and statement arity s =
 	  print_string arity; mcode print_string d;
 	  whencode (dots force_newline (statement "")) (statement "") whn
       | Ast0.Include(inc,s) ->
-	  mcode print_string inc; print_string " "; mcode print_string s
+	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.Define(def,id,params,body) ->
 	  mcode print_string def; print_string " "; ident id;
 	  print_option (List.iter (mcode print_string)) params;

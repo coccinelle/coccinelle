@@ -37,6 +37,7 @@ type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 let combiner bind option_default 
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn
     tyfn initfn paramfn declfn stmtfn casefn topfn =
@@ -388,7 +389,7 @@ let combiner bind option_default
       | Ast0.Ty(ty) -> typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  bind (string_mcode d) (whencode statement_dots statement whn)
-      | Ast0.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      | Ast0.Include(inc,name) -> bind (string_mcode inc) (inc_mcode name)
       | Ast0.Define(def,id,params,body) ->
 	  multibind [string_mcode def; ident id;
 		      get_option
@@ -491,6 +492,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder = fun
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
   let get_option f = function
@@ -807,7 +809,7 @@ let rebuilder = fun
 	| Ast0.Stars(d,whn) ->
 	    Ast0.Stars(string_mcode d, whencode statement_dots statement whn)
 	| Ast0.Include(inc,name) ->
-	    Ast0.Include(string_mcode inc,string_mcode name)
+	    Ast0.Include(string_mcode inc,inc_mcode name)
 	| Ast0.Define(def,id,params,body) ->
 	    Ast0.Define(string_mcode def,ident id,
 			get_option (List.map string_mcode) params,

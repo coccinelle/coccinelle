@@ -86,6 +86,16 @@ let check_arity_context_linetype s =
     (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
   | _ -> raise (Lexical ("invalid in a nonempty context:"^s))
 
+let process_include start finish str =
+  (match !current_line_type with
+    (D.PLUS,_,_) ->
+      (try
+	let _ = Str.search_forward (Str.regexp "...") str start in
+	failwith "... not allowed in + include"
+      with Not_found -> ())
+  | _ -> ());
+  String.sub str (start + 1) (finish - start - 1)
+
 (* ---------------------------------------------------------------------- *)
 (* identifiers, including metavariables *)
 
@@ -459,21 +469,19 @@ rule token = parse
 	  (lt,check_var ident (arity,line,lline,offset+off,(-1),strbef,straft),
 	   String.length ident, params) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
-      { TInclude
+      { TIncludeL
 	  (let str = tok lexbuf in
 	  let start = String.index str '"' in
 	  let finish = String.rindex str '"' in
 	  start_line true;
-	  (String.sub str start (finish - start + 1),
-	   (get_current_line_type lexbuf))) }
+	  (process_include start finish str,get_current_line_type lexbuf)) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '<' [^ '>']+ '>'
-      { TInclude
+      { TIncludeNL
 	  (let str = tok lexbuf in
 	  let start = String.index str '<' in
 	  let finish = String.rindex str '>' in
 	  start_line true;
-	  (String.sub str start (finish - start + 1),
-	   (get_current_line_type lexbuf)))}
+	  (process_include start finish str,get_current_line_type lexbuf)) }
   | "#" [' ' '\t']* "if" [^'\n']*
   | "#" [' ' '\t']* "ifdef" [^'\n']*
   | "#" [' ' '\t']* "ifndef" [^'\n']*

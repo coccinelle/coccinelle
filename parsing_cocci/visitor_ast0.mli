@@ -39,6 +39,7 @@ val combiner :
     ((Ast_cocci.sign,'a) cmcode) ->
     ((Ast_cocci.structUnion,'a) cmcode) ->
     ((Ast_cocci.storage,'a) cmcode) ->
+    ((Ast_cocci.inc_file,'a) cmcode) ->
     ((Ast0_cocci.expression Ast0_cocci.dots,'a) ccode) ->
     ((Ast0_cocci.initialiser Ast0_cocci.dots,'a) ccode) ->
     ((Ast0_cocci.parameterTypeDef Ast0_cocci.dots,'a) ccode) ->
@@ -99,6 +100,7 @@ val rebuilder :
     (Ast_cocci.sign rmcode) ->
     (Ast_cocci.structUnion rmcode) ->
     (Ast_cocci.storage rmcode) ->
+    (Ast_cocci.inc_file rmcode) ->
     (Ast0_cocci.expression Ast0_cocci.dots rcode) ->
     (Ast0_cocci.initialiser Ast0_cocci.dots rcode) ->
     (Ast0_cocci.parameterTypeDef Ast0_cocci.dots rcode) ->

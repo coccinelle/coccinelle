@@ -284,6 +284,7 @@ let classify all_marked table code =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
@@ -606,6 +607,7 @@ let contextify_all =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing
@@ -646,6 +648,7 @@ let contextify_whencode =
   let combiner = 
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing
       expression

@@ -68,6 +68,7 @@ and contains_only_minus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing

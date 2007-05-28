@@ -865,7 +865,7 @@ and statement in_nest tgt stm =
   | Ast0.Include(inc,s) -> 
       let arity =
 	all_same true true tgt (mcode2line inc)
-	  (List.map mcode2arity [inc;s]) in
+	  [mcode2arity inc; mcode2arity s] in
       let inc = mcode inc in
       let s = mcode s in
       make_rule_elem stm tgt arity (Ast0.Include(inc,s))

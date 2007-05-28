@@ -321,7 +321,7 @@ and base_rule_elem =
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)
-  | Include       of string mcode (*#include*) * string mcode (*file *)
+  | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	string mcode list option (*params*) * define_body
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
@@ -393,6 +393,14 @@ and base_define_body =
 
 and define_body = base_define_body wrap
 
+and inc_file =
+    Local of inc_elem list
+  | NonLocal of inc_elem list
+
+and inc_elem =
+    IncPath of string
+  | IncDots
+
 and base_top_level =
     DECL of statement
   | CODE of statement dots
@@ -401,7 +409,9 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and rule = string * string list * top_level list
+and rule = string * dependency list * top_level list
+
+and dependency = Dep of string | AntiDep of string
 
 and rule_with_metavars = metavar list * rule
 
@@ -422,6 +432,7 @@ and anything =
   | DeclarationTag      of declaration
   | InitTag             of initialiser
   | StorageTag          of storage
+  | IncFileTag          of inc_file
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
   | CaseLineTag         of case_line

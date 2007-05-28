@@ -2646,8 +2646,14 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.Include(incla,filea), F.Include (filebstr, ii) ->
+      let path2str = function
+	  A.IncPath s -> s
+	| A.IncDots -> failwith "not supported" in
+      let stringify = function (* to remove! *)
+	  A.Local s -> "\""^(String.concat "/" (List.map path2str s))^"\""
+	| A.NonLocal s -> "<"^(String.concat "/" (List.map path2str s))^">" in
       let (inclb, fileb) = tuple_of_list2 ii in 
-      if ((term filea) =$= filebstr)
+      if ((stringify (term filea)) =$= filebstr)
       then 
         tokenf incla inclb >>= (fun incla inclb -> 
         tokenf filea fileb >>= (fun filea fileb -> 

@@ -279,10 +279,13 @@ let worth_trying cfile tokens =
       | _ -> s
 
     ) in
-    (match Sys.command (sprintf "egrep -q '(%s)' %s" (join "|" tokens) cfile)
-    with
+    let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) cfile in
+    (match Sys.command com with
     | 0 (* success *) -> true
-    | _ (* failure *) -> false (* no match, so not worth trying *)
+    | _ (* failure *) ->
+	(if !Flag.show_misc
+	then Printf.printf "grep failed: %s\n" com);
+	false (* no match, so not worth trying *)
     )
   else true
 
@@ -318,6 +321,7 @@ let sp_contain_typed_metavar toplevel_list_list =
   let combiner = 
     Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing 
@@ -461,7 +465,7 @@ type toplevel_cocci_info = {
   ast_rule: Ast_cocci.rule;
 
   rulename: string;
-  dependencies: string list;
+  dependencies: Ast_cocci.dependency list;
   used_after: Ast_cocci.meta_name list;
 
   ruleid: int;
@@ -676,7 +680,12 @@ let rec bigloop rs (cs,hss) =
   rs +> List.iter (fun r -> 
    show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
-   if not (Common.include_set r.dependencies !rules_that_have_matched)
+   if not
+       (List.for_all
+	  (function
+	      Ast_cocci.Dep s -> List.mem s !rules_that_have_matched
+	    | Ast_cocci.AntiDep s -> not (List.mem s !rules_that_have_matched))
+	  r.dependencies)
    then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
    else begin
 

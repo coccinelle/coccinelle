@@ -62,6 +62,7 @@ it *)
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
@@ -218,6 +219,7 @@ bind to that; not good for isomorphisms *)
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     edots idots pdots sdots ddots cdots
     do_nothing expression do_nothing initialiser do_nothing do_nothing
     statement do_nothing do_top
@@ -335,6 +337,7 @@ let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
+let mk_inc_file x         = Ast.IncFileTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
@@ -400,7 +403,7 @@ let collect_plus_nodes root =
     (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
     (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)
-    (mcode mk_storage)
+    (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
     (do_nothing mk_casedots)
@@ -756,6 +759,7 @@ let reevaluate_contextness =
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
       donothing donothing donothing donothing donothing donothing donothing in
@@ -875,6 +879,7 @@ let insert_markers e =
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing statement_dots donothing donothing
       donothing donothing
       donothing donothing donothing donothing donothing donothing top_level in

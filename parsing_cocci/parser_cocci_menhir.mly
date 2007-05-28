@@ -58,7 +58,7 @@ module P = Parse_aux
 %token <Data.clt> TMid0 TCPar TCPar0
 
 %token <string>  TPragma
-%token <string * Data.clt> TInclude
+%token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
 %token <Data.clt * token * int * string> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
@@ -117,7 +117,7 @@ module P = Parse_aux
 %type <Ast0_cocci.rule> plus_main
 
 %start rule_name
-%type <string * string list * string option> rule_name
+%type <string * Ast_cocci.dependency list * string option> rule_name
 
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
@@ -166,7 +166,11 @@ extends:
 
 depends:
   /* empty */                                     { [] }
-| TDepends TOn parents=comma_list(TRuleName)      { parents }
+| TDepends TOn parents=separated_nonempty_list(TAndLog,pnrule) { parents }
+
+pnrule:
+  TRuleName       { Ast.Dep $1 }
+| TBang TRuleName { Ast.AntiDep $2 }
 
 choose_iso:
   TUsing TString     { P.id2name $2 }
@@ -399,7 +403,7 @@ filespec:
 			 P.id2mcode $2))] }
 
 includes:
-  TInclude
+  TIncludeL
     { Ast0.wrap
 	(Ast0.DECL
 	   (Ast0.wrap
@@ -407,7 +411,20 @@ includes:
 			    let (arity,ln,lln,offset,col,strbef,straft) =
 			      P.id2clt $1 in
 			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
-			    P.clt2mcode (P.id2name $1) (P.drop_bef clt))))) }
+			    P.clt2mcode
+			      (Ast.Local (Parse_aux.str2inc (P.id2name $1)))
+			      (P.drop_bef clt))))) }
+| TIncludeNL
+    { Ast0.wrap
+	(Ast0.DECL
+	   (Ast0.wrap
+	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
+			    let (arity,ln,lln,offset,col,strbef,straft) =
+			      P.id2clt $1 in
+			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
+			    P.clt2mcode
+			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
+			      (P.drop_bef clt))))) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.Ty(t)) in
       Ast0.wrap

@@ -25,6 +25,7 @@ let strip_info =
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing
@@ -242,6 +243,7 @@ let match_maker context_required whencode_allowed =
 
     V0.combiner bind option_default 
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing param donothing stmt donothing
       donothing in
@@ -942,6 +944,7 @@ let make_minus =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
     statement donothing donothing
@@ -1008,6 +1011,7 @@ let rebuild_mcode start_line =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
@@ -1030,6 +1034,7 @@ let count_edots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
@@ -1044,6 +1049,7 @@ let count_idots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
@@ -1060,6 +1066,7 @@ let count_dots =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
@@ -1292,6 +1299,7 @@ let instantiate bindings mv_bindings =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn donothing paramfn declfn stmtfn donothing donothing
 
@@ -1730,6 +1738,7 @@ let transform (alts : isomorphism) t =
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
       donothing donothing donothing donothing donothing donothing
       donothing exprfn typefn donothing donothing declfn stmtfn
       donothing topfn in
@@ -1744,6 +1753,7 @@ let rewrap =
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing

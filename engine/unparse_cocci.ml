@@ -410,6 +410,20 @@ let rec define_body m =
 
   | Ast.DStm(re) -> rule_elem "" re
 
+and inc_file = function
+    Ast.Local(elems) ->
+      print_string "\"";
+      print_between (function _ -> print_string "/") inc_elem elems;
+      print_string "\""
+  | Ast.NonLocal(elems) ->
+      print_string "<";
+      print_between (function _ -> print_string "/") inc_elem elems;
+      print_string ">"
+
+and inc_elem = function
+    Ast.IncPath s -> print_string s
+  | Ast.IncDots -> print_string "..."
+
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
@@ -476,7 +490,7 @@ and rule_elem arity re =
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode print_string s
+      mcode print_string inc; print_string " "; mcode inc_file s
   | Ast.Define(def,id,params,body) ->
       mcode print_string def; print_string " "; ident id; 
       print_option (List.iter (mcode print_string)) params; print_string " ";
@@ -593,6 +607,7 @@ let rec pp_any = function
   | Ast.DeclarationTag(x) -> declaration x
 
   | Ast.StorageTag(x) -> storage x
+  | Ast.IncFileTag(x) -> inc_file x
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x
   | Ast.StatementTag(x) -> statement "" x

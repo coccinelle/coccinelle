@@ -247,3 +247,9 @@ let check_meta tok =
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
+
+(* ---------------------------------------------------------------------- *)
+
+let str2inc s =
+  let elements = Str.split (Str.regexp "/") s in
+  List.map (function "..." -> Ast.IncDots | s -> Ast.IncPath s) elements

@@ -34,6 +34,7 @@ let combiner bind option_default
     meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
     unary_mcodefn binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
+    inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
@@ -59,6 +60,7 @@ let combiner bind option_default
   and sign_mcode x = sign_mcodefn all_functions x
   and struct_mcode x = struct_mcodefn all_functions x
   and storage_mcode x = storage_mcodefn all_functions x
+  and inc_file_mcode x = inc_file_mcodefn all_functions x
 
   and expression_dots d =
     let k d =
@@ -329,7 +331,7 @@ let combiner bind option_default
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
-      |	Ast.Include(inc,name) -> bind (string_mcode inc) (string_mcode name)
+      |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
       | Ast.Define(def,id,params,body) ->
 	  multibind [string_mcode def; ident id;
 		      get_option
@@ -438,6 +440,7 @@ let combiner bind option_default
       | Ast.DeclarationTag(decl) -> declaration decl
       | Ast.InitTag(ini) -> initialiser ini
       | Ast.StorageTag(stg) -> option_default
+      | Ast.IncFileTag(stg) -> option_default
       | Ast.Rule_elemTag(rule) -> rule_elem rule
       | Ast.StatementTag(rule) -> statement rule
       | Ast.CaseLineTag(case) -> case_line case
@@ -501,6 +504,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 let rebuilder
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
@@ -784,7 +788,7 @@ let rebuilder
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
-	    Ast.Include(string_mcode inc,string_mcode name)
+	    Ast.Include(string_mcode inc,inc_file_mcode name)
 	| Ast.Define(def,id,params,body) ->
 	    Ast.Define(string_mcode def,ident id,
 		       get_option (List.map string_mcode) params,
@@ -903,6 +907,7 @@ let rebuilder
       | Ast.InitTag(decl) -> Ast.InitTag(initialiser decl)
       | Ast.DeclarationTag(decl) -> Ast.DeclarationTag(declaration decl)
       | Ast.StorageTag(stg) as x -> x
+      | Ast.IncFileTag(stg) as x -> x
       | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)

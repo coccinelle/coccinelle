@@ -222,6 +222,7 @@ let rec propagate_types env =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
     donothing donothing donothing statement_dots donothing donothing
     ident expression donothing donothing donothing donothing statement
     case_line donothing
