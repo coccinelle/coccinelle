@@ -48,8 +48,8 @@ in
 let mcode fn (s,info,_) =
   List.iter (function str -> print_string str; print_string "\n")
     info.Ast.strbef;
-  if info.Ast.column > 0
-  then (print_string "\n"; print_string (String.make info.Ast.column ' '));
+  if info.Ast.column > 0 && not(info.Ast.strbef = [])
+  then print_string (String.make info.Ast.column ' ');
   fn s;
   match info.Ast.straft with
     [] -> ()
