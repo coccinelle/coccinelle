@@ -105,23 +105,27 @@ let rec propagate_types env =
 	  (match Ast0.get_type exp2 with
 	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
 	  | Some(T.BaseType(T.IntType,None)) -> ()
+	  | Some (T.MetaType(_)) -> ()
 	  | _ -> err exp2 "bad type for an array index");
 	  (match Ast0.get_type exp1 with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
 	  | Some (T.Pointer(ty)) -> Some ty
+	  | Some (T.MetaType(_)) -> None
 	  | Some x -> err exp1 "ill-typed array reference")
       | Ast0.RecordAccess(exp,pt,field) ->
 	  (match Ast0.get_type exp with
 	    None -> None
 	  | Some (T.StructUnionName(_,_,_)) -> None
 	  | Some (T.TypeName(_)) -> None
+	  | Some (T.MetaType(_)) -> None
 	  | Some x -> err exp "non-structure type in field ref")
       | Ast0.RecordPtAccess(exp,ar,field) ->
 	  (match Ast0.get_type exp with
 	    None -> None
 	  | Some (T.Pointer(T.Unknown)) -> None
 	  | Some (T.Pointer(T.StructUnionName(_,_,_))) -> None
+	  | Some (T.MetaType(_)) -> None
 	  | Some x -> err exp "non-structure pointer type in field ref")
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))

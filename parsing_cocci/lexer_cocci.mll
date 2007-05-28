@@ -90,7 +90,7 @@ let process_include start finish str =
   (match !current_line_type with
     (D.PLUS,_,_) ->
       (try
-	let _ = Str.search_forward (Str.regexp "...") str start in
+	let _ = Str.search_forward (Str.regexp "\.\.\.") str start in
 	failwith "... not allowed in + include"
       with Not_found -> ())
   | _ -> ());
