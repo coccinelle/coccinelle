@@ -10,6 +10,9 @@ worth it.  The most obvious goal is to distinguish between test expressions
 that have pointer, integer, and boolean type when matching isomorphisms,
 but perhaps other needs will become apparent. *)
 
+let err wrapped s =
+  failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
+
 type id = Id of string | Meta of (string * string)
 
 let rec lub_type t1 t2 =
@@ -99,14 +102,27 @@ let rec propagate_types env =
 	      Some(T.BaseType(T.BoolType,None)))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	  Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)));
+	  (match Ast0.get_type exp2 with
+	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
+	  | Some(T.BaseType(T.IntType,None)) -> ()
+	  | _ -> err exp2 "bad type for an array index");
 	  (match Ast0.get_type exp1 with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
 	  | Some (T.Pointer(ty)) -> Some ty
-	  | Some x -> failwith "ill-typed array reference")
-      | Ast0.RecordAccess(exp,pt,field) -> None
-      | Ast0.RecordPtAccess(exp,ar,field) -> None
+	  | Some x -> err exp1 "ill-typed array reference")
+      | Ast0.RecordAccess(exp,pt,field) ->
+	  (match Ast0.get_type exp with
+	    None -> None
+	  | Some (T.StructUnionName(_,_,_)) -> None
+	  | Some (T.TypeName(_)) -> None
+	  | Some x -> err exp "non-structure type in field ref")
+      | Ast0.RecordPtAccess(exp,ar,field) ->
+	  (match Ast0.get_type exp with
+	    None -> None
+	  | Some (T.Pointer(T.Unknown)) -> None
+	  | Some (T.Pointer(T.StructUnionName(_,_,_))) -> None
+	  | Some x -> err exp "non-structure pointer type in field ref")
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))

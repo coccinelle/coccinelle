@@ -85,7 +85,7 @@ let print_mcodekind = function
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS -> print_string "PLUS"
 
-let print_meta (r,x) = print_string r; print_string "."; print_string x
+let print_meta (r,x) = print_string r; print_string ":"; print_string x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

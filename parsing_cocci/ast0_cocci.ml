@@ -382,6 +382,7 @@ let copywrap (_,info,index,mcodekind,ty,dots) x =
      strings_after = info.strings_after },
    ref !index,ref !mcodekind,ref !ty,dots)
 let get_info (_,info,_,_,_,_) = info
+let get_line (_,info,_,_,_,_) = info.line_start
 let get_index (_,_,index,_,_,_) = !index
 let set_index (_,_,index,_,_,_) i = index := i
 let get_mcodekind (_,_,_,mcodekind,_,_) = !mcodekind
