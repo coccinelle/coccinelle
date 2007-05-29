@@ -2,5 +2,5 @@
 
 static void serio_init_port(struct serio *serio)
 {
-	init_MUTEX(&serio->new_lock);
+	mutex_init(&serio->new_lock);
 }
