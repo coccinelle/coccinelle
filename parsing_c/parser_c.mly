@@ -1329,7 +1329,18 @@ cpp_directives:
  | TMacroMisc { EmptyDef [$1] }
 
  | TIncludeStart TIncludeFilename 
-     { Include (fst $2, [$1;snd $2]) }
+     { 
+       let s = fst $2 in
+       let inc_file = 
+         match () with
+         | _ when s =~ "^\"\\(.*\\)\"$" -> 
+             Local (Common.split "/" (matched1 s))
+         | _ when s =~ "^\\<\\(.*\\)\\>$" -> 
+             NonLocal (Common.split "/" (matched1 s))
+         | _ -> failwith ("wierd header file: " ^ s)
+       in
+       Include ((inc_file, [$1;snd $2]), Ast_c.noRelPos()) 
+     }
 
  | TDefVarStart TDefIdent define_val TDefEOL 
      { Define ((fst $2, [$1; snd $2;$4]), (DefineVar ($3))) }

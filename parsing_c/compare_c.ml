@@ -180,7 +180,7 @@ let compare_ast filename1 filename2  =
         | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
         | SpecialMacro (a1,b1,c1), SpecialMacro (a2,b2,c2) -> 
             if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
-        | Include a, Include b -> if not (a =*= b) then incr error
+        | Include (a,_), Include (b,_) -> if not (a =*= b) then incr error
         | Define _, Define _ ->   
             raise Todo
             (* if not (a =*= b) then incr error *)

@@ -122,7 +122,12 @@
    ; ! \\+
 
    ; --- +++
+
    ; #cpp
+   ("#\\(include\\) *\\(.*\\)" 
+    (1 'font-lock-builtin-face)
+    (2 'font-lock-string-face)
+    )
 
    ; comments
    ("//.*" . 'font-lock-comment-face)

@@ -796,7 +796,7 @@ let pp_program_gen pr_elem progelem =
   | Declaration decl -> pp_decl_gen pr_elem decl
   | Definition def -> pp_def_gen pr_elem def
 
-  | Include (s, [i1;i2]) -> 
+  | Include ((s, [i1;i2]),h_rel_pos) -> 
       pr_elem i1; pr_elem i2
   | Define ((s,[idefine;iident;ieol]), (def)) -> 
       pr_elem idefine;

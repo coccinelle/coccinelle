@@ -333,18 +333,76 @@ let sp_contain_typed_metavar toplevel_list_list =
     
 
 (* --------------------------------------------------------------------- *)
-(* local includes and typing environment *)
+(* includes and typing environment *)
 (* --------------------------------------------------------------------- *)
 
 let extract_local_includes file cs = 
   cs +> Common.map_filter (fun (c,_info_item) -> 
     match c with
-    | Ast_c.Include (s,_) when s=~ "^\"\\(.*\\)\"$" ->
-        Some (Left (matched1 s))
-    | Ast_c.Include (s,_) when s=~ "^\\<\\(.*\\)\\>$" ->
-        Some (Right (matched1 s))
+    | Ast_c.Include ((x,_),_)  -> Some x
     | _ -> None
   )
+
+
+
+(* compute the set of new prefixes
+on 
+ "a/b/x"; (* in fact it is now a list of string so  ["a";"b";"x"] *)
+ "a/b/c/x";
+ "a/x";
+ "b/x";
+it would give for the first element 
+ ""; "a"; "a/b"; "a/b/x"
+for the second
+ "a/b/c/x"
+*)
+
+let compute_new_prefixes xs = 
+  xs +> Common.map_withenv (fun already xs -> 
+    let subdirs_prefixes = Common.inits xs in
+    let new_first = subdirs_prefixes +> List.filter (fun x -> 
+      not (List.mem x already)
+    )
+    in
+    new_first, 
+    new_first @ already
+  ) []
+  +> fst
+
+
+(* does via side effect on the ref in the Include in Ast_c *)
+let rec update_include_rel_pos cs =
+  let only_include = cs +> Common.map_filter (fun c -> 
+    match c with 
+    | Ast_c.Include ((s,_),aref) ->Some (s, aref)
+    | _ -> None
+  )
+  in
+  let (locals, nonlocals) = 
+    only_include +> Common.partition_either (fun (c, aref)  -> 
+      match c with
+      | Ast_c.Local x -> Left (x, aref)
+      | Ast_c.NonLocal x -> Right (x, aref)
+    ) in
+
+  pr2gen (only_include, locals, nonlocals);
+  update_rel_pos_bis locals;
+  update_rel_pos_bis nonlocals;
+  cs
+and update_rel_pos_bis xs = 
+  let xs' = List.map fst xs in
+  let the_first = compute_new_prefixes xs' in
+  let the_last  = List.rev (compute_new_prefixes (List.rev xs')) in
+  let merged = Common.zip xs (Common.zip the_first the_last) in
+  merged +> List.iter (fun ((x, aref), (the_first, the_last)) -> 
+    aref := Some 
+      { 
+        Ast_c.first_of = the_first;
+        Ast_c.last_of = the_last;
+      }
+  )
+        
+
 
 
 (* --------------------------------------------------------------------- *)
@@ -423,7 +481,7 @@ let flow_info e =
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.Include x -> (Control_flow_c.Include x), "#include"
+        | Ast_c.Include (a,b) -> (Control_flow_c.Include (a,b)), "#include"
         | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
         (* todo? still useful ? could consider as Decl instead *)
         | Ast_c.SpecialMacro (s, args, ii) -> 
@@ -595,13 +653,15 @@ let prepare_c file =
 
   let env = ref TAC.initial_env in
 
-  let hss = local_includes +> Common.map_filter (fun h -> 
-    let (h, realh) = 
-      match h with
-      | Left s -> s, Filename.concat dir s
-      | Right s -> 
-          Common.basename s, Filename.concat !Flag.include_path s
+  let hss = local_includes +> Common.map_filter (fun inc_file -> 
+    let realh = 
+      match inc_file with
+      | Ast_c.Local xs -> 
+          Filename.concat dir (Common.join "/" xs)
+      | Ast_c.NonLocal xs -> 
+          Filename.concat !Flag.include_path (Common.join "/" xs)
     in
+    let h = Common.basename realh in
 
     if not (Common.lfile_exists realh) 
     then begin pr2 ("TYPE: header " ^ realh ^ " not found"); None end
@@ -621,7 +681,9 @@ let prepare_c file =
         header_path = realh;
       }
   ) in
-  build_info_program cprogram !env,
+  let cs = build_info_program cprogram !env in
+  ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
+  cs,
   hss
 
 

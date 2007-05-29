@@ -356,6 +356,15 @@ and define =
      | DefineText of string wrap
      | DefineEmpty
 
+(* useful for cocci, to tag the first #include <xx/> and last #include <yy> *)
+and include_rel_pos = { 
+  first_of : string list list;
+  last_of : string list list;
+}
+and inc_file = 
+  | Local of inc_elem list
+  | NonLocal of inc_elem list
+and inc_elem = string
 
 (* ------------------------------------------------------------------------- *)
 and toplevel =
@@ -363,7 +372,7 @@ and toplevel =
   | Definition of definition
          
   (* cppext: *)
-  | Include of string wrap           (* #include s *)
+  | Include of inc_file wrap * include_rel_pos option ref (* #include s *)
   | Define of string wrap * define   (* #define s *)
   (* cppext: *)
   | SpecialMacro of string * argument wrap2 list * il 
@@ -410,6 +419,9 @@ let noInstr = (ExprStatement (None), [])
 let emptyMetavarsBinding = ([]: metavars_binding)
 let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NoPos,Ast_cocci.NOTHING),
                  emptyMetavarsBinding)
+
+
+let noRelPos () = ref (None: include_rel_pos option)
 
 (*****************************************************************************)
 (* Wrappers *)

@@ -417,7 +417,7 @@ and vk_program = fun bigf p ->
           );
           infolistf ii
           
-    | Include (s, ii) -> infolistf ii;
+    | Include ((s, ii), h_rel_pos) -> infolistf ii;
     | Define ((s,ii), (def)) -> 
         iif ii;
         vk_define bigf def
@@ -508,7 +508,7 @@ and vk_node = fun bigf node ->
         vk_define bigf def; 
 
 
-    | F.Include (s, ii) -> iif ii
+    | F.Include ((s, ii),h_rel_pos) -> iif ii
     | F.Ifdef (st, ((),ii)) -> iif ii
 
     | F.Break    (st,((),ii)) -> iif ii
@@ -923,7 +923,7 @@ and vk_program_s = fun bigf p ->
           ),
           infolistf ii
           )
-    | Include (s, ii) -> Include (s, infolistf ii)
+    | Include ((s, ii), h_rel_pos) -> Include ((s, infolistf ii), h_rel_pos)
     | Define ((s,ii), (def)) -> 
 
         let define_val = function
@@ -1028,7 +1028,7 @@ and vk_node_s = fun bigf node ->
         F.Define ((s, iif ii), (def))
 
 
-    | F.Include (s, ii) -> F.Include (s, iif ii)
+    | F.Include ((s, ii), h_rel_pos) -> F.Include ((s, iif ii), h_rel_pos)
     | F.Ifdef (st, ((),ii)) -> F.Ifdef (st, ((),iif ii))
 
     | F.Macro (st, ((),ii)) -> F.Macro (st, ((),iif ii))
