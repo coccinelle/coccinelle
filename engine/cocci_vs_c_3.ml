@@ -33,6 +33,16 @@ let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
     | A.STARS _ -> A.STARS easundots
   )
 
+
+(* For the #include <linux/...> in the .cocci, need to find where is
+ * the '+' attached to this element, to later find the first concrete
+ * #include <linux/xxx.h> or last one in the serie of #includes in the
+ * .c.
+ *)
+type include_requirement = 
+  | IncludeMcodeBefore
+  | IncludeMcodeAfter 
+  | IncludeNothing
         
 (* todo? put in semantic_c.ml *)
 type info_ident = 
@@ -2189,8 +2199,39 @@ and equal_structUnion_type_cocci a b =
 
 
 
+(*---------------------------------------------------------------------------*)
+and inc_file (a, before_after) (b, h_rel_pos) = 
 
+  let rec aux_inc (ass, bss) passed = 
+    match ass, bss with
+    | [], [] -> true
+    | [A.IncDots], _ -> 
+        let passed = List.rev passed in
 
+        (match before_after, !h_rel_pos with
+        | IncludeNothing, _ -> true
+        | IncludeMcodeBefore, Some x -> 
+            List.mem passed (x.Ast_c.first_of)
+
+        | IncludeMcodeAfter, Some x -> 
+            List.mem passed (x.Ast_c.last_of)
+
+        (* no info, maybe cos of a #include <xx.h> that was already in a .h *)
+        | _, None -> false 
+        )
+
+    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc (xs, ys) (x::passed)
+    | _ -> failwith "IncDots not in last place or other pb"
+        
+  in
+
+  match a, b with
+  | A.Local ass, B.Local bss -> 
+      aux_inc (ass, bss) []
+  | A.NonLocal ass, B.NonLocal bss -> 
+      aux_inc (ass, bss) []
+  | _ -> false
+       
 
 
 (*---------------------------------------------------------------------------*)
@@ -2645,27 +2686,26 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Include(incla,filea), F.Include ((filebstr, ii), h_rel_pos) ->
-      
+  | A.Include(incla,filea), F.Include ((fileb, ii), h_rel_pos) ->
 
-      let path2str = function
-	  A.IncPath s -> s
-	| A.IncDots -> failwith "not supported" in
-      let stringify = function (* to remove! *)
-	  A.Local s -> "\""^(String.concat "/" (List.map path2str s))^"\""
-	| A.NonLocal s -> "<"^(String.concat "/" (List.map path2str s))^">" in
-      let stringify2 = function (* to remove! *)
-	  B.Local s -> "\""^(String.concat "/" (s))^"\""
-	| B.NonLocal s -> "<"^(String.concat "/" (s))^">" 
+      let include_requirment = 
+        match mcodekind incla, mcodekind filea with
+        | A.CONTEXT (_, A.BEFORE _), _ -> 
+            IncludeMcodeBefore
+        | _, A.CONTEXT (_, A.AFTER _) -> 
+            IncludeMcodeAfter
+        | _ -> 
+            IncludeNothing
       in
-      let (inclb, fileb) = tuple_of_list2 ii in 
-      if ((stringify (term filea)) =$= stringify2 filebstr)
+
+      let (inclb, iifileb) = tuple_of_list2 ii in 
+      if inc_file (term filea, include_requirment) (fileb, h_rel_pos)
       then 
         tokenf incla inclb >>= (fun incla inclb -> 
-        tokenf filea fileb >>= (fun filea fileb -> 
+        tokenf filea iifileb >>= (fun filea iifileb -> 
           return (
             A.Include(incla, filea),
-            F.Include ((filebstr, [inclb;fileb]), h_rel_pos)
+            F.Include ((fileb, [inclb;iifileb]), h_rel_pos)
           )))
       else fail
 
