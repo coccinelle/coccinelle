@@ -24,7 +24,7 @@ my $old_dir = "/tmp/extract_c_and_res/$ARGV[0]_old";
 my $new_dir = "/tmp/extract_c_and_res/$ARGV[0]_new";
 `mkdir -p $new_dir`;
 
-my $commit_new = $ARGV[0]; # new
+my $commit_new = $ARGV[0];
 my $commit_old = $ARGV[1] || "$commit_new^"; # default parent 
 
 my $gitfile = "$target_dir/$commit_new.gitinfo";
@@ -46,6 +46,7 @@ while(<FILE>) {
   # allow other dir ? # fs|mm   there is drivers under arch/ too
   if(/^diff --git a\/((drivers|sound)\/.*?\.[ch]) b/){ 
         mylog "  $1\n";
+
         push @files, $1;
         $files->{$1} = 1;                
                         
@@ -104,6 +105,7 @@ foreach my $f (@files) {
 
   $kerneldir_of_file->{$base} = `dirname $f`;
   chomp $kerneldir_of_file->{$base};
+
   push @finalcfiles, $base;
   $finalcfiles->{$base} = 1;
 
@@ -130,9 +132,7 @@ foreach my $f (@driverheaders_in_include) {
   chomp $base;
   if($base =~ /.h$/) {
     $base =~ s/.h$/.c/;
-  } else {
-    die "PB: internal error";
-  }
+  } else { die "PB: internal error"; }
 
 #  pr2 "$f $base";
   if(defined($finalcfiles->{$base})) {
@@ -164,9 +164,7 @@ foreach my $line (@linuxheaders) {
     chomp $base;
     if($base =~ /.h$/) {
       $base =~ s/.h$/.c/;
-    } else {
-      die "PB: internal error";
-    }
+    } else { die "PB: internal error"; }
 
     if(defined($finalcfiles->{$base}) && ! -e "$target_dir/include/$f") {
       pr2 "found header of driver in include/: $f of $base";
@@ -174,9 +172,7 @@ foreach my $line (@linuxheaders) {
       chomp $dir;
       `mkdir -p $target_dir/include/$dir`;
       `git-cat-file blob $commit_old:include/$f > $target_dir/include/$f`;
-
     }
-    
   } else { pr2 "pb regexp: $line"; }
 }
 
@@ -206,7 +202,6 @@ foreach my $line (@headers) {
   } else { pr2 "pb regexp: $line"; }
   
 }
-
 
 foreach my $h (keys %{$hfiles}) {
   my ($base) = `basename $h`;
