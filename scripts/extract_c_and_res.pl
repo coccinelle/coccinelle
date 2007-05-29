@@ -24,13 +24,13 @@ my $old_dir = "/tmp/extract_c_and_res/$ARGV[0]_old";
 my $new_dir = "/tmp/extract_c_and_res/$ARGV[0]_new";
 `mkdir -p $new_dir`;
 
-my $commit1 = $ARGV[0]; # new
-my $commit2 = $ARGV[1] || "$commit1^"; # default parent 
+my $commit_new = $ARGV[0]; # new
+my $commit_old = $ARGV[1] || "$commit_new^"; # default parent 
 
-my $gitfile = "$target_dir/$commit1.gitinfo";
+my $gitfile = "$target_dir/$commit_new.gitinfo";
 my $makefile = "$target_dir/Makefile";
 
-`git show $commit1 > $gitfile `;
+`git show $commit_new > $gitfile `;
 
 
 # processing the patch 
@@ -96,10 +96,11 @@ foreach my $f (@files) {
   }                         
   die "PB: one of the file already exist: $base" if (-e "$target_dir/$base");
 
-  `git-cat-file blob $commit2:$f > $target_dir/$base`;
-  `git-cat-file blob $commit1:$f > $target_dir/$res`;
-  `git-cat-file blob $commit2:$f > $old_dir/$base`;
-  `git-cat-file blob $commit1:$f > $new_dir/$base`;
+  `git-cat-file blob $commit_old:$f > $target_dir/$base`;
+  `git-cat-file blob $commit_new:$f > $target_dir/$res`;
+
+  `git-cat-file blob $commit_old:$f > $old_dir/$base`;
+  `git-cat-file blob $commit_new:$f > $new_dir/$base`;
 
   $kerneldir_of_file->{$base} = `dirname $f`;
   chomp $kerneldir_of_file->{$base};
@@ -139,8 +140,13 @@ foreach my $f (@driverheaders_in_include) {
     my $dir = `dirname $f`;
     chomp $dir;
     `mkdir -p $target_dir/$dir`;
-    `git-cat-file blob $commit2:$f > $target_dir/$f`;
-    `git-cat-file blob $commit1:$f > $target_dir/$f.res`;
+    `git-cat-file blob $commit_old:$f > $target_dir/$f`;
+    `git-cat-file blob $commit_new:$f > $target_dir/$f.res`;
+
+    `mkdir -p $old_dir/$dir`;
+    `mkdir -p $new_dir/$dir`;
+    `git-cat-file blob $commit_old:$f > $old_dir/$f`;
+    `git-cat-file blob $commit_new:$f > $new_dir/$f`;
     
   }
 }
@@ -167,7 +173,8 @@ foreach my $line (@linuxheaders) {
       my $dir = `dirname $f`;
       chomp $dir;
       `mkdir -p $target_dir/include/$dir`;
-      `git-cat-file blob $commit2:include/$f > $target_dir/include/$f`;
+      `git-cat-file blob $commit_old:include/$f > $target_dir/include/$f`;
+
     }
     
   } else { pr2 "pb regexp: $line"; }
@@ -212,6 +219,6 @@ foreach my $h (keys %{$hfiles}) {
     pr2 "BUT I CONTINUE, but may have more .failed in the end";
     pr2 "-------------------------------------";
   } else {
-    `git-cat-file blob $commit2:$h > $target_dir/$base`;
+    `git-cat-file blob $commit_old:$h > $target_dir/$base`;
   }
 }
