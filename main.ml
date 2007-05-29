@@ -98,6 +98,8 @@ let short_options = [
 
   "-dir", Arg.Set dir, 
   "    <dirname> process all files in directory recursively";
+  "-I",   Arg.Set_string Flag.include_path,
+  "  <dir> where are the Linux headers (optional)";
 
   "-version",   Arg.Unit (fun () -> 
     pr2 "version: $Date$";
@@ -349,6 +351,7 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
+        Flag.include_path := "tests/include";
         let output_file =
           if !reentrant 
           then Common.new_temp_file "cocci-output" ".c" 
@@ -357,6 +360,7 @@ let main () =
         Testing.testone x !compare_with_expected !iso_file output_file
 
     | []  when !test_all -> 
+        Flag.include_path := "tests/include";
         Testing.testall !iso_file
 
     | [] when !test_regression_okfailed -> 

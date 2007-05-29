@@ -26,3 +26,5 @@ let show_misc = ref true
 let windows = ref false
 
 let popl = ref false
+
+let include_path = ref "include"

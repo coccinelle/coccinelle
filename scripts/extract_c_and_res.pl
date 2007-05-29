@@ -210,7 +210,7 @@ foreach my $h (keys %{$hfiles}) {
 
   if(-e "$target_dir/$base") {
     pr2 "-------------------------------------";
-    pr2 "PB: local header $base already exists";
+    pr2 "PB: local header (not modified in the git) $base already exists";
     pr2 "BUT I CONTINUE, but may have more .failed in the end";
     pr2 "-------------------------------------";
   } else {

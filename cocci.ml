@@ -336,13 +336,13 @@ let sp_contain_typed_metavar toplevel_list_list =
 (* local includes and typing environment *)
 (* --------------------------------------------------------------------- *)
 
-let extract_local_includes cs = 
+let extract_local_includes file cs = 
   cs +> Common.map_filter (fun (c,_info_item) -> 
     match c with
-    | Ast_c.Include (s,_) -> 
-        if s=~ "^\"\\(.*\\)\"$"
-        then Some (matched1 s)
-        else None
+    | Ast_c.Include (s,_) when s=~ "^\"\\(.*\\)\"$" ->
+        Some (Left (matched1 s))
+    | Ast_c.Include (s,_) when s=~ "^\\<\\(.*\\)\\>$" ->
+        Some (Right (matched1 s))
     | _ -> None
   )
 
@@ -589,16 +589,22 @@ let rebuild_info_c_and_headers (cs, hss) =
 
 let prepare_c file = 
   let cprogram = cprogram_from_file file in
-  let local_includes = extract_local_includes cprogram in
+  let local_includes = extract_local_includes (Common.basename file) cprogram 
+  in
   let dir = (Common.dirname file) in
 
   let env = ref TAC.initial_env in
 
   let hss = local_includes +> Common.map_filter (fun h -> 
-    let realh = Filename.concat dir h in 
+    let (h, realh) = 
+      match h with
+      | Left s -> s, Filename.concat dir s
+      | Right s -> 
+          Common.basename s, Filename.concat !Flag.include_path s
+    in
 
     if not (Common.lfile_exists realh) 
-    then begin pr2 ("TYPE: local header " ^ realh ^ " not found"); None end
+    then begin pr2 ("TYPE: header " ^ realh ^ " not found"); None end
     else 
       let h_cs = cprogram_from_file realh in
       let info_h_cs = build_info_program h_cs !env in
