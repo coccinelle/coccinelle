@@ -236,6 +236,7 @@ and vk_statement = fun bigf st ->
     | Jump (Goto s) -> ()
     | Jump ((Continue|Break|Return)) -> ()
     | Jump (ReturnExpr e) -> vk_expr bigf e;
+    | Jump (GotoComputed e) -> vk_expr bigf e;
 
     | Decl decl -> vk_decl bigf decl 
     | Asm asmbody -> vk_asmbody bigf asmbody
@@ -727,6 +728,7 @@ and vk_statement_s = fun bigf st ->
       | Jump (Goto s) -> Jump (Goto s)
       | Jump (((Continue|Break|Return) as x)) -> Jump (x)
       | Jump (ReturnExpr e) -> Jump (ReturnExpr ((vk_expr_s bigf) e))
+      | Jump (GotoComputed e) -> Jump (GotoComputed (vk_expr_s bigf e));
 
       | Decl decl -> Decl (vk_decl_s bigf decl)
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)

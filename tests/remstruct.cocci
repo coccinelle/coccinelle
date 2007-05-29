@@ -4,8 +4,8 @@
 - };
 
 
-//@@  @@
-//- static struct irqchip xxx = {
-//- .a = 12,
-//- ...
-//- };
+@@  @@
+- static struct irqchip xxx = {
+- .a = 12,
+- ...
+- };

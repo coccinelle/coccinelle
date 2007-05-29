@@ -189,7 +189,7 @@ let trans_macro_token macrokind info =
   match macrokind with
   | MacroDecl -> Parser_c.TMacroDecl (Ast_c.get_str_of_info info, info)
   | MacroDeclConst -> Parser_c.TMacroDeclConst (info)
-  | MacroMisc -> Parser_c.TMacro info
+  | MacroMisc -> Parser_c.TMacroMisc info
   
 
 
@@ -424,9 +424,12 @@ let keyword_table = Common.hash_of_list [
   "____cacheline_aligned",        (fun ii -> TCommentCpp ii); 
   "__cacheline_aligned_in_smp",   (fun ii -> TCommentCpp ii);
   "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
+  "____cacheline_internodealigned_in_smp", (fun ii -> TCommentCpp ii);
+
   "__devinit",                    (fun ii -> TCommentCpp ii); 
   "__devexit",                    (fun ii -> TCommentCpp ii); 
   "__devinitdata",                (fun ii -> TCommentCpp ii); 
+
   "__ALIGNED__",                  (fun ii -> TCommentCpp ii); 
 
   "__pmac",                       (fun ii -> TCommentCpp ii);  
@@ -435,15 +438,26 @@ let keyword_table = Common.hash_of_list [
 
   "__cpuinit",                    (fun ii -> TCommentCpp ii);  
   "__cpuinitdata",                (fun ii -> TCommentCpp ii);  
+
   "__must_check",                 (fun ii -> TCommentCpp ii);  
-  "__unused",                     (fun ii -> TCommentCpp ii);  
+(*  "__unused",                     (fun ii -> TCommentCpp ii);   *)
+  "__maybe_unused",                     (fun ii -> TCommentCpp ii);  
+
 
   "__read_mostly",                (fun ii -> TCommentCpp ii);  
+
   "__attribute_used__",           (fun ii -> TCommentCpp ii);  
+  "__attribute_pure__",           (fun ii -> TCommentCpp ii);  
+  "__attribute_const__",          (fun ii -> TCommentCpp ii);  
 
   "__CS4231_INLINE__",            (fun ii -> TCommentCpp ii);  
   "CCIO_INLINE",                  (fun ii -> TCommentCpp ii);  
   "SBA_INLINE",                   (fun ii -> TCommentCpp ii);  
+  "STATIC_INLINE",                (fun ii -> TCommentCpp ii);  
+
+  "__always_inline",              (fun ii -> TCommentCpp ii);  
+  "noinline",                     (fun ii -> TCommentCpp ii);  
+
 
   "INITSECTION",                  (fun ii -> TCommentCpp ii);  
 
@@ -452,10 +466,10 @@ let keyword_table = Common.hash_of_list [
   "__init_or_module",             (fun ii -> TCommentCpp ii);  
   "__initdata_or_module",         (fun ii -> TCommentCpp ii);  
 
+  "__pminitdata",         (fun ii -> TCommentCpp ii);  
+
   "__3xp_aligned",                (fun ii -> TCommentCpp ii);  
 
-  "__always_inline",              (fun ii -> TCommentCpp ii);  
-  "noinline",                     (fun ii -> TCommentCpp ii);  
 
   "__xipram",                (fun ii -> TCommentCpp ii);  
   "compat_init_data",        (fun ii -> TCommentCpp ii);  
@@ -465,7 +479,8 @@ let keyword_table = Common.hash_of_list [
 
   "far",                     (fun ii -> TCommentCpp ii);  
   "SK_FAR",                  (fun ii -> TCommentCpp ii);  
-  "near",                    (fun ii -> TCommentCpp ii);  
+
+(*  "near",                    (fun ii -> TCommentCpp ii);   *)
 
   "DIVA_EXIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
   "DIVA_INIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
@@ -482,19 +497,52 @@ let keyword_table = Common.hash_of_list [
 
   "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp ii);
 
-
-
-
-
   "PNMI_STATIC",   (fun ii -> Tstatic ii); 
   "RLMT_STATIC",   (fun ii -> Tstatic ii); 
   "SISINITSTATIC", (fun ii -> Tstatic ii); 
+  "SCTP_STATIC", (fun ii -> Tstatic ii);  
+
 
   "SISIOMEMTYPE",  (fun ii -> TCommentCpp ii); 
 
   (* IF *)
   "BUGLVL", (fun ii -> Tif ii);
   "IFDEBUG", (fun ii -> Tif ii);
+
+
+
+   (* in the other part of the kernel, in arch/, mm/, etc *)
+  "__sched",              (fun ii -> TCommentCpp ii);  
+  "__initmv",              (fun ii -> TCommentCpp ii);  
+  "__exception",           (fun ii -> TCommentCpp ii);  
+  "__cpuexit",            (fun ii -> TCommentCpp ii);  
+  "__kprobes",    (fun ii -> TCommentCpp ii);  
+  "__meminit", (fun ii -> TCommentCpp ii);  
+  "__meminitdata", (fun ii -> TCommentCpp ii);  
+  "__nosavedata", (fun ii -> TCommentCpp ii);  
+  "__kernel", (fun ii -> TCommentCpp ii);  
+  "__nomods_init", (fun ii -> TCommentCpp ii);  
+  "__apicdebuginit", (fun ii -> TCommentCpp ii);  
+  "__ipc_init", (fun ii -> TCommentCpp ii);  
+  "__modinit", (fun ii -> TCommentCpp ii);  
+  "nabi_no_regargs", (fun ii -> TCommentCpp ii);  
+  "__lockfunc", (fun ii -> TCommentCpp ii);  
+  "__weak", (fun ii -> TCommentCpp ii);  
+  "__tlb_handler_align", (fun ii -> TCommentCpp ii);  
+  "__lock_aligned", (fun ii -> TCommentCpp ii);  
+  "__force_data", (fun ii -> TCommentCpp ii);  
+  "__nongprelbss",       (fun ii -> TCommentCpp ii);  
+  "__nongpreldata",     (fun ii -> TCommentCpp ii);  
+
+  "ATTRIB_NORET", (fun ii -> TCommentCpp ii);  
+  "ATTRIBUTE_UNUSED", (fun ii -> TCommentCpp ii);  
+  "BTEXT", (fun ii -> TCommentCpp ii);  
+  "BTDATA", (fun ii -> TCommentCpp ii);  
+  "PAGE_ALIGNED", (fun ii -> TCommentCpp ii);  
+
+  "EARLY_INIT_SECTION_ATTR", (fun ii -> TCommentCpp ii);  
+
+  "INIT", (fun ii -> TCommentCpp ii);  
 
   (* string macro. normally handle quite well by mu lalr(k), but
    * sometimes not enough, if have for instance the XX YY case, could
@@ -870,6 +918,24 @@ let find_and_tag_good_macro cleanxs_with_pos =
             Hashtbl.add !put_comment (TH.pos_of_token tok) true
           );
         find_macro_paren xs
+
+(* not needed if have good stringification of macro
+    | NotParenToken ((TIdent (s,_),_) as id)::Parenthised (xxs,info_parens)::xs
+        when List.mem s ["EX_TABLE"] -> 
+        pr2_cpp ("MACRO: EX_TABLE detected");
+        xxs +> List.iter (fun xs -> 
+          xs +> iter_token_paren (fun (tok ,pos) -> 
+            Hashtbl.add !put_comment (TH.pos_of_token tok) true
+          ));
+        (id::info_parens) +> List.iter (fun (tok, pos) -> 
+            Hashtbl.add !put_comment (TH.pos_of_token tok) true
+          );
+        find_macro_paren xs
+
+*)
+              
+            
+          
        
        
        
@@ -1330,13 +1396,16 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   (* stringification of ident *)
   (*-------------------------------------------------------------*)
+  (* printk(  xxx ...  *)
   | (TIdent (s,i1)::_,       TOPar _::TIdent ("printk", _)::_) -> 
       msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
 
+  (* a string after *)
   | (TIdent (s,i1)::TString (_,_)::_,   _) ->  
       msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
+  (* a string before *)
   | (TIdent (s,i1)::_,   TString _::_) ->      
       msg_stringification s;
       TString ((s, Ast_c.IsChar), i1)
@@ -1569,6 +1638,13 @@ let lookahead2 next before =
 
   (*  (xx) yy *)
   | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
+    when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
+      msg_typedef s; LP.add_typedef_root s;
+      TOPar info
+
+
+  (*  (xx) (    yy) *)
+  | (TOPar info::TIdent (s, i1)::TCPar _::TOPar _::_ , x::_)  
     when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
       msg_typedef s; LP.add_typedef_root s;
       TOPar info

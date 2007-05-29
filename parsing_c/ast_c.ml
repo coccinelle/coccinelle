@@ -280,6 +280,7 @@ and statementbis =
   and jump  = Goto of string
             | Continue | Break 
             | Return   | ReturnExpr of expression
+            | GotoComputed of expression (* gccext: goto *exp ';' *)
 
 
   (* gccext: *)
@@ -361,10 +362,10 @@ and toplevel =
   | Declaration of declaration
   | Definition of definition
          
-     (* cppext: *)
+  (* cppext: *)
   | Include of string wrap           (* #include s *)
   | Define of string wrap * define   (* #define s *)
-      (* cppext: *)
+  (* cppext: *)
   | SpecialMacro of string * argument wrap2 list * il 
          
   | EmptyDef of il      (* gccext: allow redundant ';' *)

@@ -43,6 +43,7 @@ let debugger = ref false
 let quiet_profile = (
   [
     Flag.show_diff;
+    Flag_parsing_c.verbose_parsing;
   ],
   [
     Flag.show_c;
@@ -58,7 +59,6 @@ let quiet_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_ctl.verbose_ctl_engine;
     Flag_engine.debug_engine;
-    Flag_parsing_c.verbose_parsing;
     Flag_parsing_c.verbose_type;
   ])
 
@@ -330,7 +330,7 @@ let main () =
 
     if !iso_file <> "" 
     then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
-    if !cocci_file <> ""
+    if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
 
     let timeout_fn =
@@ -422,7 +422,9 @@ let main () =
           let saved = cfile ^ ".cocci_res" in
 
           (try Cocci.full_engine cfile (cocci_file, iso_file) generated_file
-           with e -> 
+           with 
+           | Common.UnixExit x -> raise (Common.UnixExit x)
+           | e -> 
               if !dir 
               then pr2 ("EXN:" ^ Printexc.to_string e)
               else raise e
@@ -464,6 +466,14 @@ let _ =
 
       Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
         pr2 "C-c intercepted, will do some cleaning before exiting";
+        (* But if do some try ... with e -> and if do not reraise the exn,
+         * the bubble never goes at top and so I cant really C-c.
+         * 
+         * A solution would be to not raise, but do the erase_temp_file in the
+         * syshandler, here, and then exit.
+         * The current solution is to not do some wild  try ... with e
+         * by having in the exn handler a case: UnixExit x -> raise ... | e ->
+         *)
         raise (Common.UnixExit (-1))
       ));
 

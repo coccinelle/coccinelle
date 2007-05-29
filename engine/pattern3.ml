@@ -318,7 +318,7 @@ let match_re_node2 a b binding =
 
 (* subtil: 3 args, otherwise profile nothing *)
 let match_re_node a b c = 
-  Common.profile_code "Pattern2.match_re_node" (fun () -> match_re_node2 a b c)
+  Common.profile_code "Pattern3.match_re_node" (fun () -> match_re_node2 a b c)
 
 
 

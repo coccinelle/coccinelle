@@ -373,7 +373,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %token <Ast_c.info> TCommentCpp TCommentMisc
 
-%token <Ast_c.info> TMacro 
+%token <Ast_c.info> TMacroMisc 
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info> TMacroDeclConst 
 
@@ -627,7 +627,7 @@ statement:
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /* cppext: */
- | TMacro { MacroStmt, [$1] }
+ | TMacroMisc { MacroStmt, [$1] }
 
 
 
@@ -720,13 +720,14 @@ iteration:
  | Tfor TOPar expr_statement expr_statement expr TCPar statement
      { For ($3,$4,(Some $5, []),$7), [$1;$2;$6] }
 
-
+/* the ';' in the caller will be appended to the infos */
 jump: 
  | Tgoto ident  { Goto (fst $2),  [$1;snd $2] } 
  | Tcontinue    { Continue,       [$1] }
  | Tbreak       { Break,          [$1] }
  | Treturn      { Return,         [$1] } 
  | Treturn expr { ReturnExpr $2,  [$1] }
+ | Tgoto TMul expr { GotoComputed $3, [$1;$2] }
 
 
 
@@ -1325,7 +1326,7 @@ cpp_directives:
  | TIdent TOPar argument_list TCPar         
      { EmptyDef [] } 
 
- | TMacro { EmptyDef [$1] }
+ | TMacroMisc { EmptyDef [$1] }
 
  | TIncludeStart TIncludeFilename 
      { Include (fst $2, [$1;snd $2]) }

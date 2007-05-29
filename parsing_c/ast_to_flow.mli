@@ -15,6 +15,7 @@ type error =
   | GotoCantFindLabel of string * Common.parse_info
   | DuplicatedLabel of string
   | NestedFunc
+  | ComputedGoto
 
 exception Error of error
 

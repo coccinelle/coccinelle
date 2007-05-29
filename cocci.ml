@@ -670,7 +670,7 @@ let prepare_c file =
 
 (* r(ule), c(element), e(nvironment) *)
 
-let rec bigloop rs (cs,hss) = 
+let rec bigloop2 rs (cs,hss) = 
   let es = ref [Ast_c.emptyMetavarsBinding] in
   let cs = ref cs in
   let hss = ref hss in
@@ -731,6 +731,8 @@ let rec bigloop rs (cs,hss) =
   ); (* end iter rs *)
 
   !cs, !hss (* return final C asts *)
+and bigloop a b = 
+  Common.profile_code "bigloop" (fun () -> bigloop2 a b)
 
 
 
@@ -796,9 +798,9 @@ let full_engine2 cfile (coccifile, isofile) outfile =
   then Common.command2 ("cp " ^ cfile ^ " " ^ outfile)
   else begin
 
-    Common.pr_xxxxxxxxxxxxxxxxx();
-    pr "let's go";
-    Common.pr_xxxxxxxxxxxxxxxxx();
+    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+    if !Flag.show_misc then pr "let's go";
+    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     g_contain_typedmetavar := contain_typedmetavar;
     let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
@@ -808,9 +810,9 @@ let full_engine2 cfile (coccifile, isofile) outfile =
 
     let (c_infos', hs_infos') = bigloop cocci_infos (c_infos, hs_infos) in
 
-    Common.pr_xxxxxxxxxxxxxxxxx ();
-    pr "Finished";
-    Common.pr_xxxxxxxxxxxxxxxxx();
+    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
+    if !Flag.show_misc then pr "Finished";
+    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     (* and now unparse everything *)
     let for_unparser xs = xs +> List.map (fun x -> 

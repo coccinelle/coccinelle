@@ -94,7 +94,7 @@ let info_from_token = function
   | TDefParamVariadic (s, i1) ->     i1
 
   | TUnknown             (i) -> i
-  | TMacro             (i) -> i
+  | TMacroMisc             (i) -> i
   | TMacroDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
   | TAction             (i) -> i
@@ -225,7 +225,7 @@ let visitor_info_from_token f = function
 
 
   | TUnknown             (i) -> TUnknown             (f i)
-  | TMacro               (i) -> TMacro             (f i)
+  | TMacroMisc               (i) -> TMacroMisc             (f i)
   | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
   | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
   | TAction               (i) -> TAction             (f i)

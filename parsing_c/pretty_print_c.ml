@@ -178,6 +178,8 @@ and pp_statement_gen pr_elem =
         pr_elem i1; pr_elem i2; pr_elem i3;
     | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
     | Jump (ReturnExpr e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2
+    | Jump (GotoComputed e), [i1;i2;i3] -> 
+        pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3
 
     | Decl decl, [] -> pp_decl_gen pr_elem decl 
     | Asm asmbody, ii -> 
@@ -219,6 +221,7 @@ and pp_statement_gen pr_elem =
         | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
         | Iteration  (For ((_,_), (_,_), (_, _), _))
         | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+        | Jump (GotoComputed _)
         | Decl _ | Selection (Ifdef (_,_))
       ), _ -> raise Impossible
 

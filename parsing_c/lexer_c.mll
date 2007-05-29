@@ -99,6 +99,7 @@ let keyword_table = Common.hash_of_list [
   "__inline",   (fun ii -> Tinline ii);
   "INLINE",     (fun ii -> Tinline ii); 
   "_INLINE_",   (fun ii -> Tinline ii); 
+  "__INLINE__",   (fun ii -> Tinline ii); 
 
   "__attribute__", (fun ii -> Tattribute ii);
   "__attribute", (fun ii -> Tattribute ii);
@@ -109,6 +110,8 @@ let keyword_table = Common.hash_of_list [
 
   (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
+  "__const",     (fun ii -> Tconst ii);
+  "CONST",      (fun ii -> Tconst ii);
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  

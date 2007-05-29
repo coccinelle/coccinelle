@@ -40,6 +40,7 @@ type error =
   | GotoCantFindLabel of string * Common.parse_info
   | DuplicatedLabel of string
   | NestedFunc
+  | ComputedGoto
 
 exception Error of error
 
@@ -386,8 +387,8 @@ let (ast_to_control_flow: definition -> cflow) = fun funcdef ->
        !g#add_arc ((newi, ilabel), Direct) +> adjust_g;
        None
         
-
-
+    | Jump (Ast_c.GotoComputed e), ii -> 
+        raise (Error (ComputedGoto))
         
      (* ------------------------- *)        
     | Ast_c.ExprStatement opte, ii -> 
@@ -1125,4 +1126,5 @@ let report_error error =
       pr2 ("FLOW: duplicate label" ^ s)
   | NestedFunc  -> 
       pr2 ("FLOW: not handling yet nested function")
-
+  | ComputedGoto -> 
+      pr2 ("FLOW: not handling computed goto yet")
