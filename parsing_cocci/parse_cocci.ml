@@ -1084,7 +1084,10 @@ let parse file default_isos =
 	Unparse_ast0.unparse minus_res;
 	Printf.printf "before plus parse\n";
 	*)
-	let plus_res = parse_one "plus" PC.plus_main file plus_tokens in
+	let plus_res =
+	  if !Flag_parsing_cocci.sgrep_mode2
+	  then minus_res (* not actually used for anything *)
+	  else parse_one "plus" PC.plus_main file plus_tokens in
 	(*
 	Printf.printf "after plus parse\n";
 	*)
@@ -1125,11 +1128,15 @@ let process file isofile verbose =
 	     let function_prototypes =
 	       Function_prototypes.process rule_name minus plus in
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
-	     Insert_plus.insert_plus m p;
+	     (if not !Flag_parsing_cocci.sgrep_mode2
+	     then Insert_plus.insert_plus m p);
 	     Type_infer.type_infer minus;
 	     let (extra_meta,minus) =
 	       Iso_pattern.apply_isos chosen_isos minus rule_name in
-	     let minus = Single_statement.single_statement minus in
+	     let minus =
+	       if !Flag_parsing_cocci.sgrep_mode2
+	       then minus
+	       else Single_statement.single_statement minus in
 	     let minus_ast =
 	       Ast0toast.ast0toast rule_name dependencies minus in
 	     match function_prototypes with

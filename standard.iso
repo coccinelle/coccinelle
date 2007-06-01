@@ -241,7 +241,7 @@ Declaration
 type T;
 identifier Z;
 @@
-T Z = ...; <=> T Z;
+T Z; => T Z = ...;
 
 // ---------------------------------------------------------------------------
 // Branch (or compound) isomorphisms

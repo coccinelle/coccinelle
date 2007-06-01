@@ -74,13 +74,13 @@ let wrapAnd     n s (x,y) = wrap n (CTL.And(s,x,y))
 let wrapOr      n (x,y) = wrap n (CTL.Or(x,y))
 let wrapSeqOr   n (x,y) = wrap n (CTL.SeqOr(x,y))
 let wrapAU      n s (x,y) =
-  if !Flag_parsing_cocci.sgrep_mode
+  if !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2
   then wrap n (CTL.EU(CTL.FORWARD,x,y))
   else wrap n (CTL.AU(CTL.FORWARD,s,x,y))
 (* only used for goto, where we want AU even for sgrep *)
 let wrapAF      n s (x,y) = wrap n (CTL.AF(CTL.FORWARD,s,x))
 let wrapAX      n s x   =
-  if !Flag_parsing_cocci.sgrep_mode
+  if !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2
   then wrap n (CTL.EX(CTL.FORWARD,x))
   else wrap n (CTL.AX(CTL.FORWARD,s,x))
 let wrapAX_absolute      n s (x)   = wrap n (CTL.AX(CTL.FORWARD,s,x))
@@ -869,7 +869,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     | Ast.WhenAlways s -> (None,Some(statement s)) in
   let notwhencodes =
     (* add in after, because it's not part of the program *)
-    if !Flag_parsing_cocci.sgrep_mode
+    if !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2
     then
       let after = aftpred n label in
       match notwhencodes with
@@ -884,7 +884,7 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     | Tail ->
 	let exit = endpred n label in
 	let errorexit = exitpred n label in
-	if !Flag_parsing_cocci.sgrep_mode
+	if !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2
 	then wrapOr n (exit,errorexit)
 	else exit (* was wrap n CTL.False *) in
   builder n (guard_to_strict guard)
@@ -1597,7 +1597,9 @@ and drop_dots x
 	build_aftret bef_aft_builder in
     wrap(CTL.Or(rest,error_exiter)) in
   
-  match (all,!Flag_parsing_cocci.sgrep_mode) with
+  match (all,
+	 !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2)
+  with
     ([],true) -> CTL.EF(dir,rest)
   | ([],false) ->
       CTL.AF(dir,s,
