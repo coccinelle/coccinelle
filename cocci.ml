@@ -346,10 +346,26 @@ let sp_contain_typed_metavar toplevel_list_list =
 (* includes and typing environment *)
 (* --------------------------------------------------------------------- *)
 
-let extract_local_includes file cs = 
+(* finding among the #include the one that we need to parse
+ * because they may contain useful type definition or because
+ * we may have to modify them
+ * 
+ * For the moment we base in part our heuristic on the name of the file.
+ * serio.c is related to #include <linux/serio.h> 
+ *)
+let includes_to_parse file cs = 
   cs +> Common.map_filter (fun (c,_info_item) -> 
     match c with
-    | Ast_c.Include ((x,_),_)  -> Some x
+    | Ast_c.Include ((x,ii),info_h_pos)  -> 
+        (match x with
+        | Ast_c.Local xs -> Some x
+        | Ast_c.NonLocal xs -> 
+            if Common.fileprefix (Common.last xs) = Common.fileprefix file 
+            then Some x
+            else None
+        | Ast_c.Wierd _ -> None
+        )
+
     | _ -> None
   )
 
@@ -400,7 +416,6 @@ let rec update_include_rel_pos cs =
       | Ast_c.Wierd x -> raise Impossible
     ) in
 
-  pr2gen (only_include, locals, nonlocals);
   update_rel_pos_bis locals;
   update_rel_pos_bis nonlocals;
   cs
@@ -662,13 +677,13 @@ let rebuild_info_c_and_headers (cs, hss) =
 
 let prepare_c file = 
   let cprogram = cprogram_from_file file in
-  let local_includes = extract_local_includes (Common.basename file) cprogram 
+  let includes = includes_to_parse (Common.basename file) cprogram 
   in
   let dir = (Common.dirname file) in
 
   let env = ref TAC.initial_env in
 
-  let hss = local_includes +> Common.map_filter (fun inc_file -> 
+  let hss = includes +> Common.map_filter (fun inc_file -> 
     let realh = 
       match inc_file with
       | Ast_c.Local xs -> 

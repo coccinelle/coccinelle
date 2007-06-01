@@ -363,10 +363,17 @@ and inc_file =
   | Wierd of string (* ex: #include SYSTEM_H *)
   and inc_elem = string
 
-(* useful for cocci, to tag the first #include <xx/> and last #include <yy> *)
+(* Useful for cocci, to tag the first of #include <xx/> and last
+ * #include of <yy/>
+ * 
+ * The first_of and last_of store the list of prefixes that was
+ * introduced by the include. on #include <a/b/x>, if the include was
+ * the first in the file, it would give in first_of the following
+ * prefixes a/b/c; a/b/; a/ ; <empty> 
+ *)
 and include_rel_pos = { 
   first_of : string list list;
-  last_of : string list list;
+  last_of :  string list list;
 }
 
 (* ------------------------------------------------------------------------- *)
