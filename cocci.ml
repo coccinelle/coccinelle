@@ -374,7 +374,11 @@ let compute_new_prefixes xs =
 let rec update_include_rel_pos cs =
   let only_include = cs +> Common.map_filter (fun c -> 
     match c with 
-    | Ast_c.Include ((s,_),aref) ->Some (s, aref)
+    | Ast_c.Include ((x,_),aref) ->
+        (match x with
+        | Ast_c.Wierd _ -> None
+        | _ -> Some (x, aref)
+        )
     | _ -> None
   )
   in
@@ -383,6 +387,7 @@ let rec update_include_rel_pos cs =
       match c with
       | Ast_c.Local x -> Left (x, aref)
       | Ast_c.NonLocal x -> Right (x, aref)
+      | Ast_c.Wierd x -> raise Impossible
     ) in
 
   pr2gen (only_include, locals, nonlocals);
@@ -660,6 +665,7 @@ let prepare_c file =
           Filename.concat dir (Common.join "/" xs)
       | Ast_c.NonLocal xs -> 
           Filename.concat !Flag.include_path (Common.join "/" xs)
+      | Ast_c.Wierd _ -> raise Impossible
     in
     let h = Common.basename realh in
 

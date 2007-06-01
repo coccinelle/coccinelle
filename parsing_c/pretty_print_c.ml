@@ -13,7 +13,7 @@ let rec pp_expression_gen pr_elem =
   let rec pp_expression = fun ((exp, typ), ii) -> 
     (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
-    | Constant (String s),        is     -> is +> List.iter pr_elem
+    | Constant (MultiString), is     -> is +> List.iter pr_elem
         (* only a String can have multiple ii *)
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 

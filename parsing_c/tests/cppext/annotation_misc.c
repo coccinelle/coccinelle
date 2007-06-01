@@ -17,11 +17,11 @@ static int __init_or_module isp116x_remove(struct device *dev)
 // why __iomem?  covered by ifdef ?
 
 //HANDLING: /tmp/linux-2.6.13/drivers/macintosh/via-pmu.c
-// __openfirmwarebidule
+// __openfirmware
 
 int __user x;
 int __iomem x;
-int __openfirmwarebidule x;
+int __openfirmware x;
 
 
 

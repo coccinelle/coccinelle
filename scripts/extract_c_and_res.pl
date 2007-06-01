@@ -115,14 +115,21 @@ foreach my $f (@files) {
 # generate Makefile
 
 open MAKE, ">$makefile" or die "$!";
-print MAKE "CEDESCRIPTION=\"TODO\"\n";
-print MAKE "SP=\"TODO\"\n";
+print MAKE "CEDESCRIPTION=\"\"\n";
+print MAKE "SP=foo.cocci\n";
 print MAKE "SOURCES = ";
 my $last = shift @finalcfiles;
 foreach my $f (@finalcfiles) {
   print MAKE "$f \\\n\t";
 }
 print MAKE "$last\n";
+
+print MAKE "
+
+TOP=../..
+include \$(TOP)/generic_makefile
+";
+
 
 
 # process potential driver headers of include/

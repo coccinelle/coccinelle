@@ -5,8 +5,7 @@ void main(int i)
 }
 
 typedef struct {
-    DECLARE_BITMAP(allocated, MAX_TAGS);
-
+  DECLARE_BITMAP(allocated, MAX_TAGS);
 
   DECLARE_BITMAP(unitbitmap, 32*32);
 };

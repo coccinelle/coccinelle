@@ -177,6 +177,7 @@ let test_tokens_c file =
   Parse_c.tokens file +> Common.pr2gen
 
 
+        
 
 let test_parse_c xs dirmode = 
         
@@ -196,9 +197,13 @@ let test_parse_c xs dirmode =
     if not (file =~ ".*\\.c") 
     then pr2 "warning: seems not a .c file";
 
+    pr2 "";
     pr2 ("PARSING: " ^ file);
 
-    let (_x, stat) = Parse_c.parse_print_error_heuristic file in
+    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
+    xs +> List.iter (fun (ast, (s, toks)) -> 
+      Parse_c.print_tokens_commentized toks
+    );
 
     Common.push2 stat stat_list;
     let s = 

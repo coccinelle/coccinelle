@@ -7,14 +7,6 @@ open Ast_c
 open Semantic_c
 
 (*****************************************************************************)
-(* todo: good error message when parse error caused by typedef (see
- * token, see if ident that is a typedef, ...) special parse error
- * treatment for missing ; (gcc)
- * 
- * todo: look at all the commit in sparse git to see all the problems
- * they had. *)
-(*****************************************************************************)
-
 let warning s v = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.warning ("PARSING: " ^ s) v
@@ -373,9 +365,10 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %token <Ast_c.info> TCommentCpp TCommentMisc
 
-%token <Ast_c.info> TMacroMisc 
+%token <Ast_c.info>            TMacroStmt
+%token <Ast_c.info>            TMacroString
 %token <(string * Ast_c.info)> TMacroDecl
-%token <Ast_c.info> TMacroDeclConst 
+%token <Ast_c.info>            TMacroDeclConst 
 
 %token <Ast_c.info> TAction
 
@@ -564,8 +557,8 @@ primary_expr:
  | TChar   { mk_e(Constant (Char   (fst $1))) [snd $1] }
  | TOPar expr TCPar { mk_e(ParenExpr ($2)) [$1;$3] }  /* forunparser: */
 
- /* gccext: */
- | TString string_list { mk_e(Constant (String (fst $1))) (snd $1::$2) } 
+ /* gccext: cppext: */
+ | string_elem string_list { mk_e(Constant (MultiString)) ($1 ++ $2) }
 
  /* gccext: allow statement as expressions via ({ statement }) */
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] } 
@@ -578,8 +571,6 @@ argument:
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro { Right (ArgAction $1) }
- | Ttypeof TOPar assign_expr TCPar 
-     { Right (ArgType ((false, None, (nQ, (Typeof ($3), [$1;$2;$4]))), [])) }
 
 action_higherordermacro: 
  | taction_list 
@@ -627,7 +618,7 @@ statement:
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /* cppext: */
- | TMacroMisc { MacroStmt, [$1] }
+ | TMacroStmt { MacroStmt, [$1] }
 
 
 
@@ -738,20 +729,11 @@ asmbody:
  | string_list colon_asm_list  { $1, $2 }
  | string_list { $1, [] } /* in old kernel */
 
- /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
- /* | TIdent  string_list { (Constant (Ident (fst $1)), noType), [snd $1] } */
- /* note that can make a bug cos if not good parsing of typedef,  
-  * ucharv toto;  is not parsed as a declaration 
-  */
 
+/* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
 string_elem:
  | TString { [snd $1] }
- /* cppext: can cause some strange behaviour ... */
- | TIdent                    { [snd $1] } 
- /* 2 s/r conflicts */
- | TIdent TOPar TIdent TCPar { [snd $1;$2;snd $3;$4] } 
- /* because lalr(k) can have already transformed the TIdent in TString */
- | TString TOPar TIdent TCPar { [snd $1;$2;snd $3;$4] }  
+ | TMacroString { [$1] }
 
 
 
@@ -850,6 +832,8 @@ type_spec2:
   */                            
  | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
 
+ | Ttypeof TOPar assign_expr TCPar { Right3 (Typeof ($3)), [$1;$2;$4] }
+
 
 type_qualif: 
  | Tconst    { {const=true  ; volatile=false}, $1 }
@@ -894,7 +878,7 @@ init_declarator2:
 /* workarounds */
 /*----------------------------*/
 declaratori: 
- | declarator gcc_attr_opt 
+ | declarator
      { LP.add_ident (fst (fst $1)); $1 }
  /* gccext: */
  | declarator gcc_asm_decl     
@@ -913,9 +897,6 @@ gcc_asm_decl:
  | Tasm Tvolatile TOPar asmbody TCPar   {  }
 
 
-gcc_attr_opt: 
- | /* empty */ { }
- | Tattribute TOPar TOPar argument_list TCPar TCPar { }
 
 
 
@@ -1000,7 +981,7 @@ tcpar: TCPar
 
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
-declaratorp: declarator gcc_attr_opt
+declaratorp: declarator 
      { LP.add_ident (fst (fst $1)); $1 }
 
 
@@ -1010,8 +991,6 @@ type_name:
      { let (returnType, _) = fixDeclSpecForDecl $1 in  returnType }
  | spec_qualif_list abstract_declarator 
      { let (returnType, _) = fixDeclSpecForDecl $1 in $2 returnType }
- | Ttypeof TOPar assign_expr TCPar 
-     { nQ, (Typeof ($3), [$1;$2;$4]) }
 
 
 abstract_declarator: 
@@ -1106,17 +1085,15 @@ tobrace_ini: TOBrace { !LP._lexer_hint.toplevel <- false; $1 }
 s_or_u_spec2: 
  | struct_or_union 
      ident tobrace_struct struct_decl_list_gcc tcbrace_struct
-     gcc_attr_opt 
      { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
  | struct_or_union       tobrace_struct struct_decl_list_gcc tcbrace_struct
-     gcc_attr_opt 
      { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
  | struct_or_union ident       
      { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
 
 struct_or_union2: 
- | Tstruct gcc_attr_opt  { Struct, $1 }
- | Tunion gcc_attr_opt   { Union, $1 }
+ | Tstruct   { Struct, $1 }
+ | Tunion    { Union, $1 }
 
 
 
@@ -1174,7 +1151,7 @@ tcbrace_struct: TCBrace
        $1
      }
 
-declaratorsd: declarator gcc_attr_opt 
+declaratorsd: declarator 
   { (*also ? LP.add_ident (fst (fst $1)); *) $1 }
 
 
@@ -1319,14 +1296,23 @@ gcc_opt_expr:
 
 /* cppext: */
 cpp_directives: 
+
  | TIdent TOPar argument_list TCPar TPtVirg 
      { SpecialMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
- /* seems dont work */
- | TIdent TOPar argument_list TCPar         
-     { EmptyDef [] } 
+ /* normally useless with parsing_hack because the ident would
+  * be transformed into a MacroNoPtVirg, except when it's 
+  * the last instruction in the file. parsing_hack does not
+  * handle well EOF
+  *
+  * old?: seems dont work
+  */
+ | TIdent TOPar argument_list TCPar { EmptyDef [] } 
 
- | TMacroMisc { EmptyDef [$1] }
+ | TIdent TPtVirg { EmptyDef [snd $1;$2] }
+
+
+ | TMacroStmt { EmptyDef [$1] }
 
  | TIncludeStart TIncludeFilename 
      { 
@@ -1337,7 +1323,8 @@ cpp_directives:
              Local (Common.split "/" (matched1 s))
          | _ when s =~ "^\\<\\(.*\\)\\>$" -> 
              NonLocal (Common.split "/" (matched1 s))
-         | _ -> failwith ("wierd header file: " ^ s)
+         | _ -> 
+             Wierd s 
        in
        Include ((inc_file, [$1;snd $2]), Ast_c.noRelPos()) 
      }
@@ -1356,8 +1343,8 @@ cpp_directives:
  * do a assign_expr_of_string in parse_c
  */
 define_val: 
- | TDefText { DefineText (fst $1, [snd $1]) }
- | expr { DefineExpr $1 }
+ | TDefText  { DefineText (fst $1, [snd $1]) }
+ | expr      { DefineExpr $1 }
  | type_name { DefineType $1 }
 
 param_define:
@@ -1412,6 +1399,6 @@ start_fun: start_fun2
     $1 
   }
 
-declaratorfd: declarator gcc_attr_opt { et "declaratorfd" (); $1 }
+declaratorfd: declarator { et "declaratorfd" (); $1 }
 
 

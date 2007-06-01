@@ -83,7 +83,7 @@ and typeCbis =
   | TypeName   of string
  
   | ParenType of fullType (* forunparser: *)
-  | Typeof of expression (* gccext: *)
+  | Typeof of expression  (* gccext: *)
  
      (* -------------------------------------- *)    
      and  baseType = Void 
@@ -196,6 +196,7 @@ and expressionbis =
 
   and constant = 
     | String of (string * isWchar) 
+    | MultiString 
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string  (* * intType*)) 
     | Float  of (string * floatType)
@@ -356,15 +357,17 @@ and define =
      | DefineText of string wrap
      | DefineEmpty
 
+and inc_file = 
+  | Local of inc_elem list
+  | NonLocal of inc_elem list
+  | Wierd of string (* ex: #include SYSTEM_H *)
+  and inc_elem = string
+
 (* useful for cocci, to tag the first #include <xx/> and last #include <yy> *)
 and include_rel_pos = { 
   first_of : string list list;
   last_of : string list list;
 }
-and inc_file = 
-  | Local of inc_elem list
-  | NonLocal of inc_elem list
-and inc_elem = string
 
 (* ------------------------------------------------------------------------- *)
 and toplevel =

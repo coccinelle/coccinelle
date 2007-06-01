@@ -4,8 +4,13 @@ void main(int i) {
 
 
 MODULE_PARM(radio_nr, "i");
+
+module_param(debug, bool, 0)
+
+EXPORT_NO_SYMBOLS(1)
  
 EXPORT_NO_SYMBOLS;
+
 
 
 module_param(debug, bool, 0);
@@ -28,3 +33,5 @@ MODULE_PARM_DESC(num_rcv_urbs,
 		 "Number of urbs used for reception (range: 0-"
 		 __MODULE_STRING(UDSL_MAX_RCV_URBS) ", default: "
 		 __MODULE_STRING(UDSL_DEFAULT_RCV_URBS) ")");
+
+module_param(debug, bool, 0)

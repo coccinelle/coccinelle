@@ -18,7 +18,7 @@ let lexbuf_to_strpos lexbuf     =
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 
 let token_to_strpos tok = 
-  let (parse_info,_cocci_info) = Token_helpers.info_from_token tok in
+  let (parse_info,_cocci_info) = TH.info_from_token tok in
   (parse_info.Common.str, parse_info.Common.charpos)
 
 
@@ -71,6 +71,8 @@ type parsing_stat = {
     mutable correct: int;  
     mutable bad: int;
 
+    mutable passed: int; (* by our cpp commentizer *)
+
     (* if want to know exactly what was passed through
      * mutable passing_through_lines: int;
      * it differs from bad by starting from the error to
@@ -82,8 +84,9 @@ type parsing_stat = {
 
 let default_stat file =  { 
     filename = file;
-    have_timeout          = false;
+    have_timeout = false;
     correct = 0; bad = 0;
+    passed = 0;
   }
 
 (* todo: stat per dir ?  give in terms of func_or_decl numbers:   
@@ -114,6 +117,19 @@ let print_parsing_stat_list = fun statxs ->
         {filename = file; have_timeout = timeout; bad = n} -> 
           pr2 (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
         );
+
+  pr2 "\n\n\n";
+  pr2 "files with lots of tokens passed/commentized:";
+  let threshold_passed = 100 in
+  statxs 
+    +> List.filter (function 
+      | {passed = n} when n > threshold_passed -> true
+      | _ -> false)
+    +> List.iter (function 
+        {filename = file; passed = n} -> 
+          pr2 (file ^ "  " ^ (i_to_s n));
+        );
+
   pr2 "\n\n\n---------------------------------------------------------------";
   pr2 (
   (sprintf "NB total files = %d; " total) ^
@@ -129,13 +145,77 @@ let print_parsing_stat_list = fun statxs ->
  );
   let good = (statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0) in
   let bad  = (statxs +> List.fold_left (fun acc {bad = x} -> acc+x) 0)  in
+  let passed = (statxs +> List.fold_left (fun acc {passed = x} -> acc+x) 0)  in
   let gf, badf = float_of_int good, float_of_int bad in
+  let passedf = float_of_int passed in
   pr2 (
-  (sprintf "nb good = %d,  nb bad = %d    " good bad) ^
+  (sprintf "nb good = %d,  nb passed = %d " good passed) ^
+  (sprintf "=========> %f"  (100.0 *. (passedf /. gf)) ^ "%")
+   );
+  pr2 (
+  (sprintf "nb good = %d,  nb bad = %d " good bad) ^
   (sprintf "=========> %f"  (100.0 *. (gf /. (gf +. badf))) ^ "%"
    )
   )
 
+
+(*****************************************************************************)
+(* Stats on what was passed/commentized  *)
+(*****************************************************************************)
+
+let count_lines_tokens_commentized xs = 
+  let commentized = xs +> Common.map_filter (function
+    | Parser_c.TCommentCpp ii
+    | Parser_c.TCommentMisc ii -> 
+        Some (fst ii)
+    | _ -> None
+  )
+  in
+  let line = ref (-1) in
+  let count = ref 0 in
+  begin
+    commentized +> List.iter (fun info -> 
+      let newline = info.Common.line in
+      if newline <> !line
+      then begin
+        line := newline;
+        incr count
+      end
+    );
+    !count
+  end
+
+
+
+let print_tokens_commentized xs = 
+  let commentized = xs +> Common.map_filter (function
+    | Parser_c.TCommentCpp ii
+    | Parser_c.TCommentMisc ii -> 
+        Some (fst ii)
+    | _ -> None
+  )
+  in
+  let line = ref (-1) in
+  begin
+    commentized +> List.iter (fun info -> 
+      let newline = info.Common.line in
+      let s = info.Common.str in
+      let s = Str.global_substitute 
+        (Str.regexp "\n") (fun s -> "") s 
+      in
+      if newline = !line
+      then prerr_string (s ^ " ")
+      else begin
+        if !line = -1 
+        then prerr_string "passed:" 
+        else prerr_string "\npassed:";
+        line := newline;
+        prerr_string (s ^ " ");
+      end
+    );
+    if not (null commentized) then prerr_string "\n";
+  end
+      
 
 
 
@@ -154,7 +234,7 @@ let tokens2 file =
       let result = Lexer_c.token lexbuf in
       (* add the line x col information *)
       let result = 
-        Token_helpers.visitor_info_from_token 
+        TH.visitor_info_from_token 
           (fun (parse_info,cocciinfo) -> 
             Common.complete_parse_info file table parse_info,
             cocciinfo
@@ -282,13 +362,13 @@ let expression_of_string = parse_gen Parser_c.expr
 (* todo: do something if find Parser_c.Eof ? *)
 let rec find_next_synchro next already_passed =
 
-  (* maybe because not enough }, because for example an ifdef that
-   * contains in both branch some opening {, then we later eat too much,
-   * "on deborde sur la fonction d'apres", so maybe can find synchro
+  (* Maybe because not enough }, because for example an ifdef that
+   * contains in both branch some opening {, we later eat too much,
+   * "on deborde sur la fonction d'apres". So maybe we can find synchro
    * point inside already_passed instead of looking in next. But take
-   * care! must go forward, we must not stay in infinite loop! So look
+   * care! must progress. We must not stay in infinite loop! So look
    * at premier(external_declaration2) in parser.output and pass at
-   * least this first tokens. 
+   * least those first tokens. 
    * 
    * I have chosen to start search for next synchro point after the 
    * first { I found, so quite sure we will not loop.
@@ -307,18 +387,18 @@ let rec find_next_synchro next already_passed =
     
 
 and find_next_synchro_orig next already_passed =
+  match next with
+  | [] ->  
+      pr2 "ERROR-RECOV: end of file while in recovery mode"; 
+      already_passed, []
 
-    match next with
-    | [] ->  
-        pr2 "ERROR-RECOV: end of file while in recovery mode"; 
-        already_passed, []
+  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 -> 
+      pr2 ("ERROR-RECOV: found sync point at line "^i_to_s (TH.line_of_tok v));
 
-    | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 -> 
-        pr2 ("ERROR-RECOV: found sync point at line "^i_to_s (TH.line_of_tok v));
-
-        (* perhaps a }; obsolete now, because parser.mly allow empty ';' *)
       (match xs with
       | [] -> raise Impossible (* there is a EOF token normally *)
+
+      (* still useful: now parser.mly allow empty ';' so normally no pb *)
       | Parser_c.TPtVirg iptvirg::xs -> 
           pr2 "ERROR-RECOV: found sync bis, eating } and ;";
           (Parser_c.TPtVirg iptvirg)::v::already_passed, xs
@@ -327,7 +407,7 @@ and find_next_synchro_orig next already_passed =
           pr2 "ERROR-RECOV: found sync bis, eating ident, }, and ;";
           (Parser_c.TPtVirg iptvirg)::(Parser_c.TIdent x)::v::already_passed, 
           xs
-
+            
       | Parser_c.TCommentSpace sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
         ::xs -> 
           pr2 "ERROR-RECOV: found sync bis, eating ident, }, and ;";
@@ -337,14 +417,14 @@ and find_next_synchro_orig next already_passed =
             v::
             already_passed, 
           xs
-
+            
       | _ -> 
           v::already_passed, xs
       )
   | v::xs when TH.col_of_tok v = 0 && TH.is_start_of_something v  -> 
       pr2 ("ERROR-RECOV: found sync 2 at line "^ i_to_s (TH.line_of_tok v));
       already_passed, v::xs
-
+        
   | v::xs -> 
       find_next_synchro_orig xs (v::already_passed)
 
@@ -365,7 +445,7 @@ let new_info posadd str (info, annot) =
     str     = str;
     column = info.column + posadd;
   }, ref Ast_c.emptyAnnot 
- (*must generate a new ref each time, otherwise share*)
+ (* must generate a new ref each time, otherwise share *)
 
 
 (* adjust token because fresh token coming from a Parse_c.token_string *)
@@ -684,7 +764,7 @@ let parse_print_error_heuristic2 file =
 
   let rec loop () =
 
-    if not (LP.is_enable_state()) && !Flag_parsing_c.debug_typedef
+    if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
     then pr2 "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
 
     (* normally have to do that only when come from an exception in which
@@ -757,6 +837,7 @@ let parse_print_error_heuristic2 file =
     let diffline = (checkpoint2 - checkpoint) in
     let info = mk_info_item file !passed_tokens_last_ckp
     in 
+    stat.passed <- stat.passed + count_lines_tokens_commentized (snd info);
 
     (match elem with
     | Ast_c.NotParsedCorrectly _ -> stat.bad     <- stat.bad     + diffline

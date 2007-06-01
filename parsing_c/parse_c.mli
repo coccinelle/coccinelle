@@ -25,6 +25,7 @@ type parsing_stat = {
     mutable have_timeout: bool;
     mutable correct: int;
     mutable bad: int;
+    mutable passed: int;
   } 
 
 
@@ -34,3 +35,5 @@ val parse_print_error_heuristic:  filename -> (program2 * parsing_stat)
 
 val print_parsing_stat_list: parsing_stat list -> unit
 
+val print_tokens_commentized : Parser_c.token list -> unit
+val count_lines_tokens_commentized : Parser_c.token list -> int

@@ -7,8 +7,6 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
 
 (*****************************************************************************)
 (*
- * todo?: stdC: multibyte character ??  
- *
  * subtil: ocamllex use side effect on lexbuf, so must take care. 
  * For instance must do   
  * 
@@ -37,10 +35,12 @@ let tokinfo lexbuf  =
   { 
     Common.charpos = Lexing.lexeme_start lexbuf; 
     Common.str     = Lexing.lexeme lexbuf;
-    line = -1; 
-    column = -1; 
-    file = "";
-  }, ref Ast_c.emptyAnnot (* must generate a new ref each time, otherwise share*)
+    Common.line = -1; 
+    Common.column = -1; 
+    Common.file = "";
+  }, 
+  (* must generate a new ref each time, otherwise share *)
+  ref Ast_c.emptyAnnot 
 
 
 let tok_add_s s (info,annot) = {info with Common.str = info.str ^ s}, annot
@@ -89,6 +89,7 @@ let keyword_table = Common.hash_of_list [
   
   "sizeof", (fun ii -> Tsizeof ii);   
 
+
   (* gccext: cppext: linuxext: synonyms *)
   "asm",     (fun ii -> Tasm ii);
   "__asm__", (fun ii -> Tasm ii);
@@ -111,7 +112,7 @@ let keyword_table = Common.hash_of_list [
   (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
   "__const",     (fun ii -> Tconst ii);
-  "CONST",      (fun ii -> Tconst ii);
+  (* "CONST",      (fun ii -> Tconst ii); *) (* pbs *)
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
@@ -220,17 +221,20 @@ rule token = parse
 
   | "#" [' ' '\t']* "ident"   [' ' '\t']+  [^'\n']+ '\n' 
 
+  | "#" [' ' '\t']* "line"   [' ' '\t']+  [^'\n']+ '\n' 
+
   | "#" [' ' '\t']* "error"   [' ' '\t']+  [^'\n']* '\n' 
   | "#" [' ' '\t']* "warning" [' ' '\t']+  [^'\n']* '\n'                     
   | "#" [' ' '\t']* "abort"   [' ' '\t']+  [^'\n']* '\n'
 
       { TCommentCpp (tokinfo lexbuf) }
 
-  (* in drivers/char/tpqic02.c *)
+  (* in drivers/char/tpqic02.c, in old version of the kernel *)
   | "#" [' ' '\t']* "error"     { TCommentCpp (tokinfo lexbuf) }
 
 
   | "#" [' ' '\t']* '\n'        { TCommentCpp (tokinfo lexbuf) }
+
 
   (* only in cpp directives ? *)
   | "\\" '\n' { TCommentSpace (tokinfo lexbuf) }
@@ -239,8 +243,7 @@ rule token = parse
   (* #define, #undef *)
   (* ---------------------- *)
 
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as define)
-    ( (letter (letter |digit)*) as ident) 
+  | (("#" [' ' '\t']*  "define" [' ' '\t']+) as define) (id as ident) 
     { 
       let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
@@ -248,24 +251,24 @@ rule token = parse
     }
 
   (* note that space here is important, the '(' must be just next to 
-   * the ident, otherwise it is a define-no-param that just lead to
-   * a paren expression
+   * the ident, otherwise it is a define-no-param that just leads to
+   * a paren expression.
    *)
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+) as define)
-    ( (letter (letter | digit)*) as ident) 
-    ( ('(' [^ ')']* ')' ) as params) { 
+  | (("#" [' ' '\t']*  "define" [' ' '\t']+) as define) (id as ident) 
+    (('(' [^ ')']* ')' ) as params) 
+    { 
       let info = tokinfo lexbuf in 
       let bodys = cpp_eat_until_nl lexbuf in
       TDefFunc (define, ident, params, bodys, info +> tok_add_s bodys)
     }
 
-  | "#" [' ' '\t']* "undef" [' ' '\t']+ (letter (letter |digit)*)
+  | "#" [' ' '\t']* "undef" [' ' '\t']+ id
       { let info = tokinfo lexbuf in 
         TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
 
-  | (letter (letter | digit) *  "...") as str
+  | (id  "...") as str
       { TDefParamVariadic (str, tokinfo lexbuf) }
 
   (* ---------------------- *)
@@ -308,21 +311,7 @@ rule token = parse
       }
 
 
-  (* linuxext: *)
-  | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
-      { let info = tokinfo lexbuf in 
-        TIfdefbool (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
-
-      } 
-  (* linuxext: *)
-  | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
-  | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
-      
-      { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
-      } 
-
-  (*
+  (* different possible variations (we not manage all of them):
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
     #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,4,2)
     #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
@@ -347,6 +336,20 @@ rule token = parse
     
   *)
 
+  (* linuxext: *)
+  | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
+      { let info = tokinfo lexbuf in 
+        TIfdefbool (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+      } 
+  (* linuxext: *)
+  | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
+  | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
+      
+      { let info = tokinfo lexbuf in 
+        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+      } 
+
+
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
   | "#" [' ''\t']* "ifdef"  [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*  
       { TIfdef (tokinfo lexbuf) }
@@ -364,7 +367,6 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [' ' '\t']+ 
       { let info = tokinfo lexbuf in 
         TIfdefelif (info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
-
       } 
 
 
@@ -436,54 +438,12 @@ rule token = parse
   | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) } 
   | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
  
-
-
-
-  (* TODO TO GENERALIZE *)
-  (* linuxext: *)
-
-
-  | "ACPI_STATE_COMMON" { TCommentMisc (tokinfo lexbuf) }
-  | "ACPI_PARSE_COMMON" { TCommentMisc (tokinfo lexbuf) }
-  | "ACPI_COMMON_DEBUG_MEM_HEADER"  { TCommentMisc (tokinfo lexbuf) }
-
-
-  | "TRACE_EXIT" {  Treturn (tokinfo lexbuf) } 
-
-  | "EXPORT_NO_SYMBOLS;" { TCommentMisc (tokinfo lexbuf) }
-
-  (* normally can be handled,  but often the module_exist does not have a trailing ;  :(  *)
-  | "module_exit(" letter (letter | digit)* ")"  
-      { TCommentMisc (tokinfo lexbuf) }
-  | "module_init(" letter (letter | digit)* ")"  
-      { TCommentMisc (tokinfo lexbuf) }
-
-
- (* struct def component. todo? generalize via LALR(k) tech by using a
-  *  "in_struct"  context_info.
-  *)
-  | "ACPI_COMMON_OBJ_INFO;"                 
-      { TCommentMisc (tokinfo lexbuf) }
-  | "CS_OWNER" [' ' '\t']+ "CS_THIS_MODULE" 
-      { TCommentMisc (tokinfo lexbuf) }
-
- (* misc *)
-  | "__MODULE_STRING" '(' [^ ')']* ')'               
-      { TCommentMisc (tokinfo lexbuf) }
-  | "ACPI_MODULE_NAME" [' ' '\t']* "(" [^'\n']+ '\n' 
-      { TCommentMisc (tokinfo lexbuf) }
-
- (* common macro of device driver *)
- | "I2C_CLIENT_INSMOD;"   { TCommentMisc (tokinfo lexbuf) }
-
-
-
-
+ (* cppext: string concatenation *)
   |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
       { let info = tokinfo lexbuf in
         TIdent (tok lexbuf, info)
       }
-  (* gccext: ##args for variadic macro *)
+  (* cppext: gccext: ##args for variadic macro *)
   |  "##" [' ''\t']* id
       { let info = tokinfo lexbuf in
         TIdent (tok lexbuf, info)
@@ -620,7 +580,6 @@ and char = parse
 	  );
           x
 	} 
-  (* toreput?: trigraph, cf less/ *)
   | _ 
       { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
         tok lexbuf
@@ -650,8 +609,6 @@ and string  = parse
 	 );
           x ^ string lexbuf
        }
- (* toreput?: trigraph *)
-
  (* bug if add that, cos match also the '"' that is needed
   *  to finish the string, and so go until end of file
   *)
@@ -681,6 +638,7 @@ and comment = parse
 
 
 (*****************************************************************************)
+
 (* CPP recognize C comments, so when #define xx (yy) /* comment \n ... */
  * then he has already erased the /* comment. 
  * 
