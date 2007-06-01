@@ -93,6 +93,8 @@ let short_options = [
 
   "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
   "    sgrep mode (sgrep for semantic grep)";
+  "-sgrep2", Arg.Set Flag_parsing_cocci.sgrep_mode2, 
+  "    sgrep mode2 (sgrep for semantic grep)";
   "-partial_match",        Arg.Set Flag_ctl.partial_match, 
   "    report partial matches of the SP on the C file";
 

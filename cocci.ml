@@ -798,13 +798,22 @@ let rec bigloop2 rs (cs,hss) =
       
     ); (* end iter es *)
     es := !newes;
-    let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
-    cs := newcs; hss := newhss;
+    if not !Flag_parsing_cocci.sgrep_mode2
+    then 
+      let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
+      begin cs := newcs; hss := newhss; end;
+      
     if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
    end
   ); (* end iter rs *)
 
+  (if !Flag_parsing_cocci.sgrep_mode2
+  then 
+    let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
+    begin cs := newcs; hss := newhss; end
+   );
   !cs, !hss (* return final C asts *)
+
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
 
