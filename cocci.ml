@@ -150,14 +150,24 @@ let show_or_not_cocci a b =
 
 (* the output *)
 
-let show_or_not_diff2 cfile outfile = 
+let show_or_not_diff2 cfile outfile show_only_minus = 
   if !Flag.show_diff then begin
     (* may need --strip-trailing-cr under windows *)
     pr2 "diff = ";
-    Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
+
+    if show_only_minus
+    then
+      let xs = Common.cmd_to_list ("diff -u -b -B " ^ cfile ^ " " ^ outfile) in
+      xs +> List.iter (fun s -> 
+        if s =~ "^\\+[^+]"
+        then ()
+        else pr2 s
+      )
+    else 
+      Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
   end
-let show_or_not_diff a b  = 
-  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
+let show_or_not_diff a b c  = 
+  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b c)
 
 
 (* the derived input *)
@@ -798,19 +808,23 @@ let rec bigloop2 rs (cs,hss) =
       
     ); (* end iter es *)
     es := !newes;
+
     if not !Flag_parsing_cocci.sgrep_mode2
-    then 
+    then begin
       let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
-      begin cs := newcs; hss := newhss; end;
+      cs := newcs; hss := newhss; 
+    end;
       
     if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
    end
   ); (* end iter rs *)
 
   (if !Flag_parsing_cocci.sgrep_mode2
-  then 
+  then begin
+    Flag_parsing_c.verbose_parsing := false;
     let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
-    begin cs := newcs; hss := newhss; end
+    cs := newcs; hss := newhss; 
+  end
    );
   !cs, !hss (* return final C asts *)
 
@@ -903,8 +917,9 @@ let full_engine2 cfile (coccifile, isofile) outfile =
     )
     in
     cfile_from_program (for_unparser c_infos') outfile;
+    let show_only_minus = !Flag_parsing_cocci.sgrep_mode2 in
 
-    show_or_not_diff cfile outfile;
+    show_or_not_diff cfile outfile show_only_minus;
 
     hs_infos' +> List.iter (fun hi -> 
       let outheader = outfile ^ "." ^ hi.header_name ^ ".h" in
@@ -912,7 +927,7 @@ let full_engine2 cfile (coccifile, isofile) outfile =
       then begin
         pr2 ("a header file was modified: " ^ hi.header_name);
         cfile_from_program (for_unparser hi.header_content) outheader;
-        show_or_not_diff hi.header_path outheader;
+        show_or_not_diff hi.header_path outheader show_only_minus;
       end
     );
   end
