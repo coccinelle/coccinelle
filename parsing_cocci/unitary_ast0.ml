@@ -209,7 +209,10 @@ let do_unitary minus plus =
 	let (used_after,rest) = loop (metavars,minus,plus) in
 	let (m_unitary,m_nonunitary) = get_free minus_checker m1 in
 	let (p_unitary,p_nonunitary) = get_free plus_checker p1 in
-	let p_free = p_unitary @ p_nonunitary in
+	let p_free =
+	  if !Flag_parsing_cocci.sgrep_mode2
+	  then []
+	  else p_unitary @ p_nonunitary in
 	let (in_p,m_unitary) =
 	  List.partition (function x -> List.mem x p_free) m_unitary in
 	let m_nonunitary = in_p@m_nonunitary in

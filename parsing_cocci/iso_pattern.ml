@@ -382,7 +382,22 @@ let match_maker context_required whencode_allowed =
 	      (function expr -> Ast0.ExprTag expr)
 	      expr
 	  else return false
-    | Ast0.MetaConst(namea,_,pure) -> failwith "metaconst not supported"
+    | Ast0.MetaConst(name,None,pure) ->
+	let rec matches e =
+	  match Ast0.unwrap e with
+	    Ast0.Constant(c) -> true
+	  | Ast0.Cast(lp,ty,rp,e) -> matches e
+	  | Ast0.SizeOfExpr(se,exp) -> true
+	  | Ast0.SizeOfType(se,lp,ty,rp) -> true
+	  | Ast0.MetaConst(nm,_,p) -> (Ast0.lub_pure p pure) = pure
+	  | _ -> false in
+	if matches expr
+	then
+	  add_pure_binding name pure (function _ -> pure) (* already checked *)
+	    (function expr -> Ast0.ExprTag expr)
+	    expr
+	else return false
+    | Ast0.MetaConst(namea,_,pure) -> failwith "typed metaconst not supported"
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
     | up ->
@@ -1199,7 +1214,16 @@ let instantiate bindings mv_bindings =
 	      Ast0.rewrap e
 		(Ast0.MetaExpr
 		   (Ast0.set_mcode_data new_mv name,new_types,pure)))
-    | Ast0.MetaConst(namea,_,pure) -> failwith "metaconst not supported"
+    | Ast0.MetaConst(name,None,pure) ->
+	(rebuild_mcode None).V0.rebuilder_expression
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.ExprTag(exp)) -> exp
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e
+		(Ast0.MetaConst(Ast0.set_mcode_data new_mv name,None,pure)))
+    | Ast0.MetaConst(namea,Some ty,pure) ->
+	failwith "typed metaconst not supported"
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
     | Ast0.Edots(d,_) ->
@@ -1629,7 +1653,10 @@ let transform_decl (metavars,alts) e =
       mkdisj match_decl metavars alts
 	(function b -> function mv_b ->
 	  (instantiate b mv_b).V0.rebuilder_declaration) e
-	make_disj_decl make_minus.V0.rebuilder_declaration
+	make_disj_decl
+	(function x ->
+	  Unparse_ast0.declaration x; Format.print_newline();
+	  make_minus.V0.rebuilder_declaration x)
 	(rebuild_mcode start_line).V0.rebuilder_declaration
 	Unparse_ast0.declaration extra_copy_other_plus
   | _ -> ([],e)

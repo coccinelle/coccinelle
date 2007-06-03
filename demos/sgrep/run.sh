@@ -3,3 +3,5 @@ find linux -name "*\.c" -exec ../../spatch.opt -cocci_file intr4.cocci {} \
 -sgrep -save_output_file \;
 
 find linux -name "*\.cocci_res" -exec ./doit {} \; -print > err_found
+
+# doit contains cat -n $1 | grep '/\*<\*/'

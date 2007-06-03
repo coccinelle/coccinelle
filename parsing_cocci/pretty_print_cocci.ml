@@ -311,10 +311,6 @@ and print_function_type (ty,lp1,params,rp1) fn =
   print_option fullType ty; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
-and print_array (ty,lb,size,rb) fn =
-  fullType ty; fn(); mcode print_string lb; print_option expression size;
-  mcode print_string rb
-
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
@@ -381,8 +377,20 @@ and print_named_type ty id =
 	  print_function_type (ty,lp1,params,rp1)
 	    (function _ -> print_string " "; ident id)
       | Ast.Array(ty,lb,size,rb) ->
-	  print_array (ty,lb,size,rb)
-	    (function _ -> print_string " "; ident id)
+	  let rec loop ty k =
+	    match Ast.unwrap ty with
+	      Ast.Array(ty,lb,size,rb) ->
+		(match Ast.unwrap ty with
+		  Ast.Type(None,ty) ->
+		    loop ty
+		      (function _ ->
+			k ();
+			mcode print_string lb;
+			print_option expression size;
+			mcode print_string rb)
+		| _ -> failwith "complex array types not supported")
+	    | _ -> typeC ty; ident id; k () in
+	  loop ty1 (function _ -> ())
       | _ -> fullType ty; ident id)
   | _ -> fullType ty; ident id
 

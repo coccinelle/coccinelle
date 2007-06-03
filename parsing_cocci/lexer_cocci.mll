@@ -327,7 +327,7 @@ rule token = parse
   | "..."
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TEllipsis (get_current_line_type lexbuf) }
-
+(*
   | "ooo"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TCircles (get_current_line_type lexbuf) }
@@ -335,12 +335,12 @@ rule token = parse
   | "***"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TStars (get_current_line_type lexbuf) }
-
+*)
   | "<..." { start_line true; check_context_linetype (tok lexbuf);
 	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCEllipsis (get_current_line_type lexbuf) }
-
+(*
   | "<ooo" { start_line true; check_context_linetype (tok lexbuf);
 	     TOCircles (get_current_line_type lexbuf) }
   | "ooo>" { start_line true; check_context_linetype (tok lexbuf);
@@ -350,7 +350,7 @@ rule token = parse
 	     TOStars (get_current_line_type lexbuf) }
   | "***>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCStars (get_current_line_type lexbuf) }
-
+*)
   | "-" { if !current_line_started
 	  then (start_line true; TMinus (get_current_line_type lexbuf))
           else (add_current_line_type D.MINUS; token lexbuf) }

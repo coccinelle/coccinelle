@@ -253,3 +253,61 @@ let check_meta tok =
 let str2inc s =
   let elements = Str.split (Str.regexp "/") s in
   List.map (function "..." -> Ast.IncDots | s -> Ast.IncPath s) elements
+
+(* ---------------------------------------------------------------------- *)
+(* statements *)
+
+let meta_stm name =
+  let (nm,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))
+
+let exp_stm exp pv =
+  Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))
+
+let ifthen iff lp tst rp thn =
+  Ast0.wrap(Ast0.IfThen(clt2mcode "if" iff,
+    clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,
+    (Ast0.default_info(),Ast0.context_befaft())))
+
+let ifthenelse iff lp tst rp thn e els =
+  Ast0.wrap(Ast0.IfThenElse(clt2mcode "if" iff,
+    clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,clt2mcode "else" e,els,
+    (Ast0.default_info(),Ast0.context_befaft())))
+
+let forloop fr lp e1 sc1 e2 sc2 e3 rp s =
+  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,e1,
+		     clt2mcode ";" sc1,e2,clt2mcode ";" sc2,e3,
+		     clt2mcode ")" rp,s,
+		     (Ast0.default_info(),Ast0.context_befaft())))
+
+let whileloop w lp e rp s =
+  Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,e,
+		       clt2mcode ")" rp,s,
+		       (Ast0.default_info(),Ast0.context_befaft())))
+
+let doloop d s w lp e rp pv =
+  Ast0.wrap(Ast0.Do(clt2mcode "do" d,s,clt2mcode "while" w,
+		    clt2mcode "(" lp,e,clt2mcode ")" rp,
+		    clt2mcode ";" pv))
+
+let switch s lp e rp lb c rb =
+  Ast0.wrap(Ast0.Switch(clt2mcode "switch" s,clt2mcode "(" lp,e,
+			clt2mcode ")" rp,clt2mcode "{" lb,
+			Ast0.wrap(Ast0.DOTS(c)),clt2mcode "}" rb))
+
+let ret_exp r e pv =
+  Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
+
+let ret r pv =
+  Ast0.wrap(Ast0.Return(clt2mcode "return" r,clt2mcode ";" pv))
+
+let break b pv =
+  Ast0.wrap(Ast0.Break(clt2mcode "break" b,clt2mcode ";" pv))
+
+let cont c pv =
+  Ast0.wrap(Ast0.Continue(clt2mcode "continue" c,clt2mcode ";" pv))
+
+let seq lb s rb =
+  Ast0.wrap(Ast0.Seq(clt2mcode "{" lb,s,clt2mcode "}" rb))
+
+(* ---------------------------------------------------------------------- *)

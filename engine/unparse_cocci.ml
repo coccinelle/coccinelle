@@ -243,10 +243,6 @@ and print_function_type (ty,lp1,params,rp1) fn =
   print_option fullType ty; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
-and print_array (ty,lb,size,rb) fn =
-  fullType ty; fn(); mcode print_string lb; print_option expression size;
-  mcode print_string rb
-
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
@@ -257,7 +253,9 @@ and typeC ty =
 	(function _ -> ())
   | Ast.FunctionType (am,ty,lp1,params,rp1) ->
       print_function_type (ty,lp1,params,rp1) (function _ -> ())
-  | Ast.Array(ty,lb,size,rb) -> print_array (ty,lb,size,rb) (function () -> ())
+  | Ast.Array(ty,lb,size,rb) ->
+      fullType ty; mcode print_string lb; print_option expression size;
+      mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; ident name; print_string " "
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -318,9 +316,21 @@ and print_named_type ty id =
       | Ast.FunctionType(am,ty,lp1,params,rp1) ->
 	  print_function_type (ty,lp1,params,rp1)
 	    (function _ -> print_string " "; ident id)
-      | Ast.Array(ty,lb,size,rb) ->
-	  print_array (ty,lb,size,rb)
-	    (function _ -> print_string " "; ident id)
+      | Ast.Array(_,_,_,_) ->
+	  let rec loop ty k =
+	    match Ast.unwrap ty with
+	      Ast.Array(ty,lb,size,rb) ->
+		(match Ast.unwrap ty with
+		  Ast.Type(None,ty) ->
+		    loop ty
+		      (function _ ->
+			k ();
+			mcode print_string lb;
+			print_option expression size;
+			mcode print_string rb)
+		| _ -> failwith "complex array types not supported")
+	    | _ -> typeC ty; ident id; k () in
+	  loop ty1 (function _ -> ())
       | _ -> fullType ty; ident id)
   | _ -> fullType ty; ident id
 

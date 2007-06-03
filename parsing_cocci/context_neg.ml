@@ -236,6 +236,33 @@ let classify all_marked table code =
 	  disj_cases starter decls r.V0.combiner_declaration ender
       | Ast0.Ddots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
+	(* Need special cases for the following so that the type will be
+	   considered as a unit, rather than distributed around the
+	   declared variable.  This needs to be done because of the call to
+	   compute_result, ie the processing of each term should make a
+	   side-effect on the complete term structure as well as collecting
+	   some information about it.  So we have to visit each complete
+	   term structure.  In (all?) other such cases, we visit the terms
+	   using rebuilder, which just visits the subterms, rather than
+	   reordering their components. *)
+      |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
+	    (bind (r.V0.combiner_typeC ty)
+	       (bind (r.V0.combiner_ident id)
+		  (bind (mcode eq)
+		     (bind (r.V0.combiner_initialiser ini) (mcode sem)))))
+      | Ast0.UnInit(stg,ty,id,sem) ->
+	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
+	    (bind (r.V0.combiner_typeC ty)
+	       (bind (r.V0.combiner_ident id) (mcode sem)))
+      |	_ -> k e) in
+
+  let param r k e =
+    compute_result Ast0.param e
+      (match Ast0.unwrap e with
+	Ast0.Param(ty,Some id) ->
+	  (* needed for the same reason as in the Init and UnInit cases *)
+	  bind (r.V0.combiner_typeC ty) (r.V0.combiner_ident id)
       |	_ -> k e) in
 
   let typeC r k e =
@@ -288,8 +315,7 @@ let classify all_marked table code =
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
-      (do_nothing Ast0.ident) expression typeC initialiser
-      (do_nothing Ast0.param) declaration
+      (do_nothing Ast0.ident) expression typeC initialiser param declaration
       statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
   combiner.V0.combiner_top_level code
 

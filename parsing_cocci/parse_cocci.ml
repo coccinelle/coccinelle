@@ -3,6 +3,7 @@ separately (thus duplicating work for the parsing of the context elements) *)
 
 module D = Data
 module PC = Parser_cocci_menhir
+module V0 = Visitor_ast0
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -137,15 +138,19 @@ let token2c (tok,_) =
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
   | PC.TEllipsis(clt) -> "..."^(line_type2c clt)
+(*
   | PC.TCircles(clt)  -> "ooo"^(line_type2c clt)
   | PC.TStars(clt)    -> "***"^(line_type2c clt)
+*)
 
   | PC.TOEllipsis(clt) -> "<..."^(line_type2c clt)
   | PC.TCEllipsis(clt) -> "...>"^(line_type2c clt)
+(*
   | PC.TOCircles(clt)  -> "<ooo"^(line_type2c clt)
   | PC.TCCircles(clt)  -> "ooo>"^(line_type2c clt)
   | PC.TOStars(clt)    -> "<***"^(line_type2c clt)
   | PC.TCStars(clt)    -> "***>"^(line_type2c clt)
+*)
   | PC.TBang0 -> "!"
   | PC.TPlus0 -> "+"
   | PC.TWhy0  -> "?"
@@ -223,7 +228,7 @@ let plus_attachable (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
   | PC.TMetaLocalFunc(_,_,clt)
 
-  | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)   
+  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
   | PC.TCPar(clt)
@@ -237,8 +242,8 @@ let plus_attachable (tok,_) =
       if line_type clt = D.PLUS then PLUS else NOTPLUS
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) -> NOTPLUS
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -278,7 +283,7 @@ let get_clt (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
   | PC.TMetaLocalFunc(_,_,clt)
 
-  | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)   
+  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
   | PC.TCPar(clt)
@@ -291,8 +296,8 @@ let get_clt (tok,_) =
   | PC.TPtVirg(clt)
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) -> clt
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> clt
 
   | _ -> failwith "no clt"
 
@@ -386,15 +391,19 @@ let update_clt (tok,x) clt =
 
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
+(*
   | PC.TCircles(_)  -> (PC.TCircles(clt),x)
   | PC.TStars(_)    -> (PC.TStars(clt),x)
+*)
 
   | PC.TOEllipsis(_) -> (PC.TOEllipsis(clt),x)
   | PC.TCEllipsis(_) -> (PC.TCEllipsis(clt),x)
+(*
   | PC.TOCircles(_)  -> (PC.TOCircles(clt),x)
   | PC.TCCircles(_)  -> (PC.TCCircles(clt),x)
   | PC.TOStars(_)    -> (PC.TOStars(clt),x)
   | PC.TCStars(_)    -> (PC.TCStars(clt),x)
+*)
 
   | PC.TWhy(_)   -> (PC.TWhy(clt),x)
   | PC.TDotDot(_)   -> (PC.TDotDot(clt),x)
@@ -502,11 +511,13 @@ let split_token ((tok,_) as t) =
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TLineEnd(clt)
-  | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt) -> split t clt
+  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
 
   | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
+(*
   | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
   | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
+*)
   | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
 
@@ -614,8 +625,8 @@ statement. *)
    to be used as a real identifier *)
 let detect_types in_meta_decls l =
   let is_delim infn = function
-      (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_)
-    | (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_)
+      (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
+    | (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
@@ -725,10 +736,10 @@ let token2line (tok,_) =
   | PC.TMetaLocalFunc(_,_,clt) 
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TEllipsis(clt) | PC.TCircles(clt) | PC.TStars(clt)    
+  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt)    
+  | PC.TOEllipsis(clt) (* | PC.TCEllipsis(clt) | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar(clt)  
@@ -833,13 +844,15 @@ isomorphisms.  This shouldn't matter because the context code of the +
 slice is mostly ignored anyway *)
 let rec drop_double_dots l =
   let start = function
-      (PC.TOEllipsis(_),_) | (PC.TOCircles(_),_) | (PC.TOStars(_),_) -> true
+      (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *) ->
+	true
     | _ -> false in
   let middle = function
-      (PC.TEllipsis(_),_) | (PC.TCircles(_),_) | (PC.TStars(_),_) -> true
+      (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *) -> true
     | _ -> false in
   let final = function
-      (PC.TCEllipsis(_),_) | (PC.TCCircles(_),_) | (PC.TCStars(_),_) -> true
+      (PC.TCEllipsis(_),_) (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
+	true
     | _ -> false in
   let rec loop ((_,i) as prev) = function
       [] -> []
@@ -1010,7 +1023,7 @@ let parse_iso = function
       close_in channel;
       res
 
-let parse file default_isos =
+let parse file =
   let table = Common.full_charpos_to_pos file in
   let channel = open_in file in
   let lexbuf = Lexing.from_channel channel in
@@ -1041,14 +1054,6 @@ let parse file default_isos =
 	Hashtbl.add Lexer_cocci.all_metavariables rule_name
 	  (Hashtbl.fold (fun key v rest -> (key,v)::rest)
 	     Lexer_cocci.metavariables []);
-	let chosen_isos =
-	  match iso with
-	    None -> default_isos
-	  | Some isofile ->
-	      Data.in_iso := true;
-	      let isos = parse_iso (Some isofile) in
-	      Data.in_iso := false;
-	      isos in
 	(* get transformation rules *)
 	let (more,tokens) =
 	  tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] in
@@ -1086,7 +1091,10 @@ let parse file default_isos =
 	*)
 	let plus_res =
 	  if !Flag_parsing_cocci.sgrep_mode2
-	  then minus_res (* not actually used for anything *)
+	  then (* not actually used for anything, except context_neg *)
+	    List.map
+	      (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
+	      minus_res
 	  else parse_one "plus" PC.plus_main file plus_tokens in
 	(*
 	Printf.printf "after plus parse\n";
@@ -1097,10 +1105,10 @@ let parse file default_isos =
 	then
 	  let (minus_ress,plus_ress) =
 	    loop (metavars@old_metas) starts_with_name in
-	  ((minus_res,metavars,(chosen_isos,dependencies,rule_name))::
+	  ((minus_res,metavars,(iso,dependencies,rule_name))::
 	   minus_ress,
 	   (plus_res, metavars)::plus_ress)
-	else ([(minus_res,metavars,(chosen_isos,dependencies,rule_name))],
+	else ([(minus_res,metavars,(iso,dependencies,rule_name))],
 	      [(plus_res, metavars)]) in
       loop [] (x = PC.TArob)
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
@@ -1110,23 +1118,34 @@ let parse file default_isos =
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
+  let extra_path = Filename.dirname file in
   Lexer_cocci.init ();
   Data.in_iso := true;
   let isos = parse_iso isofile in
   Data.in_iso := false;
   Lexer_cocci.init ();
-  let (minus,plus) = parse file isos in
+  let (minus,plus) = parse file in
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
     List.concat
       (List.map2
-	 (function (minus, metavars, (chosen_isos, dependencies, rule_name)) ->
+	 (function (minus, metavars, (iso, dependencies, rule_name)) ->
 	   function (plus, metavars) ->
+	     let chosen_isos =
+	       match iso with
+		 None -> isos
+	       | Some isofile ->
+		   Lexer_cocci.init ();
+		   Data.in_iso := true;
+		   let isos = parse_iso (Some (extra_path^"/"^isofile)) in
+		   Data.in_iso := false;
+		   isos in
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let function_prototypes =
 	       Function_prototypes.process rule_name minus plus in
+	     (* warning! context_neg side-effects its arguments! *)
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     (if not !Flag_parsing_cocci.sgrep_mode2
 	     then Insert_plus.insert_plus m p);
