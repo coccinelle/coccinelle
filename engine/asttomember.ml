@@ -84,7 +84,8 @@ and statement onlyModif tail stmt used_after optional =
       let body_info =
 	lub (statement_list onlyModif false decls used_after optional,
 	     statement_list onlyModif tail body used_after optional) in
-      if contains_modif onlyModif lbrace used_after or contains_modif onlyModif rbrace used_after
+      if contains_modif onlyModif lbrace used_after or
+	contains_modif onlyModif rbrace used_after
       then
 	match body_info with
 	  Req(elems) -> body_info (* don't bother adding braces *)
@@ -96,7 +97,9 @@ and statement onlyModif tail stmt used_after optional =
   | Ast.For(header,branch,(_,_,_,aft)) ->
       if contains_modif onlyModif header used_after or mcode () ((),(),aft)
       then optional [header]
-      else extend optional header (statement onlyModif tail branch used_after optional)
+      else
+	extend optional header
+	  (statement onlyModif tail branch used_after optional)
 
   | Ast.Switch(header,lb,cases,rb) ->
       let body_info = case_lines  onlyModif tail cases used_after optional in
@@ -121,8 +124,10 @@ and statement onlyModif tail stmt used_after optional =
       List.fold_left
 	(function prev ->
 	  function cur ->
-	    lub (statement_list onlyModif tail cur used_after (function x -> Opt x),
-		 prev))
+	    lub
+	      (statement_list onlyModif tail cur used_after
+		 (function x -> Opt x),
+	       prev))
 	(Opt []) stmt_dots_list
 
   | Ast.Nest(stmt_dots,whencode,t) ->
@@ -132,8 +137,10 @@ and statement onlyModif tail stmt used_after optional =
 	    Ast.MultiStm(stm) ->
 	      statement onlyModif tail stm used_after optional
 	  | _ ->
-	      statement_list onlyModif tail stmt_dots used_after (function x -> Opt x))
-      | _ -> statement_list onlyModif tail stmt_dots used_after (function x -> Opt x))
+	      statement_list onlyModif tail stmt_dots used_after
+		(function x -> Opt x))
+      | _ -> statement_list onlyModif tail stmt_dots used_after
+	    (function x -> Opt x))
 
   | Ast.Dots((_,i,d),whencodes,t) -> Opt []
 
@@ -151,7 +158,8 @@ and statement onlyModif tail stmt used_after optional =
 	| Opt(elems) -> lub (optional [header], body_info)
       else body_info
 
-  | Ast.OptStm(stm) -> statement onlyModif tail stm used_after (function x -> Opt x)
+  | Ast.OptStm(stm) ->
+      statement onlyModif tail stm used_after (function x -> Opt x)
 
   | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
       statement onlyModif tail stm used_after optional
@@ -174,7 +182,8 @@ and case_line onlyModif tail case used_after optional =
       if contains_modif onlyModif header used_after
       then optional [header]
       else
-	extend optional header (statement_list onlyModif tail code used_after optional)
+	extend optional header
+	  (statement_list onlyModif tail code used_after optional)
   | Ast.OptCase(case) -> failwith "not supported"
 
 (* --------------------------------------------------------------------- *)

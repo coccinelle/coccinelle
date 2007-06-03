@@ -10,7 +10,8 @@ worth it.  The most obvious goal is to distinguish between test expressions
 that have pointer, integer, and boolean type when matching isomorphisms,
 but perhaps other needs will become apparent. *)
 
-let err wrapped s =
+let err wrapped ty s =
+  T.typeC ty; Format.print_newline();
   failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
 
 type id = Id of string | Meta of (string * string)
@@ -105,28 +106,29 @@ let rec propagate_types env =
 	  (match Ast0.get_type exp2 with
 	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
 	  | Some(T.BaseType(T.IntType,None)) -> ()
-	  | Some (T.MetaType(_)) -> ()
-	  | _ -> err exp2 "bad type for an array index");
+	  | Some (T.MetaType(_,_,_)) -> ()
+	  | Some ty -> err exp2 ty "bad type for an array index");
 	  (match Ast0.get_type exp1 with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
 	  | Some (T.Pointer(ty)) -> Some ty
-	  | Some (T.MetaType(_)) -> None
-	  | Some x -> err exp1 "ill-typed array reference")
+	  | Some (T.MetaType(_,_,_)) -> None
+	  | Some x -> err exp1 x "ill-typed array reference")
       | Ast0.RecordAccess(exp,pt,field) ->
 	  (match Ast0.get_type exp with
 	    None -> None
 	  | Some (T.StructUnionName(_,_,_)) -> None
 	  | Some (T.TypeName(_)) -> None
-	  | Some (T.MetaType(_)) -> None
-	  | Some x -> err exp "non-structure type in field ref")
+	  | Some (T.MetaType(_,_,_)) -> None
+	  | Some x -> err exp x "non-structure type in field ref")
       | Ast0.RecordPtAccess(exp,ar,field) ->
 	  (match Ast0.get_type exp with
 	    None -> None
 	  | Some (T.Pointer(T.Unknown)) -> None
+	  | Some (T.Pointer(T.MetaType(_,_,_))) -> None
 	  | Some (T.Pointer(T.StructUnionName(_,_,_))) -> None
-	  | Some (T.MetaType(_)) -> None
-	  | Some x -> err exp "non-structure pointer type in field ref")
+	  | Some (T.MetaType(_,_,_)) -> None
+	  | Some x -> err exp x "non-structure pointer type in field ref")
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
@@ -185,7 +187,8 @@ let rec propagate_types env =
 	    let rec process_decl decl =
 	      match Ast0.unwrap decl with
 		Ast0.Init(_,ty,id,_,exp,_) ->
-		  (propagate_types (acc@env)).V0.combiner_initialiser exp;
+		  let _ =
+		    (propagate_types (acc@env)).V0.combiner_initialiser exp in
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(_,ty,id,_) ->
 		  [(strip id,Ast0.ast0_type_to_type ty)]
@@ -207,7 +210,6 @@ let rec propagate_types env =
     match Ast0.unwrap d with
       Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
 	process_statement_list env l; option_default in
-
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
