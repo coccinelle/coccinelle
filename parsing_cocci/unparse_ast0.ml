@@ -205,10 +205,6 @@ and print_function_type (ty,lp1,params,rp1) fn =
   print_option typeC ty; fn(); mcode print_string lp1;
   parameter_list params; mcode print_string rp1
 
-and print_array (ty,lb,size,rb) fn =
-  typeC ty; fn(); mcode print_string lb; print_option expression size;
-  mcode print_string rb
-
 and typeC t =
   print_context t
     (function _ ->
@@ -225,7 +221,8 @@ and typeC t =
       | Ast0.FunctionType(ty,lp1,params,rp1) ->
 	  print_function_type (ty,lp1,params,rp1) (function _ -> ())
       | Ast0.Array(ty,lb,size,rb) ->
-	  print_array (ty,lb,size,rb) (function _ -> ())
+	  typeC ty; mcode print_string lb; print_option expression size;
+	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind; ident name; print_string " "
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -259,8 +256,17 @@ and print_named_type ty id =
       print_function_type (ty,lp1,params,rp1)
 	(function _ -> print_string " "; ident id)
   | Ast0.Array(ty,lb,size,rb) ->
-      print_array (ty,lb,size,rb)
-	(function _ -> print_string " "; ident id)
+      let rec loop ty k =
+	match Ast0.unwrap ty with
+	  Ast0.Array(ty,lb,size,rb) ->
+	    loop ty
+	      (function _ ->
+		k ();
+		mcode print_string lb;
+		print_option expression size;
+		mcode print_string rb)
+	| _ -> typeC ty; ident id; k () in
+      loop ty (function _ -> ())
   | _ -> typeC ty; ident id
 
 and declaration d =

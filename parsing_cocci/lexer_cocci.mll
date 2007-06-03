@@ -512,8 +512,7 @@ rule token = parse
       { start_line true; id_tokens lexbuf } 
 
   | "'" { start_line true;
-	  TChar(Printf.sprintf "'%s'" (char lexbuf),
-		(get_current_line_type lexbuf)) }
+	  TChar(char lexbuf,get_current_line_type lexbuf) }
   | '"' { start_line true;
 	  TString(string lexbuf,(get_current_line_type lexbuf)) }
   | (real as x)    { start_line true;
