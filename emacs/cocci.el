@@ -337,10 +337,6 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
 ;"
 
 ;; Provide
-
-
-
-
 (provide 'cocci-mode)
 
 ;;; cocci.el ends here

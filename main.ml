@@ -13,6 +13,7 @@ let iso_file   = ref ""
 let default_output_file = ref "/tmp/output.c"
 let reentrant = ref false 
 let save_output_file = ref false (* if true, stores output in file.cocci_res *)
+let inplace_modif = ref false
 
 let dir = ref false
 
@@ -90,6 +91,8 @@ let short_options = [
 
   "-o", Arg.Set_string default_output_file,
   "   <file> the output file (default=" ^ !default_output_file ^ ")";
+  "-i", Arg.Set inplace_modif,
+  "   do the modification on the file directly";
 
   "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
   "    sgrep mode (sgrep for semantic grep)";
@@ -140,7 +143,7 @@ let other_options = [
     "-cocci_file", Arg.Set_string cocci_file, 
     "   <file> the semantic patch file";
     "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
-    "-i", Arg.Set_string iso_file,       " short option of -iso_file";
+    "-iso", Arg.Set_string iso_file,       " short option of -iso_file";
   ];
 
   "most useful show options", 
@@ -440,6 +443,18 @@ let main () =
 
 	  if !save_output_file 
           then Common.command2 ("cp " ^ generated_file ^ " " ^ saved);
+
+	  if !inplace_modif
+          then begin 
+            let xs = 
+              Common.cmd_to_list ("diff " ^ cfile ^ " " ^ generated_file)
+            in
+            if not (null xs)
+            then begin
+              Common.command2 ("cp " ^ cfile ^ " " ^ cfile ^ ".cocciorig");
+              Common.command2 ("cp " ^ generated_file ^ " " ^ cfile);
+            end
+          end;
 
           if !compare_with_expected 
           then 
