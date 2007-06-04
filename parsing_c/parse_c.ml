@@ -166,7 +166,8 @@ let print_parsing_stat_list = fun statxs ->
 let count_lines_tokens_commentized xs = 
   let commentized = xs +> Common.map_filter (function
     | Parser_c.TCommentCpp ii
-    | Parser_c.TCommentMisc ii -> 
+    | Parser_c.TCommentMisc ii
+    | Parser_c.TAction ii ->
         Some (fst ii)
     | _ -> None
   )
@@ -190,7 +191,8 @@ let count_lines_tokens_commentized xs =
 let print_tokens_commentized xs = 
   let commentized = xs +> Common.map_filter (function
     | Parser_c.TCommentCpp ii
-    | Parser_c.TCommentMisc ii -> 
+    | Parser_c.TCommentMisc ii 
+    | Parser_c.TAction ii ->
         Some (fst ii)
     | _ -> None
   )

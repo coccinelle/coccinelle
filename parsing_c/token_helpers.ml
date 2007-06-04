@@ -62,6 +62,23 @@ let is_start_of_something = function
     -> true
   | _ -> false
 
+
+
+let is_binary_operator = function
+  | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _ 
+  | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _ 
+  | TShl _ | TShr _  
+  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ 
+        -> true
+  | _ -> false 
+
+let is_stuff_taking_parenthized = function
+  | Tif _ 
+  | Twhile _ 
+  | Ttypeof _
+    -> true 
+  | _ -> false
+
 (*****************************************************************************)
 (* Visitors *)
 (*****************************************************************************)

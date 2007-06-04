@@ -136,22 +136,27 @@ module XTRANS = struct
     | _ -> 
         if (oldmcode, oldenv) = (mck, binding)
         then begin
-          pr2 "already tagged but with same mcode, so safe";
+          if !Flag_engine.show_misc 
+          then pr2 "already tagged but with same mcode, so safe";
           ib
         end
            
-        else begin
-          Format.printf "SP mcode ";
-          Pretty_print_cocci.print_mcodekind oldmcode;
-          Format.force_newline();
-          Format.printf "C code mcode ";
-          Pretty_print_cocci.print_mcodekind mck;
-          Format.force_newline();
-          Format.print_flush();
-          failwith
-	    (Common.sprintf "already tagged token:\n%s"
-	        (Common.error_message s2.file (s2.str, s2.charpos)))
-        end
+        else 
+          if !Flag_parsing_cocci.sgrep_mode2
+          then ib (* safe *)
+          else 
+            begin
+              Format.printf "SP mcode ";
+              Pretty_print_cocci.print_mcodekind oldmcode;
+              Format.force_newline();
+              Format.printf "C code mcode ";
+              Pretty_print_cocci.print_mcodekind mck;
+              Format.force_newline();
+              Format.print_flush();
+              failwith
+	        (Common.sprintf "already tagged token:\n%s"
+	            (Common.error_message s2.file (s2.str, s2.charpos)))
+            end
 
 
 

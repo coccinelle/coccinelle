@@ -722,6 +722,9 @@ let rec find_ifdef_mid xs =
         
   )
 
+
+let thresholdFunheaderLimit = 4
+
 (* ifdef defining alternate function header, type *)
 let rec find_ifdef_funheaders = function
   | [] -> ()
@@ -729,16 +732,19 @@ let rec find_ifdef_funheaders = function
 
   (* ifdef-funheader if ifdef with 2 lines and a '{' in next line *)
   | Ifdef 
-      ([[NotIfdefLine (({col = 0} as _xline1)::line1)];
-        [NotIfdefLine (({col = 0} as xline2)::line2)]
+      ([(NotIfdefLine (({col = 0} as _xline1)::line1))::ifdefblock1;
+        (NotIfdefLine (({col = 0} as xline2)::line2))::ifdefblock2
       ], info_ifdef_stmt 
       )
     ::NotIfdefLine (({tok = TOBrace i; col = 0})::line3)
     ::xs  
+   when List.length ifdefblock1 <= thresholdFunheaderLimit &&
+        List.length ifdefblock2 <= thresholdFunheaderLimit
     -> 
       find_ifdef_funheaders xs;
       let all_toks = [xline2] @ line2 @ info_ifdef_stmt in
       all_toks +> List.iter set_as_comment;
+      ifdefblock2 +> iter_token_ifdef set_as_comment;
 
   (* ifdef with nested ifdef *)
   | Ifdef 
@@ -825,9 +831,9 @@ let rec find_macro_paren xs =
   | PToken ({tok = TIdent (s,_)} as id)
     ::Parenthised (xxs,info_parens)
     ::xs
-    when List.mem s ["FASTCALL"] -> 
+    when List.mem s ["FASTCALL";"PARAMS"] -> 
       
-      pr2_cpp ("MACRO: FASTCALL detected: " ^ s);
+      pr2_cpp ("MACRO: FASTCALL like detected: " ^ s);
       (* pass only the macro *)
       xxs +> List.iter find_macro_paren;
       (id::info_parens) +> List.iter set_as_comment;
@@ -1008,6 +1014,29 @@ let rec find_macro xs =
 
 
 
+
+  (* on multiple lines *)
+  | (Line 
+        (
+          (PToken ({tok = Tstatic _})::[]
+          )))
+    ::(Line 
+          (
+            (PToken ({tok = TIdent (s,_)} as macro)::
+             Parenthised (xxs,info_parens)::
+             PToken ({tok = TPtVirg _})::
+           _
+          ) 
+        ))
+    ::xs 
+    when (s ==~ regexp_macro) || List.mem s declList -> 
+      msg_declare_macro s;
+      let info = TH.info_from_token macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+
+      find_macro (xs)
+
+
   (* linuxext: ex: DECLARE_BITMAP(); 
    * 
    * Here I use regexp_declare and not regexp_macro because
@@ -1092,7 +1121,11 @@ let rec find_macro xs =
         (col1 = col2 && 
             (match other.tok with
             | TOBrace _ -> false (* otherwise would match funcdecl *)
-            | TPtVirg _ -> false
+            | TPtVirg _ 
+            | TDotDot _
+                -> false
+            | tok when TH.is_binary_operator tok -> false
+
             | _ -> true
             )
         ) 
@@ -1101,6 +1134,8 @@ let rec find_macro xs =
               (match other.tok with
               (* TCBrace _ -> true  have false positif *)
               | Treturn _ -> true
+              | Tif _ -> true
+              | Telse _ -> true
               | _ -> false
               )
           )
@@ -1136,6 +1171,7 @@ let rec find_macro xs =
             col1 <> 0 && (* otherwise can match typedef of fundecl*)
             (match other.tok with
             | TPtVirg _ -> false 
+            | tok when TH.is_binary_operator tok -> false
             | TOr _ -> false 
             | _ -> true
             )) ||
@@ -1143,6 +1179,8 @@ let rec find_macro xs =
               (match other.tok with
               (* | TCBrace _ -> true  have some false positif *)
               | Treturn _ -> true
+              | Tif _ -> true
+              | Telse _ -> true
               | _ -> false
               ))
       in
@@ -1164,6 +1202,36 @@ let rec find_macro xs =
 
 let rec find_actions = function
   | [] -> ()
+
+  (* not easy to detect this macro because his params are for instance:
+   * sn9c102_write_const_regs(cam, {0x00, 0x10}, {0x00, 0x11},
+   * but my mk_paren_grouped does not handle the {} and so it 
+   * is in fact parsed as 
+   * sn9c102_write_const_regs([cam], [{0x00] , [0x10}], [{0x00], [0x11}],
+   * so a correct detection is tedious. 
+   *)
+  | PToken ({tok = TIdent (s,ii)})
+    ::Parenthised (xxs,info_parens)::xs 
+    when List.mem s ["sn9c102_write_const_regs"] -> 
+      msg_macro_higher_order s;
+
+      let res = 
+      xxs +> List.iter (fun xs -> xs +> iter_token_paren 
+        (fun x -> 
+          if TH.is_eof x.tok
+          then 
+            (* certainly because paren detection had a pb because of
+             * some ifdef-exp
+             *)
+            pr2_cpp "PB: wierd, I try to tag an EOF token as action"
+          else 
+            x.tok <- TAction (TH.info_from_token x.tok);
+        )) in
+      res
+
+
+      
+
   | PToken ({tok = TIdent (s,ii)})
     ::Parenthised (xxs,info_parens)::xs -> 
       find_actions xs;
@@ -1177,9 +1245,8 @@ let rec find_actions = function
 
 and find_actions_params xxs = 
   xxs +> List.fold_left (fun acc xs -> 
-    if (tokens_of_paren xs) +> List.exists (fun x -> 
-      TH.is_statement_token x.tok
-    )
+    let toks = tokens_of_paren xs in
+    if toks +> List.exists (fun x -> TH.is_statement_token x.tok)
     then begin
       xs +> iter_token_paren (fun x -> 
         if TH.is_eof x.tok
@@ -1460,6 +1527,13 @@ let lookahead2 next before =
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
+  (*  xx * yy ,     AND in Toplevel  *)
+  | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
+    when not_struct_enum before && !LP._lexer_hint.toplevel  -> 
+
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
   (*  xx * yy (     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOPar _::_ , _)
     when not_struct_enum before  && !LP._lexer_hint.toplevel -> 
@@ -1560,14 +1634,15 @@ let lookahead2 next before =
 
   (*  (xx) yy *)
   | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
-    when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
+    when not (TH.is_stuff_taking_parenthized x) -> 
+
       msg_typedef s; LP.add_typedef_root s;
       TOPar info
 
 
   (*  (xx) (    yy) *)
   | (TOPar info::TIdent (s, i1)::TCPar _::TOPar _::_ , x::_)  
-    when (match x with Tif _ -> false | Twhile _ -> false | _ -> true) -> 
+    when not (TH.is_stuff_taking_parenthized x)  -> 
       msg_typedef s; LP.add_typedef_root s;
       TOPar info
 

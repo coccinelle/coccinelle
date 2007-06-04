@@ -725,17 +725,15 @@ jump:
 /*----------------------------*/
 /* gccext: */
 /*----------------------------*/
-asmbody: 
- | string_list colon_asm_list  { $1, $2 }
- | string_list { $1, [] } /* in old kernel */
-
-
-/* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
 string_elem:
  | TString { [snd $1] }
+ /* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  */
  | TMacroString { [$1] }
 
 
+asmbody: 
+ | string_list colon_asm_list  { $1, $2 }
+ | string_list { $1, [] } /* in old kernel */
 
 
 colon_asm: TDotDot colon_option_list { Colon $2, [$1]   }
@@ -743,6 +741,10 @@ colon_asm: TDotDot colon_option_list { Colon $2, [$1]   }
 colon_option: 
  | TString                      { ColonMisc, [snd $1] }
  | TString TOPar asm_expr TCPar { ColonExpr $3, [snd $1; $2;$4] } 
+ /* cppext: certainly a macro */
+ | TOCro TIdent TCCro TString TOPar asm_expr TCPar
+     { ColonExpr $6, [$1;snd $2;$3;snd $4; $5; $7 ] }
+ | TIdent                       { ColonMisc, [snd $1] }
  | /* empty */                  { ColonMisc, [] }
 
 asm_expr: assign_expr { $1 }

@@ -112,7 +112,8 @@ let keyword_table = Common.hash_of_list [
   (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
   "__const",     (fun ii -> Tconst ii);
-  (* "CONST",      (fun ii -> Tconst ii); *) (* pbs *)
+  (* pbs, can also be a #define and use as case CONST: *)
+  (* "CONST",      (fun ii -> Tconst ii); *) 
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
