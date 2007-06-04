@@ -334,7 +334,7 @@ let parse_gen parsefunc s =
   let lexer_function = 
     (fun _ -> 
       if TH.is_eof !cur_tok
-      then (pr2 "ALREADY AT END"; !cur_tok)
+      then (pr2 "LEXER: ALREADY AT END"; !cur_tok)
       else
         let v = Common.pop2 all_tokens in
         cur_tok := v;

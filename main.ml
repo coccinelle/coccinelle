@@ -43,7 +43,6 @@ let debugger = ref false
 let quiet_profile = (
   [
     Flag.show_diff;
-    Flag_parsing_c.verbose_parsing;
   ],
   [
     Flag.show_c;
@@ -60,6 +59,7 @@ let quiet_profile = (
     Flag_ctl.verbose_ctl_engine;
     Flag_engine.debug_engine;
     Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_parsing;
   ])
 
 (*****************************************************************************)
