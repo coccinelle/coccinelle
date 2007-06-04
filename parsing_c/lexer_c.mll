@@ -295,9 +295,10 @@ rule token = parse
   (* ---------------------- *)
 
   (* '0'+ because sometimes it is a #if 000 *)
-  | "#" [' ' '\t']* "if" [' ' '\t']* '0'+   [^'\n']*  '\n'
-      { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info) 
+  | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
+      { 
+        let info = tokinfo lexbuf in 
+        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       }
 
   | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
