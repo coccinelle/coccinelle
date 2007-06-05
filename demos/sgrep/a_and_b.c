@@ -16,3 +16,11 @@ int test3(int i)
 {
 	bar();
 }
+
+
+int test4(int i) 
+{
+	bar();
+	foo();
+	foo();
+}

@@ -19,6 +19,10 @@
 // 	return retval;
 // }
 
+// note that better to send a .sgrep than a .cocci, that is 
+// to not do the fix because some times the fix is not replacing
+// the use of GFP_KERNEL but instead to move the function call outside
+// the spin_locked region.
 
 @@
 //expression E;
@@ -34,7 +38,7 @@ spin_lock(...)
 //- usb_submit_urb(E, GFP_KERNEL)
 fn(...,
 - GFP_KERNEL
-+ GFP_ATOMIC
+//+ GFP_ATOMIC
   ,...
   )
  
