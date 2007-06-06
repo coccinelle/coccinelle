@@ -10,16 +10,16 @@ open Common open Commonop
 let cocci_file = ref ""
 let iso_file   = ref "" 
 
-let default_output_file = ref "/tmp/output.c"
-let reentrant = ref false 
-let save_output_file = ref false (* if true, stores output in file.cocci_res *)
-let inplace_modif = ref false
+let output_file = ref ""
+let inplace_modif = ref false  (* but keeps a .cocci_orig *)
+let outplace_modif = ref false (* generates a .cocci_res  *)
 
 let dir = ref false
 
 (* test mode *)
 let test_mode = ref false
 let test_all = ref false
+let test_okfailed = ref false
 let test_regression_okfailed = ref false
 
 (* action mode *)
@@ -89,10 +89,12 @@ let short_options = [
   "-sp_file",  Arg.Set_string cocci_file, " <file> the semantic patch file";
   "-iso_file", Arg.Set_string iso_file,   " <file> the iso file";
 
-  "-o", Arg.Set_string default_output_file,
-  "   <file> the output file (default=" ^ !default_output_file ^ ")";
-  "-i", Arg.Set inplace_modif,
+  "-o", Arg.Set_string output_file,
+  "   <file> the output file (optional)";
+  "-inplace", Arg.Set inplace_modif,
   "   do the modification on the file directly";
+  "-outplace", Arg.Set outplace_modif,
+  "   store modifications in a .cocci_res file";
 
   "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
   "    sgrep mode (sgrep for semantic grep)";
@@ -109,7 +111,8 @@ let short_options = [
   "-version",   Arg.Unit (fun () -> 
     pr2 "version: $Date$";
     raise (Common.UnixExit 0)
-    ), " ";
+    ), 
+  "   guess what";
   "-longhelp", Arg.Unit (fun () -> 
     !long_usage_func();
     raise (Common.UnixExit 0)
@@ -127,17 +130,7 @@ let short_options = [
  *  (title of section * (optional) explanation of sections * option list
  *)
 let other_options = [
-  "output file options",
-  "",
-  [ 
-    "-save_output_file",  Arg.Set save_output_file, 
-    "   save output in <cfile>.cocci_res";
-    "-reentrant",         Arg.Set reentrant, 
-    "   choose a default unique/safe output file in /tmp";
-  ];
-
-
-  "alias and obsolete options", 
+  "aliases and obsolete options", 
   "",
   [ 
     "-cocci_file", Arg.Set_string cocci_file, 
@@ -253,8 +246,11 @@ let other_options = [
     "   <file> launch spatch on tests/file.[c,cocci]";
     "-testall", Arg.Set test_all, 
     "   launch spatch on all files in tests/ having a .res";
+    "-test_okfailed", Arg.Set test_okfailed,
+    "    generates .{ok,failed,spatch_ok} files using .res files";
     "-test_regression_okfailed", Arg.Set test_regression_okfailed,
-    "    process the .ok .failed files in current dir";
+    "    process the .{ok,failed,spatch_ok} files in current dir";
+
     "-compare_with_expected", Arg.Set compare_with_expected, 
     "   use also file.res"; 
     
@@ -357,12 +353,7 @@ let main () =
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
         Flag.include_path := "tests/include";
-        let output_file =
-          if !reentrant 
-          then Common.new_temp_file "cocci-output" ".c" 
-          else !default_output_file
-        in
-        Testing.testone x !compare_with_expected !iso_file output_file
+        Testing.testone x   !iso_file !compare_with_expected
 
     | []  when !test_all -> 
         Flag.include_path := "tests/include";
@@ -370,6 +361,9 @@ let main () =
 
     | [] when !test_regression_okfailed -> 
         Testing.test_regression_okfailed ()
+
+    | x::xs when !test_okfailed -> 
+        Testing.test_okfailed (!cocci_file, !iso_file) (x::xs)
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
@@ -383,9 +377,9 @@ let main () =
     | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 
         Testing.test_cfg filefunc
     | [file] when !action = "-parse_unparse" -> 
-       Testing.test_parse_unparse file !default_output_file
+       Testing.test_parse_unparse file
     | [file] when !action = "-typeur" -> 
-        Testing.test_typeur file !default_output_file
+        Testing.test_typeur file
     | [file1;file2] when !action = "-compare_c" -> 
        Testing.test_compare_c file1 file2 (* result is in unix code *)
     | [] when !action = "-compare_c_hardcoded" -> 
@@ -401,75 +395,65 @@ let main () =
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -sp_file <file>";
 
-
         (* todo?: for iso could try to go back the parent dir recursively to
          * find the standard.iso 
          *)
         let cocci_file = !cocci_file in
         let iso_file = if !iso_file = "" then None else Some !iso_file in
 
-        let fullxs = 
-          if !dir 
-          then Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
-          else x::xs 
+        let outfiles = 
+          if not !dir 
+          then Cocci.full_engine (cocci_file, iso_file) (x::xs)
+          else 
+            let fullxs = 
+              Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
+            in
+            fullxs +> List.map (fun cfile -> 
+              pr2 ("HANDLING: " ^ cfile);
+              let cfile = Common.adjust_extension_if_needed cfile ".c" in
+              (try Cocci.full_engine (cocci_file, iso_file) [cfile]
+                with 
+                | Common.UnixExit x -> raise (Common.UnixExit x)
+                | e -> 
+                    pr2 ("EXN:" ^ Printexc.to_string e); 
+                    [] (* *)
+              ))
+              +> List.concat
         in
-
-        fullxs +> List.iter (fun cfile -> 
-          pr2 ("HANDLING: " ^ cfile);
-
-          let cfile = Common.adjust_extension_if_needed cfile ".c" in
-
-          let base = if cfile =~ "\\(.*\\).c$" then matched1 cfile else cfile
-          in 
-          let generated_file = 
-            if !reentrant 
-            then Common.new_temp_file "cocci-output" ".c" 
-            else !default_output_file
-          in
-          
-          let expected_res = base ^ ".res" in
-          let saved = cfile ^ ".cocci_res" in
-
-          (try Cocci.full_engine cfile (cocci_file, iso_file) generated_file
-           with 
-           | Common.UnixExit x -> raise (Common.UnixExit x)
-           | e -> 
-              if !dir 
-              then pr2 ("EXN:" ^ Printexc.to_string e)
-              else raise e
-          );
-          
-	  Ctlcocci_integration.print_bench();
-
-	  if !save_output_file 
-          then Common.command2 ("cp " ^ generated_file ^ " " ^ saved);
-
-	  if !inplace_modif
-          then begin 
-            let xs = 
-              Common.cmd_to_list ("diff " ^ cfile ^ " " ^ generated_file)
-            in
-            if not (null xs)
+	Ctlcocci_integration.print_bench();
+        
+        outfiles +> List.iter (fun (infile, outopt) -> 
+          outopt +> do_option (fun outfile -> 
+            if !inplace_modif
             then begin
-              Common.command2 ("cp " ^ cfile ^ " " ^ cfile ^ ".cocciorig");
-              Common.command2 ("cp " ^ generated_file ^ " " ^ cfile);
+              Common.command2 ("cp " ^ infile ^ " " ^ infile ^ ".cocci_orig");
+              Common.command2 ("cp " ^ outfile ^ " " ^ infile);
+            end;
+            if !outplace_modif
+            then Common.command2 ("cp " ^outfile^ " " ^ infile ^".cocci_res");
+
+            if !output_file = "" 
+            then begin
+              let tmpfile = "/tmp/"^Common.basename infile in
+              pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
+              Common.command2 ("cp "^outfile^" "^tmpfile);
             end
-          end;
 
-          if !compare_with_expected 
-          then 
-            let (correct, diffxs) = 
-              Compare_c.compare_default generated_file expected_res 
-            in
-            pr2 (Compare_c.compare_result_to_string (correct, diffxs));
-            if (List.length fullxs = 1)
-            then 
-              let res = Compare_c.compare_result_to_bool correct in
-              if res 
-              then raise (Common.UnixExit 0)
-              else raise (Common.UnixExit (-1))
+          ));
+        if !output_file <> "" then
+          (match outfiles with 
+          | [infile, Some outfile] when infile = x && null xs -> 
+              Common.command2 ("cp " ^outfile^ " " ^ !output_file);
+          | [infile, None] when infile = x && null xs -> 
+              Common.command2 ("cp " ^infile^ " " ^ !output_file);
+          | _ -> 
+              failwith 
+                ("-o can not be applied because there is multiple " ^
+                "modified files");
+          );
 
-        ) (* iter *)
+        if !compare_with_expected
+        then Testing.compare_with_expected outfiles
 
     (* --------------------------------------------------------- *)
     (* empty entry *)
@@ -495,6 +479,7 @@ let _ =
          * The current solution is to not do some wild  try ... with e
          * by having in the exn handler a case: UnixExit x -> raise ... | e ->
          *)
+        Sys.set_signal Sys.sigint Sys.Signal_default;
         raise (Common.UnixExit (-1))
       ));
 

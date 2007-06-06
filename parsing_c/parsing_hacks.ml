@@ -578,16 +578,19 @@ let keyword_table = Common.hash_of_list [
    * be considered as a declaration with XX being a typedef, so would
    * Have ambiguity. So at least by adding this special case, we can
    * catch more correct string-macro, no more a XX YY but now a good
-   * "XX" YY *)
-
-  "KERN_INFO",    (fun ii -> TString(("KERN_INFO",Ast_c.IsChar),ii));
-  "KERN_ERR",     (fun ii -> TString(("KERN_ERR",Ast_c.IsChar),ii));
-  "KERN_CRIT",    (fun ii -> TString(("KERN_CRIT",Ast_c.IsChar),ii));
-  "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
-  "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
-  "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
-  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
+   * "XX" YY 
+   * 
+   * cf include/linux/kernel.h
+   *)
+  
   "KERN_EMERG",   (fun ii -> TString(("KERN_EMERG",Ast_c.IsChar),ii));
+  "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
+  "KERN_CRIT",    (fun ii -> TString(("KERN_CRIT",Ast_c.IsChar),ii));
+  "KERN_ERR",     (fun ii -> TString(("KERN_ERR",Ast_c.IsChar),ii));
+  "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
+  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
+  "KERN_INFO",    (fun ii -> TString(("KERN_INFO",Ast_c.IsChar),ii));
+  "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
 ]
 
 (* For stringification I need to have at least a witness, a string, 

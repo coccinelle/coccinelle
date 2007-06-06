@@ -2907,7 +2907,7 @@ let regression_testing newscore best_score_file =
           Printf.printf "new test file appeared: %s\n" res;
           Hashtbl.add newbestscore res x;
       | None, Some x -> 
-          Printf.printf "old test file disappeared: %s" res;
+          Printf.printf "old test file disappeared: %s\n" res;
       | Some newone, Some bestone -> 
           (match newone, bestone with
           | Ok, Ok -> 

@@ -1,7 +1,13 @@
 open Common
 
-(* full_engine : cinfile (coccifile, isofile) -> coutfile -> unit *)
-val full_engine : filename -> (filename * filename option) -> filename -> unit
+(* full_engine takes (coccifile, isofile) and cfiles in parameters and
+ * returns a list associating to the input cfiles, and maybe header
+ * files that required also to be modified, the files containing the result,
+ * in general files in /tmp
+ *)
+val full_engine : 
+  (filename * filename option) -> filename list -> 
+  (filename * filename option) list
 
 
 (* --------------------------------------------------------------------- *)

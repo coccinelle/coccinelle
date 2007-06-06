@@ -135,6 +135,9 @@ let show_or_not_cfile2 cfile =
 let show_or_not_cfile a = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_cfile2 a)
 
+let show_or_not_cfiles cfiles = List.iter show_or_not_cfile cfiles
+
+
 let show_or_not_cocci2 coccifile isofile = 
   if !Flag.show_cocci then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
@@ -272,7 +275,7 @@ let show_or_not_binding a b  =
 (*****************************************************************************)
 (* Some  helpers functions *)
 (*****************************************************************************)
-let worth_trying cfile tokens = 
+let worth_trying cfiles tokens = 
   if not !Flag.windows && not (null tokens)
   then
    (* could also modify the code in get_constants.ml *)
@@ -289,7 +292,8 @@ let worth_trying cfile tokens =
       | _ -> s
 
     ) in
-    let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) cfile in
+    let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+    in
     (match Sys.command com with
     | 0 (* success *) -> true
     | _ (* failure *) ->
@@ -343,45 +347,20 @@ let sp_contain_typed_metavar toplevel_list_list =
     
 
 (* --------------------------------------------------------------------- *)
-(* includes and typing environment *)
+(* #include relative position in the file *)
 (* --------------------------------------------------------------------- *)
 
-(* finding among the #include the one that we need to parse
- * because they may contain useful type definition or because
- * we may have to modify them
- * 
- * For the moment we base in part our heuristic on the name of the file.
- * serio.c is related to #include <linux/serio.h> 
- *)
-let includes_to_parse file cs = 
-  cs +> Common.map_filter (fun (c,_info_item) -> 
-    match c with
-    | Ast_c.Include ((x,ii),info_h_pos)  -> 
-        (match x with
-        | Ast_c.Local xs -> Some x
-        | Ast_c.NonLocal xs -> 
-            if Common.fileprefix (Common.last xs) = Common.fileprefix file 
-            then Some x
-            else None
-        | Ast_c.Wierd _ -> None
-        )
-
-    | _ -> None
-  )
-
-
-
 (* compute the set of new prefixes
-on 
- "a/b/x"; (* in fact it is now a list of string so  ["a";"b";"x"] *)
- "a/b/c/x";
- "a/x";
- "b/x";
-it would give for the first element 
- ""; "a"; "a/b"; "a/b/x"
-for the second
- "a/b/c/x"
-*)
+ * on 
+ *  "a/b/x"; (* in fact it is now a list of string so  ["a";"b";"x"] *)
+ *  "a/b/c/x";
+ *  "a/x";
+ *  "b/x";
+ * it would give for the first element 
+ *   ""; "a"; "a/b"; "a/b/x"
+ * for the second
+ *   "a/b/c/x"
+ *)
 
 let compute_new_prefixes xs = 
   xs +> Common.map_withenv (fun already xs -> 
@@ -561,11 +540,13 @@ type toplevel_cocci_info = {
   was_matched: bool ref;
 }
 
-type header_info = { 
-  header_name : string;
+type kind_file = Header | Source 
+type file_info = { 
+  fname : string;
   was_modified_once: bool ref;
-  header_content: toplevel_c_info list;
-  header_path : string;
+  asts: toplevel_c_info list;
+  fpath : string;
+  fkind : kind_file;
 }
 
 let g_contain_typedmetavar = ref false 
@@ -577,8 +558,13 @@ let fake_env = TAC.initial_env
 let last_env_toplevel_c_info xs =
   (Common.last xs).env_typing_after
 
-let concat_headers_and_c hss cs = 
-  (List.concat (hss +> List.map (fun x -> x.header_content))) ++ cs
+let concat_headers_and_c ccs = 
+  (List.concat (ccs +> List.map (fun x -> x.asts)))
+
+let for_unparser xs = 
+  xs +> List.map (fun x -> 
+    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
+  )
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls used_after_lists astcocci = 
@@ -658,64 +644,105 @@ let rebuild_info_program cs =
   ) +> List.concat
 
 
-let rebuild_info_c_and_headers (cs, hss) = 
-
-  hss +> List.iter (fun hi -> 
-    if hi.header_content +> List.exists (fun c -> !(c.was_modified))
-    then hi.was_modified_once := true;
+let rebuild_info_c_and_headers ccs = 
+  ccs +> List.iter (fun c_or_h -> 
+    if c_or_h.asts +> List.exists (fun c -> !(c.was_modified))
+    then c_or_h.was_modified_once := true;
   );
-  let hss' = 
-    hss +> List.map (fun hi -> 
-      { hi with header_content = rebuild_info_program hi.header_content }
+  ccs +> List.map (fun c_or_h -> 
+    { c_or_h with asts = rebuild_info_program c_or_h.asts }
+  )
+
+
+
+
+
+(* finding among the #include the one that we need to parse
+ * because they may contain useful type definition or because
+ * we may have to modify them
+ * 
+ * For the moment we base in part our heuristic on the name of the file.
+ * serio.c is related to #include <linux/serio.h> 
+ *)
+
+let includes_to_parse xs = 
+  xs +> List.map (fun (file, cs) -> 
+    let dir = Common.dirname file in
+
+    cs +> Common.map_filter (fun (c,_info_item) -> 
+      match c with
+      | Ast_c.Include ((x,ii),info_h_pos)  -> 
+          (match x with
+          | Ast_c.Local xs -> 
+              Some (Filename.concat dir (Common.join "/" xs))
+          | Ast_c.NonLocal xs -> 
+              if Common.fileprefix (Common.last xs) = Common.fileprefix file 
+              then 
+                Some (Filename.concat !Flag.include_path (Common.join "/" xs))
+              else None
+        | Ast_c.Wierd _ -> None
+          )
+
+      | _ -> None
     )
+  )
+  +> List.concat
+  +> Common.uniq
+
+
+
+
+let prepare_c files = 
+  let cprograms = List.map cprogram_from_file files in
+  let includes = includes_to_parse (zip files cprograms) in
+
+  (* todo?: may not be good to first have all the headers and then all the c *)
+  let all = 
+    (includes +> List.map (fun hpath -> Right hpath))
+    ++
+    ((zip files cprograms) +> List.map (fun (file, asts) -> Left (file, asts)))
   in
-  let cs' = rebuild_info_program cs in
-  cs', hss'
-
-
-
-
-let prepare_c file = 
-  let cprogram = cprogram_from_file file in
-  let includes = includes_to_parse (Common.basename file) cprogram 
-  in
-  let dir = (Common.dirname file) in
 
   let env = ref TAC.initial_env in
 
-  let hss = includes +> Common.map_filter (fun inc_file -> 
-    let realh = 
-      match inc_file with
-      | Ast_c.Local xs -> 
-          Filename.concat dir (Common.join "/" xs)
-      | Ast_c.NonLocal xs -> 
-          Filename.concat !Flag.include_path (Common.join "/" xs)
-      | Ast_c.Wierd _ -> raise Impossible
-    in
-    let h = Common.basename realh in
-
-    if not (Common.lfile_exists realh) 
-    then begin pr2 ("TYPE: header " ^ realh ^ " not found"); None end
-    else 
-      let h_cs = cprogram_from_file realh in
-      let info_h_cs = build_info_program h_cs !env in
-      env := 
-        if null info_h_cs
-        then !env
-        else last_env_toplevel_c_info info_h_cs
-      ;
-
-      Some { 
-        header_name = h;
-        header_content = info_h_cs;
-        was_modified_once = ref false;
-        header_path = realh;
-      }
-  ) in
-  let cs = build_info_program cprogram !env in
-  ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-  cs,
-  hss
+  let ccs = all +> Common.map_filter (fun x -> 
+    match x with 
+    | Right hpath -> 
+        if not (Common.lfile_exists hpath) 
+        then begin 
+          pr2 ("TYPE: header " ^ hpath ^ " not found"); 
+          None 
+        end
+        else 
+          let h_cs = cprogram_from_file hpath in
+          let info_h_cs = build_info_program h_cs !env in
+          env := 
+            if null info_h_cs
+            then !env
+            else last_env_toplevel_c_info info_h_cs
+          ;
+          Some { 
+            fname = Common.basename hpath;
+            asts = info_h_cs;
+            was_modified_once = ref false;
+            fpath = hpath;
+            fkind = Header;
+          }
+    | Left (file, cprogram) -> 
+        (* todo?: don't update env ? *)
+        let cs = build_info_program cprogram !env in
+        (* we do that only for the c, not for the h *)
+        ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
+        Some { 
+          fname = Common.basename file;
+          asts = cs;
+          was_modified_once = ref false;
+          fpath = file;
+          fkind = Source;
+        }
+  ) 
+  in
+  ccs        
 
 
 (*****************************************************************************)
@@ -769,10 +796,9 @@ let prepare_c file =
 
 (* r(ule), c(element), e(nvironment) *)
 
-let rec bigloop2 rs (cs,hss) = 
+let rec bigloop2 rs ccs = 
   let es = ref [Ast_c.emptyMetavarsBinding] in
-  let cs = ref cs in
-  let hss = ref hss in
+  let ccs = ref ccs in
   let rules_that_have_matched = ref [] in
 
   (* looping over the rules *)
@@ -780,11 +806,10 @@ let rec bigloop2 rs (cs,hss) =
    show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
    if not
-       (List.for_all
-	  (function
-	      Ast_cocci.Dep s -> List.mem s !rules_that_have_matched
-	    | Ast_cocci.AntiDep s -> not (List.mem s !rules_that_have_matched))
-	  r.dependencies)
+       (List.for_all (function
+         | Ast_cocci.Dep s     ->     (List.mem s !rules_that_have_matched)
+         | Ast_cocci.AntiDep s -> not (List.mem s !rules_that_have_matched)
+       ) r.dependencies)
    then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
    else begin
 
@@ -797,7 +822,7 @@ let rec bigloop2 rs (cs,hss) =
       let children_e = ref [] in
       
       (* looping over the functions and toplevel elements in .h and .h *)
-      concat_headers_and_c !hss !cs +> List.iter (fun c -> 
+      concat_headers_and_c !ccs +> List.iter (fun c -> 
         if c.flow <> None 
         then
           (* does also some side effects on c and r *)
@@ -824,11 +849,9 @@ let rec bigloop2 rs (cs,hss) =
     ); (* end iter es *)
     es := !newes;
 
+    (* apply the tagged modifs and reparse *)
     if not !Flag_parsing_cocci.sgrep_mode2
-    then begin
-      let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
-      cs := newcs; hss := newhss; 
-    end;
+    then ccs := rebuild_info_c_and_headers !ccs;
       
     if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
    end
@@ -837,11 +860,9 @@ let rec bigloop2 rs (cs,hss) =
   (if !Flag_parsing_cocci.sgrep_mode2
   then begin
     Flag_parsing_c.verbose_parsing := false;
-    let (newcs, newhss) = rebuild_info_c_and_headers (!cs, !hss) in
-    cs := newcs; hss := newhss; 
-  end
-   );
-  !cs, !hss (* return final C asts *)
+    ccs := rebuild_info_c_and_headers !ccs
+  end);
+  !ccs (* return final C asts *)
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
@@ -896,9 +917,9 @@ and process_a_ctl_a_env_a_toplevel  a b c =
 (*****************************************************************************)
 
 (* Returns nothing. The output is in the file outfile *)
-let full_engine2 cfile (coccifile, isofile) outfile = 
+let full_engine2 (coccifile, isofile) cfiles = 
 
-  show_or_not_cfile   cfile;
+  show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
 
   let (astcocci,used_after_lists,toks) = sp_from_file coccifile isofile in
@@ -906,8 +927,8 @@ let full_engine2 cfile (coccifile, isofile) outfile =
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
-  if not (worth_trying cfile toks)
-  then Common.command2 ("cp " ^ cfile ^ " " ^ outfile)
+  if not (worth_trying cfiles toks)
+  then cfiles +> List.map (fun s -> s, None)
   else begin
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
@@ -915,38 +936,42 @@ let full_engine2 cfile (coccifile, isofile) outfile =
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     g_contain_typedmetavar := contain_typedmetavar;
+
     let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
-    let (c_infos, hs_infos)     = prepare_c cfile in
+    let c_infos  = prepare_c cfiles in
 
     show_or_not_ctl_tex astcocci ctls;
 
-    let (c_infos', hs_infos') = bigloop cocci_infos (c_infos, hs_infos) in
+    (* ! the big loop ! *)
+    let c_infos' = bigloop cocci_infos c_infos in
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
     if !Flag.show_misc then pr "Finished";
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
-    (* and now unparse everything *)
-    let for_unparser xs = xs +> List.map (fun x -> 
-      (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
-    )
-    in
-    cfile_from_program (for_unparser c_infos') outfile;
-    let show_only_minus = !Flag_parsing_cocci.sgrep_mode2 in
-
-    show_or_not_diff cfile outfile show_only_minus;
-
-    hs_infos' +> List.iter (fun hi -> 
-      let outheader = outfile ^ "." ^ hi.header_name ^ ".h" in
-      if !(hi.was_modified_once)
+    c_infos' +> List.map (fun c_or_h -> 
+      if !(c_or_h.was_modified_once)
       then begin
-        pr2 ("a header file was modified: " ^ hi.header_name);
-        cfile_from_program (for_unparser hi.header_content) outheader;
-        show_or_not_diff hi.header_path outheader show_only_minus;
+        let outfile = Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) 
+        in
+
+        if c_or_h.fkind = Header 
+        then pr2 ("a header file was modified: " ^ c_or_h.fname);
+
+        (* and now unparse everything *)
+        cfile_from_program (for_unparser c_or_h.asts) outfile;
+
+        let show_only_minus = !Flag_parsing_cocci.sgrep_mode2 in
+        show_or_not_diff c_or_h.fpath outfile show_only_minus;
+
+        (c_or_h.fpath, 
+        if !Flag_parsing_cocci.sgrep_mode2 then None else Some outfile
+        )
       end
+      else 
+        (c_or_h.fpath, None)
     );
   end
 
-
-let full_engine a b c = 
-  Common.profile_code "full_engine" (fun () -> full_engine2 a b c)
+let full_engine a b = 
+  Common.profile_code "full_engine" (fun () -> full_engine2 a b)
