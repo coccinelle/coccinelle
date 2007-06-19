@@ -126,8 +126,10 @@ let rec propagate_types env =
 	    None -> None
 	  | Some (T.Pointer(T.Unknown)) -> None
 	  | Some (T.Pointer(T.MetaType(_,_,_))) -> None
+	  | Some (T.Pointer(T.TypeName(_))) -> None
 	  | Some (T.Pointer(T.StructUnionName(_,_,_))) -> None
 	  | Some (T.MetaType(_,_,_)) -> None
+	  | Some (T.TypeName(_)) -> None
 	  | Some x -> err exp x "non-structure pointer type in field ref")
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))

@@ -962,6 +962,7 @@ let get_metavars parse_fn table file lexbuf =
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
       tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg] in
+    let tokens = prepare_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | _ ->

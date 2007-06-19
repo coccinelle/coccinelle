@@ -85,6 +85,15 @@ let long_usage_func  = ref (fun () -> ())
 (* will be printed when use only ./spatch. For the rest you have to
  * use -longhelp to see them. 
  *)
+let set_sgrep2 _ =
+  (* to keep ctl directory independent of parsing_cocci directory *)
+   Flag_parsing_cocci.sgrep_mode2 := true;
+   Flag_ctl.sgrep_mode2 := true
+
+let set_diff_lines n =
+  let n = string_of_int n in
+  Flag_parsing_c.diff_lines := Some n
+
 let short_options = [ 
   "-sp_file",  Arg.Set_string cocci_file, " <file> the semantic patch file";
   "-iso_file", Arg.Set_string iso_file,   " <file> the iso file";
@@ -98,8 +107,9 @@ let short_options = [
 
   "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
   "    sgrep mode (sgrep for semantic grep)";
-  "-sgrep2", Arg.Set Flag_parsing_cocci.sgrep_mode2, 
+  "-sgrep2", Arg.Unit set_sgrep2,
   "    sgrep mode2 (sgrep for semantic grep)";
+  "-U", Arg.Int set_diff_lines, "set number of diff context lines";
   "-partial_match",        Arg.Set Flag_ctl.partial_match, 
   "    report partial matches of the SP on the C file";
 

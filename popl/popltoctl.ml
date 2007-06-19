@@ -14,6 +14,44 @@ type formula =
 
 let wrap n ctl = (ctl,n)
 
+(* --------------------------------------------------------------------- *)
+
+let contains_modif =
+  let bind x y = x or y in
+  let option_default = false in
+  let mcode r (_,_,kind) =
+    match kind with
+      Ast.MINUS(_,_) -> true
+    | Ast.PLUS -> failwith "not possible"
+    | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
+  let do_nothing r k e = k e in
+  let rule_elem r k re =
+    let res = k re in
+    match Ast.unwrap re with
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+      bind (mcode r ((),(),bef)) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef)) res
+    | _ -> res in
+  let recursor =
+    V.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
+  recursor.V.combiner_rule_elem
+
+let ctl_exists v x keep_wit = wrap 0 (CTL.Exists(v,x,keep_wit))
+
+let predmaker guard term =
+  if guard && contains_modif term
+  then
+    let v = ("","_v") in
+    ctl_exists v (wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Modif v))) true
+  else wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Control))
+
+(* --------------------------------------------------------------------- *)
+
 let is_true c =
   match CTL.unwrap c with CTL.True -> true | _ -> false
 
@@ -42,44 +80,47 @@ let ctl_ax x       =
 
 let after          = wrap 0 (CTL.Pred(Lib_engine.After, CTL.Control))
 let exit           = wrap 0 (CTL.Pred(Lib_engine.Exit, CTL.Control))
+let truepred       = wrap 0 (CTL.Pred(Lib_engine.TrueBranch, CTL.Control))
+let retpred        = wrap 0 (CTL.Pred(Lib_engine.Return, CTL.Control))
 
-let ctl_au x y     = wrap 0 (CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y after))
+let string2var x = ("",x)
 
-let ctl_exists v x keep_wit = wrap 0 (CTL.Exists(v,x,keep_wit))
+let labelctr = ref 0
+let get_label_ctr _ =
+  let cur = !labelctr in
+  labelctr := cur + 1;
+  string2var (Printf.sprintf "l%d" cur)
+
+let ctl_au x seq_after y =
+  let lv = get_label_ctr() in
+  let labelpred = wrap 0 (CTL.Pred(Lib_engine.Label lv,CTL.Control)) in
+  let preflabelpred =
+    wrap 0 (CTL.Pred(Lib_engine.PrefixLabel lv,CTL.Control)) in
+  let matchgoto = predmaker false (Ast.make_term Ast.Goto) in
+  let matchbreak =
+    predmaker false
+      (Ast.make_term
+	 (Ast.Break(Ast.make_mcode "break",Ast.make_mcode ";"))) in
+  let matchcontinue =
+    predmaker false
+      (Ast.make_term
+	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
+  let stop_early =
+    ctl_or after
+      (ctl_and (ctl_and truepred labelpred)
+	 (wrap 0
+	 (CTL.AU
+	    (CTL.FORWARD,CTL.STRICT,preflabelpred,
+	     ctl_and preflabelpred
+	       (ctl_or retpred
+		  (ctl_and (ctl_or (ctl_or matchgoto matchbreak) matchcontinue)
+		     (wrap 0
+			(CTL.AG
+			   (CTL.FORWARD,CTL.STRICT,
+			    ctl_not seq_after))))))))) in
+  wrap 0 (CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y stop_early))
 
 let ctl_uncheck x  = wrap 0 (CTL.Uncheck(x))
-
-let contains_modif =
-  let bind x y = x or y in
-  let option_default = false in
-  let mcode r (_,_,kind) =
-    match kind with
-      Ast.MINUS(_,_) -> true
-    | Ast.PLUS -> failwith "not possible"
-    | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
-  let do_nothing r k e = k e in
-  let rule_elem r k re =
-    let res = k re in
-    match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-      bind (mcode r ((),(),bef)) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef)) res
-    | _ -> res in
-  let recursor =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
-      do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
-  recursor.V.combiner_rule_elem
-
-let predmaker guard term =
-  if guard && contains_modif term
-  then
-    let v = ("","_v") in
-    ctl_exists v (wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Modif v))) true
-  else wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Control))
 
 (* --------------------------------------------------------------------- *)
 
@@ -94,11 +135,12 @@ and ctl_element keep_wit a = function
   | Past.Or(seq1,seq2) ->
       ctl_seqor (ctl_seq keep_wit a seq1) (ctl_seq keep_wit a seq2)
   | Past.DInfo(dots,seq_bef,seq_aft) ->
-      let shortest =
+      let shortest l =
 	List.fold_left ctl_or ctl_false
-	  (List.map (ctl_element false ctl_true)
-	     (Common.union_set seq_bef seq_aft)) in
-      ctl_au (ctl_and (guard_ctl_dots keep_wit dots) (ctl_not shortest)) a
+	  (List.map (ctl_element false ctl_true) l) in
+      ctl_au (ctl_and (guard_ctl_dots keep_wit dots)
+		(ctl_not (shortest (Common.union_set seq_bef seq_aft))))
+	(shortest seq_aft) a
   | Past.EExists(var,elem) ->
       ctl_exists var (ctl_element keep_wit a elem) keep_wit
 
@@ -117,12 +159,13 @@ and guard_ctl_element keep_wit = function
   | Past.Or(seq1,seq2) ->
       ctl_seqor (guard_ctl_seq keep_wit seq1) (guard_ctl_seq keep_wit seq2)
   | Past.DInfo(dots,seq_bef,seq_aft) ->
-      let shortest =
+      let shortest l =
 	List.fold_left ctl_or ctl_false
-	  (List.map (ctl_element false ctl_true)
-	     (Common.union_set seq_bef seq_aft)) in
-      let aft = ctl_or shortest exit in
-      ctl_au (ctl_and (guard_ctl_dots keep_wit dots) (ctl_not shortest)) aft
+	  (List.map (ctl_element false ctl_true) l) in
+      let s = shortest (Common.union_set seq_bef seq_aft) in
+      let aft = ctl_or s exit in
+      ctl_au (ctl_and (guard_ctl_dots keep_wit dots) (ctl_not s))
+	(shortest seq_aft) aft
   | Past.EExists(var,elem) ->
       ctl_exists var (guard_ctl_element keep_wit elem) keep_wit
 

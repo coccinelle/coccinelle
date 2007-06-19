@@ -485,9 +485,11 @@ let eq_trip (s,th,wit) (s',th',wit') =
 
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
+(* conj opt doesn't work ((1,[],{{x=3}}) v (1,[],{{x=4}})) & (1,[],{{x=4}}) =
+(1,[],{{x=3},{x=4}}), not (1,[],{{x=4}}) *)
 let triples_conj trips trips' =
   let (trips,shared,trips') =
-    if !pTRIPLES_CONJ_OPT
+    if false && !pTRIPLES_CONJ_OPT
     then
       let (shared,trips) =
 	List.partition (function t -> List.mem t trips') trips in
@@ -664,18 +666,22 @@ let triples_union trips trips' =
       if trips = trips'
       then trips
       else
-	let subsumes (s1,th1,wit1) (s2,th2,wit2) =
-	  if s1 = s2
-	  then
-	    (match conj_subst th1 th2 with
-	      Some conj ->
-		if conj = th1
-		then if subseteq wit2 wit1 then 1 else 0
-		else
-		  if conj = th2
-		  then if subseteq wit1 wit2 then (-1) else 0
-		  else 0
-	    | None -> 0)
+	let subsumes ((s1,th1,wit1) as x) ((s2,th2,wit2) as y) =
+	  if !Flag_ctl.sgrep_mode2
+	  then (* witnesses under exist path quantification *)
+	    if eq_trip x y then 1 else 0
+	  else (* no witnesses under exist path quantification *)
+	    if s1 = s2
+	    then
+	      (match conj_subst th1 th2 with
+		Some conj ->
+		  if conj = th1
+		  then if subseteq wit2 wit1 then 1 else 0
+		  else
+		    if conj = th2
+		    then if subseteq wit1 wit2 then (-1) else 0
+		    else 0
+	      | None -> 0)
 	  else 0 in
 	let rec first_loop second = function
 	    [] -> second

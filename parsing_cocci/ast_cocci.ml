@@ -496,6 +496,9 @@ let make_meta_decl s d (fvs,fresh,inh) =
   (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false), 0,
    fvs, fresh, inh, [], NoDots)
 
+let make_term x = (x,0,[],[],[],[],NoDots)
+let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING))
+
 (* --------------------------------------------------------------------- *)
 
 let undots x =

@@ -160,14 +160,23 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 
     if show_only_minus
     then
-      let xs = Common.cmd_to_list ("diff -u -b -B " ^ cfile ^ " " ^ outfile) in
+      let xs =
+	match !Flag_parsing_c.diff_lines with
+	  None ->
+	    Common.cmd_to_list ("diff -u -b -B " ^ cfile ^ " " ^ outfile)
+	| Some n ->
+	    Common.cmd_to_list ("diff -U "^n^" -b -B "^cfile^" "^outfile) in
       xs +> List.iter (fun s -> 
         if s =~ "^\\+[^+]"
         then ()
         else pr2 s
       )
     else 
-      Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile);
+	match !Flag_parsing_c.diff_lines with
+	  None ->
+	    Common.command2 ("diff -u -b -B " ^ cfile ^ " " ^ outfile)
+	| Some n ->
+	    Common.command2 ("diff -U "^n^" -b -B "^cfile^" "^outfile)
   end
 let show_or_not_diff a b c  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b c)

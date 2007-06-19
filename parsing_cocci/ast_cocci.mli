@@ -472,3 +472,6 @@ val make_meta_decl :
     string -> mcodekind ->
       (meta_name list * meta_name list * meta_name list) ->
       declaration
+
+val make_term : 'a -> 'a wrap
+val make_mcode : 'a -> 'a mcode

@@ -147,7 +147,12 @@ let normal_form_token x =
  *)
 let compare_ast filename1 filename2  =
 
-  let xs = Common.cmd_to_list ("diff -u -b -B " ^filename1^" "^ filename2) in
+  let xs =
+    match !Flag_parsing_c.diff_lines with
+      None ->
+	Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2)
+    | Some n -> 
+	Common.cmd_to_list ("diff -U "^n^" -b -B "^filename1^" "^filename2) in
 
   (* get rid of the --- and +++ lines *)
   let xs = 
@@ -320,7 +325,12 @@ let compare_token filename1 filename2 =
           (Correct)
   in
 
-  let xs = Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2) in
+  let xs =
+    match !Flag_parsing_c.diff_lines with
+      None ->
+	Common.cmd_to_list ("diff -u -b -B "^filename1^ " "  ^ filename2)
+    | Some n -> 
+	Common.cmd_to_list ("diff -U "^n^" -b -B "^filename1^" "^filename2) in
 
   (* get rid of the --- and +++ lines *)
   let xs = 

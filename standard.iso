@@ -120,18 +120,24 @@ expression E,E1;
 // Boolean isomorphisms
 // ---------------------------------------------------------------------------
 
+
+// the space at the beginning of the line is very important!
 Expression
 @@ int X; @@
-X == 0 <=> !X <=> 0 == X
+ !X => 0 == X
+
+// the space at the beginning of the line is very important!
+Expression
+@@ int X; @@
+ !X => X == 0
+
+Expression
+@@ expression X; @@
+X == 0 <=> 0 == X => !X
 
 Expression
 @@ expression X; @@
 X != 0 <=> 0 != X => X
-
-Expression
-@@ expression X; @@
-X != NULL <=> NULL != X => X
-
 
 Expression
 @@ expression X,Y; @@
@@ -173,9 +179,23 @@ for(X;Y;i++) S <=> for(X;Y;++i) S
 // Pointer isomorphisms
 // ---------------------------------------------------------------------------
 
+// the space at the beginning of the line is very important!
 Expression
 @@ expression *X; @@
-X == NULL <=> !X <=> NULL == X
+ !X => NULL == X
+
+// the space at the beginning of the line is very important!
+Expression
+@@ expression *X; @@
+ !X => X == NULL
+
+Expression
+@@ expression X; @@
+X == NULL <=> NULL == X => !X
+
+Expression
+@@ expression X; @@
+X != NULL <=> NULL != X => X
 
 // pointer arithmetic equivalences
 
@@ -193,7 +213,7 @@ Statement
 int X;
 statement S1, S2;
 @@
-if (X) S1 else S2 => if (X != 0) S1 else S2
+if (X) S1 else S2 => if (X != 0) S1 else S2 <=> if (0 != X) S1 else S2
 
 Statement
 @@
@@ -201,6 +221,20 @@ int X;
 statement S;
 @@
 if (X) S => if (X != 0) S <=> if (0 != X) S
+
+Statement
+@@
+expression *X;
+statement S1, S2;
+@@
+if (X) S1 else S2 => if (X != NULL) S1 else S2 => if (NULL != X) S1 else S2
+
+Statement
+@@
+expression *X;
+statement S;
+@@
+if (X) S => if (X != NULL) S <=> if (NULL != X) S
 
 
 Statement
