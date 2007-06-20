@@ -158,12 +158,22 @@ let delete_previous_result_files infile =
 let test_okfailed (cocci_file, iso_file) cfiles = 
 
   let iso_file = if iso_file = "" then None else Some iso_file in
-  (* for the fresh variables *)
-  (* TODO *)
 
   let tmpfile = Common.new_temp_file "cocci" ".stdout" in
-  let final_files = ref [] in
-  
+  let final_files = ref [] in (* generate a okfailed per input file *)
+
+  let redirect_in = 
+    match cfiles with
+    | x::xs -> 
+        let (dir, base, ext) = Common.dbe_of_filename x in
+        let varfile = Common.filename_of_dbe (dir, base, "var") in
+        if ext = "c" && Common.lfile_exists varfile
+        then Common.redirect_stdin varfile
+        else (fun f -> f ())
+    | [] -> failwith "wierd: no files for test_okfailed given"
+  in
+        
+  redirect_in (fun () -> 
   Common.redirect_stdout_stderr tmpfile (fun () -> 
     try (
       Common.timeout_function_opt !Flag.timeout (fun () ->
@@ -171,15 +181,17 @@ let test_okfailed (cocci_file, iso_file) cfiles =
         let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
         
         outfiles +> List.iter (fun (infile, outopt) -> 
-          let dir = Common.dirname infile in
-          let base, expected_suffix   = 
-            match Common.basename infile with
-            | s when s =~ "\\(.*\\)\\.c$" -> matched1 s, ".res"
-            | s when s =~ "\\(.*\\)\\.h$" -> matched1 s, ".h.res"
+          let (dir, base, ext) = Common.dbe_of_filename infile in
+          let expected_suffix   = 
+            match ext with
+            | "c" -> "res"
+            | "h" -> "h.res"
             | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
           in
-          let expected_res =  dir ^ "/" ^ (base^expected_suffix) in
-          let expected_res2 = dir ^ "/" ^ "corrected_"^(base^expected_suffix) in
+          let expected_res =  
+            Common.filename_of_dbe  (dir, base, expected_suffix) in
+          let expected_res2 = 
+            Common.filename_of_dbe (dir,"corrected_"^ base, expected_suffix) in
 
           delete_previous_result_files infile;
           
@@ -223,7 +235,7 @@ let test_okfailed (cocci_file, iso_file) cfiles =
       cfiles +> List.iter (fun infile -> 
         push2 (infile ^ (suffix_of_okfailed Failed)) final_files;
       )
-  );
+  ));
   !final_files +> List.iter (fun file -> 
     Common.command2 ("cp " ^ tmpfile ^ " " ^ file);
   )

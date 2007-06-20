@@ -136,6 +136,18 @@ let redirect_stdout_stderr file f =
     close_out chan;
   end
 
+let redirect_stdin file f = 
+  begin
+    let chan = open_in file in
+    let descr = Unix.descr_of_in_channel chan in
+
+    let savein = Unix.dup Unix.stdin in
+    Unix.dup2 descr Unix.stdin;
+    f();
+    Unix.dup2 savein Unix.stdin;
+    close_in chan;
+  end
+
 
 
 
@@ -1235,6 +1247,15 @@ let adjust_extension_if_needed filename ext =
   if not (filename =~ (".*\\" ^ ext))
   then filename ^ ext
   else filename
+
+let dbe_of_filename file = 
+  ignore(Filename.chop_extension file); (* raise Invalid_argument if no ext *)
+  Filename.dirname file, 
+  Filename.basename file +> fileprefix, 
+  Filename.basename file +> filesuffix
+
+let filename_of_dbe (dir, base, ext) = 
+  Filename.concat dir (base ^ "." ^ ext)
 
 
 (*****************************************************************************)

@@ -21,6 +21,7 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 val pr2gen: 'a -> unit
 
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
+val redirect_stdin : filename -> (unit -> unit) -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -488,6 +489,11 @@ val filesuffix : filename -> string
 val fileprefix : filename -> string
 
 val adjust_extension_if_needed : filename -> string -> filename
+
+(* dbe for dir, base, ext *)
+val dbe_of_filename : filename -> string * string * string
+val filename_of_dbe : string * string * string -> filename
+
 
 (*****************************************************************************)
 (* Dates *)
