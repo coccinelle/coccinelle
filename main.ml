@@ -28,10 +28,7 @@ let action = ref ""
 (* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
 
-
 let save_tmp_files = ref false
-
-let timeout = ref (None : int option)
 
 (* if set then will not do certain finalize so faster to go back in replay *)
 let debugger = ref false
@@ -217,7 +214,7 @@ let other_options = [
     "   gather timing information about the main coccinelle functions";
     "-bench", Arg.Int (function x -> Flag_ctl.bench := x), 
     "   <level> for profiling the CTL engine";
-    "-timeout",              Arg.Int (fun x -> timeout := Some x), 
+    "-timeout",              Arg.Int (fun x -> Flag.timeout := Some x), 
     "   <sec> timeout in seconds";
   ];
 
@@ -345,13 +342,7 @@ let main () =
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
 
-    let timeout_fn =
-      match !timeout with
-      | Some x -> Common.timeout_function x
-      |	None -> (function f -> f()) 
-    in
-    timeout_fn                       (fun () -> 
-
+    Common.timeout_function_opt !Flag.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
 

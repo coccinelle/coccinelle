@@ -20,6 +20,7 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val pr2gen: 'a -> unit
 
+val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -561,6 +562,9 @@ exception Timeout
  * with Timeout -> raise Timeout | _ -> ... 
  *)
 val timeout_function : int -> (unit -> 'a) -> 'a
+
+val timeout_function_opt : int option -> (unit -> 'a) -> 'a
+
 
 (* creation of /tmp files, a la gcc 
  * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" 

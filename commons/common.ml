@@ -119,6 +119,25 @@ let pr2gen x = pr2 (Dumper.dump x)
 
 
 
+let redirect_stdout_stderr file f = 
+  begin
+    let chan = open_out file in
+    let descr = Unix.descr_of_out_channel chan in
+
+    let saveout = Unix.dup Unix.stdout in
+    let saveerr = Unix.dup Unix.stderr in
+    Unix.dup2 descr Unix.stdout;
+    Unix.dup2 descr Unix.stderr;
+    flush stdout; flush stderr;
+    f();
+    flush stdout; flush stderr;
+    Unix.dup2 saveout Unix.stdout;
+    Unix.dup2 saveerr Unix.stderr;
+    close_out chan;
+  end
+
+
+
 
 include Printf
 
@@ -1495,6 +1514,12 @@ let timeout_function timeoutval = fun f ->
         ignore(Unix.alarm 0);
         raise e
       end
+
+let timeout_function_opt timeoutvalopt f =
+  match timeoutvalopt with
+  | None -> f()
+  | Some x -> timeout_function x f
+  
 
 
 (* creation of tmp files, a la gcc *)

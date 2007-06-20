@@ -4,7 +4,6 @@ open Common open Commonop
 (* Test framework *)
 (*****************************************************************************)
 
-
 (* There can have multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
@@ -36,7 +35,8 @@ let testone x iso_file compare_with_expected_flag =
 
 (* ------------------------------------------------------------------------ *)
 let best_score_file = "/tmp/score_cocci_best.marshalled"
-let timeout_value = 30
+
+let timeout_testall = 30
 
 let testall iso_file =
 
@@ -60,7 +60,7 @@ let testall iso_file =
       let expected = "tests/" ^ res in
 
       try (
-        Common.timeout_function timeout_value (fun () -> 
+        Common.timeout_function timeout_testall  (fun () -> 
           
           let xs = Cocci.full_engine (cocci_file, iso_file) [cfile] in
           let generated = 
@@ -149,9 +149,6 @@ let suffix_of_okfailed = function
   | SpatchOK -> ".spatch_ok"
   | Failed -> ".failed"
 
-let create_result_file infile kind = 
-  Common.command2 ("touch " ^ infile ^ suffix_of_okfailed kind)
-
 let delete_previous_result_files infile = 
   [Ok;SpatchOK;Failed] +> List.iter (fun kind -> 
     Common.command2 ("rm -f " ^ infile ^ suffix_of_okfailed kind)
@@ -164,49 +161,74 @@ let test_okfailed (cocci_file, iso_file) cfiles =
   (* for the fresh variables *)
   (* TODO *)
 
-  (* redirecting error message *)
-  (* TODO *)
+  let tmpfile = Common.new_temp_file "cocci" ".stdout" in
+  let final_files = ref [] in
   
-  let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
-  
-  outfiles +> List.iter (fun (infile, outopt) -> 
-    let dir = Common.dirname infile in
-    let base, expected_suffix   = 
-      match Common.basename infile with
-      | s when s =~ "\\(.*\\)\\.c$" -> matched1 s, ".res"
-      | s when s =~ "\\(.*\\)\\.h$" -> matched1 s, ".h.res"
-      | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
-    in
-    let expected_res =  dir ^ "/" ^ (base^expected_suffix) in
-    let expected_res2 = dir ^ "/" ^ "corrected_"^(base^expected_suffix) in
-
-    delete_previous_result_files infile;
-    
-    match outopt, Common.lfile_exists expected_res with
-    | None, false -> 
-        ()
-    | Some outfile, false -> 
-        pr2 ("PB: input file " ^ infile ^ " modified but no .res");
-        create_result_file infile Failed
-
-    | x, true -> 
-        let outfile = match x with Some outfile -> outfile | None -> infile in
+  Common.redirect_stdout_stderr tmpfile (fun () -> 
+    try (
+      Common.timeout_function_opt !Flag.timeout (fun () ->
         
-        let diff = Compare_c.compare_default outfile expected_res in
-        pr2 (Compare_c.compare_result_to_string diff);
-        if fst diff = Compare_c.Correct
-        then create_result_file infile Ok
-        else 
-          if Common.lfile_exists expected_res2
-          then begin
-            let diff = Compare_c.compare_default outfile expected_res2 in
-            pr2 (Compare_c.compare_result_to_string diff);
-            if fst diff = Compare_c.Correct
-            then create_result_file infile SpatchOK
-            else create_result_file infile Failed
-          end
-          else create_result_file infile Failed
+        let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
+        
+        outfiles +> List.iter (fun (infile, outopt) -> 
+          let dir = Common.dirname infile in
+          let base, expected_suffix   = 
+            match Common.basename infile with
+            | s when s =~ "\\(.*\\)\\.c$" -> matched1 s, ".res"
+            | s when s =~ "\\(.*\\)\\.h$" -> matched1 s, ".h.res"
+            | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
+          in
+          let expected_res =  dir ^ "/" ^ (base^expected_suffix) in
+          let expected_res2 = dir ^ "/" ^ "corrected_"^(base^expected_suffix) in
+
+          delete_previous_result_files infile;
+          
+          match outopt, Common.lfile_exists expected_res with
+          | None, false -> 
+              ()
+          | Some outfile, false -> 
+              pr2 ("PB: input file " ^ infile ^ " modified but no .res");
+              push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+
+          | x, true -> 
+              let outfile = 
+                match x with 
+                | Some outfile -> outfile 
+                | None -> infile 
+              in
+              
+              let diff = Compare_c.compare_default outfile expected_res in
+              pr2 (Compare_c.compare_result_to_string diff);
+              if fst diff = Compare_c.Correct
+              then push2 (infile ^ (suffix_of_okfailed Ok)) final_files
+              else 
+                if Common.lfile_exists expected_res2
+                then begin
+                  let diff = Compare_c.compare_default outfile expected_res2 in
+                  pr2 (Compare_c.compare_result_to_string diff);
+                  if fst diff = Compare_c.Correct
+                  then push2 (infile ^ (suffix_of_okfailed SpatchOK)) final_files
+                  else push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+                end
+              else push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+        )
+      );
+    )
+    with exn -> 
+      pr2 ("PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n"));
+      (* we may miss some file because cfiles is shorter than outfiles.
+       * For instance the detected local headers are not in cfiles, so
+       * may have less failed. But at least have some failed
+       *)
+      cfiles +> List.iter (fun infile -> 
+        push2 (infile ^ (suffix_of_okfailed Failed)) final_files;
+      )
+  );
+  !final_files +> List.iter (fun file -> 
+    Common.command2 ("cp " ^ tmpfile ^ " " ^ file);
   )
+
+  
 
 
 let test_regression_okfailed () = 
