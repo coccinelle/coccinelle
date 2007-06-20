@@ -2235,53 +2235,6 @@ and inc_file (a, before_after) (b, h_rel_pos) =
 
 
 (*---------------------------------------------------------------------------*)
-and define_val bodya defvalb = 
-  match A.unwrap bodya, defvalb with
-  | A.DMetaId (idbodya, keep), B.DefineText (bodyb, [iibodyb]) -> 
-
-      let inherited = false (* TODO ? *) in
-      X.envf keep inherited (term idbodya, B.MetaTextVal bodyb) >>=
-        (fun _s v -> 
-          match v with
-          | B.MetaTextVal sa -> 
-              if (sa =$= bodyb)
-              then 
-                tokenf idbodya iibodyb >>= (fun idbodya iibodyb -> 
-                  return (
-                    (A.DMetaId (idbodya, keep) +> A.rewrap bodya),
-                    (B.DefineText (bodyb, [iibodyb]))
-                    ))
-              else fail
-          | _ -> raise Impossible
-        )
-
-  | A.DStm (re), b ->
-      (match (A.unwrap re,b) with
-      (* Here Exp have not the usual sense, we must not search subexp 
-       * inside eb. It's here to match exactly as-is the body of the #define.
-       * If we want to search/modify subexp inside this body, we don't
-       * use a DStm (Exp)  SP but instead we simply use Exp and let
-       * the visitor_c do its job by visiting also the body of the macros.
-       *)
-      |  A.Exp(ea), B.DefineExpr (eb) ->
-           expression ea eb >>= (fun ea eb -> 
-             return (
-               (A.DStm ((A.Exp ea) +> A.rewrap re) +> A.rewrap bodya),
-               (B.DefineExpr (eb))
-             ))
-      (* Same comment that previous here *)
-      | A.Ty(ta), B.DefineType (tb) -> 
-          fullType ta tb >>= (fun ta tb -> 
-            return (
-              (A.DStm ((A.Ty ta) +> A.rewrap re) +> A.rewrap bodya),
-              (B.DefineType (tb))
-            ))
-
-
-      | _ -> fail (*failwith "only types and expressions supported"*))
-
-  | _, _ -> fail
-
 
 and (define_params: (string A.mcode list, (string B.wrap list)) matcher) =
  fun paramsa paramsb -> 
@@ -2711,10 +2664,12 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Define(definea,ida,params,bodya), F.Define ((idb, ii), def) ->
+  | A.DefineHeader(definea,ida,params), F.Define ((idb, ii), def) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
       tokenf definea defineb >>= (fun definea defineb -> 
+	failwith "don't know what to do here"
+	  (*
         match params, def with
         | None, (B.DefineVar, defvalb) -> 
             define_val bodya defvalb >>= (fun bodya defvalb -> 
@@ -2732,6 +2687,7 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                   (B.DefineFunc (paramsb), defvalb)
                 ))))
         | _ -> fail
+	     *)
       ))
 
 

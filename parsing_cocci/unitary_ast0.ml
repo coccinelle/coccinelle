@@ -87,18 +87,11 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.V0.combiner_declaration decls)
     | _ -> k d in
 
-  let define_body b =
-    match Ast0.unwrap b with
-      Ast0.DMetaId(name,_) -> checker name
-    | _ -> option_default in
-  
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
-    | Ast0.Define(def,id,params,body) ->
-	bind (k s) (define_body body)
     | _ -> k s in
   
   let res = V0.combiner bind option_default 
@@ -159,21 +152,12 @@ let update_unitary unitary =
 	Ast0.rewrap p (Ast0.MetaParamList(name,is_unitary name))
     | _ -> k p in
   
-  let define_body b =
-    match Ast0.unwrap b with
-      Ast0.DMetaId(name,_) ->
-	Ast0.rewrap b (Ast0.DMetaId(name,is_unitary name))
-    | _ -> b in
-  
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmt(name,is_unitary name))
     | Ast0.MetaStmtList(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmtList(name,is_unitary name))
-    | Ast0.Define(def,id,params,body) ->
-	Ast0.rewrap s
-	  (Ast0.Define(def,r.V0.rebuilder_ident id,params,define_body body))
     | _ -> k s in
   
   let res = V0.rebuilder

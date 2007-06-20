@@ -13,8 +13,6 @@ val clear_meta: (unit -> unit) ref
 
 val add_id_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
 
-val add_text_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
-
 val add_type_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
 
 val add_param_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref

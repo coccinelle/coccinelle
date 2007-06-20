@@ -130,7 +130,6 @@ let id_tokens lexbuf =
   let in_iso = !Data.in_iso in
   match s with
     "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
-  | "text" when in_meta ->       check_arity_context_linetype s; TText
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
@@ -214,10 +213,6 @@ let init _ =
   Data.add_id_meta :=
     (function name -> function pure ->
       let fn clt = TMetaId(name,pure,clt) in
-      Hashtbl.replace metavariables (get_name name) fn);
-  Data.add_text_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaText(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (function name -> function pure ->

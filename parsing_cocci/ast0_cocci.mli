@@ -259,7 +259,7 @@ and base_statement =
 	string mcode (* } *)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | Define of string mcode (* #define *) * ident (* name *) *
-	string mcode list option (*params*) * define_body
+	string mcode list option (*params*) * statement dots
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)
@@ -284,15 +284,6 @@ and base_case_line =
   | OptCase of case_line
 
 and case_line = base_case_line wrap
-
-(* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and base_define_body =
-    DMetaId of (string * string) mcode * pure
-  | DStm of statement dots
-
-and define_body = base_define_body wrap
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

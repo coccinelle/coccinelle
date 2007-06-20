@@ -103,11 +103,7 @@ let collect_all_refs =
     nub
       (match Ast.unwrap re with
 	Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-      | Ast.MetaStmtList(name,_,_) -> [metaid name]
-      | Ast.Define(_,id,_,db) ->
-	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,_) -> bind (k re) [metaid name]
-	  | _ -> k re)
+      | Ast.MetaStmtList(name,_,_) | Ast.MetaText(name,_,_) -> [metaid name]
       | _ -> k re) in
 
   let astfvstatement recursor k s =
@@ -184,11 +180,8 @@ let collect_saved =
     nub (*within a rule_elem, pattern3 manages the coherence of the bindings*)
       (match Ast.unwrap re with
 	Ast.MetaRuleElem(name,TC.Saved,_) | Ast.MetaStmt(name,TC.Saved,_,_)
-      | Ast.MetaStmtList(name,TC.Saved,_) -> [metaid name]
-      | Ast.Define(_,id,_,db) ->
-	  (match Ast.unwrap db with
-	    Ast.DMetaId(name,TC.Saved) -> bind (k re) [metaid name]
-	  | _ -> k re)
+      | Ast.MetaStmtList(name,TC.Saved,_) | Ast.MetaText(name,TC.Saved,_) ->
+	  [metaid name]
       | _ -> k re) in
 
   let mcode r e = [] in
@@ -374,13 +367,6 @@ let classify_variables metavars minirules used_after =
 	Ast.rewrap e (Ast.MetaParamList(name,unitary,inherited))
     | _ -> k e in
 
-  let define_body r b =
-    match Ast.unwrap b with
-      Ast.DMetaId(name,_) ->
-	let (unitary,_) = classify name in
-	Ast.rewrap b (Ast.DMetaId(name,unitary))
-    | Ast.DStm(re) -> Ast.rewrap b (Ast.DStm(r.V.rebuilder_rule_elem re)) in
-  
   let rule_elem r k e =
     match Ast.unwrap e with
       Ast.MetaStmt(name,_,msi,_) ->
@@ -389,8 +375,9 @@ let classify_variables metavars minirules used_after =
     | Ast.MetaStmtList(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
-    | Ast.Define(def,id,params,body) ->
-	Ast.rewrap e (Ast.Define(def,id,params,define_body r body))
+    | Ast.MetaText(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaText(name,unitary,inherited))
     | _ -> k e in
 
   let fn = V.rebuilder

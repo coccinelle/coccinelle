@@ -410,17 +410,7 @@ in
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-let rec define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,_) -> 
-      handle_metavar name
-	(function
-	    Ast_c.MetaTextVal text -> pr text
-	  | _ -> raise Impossible)
-
-  | Ast.DStm(re) -> rule_elem "" re
-
-and inc_file = function
+let rec inc_file = function
     Ast.Local(elems) ->
       print_string "\"";
       print_between (function _ -> print_string "/") inc_elem elems;
@@ -501,10 +491,9 @@ and rule_elem arity re =
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
-  | Ast.Define(def,id,params,body) ->
+  | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id; 
-      print_option (List.iter (mcode print_string)) params; print_string " ";
-      define_body body
+      print_option (List.iter (mcode print_string)) params
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
@@ -563,6 +552,10 @@ let rec statement arity s =
       rule_elem arity header; rule_elem arity lbrace;
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
+
+  | Ast.Define(header,body) ->
+      rule_elem arity header; print_string " ";
+      dots force_newline (statement arity) body
 
   | Ast.Disj(_)| Ast.Nest(_)
   | Ast.Dots(_) | Ast.Circles(_) | Ast.Stars(_) ->

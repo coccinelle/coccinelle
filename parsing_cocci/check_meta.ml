@@ -275,14 +275,6 @@ and parameter_list old_metas table minus =
   dots (parameterTypeDef old_metas table minus)
 
 (* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and define_body old_metas table minus s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,_) -> check_table table minus name
-  | Ast0.DStm(stmtdots) -> dots (statement old_metas table minus) stmtdots
-
-(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 and statement old_metas table minus s =
@@ -332,7 +324,7 @@ and statement old_metas table minus s =
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
   | Ast0.Define(def,id,_,body) ->
       ident GLOBAL old_metas table minus id;
-      define_body old_metas table minus body
+      dots (statement old_metas table minus) body
   | _ -> () (* no metavariable subterms *)
 
 and fninfo old_metas table minus = function

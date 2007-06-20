@@ -329,15 +329,15 @@ let combiner bind option_default
       | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
       | Ast.MetaStmtList(name,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
+      | Ast.MetaText(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
-      | Ast.Define(def,id,params,body) ->
+      |	Ast.DefineHeader(def,id,params) ->
 	  multibind [string_mcode def; ident id;
-		      get_option
-			(function x -> multibind (List.map string_mcode x))
-			params;
-		      define_body body]
+                      get_option
+                        (function x -> multibind (List.map string_mcode x))
+                        params]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
 	  multibind [string_mcode case; expression exp; string_mcode colon] in
@@ -381,6 +381,8 @@ let combiner bind option_default
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
+      | Ast.Define(header,body) ->
+	  bind (rule_elem header) (statement_dots body)
       | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
 	  bind (string_mcode d) (whencode statement_dots statement whn)
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
@@ -405,11 +407,6 @@ let combiner bind option_default
 	  bind (rule_elem header) (statement_dots code)
       |	Ast.OptCase(case) -> case_line case in
     casefn all_functions k c
-
-  and define_body b =
-    match Ast.unwrap b with
-      Ast.DMetaId(name,_) -> meta_mcode name
-    | Ast.DStm(d) -> rule_elem d
 
   and top_level t =
     let k t =
@@ -785,14 +782,15 @@ let rebuilder
 	    Ast.MetaStmtList(meta_mcode name,keep,inherited)
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
+	| Ast.MetaText(name,keep,inherited) ->
+	    Ast.MetaText(meta_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,inc_file_mcode name)
-	| Ast.Define(def,id,params,body) ->
-	    Ast.Define(string_mcode def,ident id,
-		       get_option (List.map string_mcode) params,
-		       define_body body)
+	| Ast.DefineHeader(def,id,params) ->
+	    Ast.DefineHeader(string_mcode def,ident id,
+			     get_option (List.map string_mcode) params)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->
@@ -836,6 +834,8 @@ let rebuilder
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,
 			statement_dots body, rule_elem rbrace)
+	| Ast.Define(header,body) ->
+	    Ast.Define(rule_elem header,statement_dots body)
 	| Ast.Dots(d,whn,t) ->
 	    Ast.Dots(string_mcode d, whencode statement_dots statement whn, t)
 	| Ast.Circles(d,whn,t) ->
@@ -870,12 +870,6 @@ let rebuilder
 	    Ast.CaseLine(rule_elem header,statement_dots code)
 	| Ast.OptCase(case) -> Ast.OptCase(case_line case)) in
     casefn all_functions k c
-
-  and define_body b =
-    Ast.rewrap b
-      (match Ast.unwrap b with
-	Ast.DMetaId(name,keep) -> Ast.DMetaId(meta_mcode name,keep)
-      | Ast.DStm(d) -> Ast.DStm(rule_elem d))
 
   and top_level t =
     let k t =

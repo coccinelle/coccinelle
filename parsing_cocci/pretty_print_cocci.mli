@@ -6,8 +6,6 @@ val statement : string -> Ast_cocci.statement -> unit
 val statement_dots : Ast_cocci.statement Ast_cocci.dots -> unit
 val rule_elem : string -> Ast_cocci.rule_elem -> unit
 val rule_elem_to_string : Ast_cocci.rule_elem -> string
-val define_body : Ast_cocci.define_body -> unit
-val define_body_to_string : Ast_cocci.define_body -> string
 
 val print_mcodekind : Ast_cocci.mcodekind -> unit
 

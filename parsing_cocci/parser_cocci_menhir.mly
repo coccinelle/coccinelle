@@ -17,7 +17,7 @@ module P = Parse_aux
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TText Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
+%token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer
 %token TUsing TExtends TDepends TOn
@@ -44,7 +44,7 @@ module P = Parse_aux
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
 %token <(string * string) * Ast0_cocci.pure * Data.clt>
                                                   TMetaFunc TMetaLocalFunc
-%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaExpList TMetaText
+%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaExpList
 %token <(string * string) * Ast0_cocci.pure * Type_cocci.typeC list option *
           Data.clt> TMetaExp TMetaConst
 %token TArob TArobArob
@@ -257,10 +257,6 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
       !Data.add_const_meta ty name pure; tok) }
-| TText
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaTextDecl(arity,name)) in
-      !Data.add_text_meta name pure; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
@@ -429,18 +425,11 @@ includes:
 			      (P.drop_bef clt))))) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.Ty(t)) in
-      Ast0.wrap
-	(Ast0.DECL
-	   (d (Ast0.wrap (Ast0.DStm (Ast0.wrap(Ast0.DOTS([ty]))))))) }
+      Ast0.wrap(Ast0.DECL(d (Ast0.wrap(Ast0.DOTS([ty]))))) }
 | defineop b=statement_dots(TEllipsis) TLineEnd
     { Ast0.wrap
 	(Ast0.DECL
-	   ($1 (Ast0.wrap
-		  (Ast0.DStm (Ast0.wrap(Ast0.DOTS(b (P.mkdots "...")))))))) }
-| defineop TMetaText TLineEnd
-    { let (nm,pure,clt) = $2 in
-      Ast0.wrap
-	(Ast0.DECL ($1 (Ast0.wrap(Ast0.DMetaId(P.clt2mcode nm clt,pure))))) }
+	   ($1 (Ast0.wrap(Ast0.DOTS(b (P.mkdots "...")))))) }
 
 defineop:
   TDefine

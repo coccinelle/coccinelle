@@ -395,7 +395,7 @@ let combiner bind option_default
 		      get_option
 			(function x -> multibind (List.map string_mcode x))
 			params;
-		      define_body body]
+		      statement_dots body]
       | Ast0.OptStm(re) -> statement re
       | Ast0.UniqueStm(re) -> statement re
       | Ast0.MultiStm(re) -> statement re in
@@ -422,11 +422,6 @@ let combiner bind option_default
 		      statement_dots code]
       |	Ast0.OptCase(case) -> case_line case in
     casefn all_functions k c
-
-  and define_body b =
-    match Ast0.unwrap b with
-      Ast0.DMetaId(name,_) -> meta_mcode name
-    | Ast0.DStm(d) -> statement_dots d
 
   and top_level t =
     let k t =
@@ -813,7 +808,7 @@ let rebuilder = fun
 	| Ast0.Define(def,id,params,body) ->
 	    Ast0.Define(string_mcode def,ident id,
 			get_option (List.map string_mcode) params,
-			define_body body)
+			statement_dots body)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
@@ -843,12 +838,6 @@ let rebuilder = fun
 		      statement_dots code)
 	| Ast0.OptCase(case) -> Ast0.OptCase(case_line case)) in
     casefn all_functions k c
-
-  and define_body b =
-    Ast0.rewrap b
-      (match Ast0.unwrap b with
-	Ast0.DMetaId(name,pure) -> Ast0.DMetaId(meta_mcode name,pure)
-      | Ast0.DStm(d) -> Ast0.DStm(statement_dots d))
 
   and top_level t =
     let k t =

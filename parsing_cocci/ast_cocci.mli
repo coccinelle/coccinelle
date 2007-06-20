@@ -314,12 +314,13 @@ and base_rule_elem =
   | MetaStmt      of (string * string) mcode * keep_binding * metaStmtInfo *
 	             inherited
   | MetaStmtList  of (string * string) mcode * keep_binding * inherited
+  | MetaText      of meta_name mcode * keep_binding * inherited
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
-  | Define of string mcode (* #define *) * ident (* name *) *
-	string mcode list option (*params*) * define_body
+  | DefineHeader  of string mcode (* #define *) * ident (* name *) *
+	             string mcode list option (*params*)
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
 
@@ -351,6 +352,7 @@ and base_statement =
 	             dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * bool * statement dots * rule_elem (* } *)
+  | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode *
 	             dots_whencode list
@@ -381,12 +383,6 @@ and base_case_line =
   | OptCase of case_line
 
 and case_line = base_case_line wrap
-
-and base_define_body =
-    DMetaId of (string * string) mcode * keep_binding
-  | DStm of rule_elem
-
-and define_body = base_define_body wrap
 
 and inc_file =
     Local of inc_elem list

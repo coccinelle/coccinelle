@@ -1399,6 +1399,17 @@ and statement stmt after quantified label guard =
 				 new_quantified4 None true guard))))
 		     new_quantified3 None false guard)] in
       quantify b1fvs (make_seq [function_header; quantify b2fvs body_code])
+  | Ast.Define(header,body) ->
+      let (hfvs,bfvs,bodyfvs) =
+	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
+	with
+	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
+	| _ -> failwith "not possible" in
+      let define_header = quantify hfvs (make_match header) in
+      let body_code =
+	statement_list body after (Common.union_set bfvs quantified)
+	  None true guard in
+      quantify bfvs (make_seq [define_header; body_code])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->

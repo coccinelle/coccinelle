@@ -371,6 +371,16 @@ and unify_rule_elem re1 re2 =
 	 (conjunct_bindings
 	    (unify_option unify_expression e21 e22)
 	    (unify_option unify_expression e31 e32))
+  | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
+      conjunct_bindings
+	(unify_ident n1 n2)
+	(unify_option
+	   (function _ ->
+	     function _ ->
+	       Printf.printf
+		 "warning: unify not supported on #define parameters";
+	       return false)
+	   p1 p2)
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
   | (Ast.Goto,Ast.Goto) -> return true
@@ -488,6 +498,9 @@ let rec unify_statement s1 s2 =
 	   (conjunct_bindings (unify_dots unify_statement sdots d1 d2)
 	      (conjunct_bindings (unify_dots unify_statement sdots s1 s2)
 		 (unify_rule_elem rb1 rb2))))
+  | (Ast.Define(h1,s1),Ast.Define(h2,s2)) ->
+      conjunct_bindings (unify_rule_elem h1 h2)
+	(unify_dots unify_statement sdots s1 s2)
   | (Ast.MultiStm(s1),_) -> unify_statement s1 s2 
   | (_,Ast.MultiStm(s2)) -> unify_statement s1 s2 
   (* dots can match against anything.  return true to be safe. *)

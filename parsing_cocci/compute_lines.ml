@@ -672,8 +672,7 @@ let rec statement s =
   | Ast0.Include(inc,stm) ->
       mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
   | Ast0.Define(def,id,params,body) ->
-      let id = ident id in
-      let body = define_body id body in
+      let body = dots is_stm_dots None statement body in
       mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
   | Ast0.OptStm(stm) ->
       let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
@@ -695,17 +694,6 @@ and case_line c =
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 
 and statement_dots x = dots is_stm_dots None statement x
-
-(* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and define_body bef s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,_) as us ->
-      let nm = promote_mcode name in mkres s us nm nm
-  | Ast0.DStm(stmtdots) ->
-      let stmtdots = dots is_stm_dots (Some bef) statement stmtdots in
-      mkres s (Ast0.DStm(stmtdots)) stmtdots stmtdots
 	
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

@@ -653,11 +653,12 @@ and statement s =
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(local_rewrap s (Ast.Include(mcode inc,mcode str)))
       | Ast0.Define(def,id,params,body) ->
-	  Ast.Atomic
+	  Ast.Define
 	    (local_rewrap s
-	       (Ast.Define(mcode def,ident id,
-			   get_option (List.map mcode) params,
-			   define_body body)))
+	       (Ast.DefineHeader
+		  (mcode def,ident id,
+		   get_option (List.map mcode) params)),
+	     statement_dots Ast.NotSequencible (*not sure*) body)
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
@@ -765,22 +766,6 @@ and case_line c =
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
 and statement_dots l = dots statement l
-
-(* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and define_body m =
-  rewrap m
-    (match Ast0.unwrap m with
-      Ast0.DMetaId(name,_) -> Ast.DMetaId(mcode name,unitary)
-    | Ast0.DStm(stmtdots) ->
-	match Ast0.undots stmtdots with
-	  [x] ->
-	    let res = statement x in
-	    (match Ast.unwrap res with
-	      Ast.Atomic(x) -> Ast.DStm(x)
-	    | _ -> failwith "only a single rule_elem supported")
-	| _ -> failwith "only a single rule_elem supported")
     
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

@@ -538,14 +538,15 @@ let rec rule_elem arity re =
       print_string arity; mcode print_meta name
   | Ast.MetaStmtList(name,_,_) ->
       print_string arity;  mcode print_meta name
+  | Ast.MetaText(name,_,_) ->
+      print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
-  | Ast.Define(def,id,params,body) ->
+  | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id;
-      print_option (List.iter (mcode print_string)) params; print_string " ";
-      define_body body
+      print_option (List.iter (mcode print_string)) params
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
@@ -597,6 +598,9 @@ and statement arity s =
 	(dots force_newline (statement arity))
 	stmt_dots_list;
       force_newline(); print_string ")"
+  | Ast.Define(header,body) ->
+      rule_elem arity header; print_string " ";
+      dots force_newline (statement arity) body
   | Ast.Nest(stmt_dots,whn,_) ->
       print_string arity;
       nest_dots (statement arity)
@@ -634,11 +638,6 @@ and case_line arity c =
 
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
-
-and define_body m =
-  match Ast.unwrap m with
-    Ast.DMetaId(name,_) -> mcode print_meta name
-  | Ast.DStm(re) -> rule_elem "" re
 
 and inc_file = function
     Ast.Local(elems) ->
@@ -741,10 +740,6 @@ let rule_elem_to_string x =
 let ident_to_string x =
   print_newlines_disj := true;
   Common.format_to_string (function _ -> ident x)
-
-let define_body_to_string x =
-  print_newlines_disj := true;
-  Common.format_to_string (function _ -> define_body x)
 
 let unparse_to_string x =
   print_newlines_disj := true;

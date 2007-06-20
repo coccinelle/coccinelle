@@ -875,7 +875,7 @@ and statement in_nest tgt stm =
       let def = mcode def in
       let id = ident false false arity id in
       let params = get_option mcode params in
-      let body = define_body arity body in
+      let body = dots (statement false arity) body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
       failwith "unexpected code"
@@ -927,24 +927,6 @@ and case_line tgt c =
       let code = dots (statement false arity) code in
       make_case_line c tgt arity (Ast0.Case(case,exp,colon,code))
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
-
-(* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and make_define_body =
-  let no_arity x = failwith "specific arity not allowed" in
-  make_opt_unique no_arity no_arity no_arity
-
-and define_body tgt s =
-  match Ast0.unwrap s with
-    Ast0.DMetaId(name,pure) ->
-      let arity =
-	all_same false false tgt (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_define_body s tgt arity (Ast0.DMetaId(name,pure))
-  | Ast0.DStm(stmtdots) ->
-      let new_stmtdots = dots (statement false tgt) stmtdots in
-      make_define_body s tgt tgt (Ast0.DStm(new_stmtdots))
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

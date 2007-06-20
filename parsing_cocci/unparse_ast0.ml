@@ -472,7 +472,8 @@ and statement arity s =
       | Ast0.Define(def,id,params,body) ->
 	  mcode print_string def; print_string " "; ident id;
 	  print_option (List.iter (mcode print_string)) params;
-	  print_string " "; define_body body
+	  print_string " ";
+	  dots force_newline (statement arity) body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.MultiStm(re) -> statement "\\+" re)
@@ -507,16 +508,6 @@ and case_line arity c =
 
 and statement_dots l = dots (function _ -> ()) (statement "") l
 and case_dots l = dots (function _ -> ()) (case_line "") l
-
-(* --------------------------------------------------------------------- *)
-(* CPP code *)
-
-and define_body s =
-  print_context s
-    (function _ ->
-      match Ast0.unwrap s with
-	Ast0.DMetaId(name,_) -> mcode print_meta name
-      | Ast0.DStm(stmtdots) -> statement_dots stmtdots)
 
 (* --------------------------------------------------------------------- *)
 (* Top level code *)
