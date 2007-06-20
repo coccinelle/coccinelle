@@ -35,6 +35,7 @@ let tokinfo lexbuf  =
   { 
     Common.charpos = Lexing.lexeme_start lexbuf; 
     Common.str     = Lexing.lexeme lexbuf;
+    (* info filled in a post-lexing phase *)
     Common.line = -1; 
     Common.column = -1; 
     Common.file = "";
@@ -112,7 +113,7 @@ let keyword_table = Common.hash_of_list [
   (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
   "__const",     (fun ii -> Tconst ii);
-  (* pbs, can also be a #define and use as case CONST: *)
+  (* pbs, can also be a #define and use as 'case CONST:' *)
   (* "CONST",      (fun ii -> Tconst ii); *) 
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
@@ -237,40 +238,41 @@ rule token = parse
   | "#" [' ' '\t']* '\n'        { TCommentCpp (tokinfo lexbuf) }
 
 
-  (* only in cpp directives ? *)
-  | "\\" '\n' { TCommentSpace (tokinfo lexbuf) }
-
   (* ---------------------- *)
   (* #define, #undef *)
   (* ---------------------- *)
 
-  | (("#" [' ' '\t']*  "define" [' ' '\t']+) as define) (id as ident) 
-    { 
-      let info = tokinfo lexbuf in 
-      let bodys = cpp_eat_until_nl lexbuf in
-      TDefVar (define, ident, bodys, info +> tok_add_s bodys)
-    }
-
-  (* note that space here is important, the '(' must be just next to 
-   * the ident, otherwise it is a define-no-param that just leads to
-   * a paren expression.
-   *)
-  | (("#" [' ' '\t']*  "define" [' ' '\t']+) as define) (id as ident) 
-    (('(' [^ ')']* ')' ) as params) 
-    { 
-      let info = tokinfo lexbuf in 
-      let bodys = cpp_eat_until_nl lexbuf in
-      TDefFunc (define, ident, params, bodys, info +> tok_add_s bodys)
-    }
+  | "#" [' ' '\t']* "define" { TDefine (tokinfo lexbuf) } 
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ id
       { let info = tokinfo lexbuf in 
         TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
-
   | (id  "...") as str
       { TDefParamVariadic (str, tokinfo lexbuf) }
+
+  (* cppext: string concatenation *)
+  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: stringification *)
+  |  "#" id  
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: gccext: ##args for variadic macro *)
+  |  "##" [' ''\t']* id
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* only in cpp directives ? *)
+  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
+
 
   (* ---------------------- *)
   (* #include *)
@@ -439,18 +441,8 @@ rule token = parse
 
   | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) } 
   | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
- 
- (* cppext: string concatenation *)
-  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-  (* cppext: gccext: ##args for variadic macro *)
-  |  "##" [' ''\t']* id
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-       
+
+
 
   (* ----------------------------------------------------------------------- *)
   (* C keywords and ident *)

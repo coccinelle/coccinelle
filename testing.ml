@@ -12,7 +12,7 @@ open Common open Commonop
  * Note that I use standard.iso when, iso_file parameter is empty.
  * If want to test without iso, use -iso_file empty.iso option.
  *)
-let testone x iso_file compare_with_expected_flag    = 
+let testone x iso_file compare_with_expected_flag = 
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
@@ -79,6 +79,10 @@ let testall iso_file =
           (match correct with
           | Compare_c.Correct -> Hashtbl.add newscore res Common.Ok;
           | Compare_c.Pb s -> 
+              let s = Str.global_replace 
+                (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+              in
+
               let s = 
                 "INCORRECT:" ^ s ^ "\n" ^ 
                   "    diff (result(<) vs expected_result(>)) = \n" ^
@@ -337,8 +341,11 @@ let test_cfg file =
 
   let (file, specific_func) = 
     if file =~ "\\(.*\\.c\\):\\(.*\\)"
-    then let (a,b) = matched2 file in a, Some b
-    else file, None
+    then 
+      let (a,b) = matched2 file in 
+      a, Some b
+    else 
+      file, None
   in
 
   if not (file =~ ".*\\.c") 
@@ -347,28 +354,30 @@ let test_cfg file =
   let (program, _stat) = Parse_c.parse_print_error_heuristic file in
 
   program +> List.iter (fun (e,_) -> 
-    match e with
-    | Ast_c.Definition (((funcs, _, _, c),_) as def)  -> 
-        pr2 funcs;
-        let relevant_function = 
-          match specific_func with
-          | None -> true
-          | Some s -> s = funcs
-        in
-        
-        if relevant_function
-        then 
-          (* old: Flow_to_ast.test !Flag.show_flow def *)
-          (try 
-              let flow = Ast_to_flow.ast_to_control_flow def in
-              Ast_to_flow.deadcode_detection flow;
-              let fixed = Ctlcocci_integration.fix_flow_ctl flow in
-              Ograph_extended.print_ograph_extended fixed
-                ("/tmp/" ^ funcs ^ ".dot")
-                  
-            with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
+    let toprocess = 
+      match specific_func, e with
+      | None, _ -> true
+      | Some s, Ast_c.Definition (((funcs, _, _, c),_))  -> 
+          s = funcs
+      | _, _ -> false 
+    in
+          
+    if toprocess
+    then 
+      (* old: Flow_to_ast.test !Flag.show_flow def *)
+      (try 
+          let flow = Ast_to_flow.ast_to_control_flow e in
+          flow +> do_option (fun flow -> 
+            Ast_to_flow.deadcode_detection flow;
+            let flow' = 
+              if !Flag.show_before_fixed_flow 
+              then flow
+              else Ctlcocci_integration.fix_flow_ctl flow
+            in
+            Ograph_extended.print_ograph_mutable flow'  ("/tmp/output.dot")
           )
-    | _ -> ()
+        with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
+      )
   )
 
 

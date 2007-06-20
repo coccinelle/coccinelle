@@ -7,6 +7,8 @@ open Ast_c
 open Semantic_c
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
 let warning s v = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.warning ("PARSING: " ^ s) v
@@ -234,65 +236,6 @@ let fixFunc = function
              "any parameter", fake_pi))
 
 
-
-(*-------------------------------------------------------------------------- *)
-(* Misc *)
-(*-------------------------------------------------------------------------- *)
-          
-(* pour ne pas avoir les pp_passing_token message, au lieu de deplacer
- * les initialiseurs, je pourrais tagger les tokens avec es MINUS. *)
-
-let split_init_assign xs iivirg' = 
-  xs +> List.fold_left (fun (inits, assigns) x -> 
-    match x with 
-    | ((var, returnType, storage),iisep) -> 
-        (match var with
-        | Some ((s, ini),  iis::iini) -> 
-            (match ini with
-            | Some (InitExpr e, ii_empty2) -> 
-                (* do the desugaring *)
-                let var' = Some ((s, None), [iis]) in
-                let iis' = Ast_c.al_info iis in
-                let iini' = List.map Ast_c.al_info iini in
-                
-                ((var', returnType, storage),iisep)::inits,
-                (ExprStatement 
-                    (Some (
-                      (Assignment (
-                        ((Ident s, Ast_c.noType()), [iis']),
-                        SimpleAssign,
-                        Lib_parsing_c.al_expr e
-                      ), 
-                      Ast_c.noType()),  iini'
-                     )
-                    ), [iivirg']
-                )::assigns
-
-            | _ -> x::inits, assigns
-            )
-        | None -> x::inits, assigns
-        | _ -> raise Impossible
-        )
-  ) ([], [])
- +> (fun (xs, ys) -> List.rev xs, List.rev ys)
-
-
-let casse_initialisation xs = 
-  if !Flag_parsing_c.casse_initialisation 
-  then 
-    xs +> List.map (fun x -> 
-      match x with
-      | Decl (DeclList ((xs),  iivirg::iifake::iisto)), ii_empty -> 
-          let iivirg' = Ast_c.al_info iivirg in
-          let (inits, assigns) = split_init_assign (xs) iivirg' in
-          (Decl (DeclList ((inits), iivirg::iifake::iisto)), ii_empty)::assigns
-          
-      | x -> [x]
-
-    ) +> List.concat
-  else xs
-
-
 (*-------------------------------------------------------------------------- *)
 (* parse_typedef_fix2 *)
 (*-------------------------------------------------------------------------- *)
@@ -342,21 +285,19 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
                            
 %token <Ast_c.info> TComment TCommentSpace 
 
+%token <Ast_c.info> TDefine
+%token <(string * Ast_c.info)> TDefParamVariadic
 
 /* used only in lexer_c, then transformed in comment or splitted in tokens */
-%token <(string * string * Ast_c.info)>                   TInclude
-%token <(string * string * string * Ast_c.info)>          TDefVar
-%token <(string * string * string * string * Ast_c.info)> TDefFunc
-
+%token <(string * string * Ast_c.info)> TInclude
 /* tokens coming from above, generated in parse_c from TInclude, etc */
 %token <(Ast_c.info)>          TIncludeStart
 %token <(string * Ast_c.info)> TIncludeFilename
-%token <(Ast_c.info)>          TDefVarStart
-%token <(Ast_c.info)>          TDefFuncStart
-%token <(string * Ast_c.info)> TDefIdent
-%token <(string * Ast_c.info)> TDefText
-%token <(Ast_c.info)>          TDefEOL
-%token <(string * Ast_c.info)> TDefParamVariadic
+
+%token <Ast_c.info> TCppEscapedNewline 
+%token <Ast_c.info> TOParDefine
+%token <(string * Ast_c.info)> TIdentDefine
+%token <Ast_c.info> TDefEOL
 
 
 
@@ -371,7 +312,6 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info>            TMacroDeclConst 
 
 %token <Ast_c.info> TAction
-
 
 
 %token <string * Ast_c.info>                     TInt
@@ -657,9 +597,9 @@ compound2:
  |  statement_list            { ([], $1) }
  |  decl_list                 { ($1, []) }
  |  decl_list statement_list  { ($1,$2) }
-*/
 
-/* statement_list: stat_or_decl_list { $1 } */
+statement_list: stat_or_decl_list { $1 }
+*/
 
 
 /* cppext: because of cpp, some stuff look like declaration but are in
@@ -671,7 +611,7 @@ compound2:
 */
 compound2:  
  |                   { ([]) }
- | stat_or_decl_list { casse_initialisation ($1) }
+ | stat_or_decl_list { $1 }
 
 stat_or_decl: 
  | decl      { Decl $1, [] }
@@ -1030,6 +970,7 @@ initialize:
  | tobrace_ini TCBrace
      { InitList [],       [$1;$2] } /* gccext: */
 
+
 /* opti: This time we use the weird order of non-terminal which requires in 
  * the "caller" to do a List.rev cos quite critical. With this wierd order it
  * allows yacc to use a constant stack space instead of exploding if we do a 
@@ -1038,6 +979,7 @@ initialize:
 initialize_list: 
  | initialize2                        { [$1,   []] }
  | initialize_list TComma initialize2 { ($3,  [$2])::$1 }
+
 
 /* gccext: condexpr and no assign_expr cos can have ambiguity with comma */
 initialize2: 
@@ -1316,6 +1258,7 @@ cpp_directives:
 
  | TMacroStmt { EmptyDef [$1] }
 
+
  | TIncludeStart TIncludeFilename 
      { 
        let s = fst $2 in
@@ -1331,13 +1274,13 @@ cpp_directives:
        Include ((inc_file, [$1;snd $2]), Ast_c.noRelPos()) 
      }
 
- | TDefVarStart TDefIdent define_val TDefEOL 
-     { Define ((fst $2, [$1; snd $2;$4]), (DefineVar ($3))) }
+ | TDefine TIdentDefine define_val TDefEOL 
+     { Define ((fst $2, [$1; snd $2;$4]), (DefineVar, $3)) }
 
- | TDefFuncStart TDefIdent TOPar param_define_list TCPar define_val TDefEOL
+ | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
      { Define 
          ((fst $2, [$1; snd $2;$7]), 
-         (DefineFunc ( ["(",[$3]] ++ $4 ++ [")",[$5]], $6))) 
+           (DefineFunc ( ["(",[$3]] ++ $4 ++ [")",[$5]]), $6)) 
      }
 
 
@@ -1345,9 +1288,16 @@ cpp_directives:
  * do a assign_expr_of_string in parse_c
  */
 define_val: 
- | TDefText  { DefineText (fst $1, [snd $1]) }
  | expr      { DefineExpr $1 }
- | type_name { DefineType $1 }
+ | statement { DefineStmt $1 }
+ | function_definition { DefineFunction $1 }
+ | Tdo statement Twhile TOPar TInt TCPar 
+     {
+       if fst $5 <> "0" 
+       then failwith "WIERD: in macro and have not a while(0)";
+       DefineDoWhileZero ($2,  [$1;$3;$4;snd $5;$6])
+     }
+ | /* empty */ { DefineEmpty }
 
 param_define:
  | TIdent               { fst $1, [snd $1] } 

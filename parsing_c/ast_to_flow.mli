@@ -1,11 +1,8 @@
 
-val ast_to_control_flow : Ast_c.definition -> Control_flow_c.cflow
-
-val simple_cfg : Control_flow_c.node2 -> string -> Control_flow_c.cflow
+val ast_to_control_flow : Ast_c.toplevel -> Control_flow_c.cflow option
 
 val deadcode_detection : Control_flow_c.cflow -> unit
 val check_control_flow : Control_flow_c.cflow -> unit
-
 
 type error = 
   | DeadCode          of Common.parse_info option
@@ -13,6 +10,7 @@ type error =
   | OnlyBreakInSwitch of Common.parse_info
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
+  | NoExit of Common.parse_info
   | DuplicatedLabel of string
   | NestedFunc
   | ComputedGoto

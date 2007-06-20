@@ -798,25 +798,35 @@ let pp_program_gen pr_elem progelem =
 
   | Include ((s, [i1;i2]),h_rel_pos) -> 
       pr_elem i1; pr_elem i2
-  | Define ((s,[idefine;iident;ieol]), (def)) -> 
+  | Define ((s,[idefine;iident;ieol]), (defkind, defval)) -> 
       pr_elem idefine;
       pr_elem iident;
         
       let define_val = function
         | DefineExpr e -> pp_expression_gen pr_elem e
-        | DefineStmt _ -> raise Todo
+        | DefineStmt st -> pp_statement_gen pr_elem st
+        | DefineDoWhileZero (st, ii) -> 
+            (match ii with
+            | [ido;iwhile;iopar;iint;icpar] -> 
+                pr_elem ido;
+                pp_statement_gen pr_elem st;
+                pr_elem iwhile; pr_elem iopar; pr_elem iint; pr_elem icpar
+            | _ -> raise Impossible
+            )
+        | DefineFunction def -> pp_def_gen pr_elem def
+            
         | DefineType ty -> pp_type_gen pr_elem ty
         | DefineText (s, ii) -> List.iter pr_elem ii
         | DefineEmpty -> ()
       in
-      (match def with
-      | DefineVar defval -> define_val defval
-      | DefineFunc (params, defval) -> 
+      (match defkind with
+      | DefineVar -> ()
+      | DefineFunc (params) -> 
           params +> List.iter (fun ((string,iistring)) -> 
             iistring +> List.iter pr_elem;
           );
-          define_val defval
       );
+      define_val defval;
       pr_elem ieol
           
 

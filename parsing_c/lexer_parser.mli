@@ -30,7 +30,6 @@ type lexer_hint = {
     mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
 (*    mutable statements: bool; *)
     mutable toplevel: bool;
-    mutable define: bool;
   }
 
 val _lexer_hint : lexer_hint ref

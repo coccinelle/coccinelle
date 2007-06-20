@@ -2,6 +2,8 @@ open Common open Commonop
 
 open Ograph_extended
 
+module F = Control_flow_c
+
 (*****************************************************************************)
 (* Debugging functions *)
 (*****************************************************************************)
@@ -16,7 +18,6 @@ let show_or_not_predicate pred =
 
 let show_or_not_nodes nodes =
   if !Flag_engine.debug_engine  then begin 
-
     indent_do (fun () -> 
       adjust_pp_with_indent_and_header "labeling: result = " (fun () -> 
         Common.pp_do_in_box (fun () -> 
@@ -46,7 +47,7 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
  * control flow it matches, and the set of subsitutions for this match. 
  *)
 let (labels_for_ctl: 
- (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
+ (nodei * F.node) list -> Lib_engine.metavars_binding -> 
  Lib_engine.label_ctlcocci) =
   fun nodes binding ->
 
@@ -55,20 +56,20 @@ let (labels_for_ctl:
 
      let nodes' = nodes +> map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
-      (match p, Control_flow_c.unwrap node with
-      | Lib_engine.Paren s,  (Control_flow_c.SeqStart (_, bracelevel, _)) -> 
+      (match p, F.unwrap node with
+      | Lib_engine.Paren s,  (F.SeqStart (_, bracelevel, _)) -> 
 	  let make_var x = ("",i_to_s x) in
           [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
-      | Lib_engine.Paren s,  (Control_flow_c.SeqEnd (bracelevel, _)) -> 
+      | Lib_engine.Paren s,  (F.SeqEnd (bracelevel, _)) -> 
 	  let make_var x = ("",i_to_s x) in
           [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
       | Lib_engine.Paren _, _ -> []
 
       | Lib_engine.Label s, _ -> 
-          let labels = Control_flow_c.extract_labels node in
+          let labels = F.extract_labels node in
           [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
       | Lib_engine.PrefixLabel s, _ -> 
-          let labels = Control_flow_c.extract_labels node in
+          let labels = F.extract_labels node in
           let prefixes = Common.inits labels +> Common.tail in
           prefixes +> List.map (fun prefixlabels -> 
             (nodei, (p,[(s --> (Lib_engine.LabelVal prefixlabels))]))
@@ -77,10 +78,10 @@ let (labels_for_ctl:
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-                Pattern3.match_re_node re node binding
-                  +> List.map (fun (re', subst) -> 
-                    Lib_engine.Match (re'), subst
-                  )
+            Pattern3.match_re_node re node binding
+            +> List.map (fun (re', subst) -> 
+              Lib_engine.Match (re'), subst
+            )
           in
           substs +> List.map (fun (p', subst) -> 
             (nodei, 
@@ -92,12 +93,12 @@ let (labels_for_ctl:
             )
           )
 
-      | Lib_engine.TrueBranch , Control_flow_c.TrueNode ->  [nodei, (p,[])]
-      | Lib_engine.FalseBranch, Control_flow_c.FalseNode -> [nodei, (p,[])]
-      | Lib_engine.After,       Control_flow_c.AfterNode -> [nodei, (p,[])]
-      | Lib_engine.FallThrough, Control_flow_c.FallThroughNode ->[nodei,(p,[])]
-      | Lib_engine.Exit,        Control_flow_c.Exit ->      [nodei, (p,[])]
-      | Lib_engine.ErrorExit,   Control_flow_c.ErrorExit -> [nodei, (p,[])]
+      | Lib_engine.TrueBranch , F.TrueNode ->  [nodei, (p,[])]
+      | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
+      | Lib_engine.After,       F.AfterNode -> [nodei, (p,[])]
+      | Lib_engine.FallThrough, F.FallThroughNode ->[nodei,(p,[])]
+      | Lib_engine.Exit,        F.Exit ->      [nodei, (p,[])]
+      | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
 
       | Lib_engine.TrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
@@ -112,8 +113,8 @@ let (labels_for_ctl:
              * todo: one day try also to match the special function
              * such as panic(); 
              *)
-          | Control_flow_c.Return _ ->  [nodei, (p,[])]
-          | Control_flow_c.ReturnExpr _ -> [nodei, (p,[])]
+          | F.Return _ ->  [nodei, (p,[])]
+          | F.ReturnExpr _ -> [nodei, (p,[])]
           | _ -> []
           )
       )
@@ -130,7 +131,7 @@ let (labels_for_ctl:
 (* Some fix flow, for CTL, for unparse *)
 (*****************************************************************************)
 (* could erase info on nodes, and edge, because they are not used by rene *)
-let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) = 
+let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) = 
  fun cflow -> cflow
 
 
@@ -138,10 +139,11 @@ let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) =
 (* Just make the final node of the control flow loop over itself. 
  * It seems that one hypothesis of the SAT algorithm is that each node as at
  * least a successor.
+ * 
  * update: do same for errorexit node.
  * 
- * Addon: also erase the fake nodes (and adjust the edges accordingly), so that
- * AX in CTL can now work.
+ * update: also erase the fake nodes (and adjust the edges accordingly), 
+ * so that AX in CTL can now work.
  * Indeed, à la fin de la branche then (et else), on devrait aller directement
  * au suivant du endif, sinon si ecrit if(1) { foo(); }; bar();
  * sans '...' entre le if et bar(), alors ca matchera pas car le CTL
@@ -151,101 +153,58 @@ let (control_flow_for_ctl: Control_flow_c.cflow -> ('a, 'b) ograph_extended) =
  * => faire une fonction qui applique des fixes autour de ce control flow,
  * comme ca passe un bon flow a rene, mais garde un flow a moi pour pouvoir 
  * facilement generate back the ast.
- *
  * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
  * une fonction qui passe a travers les Fake, mais bof.
  * 
  * update: also make loop the deadcode nodes, the one that have
  * no predecessor.
  *)
-let (fix_flow_ctl2: Control_flow_c.cflow -> Control_flow_c.cflow) = fun flow ->
+let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   let g = ref flow in
 
-  (* ------------------------ *)
-  (* helpers *)
-  (* ------------------------ *)
+  let topi = F.get_first_node !g in
+  !g#add_arc ((topi, topi), F.Direct);
+
+  (try 
+      let endi  = F.find_node (fun x -> x = F.EndNode) !g in
+      !g#add_arc ((endi, endi), F.Direct);
+    with Not_found -> ()
+  );
+
+  (try 
+    let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
+    let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
     
-  let adjust_g (newg)        = begin  g := newg;    end in
-  let adjust_g_i (newg,newi) = begin  g := newg;   newi end in
-
-  let find_node f = 
-    !g#nodes#tolist 
-     +> List.find (fun (nodei, node) -> f (Control_flow_c.unwrap node)) 
-     +> fst
-  in
-
-  (* remove an intermediate node and redirect the connexion  *)
-  let remove_one_node nodei = 
-    let preds = (!g#predecessors nodei)#tolist in
-    let succs = (!g#successors nodei)#tolist in
-    assert (not (null preds));
-
-    preds +> List.iter (fun (predi, Control_flow_c.Direct) -> 
-      !g#del_arc ((predi, nodei), Control_flow_c.Direct) +> adjust_g;
-      );
-    succs +> List.iter (fun (succi, Control_flow_c.Direct) -> 
-      !g#del_arc ((nodei, succi), Control_flow_c.Direct) +> adjust_g;
-      );
+    !g#add_arc ((exitnodei, exitnodei), F.Direct);
     
-    !g#del_node nodei +> adjust_g;
-
-    (* connect in-nodes to out-nodes *)
-    preds +> List.iter (fun (pred, Control_flow_c.Direct) -> 
-      succs +> List.iter (fun (succ, Control_flow_c.Direct) -> 
-        !g#add_arc ((pred, succ), Control_flow_c.Direct) +> adjust_g;
-        );
-      );
-  in
-
-
-
-  (* ------------------------ *)
-
-  (* note that must choose a kind that will not be deleted after *)
-  let topi = !g#add_node ((Control_flow_c.Fake, []), "start") +> adjust_g_i
-  in
-  let enteri = 
-    find_node (function Control_flow_c.FunHeader _ -> true | _ -> false)
-  in
-  let exitnodei  = find_node (fun x -> x = Control_flow_c.Exit) in
-  let errornodei = find_node (fun x -> x = Control_flow_c.ErrorExit) in
-
-
-  !g#add_arc ((topi, topi), Control_flow_c.Direct) +> adjust_g;
-  !g#add_arc ((topi, enteri), Control_flow_c.Direct) +> adjust_g;
-  !g#add_arc ((exitnodei, exitnodei), Control_flow_c.Direct) +> adjust_g;
-
-  if null ((!g#successors   errornodei)#tolist) &&
-     null ((!g#predecessors errornodei)#tolist)
-  then
-    !g#del_node errornodei +> adjust_g
-  else 
-    !g#add_arc ((errornodei, errornodei), Control_flow_c.Direct) +> adjust_g;
-
+    if null ((!g#successors   errornodei)#tolist) &&
+       null ((!g#predecessors errornodei)#tolist)
+    then !g#del_node errornodei
+    else !g#add_arc ((errornodei, errornodei), F.Direct);
+   with Not_found -> ()
+  );
 
   let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) -> 
-    match Control_flow_c.unwrap node with
-    | Control_flow_c.CaseNode _ 
-    | Control_flow_c.Enter
-    (*| Control_flow_c.Fake*) (* [endif], [endswitch], ... *)
+    match F.unwrap node with
+    | F.CaseNode _ 
+    | F.Enter
+    (*| F.Fake*) (* [endif], [endswitch], ... *)
       -> true
     | _ -> false 
     ) in
   
-  fake_nodes +> List.iter (fun (nodei, node) -> remove_one_node nodei);
+  fake_nodes +> List.iter (fun (nodei, node) -> F.remove_one_node nodei !g);
 
   (* even when have deadcode, julia want loop over those nodes *)
   !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
     if (!g#predecessors nodei)#null 
     then begin
-      let fakei = !g#add_node ((Control_flow_c.Fake,[]), "DEADCODELOOP") 
-        +> adjust_g_i
+      let fakei = !g#add_node ((F.Fake,[]), "DEADCODELOOP") 
       in
-      !g#add_arc ((fakei, nodei), Control_flow_c.Direct) +> adjust_g;
-      !g#add_arc ((fakei, fakei), Control_flow_c.Direct) +> adjust_g;
+      !g#add_arc ((fakei, nodei), F.Direct);
+      !g#add_arc ((fakei, fakei), F.Direct);
     end
   );
-
 
   !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
     assert (List.length ((!g#successors nodei)#tolist) >= 1); 
@@ -260,14 +219,6 @@ let fix_flow_ctl a =
 
 
 
-
-let (fix_simple_flow_ctl: Control_flow_c.cflow -> Control_flow_c.cflow) = 
- fun flow -> 
-  let nodes = flow#nodes#tolist in
-  match nodes with 
-  | [(nodei, n)] -> 
-      flow#add_arc ((nodei, nodei), Control_flow_c.Direct)
-  | _ -> failwith "simple flow can contain only one node"
 
 (*****************************************************************************)
 (* subtil: the label must operate on newflow, not (old) cflow 
@@ -306,9 +257,7 @@ module ENV =
 module CFG = 
   struct
     type node = int
-    type cfg = 
-        (Control_flow_c.node, Control_flow_c.edge) 
-        Ograph_extended.ograph_extended
+    type cfg = (F.node, F.edge) Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
     let print_node i = Format.print_string (i_to_s i)

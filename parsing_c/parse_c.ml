@@ -450,59 +450,6 @@ let new_info posadd str (info, annot) =
  (* must generate a new ref each time, otherwise share *)
 
 
-(* adjust token because fresh token coming from a Parse_c.token_string *)
-let adjust_tok posadd filename tok = 
-  tok +> TH.visitor_info_from_token (fun (info, annot) -> 
-    { info with
-      charpos = info.charpos + posadd;
-      file = filename;
-    }, annot
-  )
-      
-
-(* ------------------------------------------------------------------------- *)
-(* parsing #define body *)
-(* ------------------------------------------------------------------------- *)
-
-(* todo: if just one token which is a typedef ? have a DefineType ?
- * todo: expression_of_string can do side effect on Lexer_parser and so
- * screwd the rest of the parsing ? *)
-
-let tokens_define_val posadd bodys info = 
-
-    
-     if (try let _ = expression_of_string bodys in true with _ -> false) ||
-        (try let _ = type_of_string bodys       in true with _ -> false)
-     then 
-
-       tokens_string bodys
-       +> Common.list_init 
-       +> List.map (fun tok -> 
-         adjust_tok  
-           (posadd + Ast_c.get_pos_of_info info)
-           (Ast_c.get_file_of_info info) 
-           tok)
-       +> List.map (fun tok -> 
-         match tok with 
-         (* can't use here Lexer_parser, nor our heuristic because on case 
-          * such as #define chip_t vortex_t, we have no info on vortex_t yet
-          * so have to do inference checking only based on name information.
-          * It is quite specific to rule66/ ...
-          *)
-         | Parser_c.TIdent (s,ii) -> 
-             if s =~ ".*_t$" 
-             then begin
-               pr2 ("TYPEDEF: in #define, promoting:" ^ s);
-               Parser_c.TypedefIdent (s, ii)
-             end
-             else 
-               tok
-         | _ -> tok
-       )
-           
-       
-     else 
-       [Parser_c.TDefText (bodys, (new_info posadd bodys info));]
 
 
 (* ------------------------------------------------------------------------- *)
@@ -516,47 +463,6 @@ let tokens_include (info, includes, filename) =
   ]
 
 
-let tokens_define_simple (info, define, ident, bodys) = 
-
-  let tokens_body = 
-    tokens_define_val (String.length (define ^ ident)) bodys info 
-  in
-
-  Parser_c.TDefVarStart (tok_set define info),
-  [Parser_c.TDefIdent (ident, (new_info (String.length define) ident info))]
-  ++ tokens_body ++ 
-  [Parser_c.TDefEOL
-      (new_info (String.length (define ^ ident ^ bodys)) "" info)]
-
-
-
-let tokens_define_func (info, define, ident, params, bodys) = 
-  (* don't want last EOF, hence the list_init *)
-
-  let tokens_params = 
-    tokens_string params
-    +> Common.list_init 
-    +> List.map (fun tok -> 
-      adjust_tok 
-        (String.length (define ^ ident) + Ast_c.get_pos_of_info info)
-        (Ast_c.get_file_of_info info) 
-        tok
-    )
-  in
-
-  let tokens_body = 
-    tokens_define_val (String.length (define ^ ident ^ params)) bodys info 
-  in
-
-  Parser_c.TDefFuncStart (tok_set define info),
-  [Parser_c.TDefIdent (ident, (new_info (String.length define) ident info))]
-  ++ tokens_params
-  ++ tokens_body 
-  ++
-  [Parser_c.TDefEOL
-      (new_info (String.length (define ^ ident ^ params ^ bodys)) "" info)]
-
-  
 (*****************************************************************************)
 (* Main entry point *)
 (*****************************************************************************)
@@ -616,6 +522,7 @@ let parse_print_error_heuristic2 file =
   (* -------------------------------------------------- *)
   LP.lexer_reset_typedef(); 
   let toks = tokens file in
+  let toks = Parsing_hacks.fix_tokens_define toks in
   let toks = Parsing_hacks.fix_tokens_cpp toks in
 
   let filelines = (""::Common.cat file) +> Array.of_list in
@@ -672,64 +579,6 @@ let parse_print_error_heuristic2 file =
               v
             end
             
-        | Parser_c.TDefVar (define, ident, bodys, info) -> 
-            if not !LP._lexer_hint.LP.toplevel 
-            then begin
-              pr2 ("CPP-DEFINE: inside function, I treat it as comment");
-              let v = Parser_c.TCommentCpp info in
-              passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-              lexer_function lexbuf
-            end
-            else begin
-              let (v,new_tokens) = 
-                tokens_define_simple (info, define, ident, bodys)
-              in
-              let new_tokens_clean = 
-                new_tokens +> List.filter TH.is_not_comment
-              in
-              passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-              passed_tokens := v::!passed_tokens;
-              remaining_tokens := new_tokens ++ !remaining_tokens;
-              remaining_tokens_clean := 
-                new_tokens_clean ++ !remaining_tokens_clean;
-              !LP._lexer_hint.LP.define <- true;
-              v
-            end
-
-        | Parser_c.TDefFunc (define, ident, params, bodys, info) -> 
-            if not !LP._lexer_hint.LP.toplevel 
-            then begin
-              pr2 ("CPP-DEFINE: inside function, I treat it as comment");
-              let v = Parser_c.TCommentCpp info in
-              passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-              lexer_function lexbuf
-            end
-            else begin
-              let (v,new_tokens) = 
-                tokens_define_func (info, define, ident, params, bodys)
-              in
-              let new_tokens_clean = 
-                new_tokens +> List.filter TH.is_not_comment
-              in
-              passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-              passed_tokens := v::!passed_tokens;
-              remaining_tokens := new_tokens ++ !remaining_tokens;
-              remaining_tokens_clean := 
-                new_tokens_clean ++ !remaining_tokens_clean;
-              !LP._lexer_hint.LP.define <- true;
-              v
-            end
-        | _ when !LP._lexer_hint.LP.define -> 
-            (* no processing for body of define, otherwise
-             * get some parse error with bad typedef inference
-             * or even good one that does not lead to an expression
-             * anymore whereas with expression_of_string it was 
-             * an expression.
-             *)
-            passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-            passed_tokens := v::!passed_tokens;
-            v
-
         | _ -> 
 
             (* typedef_fix1 *)

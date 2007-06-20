@@ -1,5 +1,7 @@
 open Commonop open Common
 
+open Ast_c
+
 (*****************************************************************************)
 (* 
  * There is more information in the CFG we build that in the CFG usually built
@@ -11,7 +13,7 @@ open Commonop open Common
  *    We must keep those entities, in the same way that we must keep the parens
  *    (ParenExpr, ParenType) in the Ast_c during parsing.
  *
- *    Morover, the coccier can mention in his semantic patch those entities,
+ *    Moreover, the coccier can mention in his semantic patch those entities,
  *    so we must keep those entities in the CFG.
  *    
  *    We also have to add some extra nodes to make the process that goes from 
@@ -56,46 +58,67 @@ open Commonop open Common
  *       - Need know if ErrorExit, 
  *
  * choice: Julia proposed that the flow is in fact just
- *  a view through the Ast, which means just Ocaml ref, so that when we
- *  modify some nodes, in fact it modifies the ast. But I prefer do it 
- *  the functionnal way.
+ * a view through the Ast, which means just Ocaml ref, so that when we
+ * modify some nodes, in fact it modifies the ast. But I prefer do it 
+ * the functionnal way.
+ * 
+ * The node2 type should be as close as possible to Ast_cocci.rule_elem to
+ * facilitate the job of cocci_vs_c.
  * 
  *)
 
 (*****************************************************************************)
-open Ast_c
 
 
 (* The string is for debugging. Used by Ograph_extended.print_graph. 
- * The int list are Labels. Trick used for CTL engine. 
+ * The int list are Labels. Trick used for CTL engine. Must not 
+ * transform that in a triple or record because print_graph would
+ * not work.
  *)
 type node = node1 * string  
  and node1 = node2 * int list 
- and node2 = 
-  | FunHeader of (string * functionType * storage) wrap
-
-  | Decl   of declaration
-
-  (* flow_to_ast: cocci: Need the { and } in the control flow graph also
-   * because the coccier can express patterns containing such { }.
-   *
-   * ctl: to make possible the forall (AX, A[...]), have to add more than
-   * one node sometimes for the same '}' (one in each CFG path) in the graph.
-   *
-   * ctl: Morover, the int in the type is here to indicate to what { } 
-   * they correspond. Two pairwise { } share the same number. kind of 
-   * "brace_identifier". Used for debugging or for checks and more importantly,
-   * needed by CTL engine.
-   *
-   * Because of those nodes, there is no equivalent for Compound.
+ and node2 =
+  (* for CTL to work, we need that some nodes loop over itself. We
+   * need that every nodes have a successor. Julia also want to go back
+   * indifinitely. So must tag some nodes as the beginning and end of
+   * the graph so that some fix_ctl function can correctly find those
+   * nodes
    * 
-   * There was a problem with SeqEnd. Some info can be tagged on it 
-   * but there is multiple SeqEnd that correspond to the same '}' even
-   * if they are in different nodes. Solved by using shared ref
-   * and allow the "already-tagged" token.
+   * if have a function, then no need for EndNode; Exit and ErrorExit
+   * would play that role.
+   * 
+   * When everything we analyze was a function there was no pb. We used
+   * FunHeader as a Topnode and Exit for EndNode but now that we also
+   * analyse #define body, we need those nodes.
    *)
+   | TopNode 
+   | EndNode 
+
+   | FunHeader of (string * functionType * storage) wrap
+
+   | Decl   of declaration
+
+   (* flow_to_ast: cocci: Need the { and } in the control flow graph also
+    * because the coccier can express patterns containing such { }.
+    *
+    * ctl: to make possible the forall (AX, A[...]), have to add more than
+    * one node sometimes for the same '}' (one in each CFG path) in the graph.
+    *
+    * ctl: Morover, the int in the type is here to indicate to what { } 
+    * they correspond. Two pairwise { } share the same number. kind of 
+    * "brace_identifier". Used for debugging or for checks and more importantly,
+    * needed by CTL engine.
+    *
+    * Because of those nodes, there is no equivalent for Compound.
+    * 
+    * There was a problem with SeqEnd. Some info can be tagged on it 
+    * but there is multiple SeqEnd that correspond to the same '}' even
+    * if they are in different nodes. Solved by using shared ref
+    * and allow the "already-tagged" token.
+    *)
   | SeqStart of statement * int * info
   | SeqEnd   of int * info
+
 
   | ExprStatement of statement * (expression option) wrap
 
@@ -154,20 +177,27 @@ type node = node1 * string
 
 
   (* ------------------------ *)
+  | DefineHeader of string wrap * define_kind
+
+  | DefineExpr of expression 
+  | DefineType of fullType
+  | DefineDoWhileZeroHeader of unit wrap
+
   | Include of inc_file wrap * include_rel_pos option ref
-  | Define of string wrap * define
+  | Define  of string wrap * define
 
 
   (* ------------------------ *)
-  (* no counter part in cocci *)
-  | Label of statement * string wrap
   | Case  of statement * expression wrap
-  | CaseRange of statement * (expression * expression) wrap
   | Default of statement * unit wrap
 
-  | Goto of statement * string wrap
   | Continue of statement * unit wrap
   | Break    of statement * unit wrap
+
+  (* no counter part in cocci *)
+  | CaseRange of statement * (expression * expression) wrap
+  | Label of statement * string wrap
+  | Goto of statement * string wrap
 
   | Asm of statement * asmbody wrap
   | Macro of statement * unit wrap
@@ -205,7 +235,7 @@ type node = node1 * string
 
 type edge = Direct (* Normal | Shadow *)
 
-type cflow = (node, edge) Ograph_extended.ograph_extended
+type cflow = (node, edge) Ograph_extended.ograph_mutable
 
 
 (* ------------------------------------------------------------------------ *)
@@ -217,8 +247,38 @@ let extract_labels ((node, labels), nodestr) = labels
 (* ------------------------------------------------------------------------ *)
 let get_first_node g = 
   g#nodes#tolist +> List.find (fun (i, node) -> 
-    match unwrap node with FunHeader _ -> true | _ -> false
+    match unwrap node with TopNode -> true | _ -> false
     ) +> fst
+
+let find_node f g = 
+  g#nodes#tolist +> List.find (fun (nodei, node) -> 
+    f (unwrap node)) 
+     +> fst
+
+
+(* remove an intermediate node and redirect the connexion  *)
+let remove_one_node nodei g = 
+  let preds = (g#predecessors nodei)#tolist in
+  let succs = (g#successors nodei)#tolist in
+  assert (not (null preds));
+
+  preds +> List.iter (fun (predi, Direct) -> 
+    g#del_arc ((predi, nodei), Direct);
+  );
+  succs +> List.iter (fun (succi, Direct) -> 
+    g#del_arc ((nodei, succi), Direct);
+  );
+  
+  g#del_node nodei;
+  
+  (* connect in-nodes to out-nodes *)
+  preds +> List.iter (fun (pred, Direct) -> 
+    succs +> List.iter (fun (succ, Direct) -> 
+      g#add_arc ((pred, succ), Direct);
+    );
+  )
+
+
 
 (* ------------------------------------------------------------------------ *)
 
@@ -229,8 +289,12 @@ let extract_fullstatement node =
       (* old: Some (Ast_c.Decl decl, []) *)
       None 
   | Macro (st, _) -> Some st
+
   | Ifdef _ -> None (* other ? *)
-  | Include _ | Define _ -> None
+
+  | Include _ | Define _
+  | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
+      -> None
 
   | SeqStart (st,_,_) 
   | ExprStatement (st, _)
@@ -252,6 +316,7 @@ let extract_fullstatement node =
   | Asm (st,_)
       -> Some st
 
+  | TopNode|EndNode
   | FunHeader _
   | SeqEnd  _ 
   | Else _ 

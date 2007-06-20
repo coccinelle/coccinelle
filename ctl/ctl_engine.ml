@@ -80,7 +80,7 @@ module type GRAPH =
 module OGRAPHEXT_GRAPH = 
   struct
     type node = int;;
-    type cfg = (string,unit) Ograph_extended.ograph_extended;;
+    type cfg = (string,unit) Ograph_extended.ograph_mutable;;
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist);;
     let print_node i = Format.print_string (Common.i_to_s i)
   end

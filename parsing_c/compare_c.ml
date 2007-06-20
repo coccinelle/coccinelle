@@ -104,15 +104,6 @@ let normal_form_token x =
 
   let x' = 
     match x with 
-
-    (* they must have been substitued, but they can be in
-     *  NotParsedCorrectly zone 
-     *)
-    | Parser_c.TDefVar _ 
-    | Parser_c.TDefFunc _  ->
-        x
-
-    | Parser_c.TDefText (s, i1) ->    Parser_c.TDefText ("", i1)
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
     | x -> x
   in

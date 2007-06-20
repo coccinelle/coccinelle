@@ -1271,7 +1271,7 @@ and find_actions_params xxs =
 (* ------------------------------------------------------------------------- *)
 (* main fix cpp function *)
 (* ------------------------------------------------------------------------- *)
-let fix_tokens_cpp tokens = 
+let fix_tokens_cpp2 tokens = 
 
   let tokens2 = tokens +> List.map (fun x -> 
     let (line, col) = TH.linecol_of_tok x in
@@ -1321,9 +1321,95 @@ let fix_tokens_cpp tokens =
     end;
     tokens2 +> List.map (fun x -> x.tok)
   end
+let fix_tokens_cpp a = 
+  Common.profile_code "C parsing.fix_cpp" (fun () -> fix_tokens_cpp2 a)
 
 
 
+
+(*****************************************************************************)
+(* The #define tricks *)
+(*****************************************************************************)
+
+(* ugly hack, a better solution perhaps would be to erase TDefEOL 
+ * from the Ast and list of tokens in parse_c.
+ * note: I do a +1 for unparsing to correctly sync.
+ *)
+let mark_end_define (info,annot) = 
+  TDefEOL (
+    {info with Common.str = ""; Common.charpos = info.Common.charpos + 1}, 
+    ref Ast_c.emptyAnnot)
+
+(* put the TDefEOL at the good place *)
+let rec define_line_1 xs = 
+  match xs with
+  | [] -> []
+  | TDefine ii::xs -> 
+      let line = TH.line_of_tok (TDefine ii) in
+      TDefine ii::define_line_2 line ii xs
+  | x::xs -> 
+      x::define_line_1 xs
+
+and define_line_2 line lastinfo xs = 
+  match xs with 
+  | [] -> 
+      (* should not happened, should meet EOF before *)
+      pr2 "WIERD";   
+      mark_end_define lastinfo::[]
+  | x::xs -> 
+      let line' = TH.line_of_tok x in
+      let info = TH.info_from_token x in
+
+      (match x with
+      | EOF ii -> 
+          mark_end_define lastinfo::EOF ii::define_line_1 xs
+      | TCppEscapedNewline ii -> 
+          assert (line' = line);
+          TCommentSpace ii::define_line_2 (line+1) info xs
+      | x -> 
+          if line' = line
+          then x::define_line_2 line info xs 
+          else 
+            mark_end_define lastinfo::define_line_1 (x::xs)
+      )
+
+let rec define_ident xs = 
+  match xs with
+  | [] -> []
+  | TDefine ii::xs -> 
+      TDefine ii::
+      (match xs with
+      | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs -> 
+          (* Change also the kind of TIdent to avoid bad interaction
+           * with other parsing_hack tricks. For instant if keep TIdent then
+           * the stringication algo can believe the TIdent is a string-macro.
+           * So simpler to change the kind of the ident too.
+           *)
+          (* if TOParDefine sticked to the ident, then 
+           * it's a macro-function. Change token to avoid ambiguity
+           * between #define foo(x)  and   #define foo   (x)
+           *)
+          TCommentSpace i1::TIdentDefine (s,i2)::TOParDefine i3
+          ::define_ident xs
+      | TCommentSpace i1::TIdent (s,i2)::xs -> 
+          TCommentSpace i1::TIdentDefine (s,i2)::define_ident xs
+      | _ -> 
+          pr2 "wierd"; 
+          define_ident xs
+      )
+  | x::xs -> 
+      x::define_ident xs
+  
+
+
+let fix_tokens_define2 xs = 
+  define_ident (define_line_1 xs)
+  
+
+let fix_tokens_define a = 
+  Common.profile_code "C parsing.fix_define" (fun () -> fix_tokens_define2 a)
+      
+      
 
 (*****************************************************************************)
 (* Lexing with lookahead *)

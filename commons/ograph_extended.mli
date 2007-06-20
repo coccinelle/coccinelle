@@ -32,5 +32,28 @@ object ('o)
   method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
 end
 
+
+
+class ['node, 'edge] ograph_mutable :
+object ('o)
+  method add_node : 'node -> nodei
+  method add_nodei : nodei -> 'node -> unit
+  method replace_node : nodei * 'node -> unit
+  method del_node : nodei -> unit
+
+  method add_arc : (nodei * nodei) * 'edge -> unit
+  method del_arc : (nodei * nodei) * 'edge -> unit
+
+  method nodes : (nodei, 'node) Oassocb.oassocb
+
+  method successors : nodei -> (nodei * 'edge) Osetb.osetb
+  method predecessors : nodei -> (nodei * 'edge) Osetb.osetb
+  method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
+end
+
 val print_ograph_extended : 
   ('node * string, 'edge) ograph_extended -> filename (* output file *) -> unit
+
+val print_ograph_mutable : 
+  ('node * string, 'edge) ograph_mutable -> filename (* output file *) -> unit
+

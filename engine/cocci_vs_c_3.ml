@@ -2716,20 +2716,20 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
       tokenf definea defineb >>= (fun definea defineb -> 
         match params, def with
-        | None, (B.DefineVar defvalb) -> 
+        | None, (B.DefineVar, defvalb) -> 
             define_val bodya defvalb >>= (fun bodya defvalb -> 
               return (
                 A.Define (definea, ida, params, bodya),
-                F.Define ((idb,[defineb;iidb;ieol]),(B.DefineVar defvalb))
+                F.Define ((idb,[defineb;iidb;ieol]),(B.DefineVar, defvalb))
               ))
-        | Some paramsa, (B.DefineFunc (paramsb, defvalb)) -> 
+        | Some paramsa, (B.DefineFunc (paramsb), defvalb) -> 
             define_val bodya defvalb >>= (fun bodya defvalb -> 
             define_params paramsa paramsb >>= (fun paramsa paramsb -> 
               return (
                 A.Define (definea, ida, Some paramsa, bodya),
                 F.Define 
                   ((idb, [defineb;iidb;ieol]),
-                  (B.DefineFunc (paramsb, defvalb))
+                  (B.DefineFunc (paramsb), defvalb)
                 ))))
         | _ -> fail
       ))

@@ -9,36 +9,39 @@ open Oassocb
 open Osetb
 
 (* 
- graph structure: 
-    node: index -> nodevalue
-    arc: (index * index) * edgevalue
-
- How ? matrix ? but no growing array :(
- When need index ? 
-  Must have an index when can't just use nodevalue as a key,  cos sometimes 
-  may have 2 times the same key, but it must be 2 different nodes.
-  For instance in program   f(); f();   we want 2 nodes, one per  f(); hence 
-  the index. If each node is different, then no problem, can omit index.
-
- todo?: prend en parametre le type de finitemap et set a prendre
- todo?: add_arc doit ramer, car del la key, puis add => better to 
-   have a ref to a set.
- opti: graph with pointers and a tag visited => need keep global value 
-    visited_counter.  check(that node is in, ...), display.
- opti: when the graph structure is stable, have a method compact,  that 
-   transforms that in a matrix (assert that all number between 0 and 
-   free_index are used,  or do some defrag-like-move/renaming).
-
- invariant: key in pred is also in succ (completness) and value in 
-   either assoc is a key also.
- 
-*)
+ * graph structure: 
+ *  -  node: index -> nodevalue
+ *  -  arc: (index * index) * edgevalue
+ * 
+ * invariant: key in pred is also in succ (completness) and value in 
+ * either assoc is a key also.
+ * 
+ * How ? matrix ? but no growing array :(
+ * 
+ * When need index ? Must have an index when can't just use nodevalue
+ * as a key, cos sometimes may have 2 times the same key, but it must
+ * be 2 different nodes. For instance in program f(); f(); we want 2
+ * nodes, one per f(); hence the index. If each node is different,
+ * then no problem, can omit index.
+ * 
+ * todo?: prend en parametre le type de finitemap et set a prendre
+ * todo?: add_arc doit ramer, car del la key, puis add => better to 
+ * have a ref to a set.
+ * 
+ * opti: graph with pointers and a tag visited => need keep global value 
+ * visited_counter.  check(that node is in, ...), display.
+ * opti: when the graph structure is stable, have a method compact,  that 
+ * transforms that in a matrix (assert that all number between 0 and 
+ * free_index are used,  or do some defrag-like-move/renaming).
+ * 
+ *)
 
 type nodei = int
 
 class ['a,'b] ograph_extended =
   let build_assoc () = new oassocb [] in (* opti?: = oassoch *)
   let build_set ()   = new osetb Setb.empty in
+
   object(o)
     (* inherit ['a] ograph *)
       
@@ -130,7 +133,69 @@ class ['a,'b] ograph_extended =
   end   
 
 
-let print_ograph_extended g filename =
+
+
+class ['a,'b] ograph_mutable =
+  let build_assoc () = new oassocb [] in
+  let build_set ()   = new osetb Setb.empty in
+
+  object(o)
+      
+    val mutable free_index = 0
+
+    val mutable succ = build_assoc()
+    val mutable pred = build_assoc()
+    val mutable nods = build_assoc()
+
+    method add_node (e: 'a) = 
+      let i = free_index in
+      nods <- nods#add (i, e); 
+      pred <- pred#add (i, build_set() );
+      succ <- succ#add (i, build_set() );
+      free_index <- i + 1;
+      i
+
+    method add_nodei i (e: 'a) = 
+      nods <- nods#add (i, e); 
+      pred <- pred#add (i, build_set() );
+      succ <- succ#add (i, build_set() );
+      free_index <- (max free_index i) + 1;
+
+
+    method del_node (i) = 
+        (* check: e is effectively the index associated with e, 
+           and check that already in *)
+
+        (* todo: assert that have no pred and succ, otherwise
+         * will have some dangling pointers 
+         *)
+        nods <- nods#delkey i; 
+        pred <- pred#delkey i;
+        succ <- succ#delkey i;
+
+    method replace_node (i, (e: 'a)) = 
+      assert (nods#haskey i);
+      nods <- nods#replkey (i, e);
+        
+    method add_arc ((a,b),(v: 'b)) = 
+      succ <- succ#replkey (a, (succ#find a)#add (b, v));
+      pred <- pred#replkey (b, (pred#find b)#add (a, v));
+    method del_arc ((a,b),v) =
+      succ <- succ#replkey (a, (succ#find a)#del (b,v));
+      pred <- pred#replkey (b, (pred#find b)#del (a,v));
+
+    method successors   e = succ#find e
+    method predecessors e = pred#find e
+
+    method nodes = nods
+    method allsuccessors = succ
+
+  end   
+
+
+
+
+let print_ograph_xxx g filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in
@@ -155,3 +220,9 @@ let print_ograph_extended g filename =
      do not get the chance to be launched *)
   Unix.sleep 1; 
   ()
+
+let print_ograph_extended g filename = 
+  print_ograph_xxx g filename 
+
+let print_ograph_mutable g filename = 
+  print_ograph_xxx g filename 

@@ -80,26 +80,39 @@ let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
 (* --------------------------------------------------------------------- *)
 (* Flow related *)
 (* --------------------------------------------------------------------- *)
-let flows astc = 
-  astc +> Common.map_filter (fun e -> 
-    match e with
-    | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-        let flow = Ast_to_flow.ast_to_control_flow def in
-        let everythings_fine = 
-          (try Ast_to_flow.deadcode_detection flow; true
-           with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-             Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-             false 
-          )
-        in
-        if everythings_fine then Some flow else None
-    | _ -> None
-   )
-
-let one_flow flows = List.hd flows
-
 let print_flow flow = 
-  Ograph_extended.print_ograph_extended flow "/tmp/test.dot" 
+  Ograph_extended.print_ograph_mutable flow "/tmp/test.dot" 
+
+
+let ast_to_flow_with_error_messages2 x =
+  let flowopt = 
+    try Ast_to_flow.ast_to_control_flow x
+    with Ast_to_flow.Error x -> 
+      Ast_to_flow.report_error x;
+      None
+  in
+  flowopt +> do_option (fun flow -> 
+    (* This time even if there is a deadcode, we still have a
+     * flow graph, so I can try the transformation and hope the
+     * deadcode will not bother us. 
+     *)
+    try Ast_to_flow.deadcode_detection flow
+    with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
+      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
+  );
+  flowopt
+let ast_to_flow_with_error_messages a = 
+  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
+
+
+let flows astc = 
+  astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
+
+let one_flow flows = 
+  List.hd flows
+
+
+
 
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
@@ -423,98 +436,6 @@ and update_rel_pos_bis xs =
 
 
 
-(* --------------------------------------------------------------------- *)
-(* Helpers for SpecialDeclMacro *)
-(* --------------------------------------------------------------------- *)
-
-let specialdeclmacro_to_stmt (s, args, ii) =
-  let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
-  let ident = (Ast_c.Ident s, Ast_c.noType()), [iis] in
-  let f = (Ast_c.FunCall (ident, args), Ast_c.noType()), [iiopar;iicpar] in
-  let stmt = Ast_c.ExprStatement (Some f), [iiptvirg] in
-  stmt,  (f, [iiptvirg])
-
-let stmt_to_specialdeclmacro (e, ii) = 
-  let _iiptvirg = tuple_of_list1 ii in
-  match e with 
-  | Some 
-      (
-        (Ast_c.FunCall 
-            (((Ast_c.Ident s, _noType), [iis]), args), _noType2), 
-        [iiopar;iicpar]
-      )
-
-      -> raise Todo
-  | _ -> raise Impossible
-
-
-(* --------------------------------------------------------------------- *)
-(* Helpers for flow *)
-(* --------------------------------------------------------------------- *)
-
-let ast_to_flow_with_error_messages2 def =
-  let flowopt = 
-    try Some (Ast_to_flow.ast_to_control_flow def)
-    with Ast_to_flow.Error x -> 
-      Ast_to_flow.report_error x;
-      None
-  in
-  flowopt +> do_option (fun flow -> 
-    (* This time even if there is a deadcode, we still have a
-     * flow graph, so I can try the transformation and hope the
-     * deadcode will not bother us. 
-     *)
-    try Ast_to_flow.deadcode_detection flow
-    with Ast_to_flow.Error (Ast_to_flow.DeadCode x) -> 
-      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-  );
-  flowopt
-let ast_to_flow_with_error_messages a = 
-  Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
-
-
-
-let flow_info e = 
-  match e with 
-  | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
-      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
-      
-      let flowopt = ast_to_flow_with_error_messages def in
-      flowopt +> map_option (fun flow -> 
-      
-        (* remove the fake nodes for julia *)
-        let fixed_flow = CCI.fix_flow_ctl flow in
-
-        if !Flag.show_flow then print_flow fixed_flow;
-        if !Flag.show_before_fixed_flow then print_flow flow;
-
-        fixed_flow
-
-      )
-  | Ast_c.Declaration _ 
-  | Ast_c.Include _ 
-  | Ast_c.Define _  
-  | Ast_c.SpecialMacro _
-    -> 
-      let (elem, str) = 
-        match e with 
-        | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.Include (a,b) -> (Control_flow_c.Include (a,b)), "#include"
-        | Ast_c.Define (x,body) -> (Control_flow_c.Define (x,body)), "#define"
-        (* todo? still useful ? could consider as Decl instead *)
-        | Ast_c.SpecialMacro (s, args, ii) -> 
-            let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
-            (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
-
-
-        | _ -> raise Impossible
-      in
-      let flow = Ast_to_flow.simple_cfg elem str  in
-      let fixed_flow = CCI.fix_simple_flow_ctl flow in
-      Some fixed_flow
-  | _ -> None
-
-
 
 (*****************************************************************************)
 (* All the information needed around the C elements and Cocci rules *)
@@ -617,7 +538,16 @@ let build_info_program cprogram env =
       tokens_c =  tokens;
       fullstring = fullstr;
 
-      flow = flow_info c; (* it's the "fixed" flow *)
+      flow = ast_to_flow_with_error_messages c +> map_option (fun flow -> 
+        (* remove the fake nodes for julia *)
+        let fixed_flow = CCI.fix_flow_ctl flow in
+
+        if !Flag.show_flow then print_flow fixed_flow;
+        if !Flag.show_before_fixed_flow then print_flow flow;
+
+        fixed_flow
+      );
+
       contain_loop = contain_loop c;
   
       env_typing_before = enva;

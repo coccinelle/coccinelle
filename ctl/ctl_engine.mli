@@ -23,7 +23,7 @@ module type GRAPH =
 module OGRAPHEXT_GRAPH :
   sig
     type node = int
-    type cfg = (string, unit) Ograph_extended.ograph_extended
+    type cfg = (string, unit) Ograph_extended.ograph_mutable
     val predecessors :
       < predecessors : 'a -> < tolist : ('b * 'c) list; .. >; .. > ->
       'a -> 'b list

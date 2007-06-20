@@ -83,7 +83,6 @@ type lexer_hint = {
     mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
 (*    mutable statements: bool; *)
     mutable toplevel: bool;
-    mutable define: bool;
   }
 
 let default_hint () = { 
@@ -91,7 +90,6 @@ let default_hint () = {
   (* statements = false; *)
   structDefinition = 0;
   toplevel = false;
-  define = false;
 }
 
 let _lexer_hint = ref (default_hint())

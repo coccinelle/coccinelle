@@ -1,14 +1,11 @@
 open Ograph_extended 
 
-
 val labels_for_ctl :
   (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
   Lib_engine.label_ctlcocci
 
 
 val fix_flow_ctl : Control_flow_c.cflow -> Control_flow_c.cflow
-
-val fix_simple_flow_ctl : Control_flow_c.cflow -> Control_flow_c.cflow
 
 val model_for_ctl :
   Control_flow_c.cflow -> Lib_engine.metavars_binding -> Lib_engine.model

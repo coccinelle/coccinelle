@@ -54,7 +54,8 @@ module F = Control_flow_c
  *) 
 (*****************************************************************************)
  
-(*
+(* old: first version (only visiting expr) 
+
 let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> unit)
  = fun f expr ->
   let rec k e = 
@@ -98,7 +99,7 @@ let test =
 (* Side effect style visitor *)
 (*****************************************************************************)
 
-(* full visitors for all langage concept,  not just for expression *)
+(* visitors for all langage concept,  not just for expression *)
 type visitor_c = 
  { 
    kexpr:      (expression  -> unit) * visitor_c -> expression  -> unit;
@@ -129,9 +130,8 @@ let default_visitor_c =
     kprogram      = (fun (k,_) p  -> k p);
   } 
 
-
 let rec vk_expr = fun bigf expr ->
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let rec exprf e = bigf.kexpr (k,bigf) e
   and k ((e,typ), ii) = 
@@ -178,7 +178,7 @@ let rec vk_expr = fun bigf expr ->
         vk_type bigf t;
         initxs +> List.iter (fun (ini, ii) -> 
           vk_ini bigf ini;
-          List.iter (vk_info bigf) ii
+          vk_ii bigf ii;
         ) 
           
     | ParenExpr (e) -> exprf e
@@ -187,10 +187,8 @@ let rec vk_expr = fun bigf expr ->
   in exprf expr
 
 and vk_argument = fun bigf arg -> 
-  let iif ii = List.iter (vk_info bigf) ii in
-
   let rec do_action = function 
-    | (ActMisc ii) -> iif ii
+    | (ActMisc ii) -> vk_ii bigf ii
   in
   match arg with
   | Left e -> (vk_expr bigf) e
@@ -201,7 +199,7 @@ and vk_argument = fun bigf arg ->
 
 
 and vk_statement = fun bigf st -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let rec statf x = bigf.kstatement (k,bigf) x 
   and k st = 
@@ -246,7 +244,7 @@ and vk_statement = fun bigf st ->
   in statf st
 
 and vk_asmbody = fun bigf (string_list, colon_list) -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   iif string_list;
   colon_list +> List.iter (fun (Colon xs, ii)  -> 
@@ -262,7 +260,7 @@ and vk_asmbody = fun bigf (string_list, colon_list) ->
     ))
 
 and vk_type = fun bigf t -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let rec typef x = bigf.ktype (k, bigf) x 
   and k t = 
@@ -309,7 +307,7 @@ and vk_type = fun bigf t ->
   in typef t
 
 and vk_decl = fun bigf d -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let f = bigf.kdecl in 
   let rec k decl = 
@@ -333,7 +331,7 @@ and vk_decl = fun bigf d ->
   in f (k, bigf) d 
 
 and vk_ini = fun bigf ini -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let rec inif x = bigf.kini (k, bigf) x 
   and k (ini, iini) = 
@@ -343,7 +341,7 @@ and vk_ini = fun bigf ini ->
     | InitList initxs -> 
         initxs +> List.iter (fun (ini, ii) -> 
           inif ini;
-          List.iter (vk_info bigf) ii
+          iif ii;
         ) 
     | InitDesignators (xs, e) -> 
         xs +> List.iter (vk_designator bigf);
@@ -357,7 +355,7 @@ and vk_ini = fun bigf ini ->
 
 
 and vk_designator = fun bigf design -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   let (designator, ii) = design in
   iif ii;
   match designator with
@@ -366,7 +364,7 @@ and vk_designator = fun bigf design ->
   | DesignatorRange (e1, e2) -> vk_expr bigf e1; vk_expr bigf e2
 
 and vk_struct_fields = fun bigf fields -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
     iif ii;
@@ -383,7 +381,7 @@ and vk_struct_fields = fun bigf fields ->
 
 
 and vk_def = fun bigf d -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
 
   let f = bigf.kdef in
   let rec k d = 
@@ -404,45 +402,47 @@ and vk_def = fun bigf d ->
 
 and vk_program = fun bigf p -> 
   let f = bigf.kprogram in
-  let infolistf ii = List.iter (vk_info bigf) ii in
-  let iif ii =  infolistf ii in
+  let iif ii =  vk_ii bigf ii in
   let rec k p = 
     match p with
     | Declaration decl -> (vk_decl bigf decl)
     | Definition def -> (vk_def bigf def)
-    | EmptyDef ii -> (infolistf ii)
+    | EmptyDef ii -> iif ii
     | SpecialMacro (s, xs, ii) -> 
           xs +> List.iter (fun (elem, iicomma) -> 
-            vk_argument bigf elem; infolistf iicomma
+            vk_argument bigf elem; iif iicomma
           );
-          infolistf ii
+          iif ii
           
-    | Include ((s, ii), h_rel_pos) -> infolistf ii;
-    | Define ((s,ii), (def)) -> 
+    | Include ((s, ii), h_rel_pos) -> iif ii;
+    | Define ((s,ii), (defkind, defval)) -> 
         iif ii;
-        vk_define bigf def
+        vk_define_kind bigf defkind;
+        vk_define_val bigf defval
 
-    | NotParsedCorrectly ii -> infolistf ii
+    | NotParsedCorrectly ii -> iif ii
     | FinalDef info -> vk_info bigf info
   in f (k, bigf) p
 
+and vk_define_kind bigf defkind = 
+  match defkind with
+  | DefineVar -> ()
+  | DefineFunc (params) -> 
+      params +> List.iter (fun (s, ii) -> vk_ii bigf ii)
 
-and vk_define bigf def =
-  let iif ii =  List.iter (vk_info bigf) ii in
-  let define_val = function
-    | DefineExpr e -> 
-        vk_expr bigf e
-    | DefineStmt _ -> raise Todo
-    | DefineType ty -> vk_type bigf ty
-    | DefineText (s, ii) -> iif ii
-    | DefineEmpty -> ()
-  in
-  (match def with
-  | DefineVar defval -> define_val defval
-  | DefineFunc (params, defval) -> 
-      params +> List.iter (fun (s, ii) -> iif  ii);
-      define_val defval
-  )
+and vk_define_val bigf defval = 
+  match defval with
+  | DefineExpr e -> 
+      vk_expr bigf e
+  | DefineStmt stmt -> vk_statement bigf stmt
+  | DefineDoWhileZero (stmt, ii) -> 
+      vk_statement bigf stmt;
+      vk_ii bigf ii
+  | DefineFunction def -> vk_def bigf def
+  | DefineType ty -> vk_type bigf ty
+  | DefineText (s, ii) -> vk_ii bigf ii
+  | DefineEmpty -> ()
+
         
 
 (* ------------------------------------------------------------------------ *)
@@ -460,7 +460,7 @@ and vk_define bigf def =
  *)
 
 and vk_node = fun bigf node -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   let infof info = vk_info bigf info in
 
   let f = bigf.knode in
@@ -503,9 +503,18 @@ and vk_node = fun bigf node ->
 
     | F.CaseNode i -> ()
 
-    | F.Define ((s,ii), (def)) -> 
+    | F.DefineExpr e  -> vk_expr bigf e
+    | F.DefineType ft  -> vk_type bigf ft
+    | F.DefineHeader ((s,ii), (defkind))  -> 
         iif ii;
-        vk_define bigf def; 
+        vk_define_kind bigf defkind;
+
+    | F.DefineDoWhileZeroHeader (((),ii)) -> iif ii
+
+    | F.Define ((s,ii), (defkind, defval)) -> 
+        iif ii;
+        vk_define_kind bigf defkind;
+        vk_define_val bigf defval
 
 
     | F.Include ((s, ii),h_rel_pos) -> iif ii
@@ -529,9 +538,10 @@ and vk_node = fun bigf node ->
         vk_asmbody bigf asmbody
 
     | (
-        F.ErrorExit|F.Exit|
+        F.TopNode|F.EndNode|
+        F.ErrorExit|F.Exit|F.Enter|
         F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
-        F.Fake|F.Enter
+        F.Fake
       ) -> ()
 
 
@@ -546,15 +556,18 @@ and vk_info = fun bigf info ->
   in
   infof info
 
+and vk_ii = fun bigf ii -> 
+  List.iter (vk_info bigf) ii
+
 
 and vk_param = fun bigf (((b, s, t), ii_b_s)) ->  
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   iif ii_b_s;
   vk_type bigf t
 
 
 let vk_args_splitted = fun bigf args_splitted -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   args_splitted +> List.iter (function  
   | Left arg -> vk_argument bigf arg
   | Right ii -> iif ii
@@ -563,7 +576,7 @@ let vk_args_splitted = fun bigf args_splitted ->
 
 
 let vk_params_splitted = fun bigf args_splitted -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   args_splitted +> List.iter (function  
   | Left arg -> vk_param bigf arg
   | Right ii -> iif ii
@@ -571,7 +584,7 @@ let vk_params_splitted = fun bigf args_splitted ->
 
 
 let vk_cst = fun bigf (cst, ii) -> 
-  let iif ii = List.iter (vk_info bigf) ii in
+  let iif ii = vk_ii bigf ii in
   iif ii;
   (match cst with
   | Left cst -> ()
@@ -615,7 +628,7 @@ let default_visitor_c_s =
   } 
 
 let rec vk_expr_s = fun bigf expr ->
-  let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let rec exprf e = bigf.kexpr_s  (k, bigf) e
   and k e = 
     let ((unwrap_e, typ), ii) = e in
@@ -630,7 +643,7 @@ let rec vk_expr_s = fun bigf expr ->
       | FunCall  (e, es)         -> 
           FunCall (exprf e,
                   es +> List.map (fun (e,ii) -> 
-                    vk_argument_s bigf e, infolistf ii
+                    vk_argument_s bigf e, iif ii
                   ))
             
       | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
@@ -653,24 +666,24 @@ let rec vk_expr_s = fun bigf expr ->
       | StatementExpr (statxs, is) -> 
           StatementExpr (
             statxs +> List.map (vk_statement_s bigf),
-            infolistf is)
+            iif is)
       | Constructor (t, initxs) -> 
           Constructor 
             (vk_type_s bigf t, 
             (initxs +> List.map (fun (ini, ii) -> 
-              vk_ini_s bigf ini, List.map (vk_info_s bigf) ii) 
+              vk_ini_s bigf ini, vk_ii_s bigf ii) 
             ))
                       
       | ParenExpr (e) -> ParenExpr (exprf e)
 
     in
-    (e', typ'), (infolistf ii)
+    (e', typ'), (iif ii)
   in exprf expr
 
 and vk_argument_s bigf argument = 
-  let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let rec do_action = function 
-    | (ActMisc ii) -> ActMisc (infolistf ii)
+    | (ActMisc ii) -> ActMisc (iif ii)
   in
   (match argument with
   | Left e -> Left (vk_expr_s bigf e)
@@ -735,22 +748,22 @@ and vk_statement_s = fun bigf st ->
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
       | MacroStmt -> MacroStmt
     in
-    st', List.map (vk_info_s bigf) ii
+    st', vk_ii_s bigf ii
   in statf st
 
 and vk_asmbody_s = fun bigf (string_list, colon_list) -> 
-  let  infolistf ii = List.map (vk_info_s bigf) ii in
+  let  iif ii = vk_ii_s bigf ii in
 
-  infolistf string_list,
+  iif string_list,
   colon_list +> List.map (fun (Colon xs, ii) -> 
     Colon 
       (xs +> List.map (fun (x, iicomma) -> 
         (match x with
-        | ColonMisc, ii -> ColonMisc, infolistf ii 
-        | ColonExpr e, ii -> ColonExpr (vk_expr_s bigf e), infolistf ii
-        ), infolistf iicomma
+        | ColonMisc, ii -> ColonMisc, iif ii 
+        | ColonExpr e, ii -> ColonExpr (vk_expr_s bigf e), iif ii
+        ), iif iicomma
       )), 
-    infolistf ii 
+    iif ii 
   )
     
   
@@ -758,7 +771,7 @@ and vk_asmbody_s = fun bigf (string_list, colon_list) ->
 
 and vk_type_s = fun bigf t -> 
   let rec typef t = bigf.ktype_s (k,bigf) t
-  and infolistf ii = List.map (vk_info_s bigf) ii
+  and iif ii = vk_ii_s bigf ii
   and k t = 
     let (q, t) = t in
     let (unwrap_q, iiq) = q in
@@ -775,15 +788,15 @@ and vk_type_s = fun bigf t ->
             (match paramst with
             | (ts, (b, iihas3dots)) -> 
                 (ts +> List.map (fun (param,iicomma) -> 
-                  (vk_param_s bigf param, infolistf iicomma)),
-                (b, infolistf iihas3dots))
+                  (vk_param_s bigf param, iif iicomma)),
+                (b, iif iihas3dots))
             ))
 
       | Enum  (sopt, enumt) -> 
           Enum (sopt,
                enumt +> List.map (fun (((s, eopt),ii_s_eq), iicomma) -> 
-                 ((s, fmap (vk_expr_s bigf) eopt), infolistf ii_s_eq),
-                 infolistf iicomma
+                 ((s, fmap (vk_expr_s bigf) eopt), iif ii_s_eq),
+                 iif iicomma
                )
           )
       | StructUnion (sopt, (su, fields)) -> 
@@ -797,36 +810,36 @@ and vk_type_s = fun bigf t ->
       | ParenType t -> ParenType (typef t)
       | Typeof e -> Typeof (vk_expr_s bigf e)
     in
-    (q', infolistf iiq), 
-  (t', infolistf iit)
+    (q', iif iiq), 
+  (t', iif iit)
 
 
   in typef t
 
 and vk_decl_s = fun bigf d -> 
   let f = bigf.kdecl_s in 
-  let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let rec k decl = 
     match decl with
     | DeclList (xs, ii) -> 
-        DeclList (List.map aux xs,   infolistf ii)
+        DeclList (List.map aux xs,   iif ii)
     | MacroDecl ((s, args),ii) -> 
         MacroDecl 
           ((s, 
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, infolistf ii)
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
            ),
-          infolistf ii)
+          iif ii)
 
 
   and aux ((var, t, sto), iicomma) = 
     ((var +> map_option (fun ((s, ini), ii_s_ini) -> 
       (s, ini +> map_option (fun init -> vk_ini_s bigf init)),
-      infolistf ii_s_ini
+      iif ii_s_ini
     )
     ),
     vk_type_s bigf t, 
     sto),
-  infolistf iicomma
+  iif iicomma
 
   in f (k, bigf) d 
 
@@ -839,7 +852,7 @@ and vk_ini_s = fun bigf ini ->
       | InitExpr e -> InitExpr (vk_expr_s bigf e)
       | InitList initxs -> 
           InitList (initxs +> List.map (fun (ini, ii) -> 
-            inif ini, List.map (vk_info_s bigf) ii) 
+            inif ini, vk_ii_s bigf ii) 
           )
 
 
@@ -852,12 +865,12 @@ and vk_ini_s = fun bigf ini ->
     | InitFieldOld (s, e) -> InitFieldOld (s, inif e)
     | InitIndexOld (e1, e) -> InitIndexOld (vk_expr_s bigf e1, inif e)
 
-    in ini', List.map (vk_info_s bigf) ii
+    in ini', vk_ii_s bigf ii
   in inif ini
 
 
 and vk_designator_s = fun bigf design -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let (designator, ii) = design in
   (match designator with
   | DesignatorField s -> DesignatorField s
@@ -871,84 +884,88 @@ and vk_designator_s = fun bigf design ->
 
 and vk_struct_fields_s = fun bigf fields -> 
 
-  let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
 
   fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
     FieldDeclList (
       onefield_multivars +> List.map (fun (field, iicomma) ->
         (match field with
-        | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), infolistf iis
+        | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), iif iis
         | BitField (sopt, t, expr), iis -> 
             BitField (sopt, vk_type_s bigf t, vk_expr_s bigf expr), 
-            infolistf iis
-        ), infolistf iicomma
+            iif iis
+        ), iif iicomma
       )
-    ), infolistf iiptvirg
+    ), iif iiptvirg
   )
 
 
 and vk_def_s = fun bigf d -> 
   let f = bigf.kdef_s in
-  let infolistf ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let rec k d = 
     match d with
     | (s, (returnt, (paramst, (b, iib))), sto, statxs), ii  -> 
         (s, 
         (vk_type_s bigf returnt, 
         (paramst +> List.map (fun (param, iicomma) ->
-          (vk_param_s bigf param, infolistf iicomma)
+          (vk_param_s bigf param, iif iicomma)
         ), 
-        (b, infolistf iib))), 
+        (b, iif iib))), 
         sto, 
         statxs +> List.map (vk_statement_s bigf) 
         ),
-        infolistf ii
+        iif ii
 
   in f (k, bigf) d 
 
 and vk_program_s = fun bigf p -> 
   let f = bigf.kprogram_s in
-  let infolistf ii = List.map (vk_info_s bigf) ii in
-  let iif ii =  infolistf ii in
+  let iif ii = vk_ii_s bigf ii in
+  let iif ii =  iif ii in
   let rec k p = 
     match p with
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
     | Definition def -> Definition (vk_def_s bigf def)
-    | EmptyDef ii -> EmptyDef (infolistf ii)
+    | EmptyDef ii -> EmptyDef (iif ii)
     | SpecialMacro (s, xs, ii) -> 
         SpecialMacro 
           (s, 
           xs +> List.map (fun (elem, iicomma) -> 
-            vk_argument_s bigf elem, infolistf iicomma
+            vk_argument_s bigf elem, iif iicomma
           ),
-          infolistf ii
+          iif ii
           )
-    | Include ((s, ii), h_rel_pos) -> Include ((s, infolistf ii), h_rel_pos)
-    | Define ((s,ii), (def)) -> 
+    | Include ((s, ii), h_rel_pos) -> Include ((s, iif ii), h_rel_pos)
+    | Define ((s,ii), (defkind, defval)) -> 
+        Define ((s, iif ii), 
+               (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
 
-        let define_val = function
-          | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
-          | DefineStmt _ -> raise Todo
-          | DefineType ty -> DefineType (vk_type_s bigf ty)
-          | DefineText (s, ii) -> DefineText (s, iif ii)
-          | DefineEmpty -> DefineEmpty
-        in
-        let def = 
-          (match def with
-          | DefineVar defval -> DefineVar (define_val defval)
-          | DefineFunc (params, defval) -> 
-              DefineFunc 
-                (params +> List.map (fun (string,iistring) -> 
-                  ((string, iif iistring))
-                ), define_val defval)
-        
-          )
-        in
-        Define ((s, iif ii), (def))
-
-    | NotParsedCorrectly ii -> NotParsedCorrectly (infolistf ii)
+    | NotParsedCorrectly ii -> NotParsedCorrectly (iif ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
   in f (k, bigf) p
+
+and vk_define_kind_s  = fun bigf defkind -> 
+  match defkind with
+  | DefineVar -> DefineVar 
+  | DefineFunc (params) -> 
+      DefineFunc 
+        (params +> List.map (fun (string,iistring) -> 
+          ((string, vk_ii_s bigf iistring))
+        ))
+
+
+and vk_define_val_s = fun bigf x -> 
+  let iif ii = vk_ii_s bigf ii in
+  match x with
+  | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
+  | DefineStmt st -> DefineStmt (vk_statement_s bigf st)
+  | DefineDoWhileZero (st,ii) -> 
+      DefineDoWhileZero (vk_statement_s bigf st, iif ii)
+  | DefineFunction def -> DefineFunction (vk_def_s bigf def)
+  | DefineType ty -> DefineType (vk_type_s bigf ty)
+  | DefineText (s, ii) -> DefineText (s, iif ii)
+  | DefineEmpty -> DefineEmpty
   
 
 and vk_info_s = fun bigf info -> 
@@ -957,10 +974,12 @@ and vk_info_s = fun bigf info ->
   in
   infof info
 
+and vk_ii_s = fun bigf ii -> 
+  List.map (vk_info_s bigf) ii
 
 (* ------------------------------------------------------------------------ *)
 and vk_node_s = fun bigf node -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   let infof info = vk_info_s bigf info  in
 
   let rec nodef n = bigf.knode_s (k, bigf) n
@@ -1005,28 +1024,17 @@ and vk_node_s = fun bigf node ->
 
     | F.CaseNode i -> F.CaseNode i
 
-    | F.Define ((s,ii), (def)) -> 
+    | F.DefineHeader((s,ii), (defkind)) -> 
+        F.DefineHeader ((s, iif ii), (vk_define_kind_s bigf defkind))
 
-        let define_val = function
-          | DefineExpr e -> DefineExpr (vk_expr_s bigf e)
-          | DefineStmt _ -> raise Todo
-          | DefineType ty -> DefineType (vk_type_s bigf ty)
-          | DefineText (s, ii) -> DefineText (s, iif ii)
-          | DefineEmpty -> DefineEmpty
-        in
-        let def = 
-          (match def with
-          | DefineVar defval -> DefineVar (define_val defval)
-          | DefineFunc (params, defval) -> 
-              DefineFunc 
-                (params +> List.map (fun ((string,iistring)) -> 
-                  ((string, iif iistring))
-                ), define_val defval)
-        
-          )
-        in
-        F.Define ((s, iif ii), (def))
+    | F.Define ((s,ii), (defkind, defval)) -> 
+        F.Define ((s, iif ii), 
+                 (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
 
+    | F.DefineExpr e -> F.DefineExpr (vk_expr_s bigf e)
+    | F.DefineType ft -> F.DefineType (vk_type_s bigf ft)
+    | F.DefineDoWhileZeroHeader ((),ii) -> 
+        F.DefineDoWhileZeroHeader ((),iif ii)
 
     | F.Include ((s, ii), h_rel_pos) -> F.Include ((s, iif ii), h_rel_pos)
     | F.Ifdef (st, ((),ii)) -> F.Ifdef (st, ((),iif ii))
@@ -1046,8 +1054,13 @@ and vk_node_s = fun bigf node ->
     | F.SeqEnd (i, info) -> F.SeqEnd (i, infof info)
     | F.SeqStart (st, i, info) -> F.SeqStart (st, i, infof info)
 
-    | ((F.ErrorExit|F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
-       F.Fake|F.Exit|F.Enter) as x) -> x
+    | (
+        (
+          F.TopNode|F.EndNode|
+          F.ErrorExit|F.Exit|F.Enter|
+          F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
+          F.Fake
+        ) as x) -> x
 
 
     )
@@ -1056,11 +1069,11 @@ and vk_node_s = fun bigf node ->
   
 (* ------------------------------------------------------------------------ *)
 and vk_param_s = fun bigf ((b, s, t), ii_b_s) -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   ((b, s, vk_type_s bigf t), iif ii_b_s)
         
 let vk_args_splitted_s = fun bigf args_splitted -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   args_splitted +> List.map (function  
   | Left arg -> Left (vk_argument_s bigf arg)
   | Right ii -> Right (iif ii)
@@ -1068,14 +1081,14 @@ let vk_args_splitted_s = fun bigf args_splitted ->
 
 
 let vk_params_splitted_s = fun bigf args_splitted -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   args_splitted +> List.map (function  
   | Left arg -> Left (vk_param_s bigf arg)
   | Right ii -> Right (iif ii)
   )
 
 let vk_cst_s = fun bigf (cst, ii) -> 
-  let iif ii = List.map (vk_info_s bigf) ii in
+  let iif ii = vk_ii_s bigf ii in
   (match cst with
   | Left cst -> Left cst 
   | Right s -> Right s

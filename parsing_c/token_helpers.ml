@@ -21,7 +21,7 @@ let is_not_comment x = not (is_comment x)
 
 
 let is_cpp_instruction = function
-  | TInclude _ | TDefVar _ | TDefFunc _
+  | TInclude _ | TDefine _
   | TIfdef _   | TIfdefelse _ | TIfdefelif _
   | TEndif _ 
   | TIfdefbool _ 
@@ -95,19 +95,16 @@ let info_from_token = function
   | TypedefIdent  (s, i) -> i
   | TInt  (s, i) -> i
 
-  | TDefVar (define, id, body, i1)         ->  i1
-  | TDefFunc   (define, id, params, body, i1) ->  i1
-
+  | TDefine (ii) -> ii 
   | TInclude (includes, filename, i1) ->     i1
 
   | TIncludeStart (i1) ->     i1
   | TIncludeFilename (s, i1) ->     i1
 
-  | TDefVarStart (i1) ->     i1
-  | TDefFuncStart (i1) ->     i1
-  | TDefIdent (s, i1) ->     i1
-  | TDefText (s, i1) ->     i1
   | TDefEOL (i1) ->     i1
+  | TOParDefine (i1) ->     i1
+  | TIdentDefine  (s, i) -> i
+  | TCppEscapedNewline (ii) -> ii
   | TDefParamVariadic (s, i1) ->     i1
 
   | TUnknown             (i) -> i
@@ -220,10 +217,7 @@ let visitor_info_from_token f = function
   | TInt  (s, i) -> 
       TInt  (s, f i) 
 
-  | TDefVar (define, ident, body, i1) -> 
-      TDefVar (define, ident, body, f i1)
-  | TDefFunc (define, ident, params, body, i1) -> 
-      TDefFunc (define, ident, params, body, f i1)
+  | TDefine (i1) -> TDefine(f i1) 
 
   | TInclude (includes, filename, i1) -> 
       TInclude (includes, filename, f i1)
@@ -233,11 +227,10 @@ let visitor_info_from_token f = function
   | TIncludeFilename (s, i1) -> 
       TIncludeFilename (s, f i1)
 
-  | TDefVarStart (i1) ->    TDefVarStart (f i1)
-  | TDefFuncStart (i1) ->   TDefFuncStart (f i1)
-  | TDefIdent (s, i1) ->    TDefIdent (s, f i1)
-  | TDefText (s, i1) ->     TDefText (s, f i1)
+  | TCppEscapedNewline (i1) ->         TCppEscapedNewline (f i1)
   | TDefEOL (i1) ->         TDefEOL (f i1)
+  | TOParDefine (i1) ->         TOParDefine (f i1)
+  | TIdentDefine  (s, i) -> TIdentDefine (s, f i)
 
   | TDefParamVariadic (s, i1) ->     TDefParamVariadic (s, f i1)
 
@@ -338,7 +331,8 @@ let visitor_info_from_token f = function
 (*****************************************************************************)
 
 let linecol_of_tok tok =
-  let (parse_info,_cocci_info) = info_from_token tok in
+  let info = info_from_token tok in
+  let (parse_info,_cocci_info) = info in
   parse_info.Common.line, parse_info.Common.column
 
 let col_of_tok tok = 

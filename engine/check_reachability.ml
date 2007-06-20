@@ -95,7 +95,7 @@ module CFG =
     type node = Ograph_extended.nodei
     type cfg = 
         (Control_flow_c.node, Control_flow_c.edge) 
-          Ograph_extended.ograph_extended
+          Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
     let print_node i = Format.print_string (string_of_int i)

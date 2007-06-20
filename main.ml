@@ -231,7 +231,6 @@ let other_options = [
 
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-    "-casse_initialisation", Arg.Set Flag_parsing_c.casse_initialisation," ";
     "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
     "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";

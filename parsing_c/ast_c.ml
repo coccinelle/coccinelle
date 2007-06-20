@@ -346,19 +346,21 @@ and definition = (string * functionType * storage * compound)
 
 (* ------------------------------------------------------------------------- *)
 (* cppext *) 
-and define =
-   | DefineVar of define_val
-   | DefineFunc   of 
-       (string wrap) list (* ( param1, param2, etc ) *) * define_val
+and define = define_kind * define_val
+   and define_kind =
+   | DefineVar
+   | DefineFunc   of (string wrap) list (* params tokens *)
    and define_val = 
      | DefineExpr of expression
      | DefineStmt of statement
      | DefineType of fullType
+     | DefineDoWhileZero of statement wrap (* do { } while(0) *)
+     | DefineFunction of definition
      | DefineText of string wrap
      | DefineEmpty
 
 and inc_file = 
-  | Local of inc_elem list
+  | Local    of inc_elem list
   | NonLocal of inc_elem list
   | Wierd of string (* ex: #include SYSTEM_H *)
   and inc_elem = string
