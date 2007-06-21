@@ -450,6 +450,17 @@ let new_info posadd str (info, annot) =
  (* must generate a new ref each time, otherwise share *)
 
 
+let rec comment_until_defeol xs = 
+  match xs with
+  | [] -> failwith "cant find end of define token TDefEOL"
+  | x::xs -> 
+      (match x with
+      | Parser_c.TDefEOL i -> 
+          Parser_c.TCommentCpp (TH.info_from_token x)::xs
+      | _ -> 
+          Parser_c.TCommentCpp (TH.info_from_token x)::comment_until_defeol xs
+      )
+
 
 
 (* ------------------------------------------------------------------------- *)
@@ -490,7 +501,7 @@ type program2 = toplevel2 list
  * - passed_tokens_last_ckp stores the passed tokens since last
  *   checkpoint. Used for NotParsedCorrectly and also for build the
  *   info_item attached to each program_element.
- * - passed_tokens is used for lookahead, in fact for lookback.
+ * - passed_tokens_clean is used for lookahead, in fact for lookback.
  * - remaining_tokens_clean is used for lookahead. Now remaining_tokens
  *   contain some comments and so would make pattern matching difficult
  *   in lookahead. Hence this variable. We would like also to get rid 
@@ -499,7 +510,7 @@ type program2 = toplevel2 list
  *   transform some cpp instruction (in comment) so can't remove them.
 
  * So remaining_tokens, passed_tokens_last_ckp contain comment-tokens,
- * whereas passed_tokens and remaining_tokens_clean does not contain
+ * whereas passed_tokens_clean and remaining_tokens_clean does not contain
  * comment-tokens.
 
  * Normally we have:
@@ -534,7 +545,7 @@ let parse_print_error_heuristic2 file =
   in
   let cur_tok                = ref (List.hd !remaining_tokens) in
   let passed_tokens_last_ckp = ref [] in 
-  let passed_tokens          = ref [] in
+  let passed_tokens_clean    = ref [] in
 
   (* hacked_lex *)
   let rec lexer_function = (fun lexbuf -> 
@@ -557,6 +568,26 @@ let parse_print_error_heuristic2 file =
         assert (x = v);
 
         (match v with
+
+        | Parser_c.TDefine (tok) -> 
+            if not !LP._lexer_hint.LP.toplevel 
+            then begin
+              pr2 ("CPP-DEFINE: inside function, I treat it as comment");
+              let v' = Parser_c.TCommentCpp (TH.info_from_token v) in
+              passed_tokens_last_ckp := v'::!passed_tokens_last_ckp;
+              remaining_tokens := comment_until_defeol !remaining_tokens;
+              remaining_tokens_clean := 
+                List.tl 
+                  (drop_until (function Parser_c.TDefEOL _ -> true | _ -> false)
+                      !remaining_tokens_clean);
+              lexer_function lexbuf
+            end
+            else begin
+              passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
+              passed_tokens_clean := v::!passed_tokens_clean;
+              v
+            end
+
         | Parser_c.TInclude (includes, filename, info) -> 
             if not !LP._lexer_hint.LP.toplevel 
             then begin
@@ -572,7 +603,7 @@ let parse_print_error_heuristic2 file =
                 new_tokens +> List.filter TH.is_not_comment
               in
               passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
-              passed_tokens := v::!passed_tokens;
+              passed_tokens_clean := v::!passed_tokens_clean;
               remaining_tokens := new_tokens ++ !remaining_tokens;
               remaining_tokens_clean := 
                 new_tokens_clean ++ !remaining_tokens_clean;
@@ -591,7 +622,7 @@ let parse_print_error_heuristic2 file =
             in
           
             let v = Parsing_hacks.lookahead 
-              (v::!remaining_tokens_clean) !passed_tokens 
+              (v::!remaining_tokens_clean) !passed_tokens_clean 
             in
 
             passed_tokens_last_ckp := v::!passed_tokens_last_ckp;
@@ -602,7 +633,7 @@ let parse_print_error_heuristic2 file =
             match v with
             | Parser_c.TCommentCpp _ -> lexer_function lexbuf
             | v -> 
-                passed_tokens := v::!passed_tokens;
+                passed_tokens_clean := v::!passed_tokens_clean;
                 v
         )
       end
@@ -664,7 +695,7 @@ let parse_print_error_heuristic2 file =
             passed_tokens_last_ckp := passed_tokens';
 
             cur_tok := List.hd passed_tokens';
-            passed_tokens := [];           (* enough ? *)
+            passed_tokens_clean := [];           (* enough ? *)
 
             (* with error recovery, remaining_tokens and
              * remaining_tokens_clean may not be in sync 

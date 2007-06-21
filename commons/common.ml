@@ -1630,6 +1630,12 @@ let rec drop_while p = function
   | [] -> []
   | x::xs -> if p x then drop_while p xs else x::xs	
 
+
+let rec drop_until p xs = 
+  drop_while (fun x -> not (p x)) xs
+let _ = example (drop_until (fun x -> x = 3) [1;2;3;4;5] = [3;4;5])
+
+
 let span p xs = (take_while p xs, drop_while p xs)
 
 

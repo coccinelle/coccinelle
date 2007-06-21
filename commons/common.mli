@@ -604,6 +604,7 @@ val take_while : ('a -> bool) -> 'a list -> 'a list
 
 val drop : int -> 'a list -> 'a list
 val drop_while : ('a -> bool) -> 'a list -> 'a list
+val drop_until : ('a -> bool) -> 'a list -> 'a list
 
 val span : ('a -> bool) -> 'a list -> 'a list * 'a list
 
