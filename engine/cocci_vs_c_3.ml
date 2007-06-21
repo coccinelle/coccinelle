@@ -2664,33 +2664,24 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.DefineHeader(definea,ida,params), F.Define ((idb, ii), def) ->
+  | A.DefineHeader(definea,ida,params), F.DefineHeader ((idb, ii), defkind) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
       tokenf definea defineb >>= (fun definea defineb -> 
-	failwith "don't know what to do here"
-	  (*
-        match params, def with
-        | None, (B.DefineVar, defvalb) -> 
-            define_val bodya defvalb >>= (fun bodya defvalb -> 
-              return (
-                A.Define (definea, ida, params, bodya),
-                F.Define ((idb,[defineb;iidb;ieol]),(B.DefineVar, defvalb))
-              ))
-        | Some paramsa, (B.DefineFunc (paramsb), defvalb) -> 
-            define_val bodya defvalb >>= (fun bodya defvalb -> 
-            define_params paramsa paramsb >>= (fun paramsa paramsb -> 
-              return (
-                A.Define (definea, ida, Some paramsa, bodya),
-                F.Define 
-                  ((idb, [defineb;iidb;ieol]),
-                  (B.DefineFunc (paramsb), defvalb)
-                ))))
-        | _ -> fail
-	     *)
+      (match params, defkind with
+      | None, B.DefineVar -> 
+          return (None, B.DefineVar)
+      | Some paramsa, (B.DefineFunc (paramsb)) -> 
+          define_params paramsa paramsb >>= (fun paramsa paramsb -> 
+            return (Some paramsa, B.DefineFunc paramsb)
+          )
+      | _ -> fail
+      ) >>= (fun params defkind -> 
+        return (
+          A.DefineHeader (definea, ida, params),
+          F.DefineHeader ((idb,[defineb;iidb;ieol]),defkind)
+        ))
       ))
-
-
 
 
   | A.Default(def,colon), F.Default (st, ((),ii)) -> 

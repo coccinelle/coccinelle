@@ -184,8 +184,6 @@ type node = node1 * string
   | DefineDoWhileZeroHeader of unit wrap
 
   | Include of inc_file wrap * include_rel_pos option ref
-  | Define  of string wrap * define
-
 
   (* ------------------------ *)
   | Case  of statement * expression wrap
@@ -292,7 +290,7 @@ let extract_fullstatement node =
 
   | Ifdef _ -> None (* other ? *)
 
-  | Include _ | Define _
+  | Include _ 
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
       -> None
 

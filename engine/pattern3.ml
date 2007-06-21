@@ -241,7 +241,6 @@ module XMATCH = struct
           | Ast_c.MetaConstVal a, Ast_c.MetaConstVal b -> 
               Lib_parsing_c.al_cst a =*= Lib_parsing_c.al_cst b
 
-          | Ast_c.MetaTextVal a, Ast_c.MetaTextVal b -> a =$= b
           | _ -> raise Impossible
           ) 
         then [binding]
@@ -269,7 +268,6 @@ module XMATCH = struct
                 failwith "not handling MetaParamListVal"
             | Ast_c.MetaConstVal a -> 
                 Ast_c.MetaConstVal (Lib_parsing_c.al_cst a)
-            | Ast_c.MetaTextVal s -> Ast_c.MetaTextVal s
             ) 
           in
           [binding +> Common.insert_assoc (k, valu')]

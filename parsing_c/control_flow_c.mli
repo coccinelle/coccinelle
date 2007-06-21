@@ -38,7 +38,6 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DefineDoWhileZeroHeader of unit wrap
 
   | Include of inc_file wrap * include_rel_pos option ref
-  | Define  of string wrap * define
 
   (* ------------------------ *)
   | Case      of statement * expression wrap

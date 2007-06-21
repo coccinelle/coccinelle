@@ -881,7 +881,6 @@ let rec pp_binding_kind = function
   | MetaParamVal     params -> pp "<<param>>"
   | MetaParamListVal params -> pp "<<paramlist>>"
   | MetaConstVal cst -> pp_cst_gen pr_elem cst
-  | MetaTextVal s -> pp "<<text>>"
 
 and pp_binding subst = 
   begin

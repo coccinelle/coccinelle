@@ -416,7 +416,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list
   | MetaConstVal     of (constant, string) either wrap
-  | MetaTextVal         of string
+
 
 (*****************************************************************************)
 (* Some constructors *)

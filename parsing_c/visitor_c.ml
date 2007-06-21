@@ -511,13 +511,8 @@ and vk_node = fun bigf node ->
 
     | F.DefineDoWhileZeroHeader (((),ii)) -> iif ii
 
-    | F.Define ((s,ii), (defkind, defval)) -> 
-        iif ii;
-        vk_define_kind bigf defkind;
-        vk_define_val bigf defval
-
-
     | F.Include ((s, ii),h_rel_pos) -> iif ii
+
     | F.Ifdef (st, ((),ii)) -> iif ii
 
     | F.Break    (st,((),ii)) -> iif ii
@@ -1026,10 +1021,6 @@ and vk_node_s = fun bigf node ->
 
     | F.DefineHeader((s,ii), (defkind)) -> 
         F.DefineHeader ((s, iif ii), (vk_define_kind_s bigf defkind))
-
-    | F.Define ((s,ii), (defkind, defval)) -> 
-        F.Define ((s, iif ii), 
-                 (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
 
     | F.DefineExpr e -> F.DefineExpr (vk_expr_s bigf e)
     | F.DefineType ft -> F.DefineType (vk_type_s bigf ft)
