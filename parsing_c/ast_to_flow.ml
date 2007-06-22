@@ -1014,14 +1014,14 @@ let ast_to_control_flow e =
 
   | Ast_c.Declaration _ 
   | Ast_c.Include _ 
-  | Ast_c.SpecialMacro _
+  | Ast_c.MacroTop _
     -> 
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> (Control_flow_c.Decl decl),  "decl"
         | Ast_c.Include (a,b) -> (Control_flow_c.Include (a,b)), "#include"
         (* todo? still useful ? could consider as Decl instead *)
-        | Ast_c.SpecialMacro (s, args, ii) -> 
+        | Ast_c.MacroTop (s, args, ii) -> 
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
 

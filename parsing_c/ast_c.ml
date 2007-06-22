@@ -387,7 +387,7 @@ and toplevel =
   | Include of inc_file wrap * include_rel_pos option ref (* #include s *)
   | Define of string wrap * define   (* #define s *)
   (* cppext: *)
-  | SpecialMacro of string * argument wrap2 list * il 
+  | MacroTop of string * argument wrap2 list * il 
          
   | EmptyDef of il      (* gccext: allow redundant ';' *)
   | NotParsedCorrectly of il

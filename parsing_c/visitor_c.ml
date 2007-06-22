@@ -408,7 +408,7 @@ and vk_program = fun bigf p ->
     | Declaration decl -> (vk_decl bigf decl)
     | Definition def -> (vk_def bigf def)
     | EmptyDef ii -> iif ii
-    | SpecialMacro (s, xs, ii) -> 
+    | MacroTop (s, xs, ii) -> 
           xs +> List.iter (fun (elem, iicomma) -> 
             vk_argument bigf elem; iif iicomma
           );
@@ -923,8 +923,8 @@ and vk_program_s = fun bigf p ->
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
     | Definition def -> Definition (vk_def_s bigf def)
     | EmptyDef ii -> EmptyDef (iif ii)
-    | SpecialMacro (s, xs, ii) -> 
-        SpecialMacro 
+    | MacroTop (s, xs, ii) -> 
+        MacroTop
           (s, 
           xs +> List.map (fun (elem, iicomma) -> 
             vk_argument_s bigf elem, iif iicomma

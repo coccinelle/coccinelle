@@ -162,7 +162,8 @@ let regexp_declare =  Str.regexp
 let regexp_foreach = Str.regexp_case_fold 
   ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|scan\\|each\\|for\\)"
 
-
+let regexp_typedef = Str.regexp
+  ".*_t$"
 
 (* Normally I should not use ref/mutable in the token_extended type
  * and I should have a set of functions taking a list of tokens and
@@ -183,16 +184,17 @@ let regexp_foreach = Str.regexp_case_fold
  * fortunately I don't use anymore this technique.
  *)
 
+type context = 
+  InFunction | InEnum | InStruct | InInitializer | NoContext
 
 type token_extended = { 
   mutable tok: Parser_c.token;
   (* todo: before/after ? *)
+  mutable where: context;
 
   (* line x col  cache, more easily accessible, of the info in the token *)
   line: int; 
   col : int;
-
-  (* todo: where: InToplevel | InFunction | InEnum | InStruct | InInit *)
 }
 
 let set_as_comment x = 
@@ -211,6 +213,11 @@ let set_as_comment x =
 type paren_grouped = 
   | Parenthised   of paren_grouped list list * token_extended list
   | PToken of token_extended
+
+type brace_grouped = 
+  | Braceised   of 
+      brace_grouped list list * token_extended * token_extended option
+  | BToken of token_extended
 
 (* Far better data structure than doing hacks in the lexer or parser
  * because in lexer we don't know to which ifdef a endif is related
@@ -239,7 +246,7 @@ type body_function_grouped =
 (* view builders  *)
 (* ------------------------------------------------------------------------- *)
 
-(* todo: synchro ! can use indentation ? 
+(* todo: synchro ! use more indentation 
  * if paren not closed and same indentation level, certainly because
  * part of a mid-ifdef-expression.
 *)
@@ -282,6 +289,42 @@ and mk_parameters extras acc_before_sep  xs =
       | _ -> 
           mk_parameters extras (PToken x::acc_before_sep) xs
       )
+
+
+
+
+let rec mk_braceised xs = 
+  match xs with
+  | [] -> []
+  | x::xs -> 
+      (match x.tok with 
+      | TOBrace _ -> 
+          let body, endbrace, xs = mk_braceised_aux [] xs in
+          Braceised (body, x, endbrace)::mk_braceised xs
+      | TCBrace _ -> 
+          pr2 "PB: found closing brace alone in fuzzy parsing";
+          BToken x::mk_braceised xs
+      | _ -> 
+          BToken x::mk_braceised xs
+      )
+
+(* return the body of the parenthised expression and the rest of the tokens *)
+and mk_braceised_aux acc xs = 
+  match xs with
+  | [] -> 
+      (* maybe because of #ifdef which "opens" '(' in 2 branches *)
+      pr2 "PB: not found closing brace in fuzzy parsing";
+      [List.rev acc], None, []
+  | x::xs -> 
+      (match x.tok with 
+      | TCBrace _ -> [List.rev acc], Some x, xs
+      | TOBrace _ -> 
+          let body, endbrace, xs = mk_braceised_aux [] xs in
+          mk_braceised_aux  (Braceised (body,x, endbrace)::acc) xs
+      | _ -> 
+          mk_braceised_aux (BToken x::acc) xs
+      )
+
           
 
 (* --------------------------------------- *)
@@ -403,6 +446,14 @@ let rec iter_token_paren f xs =
   | Parenthised (xxs, info_parens) -> 
       info_parens +> List.iter f;
       xxs +> List.iter (fun xs -> iter_token_paren f xs)
+  )
+
+let rec iter_token_brace f xs = 
+  xs +> List.iter (function
+  | BToken tok -> f tok;
+  | Braceised (xxs, tok1, tok2opt) -> 
+      f tok1; do_option f tok2opt;
+      xxs +> List.iter (fun xs -> iter_token_brace f xs)
   )
 
 let tokens_of_paren xs = 
@@ -791,6 +842,65 @@ let rec find_ifdef_funheaders = function
         
 
 
+(* ------------------------------------------------------------------------- *)
+(* set the context info in token *)
+(* ------------------------------------------------------------------------- *)
+
+
+let set_in_function_tag xs = 
+ (* could try: ) { } but it can be the ) of a if or while, so 
+  * better to just base the heuristic on the position in column zero.
+  * Note that some struct or enum or init put also their { in first column
+  * but set_in_other will overwrite the previous InFunction tag
+  *)
+  xs +> List.iter (function
+  | BToken x -> ()
+  | Braceised (body, tok1, Some tok2) when
+        tok1.col = 0 && tok2.col = 0 -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InFunction
+      ));
+  | Braceised (body, tok1, tok2) -> 
+      ()
+  )
+
+let rec set_in_other xs = 
+  match xs with 
+  | [] -> ()
+  (* enum x { } *)
+  | BToken ({tok = Tenum _})::BToken ({tok = TIdent _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InEnum;
+      ));
+      set_in_other xs
+
+  (* struct x { } *)
+  | BToken ({tok = Tstruct _})::BToken ({tok = TIdent _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InStruct;
+      ));
+      set_in_other xs
+  (* = { } *)
+  | BToken ({tok = TEq _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InInitializer;
+      ));
+      set_in_other xs
+
+  | x::xs -> set_in_other xs
+      
+      
+
+let set_context_tag xs = 
+  begin
+    set_in_function_tag xs;
+    set_in_other xs;
+  end
+  
+  
 
 (* ------------------------------------------------------------------------- *)
 (* macro *)
@@ -1110,7 +1220,7 @@ let rec find_macro xs =
    *     return x;
    *)
   | (Line 
-        ([PToken ({tok = TIdent (s,ii); col = col1} as macro);
+        ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as macro);
           Parenthised (xxs,info_parens);
         ] as _line1
         ))
@@ -1135,7 +1245,7 @@ let rec find_macro xs =
         || 
         (col2 <= col1 &&
               (match other.tok with
-              (* TCBrace _ -> true  have false positif *)
+              | TCBrace _ when ctx = InFunction -> true
               | Treturn _ -> true
               | Tif _ -> true
               | Telse _ -> true
@@ -1160,7 +1270,7 @@ let rec find_macro xs =
    *     UNLOCK
    *)
   | (Line 
-        ([PToken ({tok = TIdent (s,ii); col = col1} as macro);
+        ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as macro);
         ] as _line1
         ))
     ::(Line 
@@ -1176,11 +1286,12 @@ let rec find_macro xs =
             | TPtVirg _ -> false 
             | tok when TH.is_binary_operator tok -> false
             | TOr _ -> false 
+            | TCBrace _ when ctx <> InFunction -> false
             | _ -> true
             )) ||
           (col2 <= col1 &&
               (match other.tok with
-              (* | TCBrace _ -> true  have some false positif *)
+              | TCBrace _ when ctx = InFunction -> true
               | Treturn _ -> true
               | Tif _ -> true
               | Telse _ -> true
@@ -1275,7 +1386,7 @@ let fix_tokens_cpp2 tokens =
 
   let tokens2 = tokens +> List.map (fun x -> 
     let (line, col) = TH.linecol_of_tok x in
-    {tok = x; line = line; col = col}
+    {tok = x; line = line; col = col; where = NoContext}
   )
   in
   begin 
@@ -1301,6 +1412,13 @@ let fix_tokens_cpp2 tokens =
       find_ifdef_funheaders ifdef_grouped;
       find_ifdef_zero ifdef_grouped;
       find_ifdef_mid ifdef_grouped;
+
+      (* tagging contextual info (InFunc, InStruct, etc *)
+      let cleaner = tokens2 +> List.filter (fun x -> 
+        not (TH.is_comment x.tok) (* could filter also #define/#include *)
+      ) in
+      let brace_grouped = mk_braceised cleaner in
+      set_context_tag brace_grouped;
 
       (* macro *)
       let cleaner = tokens2 +> List.filter (fun x -> 
@@ -1690,7 +1808,7 @@ let lookahead2 next before =
 
   (* xx_t * yy *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  
-      when s =~ ".*_t$" && not_struct_enum before 
+      when s ==~ regexp_typedef && not_struct_enum before 
         (* struct user_info_t sometimes *) 
         -> 
       msg_typedef s;  LP.add_typedef_root s;
@@ -1741,7 +1859,9 @@ let lookahead2 next before =
       TOPar info
 
   (* (xx){ ... }  constructor *)
-  | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::_)  when s =~ ".*_t$"->
+  | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::x::_)  
+      when (*s ==~ regexp_typedef && *) not (TH.is_stuff_taking_parenthized x) 
+        ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 

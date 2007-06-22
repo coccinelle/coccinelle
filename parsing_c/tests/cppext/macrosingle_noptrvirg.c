@@ -68,6 +68,7 @@ void main(int i)
  default:
    PARSE_ERROR1
  }
+}
 
 void main(int i) 
 {

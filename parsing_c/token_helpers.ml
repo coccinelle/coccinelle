@@ -75,6 +75,7 @@ let is_binary_operator = function
 let is_stuff_taking_parenthized = function
   | Tif _ 
   | Twhile _ 
+  | Tswitch _
   | Ttypeof _
     -> true 
   | _ -> false

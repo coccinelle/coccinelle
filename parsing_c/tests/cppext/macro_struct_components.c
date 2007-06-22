@@ -1,4 +1,4 @@
-# define DC390_AFLAGS unsigned long aflags;
+#define DC390_AFLAGS unsigned long aflags;
 
 
 #define ACPI_COMMON_OBJ_INFO \

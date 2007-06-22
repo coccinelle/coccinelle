@@ -1242,7 +1242,7 @@ gcc_opt_expr:
 cpp_directives: 
 
  | TIdent TOPar argument_list TCPar TPtVirg 
-     { SpecialMacro (fst $1, $3,    [snd $1;$2;$4;$5]) } 
+     { MacroTop (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
  /* normally useless with parsing_hack because the ident would
   * be transformed into a MacroNoPtVirg, except when it's 
@@ -1290,7 +1290,10 @@ cpp_directives:
 define_val: 
  | expr      { DefineExpr $1 }
  | statement { DefineStmt $1 }
+ | decl      { DefineStmt (Decl $1, []) }
+ | TypedefIdent { DefineType (nQ, (TypeName (fst $1), [snd $1])) }
  | function_definition { DefineFunction $1 }
+
  | Tdo statement Twhile TOPar TInt TCPar 
      {
        if fst $5 <> "0" 

@@ -830,7 +830,7 @@ let pp_program_gen pr_elem progelem =
       pr_elem ieol
           
 
-  | SpecialMacro (s, es,   [i1;i2;i3;i4]) -> 
+  | MacroTop (s, es,   [i1;i2;i3;i4]) -> 
       pr_elem i1;
       pr_elem i2;
       es +> List.iter (fun (e, opt) -> 
