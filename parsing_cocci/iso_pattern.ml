@@ -1480,8 +1480,6 @@ let get_name = function
       (nm,function nm -> Ast.MetaFuncDecl(ar,nm))
   | Ast.MetaLocalFuncDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
-  | Ast.MetaTextDecl(ar,nm) ->
-      (nm,function nm -> Ast.MetaTextDecl(ar,nm))
 
 let make_new_metavars metavars bindings =
   let new_metavars =

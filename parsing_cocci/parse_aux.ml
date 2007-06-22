@@ -237,13 +237,6 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaTextDecl(Ast.NONE,(rule,name)) ->
-      (match lookup rule name with
-	Ast.MetaTextDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))

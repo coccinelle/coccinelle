@@ -55,7 +55,6 @@ and metavar =
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
-  | MetaTextDecl of arity * meta_name (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -318,7 +317,6 @@ and base_rule_elem =
   | MetaStmt      of meta_name mcode * keep_binding * metaStmtInfo *
 	             inherited
   | MetaStmtList  of meta_name mcode * keep_binding * inherited
-  | MetaText      of meta_name mcode * keep_binding * inherited
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)
@@ -478,7 +476,6 @@ let get_meta_name = function
   | MetaStmListDecl(ar,nm) -> nm
   | MetaFuncDecl(ar,nm) -> nm
   | MetaLocalFuncDecl(ar,nm) -> nm
-  | MetaTextDecl(ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 

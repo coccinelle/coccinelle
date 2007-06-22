@@ -17,7 +17,6 @@ let dumb_astcocci_rule_elem = function
  | A.MetaRuleElem _ -> ()
  | A.MetaStmt (ida,_,_,_) -> ()
  | A.MetaStmtList _ -> ()
- | A.MetaText _ -> ()
  | A.Exp expr -> ()
  | A.Ty ty -> ()
  | A.FunHeader (bef,allminus, fninfo, ida, _, paramsa, _) -> ()

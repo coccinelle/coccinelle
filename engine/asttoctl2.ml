@@ -440,6 +440,9 @@ and get_before_e s a =
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
        [Ast.WParen(rbrace,index)])
+  | Ast.Define(header,body) ->
+      let (body,_) = get_before body [] in
+      (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
   | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_before_e branch [] in
       (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)), [Ast.Other s])
@@ -561,6 +564,9 @@ and get_after_e s a =
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
        [Ast.WParen(lbrace,index)])
+  | Ast.Define(header,body) ->
+      let (body,_) = get_after body a in
+      (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
   | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_after_e branch a in
       (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)),[Ast.Other s])

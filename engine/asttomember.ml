@@ -158,6 +158,11 @@ and statement onlyModif tail stmt used_after optional =
 	| Opt(elems) -> lub (optional [header], body_info)
       else body_info
 
+  | Ast.Define(header,body) ->
+      if contains_modif onlyModif header used_after
+      then optional [header]
+      else statement_list onlyModif tail body used_after optional
+
   | Ast.OptStm(stm) ->
       statement onlyModif tail stm used_after (function x -> Opt x)
 

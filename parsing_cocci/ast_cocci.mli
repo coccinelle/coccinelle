@@ -55,7 +55,6 @@ and metavar =
   | MetaStmListDecl of arity * (string * string) (* name *)
   | MetaFuncDecl of arity * (string * string) (* name *)
   | MetaLocalFuncDecl of arity * (string * string) (* name *)
-  | MetaTextDecl of arity * (string * string) (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -314,7 +313,6 @@ and base_rule_elem =
   | MetaStmt      of (string * string) mcode * keep_binding * metaStmtInfo *
 	             inherited
   | MetaStmtList  of (string * string) mcode * keep_binding * inherited
-  | MetaText      of meta_name mcode * keep_binding * inherited
 
   | Exp           of expression
   | Ty            of fullType (* only at top level *)

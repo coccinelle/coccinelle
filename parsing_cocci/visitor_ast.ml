@@ -329,7 +329,6 @@ let combiner bind option_default
       | Ast.MetaStmt(name,_,_,_) -> meta_mcode name
       | Ast.MetaStmtList(name,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
-      | Ast.MetaText(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
@@ -782,8 +781,6 @@ let rebuilder
 	    Ast.MetaStmtList(meta_mcode name,keep,inherited)
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
-	| Ast.MetaText(name,keep,inherited) ->
-	    Ast.MetaText(meta_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
