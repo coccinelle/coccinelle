@@ -227,7 +227,11 @@ let test_okfailed (cocci_file, iso_file) cfiles =
       );
     )
     with exn -> 
-      pr2 ("PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n"));
+      let clean s =
+	Str.global_replace (Str.regexp "\\\\n") "\n"
+	  (Str.global_replace (Str.regexp ("\\\\\"")) "\""
+	     (Str.global_replace (Str.regexp "\\\\t") "\t" s)) in
+      pr2 ("PROBLEM\n" ^ ("   exn = " ^ (clean(Printexc.to_string exn)) ^ "\n"));
       (* we may miss some file because cfiles is shorter than outfiles.
        * For instance the detected local headers are not in cfiles, so
        * may have less failed. But at least have some failed
