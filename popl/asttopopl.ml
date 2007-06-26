@@ -11,8 +11,12 @@ let rec stm s =
       |	Ast.Exp(_) -> Past.Term ast
       |	Ast.Decl(_,_,_) -> Past.Term ast
       |	_ -> failwith "complex statements not supported")
-  | Ast.Disj([sd1;sd2]) ->
-      Past.Or (stm_list sd1,stm_list sd2)
+  | Ast.Disj(stm1::stm2::stmts) ->
+      List.fold_left
+	(function prev ->
+	  function cur ->
+	    Past.Or(Past.Seq(prev,Past.Empty),stm_list cur))
+	(Past.Or(stm_list stm1,stm_list stm2)) stmts
   | Ast.Dots(dots,whencodes,_) ->
       (match whencodes with
 	Ast.NoWhen -> Past.DInfo(Past.Dots,[],[])
@@ -24,7 +28,17 @@ let rec stm s =
 	Ast.NoWhen -> Past.DInfo(nest,[],[])
       |	Ast.WhenNot(a) -> Past.DInfo(Past.When(nest,stm_list a),[],[])
       |	_ -> failwith "only when != supported")
-  | _ -> failwith "unsupported statement"
+  | Ast.While(header,body,(_,_,_,aft)) | Ast.For(header,body,(_,_,_,aft)) ->
+      (* only allowed if only the header is significant *)
+      (match (Ast.unwrap body,aft) with
+	(Ast.Atomic(re),Ast.CONTEXT(_,Ast.NOTHING)) ->
+	  (match Ast.unwrap re with
+	    Ast.MetaStmt(_,Type_cocci.Unitary,_,false) -> Past.Term header
+	  | _ -> failwith "unsupported statement1")
+      | _ -> failwith "unsupported statement2")
+  | _ ->
+      Pretty_print_cocci.statement "" s;
+      failwith "unsupported statement3"
 
 and stm_list s =
   match Ast.unwrap s with
