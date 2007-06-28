@@ -311,7 +311,7 @@ let (mysat2:
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in
-    if not (!Flag_parsing_cocci.sgrep_mode)
+    if not (!Flag_parsing_cocci.sgrep_mode || !Flag_parsing_cocci.sgrep_mode2)
     then Check_reachability.check_reachability triples flow;
     let (trans_info2,used_after_fresh_env) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in
