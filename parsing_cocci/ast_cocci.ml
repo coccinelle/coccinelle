@@ -271,6 +271,25 @@ and parameterTypeDef = base_parameterTypeDef wrap
 and parameter_list = parameterTypeDef dots
 
 (* --------------------------------------------------------------------- *)
+(* #define Parameters *)
+
+and base_define_param =
+    DParam        of ident
+  | DPComma       of string mcode
+  | DPdots        of string mcode (* ... *)
+  | DPcircles     of string mcode (* ooo *)
+  | OptDParam     of define_param
+  | UniqueDParam  of define_param
+
+and define_param = base_define_param wrap
+
+and base_define_parameters =
+    NoParams     (* not parameter list, not an empty one *)
+  | DParams      of string mcode(*( *) * define_param dots * string mcode(* )*)
+
+and define_parameters = base_define_parameters wrap
+
+(* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
 and storage = Static | Auto | Register | Extern
@@ -322,7 +341,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
-	             string mcode list option (*params*)
+	             define_parameters (*params*)
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
 
@@ -403,7 +422,7 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and rule = string * dependency list * top_level list
+and rule = string (* name *) * dependency list * top_level list
 
 and dependency = Dep of string | AntiDep of string
 

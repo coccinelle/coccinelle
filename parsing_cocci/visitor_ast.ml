@@ -333,14 +333,39 @@ let combiner bind option_default
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
       |	Ast.DefineHeader(def,id,params) ->
-	  multibind [string_mcode def; ident id;
-                      get_option
-                        (function x -> multibind (List.map string_mcode x))
-                        params]
+	  multibind [string_mcode def; ident id; define_parameters params]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
 	  multibind [string_mcode case; expression exp; string_mcode colon] in
     rulefn all_functions k re
+
+  (* not parameterizable for now... *)
+  and define_parameters p =
+    let k p =
+      match Ast.unwrap p with
+	Ast.NoParams -> option_default
+      | Ast.DParams(lp,params,rp) ->
+	  multibind
+	    [string_mcode lp; define_param_dots params; string_mcode rp] in
+    k p
+
+  and define_param_dots d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map define_param l) in
+    k d
+
+  and define_param p =
+    let k p =
+      match Ast.unwrap p with
+	Ast.DParam(id) -> ident id
+      | Ast.DPComma(comma) -> string_mcode comma
+      | Ast.DPdots(d) -> string_mcode d
+      | Ast.DPcircles(c) -> string_mcode c
+      | Ast.OptDParam(dp) -> define_param dp
+      | Ast.UniqueDParam(dp) -> define_param dp in
+    k p 
 
   (* discard the result, because the statement is assumed to be already
      represented elsewhere in the code *)
@@ -787,12 +812,44 @@ let rebuilder
 	    Ast.Include(string_mcode inc,inc_file_mcode name)
 	| Ast.DefineHeader(def,id,params) ->
 	    Ast.DefineHeader(string_mcode def,ident id,
-			     get_option (List.map string_mcode) params)
+			     define_parameters params)
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->
 	    Ast.Case(string_mcode case,expression exp,string_mcode colon)) in
     rulefn all_functions k re
+
+  (* not parameterizable for now... *)
+  and define_parameters p =
+    let k p =
+      Ast.rewrap p
+	(match Ast.unwrap p with
+	  Ast.NoParams -> Ast.NoParams
+	| Ast.DParams(lp,params,rp) ->
+	    Ast.DParams(string_mcode lp,define_param_dots params,
+			string_mcode rp)) in
+    k p
+
+  and define_param_dots d =
+    let k d =
+      Ast.rewrap d
+	(match Ast.unwrap d with
+	  Ast.DOTS(l) -> Ast.DOTS(List.map define_param l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map define_param l)
+	| Ast.STARS(l) -> Ast.STARS(List.map define_param l)) in
+    k d
+
+  and define_param p =
+    let k p =
+      Ast.rewrap p
+	(match Ast.unwrap p with
+	  Ast.DParam(id) -> Ast.DParam(ident id)
+	| Ast.DPComma(comma) -> Ast.DPComma(string_mcode comma)
+	| Ast.DPdots(d) -> Ast.DPdots(string_mcode d)
+	| Ast.DPcircles(c) -> Ast.DPcircles(string_mcode c)
+	| Ast.OptDParam(dp) -> Ast.OptDParam(define_param dp)
+	| Ast.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp)) in
+    k p
 
   and process_bef_aft s =
     Ast.rewrap_dots_bef_aft s

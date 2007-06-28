@@ -874,10 +874,59 @@ and statement in_nest tgt stm =
 	all_same true true tgt (mcode2line def) [mcode2arity def] in
       let def = mcode def in
       let id = ident false false arity id in
-      let params = get_option mcode params in
+      let params = define_parameters arity params in
       let body = dots (statement false arity) body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
   | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.MultiStm(_) ->
+      failwith "unexpected code"
+
+and define_parameters tgt params =
+  match Ast0.unwrap params with
+    Ast0.NoParams -> params
+  | Ast0.DParams(lp,params,rp) ->
+      let arity =
+	all_same false true tgt (mcode2line lp)
+	  [mcode2arity lp;mcode2arity rp] in
+      let lp = mcode lp in
+      let params = dots (define_param arity) params in
+      let rp = mcode rp in
+      Ast0.rewrap params (Ast0.DParams(lp,params,rp))
+
+and make_define_param x =
+  make_opt_unique
+    (function x -> Ast0.OptDParam x)
+    (function x -> Ast0.UniqueDParam x)
+    (function x -> failwith " not possible")
+    x
+
+and define_param tgt param =
+  match Ast0.unwrap param with
+    Ast0.DParam(id) ->
+      let new_id = ident false true tgt id in
+      Ast0.rewrap param
+	(match Ast0.unwrap new_id with
+	  Ast0.OptIdent(id) ->
+	    Ast0.OptDParam(Ast0.rewrap param (Ast0.DParam(id)))
+	| Ast0.UniqueIdent(decl) ->
+	    Ast0.UniqueDParam(Ast0.rewrap param (Ast0.DParam(id)))
+	| Ast0.MultiIdent(id) -> failwith "undepected mult"
+	| _ -> Ast0.DParam(new_id))
+  | Ast0.DPComma(cm) ->
+      let arity =
+	all_same false true tgt (mcode2line cm) [mcode2arity cm] in
+      let cm = mcode cm in
+      make_define_param param tgt arity (Ast0.DPComma(cm))
+  | Ast0.DPdots(dots) ->
+      let arity =
+	all_same false true tgt (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_define_param param tgt arity (Ast0.DPdots(dots))
+  | Ast0.DPcircles(circles) ->
+      let arity =
+	all_same false true tgt (mcode2line circles) [mcode2arity circles] in
+      let circles = mcode circles in
+      make_define_param param tgt arity (Ast0.DPcircles(circles))
+  | Ast0.OptDParam(dp) | Ast0.UniqueDParam(dp) ->
       failwith "unexpected code"
 
 and fninfo arity = function

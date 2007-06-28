@@ -69,6 +69,12 @@ let mkedots str (dot,whencode) =
   | "***" -> Ast0.wrap(Ast0.Estars(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
+let mkdpdots str dot =
+  match str with
+    "..." -> Ast0.wrap(Ast0.DPdots(clt2mcode str dot))
+  | "ooo" -> Ast0.wrap(Ast0.DPcircles(clt2mcode str dot))
+  | _ -> failwith "cannot happen"
+
 let mkidots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))

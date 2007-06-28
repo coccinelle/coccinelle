@@ -76,6 +76,11 @@ let pdots p =
     Ast.Pdots(_) | Ast.Pcircles(_) -> true
   | _ -> false
 
+let dpdots e =
+  match Ast.unwrap e with
+    Ast.DPdots(_) | Ast.DPcircles(_) -> true
+  | _ -> false
+
 let sdots s =
   match Ast.unwrap s with
     Ast.Dots(_,_,_) | Ast.Circles(_,_,_) | Ast.Stars(_,_,_) -> true
@@ -340,6 +345,32 @@ and unify_parameterTypeDef p1 p2 =
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
+(* Define parameter *)
+
+and unify_define_parameters p1 p2 =
+ match (Ast.unwrap p1,Ast.unwrap p2) with
+    (Ast.NoParams,Ast.NoParams) -> return true
+  | (Ast.DParams(lp1,params1,rp1),Ast.DParams(lp2,params2,rp2)) ->
+      unify_dots unify_define_param dpdots params1 params2
+  | _ -> return false
+
+and unify_define_param p1 p2 =
+  match (Ast.unwrap p1,Ast.unwrap p2) with
+    (Ast.DParam(i1),Ast.DParam(i2)) ->
+	(unify_ident i1 i2)
+  | (Ast.DPComma(_),Ast.DPComma(_)) -> return true
+
+  (* dots can match against anything.  return true to be safe. *)
+  | (Ast.DPdots(_),_) | (_,Ast.DPdots(_))
+  | (Ast.DPcircles(_),_) | (_,Ast.DPcircles(_)) -> return true
+
+  | (Ast.OptDParam(_),_)
+  | (Ast.UniqueDParam(_),_)
+  | (_,Ast.OptDParam(_))
+  | (_,Ast.UniqueDParam(_)) -> failwith "unsupported parameter"
+  | _ -> return false
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 and unify_rule_elem re1 re2 =
@@ -372,15 +403,8 @@ and unify_rule_elem re1 re2 =
 	    (unify_option unify_expression e21 e22)
 	    (unify_option unify_expression e31 e32))
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
-      conjunct_bindings
-	(unify_ident n1 n2)
-	(unify_option
-	   (function _ ->
-	     function _ ->
-	       Printf.printf
-		 "warning: unify not supported on #define parameters";
-	       return false)
-	   p1 p2)
+      conjunct_bindings (unify_ident n1 n2)
+	(unify_define_parameters p1 p2)
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
   | (Ast.Goto,Ast.Goto) -> return true

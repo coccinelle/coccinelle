@@ -391,15 +391,40 @@ let combiner bind option_default
 	  bind (string_mcode d) (whencode statement_dots statement whn)
       | Ast0.Include(inc,name) -> bind (string_mcode inc) (inc_mcode name)
       | Ast0.Define(def,id,params,body) ->
-	  multibind [string_mcode def; ident id;
-		      get_option
-			(function x -> multibind (List.map string_mcode x))
-			params;
+	  multibind [string_mcode def; ident id; define_parameters params;
 		      statement_dots body]
       | Ast0.OptStm(re) -> statement re
       | Ast0.UniqueStm(re) -> statement re
       | Ast0.MultiStm(re) -> statement re in
     stmtfn all_functions k s
+
+  (* not parameterizable for now... *)
+  and define_parameters p =
+    let k p =
+      match Ast0.unwrap p with
+	Ast0.NoParams -> option_default
+      | Ast0.DParams(lp,params,rp) ->
+	  multibind
+	    [string_mcode lp; define_param_dots params; string_mcode rp] in
+    k p
+
+  and define_param_dots d =
+    let k d =
+      match Ast0.unwrap d with
+	Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
+	  multibind (List.map define_param l) in
+    k d
+
+  and define_param p =
+    let k p =
+      match Ast0.unwrap p with
+	Ast0.DParam(id) -> ident id
+      | Ast0.DPComma(comma) -> string_mcode comma
+      | Ast0.DPdots(d) -> string_mcode d
+      | Ast0.DPcircles(c) -> string_mcode c
+      | Ast0.OptDParam(dp) -> define_param dp
+      | Ast0.UniqueDParam(dp) -> define_param dp in
+    k p 
 
   and fninfo = function
       Ast0.FStorage(stg) -> storage_mcode stg
@@ -807,13 +832,45 @@ let rebuilder = fun
 	    Ast0.Include(string_mcode inc,inc_mcode name)
 	| Ast0.Define(def,id,params,body) ->
 	    Ast0.Define(string_mcode def,ident id,
-			get_option (List.map string_mcode) params,
+			define_parameters params,
 			statement_dots body)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
 	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
 	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
     let s = stmtfn all_functions k s in
     process_bef_aft s
+
+  (* not parameterizable for now... *)
+  and define_parameters p =
+    let k p =
+      Ast0.rewrap p
+	(match Ast0.unwrap p with
+	  Ast0.NoParams -> Ast0.NoParams
+	| Ast0.DParams(lp,params,rp) ->
+	    Ast0.DParams(string_mcode lp,define_param_dots params,
+			 string_mcode rp))in
+    k p
+
+  and define_param_dots d =
+    let k d =
+      Ast0.rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.DOTS(l) -> Ast0.DOTS(List.map define_param l)
+	| Ast0.CIRCLES(l) -> Ast0.CIRCLES(List.map define_param l)
+	| Ast0.STARS(l) -> Ast0.STARS(List.map define_param l)) in
+    k d
+
+  and define_param p =
+    let k p =
+      Ast0.rewrap p
+	(match Ast0.unwrap p with
+	  Ast0.DParam(id) -> Ast0.DParam(ident id)
+	| Ast0.DPComma(comma) -> Ast0.DPComma(string_mcode comma)
+	| Ast0.DPdots(d) -> Ast0.DPdots(string_mcode d)
+	| Ast0.DPcircles(c) -> Ast0.DPcircles(string_mcode c)
+	| Ast0.OptDParam(dp) -> Ast0.OptDParam(define_param dp)
+	| Ast0.UniqueDParam(dp) -> Ast0.UniqueDParam(define_param dp)) in
+    k p
 
   and fninfo = function
       Ast0.FStorage(stg) -> Ast0.FStorage(storage_mcode stg)

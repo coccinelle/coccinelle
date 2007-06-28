@@ -204,6 +204,25 @@ and parameterTypeDef = base_parameterTypeDef wrap
 and parameter_list = parameterTypeDef dots
 
 (* --------------------------------------------------------------------- *)
+(* #define Parameters *)
+
+and base_define_param =
+    DParam        of ident
+  | DPComma       of string mcode
+  | DPdots        of string mcode (* ... *)
+  | DPcircles     of string mcode (* ooo *)
+  | OptDParam     of define_param
+  | UniqueDParam  of define_param
+
+and define_param = base_define_param wrap
+
+and base_define_parameters =
+    NoParams
+  | DParams      of string mcode(*( *) * define_param dots * string mcode(* )*)
+
+and define_parameters = base_define_parameters wrap
+
+(* --------------------------------------------------------------------- *)
 (* Statement*)
 
 and base_statement =
@@ -259,7 +278,7 @@ and base_statement =
 	string mcode (* } *)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | Define of string mcode (* #define *) * ident (* name *) *
-	string mcode list option (*params*) * statement dots
+	define_parameters (*params*) * statement dots
   | OptStm   of statement
   | UniqueStm of statement
   | MultiStm  of statement (* only allowed in nests *)

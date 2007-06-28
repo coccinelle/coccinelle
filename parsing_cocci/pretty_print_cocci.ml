@@ -544,12 +544,28 @@ let rec rule_elem arity re =
       mcode print_string inc; print_string " "; mcode inc_file s
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id;
-      print_option (List.iter (mcode print_string)) params
+      print_define_parameters params
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
+
+and print_define_parameters params =
+  match Ast.unwrap params with
+    Ast.NoParams -> ()
+  | Ast.DParams(lp,params,rp) ->
+      mcode print_string lp;
+      dots (function _ -> ()) print_define_param params; mcode print_string rp
+
+and print_define_param param =
+  match Ast.unwrap param with
+    Ast.DParam(id) -> ident id
+  | Ast.DPComma(comma) -> mcode print_string comma
+  | Ast.DPdots(dots) -> mcode print_string dots
+  | Ast.DPcircles(circles) -> mcode print_string circles
+  | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
+  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and statement arity s =
   match Ast.unwrap s with

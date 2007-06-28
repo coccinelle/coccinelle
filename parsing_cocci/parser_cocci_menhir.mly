@@ -62,7 +62,7 @@ module P = Parse_aux
 %token <string>  TPragma
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
-%token <Data.clt * token * int * string> TDefineParam
+%token <Data.clt * token * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
@@ -251,6 +251,11 @@ metadec:
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (fun arity name pure check_meta ->
       let ty = Some vl in
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_exp_meta ty name pure; tok) }
+| vl=meta_exp_type TOCro TCCro
+    { (fun arity name pure check_meta ->
+      let ty = Some (List.map (function x -> Type_cocci.Array x) vl) in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
       !Data.add_exp_meta ty name pure; tok) }
 | TConstant ty=ioption(meta_exp_type)
@@ -446,28 +451,12 @@ defineop:
 			   raise
 			     (Semantic_cocci.Semantic
 				"unexpected name for a #define")),
-		       None,
+		       Ast0.wrap Ast0.NoParams,
 		       body)) }
-| TDefineParam
-    { let (clt,ident,identlen,params) = $1 in
-      let param_list =
-	(* assume no spaces in the param list *)
-	Str.split (Str.regexp ",") params in
-      let param_list =
-	let rec loop = function
-	    [] -> [")"]
-	  | [x] -> [x;")"]
-	  | x::xs -> x::","::(loop xs) in
-	"(" :: (loop param_list) in
+| TDefineParam define_param_list_option TCPar
+    { let (clt,ident,parenoff) = $1 in
       let (arity,line,lline,offset,col,strbef,straft) = clt in
-      let starting_offset = (String.length "#define ") + identlen in
-      let (param_offsets,_) =
-	List.fold_left
-	  (function (offsets,prev_end) ->
-	    function cur ->
-	      ((prev_end::offsets),prev_end + (String.length cur)))
-	  ([],starting_offset) param_list in
-      let param_offsets = List.rev param_offsets in
+      let lp = P.clt2mcode "(" (arity,line,lline,parenoff,0,[],[]) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
@@ -481,13 +470,43 @@ defineop:
 		  raise
 		    (Semantic_cocci.Semantic
 		       "unexpected name for a #define")),
-	      Some
-		(List.map2
-		   (function param ->
-		     function offset ->
-		       (P.clt2mcode param (arity,line,lline,offset,0,[],[])))
-		   param_list param_offsets),
-	      body)) }
+	      Ast0.wrap (Ast0.DParams (lp,$2,P.clt2mcode ")" $3)),body)) }
+
+/* ---------------------------------------------------------------------- */
+
+define_param_list: define_param_list_start
+     {let circle x =
+       match Ast0.unwrap x with Ast0.DPcircles(_) -> true | _ -> false in
+     if List.exists circle $1
+     then Ast0.wrap(Ast0.CIRCLES($1))
+     else Ast0.wrap(Ast0.DOTS($1)) }
+
+define_param_list_start:
+    ident { [Ast0.wrap(Ast0.DParam $1)] }
+  | ident TComma define_param_list_start
+      { Ast0.wrap(Ast0.DParam $1)::
+	Ast0.wrap(Ast0.DPComma(P.clt2mcode "," $2))::$3 }
+  | d=TEllipsis r=list(dp_comma_args(TEllipsis))
+      { (P.mkdpdots "..." d)::
+	(List.concat (List.map (function x -> x (P.mkdpdots "...")) r)) }
+/*
+  | d=edots_when(TCircles,ident)
+	r=list(dp_comma_args(edots_when(TCircles,ident)))
+      { (P.mkdpdots "ooo" d)::
+	(List.concat (List.map (function x -> x (P.mkdpdots "ooo")) r)) }
+*/
+
+dp_comma_args(dotter):
+  c=TComma d=dotter
+    { function dot_builder ->
+      [Ast0.wrap(Ast0.DPComma(P.clt2mcode "," c)); dot_builder d] }
+| TComma ident
+    { function dot_builder ->
+      [Ast0.wrap(Ast0.DPComma(P.clt2mcode "," $1));
+	Ast0.wrap(Ast0.DParam $2)] }
+
+define_param_list_option: define_param_list { $1 }
+         | /* empty */     { Ast0.wrap(Ast0.DOTS([])) }
 
 /*****************************************************************************/
 

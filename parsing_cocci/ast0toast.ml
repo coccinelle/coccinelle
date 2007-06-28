@@ -656,12 +656,28 @@ and statement s =
 	  Ast.Define
 	    (local_rewrap s
 	       (Ast.DefineHeader
-		  (mcode def,ident id,
-		   get_option (List.map mcode) params)),
+		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
       | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
+
+  and define_parameters p =
+    rewrap p
+      (match Ast0.unwrap p with
+	Ast0.NoParams -> Ast.NoParams
+      | Ast0.DParams(lp,params,rp) ->
+	  Ast.DParams(mcode lp,dots define_param params,mcode rp))
+
+  and define_param p =
+    rewrap p
+      (match Ast0.unwrap p with
+	Ast0.DParam(id) -> Ast.DParam(ident id)
+      | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
+      | Ast0.DPdots(d) -> Ast.DPdots(mcode d)
+      | Ast0.DPcircles(c) -> Ast.DPcircles(mcode c)
+      | Ast0.OptDParam(dp) -> Ast.OptDParam(define_param dp)
+      | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
 
   and whencode notfn alwaysfn = function
       Ast0.NoWhen -> Ast.NoWhen

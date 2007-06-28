@@ -733,7 +733,7 @@ let prepare_c files =
  *)
 
 
-(* r(ule), c(element), e(nvironment) *)
+(* r(ule), c(element in C code), e(nvironment) *)
 
 let rec bigloop2 rs ccs = 
   let es = ref [Ast_c.emptyMetavarsBinding] in
@@ -838,7 +838,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
     then begin
       c.was_modified := true;
       (* modify ast via side effect *)
-      ignore(Transformation3.transform trans_info (some c.flow));
+      ignore(Transformation3.transform r.rulename trans_info (some c.flow));
     end;
 
     Some newbindings

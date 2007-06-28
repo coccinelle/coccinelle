@@ -2668,13 +2668,14 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
       tokenf definea defineb >>= (fun definea defineb -> 
-      (match params, defkind with
-      | None, B.DefineVar -> 
-          return (None, B.DefineVar)
-      | Some paramsa, (B.DefineFunc (paramsb)) -> 
-          define_params paramsa paramsb >>= (fun paramsa paramsb -> 
+      (match A.unwrap params, defkind with
+      | A.NoParams, B.DefineVar -> 
+          return (params, B.DefineVar)
+      | A.DParams(lp,paramsa,rp), (B.DefineFunc (paramsb)) -> 
+	  failwith "not supported"
+          (*define_params paramsa paramsb >>= (fun paramsa paramsb -> 
             return (Some paramsa, B.DefineFunc paramsb)
-          )
+          )*)
       | _ -> fail
       ) >>= (fun params defkind -> 
         return (

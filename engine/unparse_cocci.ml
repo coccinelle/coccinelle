@@ -493,7 +493,7 @@ and rule_elem arity re =
       mcode print_string inc; print_string " "; mcode inc_file s
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; print_string " "; ident id; 
-      print_option (List.iter (mcode print_string)) params
+      print_define_parameters params
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; print_string " "
   | Ast.Case(case,exp,colon) ->
@@ -512,6 +512,22 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and print_define_parameters params =
+  match Ast.unwrap params with
+    Ast.NoParams -> ()
+  | Ast.DParams(lp,params,rp) ->
+      mcode print_string lp;
+      dots (function _ -> ()) print_define_param params; mcode print_string rp
+
+and print_define_param param =
+  match Ast.unwrap param with
+    Ast.DParam(id) -> ident id
+  | Ast.DPComma(comma) -> mcode print_string comma
+  | Ast.DPdots(dots) -> mcode print_string dots
+  | Ast.DPcircles(circles) -> mcode print_string circles
+  | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
+  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg

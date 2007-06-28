@@ -471,12 +471,28 @@ and statement arity s =
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.Define(def,id,params,body) ->
 	  mcode print_string def; print_string " "; ident id;
-	  print_option (List.iter (mcode print_string)) params;
+	  print_define_parameters params;
 	  print_string " ";
 	  dots force_newline (statement arity) body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.UniqueStm(re) -> statement "!" re
       | Ast0.MultiStm(re) -> statement "\\+" re)
+
+and print_define_parameters params =
+  match Ast0.unwrap params with
+    Ast0.NoParams -> ()
+  | Ast0.DParams(lp,params,rp) ->
+      mcode print_string lp;
+      dots (function _ -> ()) print_define_param params; mcode print_string rp
+
+and print_define_param param =
+  match Ast0.unwrap param with
+    Ast0.DParam(id) -> ident id
+  | Ast0.DPComma(comma) -> mcode print_string comma
+  | Ast0.DPdots(dots) -> mcode print_string dots
+  | Ast0.DPcircles(circles) -> mcode print_string circles
+  | Ast0.OptDParam(dp) -> print_string "?"; print_define_param dp
+  | Ast0.UniqueDParam(dp) -> print_string "!"; print_define_param dp
 
 and print_fninfo = function
     Ast0.FStorage(stg) -> mcode U.storage stg

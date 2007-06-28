@@ -6,6 +6,8 @@ module F = Control_flow_c
 (* The functor argument  *) 
 (*****************************************************************************)
 
+let current_rule_name = ref "" (* initialized in transform2; used for errors *)
+
 module XTRANS = struct
 
   (* ------------------------------------------------------------------------*)
@@ -154,8 +156,9 @@ module XTRANS = struct
               Format.force_newline();
               Format.print_flush();
               failwith
-	        (Common.sprintf "already tagged token:\n%s"
-	            (Common.error_message s2.file (s2.str, s2.charpos)))
+	        (Common.sprintf "%s: already tagged token:\n%s"
+		   !current_rule_name
+	           (Common.error_message s2.file (s2.str, s2.charpos)))
             end
 
 
@@ -378,8 +381,10 @@ let transform_re_node a b binding =
   | Some (_sp, b') -> b'
 
 
-let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
- fun xs cflow -> 
+let (transform2: string (* rule name *) ->
+  Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
+ fun rule_name xs cflow -> 
+   current_rule_name := rule_name;
   (* find the node, transform, update the node,  and iter for all elements *)
 
    xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
@@ -411,9 +416,9 @@ let (transform2: Lib_engine.transformation_info -> F.cflow -> F.cflow) =
 
 
 
-let transform a b = 
+let transform rule_name a b = 
   Common.profile_code "Transformation3.transform" 
-    (fun () -> transform2 a b)
+    (fun () -> transform2 rule_name a b)
 
 
 
