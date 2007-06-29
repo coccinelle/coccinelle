@@ -87,28 +87,34 @@ signed => signed int
 // But *X is not the only way to deference X, there is also 
 // X->fld,  hence those iso. 
 
-Expression
-@@
-expression E;
-identifier fld;
-@@
+// The following don't see like a good idea, because eg fld could be
+// instantiated in different ways in different places, meaning that the
+// two occurrences of "*E" would not refer to the same thing at all.
+// This could be addressed by making E pure, but then I think it would
+// have no purpose.
 
-*E => E->fld
-
-Expression
-@@
-expression E;
-identifier fld;
-@@
-
-*E => (E)->fld
-
-Expression
-@@
-expression E,E1;
-@@
-
-*E => E[E1]
+// Expression
+// @@
+// expression E;
+// identifier fld;
+// @@
+// 
+// *E => E->fld
+// 
+// Expression
+// @@
+// expression E;
+// identifier fld;
+// @@
+// 
+// *E => (E)->fld
+// 
+// Expression
+// @@
+// expression E,E1;
+// @@
+// 
+// *E => E[E1]
 
 // ---------------------------------------------------------------------------
 // Typedef isomorphisms
