@@ -349,7 +349,7 @@ and definition = (string * functionType * storage * compound)
 and define = define_kind * define_val
    and define_kind =
    | DefineVar
-   | DefineFunc   of (string wrap) list (* params tokens *)
+   | DefineFunc   of ((string wrap) wrap2 list) wrap
    and define_val = 
      | DefineExpr of expression
      | DefineStmt of statement

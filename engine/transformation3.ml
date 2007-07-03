@@ -290,6 +290,12 @@ module XTRANS = struct
         x
 
 
+  let distribute_mck_define_params (maxpos, minpos) = fun (lop,mop,rop,bop) -> 
+   fun x ->
+    Visitor_c.vk_define_params_splitted_s 
+      (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+      x
+
    let get_pos mck = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
@@ -339,6 +345,8 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_struct_fields, distribute_mck_struct_fields)
   let distrf_cst = 
     distrf (Lib_parsing_c.ii_of_cst, distribute_mck_cst)
+  let distrf_define_params = 
+    distrf (Lib_parsing_c.ii_of_define_params,distribute_mck_define_params)
 
 
   (* ------------------------------------------------------------------------*)

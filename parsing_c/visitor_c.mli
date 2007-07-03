@@ -36,6 +36,9 @@ val vk_struct_fields : visitor_c -> field wrap list -> unit
 
 val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
+val vk_define_params_splitted : 
+  visitor_c -> (string Ast_c.wrap, il) Common.either list -> unit
+
 
 
 
@@ -78,6 +81,11 @@ val vk_params_splitted_s :
   (parameterType, il) Common.either list
 
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
+
+val vk_define_params_splitted_s : 
+  visitor_c_s -> 
+  (string Ast_c.wrap, il) Common.either list -> 
+  (string Ast_c.wrap, il) Common.either list
 
 val vk_struct_fields_s : visitor_c_s -> 
   field wrap list -> field wrap list

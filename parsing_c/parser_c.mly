@@ -1211,8 +1211,8 @@ taction_list:
 
 param_define_list: 
  | /* empty */ { [] }
- | param_define                           { [$1] }
- | param_define_list TComma param_define  { $1 ++ [",",[$2]] ++ [$3] }
+ | param_define                           { [$1, []] }
+ | param_define_list TComma param_define  { $1 ++ [$3, [$2]] }
 
 designator_list: 
  | designator { [$1] }
@@ -1280,7 +1280,7 @@ cpp_directives:
  | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
      { Define 
          ((fst $2, [$1; snd $2;$7]), 
-           (DefineFunc ( ["(",[$3]] ++ $4 ++ [")",[$5]]), $6)) 
+           (DefineFunc ($4, [$3;$5]), $6)) 
      }
 
 
@@ -1297,7 +1297,7 @@ define_val:
  | Tdo statement Twhile TOPar TInt TCPar 
      {
        if fst $5 <> "0" 
-       then failwith "WIERD: in macro and have not a while(0)";
+       then pr2 "WIERD: in macro and have not a while(0)";
        DefineDoWhileZero ($2,  [$1;$3;$4;snd $5;$6])
      }
  | /* empty */ { DefineEmpty }

@@ -427,8 +427,12 @@ and vk_program = fun bigf p ->
 and vk_define_kind bigf defkind = 
   match defkind with
   | DefineVar -> ()
-  | DefineFunc (params) -> 
-      params +> List.iter (fun (s, ii) -> vk_ii bigf ii)
+  | DefineFunc (params, ii) -> 
+      vk_ii bigf ii;
+      params +> List.iter (fun ((s,iis), iicomma) -> 
+        vk_ii bigf iis;
+        vk_ii bigf iicomma;
+      )
 
 and vk_define_val bigf defval = 
   match defval with
@@ -565,6 +569,14 @@ let vk_args_splitted = fun bigf args_splitted ->
   let iif ii = vk_ii bigf ii in
   args_splitted +> List.iter (function  
   | Left arg -> vk_argument bigf arg
+  | Right ii -> iif ii
+  )
+
+
+let vk_define_params_splitted = fun bigf args_splitted -> 
+  let iif ii = vk_ii bigf ii in
+  args_splitted +> List.iter (function  
+  | Left (s, iis) -> vk_ii bigf iis
   | Right ii -> iif ii
   )
 
@@ -943,11 +955,13 @@ and vk_program_s = fun bigf p ->
 and vk_define_kind_s  = fun bigf defkind -> 
   match defkind with
   | DefineVar -> DefineVar 
-  | DefineFunc (params) -> 
+  | DefineFunc (params, ii) -> 
       DefineFunc 
-        (params +> List.map (fun (string,iistring) -> 
-          ((string, vk_ii_s bigf iistring))
-        ))
+        (params +> List.map (fun ((s,iis),iicomma) -> 
+          ((s, vk_ii_s bigf iis), vk_ii_s bigf iicomma)
+        ),
+        vk_ii_s bigf ii
+        )
 
 
 and vk_define_val_s = fun bigf x -> 
@@ -1075,6 +1089,13 @@ let vk_params_splitted_s = fun bigf args_splitted ->
   let iif ii = vk_ii_s bigf ii in
   args_splitted +> List.map (function  
   | Left arg -> Left (vk_param_s bigf arg)
+  | Right ii -> Right (iif ii)
+  )
+
+let vk_define_params_splitted_s = fun bigf args_splitted -> 
+  let iif ii = vk_ii_s bigf ii in
+  args_splitted +> List.map (function  
+  | Left (s, iis) -> Left (s, vk_ii_s bigf iis)
   | Right ii -> Right (iif ii)
   )
 

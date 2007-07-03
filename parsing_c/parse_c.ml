@@ -381,6 +381,7 @@ let rec find_next_synchro next already_passed =
     Common.span (fun tok -> 
       match tok with
       | Parser_c.TOBrace _ -> false
+      | Parser_c.TDefine _ -> false
       | _ -> true
     ) last_round
   in
@@ -393,6 +394,10 @@ and find_next_synchro_orig next already_passed =
   | [] ->  
       pr2 "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
+
+  | (Parser_c.TDefEOL i as v)::xs when TH.col_of_tok v = 0 -> 
+      pr2 ("ERROR-RECOV: found sync end of #define "^i_to_s(TH.line_of_tok v));
+      v::already_passed, xs
 
   | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 -> 
       pr2 ("ERROR-RECOV: found sync point at line "^i_to_s (TH.line_of_tok v));

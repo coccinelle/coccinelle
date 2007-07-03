@@ -365,6 +365,10 @@ module type PARAM =
       (A.meta_name A.mcode, Ast_c.parameterType) matcher
     val distrf_node : (A.meta_name A.mcode, Control_flow_c.node) matcher
 
+    val distrf_define_params : 
+      (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list)
+      matcher
+
     val distrf_struct_fields : 
       (A.meta_name A.mcode, B.field B.wrap list) matcher
 
@@ -2236,24 +2240,88 @@ and inc_file (a, before_after) (b, h_rel_pos) =
 
 (*---------------------------------------------------------------------------*)
 
-and (define_params: (string A.mcode list, (string B.wrap list)) matcher) =
- fun paramsa paramsb -> 
-   match paramsa, paramsb with
-   | [], [] -> return ([], [])
-   | x::xs, (y,ii)::ys -> 
-       define_params xs ys >>= (fun xs ys -> 
-         if term x = y 
-         then 
-           let (iiy) = tuple_of_list1 ii in
-           tokenf x iiy >>= (fun x iiy -> 
-             return (
-               x::xs,
-               (y,[iiy])::ys
-             ))
-         else fail
-       )
-   | _ -> fail
+and (define_params: sequence -> 
+  (A.define_param list, (string B.wrap) B.wrap2 list) matcher) = 
+ fun seqstyle eas ebs -> 
+  match seqstyle with
+  | Unordered -> failwith "not handling ooo"
+  | Ordered -> 
+      define_paramsbis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
+        return (eas, (Ast_c.unsplit_comma ebs_splitted))
+      )
+
+(* todo? facto code with argument and parameters ? *)
+and define_paramsbis = fun eas ebs -> 
+  match eas, ebs with
+  | [], [] -> return ([], [])
+  | [], eb::ebs -> fail
+  | ea::eas, ebs -> 
+      X.all_bound (A.get_inherited ea) >&&>
+      (match A.unwrap ea, ebs with
+      | A.DPdots (mcode), ys -> 
+
+          (* '...' can take more or less the beginnings of the arguments *)
+          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
+            acc >||> (
+
+              (if startxs = []
+              then
+                if mcode_contain_plus (mcodekind mcode)
+                then fail 
+                  (* failwith "I have no token that I could accroche myself on" *)
+                else return (dots2metavar mcode, [])
+              else 
+                (match Common.last startxs with
+                | Right _ -> fail
+                | Left _ -> 
+                    X.distrf_define_params (dots2metavar mcode) startxs
+                )
+              ) >>= (fun mcode startxs ->
+		let mcode = metavar2dots mcode in
+                define_paramsbis eas endxs >>= (fun eas endxs -> 
+                  return (
+                    (A.DPdots (mcode) +> A.rewrap ea) ::eas,
+                    startxs ++ endxs
+                  )))
+              )
+            ) fail 
+
+      | A.DPComma ia1, Right ii::ebs -> 
+          let ib1 = tuple_of_list1 ii in
+          tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+          define_paramsbis eas ebs >>= (fun eas ebs -> 
+            return (
+              (A.DPComma ia1 +> A.rewrap ea)::eas,
+              (Right [ib1])::ebs
+            )
+          ))
+
+      | A.DPComma ia1, ebs -> 
+          if mcode_contain_plus (mcodekind ia1)
+          then fail
+          else 
+            (define_paramsbis eas ebs) (* try optional comma trick *)
+
+      | (A.OptDParam _ | A.UniqueDParam _), _ -> 
+              failwith "handling Opt/Unique/Multi for define parameters"
+
+      | A.DPcircles (_), ys -> raise Impossible (* in Ordered mode *)
+
+      | A.DParam ida, (Left (idb, ii))::ebs -> 
+          let ib1 = tuple_of_list1 ii in
+          ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) -> 
+          define_paramsbis eas ebs >>= (fun eas ebs -> 
+            return (
+              (A.DParam ida)+> A.rewrap ea :: eas,
+              (Left (idb, [ib1]))::ebs
+            )))
           
+      | _unwrapx, (Right y)::ys -> raise Impossible
+      | _unwrapx, [] -> fail
+      )
+  
+
 
 (*****************************************************************************)
 (* Entry points *)
@@ -2670,12 +2738,23 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       tokenf definea defineb >>= (fun definea defineb -> 
       (match A.unwrap params, defkind with
       | A.NoParams, B.DefineVar -> 
-          return (params, B.DefineVar)
-      | A.DParams(lp,paramsa,rp), (B.DefineFunc (paramsb)) -> 
-	  failwith "not supported"
-          (*define_params paramsa paramsb >>= (fun paramsa paramsb -> 
-            return (Some paramsa, B.DefineFunc paramsb)
-          )*)
+          return (
+            A.NoParams +> A.rewrap params, 
+            B.DefineVar
+          )
+      | A.DParams(lpa,eas,rpa), (B.DefineFunc (ebs, ii)) -> 
+          let (lpb, rpb) = tuple_of_list2 ii in
+          tokenf lpa lpb >>= (fun lpa lpb -> 
+          tokenf rpa rpb >>= (fun rpa rpb -> 
+
+          define_params (seqstyle eas) (A.undots eas) ebs >>= 
+            (fun easundots ebs -> 
+              let eas = redots eas easundots in
+              return (
+                A.DParams (lpa,eas,rpa) +> A.rewrap params,
+                B.DefineFunc (ebs,[lpb;rpb])
+                )
+            )))
       | _ -> fail
       ) >>= (fun params defkind -> 
         return (

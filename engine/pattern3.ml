@@ -200,6 +200,7 @@ module XMATCH = struct
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
   let distrf_struct_fields   = distrf (Lib_parsing_c.ii_of_struct_fields)
   let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
+  let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)

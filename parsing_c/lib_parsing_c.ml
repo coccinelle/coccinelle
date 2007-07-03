@@ -48,6 +48,8 @@ let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
 let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
+let ii_of_define_params = 
+  extract_info_visitor Visitor_c.vk_define_params_splitted
 
 let max_min_ii_by_pos xs = 
 

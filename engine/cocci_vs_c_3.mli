@@ -93,6 +93,11 @@ module type PARAM =
     val distrf_node : 
       (Ast_cocci.meta_name Ast_cocci.mcode, Control_flow_c.node) matcher
 
+    val distrf_define_params : 
+      (Ast_cocci.meta_name Ast_cocci.mcode, 
+      (string Ast_c.wrap, Ast_c.il) Common.either list)
+      matcher
+
     val distrf_struct_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field Ast_c.wrap list) 
       matcher

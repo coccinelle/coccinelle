@@ -821,13 +821,18 @@ let pp_program_gen pr_elem progelem =
       in
       (match defkind with
       | DefineVar -> ()
-      | DefineFunc (params) -> 
-          params +> List.iter (fun ((string,iistring)) -> 
-            iistring +> List.iter pr_elem;
-          );
-      );
-      define_val defval;
-      pr_elem ieol
+      | DefineFunc (params, ii) -> 
+          let (i1,i2) = tuple_of_list2 ii in
+          pr_elem i1; 
+          params +> List.iter (fun ((s,iis), iicomma) -> 
+            assert (List.length iicomma <= 1);
+            iicomma +> List.iter pr_elem;
+            iis +> List.iter pr_elem;
+        );
+        pr_elem i2;
+        define_val defval;
+        pr_elem ieol
+      )
           
 
   | MacroTop (s, es,   [i1;i2;i3;i4]) -> 

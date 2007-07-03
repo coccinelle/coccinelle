@@ -58,9 +58,7 @@ let msg_typedef s =
       | _ -> false 
       )
     )
-    (fun s -> 
-      pr2 ("TYPEDEF: promoting: " ^ s)
-    )
+    (fun s -> pr2 ("TYPEDEF: promoting: " ^ s))
     s
 
 let msg_declare_macro s = 
@@ -78,11 +76,11 @@ let msg_declare_macro s =
       | "DECLARE_BITMAP"
 
           -> true
-(*
+ (*
       | s when s =~ "^DECLARE_.*" -> true
       | s when s =~ ".*_ATTR$" -> true
       | s when s =~ "^DEFINE_.*" -> true
-*)
+ *)
 
       | _ -> false
       )
@@ -165,6 +163,234 @@ let regexp_foreach = Str.regexp_case_fold
 let regexp_typedef = Str.regexp
   ".*_t$"
 
+
+
+
+
+(* linuxext: *)
+let keyword_table = Common.hash_of_list [
+  (* attributes. could perhaps generalize via "__.*" *)
+  "__init",                       (fun ii -> TCommentCpp ii); 
+  "__exit",                       (fun ii -> TCommentCpp ii); 
+  "__user",                       (fun ii -> TCommentCpp ii); 
+  "__iomem",                      (fun ii -> TCommentCpp ii); 
+  "__initdata",                   (fun ii -> TCommentCpp ii); 
+  "__exitdata",                   (fun ii -> TCommentCpp ii); 
+  "__devinit",                    (fun ii -> TCommentCpp ii); 
+  "__devexit",                    (fun ii -> TCommentCpp ii); 
+  "__devinitdata",                (fun ii -> TCommentCpp ii); 
+  "__cpuinit",                    (fun ii -> TCommentCpp ii);  
+  "__cpuinitdata",                (fun ii -> TCommentCpp ii);  
+  "__init_or_module",             (fun ii -> TCommentCpp ii);  
+  "__initdata_or_module",         (fun ii -> TCommentCpp ii);  
+  "__pminit",     (fun ii -> TCommentCpp ii);  
+  "__pminitdata", (fun ii -> TCommentCpp ii);  
+
+  "__cacheline_aligned",          (fun ii -> TCommentCpp ii); 
+  "____cacheline_aligned",        (fun ii -> TCommentCpp ii); 
+  "__cacheline_aligned_in_smp",   (fun ii -> TCommentCpp ii);
+  "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
+  "____cacheline_internodealigned_in_smp", (fun ii -> TCommentCpp ii);
+
+  "__ALIGNED__",                  (fun ii -> TCommentCpp ii); 
+  "__3xp_aligned",                (fun ii -> TCommentCpp ii);  
+
+  "__pmac",                       (fun ii -> TCommentCpp ii);  
+  "__force",                      (fun ii -> TCommentCpp ii);  
+  "__nocast",                     (fun ii -> TCommentCpp ii);  
+  "__read_mostly",                (fun ii -> TCommentCpp ii);  
+
+
+  "__must_check",   (fun ii -> TCommentCpp ii);  
+  "__unused",       (fun ii -> TCommentCpp ii); (* pbs *)
+  "__maybe_unused", (fun ii -> TCommentCpp ii);  
+
+
+  "__attribute_used__",           (fun ii -> TCommentCpp ii);  
+  "__attribute_pure__",           (fun ii -> TCommentCpp ii);  
+  "__attribute_const__",          (fun ii -> TCommentCpp ii);  
+
+  "__always_inline",              (fun ii -> TCommentCpp ii);  
+  "noinline",                     (fun ii -> TCommentCpp ii);  
+
+  "__CS4231_INLINE__",            (fun ii -> TCommentCpp ii);  
+  "CCIO_INLINE",                  (fun ii -> TCommentCpp ii);  
+  "SBA_INLINE",                   (fun ii -> TCommentCpp ii);  
+
+  "STATIC_INLINE",                (fun ii -> TCommentCpp ii);  
+
+  "AGPEXTERN",                (fun ii -> TCommentCpp ii);  
+
+  "INITSECTION",                  (fun ii -> TCommentCpp ii);  
+
+  "NORET_TYPE",                   (fun ii -> TCommentCpp ii);  
+
+  "__xipram",                (fun ii -> TCommentCpp ii);  
+  "compat_init_data",        (fun ii -> TCommentCpp ii);  
+
+  "fastcall",                (fun ii -> TCommentCpp ii);  
+  "asmlinkage",              (fun ii -> TCommentCpp ii);  
+
+  "far",                     (fun ii -> TCommentCpp ii);  
+  "SK_FAR",                  (fun ii -> TCommentCpp ii);  
+
+ (*  "near",                    (fun ii -> TCommentCpp ii);   *)
+
+  "DIVA_EXIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
+  "DIVA_INIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
+  "ACPI_SYSTEM_XFACE",       (fun ii -> TCommentCpp ii);  
+
+  "ASC_INITDATA",            (fun ii -> TCommentCpp ii);  
+  "in2000__INITDATA",        (fun ii -> TCommentCpp ii);  
+  "PACKED",                  (fun ii -> TCommentCpp ii);  
+
+  "WPMINFO",                 (fun ii -> TCommentCpp ii);
+  "CPMINFO",                 (fun ii -> TCommentCpp ii);
+  "PMINFO",                  (fun ii -> TCommentCpp ii);
+
+
+  "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp ii);
+
+  "PNMI_STATIC",   (fun ii -> Tstatic ii); 
+  "RLMT_STATIC",   (fun ii -> Tstatic ii); 
+  "SISINITSTATIC", (fun ii -> Tstatic ii); 
+  "SCTP_STATIC",   (fun ii -> Tstatic ii);  
+
+
+  "SISIOMEMTYPE",  (fun ii -> TCommentCpp ii); 
+
+  (* IF *)
+  "BUGLVL", (fun ii -> Tif ii);
+  "IFDEBUG", (fun ii -> Tif ii);
+
+
+
+  "ACPI_STATE_COMMON" ,            (fun ii -> TCommentCpp ii); 
+  "ACPI_PARSE_COMMON"  ,           (fun ii -> TCommentCpp ii); 
+  "ACPI_COMMON_DEBUG_MEM_HEADER" , (fun ii -> TCommentCpp ii); 
+
+  "TRACE_EXIT", (fun ii -> Treturn ii); 
+
+
+   (* in the other part of the kernel, in arch/, mm/, etc *)
+  "__sched",                      (fun ii -> TCommentCpp ii);  
+  "__initmv",                     (fun ii -> TCommentCpp ii);  
+  "__exception",                  (fun ii -> TCommentCpp ii);  
+  "__cpuexit",                    (fun ii -> TCommentCpp ii);  
+  "__kprobes",                    (fun ii -> TCommentCpp ii);  
+  "__meminit",                    (fun ii -> TCommentCpp ii);  
+  "__meminitdata",                (fun ii -> TCommentCpp ii);  
+  "__nosavedata",                 (fun ii -> TCommentCpp ii);  
+  "__kernel",                     (fun ii -> TCommentCpp ii);  
+  "__nomods_init",                (fun ii -> TCommentCpp ii);  
+  "__apicdebuginit",              (fun ii -> TCommentCpp ii);  
+  "__ipc_init",                   (fun ii -> TCommentCpp ii);  
+  "__modinit",                    (fun ii -> TCommentCpp ii);  
+  "__lockfunc",                   (fun ii -> TCommentCpp ii);  
+  "__weak",                       (fun ii -> TCommentCpp ii);  
+  "__tlb_handler_align",          (fun ii -> TCommentCpp ii);  
+  "__lock_aligned",               (fun ii -> TCommentCpp ii);  
+  "__force_data",                 (fun ii -> TCommentCpp ii);  
+  "__nongprelbss",                (fun ii -> TCommentCpp ii);  
+  "__nongpreldata",               (fun ii -> TCommentCpp ii);  
+  "nabi_no_regargs",              (fun ii -> TCommentCpp ii);  
+
+  "__section_jiffies",            (fun ii -> TCommentCpp ii);  
+  "__vsyscall_fn",                (fun ii -> TCommentCpp ii);  
+  "__section_vgetcpu_mode",       (fun ii -> TCommentCpp ii);  
+  "__section_vsyscall_gtod_data", (fun ii -> TCommentCpp ii);  
+
+  "ATTRIB_NORET",     (fun ii -> TCommentCpp ii);  
+  "ATTRIBUTE_UNUSED", (fun ii -> TCommentCpp ii);  
+  "BTEXT",            (fun ii -> TCommentCpp ii);  
+  "BTDATA",           (fun ii -> TCommentCpp ii);  
+  "PAGE_ALIGNED",     (fun ii -> TCommentCpp ii);  
+
+  "EARLY_INIT_SECTION_ATTR", (fun ii -> TCommentCpp ii);  
+
+ (*  "INIT", (fun ii -> TCommentCpp ii);   *) (* pbs *)
+
+  "IDI_CALL_ENTITY_T", (fun ii -> TCommentCpp ii);  
+
+
+  (* maybe only in old kernel *)
+  "__openfirmware", (fun ii -> TCommentCpp ii);  
+
+  (* string macro. normally handle quite well by mu lalr(k), but
+   * sometimes not enough, if have for instance the XX YY case, could
+   * be considered as a declaration with XX being a typedef, so would
+   * Have ambiguity. So at least by adding this special case, we can
+   * catch more correct string-macro, no more a XX YY but now a good
+   * "XX" YY 
+   * 
+   * cf include/linux/kernel.h
+   *)
+  
+  "KERN_EMERG",   (fun ii -> TString(("KERN_EMERG",Ast_c.IsChar),ii));
+  "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
+  "KERN_CRIT",    (fun ii -> TString(("KERN_CRIT",Ast_c.IsChar),ii));
+  "KERN_ERR",     (fun ii -> TString(("KERN_ERR",Ast_c.IsChar),ii));
+  "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
+  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
+  "KERN_INFO",    (fun ii -> TString(("KERN_INFO",Ast_c.IsChar),ii));
+  "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
+ ]
+
+
+let passed_macro_parentized_list = 
+  ["__acquires";"__releases";
+   "__declspec"; 
+   "__page_aligned";
+   "__vsyscall"
+  ]
+
+let fast_call_like_list = 
+        ["FASTCALL";"PARAMS"]
+
+let ex_table_like_list = 
+  ["EX_TABLE";"ASM_EXCEPTIONTABLE_ENTRY";"DCACHE_CLEAR";"PPC405_ERR77"]
+
+
+
+(* loop, macro without ';', single macro *)
+(* linuxext: *)
+let debug_macros_list = 
+  ["ASSERT"; "IRDA_ASSERT"; "ASSERTCMP"; "ASSERTRANGE"; "ASSERTIFCMP";
+   "CHECK_NULL";
+   "DEBUG";"DEBUG0";"DEBUG1";"DEBUG2";"DEBUG3";
+   "DBG";"DEB";"PARSEDEBUG";"DEBC";"DBG_TRC";"DBG_ERR";"DBG_FTL";
+   "DBGINFO"; "DFLOW";"DFLIP";"DLOG_INT_TRIG";
+   "D3";"D1";"DB";"DCBDEBUG";"SCSI_LOG_MLQUEUE";
+   "PLND"; "FCALND";"FCALD";
+   "DEBUGRECURSION";
+   "DEBUGPIO";"VDEB";
+   "READ_UNLOCK_IRQRESTORE";
+   "TRACE_CATCH";
+   "PDBGG";
+   "IF_ABR";"IF_EVENT";"IF_ERR";"IF_CBR";"IF_INIT";"IF_RX";
+   "SOD";
+   "KDBG";
+   "IRDA_ASSERT_LABEL";
+  ]
+
+let declList =
+  ["decl_subsys";
+  ]
+
+
+
+let xxx_initfunc_like_list = 
+  ["GDTH_INITFUNC";"ASC_INITFUNC"]
+
+let action_list = 
+   ["sn9c102_write_const_regs"]
+
+
+(* ------------------------------------------------------------------------- *)
+(* fuzzy parsing, different "views" over the same program *)
+(* ------------------------------------------------------------------------- *)
+
+
 (* Normally I should not use ref/mutable in the token_extended type
  * and I should have a set of functions taking a list of tokens and
  * returning a list of tokens. The problem is that to make easier some
@@ -189,8 +415,8 @@ type context =
 
 type token_extended = { 
   mutable tok: Parser_c.token;
-  (* todo: before/after ? *)
   mutable where: context;
+  (* todo: before/after ? *)
 
   (* line x col  cache, more easily accessible, of the info in the token *)
   line: int; 
@@ -204,10 +430,6 @@ let set_as_comment x =
     x.tok <- TCommentCpp (TH.info_from_token x.tok)
   
 
-
-(* ------------------------------------------------------------------------- *)
-(* fuzzy parsing, different "views" over the same program *)
-(* ------------------------------------------------------------------------- *)
 
 (* x list list, because x list separated by ',' *) 
 type paren_grouped = 
@@ -327,7 +549,7 @@ and mk_braceised_aux acc xs =
 
           
 
-(* --------------------------------------- *)
+
 let rec mk_ifdef xs = 
   match xs with
   | [] -> []
@@ -469,180 +691,89 @@ let rec iter_token_ifdef f xs =
       info_ifdef +> List.iter f;
       xxs +> List.iter (iter_token_ifdef f)
   )
+
+
+
+(* ------------------------------------------------------------------------- *)
+(* set the context info in token *)
+(* ------------------------------------------------------------------------- *)
+
+
+let rec set_in_function_tag xs = 
+ (* could try: ) { } but it can be the ) of a if or while, so 
+  * better to base the heuristic on the position in column zero.
+  * Note that some struct or enum or init put also their { in first column
+  * but set_in_other will overwrite the previous InFunction tag.
+  *)
+  match xs with
+  | [] -> ()
+  (* ) { and the closing } is in column zero, then certainly a function *)
+  | BToken ({tok = TCPar _ })::(Braceised (body, tok1, Some tok2))::xs 
+      when tok1.col <> 0 && tok2.col = 0 -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InFunction
+      ));
+      set_in_function_tag xs
+
+  | (BToken x)::xs -> set_in_function_tag xs
+
+  | (Braceised (body, tok1, Some tok2))::xs 
+      when tok1.col = 0 && tok2.col = 0 -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InFunction
+      ));
+      set_in_function_tag xs
+  | Braceised (body, tok1, tok2)::xs -> 
+      set_in_function_tag xs
+  
+
+let rec set_in_other xs = 
+  match xs with 
+  | [] -> ()
+  (* enum x { } *)
+  | BToken ({tok = Tenum _})::BToken ({tok = TIdent _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InEnum;
+      ));
+      set_in_other xs
+
+  (* struct x { } *)
+  | BToken ({tok = Tstruct _})::BToken ({tok = TIdent _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InStruct;
+      ));
+      set_in_other xs
+  (* = { } *)
+  | BToken ({tok = TEq _})
+    ::Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter (iter_token_brace (fun tok -> 
+        tok.where <- InInitializer;
+      ));
+      set_in_other xs
+
+  | BToken _::xs -> set_in_other xs
+
+  | Braceised(body, tok1, tok2)::xs -> 
+      body +> List.iter set_in_other;
+      set_in_other xs
+
+      
+      
+
+let set_context_tag xs = 
+  begin
+    set_in_function_tag xs;
+    set_in_other xs;
+  end
+  
+  
       
 
 (* ------------------------------------------------------------------------- *)
 (* annotation, static, if,  and stringification part 1 *)
 (* ------------------------------------------------------------------------- *)
-
-(* linuxext: *)
-let keyword_table = Common.hash_of_list [
-  (* attributes. could perhaps generalize via "__.*" *)
-  "__init",                       (fun ii -> TCommentCpp ii); 
-  "__exit",                       (fun ii -> TCommentCpp ii); 
-  "__user",                       (fun ii -> TCommentCpp ii); 
-  "__iomem",                      (fun ii -> TCommentCpp ii); 
-  "__initdata",                   (fun ii -> TCommentCpp ii); 
-  "__exitdata",                   (fun ii -> TCommentCpp ii); 
-  "__devinit",                    (fun ii -> TCommentCpp ii); 
-  "__devexit",                    (fun ii -> TCommentCpp ii); 
-  "__devinitdata",                (fun ii -> TCommentCpp ii); 
-  "__cpuinit",                    (fun ii -> TCommentCpp ii);  
-  "__cpuinitdata",                (fun ii -> TCommentCpp ii);  
-  "__init_or_module",             (fun ii -> TCommentCpp ii);  
-  "__initdata_or_module",         (fun ii -> TCommentCpp ii);  
-  "__pminit",     (fun ii -> TCommentCpp ii);  
-  "__pminitdata", (fun ii -> TCommentCpp ii);  
-
-  "__cacheline_aligned",          (fun ii -> TCommentCpp ii); 
-  "____cacheline_aligned",        (fun ii -> TCommentCpp ii); 
-  "__cacheline_aligned_in_smp",   (fun ii -> TCommentCpp ii);
-  "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp ii);
-  "____cacheline_internodealigned_in_smp", (fun ii -> TCommentCpp ii);
-
-  "__ALIGNED__",                  (fun ii -> TCommentCpp ii); 
-  "__3xp_aligned",                (fun ii -> TCommentCpp ii);  
-
-  "__pmac",                       (fun ii -> TCommentCpp ii);  
-  "__force",                      (fun ii -> TCommentCpp ii);  
-  "__nocast",                     (fun ii -> TCommentCpp ii);  
-  "__read_mostly",                (fun ii -> TCommentCpp ii);  
-
-
-  "__must_check",   (fun ii -> TCommentCpp ii);  
-  "__unused",       (fun ii -> TCommentCpp ii); (* pbs *)
-  "__maybe_unused", (fun ii -> TCommentCpp ii);  
-
-
-  "__attribute_used__",           (fun ii -> TCommentCpp ii);  
-  "__attribute_pure__",           (fun ii -> TCommentCpp ii);  
-  "__attribute_const__",          (fun ii -> TCommentCpp ii);  
-
-  "__always_inline",              (fun ii -> TCommentCpp ii);  
-  "noinline",                     (fun ii -> TCommentCpp ii);  
-
-  "__CS4231_INLINE__",            (fun ii -> TCommentCpp ii);  
-  "CCIO_INLINE",                  (fun ii -> TCommentCpp ii);  
-  "SBA_INLINE",                   (fun ii -> TCommentCpp ii);  
-
-  "STATIC_INLINE",                (fun ii -> TCommentCpp ii);  
-
-  "AGPEXTERN",                (fun ii -> TCommentCpp ii);  
-
-  "INITSECTION",                  (fun ii -> TCommentCpp ii);  
-
-  "NORET_TYPE",                   (fun ii -> TCommentCpp ii);  
-
-  "__xipram",                (fun ii -> TCommentCpp ii);  
-  "compat_init_data",        (fun ii -> TCommentCpp ii);  
-
-  "fastcall",                (fun ii -> TCommentCpp ii);  
-  "asmlinkage",              (fun ii -> TCommentCpp ii);  
-
-  "far",                     (fun ii -> TCommentCpp ii);  
-  "SK_FAR",                  (fun ii -> TCommentCpp ii);  
-
-(*  "near",                    (fun ii -> TCommentCpp ii);   *)
-
-  "DIVA_EXIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
-  "DIVA_INIT_FUNCTION",      (fun ii -> TCommentCpp ii);  
-  "ACPI_SYSTEM_XFACE",       (fun ii -> TCommentCpp ii);  
-
-  "ASC_INITDATA",            (fun ii -> TCommentCpp ii);  
-  "in2000__INITDATA",        (fun ii -> TCommentCpp ii);  
-  "PACKED",                  (fun ii -> TCommentCpp ii);  
-
-  "WPMINFO",                 (fun ii -> TCommentCpp ii);
-  "CPMINFO",                 (fun ii -> TCommentCpp ii);
-  "PMINFO",                  (fun ii -> TCommentCpp ii);
-
-
-  "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp ii);
-
-  "PNMI_STATIC",   (fun ii -> Tstatic ii); 
-  "RLMT_STATIC",   (fun ii -> Tstatic ii); 
-  "SISINITSTATIC", (fun ii -> Tstatic ii); 
-  "SCTP_STATIC",   (fun ii -> Tstatic ii);  
-
-
-  "SISIOMEMTYPE",  (fun ii -> TCommentCpp ii); 
-
-  (* IF *)
-  "BUGLVL", (fun ii -> Tif ii);
-  "IFDEBUG", (fun ii -> Tif ii);
-
-
-
-  "ACPI_STATE_COMMON" ,            (fun ii -> TCommentCpp ii); 
-  "ACPI_PARSE_COMMON"  ,           (fun ii -> TCommentCpp ii); 
-  "ACPI_COMMON_DEBUG_MEM_HEADER" , (fun ii -> TCommentCpp ii); 
-
-  "TRACE_EXIT", (fun ii -> Treturn ii); 
-
-
-   (* in the other part of the kernel, in arch/, mm/, etc *)
-  "__sched",                      (fun ii -> TCommentCpp ii);  
-  "__initmv",                     (fun ii -> TCommentCpp ii);  
-  "__exception",                  (fun ii -> TCommentCpp ii);  
-  "__cpuexit",                    (fun ii -> TCommentCpp ii);  
-  "__kprobes",                    (fun ii -> TCommentCpp ii);  
-  "__meminit",                    (fun ii -> TCommentCpp ii);  
-  "__meminitdata",                (fun ii -> TCommentCpp ii);  
-  "__nosavedata",                 (fun ii -> TCommentCpp ii);  
-  "__kernel",                     (fun ii -> TCommentCpp ii);  
-  "__nomods_init",                (fun ii -> TCommentCpp ii);  
-  "__apicdebuginit",              (fun ii -> TCommentCpp ii);  
-  "__ipc_init",                   (fun ii -> TCommentCpp ii);  
-  "__modinit",                    (fun ii -> TCommentCpp ii);  
-  "__lockfunc",                   (fun ii -> TCommentCpp ii);  
-  "__weak",                       (fun ii -> TCommentCpp ii);  
-  "__tlb_handler_align",          (fun ii -> TCommentCpp ii);  
-  "__lock_aligned",               (fun ii -> TCommentCpp ii);  
-  "__force_data",                 (fun ii -> TCommentCpp ii);  
-  "__nongprelbss",                (fun ii -> TCommentCpp ii);  
-  "__nongpreldata",               (fun ii -> TCommentCpp ii);  
-  "nabi_no_regargs",              (fun ii -> TCommentCpp ii);  
-
-  "__section_jiffies",            (fun ii -> TCommentCpp ii);  
-  "__vsyscall_fn",                (fun ii -> TCommentCpp ii);  
-  "__section_vgetcpu_mode",       (fun ii -> TCommentCpp ii);  
-  "__section_vsyscall_gtod_data", (fun ii -> TCommentCpp ii);  
-
-  "ATTRIB_NORET",     (fun ii -> TCommentCpp ii);  
-  "ATTRIBUTE_UNUSED", (fun ii -> TCommentCpp ii);  
-  "BTEXT",            (fun ii -> TCommentCpp ii);  
-  "BTDATA",           (fun ii -> TCommentCpp ii);  
-  "PAGE_ALIGNED",     (fun ii -> TCommentCpp ii);  
-
-  "EARLY_INIT_SECTION_ATTR", (fun ii -> TCommentCpp ii);  
-
-(*  "INIT", (fun ii -> TCommentCpp ii);   *) (* pbs *)
-
-  "IDI_CALL_ENTITY_T", (fun ii -> TCommentCpp ii);  
-
-
-  (* maybe only in old kernel *)
-  "__openfirmware", (fun ii -> TCommentCpp ii);  
-
-  (* string macro. normally handle quite well by mu lalr(k), but
-   * sometimes not enough, if have for instance the XX YY case, could
-   * be considered as a declaration with XX being a typedef, so would
-   * Have ambiguity. So at least by adding this special case, we can
-   * catch more correct string-macro, no more a XX YY but now a good
-   * "XX" YY 
-   * 
-   * cf include/linux/kernel.h
-   *)
-  
-  "KERN_EMERG",   (fun ii -> TString(("KERN_EMERG",Ast_c.IsChar),ii));
-  "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
-  "KERN_CRIT",    (fun ii -> TString(("KERN_CRIT",Ast_c.IsChar),ii));
-  "KERN_ERR",     (fun ii -> TString(("KERN_ERR",Ast_c.IsChar),ii));
-  "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
-  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
-  "KERN_INFO",    (fun ii -> TString(("KERN_INFO",Ast_c.IsChar),ii));
-  "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
-]
 
 (* For stringification I need to have at least a witness, a string, 
  * and sometimes have just printk(KERN_WARNING MYSTR) and it could
@@ -656,8 +787,6 @@ let keyword_table = Common.hash_of_list [
  *)
 
 
-
-
 let fix_tokens_annotation_and_stringification_part1 tokens = 
   tokens +> List.iter (fun x -> 
     match x.tok with
@@ -668,8 +797,6 @@ let fix_tokens_annotation_and_stringification_part1 tokens =
         )
     | x -> ()
   )
-
-
 
 
 (* ------------------------------------------------------------------------- *)
@@ -842,76 +969,10 @@ let rec find_ifdef_funheaders = function
         
 
 
-(* ------------------------------------------------------------------------- *)
-(* set the context info in token *)
-(* ------------------------------------------------------------------------- *)
-
-
-let set_in_function_tag xs = 
- (* could try: ) { } but it can be the ) of a if or while, so 
-  * better to just base the heuristic on the position in column zero.
-  * Note that some struct or enum or init put also their { in first column
-  * but set_in_other will overwrite the previous InFunction tag
-  *)
-  xs +> List.iter (function
-  | BToken x -> ()
-  | Braceised (body, tok1, Some tok2) when
-        tok1.col = 0 && tok2.col = 0 -> 
-      body +> List.iter (iter_token_brace (fun tok -> 
-        tok.where <- InFunction
-      ));
-  | Braceised (body, tok1, tok2) -> 
-      ()
-  )
-
-let rec set_in_other xs = 
-  match xs with 
-  | [] -> ()
-  (* enum x { } *)
-  | BToken ({tok = Tenum _})::BToken ({tok = TIdent _})
-    ::Braceised(body, tok1, tok2)::xs -> 
-      body +> List.iter (iter_token_brace (fun tok -> 
-        tok.where <- InEnum;
-      ));
-      set_in_other xs
-
-  (* struct x { } *)
-  | BToken ({tok = Tstruct _})::BToken ({tok = TIdent _})
-    ::Braceised(body, tok1, tok2)::xs -> 
-      body +> List.iter (iter_token_brace (fun tok -> 
-        tok.where <- InStruct;
-      ));
-      set_in_other xs
-  (* = { } *)
-  | BToken ({tok = TEq _})
-    ::Braceised(body, tok1, tok2)::xs -> 
-      body +> List.iter (iter_token_brace (fun tok -> 
-        tok.where <- InInitializer;
-      ));
-      set_in_other xs
-
-  | x::xs -> set_in_other xs
-      
-      
-
-let set_context_tag xs = 
-  begin
-    set_in_function_tag xs;
-    set_in_other xs;
-  end
-  
-  
 
 (* ------------------------------------------------------------------------- *)
 (* macro *)
 (* ------------------------------------------------------------------------- *)
-
-let passed_macro_parentized_list = 
-  ["__acquires";"__releases";
-   "__declspec"; 
-   "__page_aligned";
-   "__vsyscall"
-  ]
 
 (* don't forget to recurse in each case *)
 let rec find_macro_paren xs = 
@@ -944,7 +1005,7 @@ let rec find_macro_paren xs =
   | PToken ({tok = TIdent (s,_)} as id)
     ::Parenthised (xxs,info_parens)
     ::xs
-    when List.mem s ["FASTCALL";"PARAMS"] -> 
+    when List.mem s fast_call_like_list  -> 
       
       pr2_cpp ("MACRO: FASTCALL like detected: " ^ s);
       (* pass only the macro *)
@@ -971,8 +1032,7 @@ let rec find_macro_paren xs =
   | PToken ({tok = TIdent (s,ii)} as id)
     ::Parenthised (xxs,info_parens)
     ::xs
-    when List.mem s 
-      ["EX_TABLE";"ASM_EXCEPTIONTABLE_ENTRY";"DCACHE_CLEAR";"PPC405_ERR77"] -> 
+    when List.mem s ex_table_like_list -> 
       pr2_cpp ("MACRO: EX_TABLE like detected");
       id.tok <- TString((s,Ast_c.IsChar),ii);
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
@@ -1022,33 +1082,6 @@ let rec find_macro_paren xs =
       find_macro_paren xs
 
 
-
-
-
-(* loop, macro without ';', single macro *)
-(* linuxext: *)
-let debug_macros_list = 
-  ["ASSERT"; "IRDA_ASSERT"; "ASSERTCMP"; "ASSERTRANGE"; "ASSERTIFCMP";
-   "CHECK_NULL";
-   "DEBUG";"DEBUG0";"DEBUG1";"DEBUG2";"DEBUG3";
-   "DBG";"DEB";"PARSEDEBUG";"DEBC";"DBG_TRC";"DBG_ERR";"DBG_FTL";
-   "DBGINFO"; "DFLOW";"DFLIP";"DLOG_INT_TRIG";
-   "D3";"D1";"DB";"DCBDEBUG";"SCSI_LOG_MLQUEUE";
-   "PLND"; "FCALND";"FCALD";
-   "DEBUGRECURSION";
-   "DEBUGPIO";"VDEB";
-   "READ_UNLOCK_IRQRESTORE";
-   "TRACE_CATCH";
-   "PDBGG";
-   "IF_ABR";"IF_EVENT";"IF_ERR";"IF_CBR";"IF_INIT";"IF_RX";
-   "SOD";
-   "KDBG";
-   "IRDA_ASSERT_LABEL";
-  ]
-
-let declList =
-  ["decl_subsys";
-  ]
 
 
 
@@ -1206,7 +1239,7 @@ let rec find_macro xs =
         ]
         ))
     ::xs 
-    when List.mem s ["GDTH_INITFUNC";"ASC_INITFUNC"]-> 
+    when List.mem s xxx_initfunc_like_list -> 
       pr2_cpp ("MACRO: XXX_INITFUNC detected: " ^ s);
       (* keep xxs only *)
       (ident::info_parens) +> List.iter set_as_comment;
@@ -1234,6 +1267,7 @@ let rec find_macro xs =
         (col1 = col2 && 
             (match other.tok with
             | TOBrace _ -> false (* otherwise would match funcdecl *)
+            | TCBrace _ when ctx <> InFunction -> false
             | TPtVirg _ 
             | TDotDot _
                 -> false
@@ -1249,6 +1283,7 @@ let rec find_macro xs =
               | Treturn _ -> true
               | Tif _ -> true
               | Telse _ -> true
+
               | _ -> false
               )
           )
@@ -1284,9 +1319,10 @@ let rec find_macro xs =
             col1 <> 0 && (* otherwise can match typedef of fundecl*)
             (match other.tok with
             | TPtVirg _ -> false 
-            | tok when TH.is_binary_operator tok -> false
             | TOr _ -> false 
             | TCBrace _ when ctx <> InFunction -> false
+            | tok when TH.is_binary_operator tok -> false
+
             | _ -> true
             )) ||
           (col2 <= col1 &&
@@ -1326,7 +1362,7 @@ let rec find_actions = function
    *)
   | PToken ({tok = TIdent (s,ii)})
     ::Parenthised (xxs,info_parens)::xs 
-    when List.mem s ["sn9c102_write_const_regs"] -> 
+    when List.mem s action_list  -> 
       msg_macro_higher_order s;
 
       let res = 
@@ -1451,7 +1487,7 @@ let fix_tokens_cpp a =
 
 (* ugly hack, a better solution perhaps would be to erase TDefEOL 
  * from the Ast and list of tokens in parse_c.
- * note: I do a +1 for unparsing to correctly sync.
+ * note: I do a +1 somewhere, it's for the unparsing to correctly sync.
  *)
 let mark_end_define (info,annot) = 
   TDefEOL (
@@ -1482,7 +1518,7 @@ and define_line_2 line lastinfo xs =
       | EOF ii -> 
           mark_end_define lastinfo::EOF ii::define_line_1 xs
       | TCppEscapedNewline ii -> 
-          assert (line' = line);
+          if (line' <> line) then pr2 "WIERD: not same line number";
           TCommentSpace ii::define_line_2 (line+1) info xs
       | x -> 
           if line' = line
