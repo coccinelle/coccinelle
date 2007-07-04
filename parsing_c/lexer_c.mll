@@ -547,7 +547,7 @@ rule token = parse
   | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = ""},an) }
 
   | _ 
-      { pr2 ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
+      { pr2_once ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
         TUnknown (tokinfo lexbuf)
       }
 

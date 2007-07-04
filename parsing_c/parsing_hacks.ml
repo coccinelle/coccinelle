@@ -17,6 +17,10 @@ let pr2_cpp s =
   if !Flag_parsing_c.debug_cpp
   then pr2 ("CPP-" ^ s)
 
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2_once s
+
 
 (* In the following, there is some harcoded names of types or macros
  * but they are not used by our heuristics! They are just here to
@@ -58,7 +62,7 @@ let msg_typedef s =
       | _ -> false 
       )
     )
-    (fun s -> pr2 ("TYPEDEF: promoting: " ^ s))
+    (fun s -> pr2_once ("TYPEDEF: promoting: " ^ s))
     s
 
 let msg_declare_macro s = 
