@@ -828,11 +828,11 @@ let pp_program_gen pr_elem progelem =
             assert (List.length iicomma <= 1);
             iicomma +> List.iter pr_elem;
             iis +> List.iter pr_elem;
-        );
-        pr_elem i2;
-        define_val defval;
-        pr_elem ieol
-      )
+          );
+          pr_elem i2;
+      );
+      define_val defval;
+      pr_elem ieol
           
 
   | MacroTop (s, es,   [i1;i2;i3;i4]) -> 
