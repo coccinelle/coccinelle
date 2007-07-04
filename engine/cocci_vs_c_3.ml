@@ -2439,13 +2439,21 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.MetaStmtList _, _ -> 
       failwith "not handling MetaStmtList"
 
-  | A.TopExp exp, nodeb ->
-      failwith "put something for an expression that must be at the top level of a rule elem"
+  | A.TopExp ea, F.DefineExpr eb  ->
+      expression ea eb >>= (fun ea eb -> 
+        return (
+          A.TopExp ea,
+          F.DefineExpr eb
+        ))
+         
 
-  (* It is important to put this case before the one that follows, cos
-     want to transform a switch, even if cocci does not have a switch
-     statement, because we may have put an Exp, and so have to
-     transform the expressions inside the switch. *)
+
+  (* It is important to put this case before the one that fails because
+   * of the lack of the counter part of a C construct in SmPL (for instance
+   * there is not yet a CaseRange in SmPL). Even if SmPL don't handle
+   * yet certain constructs, those constructs may contain expression
+   * that we still want and can transform.
+   *)
 
   | A.Exp exp, nodeb -> 
      (* Now keep fullstatement inside the control flow node, 
