@@ -1544,8 +1544,9 @@ let timeout_function timeoutval = fun f ->
       * Maybe signals are disabled when process an exception handler ?
       *)
       begin 
-        log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e);
         ignore(Unix.alarm 0);
+        (* log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e); *)
+        log "exn while in timeout_function";
         raise e
       end
 
