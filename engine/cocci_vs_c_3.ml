@@ -9,9 +9,7 @@ module F = Control_flow_c
 (* Wrappers *)
 (*****************************************************************************)
 
-let pr2_memo = 
-  Common.once (fun s -> pr2 ("(MEMO)" ^ s))
-  
+ 
 
 (*****************************************************************************)
 (* Helpers *)
@@ -456,7 +454,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       (match opttypa, !opttypb with
         | None, _ -> return ((),())
         | Some _, [] -> 
-            pr2_memo ("I don't have the type information. Certainly a pb in " ^
+            pr2_once ("I don't have the type information. Certainly a pb in " ^
                          "annotate_typer.ml");
             fail
 
@@ -531,7 +529,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       (match opttypa, !opttypb with
         | None, _ -> return ((),())
         | Some _, [] -> 
-            pr2_memo ("I don't have the type information. Certainly a pb in " ^
+            pr2_once ("I don't have the type information. Certainly a pb in " ^
                          "annotate_typer.ml");
             fail
 
@@ -1646,10 +1644,10 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
       assert (null iivirg);
       (match onevar with
       | B.BitField (sopt, typb, expr), ii -> 
-          pr2 "warning: bitfield not handled by ast_cocci";
+          pr2_once "warning: bitfield not handled by ast_cocci";
           fail
       | B.Simple (None, typb), ii -> 
-          pr2 "warning: unamed struct field not handled by ast_cocci";
+          pr2_once "warning: unamed struct field not handled by ast_cocci";
           fail
       | B.Simple (Some idb, typb), ii -> 
           let (iidb) = tuple_of_list1 ii in
@@ -1851,7 +1849,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
       | _, B.IntType (B.Si (_, B.CLongLong)) 
       | _, B.FloatType B.CLongDouble 
           -> 
-          pr2 "warning: long long or long double not handled by ast_cocci";
+          pr2_once 
+            "warning: long long or long double not handled by ast_cocci";
           fail
           
           
@@ -2001,7 +2000,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
         (match sbopt with
         | None -> 
-            pr2 "warning: anonymous structDef not handled by ast_cocci";
+            pr2_once "warning: anonymous structDef not handled by ast_cocci";
             fail
         | Some sb -> 
             let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in

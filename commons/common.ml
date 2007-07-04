@@ -119,6 +119,19 @@ let pr2gen x = pr2 (Dumper.dump x)
 
 
 
+
+let _already_printed = Hashtbl.create 101
+
+let pr2_once s = 
+  if not (Hashtbl.mem _already_printed s)
+  then begin
+    Hashtbl.add _already_printed s true;
+    pr2 ("(ONCE) " ^ s);
+  end
+
+
+
+
 let redirect_stdout_stderr file f = 
   begin
     let chan = open_out file in

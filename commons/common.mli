@@ -20,6 +20,9 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 val pr2gen: 'a -> unit
 
+val _already_printed : (string, bool) Hashtbl.t
+val pr2_once : string -> unit
+
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
 

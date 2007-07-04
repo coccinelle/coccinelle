@@ -79,9 +79,7 @@ let long_usage_func  = ref (fun () -> ())
  * quite well the underlying semantics of coccinelle.
  *)
    
-(* will be printed when use only ./spatch. For the rest you have to
- * use -longhelp to see them. 
- *)
+
 let set_sgrep2 _ =
   (* to keep ctl directory independent of parsing_cocci directory *)
    Flag_parsing_cocci.sgrep_mode2 := true;
@@ -91,6 +89,11 @@ let set_diff_lines n =
   let n = string_of_int n in
   Flag_parsing_c.diff_lines := Some n
 
+
+
+(* will be printed when use only ./spatch. For the rest you have to
+ * use -longhelp to see them. 
+ *)
 let short_options = [ 
   "-sp_file",  Arg.Set_string cocci_file, " <file> the semantic patch file";
   "-iso_file", Arg.Set_string iso_file,   " <file> the iso file";
@@ -134,7 +137,7 @@ let short_options = [
 ]
 
 (* the format is a list of triples:
- *  (title of section * (optional) explanation of sections * option list
+ *  (title of section * (optional) explanation of sections * option list)
  *)
 let other_options = [
   "aliases and obsolete options", 
