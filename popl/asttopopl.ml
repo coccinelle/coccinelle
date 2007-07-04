@@ -19,14 +19,12 @@ let rec stm s =
 	(Past.Or(stm_list stm1,stm_list stm2)) stmts
   | Ast.Dots(dots,whencodes,_) ->
       (match whencodes with
-	Ast.NoWhen -> Past.DInfo(Past.Dots,[],[])
-      |	Ast.WhenNot(a) -> Past.DInfo(Past.When(Past.Dots,stm_list a),[],[])
-      |	_ -> failwith "only when != supported")
+	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(Past.Dots,stm_list a),[],[])
+      |	_ -> failwith "only one when != supported")
   | Ast.Nest(stmt_dots,whencodes,_) ->
       let nest = Past.Nest(stm_list stmt_dots) in
       (match whencodes with
-	Ast.NoWhen -> Past.DInfo(nest,[],[])
-      |	Ast.WhenNot(a) -> Past.DInfo(Past.When(nest,stm_list a),[],[])
+	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(nest,stm_list a),[],[])
       |	_ -> failwith "only when != supported")
   | Ast.While(header,body,(_,_,_,aft)) | Ast.For(header,body,(_,_,_,aft)) ->
       (* only allowed if only the header is significant *)

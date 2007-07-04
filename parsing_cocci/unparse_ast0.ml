@@ -466,7 +466,9 @@ and statement arity s =
       | Ast0.Ty(ty) -> print_string arity; typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;
-	  whencode (dots force_newline (statement "")) (statement "") whn
+	  List.iter
+	    (whencode (dots force_newline (statement "")) (statement ""))
+	    whn
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.Define(def,id,params,body) ->
@@ -501,8 +503,7 @@ and print_fninfo = function
   | Ast0.FAttr(attr) -> mcode print_string attr
 
 and whencode notfn alwaysfn = function
-    Ast0.NoWhen -> ()
-  | Ast0.WhenNot a ->
+    Ast0.WhenNot a ->
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast0.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()

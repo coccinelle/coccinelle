@@ -81,8 +81,9 @@ let mkidots str (dot,whencode) =
   | _ -> failwith "cannot happen"
 
 let mkddots str (dot,whencode) =
-  match str with
-    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+  match (str,whencode) with
+    ("...",None) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, None))
+  | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
   | _ -> failwith "cannot happen"
 
 let mkpdots str dot =

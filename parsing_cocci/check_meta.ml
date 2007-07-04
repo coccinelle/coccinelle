@@ -314,8 +314,9 @@ and statement old_metas table minus s =
       dots (statement old_metas table minus) rule_elem_dots;
       get_opt (dots (statement old_metas table minus)) w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
-      whencode (dots (statement old_metas table minus))
-	(statement old_metas table minus) x
+      List.iter
+	(whencode (dots (statement old_metas table minus))
+	   (statement old_metas table minus)) x
   | Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
@@ -334,8 +335,7 @@ and fninfo old_metas table minus = function
   | Ast0.FAttr(attr) -> ()
 
 and whencode notfn alwaysfn = function
-    Ast0.NoWhen -> ()
-  | Ast0.WhenNot a -> notfn a
+    Ast0.WhenNot a -> notfn a
   | Ast0.WhenAlways a -> alwaysfn a
 
 and case_line old_metas table minus c =

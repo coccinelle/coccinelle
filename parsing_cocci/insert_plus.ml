@@ -52,9 +52,9 @@ it *)
 	 (match Ast0.unwrap s with
 	   Ast0.Nest(started,stm_dots,ender,whencode) ->
 	     Ast0.Nest(started,stm_dots,ender,None)
-	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,Ast0.NoWhen)
-	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,Ast0.NoWhen)
-	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,Ast0.NoWhen)
+	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,[])
+	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,[])
+	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,[])
 	 | s -> s)) in
 
   let topfn r k e = Ast0.TopTag(e) :: (k e) in

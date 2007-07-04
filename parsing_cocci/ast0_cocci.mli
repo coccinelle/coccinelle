@@ -266,11 +266,11 @@ and base_statement =
   | Nest          of string mcode * statement dots * string mcode *
 	             statement dots option
   | Dots          of string mcode (* ... *) *
-                     (statement dots,statement) whencode
+                     (statement dots,statement) whencode list
   | Circles       of string mcode (* ooo *) *
-	             (statement dots,statement) whencode
+	             (statement dots,statement) whencode list
   | Stars         of string mcode (* *** *) *
-	             (statement dots,statement) whencode
+	             (statement dots,statement) whencode list
   | FunDecl of (info * mcodekind) (* before the function decl *) *
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list * string mcode (* ) *) *
@@ -290,8 +290,7 @@ and fninfo =
   | FAttr of string mcode
 
 and ('a,'b) whencode =
-    NoWhen
-  | WhenNot of 'a
+    WhenNot of 'a
   | WhenAlways of 'b
 
 and statement = base_statement wrap

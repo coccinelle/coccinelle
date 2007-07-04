@@ -744,36 +744,31 @@ mysterious bug that is obtained with eg int attach(...); *)
 	      failwith "nest not supported in patterns"
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
 	  | (Ast0.Ty(tya),Ast0.Ty(tyb)) -> match_typeC tya tyb
-	  | (Ast0.Dots(_,Ast0.NoWhen),Ast0.Dots(_,Ast0.NoWhen))
-	  | (Ast0.Circles(_,Ast0.NoWhen),Ast0.Circles(_,Ast0.NoWhen))
-	  | (Ast0.Stars(_,Ast0.NoWhen),Ast0.Stars(_,Ast0.NoWhen)) ->
-	      return true
-	  | (Ast0.Dots(d,Ast0.NoWhen),Ast0.Dots(_,Ast0.WhenNot wc))
-	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenNot wc))
-	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenNot wc)) ->
-	  (* hope that mcode of dots is unique somehow *)
-	      let (_,_,dots_whencode_allowed) = whencode_allowed in
-	      if dots_whencode_allowed
-	      then add_dot_binding d (Ast0.DotsStmtTag wc)
-	      else
-		(Printf.printf "warning: not applying iso because of whencode";
-		 return false)
-	  | (Ast0.Dots(d,Ast0.NoWhen),Ast0.Dots(_,Ast0.WhenAlways wc))
-	  | (Ast0.Circles(d,Ast0.NoWhen),Ast0.Circles(_,Ast0.WhenAlways wc))
-	  | (Ast0.Stars(d,Ast0.NoWhen),Ast0.Stars(_,Ast0.WhenAlways wc)) ->
-	  (* hope that mcode of dots is unique somehow *)
-	      let (_,_,dots_whencode_allowed) = whencode_allowed in
-	      if dots_whencode_allowed
-	      then add_dot_binding d (Ast0.StmtTag wc)
-	      else
-		(Printf.printf "warning: not applying iso because of whencode";
-		 return false)
-	  | (Ast0.Dots(_,Ast0.WhenNot _),_)
-	  | (Ast0.Circles(_,Ast0.WhenNot _),_)
-	  | (Ast0.Stars(_,Ast0.WhenNot _),_)
-	  | (Ast0.Dots(_,Ast0.WhenAlways _),_)
-	  | (Ast0.Circles(_,Ast0.WhenAlways _),_)
-	  | (Ast0.Stars(_,Ast0.WhenAlways _),_) ->
+	  | (Ast0.Dots(d,[]),Ast0.Dots(_,wc))
+	  | (Ast0.Circles(d,[]),Ast0.Circles(_,wc))
+	  | (Ast0.Stars(d,[]),Ast0.Stars(_,wc)) ->
+	      (match wc with
+		[] -> return true
+	      |	_ ->
+		  let (_,_,dots_whencode_allowed) = whencode_allowed in
+		  if dots_whencode_allowed
+		  then
+		    List.fold_left
+		      (function prev ->
+			function
+		      | Ast0.WhenNot wc ->
+			  conjunct_bindings prev
+			    (add_dot_binding d (Ast0.DotsStmtTag wc))
+		      | Ast0.WhenAlways wc ->
+			  conjunct_bindings prev
+			    (add_dot_binding d (Ast0.StmtTag wc)))
+		      (return true) wc
+		  else
+		    (Printf.printf
+		       "warning: not applying iso because of whencode";
+		     return false))
+	  | (Ast0.Dots(_,_::_),_) | (Ast0.Circles(_,_::_),_)
+	  | (Ast0.Stars(_,_::_),_) ->
 	      failwith "whencode not allowed in a pattern3"
 	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
 	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
@@ -1293,32 +1288,38 @@ let instantiate bindings mv_bindings =
 		(Ast0.MetaStmt(Ast0.set_mcode_data new_mv name,pure)))
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | Ast0.Dots(d,_) ->
-	(try
-	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) ->
-	      Ast0.rewrap e (Ast0.Dots(d,Ast0.WhenNot stms))
-	  | Ast0.StmtTag(stm) ->
-	      Ast0.rewrap e (Ast0.Dots(d,Ast0.WhenAlways stm))
-	  | _ -> failwith "unexpected binding")
-	with Not_found -> e)
+	Ast0.rewrap e
+	  (Ast0.Dots
+	     (d,
+	      List.map
+		(function (_,v) ->
+		  match v with
+		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
+		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
+		  | _ -> failwith "unexpected binding")
+		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | Ast0.Circles(d,_) ->
-	(try
-	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) ->
-	      Ast0.rewrap e (Ast0.Circles(d,Ast0.WhenNot stms))
-	  | Ast0.StmtTag(stm) ->
-	      Ast0.rewrap e (Ast0.Circles(d,Ast0.WhenAlways stm))
-	  | _ -> failwith "unexpected binding")
-	with Not_found -> e)
+	Ast0.rewrap e
+	  (Ast0.Circles
+	     (d,
+	      List.map
+		(function (_,v) ->
+		  match v with
+		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
+		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
+		  | _ -> failwith "unexpected binding")
+		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | Ast0.Stars(d,_) ->
-	(try
-	  (match List.assoc (dot_term d) bindings with
-	    Ast0.DotsStmtTag(stms) ->
-	      Ast0.rewrap e (Ast0.Stars(d,Ast0.WhenNot stms))
-	  | Ast0.StmtTag(stm) ->
-	      Ast0.rewrap e (Ast0.Stars(d,Ast0.WhenAlways stm))
-	  | _ -> failwith "unexpected binding")
-	with Not_found -> e)
+	Ast0.rewrap e
+	  (Ast0.Stars
+	     (d,
+	      List.map
+		(function (_,v) ->
+		  match v with
+		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
+		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
+		  | _ -> failwith "unexpected binding")
+		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | _ -> k e in
 
   V0.rebuilder
@@ -1652,9 +1653,7 @@ let transform_decl (metavars,alts) e =
 	(function b -> function mv_b ->
 	  (instantiate b mv_b).V0.rebuilder_declaration) e
 	make_disj_decl
-	(function x ->
-	  Unparse_ast0.declaration x; Format.print_newline();
-	  make_minus.V0.rebuilder_declaration x)
+	make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
 	Unparse_ast0.declaration extra_copy_other_plus
   | _ -> ([],e)

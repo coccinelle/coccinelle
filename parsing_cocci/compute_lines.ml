@@ -672,6 +672,7 @@ let rec statement s =
   | Ast0.Include(inc,stm) ->
       mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
   | Ast0.Define(def,id,params,body) ->
+      let id = ident id in
       let body = dots is_stm_dots None statement body in
       mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
   | Ast0.OptStm(stm) ->

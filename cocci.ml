@@ -749,7 +749,11 @@ let rec bigloop2 rs ccs =
          | Ast_cocci.Dep s     ->     (List.mem s !rules_that_have_matched)
          | Ast_cocci.AntiDep s -> not (List.mem s !rules_that_have_matched)
        ) r.dependencies)
-   then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
+   then
+     begin
+       if !Flag.show_misc
+       then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
+     end
    else begin
 
     let newes = ref [] in (* envs for next round/rule *)

@@ -34,10 +34,10 @@ let string2var x = ("",x)
 let wrap n ctl = (ctl,n)
 
 let label_pred_maker line = function
-    None -> None
+    None -> []
   | Some label_var ->
       let label_pred = (Lib_engine.PrefixLabel(label_var),CTL.Control) in
-      Some(wrap line (CTL.Pred label_pred))
+      [wrap line (CTL.Pred label_pred)]
 
 let predmaker guard pred line = function
     None -> wrap line (CTL.Pred pred)
@@ -189,7 +189,7 @@ let elim_opt =
 		    {Ast.line = 0;Ast.column = 0;
 		      Ast.strbef = [];Ast.straft = []},
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
-		   Ast.NoWhen,[]) in
+		   [],[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
 			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots)])]
 
@@ -387,10 +387,12 @@ let rec get_before sl a =
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and get_before_whencode = function
-    Ast.NoWhen -> Ast.NoWhen
-  | Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
-  | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w
+and get_before_whencode wc =
+  List.map
+    (function
+	Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
+      | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w)
+    wc
 
 and get_before_e s a =
   match Ast.unwrap s with
@@ -492,10 +494,12 @@ let rec get_after sl a =
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and get_after_whencode a = function
-    Ast.NoWhen -> Ast.NoWhen
-  | Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
-  | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w
+and get_after_whencode a wc =
+  List.map
+    (function
+	Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
+      | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w)
+    wc
 
 and get_after_e s a =
   match Ast.unwrap s with
@@ -867,20 +871,34 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
     process_bef_aft statement_list statement guard builder wrapcode =
   let befaft = List.map (process_bef_aft guard) befaftexps in
   let befaftg = List.map (process_bef_aft true) befaftexps in
-  let (notwhencodes,whencodes) =
-    match whencodes with
-      Ast.NoWhen -> (None,label_pred_maker n label)
-    | Ast.WhenNot whencodes ->
-	(Some (statement_list whencodes),label_pred_maker n label)
-    | Ast.WhenAlways s -> (None,Some(statement s)) in
+  let ((notwhencodes : formula list),(whencodes : formula list)) =
+    let (nots,eqs) =
+      List.partition
+	(function
+	    Ast.WhenNot whencodes -> true
+	  | Ast.WhenAlways s -> false)
+	whencodes in
+    let nots =
+      List.map
+	(function
+	    Ast.WhenNot whencodes -> whencodes
+	  | Ast.WhenAlways s -> failwith "not possible")
+	nots in
+    let eqs =
+      List.map
+	(function
+	    Ast.WhenNot whencodes -> failwith "not possible"
+	  | Ast.WhenAlways s -> s)
+	eqs in
+    let extra = 
+      match eqs with
+	[] -> label_pred_maker n label
+      |	_ -> [] in
+    (List.map statement_list nots, extra @ List.map statement eqs) in
   let notwhencodes =
     (* add in after, because it's not part of the program *)
     if !Flag_parsing_cocci.sgrep_mode or !Flag_parsing_cocci.sgrep_mode2
-    then
-      let after = aftpred n label in
-      match notwhencodes with
-	None -> Some after
-      |	Some x -> Some (wrapOr n (after,x))(*can use v because disjoint w/ x*)
+    then (aftpred n label) :: notwhencodes
     else notwhencodes in
   let ender =
     match after with
@@ -894,7 +912,8 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 	then wrapOr n (exit,errorexit)
 	else exit (* was wrap n CTL.False *) in
   builder n (guard_to_strict guard)
-    (List.combine befaft befaftg,nest,notwhencodes,whencodes,dot_code,ender,
+    (List.combine befaft befaftg,nest,
+     (notwhencodes : formula list),(whencodes : formula list),dot_code,ender,
      aftret n label, truepred n label,
      make_match n label false (wrapcode Ast.Goto),
      make_match n None false (wrapcode Ast.Goto))
@@ -1187,8 +1206,7 @@ and statement stmt after quantified label guard =
 	    guard in
 	dots_and_nests (Some dots_pattern) whencode t None after n label
 	  (process_bef_aft quantified n label)
-	  (function x ->
-	    statement_list x Tail quantified label true true)
+	  (function x -> statement_list x Tail quantified label true true)
 	  (function x -> statement x Tail quantified label true)
 	  guard builder (Ast.rewrap stmt) in
 
@@ -1359,7 +1377,7 @@ and statement stmt after quantified label guard =
 	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,Ast.NoWhen,_) -> Some (Common.Left stmt_dots)
+	      Ast.Nest(stmt_dots,[],_) -> Some (Common.Left stmt_dots)
 	    | Ast.Dots(_,whencode,_) -> Some (Common.Right whencode)
 	    | _ -> None)
 	| _ -> None in
@@ -1383,15 +1401,32 @@ and statement stmt after quantified label guard =
 	    	    make_seq
 	      [start_brace;
 		match whencode with
-		  Ast.NoWhen -> wrap n CTL.True
-		| Ast.WhenNot(x) ->
-		    wrapAU
-		      (wrapNot(statement_list x Tail new_quantified4 label
-				 true true),
-		       make_match stripped_rbrace)
-		| Ast.WhenAlways(x) ->
-		    wrapAU (statement x Tail new_quantified4 label true,
-			    make_match stripped_rbrace)]
+		  [] -> wrap n CTL.True
+		| _ ->
+		    let leftarg =
+		      wrapAnd
+			(wrapNot
+			   (List.fold_left
+			      (function prev ->
+				function
+				    Ast.WhenAlways(s) -> prev
+				  | Ast.WhenNot(sl) ->
+				      let x =
+					statement_list sl Tail new_quantified4
+					  label true true in
+				      wrapOr(prev,x))
+			      (wrap n CTL.False) whencode),
+			 List.fold_left
+			   (function prev ->
+			     function
+				 Ast.WhenAlways(s) ->
+				   let x =
+				     statement s Tail new_quantified4
+				       label true in
+				   wrapAnd(prev,x)
+			       | Ast.WhenNot(sl) -> prev)
+			   (wrap n CTL.True) whencode) in
+		    wrapAU(leftarg,make_match stripped_rbrace)]
 	| None ->
 	    make_seq
 	      [start_brace;
@@ -1495,7 +1530,7 @@ let rec letify x =
 	    drop_pdots phi1
 	      (dir2,s2,List.map (function (x,y) -> (x,letify y)) before_after,
 	       get_option letify nest,
-	       get_option letify notwhens,get_option letify whens,
+	       List.map letify notwhens,List.map letify whens,
 	       dotcode, letify rest, ar, tr, goto, goto')
 	      (function ax -> CTL.rewrap x (CTL.AX(dir1,s1,ax)))
 	      (function ex -> CTL.rewrap x (CTL.EX(dir1,ex)))
@@ -1516,14 +1551,14 @@ let rec letify x =
 	drop_dots x
 	  (dir,s,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
-	   get_option letify notwhens,get_option letify whens,
+	   List.map letify notwhens,List.map letify whens,
 	   dotcode, letify rest, ar, tr, goto, goto')
     | CTL.PDots(dir,s,before_after,nest,notwhens,whens,dotcode,rest,ar,tr,
 		goto,goto')->
 	drop_pdots x
 	  (dir,s,List.map (function (x,y) -> (x,letify y)) before_after,
 	   get_option letify nest,
-	   get_option letify notwhens,get_option letify whens,
+	   List.map letify notwhens,List.map letify whens,
 	   dotcode, letify rest, ar, tr, goto, goto')
 	  (function ax -> ax) (function ex -> ex))
 
@@ -1549,10 +1584,9 @@ and drop_dots x
 			     (CTL.rewrap n
 				(CTL.Uncheck (CTL.rewrap n (CTL.Ref v))))))))))
       nest in
-  let notwhens = get_option not_uncheck notwhens in
-  let whens = get_option uncheck whens in
-  let all =
-    (lst dotcode) @ (lst nest) @ (lst notwhens) @ (lst whens) @ before_after in
+  let notwhens = List.map not_uncheck notwhens in
+  let whens = List.map uncheck whens in
+  let all = (lst dotcode) @ (lst nest) @ notwhens @ whens @ before_after in
   let wrap f = CTL.rewrap x f in
   let gotopred = (* dotcode may contain - *)
     match dotcode with

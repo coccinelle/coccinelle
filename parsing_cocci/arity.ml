@@ -831,22 +831,28 @@ and statement in_nest tgt stm =
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whn =
-	whencode (concat_dots (statement false Ast0.NONE))
-	  (statement false Ast0.NONE) whn in
+	List.map
+	  (whencode (concat_dots (statement false Ast0.NONE))
+	     (statement false Ast0.NONE))
+	  whn in
       make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
   | Ast0.Circles(dots,whn) ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whn =
-	whencode (concat_dots (statement false Ast0.NONE))
-	  (statement false Ast0.NONE) whn in
+	List.map
+	  (whencode (concat_dots (statement false Ast0.NONE))
+	     (statement false Ast0.NONE))
+	  whn in
       make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
   | Ast0.Stars(dots,whn)   ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       let whn =
-	whencode (concat_dots (statement false Ast0.NONE))
-	  (statement false Ast0.NONE) whn in
+	List.map
+	  (whencode (concat_dots (statement false Ast0.NONE))
+	     (statement false Ast0.NONE))
+	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
   | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
       let arity =
@@ -946,8 +952,7 @@ and fninfo2arity fninfo =
        fninfo)
 
 and whencode notfn alwaysfn = function
-    Ast0.NoWhen -> Ast0.NoWhen
-  | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
+    Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
 
 and make_case_line =

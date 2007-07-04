@@ -400,7 +400,7 @@ let combiner bind option_default
 	  multibind (List.map statement_dots stmt_dots_list)
       | Ast.Nest(stmt_dots,whn,_) ->
 	  bind (statement_dots stmt_dots)
-	    (whencode statement_dots statement whn)
+	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
@@ -408,7 +408,8 @@ let combiner bind option_default
       | Ast.Define(header,body) ->
 	  bind (rule_elem header) (statement_dots body)
       | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
-	  bind (string_mcode d) (whencode statement_dots statement whn)
+	  bind (string_mcode d)
+	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
 	  statement stmt in
     stmtfn all_functions k s
@@ -420,8 +421,7 @@ let combiner bind option_default
     | Ast.FAttr(attr) -> string_mcode attr
 
   and whencode notfn alwaysfn = function
-      Ast.NoWhen -> option_default
-    | Ast.WhenNot a -> notfn a
+      Ast.WhenNot a -> notfn a
     | Ast.WhenAlways a -> alwaysfn a
  
   and case_line c =
@@ -883,7 +883,7 @@ let rebuilder
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
 	| Ast.Nest(stmt_dots,whn,t) ->
 	    Ast.Nest(statement_dots stmt_dots,
-		     whencode statement_dots statement whn,t)
+		     List.map (whencode statement_dots statement) whn,t)
 	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls, dots,
@@ -891,11 +891,14 @@ let rebuilder
 	| Ast.Define(header,body) ->
 	    Ast.Define(rule_elem header,statement_dots body)
 	| Ast.Dots(d,whn,t) ->
-	    Ast.Dots(string_mcode d, whencode statement_dots statement whn, t)
+	    Ast.Dots(string_mcode d,
+		     List.map (whencode statement_dots statement) whn, t)
 	| Ast.Circles(d,whn,t) ->
-	    Ast.Circles(string_mcode d,whencode statement_dots statement whn,t)
+	    Ast.Circles(string_mcode d,
+			List.map (whencode statement_dots statement) whn,t)
 	| Ast.Stars(d,whn,t) ->
-	    Ast.Stars(string_mcode d, whencode statement_dots statement whn, t)
+	    Ast.Stars(string_mcode d,
+		      List.map (whencode statement_dots statement) whn, t)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in
@@ -912,8 +915,7 @@ let rebuilder
     | Ast.FAttr(attr) -> Ast.FAttr(string_mcode attr)
 
   and whencode notfn alwaysfn = function
-      Ast.NoWhen -> Ast.NoWhen
-    | Ast.WhenNot a -> Ast.WhenNot (notfn a)
+      Ast.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
 
   and case_line c =

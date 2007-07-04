@@ -388,7 +388,8 @@ let combiner bind option_default
       | Ast0.Exp(exp) -> expression exp
       | Ast0.Ty(ty) -> typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
-	  bind (string_mcode d) (whencode statement_dots statement whn)
+	  bind (string_mcode d)
+	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast0.Include(inc,name) -> bind (string_mcode inc) (inc_mcode name)
       | Ast0.Define(def,id,params,body) ->
 	  multibind [string_mcode def; ident id; define_parameters params;
@@ -433,8 +434,7 @@ let combiner bind option_default
     | Ast0.FAttr(init) -> string_mcode init
 
   and whencode notfn alwaysfn = function
-      Ast0.NoWhen -> option_default
-    | Ast0.WhenNot a -> notfn a
+      Ast0.WhenNot a -> notfn a
     | Ast0.WhenAlways a -> alwaysfn a
 
   and case_line c =
@@ -823,11 +823,14 @@ let rebuilder = fun
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.Ty(ty) -> Ast0.Ty(typeC ty)
 	| Ast0.Dots(d,whn) ->
-	    Ast0.Dots(string_mcode d, whencode statement_dots statement whn)
+	    Ast0.Dots(string_mcode d,
+		      List.map (whencode statement_dots statement) whn)
 	| Ast0.Circles(d,whn) ->
-	    Ast0.Circles(string_mcode d, whencode statement_dots statement whn)
+	    Ast0.Circles(string_mcode d,
+			 List.map (whencode statement_dots statement) whn)
 	| Ast0.Stars(d,whn) ->
-	    Ast0.Stars(string_mcode d, whencode statement_dots statement whn)
+	    Ast0.Stars(string_mcode d,
+		       List.map (whencode statement_dots statement) whn)
 	| Ast0.Include(inc,name) ->
 	    Ast0.Include(string_mcode inc,inc_mcode name)
 	| Ast0.Define(def,id,params,body) ->
@@ -879,8 +882,7 @@ let rebuilder = fun
     | Ast0.FAttr(init) -> Ast0.FAttr(string_mcode init)
 
   and whencode notfn alwaysfn = function
-      Ast0.NoWhen -> Ast0.NoWhen
-    | Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
+      Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
 
   and case_line c =

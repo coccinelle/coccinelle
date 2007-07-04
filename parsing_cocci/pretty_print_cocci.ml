@@ -619,11 +619,17 @@ and statement arity s =
       print_string arity;
       nest_dots (statement arity)
 	(function _ ->
-	  whencode (dots force_newline (statement "")) (statement "") whn)
+	  open_box 0;
+	  print_between force_newline
+	    (whencode (dots force_newline (statement "")) (statement "")) whn;
+	  close_box(); force_newline())
 	stmt_dots
   | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
       print_string arity; mcode print_string d;
-      whencode (dots force_newline (statement "")) (statement "") whn
+      open_box 0;
+      print_between force_newline
+	(whencode (dots force_newline (statement "")) (statement "")) whn;
+      close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
   | Ast.MultiStm(s) -> statement "\\+" s
@@ -637,8 +643,7 @@ and print_statement_when whencode =
 
 
 and whencode notfn alwaysfn = function
-    Ast.NoWhen -> ()
-  | Ast.WhenNot a ->
+    Ast.WhenNot a ->
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()

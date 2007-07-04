@@ -1,8 +1,9 @@
-@@
-expression x;
+@a@
+identifier x;
 expression E;
 expression f;
 identifier fld;
+type T;
 @@
 
 (
@@ -17,11 +18,13 @@ identifier fld;
   dev_kfree_skb_anx(x);
 )
   ... WHEN != x = E
+      WHEN != \(T x;\| T x = E;\)
   f(...,x,...)
 
 @@
-expression x;
+identifier x;
 expression E;
+type T;
 @@
 
 (
@@ -36,12 +39,15 @@ expression E;
   dev_kfree_skb_anx(x);
 )
   ... WHEN != x = E
+      WHEN != T x;
+      WHEN != T x = E;
   *x
 
 @@
-expression x;
+identifier x;
 expression E;
 identifier fld;
+type T;
 @@
 
 (
@@ -56,5 +62,7 @@ identifier fld;
   dev_kfree_skb_anx(x);
 )
   ... WHEN != x = E
+      WHEN != T x;
+      WHEN != T x = E;
   x->fld
 

@@ -709,7 +709,7 @@ let triples_witness x unchecked not_keep trips =
 	  let (th_x,newth) = split_subst th x in
 	  match th_x with
 	    [] ->
-	      if not not_keep
+	      if not not_keep && !Flag_ctl.verbose_ctl_engine
 	      then
 		(SUB.print_mvar x; Format.print_flush();
 		 print_state ": empty witness from" [t]);

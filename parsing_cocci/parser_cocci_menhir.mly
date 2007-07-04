@@ -330,9 +330,10 @@ struct_or_union:
      | u=Tunion  { P.clt2mcode Ast.Union u }
 
 struct_decl:
-       t=ctype d=d_ident pv=TPtVirg
+      TNothing { [] }
+    | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
-	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
+	 [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
     | t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
@@ -341,25 +342,25 @@ struct_decl:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
+        [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
      | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv)) }
+	 [Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv))] }
 
 struct_decl_list:
    struct_decl_list_start { Ast0.wrap(Ast0.DOTS($1)) }
 
 struct_decl_list_start:
-  struct_decl                        { [$1] }
-| struct_decl struct_decl_list_start { $1::$2 }
+  struct_decl                        { $1 }
+| struct_decl struct_decl_list_start { $1@$2 }
 | d=edots_when(TEllipsis,struct_decl) r=continue_struct_decl_list
     { (P.mkddots "..." d)::r }
 
 continue_struct_decl_list:
   /* empty */                        { [] }
-| struct_decl struct_decl_list_start { $1::$2 }
-| struct_decl                        { [$1] }
+| struct_decl struct_decl_list_start { $1@$2 }
+| struct_decl                        { $1 }
 
 ctype:
        cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
@@ -386,18 +387,18 @@ ctype_qualif:
 declarations, statements, and expressions for the subterms */
 
 minus_body: 
-    f=loption(filespec) i=list(includes)
+    f=loption(filespec)
     b=loption(minus_function_decl_statement_or_expression)
     ew=loption(error_words)
-    { match f@i@b@ew with
+    { match f@b@ew with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_body: 
-    f=loption(filespec) i=list(includes)
+    f=loption(filespec)
     b=loption(plus_function_decl_statement_or_expression)
     ew=loption(error_words)
-    { Top_level.top_level (f@i@b@ew) }
+    { Top_level.top_level (f@b@ew) }
 
 filespec:
   TMinusFile TPlusFile
@@ -408,33 +409,27 @@ filespec:
 includes:
   TIncludeL
     { Ast0.wrap
-	(Ast0.DECL
-	   (Ast0.wrap
 	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
 			    let (arity,ln,lln,offset,col,strbef,straft) =
 			      P.id2clt $1 in
 			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
 			    P.clt2mcode
 			      (Ast.Local (Parse_aux.str2inc (P.id2name $1)))
-			      (P.drop_bef clt))))) }
+			      (P.drop_bef clt))) }
 | TIncludeNL
     { Ast0.wrap
-	(Ast0.DECL
-	   (Ast0.wrap
 	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
 			    let (arity,ln,lln,offset,col,strbef,straft) =
 			      P.id2clt $1 in
 			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
 			    P.clt2mcode
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
-			      (P.drop_bef clt))))) }
+			      (P.drop_bef clt))) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.Ty(t)) in
-      Ast0.wrap(Ast0.DECL(d (Ast0.wrap(Ast0.DOTS([ty]))))) }
+      d (Ast0.wrap(Ast0.DOTS([ty]))) }
 | defineop b=statement_dots(TEllipsis) TLineEnd
-    { Ast0.wrap
-	(Ast0.DECL
-	   ($1 (Ast0.wrap(Ast0.DOTS(b (P.mkdots "...")))))) }
+    { $1 (Ast0.wrap(Ast0.DOTS(b (P.mkdots "...")))) }
 
 defineop:
   TDefine
@@ -624,7 +619,8 @@ const_vol:
 /*****************************************************************************/
 
 statement:
-  TMetaStm
+  includes { $1 } /* shouldn't be allowed to be a single_statement... */
+| TMetaStm
     { P.meta_stm $1 }
 | expr TPtVirg
     { P.exp_stm $1 $2 }
@@ -847,6 +843,13 @@ decl_statement:
 	      (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),x)))
 	  $1 }
   | statement { [$1] }
+  /* this doesn't allow expressions at top level, because the parser doesn't
+	know whether there is one.  If there is one, this is not sequencible.
+	If there is not one, then it is.  It seems complicated to get around
+    this at the parser level.  We would have to have a check afterwards to
+    allow this.  One case where this would be useful is for a when.  Now
+	we allow a sequence of whens, so one can be on only statements and
+    one can be on only expressions. */
   | TOPar0 pre_post_decl_statement_and_expression_opt_mid TCPar0
       { let (first,rest) = $2 in
         let (mids,code) = List.split rest in
@@ -1391,11 +1394,12 @@ edots_when(dotter,when_grammar):
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
 dots_when(dotter,when_grammar,simple_when_grammar):
-    d=dotter                                 { (d,Ast0.NoWhen) }
-  | d=dotter TWhen TNotEq w=when_grammar TLineEnd
-      { (d,Ast0.WhenNot w) }
-  | d=dotter TWhen TEq w=simple_when_grammar TLineEnd
-      { (d,Ast0.WhenAlways w) }
+    d=dotter w=list(whens(when_grammar,simple_when_grammar))
+      { (d,w) }
+
+whens(when_grammar,simple_when_grammar):
+    TWhen TNotEq w=when_grammar TLineEnd { Ast0.WhenNot w }
+  | TWhen TEq w=simple_when_grammar TLineEnd { Ast0.WhenAlways w }
 
 // used in NEST
 no_dot_start_end(grammar,dotter):

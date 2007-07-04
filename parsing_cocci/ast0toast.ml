@@ -613,26 +613,32 @@ and statement s =
 	  Ast.Nest
 	    (statement_dots Ast.Sequencible rule_elem_dots,
 	     (match whencode with
-	       None -> Ast.NoWhen
-	     | Some x -> Ast.WhenNot (statement_dots Ast.Sequencible x)),
+	       None -> []
+	     | Some x -> [Ast.WhenNot (statement_dots Ast.Sequencible x)]),
 	     [])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in
 	  let whn =
-	    whencode (statement_dots Ast.Sequencible)
-	      (statement Ast.NotSequencible) whn in
+	    List.map
+	      (whencode (statement_dots Ast.Sequencible)
+		 (statement Ast.NotSequencible))
+	      whn in
 	  Ast.Dots(d,whn,[])
       | Ast0.Circles(d,whn) ->
 	  let d = mcode d in
 	  let whn =
-	    whencode (statement_dots Ast.Sequencible)
-	      (statement Ast.NotSequencible) whn in
+	    List.map
+	      (whencode (statement_dots Ast.Sequencible)
+		 (statement Ast.NotSequencible))
+	      whn in
 	  Ast.Circles(d,whn,[])
       | Ast0.Stars(d,whn) ->
 	  let d = mcode d in
 	  let whn =
-	    whencode (statement_dots Ast.Sequencible)
-	      (statement Ast.NotSequencible) whn in
+	    List.map
+	      (whencode (statement_dots Ast.Sequencible)
+		 (statement Ast.NotSequencible))
+	      whn in
 	  Ast.Stars(d,whn,[])
       | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
 	  let fi = List.map fninfo fi in
@@ -680,8 +686,7 @@ and statement s =
       | Ast0.UniqueDParam(dp) -> Ast.UniqueDParam(define_param dp))
 
   and whencode notfn alwaysfn = function
-      Ast0.NoWhen -> Ast.NoWhen
-    | Ast0.WhenNot a -> Ast.WhenNot (notfn a)
+      Ast0.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
 
   and process_list seqible = function
