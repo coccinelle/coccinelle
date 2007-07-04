@@ -105,7 +105,7 @@ let ast_to_flow_with_error_messages a =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
 
-let flows astc = 
+let flows_from_ast astc = 
   astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
 
 let one_flow flows = 
@@ -117,7 +117,7 @@ let one_flow flows =
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
-let ctls ast ua  =
+let ctls_from_ast ast ua  =
   List.map2
     (function ast -> function ua ->
       List.combine
@@ -866,7 +866,7 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cocci   coccifile isofile;
 
   let (astcocci,used_after_lists,toks) = sp_from_file coccifile isofile in
-  let ctls = ctls astcocci used_after_lists in
+  let ctls = ctls_from_ast astcocci used_after_lists in
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)

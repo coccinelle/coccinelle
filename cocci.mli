@@ -25,13 +25,13 @@ val sp_from_file :
 val rule_elem_from_string : string -> filename option -> Ast_cocci.rule_elem
 
 
-val flows : Ast_c.program -> Control_flow_c.cflow list
+val flows_from_ast : Ast_c.program -> Control_flow_c.cflow list
 val one_flow  : Control_flow_c.cflow list -> Control_flow_c.cflow
 
 val print_flow : Control_flow_c.cflow -> unit
 
 
-val ctls :
+val ctls_from_ast :
     Ast_cocci.rule list ->
       Ast_cocci.meta_name list list list ->
 	(Lib_engine.ctlcocci *
