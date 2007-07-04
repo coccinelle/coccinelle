@@ -602,6 +602,8 @@ and statement s =
       | Ast0.MetaStmtList(name,_) ->
 	  Ast.Atomic(local_rewrap s
 		       (Ast.MetaStmtList(mcode name,unitary,false)))
+      | Ast0.TopExp(exp) ->
+	  Ast.Atomic(local_rewrap s (Ast.TopExp(expression exp)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
       | Ast0.Ty(ty) ->

@@ -260,6 +260,7 @@ and base_statement =
   | MetaStmt      of (string * string) mcode * pure
   | MetaStmtList  of (string * string) mcode (*only in statement lists*) * pure
   | Exp           of expression  (* only in dotted statement lists *)
+  | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode

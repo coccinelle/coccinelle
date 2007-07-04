@@ -592,6 +592,9 @@ let rec statement s =
   | Ast0.Exp(exp) ->
       let exp = expression exp in
       mkres s (Ast0.Exp(exp)) exp exp
+  | Ast0.TopExp(exp) ->
+      let exp = expression exp in
+      mkres s (Ast0.TopExp(exp)) exp exp
   | Ast0.Ty(ty) ->
       let ty = typeC ty in
       mkres s (Ast0.Ty(ty)) ty ty

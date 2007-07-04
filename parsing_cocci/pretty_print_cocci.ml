@@ -539,6 +539,7 @@ let rec rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       print_string arity;  mcode print_meta name
   | Ast.Exp(exp) -> print_string arity; expression exp
+  | Ast.TopExp(exp) -> print_string arity; expression exp
   | Ast.Ty(ty) -> print_string arity; fullType ty
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s

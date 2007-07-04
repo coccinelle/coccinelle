@@ -463,6 +463,7 @@ and statement arity s =
 	  end_block();
 	  mcode print_string ender
       | Ast0.Exp(exp) -> print_string arity; expression exp
+      | Ast0.TopExp(exp) -> print_string arity; expression exp
       | Ast0.Ty(ty) -> print_string arity; typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;

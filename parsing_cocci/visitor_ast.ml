@@ -330,6 +330,7 @@ let combiner bind option_default
       | Ast.MetaStmtList(name,_,_) -> meta_mcode name
       | Ast.MetaRuleElem(name,_,_) -> meta_mcode name
       | Ast.Exp(exp) -> expression exp
+      | Ast.TopExp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
       |	Ast.DefineHeader(def,id,params) ->
@@ -807,6 +808,7 @@ let rebuilder
 	| Ast.MetaRuleElem(name,keep,inherited) ->
 	    Ast.MetaRuleElem(meta_mcode name,keep,inherited)
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
+	| Ast.TopExp(exp) -> Ast.TopExp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,inc_file_mcode name)

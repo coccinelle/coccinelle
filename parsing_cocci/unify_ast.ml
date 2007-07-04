@@ -424,6 +424,8 @@ and unify_rule_elem re1 re2 =
   | (Ast.Exp(e1),_) -> subexp (unify_expression e1) re2
   | (_,Ast.Exp(e2)) -> subexp (unify_expression e2) re1
 
+  | (Ast.TopExp(e1),Ast.TopExp(e2)) -> unify_expression e1 e2
+
     (* can match a rule_elem in different parts *)
   | (Ast.Ty(t1),Ast.Ty(t2)) -> return true
   | (Ast.Ty(t1),_) -> subtype (unify_fullType t1) re2

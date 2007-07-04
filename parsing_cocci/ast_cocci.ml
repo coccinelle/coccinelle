@@ -338,6 +338,7 @@ and base_rule_elem =
   | MetaStmtList  of meta_name mcode * keep_binding * inherited
 
   | Exp           of expression
+  | TopExp        of expression (* for macros body *)
   | Ty            of fullType (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *

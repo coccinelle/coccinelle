@@ -426,10 +426,18 @@ includes:
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
 | d=defineop t=ctype TLineEnd
-    { let ty = Ast0.wrap(Ast0.Ty(t)) in
+    { let ty = Ast0.wrap(Ast0.TopExp(Ast0.wrap(Ast0.TypeExp(t)))) in
       d (Ast0.wrap(Ast0.DOTS([ty]))) }
 | defineop b=statement_dots(TEllipsis) TLineEnd
-    { $1 (Ast0.wrap(Ast0.DOTS(b (P.mkdots "...")))) }
+    { let body = b (P.mkdots "...") in
+      let body =
+	match body with
+	  [e] ->
+	    (match Ast0.unwrap e with
+	      Ast0.Exp(e1) -> [Ast0.rewrap e (Ast0.TopExp(e1))]
+	    | _ -> body)
+	| _ -> body in
+      $1 (Ast0.wrap(Ast0.DOTS(body))) }
 
 defineop:
   TDefine
@@ -1138,7 +1146,7 @@ fun_exp_decl_statement_list:
     TNothing { [] } /* only in + code, between dots */
   | t=ctype
       /* This rule could be in exp_decl_statement_list, which would allow
-         it to be ain a... sequence.  But it is not clear whether that makes
+         it to be in a... sequence.  But it is not clear whether that makes
          sense, so for now it is here. */
       { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(t))))] }
   | lp=TOPar0 t=midzero_list(ctype) rp=TCPar0

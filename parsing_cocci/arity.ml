@@ -790,6 +790,17 @@ and statement in_nest tgt stm =
 	| Ast0.MultiExp(exp) ->
 	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.Exp(exp)))
 	| _ -> Ast0.Exp(new_exp))
+  | Ast0.TopExp(exp) ->
+      let new_exp = top_expression in_nest true tgt exp in
+      Ast0.rewrap stm 
+	(match Ast0.unwrap new_exp with
+	  Ast0.OptExp(exp) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
+	| Ast0.UniqueExp(exp) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
+	| Ast0.MultiExp(exp) ->
+	    Ast0.MultiStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
+	| _ -> Ast0.TopExp(new_exp))
   | Ast0.Ty(ty) ->
       let new_ty = typeC tgt ty in (* opt makes no sense alone at top level *)
       Ast0.rewrap stm 

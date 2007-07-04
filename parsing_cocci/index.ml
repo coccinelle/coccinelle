@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 140 *)
+(* current max is 141 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -172,6 +172,7 @@ let statement s =
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
   | Ast0.Nest(_,stmt_dots,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]
+  | Ast0.TopExp(exp) -> [141]
   | Ast0.Ty(ty) -> [124]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Circles(d,whencode) -> [85]

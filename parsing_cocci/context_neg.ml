@@ -539,6 +539,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Nest(starter1,_,ender1,_),Ast0.Nest(starter2,_,ender2,_)) ->
       equal_mcode starter1 starter2 && equal_mcode ender1 ender2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
+  | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))

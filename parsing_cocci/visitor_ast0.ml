@@ -386,6 +386,7 @@ let combiner bind option_default
 	       (bind (string_mcode ender)
 		  (get_option statement_dots whencode)))
       | Ast0.Exp(exp) -> expression exp
+      | Ast0.TopExp(exp) -> expression exp
       | Ast0.Ty(ty) -> typeC ty
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  bind (string_mcode d)
@@ -821,6 +822,7 @@ let rebuilder = fun
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
 		      string_mcode ender,get_option statement_dots whencode)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
+	| Ast0.TopExp(exp) -> Ast0.TopExp(expression exp)
 	| Ast0.Ty(ty) -> Ast0.Ty(typeC ty)
 	| Ast0.Dots(d,whn) ->
 	    Ast0.Dots(string_mcode d,

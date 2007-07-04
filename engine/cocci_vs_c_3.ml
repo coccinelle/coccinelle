@@ -2439,6 +2439,9 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | A.MetaStmtList _, _ -> 
       failwith "not handling MetaStmtList"
 
+  | A.TopExp exp, nodeb ->
+      failwith "put something for an expression that must be at the top level of a rule elem"
+
   (* It is important to put this case before the one that follows, cos
      want to transform a switch, even if cocci does not have a switch
      statement, because we may have put an Exp, and so have to
