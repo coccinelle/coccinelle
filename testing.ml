@@ -157,6 +157,8 @@ let delete_previous_result_files infile =
 
 let test_okfailed (cocci_file, iso_file) cfiles = 
 
+  cfiles +> List.iter delete_previous_result_files;
+
   let iso_file = if iso_file = "" then None else Some iso_file in
 
   let tmpfile = Common.new_temp_file "cocci" ".stdout" in
@@ -193,6 +195,10 @@ let test_okfailed (cocci_file, iso_file) cfiles =
           let expected_res2 = 
             Common.filename_of_dbe (dir,"corrected_"^ base, expected_suffix) in
 
+          (* can detele more than the first delete_previous_result_files
+           * because here we can have more files than in cfiles, for instance
+           * the header files
+           *)
           delete_previous_result_files infile;
           
           match outopt, Common.lfile_exists expected_res with
