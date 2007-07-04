@@ -1,0 +1,2 @@
+#define MAX_SETUP_STRINGS ARRAY_SIZE(setup_strings)
+#define SETUP_BUFFER_SIZE 200
