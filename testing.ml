@@ -144,25 +144,32 @@ let testall iso_file =
 
 type okfailed = Ok | SpatchOK | Failed
 
-let suffix_of_okfailed = function
+(* test_to_string *)
+let t_to_s = function
   | Ok -> ".ok"
   | SpatchOK -> ".spatch_ok"
   | Failed -> ".failed"
 
 let delete_previous_result_files infile = 
   [Ok;SpatchOK;Failed] +> List.iter (fun kind -> 
-    Common.command2 ("rm -f " ^ infile ^ suffix_of_okfailed kind)
+    Common.command2 ("rm -f " ^ infile ^ t_to_s kind)
   )
 
 
 let test_okfailed (cocci_file, iso_file) cfiles = 
 
-  cfiles +> List.iter delete_previous_result_files;
-
   let iso_file = if iso_file = "" then None else Some iso_file in
 
-  let tmpfile = Common.new_temp_file "cocci" ".stdout" in
-  let final_files = ref [] in (* generate a okfailed per input file *)
+  cfiles +> List.iter delete_previous_result_files;
+
+  (* final_files contain the name of an output file (a .ok or .failed
+   * or .spatch_ok), and also some additionnal strings to be printed in
+   * this output file in addition to the general error message of
+   * full_engine. *)
+  let final_files = ref [] in 
+
+
+  let newout = Common.new_temp_file "cocci" ".stdout" in
 
   let redirect_in = 
     match cfiles with
@@ -174,39 +181,40 @@ let test_okfailed (cocci_file, iso_file) cfiles =
         else (fun f -> f ())
     | [] -> failwith "wierd: no files for test_okfailed given"
   in
-        
+  
   redirect_in (fun () -> 
-  Common.redirect_stdout_stderr tmpfile (fun () -> 
-    try (
-      Common.timeout_function_opt !Flag.timeout (fun () ->
-        
-        let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
-        
-        outfiles +> List.iter (fun (infile, outopt) -> 
-          let (dir, base, ext) = Common.dbe_of_filename infile in
-          let expected_suffix   = 
-            match ext with
-            | "c" -> "res"
-            | "h" -> "h.res"
-            | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
-          in
-          let expected_res =  
-            Common.filename_of_dbe  (dir, base, expected_suffix) in
-          let expected_res2 = 
-            Common.filename_of_dbe (dir,"corrected_"^ base, expected_suffix) in
+    Common.redirect_stdout_stderr newout (fun () -> 
+      try (
+        Common.timeout_function_opt !Flag.timeout (fun () ->
+          
+          let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
+          
+          outfiles +> List.iter (fun (infile, outopt) -> 
+            let (dir, base, ext) = Common.dbe_of_filename infile in
+            let expected_suffix   = 
+              match ext with
+              | "c" -> "res"
+              | "h" -> "h.res"
+              | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
+            in
+            let expected_res =  
+              Common.filename_of_dbe  (dir, base, expected_suffix) in
+            let expected_res2 = 
+              Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
+            in
 
-          (* can detele more than the first delete_previous_result_files
-           * because here we can have more files than in cfiles, for instance
-           * the header files
-           *)
+            (* can detele more than the first delete_previous_result_files
+             * because here we can have more files than in cfiles, for instance
+             * the header files
+             *)
           delete_previous_result_files infile;
           
           match outopt, Common.lfile_exists expected_res with
           | None, false -> 
               ()
           | Some outfile, false -> 
-              pr2 ("PB: input file " ^ infile ^ " modified but no .res");
-              push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+              let s =("PB: input file " ^ infile ^ " modified but no .res") in
+              push2 (infile^t_to_s Failed, [s]) final_files
 
           | x, true -> 
               let outfile = 
@@ -216,19 +224,19 @@ let test_okfailed (cocci_file, iso_file) cfiles =
               in
               
               let diff = Compare_c.compare_default outfile expected_res in
-              pr2 (Compare_c.compare_result_to_string diff);
+              let s1 = (Compare_c.compare_result_to_string diff) in
               if fst diff = Compare_c.Correct
-              then push2 (infile ^ (suffix_of_okfailed Ok)) final_files
+              then push2 (infile ^ (t_to_s Ok), [s1]) final_files
               else 
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
-                  pr2 (Compare_c.compare_result_to_string diff);
+                  let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff = Compare_c.Correct
-                  then push2 (infile ^ (suffix_of_okfailed SpatchOK)) final_files
-                  else push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+                  then push2 (infile ^ (t_to_s SpatchOK),[s1;s2]) final_files
+                  else push2 (infile ^ (t_to_s Failed), [s1;s2]) final_files
                 end
-              else push2 (infile ^ (suffix_of_okfailed Failed)) final_files
+              else push2 (infile ^ (t_to_s Failed), [s1]) final_files
         )
       );
     )
@@ -237,17 +245,22 @@ let test_okfailed (cocci_file, iso_file) cfiles =
 	Str.global_replace (Str.regexp "\\\\n") "\n"
 	  (Str.global_replace (Str.regexp ("\\\\\"")) "\""
 	     (Str.global_replace (Str.regexp "\\\\t") "\t" s)) in
-      pr2 ("PROBLEM\n" ^ ("   exn = " ^ (clean(Printexc.to_string exn)) ^ "\n"));
+      let s = "PROBLEM\n"^("   exn = " ^ clean(Printexc.to_string exn) ^ "\n")
+      in
       (* we may miss some file because cfiles is shorter than outfiles.
        * For instance the detected local headers are not in cfiles, so
-       * may have less failed. But at least have some failed
+       * may have less failed. But at least have some failed.
        *)
       cfiles +> List.iter (fun infile -> 
-        push2 (infile ^ (suffix_of_okfailed Failed)) final_files;
+        push2 (infile ^ (t_to_s Failed), [s]) final_files;
       )
   ));
-  !final_files +> List.iter (fun file -> 
-    Common.command2 ("cp " ^ tmpfile ^ " " ^ file);
+  !final_files +> List.iter (fun (file, additional_strs) -> 
+    Common.command2 ("cp " ^ newout ^ " " ^ file);
+    with_open_outfile file (fun (pr, chan) -> 
+      additional_strs +> List.iter (fun s -> pr (s ^ "\n"))
+    );
+    
   )
 
   
