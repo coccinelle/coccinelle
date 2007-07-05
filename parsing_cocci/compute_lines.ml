@@ -251,8 +251,10 @@ let rec expression e =
   | Ast0.MetaConst(name,_,_) | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_)
   | Ast0.MetaExprList(name,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
-  | Ast0.EComma(cm) as ue ->
-      let ln = promote_mcode cm in mkres e ue ln ln
+  | Ast0.EComma(cm) ->
+      let cm = bad_mcode cm in
+      let ln = promote_mcode cm in
+      mkres e (Ast0.EComma(cm)) ln ln
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
       let starter = bad_mcode starter in
       let exps = List.map expression exps in
@@ -491,7 +493,10 @@ and parameterTypeDef p =
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.MetaParamList(name,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
-  | Ast0.PComma(cm) as up -> let ln = promote_mcode cm in mkres p up ln ln
+  | Ast0.PComma(cm) ->
+      let cm = bad_mcode cm in
+      let ln = promote_mcode cm in
+      mkres p (Ast0.PComma(cm)) ln ln
   | Ast0.Pdots(dots) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
