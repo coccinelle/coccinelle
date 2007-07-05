@@ -976,7 +976,7 @@ let parse_iso = function
     None -> []
   | Some file ->
       let table = Common.full_charpos_to_pos file in
-      let channel = open_in file in
+      Common.with_open_infile file (fun channel ->
       let lexbuf = Lexing.from_channel channel in
       let res =
       match tokens_all table file false lexbuf [PC.TArobArob] with
@@ -1017,12 +1017,11 @@ let parse_iso = function
 	    else [(iso_metavars,entry)] in
 	  loop start
       | (false,_) -> [] in
-      close_in channel;
-      res
+      res)
 
 let parse file =
   let table = Common.full_charpos_to_pos file in
-  let channel = open_in file in
+  Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
   let res =
   match tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] with 
@@ -1110,8 +1109,7 @@ let parse file =
       loop [] (x = PC.TArob)
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
   | _ -> failwith "unexpected code before the first rule\n" in
-  close_in channel;
-  res
+  res)
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
