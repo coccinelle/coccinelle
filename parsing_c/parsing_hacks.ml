@@ -431,7 +431,7 @@ let set_as_comment x =
   if TH.is_eof x.tok 
   then () (* otherwise parse_c will be lost if don't find a EOF token *)
   else 
-    x.tok <- TCommentCpp (TH.info_from_token x.tok)
+    x.tok <- TCommentCpp (TH.info_of_tok x.tok)
   
 
 
@@ -1051,7 +1051,7 @@ let rec find_macro_paren xs =
     ::Parenthised (xxs, info_parens)
     ::xs -> 
       pr2_cpp ("MACRO: string macro with params : " ^ s);
-      id.tok <- TMacroString (TH.info_from_token id.tok);
+      id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       find_macro_paren xs
 
@@ -1061,7 +1061,7 @@ let rec find_macro_paren xs =
     ::PToken ({tok = TString _})
     ::xs -> 
       pr2_cpp ("MACRO: string macro with params : " ^ s);
-      id.tok <- TMacroString (TH.info_from_token id.tok);
+      id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       find_macro_paren xs
 
@@ -1069,14 +1069,14 @@ let rec find_macro_paren xs =
   | PToken ({tok = TString _})::PToken ({tok = TIdent (s,_)} as id)
       ::xs -> 
       msg_stringification s;
-      id.tok <- TMacroString (TH.info_from_token id.tok);
+      id.tok <- TMacroString (TH.info_of_tok id.tok);
       find_macro_paren xs
 
   (* after case *)
   | PToken ({tok = TIdent (s,_)} as id)::PToken ({tok = TString _})
       ::xs -> 
       msg_stringification s;
-      id.tok <- TMacroString (TH.info_from_token id.tok);
+      id.tok <- TMacroString (TH.info_of_tok id.tok);
       find_macro_paren xs
 
   (* recurse *)
@@ -1107,8 +1107,8 @@ let rec find_macro xs =
     ::xs 
     when (s ==~ regexp_macro) || List.mem s declList -> 
       msg_declare_macro s;
-      let info = TH.info_from_token macro.tok in
-      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro (xs)
 
@@ -1128,8 +1128,8 @@ let rec find_macro xs =
     ::xs 
     when (s ==~ regexp_macro) || List.mem s declList -> 
       msg_declare_macro s;
-      let info = TH.info_from_token macro.tok in
-      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
       
       (* need retag this const, otherwise ambiguity in grammar 
          21: shift/reduce conflict (shift 121, reduce 137) on Tconst
@@ -1137,7 +1137,7 @@ let rec find_macro xs =
 	 decl2 : Tstatic . Tconst TMacroDecl TOPar argument_list TCPar ...
 	 storage_class_spec : Tstatic .  (137)
       *)
-      const.tok <- TMacroDeclConst (TH.info_from_token const.tok);
+      const.tok <- TMacroDeclConst (TH.info_of_tok const.tok);
 
       find_macro (xs)
 
@@ -1157,8 +1157,8 @@ let rec find_macro xs =
     when s ==~ regexp_macro -> 
 
       msg_declare_macro s;
-      let info = TH.info_from_token macro.tok in
-      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro (xs)
 
@@ -1181,8 +1181,8 @@ let rec find_macro xs =
     ::xs 
     when (s ==~ regexp_macro) || List.mem s declList -> 
       msg_declare_macro s;
-      let info = TH.info_from_token macro.tok in
-      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro (xs)
 
@@ -1209,8 +1209,8 @@ let rec find_macro xs =
     when (s ==~ regexp_declare) || List.mem s declList -> 
 
       msg_declare_macro s;
-      let info = TH.info_from_token macro.tok in
-      macro.tok <- TMacroDecl (Ast_c.get_str_of_info info, info);
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro (xs)
 
@@ -1229,7 +1229,7 @@ let rec find_macro xs =
     ::xs 
     when List.mem s debug_macros_list -> 
       msg_debug_macro s;
-      macro.tok <- TMacroStmt (TH.info_from_token macro.tok);
+      macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
 
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
 
@@ -1297,7 +1297,7 @@ let rec find_macro xs =
       if condition
       then begin
         msg_macro_noptvirg s;
-        macro.tok <- TMacroStmt (TH.info_from_token macro.tok);
+        macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
         [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       end;
 
@@ -1342,7 +1342,7 @@ let rec find_macro xs =
       if condition
       then begin
         msg_macro_noptvirg_single s;
-        macro.tok <- TMacroStmt (TH.info_from_token macro.tok);
+        macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
       end;
       find_macro (line2::xs)
         
@@ -1379,7 +1379,7 @@ let rec find_actions = function
              *)
             pr2_cpp "PB: wierd, I try to tag an EOF token as action"
           else 
-            x.tok <- TAction (TH.info_from_token x.tok);
+            x.tok <- TAction (TH.info_of_tok x.tok);
         )) in
       res
 
@@ -1400,7 +1400,7 @@ let rec find_actions = function
 and find_actions_params xxs = 
   xxs +> List.fold_left (fun acc xs -> 
     let toks = tokens_of_paren xs in
-    if toks +> List.exists (fun x -> TH.is_statement_token x.tok)
+    if toks +> List.exists (fun x -> TH.is_statement x.tok)
     then begin
       xs +> iter_token_paren (fun x -> 
         if TH.is_eof x.tok
@@ -1410,7 +1410,7 @@ and find_actions_params xxs =
            *)
           pr2_cpp "PB: wierd, I try to tag an EOF token as action"
         else 
-          x.tok <- TAction (TH.info_from_token x.tok);
+          x.tok <- TAction (TH.info_of_tok x.tok);
       );
       true (* modified *)
     end
@@ -1493,10 +1493,18 @@ let fix_tokens_cpp a =
  * from the Ast and list of tokens in parse_c.
  * note: I do a +1 somewhere, it's for the unparsing to correctly sync.
  *)
-let mark_end_define (info,annot) = 
-  TDefEOL (
-    {info with Common.str = ""; Common.charpos = info.Common.charpos + 1}, 
-    ref Ast_c.emptyAnnot)
+let mark_end_define ii = 
+  let ii' = 
+    { 
+      Ast_c.pinfo = { ii.Ast_c.pinfo with 
+        Common.str = ""; 
+        Common.charpos = ii.Ast_c.pinfo.Common.charpos + 1
+      };
+      cocci_tag = ref Ast_c.emptyAnnot;
+    } 
+  in
+  TDefEOL ii'
+
 
 (* put the TDefEOL at the good place *)
 let rec define_line_1 xs = 
@@ -1516,7 +1524,7 @@ and define_line_2 line lastinfo xs =
       mark_end_define lastinfo::[]
   | x::xs -> 
       let line' = TH.line_of_tok x in
-      let info = TH.info_from_token x in
+      let info = TH.info_of_tok x in
 
       (match x with
       | EOF ii -> 

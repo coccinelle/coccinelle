@@ -34,7 +34,7 @@ let is_eof = function
   | EOF x -> true
   | _ -> false
 
-let is_statement_token = function
+let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
   | Tgoto _ 
@@ -87,7 +87,7 @@ let is_stuff_taking_parenthized = function
 (* Because ocamlyacc force us to do it that way. The ocamlyacc token 
  * cant be a pair of a sum type, it must be directly a sum type.
  *)
-let info_from_token = function
+let info_of_tok = function
   | TString ((string, isWchar), i) -> i
   | TChar  ((string, isWchar), i) -> i
   | TFloat ((string, floatType), i) -> i
@@ -201,39 +201,29 @@ let info_from_token = function
 
 
 (* used by tokens to complete the parse_info with filename, line, col infos *)
-let visitor_info_from_token f = function
-  | TString ((s, isWchar), i) -> 
-      TString ((s, isWchar), f i) 
-  | TChar  ((s, isWchar), i) -> 
-      TChar  ((s, isWchar), f i) 
-  | TFloat ((s, floatType), i) -> 
-      TFloat ((s, floatType), f i) 
-  | TAssign  (assignOp, i) -> 
-      TAssign  (assignOp, f i) 
+let visitor_info_of_tok f = function
+  | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i) 
+  | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i) 
+  | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i) 
+  | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i) 
 
-  | TIdent  (s, i) -> 
-      TIdent  (s, f i) 
-  | TypedefIdent  (s, i) -> 
-      TypedefIdent  (s, f i) 
-  | TInt  (s, i) -> 
-      TInt  (s, f i) 
+  | TIdent  (s, i)       -> TIdent  (s, f i) 
+  | TypedefIdent  (s, i) -> TypedefIdent  (s, f i) 
+  | TInt  (s, i)         -> TInt  (s, f i) 
 
   | TDefine (i1) -> TDefine(f i1) 
 
-  | TInclude (includes, filename, i1) -> 
-      TInclude (includes, filename, f i1)
+  | TInclude (includes, filename, i1) -> TInclude (includes, filename, f i1)
 
-  | TIncludeStart (i1) -> 
-      TIncludeStart (f i1)
-  | TIncludeFilename (s, i1) -> 
-      TIncludeFilename (s, f i1)
+  | TIncludeStart (i1) -> TIncludeStart (f i1)
+  | TIncludeFilename (s, i1) -> TIncludeFilename (s, f i1)
 
-  | TCppEscapedNewline (i1) ->         TCppEscapedNewline (f i1)
-  | TDefEOL (i1) ->         TDefEOL (f i1)
-  | TOParDefine (i1) ->         TOParDefine (f i1)
+  | TCppEscapedNewline (i1) -> TCppEscapedNewline (f i1)
+  | TDefEOL (i1) -> TDefEOL (f i1)
+  | TOParDefine (i1) -> TOParDefine (f i1)
   | TIdentDefine  (s, i) -> TIdentDefine (s, f i)
 
-  | TDefParamVariadic (s, i1) ->     TDefParamVariadic (s, f i1)
+  | TDefParamVariadic (s, i1) -> TDefParamVariadic (s, f i1)
 
 
   | TUnknown             (i) -> TUnknown             (f i)
@@ -252,6 +242,7 @@ let visitor_info_from_token f = function
   | TIfdefelif           (i) -> TIfdefelif           (f i) 
   | TEndif               (i) -> TEndif               (f i) 
   | TIfdefbool           (b, i) -> TIfdefbool    (b, f i) 
+
   | TOPar                (i) -> TOPar                (f i) 
   | TCPar                (i) -> TCPar                (f i) 
   | TOBrace              (i) -> TOBrace              (f i) 
@@ -332,9 +323,8 @@ let visitor_info_from_token f = function
 (*****************************************************************************)
 
 let linecol_of_tok tok =
-  let info = info_from_token tok in
-  let (parse_info,_cocci_info) = info in
-  parse_info.Common.line, parse_info.Common.column
+  let info = info_of_tok tok in
+  info.Ast_c.pinfo.Common.line, info.Ast_c.pinfo.Common.column
 
 let col_of_tok tok = 
   snd (linecol_of_tok tok)
@@ -343,11 +333,11 @@ let line_of_tok tok =
   fst (linecol_of_tok tok)
 
 
-let pos_of_token x = 
-  Ast_c.get_pos_of_info (info_from_token x)
+let pos_of_tok x = 
+  Ast_c.pos_of_info (info_of_tok x)
 
-let str_of_token x = 
-  Ast_c.get_str_of_info (info_from_token x)
+let str_of_tok x = 
+  Ast_c.str_of_info (info_of_tok x)
 
 
 

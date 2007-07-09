@@ -1,3 +1,5 @@
+// cf first slide of OLS
+
 void main (int x) { 
   foo(1);
   h("toto");

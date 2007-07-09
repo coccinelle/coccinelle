@@ -5,4 +5,3 @@ let useEU = ref true
 
 let show_misc = ref true
 
-let use_ref = ref true

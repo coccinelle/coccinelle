@@ -19,6 +19,12 @@ identifier proc_info_func;
     ...
   }
 
+//alt: 
+//-  proc_info_func(char *buffer, char **start, off_t offset, int length, 
+//-                 int hostno, int inout) 
+//+ proc_info_func(struct Scsi_Host *hostptr, char *buffer, char **start, 
+//+                off_t offset, int length, int inout)
+//{
 
 
 

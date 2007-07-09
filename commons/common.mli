@@ -8,8 +8,9 @@ val _tab_level_print: int ref
 val indent_do : (unit -> 'a) -> 'a
 val reset_pr_indent : unit -> unit
 
-(* The following functions first indent _tab_level_print spaces. The
- * use of 2 in pr2 is because 2 is under UNIX the second descriptor
+(* The following functions first indent _tab_level_print spaces.
+ * 
+ * The use of 2 in pr2 is because 2 is under UNIX the second descriptor
  * which corresponds to stderr. *)
 val pr : string -> unit
 val pr2 : string -> unit
@@ -18,6 +19,7 @@ val pr2_no_nl : string -> unit
 val pr_xxxxxxxxxxxxxxxxx : unit -> unit
 val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
+(* use Dumper.dump *)
 val pr2gen: 'a -> unit
 
 val _already_printed : (string, bool) Hashtbl.t
@@ -194,7 +196,7 @@ val macro_expand : string -> unit
 (* Composition/Control *)
 (*****************************************************************************)
 
-(* now in commonop: val ( +> ) : 'a -> ('a -> 'b) -> 'b *)
+(* now in Commonop: val ( +> ) : 'a -> ('a -> 'b) -> 'b *)
 val ( +!> ) : 'a ref -> ('a -> 'a) -> unit
 val ( $ ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
 
@@ -228,9 +230,13 @@ val run_hooks_action : 'a -> ('a -> unit) list ref -> unit
 
 type 'a mylazy = (unit -> 'a)
 
+(* emacs spirit *)
 val save_excursion : 'a ref -> (unit -> 'b) -> 'b
 
+(* emacs spirit *)
 val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
+
+(* java spirit *)
 val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
@@ -277,6 +283,16 @@ val (=*=): 'a -> 'a -> bool
 val (=): int -> int -> bool
 *)
 
+
+
+
+
+
+
+
+
+
+
 (*****************************************************************************)
 (* Bool *)
 (*****************************************************************************)
@@ -291,14 +307,16 @@ val xor : 'a -> 'a -> bool
 (*****************************************************************************)
 
 val string_of_char : char -> string
+
 val is_single : char -> bool
 val is_symbol : char -> bool
 val is_space : char -> bool
-val cbetween : char -> char -> char -> bool
 val is_upper : char -> bool
 val is_lower : char -> bool
 val is_alpha : char -> bool
 val is_digit : char -> bool
+
+val cbetween : char -> char -> char -> bool
 
 (*****************************************************************************)
 (* Num *)
@@ -350,6 +368,10 @@ val int_of_stringbits : string -> int
 val int_of_octal : string -> int
 val int_of_all : string -> int
 
+(* useful but sometimes when want grep for all places where do modif,
+ * easier to have just code using ':=' and '<-' to do some modifications.
+ * In the same way avoid using {contents = xxx} to build some ref.
+ *)
 val ( += ) : int ref -> int -> unit
 val ( -= ) : int ref -> int -> unit
 
@@ -386,8 +408,8 @@ val map_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 
 val pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
-val snd : 'a * 'b -> 'b
-val fst : 'a * 'b -> 'a
+val snd : 'a * 'b -> 'b (* alias *)
+val fst : 'a * 'b -> 'a (* alias *)
 
 val double : 'a -> 'a * 'a
 val swap : 'a * 'b -> 'b * 'a
@@ -429,8 +451,8 @@ val find_some : ('a -> 'b option) -> 'a list -> 'b
 (* Strings *)
 (*****************************************************************************)
 
-val slength : string -> int
-val concat : string -> string list -> string
+val slength : string -> int (* alias *)
+val concat : string -> string list -> string (* alias *)
 
 val i_to_s : int -> string
 val s_to_i : string -> int
@@ -450,13 +472,14 @@ val split_on_char : char -> string -> string list
 
 val lowercase : string -> string
 
-val regexp_alpha : Str.regexp
-
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
 
-(* now in commonop
+val regexp_alpha : Str.regexp
+
+
+(* now in Commonop:
  val ( =~ ) : string -> string -> bool
  val ( ==~ ) : string -> Str.regexp -> bool
 *)
@@ -506,7 +529,7 @@ val int_to_month : int -> string
 
 
 (*****************************************************************************)
-(* Lines/words/strings *)
+(* Lines/Words/Strings *)
 (*****************************************************************************)
 
 val list_of_string : string -> char list
@@ -557,7 +580,7 @@ val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
 
 val has_env : string -> bool
 
-(* scheme spirit *)
+(* scheme spirit. do a finalize so no leak. *)
 val with_open_outfile : 
   filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 val with_open_infile : 
@@ -565,10 +588,12 @@ val with_open_infile :
 
 exception Timeout
 
-(* subtil: have to make sure that timeout is not intercepted before here, so 
- * avoid exn handle such as try (...) with _ -> cos timeout will not bubble up
+(* subtil: have to make sure that Timeout is not intercepted before here. So 
+ * avoid exn handler such as try (...) with _ -> cos Timeout will not bubble up
  * enough. In such case, add a case before such as  
  * with Timeout -> raise Timeout | _ -> ... 
+ * 
+ * The same is true for UnixExit (see below).
  *)
 val timeout_function : int -> (unit -> 'a) -> 'a
 
@@ -582,17 +607,31 @@ val _temp_files_created : string list ref
 val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
 
-(* subtil: same problem than with Timeout. Do not intercept such exception
+(* If the user use some exit 0 in his code, then no one can intercept this
+ * exit and do something before exiting. There is exn handler for exit 0
+ * so better never use exit 0 but instead use an exception and just at
+ * the very toplevel transform this exn in a unix exit code.
+ * 
+ * subtil: same problem than with Timeout. Do not intercept such exception
  * with some blind try (...) with _ -> ...
  *)
 exception UnixExit of int 
 val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
+
+
+
+
+
+
+
+
+
 (*****************************************************************************)
 (* List *)
 (*****************************************************************************)
 
-(* tail recursive map (but that also reverse the element) *)
+(* tail recursive efficient map (but that also reverse the element!) *)
 val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
 
 
@@ -676,11 +715,14 @@ val collect : ('a -> 'b list) -> 'a list -> 'b list
 
 val remove : 'a -> 'a list -> 'a list
 
+(* Not like unix uniq command line tool that only delete contiguous repeated
+ * line. Here we delete any repeated line (here list element).
+ *)
 val uniq : 'a list -> 'a list
 val doublon : 'a list -> bool
 
-val reverse : 'a list -> 'a list
-val rev : 'a list -> 'a list
+val reverse : 'a list -> 'a list (* alias *)
+val rev : 'a list -> 'a list (* alias *)
 val rotate : 'a list -> 'a list
 
 val map_flatten : ('a -> 'b list) -> 'a list -> 'b list
@@ -796,13 +838,24 @@ val ( $@$ ) : 'a list -> 'a list -> 'a list
 (* Set as normal list *)
 (*****************************************************************************)
 
+(* cf above *) 
+
 (*****************************************************************************)
 (* Set as sorted list *)
 (*****************************************************************************)
 
 
 (*****************************************************************************)
-(* Assoc *)
+(* Sets specialized *)
+(*****************************************************************************)
+
+(* 
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+*)
+ 
+
+(*****************************************************************************)
+(* Assoc. But have a look too at Mapb.mli. It's better. Or use Hashtbl. *)
 (*****************************************************************************)
 
 type ('a, 'b) assoc = ('a * 'b) list
@@ -833,7 +886,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 (*****************************************************************************)
-(* Assoc. But have a look too at Mapb.mli. It's better. Or use Hashtbl. *)
+(* Assocs specialized. *)
 (*****************************************************************************)
 
 module IntMap :
@@ -890,6 +943,7 @@ val hiter : ('a -> 'b -> unit) -> ('a, 'b) Hashtbl.t -> unit
 val hfold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) Hashtbl.t -> 'c -> 'c
 val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
+
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
@@ -915,7 +969,7 @@ val top : 'a stack -> 'a
 val pop : 'a stack -> 'a stack
 
 val push2 : 'a -> 'a stack ref -> unit
-val pop2 : 'a stack ref -> 'a
+val pop2: 'a stack ref -> 'a
 
 
 (*****************************************************************************)
@@ -949,6 +1003,8 @@ val empty_graph : 'a list * 'b list
 (* Generic op *)
 (*****************************************************************************)
 
+(* mostly alias to functions in List *)
+
 val map : ('a -> 'b) -> 'a list -> 'b list
 val filter : ('a -> bool) -> 'a list -> 'a list
 val fold : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
@@ -976,6 +1032,15 @@ val head : 'a list -> 'a
 val tail : 'a list -> 'a list
 
 val is_singleton : 'a list -> bool
+
+
+
+
+
+
+
+
+
 
 
 (*****************************************************************************)
@@ -1009,7 +1074,7 @@ val sum_vector : vector list -> vector
 (*****************************************************************************)
 type pixel = int * int * int
 val write_ppm : int -> int -> pixel list -> filename -> unit
-val test1 : unit -> unit
+val test_ppm1 : unit -> unit
 
 (*****************************************************************************)
 (* Diff (lfs) *)
@@ -1032,8 +1097,8 @@ val getDoubleParser :
 (*****************************************************************************)
 
 
-(* Currently lexing.ml does not handle the line number position:
- * even if there is some fields in the lexing structure, they are not 
+(* Currently lexing.ml does not handle the line number position.
+ * Even if there is some fields in the lexing structure, they are not 
  * maintained by the lexing engine :( So the following code does not work:
  *   let pos = Lexing.lexeme_end_p lexbuf in 
  *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
@@ -1055,15 +1120,21 @@ val fake_parse_info : parse_info
 (* array[i] will contain the (line x col) of the i char position *)
 val full_charpos_to_pos : filename -> (int * int) array
 
+(* fill in the line and column field of parse_info that were not set
+ * during lexing because of limitations of ocamllex. *)
 val complete_parse_info : 
   filename -> (int * int) array -> parse_info -> parse_info
 
+(* return line x col x str_line  from a charpos. This function is quite
+ * expensive so don't use it to get the line x col from every token in
+ * a file. Instead use full_charpos_to_pos.
+ *)
 val info_from_charpos : int -> filename -> (int * int * string)
 
 val error_message :       filename -> (string * int) -> string
 val error_message_short : filename -> (string * int) -> string
 
-(* add a 'decalage' argument to handle stuff such as cpp which includes 
+(* add a 'decalage/shift' argument to handle stuff such as cpp which includes 
  * files and who can make shift.
  *)
 val error_messagebis : filename -> (string * int) -> int -> string

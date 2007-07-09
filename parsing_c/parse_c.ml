@@ -18,8 +18,7 @@ let lexbuf_to_strpos lexbuf     =
   (Lexing.lexeme lexbuf, Lexing.lexeme_start lexbuf)    
 
 let token_to_strpos tok = 
-  let (parse_info,_cocci_info) = TH.info_from_token tok in
-  (parse_info.Common.str, parse_info.Common.charpos)
+  (TH.str_of_tok tok, TH.pos_of_tok tok)
 
 
 let error_msg_tok file tok = 
@@ -163,20 +162,20 @@ let print_parsing_stat_list = fun statxs ->
 (* Stats on what was passed/commentized  *)
 (*****************************************************************************)
 
+let commentized xs = xs +> Common.map_filter (function
+  | Parser_c.TCommentCpp ii
+  | Parser_c.TCommentMisc ii
+  | Parser_c.TAction ii ->
+      Some (ii.Ast_c.pinfo)
+  | _ -> None
+ )
+  
 let count_lines_tokens_commentized xs = 
-  let commentized = xs +> Common.map_filter (function
-    | Parser_c.TCommentCpp ii
-    | Parser_c.TCommentMisc ii
-    | Parser_c.TAction ii ->
-        Some (fst ii)
-    | _ -> None
-  )
-  in
   let line = ref (-1) in
   let count = ref 0 in
   begin
-    commentized +> List.iter (fun info -> 
-      let newline = info.Common.line in
+    commentized xs +> List.iter (fun pinfo -> 
+      let newline = pinfo.Common.line in
       if newline <> !line
       then begin
         line := newline;
@@ -189,19 +188,12 @@ let count_lines_tokens_commentized xs =
 
 
 let print_tokens_commentized xs = 
-  let commentized = xs +> Common.map_filter (function
-    | Parser_c.TCommentCpp ii
-    | Parser_c.TCommentMisc ii 
-    | Parser_c.TAction ii ->
-        Some (fst ii)
-    | _ -> None
-  )
-  in
   let line = ref (-1) in
   begin
-    commentized +> List.iter (fun info -> 
-      let newline = info.Common.line in
-      let s = info.Common.str in
+    let ys = commentized xs in
+    ys +> List.iter (fun pinfo -> 
+      let newline = pinfo.Common.line in
+      let s = pinfo.Common.str in
       let s = Str.global_substitute 
         (Str.regexp "\n") (fun s -> "") s 
       in
@@ -209,13 +201,13 @@ let print_tokens_commentized xs =
       then prerr_string (s ^ " ")
       else begin
         if !line = -1 
-        then prerr_string "passed:" 
-        else prerr_string "\npassed:";
+        then pr2_no_nl "passed:" 
+        else pr2_no_nl "\npassed:";
         line := newline;
-        prerr_string (s ^ " ");
+        pr2_no_nl (s ^ " ");
       end
     );
-    if not (null commentized) then prerr_string "\n";
+    if not (null ys) then pr2 "";
   end
       
 
@@ -233,19 +225,15 @@ let tokens2 file =
   let lexbuf = Lexing.from_channel chan in
   try 
     let rec tokens_aux () = 
-      let result = Lexer_c.token lexbuf in
+      let tok = Lexer_c.token lexbuf in
       (* add the line x col information *)
-      let result = 
-        TH.visitor_info_from_token 
-          (fun (parse_info,cocciinfo) -> 
-            Common.complete_parse_info file table parse_info,
-            cocciinfo
-          ) result 
+      let tok = tok +> TH.visitor_info_of_tok (fun ii -> { ii with Ast_c.pinfo=
+          Common.complete_parse_info file table ii.Ast_c.pinfo
+      })
       in
-     
-      if TH.is_eof result
-      then [result]
-      else result::(tokens_aux ())
+      if TH.is_eof tok
+      then [tok]
+      else tok::(tokens_aux ())
     in
     tokens_aux ()
   with
@@ -263,10 +251,10 @@ let tokens_string string =
   let lexbuf = Lexing.from_string string in
   try 
     let rec tokens_s_aux () = 
-      let result = Lexer_c.token lexbuf in
-      if TH.is_eof result
-      then [result]
-      else result::(tokens_s_aux ())
+      let tok = Lexer_c.token lexbuf in
+      if TH.is_eof tok
+      then [tok]
+      else tok::(tokens_s_aux ())
     in
     tokens_s_aux ()
   with
@@ -443,16 +431,18 @@ and find_next_synchro_orig next already_passed =
 (* ------------------------------------------------------------------------- *)
 (* helpers *)
 (* ------------------------------------------------------------------------- *)
-let tok_set s (info, annot) =  {info with Common.str = s;}, annot
 
 (* used to generate new token from existing one *)
-let new_info posadd str (info, annot) = 
-  { info with
-    charpos = info.charpos + posadd;
-    str     = str;
-    column = info.column + posadd;
-  }, ref Ast_c.emptyAnnot 
- (* must generate a new ref each time, otherwise share *)
+let new_info posadd str ii = 
+  { Ast_c.pinfo = 
+      { ii.Ast_c.pinfo with 
+        charpos = ii.Ast_c.pinfo.charpos + posadd;
+        str     = str;
+        column = ii.Ast_c.pinfo.column + posadd;
+      };
+    (* must generate a new ref each time, otherwise share *)
+    cocci_tag = ref Ast_c.emptyAnnot;
+  }
 
 
 let rec comment_until_defeol xs = 
@@ -461,9 +451,9 @@ let rec comment_until_defeol xs =
   | x::xs -> 
       (match x with
       | Parser_c.TDefEOL i -> 
-          Parser_c.TCommentCpp (TH.info_from_token x)::xs
+          Parser_c.TCommentCpp (TH.info_of_tok x)::xs
       | _ -> 
-          Parser_c.TCommentCpp (TH.info_from_token x)::comment_until_defeol xs
+          Parser_c.TCommentCpp (TH.info_of_tok x)::comment_until_defeol xs
       )
 
 
@@ -473,11 +463,17 @@ let rec comment_until_defeol xs =
 (* ------------------------------------------------------------------------- *)
 
 let tokens_include (info, includes, filename) = 
-  Parser_c.TIncludeStart (tok_set includes info), 
+  Parser_c.TIncludeStart (Ast_c.rewrap_str includes info), 
   [Parser_c.TIncludeFilename 
       (filename, (new_info (String.length includes) filename info))
   ]
 
+(*****************************************************************************)
+(* Parsing default define, standard.h *)
+(*****************************************************************************)
+
+let parse_cpp_define_file file = 
+  raise Todo
 
 (*****************************************************************************)
 (* Main entry point *)
@@ -578,7 +574,7 @@ let parse_print_error_heuristic2 file =
             if not !LP._lexer_hint.LP.toplevel 
             then begin
               pr2 ("CPP-DEFINE: inside function, I treat it as comment");
-              let v' = Parser_c.TCommentCpp (TH.info_from_token v) in
+              let v' = Parser_c.TCommentCpp (TH.info_of_tok v) in
               passed_tokens_last_ckp := v'::!passed_tokens_last_ckp;
               remaining_tokens := comment_until_defeol !remaining_tokens;
               remaining_tokens_clean := 
@@ -712,8 +708,7 @@ let parse_print_error_heuristic2 file =
             print_bad line_error (checkpoint, checkpoint2) filelines;
 
             let info_of_bads = 
-              Common.map_eff_rev TH.info_from_token !passed_tokens_last_ckp 
-            in 
+              Common.map_eff_rev TH.info_of_tok !passed_tokens_last_ckp in 
             Ast_c.NotParsedCorrectly info_of_bads
           end
       ) 

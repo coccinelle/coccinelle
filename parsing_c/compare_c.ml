@@ -101,15 +101,14 @@ let normal_form_program xs =
 
 
 let normal_form_token x = 
-
   let x' = 
     match x with 
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
     | x -> x
   in
-  x' +> Token_helpers.visitor_info_from_token (fun info -> 
+  x' +> Token_helpers.visitor_info_of_tok (fun info -> 
     let info = Ast_c.al_info info in
-    let str = Ast_c.get_str_of_info info in
+    let str = Ast_c.str_of_info info in
     if Common.string_match_substring cvs_keyword_regexp str
     then 
       let newstr = cvs_compute_newstr str in
@@ -265,11 +264,9 @@ let compare_token filename1 filename2 =
         then loop xs ys
         else 
           let str1, pos1 = 
-            Token_helpers.str_of_token x, Token_helpers.pos_of_token x
-          in
+            Token_helpers.str_of_tok x, Token_helpers.pos_of_tok x in
           let str2, pos2 = 
-            Token_helpers.str_of_token y, Token_helpers.pos_of_token y
-          in
+            Token_helpers.str_of_tok y, Token_helpers.pos_of_tok y in
           Some ("diff token: " ^ str1 ^" VS " ^ str2 ^ "\n" ^
                    Common.error_message filename1 (str1, pos1) ^ "\n" ^
                    Common.error_message filename2 (str2, pos2) ^ "\n"

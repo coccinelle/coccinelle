@@ -33,19 +33,20 @@ let tok     lexbuf  = Lexing.lexeme lexbuf
 
 let tokinfo lexbuf  = 
   { 
-    Common.charpos = Lexing.lexeme_start lexbuf; 
-    Common.str     = Lexing.lexeme lexbuf;
-    (* info filled in a post-lexing phase *)
-    Common.line = -1; 
-    Common.column = -1; 
-    Common.file = "";
-  }, 
-  (* must generate a new ref each time, otherwise share *)
-  ref Ast_c.emptyAnnot 
+    pinfo = {
+      Common.charpos = Lexing.lexeme_start lexbuf; 
+      Common.str     = Lexing.lexeme lexbuf;
+      (* info filled in a post-lexing phase *)
+      Common.line = -1; 
+      Common.column = -1; 
+      Common.file = "";
+    };
+   (* must generate a new ref each time, otherwise share *)
+    cocci_tag = ref Ast_c.emptyAnnot;
+  }
 
-
-let tok_add_s s (info,annot) = {info with Common.str = info.str ^ s}, annot
-let tok_set s (info, annot) =  {info with Common.str = s;}, annot
+let tok_add_s s ii = 
+  {ii with pinfo = { ii.pinfo with Common.str = ii.pinfo.str ^ s}}
     
 
 (* opti: less convenient, but using a hash is faster than using a match *)
@@ -298,8 +299,7 @@ rule token = parse
 
   (* '0'+ because sometimes it is a #if 000 *)
   | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
-      { 
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       }
 
@@ -431,7 +431,7 @@ rule token = parse
   | "&&" { TAndLog(tokinfo lexbuf) } | "||" { TOrLog(tokinfo lexbuf) }
   | ">>" { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }
   | "&"  { TAnd(tokinfo lexbuf) }    | "|" { TOr(tokinfo lexbuf) } 
-  | "^" { TXor(tokinfo lexbuf) }
+  | "^"  { TXor(tokinfo lexbuf) }
   | "..." { TEllipsis(tokinfo lexbuf) }
   | "->"   { TPtrOp(tokinfo lexbuf) }  | '.'  { TDot(tokinfo lexbuf) }  
   | ','    { TComma(tokinfo lexbuf) }  
@@ -535,16 +535,15 @@ rule token = parse
   * will be parsed as an ident  
   *)
   | ['0'-'9']+ letter (letter | digit) *  
-      { let info = tokinfo lexbuf in
-        pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
-        TIdent (tok lexbuf, info)
+      { pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
+        TIdent (tok lexbuf, tokinfo lexbuf)
       } 
 
 (*  | ['0'-'1']+'b' { TInt (((tok lexbuf)<!!>(0,-2)) +> int_of_stringbits) } *)
 
 
   (*------------------------------------------------------------------------ *)
-  | eof { let (w,an) = tokinfo lexbuf in EOF ({w with Common.str = ""},an) }
+  | eof { EOF (tokinfo lexbuf +> Ast_c.rewrap_str "") }
 
   | _ 
       { pr2_once ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
@@ -625,7 +624,7 @@ and comment = parse
   | [ '*']   { let s = tok lexbuf in s ^ comment lexbuf }
   | _  
       { let s = tok lexbuf in
-        pr2 ("LEXER: unrecognised symbol in comment:"^tok lexbuf);
+        pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment lexbuf
       }
 
@@ -647,19 +646,14 @@ and comment = parse
 
 and cpp_eat_until_nl = parse
   | "/*"          
-      { 
-        let s = tok lexbuf in 
+      { let s = tok lexbuf in 
         let s2 = comment lexbuf in 
         let s3 = cpp_eat_until_nl lexbuf in 
         s ^ s2 ^ s3  
       } (* fix *)
-  | "\n"                          
-      { tok lexbuf } 
-  | '\\' "\n"                     
-      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
+  | "\n"      { tok lexbuf } 
+  | '\\' "\n" { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
   | [^ '\n' '\\'      '/' '*'  ]+ 
       { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf } (* need fix too *)
-  | eof 
-      { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
-  | _                             
-      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }  
+  | eof { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
+  | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }  

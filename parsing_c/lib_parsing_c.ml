@@ -60,7 +60,7 @@ let max_min_ii_by_pos xs =
       (x, x)
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
-        let posf x = Ast_c.get_pos_of_info x in
+        let posf x = Ast_c.pos_of_info x in
 
         if (Ast_c.is_al_info e)
         then (maxii, minii)
@@ -72,7 +72,7 @@ let max_min_ii_by_pos xs =
   
 let max_min_by_pos xs = 
   let (i1, i2) = max_min_ii_by_pos xs in
-  (Ast_c.get_pos_of_info i1, Ast_c.get_pos_of_info i2)
+  (Ast_c.pos_of_info i1, Ast_c.pos_of_info i2)
 
 
 

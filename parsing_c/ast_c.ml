@@ -8,8 +8,8 @@ open Common open Commonop
  * it requires to do too much things in parsing such as checking no
  * conflicting structname, computing value, etc. Better to separate
  * concern, so I put '=>' to mean what we would really like. In fact
- * what we really like is defining another fullType from scratch,
- * because many stuff are just sugar.
+ * what we really like is defining another fullType, expression, etc
+ * from scratch, because many stuff are just sugar.
  * 
  * invariant: Array and FunctionType have also typeQualifier but they
  * dont have sense. I put this to factorise some code. If you look in
@@ -53,7 +53,10 @@ open Common open Commonop
  *)
 
 (* forunparser: *)
-type info = Common.parse_info * (Ast_cocci.mcodekind * metavars_binding) ref
+type info = { 
+  pinfo : Common.parse_info;
+  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref
+  }
 and il = info list
 
 and 'a wrap  = 'a * il   
@@ -106,7 +109,7 @@ and typeCbis =
 
      (* -------------------------------------- *)    
      and structUnion = Struct | Union
-     and structType  = structUnion * field wrap list  (* ; *)
+     and structType  = structUnion * (field wrap) list  (* ; *)
 
         (* before unparser, I didn't have a FieldDeclList but just a Field. *)
          and field  =  FieldDeclList of fieldkind wrap2 list (* , *)
@@ -225,10 +228,10 @@ and expressionbis =
 
 (* ------------------------------------------------------------------------- *)
 (* note: that assignement is not a statement but an expression;
- * wonderful C langage. note: I use 'and' for type definition cos
- * gccext allow statement as expression, so need mutual recursive type
- * definition. 
- *)
+ * wonderful C langage.
+ * 
+ * note: I use 'and' for type definition cos gccext allow statement as
+ * expression, so need mutual recursive type definition. *)
 and statement = statementbis wrap 
 and statementbis = 
   | Labeled       of labeled
@@ -265,7 +268,7 @@ and statementbis =
   and exprStatement = expression option
 
  (* for Switch, need check that all elements in the compound start 
-  * with a case:, otherwise unreachable code 
+  * with a case:, otherwise unreachable code.
   *)
   and selection     = 
    | If     of expression * statement * statement
@@ -454,13 +457,17 @@ let unwrap_typeC (qu, (typeC, ii)) = typeC
 let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 
-let rewrap_str s (info, annot) =  { info with Common.str = s;}, annot
+let rewrap_str s ii =  
+  {ii with pinfo = { ii.pinfo with Common.str = s;}}
 
-let get_pos_of_info  (info, annot) = info.Common.charpos
-let get_str_of_info  (info, annot) = info.Common.str
-let get_file_of_info (info, annot) = info.Common.file
+let pos_of_info  ii = ii.pinfo.Common.charpos
+let str_of_info  ii = ii.pinfo.Common.str
+let file_of_info ii = ii.pinfo.Common.file
 
-let mcode_of_info (info, annot)  = fst !annot 
+let mcode_of_info ii  = fst (!(ii.cocci_tag))
+
+let compare_pos i1 i2 = 
+  compare i1.pinfo.charpos i2.pinfo.charpos
 
 (*****************************************************************************)
 (* Abstract line *)
@@ -475,19 +482,25 @@ let mcode_of_info (info, annot)  = fst !annot
 let _Magic_info_number = -10
 
 let al_info x = 
-  { charpos = _Magic_info_number; 
-    str = (fst x).str;
-    line = -1; column = -1; file = "";
-  }, 
-  ref emptyAnnot
+  { pinfo = 
+      { charpos = _Magic_info_number; 
+        str = x.pinfo.str;
+        line = -1; column = -1; file = "";
+      };
+    cocci_tag = ref emptyAnnot
+  }
 
-let is_al_info (x, annot) = x.charpos = _Magic_info_number
+let is_al_info ii = ii.pinfo.charpos =|= _Magic_info_number
 
 (* When want add some info in ast that does not correspond to 
  * an existing C element or when don't want 'synchronize' on it 
  * in unparse_c.ml
  *)
-let fakeInfo ()  = al_info (Common.fake_parse_info, ref emptyAnnot)
+let fakeInfo ()  = al_info 
+  {
+    pinfo = Common.fake_parse_info;
+    cocci_tag = ref emptyAnnot;
+  }
 
 (*****************************************************************************)
 (* Views *)

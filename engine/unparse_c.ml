@@ -2,6 +2,8 @@ open Common open Commonop
 
 open Ast_c
 
+module TH = Token_helpers
+
 (*****************************************************************************)
 (* todo: take care of priority. For instance A => A+A, and if had B*A,
  * we dont want to generate B*A+A, we must insert some extra () (but
@@ -64,14 +66,17 @@ let lastfix program =
 (*****************************************************************************)
 
 let (is_between_two_minus : Ast_c.info -> Ast_c.info -> bool) = 
- fun (infoa,coccirefa) (infob,coccirefb) ->
-  let (mcoda,enva) = !coccirefa in
-  let (mcodb,envb) = !coccirefb in
+ fun infoa infob ->
+  let (mcoda,enva) = !(infoa.cocci_tag) in
+  let (mcodb,envb) = !(infob.cocci_tag) in
   match mcoda, mcodb with
   | Ast_cocci.MINUS _, Ast_cocci.MINUS _ -> true
   | _ -> false
 
-let pinfo_from_tok tok = fst (Token_helpers.info_from_token tok)
+let first_fake_token () = 
+  { pinfo = Common.fake_parse_info;
+    cocci_tag = ref Ast_c.emptyAnnot
+  }
 
 (* When insert some new code, because of a + in a SP, we must add this
  * code at the right place, with the good indentation. So each time we
@@ -109,12 +114,14 @@ let new_tabbing a =
  * minus, but not deleted, so normally passed should always be empty.
  *)
 let (passed_commentsbefore_notbefore2: 
- Common.parse_info -> Parser_c.token list -> Parser_c.token list Common.triple)
- = fun pinfo toks ->
+ Ast_c.info -> Parser_c.token list -> Parser_c.token list Common.triple)
+ = fun info toks ->
 
   let (before, notbefore) = toks +> Common.span (fun tok -> 
-    (pinfo_from_tok tok).charpos < pinfo.charpos)   
+    TH.pos_of_tok tok < pos_of_info info
+  )
   in
+
   let (commentsbefore, passed) = 
     before +> List.rev +> 
       (* on the above example, at this stage we have 'com yy cpp token1 xx' *)
@@ -171,14 +178,12 @@ let pp_program2 xs outfile  =
   Common.with_open_outfile outfile (fun (pr,chan) -> 
     let pr s = 
       pr s ; 
-      flush chan;
+      (* flush chan; *)
       (* Common.pr2 ("UNPARSING: >" ^ s ^ "<"); *)
     in
 
-    let (toks: Parser_c.token list ref) = ref [] in
-    let _last_synced_token = 
-      ref (Common.fake_parse_info, ref Ast_c.emptyAnnot) 
-    in
+    let _toks = ref [] in
+    let _last_synced_token = ref (first_fake_token ()) in
 
     let _current_tabbing = ref "" in
     let update_current_tabbing s = 
@@ -189,57 +194,56 @@ let pp_program2 xs outfile  =
 
     (* ---------------------- *)
     (* prints space and also adjusts !toks and _current_tabbing *)
-    let sync (pinfo,annot) = 
-      assert (pinfo <> Common.fake_parse_info);
+    let sync info = 
+      assert (info.pinfo <> Common.fake_parse_info);
       (* todo: if fake_parse_info ?  print the comments that are here ? *)
 
       let (passed, commentsbefore, notbefore) = 
-        passed_commentsbefore_notbefore pinfo !toks 
+        passed_commentsbefore_notbefore info !_toks 
       in
       passed +> List.iter (fun tok -> 
+        let str = TH.str_of_tok tok in
         match tok with
-        | Parser_c.TComment (i,_) ->     pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-        | Parser_c.TCommentCpp (i,_) ->  pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-        | Parser_c.TCommentMisc (i,_) -> 
-            pr2 ("PP_PASSING_COMMENTS: " ^ i.str)
-        | _ -> pr2 ("pp_passing_token: " ^ (pinfo_from_tok tok).str);
+        | Parser_c.TComment _ ->     pr2 ("PP_PASSING_COMMENTS: " ^ str)
+        | Parser_c.TCommentCpp _ ->  pr2 ("PP_PASSING_COMMENTS: " ^ str)
+        | Parser_c.TCommentMisc _ -> 
+            pr2 ("PP_PASSING_COMMENTS: " ^ str)
+        | _ -> pr2 ("pp_passing_token: " ^ str);
             
       );
-      let pure_real_comment = 
-        commentsbefore +> List.for_all Token_helpers.is_real_comment 
+      let pure_real_comment = commentsbefore +> List.for_all TH.is_real_comment
       in
 
       commentsbefore +> List.iter (fun tok -> 
+        let str = TH.str_of_tok tok in
         match tok with
-        | Parser_c.TCommentSpace       (i,_) -> 
-            update_current_tabbing i.str;
-            if not (is_between_two_minus !_last_synced_token (pinfo,annot))
-              || 
-               not (pure_real_comment)
-            then pr i.str;
+        | Parser_c.TCommentSpace       _ -> 
+            update_current_tabbing str;
+            if not (is_between_two_minus !_last_synced_token info)
+              || not (pure_real_comment)
+            then pr str;
 
-        | Parser_c.TComment            (i,_) -> pr i.str
-        | Parser_c.TCommentCpp         (i,_) -> pr i.str
-        | Parser_c.TCommentMisc (i,_) -> pr i.str
+        | Parser_c.TComment _ |Parser_c.TCommentCpp _ |Parser_c.TCommentMisc _ 
+            -> pr str
         | x -> error_cant_have x
       );
       
-      toks := notbefore;
-      let tok = pop2 toks in 
+      _toks := notbefore;
+      let tok = pop2 _toks in 
 
       (* pasforcement: assert_equal tokinfo.str pinfo.str; Indeed we may
        * have "reused" a token to keep its related comment and just
        * change its value (e.g. if decide to transform every 0 in 1, we
        * will reuse the info from 0) *)
-      assert_equal (pinfo_from_tok tok).charpos pinfo.charpos;
+      assert_equal (TH.pos_of_tok tok)  (pos_of_info info);
       
     in
 
     (* ---------------------- *)
-    let rec pr_elem ((pinfo,cocciinfo) as e) = 
-      let (mcode,env) = !cocciinfo in
+    let rec pr_elem ii = 
+      let (mcode,env) = !(ii.cocci_tag) in
 
-      (* 'e' can be an abstract_lined token. Indeed when we capture
+      (* 'ii' can be an abstract_lined token. Indeed when we capture
        * some code in a metavariable, this code may then further be
        * written back if this metavariable is put in a + line. When we
        * add some code in the environment, for the moment we
@@ -260,26 +264,26 @@ let pp_program2 xs outfile  =
        * todo: but that means we cant move huge chunk of code that contains
        * comments. During the move we will lose those space/comments/cpp.
        *)
-      if not (Ast_c.is_al_info e)
+      if not (Ast_c.is_al_info ii)
       then 
         begin
-          if not (get_pos_of_info e > get_pos_of_info !_last_synced_token)
+          if not (pos_of_info ii > pos_of_info !_last_synced_token)
           then 
             failwith 
               (sprintf 
                   "pp_c: wrong order, you ask for %s but have already pass %s"
-                  (Dumper.dump e) (Dumper.dump !_last_synced_token)); 
+                  (Dumper.dump ii) (Dumper.dump !_last_synced_token)); 
 
-          sync e; 
-          _last_synced_token := e;
+          sync ii; 
+          _last_synced_token := ii;
         end;
       
       (*old: pr info.str *)
-      let s = pinfo.str in
+      let s = Ast_c.str_of_info ii in
 
       (* UGLY trick *)
       let s = 
-        if Ast_c.is_al_info e 
+        if Ast_c.is_al_info ii
         then
           (match s with
           | "char" | "short" | "int" | "double" | "float" | "long" | "void"
@@ -327,8 +331,8 @@ let pp_program2 xs outfile  =
     (* ---------------------- *)
 
     xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
-      toks := toks_e;
-      _last_synced_token := (Common.fake_parse_info, ref Ast_c.emptyAnnot);
+      _toks := toks_e;
+      _last_synced_token := first_fake_token ();
 
       let e = lastfix e in
 

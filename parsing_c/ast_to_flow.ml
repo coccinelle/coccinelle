@@ -67,7 +67,7 @@ let add_arc_opt (starti, nodei) g =
 
 let lbl_empty = [] 
 
-let pinfo_of_ii ii = fst (List.hd ii)
+let pinfo_of_ii ii = (List.hd ii).Ast_c.pinfo
 
 
 
@@ -763,7 +763,7 @@ let rec (aux_statement:
       (match finalthen with
       | None -> 
           if (!g#predecessors taili)#null
-          then raise (Error (DeadCode (Some (ii +> List.hd +> fst))))
+          then raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           else Some newfakeelse
       | Some finali -> 
           !g#add_arc ((finali, taili), Direct);
@@ -1124,7 +1124,7 @@ let deadcode_detection g =
       | SeqEnd _ -> () (* todo?: certaines '}' deviennent orphelins *)
       | x -> 
           (match Control_flow_c.extract_fullstatement node with
-          | Some (st, ii::iis) -> raise (Error (DeadCode (Some (fst ii))))
+          | Some (st, ii) -> raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           | _ -> 
              pr2 "control_flow: orphelin nodes, maybe something wierd happened"
           )

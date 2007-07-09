@@ -413,6 +413,7 @@ let main () =
             in
             fullxs +> List.map (fun cfile -> 
               pr2 ("HANDLING: " ^ cfile);
+              Unix.sleep 1;
               let cfile = Common.adjust_extension_if_needed cfile ".c" in
               (try Cocci.full_engine (cocci_file, iso_file) [cfile]
                 with 

@@ -6,7 +6,7 @@ module F = Control_flow_c
 (* The functor argument  *) 
 (*****************************************************************************)
 
-let current_rule_name = ref "" (* initialized in transform2; used for errors *)
+let current_rule_name = ref "" (* initialized in transform; used for errors *)
 
 module XTRANS = struct
 
@@ -113,7 +113,7 @@ module XTRANS = struct
 
   let tag_with_mck mck ib = fun binding -> 
 
-    let (s2, cocciinforef) = ib in
+    let (s2, cocciinforef) = ib.Ast_c.pinfo, ib.Ast_c.cocci_tag in
     let (oldmcode, oldenv) = !cocciinforef in
 
     let mck =
@@ -126,14 +126,8 @@ module XTRANS = struct
     | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 
-        if !Flag_engine.use_ref 
-        then begin
-          cocciinforef := (mck, binding);
-          ((s2, cocciinforef) )
-        end
-        else 
-          let newcocciinfo = ref (mck, binding) in
-          ((s2, newcocciinfo))
+        cocciinforef := (mck, binding);
+        ib
 
     | _ -> 
         if (oldmcode, oldenv) = (mck, binding)
@@ -165,13 +159,13 @@ module XTRANS = struct
 
   let tokenf ia ib = fun binding -> 
     let (s1, i, mck) = ia in
-    let pos = Ast_c.get_pos_of_info ib in
+    let pos = Ast_c.pos_of_info ib in
     if check_pos (Some i) mck pos 
     then return (ia, tag_with_mck mck ib binding) binding
     else fail binding
 
   let tokenf_mck mck ib = fun binding -> 
-    let pos = Ast_c.get_pos_of_info ib in
+    let pos = Ast_c.pos_of_info ib in
     if check_pos None mck pos 
     then return (mck, tag_with_mck mck ib binding) binding
     else fail binding
@@ -249,7 +243,7 @@ module XTRANS = struct
     let bigf = { 
       Visitor_c.default_visitor_c_s with
         Visitor_c.kinfo_s = (fun (k,bigf) i -> 
-          let pos = Ast_c.get_pos_of_info i in
+          let pos = Ast_c.pos_of_info i in
           match () with
           | _ when pos =|= maxpos && pos =|= minpos -> bop i
           | _ when pos =|= maxpos -> rop i
@@ -360,9 +354,8 @@ module XTRANS = struct
     then (
       try Some (s, List.assoc s env)
       with Not_found -> 
-        pr2 ("Don't find value for metavariable " ^ 
-             meta_name_to_str s ^ 
-             " in the environment");
+        pr2 (sprintf "Don't find value for metavariable %s in the environment"
+                (meta_name_to_str s));
         None
     )
     else 
@@ -427,15 +420,3 @@ let (transform2: string (* rule name *) ->
 let transform rule_name a b = 
   Common.profile_code "Transformation3.transform" 
     (fun () -> transform2 rule_name a b)
-
-
-
-
-
-(*
-let transform_declaration a b binding = 
-  match TRANS.declaration a b binding with
-  | None -> raise Impossible
-  | Some (_sp, b') -> b'
-*)
-

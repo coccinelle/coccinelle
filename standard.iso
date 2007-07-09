@@ -158,6 +158,12 @@ Expression
 @@ expression X, Y; @@
 X + Y <=> Y + X
 
+
+// needed in kcalloc CE, where have a -kzalloc(c * sizeof(T), E)
+Expression
+@@ expression X, Y; @@
+X * Y <=> Y * X
+
 // ---------------------------------------------------------------------------
 // Increment isomorphisms
 // ---------------------------------------------------------------------------

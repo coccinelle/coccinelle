@@ -272,16 +272,15 @@ and (pp_base_type_gen:
         let print_sto_qu (sto, (qu, iiqu)) = 
           let all_ii = get_sto sto ++ iiqu in
           all_ii 
-          +> List.sort (fun i1 i2 -> compare (fst i1).charpos (fst i2).charpos)
+          +> List.sort Ast_c.compare_pos
           +> List.iter pr_elem;
           
         in
         (* TODO in fact for pointer, the qualifier is after the type *)
         let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
           let all_ii = get_sto sto ++ iiqu ++ iity in
-          let all_ii2 = all_ii +> List.sort (fun i1 i2 -> 
-            compare (fst i1).charpos (fst i2).charpos) 
-          in
+          let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
+
           if all_ii <> all_ii2 
           then begin pr2 "STRANGEORDER"; all_ii2 +> List.iter pr_elem end
           else all_ii2 +> List.iter pr_elem
@@ -851,7 +850,7 @@ let pp_program_gen pr_elem progelem =
   | NotParsedCorrectly ii -> 
       assert (List.length ii >= 1);
       ii +> List.iter pr_elem 
-  | FinalDef (ii,annot) -> pr_elem ({ii with str = ""},annot)
+  | FinalDef info -> pr_elem (Ast_c.rewrap_str "" info)
       
   | _ -> raise Impossible
      
@@ -866,8 +865,8 @@ and pp_cst_gen pr_elem cst =
 (*****************************************************************************)
 
 (* Here we do not use (mcode, env). It is a simple C pretty printer. *)
-let pr_elem (info,mcode_env) = 
-  let s = info.str in
+let pr_elem info = 
+  let s = Ast_c.str_of_info info in
   pp s
 
 

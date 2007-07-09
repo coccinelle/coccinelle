@@ -2684,7 +2684,7 @@ let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
      close_out chan
     end
     
-let test1 () = write_ppm 100 100 
+let test_ppm1 () = write_ppm 100 100 
     ((generate (50*100) (1,45,100)) ++ (generate (50*100) (1,1,100)))
     "img.ppm"
 
@@ -2806,8 +2806,8 @@ let fake_parse_info = {
 let (info_from_charpos2: int -> filename -> (int * int * string)) = 
  fun charpos filename ->
 
-  (* Currently lexing.ml does not handle the line number position,  
-   * even if there is some fields in the lexing structure, they are not 
+  (* Currently lexing.ml does not handle the line number position.
+   * Even if there is some fields in the lexing structure, they are not 
    * maintained by the lexing engine :( So the following code does not work:
    *   let pos = Lexing.lexeme_end_p lexbuf in 
    *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
