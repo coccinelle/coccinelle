@@ -55,15 +55,18 @@ let max_min_ii_by_pos xs =
 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
-  | [x] when Ast_c.is_al_info x -> 
+  | [x] when Ast_c.mark_of_info x <> Ast_c.OriginTok -> 
       Common.pr2 "PB: no max or min, have fake info, should not happen";
       (x, x)
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let posf x = Ast_c.pos_of_info x in
 
-        if (Ast_c.is_al_info e)
-        then (maxii, minii)
+        if (Ast_c.mark_of_info e <> Ast_c.OriginTok)
+        then begin 
+          Common.pr2 "PB: no max or min, have fake info, should not happen";
+          (maxii, minii)
+        end
         else 
           let maxii' = if posf e >= posf maxii then e else maxii in
           let minii' = if posf e <= posf minii then e else minii in

@@ -280,8 +280,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
  * generate them.
  */
 
-/* unrecognized token */
-%token <Ast_c.info> TUnknown
+%token <Ast_c.info> TUnknown /* unrecognized token */
                            
 %token <Ast_c.info> TComment TCommentSpace 
 
@@ -294,10 +293,11 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <(Ast_c.info)>          TIncludeStart
 %token <(string * Ast_c.info)> TIncludeFilename
 
-%token <Ast_c.info> TCppEscapedNewline 
-%token <Ast_c.info> TOParDefine
-%token <(string * Ast_c.info)> TIdentDefine
-%token <Ast_c.info> TDefEOL
+%token <Ast_c.info> TCppEscapedNewline /* disappear after fix_tokens_define */
+
+%token <Ast_c.info> TOParDefine        /* appear    after fix_tokens_define */
+%token <(string * Ast_c.info)> TIdentDefine /* same */
+%token <Ast_c.info> TDefEOL                 /* same */
 
 
 
@@ -306,12 +306,15 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %token <Ast_c.info> TCommentCpp TCommentMisc
 
+/* appear  after fix_tokens_cpp */
 %token <Ast_c.info>            TMacroStmt
 %token <Ast_c.info>            TMacroString
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info>            TMacroDeclConst 
 
 %token <Ast_c.info> TAction
+
+
 
 
 %token <string * Ast_c.info>                     TInt
@@ -1029,9 +1032,9 @@ tobrace_ini: TOBrace { !LP._lexer_hint.toplevel <- false; $1 }
 s_or_u_spec2: 
  | struct_or_union 
      ident tobrace_struct struct_decl_list_gcc tcbrace_struct
-     { StructUnion (Some (fst $2), (fst $1,$4)),       [snd $1;snd $2;$3;$5]  }
+     { StructUnion (fst $1, Some (fst $2), $4),  [snd $1;snd $2;$3;$5]  }
  | struct_or_union       tobrace_struct struct_decl_list_gcc tcbrace_struct
-     { StructUnion (None, (fst $1,$3)), [snd $1;$2;$4] }
+     { StructUnion (fst $1, None, $3), [snd $1;$2;$4] }
  | struct_or_union ident       
      { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
 

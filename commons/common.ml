@@ -1663,6 +1663,19 @@ let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) =
       else ([], x::xs)
 let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
+
+let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) = 
+ fun p -> function
+  | []    -> raise Not_found
+  | x::xs -> 
+      if p x then 
+        [], x, xs 
+      else 
+        let (l1, a, l2) = split_when p xs in
+        (x::l1, a, l2)
+let _ = example (split_when (fun x -> x = 3) [1;2;3;4;1;2] = ([1;2],3,[4;1;2]))
+
+
 (* generate exception (Failure "tl") if there is no element satisfying p *)
 let rec (skip_until: ('a list -> bool) -> 'a list -> 'a list) = fun p xs ->
   if p xs then xs else skip_until p (List.tl xs)
@@ -1721,6 +1734,10 @@ let remove x xs =
   let newxs = List.filter (fun y -> y <> x) xs in
   let _ = assert (List.length newxs = List.length xs - 1) in
   newxs
+
+
+let exclude p xs = 
+  List.filter (fun x -> not (p x)) xs
 
 let foldl1 p = function x::xs -> List.fold_left p x xs | _ -> failwith "foldl1"
 

@@ -243,7 +243,7 @@ let extract_labels ((node, labels), nodestr) = labels
 
 
 (* ------------------------------------------------------------------------ *)
-let get_first_node g = 
+let first_node g = 
   g#nodes#tolist +> List.find (fun (i, node) -> 
     match unwrap node with TopNode -> true | _ -> false
     ) +> fst

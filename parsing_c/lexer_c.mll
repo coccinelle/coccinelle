@@ -43,6 +43,7 @@ let tokinfo lexbuf  =
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    mark = Ast_c.OriginTok;
   }
 
 let tok_add_s s ii = 
@@ -175,14 +176,14 @@ rule token = parse
   | [' ' '\t' '\n' '\r' '\011' '\012' ]+  
       { TCommentSpace (tokinfo lexbuf) }
   | "/*" 
-      { let i = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         let com = comment lexbuf in
-        TComment(i +> tok_add_s com) 
+        TComment(info +> tok_add_s com) 
       }
 
 
   (* C++ comment are allowed via gccext, but normally they are deleted by cpp.
-   * So need this here only when dont call cpp before.  
+   * So need this here only when dont call cpp before.
    *)
   | "//" [^'\r' '\n' '\011']*    { TComment (tokinfo lexbuf) } 
 

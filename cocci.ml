@@ -18,20 +18,20 @@ module TAC = Type_annoter_c
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_from_file file = 
+let cprogram_of_file file = 
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 
-let cfile_from_program program2_with_ppmethod outf = 
+let cfile_of_program program2_with_ppmethod outf = 
   Unparse_c.pp_program program2_with_ppmethod outf
 
 
   
 
-let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
+let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   begin
     Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
-    let program = cprogram_from_file ("/tmp/__cocci.c") in
+    let program = cprogram_of_file ("/tmp/__cocci.c") in
     program +> Common.find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
@@ -39,10 +39,10 @@ let (cstatement_from_string: string -> Ast_c.statement) = fun s ->
       )
   end
 
-let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
+let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   begin
     Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
-    let program = cprogram_from_file ("/tmp/__cocci.c") in
+    let program = cprogram_of_file ("/tmp/__cocci.c") in
     program +> Common.find_some (fun (e,_) -> 
       match e with
       | Ast_c.Definition ((funcs, _, _, compound),_) -> 
@@ -58,13 +58,13 @@ let (cexpression_from_string: string -> Ast_c.expression) = fun s ->
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
-let sp_from_file file iso    = Parse_cocci.process file iso false
+let sp_of_file file iso    = Parse_cocci.process file iso false
 
-let (rule_elem_from_string: string -> filename option -> Ast_cocci.rule_elem) =
+let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_) = sp_from_file ("/tmp/__cocci.cocci") iso in
+    let (astcocci, _,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +> List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
 	match Ast_cocci.unwrap x with
@@ -105,7 +105,7 @@ let ast_to_flow_with_error_messages a =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
 
-let flows_from_ast astc = 
+let flows_of_ast astc = 
   astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
 
 let one_flow flows = 
@@ -117,7 +117,7 @@ let one_flow flows =
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
-let ctls_from_ast ast ua  =
+let ctls_of_ast ast ua  =
   List.map2
     (function ast -> function ua ->
       List.combine
@@ -262,7 +262,7 @@ let show_or_not_trans_info2 trans_info =
               Pretty_print_cocci.rule_elem "" re;
             );
             adjust_pp_with_indent_and_header "with binding: " (fun () -> 
-              Pretty_print_c.pp_binding subst;
+              Pretty_print_engine.pp_binding subst;
             );
           )
         );
@@ -277,7 +277,7 @@ let show_or_not_trans_info a  =
 let show_or_not_binding2 s binding =
   if !Flag.show_binding_in_out then begin
     adjust_pp_with_indent_and_header ("binding " ^ s ^ " = ") (fun () -> 
-      Pretty_print_c.pp_binding binding;
+      Pretty_print_engine.pp_binding binding;
     )
   end
 let show_or_not_binding a b  = 
@@ -556,11 +556,11 @@ let rebuild_info_program cs =
     if !(c.was_modified)
     then begin
       let file = Common.new_temp_file "cocci_small_output" ".c" in
-      cfile_from_program 
+      cfile_of_program 
         [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] file;
 
       (* Common.command2 ("cat " ^ file); *)
-      let cprogram = cprogram_from_file file in
+      let cprogram = cprogram_of_file file in
       let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,
@@ -623,7 +623,7 @@ let includes_to_parse xs =
 
 
 let prepare_c files = 
-  let cprograms = List.map cprogram_from_file files in
+  let cprograms = List.map cprogram_of_file files in
   let includes = includes_to_parse (zip files cprograms) in
 
   (* todo?: may not be good to first have all the headers and then all the c *)
@@ -644,7 +644,7 @@ let prepare_c files =
           None 
         end
         else 
-          let h_cs = cprogram_from_file hpath in
+          let h_cs = cprogram_of_file hpath in
           let info_h_cs = build_info_program h_cs !env in
           env := 
             if null info_h_cs
@@ -856,8 +856,8 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
 
-  let (astcocci,used_after_lists,toks) = sp_from_file coccifile isofile in
-  let ctls = ctls_from_ast astcocci used_after_lists in
+  let (astcocci,used_after_lists,toks) = sp_of_file coccifile isofile in
+  let ctls = ctls_of_ast astcocci used_after_lists in
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
@@ -893,7 +893,7 @@ let full_engine2 (coccifile, isofile) cfiles =
         then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
         (* and now unparse everything *)
-        cfile_from_program (for_unparser c_or_h.asts) outfile;
+        cfile_of_program (for_unparser c_or_h.asts) outfile;
 
         let show_only_minus = !Flag_parsing_cocci.sgrep_mode2 in
         show_or_not_diff c_or_h.fpath outfile show_only_minus;

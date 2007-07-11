@@ -657,6 +657,8 @@ val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val splitAt : int -> 'a list -> 'a list * 'a list
 
+val split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list
+
 val pack : int -> 'a list -> 'a list list
 
 
@@ -714,6 +716,8 @@ val collect_accu : ('a -> 'b list) -> 'b list -> 'a list -> 'b list
 val collect : ('a -> 'b list) -> 'a list -> 'b list
 
 val remove : 'a -> 'a list -> 'a list
+
+val exclude : ('a -> bool) -> 'a list -> 'a list
 
 (* Not like unix uniq command line tool that only delete contiguous repeated
  * line. Here we delete any repeated line (here list element).

@@ -71,10 +71,14 @@ let pr2 s =
  * because VarOrFunc and Typedef are in the same namespace.
  *)
 
+
+(* the wrap for StructUnionNameDef contain the whole ii, the i for
+ * the string, the structUnion and the structType
+ *)
 type namedef = 
   | VarOrFunc of string * fullType
   | TypeDef of string * fullType
-  | StructUnionNameDef of string * structType wrap
+  | StructUnionNameDef of string * (structUnion * structType) wrap
   (* todo: EnumConstant *)
   (* todo: EnumDef *)
 
@@ -111,7 +115,7 @@ let lookup_typedef s env =
   in
   lookup_env f env
 
-let lookup_structunion (su, s) env =
+let lookup_structunion (_su, s) env =
   let f = function
     | StructUnionNameDef (s2, typ) -> if s2 = s then Some typ else None
     | _ -> None
@@ -190,7 +194,7 @@ let rec type_unfold_one_step ty env =
   | BaseType x  -> ty
   | Pointer t -> ty
   | Array (e, t) -> ty
-  | StructUnion (sopt, su) -> ty
+  | StructUnion (sopt, su, fields) -> ty
       
   | FunctionType t -> ty
   | Enum  (s, enumt) -> ty
@@ -198,8 +202,8 @@ let rec type_unfold_one_step ty env =
       
   | StructUnionName (su, s) -> 
       (try 
-          let ((structtyp,ii), env') = lookup_structunion (su, s) env in
-          Ast_c.nQ, (StructUnion (Some s, structtyp), ii)
+          let (((su,fields),ii), env') = lookup_structunion (su, s) env in
+          Ast_c.nQ, (StructUnion (su, Some s, fields), ii)
           (* old: +> Ast_c.rewrap_typeC ty 
            * but must wrap with good ii, otherwise pretty_print_c
            * will be lost and raise some Impossible
@@ -223,7 +227,8 @@ let rec type_unfold_one_step ty env =
 
 
 
-let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) = 
+let (find_type_field: 
+  string -> (Ast_c.structUnion * Ast_c.structType) -> Ast_c.fullType) = 
   fun fld (su, fields) -> 
     fields +> Common.find_some (fun x -> 
       match Ast_c.unwrap x with
@@ -244,7 +249,7 @@ let (find_type_field: string -> Ast_c.structType -> Ast_c.fullType) =
 
 let structdef_to_struct_name ty = 
   match ty with 
-  | qu, (StructUnion (sopt, (su, fields)), iis) -> 
+  | qu, (StructUnion (su, sopt, fields), iis) -> 
       (match sopt,iis with
       | Some s , [i1;i2;i3;i4] -> 
           qu, (StructUnionName (su, s), [i1;i2])
@@ -266,7 +271,7 @@ let rec type_variations_step ty env =
   | Array (e, t) -> 
       Array (e, type_variations_step t env) +> Ast_c.rewrap_typeC ty
       
-  | StructUnion (sopt, su) -> 
+  | StructUnion (su, sopt, fields) -> 
       structdef_to_struct_name ty
          
       
@@ -453,11 +458,11 @@ let rec (annotate_program2 :
       | RecordAccess  (e, fld) ->  
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
-            | StructUnion (sopt, structtyp) -> 
+            | StructUnion (su, sopt, fields) -> 
                 (try 
                   (* todo: type_variations_typedef ? which env ? *)
-                    type_variations_typedef (find_type_field fld structtyp) 
-                      !_scoped_env
+                    type_variations_typedef 
+                      (find_type_field fld (su, fields)) !_scoped_env
                 with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
@@ -476,11 +481,11 @@ let rec (annotate_program2 :
           | Pointer (t) -> 
               (match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) 
                 with
-              | StructUnion (sopt, structtyp) -> 
+              | StructUnion (su, sopt, fields) -> 
                 (try 
                   (* todo: type_variations_typedef ? which env ? *)
-                  type_variations_typedef (find_type_field fld structtyp) 
-                    !_scoped_env
+                  type_variations_typedef 
+                    (find_type_field fld (su, fields)) !_scoped_env
                   with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
@@ -535,7 +540,7 @@ let rec (annotate_program2 :
     Visitor_c.ktype = (fun (k, bigf) typ -> 
       let (q, t) = Lib.al_type typ in
       match t with 
-      | StructUnion  ((Some s),  (su, structType)),ii -> 
+      | StructUnion  (su, Some s, structType),ii -> 
           add_binding (StructUnionNameDef (s, ((su, structType),ii))) true;
           k typ (* todo: restrict ? new scope so use do_in_scope ? *)
       | _ -> k typ

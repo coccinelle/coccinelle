@@ -1,3 +1,5 @@
+// A*B is not just a toy isomorphism :) it's really useful sometimes.
+
 @@
 expression E;
 constant c;

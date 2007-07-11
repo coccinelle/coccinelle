@@ -499,7 +499,8 @@ let test_compare_c_hardcoded () =
 
 
 let test_xxx () = 
-  raise Todo
+  ignore(Parse_c.parse_cpp_define_file "standard.h")
+
 (*
   Format.print_newline();
   Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";

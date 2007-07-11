@@ -162,7 +162,7 @@ let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) =
 let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   let g = ref flow in
 
-  let topi = F.get_first_node !g in
+  let topi = F.first_node !g in
   !g#add_arc ((topi, topi), F.Direct);
 
   (try 

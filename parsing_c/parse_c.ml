@@ -46,8 +46,11 @@ let mk_info_item2 filename toks =
     (* old: get_slice_file filename (line1, line2) *)
     begin
       toks' +> List.iter (fun tok -> 
-        let s = fst (token_to_strpos tok)in
-        Buffer.add_string buf s;
+        let s = TH.str_of_tok tok in
+        match Ast_c.mark_of_info (TH.info_of_tok tok) with
+        | Ast_c.OriginTok -> Buffer.add_string buf s
+        | Ast_c.AbstractLineTok -> raise Impossible
+        | _ -> ()
       );
       Buffer.contents buf
     end
@@ -442,6 +445,7 @@ let new_info posadd str ii =
       };
     (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    mark = Ast_c.OriginTok;
   }
 
 
@@ -473,7 +477,10 @@ let tokens_include (info, includes, filename) =
 (*****************************************************************************)
 
 let parse_cpp_define_file file = 
-  raise Todo
+  let toks = tokens file in
+  let toks = Parsing_hacks.fix_tokens_define toks in
+  Parsing_hacks.extract_cpp_define toks
+
 
 (*****************************************************************************)
 (* Main entry point *)

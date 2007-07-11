@@ -6,6 +6,16 @@ type pr_elem_func = Ast_c.info -> unit
 
 (*****************************************************************************)
 
+(* This module is used by unparse_c, but because unparse_c have also the
+ * list of tokens, pretty_print_c could be useless (except that the ast_c
+ * have some fake tokens not present in the list of tokens so it's still
+ * useful). But this module is also useful to unparse C when you don't
+ * have the ordered list of tokens separately, or tokens without 
+ * position information, for instance when you want to pretty print
+ * some piece of C that was generated, or abstract-lined piece of code, 
+ * etc.
+ *)
+
 let rec pp_expression_gen pr_elem = 
   (* subtil: dont try to shorten the def of pp_statement by omitting e,
      otherwise get infinite funcall and huge memory consumption *)
@@ -13,8 +23,8 @@ let rec pp_expression_gen pr_elem =
   let rec pp_expression = fun ((exp, typ), ii) -> 
     (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
+    (* only a MultiString can have multiple ii *)
     | Constant (MultiString), is     -> is +> List.iter pr_elem
-        (* only a String can have multiple ii *)
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
@@ -294,7 +304,7 @@ and (pp_base_type_gen:
             pp_base_type returnt sto
 
 
-        | (StructUnion (sopt, (su, fields)),iis) -> 
+        | (StructUnion (su, sopt, fields),iis) -> 
             print_sto_qu (sto, qu);
 
             (match sopt,iis with
@@ -461,7 +471,7 @@ and (pp_type_with_ident_rest_gen:
       (* the work is to do in base_type !! *)
       | (BaseType _, iis)                       -> print_ident ident
       | (Enum  (sopt, enumt), iis)              -> print_ident ident
-      | (StructUnion (sopt, (_, fields)),iis)   -> print_ident ident
+      | (StructUnion (_, sopt, fields),iis)   -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
       | (TypeName (s), iis)                     -> print_ident ident
@@ -549,7 +559,7 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
 
       | (BaseType _, iis)    -> ()    
       | (Enum  (sopt, enumt), iis) -> ()    
-      | (StructUnion (sopt, (_, fields)),iis)  -> ()    
+      | (StructUnion (_, sopt, fields),iis)  -> ()    
       | (StructUnionName (s, structunion), iis) -> ()    
       | (EnumName  s, iis) -> ()    
       | (TypeName (s), iis) -> ()
@@ -606,7 +616,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
 
       | (BaseType _, iis)        -> ()    
       | (Enum  (sopt, enumt), iis) -> ()    
-      | (StructUnion (sopt, (_, fields)),iis)-> ()      
+      | (StructUnion (_, sopt, fields),iis)-> ()      
       | (StructUnionName (s, structunion), iis) -> ()    
       | (EnumName  s, iis) -> ()    
       | (TypeName (s), iis) -> ()
@@ -874,23 +884,3 @@ let pp_expression_simple = pp_expression_gen pr_elem
 let pp_statement_simple  = pp_statement_gen pr_elem
 
 
-let rec pp_binding_kind = function
-  | MetaIdVal        s -> pp ("id " ^ s)
-  | MetaFuncVal      s -> pp ("func " ^ s)
-  | MetaLocalFuncVal s -> pp ("localfunc " ^ s)
-  | MetaExprVal      expr -> pp_expression_simple expr
-  | MetaExprListVal  expr_list -> pp "<<exprlist>>"
-  | MetaTypeVal      typ -> pp_type_gen pr_elem typ
-  | MetaStmtVal      statement -> pp_statement_simple statement
-  | MetaParamVal     params -> pp "<<param>>"
-  | MetaParamListVal params -> pp "<<paramlist>>"
-  | MetaConstVal cst -> pp_cst_gen pr_elem cst
-
-and pp_binding subst = 
-  begin
-    pp "[";
-    Common.print_between (fun () -> pp ";"; Format.print_cut() ) 
-      (fun ((_,s), kind) -> pp s; pp " --> "; pp_binding_kind kind)
-      subst;
-    pp "]";
-  end

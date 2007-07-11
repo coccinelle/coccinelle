@@ -4,6 +4,57 @@ open Common open Commonop
 (* The AST C related types *)
 (*****************************************************************************)
 
+(* Cocci: Each token will be decorated in the futur by the mcodekind
+ * of cocci. It is the job of the pretty printer to look at this
+ * information and decide to print or not the token (and also the
+ * pending '+' associated sometimes with the token).
+ * 
+ * The first time that we parse the original C file, the mcodekind is
+ * empty, or more precisely all is tagged as a CONTEXT with NOTHING
+ * associated. This is what I call a "clean" expr/statement/....
+ * 
+ * Each token will also be decorated in the future with an environment,
+ * because the pending '+' may contain metavariables that refer to some
+ * C code.
+ * 
+ * Update: Now I use a ref! so take care.
+ * 
+ * Sometimes we want to add someting at the beginning or at the end 
+ * of a construct. For 'function' and 'decl' we want add something
+ * to their left and for 'if' 'while' et 'for' and so on at their right.
+ * We want kind of "virtual placeholders" that represent the start or
+ * end of a construct. We use fakeInfo for that purpose.
+ * To identify those cases I have added a fakestart/fakeend comment.
+ * 
+ * Concerning the mark, FakeTok are present only in ast and generated 
+ * after parsing, OriginTok are both in ast and list of tokens,
+ * ExpandedTok are both in ast and list of tokens, AbstractLineTok
+ * are neither in ast nor in list of tokens but only in the '+'
+ * of the mcode of some tokens.
+ * 
+ * convention: I often use 'ii' for the name of a list of info. 
+ * 
+ *)
+
+(* forunparser: *)
+
+type mark_token = OriginTok | FakeTok | ExpandedTok | AbstractLineTok
+
+type info = { 
+  pinfo : Common.parse_info;
+  mark : mark_token;
+  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
+  }
+and il = info list
+
+and 'a wrap  = 'a * il   
+
+(* wrap2 is like wrap, except that I use it often for separator such
+ * as ','. In that case the info is associated to the argument that
+ * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
+and 'a wrap2 = 'a * il
+
+(* ------------------------------------------------------------------------- *)
 (* Could have more precise type in fullType, in expression, etc, but
  * it requires to do too much things in parsing such as checking no
  * conflicting structname, computing value, etc. Better to separate
@@ -27,46 +78,8 @@ open Common open Commonop
 
 (* ------------------------------------------------------------------------- *)
 
-(* Cocci: Each token will be decorated in the futur by the mcodekind
- * of cocci. It is the job of the pretty printer to look at this
- * information and decide to print or not the token (and also the
- * pending '+' associated sometimes with the token).
- * 
- * The first time that we parse the original C file, the mcodekind is
- * empty, or more precisely all is tagged as a CONTEXT with NOTHING
- * associated. This is what I call a "clean" expr/statement/....
- * 
- * Each token will also be decorated in the future with an environment,
- * because the pending '+' may contain metavariables that refer to some
- * C code.
- * 
- * convention: I often use 'ii' for the name of a list of info. 
- * 
- * Update: Now I use a ref! so take care.
- * 
- * Sometimes we want to add someting at the beginning or at the end 
- * of a construct. For 'function' and 'decl' we want add something
- * to their left and for 'if' 'while' et 'for' and so on at their right.
- * We want kind of "virtual placeholders" that represent the start or
- * end of a construct. We use fakeInfo for that purpose.
- * To identify those cases I have added a fakestart/fakeend comment.
- *)
 
-(* forunparser: *)
-type info = { 
-  pinfo : Common.parse_info;
-  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref
-  }
-and il = info list
 
-and 'a wrap  = 'a * il   
-
-(* wrap2 is like wrap, except that I use it often for separator such
- * as ','. In that case the info is associated to the argument that
- * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
-and 'a wrap2 = 'a * il
-
-(* ------------------------------------------------------------------------- *)
 and fullType = typeQualifier * typeC
 and  typeC = typeCbis wrap
 
@@ -78,7 +91,7 @@ and typeCbis =
   | FunctionType    of functionType
 
   | Enum            of string option * enumType    
-  | StructUnion     of string option * structType (* new scope *)
+  | StructUnion     of structUnion * string option * structType (* new scope *)
 
   | EnumName        of string
   | StructUnionName of structUnion * string 
@@ -109,7 +122,7 @@ and typeCbis =
 
      (* -------------------------------------- *)    
      and structUnion = Struct | Union
-     and structType  = structUnion * (field wrap) list  (* ; *)
+     and structType  = (field wrap) list  (* ; *)
 
         (* before unparser, I didn't have a FieldDeclList but just a Field. *)
          and field  =  FieldDeclList of fieldkind wrap2 list (* , *)
@@ -147,7 +160,7 @@ and expression = (expressionbis * fullType list ref (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
-   * With CPP, Ident can also be the name of a macro.
+   * With cppext, Ident can also be the name of a macro.
    *)
   | Ident          of string  (* todo? more semantic info such as LocalFunc *)
   | Constant       of constant                                  
@@ -368,13 +381,14 @@ and inc_file =
   | Wierd of string (* ex: #include SYSTEM_H *)
   and inc_elem = string
 
-(* Useful for cocci, to tag the first of #include <xx/> and last
- * #include of <yy/>
+(* Cocci: to tag the first of #include <xx/> and last of #include <yy/>
  * 
  * The first_of and last_of store the list of prefixes that was
- * introduced by the include. on #include <a/b/x>, if the include was
+ * introduced by the include. On #include <a/b/x>, if the include was
  * the first in the file, it would give in first_of the following
  * prefixes a/b/c; a/b/; a/ ; <empty> 
+ * 
+ * This is set after parsing, in cocci.ml, in update_rel_pos.
  *)
 and include_rel_pos = { 
   first_of : string list list;
@@ -438,6 +452,19 @@ let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NoPos,Ast_cocci.NOTHING),
 
 let noRelPos () = ref (None: include_rel_pos option)
 
+
+(* When want add some info in ast that does not correspond to 
+ * an existing C element.
+ * old: or when don't want 'synchronize' on it in unparse_c.ml
+ * (now have other mark for tha matter).
+ *)
+let fakeInfo ()  = 
+  { pinfo = Common.fake_parse_info;
+    cocci_tag = ref emptyAnnot;
+    mark = FakeTok;
+  }
+
+
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
@@ -459,47 +486,39 @@ let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 let rewrap_str s ii =  
   {ii with pinfo = { ii.pinfo with Common.str = s;}}
+let rewrap_mark mark ii =  
+  {ii with mark = mark}
 
 let pos_of_info  ii = ii.pinfo.Common.charpos
 let str_of_info  ii = ii.pinfo.Common.str
 let file_of_info ii = ii.pinfo.Common.file
-
+let mark_of_info ii = ii.mark
 let mcode_of_info ii  = fst (!(ii.cocci_tag))
 
+(* todo: use virtual pos ? *)
 let compare_pos i1 i2 = 
   compare i1.pinfo.charpos i2.pinfo.charpos
 
 (*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)
-(* Abstract line. When we have extended the C Ast to add some info to the
- * tokens, such as its line number in the file, we can not use anymore the
+
+(* When we have extended the C Ast to add some info to the tokens,
+ * such as its line number in the file, we can not use anymore the
  * ocaml '=' to compare Ast elements. To overcome this problem, to be
- * able to use again '=', we just have to get rid of all those extra 
- * information.
+ * able to use again '=', we just have to get rid of all those extra
+ * information, to "abstract those line" information.
  *)
 
-let _Magic_info_number = -10
-
 let al_info x = 
+  let _Magic_info_number = -10 in
   { pinfo = 
       { charpos = _Magic_info_number; 
         str = x.pinfo.str;
         line = -1; column = -1; file = "";
       };
-    cocci_tag = ref emptyAnnot
-  }
-
-let is_al_info ii = ii.pinfo.charpos =|= _Magic_info_number
-
-(* When want add some info in ast that does not correspond to 
- * an existing C element or when don't want 'synchronize' on it 
- * in unparse_c.ml
- *)
-let fakeInfo ()  = al_info 
-  {
-    pinfo = Common.fake_parse_info;
     cocci_tag = ref emptyAnnot;
+    mark = AbstractLineTok;
   }
 
 (*****************************************************************************)
@@ -510,6 +529,9 @@ let fakeInfo ()  = al_info
  * represented via the wrap2 and associated with an element, with
  * a list where the comma are on their own. f(1,2,2) was
  * [(1,[]); (2,[,]); (2,[,])] and become [1;',';2;',';2].
+ * 
+ * Used in cocci_vs_c.ml, to have a more direct correspondance between
+ * the ast_cocci of julia and ast_c.
  *)
 let rec (split_comma: 'a wrap2 list -> ('a, il) either list) = 
   function

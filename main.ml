@@ -10,6 +10,8 @@ open Common open Commonop
 let cocci_file = ref ""
 let iso_file   = ref "" 
 
+let macro_file = ref ""
+
 let output_file = ref ""
 let inplace_modif = ref false  (* but keeps a .cocci_orig *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
@@ -56,6 +58,7 @@ let quiet_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_ctl.verbose_ctl_engine;
     Flag_engine.debug_engine;
+    Flag_engine.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
   ])
@@ -117,6 +120,9 @@ let short_options = [
   "    <dirname> process all files in directory recursively";
   "-I",   Arg.Set_string Flag.include_path,
   "  <dir> where are the Linux headers (optional)";
+
+  "-D",   Arg.Set_string macro_file,
+  "  <file> default macros (optional)";
 
   "-version",   Arg.Unit (fun () -> 
     pr2 "version: $Date$";
@@ -185,7 +191,7 @@ let other_options = [
     "-show_SP_julia"       ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
 
-  "debug C parsing",
+  "debug C parsing/unparsing",
   "",
   [
     "-debug_cpp",          Arg.Set  Flag_parsing_c.debug_cpp, " ";
@@ -196,6 +202,8 @@ let other_options = [
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" macro";
     "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
+
+    "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
 
   ];
 
@@ -234,8 +242,6 @@ let other_options = [
     "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
     "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";
-    "-nong",               Arg.Clear Flag_parsing_c.next_gen_parsing,
-    "   don't use the next-gen parsing";
   ];
 
   "misc options",
@@ -286,6 +292,8 @@ let other_options = [
     "   <file>");
     (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
     "  <file1> <file2>");
+    (let s = "-xxx"  in s, Arg.Unit (fun () -> action := s),
+    "  ");
   ];
 ]
 
@@ -344,6 +352,11 @@ let main () =
     then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
+
+
+    if !macro_file <> "" 
+    then Parsing_hacks._defs := Common.hash_of_list
+      (Parse_c.parse_cpp_define_file !macro_file);
 
     Common.timeout_function_opt !Flag.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)

@@ -59,7 +59,6 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
 
   (* ------------------------ *)
-  (* some control nodes *)
   | Enter 
   | Exit
   | Fake
@@ -79,12 +78,11 @@ type cflow = (node, edge) Ograph_extended.ograph_mutable
 
 val unwrap : node -> node2
 val rewrap : node -> node2 -> node
-val extract_labels : node -> int list
 
+val extract_labels : node -> int list
 val extract_fullstatement : node -> Ast_c.statement option
 
-val get_first_node : cflow -> Ograph_extended.nodei
+val first_node : cflow -> Ograph_extended.nodei
 val find_node : (node2 -> bool) -> cflow -> Ograph_extended.nodei
-
 (* remove an intermediate node and redirect the connexion  *)
 val remove_one_node : Ograph_extended.nodei -> cflow -> unit

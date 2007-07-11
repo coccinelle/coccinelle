@@ -293,7 +293,7 @@ and vk_type = fun bigf t ->
           eopt +> do_option (vk_expr bigf)
           );    
         
-    | StructUnion (sopt, (_su, fields)) -> 
+    | StructUnion (sopt, _su, fields) -> 
         vk_struct_fields bigf fields
 
     | StructUnionName (s, structunion) -> ()
@@ -806,8 +806,8 @@ and vk_type_s = fun bigf t ->
                  iif iicomma
                )
           )
-      | StructUnion (sopt, (su, fields)) -> 
-          StructUnion (sopt, (su, vk_struct_fields_s bigf fields))
+      | StructUnion (sopt, su, fields) -> 
+          StructUnion (sopt, su, vk_struct_fields_s bigf fields)
 
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)

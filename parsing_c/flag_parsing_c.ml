@@ -23,6 +23,4 @@ let pretty_print_type_info = ref false
 
 
 
-let next_gen_parsing = ref true
-
 let diff_lines = ref (None : string option) (* number of lines of context *)

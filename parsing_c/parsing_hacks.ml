@@ -25,10 +25,9 @@ let pr2_once s =
 (* In the following, there is some harcoded names of types or macros
  * but they are not used by our heuristics! They are just here to
  * enable to detect false positive by printing only the typedef/macros
- * that we don't know yet. If we print everything, then we can easily get
- * lost with too much verbose tracing information. So those functions
- * "filter" some messages. 
- *)
+ * that we don't know yet. If we print everything, then we can easily
+ * get lost with too much verbose tracing information. So those
+ * functions "filter" some messages. *)
 
 let msg_gen cond is_known printer s = 
   if cond
@@ -144,7 +143,7 @@ let msg_stringification s =
   
 
 (*****************************************************************************)
-(* CPP handling: macros, ifdefs  *)
+(* CPP handling: macros, ifdefs, macros defs  *)
 (*****************************************************************************)
 
 (* opti: better to built then once and for all, especially regexp_foreach *)
@@ -168,6 +167,12 @@ let regexp_typedef = Str.regexp
   ".*_t$"
 
 
+
+
+type define_body = (unit,string list) either * Parser_c.token list
+
+let (_defs : (string, define_body) Hashtbl.t ref)  = 
+  ref (Hashtbl.create 101)
 
 
 
@@ -420,7 +425,9 @@ type context =
 type token_extended = { 
   mutable tok: Parser_c.token;
   mutable where: context;
-  (* todo: before/after ? *)
+
+  (* todo: after ? *)
+  mutable new_tokens_before : Parser_c.token list;
 
   (* line x col  cache, more easily accessible, of the info in the token *)
   line: int; 
@@ -432,7 +439,14 @@ let set_as_comment x =
   then () (* otherwise parse_c will be lost if don't find a EOF token *)
   else 
     x.tok <- TCommentCpp (TH.info_of_tok x.tok)
-  
+
+let mk_token_extended x = 
+  let (line, col) = TH.linecol_of_tok x in
+  { tok = x; 
+    line = line; col = col; 
+    where = NoContext; 
+    new_tokens_before = [];
+  }
 
 
 (* x list list, because x list separated by ',' *) 
@@ -481,7 +495,7 @@ let rec mk_parenthised xs =
   | [] -> []
   | x::xs -> 
       (match x.tok with 
-      | TOPar _ -> 
+      | TOPar _ | TOParDefine _ -> 
           let body, extras, xs = mk_parameters [x] [] xs in
           Parenthised (body,extras)::mk_parenthised xs
       | _ -> 
@@ -504,7 +518,7 @@ and mk_parameters extras acc_before_sep  xs =
 
       | TCPar _ -> 
           [List.rev acc_before_sep], List.rev (x::extras), xs
-      | TOPar _ -> 
+      | TOPar _ | TOParDefine _ -> 
           let body, extrasnest, xs = mk_parameters [x] [] xs in
           mk_parameters extras 
             (Parenthised (body,extrasnest)::acc_before_sep) 
@@ -682,11 +696,6 @@ let rec iter_token_brace f xs =
       xxs +> List.iter (fun xs -> iter_token_brace f xs)
   )
 
-let tokens_of_paren xs = 
-  let g = ref [] in
-  xs +> iter_token_paren (fun tok -> push2 tok g);
-  !g
-
 let rec iter_token_ifdef f xs = 
   xs +> List.iter (function
   | NotIfdefLine xs -> xs +> List.iter f;
@@ -695,6 +704,15 @@ let rec iter_token_ifdef f xs =
       info_ifdef +> List.iter f;
       xxs +> List.iter (iter_token_ifdef f)
   )
+
+
+
+
+let tokens_of_paren xs = 
+  let g = ref [] in
+  xs +> iter_token_paren (fun tok -> push2 tok g);
+  !g
+
 
 
 
@@ -775,6 +793,8 @@ let set_context_tag xs =
   
       
 
+
+
 (* ------------------------------------------------------------------------- *)
 (* annotation, static, if,  and stringification part 1 *)
 (* ------------------------------------------------------------------------- *)
@@ -851,7 +871,7 @@ let (count_open_close_stuff_ifdef_clause: ifdef_grouped list -> (int * int)) =
    let cnt_paren, cnt_brace = ref 0, ref 0 in
    xs +> iter_token_ifdef (fun x -> 
      (match x.tok with
-     | TOPar _ -> incr cnt_paren
+     | TOPar _ | TOParDefine _ -> incr cnt_paren
      | TOBrace _ -> incr cnt_brace
      | TCPar _ -> decr cnt_paren
      | TCBrace _ -> decr cnt_brace
@@ -975,8 +995,59 @@ let rec find_ifdef_funheaders = function
 
 
 (* ------------------------------------------------------------------------- *)
-(* macro *)
+(* macro, using standard.h or other defs *)
 (* ------------------------------------------------------------------------- *)
+
+(* no need to take care to not substitute the macro name itself
+ * that occurs in the macro definition because the macro name is
+ * after fix_token_define a TDefineIdent, no more a TIdent.
+ *)
+
+let rec apply_macro_defs xs = 
+  match xs with
+  | [] -> ()
+
+  (* recognized macro of standard.h (or other) *)
+  | PToken ({tok = TIdent (s,i1)} as id)::Parenthised (xxs,info_parens)::xs 
+      when Hashtbl.mem !_defs s -> 
+      pr2_cpp ("MACRO: found known macro = " ^ s);
+      (match Hashtbl.find !_defs s with
+      | Left (), bodymacro -> 
+          failwith "macro without param used before parenthize, wierd"
+      | Right params, bodymacro -> 
+          [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
+          set_as_comment id;
+          id.new_tokens_before <- bodymacro;
+      );
+      apply_macro_defs xs
+
+  | PToken ({tok = TIdent (s,i1)} as id)::xs 
+      when Hashtbl.mem !_defs s -> 
+      pr2_cpp ("MACRO: found known macro = " ^ s);
+      (match Hashtbl.find !_defs s with
+      | Right params, bodymacro -> 
+          failwith "macro with params but no parens found, wierd"
+      | Left (), bodymacro -> 
+          set_as_comment id;
+          id.new_tokens_before <- bodymacro;
+      );
+      apply_macro_defs xs
+
+  (* recurse *)
+  | (PToken x)::xs -> apply_macro_defs xs 
+  | (Parenthised (xxs, info_parens))::xs -> 
+      xxs +> List.iter apply_macro_defs;
+      apply_macro_defs xs
+
+
+
+
+
+
+(* ------------------------------------------------------------------------- *)
+(* macro2 *)
+(* ------------------------------------------------------------------------- *)
+
 
 (* don't forget to recurse in each case *)
 let rec find_macro_paren xs = 
@@ -1089,8 +1160,10 @@ let rec find_macro_paren xs =
 
 
 
+
+
 (* don't forget to recurse in each case *)
-let rec find_macro xs = 
+let rec find_macro_lineparen xs = 
   match xs with
   | [] -> ()
 
@@ -1110,7 +1183,7 @@ let rec find_macro xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
 
   (* the static const case *)
   | (Line 
@@ -1139,7 +1212,7 @@ let rec find_macro xs =
       *)
       const.tok <- TMacroDeclConst (TH.info_of_tok const.tok);
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
 
 
   (* same but without trailing ';'
@@ -1160,7 +1233,7 @@ let rec find_macro xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
 
 
 
@@ -1184,7 +1257,7 @@ let rec find_macro xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
 
 
   (* linuxext: ex: DECLARE_BITMAP(); 
@@ -1212,7 +1285,7 @@ let rec find_macro xs =
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
 
 
 
@@ -1233,7 +1306,7 @@ let rec find_macro xs =
 
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
 
-      find_macro (xs)
+      find_macro_lineparen (xs)
             
             
   (* linuxext: special known macro around fun header *)
@@ -1248,7 +1321,7 @@ let rec find_macro xs =
       (* keep xxs only *)
       (ident::info_parens) +> List.iter set_as_comment;
 
-      find_macro xs
+      find_macro_lineparen xs
 
 
 
@@ -1301,7 +1374,7 @@ let rec find_macro xs =
         [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       end;
 
-      find_macro (line2::xs)
+      find_macro_lineparen (line2::xs)
         
   (* linuxext:? single macro 
    * ex: LOCK
@@ -1344,10 +1417,10 @@ let rec find_macro xs =
         msg_macro_noptvirg_single s;
         macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
       end;
-      find_macro (line2::xs)
+      find_macro_lineparen (line2::xs)
         
   | x::xs -> 
-      find_macro xs
+      find_macro_lineparen xs
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1424,61 +1497,82 @@ and find_actions_params xxs =
 (* ------------------------------------------------------------------------- *)
 let fix_tokens_cpp2 tokens = 
 
-  let tokens2 = tokens +> List.map (fun x -> 
-    let (line, col) = TH.linecol_of_tok x in
-    {tok = x; line = line; col = col; where = NoContext}
-  )
+  let tokens2 = ref (tokens +> List.map mk_token_extended) in
+  
+  let rebuild_tokens2 () = 
+    let _tokens = ref [] in
+    !tokens2 +> List.iter (fun tok -> 
+      tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
+      push2 tok.tok _tokens 
+    );
+    let tokens = List.rev !_tokens in
+    tokens2 := (tokens +> List.map mk_token_extended)
   in
+
   begin 
-    fix_tokens_annotation_and_stringification_part1 tokens2;
+    fix_tokens_annotation_and_stringification_part1 !tokens2;
 
-    if !Flag_parsing_c.next_gen_parsing 
-    then begin
-      (* the order is important, if put action first 
-       * then because of ifdef, can have not closed paren
-       * and so may believe that higher order macro 
-       * and it will eat too much tokens. 
-       * 
-       * I recompute multiple times cleaner cos the mutable
-       * can have be changed and so may have more comments
-       * 
-       *)
+    (* the order is important, if put action first 
+     * then because of ifdef, can have not closed paren
+     * and so may believe that higher order macro 
+     * and it will eat too much tokens. 
+     * 
+     * I recompute multiple times cleaner cos the mutable
+     * can have be changed and so may have more comments
+     * in the token original list.
+     * 
+     *)
 
-      (* ifdef *)
-      let cleaner = tokens2 +> List.filter (fun x -> 
-        not (TH.is_comment x.tok) (* could filter also #define/#include *)
-      ) in
-      let ifdef_grouped = mk_ifdef cleaner in
-      find_ifdef_funheaders ifdef_grouped;
-      find_ifdef_zero ifdef_grouped;
-      find_ifdef_mid ifdef_grouped;
+    (* ifdef *)
+    let cleaner = !tokens2 +> List.filter (fun x -> 
+      not (TH.is_comment x.tok) (* could filter also #define/#include *)
+    ) in
+    let ifdef_grouped = mk_ifdef cleaner in
+    find_ifdef_funheaders ifdef_grouped;
+    find_ifdef_zero ifdef_grouped;
+    find_ifdef_mid ifdef_grouped;
 
-      (* tagging contextual info (InFunc, InStruct, etc *)
-      let cleaner = tokens2 +> List.filter (fun x -> 
-        not (TH.is_comment x.tok) (* could filter also #define/#include *)
-      ) in
-      let brace_grouped = mk_braceised cleaner in
-      set_context_tag brace_grouped;
 
-      (* macro *)
-      let cleaner = tokens2 +> List.filter (fun x -> 
-        not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-      ) in
-      let paren_grouped = mk_parenthised  cleaner in
-      let line_paren_grouped = mk_line_parenthised paren_grouped in
-      find_macro line_paren_grouped;
-      find_macro_paren paren_grouped;
+    (* macro 1 *)
+    let cleaner = !tokens2 +> List.filter (fun x -> 
+      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
+    ) in
+    let paren_grouped = mk_parenthised  cleaner in
+    apply_macro_defs paren_grouped;
+    rebuild_tokens2 ();
 
-      (* actions *)
-      let cleaner = tokens2 +> List.filter (fun x -> 
-        not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-      ) 
-      in
-      let paren_grouped = mk_parenthised  cleaner in
-      find_actions paren_grouped;
-    end;
-    tokens2 +> List.map (fun x -> x.tok)
+    (* tagging contextual info (InFunc, InStruct, etc). Better to do
+     * that after the "ifdef-simplification" phase.
+     *)
+    let cleaner = !tokens2 +> List.filter (fun x -> 
+      not (TH.is_comment x.tok) (* could filter also #define/#include *)
+    ) in
+    let brace_grouped = mk_braceised cleaner in
+    set_context_tag brace_grouped;
+
+
+
+    (* macro *)
+    let cleaner = !tokens2 +> List.filter (fun x -> 
+      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
+    ) in
+    let paren_grouped = mk_parenthised  cleaner in
+    let line_paren_grouped = mk_line_parenthised paren_grouped in
+    find_macro_lineparen line_paren_grouped;
+    find_macro_paren paren_grouped;
+
+    (* actions *)
+    let cleaner = !tokens2 +> List.filter (fun x -> 
+      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
+    ) 
+    in
+    let paren_grouped = mk_parenthised  cleaner in
+    find_actions paren_grouped;
+
+
+    !tokens2 +> List.map (fun x -> x.tok)
   end
+
 let fix_tokens_cpp a = 
   Common.profile_code "C parsing.fix_cpp" (fun () -> fix_tokens_cpp2 a)
 
@@ -1490,20 +1584,29 @@ let fix_tokens_cpp a =
 (*****************************************************************************)
 
 (* ugly hack, a better solution perhaps would be to erase TDefEOL 
- * from the Ast and list of tokens in parse_c.
+ * from the Ast and list of tokens in parse_c. 
+ * 
  * note: I do a +1 somewhere, it's for the unparsing to correctly sync.
+ * 
+ * note: can't replace mark_end_define by simply a fakeInfo(). The reason
+ * is where is the \n TCommentSpace. Normally there is always a last token
+ * to synchronize on, either EOF or the token of the next toplevel.
+ * In the case of the #define we got in list of token 
+ * [TCommentSpace "\n"; TDefEOL] but if TDefEOL is a fakeinfo then we will
+ * not synchronize on it and so we will not print the "\n".
+ * A solution would be to put the TDefEOL before the "\n".
  *)
 let mark_end_define ii = 
   let ii' = 
-    { 
-      Ast_c.pinfo = { ii.Ast_c.pinfo with 
+    { Ast_c.pinfo = { ii.Ast_c.pinfo with 
         Common.str = ""; 
         Common.charpos = ii.Ast_c.pinfo.Common.charpos + 1
       };
       cocci_tag = ref Ast_c.emptyAnnot;
+      mark = Ast_c.OriginTok;
     } 
   in
-  TDefEOL ii'
+  TDefEOL (ii')
 
 
 (* put the TDefEOL at the good place *)
@@ -1520,7 +1623,7 @@ and define_line_2 line lastinfo xs =
   match xs with 
   | [] -> 
       (* should not happened, should meet EOF before *)
-      pr2 "WIERD";   
+      pr2 "PB: WIERD";   
       mark_end_define lastinfo::[]
   | x::xs -> 
       let line' = TH.line_of_tok x in
@@ -1530,7 +1633,7 @@ and define_line_2 line lastinfo xs =
       | EOF ii -> 
           mark_end_define lastinfo::EOF ii::define_line_1 xs
       | TCppEscapedNewline ii -> 
-          if (line' <> line) then pr2 "WIERD: not same line number";
+          if (line' <> line) then pr2 "PB: WIERD: not same line number";
           TCommentSpace ii::define_line_2 (line+1) info xs
       | x -> 
           if line' = line
@@ -1570,11 +1673,54 @@ let rec define_ident xs =
 
 let fix_tokens_define2 xs = 
   define_ident (define_line_1 xs)
-  
 
 let fix_tokens_define a = 
   Common.profile_code "C parsing.fix_define" (fun () -> fix_tokens_define2 a)
       
+
+(*****************************************************************************)
+(* cpp built-in *)
+(*****************************************************************************)
+
+let rec define_parse xs = 
+  match xs with
+  | [] -> []
+  | TDefine i1::TIdentDefine (s,i2)::TOParDefine i3::xs -> 
+      let (tokparams, _, xs) = 
+        xs +> Common.split_when (function TCPar _ -> true | _ -> false) in
+      let (body, _, xs) = 
+        xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
+      let params = 
+        tokparams +> Common.map_filter (function
+        | TComma _ -> None
+        | TIdent (s, _) -> Some s
+        | x -> error_cant_have x
+        ) in
+      let body = body +> List.map 
+        (TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok)) in
+      let def = (s, (Right params, body)) in
+      def::define_parse xs
+
+  | TDefine i1::TIdentDefine (s,i2)::xs -> 
+      let (body, _, xs) = 
+        xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
+      let body = body +> List.map 
+        (TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok)) in
+      let def = (s, (Left (), body)) in
+      def::define_parse xs
+
+  | TDefine i1::_ -> 
+      raise Impossible
+  | x::xs -> define_parse xs 
+      
+
+let extract_cpp_define xs = 
+  let cleaner = xs +> List.filter (fun x -> 
+    not (TH.is_comment x)
+  ) in
+  define_parse cleaner
+  
+
       
 
 (*****************************************************************************)

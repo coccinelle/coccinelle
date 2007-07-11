@@ -1996,7 +1996,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         
 
     | A.StructUnionDef(ty, lba, declsa, rba), 
-     (B.StructUnion (sbopt, (sub, declsb)), ii) -> 
+     (B.StructUnion (sub, sbopt, declsb), ii) -> 
 
         (match sbopt with
         | None -> 
@@ -2023,7 +2023,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
               return (
                 (A.StructUnionDef(ty, lba, declsa, rba)) +> A.rewrap ta,
-                (B.StructUnion (sbopt, (sub, declsb)),[iisub;iisb;lbb;rbb])
+                (B.StructUnion (sub, sbopt, declsb),[iisub;iisb;lbb;rbb])
               )))))
         )
               

@@ -44,7 +44,7 @@ and (iso_t_t: fullType -> fullType -> bool) = fun a b ->
   
 (*
 let _ = assert (iso_e_e 
-  (cexpression_from_string "a&&b")
-  (cexpression_from_string "b&&a")
+  (cexpression_of_string "a&&b")
+  (cexpression_of_string "b&&a")
 *)
 

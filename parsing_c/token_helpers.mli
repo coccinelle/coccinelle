@@ -18,5 +18,5 @@ val linecol_of_tok : Parser_c.token -> int * int
 val col_of_tok  : Parser_c.token -> int
 val line_of_tok : Parser_c.token -> int
 val pos_of_tok : Parser_c.token -> int
-val str_of_tok : Parser_c.token -> string
-
+val str_of_tok :  Parser_c.token -> string
+val mark_of_tok : Parser_c.token -> Ast_c.mark_token
