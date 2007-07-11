@@ -23,7 +23,7 @@ let rec adding_something s =
   | Ast0.MIXED(_) -> not(contains_only_minus.V0.combiner_statement s)
   | _ -> failwith "unexpected plus code"
 
-(* needs a special case when there is a Disj *)
+(* needs a special case when there is a Disj or an empty DOTS *)
 and contains_only_minus =
   let bind x y = x && y in
   let option_default = true in
@@ -37,6 +37,11 @@ and contains_only_minus =
   let mcode (_,_,_,mc) = mcodekind mc in
 
   let donothing r k e = mcodekind (Ast0.get_mcodekind e) && k e in
+
+  let dots r k e =
+    match Ast0.unwrap e with
+      Ast0.DOTS([]) | Ast0.CIRCLES([]) | Ast0.STARS([]) -> true
+    | _ -> k e in
 
   let expression r k e =
     mcodekind (Ast0.get_mcodekind e) &&
@@ -69,7 +74,7 @@ and contains_only_minus =
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
-    donothing donothing donothing donothing donothing donothing
+    dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
 
@@ -232,9 +237,10 @@ and case_line c =
   
 and do_statement_dots dots_before dots_after = function
     [] -> []
-  | dots::rest when is_dots dots ->
-      dots::(do_statement_dots true dots_after rest)
   | [x] -> [statement dots_before dots_after x]
+  | dots::rest when is_dots dots ->
+      (statement dots_before dots_after dots)::
+      (do_statement_dots true dots_after rest)
   | x::(dots::_ as rest) when is_dots dots ->
       (statement dots_before dots_after x)::
       do_statement_dots false dots_after rest
