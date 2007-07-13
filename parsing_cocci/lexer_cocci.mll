@@ -28,23 +28,28 @@ let get_current_line_type lexbuf =
   prev_plus := (c = D.PLUS);
   (c,l,ll,lex_start,preceeding_spaces,[],[])
 let current_line_started = ref false
+let col_zero = ref true
 
 let reset_line lexbuf =
   line := !line + 1;
   current_line_type := (D.CONTEXT,!line,!logical_line);
   current_line_started := false;
+  col_zero := true;
   line_start := Lexing.lexeme_start lexbuf + 1
 
 let started_line = ref (-1)
 
 let start_line seen_char =
   current_line_started := true;
+  col_zero := false;
   (if seen_char && not(!line = !started_line)
   then
     begin
       started_line := !line;
       logical_line := !logical_line + 1
     end)
+
+let pass_zero _ = col_zero := false
 
 let add_current_line_type x =
   match (x,!current_line_type) with
@@ -346,42 +351,47 @@ rule token = parse
   | "***>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCStars (get_current_line_type lexbuf) }
 *)
-  | "-" { if !current_line_started
+  | "-" { pass_zero();
+	  if !current_line_started
 	  then (start_line true; TMinus (get_current_line_type lexbuf))
           else (add_current_line_type D.MINUS; token lexbuf) }
-  | "+" { if !current_line_started
+  | "+" { pass_zero();
+	  if !current_line_started
 	  then (start_line true; TPlus (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TPlus0
           else (add_current_line_type D.PLUS; token lexbuf) }
-  | "\\+" { if !current_line_started
+  | "\\+" { pass_zero();
+	  if !current_line_started
 	  then failwith "Illegal use of \\+"
           else if !Data.in_meta
 	  then TPlus0
           else (add_current_line_type D.MULTI; token lexbuf) }
-  | "?" { if !current_line_started
+  | "?" { pass_zero();
+	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TWhy0
           else (add_current_line_type D.OPT; token lexbuf) }
-  | "!" { if !current_line_started
+  | "!" { pass_zero();
+	  if !current_line_started
 	  then (start_line true; TBang (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
-  | "(" { if !current_line_started
+  | "(" { if not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TOPar0 (get_current_line_type lexbuf))}
   | "\\(" { start_line true; TOPar0 (get_current_line_type lexbuf) }
-  | "|" { if !current_line_started
+  | "|" { if not (!col_zero)
 	  then (start_line true; TOr (get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 (get_current_line_type lexbuf))}
   | "\\|" { start_line true; TMid0 (get_current_line_type lexbuf) }
-  | ")" { if !current_line_started
+  | ")" { if not !col_zero
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);

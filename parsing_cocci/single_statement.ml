@@ -148,7 +148,10 @@ let rec statement dots_before dots_after s =
   let do_one s =
     if dots_before && dots_after &&
       (adding_something s or contains_only_minus.V0.combiner_statement s)
-    then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))
+    then
+      let with_braces = add_braces s in
+      Unparse_ast0.statement "" with_braces; Format.print_newline();
+      Ast0.set_dots_bef_aft s (Ast0.BetweenDots(with_braces))
     else s in
 
   match Ast0.unwrap s with

@@ -10,9 +10,11 @@ constant, not all the constants. *)
 module Ast = Ast_cocci
 module V = Visitor_ast
 
-let get_constants rules =
+let keep_some_bind x y = match x with [] -> y | _ -> x
+let keep_all_bind = Common.union_set
+
+let get_minus_constants bind =
   let donothing r k e = k e in
-  let bind x y = match x with [] -> y | _ -> x in
   let option_default = [] in
   let mcode _ _ = option_default in
 
@@ -78,23 +80,65 @@ let get_constants rules =
 	union_all (List.map r.V.combiner_statement_dots stmt_dots)
     | _ -> k e in
 
-  let res =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
-      donothing donothing donothing donothing
-      ident expression fullType typeC donothing donothing declaration
-      donothing statement donothing donothing donothing in
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    ident expression fullType typeC donothing donothing declaration
+    donothing statement donothing donothing donothing
 
-  let rule_fn tls =
-    List.fold_left
-      (function rest ->
-	function cur ->
-	  Common.union_set (res.V.combiner_top_level cur) rest)
-      [] tls in
-      
+(* ------------------------------------------------------------------------ *)
+
+let get_plus_constants =
+  let donothing r k e = k e in
+  let bind = Common.union_set in
+  let option_default = [] in
+  let mcode r (_,_,mcodekind) =
+    let recurse l =
+      List.fold_left
+	(List.fold_left
+	   (function prev ->
+	     function cur ->
+	       bind
+		 ((get_minus_constants keep_all_bind).V.combiner_anything
+		    cur)
+		 prev))
+	[] l in
+    match mcodekind with
+      Ast.MINUS(_,anythings) -> recurse anythings
+    | Ast.CONTEXT(_,Ast.BEFORE(a)) -> recurse a
+    | Ast.CONTEXT(_,Ast.AFTER(a)) -> recurse a
+    | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2)) ->
+	Common.union_set (recurse a1) (recurse a2)
+    | _ -> [] in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
+
+(* ------------------------------------------------------------------------ *)
+
+let rule_fn tls in_plus =
   List.fold_left
-    (function rest ->
-      function (nm,dep,cur) ->
-	Common.union_set (rule_fn cur) rest)
-    [] rules
+    (function (rest_info,in_plus) ->
+      function cur ->
+	let minuses =
+	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
+	let plusses = get_plus_constants.V.combiner_top_level cur in
+	let new_plusses = Common.union_set plusses in_plus in
+	let new_minuses = Common.minus_set minuses new_plusses in
+	(Common.union_set new_minuses rest_info, new_plusses))
+    ([],in_plus) tls
+
+let get_constants rules =
+  let (info,_) =
+    List.fold_left
+      (function (rest_info,in_plus) ->
+	function (nm,dep,cur) ->
+	  let (cur_info,cur_plus) = rule_fn cur in_plus in
+	  (Common.union_set cur_info rest_info,cur_plus))
+      ([],[]) rules in
+  info
