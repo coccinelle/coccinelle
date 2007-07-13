@@ -711,7 +711,43 @@ let rec iter_token_ifdef f xs =
 let tokens_of_paren xs = 
   let g = ref [] in
   xs +> iter_token_paren (fun tok -> push2 tok g);
-  !g
+  List.rev !g
+
+
+let tokens_of_paren_ordered xs = 
+  let g = ref [] in
+
+  let rec aux_tokens_ordered = function
+    | PToken tok -> push2 tok g;
+    | Parenthised (xxs, info_parens) -> 
+        let (opar, cpar, commas) = 
+          match info_parens with
+          | opar::xs -> 
+              (match List.rev xs with
+              | cpar::xs -> 
+                  opar, cpar, List.rev xs
+              | _ -> raise Impossible
+              )
+          | _ -> raise Impossible
+        in
+        push2 opar g;
+        aux_args (xxs,commas);
+        push2 cpar g;
+
+  and aux_args (xxs, commas) =
+    match xxs, commas with
+    | [], [] -> ()
+    | [xs], [] -> xs +> List.iter aux_tokens_ordered
+    | xs::ys::xxs, comma::commas -> 
+        xs +> List.iter aux_tokens_ordered;
+        push2 comma g;
+        aux_args (ys::xxs, commas)
+    | _ -> raise Impossible
+
+  in
+
+  xs +> List.iter aux_tokens_ordered;
+  List.rev !g
 
 
 
@@ -754,7 +790,10 @@ let rec set_in_other xs =
   | [] -> ()
   (* enum x { } *)
   | BToken ({tok = Tenum _})::BToken ({tok = TIdent _})
-    ::Braceised(body, tok1, tok2)::xs -> 
+    ::Braceised(body, tok1, tok2)::xs 
+  | BToken ({tok = Tenum _})
+    ::Braceised(body, tok1, tok2)::xs 
+    -> 
       body +> List.iter (iter_token_brace (fun tok -> 
         tok.where <- InEnum;
       ));
@@ -811,7 +850,7 @@ let set_context_tag xs =
  *)
 
 
-let fix_tokens_annotation_and_stringification_part1 tokens = 
+let find_annotation_and_stringification_part1 tokens = 
   tokens +> List.iter (fun x -> 
     match x.tok with
     | TIdent (s, ii) -> 
@@ -998,6 +1037,16 @@ let rec find_ifdef_funheaders = function
 (* macro, using standard.h or other defs *)
 (* ------------------------------------------------------------------------- *)
 
+
+let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
+          Parser_c.token list -> Parser_c.token list) = fun env xs ->
+  xs +> List.map (fun tok -> 
+    match tok with
+    | TIdent (s,i1) when List.mem_assoc s env -> Common.assoc s env
+    | x -> [x]
+  )
+  +> List.flatten
+  
 (* no need to take care to not substitute the macro name itself
  * that occurs in the macro definition because the macro name is
  * after fix_token_define a TDefineIdent, no more a TIdent.
@@ -1013,11 +1062,35 @@ let rec apply_macro_defs xs =
       pr2_cpp ("MACRO: found known macro = " ^ s);
       (match Hashtbl.find !_defs s with
       | Left (), bodymacro -> 
-          failwith "macro without param used before parenthize, wierd"
-      | Right params, bodymacro -> 
-          [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
+          pr2_cpp ("macro without param used before parenthize, wierd: " ^ s);
+          (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
           set_as_comment id;
           id.new_tokens_before <- bodymacro;
+      | Right params, bodymacro -> 
+          if List.length params = List.length xxs
+          then
+            let xxs' = xxs +> List.map (fun x -> 
+              (tokens_of_paren_ordered x) +> List.map (fun x -> 
+                TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok) 
+                  x.tok
+              )
+            ) in
+            id.new_tokens_before <-
+              cpp_engine (Common.zip params xxs') bodymacro
+
+          else begin
+            pr2_cpp ("macro with wrong number of arguments, wierd: " ^ s);
+            id.new_tokens_before <- bodymacro;
+          end;
+          (* important to do that after have apply the macro, otherwise
+           * will pass as argument to the macro some tokens that
+           * are all TCommentCpp
+           *)
+          [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
+          set_as_comment id;
+
+           
+
       );
       apply_macro_defs xs
 
@@ -1026,7 +1099,9 @@ let rec apply_macro_defs xs =
       pr2_cpp ("MACRO: found known macro = " ^ s);
       (match Hashtbl.find !_defs s with
       | Right params, bodymacro -> 
-          failwith "macro with params but no parens found, wierd"
+          pr2_cpp ("macro with params but no parens found, wierd: " ^ s);
+          (* dont apply the macro, perhaps a redefinition *)
+          ()
       | Left (), bodymacro -> 
           set_as_comment id;
           id.new_tokens_before <- bodymacro;
@@ -1121,7 +1196,7 @@ let rec find_macro_paren xs =
   | PToken ({tok = TString _})::PToken ({tok = TIdent (s,_)} as id)
     ::Parenthised (xxs, info_parens)
     ::xs -> 
-      pr2_cpp ("MACRO: string macro with params : " ^ s);
+      pr2_cpp ("MACRO: string-macro with params : " ^ s);
       id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       find_macro_paren xs
@@ -1131,7 +1206,7 @@ let rec find_macro_paren xs =
     ::Parenthised (xxs, info_parens)
     ::PToken ({tok = TString _})
     ::xs -> 
-      pr2_cpp ("MACRO: string macro with params : " ^ s);
+      pr2_cpp ("MACRO: string-macro with params : " ^ s);
       id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       find_macro_paren xs
@@ -1495,22 +1570,23 @@ and find_actions_params xxs =
 (* ------------------------------------------------------------------------- *)
 (* main fix cpp function *)
 (* ------------------------------------------------------------------------- *)
+
+let rebuild_tokens_extented toks_ext = 
+  let _tokens = ref [] in
+  toks_ext +> List.iter (fun tok -> 
+    tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
+    push2 tok.tok _tokens 
+  );
+  let tokens = List.rev !_tokens in
+  (tokens +> List.map mk_token_extended)
+
+
 let fix_tokens_cpp2 tokens = 
 
   let tokens2 = ref (tokens +> List.map mk_token_extended) in
   
-  let rebuild_tokens2 () = 
-    let _tokens = ref [] in
-    !tokens2 +> List.iter (fun tok -> 
-      tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
-      push2 tok.tok _tokens 
-    );
-    let tokens = List.rev !_tokens in
-    tokens2 := (tokens +> List.map mk_token_extended)
-  in
-
   begin 
-    fix_tokens_annotation_and_stringification_part1 !tokens2;
+    find_annotation_and_stringification_part1 !tokens2;
 
     (* the order is important, if put action first 
      * then because of ifdef, can have not closed paren
@@ -1539,7 +1615,7 @@ let fix_tokens_cpp2 tokens =
     ) in
     let paren_grouped = mk_parenthised  cleaner in
     apply_macro_defs paren_grouped;
-    rebuild_tokens2 ();
+    tokens2 := rebuild_tokens_extented !tokens2;
 
     (* tagging contextual info (InFunc, InStruct, etc). Better to do
      * that after the "ifdef-simplification" phase.
@@ -1595,6 +1671,8 @@ let fix_tokens_cpp a =
  * [TCommentSpace "\n"; TDefEOL] but if TDefEOL is a fakeinfo then we will
  * not synchronize on it and so we will not print the "\n".
  * A solution would be to put the TDefEOL before the "\n".
+ * 
+ * todo?: could put a ExpandedTok for that ? 
  *)
 let mark_end_define ii = 
   let ii' = 
@@ -1663,7 +1741,7 @@ let rec define_ident xs =
       | TCommentSpace i1::TIdent (s,i2)::xs -> 
           TCommentSpace i1::TIdentDefine (s,i2)::define_ident xs
       | _ -> 
-          pr2 "wierd"; 
+          pr2 "wierd #define body"; 
           define_ident xs
       )
   | x::xs -> 
@@ -1921,10 +1999,11 @@ let lookahead2 next before =
       TypedefIdent (s, i1)
 
 
-  (*  xx * yy ;     AND in Toplevel  *)
+  (*  xx * yy ;     AND in Toplevel, except when have = before  *)
+  | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , TEq _::_) ->
+      TIdent (s, i1)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , _)
     when not_struct_enum before && !LP._lexer_hint.toplevel  -> 
-
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 

@@ -1,5 +1,6 @@
 open Common open Commonop 
 
+
 (*****************************************************************************)
 (* Test framework *)
 (*****************************************************************************)
@@ -28,7 +29,10 @@ let testone x iso_file compare_with_expected_flag =
         then 
           Compare_c.compare_default outfile expected_res 
           +> Compare_c.compare_result_to_string 
-          +> pr2
+          +> pr2;
+        let tmpfile = "/tmp/"^Common.basename cfile in
+        pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
+        Common.command2 ("cp "^outfile^" "^tmpfile);
     | None -> pr2 "no modification on the input file"
   end
           
@@ -316,8 +320,8 @@ let compare_with_expected outfiles =
 (*****************************************************************************)
 (* Subsystem testing *)
 (*****************************************************************************)
-
 let tmpfile = "/tmp/output.c" 
+
 
 
 let test_tokens_c file = 

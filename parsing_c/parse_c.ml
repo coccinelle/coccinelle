@@ -386,12 +386,12 @@ and find_next_synchro_orig next already_passed =
       pr2 "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
 
-  | (Parser_c.TDefEOL i as v)::xs when TH.col_of_tok v = 0 -> 
+  | (Parser_c.TDefEOL i as v)::xs  -> 
       pr2 ("ERROR-RECOV: found sync end of #define "^i_to_s(TH.line_of_tok v));
       v::already_passed, xs
 
   | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 -> 
-      pr2 ("ERROR-RECOV: found sync point at line "^i_to_s (TH.line_of_tok v));
+      pr2 ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
 
       (match xs with
       | [] -> raise Impossible (* there is a EOF token normally *)
@@ -420,7 +420,7 @@ and find_next_synchro_orig next already_passed =
           v::already_passed, xs
       )
   | v::xs when TH.col_of_tok v = 0 && TH.is_start_of_something v  -> 
-      pr2 ("ERROR-RECOV: found sync 2 at line "^ i_to_s (TH.line_of_tok v));
+      pr2 ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
       already_passed, v::xs
         
   | v::xs -> 
@@ -664,6 +664,7 @@ let parse_print_error_heuristic2 file =
      *)
     LP.enable_typedef();  
     LP._lexer_hint := { (LP.default_hint ()) with LP.toplevel = true; };
+    LP.save_typedef_state();
 
     (* todo?: I am not sure that it represents current_line, cos maybe
      * cur_tok partipated in the previous parsing phase, so maybe cur_tok
@@ -693,6 +694,7 @@ let parse_print_error_heuristic2 file =
                 pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok file !cur_tok)
             | e -> raise e
             );
+            LP.restore_typedef_state();
             let line_error = TH.line_of_tok !cur_tok in
 
             (*  error recovery, go to next synchro point *)
@@ -711,7 +713,7 @@ let parse_print_error_heuristic2 file =
             remaining_tokens_clean := 
               (!remaining_tokens +> List.filter TH.is_not_comment);
 
-            let checkpoint2 = TH.line_of_tok !cur_tok in
+            let checkpoint2 = TH.line_of_tok !cur_tok in (* <> line_error *)
             print_bad line_error (checkpoint, checkpoint2) filelines;
 
             let info_of_bads = 

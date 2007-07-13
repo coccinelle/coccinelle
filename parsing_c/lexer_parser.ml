@@ -78,6 +78,19 @@ let add_ident s    =
   end
 
 
+let _old_state = ref (Hashtbl.copy !_typedef,!_scoped_typedef)
+
+let save_typedef_state () = 
+  _old_state := (Hashtbl.copy !_typedef,!_scoped_typedef)
+let restore_typedef_state () = 
+  begin
+    _typedef := fst(!_old_state);
+    _scoped_typedef := snd(!_old_state);
+  end
+  
+
+
+
 type lexer_hint = { 
     mutable parameterDeclaration: bool;
     mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)

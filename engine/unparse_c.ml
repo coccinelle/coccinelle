@@ -143,11 +143,15 @@ let (passed_commentsbefore_notbefore2:
  = fun info toks ->
 
   let (before, notbefore) = toks +> Common.span (fun tok -> 
-    assert (TH.mark_of_tok tok = OriginTok);
-    TH.pos_of_tok tok < pos_of_info info
+    match mark_of_info info with
+    | OriginTok -> 
+        TH.pos_of_tok tok < pos_of_info info
+    | ExpandedTok -> 
+        TH.info_of_tok tok <> info
+    | _ -> raise Impossible
   )
   in
-
+  
   let (commentsbefore, passed) = 
     before +> List.rev +> 
       (* on the above example, at this stage we have 'com yy cpp token1 xx' *)
@@ -205,8 +209,8 @@ let pp_program2 xs outfile  =
   Common.with_open_outfile outfile (fun (pr,chan) -> 
     let pr s = 
       if !Flag_engine.debug_unparsing 
-      then begin pr2_no_nl s; flush stderr end;
-      pr s ; 
+      then begin pr2_no_nl s; flush stderr end
+      else pr s  
       (* flush chan; *)
       (* Common.pr2 ("UNPARSING: >" ^ s ^ "<"); *)
     in
@@ -224,7 +228,6 @@ let pp_program2 xs outfile  =
     (* ---------------------- *)
     (* prints space and also adjusts !toks and _current_tabbing *)
     let sync info = 
-      assert (Ast_c.mark_of_info info = OriginTok);
       (* todo: if FakeTok ?  print the comments that are here ? *)
 
       let (passed, commentsbefore, notbefore) = 
@@ -311,9 +314,7 @@ let pp_program2 xs outfile  =
         end;
 
       if Ast_c.mark_of_info ii = ExpandedTok
-      then 
-        (let x =  pop2 _toks in 
-        assert(TH.info_of_tok x = ii));
+      then sync ii;
       
       
       (*old: pr info.str *)
@@ -368,6 +369,8 @@ let pp_program2 xs outfile  =
       | PPnormal -> 
           Pretty_print_c.pp_program_gen pr_elem e;
           (* assert(null !_toks); *)
+          if (null !_toks) 
+          then pr2 "WIERD: unparsing not finished"
       | PPviastr -> pr str
     );
   )

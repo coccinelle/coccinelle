@@ -85,6 +85,9 @@ clean::
 test: $(TARGET)
 	./$(TARGET) -testall
 
+testparsing:
+	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests/
+
 # -inline 0  to see all the functions in the profile.
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt

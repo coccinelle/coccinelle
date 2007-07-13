@@ -23,6 +23,11 @@ val is_typedef : string -> bool
 
 val lexer_reset_typedef : unit -> unit
 
+val _old_state : ((string, typedef) Hashtbl.t * typedef list list) ref
+val save_typedef_state : unit -> unit
+val restore_typedef_state : unit -> unit
+
+
 
 
 type lexer_hint = { 
