@@ -2,7 +2,8 @@
 expression E;
 identifier y;
 constant c;
-identifier x;
+identifier x,fld;
+expression f;
 @@
 
 (
@@ -11,6 +12,14 @@ identifier x;
 #define x y
 |
 #define x c
+|
+#define x f(...)
+|
+#define x sizeof(...)
+|
+#define x E.fld
+|
+#define x E->fld
 |
 - #define x E
 )
