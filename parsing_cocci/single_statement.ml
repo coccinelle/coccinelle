@@ -144,7 +144,28 @@ let all_minus s =
     Ast0.MINUS(_) -> true
   | _ -> false
 
+let rec do_branch s =
+  if contains_only_minus.V0.combiner_statement s
+  then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))
+  else
+    match Ast0.unwrap s with
+      Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+	let stmts =
+	  List.map
+	    (function s ->
+	      match Ast0.unwrap s with
+		Ast0.DOTS([s]) ->
+		  Ast0.rewrap s (Ast0.DOTS([do_branch s]))
+	      |	Ast0.DOTS(_) -> s
+	      |	_ -> failwith "not supported")
+	    statement_dots_list in
+	Ast0.rewrap s (Ast0.Disj(starter,stmts,mids,ender))
+    | _ -> s
+
 let rec statement dots_before dots_after s =
+  Printf.printf "statement %b %b\n" dots_before dots_after;
+  Unparse_ast0.statement "" s;
+  Format.print_newline();
   let do_one s =
     if dots_before && dots_after &&
       (adding_something s or contains_only_minus.V0.combiner_statement s)
@@ -171,25 +192,30 @@ let rec statement dots_before dots_after s =
   | Ast0.IfThen(iff,lp,exp,rp,branch1,x) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.IfThen(iff,lp,exp,rp,statement false false branch1,x)))
+	   (Ast0.IfThen(iff,lp,exp,rp,
+	     statement false false (do_branch branch1),x)))
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,x) ->
       do_one
 	(Ast0.rewrap s
 	   (Ast0.IfThenElse
-	      (iff,lp,exp,rp,statement false false branch1,els,
-		statement false false branch2,x)))
+	      (iff,lp,exp,rp,
+		statement false false (do_branch branch1),els,
+		statement false false (do_branch branch2),x)))
   | Ast0.While(whl,lp,exp,rp,body,x) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.While(whl,lp,exp,rp,statement false false body,x)))
+	   (Ast0.While(whl,lp,exp,rp,
+		       statement false false (do_branch body),x)))
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.Do(d,statement false false body,whl,lp,exp,rp,sem)))
+	   (Ast0.Do(d,statement false false (do_branch body),
+		    whl,lp,exp,rp,sem)))
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,x) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,statement false false body,
+	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,
+		     statement false false (do_branch body),
 		     x)))
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       do_one
@@ -242,13 +268,12 @@ and do_statement_dots dots_before dots_after = function
     [] -> []
   | [x] -> [statement dots_before dots_after x]
   | dots::rest when is_dots dots ->
-      (statement dots_before dots_after dots)::
-      (do_statement_dots true dots_after rest)
+      dots::(do_statement_dots true dots_after rest)
   | x::(dots::_ as rest) when is_dots dots ->
-      (statement dots_before dots_after x)::
+      (statement dots_before true x)::
       do_statement_dots false dots_after rest
   | x::rest ->
-      (statement dots_before dots_after x)::
+      (statement dots_before false x)::
       do_statement_dots false dots_after rest
 	
 and statement_dots dots_before dots_after d =
