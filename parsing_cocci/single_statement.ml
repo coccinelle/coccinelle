@@ -163,9 +163,6 @@ let rec do_branch s =
     | _ -> s
 
 let rec statement dots_before dots_after s =
-  Printf.printf "statement %b %b\n" dots_before dots_after;
-  Unparse_ast0.statement "" s;
-  Format.print_newline();
   let do_one s =
     if dots_before && dots_after &&
       (adding_something s or contains_only_minus.V0.combiner_statement s)
