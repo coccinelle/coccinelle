@@ -201,6 +201,8 @@ let other_options = [
 
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" macro";
+    "-filter_define_error", Arg.Set  Flag_parsing_c.filter_define_error , 
+    "  ";
     "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
 
     "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
@@ -279,6 +281,10 @@ let other_options = [
     (let s = "-tokens_c" in s, Arg.Unit (fun () -> action := s),
     "   <file>");
     (let s = "-parse_c"  in s, Arg.Unit (fun () -> action := s),
+    "   <file or dir> works with -dir");
+    (let s = "-parse_h"  in s, Arg.Unit (fun () -> action := s),
+    "   <file or dir> works with -dir");
+    (let s = "-parse_ch"  in s, Arg.Unit (fun () -> action := s),
     "   <file or dir> works with -dir");
     (let s = "-parse_cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
@@ -388,6 +394,10 @@ let main () =
         Testing.test_tokens_c file
     | x::xs when  !action = "-parse_c" -> 
         Testing.test_parse_c  (x::xs) !dir 
+    | x::xs when  !action = "-parse_h" -> 
+        Testing.test_parse_h  (x::xs) !dir 
+    | x::xs when  !action = "-parse_ch" -> 
+        Testing.test_parse_ch  (x::xs) !dir 
     | [file] when !action = "-parse_cocci" -> 
         Testing.test_parse_cocci file !iso_file
     | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 

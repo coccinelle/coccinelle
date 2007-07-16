@@ -39,6 +39,9 @@ let msg_gen cond is_known printer s =
       then printer s
         
 
+
+
+
 (* note: cant use partial application with let msg_typedef = 
  * because it would compute msg_typedef at compile time when 
  * the flag debug_typedef is always false
@@ -63,6 +66,9 @@ let msg_typedef s =
     )
     (fun s -> pr2_once ("TYPEDEF: promoting: " ^ s))
     s
+
+
+
 
 let msg_declare_macro s = 
   msg_gen (!Flag_parsing_c.debug_cpp)
@@ -121,7 +127,6 @@ let msg_macro_higher_order s =
     )
     (fun s -> pr2_cpp ("MACRO: found higher ordre macro : " ^ s))
     s
-
 
 
 let msg_stringification s = 
@@ -209,7 +214,6 @@ let keyword_table = Common.hash_of_list [
   "__nocast",                     (fun ii -> TCommentCpp ii);  
   "__read_mostly",                (fun ii -> TCommentCpp ii);  
 
-
   "__must_check",   (fun ii -> TCommentCpp ii);  
   "__unused",       (fun ii -> TCommentCpp ii); (* pbs *)
   "__maybe_unused", (fun ii -> TCommentCpp ii);  
@@ -220,6 +224,10 @@ let keyword_table = Common.hash_of_list [
   "__attribute_const__",          (fun ii -> TCommentCpp ii);  
 
   "__always_inline",              (fun ii -> TCommentCpp ii);  
+
+  "__xipram",                (fun ii -> TCommentCpp ii);  
+
+
   "noinline",                     (fun ii -> TCommentCpp ii);  
 
   "__CS4231_INLINE__",            (fun ii -> TCommentCpp ii);  
@@ -227,6 +235,7 @@ let keyword_table = Common.hash_of_list [
   "SBA_INLINE",                   (fun ii -> TCommentCpp ii);  
 
   "STATIC_INLINE",                (fun ii -> TCommentCpp ii);  
+  "__EXTERN_INLINE",              (fun ii -> TCommentCpp ii);  
 
   "AGPEXTERN",                (fun ii -> TCommentCpp ii);  
 
@@ -234,7 +243,6 @@ let keyword_table = Common.hash_of_list [
 
   "NORET_TYPE",                   (fun ii -> TCommentCpp ii);  
 
-  "__xipram",                (fun ii -> TCommentCpp ii);  
   "compat_init_data",        (fun ii -> TCommentCpp ii);  
 
   "fastcall",                (fun ii -> TCommentCpp ii);  
@@ -302,6 +310,9 @@ let keyword_table = Common.hash_of_list [
   "__force_data",                 (fun ii -> TCommentCpp ii);  
   "__nongprelbss",                (fun ii -> TCommentCpp ii);  
   "__nongpreldata",               (fun ii -> TCommentCpp ii);  
+  "__noreturn",                   (fun ii -> TCommentCpp ii);  
+
+
   "nabi_no_regargs",              (fun ii -> TCommentCpp ii);  
 
   "__section_jiffies",            (fun ii -> TCommentCpp ii);  
@@ -320,6 +331,13 @@ let keyword_table = Common.hash_of_list [
  (*  "INIT", (fun ii -> TCommentCpp ii);   *) (* pbs *)
 
   "IDI_CALL_ENTITY_T", (fun ii -> TCommentCpp ii);  
+
+
+  (* in header files *)
+  "__bitwise", (fun ii -> TCommentCpp ii);  
+  "__bitwise__", (fun ii -> TCommentCpp ii);  
+  "__deprecated", (fun ii -> TCommentCpp ii);  
+
 
 
   (* maybe only in old kernel *)
@@ -1118,6 +1136,35 @@ let rec apply_macro_defs xs =
 
 
 
+(* ------------------------------------------------------------------------- *)
+(* stringification *)
+(* ------------------------------------------------------------------------- *)
+
+let rec find_string_macro_paren xs = 
+  match xs with
+  | [] -> ()
+  | Parenthised(xxs, info_parens)::xs -> 
+      xxs +> List.iter (fun xs -> 
+        if xs +> List.exists 
+          (function PToken({tok = TString _}) -> true | _ -> false) &&
+          xs +> List.for_all 
+          (function PToken({tok = TString _}) | PToken({tok = TIdent _}) -> 
+            true | _ -> false)
+        then
+          xs +> List.iter (fun tok -> 
+            match tok with
+            | PToken({tok = TIdent (s,_)} as id) -> 
+                msg_stringification s;
+                id.tok <- TMacroString (TH.info_of_tok id.tok);
+            | _ -> ()
+          )
+        else 
+          find_string_macro_paren xs
+      );
+      find_string_macro_paren xs
+  | PToken(tok)::xs -> 
+      find_string_macro_paren xs
+      
 
 (* ------------------------------------------------------------------------- *)
 (* macro2 *)
@@ -1163,11 +1210,6 @@ let rec find_macro_paren xs =
       (id::info_parens) +> List.iter set_as_comment;
       find_macro_paren xs
 
-  (* stringification
-   * 
-   * the order of the matching clause is important
-   *)
-
   (* EX_TABLE & co. 
    *
    * Replaced by a string. We can't put everything as comment
@@ -1189,8 +1231,11 @@ let rec find_macro_paren xs =
 
       find_macro_paren xs
 
-
-
+  (* stringification
+   * 
+   * the order of the matching clause is important
+   * 
+   *)
 
   (* string macro with params, before case *)
   | PToken ({tok = TString _})::PToken ({tok = TIdent (s,_)} as id)
@@ -1211,6 +1256,11 @@ let rec find_macro_paren xs =
       [Parenthised (xxs, info_parens)] +> iter_token_paren set_as_comment;
       find_macro_paren xs
 
+
+  (* for the case where the string is not inside a funcall, but
+   * for instance in an initializer.
+   *)
+        
   (* string macro variable, before case *)
   | PToken ({tok = TString _})::PToken ({tok = TIdent (s,_)} as id)
       ::xs -> 
@@ -1615,7 +1665,8 @@ let fix_tokens_cpp2 tokens =
     ) in
     let paren_grouped = mk_parenthised  cleaner in
     apply_macro_defs paren_grouped;
-    tokens2 := rebuild_tokens_extented !tokens2;
+    (* because the before field is used by apply_macro_defs *)
+    tokens2 := rebuild_tokens_extented !tokens2; 
 
     (* tagging contextual info (InFunc, InStruct, etc). Better to do
      * that after the "ifdef-simplification" phase.
@@ -1634,8 +1685,10 @@ let fix_tokens_cpp2 tokens =
     ) in
     let paren_grouped = mk_parenthised  cleaner in
     let line_paren_grouped = mk_line_parenthised paren_grouped in
+    find_string_macro_paren paren_grouped;
     find_macro_lineparen line_paren_grouped;
     find_macro_paren paren_grouped;
+
 
     (* actions *)
     let cleaner = !tokens2 +> List.filter (fun x -> 
@@ -1692,8 +1745,11 @@ let rec define_line_1 xs =
   match xs with
   | [] -> []
   | TDefine ii::xs -> 
-      let line = TH.line_of_tok (TDefine ii) in
+      let line = Ast_c.line_of_info ii in
       TDefine ii::define_line_2 line ii xs
+  | TCppEscapedNewline ii::xs -> 
+      pr2 "WIERD: a \\ outside a #define";
+      TCommentSpace ii::define_line_1 xs
   | x::xs -> 
       x::define_line_1 xs
 

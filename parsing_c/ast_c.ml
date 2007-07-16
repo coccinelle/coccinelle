@@ -490,6 +490,7 @@ let rewrap_mark mark ii =
   {ii with mark = mark}
 
 let pos_of_info  ii = ii.pinfo.Common.charpos
+let line_of_info  ii = ii.pinfo.Common.line
 let str_of_info  ii = ii.pinfo.Common.str
 let file_of_info ii = ii.pinfo.Common.file
 let mark_of_info ii = ii.mark

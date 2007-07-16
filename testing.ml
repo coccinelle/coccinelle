@@ -23,8 +23,8 @@ let testone x iso_file compare_with_expected_flag =
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
     let res = Cocci.full_engine (cocci_file, iso_file) [cfile] in
-    match List.assoc cfile res with
-    | Some outfile -> 
+    match res with
+    | [s, Some outfile] when s = cfile -> 
         if compare_with_expected_flag
         then 
           Compare_c.compare_default outfile expected_res 
@@ -33,13 +33,12 @@ let testone x iso_file compare_with_expected_flag =
         let tmpfile = "/tmp/"^Common.basename cfile in
         pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
         Common.command2 ("cp "^outfile^" "^tmpfile);
-    | None -> pr2 "no modification on the input file"
+    | _ -> pr2 "no modification on the input file or wrong file"
   end
           
 
 (* ------------------------------------------------------------------------ *)
 let best_score_file = "/tmp/score_cocci_best.marshalled"
-
 let timeout_testall = 30
 
 let testall iso_file =
@@ -86,19 +85,16 @@ let testall iso_file =
               let s = Str.global_replace 
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
-
               let s = 
                 "INCORRECT:" ^ s ^ "\n" ^ 
-                  "    diff (result(<) vs expected_result(>)) = \n" ^
-                  (diffxs +> List.map (fun s -> ("    " ^ s ^ "\n")) 
-                    +> Common.join ""
-                  )
+                "    diff (result(<) vs expected_result(>)) = \n" ^
+                (diffxs +> List.map(fun s -> "    "^s^"\n") +> Common.join "")
               in
               Hashtbl.add newscore res (Common.Pb s)
           | Compare_c.PbOnlyInNotParsedCorrectly s -> 
               let s = 
                 "seems incorrect, but only because of code that " ^
-                  "was not parsable" ^ s
+                "was not parsable" ^ s
               in
               Hashtbl.add newscore res (Common.Pb s)
           )
@@ -116,8 +112,8 @@ let testall iso_file =
     pr2 "--------------------------------";
 
     Common.hash_to_list newscore +> List.iter (fun (s, v) -> 
-      print_string (Printf.sprintf "%-30s: " s);
-      print_string (
+      pr_no_nl (Printf.sprintf "%-30s: " s);
+      pr_no_nl (
         match v with
         | Common.Ok ->  "CORRECT\n" 
         | Common.Pb s -> s
@@ -320,6 +316,7 @@ let compare_with_expected outfiles =
 (*****************************************************************************)
 (* Subsystem testing *)
 (*****************************************************************************)
+
 let tmpfile = "/tmp/output.c" 
 
 
@@ -336,14 +333,14 @@ let test_tokens_c file =
 
         
 
-let test_parse_c xs dirmode = 
+let test_parse_gen xs dirmode ext = 
         
   Flag_parsing_c.debug_cpp := true;
   Flag_parsing_c.debug_typedef := true;
 
   let fullxs = 
     if dirmode
-    then Common.cmd_to_list ("find " ^(join " " xs) ^" -name \"*.c\"")
+    then Common.cmd_to_list ("find " ^(join " " xs) ^" -name \"*." ^ext^"\"")
     else xs 
   in
       
@@ -351,16 +348,14 @@ let test_parse_c xs dirmode =
   let newscore  = Common.empty_score () in
 
   fullxs +> List.iter (fun file -> 
-    if not (file =~ ".*\\.c") 
-    then pr2 "warning: seems not a .c file";
+    if not (file =~ (".*\\."^ext))
+    then pr2 ("warning: seems not a ."^ext^" file");
 
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
     let (xs, stat) = Parse_c.parse_print_error_heuristic file in
-    xs +> List.iter (fun (ast, (s, toks)) -> 
-      Parse_c.print_tokens_commentized toks
-    );
+    xs +> List.iter (fun (ast, (s, toks)) -> Parse_c.print_commentized toks);
 
     Common.push2 stat stat_list;
     let s = 
@@ -381,8 +376,10 @@ let test_parse_c xs dirmode =
     pr2 "regression testing  information";
     pr2 "--------------------------------";
     let str = Str.global_replace (Str.regexp "/") "__" (List.hd xs) in
+    let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
+    let ext = if ext = "c" then "" else ext in
     Common.regression_testing newscore 
-      ("/tmp/score_parsing__" ^ str ^ ".marshalled");
+      ("/tmp/score_parsing__" ^str ^ def ^ ext ^ ".marshalled")
   end
         
 
@@ -440,6 +437,10 @@ let test_cfg file =
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
   )
+
+let test_parse_c xs dirmode = test_parse_gen xs dirmode "c"
+let test_parse_h xs dirmode = test_parse_gen xs dirmode "h"
+let test_parse_ch xs dirmode = test_parse_gen xs dirmode "[ch]"
 
 
 
@@ -503,7 +504,9 @@ let test_compare_c_hardcoded () =
 
 
 let test_xxx () = 
-  ignore(Parse_c.parse_cpp_define_file "standard.h")
+  (* ignore(Parse_c.parse_cpp_define_file "standard.h")*)
+  pr2 "pr2";
+  pr  "pr"
 
 (*
   Format.print_newline();

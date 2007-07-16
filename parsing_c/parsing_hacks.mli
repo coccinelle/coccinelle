@@ -1,5 +1,6 @@
 open Common 
 
+(* the either is to differentialte macro-variables from macro-functions *)
 type define_body = (unit,string list) either * Parser_c.token list
 
 val _defs : (string, define_body) Hashtbl.t ref

@@ -16,8 +16,9 @@ val visitor_info_of_tok :
   (Ast_c.info -> Ast_c.info) -> Parser_c.token -> Parser_c.token
 
 val linecol_of_tok : Parser_c.token -> int * int
-val col_of_tok  : Parser_c.token -> int
-val line_of_tok : Parser_c.token -> int
-val pos_of_tok : Parser_c.token -> int
-val str_of_tok :  Parser_c.token -> string
-val mark_of_tok : Parser_c.token -> Ast_c.mark_token
+val col_of_tok     : Parser_c.token -> int
+val line_of_tok    : Parser_c.token -> int
+val pos_of_tok     : Parser_c.token -> int
+val str_of_tok     :  Parser_c.token -> string
+val mark_of_tok    : Parser_c.token -> Ast_c.mark_token
+val file_of_tok    : Parser_c.token -> Common.filename

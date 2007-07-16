@@ -1,5 +1,5 @@
 // ****************************************************************************
-// Standard C isomorphisms
+// Prelude 
 // ****************************************************************************
 
 // Note: the order of the rule has some importance. As we do not do a fixpoint,
@@ -13,6 +13,9 @@
 //  - Yes if iso2 precede iso1 in this file, 
 //  - No otherwise.
 
+// ****************************************************************************
+// Standard C isomorphisms
+// ****************************************************************************
 
 // ---------------------------------------------------------------------------
 // Spacing (include comments) isomorphisms
@@ -152,7 +155,7 @@ X | Y <=> Y | X
 // ---------------------------------------------------------------------------
 // Arithmetic isomorphisms
 // ---------------------------------------------------------------------------
-//todo: require side-effect free expression
+//todo: require check side-effect free expression
 
 Expression
 @@ expression X, Y; @@
@@ -163,6 +166,14 @@ X + Y <=> Y + X
 Expression
 @@ expression X, Y; @@
 X * Y <=> Y * X
+
+// ---------------------------------------------------------------------------
+// Relational isomorphisms
+// ---------------------------------------------------------------------------
+
+Expression
+@@ expression X, Y; @@
+X < Y <=> Y > X
 
 // ---------------------------------------------------------------------------
 // Increment isomorphisms
@@ -281,6 +292,7 @@ if (E) S1 else S2 => if (E) S1
 // ----------------
 
 // ---------------------------------------------------------------------------
+// Optional initializers
 // ---------------------------------------------------------------------------
 Declaration
 @@
@@ -348,6 +360,8 @@ Statement
 return ...; => return;
 
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 Expression
 @@ expression E; @@
 
@@ -357,6 +371,9 @@ Expression
 @@ expression E; @@
 
 likely(E) => E
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 // Redundant because 'E' subsume (unify) '...'
 //{ ... return ...; } => return ...;
@@ -414,7 +431,7 @@ identifier fld;
 E1->fld => E1[E2].fld
 
 // ****************************************************************************
-// Put here all the Linux specific isomorphisms 
+// Linux specific isomorphisms 
 // ****************************************************************************
 
 // Examples: many functions are equivalent/related, and one SP modifying
@@ -433,7 +450,7 @@ E1->fld => E1[E2].fld
 
 
 // ****************************************************************************
-// Everything that is required to be in last, for ugly reasons ...
+// Everything that is required to be in last position, for ugly reasons ...
 // ****************************************************************************
 
 TopLevel

@@ -336,5 +336,5 @@ let line_of_tok x = fst (linecol_of_tok x)
 let pos_of_tok x =  Ast_c.pos_of_info (info_of_tok x)
 let str_of_tok x =  Ast_c.str_of_info (info_of_tok x)
 let mark_of_tok x = Ast_c.mark_of_info (info_of_tok x)
-
+let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
 

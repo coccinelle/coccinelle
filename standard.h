@@ -1,22 +1,46 @@
+// ****************************************************************************
+// Prelude
+// ****************************************************************************
+
 /* this file contains:
  *   - macros found in <.h>
- *   - macros found in ".h"
- *   - macros found in .c but where we cant detect
- *     that it will be a "bad macro"
- *   - macros found in .c but that cannot be parsed and so
- *     where in the futur should be autodetected
- *     (which is not as easy for macros in .h cos require
- *     to access .h file)
+ *   - macros found in ".h" 
+ *     but where we cant detect that it will be a "bad macro"
+ *   - macros found in .c correctly parsed
+ *     but where we cant detect that it will be a "bad macro"
+ *   - macros found in .c that cannot be parsed 
+ *     in the futur should be autodetected
+ *     (not so easy to do same for macros in .h cos require to access .h file
  */
+
+// ****************************************************************************
+// Test macros
+// ****************************************************************************
+
 // #define FOO(a, OP, b) a OP b
 #define FOO(a,b) fn(a,b)
 
 
+// ****************************************************************************
+// Generic macros
+// ****************************************************************************
+
 // #define CONST 
 // #define _attribute__const __attribute__((const))
+
+
+// ****************************************************************************
+// Yacc macros 
+// ****************************************************************************
+
+#define YY_PROTO(x) x 
+#define yyconst const 
+
+// ****************************************************************************
+// Linux macros 
+// ****************************************************************************
+
 #define __init_refok
-
-
 
 
 // include/asm-arm/mach/arch.h
@@ -38,6 +62,15 @@ static const struct machine_desc __mach_desc_##_type	\
          struct machdep_calls mach_##name /*__machine_desc*/ =
 
 
+// include/asm-i386/pci.h
+#define DECLARE_PCI_UNMAP_ADDR(ADDR_NAME)
+#define DECLARE_PCI_UNMAP_LEN(LEN_NAME)
+
+// include/linux/types.h
+//#define BITS_TO_LONGS(bits) \
+//	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
+#define DECLARE_BITMAP(name,bits) \
+	/*unsigned*/ long name[BITS_TO_LONGS(bits)]
 
 
 
@@ -167,6 +200,7 @@ do {									\
 //#define DECLARE_PER_CPU(type, name) extern __typeof__(type) per_cpu__##name
 #define DEFINE_PER_CPU(type, name) \
     __attribute__((__section__(".data.percpu"))) /*__typeof__(*/type/*)*/ per_cpu__##name
+#define DECLARE_PER_CPU(type, name) extern /*__typeof__(*/type/*)*/ per_cpu__##name
 
 
 
@@ -199,3 +233,65 @@ do {									\
 
 
 
+
+// ****************************************************************************
+// Sparse macros 
+// ****************************************************************************
+
+#define FORMAT_ATTR(pos)
+
+// END_FOR_EACH_PTR_REVERSE
+
+// ****************************************************************************
+// Httpd (apatch) macros 
+// ****************************************************************************
+
+#define AP_DECLARE(x) x
+#define PROXY_DECLARE(x) x
+#define CACHE_DECLARE(x) x
+#define DBD_DECLARE_NONSTD(x) x
+#define DAV_DECLARE(x) x
+#define APU_DECLARE(x) x
+#define APU_DECLARE_NONSTD(x) x
+#define APR_DECLARE(x) x
+#define AP_CORE_DECLARE(x) x
+#define AP_DECLARE_NONSTD(x) x
+
+
+#define AP_CORE_DECLARE_NONSTD(x) x
+#define APR_OPTIONAL_FN_TYPE(x) x
+#define DAV_DECLARE_NONSTD(x) x
+
+#define APR_DECLARE_NONSTD(x) x
+
+#define APR_INLINE inline
+#define EXPORT static
+#define REGISTER register
+
+#define MODSSL_D2I_SSL_SESSION_CONST const 
+#define MODSSL_D2I_X509_CONST const
+#define MODSSL_D2I_PrivateKey_CONST const
+#define MODSSL_D2I_SSL_SESSION_CONST const
+
+#define STACK_OF(X509_NAME) X509_NAME
+
+#define MODSSL_PCHAR_CAST  (pchar)
+
+#define WINAPI
+#define CALLBACK
+#define APIENTRY
+#define __declspec(x) 
+#define __stdcall
+
+#define APU_DECLARE_DATA
+#define APR_THREAD_FUNC
+#define AP_DECLARE_DATA
+#define PROXY_DECLARE_DATA
+#define AP_MODULE_DECLARE_DATA
+#define APR_DECLARE_DATA
+
+//#define module struct xxx
+
+#define APR_POOL_IMPLEMENT_ACCESSOR(shm)
+
+#define ADD_SUITE(suite) suite;

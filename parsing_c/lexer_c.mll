@@ -217,9 +217,17 @@ rule token = parse
   (* misc *)
   (* ---------------------- *)
       
-  | "#pragma pack"               [^'\n']* '\n'  
-  | "#pragma GCC set_debug_pwd " [^'\n']* '\n'  
-  | "#pragma alloc_text"         [^'\n']* '\n'  
+
+   (* #pragma pack
+    * #pragma GCC set_debug_pwd
+    * #pragma alloc_text
+    * #pragma options align=packed
+    * #pragma options align=reset
+    * #pragma options align=power
+    * #pragma	pack(2)
+    * etc
+    *)
+  | "#pragma" sp  [^'\n']* '\n'  
 
       { TCommentCpp (tokinfo lexbuf) }
 
@@ -272,7 +280,7 @@ rule token = parse
         TIdent (tok lexbuf, info)
       }
 
-  (* only in cpp directives ? *)
+  (* only in cpp directives normally *)
   | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
 
 

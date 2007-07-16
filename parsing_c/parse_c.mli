@@ -23,20 +23,20 @@ type parsing_stat = {
     mutable have_timeout: bool;
     mutable correct: int;
     mutable bad: int;
-    mutable passed: int;
+    mutable commentized: int;
   } 
 
 
-(* this is the main function *)
+(* This is the main function. It uses globals in Lexer_Parser and 
+ * Parsing_hacks.
+ *)
 val parse_print_error_heuristic:  
   filename (*cfile*) -> (program2 * parsing_stat)
 
 
 val print_parsing_stat_list: parsing_stat list -> unit
 
-val print_tokens_commentized       : Parser_c.token list -> unit
-val count_lines_tokens_commentized : Parser_c.token list -> int
+val print_commentized       : Parser_c.token list -> unit
 
-(* the either is to differentialte macro-variables from macro-functions *)
 val parse_cpp_define_file : 
   filename -> (string, Parsing_hacks.define_body) assoc
