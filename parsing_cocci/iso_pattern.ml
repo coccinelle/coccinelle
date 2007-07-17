@@ -157,6 +157,65 @@ let is_context e =
     Ast0.CONTEXT(cell) -> true
   | _ -> false
 
+(* needs a special case when there is a Disj or an empty DOTS *)
+let is_pure_context =
+  let bind x y = x && y in
+  let option_default = true in
+  let mcodekind = function
+      Ast0.MINUS(mc) -> false
+    | Ast0.CONTEXT(mc) ->
+	(match !mc with
+	  (Ast.NOTHING,_,_) -> true
+	| _ -> false)
+    | _ -> false in
+  let mcode (_,_,_,mc) = mcodekind mc in
+
+  let donothing r k e = mcodekind (Ast0.get_mcodekind e) && k e in
+
+  let dots r k e =
+    match Ast0.unwrap e with
+      Ast0.DOTS([]) | Ast0.CIRCLES([]) | Ast0.STARS([]) -> true
+    | _ -> k e in
+
+  let expression r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+	List.for_all r.V0.combiner_expression expr_list
+    | _ -> k e in
+
+  let declaration r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjDecl(starter,decls,mids,ender) ->
+	List.for_all r.V0.combiner_declaration decls
+    | _ -> k e in
+
+  let typeC r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjType(starter,types,mids,ender) ->
+	List.for_all r.V0.combiner_typeC types
+    | _ -> k e in
+
+  let statement r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+	List.for_all r.V0.combiner_statement_dots statement_dots_list
+    | _ -> k e in
+
+  let res = V0.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    dots dots dots dots dots dots
+    donothing expression typeC donothing donothing declaration
+    statement donothing donothing in
+  res.V0.combiner_statement
+
+let is_minus e =
+  match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
+
 let match_list matcher is_list_matcher do_list_match la lb =
   let rec loop = function
       ([],[]) -> return true
@@ -698,8 +757,20 @@ mysterious bug that is obtained with eg int attach(...); *)
 			  bodya bodyb)))
 	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
-	      match_dots match_statement is_slist_matcher do_slist_match
-		bodya bodyb
+	      (* seqs can only match if they are all minus (plus code
+	      allowed) r all context (plus code not allowed in the body).
+	      we could be more permissive if the expansions of the isos are
+	      also all seqs, but this would be hard to check except at top
+	      level, and perhaps not worth checking even in that case.
+	      Overall, the issue is that braces are used where single
+	      statements are required, and something not satisfying these
+	      conditions can cause a single statement to become a
+	      non-single statement after the transformation. *)
+	      if is_minus s or is_pure_context s
+	      then
+		match_dots match_statement is_slist_matcher do_slist_match
+		  bodya bodyb
+	      else return false
 	  | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
 	      match_expr expa expb
 	  | (Ast0.IfThen(_,_,expa,_,branch1a,_),

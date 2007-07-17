@@ -45,7 +45,7 @@ module CTL_ENGINE_BIS :
 	(predicate, G.node, WRAPPER_ENV.mvar, SUB.value) labelfunc *
 	G.node list ->
 	  ((WRAPPER_PRED.t, WRAPPER_ENV.mvar, int) Ast_ctl.generic_ctl *
-	     (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
+	     (WRAPPER_PRED.t list list)) ->
                (WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples
 
     val satbis :
@@ -53,7 +53,7 @@ module CTL_ENGINE_BIS :
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
 	   ((predicate,SUB.mvar) wrapped_ctl *
-	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
+	      (WRAPPER_PRED.t list list)) ->
 		(WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
 		  ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
 		     ((G.node * (SUB.mvar * SUB.value) list * predicate)

@@ -303,7 +303,7 @@ let (satbis_to_trans_info:
 (*****************************************************************************)
 let (mysat2:
   Lib_engine.model ->
-  (Lib_engine.ctlcocci * (pred list * pred list)) -> 
+  (Lib_engine.ctlcocci * (pred list list)) -> 
   (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
   (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, binding) -> 

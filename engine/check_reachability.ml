@@ -120,7 +120,7 @@ let test_formula state formula cfg =
     Flag_ctl.partial_match := false;
     let res =
       ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist) formula
-	([state],[]) in
+	[[state]] in
     Flag_ctl.verbose_ctl_engine := verbose;
     Flag_ctl.partial_match := pm;
     let res = List.map (function (st,_,_) -> st) res in

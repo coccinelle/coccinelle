@@ -55,7 +55,7 @@ module CTL_ENGINE :
         val sat :
           G.cfg * (P.t -> (P.t,'anno) triples) * G.node list ->
             (P.t, SUB.mvar, 'c) Ast_ctl.generic_ctl ->
-	      (P.t list * P.t list) ->
+	      (P.t list list (* optional and required things *)) ->
 		(P.t,'anno) triples
 
 	val print_bench : unit -> unit

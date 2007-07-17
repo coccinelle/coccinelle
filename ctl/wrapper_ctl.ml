@@ -185,7 +185,7 @@ struct
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
          G.node list -> 
 	   ((predicate,SUB.mvar) wrapped_ctl *
-	      (WRAPPER_PRED.t list * WRAPPER_PRED.t list)) ->
+	      (WRAPPER_PRED.t list list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->
 	       ((WRAPPER_PRED.t, 'a) WRAPPER_ENGINE.triples *
 		  ((G.node * (SUB.mvar * SUB.value) list * predicate)

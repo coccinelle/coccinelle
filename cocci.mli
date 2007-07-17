@@ -33,8 +33,8 @@ val ctls_of_ast :
     Ast_cocci.rule list ->
       Ast_cocci.meta_name list list list ->
 	(Lib_engine.ctlcocci *
-	   ((Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif) list *
-	      (Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif) list))
+	   ((Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif)
+	      list list))
 	  list list
 
 

@@ -1904,45 +1904,29 @@ let print_bench _ =
 (* ---------------------------------------------------------------------- *)
 (* preprocessing: ignore irrelevant functions *)
 
-let preprocess label (req,opt) =
-  let get_any x =
-    try not([] = Hashtbl.find memo_label x)
-    with
-      Not_found ->
-	let triples = setify(label x) in
-	(*if triples = []
+let preprocess label = function
+    [] -> true (* no information, try everything *)
+  | l ->
+      let get_any verbose x =
+	try not([] = Hashtbl.find memo_label x)
+	with
+	  Not_found ->
+	    let triples = setify(label x) in
+	    (if verbose && not(triples = [])
+	    then
+	      (Printf.printf "found:\n";
+	       P.print_predicate x; Format.print_newline();
+	       Printf.printf "but it was not enough\n"));
+	    Hashtbl.add memo_label x
+	      (List.map (function (st,th,_) -> (st,th)) triples);
+	    not ([] = triples) in
+      if List.exists (List.for_all (get_any false)) l
+      then true
+      else
+	(if !Flag_ctl.verbose_ctl_engine
 	then
-	  (Printf.printf "failed to find\n";
-	   P.print_predicate x;
-	   Format.print_newline());*)
-	Hashtbl.add memo_label x
-	  (List.map (function (st,th,_) -> (st,th)) triples);
-	not ([] = triples) in
-  match req with
-    [] -> List.exists get_any opt
-  | _ ->
-      if !Flag_ctl.partial_match
-      then
-	let found = List.filter get_any req in
-	if List.length found = List.length req
-	then true
-	else
-	  begin
-	    Printf.printf "missing something required\nfound:\n";
-	    flush stdout;
-	    List.iter
-	      (function x -> P.print_predicate x; Format.print_newline())
-	      found;
-	    let notfound =
-	      List.filter (function x -> not(List.mem x found)) req in
-	    Printf.printf "not found:\n";
-	    flush stdout;
-	    List.iter
-	      (function x -> P.print_predicate x; Format.print_newline())
-	      notfound;
-	    false
-	  end
-      else List.for_all get_any req
+	  List.iter (List.iter (function x -> let _ = get_any true in ())) l;
+	 false)
 
 let filter_partial_matches trips =
   let anynegwit = (* if any is neg, then all are *)

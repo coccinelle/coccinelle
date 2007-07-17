@@ -449,7 +449,7 @@ type toplevel_c_info = {
 }
 
 type toplevel_cocci_info = {
-  ctl: Lib_engine.ctlcocci * (CCI.pred list * CCI.pred list);
+  ctl: Lib_engine.ctlcocci * (CCI.pred list list);
   ast_rule: Ast_cocci.rule;
 
   rulename: string;
