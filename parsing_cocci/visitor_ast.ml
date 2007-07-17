@@ -379,7 +379,7 @@ let combiner bind option_default
     process_bef_aft s;
     let k s =
       match Ast.unwrap s with
-	Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+	Ast.Seq(lbrace,decls,body,rbrace) ->
 	  multibind [rule_elem lbrace; statement_dots decls;
 		      statement_dots body; rule_elem rbrace]
       | Ast.IfThen(header,branch,_) ->
@@ -402,7 +402,7 @@ let combiner bind option_default
       | Ast.Nest(stmt_dots,whn,_) ->
 	  bind (statement_dots stmt_dots)
 	    (multibind (List.map (whencode statement_dots statement) whn))
-      | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+      | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots decls; statement_dots body;
 		      rule_elem rbrace]
@@ -863,8 +863,8 @@ let rebuilder
     let k s =
       Ast.rewrap s
 	(match Ast.unwrap s with
-	  Ast.Seq(lbrace,decls,dots,body,rbrace) ->
-	    Ast.Seq(rule_elem lbrace, statement_dots decls, dots,
+	  Ast.Seq(lbrace,decls,body,rbrace) ->
+	    Ast.Seq(rule_elem lbrace, statement_dots decls,
 		    statement_dots body, rule_elem rbrace)
 	| Ast.IfThen(header,branch,aft) ->
 	    Ast.IfThen(rule_elem header, statement branch,aft)
@@ -886,9 +886,9 @@ let rebuilder
 	| Ast.Nest(stmt_dots,whn,t) ->
 	    Ast.Nest(statement_dots stmt_dots,
 		     List.map (whencode statement_dots statement) whn,t)
-	| Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+	| Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
-			statement_dots decls, dots,
+			statement_dots decls,
 			statement_dots body, rule_elem rbrace)
 	| Ast.Define(header,body) ->
 	    Ast.Define(rule_elem header,statement_dots body)

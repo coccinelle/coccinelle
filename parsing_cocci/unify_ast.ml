@@ -482,7 +482,7 @@ and subtype f =
 
 let rec unify_statement s1 s2 =
   match (Ast.unwrap s1,Ast.unwrap s2) with
-    (Ast.Seq(lb1,d1,_,s1,rb1),Ast.Seq(lb2,d2,_,s2,rb2)) ->
+    (Ast.Seq(lb1,d1,s1,rb1),Ast.Seq(lb2,d2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem lb1 lb2)
 	(conjunct_bindings
 	   (unify_dots unify_statement sdots s1 s2)
@@ -518,7 +518,7 @@ let rec unify_statement s1 s2 =
 	   s2)
   | (Ast.Nest(s1,_,_),Ast.Nest(s2,_,_)) ->
       unify_dots unify_statement sdots s1 s2
-  | (Ast.FunDecl(h1,lb1,d1,_,s1,rb1),Ast.FunDecl(h2,lb2,d2,_,s2,rb2)) ->
+  | (Ast.FunDecl(h1,lb1,d1,s1,rb1),Ast.FunDecl(h2,lb2,d2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(conjunct_bindings (unify_rule_elem lb1 lb2)
 	   (conjunct_bindings (unify_dots unify_statement sdots d1 d2)

@@ -527,9 +527,9 @@ and statement s =
 				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) -> 
 	  let lbrace = mcode lbrace in
-	  let (decls,dots,body) = separate_decls seqible body in
+	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,dots,body,
+	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,body,
 		  tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(local_rewrap s
@@ -605,7 +605,18 @@ and statement s =
       | Ast0.TopExp(exp) ->
 	  Ast.Atomic(local_rewrap s (Ast.TopExp(expression exp)))
       | Ast0.Exp(exp) ->
-	  Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
+	  (match Ast0.unwrap exp with
+	    Ast0.DisjExpr(starter,expr_list,mids,ender) ->
+	      Ast.Disj
+		(List.map
+		   (function e ->
+		     local_rewrap s
+		       (Ast.DOTS
+			  ([local_rewrap s
+			       (Ast.Atomic
+				  (local_rewrap s (Ast.Exp(expression e))))])))
+		   expr_list)
+	  | _ -> Ast.Atomic(local_rewrap s (Ast.Exp(expression exp))))
       | Ast0.Ty(ty) ->
 	  Ast.Atomic(local_rewrap s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
@@ -649,14 +660,14 @@ and statement s =
 	  let params = parameter_list params in
 	  let rp = mcode rp in
 	  let lbrace = mcode lbrace in
-	  let (decls,dots,body) = separate_decls seqible body in
+	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.V0.combiner_statement s in
 	  Ast.FunDecl(local_rewrap s
 			(Ast.FunHeader(convert_mcodekind bef,
 				       allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
-		      decls,dots,body,
+		      decls,body,
 		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(local_rewrap s (Ast.Include(mcode inc,mcode str)))
@@ -709,41 +720,26 @@ and statement s =
 
   and separate_decls seqible d =
     let rec collect_decls = function
-	[] -> ([],false,[])
+	[] -> ([],[])
       | (x::xs) as l ->
 	  (match Ast0.unwrap x with
 	    Ast0.Decl(_) ->
-	      let (decls,dots,other) = collect_decls xs in
-	      (x :: decls,dots,other)
+	      let (decls,other) = collect_decls xs in
+	      (x :: decls,other)
 	  | Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_) ->
-	      let (decls,dots,other) = collect_decls xs in
+	      let (decls,other) = collect_decls xs in
 	      (match decls with
-		[] -> ([],true,x::other)
-	      | _ -> (x :: decls,dots,other))
+		[] -> ([],x::other)
+	      | _ -> (x :: decls,other))
 	  | Ast0.Disj(starter,stmt_dots_list,mids,ender) ->
 	      let disjs = List.map collect_dot_decls stmt_dots_list in
-	      let all_decls = List.for_all (function (_,_,s) -> s=[]) disjs in
-	      let all_dots = List.for_all (function (_,d,_) -> d) disjs in
-	      let all_not_dots =
-		List.for_all (function (_,d,_) -> not d) disjs in
-	      let all_stmts = List.for_all (function (d,_,_) -> d=[]) disjs in
+	      let all_decls = List.for_all (function (_,s) -> s=[]) disjs in
 	      if all_decls
 	      then
-		let (decls,dots,other) = collect_decls xs in
-		(x :: decls,dots,other)
-	      else
-		if all_stmts && all_dots
-		then ([],true,l)
-		else
-		  if all_stmts && all_not_dots
-		  then ([],false,l)
-		  else
-		    begin
-		      Printf.printf
-			"warning: mixes stmts and decls, not skipping initial decls\n";
-		      ([],true,l)
-		    end
-	  | _ -> ([],false,l))
+		let (decls,other) = collect_decls xs in
+		(x :: decls,other)
+	      else ([],l)
+	  | _ -> ([],l))
 
     and collect_dot_decls d =
       match Ast0.unwrap d with
@@ -752,8 +748,8 @@ and statement s =
       | Ast0.STARS(x) -> collect_decls x in
 
     let process l d fn =
-      let (decls,dots,other) = collect_decls l in
-      (rewrap d (fn (List.map (statement seqible) decls)), dots,
+      let (decls,other) = collect_decls l in
+      (rewrap d (fn (List.map (statement seqible) decls)),
        rewrap d (fn (process_list seqible other))) in
     match Ast0.unwrap d with
       Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)

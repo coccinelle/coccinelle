@@ -672,7 +672,9 @@ whenppdecs: TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
 /* a statement that fits into a single rule_elem.  should nests be included?
 what about statement metavariables? */
 rule_elem_statement:
-  expr TPtVirg { P.exp_stm $1 $2 }
+  one_decl_var
+    { Ast0.wrap(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),$1)) }
+| expr TPtVirg { P.exp_stm $1 $2 }
 | TReturn eexpr TPtVirg { P.ret_exp $1 $2 $3 }
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
@@ -765,7 +767,57 @@ decl_var:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))] }
+      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
+
+one_decl_var:
+    t=ctype pv=TPtVirg
+      { Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv)) }
+  | s=ioption(storage) t=ctype d=d_ident pv=TPtVirg
+      { let (id,fn) = d in
+        Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
+  | f=funproto { f }
+  | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
+      { let (id,fn) = d in
+      Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv)) }
+  /* type is a typedef name */
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
+      d=d_ident pv=TPtVirg
+      { let (id,fn) = d in
+        let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
+	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)) }
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
+      e=initialize pv=TPtVirg
+      { let (id,fn) = d in
+      !Data.add_type_name (P.id2name i);
+      let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
+      Ast0.wrap(Ast0.Init(s,fn idtype,id,P.clt2mcode "=" q,e,
+			   P.clt2mcode ";" pv)) }
+  /* function pointer type */
+  | s=ioption(storage)
+    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+    pv=TPtVirg
+      { let (id,fn) = d in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
+		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
+        Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
+  | TDeclarerId TOPar eexpr_list_option TCPar TPtVirg
+      { Ast0.wrap(Ast0.MacroDecl(P.id2mcode $1,P.clt2mcode "(" $2,$3,
+				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) } 
+  | s=ioption(storage)
+    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
+    q=TEq e=initialize pv=TPtVirg
+      { let (id,fn) = d in
+        let t =
+	  Ast0.wrap
+	    (Ast0.FunctionPointer
+	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
+		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
+      Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))}
 
 
 d_ident:

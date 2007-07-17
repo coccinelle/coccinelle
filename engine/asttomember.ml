@@ -157,7 +157,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	(* modifications on return are managed in some other way *)
 	Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) when tail -> []
       |	_ -> if testfn ast then [[strip ast]] else [])
-  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+  | Ast.Seq(lbrace,decls,body,rbrace) ->
       let body_info =
 	conj
 	  (statement_list testfn mcode false decls)
@@ -206,7 +206,7 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Dots((_,i,d),whencodes,t) -> []
 
-  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let body_info =
 	conj
 	  (statement_list testfn mcode false decls)
@@ -267,7 +267,10 @@ let asttomember (_,_,l) used_after =
   let process_one l =
     if debug
     then print_info l;
-    List.map (List.map (function x -> (Lib_engine.Match(x),CTL.Control))) l in
+    List.map
+      (List.map
+	 (function x -> (Lib_engine.Match(x,("","_p")),CTL.Control)))
+      l in
   List.map2
     (function min -> function max ->
       match min with

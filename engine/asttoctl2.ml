@@ -235,6 +235,7 @@ let a2n = function After x -> Guard x | a -> a
 (* Top-level code *)
 
 let fresh_var _ = string2var "_v"
+let fresh_pos _ = string2var "_p"
 
 let fresh_metavar _ = "_S"
 
@@ -301,20 +302,26 @@ let contains_modif =
 
 let make_match n label guard code =
   let v = fresh_var() in
-  if contains_modif code && not guard
-  then
-    wrapExists n true
-      (v,predmaker guard (Lib_engine.Match(code),CTL.Modif v) n label)
-  else
-    match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
-      (true,_,[]) | (_,true,_) ->
-	predmaker guard (Lib_engine.Match(code),CTL.Control) n label
-    | _ ->
-	wrapExists n true
-	  (v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v) n label)
+  let pos = fresh_pos() in
+  let matcher = Lib_engine.Match(code,pos) in
+  wrapExists n true
+    (pos,
+     if contains_modif code && not guard
+     then
+       wrapExists n true
+	 (v,predmaker guard (matcher,CTL.Modif v) n label)
+     else
+       match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
+	 (true,_,[]) | (_,true,_) ->
+	   predmaker guard (matcher,CTL.Control) n label
+       | _ ->
+	   wrapExists n true
+	     (v,predmaker guard (matcher,CTL.UnModif v) n label))
 
 let make_raw_match n label guard code =
-  predmaker guard (Lib_engine.Match(code),CTL.Control) n label
+  let pos = fresh_pos() in
+  wrapExists n true
+    (pos,predmaker guard (Lib_engine.Match(code,pos),CTL.Control) n label)
 
 let rec seq_fvs quantified = function
     [] -> []
@@ -350,7 +357,7 @@ let count_nested_braces s =
   let option_default = 0 in
   let stmt_count r k s =
     match Ast.unwrap s with
-      Ast.Seq(_,_,_,_,_) | Ast.FunDecl(_,_,_,_,_,_) -> (k s) + 1
+      Ast.Seq(_,_,_,_) | Ast.FunDecl(_,_,_,_,_) -> (k s) + 1
     | _ -> k s in
   let donothing r k e = k e in
   let mcode r x = 0 in
@@ -436,11 +443,11 @@ and get_before_e s a =
       (match Ast.unwrap ast with
 	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
-  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+  | Ast.Seq(lbrace,decls,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
       let (bd,_) = get_before body dea in
-      (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
+      (Ast.rewrap s (Ast.Seq(lbrace,de,bd,rbrace)),
        [Ast.WParen(rbrace,index)])
   | Ast.Define(header,body) ->
       let (body,_) = get_before body [] in
@@ -469,11 +476,11 @@ and get_before_e s a =
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
-  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let index = count_nested_braces s in
       let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
       let (bd,_) = get_before body dea in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
   | Ast.MultiStm(stm) -> (* I have no idea ... *)
       let (stm,res) = get_before_e stm a in
       (Ast.rewrap s (Ast.MultiStm(stm)),res)
@@ -562,11 +569,11 @@ and get_after_e s a =
 		   (Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots a,i)))),[])
       |	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
-  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+  | Ast.Seq(lbrace,decls,body,rbrace) ->
       let index = count_nested_braces s in
       let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
       let (de,_) = get_after decls bda in
-      (Ast.rewrap s (Ast.Seq(lbrace,de,dots,bd,rbrace)),
+      (Ast.rewrap s (Ast.Seq(lbrace,de,bd,rbrace)),
        [Ast.WParen(lbrace,index)])
   | Ast.Define(header,body) ->
       let (body,_) = get_after body a in
@@ -595,10 +602,10 @@ and get_after_e s a =
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
-  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (bd,bda) = get_after body [] in
       let (de,_) = get_after decls bda in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,dots,bd,rbrace)),[])
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
   | Ast.MultiStm(stm) -> (* I have no idea ... *)
       let (stm,res) = get_after_e stm a in
       (Ast.rewrap s (Ast.MultiStm(stm)),res)
@@ -921,19 +928,6 @@ let dots_and_nests nest whencodes befaftexps dot_code after n label
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
   
-let decl_to_not_decl n dots stmt make_match f =
-  if dots
-  then f
-  else
-    let de =
-      let md =
-	Ast.make_meta_decl "_d" (Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) ([],[],[])
-      in
-      Ast.rewrap md (Ast.Decl(Ast.CONTEXT(Ast.NoPos,Ast.NOTHING),false,md)) in
-    wrapAU n CTL.NONSTRICT
-      (make_match de,
-       wrapAnd n CTL.NONSTRICT (wrap n (CTL.Not (make_match de)), f))
-
 let rec statement_list stmt_list after quantified label dots_before guard =
   let n = Ast.get_line stmt_list in
   let isdots x =
@@ -1083,7 +1077,7 @@ and statement stmt after quantified label guard =
 	      (* have to have the return, if there is a return value *)
 	      make_seq_after (quantify fvs term) after
           | _ -> make_seq_after (quantify fvs term) after)
-  | Ast.Seq(lbrace,decls,dots,body,rbrace) ->
+  | Ast.Seq(lbrace,decls,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
 	match
 	  seq_fvs quantified
@@ -1115,11 +1109,10 @@ and statement stmt after quantified label guard =
 		     quantify b2fvs
 		       (statement_list decls
 			  (After
-			     (decl_to_not_decl n dots stmt make_match
-				(quantify b3fvs
-				   (statement_list body
-				      (After (make_seq_after end_brace after))
-				      new_quantified3 (Some lv) true guard))))
+			     (quantify b3fvs
+				(statement_list body
+				   (After (make_seq_after end_brace after))
+				   new_quantified3 (Some lv) true guard)))
 			  new_quantified2 (Some lv) false guard)]))) in
       if ends_in_return body
       then
@@ -1164,13 +1157,12 @@ and statement stmt after quantified label guard =
 		       quantify b2fvs
 			 (statement_list decls
 			    (After
-			       (decl_to_not_decl n dots stmt make_match
-				  (quantify b3fvs
-				     (statement_list body Tail
+			       (quantify b3fvs
+				  (statement_list body Tail
 					(*After
 					   (make_seq_after
 					      nopv_end_brace after)*)
-					new_quantified3 None true guard))))
+				     new_quantified3 None true guard)))
 			    new_quantified2 (Some lv) false guard))])) in
 	wrapOr(pattern_as_given,
 	       match Ast.unwrap decls with
@@ -1341,10 +1333,9 @@ and statement stmt after quantified label guard =
 				(wrap n CTL.True)
 				case_headers);
 		       List.fold_left
-			 (function prev -> function cur ->
-			   wrapOr(prev,cur))
+			 (function prev -> function cur -> wrapOr(prev,cur))
 			 no_header case_code]))])
-  | Ast.FunDecl(header,lbrace,decls,dots,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
 	  seq_fvs quantified
@@ -1433,11 +1424,10 @@ and statement stmt after quantified label guard =
 		quantify b3fvs
 		  (statement_list decls
 		     (After
-			(decl_to_not_decl n dots stmt make_match
-			   (quantify b4fvs
-			      (statement_list body
-				 (After (make_seq_after end_brace after))
-				 new_quantified4 None true guard))))
+			(quantify b4fvs
+			   (statement_list body
+			      (After (make_seq_after end_brace after))
+			      new_quantified4 None true guard)))
 		     new_quantified3 None false guard)] in
       quantify b1fvs (make_seq [function_header; quantify b2fvs body_code])
   | Ast.Define(header,body) ->

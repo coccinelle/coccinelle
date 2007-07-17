@@ -59,7 +59,7 @@ let rec pp_predicate = function
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp_meta s; pp ")"
-  | Match re -> Pretty_print_cocci.print_rule_elem re
+  | Match (re,l) -> Pretty_print_cocci.print_rule_elem re; pp "::"; pp_meta l
   | Label s -> pp "Label("; pp_meta s; pp ")"
   | PrefixLabel s -> pp "PrefixLabel("; pp_meta s; pp ")"
 

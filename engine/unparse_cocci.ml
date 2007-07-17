@@ -538,7 +538,7 @@ and print_fninfo = function
 
 let rec statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,_,body,rbrace) ->
+    Ast.Seq(lbrace,decls,body,rbrace) ->
       rule_elem arity lbrace;
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
@@ -565,7 +565,7 @@ let rec statement arity s =
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,decls,_,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
       dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace

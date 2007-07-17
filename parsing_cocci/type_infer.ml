@@ -229,6 +229,9 @@ let rec propagate_types env =
 	let _ = k s in
 	(match (Ast0.unwrap exp,Ast0.get_type exp) with
 	  (Ast0.Edots(_,_),_) -> ()
+	| (Ast0.MetaExpr(_,_,_),_) ->
+	    (* if a type is known, it is specified in the decl *)
+	    ()
 	| (_,None) -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))
 	| _ -> ());
 	None

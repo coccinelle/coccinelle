@@ -44,11 +44,16 @@ let contains_modif =
 let ctl_exists v x keep_wit = wrap 0 (CTL.Exists(v,x,keep_wit))
 
 let predmaker guard term =
-  if guard && contains_modif term
-  then
-    let v = ("","_v") in
-    ctl_exists v (wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Modif v))) true
-  else wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Control))
+  let pos = ("","_p") in
+  ctl_exists pos
+    (if guard && contains_modif term
+    then
+      let v = ("","_v") in
+      ctl_exists v
+	(wrap 0 (CTL.Pred (Lib_engine.Match(term,pos),CTL.Modif v)))
+	true
+    else wrap 0 (CTL.Pred (Lib_engine.Match(term,pos),CTL.Control)))
+    true
 
 (* --------------------------------------------------------------------- *)
 
