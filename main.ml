@@ -32,8 +32,6 @@ let compare_with_expected = ref false
 
 let save_tmp_files = ref false
 
-(* if set then will not do certain finalize so faster to go back in replay *)
-let debugger = ref false
 
 (*****************************************************************************)
 (* Profiles *)
@@ -250,7 +248,7 @@ let other_options = [
   "",
   [
     "-save_tmp_files",   Arg.Set save_tmp_files,   " ";
-    "-debugger",         Arg.Set debugger , 
+    "-debugger",         Arg.Set Common.debugger , 
     "   option to set if launch spatch in ocamldebug";
   ];
 
@@ -511,17 +509,19 @@ let _ =
       ));
 
       (* The finalize below makes it tedious to go back to exn when use
-       * 'back' in the debugger. Hence this special case. *)
+       * 'back' in the debugger. Hence this special case. But the 
+       * Common.debugger will be set in main(), so too late, so 
+       * have to be quicker
+       *)
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
-      then main ()
-      else 
+      then Common.debugger := false;
 
-        Common.finalize          (fun ()-> 
-         Common.pp_do_in_zero_box (fun () -> 
-           main ();
-           Ctlcocci_integration.print_bench();
-           Common.profile_diagnostic ();
-         ))
-        (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+      Common.finalize          (fun ()-> 
+        Common.pp_do_in_zero_box (fun () -> 
+          main ();
+          Ctlcocci_integration.print_bench();
+          Common.profile_diagnostic ();
+        ))
+       (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
     )
       

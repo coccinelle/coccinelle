@@ -302,7 +302,8 @@ and vk_type = fun bigf t ->
     | TypeName (s) -> ()
 
     | ParenType t -> typef t
-    | Typeof e -> vk_expr bigf e
+    | TypeOfExpr e -> vk_expr bigf e
+    | TypeOfType t -> typef t
 
   in typef t
 
@@ -815,7 +816,8 @@ and vk_type_s = fun bigf t ->
       | TypeName s -> TypeName s
 
       | ParenType t -> ParenType (typef t)
-      | Typeof e -> Typeof (vk_expr_s bigf e)
+      | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
+      | TypeOfType t -> TypeOfType (typef t)
     in
     (q', iif iiq), 
   (t', iif iit)

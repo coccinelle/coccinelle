@@ -168,7 +168,13 @@ let print_parsing_stat_list = fun statxs ->
 (*****************************************************************************)
 
 let commentized xs = xs +> Common.map_filter (function
-  | Parser_c.TCommentCpp ii
+  | Parser_c.TCommentCpp (cppkind, ii) -> 
+      (match cppkind with
+      | Ast_c.CppOther 
+        -> Some (ii.Ast_c.pinfo)
+      | _ -> None
+      )
+      
   | Parser_c.TCommentMisc ii
   | Parser_c.TAction ii ->
       Some (ii.Ast_c.pinfo)
@@ -485,9 +491,11 @@ let rec comment_until_defeol xs =
   | x::xs -> 
       (match x with
       | Parser_c.TDefEOL i -> 
-          Parser_c.TCommentCpp (TH.info_of_tok x)::xs
+          Parser_c.TCommentCpp (Ast_c.CppDirective, TH.info_of_tok x)
+          ::xs
       | _ -> 
-          Parser_c.TCommentCpp (TH.info_of_tok x)::comment_until_defeol xs
+          Parser_c.TCommentCpp (Ast_c.CppOther, TH.info_of_tok x)
+          ::comment_until_defeol xs
       )
 
 let drop_until_defeol xs = 
@@ -597,7 +605,8 @@ let rec lexer_function tr = fun lexbuf ->
           if not !LP._lexer_hint.LP.toplevel 
           then begin
             pr2 ("CPP-DEFINE: inside function, I treat it as comment");
-            let v' = Parser_c.TCommentCpp (TH.info_of_tok v) in
+            let v' = Parser_c.TCommentCpp (Ast_c.CppDirective,TH.info_of_tok v)
+            in
             tr.passed <- v'::tr.passed;
             tr.rest       <- comment_until_defeol tr.rest;
             tr.rest_clean <- drop_until_defeol tr.rest_clean;
@@ -613,7 +622,7 @@ let rec lexer_function tr = fun lexbuf ->
           if not !LP._lexer_hint.LP.toplevel 
           then begin
             pr2 ("CPP-INCLUDE: inside function, I treat it as comment");
-            let v = Parser_c.TCommentCpp info in
+            let v = Parser_c.TCommentCpp(Ast_c.CppDirective, info) in
             tr.passed <- v::tr.passed;
             lexer_function tr lexbuf
           end

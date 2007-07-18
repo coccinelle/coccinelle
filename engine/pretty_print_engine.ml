@@ -27,6 +27,8 @@ let rec pp_binding_kind = function
   | Ast_c.MetaParamListVal params -> pp "<<paramlist>>"
   | Ast_c.MetaConstVal cst -> 
       Pretty_print_c.pp_cst_gen pr_elem cst
+  | Ast_c.MetaPosVal (pos1, pos2) -> 
+      pp (Common.sprintf ("pos(%d,%d)") pos1 pos2)
 
 and pp_binding subst = 
   begin

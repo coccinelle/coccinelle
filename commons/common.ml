@@ -115,7 +115,7 @@ let reset_pr_indent () =
 (* let pr s = (print_string s; print_string "\n"; flush stdout) *)
 (* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 
-let pr2gen x = pr2 (Dumper.dump x)
+let pr2_gen x = pr2 (Dumper.dump x)
 
 
 
@@ -196,6 +196,10 @@ let _debug = ref true
 let debugon  () = _debug := true
 let debugoff () = _debug := false
 let debug f = if !_debug then f () else ()
+
+
+
+let debugger = ref false 
 
 (*****************************************************************************)
 (* Profiling *)
@@ -790,14 +794,16 @@ let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
 (* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
 let unwind_protect f cleanup =
-  try f ()
-  with e -> begin cleanup e; raise e end
+  if !debugger then f() else 
+    try f ()
+    with e -> begin cleanup e; raise e end
 
 (* want or of merd, but cant cos cant put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
 
 let finalize f cleanup = 
+  if !debugger then f() else 
   try 
     let res = f () in
     cleanup ();

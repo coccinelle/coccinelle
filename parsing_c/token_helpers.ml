@@ -8,7 +8,8 @@ open Parser_c
 
 let is_comment = function
   | TComment _    | TCommentSpace _ 
-  | TCommentCpp _ | TCommentMisc _ -> true
+  | TCommentCpp _ 
+  | TCommentMisc _ -> true
   | _ -> false
 
 
@@ -122,7 +123,7 @@ let info_of_tok = function
 
   | TComment             (i) -> i
   | TCommentSpace        (i) -> i
-  | TCommentCpp          (i) -> i
+  | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
   | TIfdef               (i) -> i
   | TIfdefelse           (i) -> i
@@ -240,7 +241,7 @@ let visitor_info_of_tok f = function
 
   | TComment             (i) -> TComment             (f i) 
   | TCommentSpace        (i) -> TCommentSpace        (f i) 
-  | TCommentCpp          (i) -> TCommentCpp          (f i) 
+  | TCommentCpp          (cppkind, i) -> TCommentCpp          (cppkind, f i) 
   | TCommentMisc         (i) -> TCommentMisc         (f i) 
   | TIfdef               (i) -> TIfdef               (f i) 
   | TIfdefelse           (i) -> TIfdefelse           (f i) 

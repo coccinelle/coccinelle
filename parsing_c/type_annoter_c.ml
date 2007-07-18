@@ -221,9 +221,10 @@ let rec type_unfold_one_step ty env =
       )
       
   | ParenType t -> type_unfold_one_step t env
-  | Typeof e -> 
+  | TypeOfExpr e -> 
       pr2_once ("Type_annoter: not handling typeof");
       ty
+  | TypeOfType t -> type_unfold_one_step t env
 
 
 
@@ -296,9 +297,11 @@ let rec type_variations_step ty env =
       )
       
   | ParenType t -> type_variations_step t env
-  | Typeof e -> 
+  | TypeOfExpr e -> 
       pr2_once ("Type_annoter: not handling typeof");
       ty
+
+  | TypeOfType t -> type_variations_step t env
  
 
 let type_variations_typedef ty env = 

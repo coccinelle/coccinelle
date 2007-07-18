@@ -89,9 +89,11 @@ testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests/
 
 testparsing2: 
-	./spatch -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
+	./spatch.opt -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
+	./spatch.opt -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
+
+testparsing2bis:
 	./spatch -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_all_filter 2>&1 
-	./spatch -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
 	./spatch -filter_define_error -D standard.h -dir -parse_h ~/kernels/git/linux-2.6/  > /tmp/parse_h_filter 2>&1 
 
 testparsing3:

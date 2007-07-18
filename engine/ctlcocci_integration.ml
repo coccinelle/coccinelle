@@ -54,7 +54,7 @@ let (labels_for_ctl:
    (fun p -> 
      show_or_not_predicate p;
 
-     let nodes' = nodes +> map (fun (nodei, node) -> 
+     let nodes' = nodes +> List.map (fun (nodei, node) -> 
       (* todo? put part of this code in pattern ? *)
       (match p, F.unwrap node with
       | Lib_engine.Paren s,  (F.SeqStart (_, bracelevel, _)) -> 
@@ -88,15 +88,12 @@ let (labels_for_ctl:
               (p', 
                 subst +> List.map (fun (s, meta) -> 
                   s --> Lib_engine.NormalMetaVal meta
-                )
-              )
-            )
-          )
+                ))))
 
       | Lib_engine.TrueBranch , F.TrueNode ->  [nodei, (p,[])]
       | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
       | Lib_engine.After,       F.AfterNode -> [nodei, (p,[])]
-      | Lib_engine.FallThrough, F.FallThroughNode ->[nodei,(p,[])]
+      | Lib_engine.FallThrough, F.FallThroughNode -> [nodei,(p,[])]
       | Lib_engine.Exit,        F.Exit ->      [nodei, (p,[])]
       | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
 

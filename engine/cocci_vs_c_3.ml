@@ -1364,8 +1364,81 @@ and storage stoa stob =
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) -> 
-  X.all_bound (A.get_inherited decla) >&&>
-   match A.unwrap decla, declb with
+ X.all_bound (A.get_inherited decla) >&&>
+ match A.unwrap decla, declb with
+
+ (* kind of typedef iso, we must unfold, it's for the case 
+  *  T { }; that we want to match agains typedef struct { } xx_t;
+  *)
+ | A.TyDecl (ty0, ptvirga), 
+   ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
+   (match A.unwrap ty0, typb0 with
+   | A.Type(cv1,ty1), ((qu,il),typb1) ->
+
+     (match A.unwrap ty1, typb1 with
+     | A.StructUnionDef(ty2, lba, declsa, rba), 
+       (B.StructUnion (sub, sbopt, declsb), ii) -> 
+
+       (match sbopt with
+       | None -> 
+         let (iisub, lbb, rbb) = tuple_of_list3 ii in
+
+         (match A.unwrap ty2 with
+         | A.Type(cv3, ty3) -> 
+           (match A.unwrap ty3 with
+           | A.MetaType(ida,keep, inherited) -> 
+
+             let fake_typeb = Ast_c.nQ, ((B.TypeName idb), [iidb]) in
+             fullType ty2 fake_typeb >>= (fun ty2 fake_typeb -> 
+                   
+             tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
+
+             tokenf lba lbb >>= (fun lba lbb -> 
+             tokenf rba rbb >>= (fun rba rbb -> 
+             struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+               let declsa = redots declsa undeclsa in
+
+               let typb1 = B.StructUnion (sub,sbopt, declsb),[iisub;lbb;rbb] in
+               let typb0 = ((qu, il), typb1) in
+               
+               let ty1 = A.StructUnionDef(ty2,lba,declsa,rba)+> A.rewrap ty1 in
+               let ty0 = A.Type(cv1, ty1) +> A.rewrap ty0 in
+               
+
+               match fake_typeb with 
+               | _nQ, ((B.TypeName idb), [iidb]) -> 
+
+                   return (
+                     (A.TyDecl (ty0, ptvirga)) +> A.rewrap decla,
+                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
+                       iivirg),iiptvirgb,iistob)
+                   )
+               | _ -> raise Impossible    
+                 
+             )))))
+
+           | A.StructUnionName(sua, sa) -> 
+               raise Todo
+           | _ -> raise Impossible
+           )
+         | _ -> fail
+         )
+       | Some _ -> raise Todo
+       )
+     | _ -> fail
+     )
+   | _ -> fail
+   )
+         
+   | A.UnInit (stoa, typa, ida, ptvirga), 
+     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
+       fail
+
+   | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
+     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
+       fail
+
+
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga), 
@@ -1395,7 +1468,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            iiptvirgb,iistob)
          )))))))
            
-
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, ptvirga), ((None, typb, stob), iivirg)  ->
        if stob = (B.NoSto, false)
@@ -2046,7 +2118,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ))
         else fail
 
-    | _, (B.Typeof e, ii) -> fail
+    | _, (B.TypeOfExpr e, ii) -> fail
+    | _, (B.TypeOfType e, ii) -> fail
           
     | _, _ -> fail
 

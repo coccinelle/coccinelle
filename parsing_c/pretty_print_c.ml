@@ -442,12 +442,22 @@ and (pp_base_type_gen:
             assert (List.length iis = 1);  
             print_sto_qu_ty (sto, qu, iis);
 
-        | (Typeof (e), iis) -> 
+        | (TypeOfExpr (e), iis) -> 
             print_sto_qu (sto, qu);
             (match iis with
             | [itypeof;iopar;icpar] -> 
                 pr_elem itypeof; pr_elem iopar;
                 pp_expression_gen pr_elem e;
+                pr_elem icpar;
+            | _ -> raise Impossible
+            )
+
+        | (TypeOfType (t), iis) -> 
+            print_sto_qu (sto, qu);
+            (match iis with
+            | [itypeof;iopar;icpar] -> 
+                pr_elem itypeof; pr_elem iopar;
+                pp_type_gen pr_elem t; 
                 pr_elem icpar;
             | _ -> raise Impossible
             )
@@ -475,7 +485,8 @@ and (pp_type_with_ident_rest_gen:
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
       | (TypeName (s), iis)                     -> print_ident ident
-      | (Typeof (e), iis)                     -> print_ident ident
+      | (TypeOfExpr (e), iis)                     -> print_ident ident
+      | (TypeOfType (e), iis)                     -> print_ident ident
 
 
 

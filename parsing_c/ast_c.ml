@@ -22,7 +22,7 @@ open Common open Commonop
  * Sometimes we want to add someting at the beginning or at the end 
  * of a construct. For 'function' and 'decl' we want add something
  * to their left and for 'if' 'while' et 'for' and so on at their right.
- * We want kind of "virtual placeholders" that represent the start or
+ * We want some kinds of "virtual placeholders" that represent the start or
  * end of a construct. We use fakeInfo for that purpose.
  * To identify those cases I have added a fakestart/fakeend comment.
  * 
@@ -38,6 +38,7 @@ open Common open Commonop
 
 (* forunparser: *)
 
+type pos = int
 type mark_token = OriginTok | FakeTok | ExpandedTok | AbstractLineTok
 
 type info = { 
@@ -47,13 +48,14 @@ type info = {
   }
 and il = info list
 
-and 'a wrap  = 'a * il   
-
 (* wrap2 is like wrap, except that I use it often for separator such
  * as ','. In that case the info is associated to the argument that
  * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
+and 'a wrap  = 'a * il   
 and 'a wrap2 = 'a * il
 
+(* ------------------------------------------------------------------------- *)
+(* C Type *)
 (* ------------------------------------------------------------------------- *)
 (* Could have more precise type in fullType, in expression, etc, but
  * it requires to do too much things in parsing such as checking no
@@ -76,9 +78,6 @@ and 'a wrap2 = 'a * il
  * Some stuff are tagged semantic: which means that they are computed
  * after parsing. *)
 
-(* ------------------------------------------------------------------------- *)
-
-
 
 and fullType = typeQualifier * typeC
 and  typeC = typeCbis wrap
@@ -99,9 +98,18 @@ and typeCbis =
   | TypeName   of string
  
   | ParenType of fullType (* forunparser: *)
-  | Typeof of expression  (* gccext: *)
- 
-     (* -------------------------------------- *)    
+
+  (* gccext: TypeOfType may seems useless, why declare a __typeof__(int)
+   * x; ? But when used with macro, it allows to fix a problem of C which
+   * is that type declaration can be spread around the ident. Indeed it
+   * may be difficult to have a macro such as '#define macro(type,
+   * ident) type ident;' because when you want to do a macro(char[256],
+   * x), then it will generate invalid code, but with a '#define
+   * macro(type, ident) __typeof(type) ident;' it will work. *)
+  | TypeOfExpr of expression  
+  | TypeOfType of fullType    
+      
+(* -------------------------------------- *)    
      and  baseType = Void 
                    | IntType   of intType 
 		   | FloatType of floatType
@@ -155,6 +163,8 @@ and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = {const: bool; volatile: bool}
 
 
+(* ------------------------------------------------------------------------- *)
+(* C expression *)
 (* ------------------------------------------------------------------------- *)
 and expression = (expressionbis * fullType list ref (* semantic: *)) wrap
 and expressionbis = 
@@ -240,11 +250,14 @@ and expressionbis =
 
 
 (* ------------------------------------------------------------------------- *)
+(* C statement *)
+(* ------------------------------------------------------------------------- *)
 (* note: that assignement is not a statement but an expression;
  * wonderful C langage.
  * 
  * note: I use 'and' for type definition cos gccext allow statement as
  * expression, so need mutual recursive type definition. *)
+
 and statement = statementbis wrap 
 and statementbis = 
   | Labeled       of labeled
@@ -308,8 +321,9 @@ and statementbis =
 
 
 (* ------------------------------------------------------------------------- *)
-(* 
- * (string * ...) option cos can have empty declaration or struct tag 
+(* Declaration *)
+(* ------------------------------------------------------------------------- *)
+(* (string * ...) option cos can have empty declaration or struct tag 
  * declaration.
  *   
  * Before I had Typedef constructor, but why make this special case and not 
@@ -350,6 +364,8 @@ and declaration =
             | DesignatorRange of expression * expression
         
 (* ------------------------------------------------------------------------- *)
+(* Function definition *)
+(* ------------------------------------------------------------------------- *)
 (* Normally we should define another type functionType2 because there 
  * are more restrictions on what can define a function than a pointer 
  * function. For instance a function declaration can omit the name of the
@@ -360,6 +376,8 @@ and declaration =
 and definition = (string * functionType * storage * compound) 
                  wrap (* s ( ) { } fakestart sto *)
 
+(* ------------------------------------------------------------------------- *)
+(* #define and #include body *)
 (* ------------------------------------------------------------------------- *)
 (* cppext *) 
 and define = define_kind * define_val
@@ -395,6 +413,8 @@ and include_rel_pos = {
   last_of :  string list list;
 }
 
+(* ------------------------------------------------------------------------- *)
+(* The toplevels elements *)
 (* ------------------------------------------------------------------------- *)
 and toplevel =
   | Declaration of declaration
@@ -433,7 +453,24 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list
   | MetaConstVal     of (constant, string) either wrap
+  (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
+   * because don't need to have the value for a position in the env of
+   * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
+   * variables accessible via SmPL whereas the position can be one day
+   * so I think it's better to put MetaPosVal here *)
+  | MetaPosVal       of pos * pos
 
+
+(*****************************************************************************)
+(* Cpp comments *)
+(*****************************************************************************)
+(* This type is not in the Ast but is associated with the TCommentCpp token.
+ * I put this enum here because parser_c.mly need it. I could have put
+ * it also in lexer_parser.
+*)
+
+type cppcommentkind = 
+  CppDirective | CppAttr | CppOther
 
 (*****************************************************************************)
 (* Some constructors *)
@@ -499,6 +536,8 @@ let mcode_of_info ii  = fst (!(ii.cocci_tag))
 (* todo: use virtual pos ? *)
 let compare_pos i1 i2 = 
   compare i1.pinfo.charpos i2.pinfo.charpos
+let equal_pos p1 p2 = 
+  p1 =|= p2
 
 (*****************************************************************************)
 (* Abstract line *)

@@ -328,7 +328,7 @@ let test_tokens_c file =
   Flag_parsing_c.debug_lexer := true; 
   Flag_parsing_c.verbose_parsing := true;
 
-  Parse_c.tokens file +> Common.pr2gen
+  Parse_c.tokens file +> Common.pr2_gen
 
 
         

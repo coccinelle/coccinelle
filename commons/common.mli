@@ -11,7 +11,8 @@ val reset_pr_indent : unit -> unit
 (* The following functions first indent _tab_level_print spaces.
  * 
  * The use of 2 in pr2 is because 2 is under UNIX the second descriptor
- * which corresponds to stderr. *)
+ * which corresponds to stderr. 
+ *)
 val pr : string -> unit
 val pr2 : string -> unit
 val pr_no_nl : string -> unit
@@ -20,7 +21,7 @@ val pr_xxxxxxxxxxxxxxxxx : unit -> unit
 val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 (* use Dumper.dump *)
-val pr2gen: 'a -> unit
+val pr2_gen: 'a -> unit
 
 val _already_printed : (string, bool) Hashtbl.t
 val pr2_once : string -> unit
@@ -57,6 +58,9 @@ val _debug : bool ref
 val debugon : unit -> unit
 val debugoff : unit -> unit
 val debug : (unit -> unit) -> unit
+
+(* if set then will not do certain finalize so faster to go back in replay *)
+val debugger : bool ref
 
 (*****************************************************************************)
 (* Profiling (cpu/mem) *)

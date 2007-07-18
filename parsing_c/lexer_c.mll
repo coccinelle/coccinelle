@@ -111,19 +111,13 @@ let keyword_table = Common.hash_of_list [
   "typeof", (fun ii -> Ttypeof ii);
   "__typeof__", (fun ii -> Ttypeof ii);
 
+  "__signed__",     (fun ii -> Tsigned ii);
 
-  (* cppext: synonyms *)
   "__const__",     (fun ii -> Tconst ii);
   "__const",     (fun ii -> Tconst ii);
-  (* pbs, can also be a #define and use as 'case CONST:' *)
-  (* "CONST",      (fun ii -> Tconst ii); *) 
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
-
-  "STATIC",        (fun ii -> Tstatic ii); 
-  "_static",       (fun ii -> Tstatic ii); 
- 
   
  ]
 
@@ -217,7 +211,6 @@ rule token = parse
   (* misc *)
   (* ---------------------- *)
       
-
    (* #pragma pack
     * #pragma GCC set_debug_pwd
     * #pragma alloc_text
@@ -228,8 +221,7 @@ rule token = parse
     * etc
     *)
   | "#pragma" sp  [^'\n']* '\n'  
-
-      { TCommentCpp (tokinfo lexbuf) }
+      { TCommentCpp (CppDirective, tokinfo lexbuf) }
 
   | "#" [' ' '\t']* "ident"   [' ' '\t']+  [^'\n']+ '\n' 
 
@@ -239,13 +231,18 @@ rule token = parse
   | "#" [' ' '\t']* "warning" [' ' '\t']+  [^'\n']* '\n'                     
   | "#" [' ' '\t']* "abort"   [' ' '\t']+  [^'\n']* '\n'
 
-      { TCommentCpp (tokinfo lexbuf) }
+      { TCommentCpp (CppDirective, tokinfo lexbuf) }
+
+  (* only after cpp, ex: # 1 "include/linux/module.h" 1 *)
+  | "#" sp pent sp  '"' [^ '"']* '"' (spopt pent)*  spopt '\n'
+      { TCommentCpp (CppDirective, tokinfo lexbuf) }
+
 
   (* in drivers/char/tpqic02.c, in old version of the kernel *)
-  | "#" [' ' '\t']* "error"     { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "error"     { TCommentCpp (CppDirective,tokinfo lexbuf) }
 
 
-  | "#" [' ' '\t']* '\n'        { TCommentCpp (tokinfo lexbuf) }
+  | "#" [' ' '\t']* '\n'        { TCommentCpp (CppDirective,tokinfo lexbuf) }
 
 
   (* ---------------------- *)
@@ -256,7 +253,7 @@ rule token = parse
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ id
       { let info = tokinfo lexbuf in 
-        TCommentCpp (info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        TCommentCpp (CppDirective,info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
   | (id  "...") as str
@@ -299,7 +296,8 @@ rule token = parse
       }
 
    (* linuxext: special_for_no_exn: in atm/ambassador.c *)
-  | "#include UCODE(" [^'\n']+  '\n'    { TCommentCpp (tokinfo lexbuf) }
+  | "#include UCODE(" [^'\n']+  '\n'    
+      { TCommentCpp (CppDirective, tokinfo lexbuf) }
 
 
   (* ---------------------- *)
@@ -324,7 +322,7 @@ rule token = parse
       }
 
 
-  (* different possible variations (we not manage all of them):
+  (* linuxext: different possible variations (we not manage all of them):
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
     #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,4,2)
     #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)

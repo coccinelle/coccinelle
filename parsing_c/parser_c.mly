@@ -277,15 +277,21 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 /* Some tokens are not even used in this file because they are filtered
  * in some intermediate phase. But they still must be declared because
  * ocamllex may generate them, or some intermediate phase may also
- * generate them.
+ * generate them (like some functions in parsing_hacks.ml)
  */
 
 %token <Ast_c.info> TUnknown /* unrecognized token */
-                           
+
 %token <Ast_c.info> TComment TCommentSpace 
+
+/* cppext: extra tokens */
 
 %token <Ast_c.info> TDefine
 %token <(string * Ast_c.info)> TDefParamVariadic
+%token <Ast_c.info> TCppEscapedNewline /* disappear after fix_tokens_define */
+%token <Ast_c.info> TOParDefine        /* appear    after fix_tokens_define */
+%token <(string * Ast_c.info)> TIdentDefine /* same */
+%token <Ast_c.info>            TDefEOL      /* same */
 
 /* used only in lexer_c, then transformed in comment or splitted in tokens */
 %token <(string * string * Ast_c.info)> TInclude
@@ -293,18 +299,13 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <(Ast_c.info)>          TIncludeStart
 %token <(string * Ast_c.info)> TIncludeFilename
 
-%token <Ast_c.info> TCppEscapedNewline /* disappear after fix_tokens_define */
-
-%token <Ast_c.info> TOParDefine        /* appear    after fix_tokens_define */
-%token <(string * Ast_c.info)> TIdentDefine /* same */
-%token <Ast_c.info> TDefEOL                 /* same */
-
 
 
 %token <Ast_c.info> TIfdef TIfdefelse TIfdefelif TEndif
 %token <(bool * Ast_c.info)> TIfdefbool
 
-%token <Ast_c.info> TCommentCpp TCommentMisc
+%token <Ast_c.info> TCommentMisc
+%token <(Ast_c.cppcommentkind * Ast_c.info)> TCommentCpp
 
 /* appear  after fix_tokens_cpp */
 %token <Ast_c.info>            TMacroStmt
@@ -315,6 +316,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info> TAction
 
 
+/* the normal tokens */
 
 
 %token <string * Ast_c.info>                     TInt
@@ -350,10 +352,13 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof  
+
+/* gccext: extra tokens */
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
 %token <Ast_c.info> Tinline
 %token <Ast_c.info> Ttypeof
+
 
 %token <Ast_c.info> EOF
 
@@ -777,7 +782,8 @@ type_spec2:
   */                            
  | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
 
- | Ttypeof TOPar assign_expr TCPar { Right3 (Typeof ($3)), [$1;$2;$4] }
+ | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
+ | Ttypeof TOPar type_name  TCPar  { Right3 (TypeOfType ($3)), [$1;$2;$4] }
 
 
 type_qualif: 
@@ -1058,6 +1064,7 @@ struct_decl2:
             grammar dont allow typedef nor initialiser in struct 
          *)
      }
+
 
  |  spec_qualif_list TPtVirg 
      { 
