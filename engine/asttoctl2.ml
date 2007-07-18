@@ -235,7 +235,7 @@ let a2n = function After x -> Guard x | a -> a
 (* Top-level code *)
 
 let fresh_var _ = string2var "_v"
-let fresh_pos _ = string2var "_p"
+let fresh_pos _ = string2var "_pos" (* must be a constant *)
 
 let fresh_metavar _ = "_S"
 
@@ -304,7 +304,7 @@ let make_match n label guard code =
   let v = fresh_var() in
   let pos = fresh_pos() in
   let matcher = Lib_engine.Match(code,pos) in
-  wrapExists n true
+  wrapExists n false
     (pos,
      if contains_modif code && not guard
      then
@@ -320,7 +320,7 @@ let make_match n label guard code =
 
 let make_raw_match n label guard code =
   let pos = fresh_pos() in
-  wrapExists n true
+  wrapExists n false
     (pos,predmaker guard (Lib_engine.Match(code,pos),CTL.Control) n label)
 
 let rec seq_fvs quantified = function
@@ -639,6 +639,54 @@ let rec ends_in_return stmt_list =
       |	_ -> false)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
+
+(* --------------------------------------------------------------------- *)
+(* expressions *)
+
+let do_exp_matches ast exp make_match make_guard_match n =
+  match Ast.unwrap exp with
+    Ast.DisjExpr(exps) ->
+      let matches =
+	List.map (function x -> make_match (Ast.rewrap exp (Ast.Exp(x))))
+	  exps in
+      let guard_matches =
+	List.map (function x -> make_guard_match (Ast.rewrap exp (Ast.Exp(x))))
+	  exps in
+      let unexists =
+	List.map
+	  (function e ->
+	    match CTL.unwrap e with
+	      CTL.Exists(var,term,keep) -> term
+	    | _ -> failwith "not possible")
+	  matches in
+      let guard_unexists =
+	List.map
+	  (function e ->
+	    match CTL.unwrap e with
+	      CTL.Exists(var,term,keep) -> term
+	    | _ -> failwith "not possible")
+	  guard_matches in
+      let rec suffixes = function
+	  [] -> []
+	| x::xs -> xs::(suffixes xs) in
+      let prefixes = List.rev (suffixes (List.rev guard_unexists)) in
+      (* fresh_pos is always the same *)
+      let pos = fresh_pos() in
+      List.fold_left
+	(function a -> function b -> wrapOr n (a,b))
+	(wrap n CTL.False)
+	(List.map2
+	   (function matcher ->
+	     function negates ->
+	       wrapExists n false
+		 (pos,
+		  List.fold_left
+		    (function prev ->
+		      function cur ->
+			wrapAnd n CTL.NONSTRICT (wrapNot n cur, prev))
+		    matcher negates))
+	   unexists prefixes)
+  | _ -> make_match ast
 
 (* --------------------------------------------------------------------- *)
 (* control structures *)
@@ -975,7 +1023,8 @@ and statement stmt after quantified label guard =
   let make_seq_after = make_seq_after n guard in
   let quantify   = quantify n in
   let real_make_match = make_match in
-  let make_match = make_match n label guard in
+  let make_match = real_make_match n label guard in
+  let make_guard_match = real_make_match n label true in
   let new_info =
     {Ast.line = (-1);Ast.column = (-1);Ast.strbef = []; Ast.straft = []} in
 
@@ -998,7 +1047,11 @@ and statement stmt after quantified label guard =
 	  let stmt_fvs = Ast.get_fvs stmt in
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  let between_dots = Ast.get_dots_bef_aft stmt in
-	  let term = make_match ast in
+	  let term =
+	    (*match Ast.unwrap ast with
+	      Ast.Exp(exp) ->
+		do_exp_matches ast exp make_match make_guard_match n
+	    | _ -> *)make_match ast in
 	  let term =
 	    if guard
 	    then term

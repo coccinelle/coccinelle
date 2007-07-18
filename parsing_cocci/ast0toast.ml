@@ -604,19 +604,7 @@ and statement s =
 		       (Ast.MetaStmtList(mcode name,unitary,false)))
       | Ast0.TopExp(exp) ->
 	  Ast.Atomic(local_rewrap s (Ast.TopExp(expression exp)))
-      | Ast0.Exp(exp) ->
-	  (match Ast0.unwrap exp with
-	    Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	      Ast.Disj
-		(List.map
-		   (function e ->
-		     local_rewrap s
-		       (Ast.DOTS
-			  ([local_rewrap s
-			       (Ast.Atomic
-				  (local_rewrap s (Ast.Exp(expression e))))])))
-		   expr_list)
-	  | _ -> Ast.Atomic(local_rewrap s (Ast.Exp(expression exp))))
+      | Ast0.Exp(exp) -> Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
       | Ast0.Ty(ty) ->
 	  Ast.Atomic(local_rewrap s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
