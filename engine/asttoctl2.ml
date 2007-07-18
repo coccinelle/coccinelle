@@ -638,28 +638,29 @@ let rec ends_in_return stmt_list =
 (* --------------------------------------------------------------------- *)
 (* expressions *)
 
-let do_exp_matches ast exp make_match make_guard_match n =
+let do_exp_matches ast exp make_match make_guard_match n fvs =
   match Ast.unwrap exp with
     Ast.DisjExpr(exps) ->
-      Common.pr2 "starting do_exp_matches\n";
       let pos = fresh_pos() in
       let matches =
 	List.map
 	  (function x ->
-	    make_match
-	      (Ast.rewrap_pos (Ast.rewrap exp (Ast.Exp(x))) (Some pos)))
+	    quantify n fvs
+	      (make_match
+		 (Ast.rewrap_pos (Ast.rewrap ast (Ast.Exp(x))) (Some pos))))
 	  exps in
       let guard_matches =
 	List.map
 	  (function x ->
-	    make_guard_match
-	      (Ast.rewrap_pos (Ast.rewrap exp (Ast.Exp(x))) (Some pos)))
+	    quantify n fvs
+	      (make_guard_match
+		 (Ast.rewrap_pos (Ast.rewrap ast (Ast.Exp(x))) (Some pos))))
 	  exps in
       let rec suffixes = function
 	  [] -> []
 	| x::xs -> xs::(suffixes xs) in
       let prefixes = List.rev (suffixes (List.rev guard_matches)) in
-      let res = List.fold_left
+      List.fold_left
 	(function a -> function b -> wrapOr n (a,b))
 	(wrap n CTL.False)
 	(List.map2
@@ -672,10 +673,8 @@ let do_exp_matches ast exp make_match make_guard_match n =
 		      function cur ->
 			wrapAnd n CTL.NONSTRICT (wrapNot n cur, prev))
 		    matcher negates))
-	   matches prefixes) in
-      Common.pr2 "ending do_exp_matches\n";
-      res
-  | _ -> make_match ast
+	   matches prefixes)
+  | _ -> quantify n fvs (make_match ast)
 
 (* --------------------------------------------------------------------- *)
 (* control structures *)
@@ -1039,8 +1038,8 @@ and statement stmt after quantified label guard =
 	  let term =
 	    match Ast.unwrap ast with
 	      Ast.Exp(exp) ->
-		do_exp_matches ast exp make_match make_guard_match n
-	    | _ -> make_match ast in
+		do_exp_matches ast exp make_match make_guard_match n fvs
+	    | _ -> quantify fvs (make_match ast) in
 	  let term =
 	    if guard
 	    then term
@@ -1062,7 +1061,7 @@ and statement stmt after quantified label guard =
 	  match Ast.unwrap ast with
             Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
-	      let normal_res = make_seq_after (quantify fvs term) after in
+	      let normal_res = make_seq_after term after in
 	      (* the following code tries to propagate the modifications on
 		 return; to a close brace, in the case where the final return
 		 is absent *)
@@ -1117,8 +1116,8 @@ and statement stmt after quantified label guard =
 		  normal_res)
 	  | Ast.ReturnExpr(_,_,_) ->
 	      (* have to have the return, if there is a return value *)
-	      make_seq_after (quantify fvs term) after
-          | _ -> make_seq_after (quantify fvs term) after)
+	      make_seq_after term after
+          | _ -> make_seq_after term after)
   | Ast.Seq(lbrace,decls,body,rbrace) ->
       let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
 	match
