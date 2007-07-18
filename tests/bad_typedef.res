@@ -3,7 +3,7 @@ typedef struct {
 } scsi_changer;
 
 
-int main (scsi_changer *x) {
+int main1 (scsi_changer *x) {
   foo(x->new_lock);
 }
 
@@ -12,6 +12,6 @@ struct  scsi_changer_two {
 };
 
 
-int main (struct scsi_changer_two *x) {
+int main2 (struct scsi_changer_two *x) {
   foo(x->new_lock);
 }
