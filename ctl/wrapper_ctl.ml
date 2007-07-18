@@ -196,9 +196,6 @@ struct
       let noclean = satbis_noclean m phi in
       let witness_trees = List.map (fun (_,_,w) -> w) noclean in
       let res = List.map (unwrap_wits true) witness_trees in
-      Printf.printf "res %d: %s\n" (List.length witness_trees)
-	(String.concat " "
-	   (List.map string_of_int (List.map List.length res)));
       let new_bindings =
 	List.map
 	  (function bindings_per_witness_tree ->

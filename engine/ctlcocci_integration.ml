@@ -243,9 +243,26 @@ module ENV =
     type value = Lib_engine.metavar_binding_kind2
     type mvar = Ast_cocci.meta_name
     let eq_mvar x x' = x = x'
-    let eq_val v v' = v = v'
-    let merge_val v v' = v	       
-
+    let eq_val v v' =
+      (* v = v' *)
+      match (v,v') with
+	(Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min1,max1)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
+	   ((min1 <= min2) && (max1 >= max2)) or
+	   ((min2 <= min1) && (max2 >= max1))
+      |	_ -> v = v'
+    let merge_val v v' = (* values guaranteed to be compatible *)
+      (* v *)
+      match (v,v') with
+	(Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min1,max1)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
+	   if (min1 <= min2) && (max1 >= max2)
+	   then Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min1,max1))
+	   else
+	     if (min2 <= min1) && (max2 >= max1)
+	     then Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))
+	     else failwith "incompatible positions give to merge"
+      |	_ -> v
     let print_mvar (_,s) = Format.print_string s
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
   end
