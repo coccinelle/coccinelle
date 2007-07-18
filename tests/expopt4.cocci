@@ -5,7 +5,7 @@
 // xxx(E);
 
 
-@@
+@ r @
 type T;
 //expression rule1.E;
 expression E;

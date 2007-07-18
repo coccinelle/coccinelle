@@ -2541,13 +2541,34 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       * fois le fullstatement et le partialstatement et appeler le 
       * visiteur que sur le partialstatement.
       *)
-
-      X.cocciExp expression exp node >>= (fun exp node -> 
+      let expfn = 
+        match Ast_cocci.get_pos re with
+        | None -> expression
+        | Some pos -> 
+            (fun ea eb -> 
+              let maxmin = 
+                Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
+              let keep = Type_cocci.Unitary in
+              let inherited = false in
+              X.envf keep inherited (pos, B.MetaPosVal maxmin) >>= (fun _s v ->
+                match v with
+                | B.MetaPosVal posa -> 
+                    if posa =*= maxmin 
+                    then
+                      expression ea eb
+                    else fail 
+                | _ -> raise Impossible
+              )
+            )
+      in
+      X.cocciExp expfn exp node >>= (fun exp node -> 
         return (
           A.Exp exp,
           F.unwrap node
         )
       )
+
+
 
   | A.Ty ty, nodeb -> 
       X.cocciTy fullType ty node >>= (fun ty node -> 

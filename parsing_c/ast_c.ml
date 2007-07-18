@@ -458,7 +458,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
    * variables accessible via SmPL whereas the position can be one day
    * so I think it's better to put MetaPosVal here *)
-  | MetaPosVal       of pos * pos
+  | MetaPosVal       of (pos * pos)
 
 
 (*****************************************************************************)

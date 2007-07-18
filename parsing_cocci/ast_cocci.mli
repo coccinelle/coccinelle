@@ -471,7 +471,7 @@ val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
-val get_pos : statement -> meta_name option
+val get_pos : 'a wrap -> meta_name option
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 val rewrap_pos : 'a wrap -> meta_name option -> 'a wrap
 
