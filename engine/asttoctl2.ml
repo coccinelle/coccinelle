@@ -1048,10 +1048,10 @@ and statement stmt after quantified label guard =
 	  let fvs = get_unquantified quantified stmt_fvs in
 	  let between_dots = Ast.get_dots_bef_aft stmt in
 	  let term =
-	    (*match Ast.unwrap ast with
+	    match Ast.unwrap ast with
 	      Ast.Exp(exp) ->
 		do_exp_matches ast exp make_match make_guard_match n
-	    | _ -> *)make_match ast in
+	    | _ -> make_match ast in
 	  let term =
 	    if guard
 	    then term
