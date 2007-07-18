@@ -50,9 +50,9 @@ let predmaker guard term =
     then
       let v = ("","_v") in
       ctl_exists v
-	(wrap 0 (CTL.Pred (Lib_engine.Match(term,pos),CTL.Modif v)))
+	(wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Modif v)))
 	true
-    else wrap 0 (CTL.Pred (Lib_engine.Match(term,pos),CTL.Control)))
+    else wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Control)))
     true
 
 (* --------------------------------------------------------------------- *)

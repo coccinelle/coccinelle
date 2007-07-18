@@ -10,7 +10,7 @@ how we reached a particular match *)
 module Ast = Ast_cocci
 
 let get_vars = function
-    Lib_engine.Match(re,_) -> (Ast.get_fvs re, Ast.get_fresh re)
+    Lib_engine.Match(re) -> (Ast.get_fvs re, Ast.get_fresh re)
   | _ -> ([],[])
 
 let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str))

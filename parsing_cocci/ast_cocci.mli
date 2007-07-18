@@ -8,7 +8,7 @@ type meta_name = string * string
 type 'a wrap =
     ('a * line * meta_name list (*free vars*) * meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
-       dots_bef_aft)
+       dots_bef_aft * meta_name option (* pos info, try not to duplicate *))
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -471,7 +471,9 @@ val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
+val get_pos : statement -> meta_name option
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
+val rewrap_pos : 'a wrap -> meta_name option -> 'a wrap
 
 val get_meta_name : metavar -> meta_name
 

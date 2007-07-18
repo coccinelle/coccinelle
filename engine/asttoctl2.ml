@@ -142,10 +142,10 @@ let elim_opt =
 	 [d0;
 	   (Ast.Disj
 	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots);
+		Ast.NoDots,None);
 		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
-		 Ast.NoDots)],
-	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,Ast.NoDots)]
+		 Ast.NoDots,None)],
+	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,Ast.NoDots,None)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
@@ -155,10 +155,10 @@ let elim_opt =
 	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
 	 [(Ast.Disj
 	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
-	       Ast.NoDots);
+	       Ast.NoDots,None);
 	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots)],
-	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots)]
+		Ast.NoDots,None)],
+	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots,None)]
 
     | ([Ast.Dots(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -175,10 +175,10 @@ let elim_opt =
 	let inh_both = Common.union_set inh_stm inh_d1 in
 	let saved_both = Common.union_set saved_stm saved_d1 in
 	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,saved_stm,
-		       Ast.NoDots);
+		       Ast.NoDots,None);
 		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,saved_d1,
-			Ast.NoDots)],
-	     l,fv_both,fresh_both,inh_both,saved_both,Ast.NoDots)]
+			Ast.NoDots,None)],
+	     l,fv_both,fresh_both,inh_both,saved_both,Ast.NoDots,None)]
 
     | ([Ast.Nest(_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -191,7 +191,7 @@ let elim_opt =
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   [],[]) in
 	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots)])]
+			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots,None)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -302,26 +302,21 @@ let contains_modif =
 
 let make_match n label guard code =
   let v = fresh_var() in
-  let pos = fresh_pos() in
-  let matcher = Lib_engine.Match(code,pos) in
-  wrapExists n false
-    (pos,
-     if contains_modif code && not guard
-     then
-       wrapExists n true
-	 (v,predmaker guard (matcher,CTL.Modif v) n label)
-     else
-       match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
-	 (true,_,[]) | (_,true,_) ->
-	   predmaker guard (matcher,CTL.Control) n label
-       | _ ->
-	   wrapExists n true
-	     (v,predmaker guard (matcher,CTL.UnModif v) n label))
+  let matcher = Lib_engine.Match(code) in
+  if contains_modif code && not guard
+  then
+    wrapExists n true
+      (v,predmaker guard (matcher,CTL.Modif v) n label)
+  else
+    match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
+      (true,_,[]) | (_,true,_) ->
+	predmaker guard (matcher,CTL.Control) n label
+    | _ ->
+	wrapExists n true
+	  (v,predmaker guard (matcher,CTL.UnModif v) n label)
 
 let make_raw_match n label guard code =
-  let pos = fresh_pos() in
-  wrapExists n false
-    (pos,predmaker guard (Lib_engine.Match(code,pos),CTL.Control) n label)
+  predmaker guard (Lib_engine.Match(code),CTL.Control) n label
 
 let rec seq_fvs quantified = function
     [] -> []
@@ -646,33 +641,25 @@ let rec ends_in_return stmt_list =
 let do_exp_matches ast exp make_match make_guard_match n =
   match Ast.unwrap exp with
     Ast.DisjExpr(exps) ->
+      Common.pr2 "starting do_exp_matches\n";
+      let pos = fresh_pos() in
       let matches =
-	List.map (function x -> make_match (Ast.rewrap exp (Ast.Exp(x))))
+	List.map
+	  (function x ->
+	    make_match
+	      (Ast.rewrap_pos (Ast.rewrap exp (Ast.Exp(x))) (Some pos)))
 	  exps in
       let guard_matches =
-	List.map (function x -> make_guard_match (Ast.rewrap exp (Ast.Exp(x))))
+	List.map
+	  (function x ->
+	    make_guard_match
+	      (Ast.rewrap_pos (Ast.rewrap exp (Ast.Exp(x))) (Some pos)))
 	  exps in
-      let unexists =
-	List.map
-	  (function e ->
-	    match CTL.unwrap e with
-	      CTL.Exists(var,term,keep) -> term
-	    | _ -> failwith "not possible")
-	  matches in
-      let guard_unexists =
-	List.map
-	  (function e ->
-	    match CTL.unwrap e with
-	      CTL.Exists(var,term,keep) -> term
-	    | _ -> failwith "not possible")
-	  guard_matches in
       let rec suffixes = function
 	  [] -> []
 	| x::xs -> xs::(suffixes xs) in
-      let prefixes = List.rev (suffixes (List.rev guard_unexists)) in
-      (* fresh_pos is always the same *)
-      let pos = fresh_pos() in
-      List.fold_left
+      let prefixes = List.rev (suffixes (List.rev guard_matches)) in
+      let res = List.fold_left
 	(function a -> function b -> wrapOr n (a,b))
 	(wrap n CTL.False)
 	(List.map2
@@ -685,7 +672,9 @@ let do_exp_matches ast exp make_match make_guard_match n =
 		      function cur ->
 			wrapAnd n CTL.NONSTRICT (wrapNot n cur, prev))
 		    matcher negates))
-	   unexists prefixes)
+	   matches prefixes) in
+      Common.pr2 "ending do_exp_matches\n";
+      res
   | _ -> make_match ast
 
 (* --------------------------------------------------------------------- *)

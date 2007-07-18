@@ -225,9 +225,9 @@ let mcode(term,_,info,mcodekind) =
 (* Dots *)
 
 let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], Ast.NoDots)
+  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], Ast.NoDots, None)
 let tokenwrap (_,info,_) ast =
-  (ast, info.Ast.line, [], [], [], [], Ast.NoDots)
+  (ast, info.Ast.line, [], [], [], [], Ast.NoDots, None)
 
 let dots fn d =
   rewrap d
@@ -510,14 +510,16 @@ and parameter_list l = dots parameterTypeDef l
 and statement s =
   let rec statement seqible s =
     let rewrap ast0 ast =
+      let befaft =
+	match Ast0.get_dots_bef_aft s with
+	  Ast0.NoDots -> Ast.NoDots
+	| Ast0.BetweenDots s ->
+	    Ast.BetweenDots (statement seqible s,get_ctr()) in
       (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
-       match Ast0.get_dots_bef_aft s with
-	 Ast0.NoDots -> Ast.NoDots
-       | Ast0.BetweenDots s ->
-	   Ast.BetweenDots (statement seqible s,get_ctr())) in
+       befaft,None) in
     let local_rewrap ast0 ast =
       (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
-       Ast.NoDots) in
+       Ast.NoDots, None) in
     rewrap s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->

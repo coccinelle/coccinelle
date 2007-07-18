@@ -415,8 +415,8 @@ let astfvs metavars bound =
 	(collect_in_plus_term.V.combiner_rule_elem re) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (re,l,_,_,_,_,d) = k re in
-    (re,l,unbound,collect_fresh unbound,inherited,[],d) in
+    let (re,l,_,_,_,_,d,pos) = k re in
+    (re,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvstatement recursor k s =
     let free =
@@ -427,7 +427,7 @@ let astfvs metavars bound =
       let (unbound,inherited) =
 	List.partition (function x -> not(List.mem x bound)) free in
       (unbound,collect_fresh unbound,inherited) in
-    let (s,l,_,_,_,_,d) = k s in
+    let (s,l,_,_,_,_,d,pos) = k s in
     let s =
       match s with
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
@@ -449,7 +449,7 @@ let astfvs metavars bound =
 	  Ast.For(header,body,(unbound,fresh,inherited,aft))
       |	_ -> s in
     let (unbound,fresh,inherited) = classify free in
-    (s,l,unbound,collect_fresh unbound,inherited,[],d) in
+    (s,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvstatement_dots recursor k sd =
     let free =
@@ -458,13 +458,13 @@ let astfvs metavars bound =
 	(collect_in_plus_term.V.combiner_statement_dots sd) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (sd,l,_,_,_,_,d) = k sd in
-    (sd,l,unbound,collect_fresh unbound,inherited,[],d) in
+    let (sd,l,_,_,_,_,d,pos) = k sd in
+    (sd,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let (tl,l,unbound,fresh,inherited,_,d) = k tl in
-    (tl,l,unbound,fresh,inherited,saved,d) in
+    let (tl,l,unbound,fresh,inherited,_,d,pos) = k tl in
+    (tl,l,unbound,fresh,inherited,saved,d,pos) in
 
   let mcode x = x in
   let donothing r k e = k e in

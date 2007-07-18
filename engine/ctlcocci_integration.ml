@@ -76,11 +76,11 @@ let (labels_for_ctl:
           )
           
 
-      | Lib_engine.Match (re,pos), _unwrapnode -> 
+      | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
             Pattern3.match_re_node re node binding
             +> List.map (fun (re', subst) -> 
-              Lib_engine.Match (re',pos), subst
+              Lib_engine.Match (re'), subst
             )
           in
           substs +> List.map (fun (p', subst) -> 
@@ -292,7 +292,7 @@ let (satbis_to_trans_info:
     xs +> List.map (fun (nodei, binding2, pred) -> 
          let rule_elem = 
            (match pred with
-           | Lib_engine.Match (rule_elem,_) -> rule_elem
+           | Lib_engine.Match (rule_elem) -> rule_elem
            | _ -> raise Impossible
            ) in
          nodei, metavars_binding2_to_binding binding2, rule_elem

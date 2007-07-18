@@ -246,11 +246,10 @@ let pred2c = function
   | Lib_engine.PrefixLabel(s) ->
       let s = meta2c s in
       ("\\msf{PrefixLabel}("^s^")",13+(String.length s))
-  | Lib_engine.Match(re,l) ->
+  | Lib_engine.Match(re) ->
       let s = Pretty_print_cocci.rule_elem_to_string re in
-      let l = meta2c l in
       let (s,len) = texify s in
-      (Printf.sprintf "%s::%s" s l,len+(String.length l)+2)
+      (Printf.sprintf "%s" s,len)
 
 let totex out_file rules ctls =
   let o = open_out out_file in

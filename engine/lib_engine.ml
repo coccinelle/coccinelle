@@ -13,7 +13,7 @@ type predicate =
   | Exit (* the "exit" node of the current function *)
   | ErrorExit
   | Paren of Ast_cocci.meta_name
-  | Match of Ast_cocci.rule_elem * Ast_cocci.meta_name
+  | Match of Ast_cocci.rule_elem
   | Label of Ast_cocci.meta_name
   | PrefixLabel of Ast_cocci.meta_name
 

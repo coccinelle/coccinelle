@@ -267,10 +267,7 @@ let asttomember (_,_,l) used_after =
   let process_one l =
     if debug
     then print_info l;
-    List.map
-      (List.map
-	 (function x -> (Lib_engine.Match(x,("","_p")),CTL.Control)))
-      l in
+    List.map (List.map (function x -> (Lib_engine.Match(x),CTL.Control))) l in
   List.map2
     (function min -> function max ->
       match min with
