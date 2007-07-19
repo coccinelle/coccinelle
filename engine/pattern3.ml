@@ -117,7 +117,7 @@ module XMATCH = struct
 	| [] -> (* failed *) k expb
 	| xs -> 
             globals := xs @ !globals; 
-            (* k expb *) (* CHOICE *)
+            k expb (* CHOICE *)
       );
       (* pad's style.
        * push2 expr globals;  k expr

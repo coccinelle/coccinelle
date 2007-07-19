@@ -862,7 +862,10 @@ let full_engine2 (coccifile, isofile) cfiles =
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if not (worth_trying cfiles toks)
-  then cfiles +> List.map (fun s -> s, None)
+  then begin 
+    pr2 ("not worth trying:" ^ Common.join " " cfiles);
+    cfiles +> List.map (fun s -> s, None)
+  end
   else begin
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();

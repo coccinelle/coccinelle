@@ -169,16 +169,27 @@ let print_parsing_stat_list = fun statxs ->
 
 let commentized xs = xs +> Common.map_filter (function
   | Parser_c.TCommentCpp (cppkind, ii) -> 
-      (match cppkind with
-      | Ast_c.CppOther 
-        -> Some (ii.Ast_c.pinfo)
-      | _ -> None
-      )
+      if !Flag_parsing_c.filter_classic_passed
+      then 
+        (match cppkind with
+        | Ast_c.CppOther -> 
+            let s = Ast_c.str_of_info ii in
+            (match s with
+            | s when s =~ "KERN_.*" -> None
+            | s when s =~ "__.*" -> None
+            | _ -> Some (ii.Ast_c.pinfo)
+            )
+             
+        | _ -> None
+        )
+      else Some (ii.Ast_c.pinfo)
       
   | Parser_c.TCommentMisc ii
-  | Parser_c.TAction ii ->
+  | Parser_c.TAction ii 
+    ->
       Some (ii.Ast_c.pinfo)
-  | _ -> None
+  | _ -> 
+      None
  )
   
 let count_lines_commentized xs = 

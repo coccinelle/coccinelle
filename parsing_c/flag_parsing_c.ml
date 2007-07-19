@@ -10,6 +10,7 @@ let debug_cfg = ref false
 
 let filter_msg = ref false
 let filter_define_error = ref false
+let filter_classic_passed = ref false
 
 let pretty_print_type_info = ref false
 

@@ -199,9 +199,9 @@ let other_options = [
 
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" macro";
-    "-filter_define_error", Arg.Set  Flag_parsing_c.filter_define_error , 
-    "  ";
-    "-debug_cfg",          Arg.Set  Flag_parsing_c.debug_cfg , "  ";
+    "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
+    "-filter_classic_passed",Arg.Set Flag_parsing_c.filter_classic_passed,"  ";
+    "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
 
     "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
 
@@ -432,9 +432,10 @@ let main () =
             let fullxs = 
               Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
             in
+
             fullxs +> List.map (fun cfile -> 
               pr2 ("HANDLING: " ^ cfile);
-              Unix.sleep 1;
+              (* Unix.sleep 1; *)
               let cfile = Common.adjust_extension_if_needed cfile ".c" in
               (try Cocci.full_engine (cocci_file, iso_file) [cfile]
                 with 

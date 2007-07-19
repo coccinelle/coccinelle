@@ -172,247 +172,10 @@ let regexp_typedef = Str.regexp
   ".*_t$"
 
 
-
-
 type define_body = (unit,string list) either * Parser_c.token list
 
 let (_defs : (string, define_body) Hashtbl.t ref)  = 
   ref (Hashtbl.create 101)
-
-
-
-(* linuxext: *)
-let keyword_table = Common.hash_of_list [
-  (* attributes. could perhaps generalize via "__.*" *)
-  "__init",               (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__exit",               (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__user",               (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__iomem",              (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__initdata",           (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__exitdata",           (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__devinit",            (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__devexit",            (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__devinitdata",        (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__cpuinit",            (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__cpuinitdata",        (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__init_or_module",     (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__initdata_or_module", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__pminit",             (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__pminitdata",         (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "__cacheline_aligned",          (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "____cacheline_aligned",        (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__cacheline_aligned_in_smp",   (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));
-  "____cacheline_aligned_in_smp", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));
-  "____cacheline_internodealigned_in_smp", 
-  (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));
-
-  "__ALIGNED__",                  (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); 
-  "__3xp_aligned",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "__pmac",                       (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__force",                      (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__nocast",                     (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__read_mostly",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "__must_check",   (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__unused",       (fun ii -> TCommentCpp(Ast_c.CppAttr, ii)); (* pbs *)
-  "__maybe_unused", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-
-  "__attribute_used__",           (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__attribute_pure__",           (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__attribute_const__",          (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "__always_inline",              (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "__xipram",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-
-  "noinline",                     (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "__CS4231_INLINE__",            (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "CCIO_INLINE",                  (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "SBA_INLINE",                   (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "STATIC_INLINE",                (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "__EXTERN_INLINE",              (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "AGPEXTERN",                (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "INITSECTION",                  (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "NORET_TYPE",                   (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "compat_init_data",        (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "fastcall",                (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "asmlinkage",              (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "far",                     (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "SK_FAR",                  (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
- (*  "near",                    (fun ii -> TCommentCpp ii);   *)
-
-  "DIVA_EXIT_FUNCTION",      (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "DIVA_INIT_FUNCTION",      (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "ACPI_SYSTEM_XFACE",       (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "ASC_INITDATA",            (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "in2000__INITDATA",        (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "PACKED",                  (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "WPMINFO",                 (fun ii -> TCommentCpp(Ast_c.CppOther,ii));
-  "CPMINFO",                 (fun ii -> TCommentCpp(Ast_c.CppOther,ii));
-  "PMINFO",                  (fun ii -> TCommentCpp(Ast_c.CppOther,ii));
-
-
-  "ACPI_INTERNAL_VAR_XFACE", (fun ii -> TCommentCpp(Ast_c.CppOther,ii));
-
-  "PNMI_STATIC",   (fun ii -> Tstatic ii); 
-  "RLMT_STATIC",   (fun ii -> Tstatic ii); 
-  "SISINITSTATIC", (fun ii -> Tstatic ii); 
-  "SCTP_STATIC",   (fun ii -> Tstatic ii);  
-
-
-  "SISIOMEMTYPE",  (fun ii -> TCommentCpp(Ast_c.CppOther,ii)); 
-
-  (* IF *)
-  "BUGLVL", (fun ii -> Tif ii);
-  "IFDEBUG", (fun ii -> Tif ii);
-
-
-
-  "ACPI_STATE_COMMON" ,            (fun ii -> TCommentCpp(Ast_c.CppOther,ii)); 
-  "ACPI_PARSE_COMMON"  ,           (fun ii -> TCommentCpp(Ast_c.CppOther,ii)); 
-  "ACPI_COMMON_DEBUG_MEM_HEADER" , (fun ii -> TCommentCpp(Ast_c.CppOther,ii)); 
-
-  "TRACE_EXIT", (fun ii -> Treturn ii); 
-
-
-   (* in the other part of the kernel, in arch/, mm/, etc *)
-  "__sched",                      (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__initmv",                     (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__exception",                  (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__cpuexit",                    (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__kprobes",                    (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__meminit",                    (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__meminitdata",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__nosavedata",                 (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__kernel",                     (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__nomods_init",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__apicdebuginit",              (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__ipc_init",                   (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__modinit",                    (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__lockfunc",                   (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__weak",                       (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__tlb_handler_align",          (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__lock_aligned",               (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__force_data",                 (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__nongprelbss",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__nongpreldata",               (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__noreturn",                   (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-
-  "nabi_no_regargs",              (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "__section_jiffies",            (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__vsyscall_fn",                (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__section_vgetcpu_mode",       (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__section_vsyscall_gtod_data", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  "ATTRIB_NORET",     (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "ATTRIBUTE_UNUSED", (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "BTEXT",            (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "BTDATA",           (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "PAGE_ALIGNED",     (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-  "EARLY_INIT_SECTION_ATTR", (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
- (*  "INIT", (fun ii -> TCommentCpp ii);   *) (* pbs *)
-
-  "IDI_CALL_ENTITY_T", (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-  "IDI_CALL_LINK_T", (fun ii -> TCommentCpp(Ast_c.CppOther,ii));  
-
-
-  (* in header files *)
-  "__bitwise", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__bitwise__", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-  "__deprecated", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-
-
-  (* maybe only in old kernel *)
-  "__openfirmware", (fun ii -> TCommentCpp(Ast_c.CppAttr, ii));  
-
-  (* string macro. normally handle quite well by mu lalr(k), but
-   * sometimes not enough, if have for instance the XX YY case, could
-   * be considered as a declaration with XX being a typedef, so would
-   * Have ambiguity. So at least by adding this special case, we can
-   * catch more correct string-macro, no more a XX YY but now a good
-   * "XX" YY 
-   * 
-   * cf include/linux/kernel.h
-   *)
-  
-  "KERN_EMERG",   (fun ii -> TString(("KERN_EMERG",Ast_c.IsChar),ii));
-  "KERN_ALERT",   (fun ii -> TString(("KERN_ALERT",Ast_c.IsChar),ii));
-  "KERN_CRIT",    (fun ii -> TString(("KERN_CRIT",Ast_c.IsChar),ii));
-  "KERN_ERR",     (fun ii -> TString(("KERN_ERR",Ast_c.IsChar),ii));
-  "KERN_WARNING", (fun ii -> TString(("KERN_WARNING",Ast_c.IsChar),ii));
-  "KERN_NOTICE",   (fun ii -> TString(("KERN_NOTICE",Ast_c.IsChar),ii));
-  "KERN_INFO",    (fun ii -> TString(("KERN_INFO",Ast_c.IsChar),ii));
-  "KERN_DEBUG",   (fun ii -> TString(("KERN_DEBUG",Ast_c.IsChar),ii));
- ]
-
-
-let passed_macro_parentized_list = 
-  ["__acquires";"__releases";
-   "__declspec"; 
-   "__page_aligned";
-   "__vsyscall"
-  ]
-
-let fast_call_like_list = 
-        ["FASTCALL";"PARAMS"]
-
-let ex_table_like_list = 
-  ["EX_TABLE";"ASM_EXCEPTIONTABLE_ENTRY";"DCACHE_CLEAR";"PPC405_ERR77"]
-
-
-
-(* loop, macro without ';', single macro *)
-(* linuxext: *)
-let debug_macros_list = 
-  ["ASSERT"; "IRDA_ASSERT"; "ASSERTCMP"; "ASSERTRANGE"; "ASSERTIFCMP";
-   "CHECK_NULL";
-   "DEBUG";"DEBUG0";"DEBUG1";"DEBUG2";"DEBUG3";
-   "DBG";"DEB";"PARSEDEBUG";"DEBC";"DBG_TRC";"DBG_ERR";"DBG_FTL";
-   "DBGINFO"; "DFLOW";"DFLIP";"DLOG_INT_TRIG";
-   "D3";"D1";"DB";"DCBDEBUG";"SCSI_LOG_MLQUEUE";
-   "PLND"; "FCALND";"FCALD";
-   "DEBUGRECURSION";
-   "DEBUGPIO";"VDEB";
-   "READ_UNLOCK_IRQRESTORE";
-   "TRACE_CATCH";
-   "PDBGG";
-   "IF_ABR";"IF_EVENT";"IF_ERR";"IF_CBR";"IF_INIT";"IF_RX";
-   "SOD";
-   "KDBG";
-   "IRDA_ASSERT_LABEL";
-  ]
-
-let declList =
-  ["decl_subsys";
-  ]
-
-
-
-let xxx_initfunc_like_list = 
-  ["GDTH_INITFUNC";"ASC_INITFUNC"]
-
-let action_list = 
-   ["sn9c102_write_const_regs"]
 
 
 (* ------------------------------------------------------------------------- *)
@@ -849,38 +612,6 @@ let set_context_tag xs =
     set_in_other xs;
   end
   
-  
-      
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* annotation, static, if,  and stringification part 1 *)
-(* ------------------------------------------------------------------------- *)
-
-(* For stringification I need to have at least a witness, a string, 
- * and sometimes have just printk(KERN_WARNING MYSTR) and it could
- * be transformed in a typedef later, so better to at least
- * transform in string already the string-macro we know.
- * 
- * Perhaps better to apply also as soon as possible the 
- * correct macro-annotation tagging (__init & co) to be able to
- * filter them as soon as possible so that they will not polluate
- * our pattern-matching that come later.
- *)
-
-
-let find_annotation_and_stringification_part1 tokens = 
-  tokens +> List.iter (fun x -> 
-    match x.tok with
-    | TIdent (s, ii) -> 
-        (match Common.optionise (fun () -> Hashtbl.find keyword_table s) with
-        | Some f -> x.tok <- f ii
-        | None -> ()
-        )
-    | x -> ()
-  )
-
 
 (* ------------------------------------------------------------------------- *)
 (* ifdef keeping/passing *)
@@ -1134,6 +865,9 @@ let rec apply_macro_defs xs =
       );
       apply_macro_defs xs
 
+
+
+
   (* recurse *)
   | (PToken x)::xs -> apply_macro_defs xs 
   | (Parenthised (xxs, info_parens))::xs -> 
@@ -1178,7 +912,6 @@ let rec find_string_macro_paren xs =
 (* macro2 *)
 (* ------------------------------------------------------------------------- *)
 
-
 (* don't forget to recurse in each case *)
 let rec find_macro_paren xs = 
   match xs with
@@ -1193,53 +926,6 @@ let rec find_macro_paren xs =
       [Parenthised (xxs, info_parens)] +> 
         iter_token_paren (set_as_comment Ast_c.CppAttr);
       set_as_comment Ast_c.CppAttr id;
-      find_macro_paren xs
-
-
-  (* __release, __acquire, etc *)
-  | PToken ({tok = TIdent (s,ii)} as id)
-    ::Parenthised (xxs,info_parens)
-    ::xs
-    when List.mem s passed_macro_parentized_list
-     -> 
-      pr2_cpp ("MACRO: __acquires/__releases like detected ");
-      [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppOther);
-      set_as_comment Ast_c.CppOther id;
-      find_macro_paren xs
-
-   (* linuxext: special case on FASTCALL, etc *)
-  | PToken ({tok = TIdent (s,_)} as id)
-    ::Parenthised (xxs,info_parens)
-    ::xs
-    when List.mem s fast_call_like_list  -> 
-      
-      pr2_cpp ("MACRO: FASTCALL like detected: " ^ s);
-      (* pass only the macro *)
-      xxs +> List.iter find_macro_paren;
-      (id::info_parens) +> List.iter (set_as_comment Ast_c.CppOther);
-      find_macro_paren xs
-
-  (* EX_TABLE & co. 
-   *
-   * Replaced by a string. We can't put everything as comment
-   * because it can be part of an expression where we wait for
-   * something, where we wait for a string
-   *
-   * normally not needed if have good stringification of macro 
-   * but those macros are sometimes used multiple times 
-   * as in EX_TABLE(0b) EX_TABLE(1b)  and we don't detect
-   * it well yet.
-   *)
-  | PToken ({tok = TIdent (s,ii)} as id)
-    ::Parenthised (xxs,info_parens)
-    ::xs
-    when List.mem s ex_table_like_list -> 
-      pr2_cpp ("MACRO: EX_TABLE like detected");
-      id.tok <- TString((s,Ast_c.IsChar),ii);
-      [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppOther);
-
       find_macro_paren xs
 
   (* stringification
@@ -1288,13 +974,21 @@ let rec find_macro_paren xs =
       id.tok <- TMacroString (TH.info_of_tok id.tok);
       find_macro_paren xs
 
+
+
+  (* cooperating with standard.h *)
+  | PToken ({tok = TIdent (s,i1)} as id)::xs 
+      when s = "MACROSTATEMENT" -> 
+      id.tok <- TMacroStmt(TH.info_of_tok id.tok);
+      find_macro_paren xs
+        
+
+
   (* recurse *)
   | (PToken x)::xs -> find_macro_paren xs 
   | (Parenthised (xxs, info_parens))::xs -> 
       xxs +> List.iter find_macro_paren;
       find_macro_paren xs
-
-
 
 
 
@@ -1316,7 +1010,7 @@ let rec find_macro_lineparen xs =
           ) 
         ))
     ::xs 
-    when (s ==~ regexp_macro) || List.mem s declList -> 
+    when (s ==~ regexp_macro) -> 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
@@ -1337,7 +1031,7 @@ let rec find_macro_lineparen xs =
 
         ))
     ::xs 
-    when (s ==~ regexp_macro) || List.mem s declList -> 
+    when (s ==~ regexp_macro) -> 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
@@ -1390,7 +1084,7 @@ let rec find_macro_lineparen xs =
           ) 
         ))
     ::xs 
-    when (s ==~ regexp_macro) || List.mem s declList -> 
+    when (s ==~ regexp_macro) -> 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.tok in
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
@@ -1417,7 +1111,7 @@ let rec find_macro_lineparen xs =
         ]
         ))
     ::xs 
-    when (s ==~ regexp_declare) || List.mem s declList -> 
+    when (s ==~ regexp_declare) -> 
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.tok in
@@ -1426,42 +1120,7 @@ let rec find_macro_lineparen xs =
       find_macro_lineparen (xs)
 
 
-
-  (* linuxext: ex: DEBUG()
-   * 
-   * because a known macro, can relax the condition on the token we
-   * must have on the next line. 
-   *)
-  | (Line 
-        ([PToken ({tok = TIdent (s,ii)} as macro);
-          Parenthised (xxs,info_parens);
-        ]
-        ))
-    ::xs 
-    when List.mem s debug_macros_list -> 
-      msg_debug_macro s;
-      macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
-
-      [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppOther);
-
-      find_macro_lineparen (xs)
-            
-            
-  (* linuxext: special known macro around fun header *)
-  | (Line 
-        ([PToken ({tok = TIdent (s,ii)} as ident);
-          Parenthised (xxs,info_parens);
-        ]
-        ))
-    ::xs 
-    when List.mem s xxx_initfunc_like_list -> 
-      pr2_cpp ("MACRO: XXX_INITFUNC detected: " ^ s);
-      (* keep xxs only *)
-      (ident::info_parens) +> List.iter (set_as_comment Ast_c.CppOther);
-
-      find_macro_lineparen xs
-
+         
 
 
   (* macro with parameters 
@@ -1570,37 +1229,9 @@ let rec find_macro_lineparen xs =
 let rec find_actions = function
   | [] -> ()
 
-  (* not easy to detect this macro because his params are for instance:
-   * sn9c102_write_const_regs(cam, {0x00, 0x10}, {0x00, 0x11},
-   * but my mk_paren_grouped does not handle the {} and so it 
-   * is in fact parsed as 
-   * sn9c102_write_const_regs([cam], [{0x00] , [0x10}], [{0x00], [0x11}],
-   * so a correct detection is tedious. 
-   *)
   | PToken ({tok = TIdent (s,ii)})
-    ::Parenthised (xxs,info_parens)::xs 
-    when List.mem s action_list  -> 
-      msg_macro_higher_order s;
-
-      let res = 
-      xxs +> List.iter (fun xs -> xs +> iter_token_paren 
-        (fun x -> 
-          if TH.is_eof x.tok
-          then 
-            (* certainly because paren detection had a pb because of
-             * some ifdef-exp
-             *)
-            pr2_cpp "PB: wierd, I try to tag an EOF token as action"
-          else 
-            x.tok <- TAction (TH.info_of_tok x.tok);
-        )) in
-      res
-
-
-      
-
-  | PToken ({tok = TIdent (s,ii)})
-    ::Parenthised (xxs,info_parens)::xs -> 
+    ::Parenthised (xxs,info_parens)
+    ::xs -> 
       find_actions xs;
       xxs +> List.iter find_actions;
       let modified = find_actions_params xxs in
@@ -1651,12 +1282,11 @@ let fix_tokens_cpp2 tokens =
   let tokens2 = ref (tokens +> List.map mk_token_extended) in
   
   begin 
-    find_annotation_and_stringification_part1 !tokens2;
-
-    (* the order is important, if put action first 
+    (* the order is important, if you put the action heuristic first,
      * then because of ifdef, can have not closed paren
      * and so may believe that higher order macro 
-     * and it will eat too much tokens. 
+     * and it will eat too much tokens. So important to do 
+     * first the ifdef.
      * 
      * I recompute multiple times cleaner cos the mutable
      * can have be changed and so may have more comments
@@ -1670,8 +1300,8 @@ let fix_tokens_cpp2 tokens =
     ) in
     let ifdef_grouped = mk_ifdef cleaner in
     find_ifdef_funheaders ifdef_grouped;
-    find_ifdef_zero ifdef_grouped;
-    find_ifdef_mid ifdef_grouped;
+    find_ifdef_zero       ifdef_grouped;
+    find_ifdef_mid        ifdef_grouped;
 
 
     (* macro 1 *)
@@ -1690,7 +1320,7 @@ let fix_tokens_cpp2 tokens =
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
     let brace_grouped = mk_braceised cleaner in
-    set_context_tag brace_grouped;
+    set_context_tag   brace_grouped;
 
 
 
@@ -1698,20 +1328,19 @@ let fix_tokens_cpp2 tokens =
     let cleaner = !tokens2 +> List.filter (fun x -> 
       not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
     ) in
-    let paren_grouped = mk_parenthised  cleaner in
+    let paren_grouped      = mk_parenthised  cleaner in
     let line_paren_grouped = mk_line_parenthised paren_grouped in
     find_string_macro_paren paren_grouped;
-    find_macro_lineparen line_paren_grouped;
-    find_macro_paren paren_grouped;
+    find_macro_lineparen    line_paren_grouped;
+    find_macro_paren        paren_grouped;
 
 
     (* actions *)
     let cleaner = !tokens2 +> List.filter (fun x -> 
       not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-    ) 
-    in
+    ) in
     let paren_grouped = mk_parenthised  cleaner in
-    find_actions paren_grouped;
+    find_actions  paren_grouped;
 
 
     !tokens2 +> List.map (fun x -> x.tok)
