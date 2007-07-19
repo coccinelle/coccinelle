@@ -69,6 +69,24 @@ let command2 s = ignore(Sys.command s)
 
 let (++) = (@)
 
+let debugger = ref false  
+
+let unwind_protect f cleanup =
+  if !debugger then f() else 
+    try f ()
+    with e -> begin cleanup e; raise e end
+
+let finalize f cleanup = 
+  if !debugger then f() else 
+  try 
+    let res = f () in
+    cleanup ();
+    res
+  with e -> 
+    cleanup ();
+    raise e
+
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -77,9 +95,11 @@ let _tab_level_print = ref 0
 
 let indent_do f = 
   _tab_level_print := !_tab_level_print + 5;
-  let res = f() in
-  _tab_level_print := !_tab_level_print - 5;
-  res
+  finalize f
+    (fun () -> 
+      _tab_level_print := !_tab_level_print - 5;
+    )
+
 
 let pr s = 
   do_n !_tab_level_print (fun () -> print_string " ");
@@ -199,7 +219,10 @@ let debug f = if !_debug then f () else ()
 
 
 
-let debugger = ref false 
+(* 
+ now in prelude:
+ let debugger = ref false  
+*)
 
 (*****************************************************************************)
 (* Profiling *)
@@ -793,14 +816,16 @@ let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
 
 (* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
-let unwind_protect f cleanup =
-  if !debugger then f() else 
-    try f ()
-    with e -> begin cleanup e; raise e end
 
 (* want or of merd, but cant cos cant put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
+
+(* now in prelude
+let unwind_protect f cleanup =
+  if !debugger then f() else 
+    try f ()
+    with e -> begin cleanup e; raise e end
 
 let finalize f cleanup = 
   if !debugger then f() else 
@@ -811,7 +836,7 @@ let finalize f cleanup =
   with e -> 
     cleanup ();
     raise e
-
+*)
 
 (*****************************************************************************)
 (* Equality *)

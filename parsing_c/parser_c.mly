@@ -660,7 +660,7 @@ iteration:
  | Tfor TOPar expr_statement expr_statement expr TCPar statement
      { For ($3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /* cppext: */
- | TMacroIterator TOPar expression_list TCPar statement
+ | TMacroIterator TOPar argument_list TCPar statement
      { MacroIteration ($3, $5), [$1;$2;$4] }
  | TMacroIterator TOPar TCPar statement
      { MacroIteration ([], $4), [$1;$2;$3] }
@@ -1193,9 +1193,11 @@ argument_list:
  | argument                           { [$1, []] }
  | argument_list TComma argument { $1 ++ [$3,    [$2]] }
 
+/*
 expression_list:
  | assign_expr { [$1, []] }
  | expression_list TComma assign_expr { $1 ++ [$3,   [$2]] }
+*/
 
 
 struct_decl_list: 

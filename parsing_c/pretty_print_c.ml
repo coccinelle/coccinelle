@@ -191,7 +191,7 @@ and pp_statement_gen pr_elem =
         es +> List.iter (fun (e, opt) -> 
           assert (List.length opt <= 1);
           opt +> List.iter pr_elem;
-          pp_expression_gen pr_elem e;
+          pp_argument_gen pr_elem e;
         );
 
         pr_elem i3;

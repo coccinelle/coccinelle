@@ -237,7 +237,7 @@ and vk_statement = fun bigf st ->
     | Iteration  (MacroIteration (es, st)) -> 
         es +> List.iter (fun (e, ii) -> 
           iif ii;
-          vk_expr bigf e
+          vk_argument bigf e
           );
         statf st;
           
@@ -512,7 +512,7 @@ and vk_node = fun bigf node ->
         iif ii;
         es +> List.iter (fun (e, ii) -> 
           iif ii;
-          vk_expr bigf e
+          vk_argument bigf e
         );
         
     | F.ReturnExpr (_st, (e,ii)) -> iif ii; vk_expr bigf e
@@ -769,7 +769,7 @@ and vk_statement_s = fun bigf st ->
           Iteration 
             (MacroIteration
                 (es +> List.map (fun (e, ii) -> 
-                  vk_expr_s bigf e, vk_ii_s bigf ii
+                  vk_argument_s bigf e, vk_ii_s bigf ii
                 ), 
                 statf st
                 ))
@@ -1058,7 +1058,7 @@ and vk_node_s = fun bigf node ->
     | F.MacroIterHeader (st, (es, ii)) -> 
         F.MacroIterHeader
           (st,
-          (es +> List.map (fun (e, ii) -> vk_expr_s bigf e, iif ii),
+          (es +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii),
           iif ii))
 
           

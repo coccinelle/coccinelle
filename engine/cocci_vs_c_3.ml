@@ -2729,20 +2729,21 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           A.WhileTail (ia1,ia2,ea,ia3,ia4), 
           F.DoWhileTail (eb, [ib1;ib2;ib3;ib4])
         ))))))
-  | A.IteratorHeader (ia1, ia2, ea, ia3), _ -> 
-      failwith "iterator not supported"
-      (* the code should be like the following, except that ea is an expr dots
+  | A.IteratorHeader (ia1, ia2, eas, ia3), F.MacroIterHeader (st, (ebs, ii))
+      -> 
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
-      expression ea eb >>= (fun ea eb -> 
+
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
       tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
       tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
+        let eas = redots eas easundots in
         return (
-          A.WhileHeader (ia1, ia2, ea, ia3), 
-          F.WhileHeader (st, (eb, [ib1;ib2;ib3]))
-        ))))) *)
+          A.IteratorHeader (ia1, ia2, eas, ia3), 
+          F.MacroIterHeader (st, (ebs, [ib1;ib2;ib3]))
+        )))))
 
-      
+     
 
   | A.ForHeader (ia1, ia2, ea1opt, ia3, ea2opt, ia4, ea3opt, ia5), 
     F.ForHeader (st, (((eb1opt,ib3s), (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
@@ -2909,7 +2910,6 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.Label _
   | _, F.CaseRange _  
-  | _, F.MacroIterHeader _
   | _, F.Asm _
   | _, F.Ifdef _
     -> fail2
