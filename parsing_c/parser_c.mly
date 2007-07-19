@@ -312,6 +312,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info>            TMacroString
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info>            TMacroDeclConst 
+%token <Ast_c.info>            TMacroIterator
 
 %token <Ast_c.info> TAction
 
@@ -658,6 +659,9 @@ iteration:
      { For ($3,$4,(None, []),$6),    [$1;$2;$5]}
  | Tfor TOPar expr_statement expr_statement expr TCPar statement
      { For ($3,$4,(Some $5, []),$7), [$1;$2;$6] }
+ /* cppext: */
+ | TMacroIterator TOPar expression_list TCPar statement
+     { MacroIteration ($3, $5), [$1;$2;$4] }
 
 /* the ';' in the caller will be appended to the infos */
 jump: 
@@ -1186,6 +1190,10 @@ colon_option_list:
 argument_list: 
  | argument                           { [$1, []] }
  | argument_list TComma argument { $1 ++ [$3,    [$2]] }
+
+expression_list:
+ | assign_expr { [$1, []] }
+ | expression_list TComma assign_expr { $1 ++ [$3,   [$2]] }
 
 
 struct_decl_list: 

@@ -222,7 +222,7 @@ and expressionbis =
 
   and constant = 
     | String of (string * isWchar) 
-    | MultiString 
+    | MultiString  (* can contain MacroString *)
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string  (* * intType*)) 
     | Float  of (string * floatType)
@@ -306,6 +306,7 @@ and statementbis =
     | DoWhile of statement * expression
     | For     of exprStatement wrap * exprStatement wrap * exprStatement wrap *
                  statement
+    | MacroIteration of expression wrap2 list * statement
 
   and jump  = Goto of string
             | Continue | Break 

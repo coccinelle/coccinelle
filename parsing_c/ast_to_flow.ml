@@ -438,8 +438,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       (match finalthen, finalelse with 
         | (None, None) -> None
         | _ -> 
-            let lasti = !g +> add_node (EndStatement(Some iifakeend)) lbl "[endif]" in
-            let afteri = !g +> add_node AfterNode lbl "[after]" in
+            let lasti = 
+              !g +> add_node (EndStatement(Some iifakeend)) lbl "[endif]" in
+            let afteri = 
+              !g +> add_node AfterNode lbl "[after]" in
             !g#add_arc ((newi, afteri),  Direct);
             !g#add_arc ((afteri, lasti), Direct);
             begin
@@ -478,7 +480,9 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       (match finalthen, finalelse with 
         | (None, None) -> None
         | _ -> 
-            let lasti =  !g +> add_node (EndStatement (Some iifakeend)) lbl "[endifcpp]" in
+            let lasti =  
+              !g +> add_node (EndStatement (Some iifakeend)) lbl "[endifcpp]" 
+            in
             begin
               !g +> add_arc_opt (finalthen, lasti);
               !g +> add_arc_opt (finalelse, lasti);
@@ -493,10 +497,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let ii = [i1;i2;i3] in
 
 
-      let newswitchi= !g+> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
+      let newswitchi= 
+        !g+> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
       !g +> add_arc_opt (starti, newswitchi);
 
-      let newendswitch = !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
+      let newendswitch = 
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
 
   
       (* The newswitchi is for the labels to know where to attach.
@@ -535,7 +541,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                 * to a compound of a switch, so really SeqStart (stmt, ...)
                 * here ? 
                 *)
-               let newi = !g +> add_node (SeqStart (stmt,brace,i1)) lbl o_info in
+               let newi = !g+>add_node (SeqStart (stmt,brace,i1)) lbl o_info in
                let endnode = mk_node (SeqEnd (brace, i2))    lbl c_info in
                let _endnode_dup = 
                  mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl c_info 
@@ -566,7 +572,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                   * add a Fallthrough.
                  *)
 
-                 let newafter = !g +> add_node FallThroughNode lbl "[switchfall]"
+                 let newafter = !g+>add_node FallThroughNode lbl "[switchfall]"
                  in
                  !g#add_arc ((newafter, newendswitch), Direct);
                  !g#add_arc ((newswitchi, newafter), Direct);
@@ -688,7 +694,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newfakethen = !g +> add_node TrueNode  lbl "[whiletrue]" in
       (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" in *)
       let newafter = !g +> add_node FallThroughNode lbl "[whilefall]" in
-      let newfakeelse = !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
+      let newfakeelse = 
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
 
       let newxi = { xi_lbl with
          ctx = LoopInfo (newi, newfakeelse,  xi_lbl.braces);
@@ -727,7 +734,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newfakethen = !g +> add_node TrueNode lbl "[dowhiletrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[enddowhile]" in *)
       let newafter = !g +> add_node FallThroughNode lbl "[dowhilefall]" in
-      let newfakeelse = !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
+      let newfakeelse = 
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
       let newxi = { xi_lbl with
          ctx = LoopInfo (taili, newfakeelse, xi_lbl.braces);
@@ -758,12 +766,14 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
-      let newi = !g+>add_node(ForHeader(stmt,((e1opt,e2opt,e3opt),ii))) lbl "for" in
+      let newi = 
+        !g+>add_node(ForHeader(stmt,((e1opt,e2opt,e3opt),ii))) lbl "for" in
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node TrueNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
       let newafter = !g +> add_node FallThroughNode lbl "[forfall]" in
-      let newfakeelse = !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
+      let newfakeelse = 
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
 
       let newxi = { xi_lbl with
            ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces); 
@@ -777,6 +787,35 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let finalthen = aux_statement (Some newfakethen, newxi) st in
       !g +> add_arc_opt (finalthen, newi);
       Some newfakeelse
+
+
+
+  | Iteration  (Ast_c.MacroIteration (es, st)), ii -> 
+      let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
+      let ii = [i1;i2;i3] in
+
+      let newi = 
+        !g+>add_node(MacroIterHeader(stmt,(es,ii))) lbl "foreach" in
+      !g +> add_arc_opt (starti, newi);
+      let newfakethen = !g +> add_node TrueNode  lbl "[fortrue]" in
+      (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
+      let newafter = !g +> add_node FallThroughNode lbl "[foreachfall]" in
+      let newfakeelse = 
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" in
+
+      let newxi = { xi_lbl with
+           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces); 
+           ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
+        }
+      in
+
+      !g#add_arc ((newi, newfakethen), Direct);
+      !g#add_arc ((newafter, newfakeelse), Direct);
+      !g#add_arc ((newi, newafter), Direct);
+      let finalthen = aux_statement (Some newfakethen, newxi) st in
+      !g +> add_arc_opt (finalthen, newi);
+      Some newfakeelse
+
 
 
    (* ------------------------- *)        
@@ -903,7 +942,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       Some newi
 
   | Ast_c.MacroStmt, ii -> 
-      let newi = !g +> add_node (Macro (stmt, ((),ii))) lbl "macro;" in
+      let newi = !g +> add_node (MacroStmt (stmt, ((),ii))) lbl "macro;" in
       !g +> add_arc_opt (starti, newi);
       Some newi
 

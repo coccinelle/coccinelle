@@ -2896,12 +2896,13 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.Label _
   | _, F.CaseRange _  
+  | _, F.MacroIterHeader _
   | _, F.Asm _
   | _, F.Ifdef _
     -> fail2
 
 
-  | _, _ -> fail 
+  | _, _ -> fail  
   )
 end
 

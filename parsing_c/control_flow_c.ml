@@ -76,8 +76,9 @@ open Ast_c
  * not work.
  *)
 type node = node1 * string  
- and node1 = node2 * int list 
- and node2 =
+  and node1 = node2 * int list 
+    and node2 =
+
   (* for CTL to work, we need that some nodes loop over itself. We
    * need that every nodes have a successor. Julia also want to go back
    * indifinitely. So must tag some nodes as the beginning and end of
@@ -132,6 +133,7 @@ type node = node1 * string
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader of statement * expression wrap
+  | MacroIterHeader of statement * (expression wrap2 list) wrap
 
   (* Used to mark the end of if, while, dowhile, for, switch. Later we
    * will be able to "tag" some cocci code on this node.
@@ -198,7 +200,7 @@ type node = node1 * string
   | Goto of statement * string wrap
 
   | Asm of statement * asmbody wrap
-  | Macro of statement * unit wrap
+  | MacroStmt of statement * unit wrap
 
   | Ifdef of statement * unit wrap
 
@@ -286,7 +288,8 @@ let extract_fullstatement node =
       (* new policy. no more considered as a statement *)
       (* old: Some (Ast_c.Decl decl, []) *)
       None 
-  | Macro (st, _) -> Some st
+  | MacroStmt (st, _) -> Some st
+  | MacroIterHeader (st, _) -> Some st
 
   | Ifdef _ -> None (* other ? *)
 
