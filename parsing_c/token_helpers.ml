@@ -23,7 +23,8 @@ let is_fake_comment = function
       -> true
   | _ -> false
 
-let is_not_comment x = not (is_comment x)
+let is_not_comment x = 
+  not (is_comment x)
 
 
 let is_cpp_instruction = function
@@ -97,9 +98,12 @@ let info_of_tok = function
   | TString ((string, isWchar), i) -> i
   | TChar  ((string, isWchar), i) -> i
   | TFloat ((string, floatType), i) -> i
+
   | TAssign  (assignOp, i) -> i
+
   | TIdent  (s, i) -> i
   | TypedefIdent  (s, i) -> i
+
   | TInt  (s, i) -> i
 
   | TDefine (ii) -> ii 
@@ -115,21 +119,26 @@ let info_of_tok = function
   | TDefParamVariadic (s, i1) ->     i1
 
   | TUnknown             (i) -> i
+
   | TMacroStmt             (i) -> i
   | TMacroString             (i) -> i
   | TMacroDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
+  | TMacroIterator             (i) -> i
+
   | TAction             (i) -> i
 
   | TComment             (i) -> i
   | TCommentSpace        (i) -> i
   | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
+
   | TIfdef               (i) -> i
   | TIfdefelse           (i) -> i
   | TIfdefelif           (i) -> i
   | TEndif               (i) -> i
   | TIfdefbool           (b, i) -> i
+
   | TOPar                (i) -> i
   | TCPar                (i) -> i
   | TOBrace              (i) -> i
@@ -166,6 +175,7 @@ let info_of_tok = function
   | TMul                 (i) -> i
   | TDiv                 (i) -> i
   | TMod                 (i) -> i
+
   | Tchar                (i) -> i
   | Tshort               (i) -> i
   | Tint                 (i) -> i
@@ -202,6 +212,7 @@ let info_of_tok = function
   | Tattribute           (i) -> i
   | Tinline              (i) -> i
   | Ttypeof              (i) -> i
+
   | EOF                  (i) -> i
   
 
@@ -233,10 +244,13 @@ let visitor_info_of_tok f = function
 
 
   | TUnknown             (i) -> TUnknown             (f i)
+
   | TMacroStmt               (i) -> TMacroStmt             (f i)
   | TMacroString               (i) -> TMacroString             (f i)
   | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
   | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
+  | TMacroIterator               (i) -> TMacroIterator             (f i)
+
   | TAction               (i) -> TAction             (f i)
 
   | TComment             (i) -> TComment             (f i) 

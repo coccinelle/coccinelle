@@ -662,6 +662,8 @@ iteration:
  /* cppext: */
  | TMacroIterator TOPar expression_list TCPar statement
      { MacroIteration ($3, $5), [$1;$2;$4] }
+ | TMacroIterator TOPar TCPar statement
+     { MacroIteration ([], $4), [$1;$2;$3] }
 
 /* the ';' in the caller will be appended to the infos */
 jump: 

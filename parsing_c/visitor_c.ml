@@ -9,7 +9,6 @@ module F = Control_flow_c
 (*****************************************************************************)
 
 
-(*****************************************************************************)
 (* Visitor based on continuation. Cleaner than the one based on mutable 
  * pointer functions. src: based on a (vague) idea from remy douence.
  * 
@@ -52,7 +51,7 @@ module F = Control_flow_c
  * - She gets a record, and gives a list of function
  * 
  *) 
-(*****************************************************************************)
+
  
 (* old: first version (only visiting expr) 
 
@@ -99,7 +98,11 @@ let test =
 (* Side effect style visitor *)
 (*****************************************************************************)
 
-(* visitors for all langage concept,  not just for expression *)
+(* Visitors for all langage concept,  not just for expression.
+ * 
+ * Note that I don't visit necesserally in the order of the token
+ * found in the original file. So don't assume such hypothesis!
+ *)
 type visitor_c = 
  { 
    kexpr:      (expression  -> unit) * visitor_c -> expression  -> unit;
@@ -229,6 +232,13 @@ and vk_statement = fun bigf st ->
         statf (ExprStatement (e1opt),i1); 
         statf (ExprStatement (e2opt),i2); 
         statf (ExprStatement (e3opt),i3); 
+        statf st;
+
+    | Iteration  (MacroIteration (es, st)) -> 
+        es +> List.iter (fun (e, ii) -> 
+          iif ii;
+          vk_expr bigf e
+          );
         statf st;
           
     | Jump (Goto s) -> ()
@@ -498,6 +508,12 @@ and vk_node = fun bigf node ->
         e1opt +> do_option (vk_expr bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
+    | F.MacroIterHeader (_s, (es, ii)) -> 
+        iif ii;
+        es +> List.iter (fun (e, ii) -> 
+          iif ii;
+          vk_expr bigf e
+        );
         
     | F.ReturnExpr (_st, (e,ii)) -> iif ii; vk_expr bigf e
         
@@ -532,7 +548,7 @@ and vk_node = fun bigf node ->
     | F.SeqEnd (i, info) -> infof info
     | F.SeqStart (st, i, info) -> infof info
 
-    | F.Macro (st, ((),ii)) -> iif ii
+    | F.MacroStmt (st, ((),ii)) -> iif ii
     | F.Asm (st, (asmbody,ii)) -> 
         iif ii;
         vk_asmbody bigf asmbody
@@ -607,7 +623,11 @@ let vk_cst = fun bigf (cst, ii) ->
 (*****************************************************************************)
 type 'a inout = 'a -> 'a 
 
-(* _s for synthetizized attributes *)
+(* _s for synthetizized attributes 
+ *
+ * Note that I don't visit necesserally in the order of the token
+ * found in the original file. So don't assume such hypothesis!
+ *)
 type visitor_c_s = { 
   kexpr_s:      (expression inout * visitor_c_s) -> expression inout;
   kstatement_s: (statement  inout * visitor_c_s) -> statement  inout;
@@ -743,7 +763,16 @@ and vk_statement_s = fun bigf st ->
           | ((ExprStatement x1,i1), (ExprStatement x2,i2), ((ExprStatement x3,i3))) -> 
               Iteration (For ((x1,i1), (x2,i2), (x3,i3), statf st))
           | x -> failwith "cant be here if iterator keep ExprStatement as is"
-          )
+         )
+
+      | Iteration  (MacroIteration (es, st)) -> 
+          Iteration 
+            (MacroIteration
+                (es +> List.map (fun (e, ii) -> 
+                  vk_expr_s bigf e, vk_ii_s bigf ii
+                ), 
+                statf st
+                ))
 
             
       | Jump (Goto s) -> Jump (Goto s)
@@ -1025,6 +1054,13 @@ and vk_node_s = fun bigf node ->
                      (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
                      (e3opt +> Common.map_option (vk_expr_s bigf), iif i3)),
                     iif ii))
+
+    | F.MacroIterHeader (st, (es, ii)) -> 
+        F.MacroIterHeader
+          (st,
+          (es +> List.map (fun (e, ii) -> vk_expr_s bigf e, iif ii),
+          iif ii))
+
           
     | F.ReturnExpr (st, (e,ii)) -> 
         F.ReturnExpr (st, (vk_expr_s bigf e, iif ii))
@@ -1046,7 +1082,7 @@ and vk_node_s = fun bigf node ->
     | F.Include ((s, ii), h_rel_pos) -> F.Include ((s, iif ii), h_rel_pos)
     | F.Ifdef (st, ((),ii)) -> F.Ifdef (st, ((),iif ii))
 
-    | F.Macro (st, ((),ii)) -> F.Macro (st, ((),iif ii))
+    | F.MacroStmt (st, ((),ii)) -> F.MacroStmt (st, ((),iif ii))
     | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))
 
     | F.Break    (st,((),ii)) -> F.Break    (st,((),iif ii))

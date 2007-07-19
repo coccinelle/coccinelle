@@ -183,6 +183,20 @@ and pp_statement_gen pr_elem =
         pr_elem i3;
         pp_statement st;
         pr_elem iifakend
+
+    | Iteration  (MacroIteration (es,st)), [i1;i2;i3;iifakend] ->
+        pr_elem i1;
+        pr_elem i2;
+
+        es +> List.iter (fun (e, opt) -> 
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_expression_gen pr_elem e;
+        );
+
+        pr_elem i3;
+        pp_statement st;
+        pr_elem iifakend
           
     | Jump (Goto s), [i1;i2;i3]               -> 
         pr_elem i1; pr_elem i2; pr_elem i3;
@@ -230,6 +244,7 @@ and pp_statement_gen pr_elem =
         | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
         | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
         | Iteration  (For ((_,_), (_,_), (_, _), _))
+        | Iteration  (MacroIteration (_,_))
         | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
         | Jump (GotoComputed _)
         | Decl _ | Selection (Ifdef (_,_))
