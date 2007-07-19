@@ -370,7 +370,7 @@ let pp_program2 xs outfile  =
           Pretty_print_c.pp_program_gen pr_elem e;
           (* assert(null !_toks); *)
           if (null !_toks) 
-          then pr2 "WIERD: unparsing not finished"
+          then pr2_once "WIERD: unparsing not finished"
       | PPviastr -> pr str
     );
   )

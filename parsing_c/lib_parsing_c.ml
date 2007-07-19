@@ -1,5 +1,6 @@
 
 open Commonop
+open Common
 
 
 (*****************************************************************************)
@@ -56,7 +57,7 @@ let max_min_ii_by_pos xs =
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] when Ast_c.mark_of_info x <> Ast_c.OriginTok -> 
-      Common.pr2 "PB: no max or min, have fake info, should not happen";
+      pr2_once "PB: no max or min, have fake info, should not happen";
       (x, x)
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
@@ -64,7 +65,7 @@ let max_min_ii_by_pos xs =
 
         if (Ast_c.mark_of_info e <> Ast_c.OriginTok)
         then begin 
-          Common.pr2 "PB: no max or min, have fake info, should not happen";
+          pr2_once "PB: no max or min, have fake info, should not happen";
           (maxii, minii)
         end
         else 

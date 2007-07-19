@@ -91,7 +91,8 @@
     "function" "local" "list" 
     "fresh" 
 
-    "declarer" "typedef" 
+    "typedef" 
+    "declarer" "iterator"
     "pure"
     ;"error" "words"
     
