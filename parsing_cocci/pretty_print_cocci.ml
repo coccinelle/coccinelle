@@ -518,6 +518,11 @@ let rec rule_elem arity re =
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
       mcode print_string rp; print_string " "
+  | Ast.IteratorHeader(nm,lp,args,rp) ->
+      print_string arity;
+      mcode print_string nm; print_string " "; mcode print_string_box lp;
+      dots (function _ -> ()) expression args; close_box();
+      mcode print_string rp; print_string " "
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
       print_string arity;
       mcode print_string switch; print_string " "; mcode print_string_box lp;
@@ -589,6 +594,9 @@ and statement arity s =
       rule_elem arity header; statement arity body;
       rule_elem arity tail
   | Ast.For(header,body,(_,_,_,aft)) ->
+      rule_elem arity header; statement arity body;
+      mcode (function _ -> ()) ((),Ast.no_info,aft)
+  | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),Ast.no_info,aft)
   | Ast.Switch(header,lb,cases,rb) ->

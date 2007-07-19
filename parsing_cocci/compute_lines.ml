@@ -574,6 +574,12 @@ let rec statement s =
       mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
 			(Ast0.get_info right,aft)))
 	(promote_mcode fr) right
+  | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let body = statement body in
+      let right = promote_to_statement body aft in
+      mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
+	(promote_mcode nm) right
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       let exp = expression exp in
       let cases =

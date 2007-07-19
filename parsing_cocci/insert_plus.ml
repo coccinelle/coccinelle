@@ -190,7 +190,8 @@ bind to that; not good for isomorphisms *)
       Ast0.IfThen(_,_,_,_,_,aft)
     | Ast0.IfThenElse(_,_,_,_,_,_,_,aft)
     | Ast0.While(_,_,_,_,_,aft)
-    | Ast0.For(_,_,_,_,_,_,_,_,_,aft) ->
+    | Ast0.For(_,_,_,_,_,_,_,_,_,aft)
+    | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)

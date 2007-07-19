@@ -258,7 +258,8 @@ let collect_in_plus_term =
   let astfvstatement recursor k s =
     match Ast.unwrap s with
       Ast.IfThen(_,_,(_,_,_,aft)) | Ast.IfThenElse(_,_,_,_,(_,_,_,aft))
-    | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft)) ->
+    | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft))
+    | Ast.Iterator(_,_,(_,_,_,aft)) ->
 	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in
 
@@ -447,6 +448,10 @@ let astfvs metavars bound =
 	  let (unbound,fresh,inherited) =
 	    classify (cip_mcodekind collect_in_plus_term aft) in
 	  Ast.For(header,body,(unbound,fresh,inherited,aft))
+      | Ast.Iterator(header,body,(_,_,_,aft)) ->
+	  let (unbound,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	_ -> s in
     let (unbound,fresh,inherited) = classify free in
     (s,l,unbound,collect_fresh unbound,inherited,[],d,pos) in

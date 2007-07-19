@@ -460,6 +460,9 @@ and get_before_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
+  | Ast.Iterator(header,body,aft) ->
+      let (bd,_) = get_before_e body [] in
+      (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,cases,rb) ->
       let cases =
 	List.map
@@ -586,6 +589,9 @@ and get_after_e s a =
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
+  | Ast.Iterator(header,body,aft) ->
+      let (bd,_) = get_after_e body a in
+      (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,cases,rb) ->
       let cases =
 	List.map
@@ -1219,7 +1225,8 @@ and statement stmt after quantified label guard =
       ifthenelse ifheader branch1 els branch2 aft after quantified n label
 	  statement make_match guard
 
-  | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
+  | Ast.While(header,body,aft) | Ast.For(header,body,aft)
+  | Ast.Iterator(header,body,aft) ->
       forwhile header body aft after quantified n label statement make_match
 	guard
 

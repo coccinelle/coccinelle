@@ -317,6 +317,9 @@ let combiner bind option_default
 		      get_option expression e1; string_mcode sem1; 
 		      get_option expression e2; string_mcode sem2; 
 		      get_option expression e3; string_mcode rp]
+      | Ast.IteratorHeader(nm,lp,args,rp) ->
+	  multibind [string_mcode nm; string_mcode lp;
+		      expression_dots args; string_mcode rp]
       | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	  multibind [string_mcode switch; string_mcode lp; expression exp; 
 		      string_mcode rp]
@@ -392,6 +395,8 @@ let combiner bind option_default
       | Ast.Do(header,body,tail) ->
 	  multibind [rule_elem header; statement body; rule_elem tail]
       | Ast.For(header,body,_) -> multibind [rule_elem header; statement body]
+      | Ast.Iterator(header,body,_) ->
+	  multibind [rule_elem header; statement body]
       |	Ast.Switch(header,lb,cases,rb) ->
 	  multibind [rule_elem header;rule_elem lb;
 		      multibind (List.map case_line cases);
@@ -789,6 +794,9 @@ let rebuilder
 			  get_option expression e1, string_mcode sem1, 
 			  get_option expression e2, string_mcode sem2, 
 			  get_option expression e3, string_mcode rp)
+	| Ast.IteratorHeader(whl,lp,args,rp) ->
+	    Ast.IteratorHeader(string_mcode whl, string_mcode lp,
+			       expression_dots args, string_mcode rp)
 	| Ast.SwitchHeader(switch,lp,exp,rp) ->
 	    Ast.SwitchHeader(string_mcode switch, string_mcode lp,
 			     expression exp, string_mcode rp)
@@ -877,6 +885,8 @@ let rebuilder
 	    Ast.Do(rule_elem header, statement body, rule_elem tail)
 	| Ast.For(header,body,aft) ->
 	    Ast.For(rule_elem header, statement body, aft)
+	| Ast.Iterator(header,body,aft) ->
+	    Ast.Iterator(rule_elem header, statement body, aft)
 	| Ast.Switch(header,lb,cases,rb) ->
 	    Ast.Switch(rule_elem header,rule_elem lb,
 		       List.map case_line cases,rule_elem rb)

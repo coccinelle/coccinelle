@@ -19,7 +19,7 @@ module P = Parse_aux
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
-%token TTypedef TDeclarer
+%token TTypedef TDeclarer TIterator
 %token TUsing TExtends TDepends TOn
 %token TNothing
 %token<string> TRuleName
@@ -36,7 +36,7 @@ module P = Parse_aux
 %token <Data.clt> TBreak TContinue
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaErr
 %token <(string * string) * Ast0_cocci.pure * Data.clt>
@@ -272,6 +272,11 @@ metadec:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_declarer_name name; [])
       else raise (Semantic_cocci.Semantic "bad declarer")) }
+| TIterator
+    { (fun arity (_,name) pure check_meta ->
+      if arity = Ast.NONE && pure = Ast0.Impure
+      then (!Data.add_iterator_name name; [])
+      else raise (Semantic_cocci.Semantic "bad iterator")) }
 
 meta_exp_type:
   t=ctype
@@ -643,6 +648,8 @@ statement:
     { P.whileloop $1 $2 $3 $4 $5 }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg
     { P.doloop $1 $2 $3 $4 $5 $6 $7 }
+| TIteratorId TOPar eexpr_list_option TCPar single_statement
+    { P.iterator $1 $2 $3 $4 $5 }
 | TSwitch TOPar eexpr TCPar TOBrace list(case_line) TCBrace
     { P.switch $1 $2 $3 $4 $5 $6 $7 }
 | TReturn eexpr TPtVirg { P.ret_exp $1 $2 $3 }

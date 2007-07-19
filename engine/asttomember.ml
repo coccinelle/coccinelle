@@ -168,7 +168,8 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.IfThen(header,branch,(_,_,_,aft))
   | Ast.While(header,branch,(_,_,_,aft))
-  | Ast.For(header,branch,(_,_,_,aft)) ->
+  | Ast.For(header,branch,(_,_,_,aft))
+  | Ast.Iterator(header,branch,(_,_,_,aft)) ->
       if testfn header or mcode () ((),(),aft)
       then conj_wrapped [header] (statement testfn mcode tail branch)
       else statement testfn mcode tail branch

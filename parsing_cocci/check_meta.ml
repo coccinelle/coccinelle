@@ -300,6 +300,9 @@ and statement old_metas table minus s =
       get_opt (expression ID old_metas table minus) exp2;
       get_opt (expression ID old_metas table minus) exp3;
       statement old_metas table minus body
+  | Ast0.Iterator(nm,lp,args,rp,body,_) ->
+      dots (expression ID old_metas table minus) args;
+      statement old_metas table minus body
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       expression ID old_metas table minus exp;
       dots (case_line old_metas table minus) cases

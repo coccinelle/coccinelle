@@ -418,6 +418,13 @@ and statement arity s =
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft)
+      | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
+	  print_string arity;
+	  mcode print_string nm; print_string " "; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp; print_string " ";
+	  statement arity body;
+	  mcode (function _ -> ()) ((),(),info,aft)
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";

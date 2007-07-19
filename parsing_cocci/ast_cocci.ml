@@ -325,6 +325,8 @@ and base_rule_elem =
                      expression option * string mcode (*;*) *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *)
+  | IteratorHeader of string mcode (* name *) * string mcode (* ( *) *
+	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
@@ -368,6 +370,7 @@ and base_statement =
   | While         of rule_elem (* header *) * statement * end_info (*endwhile*)
   | Do            of rule_elem (* do *) * statement * rule_elem (* tail *)
   | For           of rule_elem (* header *) * statement * end_info (*endfor*)
+  | Iterator      of rule_elem (* header *) * statement * end_info (*enditer*)
   | Switch        of rule_elem (* header *) * rule_elem (* { *) *
 	             case_line list * rule_elem (* } *)
   | Atomic        of rule_elem

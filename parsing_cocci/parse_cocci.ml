@@ -35,6 +35,7 @@ let token2c (tok,_) =
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
   | PC.TDeclarer -> "declarer"
+  | PC.TIterator -> "iterator"
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
   | PC.TExtends -> "extends"
@@ -90,6 +91,7 @@ let token2c (tok,_) =
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
   | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
+  | PC.TIteratorId(s,clt) -> (pr "iteratorname-%s" s)^(line_type2c clt)
 
   | PC.TSizeof(clt) -> "sizeof"^(line_type2c clt)
 
@@ -206,7 +208,7 @@ let plus_attachable (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt)
 
@@ -261,7 +263,7 @@ let get_clt (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt)
 
@@ -345,6 +347,7 @@ let update_clt (tok,x) clt =
   | PC.TIdent(s,_) -> (PC.TIdent(s,clt),x)
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
   | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
+  | PC.TIteratorId(s,_) -> (PC.TIteratorId(s,clt),x)
 
   | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
 
@@ -475,7 +478,7 @@ let split t = function
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
-  | PC.TFunction | PC.TTypedef | PC.TDeclarer
+  | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TExtends
   | PC.TDepends | PC.TOn | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
@@ -497,7 +500,7 @@ let split_token ((tok,_) as t) =
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaExpList(_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,clt)
@@ -713,7 +716,7 @@ let token2line (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt) | PC.TSizeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 

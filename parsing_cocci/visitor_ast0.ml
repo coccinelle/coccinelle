@@ -354,6 +354,10 @@ let combiner bind option_default
 	      string_mcode sem1; get_option expression e2; string_mcode sem2;
 	      get_option expression e3;
 	      string_mcode rp; statement body]
+      | Ast0.Iterator(nm,lp,args,rp,body,_) ->
+	  multibind
+	    [string_mcode nm; string_mcode lp; expression_dots args;
+	      string_mcode rp; statement body]
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  multibind
 	    [string_mcode switch; string_mcode lp; expression exp;
@@ -797,6 +801,10 @@ let rebuilder = fun
 		     get_option expression e2, string_mcode sem2,
 		     get_option expression e3,
 		     string_mcode rp, statement body, aft)
+	| Ast0.Iterator(nm,lp,args,rp,body,aft) ->
+	    Ast0.Iterator(string_mcode nm, string_mcode lp,
+			  expression_dots args,
+			  string_mcode rp, statement body, aft)
 	| Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       	    Ast0.Switch(string_mcode switch,string_mcode lp,expression exp,
 			string_mcode rp,string_mcode lb,

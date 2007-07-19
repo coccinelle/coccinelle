@@ -736,6 +736,16 @@ and statement in_nest tgt stm =
       let body = statement false arity body in
       make_rule_elem stm tgt arity
 	(Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,aft))
+  | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
+      let arity =
+	stm_same (mcode2line nm)
+	  (List.map mcode2arity [nm;lp;rp]) in
+      let nm = mcode nm in
+      let lp = mcode lp in
+      let args = dots (expression false arity) args in
+      let rp = mcode rp in
+      let body = statement false arity body in
+      make_rule_elem stm tgt arity (Ast0.Iterator(nm,lp,args,rp,body,aft))
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       let arity =
 	stm_same (mcode2line switch)

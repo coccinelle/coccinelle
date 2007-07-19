@@ -113,6 +113,8 @@ let type_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let declarer_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
+let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
+
 let rule_names = (Hashtbl.create(100) : (string, unit) Hashtbl.t)
 
 let check_var s linetype =
@@ -122,7 +124,9 @@ let check_var s linetype =
       (try (Hashtbl.find type_names s) linetype
       with Not_found ->
 	(try (Hashtbl.find declarer_names s) linetype
-	with Not_found -> TIdent (s,linetype))) in
+	with Not_found -> 
+	  (try (Hashtbl.find iterator_names s) linetype
+	  with Not_found -> TIdent (s,linetype)))) in
   if !Data.in_meta or !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
@@ -146,6 +150,7 @@ let id_tokens lexbuf =
   | "fresh" when in_meta ->      check_arity_context_linetype s; TFresh
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
+  | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
   | "context" when in_meta && in_iso ->
@@ -271,6 +276,10 @@ let init _ =
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
       Hashtbl.replace declarer_names name fn);
+  Data.add_iterator_name :=
+    (function name ->
+      let fn clt = TIteratorId(name,clt) in
+      Hashtbl.replace iterator_names name fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
     (function parent ->

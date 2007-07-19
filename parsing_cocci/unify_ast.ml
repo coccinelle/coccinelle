@@ -402,6 +402,11 @@ and unify_rule_elem re1 re2 =
 	 (conjunct_bindings
 	    (unify_option unify_expression e21 e22)
 	    (unify_option unify_expression e31 e32))
+  | (Ast.IteratorHeader(nm1,lp1,args1,rp1),
+     Ast.IteratorHeader(nm2,lp2,args2,rp2)) ->
+      if unify_mcode nm1 nm2
+      then unify_dots unify_expression edots args1 args2
+      else return false
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
       conjunct_bindings (unify_ident n1 n2)
 	(unify_define_parameters p1 p2)

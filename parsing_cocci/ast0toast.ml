@@ -577,6 +577,12 @@ and statement s =
 	  Ast.For(local_rewrap s
 		    (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body,([],[],[],convert_mcodekind aft))
+      | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+	  Ast.Iterator(local_rewrap s
+		      (Ast.IteratorHeader
+			 (mcode nm,mcode lp,dots expression args,mcode rp)),
+		    statement Ast.NotSequencible body,
+		    ([],[],[],convert_mcodekind aft))
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  let switch = mcode switch in
 	  let lp = mcode lp in

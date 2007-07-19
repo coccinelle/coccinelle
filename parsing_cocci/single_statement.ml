@@ -209,6 +209,10 @@ let rec statement dots_before dots_after s =
 	(Ast0.rewrap s
 	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,
 		     statement false false body,x)))
+  | Ast0.Iterator(nm,lp,args,rp,body,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.Iterator(nm,lp,args,rp,statement false false body,x)))
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
       do_one
 	(Ast0.rewrap s

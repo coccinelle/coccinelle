@@ -303,6 +303,7 @@ let classify all_marked table code =
       | Ast0.While(_,_,_,_,_,(info,aft))
       | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
 	  bind (k s) (mcode ((),(),info,aft))
+      | Ast0.Iterator(_,_,_,_,_,(info,aft))
 *)
       |	_ -> k s) in
 
@@ -516,6 +517,8 @@ let rec equal_statement s1 s2 =
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
        equal_mcode rp1 rp2
+  | (Ast0.Iterator(nm1,lp1,_,rp1,_,_),Ast0.Iterator(nm2,lp2,_,rp2,_,_)) ->
+      equal_mcode nm1 nm2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Switch(switch1,lp1,_,rp1,lb1,case1,rb1),
      Ast0.Switch(switch2,lp2,_,rp2,lb2,case2,rb2)) ->
        equal_mcode switch1 switch2 && equal_mcode lp1 lp2 &&

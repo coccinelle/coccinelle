@@ -799,6 +799,15 @@ mysterious bug that is obtained with eg int attach(...); *)
 		    (conjunct_bindings
 		       (match_option match_expr e3a e3b)
 		       (match_statement bodya bodyb)))
+	  | (Ast0.Iterator(nma,_,argsa,_,bodya,_),
+	     Ast0.Iterator(nmb,_,argsb,_,bodyb,_)) ->
+	      if mcode_equal nma nmb
+	      then
+		conjunct_bindings
+		  (match_dots match_expr is_elist_matcher do_elist_match
+		     argsa argsb)
+		  (match_statement bodya bodyb)
+	      else return false
 	  | (Ast0.Switch(_,_,expa,_,_,casesa,_),
 	     Ast0.Switch(_,_,expb,_,_,casesb,_)) ->
 	       conjunct_bindings (match_expr expa expb)
@@ -1085,6 +1094,8 @@ let rebuild_mcode start_line =
 	 | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
 	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
 		      (info,copy_mcodekind mc))
+	 | Ast0.Iterator(nm,lp,args,rp,body,(info,mc)) ->
+	     Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc))
 	 | Ast0.FunDecl
 	     ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	       Ast0.FunDecl
@@ -1506,12 +1517,14 @@ let extra_copy_stmt_plus model e =
   | Ast0.IfThen(_,_,_,_,_,(info,aft))
   | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
   | Ast0.While(_,_,_,_,_,(info,aft))
-  | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
+  | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft))
+  | Ast0.Iterator(_,_,_,_,_,(info,aft)) ->
       (match Ast0.unwrap e with
 	Ast0.IfThen(_,_,_,_,_,(info,aft1))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
       | Ast0.While(_,_,_,_,_,(info,aft1))
-      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1)) ->
+      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1))
+      | Ast0.Iterator(_,_,_,_,_,(info,aft1)) ->
 	  merge_plus aft aft1
       | _ -> merge_plus aft (Ast0.get_mcodekind e))
   | _ -> ());

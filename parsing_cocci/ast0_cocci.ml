@@ -254,6 +254,9 @@ and base_statement =
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *) * statement *
 	             (info * mcodekind) (* after info *)
+  | Iterator      of string mcode (* name *) * string mcode (* ( *) *
+	             expression dots * string mcode (* ) *) *
+	             statement * (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
 	             case_line dots * string mcode (* } *)
