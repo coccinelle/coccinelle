@@ -316,6 +316,15 @@ let worth_trying cfiles tokens =
     )
   else true
 
+let check_macro_in_sp_and_adjust tokens = 
+  tokens +> List.iter (fun s -> 
+    if Hashtbl.mem !Parsing_hacks._defs s
+    then begin
+      pr2 "warning: macro in semantic patch was in macro definitions";
+      pr2 ("disabling macro expansion for " ^ s);
+      Hashtbl.remove !Parsing_hacks._defs s
+    end
+  )
 
 
 let contain_loop top = 
@@ -873,6 +882,8 @@ let full_engine2 (coccifile, isofile) cfiles =
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     g_contain_typedmetavar := contain_typedmetavar;
+
+    check_macro_in_sp_and_adjust toks;
 
     let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
     let c_infos  = prepare_c cfiles in
