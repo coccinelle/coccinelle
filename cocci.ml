@@ -155,7 +155,7 @@ let show_or_not_cocci2 coccifile isofile =
   if !Flag.show_cocci then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing semantic patch file: " ^ coccifile);
-    isofile +> Common.do_option (fun s -> pr2 ("with isos from: " ^ s));
+    isofile +> (fun s -> pr2 ("with isos from: " ^ s));
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     Common.command2 ("cat " ^ coccifile);
     pr2 "";
@@ -856,7 +856,7 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
 
-  let (astcocci,used_after_lists,toks) = sp_of_file coccifile isofile in
+  let (astcocci,used_after_lists,toks) = sp_of_file coccifile (Some isofile) in
   let ctls = ctls_of_ast astcocci used_after_lists in
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 

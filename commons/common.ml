@@ -141,13 +141,15 @@ let pr2_gen x = pr2 (Dumper.dump x)
 
 
 let _already_printed = Hashtbl.create 101
-
+let _disable_once = ref false 
 let pr2_once s = 
-  if not (Hashtbl.mem _already_printed s)
-  then begin
-    Hashtbl.add _already_printed s true;
-    pr2 ("(ONCE) " ^ s);
-  end
+  if !_disable_once then pr2 s
+  else 
+    if not (Hashtbl.mem _already_printed s)
+    then begin
+      Hashtbl.add _already_printed s true;
+      pr2 ("(ONCE) " ^ s);
+    end
 
 
 
@@ -1284,7 +1286,7 @@ let () = example "without"
     (withoutExtension "toto.s.toto" = "toto")
 *)
 
-let adjust_extension_if_needed filename ext = 
+let adjust_ext_if_needed filename ext = 
   if String.get ext 0 <> '.' 
   then failwith "I need an extension such as .c not just c";
 

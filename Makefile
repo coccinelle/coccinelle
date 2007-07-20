@@ -3,7 +3,7 @@
 ##############################################################################
 TARGET=spatch
 
-SRC=flag.ml cocci.ml testing.ml test.ml main.ml
+SRC=config.ml flag.ml cocci.ml testing.ml test.ml main.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma \

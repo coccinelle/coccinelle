@@ -695,7 +695,7 @@ do {									\
 
 #define WINAPI
 //#define CALLBACK
-// genertate false positive in Linux 
+// generate false positive in Linux 
 #define APIENTRY
 #define __declspec(x) 
 #define __stdcall

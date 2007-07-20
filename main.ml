@@ -8,9 +8,6 @@ open Common open Commonop
  * better to not put a default value here.
  *)
 let cocci_file = ref ""
-let iso_file   = ref "" 
-
-let macro_file = ref ""
 
 let output_file = ref ""
 let inplace_modif = ref false  (* but keeps a .cocci_orig *)
@@ -97,7 +94,6 @@ let set_diff_lines n =
  *)
 let short_options = [ 
   "-sp_file",  Arg.Set_string cocci_file, " <file> the semantic patch file";
-  "-iso_file", Arg.Set_string iso_file,   " <file> the iso file";
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file (optional)";
@@ -114,13 +110,18 @@ let short_options = [
   "-partial_match",        Arg.Set Flag_ctl.partial_match, 
   "    report partial matches of the SP on the C file";
 
-  "-dir", Arg.Set dir, 
-  "    <dirname> process all files in directory recursively";
+  "-iso_file", Arg.Set_string Config.std_iso,   
+  " <file> (default=" ^ !Config.std_iso ^")";
+  "-macro_file", Arg.Set_string Config.std_h,
+  " <file> (default=" ^ !Config.std_h ^ ")";
+
   "-I",   Arg.Set_string Flag.include_path,
   "  <dir> where are the Linux headers (optional)";
 
-  "-D",   Arg.Set_string macro_file,
-  "  <file> default macros (optional)";
+
+  "-dir", Arg.Set dir, 
+  "    <dirname> process all files in directory recursively";
+
 
   "-version",   Arg.Unit (fun () -> 
     pr2 "version: $Date$";
@@ -150,7 +151,7 @@ let other_options = [
     "-cocci_file", Arg.Set_string cocci_file, 
     "   <file> the semantic patch file";
     "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
-    "-iso", Arg.Set_string iso_file,       " short option of -iso_file";
+    "-iso", Arg.Set_string Config.std_iso,     " short option of -iso_file";
   ];
 
   "most useful show options", 
@@ -198,11 +199,11 @@ let other_options = [
     "-debug_typedef",      Arg.Set  Flag_parsing_c.debug_typedef, "  ";
 
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
-    "  filter some cpp message when the macro is a \"known\" macro";
+    "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
     "-filter_classic_passed",Arg.Set Flag_parsing_c.filter_classic_passed,"  ";
-    "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
 
+    "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
     "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
 
   ];
@@ -250,6 +251,8 @@ let other_options = [
     "-save_tmp_files",   Arg.Set save_tmp_files,   " ";
     "-debugger",         Arg.Set Common.debugger , 
     "   option to set if launch spatch in ocamldebug";
+    "-disable_once",     Arg.Set Common._disable_once, 
+    "   to print more messages";
   ];
 
 
@@ -352,15 +355,17 @@ let main () =
     Arg.parse (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
     args := List.rev !args;
 
-    if !iso_file <> "" 
-    then iso_file := Common.adjust_extension_if_needed !iso_file ".iso";
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
-    then cocci_file := Common.adjust_extension_if_needed !cocci_file ".cocci";
+    then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";
 
+    if !Config.std_iso <> "" 
+    then Config.std_iso := Common.adjust_ext_if_needed !Config.std_iso ".iso";
+    if !Config.std_h <> "" 
+    then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
 
-    if !macro_file <> "" 
+    if !Config.std_h <> "" 
     then Parsing_hacks._defs := Common.hash_of_list
-      (Parse_c.parse_cpp_define_file !macro_file);
+      (Parse_c.parse_cpp_define_file !Config.std_h);
 
     Common.timeout_function_opt !Flag.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)
@@ -373,17 +378,17 @@ let main () =
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
         Flag.include_path := "tests/include";
-        Testing.testone x   !iso_file !compare_with_expected
+        Testing.testone x !compare_with_expected
 
     | []  when !test_all -> 
         Flag.include_path := "tests/include";
-        Testing.testall !iso_file
+        Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
         Testing.test_regression_okfailed ()
 
     | x::xs when !test_okfailed -> 
-        Testing.test_okfailed (!cocci_file, !iso_file) (x::xs)
+        Testing.test_okfailed !cocci_file (x::xs)
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
@@ -397,7 +402,7 @@ let main () =
     | x::xs when  !action = "-parse_ch" -> 
         Testing.test_parse_ch  (x::xs) !dir 
     | [file] when !action = "-parse_cocci" -> 
-        Testing.test_parse_cocci file !iso_file
+        Testing.test_parse_cocci file
     | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 
         Testing.test_cfg filefunc
     | [file] when !action = "-parse_unparse" -> 
@@ -419,15 +424,9 @@ let main () =
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -sp_file <file>";
 
-        (* todo?: for iso could try to go back the parent dir recursively to
-         * find the standard.iso 
-         *)
-        let cocci_file = !cocci_file in
-        let iso_file = if !iso_file = "" then None else Some !iso_file in
-
         let outfiles = 
           if not !dir 
-          then Cocci.full_engine (cocci_file, iso_file) (x::xs)
+          then Cocci.full_engine (!cocci_file, !Config.std_iso) (x::xs)
           else 
             let fullxs = 
               Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
@@ -436,8 +435,8 @@ let main () =
             fullxs +> List.map (fun cfile -> 
               pr2 ("HANDLING: " ^ cfile);
               (* Unix.sleep 1; *)
-              let cfile = Common.adjust_extension_if_needed cfile ".c" in
-              (try Cocci.full_engine (cocci_file, iso_file) [cfile]
+              let cfile = Common.adjust_ext_if_needed cfile ".c" in
+              (try Cocci.full_engine (!cocci_file, !Config.std_iso) [cfile]
                 with 
                 | Common.UnixExit x -> raise (Common.UnixExit x)
                 | e -> 

@@ -15,10 +15,6 @@ let pr2 s =
 
 let pr2_cpp s = 
   if !Flag_parsing_c.debug_cpp
-  then pr2 ("CPP-" ^ s)
-
-let pr2_once s = 
-  if !Flag_parsing_c.verbose_parsing 
   then Common.pr2_once ("CPP-" ^ s)
 
 
@@ -64,7 +60,7 @@ let msg_typedef s =
       | _ -> false 
       )
     )
-    (fun s -> pr2_once ("TYPEDEF: promoting: " ^ s))
+    (fun s -> pr2_cpp ("TYPEDEF: promoting: " ^ s))
     s
 
 
@@ -818,7 +814,7 @@ let rec apply_macro_defs xs =
       pr2_cpp ("MACRO: found known macro = " ^ s);
       (match Hashtbl.find !_defs s with
       | Left (), bodymacro -> 
-          pr2_cpp ("macro without param used before parenthize, wierd: " ^ s);
+          pr2 ("macro without param used before parenthize, wierd: " ^ s);
           (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
           set_as_comment (Ast_c.CppOther) id;
           id.new_tokens_before <- bodymacro;
@@ -835,7 +831,7 @@ let rec apply_macro_defs xs =
               cpp_engine (Common.zip params xxs') bodymacro
 
           else begin
-            pr2_cpp ("macro with wrong number of arguments, wierd: " ^ s);
+            pr2 ("macro with wrong number of arguments, wierd: " ^ s);
             id.new_tokens_before <- bodymacro;
           end;
           (* important to do that after have apply the macro, otherwise
@@ -856,7 +852,7 @@ let rec apply_macro_defs xs =
       pr2_cpp ("MACRO: found known macro = " ^ s);
       (match Hashtbl.find !_defs s with
       | Right params, bodymacro -> 
-          pr2_cpp ("macro with params but no parens found, wierd: " ^ s);
+          pr2 ("macro with params but no parens found, wierd: " ^ s);
           (* dont apply the macro, perhaps a redefinition *)
           ()
       | Left (), bodymacro -> 
@@ -922,7 +918,7 @@ let rec find_macro_paren xs =
     ::Parenthised (xxs,info_parens)
     ::xs
      -> 
-      pr2_once ("MACRO: __attribute detected ");
+      pr2_cpp ("MACRO: __attribute detected ");
       [Parenthised (xxs, info_parens)] +> 
         iter_token_paren (set_as_comment Ast_c.CppAttr);
       set_as_comment Ast_c.CppAttr id;
@@ -1252,7 +1248,7 @@ and find_actions_params xxs =
           (* certainly because paren detection had a pb because of
            * some ifdef-exp
            *)
-          pr2_cpp "PB: wierd, I try to tag an EOF token as action"
+          pr2 "PB: wierd, I try to tag an EOF token as action"
         else 
           x.tok <- TAction (TH.info_of_tok x.tok);
       );
@@ -1769,7 +1765,7 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , 
      (TOBrace _| TPtVirg _)::_)  when not_struct_enum before ->
       msg_typedef s;  LP.add_typedef_root s;
-      pr2 ("dangerous typedef inference, maybe not a typedef: " ^ s);
+      pr2 ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s);
       TypedefIdent (s, i1)
 
 

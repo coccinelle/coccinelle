@@ -3,18 +3,14 @@ open Common
 (*****************************************************************************)
 (* work with tests/ *)
 (*****************************************************************************)
-val testone : 
-  string (*test*) -> filename (*iso*) -> bool (*compare_expected*) -> unit
-val testall : 
-  filename (*iso*) -> unit
+val testone : string (*test*) -> bool (*compare_expected*) -> unit
+val testall : unit -> unit
 
 (*****************************************************************************)
 (* works with tests-big/. The .res, .ok, .failed, .var *)
 (*****************************************************************************)
-val test_okfailed : 
-  (filename (*cocci*) * filename (*iso*)) -> filename (*c*) list -> unit
-val test_regression_okfailed : 
-  unit -> unit
+val test_okfailed : filename (*cocci*) -> filename (*c*) list -> unit
+val test_regression_okfailed : unit -> unit
 
 
 
@@ -42,6 +38,6 @@ val test_typeur : filename -> unit
 val test_compare_c : filename -> filename -> unit (* result is in unix code *)
 val test_compare_c_hardcoded : unit -> unit
 
-val test_parse_cocci : filename -> filename (* iso *) -> unit
+val test_parse_cocci : filename -> unit
 
 val test_xxx : unit -> unit

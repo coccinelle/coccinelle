@@ -24,6 +24,7 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 val pr2_gen: 'a -> unit
 
 val _already_printed : (string, bool) Hashtbl.t
+val _disable_once : bool ref
 val pr2_once : string -> unit
 
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
@@ -518,7 +519,7 @@ val basename : string -> string
 val filesuffix : filename -> string
 val fileprefix : filename -> string
 
-val adjust_extension_if_needed : filename -> string -> filename
+val adjust_ext_if_needed : filename -> string -> filename
 
 (* dbe for dir, base, ext *)
 val dbe_of_filename : filename -> string * string * string

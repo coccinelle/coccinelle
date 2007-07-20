@@ -6,7 +6,7 @@ open Common
  * in general files in /tmp
  *)
 val full_engine : 
-  (filename * filename option) -> filename list -> 
+  (filename * filename) -> filename list -> 
   (filename * filename option) list
 
 

@@ -12,17 +12,16 @@ open Common open Commonop
  * Note that I use standard.iso when, iso_file parameter is empty.
  * If want to test without iso, use -iso_file empty.iso option.
  *)
-let testone x iso_file compare_with_expected_flag = 
+let testone x compare_with_expected_flag = 
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
   let cfile      = "tests/" ^ x ^ ".c" in 
   let cocci_file = "tests/" ^ base ^ ".cocci" in
-  let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) in
 
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
-    let res = Cocci.full_engine (cocci_file, iso_file) [cfile] in
+    let res = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
     match res with
     | [s, Some outfile] when s = cfile -> 
         if compare_with_expected_flag
@@ -41,7 +40,7 @@ let testone x iso_file compare_with_expected_flag =
 let best_score_file = "/tmp/score_cocci_best.marshalled"
 let timeout_testall = 30
 
-let testall iso_file =
+let testall () =
 
   let newscore  = empty_score () in
 
@@ -58,14 +57,12 @@ let testall iso_file =
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
-      let iso_file = Some (if iso_file = "" then "standard.iso" else iso_file) 
-      in
       let expected = "tests/" ^ res in
 
       try (
         Common.timeout_function timeout_testall  (fun () -> 
           
-          let xs = Cocci.full_engine (cocci_file, iso_file) [cfile] in
+          let xs = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
           let generated = 
             match List.assoc cfile xs with
             | Some generated -> generated
@@ -156,9 +153,8 @@ let delete_previous_result_files infile =
   )
 
 
-let test_okfailed (cocci_file, iso_file) cfiles = 
+let test_okfailed cocci_file cfiles = 
 
-  let iso_file = if iso_file = "" then None else Some iso_file in
 
   cfiles +> List.iter delete_previous_result_files;
 
@@ -187,7 +183,8 @@ let test_okfailed (cocci_file, iso_file) cfiles =
       try (
         Common.timeout_function_opt !Flag.timeout (fun () ->
           
-          let outfiles = Cocci.full_engine (cocci_file, iso_file) cfiles in
+          let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles 
+          in
           
           outfiles +> List.iter (fun (infile, outopt) -> 
             let (dir, base, ext) = Common.dbe_of_filename infile in
@@ -335,8 +332,8 @@ let test_tokens_c file =
 
 let test_parse_gen xs dirmode ext = 
         
-  Flag_parsing_c.debug_cpp := true;
   Flag_parsing_c.debug_typedef := true;
+  Flag_parsing_c.debug_cpp := true;
 
   let fullxs = 
     if dirmode
@@ -383,13 +380,11 @@ let test_parse_gen xs dirmode ext =
   end
         
 
-let test_parse_cocci file iso_file = 
+let test_parse_cocci file = 
   if not (file =~ ".*\\.cocci") 
   then pr2 "warning: seems not a .cocci file";
 
-  let iso_file = if iso_file = "" then None else Some iso_file in
-
-  let (xs,_,_) = Parse_cocci.process file iso_file false in
+  let (xs,_,_) = Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse
 
 
