@@ -340,7 +340,8 @@ let combiner bind option_default
 	  multibind [string_mcode def; ident id; define_parameters params]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
       |	Ast.Case(case,exp,colon) ->
-	  multibind [string_mcode case; expression exp; string_mcode colon] in
+	  multibind [string_mcode case; expression exp; string_mcode colon]
+      |	Ast.DisjRuleElem(res) -> multibind (List.map rule_elem res) in
     rulefn all_functions k re
 
   (* not parameterizable for now... *)
@@ -826,7 +827,8 @@ let rebuilder
 	| Ast.Default(def,colon) ->
 	    Ast.Default(string_mcode def,string_mcode colon)
 	| Ast.Case(case,exp,colon) ->
-	    Ast.Case(string_mcode case,expression exp,string_mcode colon)) in
+	    Ast.Case(string_mcode case,expression exp,string_mcode colon)
+	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
 
   (* not parameterizable for now... *)

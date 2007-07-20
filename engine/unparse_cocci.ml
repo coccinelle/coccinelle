@@ -505,6 +505,7 @@ and rule_elem arity re =
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
+  | Ast.DisjRuleElem(res) -> raise CantBeInPlus
 
   | Ast.MetaRuleElem(name,_,_) ->
       raise Impossible

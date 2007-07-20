@@ -128,15 +128,20 @@ let rec conj xs ys =
 	      prev ys)
 	[] xs
 
-let conj_one testfn x l =
-  if testfn x
-  then conj [[strip x]] l
-  else l
-
 let conj_wrapped x l = conj [List.map strip x] l
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
+
+let rule_elem re =
+  match Ast.unwrap re with
+    Ast.DisjRuleElem(res) -> List.map (function x -> [strip x]) res
+  | _ -> [[strip re]]
+
+let conj_one testfn x l =
+  if testfn x
+  then conj (rule_elem x) l
+  else l
 
 let rec statement_list testfn mcode tail stmt_list : 'a list list =
   match Ast.unwrap stmt_list with
@@ -156,7 +161,7 @@ and statement testfn mcode tail stmt : 'a list list =
       (match Ast.unwrap ast with
 	(* modifications on return are managed in some other way *)
 	Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) when tail -> []
-      |	_ -> if testfn ast then [[strip ast]] else [])
+      |	_ -> if testfn ast then rule_elem ast else [])
   | Ast.Seq(lbrace,decls,body,rbrace) ->
       let body_info =
 	conj
@@ -171,13 +176,13 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.For(header,branch,(_,_,_,aft))
   | Ast.Iterator(header,branch,(_,_,_,aft)) ->
       if testfn header or mcode () ((),(),aft)
-      then conj_wrapped [header] (statement testfn mcode tail branch)
+      then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
   | Ast.Switch(header,lb,cases,rb) ->
       let body_info = case_lines  testfn mcode tail cases in
       if testfn header or testfn lb or testfn rb
-      then conj_wrapped [header] body_info
+      then conj (rule_elem header) body_info
       else body_info
 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,(_,_,_,aft)) ->
@@ -186,7 +191,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	  (statement testfn mcode tail branch1)
 	  (statement testfn mcode tail branch2) in
       if testfn ifheader or mcode () ((),(),aft)
-      then conj_wrapped [ifheader] branches
+      then conj (rule_elem ifheader) branches
       else branches
 
   | Ast.Disj(stmt_dots_list) ->
@@ -213,7 +218,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	  (statement_list testfn mcode false decls)
 	  (statement_list testfn mcode true body) in
       if testfn header or testfn lbrace or testfn rbrace
-      then conj_wrapped [header] body_info
+      then conj (rule_elem header) body_info
       else body_info
 
   | Ast.Define(header,body) ->

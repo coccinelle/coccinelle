@@ -343,6 +343,7 @@ and base_rule_elem =
 	             define_parameters (*params*)
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
+  | DisjRuleElem  of rule_elem list
 
 and fninfo =
     FStorage of storage mcode

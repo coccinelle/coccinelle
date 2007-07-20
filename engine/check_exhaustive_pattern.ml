@@ -42,6 +42,7 @@ let dumb_astcocci_rule_elem = function
  | A.Include _ -> ()
  | A.Default _ -> ()
  | A.Case _ -> ()
+ | A.DisjRuleElem _ -> failwith "not possible - compiled away in asttoctl"
 
 let dumb_astcocci_decl = function
  | A.UnInit (stg, typa, sa, _)     -> ()

@@ -300,6 +300,7 @@ let contains_modif =
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
+(* code is not a DisjRuleElem *)
 let make_match n label guard code =
   let v = fresh_var() in
   let matcher = Lib_engine.Match(code) in
@@ -314,10 +315,10 @@ let make_match n label guard code =
     | _ ->
 	wrapExists n true
 	  (v,predmaker guard (matcher,CTL.UnModif v) n label)
-
+	  
 let make_raw_match n label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) n label
-
+    
 let rec seq_fvs quantified = function
     [] -> []
   | fv1::fvs ->
@@ -644,43 +645,66 @@ let rec ends_in_return stmt_list =
 (* --------------------------------------------------------------------- *)
 (* expressions *)
 
-let do_exp_matches ast exp make_match make_guard_match n fvs =
-  match Ast.unwrap exp with
-    Ast.DisjExpr(exps) ->
-      let pos = fresh_pos() in
-      let matches =
-	List.map
-	  (function x ->
-	    quantify n fvs
-	      (make_match
-		 (Ast.rewrap_pos (Ast.rewrap ast (Ast.Exp(x))) (Some pos))))
-	  exps in
-      let guard_matches =
-	List.map
-	  (function x ->
-	    quantify n fvs
-	      (make_guard_match
-		 (Ast.rewrap_pos (Ast.rewrap ast (Ast.Exp(x))) (Some pos))))
-	  exps in
-      let rec suffixes = function
-	  [] -> []
-	| x::xs -> xs::(suffixes xs) in
-      let prefixes = List.rev (suffixes (List.rev guard_matches)) in
+let exptymatch l make_match make_guard_match n =
+  let pos = fresh_pos() in
+  let matches_guard_matches =
+    List.map
+      (function x ->
+	(make_match (Ast.rewrap_pos x (Some pos)),
+	 make_guard_match (Ast.rewrap_pos x (Some pos))))
+      l in
+  let (matches,guard_matches) = List.split matches_guard_matches in
+  let rec suffixes = function
+      [] -> []
+    | x::xs -> xs::(suffixes xs) in
+  let prefixes = List.rev (suffixes (List.rev guard_matches)) in
+  let info = (* not null *)
+    List.map2
+      (function matcher ->
+	function negates ->
+	  wrapExists n false
+	    (pos,
+	     List.fold_left
+	       (function prev ->
+		 function cur -> wrapAnd n CTL.NONSTRICT (wrapNot n cur, prev))
+	       matcher negates))
+      matches prefixes in
+  List.fold_left
+    (function a -> function b -> wrapOr n (a,b)) (List.hd info) (List.tl info)
+
+(* code might be a DisjRuleElem, in which case we break it apart
+   code might contain an Exp or Ty *)
+let do_re_matches res make_match make_guard_match n quantified =
+  let make_match x =
+    let stmt_fvs = Ast.get_fvs x in
+    let fvs = get_unquantified quantified stmt_fvs in
+    quantify n fvs (make_match x) in
+  let make_guard_match x =
+    let stmt_fvs = Ast.get_fvs x in
+    let fvs = get_unquantified quantified stmt_fvs in
+    quantify n fvs (make_guard_match x) in
+  match List.map Ast.unwrap res with
+    [] -> failwith "unexpected empty disj"
+  | Ast.Exp(e)::rest -> exptymatch res make_match make_guard_match n
+  | Ast.Ty(t)::rest  -> exptymatch res make_match make_guard_match n
+  | all ->
+      if List.exists (function Ast.Exp(_) | Ast.Ty(_) -> true | _ -> false) all
+      then failwith "unexpected exp or ty";
       List.fold_left
-	(function a -> function b -> wrapOr n (a,b))
-	(wrap n CTL.False)
-	(List.map2
-	   (function matcher ->
-	     function negates ->
-	       wrapExists n false
-		 (pos,
-		  List.fold_left
-		    (function prev ->
-		      function cur ->
-			wrapAnd n CTL.NONSTRICT (wrapNot n cur, prev))
-		    matcher negates))
-	   matches prefixes)
-  | _ -> quantify n fvs (make_match ast)
+	(function prev -> function cur -> wrapSeqOr n (prev,make_match cur))
+	(make_match (List.hd res)) (List.tl res)
+
+(* code might be a DisjRuleElem, in which case we break it apart
+   code doesn't contain an Exp or Ty *)
+let header_match n label guard code : ('a, Ast.meta_name, 'b) CTL.generic_ctl =
+  match Ast.unwrap code with
+    Ast.DisjRuleElem(res) ->
+      let make_match = make_match n label guard in
+      let orop = if guard then wrapOr else wrapSeqOr in
+      List.fold_left
+	(function prev -> function cur -> orop n (prev,make_match cur))
+	(make_match (List.hd res)) (List.tl res)
+  | _ -> make_match n label guard code
 
 (* --------------------------------------------------------------------- *)
 (* control structures *)
@@ -1017,8 +1041,8 @@ and statement stmt after quantified label guard =
   let make_seq_after = make_seq_after n guard in
   let quantify   = quantify n in
   let real_make_match = make_match in
-  let make_match = real_make_match n label guard in
-  let make_guard_match = real_make_match n label true in
+  let make_match = header_match n label guard in
+  let make_guard_match = header_match n label true in
   let new_info =
     {Ast.line = (-1);Ast.column = (-1);Ast.strbef = []; Ast.straft = []} in
 
@@ -1038,14 +1062,15 @@ and statement stmt after quantified label guard =
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	_ ->
-	  let stmt_fvs = Ast.get_fvs stmt in
-	  let fvs = get_unquantified quantified stmt_fvs in
 	  let between_dots = Ast.get_dots_bef_aft stmt in
 	  let term =
 	    match Ast.unwrap ast with
-	      Ast.Exp(exp) ->
-		do_exp_matches ast exp make_match make_guard_match n fvs
-	    | _ -> quantify fvs (make_match ast) in
+	      Ast.DisjRuleElem(res) ->
+		do_re_matches res make_match make_guard_match n quantified
+	    | _ ->
+		let stmt_fvs = Ast.get_fvs stmt in
+		let fvs = get_unquantified quantified stmt_fvs in
+		quantify fvs (make_match ast) in
 	  let term =
 	    if guard
 	    then term

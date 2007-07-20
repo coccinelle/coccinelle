@@ -417,6 +417,13 @@ and unify_rule_elem re1 re2 =
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2
 
+  | (Ast.DisjRuleElem(res1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_rule_elem x re2) res1)
+  | (_,Ast.DisjRuleElem(res2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_rule_elem re1 x) res2)
+
   | (Ast.MetaRuleElem(_,_,_),_)
   | (Ast.MetaStmt(_,_,_,_),_)
   | (Ast.MetaStmtList(_,_,_),_)

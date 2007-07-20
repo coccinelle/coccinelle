@@ -556,6 +556,16 @@ let rec rule_elem arity re =
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
+  | Ast.DisjRuleElem(res) ->
+      Printf.printf "disj_rule_elem %d\n" (List.length res);
+      print_string arity;
+      force_newline(); print_string "("; force_newline();
+      print_between
+	(function _ -> force_newline();print_string "|r"; force_newline())
+	(rule_elem arity)
+	res;
+      force_newline(); print_string ")"
+
 
 and print_define_parameters params =
   match Ast.unwrap params with

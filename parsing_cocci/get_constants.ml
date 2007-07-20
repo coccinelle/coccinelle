@@ -74,6 +74,12 @@ let get_minus_constants bind =
 	union_all (List.map r.V.combiner_declaration decls)
     | _ -> k e in
 
+  let rule_elem r k e =
+    match Ast.unwrap e with
+      Ast.DisjRuleElem(res) ->
+	union_all (List.map r.V.combiner_rule_elem res)
+    | _ -> k e in
+
   let statement r k e =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
@@ -85,7 +91,7 @@ let get_minus_constants bind =
     mcode
     donothing donothing donothing donothing
     ident expression fullType typeC donothing donothing declaration
-    donothing statement donothing donothing donothing
+    rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
