@@ -463,7 +463,7 @@ identifier fld;
 E.fld => E1->fld
 
 Expression
-@ sizeof @
+@ sizeof_parens @
 expression E;
 @@
 
