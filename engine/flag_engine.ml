@@ -6,3 +6,4 @@ let useEU = ref true
 
 let show_misc = ref true
 
+let disallow_nested_exps = ref true

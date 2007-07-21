@@ -19,7 +19,16 @@
   of nodes satisfying AF[1v2] and give a warning if 47 is in the set of
   nodes satisfying EXEF(47 & EXEF(1v2)). (Note that the root of a witness
   tree here is the node causing the pattern to match; there might not be
-  any witnesses associated with this node.) *)
+  any witnesses associated with this node.)
+
+  Another try on the exists formula:
+  !(1v2) & EXE[!(1v2) U 47]
+  The first !(1v2) is to discard immediately cases where the beginning and
+  end of the path are the same.  Afterwards, it would only seem necessary to
+  serach up to the next occurrence of 47 (leaf), ensuring that there are not
+  1s or 2s (starting points) along the way.  Then the second 47 would be in
+  the path, but possible not transformed.
+ *)
 
 module G = Ograph_extended
 module CTL = Ast_ctl
@@ -51,10 +60,10 @@ let create_formulas _ =
     (function node ->
       function roots ->
 	function acc ->
-	  let exef f =
+	  (*let exef f =
 	    wrap
 	      (Ast_ctl.EX
-		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in
+		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in*)
 	  let match_node = wrap (Ast_ctl.Pred(node)) in
 	  let match_roots =
 	    List.map (function n -> wrap (Ast_ctl.Pred(n)))
@@ -65,7 +74,17 @@ let create_formulas _ =
 	      (List.hd match_roots) (List.tl match_roots) in
 	  (node,
 	   wrap (Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,roots)),
-	   exef(wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots)))))
+	   wrap
+	     (Ast_ctl.And
+		(Ast_ctl.NONSTRICT,
+		 wrap (Ast_ctl.Not(roots)),
+		 wrap (Ast_ctl.EX
+			 (Ast_ctl.BACKWARD,
+			  wrap
+			    (Ast_ctl.EU
+			       (Ast_ctl.BACKWARD,roots,match_node)))))))
+	   (*exef
+	      (wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots))))*)
 	  :: acc)
     modified []
 

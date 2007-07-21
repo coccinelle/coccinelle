@@ -117,7 +117,7 @@ module XMATCH = struct
 	| [] -> (* failed *) k expb
 	| xs -> 
             globals := xs @ !globals; 
-            k expb (* CHOICE *)
+            if not !Flag_engine.disallow_nested_exps then k expb (* CHOICE *)
       );
       (* pad's style.
        * push2 expr globals;  k expr

@@ -243,6 +243,8 @@ let other_options = [
     "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
     "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";
+    "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
+       "disallow an expresion pattern from matching a term and its subterm"
   ];
 
   "misc options",
