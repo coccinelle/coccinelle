@@ -118,6 +118,9 @@ module P = Parse_aux
 %start plus_main 
 %type <Ast0_cocci.rule> plus_main
 
+%start iso_rule_name
+%type <string * Ast_cocci.dependency list * string option> iso_rule_name
+
 %start rule_name
 %type <string * Ast_cocci.dependency list * string option> rule_name
 
@@ -152,6 +155,14 @@ pure:
   TPure       { Ast0.Pure }
 | TContext    { Ast0.Context }
 | /* empty */ { Ast0.Impure }
+
+iso_rule_name:
+  nm=pure_ident TArob
+    { let n = P.id2name nm in
+    (try let _ =  Hashtbl.find Data.all_metadecls n in
+    raise (Semantic_cocci.Semantic ("repeated rule name"))
+    with Not_found -> ());
+    (n,[],None) }
 
 rule_name:
   nm=pure_ident extends d=depends i=ioption(choose_iso) TArob

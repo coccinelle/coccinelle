@@ -16,7 +16,8 @@ let current_rule = ref ""
 
 (* --------------------------------------------------------------------- *)
 
-type isomorphism = Ast_cocci.metavar list * Ast0_cocci.anything list list
+type isomorphism =
+    Ast_cocci.metavar list * Ast0_cocci.anything list list * string (* name *)
 
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
@@ -224,7 +225,7 @@ let match_list matcher is_list_matcher do_list_match la lb =
     | _ -> return false in
   loop (la,lb)
 
-let match_maker context_required whencode_allowed =
+let match_maker checks_needed context_required whencode_allowed =
 
   let match_dots matcher is_list_matcher do_list_match d1 d2 =
     match (Ast0.unwrap d1, Ast0.unwrap d2) with
@@ -308,23 +309,23 @@ let match_maker context_required whencode_allowed =
       donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
-    match pure with
-      Ast0.Pure | Ast0.Context ->
+    match (checks_needed,pure) with
+      (true,Ast0.Pure) | (true,Ast0.Context) ->
 	(match lst with
 	  [x] ->
 	    if (Ast0.lub_pure (is_pure x) pure) = pure
 	    then add_binding name (builder1 lst)
 	    else return false
 	| _ -> return false)
-    | Ast0.Impure -> add_binding name (builder2 lst) in
+    | (false,_) | (_,Ast0.Impure) -> add_binding name (builder2 lst) in
 
   let add_pure_binding name pure is_pure builder x =
-    match pure with
-      Ast0.Pure | Ast0.Context ->
+    match (checks_needed,pure) with
+      (true,Ast0.Pure) | (true,Ast0.Context) ->
 	if (Ast0.lub_pure (is_pure x) pure) = pure
 	then add_binding name (builder x)
 	else return false
-    | Ast0.Impure ->  add_binding name (builder x) in
+    | (false,_) | (_,Ast0.Impure) ->  add_binding name (builder x) in
 
   let do_elist_match builder el lst =
     match Ast0.unwrap el with
@@ -366,7 +367,7 @@ let match_maker context_required whencode_allowed =
     | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
     | up ->
-	if not(context_required) or is_context id
+	if not(checks_needed) or not(context_required) or is_context id
 	then
 	  match (up,Ast0.unwrap id) with
 	    (Ast0.Id(namea),Ast0.Id(nameb)) -> return (mcode_equal namea nameb)
@@ -460,7 +461,7 @@ let match_maker context_required whencode_allowed =
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
     | up ->
-	if not(context_required) or is_context expr
+	if not(checks_needed) or not(context_required) or is_context expr
 	then
 	  match (up,Ast0.unwrap expr) with
 	    (Ast0.Ident(ida),Ast0.Ident(idb)) ->
@@ -566,7 +567,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	      (function ty -> Ast0.TypeCTag ty)
 	      t)
     | up ->
-	if not(context_required) or is_context t
+	if not(checks_needed) or not(context_required) or is_context t
 	then
 	  match (up,Ast0.unwrap t) with
 	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
@@ -616,7 +617,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	else return false
 	    
   and match_decl pattern d =
-    if not(context_required) or is_context d
+    if not(checks_needed) or not(context_required) or is_context d
     then
       match (Ast0.unwrap pattern,Ast0.unwrap d) with
 	(Ast0.Init(stga,tya,ida,_,inia,_),Ast0.Init(stgb,tyb,idb,_,inib,_)) ->
@@ -661,7 +662,7 @@ mysterious bug that is obtained with eg int attach(...); *)
     else return false
 
   and match_init pattern i =
-    if not(context_required) or is_context i
+    if not(checks_needed) or not(context_required) or is_context i
     then
       match (Ast0.unwrap pattern,Ast0.unwrap i) with
 	(Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
@@ -709,7 +710,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  p
     | Ast0.MetaParamList(name,pure) -> failwith "metaparamlist not supported"
     | up ->
-	if not(context_required) or is_context p
+	if not(checks_needed) or not(context_required) or is_context p
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
@@ -739,7 +740,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	      s)
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
     | up ->
-	if not(context_required) or is_context s
+	if not(checks_needed) or not(context_required) or is_context s
 	then
 	  match (up,Ast0.unwrap s) with
 	    (Ast0.FunDecl(_,fninfoa,namea,_,paramsa,_,_,bodya,_),
@@ -883,7 +884,7 @@ mysterious bug that is obtained with eg int attach(...); *)
     loop (patterninfo,cinfo)
 
   and match_case_line pattern c =
-    if not(context_required) or is_context c
+    if not(checks_needed) or not(context_required) or is_context c
     then
       match (Ast0.unwrap pattern,Ast0.unwrap c) with
 	(Ast0.Default(_,_,codea),Ast0.Default(_,_,codeb)) ->
@@ -904,24 +905,24 @@ mysterious bug that is obtained with eg int attach(...); *)
   (match_expr, match_decl, match_statement, match_typeC,
    match_statement_dots)
 
-let match_expr context_required whencode_allowed =
-  let (fn,_,_,_,_) = match_maker context_required whencode_allowed in
+let match_expr dochecks context_required whencode_allowed =
+  let (fn,_,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
 
-let match_decl context_required whencode_allowed =
-  let (_,fn,_,_,_) = match_maker context_required whencode_allowed in
+let match_decl dochecks context_required whencode_allowed =
+  let (_,fn,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
 
-let match_statement context_required whencode_allowed =
-  let (_,_,fn,_,_) = match_maker context_required whencode_allowed in
+let match_statement dochecks context_required whencode_allowed =
+  let (_,_,fn,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
 
-let match_typeC context_required whencode_allowed =
-  let (_,_,_,fn,_) = match_maker context_required whencode_allowed in
+let match_typeC dochecks context_required whencode_allowed =
+  let (_,_,_,fn,_) = match_maker dochecks context_required whencode_allowed in
   fn
 
-let match_statement_dots context_required whencode_allowed =
-  let (_,_,_,_,fn) = match_maker context_required whencode_allowed in
+let match_statement_dots dochecks context_required whencode_allowed =
+  let (_,_,_,_,fn) = match_maker dochecks context_required whencode_allowed in
   fn
 
 (* --------------------------------------------------------------------- *)
@@ -1586,7 +1587,7 @@ let make_new_metavars metavars bindings =
 (* --------------------------------------------------------------------- *)
 
 let mkdisj matcher metavars alts instantiater e disj_maker minusify
-    rebuild_mcodes printer extra_plus =
+    rebuild_mcodes name printer extra_plus =
   let call_instantiate bindings mv_bindings alts =
     List.concat
       (List.map
@@ -1606,8 +1607,15 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	let wc =
 	  whencode_allowed prev_ecount prev_icount prev_dcount
 	    ecount dcount icount rest in
-	(match matcher (context_required e) wc pattern e init_env with
+	(match matcher true (context_required e) wc pattern e init_env with
 	  None ->
+	    (match matcher false false wc pattern e init_env with
+	      Some _ ->
+		Printf.printf
+		  "warning: some constraints on isos caused %s\nnot to match the following code on line %d\n" name (Ast0.get_line e);
+		printer e;
+		Format.print_newline();
+	    | _ -> ());
 	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
 	      (prev_dcount + dcount) rest
 	| Some (bindings : (((string * string) * 'a) list list)) ->
@@ -1673,7 +1681,7 @@ let make_disj_stmt sl =
   Ast0.context_wrap
     (Ast0.Disj(disj_starter,List.map dotify sl,mids,disj_ender))
 
-let transform_type (metavars,alts) e =
+let transform_type (metavars,alts,name) e =
   match alts with
     (Ast0.TypeCTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1693,11 +1701,11 @@ let transform_type (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_typeC) e
 	make_disj_type make_minus.V0.rebuilder_typeC
 	(rebuild_mcode start_line).V0.rebuilder_typeC
-	Unparse_ast0.typeC extra_copy_other_plus
+	name Unparse_ast0.typeC extra_copy_other_plus
   | _ -> ([],e)
 
 
-let transform_expr (metavars,alts) e =
+let transform_expr (metavars,alts,name) e =
   match alts with
     (Ast0.ExprTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1717,10 +1725,10 @@ let transform_expr (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_expression) e
 	make_disj_expr make_minus.V0.rebuilder_expression
 	(rebuild_mcode start_line).V0.rebuilder_expression
-	Unparse_ast0.expression extra_copy_other_plus
+	name Unparse_ast0.expression extra_copy_other_plus
   | _ -> ([],e)
 
-let transform_decl (metavars,alts) e =
+let transform_decl (metavars,alts,name) e =
   match alts with
     (Ast0.DeclTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1741,10 +1749,10 @@ let transform_decl (metavars,alts) e =
 	make_disj_decl
 	make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
-	Unparse_ast0.declaration extra_copy_other_plus
+	name Unparse_ast0.declaration extra_copy_other_plus
   | _ -> ([],e)
 
-let transform_stmt (metavars,alts) e =
+let transform_stmt (metavars,alts,name) e =
   match alts with
     (Ast0.StmtTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
@@ -1764,11 +1772,11 @@ let transform_stmt (metavars,alts) e =
 	  (instantiate b mv_b).V0.rebuilder_statement) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
-	(Unparse_ast0.statement "") extra_copy_stmt_plus
+	name (Unparse_ast0.statement "") extra_copy_stmt_plus
   | _ -> ([],e)
 
 (* sort of a hack, because there is no disj at top level *)
-let transform_top (metavars,alts) e =
+let transform_top (metavars,alts,name) e =
   match Ast0.unwrap e with
     Ast0.DECL(declstm) ->
       (try
@@ -1782,7 +1790,7 @@ let transform_top (metavars,alts) e =
 		     | _ -> raise (Failure ""))
 		 | _ -> raise (Failure "")))
 	    alts in
-	let (mv,s) = transform_stmt (metavars,strip alts) declstm in
+	let (mv,s) = transform_stmt (metavars,strip alts,name) declstm in
 	(mv,Ast0.rewrap e (Ast0.DECL(s)))
       with Failure _ -> ([],e))
   | Ast0.CODE(stmts) ->
@@ -1808,7 +1816,7 @@ let transform_top (metavars,alts) e =
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      make_minus.V0.rebuilder_statement_dots
 	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
-	      Unparse_ast0.statement_dots extra_copy_other_plus
+	      name Unparse_ast0.statement_dots extra_copy_other_plus
 	| _ -> ([],stmts) in
       (mv,Ast0.rewrap e (Ast0.CODE res))
   | _ -> ([],e)
@@ -1897,8 +1905,8 @@ let apply_isos isos rule rule_name =
   current_rule := rule_name;
   let isos =
     List.map
-      (function (metavars,iso) ->
-	(metavars,List.map (List.map rewrap_anything) iso))
+      (function (metavars,iso,name) ->
+	(metavars,List.map (List.map rewrap_anything) iso,name))
       isos in
   let (extra_meta,rule) =
     List.split

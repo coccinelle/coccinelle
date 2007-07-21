@@ -1,4 +1,5 @@
-type isomorphism = Ast_cocci.metavar list * Ast0_cocci.anything list list
+type isomorphism =
+    Ast_cocci.metavar list * Ast0_cocci.anything list list * string(*iso name*)
 
 val apply_isos :
     isomorphism list -> Ast0_cocci.rule -> string (* rule name *) ->

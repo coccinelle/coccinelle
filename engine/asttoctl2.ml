@@ -673,7 +673,8 @@ let exptymatch l make_match make_guard_match n =
     (function a -> function b -> wrapOr n (a,b)) (List.hd info) (List.tl info)
 
 (* code might be a DisjRuleElem, in which case we break it apart
-   code might contain an Exp or Ty *)
+   code might contain an Exp or Ty
+   this one pushes the quantifier inwards *)
 let do_re_matches res make_match make_guard_match n quantified =
   let make_match x =
     let stmt_fvs = Ast.get_fvs x in
@@ -695,7 +696,9 @@ let do_re_matches res make_match make_guard_match n quantified =
 	(make_match (List.hd res)) (List.tl res)
 
 (* code might be a DisjRuleElem, in which case we break it apart
-   code doesn't contain an Exp or Ty *)
+   code doesn't contain an Exp or Ty
+   this one is for use when it is not practical to push the quantifier inwards
+ *)
 let header_match n label guard code : ('a, Ast.meta_name, 'b) CTL.generic_ctl =
   match Ast.unwrap code with
     Ast.DisjRuleElem(res) ->

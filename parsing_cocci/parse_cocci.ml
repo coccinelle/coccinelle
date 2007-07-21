@@ -435,7 +435,7 @@ let update_clt (tok,x) clt =
 
 (* ----------------------------------------------------------------------- *)
 
-let make_name ln = Printf.sprintf "rule starting on line %d" ln
+let make_name prefix ln = Printf.sprintf "%s starting on line %d" prefix ln
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)
@@ -975,19 +975,40 @@ let get_metavars parse_fn table file lexbuf =
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
+let get_rule_name parse_fn starts_with_name get_tokens file prefix =
+  Data.in_rule_name := true;
+  let name_res =
+    if starts_with_name
+    then
+      let (_,tokens) = get_tokens [PC.TArob] in
+      parse_one "rule name" parse_fn file tokens
+    else (make_name prefix (!Lexer_cocci.line),[],None) in
+  Data.in_rule_name := false;
+  name_res
+
 let parse_iso = function
     None -> []
   | Some file ->
       let table = Common.full_charpos_to_pos file in
       Common.with_open_infile file (fun channel ->
       let lexbuf = Lexing.from_channel channel in
+      let get_tokens = tokens_all table file false lexbuf in
       let res =
-      match tokens_all table file false lexbuf [PC.TArobArob] with
+      match get_tokens [PC.TArobArob;PC.TArob] with
 	(true,start) ->
-	  let rec loop start =
+	  let parse_start start =
+	    let rev = List.rev start in
+	    let (arob,_) = List.hd rev in
+	    (arob = PC.TArob,List.rev(List.tl rev)) in
+	  let (starts_with_name,start) = parse_start start in
+	  let rec loop starts_with_name start =
 	    (!Data.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
+	    let (rule_name,_,_) =
+	      get_rule_name PC.iso_rule_name starts_with_name get_tokens
+		file ("iso file "^file) in
+	    Ast0_cocci.rule_name := rule_name;
 	    Data.in_meta := true;
 	    let iso_metavars =
 	      match get_metavars PC.iso_meta_main table file lexbuf with
@@ -996,13 +1017,13 @@ let parse_iso = function
 	    Data.in_meta := false;
 	    (* get the rule *)
 	    let (more,tokens) =
-	      tokens_all table file false lexbuf
+	      get_tokens
 		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoDeclaration;
 		  PC.TIsoType;PC.TIsoTopLevel] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
-	    let tokens = prepare_tokens ((drop_last [] start)@tokens) in
+	    let tokens = prepare_tokens (start@tokens) in
             (*
 	    Printf.printf "iso tokens\n";
 	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
@@ -1013,12 +1034,14 @@ let parse_iso = function
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,
 		    but the code is left here in case it is put back. *)
-	      match tokens_all table file true lexbuf [PC.TArobArob] with
+	      match get_tokens [PC.TArobArob;PC.TArob] with
 		(true,start) ->
-		  (iso_metavars,entry) :: (loop (next_start::start))
+		  let (starts_with_name,start) = parse_start start in
+		  (iso_metavars,entry,rule_name) ::
+		  (loop starts_with_name (next_start::start))
 	      |	_ -> failwith "isomorphism ends early"
-	    else [(iso_metavars,entry)] in
-	  loop start
+	    else [(iso_metavars,entry,rule_name)] in
+	  loop starts_with_name start
       | (false,_) -> [] in
       res)
 
@@ -1026,22 +1049,15 @@ let parse file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
+  let get_tokens = tokens_all table file false lexbuf in
   let res =
-  match tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] with 
+  match get_tokens [PC.TArobArob;PC.TArob] with 
     (* read over initial @@ *)
     (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
       let rec loop old_metas starts_with_name =
 	(!Data.init_rule)();
-	Data.in_rule_name := true;
 	let (rule_name,dependencies,iso) =
-	  if starts_with_name
-	  then
-	    begin
-	      let (_,tokens) = tokens_all table file true lexbuf [PC.TArob] in
-	      parse_one "rule name" PC.rule_name file tokens
-	    end
-	  else (make_name (!Lexer_cocci.line),[],None) in
-	Data.in_rule_name := false;
+	  get_rule_name PC.rule_name starts_with_name get_tokens file "rule" in
 	Ast0_cocci.rule_name := rule_name;
 	(* get metavariable declarations *)
 	Data.in_meta := true;
@@ -1054,8 +1070,7 @@ let parse file =
 	  (Hashtbl.fold (fun key v rest -> (key,v)::rest)
 	     Lexer_cocci.metavariables []);
 	(* get transformation rules *)
-	let (more,tokens) =
-	  tokens_all table file false lexbuf [PC.TArobArob;PC.TArob] in
+	let (more,tokens) = get_tokens [PC.TArobArob;PC.TArob] in
 	let starts_with_name =
 	  more &&
 	  (match List.hd (List.rev tokens) with
