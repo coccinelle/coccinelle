@@ -1244,7 +1244,7 @@ let rec satloop unchecked required required_states
 	      get_reachable dir m new_required_states in
 	    (match (pm,loop unchecked new_required new_required_states phi2)
 	    with
-	      (false,[]) -> []
+	      (false,[]) -> phi1res
 	    | (_,phi2res) ->
 		(match phi1res with
 		  [] -> (* !Flag_ctl.partial_match must be true *)
@@ -1461,7 +1461,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		env) with
 	      (false,(child2,[])) ->
-		Printf.printf "andany\n"; flush stdout; anno [] [child1;child2]
+		Printf.printf "andany\n"; flush stdout;
+		anno res1 [child1;child2]
 	    | (_,(child2,res2)) ->
 		(match res1 with
 		  [] -> (* !Flag_ctl.partial_match must be true *)
