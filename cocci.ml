@@ -859,6 +859,14 @@ and process_a_ctl_a_env_a_toplevel  a b c =
 (* The main function *)
 (*****************************************************************************)
 
+(* memoize what is already translated *)
+let already_translated =
+  (Hashtbl.create(100) :
+     (string (*file*) * string (*iso*),
+      (Asttoctl2.formula
+	 * (Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif)
+	 list list) list list) Hashtbl.t)
+
 (* Returns nothing. The output is in the file outfile *)
 let full_engine2 (coccifile, isofile) cfiles = 
 
@@ -866,7 +874,13 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cocci   coccifile isofile;
 
   let (astcocci,used_after_lists,toks) = sp_of_file coccifile (Some isofile) in
-  let ctls = ctls_of_ast astcocci used_after_lists in
+  let ctls =
+    try Hashtbl.find already_translated (coccifile, isofile)
+    with
+      Not_found ->
+	let res = ctls_of_ast  astcocci used_after_lists in
+	Hashtbl.add already_translated (coccifile, isofile) res;
+	res in
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)

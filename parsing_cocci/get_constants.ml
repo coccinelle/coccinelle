@@ -49,7 +49,8 @@ let get_minus_constants bind =
 	  (r.V.combiner_expression exp)
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
-    | Ast.DisjExpr(exps) -> union_all (List.map r.V.combiner_expression exps)
+    | Ast.DisjExpr(exps) ->
+	union_all (List.map r.V.combiner_expression exps)
     | _ -> k e in
 
   let typeC r k e =
@@ -134,8 +135,8 @@ let rule_fn tls in_plus =
 	let minuses =
 	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
 	let plusses = get_plus_constants.V.combiner_top_level cur in
+	let new_minuses = Common.minus_set minuses in_plus in
 	let new_plusses = Common.union_set plusses in_plus in
-	let new_minuses = Common.minus_set minuses new_plusses in
 	(Common.union_set new_minuses rest_info, new_plusses))
     ([],in_plus) tls
 
@@ -148,3 +149,4 @@ let get_constants rules =
 	  (Common.union_set cur_info rest_info,cur_plus))
       ([],[]) rules in
   info
+
