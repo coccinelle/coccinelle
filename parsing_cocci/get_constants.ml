@@ -22,6 +22,12 @@ let get_minus_constants bind =
       [] -> []
     | x::xs -> Common.union_set x (union_all xs) in
 
+  (* if one branch gives no information, then we have to take anything *)
+  let disj_union_all l =
+    if List.exists (function [] -> true | _ -> false) l
+    then []
+    else union_all l in
+
   (* need special cases for everything with a disj, because the bind above
      would throw away all but the first disj *)
 
@@ -50,7 +56,7 @@ let get_minus_constants bind =
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
-	union_all (List.map r.V.combiner_expression exps)
+	disj_union_all (List.map r.V.combiner_expression exps)
     | _ -> k e in
 
   let typeC r k e =
@@ -66,25 +72,26 @@ let get_minus_constants bind =
 
   let fullType r k e =
     match Ast.unwrap e with
-      Ast.DisjType(types) -> union_all (List.map r.V.combiner_fullType types)
+      Ast.DisjType(types) ->
+	disj_union_all (List.map r.V.combiner_fullType types)
     | _ -> k e in
 
   let declaration r k e =
     match Ast.unwrap e with
       Ast.DisjDecl(decls) ->
-	union_all (List.map r.V.combiner_declaration decls)
+	disj_union_all (List.map r.V.combiner_declaration decls)
     | _ -> k e in
 
   let rule_elem r k e =
     match Ast.unwrap e with
       Ast.DisjRuleElem(res) ->
-	union_all (List.map r.V.combiner_rule_elem res)
+	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k e in
 
   let statement r k e =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
-	union_all (List.map r.V.combiner_statement_dots stmt_dots)
+	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
     | _ -> k e in
 
   V.combiner bind option_default
