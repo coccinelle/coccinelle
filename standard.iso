@@ -65,15 +65,18 @@ pure type T;
 
 
 Type
-@ add_signed @ @@
+@ add_signed @ 
+@@
 int => signed int
 
 Type
-@ add_int1 @ @@
+@ add_int1 @ 
+@@
 unsigned => unsigned int
 
 Type
-@ add_int2 @ @@
+@ add_int2 @ 
+@@
 signed => signed int
 
 
@@ -132,24 +135,34 @@ signed => signed int
 
 // the space at the beginning of the line is very important!
 Expression
-@ not_int1 @ int X; @@
+@ not_int1 @ 
+int X; 
+@@
  !X => 0 == X
 
 // the space at the beginning of the line is very important!
 Expression
-@ not_int2 @ int X; @@
+@ not_int2 @ 
+int X; 
+@@
  !X => X == 0
 
 Expression
-@ is_zero @ expression X; @@
+@ is_zero @ 
+expression X; 
+@@
 X == 0 <=> 0 == X => !X
 
 Expression
-@ isnt_zero @ expression X; @@
+@ isnt_zero @ 
+expression X; 
+@@
 X != 0 <=> 0 != X => X
 
 Expression
-@ or_comm @ expression X,Y; @@
+@ or_comm @ 
+expression X,Y; 
+@@
 X | Y => Y | X
 
 // ---------------------------------------------------------------------------
@@ -158,13 +171,17 @@ X | Y => Y | X
 //todo: require check side-effect free expression
 
 Expression
-@ plus_comm @ expression X, Y; @@
+@ plus_comm @ 
+expression X, Y; 
+@@
 X + Y => Y + X
 
 
 // needed in kcalloc CE, where have a -kzalloc(c * sizeof(T), E)
 Expression
-@ mult_comm @ expression X, Y; @@
+@ mult_comm @ 
+expression X, Y; 
+@@
 X * Y => Y * X
 
 // ---------------------------------------------------------------------------
@@ -172,7 +189,9 @@ X * Y => Y * X
 // ---------------------------------------------------------------------------
 
 Expression
-@ gtr_lss @ expression X, Y; @@
+@ gtr_lss @ 
+expression X, Y; 
+@@
 X < Y <=> Y > X
 
 // ---------------------------------------------------------------------------
@@ -182,7 +201,9 @@ X < Y <=> Y > X
 // equivalences between i++, +=1, etc
 // note: there is an addition in this SP.
 Statement
-@ inc @ identifier i; @@
+@ inc @ 
+identifier i; 
+@@
 i++; <=> ++i; <=> i+=1; <=> i=i+1;
 
 // I would like to avoid the following rule, but we cant transform a ++i
@@ -194,7 +215,11 @@ i++; <=> ++i; <=> i+=1; <=> i=i+1;
 // case.
 
 Statement
-@ for_inc @ expression X, Y; statement S; identifier i; @@
+@ for_inc @ 
+expression X, Y; 
+statement S; 
+identifier i; 
+@@
 for(X;Y;i++) S <=> for(X;Y;++i) S
 
 
@@ -204,20 +229,28 @@ for(X;Y;i++) S <=> for(X;Y;++i) S
 
 // the space at the beginning of the line is very important!
 Expression
-@ not_ptr1 @ expression *X; @@
+@ not_ptr1 @ 
+expression *X; 
+@@
  !X => NULL == X
 
 // the space at the beginning of the line is very important!
 Expression
-@ not_ptr2 @ expression *X; @@
+@ not_ptr2 @ 
+expression *X; 
+@@
  !X => X == NULL
 
 Expression
-@ is_null @ expression X; @@
+@ is_null @ 
+expression X; 
+@@
 X == NULL <=> NULL == X => !X
 
 Expression
-@ isnt_zero @ expression X; @@
+@ isnt_zero @ 
+expression X; 
+@@
 X != NULL <=> NULL != X => X
 
 // pointer arithmetic equivalences
@@ -310,31 +343,48 @@ T Z; => T Z = ...;
 // could worry that this has to be a simple statement, but this should work
 // better as it allows + code on S
 Statement
-@ braces1 @ statement S; @@
+@ braces1 @ 
+statement S; 
+@@
 { ... S } => S
+
 Statement
-@ braces2 @ statement S; @@
+@ braces2 @ 
+statement S; 
+@@
 { ... S ... } => S
+
 Statement
-@ braces3 @ statement S; @@
+@ braces3 @ 
+statement S; 
+@@
 { S ... } => S
+
 Statement
-@ braces4 @ statement S; @@
+@ braces4 @ 
+statement S; 
+@@
 { S } => S
+
 Statement
-@ ret @ @@
+@ ret @ 
+@@
 return ...; => return;
 
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 Expression
-@ unlikely @ expression E; @@
+@ unlikely @ 
+expression E; 
+@@
 
 unlikely(E) => E
 
 Expression
-@ likely @ expression E; @@
+@ likely @ 
+expression E; 
+@@
 
 likely(E) => E
 
@@ -471,7 +521,7 @@ sizeof(E) => sizeof E
 
 
 Expression
-@@
+@ sizeof_type_expr @
 type T;
 T E;
 @@

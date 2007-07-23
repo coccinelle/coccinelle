@@ -195,6 +195,8 @@
    ("Expression"  . 'cocci-special-face)
    ("Statement"   . 'cocci-special-face)
    ("Declaration" . 'cocci-special-face)
+   ("Type"  . 'cocci-special-face)
+   ("TopLevel"  . 'cocci-special-face)
 
 
    ("\\<[0-9]+\\>" . 'cocci-number-face)
