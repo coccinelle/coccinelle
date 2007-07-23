@@ -312,7 +312,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info>            TMacroString
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info>            TMacroDeclConst 
-%token <Ast_c.info>            TMacroIterator
+%token <(string * Ast_c.info)> TMacroIterator
 
 %token <Ast_c.info> TAction
 
@@ -661,9 +661,9 @@ iteration:
      { For ($3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /* cppext: */
  | TMacroIterator TOPar argument_list TCPar statement
-     { MacroIteration ($3, $5), [$1;$2;$4] }
+     { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
  | TMacroIterator TOPar TCPar statement
-     { MacroIteration ([], $4), [$1;$2;$3] }
+     { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
 /* the ';' in the caller will be appended to the infos */
 jump: 

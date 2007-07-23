@@ -133,7 +133,7 @@ type node = node1 * string
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader of statement * expression wrap
-  | MacroIterHeader of statement * (argument wrap2 list) wrap
+  | MacroIterHeader of statement * (string * argument wrap2 list) wrap
 
   (* Used to mark the end of if, while, dowhile, for, switch. Later we
    * will be able to "tag" some cocci code on this node.

@@ -1881,7 +1881,7 @@ let lookahead2 next before =
    
       then begin
         msg_foreach s;
-        TMacroIterator i1
+        TMacroIterator (s, i1)
       end
       else TIdent (s, i1)
 

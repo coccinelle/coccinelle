@@ -433,7 +433,7 @@ let rec (annotate_program2 :
             );
             noTypeHere
             
-      | Ident (s) -> 
+        | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
           | Some (typ,_nextenv) -> 
               type_variations_typedef typ !_scoped_env 
@@ -447,8 +447,8 @@ let rec (annotate_program2 :
                 end;
               noTypeHere
           )
-      | Unary (e, DeRef)  
-      | ArrayAccess (e, _) ->
+        | Unary (e, DeRef)  
+        | ArrayAccess (e, _) ->
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
             (* todo: maybe not good env !! *)
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
@@ -458,7 +458,7 @@ let rec (annotate_program2 :
             | _ -> noTypeHere
           )
 
-      | RecordAccess  (e, fld) ->  
+        | RecordAccess  (e, fld) ->  
           (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | StructUnion (su, sopt, fields) -> 
@@ -478,7 +478,7 @@ let rec (annotate_program2 :
             | _ -> noTypeHere
           )
 
-      | RecordPtAccess (e, fld) -> 
+        | RecordPtAccess (e, fld) -> 
           (Ast_c.get_types_expr e) +> do_with_types (fun t ->
           match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with 
           | Pointer (t) -> 
@@ -501,15 +501,18 @@ let rec (annotate_program2 :
               )
           | _ -> noTypeHere
           )
-      | Cast (t, e) -> 
+        | Cast (t, e) -> 
           (* todo: type_variations_typedef ? *)
           (* todo: add_types_expr [t] e ? *)
           type_variations_typedef (Lib.al_type t) !_scoped_env
 
-      | ParenExpr e -> 
-          Ast_c.get_types_expr e
+         (* todo: check e2 ? *)
+        | Assignment (e1, op, e2) -> 
+            Ast_c.get_types_expr e1
 
-      | _ -> noTypeHere
+        | ParenExpr e -> Ast_c.get_types_expr e
+
+        | _ -> noTypeHere
       in
       Ast_c.set_types_expr expr ty
       

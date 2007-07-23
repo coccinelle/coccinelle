@@ -234,7 +234,7 @@ and vk_statement = fun bigf st ->
         statf (ExprStatement (e3opt),i3); 
         statf st;
 
-    | Iteration  (MacroIteration (es, st)) -> 
+    | Iteration  (MacroIteration (s, es, st)) -> 
         es +> List.iter (fun (e, ii) -> 
           iif ii;
           vk_argument bigf e
@@ -508,7 +508,7 @@ and vk_node = fun bigf node ->
         e1opt +> do_option (vk_expr bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
-    | F.MacroIterHeader (_s, (es, ii)) -> 
+    | F.MacroIterHeader (_s, ((s,es), ii)) -> 
         iif ii;
         es +> List.iter (fun (e, ii) -> 
           iif ii;
@@ -765,10 +765,11 @@ and vk_statement_s = fun bigf st ->
           | x -> failwith "cant be here if iterator keep ExprStatement as is"
          )
 
-      | Iteration  (MacroIteration (es, st)) -> 
+      | Iteration  (MacroIteration (s, es, st)) -> 
           Iteration 
             (MacroIteration
-                (es +> List.map (fun (e, ii) -> 
+                (s,
+                es +> List.map (fun (e, ii) -> 
                   vk_argument_s bigf e, vk_ii_s bigf ii
                 ), 
                 statf st
@@ -1055,10 +1056,10 @@ and vk_node_s = fun bigf node ->
                      (e3opt +> Common.map_option (vk_expr_s bigf), iif i3)),
                     iif ii))
 
-    | F.MacroIterHeader (st, (es, ii)) -> 
+    | F.MacroIterHeader (st, ((s,es), ii)) -> 
         F.MacroIterHeader
           (st,
-          (es +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii),
+          ((s, es +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii)),
           iif ii))
 
           

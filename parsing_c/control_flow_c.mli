@@ -23,7 +23,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader  of statement * expression wrap
-  | MacroIterHeader of statement * (argument wrap2 list) wrap
+  | MacroIterHeader of statement * (string * argument wrap2 list) wrap
 
   | EndStatement  of info option
 

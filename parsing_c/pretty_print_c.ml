@@ -184,7 +184,7 @@ and pp_statement_gen pr_elem =
         pp_statement st;
         pr_elem iifakend
 
-    | Iteration  (MacroIteration (es,st)), [i1;i2;i3;iifakend] ->
+    | Iteration  (MacroIteration (s,es,st)), [i1;i2;i3;iifakend] ->
         pr_elem i1;
         pr_elem i2;
 
@@ -244,7 +244,7 @@ and pp_statement_gen pr_elem =
         | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
         | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
         | Iteration  (For ((_,_), (_,_), (_, _), _))
-        | Iteration  (MacroIteration (_,_))
+        | Iteration  (MacroIteration (_,_,_))
         | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
         | Jump (GotoComputed _)
         | Decl _ | Selection (Ifdef (_,_))

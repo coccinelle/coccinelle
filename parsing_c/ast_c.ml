@@ -306,7 +306,7 @@ and statementbis =
     | DoWhile of statement * expression
     | For     of exprStatement wrap * exprStatement wrap * exprStatement wrap *
                  statement
-    | MacroIteration of argument wrap2 list * statement
+    | MacroIteration of string * argument wrap2 list * statement
 
   and jump  = Goto of string
             | Continue | Break 

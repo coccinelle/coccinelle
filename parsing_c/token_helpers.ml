@@ -126,7 +126,7 @@ let info_of_tok = function
   | TMacroString             (i) -> i
   | TMacroDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
-  | TMacroIterator             (i) -> i
+  | TMacroIterator             (s,i) -> i
 
   | TAction             (i) -> i
 
@@ -251,7 +251,7 @@ let visitor_info_of_tok f = function
   | TMacroString               (i) -> TMacroString             (f i)
   | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
   | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
-  | TMacroIterator               (i) -> TMacroIterator             (f i)
+  | TMacroIterator               (s,i) -> TMacroIterator             (s,f i)
 
   | TAction               (i) -> TAction             (f i)
 

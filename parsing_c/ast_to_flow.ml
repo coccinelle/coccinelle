@@ -790,12 +790,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
 
-  | Iteration  (Ast_c.MacroIteration (es, st)), ii -> 
+  | Iteration  (Ast_c.MacroIteration (s, es, st)), ii -> 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
       let newi = 
-        !g+>add_node(MacroIterHeader(stmt,(es,ii))) lbl "foreach" in
+        !g+>add_node(MacroIterHeader(stmt,((s,es),ii))) lbl "foreach" in
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node TrueNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
