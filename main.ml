@@ -152,6 +152,7 @@ let other_options = [
     "   <file> the semantic patch file";
     "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
     "-iso", Arg.Set_string Config.std_iso,     " short option of -iso_file";
+    "-D", Arg.Set_string Config.std_h,     " short option of -macro_file";
   ];
 
   "most useful show options", 

@@ -510,3 +510,71 @@ let test_xxx () =
   Format.printf "@[<v>(---@[<v>(---@[<v>(---@,)@]@,)@]@,)@]"
 *)
 
+
+(*****************************************************************************)
+(* to be called by ocaml toplevel, to test. *)
+(*****************************************************************************)
+
+let cprogram_of_file file = 
+  let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
+  program2 
+
+let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
+  begin
+    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
+    let program = cprogram_of_file ("/tmp/__cocci.c") in
+    program +> Common.find_some (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
+      | _ -> None
+      )
+  end
+
+let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
+  begin
+    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
+    let program = cprogram_of_file ("/tmp/__cocci.c") in
+    program +> Common.find_some (fun (e,_) -> 
+      match e with
+      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
+          (match compound with
+          | [(Ast_c.ExprStatement (Some e),ii)] -> Some e
+          | _ -> None
+          )
+      | _ -> None
+      )
+  end
+  
+
+
+let sp_of_file file iso    = Parse_cocci.process file iso false
+
+let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
+ fun s iso -> 
+  begin
+    Common.write_file ("/tmp/__cocci.cocci") (s);
+    let (astcocci, _,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
+    let stmt =
+      astcocci +> List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
+	match Ast_cocci.unwrap x with
+	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
+	| _ -> raise Not_found)
+    in
+    match Ast_cocci.unwrap stmt with
+    | Ast_cocci.Atomic(re) -> re
+    | _ -> failwith "only atomic patterns allowed"
+  end
+
+
+
+
+(*
+let flows_of_ast astc = 
+  astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
+
+let one_flow flows = 
+  List.hd flows
+
+let one_ctl ctls = List.hd (List.hd ctls)
+*)
+

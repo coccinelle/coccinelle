@@ -380,8 +380,10 @@ and definition = (string * functionType * storage * compound)
 (* ------------------------------------------------------------------------- *)
 (* #define and #include body *)
 (* ------------------------------------------------------------------------- *)
+
 (* cppext *) 
-and define = define_kind * define_val
+and define = string wrap * define_body   (* #define s *)
+ and define_body = define_kind * define_val
    and define_kind =
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap
@@ -394,7 +396,10 @@ and define = define_kind * define_val
      | DefineText of string wrap
      | DefineEmpty
 
-and inc_file = 
+
+
+and includ = inc_file wrap * include_rel_pos option ref (* #include s *)
+ and inc_file = 
   | Local    of inc_elem list
   | NonLocal of inc_elem list
   | Wierd of string (* ex: #include SYSTEM_H *)
@@ -409,10 +414,10 @@ and inc_file =
  * 
  * This is set after parsing, in cocci.ml, in update_rel_pos.
  *)
-and include_rel_pos = { 
+ and include_rel_pos = { 
   first_of : string list list;
   last_of :  string list list;
-}
+ }
 
 (* ------------------------------------------------------------------------- *)
 (* The toplevels elements *)
@@ -422,8 +427,8 @@ and toplevel =
   | Definition of definition
          
   (* cppext: *)
-  | Include of inc_file wrap * include_rel_pos option ref (* #include s *)
-  | Define of string wrap * define   (* #define s *)
+  | Include of includ 
+  | Define of define 
   (* cppext: *)
   | MacroTop of string * argument wrap2 list * il 
          

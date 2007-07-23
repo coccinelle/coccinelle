@@ -615,7 +615,7 @@ let rec lexer_function tr = fun lexbuf ->
       | Parser_c.TDefine (tok) -> 
           if not !LP._lexer_hint.LP.toplevel 
           then begin
-            pr2 ("CPP-DEFINE: inside function, I treat it as comment");
+            pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
             let v' = Parser_c.TCommentCpp (Ast_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
@@ -632,7 +632,7 @@ let rec lexer_function tr = fun lexbuf ->
       | Parser_c.TInclude (includes, filename, info) -> 
           if not !LP._lexer_hint.LP.toplevel 
           then begin
-            pr2 ("CPP-INCLUDE: inside function, I treat it as comment");
+            pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
             let v = Parser_c.TCommentCpp(Ast_c.CppDirective, info) in
             tr.passed <- v::tr.passed;
             lexer_function tr lexbuf

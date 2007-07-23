@@ -1130,7 +1130,7 @@ let parse file =
   res)
 
 (* parse to ast0 and then convert to ast *)
-let do_process file isofile verbose =
+let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init ();
   Data.in_iso := true;
@@ -1182,19 +1182,3 @@ let do_process file isofile verbose =
   let tokens = Get_constants.get_constants code in
   (code,ua,tokens)
 
-(* memoize... *)
-let already_parsed =
-  (Hashtbl.create(100) :
-     (string (*file*) * string option (*iso*),
-      (Ast_cocci.rule list) * (((Ast_cocci.meta_name list) list) list) *
-	string list) Hashtbl.t)
-
-let process file isofile verbose =
-  try
-    let info = Hashtbl.find already_parsed (file,isofile) in
-    info
-  with
-    Not_found ->
-      let res = do_process file isofile verbose in
-      Hashtbl.add already_parsed (file,isofile) res;
-      res

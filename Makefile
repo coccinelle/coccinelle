@@ -88,13 +88,14 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests/
 
-testparsing2: 
-	./spatch.opt -filter_define_error -filter_classic_passed -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
-	./spatch.opt -filter_define_error -filter_classic_passed -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
+PARSECMD=./spatch -D standard.h -filter_define_error -filter_classic_passed \
+	  -dir
 
-testparsing2bis:
-	./spatch -filter_define_error -D standard.h -dir -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_all_filter 2>&1 
-	./spatch -filter_define_error -D standard.h -dir -parse_h ~/kernels/git/linux-2.6/  > /tmp/parse_h_filter 2>&1 
+testparsing2: 
+	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
+	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
+	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_all_filter 2>&1 
+	$(PARSECMD) -parse_h ~/kernels/git/linux-2.6/  > /tmp/parse_h_filter 2>&1 
 
 testparsing3:
 	./spatch -D standard.h -parse_ch -dir ~/kernels/git/linux-2.6/ > /tmp/parse_ch_all 2>&1

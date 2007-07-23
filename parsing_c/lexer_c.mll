@@ -256,8 +256,17 @@ rule token = parse
         TCommentCpp (CppDirective,info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
-  | (id  "...") as str
-      { TDefParamVariadic (str, tokinfo lexbuf) }
+
+  (* could generate separate token for #, ## and then exten grammar,
+   * but there can be ident in many different places, in expression
+   * but also in declaration, in function name. So having 3 tokens
+   * for an ident does not work well with how we add info in
+   * ast_c. So better to generate just one token, just one info,
+   * even if have later to reanalyse those tokens and unsplit.
+   *)
+
+  | ((id as s)  "...")
+      { TDefParamVariadic (s, tokinfo lexbuf) }
 
   (* cppext: string concatenation *)
   |  id   ([' ''\t']* "##" [' ''\t']* id)+ 

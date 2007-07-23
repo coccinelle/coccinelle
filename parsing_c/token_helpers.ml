@@ -46,6 +46,7 @@ let is_statement = function
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
   | Tgoto _ 
   | TPtVirg _
+  | TMacroIterator _
       -> true
   | _ -> false
 
@@ -84,6 +85,7 @@ let is_stuff_taking_parenthized = function
   | Twhile _ 
   | Tswitch _
   | Ttypeof _
+  | TMacroIterator _
     -> true 
   | _ -> false
 

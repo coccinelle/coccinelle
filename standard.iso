@@ -468,3 +468,12 @@ expression E;
 @@
 
 sizeof(E) => sizeof E
+
+
+Expression
+@@
+type T;
+T E;
+@@
+
+sizeof(T) => sizeof(E)

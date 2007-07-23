@@ -25,57 +25,10 @@ let cprogram_of_file file =
 let cfile_of_program program2_with_ppmethod outf = 
   Unparse_c.pp_program program2_with_ppmethod outf
 
-
-  
-
-let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
-  begin
-    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
-    let program = cprogram_of_file ("/tmp/__cocci.c") in
-    program +> Common.find_some (fun (e,_) -> 
-      match e with
-      | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
-      | _ -> None
-      )
-  end
-
-let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
-  begin
-    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
-    let program = cprogram_of_file ("/tmp/__cocci.c") in
-    program +> Common.find_some (fun (e,_) -> 
-      match e with
-      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
-          (match compound with
-          | [(Ast_c.ExprStatement (Some e),ii)] -> Some e
-          | _ -> None
-          )
-      | _ -> None
-      )
-  end
-  
-
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
 let sp_of_file file iso    = Parse_cocci.process file iso false
-
-let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
- fun s iso -> 
-  begin
-    Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
-    let stmt =
-      astcocci +> List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
-	match Ast_cocci.unwrap x with
-	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
-	| _ -> raise Not_found)
-    in
-    match Ast_cocci.unwrap stmt with
-    | Ast_cocci.Atomic(re) -> re
-    | _ -> failwith "only atomic patterns allowed"
-  end
-
 
 (* --------------------------------------------------------------------- *)
 (* Flow related *)
@@ -105,15 +58,6 @@ let ast_to_flow_with_error_messages a =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
 
-let flows_of_ast astc = 
-  astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
-
-let one_flow flows = 
-  List.hd flows
-
-
-
-
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
@@ -126,11 +70,6 @@ let ctls_of_ast ast ua  =
 	else Asttoctl2.asttoctl ast ua)
 	(Asttomember.asttomember ast ua))
     ast ua
-
-let one_ctl ctls = List.hd (List.hd ctls)
-
-
-
 
 (*****************************************************************************)
 (* Some  debugging functions *)
@@ -859,13 +798,8 @@ and process_a_ctl_a_env_a_toplevel  a b c =
 (* The main function *)
 (*****************************************************************************)
 
-(* memoize what is already translated *)
-let already_translated =
-  (Hashtbl.create(100) :
-     (string (*file*) * string (*iso*),
-      (Asttoctl2.formula
-	 * (Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif)
-	 list list) list list) Hashtbl.t)
+let _hparse = Hashtbl.create 101
+let _hctl = Hashtbl.create 101
 
 (* Returns nothing. The output is in the file outfile *)
 let full_engine2 (coccifile, isofile) cfiles = 
@@ -873,14 +807,17 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
 
-  let (astcocci,used_after_lists,toks) = sp_of_file coccifile (Some isofile) in
-  let ctls =
-    try Hashtbl.find already_translated (coccifile, isofile)
-    with
-      Not_found ->
-	let res = ctls_of_ast  astcocci used_after_lists in
-	Hashtbl.add already_translated (coccifile, isofile) res;
-	res in
+  let (astcocci,used_after_lists,toks) = 
+    Common.memoized _hparse (coccifile, isofile) (fun () -> 
+      sp_of_file coccifile (Some isofile) 
+    )
+  in
+  let ctls = 
+    Common.memoized _hctl (coccifile, isofile) (fun () -> 
+      ctls_of_ast  astcocci used_after_lists
+    )
+  in
+
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
