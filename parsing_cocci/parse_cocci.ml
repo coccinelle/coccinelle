@@ -38,6 +38,7 @@ let token2c (tok,_) =
   | PC.TIterator -> "iterator"
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
+  | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
   | PC.TDepends -> "depends"
   | PC.TOn -> "on"
@@ -480,7 +481,7 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TStatement
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TExtends
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TDepends | PC.TOn | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -977,23 +978,24 @@ let get_metavars parse_fn table file lexbuf =
 
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
   Data.in_rule_name := true;
+  let mknm _ = make_name prefix (!Lexer_cocci.line) in
   let name_res =
     if starts_with_name
     then
       let (_,tokens) = get_tokens [PC.TArob] in
-      parse_one "rule name" parse_fn file tokens
-    else (make_name prefix (!Lexer_cocci.line),[],None) in
+      match parse_one "rule name" parse_fn file tokens with
+	(None,a,b,c) -> (mknm(),a,b,c)
+      |	(Some nm,a,b,c) -> (nm,a,b,c)
+    else (mknm(),[],[],[]) in
   Data.in_rule_name := false;
   name_res
 
-let parse_iso = function
-    None -> []
-  | Some file ->
-      let table = Common.full_charpos_to_pos file in
-      Common.with_open_infile file (fun channel ->
-      let lexbuf = Lexing.from_channel channel in
-      let get_tokens = tokens_all table file false lexbuf in
-      let res =
+let parse_iso file =
+  let table = Common.full_charpos_to_pos file in
+  Common.with_open_infile file (fun channel ->
+    let lexbuf = Lexing.from_channel channel in
+    let get_tokens = tokens_all table file false lexbuf in
+    let res =
       match get_tokens [PC.TArobArob;PC.TArob] with
 	(true,start) ->
 	  let parse_start start =
@@ -1005,7 +1007,7 @@ let parse_iso = function
 	    (!Data.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
-	    let (rule_name,_,_) =
+	    let (rule_name,_,_,_) =
 	      get_rule_name PC.iso_rule_name starts_with_name get_tokens
 		file ("iso file "^file) in
 	    Ast0_cocci.rule_name := rule_name;
@@ -1025,9 +1027,10 @@ let parse_iso = function
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
 	    let tokens = prepare_tokens (start@tokens) in
             (*
-	    Printf.printf "iso tokens\n";
-	    List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
-	    Printf.printf "\n\n";
+	       Printf.printf "iso tokens\n";
+	       List.iter
+	       (function x -> Printf.printf "%s " (token2c x)) tokens;
+	       Printf.printf "\n\n";
 	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    if more
@@ -1043,7 +1046,29 @@ let parse_iso = function
 	    else [(iso_metavars,entry,rule_name)] in
 	  loop starts_with_name start
       | (false,_) -> [] in
-      res)
+    res)
+
+let parse_iso_files existing_isos iso_files extra_path =
+  let get_names = List.map (function (_,_,nm) -> nm) in
+  let old_names = get_names existing_isos in
+  Data.in_iso := true;
+  let (res,_) =
+    List.fold_left
+      (function (prev,names) ->
+	function file ->
+	  Lexer_cocci.init ();
+	  let file =
+	    match file with
+	      Common.Left(fl)  -> Filename.concat extra_path fl
+	    | Common.Right(fl) -> Filename.concat Config.path fl in
+	  let current = parse_iso file in
+	  let new_names = get_names current in
+	  if List.exists (function x -> List.mem x names) new_names
+	  then failwith (Printf.sprintf "repeated iso name found in %s" file);
+	  (current::prev,new_names @ names))
+      ([],old_names) iso_files in
+  Data.in_iso := false;
+  (List.concat (List.rev res))@existing_isos
 
 let parse file =
   let table = Common.full_charpos_to_pos file in
@@ -1051,81 +1076,90 @@ let parse file =
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
   let res =
-  match get_tokens [PC.TArobArob;PC.TArob] with 
-    (* read over initial @@ *)
-    (true,[(PC.TArobArob as x,_)]) | (true,[(PC.TArob as x,_)]) ->
-      let rec loop old_metas starts_with_name =
-	(!Data.init_rule)();
-	let (rule_name,dependencies,iso) =
-	  get_rule_name PC.rule_name starts_with_name get_tokens file "rule" in
-	Ast0_cocci.rule_name := rule_name;
-	(* get metavariable declarations *)
-	Data.in_meta := true;
-	let (metavars,inherited_metavars) =
-	  get_metavars PC.meta_main table file lexbuf in
-	Data.in_meta := false;
-	Hashtbl.add Data.all_metadecls rule_name metavars;
-	Hashtbl.add Lexer_cocci.rule_names rule_name ();
-	Hashtbl.add Lexer_cocci.all_metavariables rule_name
-	  (Hashtbl.fold (fun key v rest -> (key,v)::rest)
-	     Lexer_cocci.metavariables []);
-	(* get transformation rules *)
-	let (more,tokens) = get_tokens [PC.TArobArob;PC.TArob] in
-	let starts_with_name =
-	  more &&
-	  (match List.hd (List.rev tokens) with
-	    (PC.TArobArob,_) -> false
-	  | (PC.TArob,_) -> true
-	  | _ -> failwith "unexpected token") in
-	let (minus_tokens,plus_tokens) = split_token_stream tokens in 
-	let minus_tokens = prepare_tokens minus_tokens in
-	let plus_tokens = prepare_tokens plus_tokens in
-	(*
-	Printf.printf "minus tokens\n";
-	List.iter (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
-	Printf.printf "\n\n";
-	Printf.printf "plus tokens\n";
-	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
-	Printf.printf "\n\n";
-        *)
-	let plus_tokens =
-	  process_pragmas
-	    (fix (function x -> drop_double_dots (drop_empty_or x))
-	       (drop_when plus_tokens)) in
-	(*
-	Printf.printf "plus tokens\n";
-	List.iter (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
-	Printf.printf "\n\n";
-	Printf.printf "before minus parse\n";
-	*)
-	let minus_res = parse_one "minus" PC.minus_main file minus_tokens in
-	(*
-	Unparse_ast0.unparse minus_res;
-	Printf.printf "before plus parse\n";
-	*)
-	let plus_res =
-	  if !Flag.sgrep_mode2
-	  then (* not actually used for anything, except context_neg *)
-	    List.map
-	      (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
-	      minus_res
-	  else parse_one "plus" PC.plus_main file plus_tokens in
-	(*
-	Printf.printf "after plus parse\n";
-	*)
-	Check_meta.check_meta rule_name old_metas inherited_metavars metavars
-	  minus_res plus_res;
-	if more
-	then
-	  let (minus_ress,plus_ress) =
-	    loop (metavars@old_metas) starts_with_name in
-	  ((minus_res,metavars,(iso,dependencies,rule_name))::
-	   minus_ress,
-	   (plus_res, metavars)::plus_ress)
-	else ([(minus_res,metavars,(iso,dependencies,rule_name))],
-	      [(plus_res, metavars)]) in
-      loop [] (x = PC.TArob)
-  | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],[])
+  match get_tokens [PC.TArobArob;PC.TArob] with
+    (true,data) ->
+      (match List.rev data with
+	((PC.TArobArob as x),_)::_ | ((PC.TArob as x),_)::_ ->
+	  let iso_files =
+	    parse_one "iso file names" PC.include_main file data in
+	  let rec loop old_metas starts_with_name =
+	    (!Data.init_rule)();
+	    let (rule_name,dependencies,iso,dropiso) =
+	      get_rule_name PC.rule_name starts_with_name get_tokens file
+		"rule" in
+	    Ast0_cocci.rule_name := rule_name;
+	    (* get metavariable declarations *)
+	    Data.in_meta := true;
+	    let (metavars,inherited_metavars) =
+	      get_metavars PC.meta_main table file lexbuf in
+	    Data.in_meta := false;
+	    Hashtbl.add Data.all_metadecls rule_name metavars;
+	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
+	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
+	      (Hashtbl.fold (fun key v rest -> (key,v)::rest)
+		 Lexer_cocci.metavariables []);
+	    (* get transformation rules *)
+	    let (more,tokens) = get_tokens [PC.TArobArob;PC.TArob] in
+	    let starts_with_name =
+	      more &&
+	      (match List.hd (List.rev tokens) with
+		(PC.TArobArob,_) -> false
+	      | (PC.TArob,_) -> true
+	      | _ -> failwith "unexpected token") in
+	    let (minus_tokens,plus_tokens) = split_token_stream tokens in 
+	    let minus_tokens = prepare_tokens minus_tokens in
+	    let plus_tokens = prepare_tokens plus_tokens in
+	    (*
+	       Printf.printf "minus tokens\n";
+	       List.iter
+	       (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
+	       Printf.printf "\n\n";
+	       Printf.printf "plus tokens\n";
+	       List.iter
+	       (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
+	       Printf.printf "\n\n";
+            *)
+	    let plus_tokens =
+	      process_pragmas
+		(fix (function x -> drop_double_dots (drop_empty_or x))
+		   (drop_when plus_tokens)) in
+	    (*
+	       Printf.printf "plus tokens\n";
+	       List.iter
+	       (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
+	       Printf.printf "\n\n";
+	       Printf.printf "before minus parse\n";
+	    *)
+	    let minus_res =
+	      parse_one "minus" PC.minus_main file minus_tokens in
+	    (*
+	       Unparse_ast0.unparse minus_res;
+	       Printf.printf "before plus parse\n";
+	    *)
+	    let plus_res =
+	      if !Flag.sgrep_mode2
+	      then (* not actually used for anything, except context_neg *)
+		List.map
+		  (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
+		  minus_res
+	      else parse_one "plus" PC.plus_main file plus_tokens in
+	    (*
+	       Printf.printf "after plus parse\n";
+	    *)
+	    Check_meta.check_meta rule_name old_metas inherited_metavars
+	      metavars minus_res plus_res;
+	    if more
+	    then
+	      let (minus_ress,plus_ress) =
+		loop (metavars@old_metas) starts_with_name in
+	      ((minus_res,metavars,(iso,dropiso,dependencies,rule_name))::
+	       minus_ress,
+	       (plus_res, metavars)::plus_ress)
+	    else ([(minus_res,metavars,(iso,dropiso,dependencies,rule_name))],
+		  [(plus_res, metavars)]) in
+	  (iso_files, loop [] (x = PC.TArob))
+      |	_ -> failwith "unexpected code before the first rule\n")
+  | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],([],[]))
   | _ -> failwith "unexpected code before the first rule\n" in
   res)
 
@@ -1133,26 +1167,32 @@ let parse file =
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init ();
-  Data.in_iso := true;
-  let isos = parse_iso isofile in
-  Data.in_iso := false;
-  Lexer_cocci.init ();
-  let (minus,plus) = parse file in
+  let (iso_files,(minus,plus)) = parse file in
+  let std_isos = parse_iso_files [] [Common.Left (!Config.std_iso)] "" in
+  let global_isos = parse_iso_files std_isos iso_files extra_path in
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
     List.concat
       (List.map2
-	 (function (minus, metavars, (iso, dependencies, rule_name)) ->
+	 (function (minus, metavars, (iso,dropiso,dependencies,rule_name)) ->
 	   function (plus, metavars) ->
 	     let chosen_isos =
-	       match iso with
-		 None -> isos
-	       | Some isofile ->
-		   Lexer_cocci.init ();
-		   Data.in_iso := true;
-		   let isos = parse_iso (Some (extra_path^"/"^isofile)) in
-		   Data.in_iso := false;
-		   isos in
+	       parse_iso_files global_isos
+		 (List.map (function x -> Common.Left x) iso)
+		 extra_path in
+	     let chosen_isos =
+	       if List.mem "all" dropiso
+	       then
+		 if List.length dropiso = 1
+		 then []
+		 else failwith "disable all should only be by itself"
+	       else
+		 List.filter
+		   (function (_,_,nm) -> not (List.mem nm dropiso))
+		   chosen_isos in
+	     Printf.printf "all isos %s\n"
+	       (String.concat " "
+		  (List.map (function (_,_,nm) -> nm) chosen_isos));
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in

@@ -20,7 +20,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator
-%token TUsing TExtends TDepends TOn
+%token TUsing TDisable TExtends TDepends TOn
 %token TNothing
 %token<string> TRuleName
 
@@ -118,11 +118,16 @@ module P = Parse_aux
 %start plus_main 
 %type <Ast0_cocci.rule> plus_main
 
+%start include_main
+%type <(string,string) Common.either list> include_main
+
 %start iso_rule_name
-%type <string * Ast_cocci.dependency list * string option> iso_rule_name
+%type <string option * Ast_cocci.dependency list * string list * string list>
+iso_rule_name
 
 %start rule_name
-%type <string * Ast_cocci.dependency list * string option> rule_name
+%type <string option * Ast_cocci.dependency list * string list * string list>
+rule_name
 
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
@@ -162,15 +167,19 @@ iso_rule_name:
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (n,[],None) }
+    (Some n,[],[],[]) }
 
 rule_name:
-  nm=pure_ident extends d=depends i=ioption(choose_iso) TArob
-    { let n = P.id2name nm in
-    (try let _ =  Hashtbl.find Data.all_metadecls n in
-    raise (Semantic_cocci.Semantic ("repeated rule name"))
-    with Not_found -> ());
-    (n,d,i) }
+  nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
+    a=loption(disable) TArob
+    { match nm with
+      Some nm ->
+	let n = P.id2name nm in
+	(try let _ =  Hashtbl.find Data.all_metadecls n in
+	raise (Semantic_cocci.Semantic ("repeated rule name"))
+	with Not_found -> ());
+	(Some n,d,i,a)
+    | None -> (None,d,i,a) }
 
 extends:
   /* empty */                                     { () }
@@ -186,7 +195,18 @@ pnrule:
 | TBang TRuleName { Ast.AntiDep $2 }
 
 choose_iso:
-  TUsing TString     { P.id2name $2 }
+  TUsing separated_nonempty_list(TComma,TString) { List.map P.id2name $2 }
+
+disable:
+  TDisable separated_nonempty_list(TComma,pure_ident) { List.map P.id2name $2 }
+
+include_main:
+  list(incl) TArob     { $1 }
+| list(incl) TArobArob { $1 }
+
+incl:
+  TIncludeL  { Common.Left (P.id2name $1) }
+| TIncludeNL { Common.Right(P.id2name $1) }
 
 metadec:
   ar=arity ispure=pure

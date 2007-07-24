@@ -159,6 +159,7 @@ let id_tokens lexbuf =
   | "words" when in_meta ->      check_context_linetype s; TWords
 
   | "using" when in_rule_name ->  check_context_linetype s; TUsing
+  | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends
   | "on" when in_rule_name -> check_context_linetype s; TOn
