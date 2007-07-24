@@ -377,17 +377,21 @@ and vk_designator = fun bigf design ->
 and vk_struct_fields = fun bigf fields -> 
   let iif ii = vk_ii bigf ii in
 
-  fields +> List.iter (fun (FieldDeclList onefield_multivars, ii) -> 
+  fields +> List.iter (fun (xfield, ii) -> 
     iif ii;
-    onefield_multivars +> List.iter (fun (field, iicomma) ->
-      iif iicomma;
-      match field with
-      | Simple (s, t), ii -> iif ii; vk_type bigf t;
-      | BitField (sopt, t, expr), ii -> 
-          iif ii;
-          vk_expr bigf expr;
-          vk_type bigf t 
-    ))
+    match xfield with 
+    | FieldDeclList onefield_multivars -> 
+        onefield_multivars +> List.iter (fun (field, iicomma) ->
+          iif iicomma;
+          match field with
+          | Simple (s, t), ii -> iif ii; vk_type bigf t;
+          | BitField (sopt, t, expr), ii -> 
+              iif ii;
+              vk_expr bigf expr;
+              vk_type bigf t 
+        )
+    | EmptyField -> ()
+  )
 
 
 
@@ -925,16 +929,21 @@ and vk_struct_fields_s = fun bigf fields ->
 
   let iif ii = vk_ii_s bigf ii in
 
-  fields +> List.map (fun (FieldDeclList onefield_multivars, iiptvirg) -> 
-    FieldDeclList (
-      onefield_multivars +> List.map (fun (field, iicomma) ->
-        (match field with
-        | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), iif iis
-        | BitField (sopt, t, expr), iis -> 
-            BitField (sopt, vk_type_s bigf t, vk_expr_s bigf expr), 
-            iif iis
-        ), iif iicomma
-      )
+  fields +> List.map (fun (xfield, iiptvirg) -> 
+    
+    (match xfield with
+    | FieldDeclList onefield_multivars -> 
+        FieldDeclList (
+          onefield_multivars +> List.map (fun (field, iicomma) ->
+            (match field with
+            | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), iif iis
+            | BitField (sopt, t, expr), iis -> 
+                BitField (sopt, vk_type_s bigf t, vk_expr_s bigf expr), 
+                iif iis
+            ), iif iicomma
+          )
+        )
+    | EmptyField -> EmptyField
     ), iif iiptvirg
   )
 

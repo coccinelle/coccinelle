@@ -1707,12 +1707,15 @@ and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
       )
 
 and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb -> 
-  let (B.FieldDeclList onefield_multivars, ii) = fb in
+  let (xfield, ii) = fb in
   let iiptvirgb = tuple_of_list1 ii in
 
-  match onefield_multivars with
-  | [] -> raise Impossible
-  | [onevar,iivirg] -> 
+  match xfield with 
+  | B.FieldDeclList onefield_multivars -> 
+
+    (match onefield_multivars with
+    | [] -> raise Impossible
+    | [onevar,iivirg] -> 
       assert (null iivirg);
       (match onevar with
       | B.BitField (sopt, typb, expr), ii -> 
@@ -1746,9 +1749,11 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
             )
       )
 
-  | x::y::xs -> 
+    | x::y::xs -> 
       pr2 "PB: More that one variable in decl. Have to split";
       fail
+    )
+  | B.EmptyField -> fail
 
 
 

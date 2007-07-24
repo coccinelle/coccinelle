@@ -1081,6 +1081,7 @@ struct_decl2:
        
        FieldDeclList [(Simple (None, returnType), []) , []], [$2]
      }
+ | TPtVirg { EmptyField, [$1]  }
 
 
 
@@ -1124,8 +1125,8 @@ dotdot: TDotDot  { et "dotdot" (); $1 }
 const_expr2: const_expr { dt "const_expr2" (); $1 }
 
 struct_decl_list_gcc: 
- | struct_decl_list gcc_opt_virg  { $1 } /* gccext: allow double ;; at end */
- | /* empty */                    { [] } /* gccext: allow empty struct */
+ | struct_decl_list  { $1 } 
+ | /* empty */       { [] } /* gccext: allow empty struct */
 
 
 /*---------------------------------------------------------------------------*/
@@ -1203,8 +1204,6 @@ expression_list:
 struct_decl_list: 
  | struct_decl                   { [$1] }
  | struct_decl_list struct_decl  { $1 ++ [$2] }
- /* gccext: allow double ;; */
- | struct_decl_list TPtVirg struct_decl  { $1 ++ [$3] }
 
 
 struct_declarator_list: 
@@ -1246,9 +1245,11 @@ gcc_comma_opt:
  | TComma {  [$1] } 
  | /* */  {  []  }
 
+/*
 gcc_opt_virg:
  | TPtVirg { }
  |  { }
+*/
 
 gcc_opt_expr: 
  | expr        { Some $1 }

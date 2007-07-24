@@ -133,7 +133,8 @@ and typeCbis =
      and structType  = (field wrap) list  (* ; *)
 
         (* before unparser, I didn't have a FieldDeclList but just a Field. *)
-         and field  =  FieldDeclList of fieldkind wrap2 list (* , *)
+         and field  = FieldDeclList of fieldkind wrap2 list (* , *)
+                    | EmptyField (* gccext: *) 
 
           (* At first I thought that a bitfield could be only Signed/Unsigned.
            * But it seems that gcc allow char i:4. C rule must say that you

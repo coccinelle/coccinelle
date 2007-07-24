@@ -243,6 +243,7 @@ let (find_type_field:
               | _ -> None
             )
           )
+      | EmptyField -> None
     )
 
 

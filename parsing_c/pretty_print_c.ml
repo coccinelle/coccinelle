@@ -331,10 +331,12 @@ and (pp_base_type_gen:
             );
 
             fields +> List.iter 
-              (fun (FieldDeclList onefield_multivars, iipttvirg) -> 
+              (fun (xfield, iipttvirg) -> 
 
-              (match onefield_multivars with
-              | x::xs -> 
+                match xfield with 
+                | FieldDeclList onefield_multivars -> 
+                 (match onefield_multivars with
+                 | x::xs -> 
                   (* handling the first var. Special case, with the
                      first var, we print the whole type *)
 
@@ -396,7 +398,8 @@ and (pp_base_type_gen:
                   assert (List.length iipttvirg = 1);
                   iipttvirg +> List.iter pr_elem;
               | x -> raise Impossible
-              );
+              ) 
+            | EmptyField -> ()
             );
 
             (match sopt,iis with
