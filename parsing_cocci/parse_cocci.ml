@@ -1190,9 +1190,6 @@ let process file isofile verbose =
 		 List.filter
 		   (function (_,_,nm) -> not (List.mem nm dropiso))
 		   chosen_isos in
-	     Printf.printf "all isos %s\n"
-	       (String.concat " "
-		  (List.map (function (_,_,nm) -> nm) chosen_isos));
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
