@@ -5,9 +5,9 @@ TARGET=ctl
 SRC=flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
 
 SYSLIBS=str.cma unix.cma
-LIBS=../commons/commons.cma
+LIBS=../commons/commons.cma ../globals/globals.cma
 
-INCLUDES=-I ../commons
+INCLUDES=-I ../commons -I ../globals
 
 
 #The Caml compilers.

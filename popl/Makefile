@@ -6,10 +6,10 @@ SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml insert_befaft.ml \
 pretty_print_popl.ml popltoctl.ml popl.ml
 
 SYSLIBS=str.cma unix.cma
-LIBS=../commons/commons.cma
+LIBS=../commons/commons.cma ../globals/globals.cma
 
-INCLUDE_PATH = -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci \
-  -I ../engine
+INCLUDE_PATH = -I ../commons -I ../globals \
+	       -I ../ctl -I ../parsing_c -I ../parsing_cocci -I ../engine
 
 #The Caml compilers.
 #for warning:  -w A 

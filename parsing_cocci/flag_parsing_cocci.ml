@@ -2,7 +2,6 @@
 each matched term *)
 
 let sgrep_mode = ref false
-let sgrep_mode2 = ref false
 
 
 let show_SP = ref false

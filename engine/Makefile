@@ -14,11 +14,12 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 # CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
-INCLUDE_PATH = -I ../commons -I ../ctl -I ../parsing_c -I ../parsing_cocci
+INCLUDE_PATH = -I ../commons -I ../globals \
+	       -I ../ctl -I ../parsing_c -I ../parsing_cocci
 
 SYSLIBS = str.cma unix.cma
-LIBS=../commons/commons.cma ../ctl/ctl.cma ../parsing_c/c_parser.cma \
-     ../parsing_cocci/cocci_parser.cma 
+LIBS=../commons/commons.cma ../globals/globals.cma \
+     ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
 
 
 # The Caml compilers.

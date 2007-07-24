@@ -13,10 +13,10 @@ unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) get_constants.ml \
 parse_cocci.ml
 
-LIBS=../commons/commons.cma
+LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-INCLUDE_PATH = -I ../commons
+INCLUDE_PATH = -I ../commons -I ../globals
 
 
 # The Caml compilers.

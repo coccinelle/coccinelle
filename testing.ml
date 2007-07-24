@@ -181,9 +181,9 @@ let test_okfailed cocci_file cfiles =
   redirect_in (fun () -> 
     Common.redirect_stdout_stderr newout (fun () -> 
       try (
-        Common.timeout_function_opt !Flag.timeout (fun () ->
+        Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
           
-          let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles 
+          let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
           in
           
           outfiles +> List.iter (fun (infile, outopt) -> 
@@ -423,7 +423,7 @@ let test_cfg file =
           flow +> do_option (fun flow -> 
             Ast_to_flow.deadcode_detection flow;
             let flow' = 
-              if !Flag.show_before_fixed_flow 
+              if !Flag_cocci.show_before_fixed_flow 
               then flow
               else Ctlcocci_integration.fix_flow_ctl flow
             in

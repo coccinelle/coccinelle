@@ -15,11 +15,9 @@ SYSLIBS = str.cma unix.cma
 # parsing_c now depends on cocci_parser because in addition to decorate the
 # token in Ast_c with some parse info, we now also make some place to
 # welcome some mcodekind of Ast_cocci.
-LIBS=../commons/commons.cma  ../parsing_cocci/cocci_parser.cma
-ADDONSPATH= -I ../commons -I  ../parsing_cocci 
-
-OCAMLRUNPARAM = 'b'
-export OCAMLRUNPARAM
+LIBS=../commons/commons.cma ../globals/globals.cma \
+     ../parsing_cocci/cocci_parser.cma
+ADDONSPATH= -I ../commons -I ../globals -I  ../parsing_cocci 
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT

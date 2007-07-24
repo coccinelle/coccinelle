@@ -3,10 +3,6 @@ open Common open Commonop
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
-(* can't put "standard.iso" for iso_file because the user may want to
- * launch spatch from any directory and so to be more consistent,
- * better to not put a default value here.
- *)
 let cocci_file = ref ""
 
 let output_file = ref ""
@@ -37,19 +33,20 @@ let save_tmp_files = ref false
 (* pair of  (list of flags to set true, list of flags to set false *)
 let quiet_profile = (
   [
-    Flag.show_diff;
+    Flag_cocci.show_diff;
   ],
   [
-    Flag.show_c;
-    Flag.show_cocci;
-    Flag.show_flow;
-    Flag.show_before_fixed_flow;
-    Flag.show_ctl_tex;
-    Flag.show_ctl_text;
-    Flag.show_transinfo;
-    Flag.show_binding_in_out;
     Flag.show_misc;
-    Flag_engine.show_misc;
+
+    Flag_cocci.show_c;
+    Flag_cocci.show_cocci;
+    Flag_cocci.show_flow;
+    Flag_cocci.show_before_fixed_flow;
+    Flag_cocci.show_ctl_tex;
+    Flag_cocci.show_ctl_text;
+    Flag_cocci.show_transinfo;
+    Flag_cocci.show_binding_in_out;
+
     Flag_parsing_cocci.show_SP;
     Flag_ctl.verbose_ctl_engine;
     Flag_engine.debug_engine;
@@ -76,18 +73,7 @@ let long_usage_func  = ref (fun () -> ())
  * the developers of coccinelle or advanced-users that know
  * quite well the underlying semantics of coccinelle.
  *)
-   
-
-let set_sgrep2 _ =
-  (* to keep ctl directory independent of parsing_cocci directory *)
-   Flag_parsing_cocci.sgrep_mode2 := true;
-   Flag_ctl.sgrep_mode2 := true
-
-let set_diff_lines n =
-  let n = string_of_int n in
-  Flag_parsing_c.diff_lines := Some n
-
-
+  
 
 (* will be printed when use only ./spatch. For the rest you have to
  * use -longhelp to see them. 
@@ -104,9 +90,10 @@ let short_options = [
 
   "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
   "    sgrep mode (sgrep for semantic grep)";
-  "-sgrep2", Arg.Unit set_sgrep2,
+  "-sgrep2", Arg.Set Flag.sgrep_mode2,
   "    sgrep mode2 (sgrep for semantic grep)";
-  "-U", Arg.Int set_diff_lines, "set number of diff context lines";
+  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)), 
+  "  set number of diff context lines";
   "-partial_match",        Arg.Set Flag_ctl.partial_match, 
   "    report partial matches of the SP on the C file";
 
@@ -115,7 +102,7 @@ let short_options = [
   "-macro_file", Arg.Set_string Config.std_h,
   " <file> (default=" ^ !Config.std_h ^ ")";
 
-  "-I",   Arg.Set_string Flag.include_path,
+  "-I",   Arg.Set_string Flag_cocci.include_path,
   "  <dir> where are the Linux headers (optional)";
 
 
@@ -151,25 +138,22 @@ let other_options = [
     "-cocci_file", Arg.Set_string cocci_file, 
     "   <file> the semantic patch file";
     "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
-    "-iso", Arg.Set_string Config.std_iso,     " short option of -iso_file";
-    "-D", Arg.Set_string Config.std_h,     " short option of -macro_file";
+    "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
+    "-D",   Arg.Set_string Config.std_h,     " short option of -macro_file";
   ];
 
   "most useful show options", 
   "",
   [
-    "-no_show_diff"           , Arg.Clear Flag.show_diff, " ";
-    "-show_flow"              , Arg.Set Flag.show_flow,        " ";
-    "-no_show_ctl_text"       , Arg.Clear Flag.show_ctl_text,  " ";
+    "-no_show_diff"           , Arg.Clear Flag_cocci.show_diff, " ";
+    "-show_flow"              , Arg.Set Flag_cocci.show_flow,        " ";
+    "-no_show_ctl_text"       , Arg.Clear Flag_cocci.show_ctl_text,  " ";
     (* works in conjunction with -show_ctl *)
-    "-ctl_inline_let",        Arg.Set Flag.inline_let_ctl, " ";
-    "-ctl_show_mcodekind",    Arg.Set Flag.show_mcodekind_in_ctl, " ";
-    "-show_binding_in_out",     Arg.Set Flag.show_binding_in_out, " ";
-    "-no_show_transinfo"      , Arg.Clear Flag.show_transinfo, " ";
-    "-no_show_misc",   Arg.Unit (fun () -> 
-      Flag.show_misc := false;
-      Flag_engine.show_misc := false;
-    ), " ";
+    "-ctl_inline_let",        Arg.Set Flag_cocci.inline_let_ctl, " ";
+    "-ctl_show_mcodekind",    Arg.Set Flag_cocci.show_mcodekind_in_ctl, " ";
+    "-show_binding_in_out",     Arg.Set Flag_cocci.show_binding_in_out, " ";
+    "-no_show_transinfo"      , Arg.Clear Flag_cocci.show_transinfo, " ";
+    "-no_show_misc",   Arg.Clear Flag.show_misc, " ";
   ];
 
   "verbose subsystems options",  
@@ -184,10 +168,10 @@ let other_options = [
   "other show options",
   "",
   [
-    "-show_c"                 , Arg.Set Flag.show_c,           " ";
-    "-show_cocci"             , Arg.Set Flag.show_cocci,       " ";
-    "-show_before_fixed_flow" , Arg.Set Flag.show_before_fixed_flow,  " ";
-    "-show_ctl_tex"           , Arg.Set Flag.show_ctl_tex,     " ";
+    "-show_c"                 , Arg.Set Flag_cocci.show_c,           " ";
+    "-show_cocci"             , Arg.Set Flag_cocci.show_cocci,       " ";
+    "-show_before_fixed_flow" , Arg.Set Flag_cocci.show_before_fixed_flow,  " ";
+    "-show_ctl_tex"           , Arg.Set Flag_cocci.show_ctl_tex,     " ";
     "-show_SP_julia"       ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
 
@@ -227,7 +211,7 @@ let other_options = [
     "   gather timing information about the main coccinelle functions";
     "-bench", Arg.Int (function x -> Flag_ctl.bench := x), 
     "   <level> for profiling the CTL engine";
-    "-timeout",              Arg.Int (fun x -> Flag.timeout := Some x), 
+    "-timeout", Arg.Int (fun x -> Flag_cocci.timeout := Some x), 
     "   <sec> timeout in seconds";
   ];
 
@@ -236,7 +220,7 @@ let other_options = [
   "change of algorithm options",
   "", 
   [  
-    "-popl", Arg.Set Flag.popl, 
+    "-popl", Arg.Set Flag_cocci.popl, 
     "    simplified SmPL, for the popl paper";
 
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
@@ -370,7 +354,7 @@ let main () =
     then Parsing_hacks._defs := Common.hash_of_list
       (Parse_c.parse_cpp_define_file !Config.std_h);
 
-    Common.timeout_function_opt !Flag.timeout (fun () -> 
+    Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
 
@@ -380,11 +364,11 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
-        Flag.include_path := "tests/include";
+        Flag_cocci.include_path := "tests/include";
         Testing.testone x !compare_with_expected
 
     | []  when !test_all -> 
-        Flag.include_path := "tests/include";
+        Flag_cocci.include_path := "tests/include";
         Testing.testall ()
 
     | [] when !test_regression_okfailed -> 

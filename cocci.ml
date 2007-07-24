@@ -65,7 +65,7 @@ let ctls_of_ast ast ua  =
   List.map2
     (function ast -> function ua ->
       List.combine
-	(if !Flag.popl
+	(if !Flag_cocci.popl
 	then Popl.popl ast
 	else Asttoctl2.asttoctl ast ua)
 	(Asttomember.asttomember ast ua))
@@ -78,7 +78,7 @@ let ctls_of_ast ast ua  =
 (* the inputs *)
 
 let show_or_not_cfile2 cfile =
-  if !Flag.show_c then begin
+  if !Flag_cocci.show_c then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
     Common.pr2_xxxxxxxxxxxxxxxxx ();
@@ -91,7 +91,7 @@ let show_or_not_cfiles cfiles = List.iter show_or_not_cfile cfiles
 
 
 let show_or_not_cocci2 coccifile isofile = 
-  if !Flag.show_cocci then begin
+  if !Flag_cocci.show_cocci then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing semantic patch file: " ^ coccifile);
     isofile +> (fun s -> pr2 ("with isos from: " ^ s));
@@ -106,7 +106,7 @@ let show_or_not_cocci a b =
 (* the output *)
 
 let show_or_not_diff2 cfile outfile show_only_minus = 
-  if !Flag.show_diff then begin
+  if !Flag_cocci.show_diff then begin
     (* may need --strip-trailing-cr under windows *)
     pr2 "diff = ";
 
@@ -128,7 +128,7 @@ let show_or_not_diff a b c  =
 (* the derived input *)
 
 let show_or_not_ctl_tex2 astcocci ctls =
-  if !Flag.show_ctl_tex then begin
+  if !Flag_cocci.show_ctl_tex then begin
     Ctltotex.totex ("/tmp/__cocci_ctl.tex") astcocci ctls;
     Common.command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
               "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
@@ -140,7 +140,7 @@ let show_or_not_ctl_tex a b  =
 
 
 let show_or_not_ctl_text2 ctl ast rulenb =
-  if !Flag.show_ctl_text then begin
+  if !Flag_cocci.show_ctl_text then begin
 
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr ("rule " ^ i_to_s rulenb ^ " = ");
@@ -157,7 +157,7 @@ let show_or_not_ctl_text2 ctl ast rulenb =
     adjust_pp_with_indent (fun () -> 
       Format.force_newline();
       Pretty_print_engine.pp_ctlcocci 
-        !Flag.show_mcodekind_in_ctl !Flag.inline_let_ctl ctl;
+        !Flag_cocci.show_mcodekind_in_ctl !Flag_cocci.inline_let_ctl ctl;
     );
     pr "";
   end
@@ -183,7 +183,7 @@ let show_or_not_celem a b  =
 
 
 let show_or_not_trans_info2 trans_info = 
-  if !Flag.show_transinfo then begin
+  if !Flag_cocci.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
@@ -214,7 +214,7 @@ let show_or_not_trans_info a  =
 
 
 let show_or_not_binding2 s binding =
-  if !Flag.show_binding_in_out then begin
+  if !Flag_cocci.show_binding_in_out then begin
     adjust_pp_with_indent_and_header ("binding " ^ s ^ " = ") (fun () -> 
       Pretty_print_engine.pp_binding binding;
     )
@@ -228,7 +228,7 @@ let show_or_not_binding a b  =
 (* Some  helpers functions *)
 (*****************************************************************************)
 let worth_trying cfiles tokens = 
-  if not !Flag.windows && not (null tokens)
+  if not !Flag_cocci.windows && not (null tokens)
   then
    (* could also modify the code in get_constants.ml *)
     let tokens = tokens +> List.map (fun s -> 
@@ -481,8 +481,8 @@ let build_info_program cprogram env =
         (* remove the fake nodes for julia *)
         let fixed_flow = CCI.fix_flow_ctl flow in
 
-        if !Flag.show_flow then print_flow fixed_flow;
-        if !Flag.show_before_fixed_flow then print_flow flow;
+        if !Flag_cocci.show_flow then print_flow fixed_flow;
+        if !Flag_cocci.show_before_fixed_flow then print_flow flow;
 
         fixed_flow
       );
@@ -556,7 +556,7 @@ let includes_to_parse xs =
           | Ast_c.NonLocal xs -> 
               if Common.fileprefix (Common.last xs) = Common.fileprefix file 
               then 
-                Some (Filename.concat !Flag.include_path (Common.join "/" xs))
+                Some (Filename.concat !Flag_cocci.include_path (Common.join "/" xs))
               else None
         | Ast_c.Wierd _ -> None
           )
@@ -732,14 +732,14 @@ let rec bigloop2 rs ccs =
     es := !newes;
 
     (* apply the tagged modifs and reparse *)
-    if not !Flag_parsing_cocci.sgrep_mode2
+    if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs;
       
     if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
    end
   ); (* end iter rs *)
 
-  (if !Flag_parsing_cocci.sgrep_mode2
+  (if !Flag.sgrep_mode2
   then begin
     Flag_parsing_c.verbose_parsing := false;
     ccs := rebuild_info_c_and_headers !ccs
@@ -860,11 +860,11 @@ let full_engine2 (coccifile, isofile) cfiles =
         (* and now unparse everything *)
         cfile_of_program (for_unparser c_or_h.asts) outfile;
 
-        let show_only_minus = !Flag_parsing_cocci.sgrep_mode2 in
+        let show_only_minus = !Flag.sgrep_mode2 in
         show_or_not_diff c_or_h.fpath outfile show_only_minus;
 
         (c_or_h.fpath, 
-        if !Flag_parsing_cocci.sgrep_mode2 then None else Some outfile
+        if !Flag.sgrep_mode2 then None else Some outfile
         )
       end
       else 

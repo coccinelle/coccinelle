@@ -194,7 +194,7 @@ let do_unitary minus plus =
 	let (m_unitary,m_nonunitary) = get_free minus_checker m1 in
 	let (p_unitary,p_nonunitary) = get_free plus_checker p1 in
 	let p_free =
-	  if !Flag_parsing_cocci.sgrep_mode2
+	  if !Flag.sgrep_mode2
 	  then []
 	  else p_unitary @ p_nonunitary in
 	let (in_p,m_unitary) =

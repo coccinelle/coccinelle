@@ -37,7 +37,7 @@ let get_minus_constants bind =
 	(match Ast.unwrap_mcode name with
 	  "NULL" -> [] (* special case, because this is too generic *)
 	| nm ->
-	    if !Flag_parsing_cocci.sgrep_mode2
+	    if !Flag.sgrep_mode2
 	    then
 	      match name with
 		(_,_,Ast.MINUS(_,_)) -> [nm]
@@ -62,7 +62,7 @@ let get_minus_constants bind =
   let typeC r k e =
     match Ast.unwrap e with
       Ast.TypeName(ty) ->
-	if !Flag_parsing_cocci.sgrep_mode2
+	if !Flag.sgrep_mode2
 	then
 	  match ty with
 	    (_,_,Ast.MINUS(_,_)) -> [Ast.unwrap_mcode ty]

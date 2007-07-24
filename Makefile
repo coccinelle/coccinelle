@@ -3,16 +3,16 @@
 ##############################################################################
 TARGET=spatch
 
-SRC=config.ml flag.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
 SYSLIBS=str.cma unix.cma
-LIBS=commons/commons.cma \
+LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
      engine/cocciengine.cma popl/popl.cma
 
-MAKESUBDIRS=commons ctl parsing_cocci parsing_c engine popl
-INCLUDEDIRS=commons ctl parsing_cocci parsing_c engine popl
+MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl
+INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl
 
 ##############################################################################
 # Generic variables

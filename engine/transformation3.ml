@@ -132,13 +132,13 @@ module XTRANS = struct
     | _ -> 
         if (oldmcode, oldenv) = (mck, binding)
         then begin
-          if !Flag_engine.show_misc 
+          if !Flag.show_misc 
           then pr2 "already tagged but with same mcode, so safe";
           ib
         end
            
         else 
-          if !Flag_parsing_cocci.sgrep_mode2
+          if !Flag.sgrep_mode2
           then ib (* safe *)
           else 
             begin
@@ -392,7 +392,7 @@ let (transform2: string (* rule name *) ->
       (* subtil: not cflow#nodes but acc#nodes *)
       let node  = acc#nodes#assoc nodei in 
 
-      if !Flag_engine.show_misc 
+      if !Flag.show_misc 
       then pr2 "transform one node";
 
       let node' = transform_re_node rule_elem node binding in

@@ -1104,7 +1104,7 @@ let parse file =
 	Printf.printf "before plus parse\n";
 	*)
 	let plus_res =
-	  if !Flag_parsing_cocci.sgrep_mode2
+	  if !Flag.sgrep_mode2
 	  then (* not actually used for anything, except context_neg *)
 	    List.map
 	      (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
@@ -1160,13 +1160,13 @@ let process file isofile verbose =
 	       Function_prototypes.process rule_name minus plus in
 	     (* warning! context_neg side-effects its arguments! *)
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
-	     (if not !Flag_parsing_cocci.sgrep_mode2
+	     (if not !Flag.sgrep_mode2
 	     then Insert_plus.insert_plus m p);
 	     Type_infer.type_infer minus;
 	     let (extra_meta,minus) =
 	       Iso_pattern.apply_isos chosen_isos minus rule_name in
 	     let minus =
-	       if !Flag_parsing_cocci.sgrep_mode2
+	       if !Flag.sgrep_mode2
 	       then minus
 	       else Single_statement.single_statement minus in
 	     let minus_ast =
