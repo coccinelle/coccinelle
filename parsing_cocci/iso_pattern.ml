@@ -98,7 +98,7 @@ let interpret_reason name line reason printer =
 	var;
   | ContextRequired(term) ->
       Printf.printf
-	"the following code matched is not uniformly minus or context:\n";
+	"the following code matched is not uniformly minus or context,\nor contains a disjunction:\n";
       Unparse_ast0.unparse_anything term
   | _ -> failwith "not possible"
 
@@ -1657,7 +1657,7 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 		  (new_metavars,
 		   call_instantiate bindings mv_bindings all_alts))) in
   let rec outer_loop prev_ecount prev_icount prev_dcount = function
-      [] -> ([],e) (* nothing matched *)
+      [] | [[_]] (*only one alternative*)  -> ([],e) (* nothing matched *)
     | (alts::rest) as all_alts ->
 	match inner_loop all_alts prev_ecount prev_icount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_icount, prev_dcount) ->

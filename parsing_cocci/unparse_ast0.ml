@@ -562,64 +562,34 @@ let unparse_anything x =
   quiet := true;
   (match x with
     Ast0.DotsExprTag(d) ->
-      Format.print_string "dotsexpr";
-      Format.print_newline();
       expression_dots d
   | Ast0.DotsParamTag(d) ->
-      Format.print_string "dotsparam";
-      Format.print_newline();
       parameter_list d
   | Ast0.DotsInitTag(d) ->
-      Format.print_string "dotsinit";
-      Format.print_newline();
       initialiser_list d
   | Ast0.DotsStmtTag(d) ->
-      Format.print_string "dotsstmt";
-      Format.print_newline();
       statement_dots d
   | Ast0.DotsDeclTag(d) ->
-      Format.print_string "dotsdecl";
-      Format.print_newline();
       declaration_dots d
   | Ast0.DotsCaseTag(d) ->
-      Format.print_string "dotscase";
-      Format.print_newline();
       case_dots d
   | Ast0.IdentTag(d) ->
-      Format.print_string "ident";
-      Format.print_newline();
       ident d
   | Ast0.ExprTag(d) ->
-      Format.print_string "expr";
-      Format.print_newline();
       expression d
   | Ast0.TypeCTag(d) ->
-      Format.print_string "type";
-      Format.print_newline();
       typeC d
   | Ast0.ParamTag(d) ->
-      Format.print_string "param";
-      Format.print_newline();
       parameterTypeDef d
   | Ast0.InitTag(d) ->
-      Format.print_string "init";
-      Format.print_newline();
       initialiser d
   | Ast0.DeclTag(d) ->
-      Format.print_string "decl";
-      Format.print_newline();
       declaration d
   | Ast0.StmtTag(d) ->
-      Format.print_string "stmt";
-      Format.print_newline();
       statement "" d
   | Ast0.CaseLineTag(d) ->
-      Format.print_string "case";
-      Format.print_newline();
       case_line "" d
   | Ast0.TopTag(d) ->
-      Format.print_string "top";
-      Format.print_newline();
       top_level d);
   quiet := q;
   print_newline()
