@@ -249,7 +249,7 @@ let classify is_minus all_marked table code =
        consider in the index list, which is needed to make a disj with
        something in one branch and nothing in the other different from code
        that just has the something (starter/ender enough, mids not needed
-       for this).  Cannot agglomerate over | boundaries, because two -
+       for this).  Cannot agglomerate + code over | boundaries, because two -
        cases might have different + code, and don't want to put the + code
        together into one unit. *)
     let make_not_marked =

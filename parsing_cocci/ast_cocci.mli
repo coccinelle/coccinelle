@@ -422,7 +422,8 @@ and base_top_level =
 
 and top_level = base_top_level wrap
 
-and rule = string * dependency list * top_level list
+and rule =
+    string * dependency list * string list (* dropped isos *) * top_level list
 
 and dependency = Dep of string | AntiDep of string
 

@@ -806,6 +806,6 @@ let ast0toast_toplevel x =
   inline_mcodes.V0.combiner_top_level x;
   top_level x
 
-let ast0toast name deps x =
+let ast0toast name deps dropped x =
   List.iter inline_mcodes.V0.combiner_top_level x;
-  (name,deps,List.map top_level x)
+  (name,deps,dropped,List.map top_level x)

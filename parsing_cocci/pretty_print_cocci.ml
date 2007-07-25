@@ -745,7 +745,7 @@ let _ =
     | Ast.SgrepStartTag(x) -> print_string x
     | Ast.SgrepEndTag(x) -> print_string x
 
-let unparse (nm,deps,x) =
+let unparse (nm,deps,drops,x) =
   print_string "@@";
   force_newline();
   print_string nm;

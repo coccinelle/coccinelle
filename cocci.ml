@@ -303,7 +303,7 @@ let sp_contain_typed_metavar toplevel_list_list =
   in
   toplevel_list_list +> 
     List.exists
-    (function (nm,deps,rule) ->
+    (function (nm,deps,drops,rule) ->
       (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
 
@@ -402,6 +402,7 @@ type toplevel_cocci_info = {
 
   rulename: string;
   dependencies: Ast_cocci.dependency list;
+  dropped_isos: string list;
   used_after: Ast_cocci.meta_name list;
 
   ruleid: int;
@@ -446,12 +447,13 @@ let prepare_cocci ctls used_after_lists astcocci =
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
 
-      let (rulename, dependencies, restast) = ast in
+      let (rulename, dependencies, dropped_isos, restast) = ast in
       { 
         ctl = List.hd ctl_toplevel_list;
         ast_rule = ast;
         rulename = rulename;
         dependencies = dependencies;
+        dropped_isos = dropped_isos;
         used_after = List.hd used_after_list;
         ruleid = rulenb;
         was_matched = ref false;

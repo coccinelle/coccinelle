@@ -291,6 +291,7 @@ let disj_all =
 
 let disj rules =
   List.map
-    (function (mv,(nm,dep,r)) ->
-      let res = List.map disj_all.V.rebuilder_top_level r in (mv,(nm,dep,res)))
+    (function (mv,(nm,dep,drop,r)) ->
+      let res =
+	List.map disj_all.V.rebuilder_top_level r in (mv,(nm,dep,drop,res)))
     rules

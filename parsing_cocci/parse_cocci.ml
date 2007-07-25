@@ -976,6 +976,8 @@ let get_metavars parse_fn table file lexbuf =
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
+let reserved_names = ["optional_storage";"optional_qualifier";"all"]
+
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
   Data.in_rule_name := true;
   let mknm _ = make_name prefix (!Lexer_cocci.line) in
@@ -985,7 +987,10 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
       let (_,tokens) = get_tokens [PC.TArob] in
       match parse_one "rule name" parse_fn file tokens with
 	(None,a,b,c) -> (mknm(),a,b,c)
-      |	(Some nm,a,b,c) -> (nm,a,b,c)
+      |	(Some nm,a,b,c) ->
+	  (if List.mem nm reserved_names
+	  then failwith (Printf.sprintf "invalid name %s\n" nm));
+	  (nm,a,b,c)
     else (mknm(),[],[],[]) in
   Data.in_rule_name := false;
   name_res
@@ -1206,11 +1211,14 @@ let process file isofile verbose =
 	       if !Flag.sgrep_mode2
 	       then minus
 	       else Single_statement.single_statement minus in
+	     let dropped_isos =
+	       List.filter (function x -> List.mem x dropiso) reserved_names in
 	     let minus_ast =
-	       Ast0toast.ast0toast rule_name dependencies minus in
+	       Ast0toast.ast0toast rule_name dependencies dropped_isos minus in
 	     match function_prototypes with
 	       None -> [(extra_meta@metavars, minus_ast)]
-	     | Some mv_fp -> [(extra_meta@metavars, minus_ast);mv_fp])
+	     | Some mv_fp ->
+		 [(extra_meta@metavars, minus_ast);mv_fp])
 	 minus plus) in
   let disjd = Disjdistr.disj parsed in
   let (code,ua) = Free_vars.free_vars disjd in
