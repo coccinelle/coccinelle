@@ -803,6 +803,56 @@ let realign minus plus =
   loop (minus,plus)
 
 (* ------------------------------------------------------------------- *)
+(* check compatible: check that at the top level the minus and plus code is
+of the same kind.  Could go further and make the correspondence between the
+code between ...s. *)
+
+let isonly f l = match Ast0.undots l with [s] -> f s | _ -> false
+
+let isall f l = List.for_all (isonly f) l
+
+let rec is_exp s =
+  match Ast0.unwrap s with
+    Ast0.Exp(e) -> true
+  | Ast0.Disj(_,stmts,_,_) -> isall is_exp stmts
+  | _ -> false
+
+let rec is_ty s =
+  match Ast0.unwrap s with
+    Ast0.Ty(e) -> true
+  | Ast0.Disj(_,stmts,_,_) -> isall is_ty stmts
+  | _ -> false
+
+let rec is_decl s =
+  match Ast0.unwrap s with
+    Ast0.Decl(_,e) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
+  | _ -> false
+
+let check_compatible m p =
+  let fail _ =
+    failwith
+      (Printf.sprintf
+	 "incompatible minus and plus code starting on lines %d and %d"
+	 (Ast0.get_line m) (Ast0.get_line p)) in
+  match (Ast0.unwrap m, Ast0.unwrap p) with
+    (Ast0.DECL(decl1),Ast0.DECL(decl2)) ->
+      if not (is_decl decl1 && is_decl decl2)
+      then fail()
+  | (Ast0.CODE(code1),Ast0.CODE(code2)) ->
+      let testers = [is_exp;is_ty;is_decl] in
+      List.iter
+	(function tester ->
+	  let v1 = isonly tester code1 in
+	  let v2 = isonly tester code2 in
+	  if (v1 && not v2) or (v2 && not v1) then fail())
+	testers
+  | (Ast0.FILEINFO(_,_),Ast0.FILEINFO(_,_)) -> ()
+  | (Ast0.OTHER(_),Ast0.OTHER(_)) -> ()
+  | _ -> fail()
+
+(* ------------------------------------------------------------------- *)
 
 (* returns a list of corresponding minus and plus trees *)
 let context_neg minus plus =
@@ -842,6 +892,7 @@ let context_neg minus plus =
 	       node *)
 	    let i = Ast0.fresh_index() in
 	    Ast0.set_index m i; Ast0.set_index p i;
+	    check_compatible m p;
 	    collect_plus_lines p;
 	    let _ =
 	      classify true

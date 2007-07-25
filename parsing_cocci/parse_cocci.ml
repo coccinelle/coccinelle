@@ -976,7 +976,8 @@ let get_metavars parse_fn table file lexbuf =
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
-let reserved_names = ["optional_storage";"optional_qualifier";"all"]
+(* all should be at the front!!! *)
+let reserved_names = ["all";"optional_storage";"optional_qualifier"]
 
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
   Data.in_rule_name := true;
@@ -1212,7 +1213,15 @@ let process file isofile verbose =
 	       then minus
 	       else Single_statement.single_statement minus in
 	     let dropped_isos =
-	       List.filter (function x -> List.mem x dropiso) reserved_names in
+	       match reserved_names with
+		 "all"::others ->
+		   (match dropiso with
+		     ["all"] -> others
+		   | _ ->
+		       List.filter (function x -> List.mem x dropiso) others)
+	       | _ ->
+		   failwith
+		     "bad list of reserved names - all must be at start" in
 	     let minus_ast =
 	       Ast0toast.ast0toast rule_name dependencies dropped_isos minus in
 	     match function_prototypes with
