@@ -1,0 +1,15 @@
+@@
+identifier fn;
+identifier sizeof_priv;
+@@
+
+- fn(...,int sizeof_priv, ...) 
+{
+   <...
+(
+        alloc_netdev(sizeof_priv, ...)
+|
+        alloc_netdev_mq(sizeof_priv, ...)
+)
+   ...>    
+ }

@@ -1,0 +1,7 @@
+@@
+iterator list_for_each_safe;
+statement S;
+expression a, b, c;
+@@
+- list_for_each_safe(a, b, c) 
+-  S
