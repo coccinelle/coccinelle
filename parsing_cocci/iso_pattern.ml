@@ -75,8 +75,35 @@ let anything_equal = function
 let term (var1,_,_,_) = var1
 let dot_term (var1,_,info,_) = ("", var1 ^ (string_of_int info.Ast0.offset))
 
-(* probably don't need option in return type, because [] is failure. but
-trying to be simple for the moment ... *)
+
+type reason =
+    NotPure of (string * string) * Ast0.anything
+  | NotPureLength of (string * string)
+  | ContextRequired of Ast0.anything
+  | NonMatch
+
+let interpret_reason name line reason printer =
+  Printf.printf
+    "warning: iso %s does not match the code below on line %d\n" name line;
+  printer(); Format.print_newline();
+  match reason with
+    NotPure((_,var),nonpure) ->
+      Printf.printf
+	"pure metavariable %s is matched against the following nonpure code:\n"
+	var;
+      Unparse_ast0.unparse_anything nonpure
+  | NotPureLength((_,var)) ->
+      Printf.printf
+	"pure metavariable %s is matched against too much or too little code\n"
+	var;
+  | ContextRequired(term) ->
+      Printf.printf
+	"the following code matched is not uniformly minus or context:\n";
+      Unparse_ast0.unparse_anything term
+  | _ -> failwith "not possible"
+
+type 'a either = OK of 'a | Fail of reason
+
 let add_binding var exp bindings =
   let var = term var in
   let attempt bindings =
@@ -85,8 +112,8 @@ let add_binding var exp bindings =
       if anything_equal(exp,cur) then [bindings] else []
     with Not_found -> [((var,exp)::bindings)] in
   match List.concat(List.map attempt bindings) with
-    [] -> None
-  | x -> Some x
+    [] -> Fail NonMatch
+  | x -> OK x
 
 let add_dot_binding var exp bindings =
   let var = dot_term var in
@@ -96,8 +123,8 @@ let add_dot_binding var exp bindings =
       if anything_equal(exp,cur) then [bindings] else []
     with Not_found -> [((var,exp)::bindings)] in
   match List.concat(List.map attempt bindings) with
-    [] -> None
-  | x -> Some x
+    [] -> Fail NonMatch
+  | x -> OK x
 
 let rec nub ls =
   match ls with
@@ -122,14 +149,15 @@ let debug str m binding =
   res
 
 let conjunct_bindings
-    (m1 : 'binding -> 'binding option)
-    (m2 : 'binding -> 'binding option)
-    (binding : 'binding) : 'binding option =
-  match m1 binding with None -> None | Some binding -> m2 binding
+    (m1 : 'binding -> 'binding either)
+    (m2 : 'binding -> 'binding either)
+    (binding : 'binding) : 'binding either =
+  match m1 binding with Fail(reason) -> Fail(reason) | OK binding -> m2 binding
 
 let mcode_equal (x,_,_,_) (y,_,_,_) = x = y
 
-let return b binding = if b then Some binding else None
+let return b binding = if b then OK binding else Fail NonMatch
+let return_false reason binding = Fail reason
 
 let match_option f t1 t2 =
   match (t1,t2) with
@@ -315,8 +343,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  [x] ->
 	    if (Ast0.lub_pure (is_pure x) pure) = pure
 	    then add_binding name (builder1 lst)
-	    else return false
-	| _ -> return false)
+	    else return_false (NotPure (term name,builder1 lst))
+	| _ -> return_false (NotPureLength (term name)))
     | (false,_) | (_,Ast0.Impure) -> add_binding name (builder2 lst) in
 
   let add_pure_binding name pure is_pure builder x =
@@ -324,7 +352,7 @@ let match_maker checks_needed context_required whencode_allowed =
       (true,Ast0.Pure) | (true,Ast0.Context) ->
 	if (Ast0.lub_pure (is_pure x) pure) = pure
 	then add_binding name (builder x)
-	else return false
+	else return_false (NotPure (term name, builder x))
     | (false,_) | (_,Ast0.Impure) ->  add_binding name (builder x) in
 
   let do_elist_match builder el lst =
@@ -378,7 +406,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueIdent(idb))
 	  | (_,Ast0.MultiIdent(idb)) -> match_ident pattern idb
 	  | _ -> return false
-	else return false in
+	else return_false (ContextRequired (Ast0.IdentTag id)) in
 
   (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
@@ -425,10 +453,10 @@ let match_maker checks_needed context_required whencode_allowed =
 			expty in
 		    match
 		      List.concat
-			(List.map (function None -> [] | Some x -> x) attempts)
+			(List.map (function Fail _ -> [] | OK x -> x) attempts)
 		    with
-		      [] -> None
-		    | x -> Some x)
+		      [] -> Fail NonMatch
+		    | x -> OK x)
 	      |	_ ->
 		  (*Printf.printf
 		    "warning: type metavar can only match one type";*)
@@ -552,7 +580,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueExp(expb))
 	  | (_,Ast0.MultiExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
-	else return false
+	else return_false (ContextRequired (Ast0.ExprTag expr))
 
 (* the special case for function types prevents the eg T X; -> T X = E; iso
 from applying, which doesn't seem very relevant, but it also avoids a
@@ -614,7 +642,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (_,Ast0.UniqueType(tyb))
 	  | (_,Ast0.MultiType(tyb)) -> match_typeC pattern tyb
 	  | _ -> return false
-	else return false
+	else return_false (ContextRequired (Ast0.TypeCTag t))
 	    
   and match_decl pattern d =
     if not(checks_needed) or not(context_required) or is_context d
@@ -659,7 +687,7 @@ mysterious bug that is obtained with eg int attach(...); *)
       | (_,Ast0.UniqueDecl(declb))
       | (_,Ast0.MultiDecl(declb)) -> match_decl pattern declb
       | _ -> return false
-    else return false
+    else return_false (ContextRequired (Ast0.DeclTag d))
 
   and match_init pattern i =
     if not(checks_needed) or not(context_required) or is_context i
@@ -700,7 +728,7 @@ mysterious bug that is obtained with eg int attach(...); *)
       | (_,Ast0.UniqueIni(ib))
       | (_,Ast0.MultiIni(ib)) -> match_init pattern ib
       | _ -> return false
-    else return false
+    else return_false (ContextRequired (Ast0.InitTag i))
 
   and match_param pattern p =
     match Ast0.unwrap pattern with
@@ -726,7 +754,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (_,Ast0.OptParam(paramb))
 	  | (_,Ast0.UniqueParam(paramb)) -> match_param pattern paramb
 	  | _ -> return false
-	else return false
+	else return_false (ContextRequired (Ast0.ParamTag p))
 	    
   and match_statement pattern s =
     match Ast0.unwrap pattern with
@@ -860,7 +888,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (_,Ast0.UniqueStm(reb))
 	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
-	else return false
+	else return_false (ContextRequired (Ast0.StmtTag s))
 
   (* first should provide a subset of the information in the second *)
   and match_fninfo patterninfo cinfo =
@@ -897,7 +925,7 @@ mysterious bug that is obtained with eg int attach(...); *)
       |	(Ast0.OptCase(ca),Ast0.OptCase(cb)) -> match_case_line ca cb
       |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
       |	_ -> return false
-    else return false in
+    else return_false (ContextRequired (Ast0.CaseLineTag c)) in
 
   let match_statement_dots x y =
     match_dots match_statement is_slist_matcher do_slist_match x y in
@@ -1608,17 +1636,18 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	  whencode_allowed prev_ecount prev_icount prev_dcount
 	    ecount dcount icount rest in
 	(match matcher true (context_required e) wc pattern e init_env with
-	  None ->
-	    (match matcher false false wc pattern e init_env with
-	      Some _ ->
-		Printf.printf
-		  "warning: some constraints on isos caused %s\nnot to match the following code on line %d\n" name (Ast0.get_line e);
-		printer e;
-		Format.print_newline();
-	    | _ -> ());
+	  Fail(reason) ->
+	    if reason = NonMatch
+	    then ()
+	    else
+	      (match matcher false false wc pattern e init_env with
+		OK _ ->
+		  interpret_reason name (Ast0.get_line e) reason
+		    (function () -> printer e)
+	      | _ -> ());
 	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
 	      (prev_dcount + dcount) rest
-	| Some (bindings : (((string * string) * 'a) list list)) ->
+	| OK (bindings : (((string * string) * 'a) list list)) ->
 	    (match List.concat all_alts with
 	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
