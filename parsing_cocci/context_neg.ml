@@ -830,6 +830,25 @@ let rec is_decl s =
   | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
   | _ -> false
 
+let rec is_fndecl s =
+  match Ast0.unwrap s with
+    Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
+  | _ -> false
+
+let rec is_toplevel s =
+  match Ast0.unwrap s with
+    Ast0.Decl(_,e) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
+  | Ast0.ExprStatement(fc,_) ->
+      (match Ast0.unwrap fc with
+	Ast0.FunCall(_,_,_,_) -> true
+      |	_ -> false)
+  | Ast0.Include(_,_) -> true
+  | Ast0.Define(_,_,_,_) -> true
+  | _ -> false
+
 let check_compatible m p =
   let fail _ =
     failwith
@@ -840,14 +859,21 @@ let check_compatible m p =
     (Ast0.DECL(decl1),Ast0.DECL(decl2)) ->
       if not (is_decl decl1 && is_decl decl2)
       then fail()
+  | (Ast0.DECL(decl1),Ast0.CODE(code2)) ->
+      let v1 = is_decl decl1 in
+      let v2 = List.for_all is_toplevel (Ast0.undots code2) in
+      if v1 && not v2 then fail()
   | (Ast0.CODE(code1),Ast0.CODE(code2)) ->
-      let testers = [is_exp;is_ty;is_decl] in
+      let testers = [is_exp;is_ty] in
       List.iter
 	(function tester ->
 	  let v1 = isonly tester code1 in
 	  let v2 = isonly tester code2 in
 	  if (v1 && not v2) or (v2 && not v1) then fail())
-	testers
+	testers;
+      let v1 = isonly is_fndecl code1 in
+      let v2 = List.for_all is_toplevel (Ast0.undots code2) in
+      if v1 && not v2 then fail()
   | (Ast0.FILEINFO(_,_),Ast0.FILEINFO(_,_)) -> ()
   | (Ast0.OTHER(_),Ast0.OTHER(_)) -> ()
   | _ -> fail()
