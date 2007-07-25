@@ -719,6 +719,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      (* starti -> doi ---> ... ---> finalthen (opt) ---> whiletaili
       *             |--------- newfakethen ---------------|  |---> newfakelse
       *)
+      let is_zero = 
+        match Ast_c.unwrap_expr e with
+        | Constant (Int "0") -> true
+        | _ -> false
+      in
 
       let (iido, iiwhiletail, iifakeend) = 
         match ii with
@@ -729,9 +734,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, doi);
       let taili = !g +> add_node (DoWhileTail (e, iiwhiletail)) lbl "whiletail"
       in
+      
 
-
-      let newfakethen = !g +> add_node TrueNode lbl "[dowhiletrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[enddowhile]" in *)
       let newafter = !g +> add_node FallThroughNode lbl "[dowhilefall]" in
       let newfakeelse = 
@@ -743,11 +747,16 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         }
       in
 
-      !g#add_arc ((taili, newfakethen), Direct); 
+      if not is_zero
+      then begin
+        let newfakethen = !g +> add_node TrueNode lbl "[dowhiletrue]" in
+        !g#add_arc ((taili, newfakethen), Direct); 
+        !g#add_arc ((newfakethen, doi), Direct); 
+      end;
+
       !g#add_arc ((newafter, newfakeelse), Direct);
       !g#add_arc ((taili, newafter), Direct);
 
-      !g#add_arc ((newfakethen, doi), Direct); 
 
       let finalthen = aux_statement (Some doi, newxi) st in 
       (match finalthen with

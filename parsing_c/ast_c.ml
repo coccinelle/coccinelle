@@ -477,7 +477,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
 *)
 
 type cppcommentkind = 
-  CppDirective | CppAttr | CppOther
+  CppDirective | CppAttr | CppMacro | CppOther
 
 (*****************************************************************************)
 (* Some constructors *)

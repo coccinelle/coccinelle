@@ -242,19 +242,30 @@ let pp_program2 xs outfile  =
         | _ -> pr2 ("pp_passing_token: " ^ str);
             
       );
-      let is_pure_real_comment = List.for_all TH.is_real_comment commentsbefore
-      in
+      let is_pure_real_comment = 
+        List.for_all TH.is_real_comment commentsbefore in
 
       commentsbefore +> List.iter (fun tok -> 
         let str = TH.str_of_tok tok in
         match tok with
-        | Parser_c.TCommentSpace       _ -> 
+        | Parser_c.TCommentSpace _ ->
             update_current_tabbing str;
             if not (is_between_two_minus !_last_synced_token info)
-              || not (is_pure_real_comment)
-            then pr str;
+               || not (is_pure_real_comment)
+            then pr str
 
-        | Parser_c.TComment _ |Parser_c.TCommentCpp _ |Parser_c.TCommentMisc _ 
+        | Parser_c.TComment _ 
+        | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
+        | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
+          -> 
+            if is_between_two_minus !_last_synced_token info
+            then 
+              pr2 ("ERASING_COMMENTS: " ^ str)
+            else pr str
+
+
+        | Parser_c.TCommentMisc _ 
+        | Parser_c.TCommentCpp _
             -> pr str
         | x -> error_cant_have x
       );

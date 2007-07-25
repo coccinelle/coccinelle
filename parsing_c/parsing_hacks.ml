@@ -816,7 +816,7 @@ let rec apply_macro_defs xs =
       | Left (), bodymacro -> 
           pr2 ("macro without param used before parenthize, wierd: " ^ s);
           (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
-          set_as_comment (Ast_c.CppOther) id;
+          set_as_comment (Ast_c.CppMacro) id;
           id.new_tokens_before <- bodymacro;
       | Right params, bodymacro -> 
           if List.length params = List.length xxs
