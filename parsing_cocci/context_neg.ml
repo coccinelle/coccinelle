@@ -66,6 +66,52 @@ let get_index = function
   | Ast0.TopTag(d) -> Index.top_level d
 
 (* --------------------------------------------------------------------- *)
+(* Collect the line numbers of the plus code.  This is used for disjunctions.
+It is not completely clear why this is necessary, but it seems like an easy
+fix for whatever is the problem that is discussed in disj_cases *)
+
+let plus_lines = ref ([] : int list)
+
+let insert n =
+  let rec loop = function
+      [] -> [n]
+    | x::xs ->
+	match compare n x with
+	  1 -> x::(loop xs)
+	| 0 -> x::xs
+	| -1 -> n::x::xs
+	| _ -> failwith "not possible" in
+  plus_lines := loop !plus_lines
+
+let find n min max =
+  let rec loop = function
+      [] -> (min,max)
+    | [x] -> if n < x then (min,x) else (x,max)
+    | x1::x2::rest ->
+	if n < x1
+	then (min,x1)
+	else if n > x1 && n < x2 then (x1,x2) else loop (x2::rest) in
+  loop !plus_lines
+
+let collect_plus_lines top =
+  plus_lines := [];
+  let bind x y = () in
+  let option_default = () in
+  let donothing r k e = k e in
+  let mcode (_,_,info,mcodekind) =
+    match mcodekind with
+      Ast0.PLUS -> insert info.Ast0.line_start
+    | _ -> () in
+  let fn =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing in
+  fn.V0.combiner_top_level top
+
+(* --------------------------------------------------------------------- *)
 
 type kind = Neutral | AllMarked | NotAllMarked (* marked means + or - *)
 
@@ -161,7 +207,9 @@ let is_context = function Ast0.CONTEXT(_) -> true | _ -> false
 
 let union_all l = List.fold_left Common.union_set [] l
 
-let classify all_marked table code =
+(* is minus is true when we are processing minus code that might be
+intermingled with plus code.  it is used in disj_cases *)
+let classify is_minus all_marked table code =
   let mkres builder k il tl bil btl l e =
     (if k = AllMarked
     then Ast0.set_mcodekind e (all_marked()) (* definitive *)
@@ -195,7 +243,7 @@ let classify all_marked table code =
 
   let do_nothing builder r k e = compute_result builder e (k e) in
 
-  let disj_cases starter code fn ender =
+  let disj_cases disj starter code fn ender =
     (* neutral_mcode used so starter and ender don't have an affect on
        whether the code is considered all plus/minus, but so that they are
        consider in the index list, which is needed to make a disj with
@@ -204,11 +252,19 @@ let classify all_marked table code =
        for this).  Cannot agglomerate over | boundaries, because two -
        cases might have different + code, and don't want to put the + code
        together into one unit. *)
-	bind (neutral_mcode starter)
-	  (bind (List.fold_right bind
-		   (List.map make_not_marked (List.map fn code))
-		   option_default)
-	     (neutral_mcode ender)) in
+    let make_not_marked =
+      if is_minus
+      then
+	(let min = Ast0.get_line disj in
+	let max = Ast0.get_line_end disj in
+	let (plus_min,plus_max) = find min (min-1) (max+1) in
+	if max > plus_max then make_not_marked else (function x -> x))
+      else make_not_marked in
+    bind (neutral_mcode starter)
+      (bind (List.fold_right bind
+	       (List.map make_not_marked (List.map fn code))
+	       option_default)
+	 (neutral_mcode ender)) in
 
   (* no whencode in plus tree so have to drop it *)
   (* need special cases for dots, nests, and disjs *)
@@ -224,7 +280,7 @@ let classify all_marked table code =
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
       | Ast0.DisjExpr(starter,expr_list,_,ender) -> 
-	  disj_cases starter expr_list r.V0.combiner_expression ender
+	  disj_cases e starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
   (* not clear why we have the next two cases, since DisjDecl and
@@ -233,7 +289,7 @@ let classify all_marked table code =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,_,ender) ->
-	  disj_cases starter decls r.V0.combiner_declaration ender
+	  disj_cases e starter decls r.V0.combiner_declaration ender
       | Ast0.Ddots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
 	(* Need special cases for the following so that the type will be
@@ -269,7 +325,7 @@ let classify all_marked table code =
     compute_result Ast0.typeC e
       (match Ast0.unwrap e with
 	Ast0.DisjType(starter,types,_,ender) ->
-	  disj_cases starter types r.V0.combiner_typeC ender
+	  disj_cases e starter types r.V0.combiner_typeC ender
       |	_ -> k e) in
 
   let initialiser r k i =
@@ -291,10 +347,10 @@ let classify all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
-	  disj_cases starter statement_dots_list r.V0.combiner_statement_dots
+	  disj_cases s starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
 (*  Why? There is nothing there
-	(* cases for everyhing eith extra mcode *)
+	(* cases for everyhing with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (mcode ((),(),info,bef)) (k s)
@@ -759,10 +815,11 @@ let context_neg minus plus =
     | ([],l) ->
 	failwith (Printf.sprintf "%d plus things remaining" (List.length l))
     | (minus,[]) ->
+	plus_lines := [];
 	let _ =
 	  List.map
 	    (function m ->
-	      classify
+	      classify true
 		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
 		minus_table m)
 	    minus in
@@ -785,11 +842,12 @@ let context_neg minus plus =
 	       node *)
 	    let i = Ast0.fresh_index() in
 	    Ast0.set_index m i; Ast0.set_index p i;
+	    collect_plus_lines p;
 	    let _ =
-	      classify
+	      classify true
 		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
 		minus_table m in
-	    let _ = classify (function _ -> Ast0.PLUS) plus_table p in
+	    let _ = classify false (function _ -> Ast0.PLUS) plus_table p in
 	    traverse minus_table plus_table;
 	    (m,p)::loop(minus,plus)
 	  end
@@ -800,8 +858,9 @@ let context_neg minus plus =
 	    if mstart < pstart
 	    then
 	      begin
+		plus_lines := [];
 		let _ =
-		  classify
+		  classify true
 		    (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
 		    minus_table m in
 		loop(minus,pall)

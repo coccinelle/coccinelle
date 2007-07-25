@@ -1218,4 +1218,3 @@ let process file isofile verbose =
   then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
   (code,ua,tokens)
-
