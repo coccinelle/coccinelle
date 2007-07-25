@@ -10,6 +10,7 @@ let inplace_modif = ref false  (* but keeps a .cocci_orig *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 
 let dir = ref false
+let kbuild_info = ref ""
 
 (* test mode *)
 let test_mode = ref false
@@ -108,6 +109,8 @@ let short_options = [
 
   "-dir", Arg.Set dir, 
   "    <dirname> process all files in directory recursively";
+  "-kbuild_info", Arg.Set_string kbuild_info, 
+  "    <file> improve -dir by grouping related c files";
 
 
   "-version",   Arg.Unit (fun () -> 
@@ -411,26 +414,36 @@ let main () =
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -sp_file <file>";
 
-        let outfiles = 
-          if not !dir 
-          then Cocci.full_engine (!cocci_file, !Config.std_iso) (x::xs)
-          else 
-            let fullxs = 
+        let infiles = 
+          match !dir, !kbuild_info with
+          | false, _ -> [x::xs]
+          | true, "" -> 
               Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
-            in
+              +> List.map (fun x -> [x])
+          | true, kbuild_info_file -> 
+              let dirs = 
+                Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d") in
+              let info = Kbuild.parse_kbuild_info kbuild_info_file in
+              let groups = Kbuild.files_in_dirs dirs info in
 
-            fullxs +> List.map (fun cfile -> 
-              pr2 ("HANDLING: " ^ cfile);
-              (* Unix.sleep 1; *)
-              let cfile = Common.adjust_ext_if_needed cfile ".c" in
-              (try Cocci.full_engine (!cocci_file, !Config.std_iso) [cfile]
-                with 
-                | Common.UnixExit x -> raise (Common.UnixExit x)
-                | e -> 
+              groups +> List.map (function Kbuild.Group xs -> xs)
+        in
+
+        let outfiles = 
+          infiles +> List.map (fun cfiles -> 
+            pr2 ("HANDLING: " ^ (join " " cfiles));
+            (* Unix.sleep 1; *)
+            (try Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
+              with 
+              | Common.UnixExit x -> raise (Common.UnixExit x)
+              | e -> 
+                  if !dir then begin
                     pr2 ("EXN:" ^ Printexc.to_string e); 
                     [] (* *)
-              ))
-              +> List.concat
+                  end 
+                  else raise e
+            ))
+          +> List.concat
         in
 	Ctlcocci_integration.print_bench();
         
@@ -501,7 +514,7 @@ let _ =
        * have to be quicker
        *)
       if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
-      then Common.debugger := false;
+      then Common.debugger := true;
 
       Common.finalize          (fun ()-> 
         Common.pp_do_in_zero_box (fun () -> 

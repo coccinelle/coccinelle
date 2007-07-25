@@ -7,13 +7,13 @@ gitgrep: gitgrep.ml
 
 
 split_patch: classic_patch.mli classic_patch.ml split_patch.ml
-	ocamlopt -o $@ str.cmxa unix.cmxa \
-	../commons/commons.cmxa -I ../commons \
+	ocamlc -g -o $@ str.cma unix.cma \
+	../commons/commons.cma -I ../commons \
 	$+
 
 extract_c_and_res: extract_c_and_res.ml
-	ocamlopt -o $@ str.cmxa unix.cmxa \
-	 ../commons/commons.cmxa -I ../commons \
+	ocamlc -g -o $@ str.cma unix.cma \
+	 ../commons/commons.cma -I ../commons \
 	$+
 
 

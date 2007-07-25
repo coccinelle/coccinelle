@@ -469,6 +469,7 @@ val _shareds : (string, string) Hashtbl.t
 val shared_string : string -> string
 
 val chop : string -> string
+val chop_dirsymbol : string -> string
 
 val ( <!!> ) : string -> int * int -> string
 val ( <!> ) : string -> int -> char
@@ -524,6 +525,9 @@ val adjust_ext_if_needed : filename -> string -> filename
 (* dbe for dir, base, ext *)
 val dbe_of_filename : filename -> string * string * string
 val filename_of_dbe : string * string * string -> filename
+(* Left (d,b,e) | Right (d,b)  if file has no extension *)
+val dbe_of_filename_safe : 
+  filename -> (string * string * string,  string * string) either
 
 
 (*****************************************************************************)
@@ -562,6 +566,7 @@ val process_output_to_list : string -> string list
 val cmd_to_list :            string -> string list (* alias *)
 
 val command2 : string -> unit
+val command2_y_or_no : string -> unit
 
 val do_in_fork : (unit -> unit) -> int
 
@@ -824,6 +829,8 @@ val top_set : 'a set -> 'a
 val inter_set : 'a set -> 'a set -> 'a set
 val union_set : 'a set -> 'a set -> 'a set
 val minus_set : 'a set -> 'a set -> 'a set
+
+val union_all : ('a set) list -> 'a set
 
 val big_union_set : ('a -> 'b set) -> 'a set -> 'b set
 val card_set : 'a set -> int

@@ -3,7 +3,7 @@
 ##############################################################################
 TARGET=spatch
 
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag_cocci.ml cocci.ml kbuild.ml testing.ml test.ml main.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\

@@ -86,6 +86,16 @@ let finalize f cleanup =
     cleanup ();
     raise e
 
+let (matched: int -> string -> string) = fun i s -> 
+  Str.matched_group i s
+
+let matched1 = fun s -> matched 1 s
+let matched2 = fun s -> (matched 1 s, matched 2 s)
+let matched3 = fun s -> (matched 1 s, matched 2 s, matched 3 s)
+let matched4 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s)
+let matched5 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s)
+let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s, matched 6 s)
+
 
 (*****************************************************************************)
 (* Debugging/logging *)
@@ -1164,6 +1174,11 @@ let chop = function
   | s -> String.sub s 0 (String.length s - 1)
 
 
+let chop_dirsymbol = function
+  | s when s =~ "\\(.*\\)/$" -> matched1 s
+  | s -> s
+
+
 let (<!!>) s (i,j) = 
   String.sub s i (if j < 0 then String.length s - i + j + 1 else j - i)
 (* let _ = example  ( "tototati"<!!>(3,-2) = "otat" ) *)
@@ -1221,6 +1236,8 @@ let (regexp_match: string -> string -> string) = fun s re ->
   Str.matched_group 1 s
 
 (* beurk, side effect code, but hey, it is convenient *)
+(* now in prelude
+
 let (matched: int -> string -> string) = fun i s -> 
   Str.matched_group i s
 
@@ -1230,6 +1247,7 @@ let matched3 = fun s -> (matched 1 s, matched 2 s, matched 3 s)
 let matched4 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s)
 let matched5 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s)
 let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s, matched 6 s)
+*)
 
 
 
@@ -1302,6 +1320,12 @@ let dbe_of_filename file =
 
 let filename_of_dbe (dir, base, ext) = 
   Filename.concat dir (base ^ "." ^ ext)
+
+let dbe_of_filename_safe file = 
+  try Left (dbe_of_filename file)
+  with Invalid_argument _ -> 
+    Right (Filename.dirname file, Filename.basename file)
+
 
 
 (*****************************************************************************)
@@ -1443,6 +1467,19 @@ let process_output_to_list = fun command ->
     with End_of_file -> begin ignore(Unix.close_process_in chan); [] end
   in process_otl_aux ()
 let cmd_to_list = process_output_to_list
+
+(* now in prelude
+let command2 s = ignore(Sys.command s)
+*)
+
+let command2_y_or_no cmd = 
+  pr2 (cmd ^ " [y/n] ?");
+  match read_line () with
+  | "y" | "yes" | "Y" -> command2 cmd
+  | "n" | "no"  | "N" -> ()
+  | _ -> failwith "answer by yes or no"
+
+
 
 let read_file file = cat file +> unlines
 
@@ -2263,6 +2300,9 @@ let (union_set: 'a set -> 'a set -> 'a set) = fun s1 s2 ->
   s2 +> fold_set (fun acc x -> if member_set x s1 then acc else insert_set x acc) s1
 let (minus_set: 'a set -> 'a set -> 'a set) = fun s1 s2 -> 
   s1 +> filter_set  (fun x -> not (member_set x s2))
+
+
+let union_all l = List.fold_left union_set [] l
 
 let big_union_set f xs = xs +> map_set f +> fold_set union_set empty_set
 

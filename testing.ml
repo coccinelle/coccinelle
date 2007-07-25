@@ -498,12 +498,31 @@ let test_compare_c_hardcoded () =
   +> pr2
 
 
+
+(*****************************************************************************)
+(* xxx *)
+(*****************************************************************************)
+
 let test_xxx () = 
-  (* ignore(Parse_c.parse_cpp_define_file "standard.h")*)
+  Sys.chdir "/home/pad/kernels/git/linux-2.6";
+  let path="drivers/net" in
+  let dirs = Common.cmd_to_list (sprintf "find %s -type d" path) in
+  let outfile = "/tmp/kernel_files.doc" in
+  let stdfile = "/home/pad/coccinelle/kernel_files.doc" in
+  let naive = Kbuild.generate_naive_kbuild_info dirs in
+  let _ = Kbuild.unparse_kbuild_info naive outfile in
+  let naive' = Kbuild.parse_kbuild_info outfile in
+  assert (naive =*= naive');
+  let std = Kbuild.parse_kbuild_info stdfile in
+  Kbuild.check_up_to_date std naive
+
+
+
+(*
+  ignore(Parse_c.parse_cpp_define_file "standard.h")
   pr2 "pr2";
   pr  "pr"
 
-(*
   Format.print_newline();
   Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";
   Format.print_newline();
