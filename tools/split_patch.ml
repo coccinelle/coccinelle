@@ -82,7 +82,7 @@ let split_patch file prefix bodymail =
     | _ -> failwith ("wrong format for mailbody in:" ^ bodymail)
   in
 
-  Common.command_y_or_no ("rm -f " ^ prefix ^ "*");
+  Common.command2_y_or_no ("rm -f " ^ prefix ^ "*");
   
 
   minipatches_indexed +> List.iter (fun ((dir,minipatch), i) -> 
