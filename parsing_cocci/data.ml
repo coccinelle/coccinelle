@@ -5,6 +5,7 @@ module Ast0 = Ast0_cocci
 let in_rule_name = ref false
 let in_meta = ref false
 let in_iso = ref false
+let in_prolog = ref false
 
 type line_type =
     MINUS | OPTMINUS | UNIQUEMINUS | MULTIMINUS

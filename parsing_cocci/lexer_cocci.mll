@@ -119,14 +119,18 @@ let rule_names = (Hashtbl.create(100) : (string, unit) Hashtbl.t)
 
 let check_var s linetype =
   let fail _ =
-    try (Hashtbl.find metavariables s) linetype
-    with Not_found ->
-      (try (Hashtbl.find type_names s) linetype
+    if (!Data.in_prolog || !Data.in_rule_name) &&
+      Str.string_match (Str.regexp "<.*>") s 0
+    then TPathIsoFile s
+    else
+      try (Hashtbl.find metavariables s) linetype
       with Not_found ->
-	(try (Hashtbl.find declarer_names s) linetype
-	with Not_found -> 
-	  (try (Hashtbl.find iterator_names s) linetype
-	  with Not_found -> TIdent (s,linetype)))) in
+	(try (Hashtbl.find type_names s) linetype
+	with Not_found ->
+	  (try (Hashtbl.find declarer_names s) linetype
+	  with Not_found -> 
+	    (try (Hashtbl.find iterator_names s) linetype
+	    with Not_found -> TIdent (s,linetype)))) in
   if !Data.in_meta or !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
@@ -137,6 +141,7 @@ let id_tokens lexbuf =
   let in_rule_name = !Data.in_rule_name in
   let in_meta = !Data.in_meta in
   let in_iso = !Data.in_iso in
+  let in_prolog = !Data.in_prolog in
   match s with
     "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
@@ -158,7 +163,7 @@ let id_tokens lexbuf =
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
 
-  | "using" when in_rule_name ->  check_context_linetype s; TUsing
+  | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends

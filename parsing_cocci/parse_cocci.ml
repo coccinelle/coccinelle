@@ -38,6 +38,7 @@ let token2c (tok,_) =
   | PC.TIterator -> "iterator"
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
+  | PC.TPathIsoFile str -> "path_iso_file-"^str
   | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
   | PC.TDepends -> "depends"
@@ -482,6 +483,7 @@ let split_token ((tok,_) as t) =
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
+  | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -1081,8 +1083,11 @@ let parse file =
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
   let get_tokens = tokens_all table file false lexbuf in
+  Data.in_prolog := true;
+  let initial_tokens = get_tokens [PC.TArobArob;PC.TArob] in
+  Data.in_prolog := false;
   let res =
-  match get_tokens [PC.TArobArob;PC.TArob] with
+    match initial_tokens with
     (true,data) ->
       (match List.rev data with
 	((PC.TArobArob as x),_)::_ | ((PC.TArob as x),_)::_ ->

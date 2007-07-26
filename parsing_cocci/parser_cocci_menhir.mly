@@ -59,7 +59,7 @@ module P = Parse_aux
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
 
-%token <string>  TPragma
+%token <string>  TPragma TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
 %token <Data.clt * token * int> TDefineParam
@@ -205,8 +205,8 @@ include_main:
 | list(incl) TArobArob { $1 }
 
 incl:
-  TIncludeL  { Common.Left (P.id2name $1) }
-| TIncludeNL { Common.Right(P.id2name $1) }
+  TUsing TString      { Common.Left(P.id2name $2) }
+| TUsing TPathIsoFile { Common.Right $2 }
 
 metadec:
   ar=arity ispure=pure

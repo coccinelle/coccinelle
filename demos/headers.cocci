@@ -6,7 +6,7 @@
 // will give and error, because standard.iso is already loaded by default
 // and it is not allowed to load two isomorphisms with the same name
 // #include <standard.iso>
-#include "headers.iso" // an iso file in the current directory
+using "headers.iso" // an iso file in the current directory
 
 @ rule0 @
 @@
