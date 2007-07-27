@@ -276,7 +276,7 @@ let make_rule = function
 (* --------------------------------------------------------------------- *)
 (* entry point *)
 
-let process rule_name minus plus =
+let process rule_name dropped_isos minus plus =
   let minus_functions = List.concat (List.map get_all_functions minus) in
   match minus_functions with
     [] -> None
@@ -292,12 +292,12 @@ let process rule_name minus plus =
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some (metavars,("proto for "^rule_name,[Ast.Dep rule_name],[],
-			  [Ast.rewrap x (Ast.DECL x)]))
+	  Some (metavars,("proto for "^rule_name,[Ast.Dep rule_name],
+			  dropped_isos,[Ast.rewrap x (Ast.DECL x)]))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
 	  let res =
-	    ("proto for "^rule_name,[Ast.Dep rule_name],[],
+	    ("proto for "^rule_name,[Ast.Dep rule_name],dropped_isos,
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
 	  Some(metavars,res)

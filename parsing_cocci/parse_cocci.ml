@@ -8,6 +8,9 @@ let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
 
+(* for isomorphisms.  all should be at the front!!! *)
+let reserved_names = ["all";"optional_storage";"optional_qualifier"]
+
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
@@ -978,9 +981,6 @@ let get_metavars parse_fn table file lexbuf =
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
 
-(* all should be at the front!!! *)
-let reserved_names = ["all";"optional_storage";"optional_qualifier"]
-
 let get_rule_name parse_fn starts_with_name get_tokens file prefix =
   Data.in_rule_name := true;
   let mknm _ = make_name prefix (!Lexer_cocci.line) in
@@ -1192,20 +1192,42 @@ let process file isofile verbose =
 		 (List.map (function x -> Common.Left x) iso)
 		 extra_path in
 	     let chosen_isos =
+	       (* check that dropped isos are actually available *)
+	       (try
+		 let iso_names =
+		   List.map (function (_,_,nm) -> nm) chosen_isos in
+		 let local_iso_names = reserved_names @ iso_names in
+		 let bad_dropped =
+		   List.find
+		     (function dropped ->
+		       not (List.mem dropped local_iso_names))
+		     dropiso in
+		 failwith ("invalid iso name "^bad_dropped^" in "^rule_name)
+	       with Not_found -> ());
 	       if List.mem "all" dropiso
 	       then
 		 if List.length dropiso = 1
 		 then []
 		 else failwith "disable all should only be by itself"
 	       else
-		 List.filter
-		   (function (_,_,nm) -> not (List.mem nm dropiso))
+		   (* drop those isos *)
+		 List.filter (function (_,_,nm) -> not (List.mem nm dropiso))
 		   chosen_isos in
+	     let dropped_isos =
+	       match reserved_names with
+		 "all"::others ->
+		   (match dropiso with
+		     ["all"] -> others
+		   | _ ->
+		       List.filter (function x -> List.mem x dropiso) others)
+	       | _ ->
+		   failwith
+		     "bad list of reserved names - all must be at start" in
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
 	     let function_prototypes =
-	       Function_prototypes.process rule_name minus plus in
+	       Function_prototypes.process rule_name dropped_isos minus plus in
 	     (* warning! context_neg side-effects its arguments! *)
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     (if not !Flag.sgrep_mode2
@@ -1217,16 +1239,6 @@ let process file isofile verbose =
 	       if !Flag.sgrep_mode2
 	       then minus
 	       else Single_statement.single_statement minus in
-	     let dropped_isos =
-	       match reserved_names with
-		 "all"::others ->
-		   (match dropiso with
-		     ["all"] -> others
-		   | _ ->
-		       List.filter (function x -> List.mem x dropiso) others)
-	       | _ ->
-		   failwith
-		     "bad list of reserved names - all must be at start" in
 	     let minus_ast =
 	       Ast0toast.ast0toast rule_name dependencies dropped_isos minus in
 	     match function_prototypes with
