@@ -817,9 +817,18 @@ let full_engine2 (coccifile, isofile) cfiles =
   show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
 
+  let isofile = 
+    if not (Common.lfile_exists isofile)
+    then begin 
+      pr2 ("warning: Can't find default iso file: " ^ isofile);
+      None
+    end
+    else Some isofile
+  in
+
   let (astcocci,used_after_lists,toks) = 
     Common.memoized _hparse (coccifile, isofile) (fun () -> 
-      sp_of_file coccifile (Some isofile) 
+      sp_of_file coccifile isofile 
     )
   in
   let ctls = 

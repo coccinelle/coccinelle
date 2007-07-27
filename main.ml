@@ -354,8 +354,13 @@ let main () =
     then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
 
     if !Config.std_h <> "" 
-    then Parsing_hacks._defs := Common.hash_of_list
-      (Parse_c.parse_cpp_define_file !Config.std_h);
+    then 
+      if not (Common.lfile_exists !Config.std_h)
+      then pr2 ("warning: Can't find default macro file: " ^ !Config.std_h)
+      else 
+        Parsing_hacks._defs := Common.hash_of_list
+          (Parse_c.parse_cpp_define_file !Config.std_h)
+    ;
 
     Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)

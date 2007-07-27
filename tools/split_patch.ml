@@ -2,7 +2,9 @@ open Common open Commonop
 
 module CP = Classic_patch 
 
-(* ./split_patch ../demos/janitorings/patch-kzalloc-vnew3.patch /tmp/xx "0 -> NULL" ../bodymail.doc  *)
+(* ./split_patch ../demos/janitorings/patch-kzalloc-vnew3.patch /tmp/xx "0 -> NULL" ../bodymail.doc  
+./split_patch /tmp/badzero.patch /tmp/xx ../mailbody.doc ../kernel_dirs.meta
+*)
 
 (*****************************************************************************)
 (* Flags *)
@@ -182,7 +184,7 @@ let split_patch file prefix bodymail subinfofile =
         pr "";
       );
 
-      command2(sprintf "diffstat %s >> %s" patchfile tmpfile);
+      command2(sprintf "diffstat -p1 %s >> %s" patchfile tmpfile);
       command2(sprintf "echo >> %s" tmpfile);
       command2(sprintf "cat %s >> %s" patchfile tmpfile);
     end

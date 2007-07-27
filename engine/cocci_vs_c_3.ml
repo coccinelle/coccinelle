@@ -1359,9 +1359,21 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      | A.StructUnionDef(ty2, lba, declsa, rba), 
        (B.StructUnion (sub, sbopt, declsb), ii) -> 
 
-       (match sbopt with
-       | None -> 
-         let (iisub, lbb, rbb) = tuple_of_list3 ii in
+       let (iisub, iisbopt, lbb, rbb) = 
+
+         match sbopt with
+         | None -> 
+             let (iisub, lbb, rbb) = tuple_of_list3 ii in
+             (iisub, [], lbb, rbb)
+         | Some s -> 
+             pr2 (sprintf 
+              "warning: both a typedef (%s) and struct name introduction (%s)"
+              idb s
+             );
+             pr2 "warning: I will consider only the typedef";
+             let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
+             (iisub, [iisb], lbb, rbb)
+       in
 
          (match A.unwrap ty2 with
          | A.Type(cv3, ty3) -> 
@@ -1378,7 +1390,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
                let declsa = redots declsa undeclsa in
 
-               let typb1 = B.StructUnion (sub,sbopt, declsb),[iisub;lbb;rbb] in
+               let typb1 = B.StructUnion (sub,sbopt, declsb),
+                 [iisub] @ iisbopt @ [lbb;rbb] in
                let typb0 = ((qu, il), typb1) in
                
                let ty1 = A.StructUnionDef(ty2,lba,declsa,rba)+> A.rewrap ty1 in
@@ -1402,8 +1415,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            | _ -> raise Impossible
            )
          | _ -> fail
-         )
-       | Some _ -> raise Todo
        )
      | _ -> fail
      )
