@@ -347,8 +347,6 @@ module type PARAM =
 
     val (>&&>) : (tin -> bool) -> (tin -> 'x tout) -> (tin -> 'x tout)
 
-
-
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
 
@@ -386,6 +384,10 @@ module type PARAM =
       (A.meta_name * Ast_c.metavar_binding_kind) tout
 
     val all_bound : A.meta_name list -> (tin -> bool)
+
+    val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+
 
   end
 
@@ -1340,28 +1342,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
   | _ -> fail
 
 
-and storage stoa stob =
-  (* "iso-by-absence" for storage. *)
-  match stoa, stob with 
-  | None, _ -> 
-      return (None, stob)
-  | Some x, ((stobis, inline),iistob) -> 
-      if equal_storage (term x) stobis
-      then 
-        match iistob with
-        | [i1] ->
-           tokenf x i1 >>= (fun x i1 -> 
-             return (Some x,  ((stobis, inline), [i1]))
-           )
-       (* or if have inline ? have to do a split_storage_inline a la 
-        * split_signb_baseb_ii *)
-        | _ -> raise Impossible 
-      else fail
-  
-
-
-
-
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) -> 
  X.all_bound (A.get_inherited decla) >&&>
@@ -1460,7 +1440,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf eqa iieqb >>= (fun eqa iieqb -> 
        fullType typa typb >>= (fun typa typb -> 
        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-       storage stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
+       storage_optional_allminus allminus stoa (stob, iistob) >>= 
+       (fun stoa (stob, iistob) -> 
        initialiser inia inib >>= (fun inia inib -> 
          return (
            (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
@@ -1760,6 +1741,7 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
 (* ------------------------------------------------------------------------- *)
 and (fullType: (A.fullType, Ast_c.fullType) matcher) = 
  fun typa typb -> 
+   X.optional_qualifier_flag (fun optional_qualifier -> 
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
    | A.Type(cv,ty1), ((qu,il),ty2) ->
@@ -1777,11 +1759,25 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 
        (match cv with
        (* "iso-by-absence" *)
-       | None -> fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 -> 
-           return (
-             (A.Type(None, ty1)) +> A.rewrap typa,
-             fullty2
-           ))
+       | None -> 
+           let do_stuff () = 
+             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 -> 
+               return (
+                 (A.Type(None, ty1)) +> A.rewrap typa,
+                 fullty2
+               ))
+           in
+           (match optional_qualifier, qu.B.const || qu.B.volatile with
+           | false, false -> do_stuff ()
+           | false, true -> fail
+           | true, false -> do_stuff ()
+           | true, true -> 
+               if !Flag.show_misc 
+               then pr2 "USING optional_qualifier builtin isomorphism";
+               do_stuff()
+           )
+             
+           
        | Some x -> 
           (* todo: can be __const__ ? can be const & volatile so 
            * should filter instead ? 
@@ -1814,7 +1810,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 
    | A.OptType(_), _  | A.UniqueType(_), _ | A.MultiType(_), _ 
        -> failwith "not handling Opt/Unique/Multi on type"
-
+   )
  
 
 (*
@@ -2157,16 +2153,43 @@ and minusize_list iixs =
 
 and storage_optional_allminus allminus stoa (stob, iistob) = 
   (* "iso-by-absence" for storage, and return type. *)
-  match stoa with
-  | None -> 
-      if allminus 
+  X.optional_storage_flag (fun optional_storage -> 
+  match stoa, stob with
+  | None, (stobis, inline) -> 
+      let do_minus () = 
+        if allminus 
+        then 
+          minusize_list iistob >>= (fun () iistob -> 
+            return (None, (stob, iistob))
+          )
+        else return (None, (stob, iistob))
+      in
+
+      (match optional_storage, stobis with
+      | false, B.NoSto -> do_minus ()
+      | false, _ -> fail
+      | true, B.NoSto -> do_minus ()
+      | true, _ -> 
+          if !Flag.show_misc 
+          then pr2 "USING optional_storage builtin isomorphism";
+          do_minus()
+      )
+
+  | Some x, ((stobis, inline)) -> 
+      if equal_storage (term x) stobis
       then 
-        minusize_list iistob >>= (fun () iistob -> 
-          return (None, (stob, iistob))
-        )
-      else return (None, (stob, iistob))
-  | Some stoa -> 
-      storage (Some stoa) (stob, iistob)
+        match iistob with
+        | [i1] ->
+           tokenf x i1 >>= (fun x i1 -> 
+             return (Some x,  ((stobis, inline), [i1]))
+           )
+       (* or if have inline ? have to do a split_storage_inline a la 
+        * split_signb_baseb_ii *)
+        | _ -> raise Impossible 
+      else fail
+  )
+ 
+
 
 
 

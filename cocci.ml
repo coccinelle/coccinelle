@@ -227,6 +227,7 @@ let show_or_not_binding a b  =
 (*****************************************************************************)
 (* Some  helpers functions *)
 (*****************************************************************************)
+
 let worth_trying cfiles tokens = 
   if not !Flag_cocci.windows && not (null tokens)
   then
@@ -307,6 +308,40 @@ let sp_contain_typed_metavar toplevel_list_list =
       (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
 
+
+
+(* finding among the #include the one that we need to parse
+ * because they may contain useful type definition or because
+ * we may have to modify them
+ * 
+ * For the moment we base in part our heuristic on the name of the file.
+ * serio.c is related to #include <linux/serio.h> 
+ *)
+
+let includes_to_parse xs = 
+  xs +> List.map (fun (file, cs) -> 
+    let dir = Common.dirname file in
+
+    cs +> Common.map_filter (fun (c,_info_item) -> 
+      match c with
+      | Ast_c.Include ((x,ii),info_h_pos)  -> 
+          (match x with
+          | Ast_c.Local xs -> 
+              Some (Filename.concat dir (Common.join "/" xs))
+          | Ast_c.NonLocal xs -> 
+              if Common.fileprefix (Common.last xs) = Common.fileprefix file 
+              then 
+                Some (Filename.concat !Flag_cocci.include_path (Common.join "/" xs))
+              else None
+        | Ast_c.Wierd _ -> None
+          )
+
+      | _ -> None
+    )
+  )
+  +> List.concat
+  +> Common.uniq
+
 (* --------------------------------------------------------------------- *)
 (* #include relative position in the file *)
 (* --------------------------------------------------------------------- *)
@@ -376,6 +411,7 @@ and update_rel_pos_bis xs =
 
 
 
+
 (*****************************************************************************)
 (* All the information needed around the C elements and Cocci rules *)
 (*****************************************************************************)
@@ -402,6 +438,9 @@ type toplevel_cocci_info = {
 
   rulename: string;
   dependencies: Ast_cocci.dependency list;
+  (* There are also some hardcoded rule names in parse_cocci.ml:
+   *  let reserved_names = ["all";"optional_storage";"optional_qualifier"] 
+   *)
   dropped_isos: string list;
   used_after: Ast_cocci.meta_name list;
 
@@ -535,39 +574,6 @@ let rebuild_info_c_and_headers ccs =
 
 
 
-
-
-(* finding among the #include the one that we need to parse
- * because they may contain useful type definition or because
- * we may have to modify them
- * 
- * For the moment we base in part our heuristic on the name of the file.
- * serio.c is related to #include <linux/serio.h> 
- *)
-
-let includes_to_parse xs = 
-  xs +> List.map (fun (file, cs) -> 
-    let dir = Common.dirname file in
-
-    cs +> Common.map_filter (fun (c,_info_item) -> 
-      match c with
-      | Ast_c.Include ((x,ii),info_h_pos)  -> 
-          (match x with
-          | Ast_c.Local xs -> 
-              Some (Filename.concat dir (Common.join "/" xs))
-          | Ast_c.NonLocal xs -> 
-              if Common.fileprefix (Common.last xs) = Common.fileprefix file 
-              then 
-                Some (Filename.concat !Flag_cocci.include_path (Common.join "/" xs))
-              else None
-        | Ast_c.Wierd _ -> None
-          )
-
-      | _ -> None
-    )
-  )
-  +> List.concat
-  +> Common.uniq
 
 
 
@@ -766,7 +772,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
       (***************************************)
       (* !Main point! The call to the engine *)
       (***************************************)
-      let model_ctl  = CCI.model_for_ctl (Common.some c.flow) e in
+      let model_ctl  = CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
+      in
       CCI.mysat model_ctl r.ctl (r.used_after, e)
     ) 
   in
@@ -783,7 +790,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
     then begin
       c.was_modified := true;
       (* modify ast via side effect *)
-      ignore(Transformation3.transform r.rulename trans_info (some c.flow));
+      ignore(Transformation3.transform r.rulename r.dropped_isos
+                trans_info (Common.some c.flow) );
     end;
 
     Some newbindings

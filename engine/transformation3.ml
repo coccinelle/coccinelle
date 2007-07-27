@@ -6,7 +6,12 @@ module F = Control_flow_c
 (* The functor argument  *) 
 (*****************************************************************************)
 
-let current_rule_name = ref "" (* initialized in transform; used for errors *)
+(* info passed recursively in monad in addition to binding *)
+type xinfo = { 
+  optional_storage_iso : bool;
+  optional_qualifier_iso : bool;
+  current_rule_name : string; (* used for errors *)
+}
 
 module XTRANS = struct
 
@@ -23,13 +28,19 @@ module XTRANS = struct
    *   type ('a, 'b) transformer = 
    *    'a -> 'b -> Lib_engine.metavars_binding -> 'b option
    * use an exception monad 
+   * 
+   * version2:
+   *    type tin = Lib_engine.metavars_binding
    *)
 
   (* ------------------------------------------------------------------------*)
   (* Standard type and operators  *) 
   (* ------------------------------------------------------------------------*)
 
-  type tin = Lib_engine.metavars_binding
+  type tin = { 
+    extra: xinfo;
+    binding: Lib_engine.metavars_binding;
+  }
   type 'x tout = 'x option
 
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
@@ -55,19 +66,24 @@ module XTRANS = struct
 
   let (>&&>) f m = fun tin -> 
     if f tin then m tin else fail tin
-    
+
+  let optional_storage_flag f = fun tin -> 
+    f (tin.extra.optional_storage_iso) tin
+
+  let optional_qualifier_flag f = fun tin -> 
+    f (tin.extra.optional_qualifier_iso) tin
 
   let mode = Cocci_vs_c_3.TransformMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
   (* ------------------------------------------------------------------------*)
-  let cocciExp = fun expf expa node -> fun binding -> 
+  let cocciExp = fun expf expa node -> fun tin -> 
 
     let bigf = { 
       Visitor_c.default_visitor_c_s with 
       Visitor_c.kexpr_s = (fun (k, bigf) expb ->
-	match expf expa expb binding with
+	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
     }
@@ -75,12 +91,12 @@ module XTRANS = struct
     Some (expa, Visitor_c.vk_node_s bigf node)
 
 
-  let cocciTy = fun expf expa node -> fun binding -> 
+  let cocciTy = fun expf expa node -> fun tin -> 
 
     let bigf = { 
       Visitor_c.default_visitor_c_s with 
       Visitor_c.ktype_s = (fun (k, bigf) expb ->
-	match expf expa expb binding with
+	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
     }
@@ -111,7 +127,7 @@ module XTRANS = struct
 	     failwith "wierd: dont have position info for the mcodekind"
 
 
-  let tag_with_mck mck ib = fun binding -> 
+  let tag_with_mck mck ib = fun tin -> 
 
     let (s2, cocciinforef) = ib.Ast_c.pinfo, ib.Ast_c.cocci_tag in
     let (oldmcode, oldenv) = !cocciinforef in
@@ -126,11 +142,11 @@ module XTRANS = struct
     | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 
-        cocciinforef := (mck, binding);
+        cocciinforef := (mck, tin.binding);
         ib
 
     | _ -> 
-        if (oldmcode, oldenv) = (mck, binding)
+        if (oldmcode, oldenv) = (mck, tin.binding)
         then begin
           if !Flag.show_misc 
           then pr2 "already tagged but with same mcode, so safe";
@@ -151,24 +167,24 @@ module XTRANS = struct
               Format.print_flush();
               failwith
 	        (Common.sprintf "%s: already tagged token:\n%s"
-		   !current_rule_name
+		   tin.extra.current_rule_name
 	           (Common.error_message s2.file (s2.str, s2.charpos)))
             end
 
 
 
-  let tokenf ia ib = fun binding -> 
+  let tokenf ia ib = fun tin -> 
     let (s1, i, mck) = ia in
     let pos = Ast_c.pos_of_info ib in
     if check_pos (Some i) mck pos 
-    then return (ia, tag_with_mck mck ib binding) binding
-    else fail binding
+    then return (ia, tag_with_mck mck ib tin) tin
+    else fail tin
 
-  let tokenf_mck mck ib = fun binding -> 
+  let tokenf_mck mck ib = fun tin -> 
     let pos = Ast_c.pos_of_info ib in
     if check_pos None mck pos 
-    then return (mck, tag_with_mck mck ib binding) binding
-    else fail binding
+    then return (mck, tag_with_mck mck ib tin) tin
+    else fail tin
 
 
   (* ------------------------------------------------------------------------*)
@@ -189,14 +205,14 @@ module XTRANS = struct
       (Ast_c.info -> Ast_c.info) -> (* what to do on both *)
       'a -> 'a
 
-  let distribute_mck mcodekind distributef expr binding =
+  let distribute_mck mcodekind distributef expr tin =
     match mcodekind with
     | Ast_cocci.MINUS (pos,any_xxs) -> 
         distributef (
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib binding),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib binding)
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin)
         ) expr
     | Ast_cocci.CONTEXT (pos,any_befaft) -> 
         (match any_befaft with
@@ -205,32 +221,32 @@ module XTRANS = struct
         | Ast_cocci.BEFORE xxs -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin)
             ) expr
         | Ast_cocci.AFTER xxs ->  
             distributef (
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib tin),
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib binding)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib tin)
             ) expr
 
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER yys)) ib binding),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER yys)) ib tin),
               (fun ib -> tag_with_mck 
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFOREAFTER (xxs,yys)))
-                ib binding)
+                ib tin)
             ) expr
 
         )
@@ -302,7 +318,7 @@ module XTRANS = struct
      | _ -> failwith "wierd: dont have position info for the mcodekind"      
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
-    fun ia x -> fun binding -> 
+    fun ia x -> fun tin -> 
     let (s1, i, mck) = ia in
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
@@ -324,9 +340,9 @@ module XTRANS = struct
     then 
       return (
         ia, 
-        distribute_mck mck (distribute_mck_x_f (max,min))  x binding
-      ) binding
-    else fail binding
+        distribute_mck mck (distribute_mck_x_f (max,min))  x tin
+      ) tin
+    else fail tin
 
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
@@ -349,10 +365,10 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf keep _inherited (s, value) = fun env -> 
+  let envf keep _inherited (s, value) = fun tin -> 
     if keep = Type_cocci.Saved
     then (
-      try Some (s, List.assoc s env)
+      try Some (s, List.assoc s tin.binding)
       with Not_found -> 
         pr2 (sprintf "Don't find value for metavariable %s in the environment"
                 (meta_name_to_str s));
@@ -365,7 +381,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 
   (* ------------------------------------------------------------------------*)
-  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l binding ->
+  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l tin ->
     true (* in transform we don't care ? *)
 
 end
@@ -376,16 +392,22 @@ end
 module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
 
 
-let transform_re_node a b binding = 
-  match TRANS.rule_elem_node a b binding with 
+let transform_re_node a b tin = 
+  match TRANS.rule_elem_node a b tin with 
   | None -> raise Impossible
   | Some (_sp, b') -> b'
 
 
-let (transform2: string (* rule name *) ->
+let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
   Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
- fun rule_name xs cflow -> 
-   current_rule_name := rule_name;
+ fun rule_name dropped_isos xs cflow -> 
+
+   let extra = { 
+     optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
+     optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
+     current_rule_name = rule_name;
+   } in
+
   (* find the node, transform, update the node,  and iter for all elements *)
 
    xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
@@ -394,8 +416,13 @@ let (transform2: string (* rule name *) ->
 
       if !Flag.show_misc 
       then pr2 "transform one node";
+      
+      let tin = {
+        XTRANS.extra = extra;
+        XTRANS.binding = binding;
+      } in
 
-      let node' = transform_re_node rule_elem node binding in
+      let node' = transform_re_node rule_elem node tin in
 
       (* assert that have done something. But with metaruleElem sometimes 
          dont modify fake nodes. So special case before on Fake nodes. *)
@@ -417,6 +444,6 @@ let (transform2: string (* rule name *) ->
 
 
 
-let transform rule_name a b = 
+let transform a b c d = 
   Common.profile_code "Transformation3.transform" 
-    (fun () -> transform2 rule_name a b)
+    (fun () -> transform2 a b c d)

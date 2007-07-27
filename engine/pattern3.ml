@@ -5,6 +5,12 @@ open Common open Commonop
 (* The functor argument  *) 
 (*****************************************************************************)
 
+(* info passed recursively in monad in addition to binding *)
+type xinfo = { 
+  optional_storage_iso : bool;
+  optional_qualifier_iso : bool;
+}
+
 module XMATCH = struct
 
   (* ------------------------------------------------------------------------*)
@@ -42,13 +48,17 @@ module XMATCH = struct
    * 
    * opti: return a lazy list of possible matchs ?
    * 
+   * version4: type tin = Lib_engine.metavars_binding
    *)
 
   (* ------------------------------------------------------------------------*)
   (* Standard type and operators  *) 
   (* ------------------------------------------------------------------------*)
 
-  type tin = Lib_engine.metavars_binding
+  type tin = { 
+    extra: xinfo;
+    binding: Lib_engine.metavars_binding;
+  }
   (* 'x is a ('a * 'b) but in fact dont care about 'b, we just tag the SP *)
   (* opti? use set instead of list *)
   type 'x tout = ('x * Lib_engine.metavars_binding) list 
@@ -56,18 +66,20 @@ module XMATCH = struct
   type ('a, 'b) matcher = 'a -> 'b  -> tin -> ('a * 'b) tout
 
   (* was >&&> *)
-  let (>>=) m1 m2 = fun binding ->
-    let xs = m1 binding in
-    let xxs = xs +> List.map (fun ((a,b), binding) -> m2 a b binding) in
+  let (>>=) m1 m2 = fun tin ->
+    let xs = m1 tin in
+    let xxs = xs +> List.map (fun ((a,b), binding) -> 
+      m2 a b {extra = tin.extra; binding = binding}
+    ) in
     List.flatten xxs
 
   (* Je compare les bindings retournés par les differentes branches.
    * Si la deuxieme branche amene a des bindings qui sont deja presents
    * dans la premiere branche, alors je ne les accepte pas.
    *)
-  let (>|+|>) m1 m2 = fun binding -> 
-    let res1 = m1 binding in
-    let res2 = m2 binding in
+  let (>|+|>) m1 m2 = fun tin -> 
+    let res1 = m1 tin in
+    let res2 = m2 tin in
     let list_bindings_already = List.map snd res1 in
     res1 ++ 
       (res2 +> List.filter (fun (x, binding) -> 
@@ -78,27 +90,27 @@ module XMATCH = struct
           
      
       
-  let (>||>) m1 m2 = fun binding ->
+  let (>||>) m1 m2 = fun tin ->
     if true then (* CHOICE *)
       (* opti? use set instead of list *)
-      m1 binding ++ m2 binding 
+      m1 tin ++ m2 tin
     else 
-      let xs = m1 binding in
+      let xs = m1 tin in
       if null xs
-      then m2 binding
+      then m2 tin
       else xs
 
 
-  let return res = fun binding -> 
-    [res, binding]
+  let return res = fun tin -> 
+    [res, tin.binding]
 
-  let fail = fun binding -> 
+  let fail = fun tin -> 
     []
 
-  let (>&&>) f m = fun binding -> 
-    if f binding
-    then m binding
-    else fail binding
+  let (>&&>) f m = fun tin -> 
+    if f tin
+    then m tin
+    else fail tin
 
 
   let mode = Cocci_vs_c_3.PatternMode
@@ -106,14 +118,14 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
   (* ------------------------------------------------------------------------*)
-  let cocciExp = fun expf expa node -> fun binding -> 
+  let cocciExp = fun expf expa node -> fun tin -> 
 
     let globals = ref [] in
     let bigf = { 
       (* julia's style *)
       Visitor_c.default_visitor_c with 
       Visitor_c.kexpr = (fun (k, bigf) expb ->
-	match expf expa expb binding with
+	match expf expa expb tin with
 	| [] -> (* failed *) k expb
 	| xs -> 
             globals := xs @ !globals; 
@@ -133,13 +145,13 @@ module XMATCH = struct
       (a, node), binding
     )
 
-  let cocciTy = fun expf expa node -> fun binding -> 
+  let cocciTy = fun expf expa node -> fun tin -> 
 
     let globals = ref [] in
     let bigf = { 
       Visitor_c.default_visitor_c with 
         Visitor_c.ktype = (fun (k, bigf) expb -> 
-	match expf expa expb binding with
+	match expf expa expb tin with
 	| [] -> (* failed *) k expb
 	| xs -> globals := xs @ !globals);
 
@@ -165,19 +177,19 @@ module XMATCH = struct
         Ast_cocci.MINUS (posmck, xs)
   
 
-  let tag_mck_pos_mcode (x,info, mck) posmck stuff = fun binding -> 
-    [((x, info, tag_mck_pos mck posmck),stuff), binding]
+  let tag_mck_pos_mcode (x,info, mck) posmck stuff = fun tin -> 
+    [((x, info, tag_mck_pos mck posmck),stuff), tin.binding]
     
 
-  let tokenf ia ib = fun binding -> 
+  let tokenf ia ib = fun tin -> 
     let pos = Ast_c.pos_of_info ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in
-    tag_mck_pos_mcode ia posmck ib binding
+    tag_mck_pos_mcode ia posmck ib tin
 
-  let tokenf_mck mck ib = fun binding -> 
+  let tokenf_mck mck ib = fun tin -> 
     let pos = Ast_c.pos_of_info ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in
-    [(tag_mck_pos mck posmck, ib), binding]
+    [(tag_mck_pos mck posmck, ib), tin.binding]
     
     
 
@@ -185,12 +197,12 @@ module XMATCH = struct
   (* Distribute mcode *) 
   (* ------------------------------------------------------------------------*)
   let distrf (ii_of_x_f) =
-    fun mcode x -> fun binding -> 
+    fun mcode x -> fun tin -> 
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
     let posmck = Ast_cocci.FixPos (min, max) (* subtil: and not max, min !!*) 
     in
-    tag_mck_pos_mcode mcode posmck x binding
+    tag_mck_pos_mcode mcode posmck x tin
 
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args)
@@ -206,8 +218,8 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   (* pre: if have declared a new metavar that hide another one, then
    * must be passed with a binding that deleted this metavar *)
-  let check_add_metavars_binding _keep inherited = fun (k, valu) binding ->
-    (match Common.optionise (fun () -> binding +> List.assoc k) with
+  let check_add_metavars_binding _keep inherited = fun (k, valu) tin ->
+    (match Common.optionise (fun () -> tin.binding +> List.assoc k) with
     | Some (valu') ->
         if
           (match valu, valu' with
@@ -245,7 +257,7 @@ module XMATCH = struct
 
           | _ -> raise Impossible
           ) 
-        then [binding]
+        then [tin.binding]
         else []
 
     | None -> 
@@ -273,13 +285,13 @@ module XMATCH = struct
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
             ) 
           in
-          [binding +> Common.insert_assoc (k, valu')]
+          [tin.binding +> Common.insert_assoc (k, valu')]
     )
 
 
 
-  let envf keep inherited = fun (k, valu) binding -> 
-    check_add_metavars_binding keep inherited (k, valu) binding
+  let envf keep inherited = fun (k, valu) tin -> 
+    check_add_metavars_binding keep inherited (k, valu) tin
       +> List.map (fun binding -> (k,valu), binding)
 
 
@@ -295,12 +307,18 @@ module XMATCH = struct
    * a big deal. If it's a problem, could fix free_vars to distinguish
    * between + variables and the other ones. *)
 
-  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l binding ->
+  let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l tin ->
     l +> List.for_all (fun inhvar -> 
-      match Common.optionise (fun () -> binding +> List.assoc inhvar) with
+      match Common.optionise (fun () -> tin.binding +> List.assoc inhvar) with
       | Some _ -> true
       | None -> false
     )
+
+  let optional_storage_flag f = fun tin -> 
+    f (tin.extra.optional_storage_iso) tin
+
+  let optional_qualifier_flag f = fun tin -> 
+    f (tin.extra.optional_qualifier_iso) tin
 
 
 end
@@ -311,14 +329,24 @@ end
 module MATCH  = Cocci_vs_c_3.COCCI_VS_C (XMATCH)
 
 
-let match_re_node2 a b binding = 
-  MATCH.rule_elem_node a b binding 
+let match_re_node2 dropped_isos a b binding = 
+
+  let tin = { 
+    XMATCH.extra = {
+      optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
+      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
+    };
+    XMATCH.binding = binding;
+  } in
+
+  MATCH.rule_elem_node a b tin
   (* take only the tagged-SP, the 'a' *)
   +> List.map (fun ((a,_b), binding) -> a, binding)
 
 (* subtil: 3 args, otherwise profile nothing *)
-let match_re_node a b c = 
-  Common.profile_code "Pattern3.match_re_node" (fun () -> match_re_node2 a b c)
+let match_re_node a b c d = 
+  Common.profile_code "Pattern3.match_re_node" 
+    (fun () -> match_re_node2 a b c d)
 
 
 

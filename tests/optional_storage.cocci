@@ -1,4 +1,4 @@
-@ disable xxxyyy @
+@ disable optional_storage @
 identifier func;
 @@
 

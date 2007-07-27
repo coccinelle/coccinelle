@@ -46,10 +46,10 @@ let (-->) x v = Ast_ctl.Subst (x,v);;
 (* Take list of predicate and for each predicate returns where in the
  * control flow it matches, and the set of subsitutions for this match. 
  *)
-let (labels_for_ctl: 
+let (labels_for_ctl: string list (* dropped isos *) ->
  (nodei * F.node) list -> Lib_engine.metavars_binding -> 
  Lib_engine.label_ctlcocci) =
-  fun nodes binding ->
+  fun dropped_isos nodes binding ->
 
    (fun p -> 
      show_or_not_predicate p;
@@ -78,7 +78,7 @@ let (labels_for_ctl:
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-            Pattern3.match_re_node re node binding
+            Pattern3.match_re_node dropped_isos re node binding
             +> List.map (fun (re', subst) -> 
               Lib_engine.Match (re'), subst
             )
@@ -221,9 +221,9 @@ let fix_flow_ctl a =
 (* subtil: the label must operate on newflow, not (old) cflow 
  * update: now I supposed that we give me a fixed_flow
  *)
-let model_for_ctl  cflow binding = 
+let model_for_ctl dropped_isos cflow binding = 
  let newflow = cflow (* old: fix_flow_ctl (control_flow_for_ctl cflow) *) in
- let labels = labels_for_ctl (newflow#nodes#tolist) binding  in
+ let labels = labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
  
