@@ -513,8 +513,10 @@ and statement s =
       let befaft =
 	match Ast0.get_dots_bef_aft s with
 	  Ast0.NoDots -> Ast.NoDots
-	| Ast0.BetweenDots s ->
-	    Ast.BetweenDots (statement seqible s,get_ctr()) in
+	| Ast0.DroppingBetweenDots s ->
+	    Ast.DroppingBetweenDots (statement seqible s,get_ctr())
+	| Ast0.AddingBetweenDots s ->
+	    Ast.AddingBetweenDots (statement seqible s,get_ctr()) in
       (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
        befaft,None) in
     let local_rewrap ast0 ast =

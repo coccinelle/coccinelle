@@ -146,7 +146,9 @@ let all_minus s =
 
 let rec do_branch s =
   if contains_only_minus.V0.combiner_statement s
-  then Ast0.set_dots_bef_aft s (Ast0.BetweenDots(add_braces s))
+  then
+    (Printf.printf "dropping between dots - 0\n";
+    Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(add_braces s)))
   else
     match Ast0.unwrap s with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
@@ -164,11 +166,19 @@ let rec do_branch s =
 
 let rec statement dots_before dots_after s =
   let do_one s =
-    if dots_before && dots_after &&
-      (adding_something s or contains_only_minus.V0.combiner_statement s)
+    if dots_before && dots_after
     then
-      let with_braces = add_braces s in
-      Ast0.set_dots_bef_aft s (Ast0.BetweenDots(with_braces))
+      if contains_only_minus.V0.combiner_statement s
+      then
+	let with_braces = add_braces s in
+	Printf.printf "dropping between dots\n";
+	Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(with_braces))
+      else if adding_something s
+      then
+	let with_braces = add_braces s in
+	Printf.printf "adding between dots\n";
+	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces))
+      else s
     else s in
 
   match Ast0.unwrap s with

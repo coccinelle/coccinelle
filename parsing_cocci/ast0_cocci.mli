@@ -27,7 +27,8 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
       * dots_bef_aft
 
-and dots_bef_aft = NoDots | BetweenDots of statement
+and dots_bef_aft =
+    NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
 
 (* for iso metavariables, true if they can only match nonmodified, unitary
    metavariables

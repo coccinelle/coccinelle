@@ -27,7 +27,10 @@ and 'a mcode = 'a * info * mcodekind
   | PLUS
  and pos = NoPos | DontCarePos | FixPos of (int * int)
 
-and dots_bef_aft = NoDots | BetweenDots of statement * int (*index of let var*)
+and dots_bef_aft =
+    NoDots
+  | AddingBetweenDots of statement * int (*index of let var*)
+  | DroppingBetweenDots of statement * int (*index of let var*)
 
 and inherited = Type_cocci.inherited
 and keep_binding = Type_cocci.keep_binding

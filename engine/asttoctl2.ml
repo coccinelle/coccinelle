@@ -1049,6 +1049,7 @@ and statement stmt after quantified label guard =
   let new_info =
     {Ast.line = (-1);Ast.column = (-1);Ast.strbef = []; Ast.straft = []} in
 
+  let term =
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
@@ -1065,7 +1066,6 @@ and statement stmt after quantified label guard =
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	_ ->
-	  let between_dots = Ast.get_dots_bef_aft stmt in
 	  let term =
 	    match Ast.unwrap ast with
 	      Ast.DisjRuleElem(res) ->
@@ -1074,24 +1074,6 @@ and statement stmt after quantified label guard =
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
 		quantify fvs (make_match ast) in
-	  let term =
-	    if guard
-	    then term
-	    else
-	      match between_dots with
-		Ast.BetweenDots (brace_term,n) ->
-		  (match Ast.unwrap brace_term with
-		    Ast.Atomic(brace_ast) ->
-		      let v = Printf.sprintf "_r_%d" n in
-		      let case1 = wrapAnd(wrapRef v,make_match brace_ast) in
-		      let case2 = wrapAnd(wrapNot(wrapRef v),term) in
-		      wrapLet
-			(v,wrapOr
-			   (wrapBackEX (truepred n label),
-			    wrapBackEX (wrapBackEX (falsepred n label))),
-			 wrapOr(case1,case2))
-		  | _ -> failwith "not possible")
-	      | Ast.NoDots -> term in
 	  match Ast.unwrap ast with
             Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
@@ -1523,7 +1505,74 @@ and statement stmt after quantified label guard =
       failwith "arities not yet supported"
   | Ast.MultiStm(stm) ->
       failwith "MultiStm should have been compiled away\n"
-  | _ -> failwith "not supported"
+  | _ -> failwith "not supported" in
+  let between_dots = Ast.get_dots_bef_aft stmt in
+  if guard
+  then term
+  else
+    match between_dots with
+      Ast.AddingBetweenDots (brace_term,n)
+    | Ast.DroppingBetweenDots (brace_term,n) ->
+	let match_brace = statement brace_term after quantified label guard in
+	let v = Printf.sprintf "_r_%d" n in
+	let case1 = wrapAnd(wrapRef v,match_brace) in
+	let case2 = wrapAnd(wrapNot(wrapRef v),term) in
+	wrapLet
+	  (v,wrapOr
+	     (wrapBackEX (truepred n label),
+	      wrapBackEX (wrapBackEX (falsepred n label))),
+	   wrapOr(case1,case2))
+(*
+    The following tries to eliminate thens and elses when the branch becomes
+    empty.  Unfortunately it doesn't work very well because of the following
+    example:
+
+    if (x) call_to_remove();
+    else if (y) call_to_remove();
+
+    In this, in one pass, we can only remove if (y), and even then we have to
+    know to replace it with braces, because the else becomes empty.
+
+    A better definition of effect_if would also be needed.
+
+    | Ast.DroppingBetweenDots (brace_term,n) ->
+	let match_brace = statement brace_term after quantified label guard in
+	let v_isthen = Printf.sprintf "_r1_%d" n in
+	let v_iselse = Printf.sprintf "_r2_%d" n in
+	let v_existselse = Printf.sprintf "_r3_%d" n in
+	let drop_re =
+	  (* coincidence that two EXes get us both to the if header from the
+	     then branch and to the else from the else branch *)
+	  wrapBackEX
+	    (wrapBackEX
+	       (make_match
+		  (make_meta_rule_elem
+		     (Ast.MINUS(Ast.NoPos,[])) ([],[],[])))) in
+	let effect_if = wrap n CTL.False in (* too complicated for now *)
+	let case1 =
+	  wrapAnd
+	    (wrapRef v_isthen,
+	     wrapAnd(wrapNot(wrapRef v_existselse),
+		     wrapAnd(term,wrapAnd(wrapNot(effect_if),drop_re)))) in
+	let case2 = wrapAnd(wrapRef v_iselse,wrapAnd(term,drop_re)) in
+	let case3 =
+	  wrapAnd
+	    (wrapRef v_isthen,
+	     wrapAnd
+	       (wrapOr(wrapRef v_existselse,effect_if),
+		match_brace)) in
+	let case4 =
+	  wrapAnd(wrapNot(wrapOr(wrapRef v_isthen,wrapRef v_iselse)),term) in
+	wrapLet
+	  (v_isthen,wrapBackEX (truepred n label),
+	   wrapLet
+	     (v_iselse,wrapBackEX (wrapBackEX (falsepred n label)),
+	      wrapLet
+		(v_existselse,
+		 wrapEX n (wrapBackEX (wrapBackEX (falsepred n label))),
+		 wrapOr(case1,wrapOr(case2,wrapOr(case3,case4))))))
+*)	 
+    | Ast.NoDots -> term
 
 (* un_process_bef_aft is because we don't want to do transformation in this
   code, and thus don't case about braces before or after it *)

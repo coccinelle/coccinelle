@@ -312,7 +312,8 @@ let combiner bind option_default
   and process_bef_aft s =
     match Ast0.get_dots_bef_aft s with
       Ast0.NoDots -> ()
-    | Ast0.BetweenDots(stm) -> let _ = statement stm in ()
+    | Ast0.DroppingBetweenDots(stm) -> let _ = statement stm in ()
+    | Ast0.AddingBetweenDots(stm) -> let _ = statement stm in ()
 
   and statement s =
     process_bef_aft s;
@@ -764,7 +765,10 @@ let rebuilder = fun
     Ast0.set_dots_bef_aft s
       (match Ast0.get_dots_bef_aft s with
 	Ast0.NoDots -> Ast0.NoDots
-      | Ast0.BetweenDots(stm) -> Ast0.BetweenDots(statement stm))
+      | Ast0.DroppingBetweenDots(stm) ->
+	  Ast0.DroppingBetweenDots(statement stm)
+      | Ast0.AddingBetweenDots(stm) ->
+	  Ast0.AddingBetweenDots(statement stm))
 
   and statement s =
     let k s =
