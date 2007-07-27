@@ -5,7 +5,7 @@
 // in the default path, as indicated by config.  Uncommenting the following
 // will give and error, because standard.iso is already loaded by default
 // and it is not allowed to load two isomorphisms with the same name
-// #include <standard.iso>
+// using <standard.iso>
 using "headers.iso" // an iso file in the current directory
 
 @ rule0 @
