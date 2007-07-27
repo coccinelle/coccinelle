@@ -20,7 +20,7 @@
 // }
 
 // note that better to send a .sgrep than a .cocci, that is 
-// to not do the fix because some times the fix is not replacing
+// to not do the fix because sometimes the correct fix is not to replace
 // the use of GFP_KERNEL but instead to move the function call outside
 // the spin_locked region.
 
