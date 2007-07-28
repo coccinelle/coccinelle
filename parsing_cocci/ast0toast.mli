@@ -1,5 +1,5 @@
 val ast0toast :
-    string -> Ast_cocci.dependency list -> string list (* dropped isos *) ->
+    string -> Ast_cocci.dependency -> string list (* dropped isos *) ->
       Ast0_cocci.rule -> Ast_cocci.rule
 val ast0toast_toplevel : Ast0_cocci.top_level -> Ast_cocci.top_level
 

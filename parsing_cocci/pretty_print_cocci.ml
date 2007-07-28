@@ -745,19 +745,30 @@ let _ =
     | Ast.SgrepStartTag(x) -> print_string x
     | Ast.SgrepEndTag(x) -> print_string x
 
+let rec dep in_and = function
+    Ast.Dep(s) -> print_string s
+  | Ast.AntiDep(s) -> print_string "!"; print_string s
+  | Ast.EverDep(s) -> print_string "ever "; print_string s
+  | Ast.NeverDep(s) -> print_string "never "; print_string s
+  | Ast.AndDep(s1,s2) ->
+      let print_and _ = dep true s1; print_string " && "; dep true s1 in
+      if in_and
+      then print_and ()
+      else (print_string "("; print_and(); print_string ")")
+  | Ast.OrDep(s1,s2) ->
+      let print_or _ = dep false s1; print_string " || "; dep false s1 in
+      if not in_and
+      then print_or ()
+      else (print_string "("; print_or(); print_string ")")
+  | Ast.NoDep -> failwith "not possible"
+
 let unparse (nm,deps,drops,x) =
   print_string "@@";
   force_newline();
   print_string nm;
   (match deps with
-    [] -> ()
-  | _ ->
-      print_string " depends on ";
-      print_between (function _ -> print_string " && ")
-	(function
-	    Ast.Dep s -> print_string s
-	  | Ast.AntiDep s -> print_string "!"; print_string s)
-	deps);
+    Ast.NoDep -> ()
+  | _ -> print_string " depends on "; dep true deps);
   (*
   print_string "line ";
   print_int (Ast.get_line (List.hd x));

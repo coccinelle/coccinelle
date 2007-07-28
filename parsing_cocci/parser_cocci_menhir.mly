@@ -20,7 +20,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator
-%token TUsing TDisable TExtends TDepends TOn
+%token TUsing TDisable TExtends TDepends TOn TEver TNever
 %token TNothing
 %token<string> TRuleName
 
@@ -122,11 +122,11 @@ module P = Parse_aux
 %type <(string,string) Common.either list> include_main
 
 %start iso_rule_name
-%type <string option * Ast_cocci.dependency list * string list * string list>
+%type <string option * Ast_cocci.dependency * string list * string list>
 iso_rule_name
 
 %start rule_name
-%type <string option * Ast_cocci.dependency list * string list * string list>
+%type <string option * Ast_cocci.dependency * string list * string list>
 rule_name
 
 %start meta_main
@@ -167,7 +167,7 @@ iso_rule_name:
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (Some n,[],[],[]) }
+    (Some n,Ast.NoDep,[],[]) }
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
@@ -187,12 +187,20 @@ extends:
     { !Data.install_bindings (parent) }
 
 depends:
-  /* empty */                                     { [] }
-| TDepends TOn parents=separated_nonempty_list(TAndLog,pnrule) { parents }
+  /* empty */              { Ast.NoDep }
+| TDepends TOn parents=dep { parents }
+
+dep:
+  pnrule           { $1 }
+| dep TAndLog dep  { Ast.AndDep($1, $3) }
+| dep TOrLog  dep  { Ast.OrDep ($1, $3) }
 
 pnrule:
-  TRuleName       { Ast.Dep $1 }
-| TBang TRuleName { Ast.AntiDep $2 }
+  TRuleName        { Ast.Dep      $1 }
+| TBang TRuleName  { Ast.AntiDep  $2 }
+| TEver TRuleName  { Ast.EverDep  $2 }
+| TNever TRuleName { Ast.NeverDep $2 }
+| TOPar dep TCPar  { $2 }
 
 choose_iso:
   TUsing separated_nonempty_list(TComma,TString) { List.map P.id2name $2 }

@@ -426,9 +426,16 @@ and base_top_level =
 and top_level = base_top_level wrap
 
 and rule =
-    string * dependency list * string list (* dropped isos *) * top_level list
+    string * dependency * string list (* dropped isos *) * top_level list
 
-and dependency = Dep of string | AntiDep of string
+and dependency =
+    Dep of string (* rule applies for the current binding *)
+  | AntiDep of string (* rule doesn't apply for the current binding *)
+  | EverDep of string (* rule applies for some binding *)
+  | NeverDep of string (* rule never applies for any binding *)
+  | AndDep of dependency * dependency
+  | OrDep of dependency * dependency
+  | NoDep
 
 and rule_with_metavars = metavar list * rule
 

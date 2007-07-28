@@ -292,12 +292,12 @@ let process rule_name dropped_isos minus plus =
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some (metavars,("proto for "^rule_name,[Ast.Dep rule_name],
+	  Some (metavars,("proto for "^rule_name,Ast.Dep rule_name,
 			  dropped_isos,[Ast.rewrap x (Ast.DECL x)]))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
 	  let res =
-	    ("proto for "^rule_name,[Ast.Dep rule_name],dropped_isos,
+	    ("proto for "^rule_name,Ast.Dep rule_name,dropped_isos,
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
 	  Some(metavars,res)

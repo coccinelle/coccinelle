@@ -46,6 +46,8 @@ let token2c (tok,_) =
   | PC.TExtends -> "extends"
   | PC.TDepends -> "depends"
   | PC.TOn -> "on"
+  | PC.TEver -> "ever"
+  | PC.TNever -> "never"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -487,7 +489,8 @@ let split_token ((tok,_) as t) =
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
-  | PC.TDepends | PC.TOn | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
+  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever
+  | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -994,7 +997,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
 	  (nm,a,b,c)
-    else (mknm(),[],[],[]) in
+    else (mknm(),Ast_cocci.NoDep,[],[]) in
   Data.in_rule_name := false;
   name_res
 

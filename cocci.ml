@@ -437,7 +437,7 @@ type toplevel_cocci_info = {
   ast_rule: Ast_cocci.rule;
 
   rulename: string;
-  dependencies: Ast_cocci.dependency list;
+  dependencies: Ast_cocci.dependency;
   (* There are also some hardcoded rule names in parse_cocci.ml:
    *  let reserved_names = ["all";"optional_storage";"optional_qualifier"] 
    *)
@@ -683,68 +683,69 @@ let prepare_c files =
 (* r(ule), c(element in C code), e(nvironment) *)
 
 let rec bigloop2 rs ccs = 
-  let es = ref [Ast_c.emptyMetavarsBinding] in
+  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
   let ccs = ref ccs in
-  let rules_that_have_matched = ref [] in
+  let rules_that_have_ever_matched = ref [] in
 
   (* looping over the rules *)
   rs +> List.iter (fun r -> 
-   show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
-
-   if not
-       (List.for_all (function
-         | Ast_cocci.Dep s     ->     (List.mem s !rules_that_have_matched)
-         | Ast_cocci.AntiDep s -> not (List.mem s !rules_that_have_matched)
-       ) r.dependencies)
-   then
-     begin
-       if !Flag.show_misc
-       then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
-     end
-   else begin
+    show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
     let newes = ref [] in (* envs for next round/rule *)
 
     (* looping over the environments *)
-    !es +> List.iter (fun e -> 
-      show_or_not_binding "in" e;
+    !es +> List.iter (fun (e,rules_that_have_matched) -> 
 
-      let children_e = ref [] in
+      if not(interpret_dependencies rules_that_have_matched
+	       !rules_that_have_ever_matched r.dependencies)
+      then
+	begin
+	  if !Flag.show_misc
+	  then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
+	end
+      else
+	begin
+	  show_or_not_binding "in" e;
+
+	  let children_e = ref [] in
       
-      (* looping over the functions and toplevel elements in .h and .h *)
-      concat_headers_and_c !ccs +> List.iter (fun c -> 
-        if c.flow <> None 
-        then
-          (* does also some side effects on c and r *)
-          match process_a_ctl_a_env_a_toplevel r e c with
-          | None -> ()
-          | Some newbindings -> 
-              newbindings +> List.iter (fun newbinding -> 
-                children_e := Common.insert_set newbinding !children_e;
-              )
-      ); (* end iter cs *)
+          (* looping over the functions and toplevel elements in .h and .h *)
+	  concat_headers_and_c !ccs +> List.iter (fun c -> 
+            if c.flow <> None 
+            then
+            (* does also some side effects on c and r *)
+              match process_a_ctl_a_env_a_toplevel r e c with
+              | None -> ()
+              | Some newbindings -> 
+		  newbindings +> List.iter (fun newbinding -> 
+                    children_e := Common.insert_set newbinding !children_e)
+		    ); (* end iter cs *)
 
-      let children_e_final = 
-        if not (null !children_e)
-        then !children_e
-        else begin
-          if !Flag_ctl.partial_match
-          then printf "Empty list of bindings, I will restart from old env";
-          [e +> List.filter (fun (s,v) -> List.mem s r.used_after)]
-        end
-      in
+	  let children_e_final = 
+            if not (null !children_e)
+            then
+	      (List.map (function e -> (e,r.rulename::rules_that_have_matched))
+		 !children_e)
+            else begin
+              if !Flag_ctl.partial_match
+              then
+		printf "Empty list of bindings, I will restart from old env";
+              [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
+		rules_that_have_matched)]
+            end
+	  in
           
-      newes := Common.union_set !newes children_e_final;
-      
+	  newes := Common.union_set !newes children_e_final;
+	end
     ); (* end iter es *)
     es := !newes;
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs;
-      
-    if !(r.was_matched) then Common.push2 r.rulename rules_that_have_matched
-   end
+
+    if !(r.was_matched)
+    then Common.push2 r.rulename rules_that_have_ever_matched
   ); (* end iter rs *)
 
   (if !Flag.sgrep_mode2
@@ -753,6 +754,19 @@ let rec bigloop2 rs ccs =
     ccs := rebuild_info_c_and_headers !ccs
   end);
   !ccs (* return final C asts *)
+
+and interpret_dependencies local global = function
+    Ast_cocci.Dep s      -> List.mem s local
+  | Ast_cocci.AntiDep s  -> not (List.mem s local)
+  | Ast_cocci.EverDep s  -> List.mem s global
+  | Ast_cocci.NeverDep s -> not (List.mem s global)
+  | Ast_cocci.AndDep(s1,s2) ->
+      (interpret_dependencies local global s1) &&
+      (interpret_dependencies local global s2)
+  | Ast_cocci.OrDep(s1,s2)  ->
+      (interpret_dependencies local global s1) or
+      (interpret_dependencies local global s2)
+  | Ast_cocci.NoDep -> true
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
