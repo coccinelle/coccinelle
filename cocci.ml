@@ -701,7 +701,11 @@ let rec bigloop2 rs ccs =
       then
 	begin
 	  if !Flag.show_misc
-	  then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied")
+	  then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied");
+	  newes :=
+	    Common.union_set !newes
+	      [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
+		rules_that_have_matched)]
 	end
       else
 	begin

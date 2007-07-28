@@ -80,6 +80,7 @@ let get_minus_constants bind =
     match Ast.unwrap e with
       Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
+    | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
     | _ -> k e in
 
   let rule_elem r k e =
