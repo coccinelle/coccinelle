@@ -1,5 +1,3 @@
-#define fieldsize(a)	(sizeof(a)/sizeof(*a))
-
 static int
 atari_proc_infos(unsigned char *nvram, char *buffer, int *len,
     off_t *begin, off_t offset, int size)

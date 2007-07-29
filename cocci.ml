@@ -442,6 +442,7 @@ type toplevel_cocci_info = {
    *  let reserved_names = ["all";"optional_storage";"optional_qualifier"] 
    *)
   dropped_isos: string list;
+  free_vars:  Ast_cocci.meta_name list;
   used_after: Ast_cocci.meta_name list;
 
   ruleid: int;
@@ -476,12 +477,14 @@ let for_unparser xs =
   )
 
 (* --------------------------------------------------------------------- *)
-let prepare_cocci ctls used_after_lists astcocci = 
+let prepare_cocci ctls free_var_lists used_after_lists astcocci = 
 
-  let gathered = Common.index_list_1 (zip (zip ctls astcocci) used_after_lists)
+  let gathered =
+    Common.index_list_1
+      (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
   in
   gathered +> List.map 
-    (fun (((ctl_toplevel_list,ast),used_after_list),rulenb) -> 
+    (fun ((((ctl_toplevel_list,ast),free_var_list),used_after_list),rulenb) -> 
       
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
@@ -493,6 +496,7 @@ let prepare_cocci ctls used_after_lists astcocci =
         rulename = rulename;
         dependencies = dependencies;
         dropped_isos = dropped_isos;
+        free_vars = List.hd free_var_list;
         used_after = List.hd used_after_list;
         ruleid = rulenb;
         was_matched = ref false;
@@ -691,58 +695,85 @@ let rec bigloop2 rs ccs =
   rs +> List.iter (fun r -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
-    let newes = ref [] in (* envs for next round/rule *)
-
     (* looping over the environments *)
-    !es +> List.iter (fun (e,rules_that_have_matched) -> 
+    let (_,newes (* envs for next round/rule *)) =
+      List.fold_left
+	(function (cache,newes) ->
+	  function (e,rules_that_have_matched) ->
+	    if not(interpret_dependencies rules_that_have_matched
+		     !rules_that_have_ever_matched r.dependencies)
+	    then
+	      begin
+		if !Flag.show_misc
+		then
+		  pr2 ("dependencies for rule "^r.rulename^" not satisfied");
+		(cache,
+		 Common.union_set newes
+		   [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
+		     rules_that_have_matched)])
+	      end
+	    else
+	      let relevant_bindings =
+		List.sort compare
+		  (List.filter (function (x,_) -> List.mem x r.free_vars) e) in
+	      let new_bindings =
+		try List.assoc relevant_bindings cache
+		with
+		  Not_found ->
+		    begin
+		      show_or_not_binding "in" e;
+		      show_or_not_binding "relevant in" relevant_bindings;
 
-      if not(interpret_dependencies rules_that_have_matched
-	       !rules_that_have_ever_matched r.dependencies)
-      then
-	begin
-	  if !Flag.show_misc
-	  then pr2 ("dependencies for rule " ^ r.rulename ^ " not satisfied");
-	  newes :=
-	    Common.union_set !newes
-	      [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
-		rules_that_have_matched)]
-	end
-      else
-	begin
-	  show_or_not_binding "in" e;
-
-	  let children_e = ref [] in
+		      let children_e = ref [] in
       
-          (* looping over the functions and toplevel elements in .h and .h *)
-	  concat_headers_and_c !ccs +> List.iter (fun c -> 
-            if c.flow <> None 
-            then
-            (* does also some side effects on c and r *)
-              match process_a_ctl_a_env_a_toplevel r e c with
-              | None -> ()
-              | Some newbindings -> 
-		  newbindings +> List.iter (fun newbinding -> 
-                    children_e := Common.insert_set newbinding !children_e)
-		    ); (* end iter cs *)
-
-	  let children_e_final = 
-            if not (null !children_e)
-            then
-	      (List.map (function e -> (e,r.rulename::rules_that_have_matched))
-		 !children_e)
-            else begin
-              if !Flag_ctl.partial_match
-              then
-		printf "Empty list of bindings, I will restart from old env";
-              [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
-		rules_that_have_matched)]
-            end
-	  in
-          
-	  newes := Common.union_set !newes children_e_final;
-	end
-    ); (* end iter es *)
-    es := !newes;
+                      (* looping over the functions and toplevel elements in
+			 .h and .h *)
+		      concat_headers_and_c !ccs +> List.iter (fun c -> 
+			if c.flow <> None 
+			then
+                        (* does also some side effects on c and r *)
+			  let processed =
+			    process_a_ctl_a_env_a_toplevel r relevant_bindings
+			      c in
+			  match processed with
+			  | None -> ()
+			  | Some newbindings -> 
+			      newbindings +> List.iter (fun newbinding -> 
+				children_e :=
+				  Common.insert_set newbinding !children_e)
+				); (* end iter cs *)
+		      !children_e
+		    end in
+	      let old_bindings_to_keep =
+		e +> List.filter (fun (s,v) -> List.mem s r.used_after) in
+	      let new_e =
+		if null new_bindings
+		then
+		  begin
+		  (*use the old bindings, specialized to the used_after_list*)
+		    if !Flag_ctl.partial_match
+		    then
+		      printf
+			"Empty list of bindings, I will restart from old env";
+		    [(old_bindings_to_keep,rules_that_have_matched)]
+		  end
+		else
+		(* combine the new bindings with the old ones, and
+		   specialize to the ysed_after_list *)
+		  let new_bindings_to_add =
+		    new_bindings +>
+		    List.map
+		      (List.filter (fun (s,v) -> List.mem s r.used_after)) in
+		  List.map
+		    (function new_binding_to_add ->
+		      (Common.union_set
+			 old_bindings_to_keep new_binding_to_add,
+		       r.rulename::rules_that_have_matched))
+		    new_bindings_to_add in
+	      ((relevant_bindings,new_bindings)::cache,
+	       Common.union_set new_e newes))
+	([],[]) !es in (* end iter es *)
+    es := newes;
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
@@ -844,15 +875,13 @@ let full_engine2 (coccifile, isofile) cfiles =
     else Some isofile
   in
 
-  let (astcocci,used_after_lists,toks) = 
+  let (astcocci,free_var_lists,used_after_lists,toks) = 
     Common.memoized _hparse (coccifile, isofile) (fun () -> 
-      sp_of_file coccifile isofile 
-    )
+      sp_of_file coccifile isofile)
   in
   let ctls = 
     Common.memoized _hctl (coccifile, isofile) (fun () -> 
-      ctls_of_ast  astcocci used_after_lists
-    )
+      ctls_of_ast  astcocci used_after_lists)
   in
 
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
@@ -873,7 +902,8 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     check_macro_in_sp_and_adjust toks;
 
-    let cocci_infos = prepare_cocci ctls used_after_lists astcocci in
+    let cocci_infos =
+      prepare_cocci ctls free_var_lists used_after_lists astcocci in
     let c_infos  = prepare_c cfiles in
 
     show_or_not_ctl_tex astcocci ctls;

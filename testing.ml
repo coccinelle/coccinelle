@@ -384,7 +384,7 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci") 
   then pr2 "warning: seems not a .cocci file";
 
-  let (xs,_,_) = Parse_cocci.process file (Some !Config.std_iso) false in
+  let (xs,_,_,_) = Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse
 
 
@@ -561,7 +561,7 @@ let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
+    let (astcocci, _,_,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +>
       List.hd +> (function (_,_,_,x) -> List.hd x) +> (function x ->

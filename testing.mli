@@ -52,7 +52,8 @@ val cexpression_of_string : string -> Ast_c.expression
 
 val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
-  Ast_cocci.rule list * Ast_cocci.meta_name list list list * string list
+  Ast_cocci.rule list * Ast_cocci.meta_name list list list *
+      Ast_cocci.meta_name list list list * string list
 val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem
 
 

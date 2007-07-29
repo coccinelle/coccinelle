@@ -199,17 +199,14 @@ struct
       let new_bindings =
 	List.map
 	  (function bindings_per_witness_tree ->
-	    binding ::
 	    (List.map (function (_,env,_) -> env) bindings_per_witness_tree))
 	  (List.map (unwrap_wits false) witness_trees) in
       (noclean,
        (res,not(noclean = []),
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
-	   things.  One could then wonder whether unwrap_wits needs
-	   binding as an argument. *)
-	(Common.uniq
-	   (List.map (collect_used_after used_after) new_bindings))))
+	   things. *)
+	(Common.uniq (List.map (collect_used_after used_after) new_bindings))))
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()
 

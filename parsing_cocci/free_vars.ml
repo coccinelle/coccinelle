@@ -532,22 +532,25 @@ let collect_top_level_used_after metavar_rule_list =
 let collect_local_used_after metavars minirules used_after =
   let locally_defined = List.map Ast.get_meta_name metavars in
   let rec loop defined = function
-      [] -> (used_after,[])
+      [] -> (used_after,[],[])
     | minirule::rest ->
+	let free_vars =
+	  Common.union_set
+	    (nub (collect_all_minirule_refs minirule))
+	    (collect_in_plus_term.V.combiner_top_level minirule) in
 	let local_free_vars =
-	  List.filter (function x -> List.mem x locally_defined)
-	    (Common.union_set
-	       (nub (collect_all_minirule_refs minirule))
-	       (collect_in_plus_term.V.combiner_top_level minirule)) in
+	  List.filter (function x -> List.mem x locally_defined) free_vars in
 	let new_defined = Common.union_set local_free_vars defined in
-	let (mini_used_after,mini_used_after_lists) = loop new_defined rest in
+	let (mini_used_after,fvs_lists,mini_used_after_lists) =
+	  loop new_defined rest in
 	let local_used = Common.union_set local_free_vars mini_used_after in
 	let (new_used_after,new_list) =
 	  List.partition (function x -> List.mem x defined) mini_used_after in
 	let new_used_after = Common.union_set local_used new_used_after in
-	(new_used_after,new_list::mini_used_after_lists) in
-  let (_,used_after_lists) = loop [] minirules in
-  used_after_lists
+	(new_used_after,free_vars::fvs_lists,
+	 new_list::mini_used_after_lists) in
+  let (_,fvs_lists,used_after_lists) = loop [] minirules in
+  (fvs_lists,used_after_lists)
 
 let collect_used_after metavar_rule_list =
   let used_after_lists = collect_top_level_used_after metavar_rule_list in
@@ -563,7 +566,7 @@ let collect_used_after metavar_rule_list =
 
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
-  let used_after_lists = collect_used_after rules in
+  let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
   let new_rules =
     List.map2
       (function (mv,(nm,dep,drop,r)) ->
@@ -575,4 +578,4 @@ let free_vars rules =
     (List.iter
        (function l -> Printf.printf "one rule: %s\n" (String.concat " " l)))
     used_after_lists;*)
-  (new_rules,used_after_lists)
+  (new_rules,fvs_lists,used_after_lists)
