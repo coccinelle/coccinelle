@@ -742,6 +742,7 @@ let rec bigloop2 rs ccs =
 				children_e :=
 				  Common.insert_set newbinding !children_e)
 				); (* end iter cs *)
+
 		      !children_e
 		    end in
 	      let old_bindings_to_keep =

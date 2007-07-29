@@ -1182,7 +1182,10 @@ let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init ();
   let (iso_files,(minus,plus)) = parse file in
-  let std_isos = parse_iso_files [] [Common.Left (!Config.std_iso)] "" in
+  let std_isos =
+    if Sys.file_exists !Config.std_iso
+    then parse_iso_files [] [Common.Left (!Config.std_iso)] ""
+    else (Common.pr2 "warning: standard.iso not found"; []) in
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let minus = Unitary_ast0.do_unitary minus plus in
   let parsed =
