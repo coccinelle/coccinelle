@@ -62,7 +62,7 @@ let quiet_profile = (
 
 let usage_msg = 
   "Usage: " ^ basename Sys.argv.(0) ^ 
-    " -sp_file <SP> <infile> -o <outfile> [-iso_file <iso>] [options]" ^ 
+    " -sp_file <SP> <infile> [-o <outfile>] [-iso_file <iso>] [options]" ^ 
     "\n" ^ "Options are:"
 
 (* forward reference trick *)
@@ -83,7 +83,7 @@ let short_options = [
   "-sp_file",  Arg.Set_string cocci_file, " <file> the semantic patch file";
 
   "-o", Arg.Set_string output_file,
-  "   <file> the output file (optional)";
+  "   <file> the output file";
   "-inplace", Arg.Set inplace_modif,
   "   do the modification on the file directly";
   "-outplace", Arg.Set outplace_modif,
@@ -118,16 +118,27 @@ let short_options = [
     raise (Common.UnixExit 0)
     ), 
   "   guess what";
-  "-longhelp", Arg.Unit (fun () -> 
-    !long_usage_func();
-    raise (Common.UnixExit 0)
-    ), 
-  "    see all the available options in different categories";
+
   "-shorthelp", Arg.Unit (fun () -> 
     !short_usage_func();
     raise (Common.UnixExit 0)
   ), 
   "    see short list of options";
+  "-longhelp", Arg.Unit (fun () -> 
+    !long_usage_func();
+    raise (Common.UnixExit 0)
+    ), 
+  "    see all the available options in different categories";
+  "-help", Arg.Unit (fun () -> 
+    !long_usage_func();
+    raise (Common.UnixExit 0)
+  ),
+  " ";
+  "--help", Arg.Unit (fun () -> 
+    !long_usage_func();
+    raise (Common.UnixExit 0)
+  ),
+  " ";
     
 ]
 
@@ -152,11 +163,11 @@ let other_options = [
     "-show_flow"              , Arg.Set Flag_cocci.show_flow,        " ";
     "-no_show_ctl_text"       , Arg.Clear Flag_cocci.show_ctl_text,  " ";
     (* works in conjunction with -show_ctl *)
-    "-ctl_inline_let",        Arg.Set Flag_cocci.inline_let_ctl, " ";
-    "-ctl_show_mcodekind",    Arg.Set Flag_cocci.show_mcodekind_in_ctl, " ";
-    "-show_binding_in_out",     Arg.Set Flag_cocci.show_binding_in_out, " ";
-    "-no_show_transinfo"      , Arg.Clear Flag_cocci.show_transinfo, " ";
-    "-no_show_misc",   Arg.Clear Flag.show_misc, " ";
+    "-ctl_inline_let",       Arg.Set Flag_cocci.inline_let_ctl, " ";
+    "-ctl_show_mcodekind",   Arg.Set Flag_cocci.show_mcodekind_in_ctl, " ";
+    "-show_binding_in_out",  Arg.Set Flag_cocci.show_binding_in_out, " ";
+    "-no_show_transinfo",    Arg.Clear Flag_cocci.show_transinfo, " ";
+    "-no_show_misc",         Arg.Clear Flag.show_misc, " ";
   ];
 
   "verbose subsystems options",  
@@ -302,6 +313,21 @@ let all_options =
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
+
+(* copy paste of Arg.parse. Don't want the default -help msg *)
+let arg_parse2 l f msg =
+  (try
+    Arg.parse_argv Sys.argv l f msg;
+  with
+  | Arg.Bad msg -> (* eprintf "%s" msg; exit 2; *)
+      let xs = Common.lines msg in
+      (* take only head, it's where the error msg is *)
+      pr2 (List.hd xs);
+      !short_usage_func();
+      raise (Common.UnixExit (2))
+  | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
+      raise Todo
+  )
   
 
 let short_usage () =
@@ -315,16 +341,16 @@ let short_usage () =
 
 let long_usage () = 
  begin
-  pr2 usage_msg;
-  pr2 "";
+  pr usage_msg;
+  pr "";
   (("main options", "", short_options)::other_options) +> List.iter 
     (fun (title, explanations, xs) -> 
-      pr2 title;
-      pr2_xxxxxxxxxxxxxxxxx();
+      pr title;
+      pr_xxxxxxxxxxxxxxxxx();
       if explanations <> "" 
-      then begin pr2 explanations; pr2 "" end;
-      arg_align2 xs +> List.iter (fun (key,action,s) -> pr2 ("  " ^ key ^ s));
-      pr2 "";
+      then begin pr explanations; pr "" end;
+      arg_align2 xs +> List.iter (fun (key,action,s) -> pr ("  " ^ key ^ s));
+      pr "";
     );
  end
       
@@ -342,7 +368,7 @@ let main () =
   begin
     let args = ref [] in
 
-    Arg.parse (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
     args := List.rev !args;
 
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
