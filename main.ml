@@ -326,7 +326,7 @@ let arg_parse2 l f msg =
       !short_usage_func();
       raise (Common.UnixExit (2))
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-      raise Todo
+      raise Impossible  (* -help is specified in speclist *)
   )
   
 

@@ -591,12 +591,10 @@ type tokens_state = {
 
 (* Hacked lex. This function use refs passed by parse_print_error_heuristic *)
 let rec lexer_function tr = fun lexbuf -> 
-
-  if TH.is_eof tr.current
-  then begin pr2 "ALREADY AT END"; tr.current end
-  else begin
-    let v = List.hd tr.rest in
-    tr.rest <- List.tl tr.rest;
+  match tr.rest with
+  | [] -> pr2 "ALREADY AT END"; tr.current
+  | v::xs -> 
+    tr.rest <- xs;
     tr.current <- v;
 
     if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);
@@ -674,7 +672,6 @@ let rec lexer_function tr = fun lexbuf ->
               v
       )
     end
-  end
 
 
 
