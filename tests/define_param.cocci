@@ -1,4 +1,3 @@
-// This file must be used without standard.iso
 
 @ rule2 disable all @
 expression E;

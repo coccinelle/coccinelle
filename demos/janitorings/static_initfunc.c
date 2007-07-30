@@ -3,7 +3,7 @@ static int __init foo1(void)
 }
 
 
-static int __init foo2(void)
+int __init foo2(void)
 {
 }
 

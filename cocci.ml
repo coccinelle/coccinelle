@@ -116,7 +116,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
       | Some n -> Common.cmd_to_list ("diff -U "^n^" -b -B "^cfile^" "^outfile)
     in
     xs +> List.iter (fun s -> 
-      if s =~ "^\\+[^+]" && show_only_minus
+      if s =~ "^\\+" && show_only_minus
       then ()
       else pr s
     )
@@ -727,7 +727,7 @@ let rec bigloop2 rs ccs =
 		      let children_e = ref [] in
       
                       (* looping over the functions and toplevel elements in
-			 .h and .h *)
+			 .c and .h *)
 		      concat_headers_and_c !ccs +> List.iter (fun c -> 
 			if c.flow <> None 
 			then

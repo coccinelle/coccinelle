@@ -31,3 +31,21 @@ expression *E;
 + NULL
   != E
 
+
+@@
+identifier *X;
+statement S;
+@@
+
+- if(X == NULL)
++ if(!X)
+  S
+
+@@
+identifier *X;
+statement S;
+@@
+
+- if(X != NULL)
++ if(X)
+  S
