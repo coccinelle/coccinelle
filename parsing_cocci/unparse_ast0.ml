@@ -286,6 +286,9 @@ and declaration d =
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
+      | Ast0.Typedef(stg,ty,id,sem) ->
+	  mcode print_string stg; typeC ty; typeC id;
+	  mcode print_string sem
       | Ast0.DisjDecl(_,decls,_,_) ->
 	  print_string "\n("; force_newline();
 	  print_between

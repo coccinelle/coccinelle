@@ -190,6 +190,7 @@ let id_tokens lexbuf =
   | "extern" ->     Textern   linetype
   | "static" ->     Tstatic   linetype
   | "inline" ->     Tinline   linetype
+  | "typedef" ->    Ttypedef  linetype
 
   | "const" ->      Tconst    linetype
   | "volatile" ->   Tvolatile linetype

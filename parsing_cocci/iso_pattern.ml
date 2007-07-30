@@ -680,6 +680,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	       argsa argsb
 	   else return false
       | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) -> match_typeC tya tyb
+      | (Ast0.Typedef(stga,tya,ida,_),Ast0.Typedef(stgb,tyb,idb,_)) ->
+	  conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb)
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
 	  failwith "not allowed in the pattern of an isomorphism"
       | (Ast0.Ddots(_,None),Ast0.Ddots(_,None)) -> return true

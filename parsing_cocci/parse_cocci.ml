@@ -67,6 +67,7 @@ let token2c (tok,_) =
   | PC.Tsigned(clt) -> "signed"^(line_type2c clt)
   | PC.Tstatic(clt) -> "static"^(line_type2c clt)
   | PC.Tinline(clt) -> "inline"^(line_type2c clt)
+  | PC.Ttypedef(clt) -> "typedef"^(line_type2c clt)
   | PC.Tattr(s,clt) -> s^(line_type2c clt)
   | PC.Tauto(clt) -> "auto"^(line_type2c clt)
   | PC.Tregister(clt) -> "register"^(line_type2c clt)
@@ -206,7 +207,8 @@ let plus_attachable (tok,_) =
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt)
-  | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
+  | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TDefine(clt,_)
@@ -327,6 +329,7 @@ let update_clt (tok,x) clt =
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
   | PC.Tinline(_) -> (PC.Tinline(clt),x)
+  | PC.Ttypedef(_) -> (PC.Ttypedef(clt),x)
   | PC.Tattr(s,_) -> (PC.Tattr(s,clt),x)
   | PC.Tauto(_) -> (PC.Tauto(clt),x)
   | PC.Tregister(_) -> (PC.Tregister(clt),x)
@@ -502,7 +505,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
-  | PC.Tinline(clt) | PC.Tattr(_,clt)
+  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
   | PC.TPragma(s) -> ([],[t]) (* only allowed in + *)
@@ -645,7 +648,7 @@ let detect_types in_meta_decls l =
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
-    | (PC.Tinline(_),_) | (PC.Tattr(_),_) -> true
+    | (PC.Tinline(_),_) | (PC.Ttypedef(_),_) | (PC.Tattr(_),_) -> true
     | (PC.TComma(_),_) when infn > 0 or in_meta_decls -> true
     | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
@@ -725,7 +728,8 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt) 
   | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt) 
-  | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tconst(clt) | PC.Tvolatile(clt) 
+  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
+  | PC.Tvolatile(clt) 
 
   | PC.TInc(clt) | PC.TDec(clt) 
 	

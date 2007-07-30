@@ -427,6 +427,12 @@ and declaration d =
 	let sem = mcode sem in
 	Ast.MacroDecl(name,lp,args,rp,sem)
     | Ast0.TyDecl(ty,sem) -> Ast.TyDecl(typeC ty,mcode sem)
+    | Ast0.Typedef(stg,ty,id,sem) ->
+	let id = typeC id in
+	(match Ast.unwrap id with
+	  Ast.Type(None,id) -> (* only MetaType or Id *)
+	    Ast.Typedef(mcode stg,typeC ty,id,mcode sem)
+	| _ -> failwith "bad typedef")
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.Ddots(dots,whencode) ->
 	let dots = mcode dots in

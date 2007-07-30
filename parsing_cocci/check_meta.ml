@@ -208,6 +208,9 @@ and declaration context old_metas table minus d =
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       dots (expression ID old_metas table minus) args
   | Ast0.TyDecl(ty,sem) -> typeC old_metas table minus ty
+  | Ast0.Typedef(stg,ty,id,sem) ->
+      typeC old_metas table minus ty;
+      typeC old_metas table minus id
   | Ast0.DisjDecl(_,decls,_,_) ->
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some x) -> declaration ID old_metas table minus x

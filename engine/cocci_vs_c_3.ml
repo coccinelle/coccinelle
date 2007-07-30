@@ -1441,7 +1441,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              (((None, typb, stob), iivirg), iiptvirgb, iistob)
            )))
        else fail
-       
+
+
+   | A.Typedef (stoa, typa, ida, ptvirga), 
+     ((Some ((idb, None),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
+       failwith "need to define typedef matching"
        
    | _, ((None, typb, sto), _) -> 
        (* old:   failwith "no variable in this declaration, wierd" *)

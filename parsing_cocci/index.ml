@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 142 *)
+(* current max is 143 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -118,6 +118,7 @@ let declaration d =
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]
   | Ast0.TyDecl(ty,sem) -> [116]
+  | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]

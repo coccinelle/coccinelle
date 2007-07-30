@@ -29,7 +29,7 @@ module P = Parse_aux
 %token<Data.clt> Tvoid Tstruct Tunion
 %token<Data.clt> Tunsigned Tsigned
 
-%token<Data.clt> Tstatic Tauto Tregister Textern Tinline
+%token<Data.clt> Tstatic Tauto Tregister Textern Tinline Ttypedef
 %token<Data.clt> Tconst Tvolatile
 %token<string * Data.clt> Tattr
 
@@ -781,14 +781,15 @@ decl_var:
 	  d }
   | f=funproto { [f] }
   | s=ioption(storage) t=ctype d=d_ident q=TEq e=initialize pv=TPtVirg
-      { let (id,fn) = d in
-      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))] }
+      {let (id,fn) = d in
+      [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
   /* type is a typedef name */
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
       d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
-	    let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
+	    let idtype =
+	      P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)))
 	  d }
   | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
@@ -824,6 +825,9 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
+  | s=Ttypedef t=ctype id=typedef_ident pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        [Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
 
 one_decl_var:
     t=ctype pv=TPtVirg
@@ -1188,6 +1192,13 @@ ident: pure_ident
      | TMetaId
          { let (nm,pure,clt) = $1 in
            Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure)) }
+
+typedef_ident:
+       pure_ident
+         { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
+     | TMetaType
+         { let (nm,pure,clt) = $1 in
+           Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
 
 /*****************************************************************************/
 

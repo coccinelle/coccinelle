@@ -263,6 +263,8 @@ and unify_declaration d1 d2 =
        then unify_dots unify_expression edots args1 args2
        else return false
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
+  | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
+      conjunct_bindings (unify_fullType ft1 ft2) (unify_typeC id1 id2)
   | (Ast.DisjDecl(d1),_) ->
       disjunct_all_bindings
 	(List.map (function x -> unify_declaration x d2) d1)

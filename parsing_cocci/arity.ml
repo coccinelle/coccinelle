@@ -491,6 +491,15 @@ and declaration in_nest tgt decl =
       let ty = typeC arity ty in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.TyDecl(ty,sem))
+  | Ast0.Typedef(stg,ty,id,sem) ->
+      let arity =
+	all_same in_nest true tgt (mcode2line sem)
+	  [mcode2arity stg;mcode2arity sem] in
+      let stg = mcode stg in
+      let ty = typeC arity ty in
+      let id = typeC arity id in
+      let sem = mcode sem in
+      make_decl decl tgt arity (Ast0.Typedef(stg,ty,id,sem))
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let decls = List.map (declaration in_nest tgt) decls in
       (match List.rev decls with

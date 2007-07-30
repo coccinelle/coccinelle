@@ -148,6 +148,7 @@ and base_declaration =
   | TyDecl of typeC * string mcode (* ; *)
   | MacroDecl of string mcode (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
+  | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
   | Ddots      of string mcode (* ... *) * declaration option (* whencode *)

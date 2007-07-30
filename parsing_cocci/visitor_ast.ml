@@ -233,6 +233,9 @@ let combiner bind option_default
 	    [string_mcode name; string_mcode lp; expression_dots args;
 	      string_mcode rp; string_mcode sem]
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
+      | Ast.Typedef(stg,ty,id,sem) ->
+	  bind (string_mcode stg)
+	    (bind (fullType ty) (bind (typeC id) (string_mcode sem)))
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       |	Ast.Ddots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option declaration whencode)
@@ -708,6 +711,9 @@ let rebuilder
 			  expression_dots args,
 			  string_mcode rp,string_mcode sem)
 	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
+	| Ast.Typedef(stg,ty,id,sem) ->
+	    Ast.Typedef(string_mcode stg, fullType ty, typeC id,
+			string_mcode sem)
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
 	| Ast.Ddots(dots,whencode) ->
 	    Ast.Ddots(string_mcode dots, get_option declaration whencode)

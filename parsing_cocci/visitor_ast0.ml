@@ -243,6 +243,9 @@ let combiner bind option_default
 	    [string_mcode name; string_mcode lp; expression_dots args;
 	      string_mcode rp; string_mcode sem]
       | Ast0.TyDecl(ty,sem) -> bind (typeC ty) (string_mcode sem)
+      | Ast0.Typedef(stg,ty,id,sem) ->
+	  bind (string_mcode stg)
+	    (bind (typeC ty) (bind (typeC id) (string_mcode sem)))
       |	Ast0.DisjDecl(starter,decls,mids,ender) ->
 	  (match decls with
 	    [] -> failwith "bad disjunction"
@@ -701,6 +704,9 @@ let rebuilder = fun
 			   expression_dots args,
 			   string_mcode rp,string_mcode sem)
 	| Ast0.TyDecl(ty,sem) -> Ast0.TyDecl(typeC ty, string_mcode sem)
+	| Ast0.Typedef(stg,ty,id,sem) ->
+	    Ast0.Typedef(string_mcode stg, typeC ty, typeC id,
+			 string_mcode sem)
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
 	    Ast0.DisjDecl(string_mcode starter,List.map declaration decls,
 			  List.map string_mcode mids,string_mcode ender)

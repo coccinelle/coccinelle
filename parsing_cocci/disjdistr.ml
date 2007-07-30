@@ -196,6 +196,9 @@ let rec disjdecl d =
   | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty
+  | Ast.Typedef(stg,ty,id,sem) ->
+      let ty = disjty ty in (* disj not allowed in id *)
+      List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
   | Ast.Ddots(_,_) | Ast.MetaDecl(_,_,_) -> [d]
   | Ast.OptDecl(decl) ->

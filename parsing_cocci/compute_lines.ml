@@ -393,6 +393,11 @@ and declaration d =
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
+  | Ast0.Typedef(stg,ty,id,sem) ->
+      let ty = typeC ty in
+      let id = typeC id in
+      mkres d (Ast0.Typedef(stg,ty,id,sem))
+	(promote_mcode stg) (promote_mcode sem)
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
       let starter = bad_mcode starter in
       let decls = List.map declaration decls in
