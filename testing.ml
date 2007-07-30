@@ -230,8 +230,8 @@ let test_okfailed cocci_file cfiles =
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff = Compare_c.Correct
-                  then push2 (infile ^ (t_to_s SpatchOK),[s1;s2]) final_files
-                  else push2 (infile ^ (t_to_s Failed), [s1;s2]) final_files
+                  then push2 (infile ^ (t_to_s SpatchOK),[s2]) final_files
+                  else push2 (infile ^ (t_to_s Failed), [s2]) final_files
                 end
               else push2 (infile ^ (t_to_s Failed), [s1]) final_files
         )
@@ -250,7 +250,7 @@ let test_okfailed cocci_file cfiles =
        *)
       cfiles +> List.iter (fun infile -> 
         push2 (infile ^ (t_to_s Failed), [s]) final_files;
-      )
+      );
   ));
   !final_files +> List.iter (fun (file, additional_strs) -> 
     Common.command2 ("cp " ^ newout ^ " " ^ file);

@@ -9,6 +9,18 @@ how we reached a particular match *)
 
 module Ast = Ast_cocci
 
+let read_fresh_id () =
+  try 
+    let s = read_line () in
+    match Parse_c.tokens_string s with
+    | [Parser_c.TIdent _; Parser_c.EOF _] -> 
+        s
+    | _ -> failwith ("wrong fresh id: " ^ s)
+  with End_of_file -> 
+    failwith "EOF encountered in read_fresh_id"
+
+
+
 let get_vars = function
     Lib_engine.Match(re) -> (Ast.get_fvs re, Ast.get_fresh re)
   | _ -> ([],[])
@@ -33,7 +45,7 @@ let process_tree inherited_env l =
       (function ((r,n) as fresh) ->
 	Printf.printf "%s: name for %s: " r n; (* not debugging code!!! *)
 	flush stdout;
-	(fresh,string2val(read_line())))
+	(fresh,string2val(read_fresh_id())))
       all_fresh in
   let (_,res) =
     List.split
