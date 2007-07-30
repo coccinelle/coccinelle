@@ -152,13 +152,11 @@ let rec unify_expression e1 e2 =
   | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
       unify_expression e1 e2
 
-  | (Ast.MetaConst(_,_,_,_),_)
   | (Ast.MetaErr(_,_,_),_)
-  | (Ast.MetaExpr(_,_,_,_),_)
+  | (Ast.MetaExpr(_,_,_,_,_),_)
   | (Ast.MetaExprList(_,_,_),_)
-  | (_,Ast.MetaConst(_,_,_,_))
   | (_,Ast.MetaErr(_,_,_))
-  | (_,Ast.MetaExpr(_,_,_,_))
+  | (_,Ast.MetaExpr(_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_)) -> return true
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true

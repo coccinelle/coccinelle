@@ -248,7 +248,7 @@ let rec expression e =
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
-  | Ast0.MetaConst(name,_,_) | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_)
+  | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
   | Ast0.MetaExprList(name,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) ->

@@ -135,11 +135,9 @@ let rec propagate_types env =
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.TypeExp(ty) -> None
-      | Ast0.MetaConst(name,Some [ty],_) -> Some ty
-      | Ast0.MetaConst(name,_,_) -> None
       | Ast0.MetaErr(name,_) -> None
-      | Ast0.MetaExpr(name,Some [ty],_) -> Some ty
-      | Ast0.MetaExpr(name,ty,_) -> None
+      | Ast0.MetaExpr(name,Some [ty],_,_) -> Some ty
+      | Ast0.MetaExpr(name,ty,_,_) -> None
       | Ast0.MetaExprList(name,_) -> None
       | Ast0.EComma(cm) -> None
       | Ast0.DisjExpr(_,exp_list,_,_) ->
@@ -229,7 +227,7 @@ let rec propagate_types env =
 	let _ = k s in
 	(match (Ast0.unwrap exp,Ast0.get_type exp) with
 	  (Ast0.Edots(_,_),_) -> ()
-	| (Ast0.MetaExpr(_,_,_),_) ->
+	| (Ast0.MetaExpr(_,_,_,_),_) ->
 	    (* if a type is known, it is specified in the decl *)
 	    ()
 	| (_,None) -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))

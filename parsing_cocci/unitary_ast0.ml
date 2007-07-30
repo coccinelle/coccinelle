@@ -63,7 +63,7 @@ let get_free checker t =
   
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.MetaConst(name,_,_) | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_)
+      Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
     | Ast0.MetaExprList(name,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_expression expr_list)
@@ -128,12 +128,10 @@ let update_unitary unitary =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.MetaConst(name,ty,_) ->
-	Ast0.rewrap e (Ast0.MetaConst(name,ty,is_unitary name))
-    | Ast0.MetaErr(name,_) ->
+      Ast0.MetaErr(name,_) ->
 	Ast0.rewrap e (Ast0.MetaErr(name,is_unitary name))
-    | Ast0.MetaExpr(name,ty,_) ->
-	Ast0.rewrap e (Ast0.MetaExpr(name,ty,is_unitary name))
+    | Ast0.MetaExpr(name,ty,form,_) ->
+	Ast0.rewrap e (Ast0.MetaExpr(name,ty,form,is_unitary name))
     | Ast0.MetaExprList(name,_) ->
 	Ast0.rewrap e (Ast0.MetaExprList(name,is_unitary name))
     | _ -> k e in

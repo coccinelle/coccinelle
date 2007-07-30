@@ -140,9 +140,8 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
       | Ast.TypeExp(ty) -> fullType ty
-      | Ast.MetaConst(name,_,_,_) -> meta_mcode name
-      | Ast.MetaErr(name,_,_) -> meta_mcode name
-      | Ast.MetaExpr(name,_,_,_) -> meta_mcode name
+      | Ast.MetaErr(name,_,_)
+      | Ast.MetaExpr(name,_,_,_,_)
       | Ast.MetaExprList(name,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
@@ -630,12 +629,10 @@ let rebuilder
 	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty, 
                            string_mcode rp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
-	| Ast.MetaConst(name,keep,ty,inherited) ->
-	    Ast.MetaConst(meta_mcode name,keep,ty,inherited)
 	| Ast.MetaErr(name,keep,inherited) ->
 	    Ast.MetaErr(meta_mcode name,keep,inherited)
-	| Ast.MetaExpr(name,keep,ty,inherited) ->
-	    Ast.MetaExpr(meta_mcode name,keep,ty,inherited)
+	| Ast.MetaExpr(name,keep,ty,form,inherited) ->
+	    Ast.MetaExpr(meta_mcode name,keep,ty,form,inherited)
 	| Ast.MetaExprList(name,keep,inherited) ->
 	    Ast.MetaExprList(meta_mcode name,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)

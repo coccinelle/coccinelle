@@ -67,9 +67,8 @@ let dumb_astcocci_initialiser = function
   | A.MultiDecl(decl) -> ()
 
 let dumb_astcocci_expr = function
- | A.MetaExpr (ida,_, opttypa, _) -> ()
+ | A.MetaExpr (ida,_, opttypa, _, _) -> ()
  | A.Edots (_,_) -> ()
- | A.MetaConst _ -> ()
  | A.MetaErr _ -> ()
  | A.Ident ida -> ()
  | A.Constant (A.String sa,_,_) -> ()

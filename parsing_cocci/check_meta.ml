@@ -127,7 +127,7 @@ let rec expression context old_metas table minus e =
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
-  | Ast0.MetaConst(name,Some tys,_) ->
+  | Ast0.MetaExpr(name,Some tys,_,_) ->
       List.iter
 	(function x ->
 	  match get_type_name x with
@@ -135,20 +135,7 @@ let rec expression context old_metas table minus e =
 	  | None -> ())
 	tys;
       check_table table minus name
-  | Ast0.MetaConst(name,ty,_) ->
-      check_table table minus name
-  | Ast0.MetaExpr(name,Some tys,_)  ->
-      List.iter
-	(function x ->
-	  match get_type_name x with
-	    Some(ty) -> check_table table minus (promote ty)
-	  | None -> ())
-	tys;
-      check_table table minus name
-  | Ast0.MetaExpr(name,ty,_)  ->
-      check_table table minus name
-  | Ast0.MetaErr(name,_)      ->
-      check_table table minus name
+  | Ast0.MetaExpr(name,_,_,_) | Ast0.MetaErr(name,_)
   | Ast0.MetaExprList(name,_) ->
       check_table table minus name
   | Ast0.DisjExpr(_,exps,_,_) ->

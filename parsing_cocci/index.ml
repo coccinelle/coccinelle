@@ -81,9 +81,8 @@ let expression e =
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
   | Ast0.TypeExp(ty) -> [123] (* added after *)
-  | Ast0.MetaConst(name,ty,_) -> [31]
   | Ast0.MetaErr(name,_) -> [32]
-  | Ast0.MetaExpr(name,ty,_) -> [33]
+  | Ast0.MetaExpr(name,ty,_,_) -> [33]
   | Ast0.MetaExprList(name,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]

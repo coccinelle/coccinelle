@@ -113,16 +113,28 @@ let nest_dots fn f d =
       end_block(); print_string "***>"
 
 (* --------------------------------------------------------------------- *)
+
+let print_type keep info = function
+    None -> ()
+	(* print_string "/* ";
+           print_string "keep:"; print_unitary keep;
+           print_string " inherited:"; print_bool inherited;
+           print_string " */"*)
+  | Some ty -> ()
+      (*;
+      print_string "/* ";
+      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
+      print_string "keep:"; print_unitary keep;
+      print_string " inherited:"; print_bool inherited;*)
+      print_string " */"*)
+
+(* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_meta name(*;
-      print_string "/* ";
-      print_string "keep:"; print_unitary keep;
-      print_string " inherited:"; print_bool inherited;
-      print_string " */"*)
+  | Ast.MetaId(name,keep,inherited) -> mcode print_meta name
   | Ast.MetaFunc(name,_,_) -> mcode print_meta name
   | Ast.MetaLocalFunc(name,_,_) -> mcode print_meta name
   | Ast.OptIdent(id) -> print_string "?"; ident id
@@ -193,25 +205,9 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaConst(name,_,None,_) -> mcode print_meta name
-  | Ast.MetaConst(name,_,Some ty,_) ->
-      mcode print_meta name; 
-      print_string "/* ";
-      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-      print_string " */"
   | Ast.MetaErr(name,_,_) -> mcode print_meta name
-  | Ast.MetaExpr(name,keep,None,inherited) -> mcode print_meta name(*;
-      print_string "/* no type ";
-      print_string "keep:"; print_unitary keep;
-      print_string " inherited:"; print_bool inherited;
-      print_string " */"*)
-  | Ast.MetaExpr(name,keep,Some ty,inherited) ->
-      mcode print_meta name(*;
-      print_string "/* ";
-      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;(*
-      print_string "keep:"; print_unitary keep;
-      print_string " inherited:"; print_bool inherited;*)
-      print_string " */"*)
+  | Ast.MetaExpr(name,keep,ty,form,inherited) ->
+      mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list

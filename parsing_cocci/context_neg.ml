@@ -439,9 +439,8 @@ let rec equal_expression e1 e2 =
   | (Ast0.SizeOfType(szf1,lp1,_,rp1),Ast0.SizeOfType(szf2,lp2,_,rp2)) ->
       equal_mcode szf1 szf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.TypeExp(_),Ast0.TypeExp(_)) -> true
-  | (Ast0.MetaConst(name1,_,_),Ast0.MetaConst(name2,_,_))
   | (Ast0.MetaErr(name1,_),Ast0.MetaErr(name2,_))
-  | (Ast0.MetaExpr(name1,_,_),Ast0.MetaExpr(name2,_,_))
+  | (Ast0.MetaExpr(name1,_,_,_),Ast0.MetaExpr(name2,_,_,_))
   | (Ast0.MetaExprList(name1,_),Ast0.MetaExprList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2

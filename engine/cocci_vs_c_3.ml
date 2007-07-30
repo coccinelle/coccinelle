@@ -451,141 +451,111 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
   
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,keep,opttypa,inherited), (((expr, opttypb), ii) as expb) ->
+  | A.MetaExpr (ida,keep,opttypa,form,inherited),
+    (((expr, opttypb), ii) as expb) ->
 
-      (match opttypa, !opttypb with
+      let form_ok =
+	match (form,expr) with
+	  (A.ANY,_) -> true
+	| (A.CONST,e) ->
+	    let rec matches = function
+		B.Constant(c) -> true
+              | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
+		  pr2 ("warning: I consider " ^ idb ^ " as a constant");
+		  true
+	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
+	      | B.SizeOfExpr(exp) -> true
+	      | B.SizeOfType(ty) -> true
+	      | _ -> false in
+	    matches e
+	| (A.ID,e) ->
+	    let rec matches = function
+		B.Ident(c) -> true
+	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
+	      | _ -> false in
+	    matches e in
+
+      if form_ok
+      then
+
+	(match opttypa, !opttypb with
         | None, _ -> return ((),())
         | Some _, [] -> 
             pr2_once ("I don't have the type information. Certainly a pb in " ^
-                         "annotate_typer.ml");
+                      "annotate_typer.ml");
             fail
-
+	      
         | Some tas, tbs -> 
             tas +> List.fold_left (fun acc ta ->  
               acc >||> (
-                tbs +> List.fold_left (fun acc tb -> 
-                  acc >|+|> (
-                    compatible_type ta tb
+              tbs +> List.fold_left (fun acc tb -> 
+                acc >|+|> (
+                compatible_type ta tb
                   )
-                ) acc
-              )) fail
-      ) >>= (fun () () ->
-
-
+                  ) acc
+		)) fail
+	      ) >>= (fun () () ->
+		
+		
       (* get binding, assert =*=,  distribute info in ida *)
-      X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>= (fun _s v ->
+		X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>=
+		(fun _s v ->
         (* todo: now that we have tagged SP, useless to check if what is
-         * in env match what is in C because the tag on ida will detect
-         * it also sooner or later
-         *)
-           
-        match v with
+           * in env match what is in C because the tag on ida will detect
+           * it also sooner or later
+        *)
+		  
+		  match v with
         (* the expa is 'abstract-lined' so should not be the base of 
-         *  futur processing. Just here to check. Then use expb! 
-         *)
-        | Ast_c.MetaExprVal expa -> 
-            if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
-            then 
-              X.distrf_e ida expb >>= (fun ida expb -> 
-                return (
-                  A.MetaExpr (ida,keep,opttypa,inherited)+> A.rewrap ea,
-                  expb
-                ))
-            else fail
-        | _ -> raise Impossible
-      ))
-
+           *  futur processing. Just here to check. Then use expb! 
+        *)
+		  | Ast_c.MetaExprVal expa -> 
+		      if (Lib_parsing_c.al_expr expa =*=
+			  Lib_parsing_c.al_expr expb)
+		      then 
+			X.distrf_e ida expb >>= (fun ida expb -> 
+			  return (
+			  A.MetaExpr (ida,keep,opttypa,form,inherited)+>
+			  A.rewrap ea,
+			  expb
+			    ))
+		      else fail
+		  | _ -> raise Impossible
+			))
+      else fail
+	  
   (* old: 
-   * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
-   *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
-   * but bug! because if have not tagged SP, then transform without doing
-   * any checks. Hopefully now have tagged SP technique.
-   *)
-
-
+     * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+     *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+     * but bug! because if have not tagged SP, then transform without doing
+     * any checks. Hopefully now have tagged SP technique.
+  *)
+	  
+	  
   (* old: | A.Edots _, _ -> raise Impossible. In fact now can also have
-   * the Edots inside normal expression, not just in arg lists. in
-   * 'x[...];' less: in if(<... x ... y ...>) *)
+     * the Edots inside normal expression, not just in arg lists. in
+     * 'x[...];' less: in if(<... x ... y ...>) *)
   | A.Edots (mcode, None), expb    -> 
       X.distrf_e (dots2metavar mcode) expb >>= (fun mcode expb -> 
         return (
-          A.Edots (metavar2dots mcode, None) +> A.rewrap ea , 
-          expb
-        ))
-
-
+        A.Edots (metavar2dots mcode, None) +> A.rewrap ea , 
+        expb
+          ))
+	
+	
   | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
-
-
+	
+	
   | A.Ident ida,   ((B.Ident idb, typ),ii) ->
       let ib1 = tuple_of_list1 ii in
       ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) -> 
         return (
-          ((A.Ident ida)) +> wa, 
-          ((B.Ident idb, typ),[ib1])
-        ))
-          
-
-
-  | A.MetaConst (ida,keep,opttypa,inherited),(((expr, opttypb), ii)) ->
-      (match opttypa, !opttypb with
-        | None, _ -> return ((),())
-        | Some _, [] -> 
-            pr2_once ("I don't have the type information. Certainly a pb in " ^
-                         "annotate_typer.ml");
-            fail
-
-        | Some tas, tbs -> 
-            tas +> List.fold_left (fun acc ta ->  
-              acc >||> (
-                tbs +> List.fold_left (fun acc tb -> 
-                  acc >|+|> (
-                    compatible_type ta tb
-                  )
-                ) acc
-              )) fail
-      ) >>= (fun () () ->
+        ((A.Ident ida)) +> wa, 
+        ((B.Ident idb, typ),[ib1])
+          ))
         
-      let cst = 
-        (match expr with
-        | B.Constant cst -> Some (Left cst)
-        | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
-            pr2 ("warning: I consider " ^ idb ^ " as a constant");
-            Some (Right idb)
-        | _ -> None
-        )
-      in
-        
-      match cst with
-      | None -> fail
-      | Some cstb -> 
-          X.envf keep inherited (term ida, Ast_c.MetaConstVal (cstb,ii))
-          >>= (fun _s v ->
-            match v with
-            | Ast_c.MetaConstVal csta -> 
-                (* do check ? 
-                   if (Lib_parsing_c.al_expr expa =*= Lib_parsing_c.al_expr expb)
-                   then 
-                *)
-                X.distrf_cst ida (cstb,ii) >>= (fun ida (cstb,ii) -> 
-                 match cstb with 
-                 | Left cstb -> 
-                     return (
-                       (A.MetaConst (ida,keep,opttypa,inherited)+>A.rewrap ea),
-                       ((B.Constant cstb, opttypb), ii)
-                     )
-                 | Right idb -> 
-                     return (
-                       (A.MetaConst (ida,keep,opttypa,inherited)+>A.rewrap ea),
-                       ((B.Ident idb, opttypb), ii)
-                     )
-                )
-            | _ -> raise Impossible
-          )
-          
-      )
-
-      
+	
+	
 
   | A.MetaErr _, _ -> failwith "not handling MetaErr"
 

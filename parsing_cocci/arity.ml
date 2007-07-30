@@ -280,18 +280,14 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
-  | Ast0.MetaConst(name,ty,pure)  ->
-      let arity = exp_same (mcode2line name) [mcode2arity name] in
-      let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaConst(name,ty,pure))
   | Ast0.MetaErr(name,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_exp expr tgt arity (Ast0.MetaErr(name,pure))
-  | Ast0.MetaExpr(name,ty,pure)  ->
+  | Ast0.MetaExpr(name,ty,form,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExpr(name,ty,pure))
+      make_exp expr tgt arity (Ast0.MetaExpr(name,ty,form,pure))
   | Ast0.MetaExprList(name,pure) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in

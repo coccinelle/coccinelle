@@ -298,11 +298,9 @@ let rec expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
-    | Ast0.MetaConst(name,ty,_) ->
-	Ast.MetaConst(mcode name,unitary,ty,false)
     | Ast0.MetaErr(name,_)  -> Ast.MetaErr(mcode name,unitary,false)
-    | Ast0.MetaExpr(name,ty,_)  ->
-	Ast.MetaExpr(mcode name,unitary,ty,false)
+    | Ast0.MetaExpr(name,ty,form,_)  ->
+	Ast.MetaExpr(mcode name,unitary,ty,form,false)
     | Ast0.MetaExprList(name,_) ->
 	Ast.MetaExprList(mcode name,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)

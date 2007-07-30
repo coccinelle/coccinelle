@@ -203,8 +203,7 @@ let rename_param param =
 	  ct := !ct + 1;
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((new_name,arity,info,mcodekind),
-			   Ast0.Pure)) in
+	      (Ast0.MetaId((new_name,arity,info,mcodekind),Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,new_name)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))

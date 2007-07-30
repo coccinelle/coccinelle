@@ -53,6 +53,8 @@ and metavar =
   | MetaErrDecl of arity * (string * string) (* name *)
   | MetaExpDecl of
       arity * (string * string) (* name *) * Type_cocci.typeC list option
+  | MetaIdExpDecl of
+      arity * (string * string) (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * (string * string) (* name *)
   | MetaStmDecl of arity * (string * string) (* name *)
   | MetaStmListDecl of arity * (string * string) (* name *)
@@ -116,11 +118,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of (string * string) mcode * keep_binding *
-	              Type_cocci.typeC list option * inherited
   | MetaErr        of (string * string) mcode * keep_binding * inherited
   | MetaExpr       of (string * string) mcode * keep_binding *
-	              Type_cocci.typeC list option * inherited
+	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of (string * string) mcode * keep_binding *
 	              inherited (* only in arg lists *)
 
@@ -139,6 +139,8 @@ and base_expression =
   | OptExp         of expression
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
+
+and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 

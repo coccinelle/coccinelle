@@ -22,8 +22,6 @@ let al_type      = Visitor_c.vk_type_s      strip_info_visitor
 
 let al_program  = List.map (Visitor_c.vk_program_s  strip_info_visitor)
 
-let al_cst = Visitor_c.vk_cst_s strip_info_visitor
-
 (*****************************************************************************)
 (* Extract infos *)
 (*****************************************************************************)

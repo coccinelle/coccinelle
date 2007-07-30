@@ -307,8 +307,8 @@ let match_maker checks_needed context_required whencode_allowed =
     let expression r k e =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
 	(match Ast0.unwrap e with
-	  Ast0.MetaConst(name,_,pure) | Ast0.MetaErr(name,pure) 
-	| Ast0.MetaExpr(name,_,pure) | Ast0.MetaExprList(name,pure) -> pure
+	  Ast0.MetaErr(name,pure) 
+	| Ast0.MetaExpr(name,_,_,pure) | Ast0.MetaExprList(name,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let typeC r k t =
@@ -411,81 +411,95 @@ let match_maker checks_needed context_required whencode_allowed =
   (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
-      Ast0.MetaExpr(name,None,pure) ->
-	add_pure_binding name pure pure_sp_code.V0.combiner_expression
-	  (function expr -> Ast0.ExprTag expr)
-	  expr
-    | Ast0.MetaExpr(name,Some ts,pure) ->
-	if List.exists
-	    (function Type_cocci.MetaType(_,_,_) -> true | _ -> false)
-	    ts
+      Ast0.MetaExpr(name,ty,form,pure) ->
+	let form_ok =
+	  match (form,expr) with
+	    (Ast.ANY,_) -> true
+	  | (Ast.CONST,e) ->
+	      let rec matches e =
+		match Ast0.unwrap e with
+		  Ast0.Constant(c) -> true
+		| Ast0.Cast(lp,ty,rp,e) -> matches e
+		| Ast0.SizeOfExpr(se,exp) -> true
+		| Ast0.SizeOfType(se,lp,ty,rp) -> true
+		| Ast0.MetaExpr(nm,_,Ast.CONST,p) ->
+		    (Ast0.lub_pure p pure) = pure
+		| _ -> false in
+	      matches e
+	  | (Ast.ID,e) ->
+	      let rec matches e =
+		match Ast0.unwrap e with
+		  Ast0.Ident(c) -> true
+		| Ast0.Cast(lp,ty,rp,e) -> matches e
+		| Ast0.MetaExpr(nm,_,Ast.ID,p) -> (Ast0.lub_pure p pure) = pure
+		| _ -> false in
+	      matches e in
+	if form_ok
 	then
-	  (match ts with
-	    [Type_cocci.MetaType(tyname,_,_)] ->
-	      let expty =
-		match (Ast0.unwrap expr,Ast0.get_type expr) with
+	  match ty with
+	    Some ts ->
+	      if List.exists
+		  (function Type_cocci.MetaType(_,_,_) -> true | _ -> false)
+		  ts
+	      then
+		(match ts with
+		  [Type_cocci.MetaType(tyname,_,_)] ->
+		    let expty =
+		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
 		     types *)
-		  (Ast0.MetaExpr(_,Some tts,_),_) -> Some tts
-		| (_,Some ty) -> Some [ty]
-		| _ -> None in
-	      (match expty with
-		Some expty ->
-		  let tyname = Ast0.rewrap_mcode name tyname in
-		  (function bindings ->
-		    let attempts =
-		      List.map
-			(function expty ->
-			  (try
-			    conjunct_bindings
-			      (add_pure_binding tyname Ast0.Impure
-				 (function _ -> Ast0.Impure)
-				 (function ty -> Ast0.TypeCTag ty)
-				 (Ast0.rewrap expr (Ast0.reverse_type expty)))
-			      (add_pure_binding name pure
-				 pure_sp_code.V0.combiner_expression
-				 (function expr -> Ast0.ExprTag expr)
-				 expr)
-			      bindings
-			  with Ast0.TyConv ->
-			    Printf.printf "warning: unconvertible type";
-			    return false bindings))
-			expty in
-		    match
-		      List.concat
-			(List.map (function Fail _ -> [] | OK x -> x) attempts)
-		    with
-		      [] -> Fail NonMatch
-		    | x -> OK x)
-	      |	_ ->
+			(Ast0.MetaExpr(_,Some tts,_,_),_) -> Some tts
+		      | (_,Some ty) -> Some [ty]
+		      | _ -> None in
+		    (match expty with
+		      Some expty ->
+			let tyname = Ast0.rewrap_mcode name tyname in
+			(function bindings ->
+			  let attempts =
+			    List.map
+			      (function expty ->
+				(try
+				  conjunct_bindings
+				    (add_pure_binding tyname Ast0.Impure
+				       (function _ -> Ast0.Impure)
+				       (function ty -> Ast0.TypeCTag ty)
+				       (Ast0.rewrap expr
+					  (Ast0.reverse_type expty)))
+				    (add_pure_binding name pure
+				       pure_sp_code.V0.combiner_expression
+				       (function expr -> Ast0.ExprTag expr)
+				       expr)
+				    bindings
+				with Ast0.TyConv ->
+				  Printf.printf "warning: unconvertible type";
+				  return false bindings))
+			      expty in
+			  match
+			    List.concat
+			      (List.map (function Fail _ -> [] | OK x -> x)
+				 attempts)
+			  with
+			    [] -> Fail NonMatch
+			  | x -> OK x)
+		    |	_ ->
 		  (*Printf.printf
-		    "warning: type metavar can only match one type";*)
-		  return false)
-	  | _ -> failwith "mixture of metatype and other types not supported")
-	else
-	  let expty = Ast0.get_type expr in
-	  if List.exists (function t -> Type_cocci.compatible t expty) ts
-	  then
-	    add_pure_binding name pure pure_sp_code.V0.combiner_expression
-	      (function expr -> Ast0.ExprTag expr)
-	      expr
-	  else return false
-    | Ast0.MetaConst(name,None,pure) ->
-	let rec matches e =
-	  match Ast0.unwrap e with
-	    Ast0.Constant(c) -> true
-	  | Ast0.Cast(lp,ty,rp,e) -> matches e
-	  | Ast0.SizeOfExpr(se,exp) -> true
-	  | Ast0.SizeOfType(se,lp,ty,rp) -> true
-	  | Ast0.MetaConst(nm,_,p) -> (Ast0.lub_pure p pure) = pure
-	  | _ -> false in
-	if matches expr
-	then
-	  add_pure_binding name pure (function _ -> pure) (* already checked *)
-	    (function expr -> Ast0.ExprTag expr)
-	    expr
+		     "warning: type metavar can only match one type";*)
+			return false)
+		| _ ->
+		    failwith "mixture of metatype and other types not supported")
+	      else
+		let expty = Ast0.get_type expr in
+		if List.exists (function t -> Type_cocci.compatible t expty) ts
+		then
+		  add_pure_binding name pure pure_sp_code.V0.combiner_expression
+		    (function expr -> Ast0.ExprTag expr)
+		    expr
+		else return false
+	  | None ->
+	      add_pure_binding name pure pure_sp_code.V0.combiner_expression
+		(function expr -> Ast0.ExprTag expr)
+		expr
 	else return false
-    | Ast0.MetaConst(namea,_,pure) -> failwith "typed metaconst not supported"
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
     | up ->
@@ -581,10 +595,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.MultiExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
-
+	    
 (* the special case for function types prevents the eg T X; -> T X = E; iso
-from applying, which doesn't seem very relevant, but it also avoids a
-mysterious bug that is obtained with eg int attach(...); *)
+   from applying, which doesn't seem very relevant, but it also avoids a
+   mysterious bug that is obtained with eg int attach(...); *)
   and match_typeC pattern t =
     match Ast0.unwrap pattern with
       Ast0.MetaType(name,pure) ->
@@ -679,7 +693,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	     return false)
       | (Ast0.Ddots(_,Some _),_) ->
 	  failwith "whencode not allowed in a pattern1"
-
+	    
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
       | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
       | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) -> match_decl decla declb
@@ -688,7 +702,7 @@ mysterious bug that is obtained with eg int attach(...); *)
       | (_,Ast0.MultiDecl(declb)) -> match_decl pattern declb
       | _ -> return false
     else return_false (ContextRequired (Ast0.DeclTag d))
-
+	
   and match_init pattern i =
     if not(checks_needed) or not(context_required) or is_context i
     then
@@ -701,14 +715,14 @@ mysterious bug that is obtained with eg int attach(...); *)
 	 Ast0.InitGccDotName(_,nameb,_,inib)) ->
 	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
       | (Ast0.InitGccName(namea,_,inia),Ast0.InitGccName(nameb,_,inib)) ->
-	   conjunct_bindings (match_ident namea nameb) (match_init inia inib)
+	  conjunct_bindings (match_ident namea nameb) (match_init inia inib)
       | (Ast0.InitGccIndex(_,expa,_,_,inia),
 	 Ast0.InitGccIndex(_,expb,_,_,inib)) ->
 	   conjunct_bindings (match_expr expa expb) (match_init inia inib)
       | (Ast0.InitGccRange(_,exp1a,_,exp2a,_,_,inia),
 	 Ast0.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
 	   conjunct_bindings (match_expr exp1a exp1b)
-	    (conjunct_bindings (match_expr exp2a exp2b) (match_init inia inib))
+	     (conjunct_bindings (match_expr exp2a exp2b) (match_init inia inib))
       | (Ast0.IComma(_),Ast0.IComma(_)) -> return true
       | (Ast0.Idots(_,None),Ast0.Idots(_,None)) -> return true
       | (Ast0.Idots(id,None),Ast0.Idots(_,Some wc)) ->
@@ -729,7 +743,7 @@ mysterious bug that is obtained with eg int attach(...); *)
       | (_,Ast0.MultiIni(ib)) -> match_init pattern ib
       | _ -> return false
     else return_false (ContextRequired (Ast0.InitTag i))
-
+	
   and match_param pattern p =
     match Ast0.unwrap pattern with
       Ast0.MetaParam(name,pure) ->
@@ -787,14 +801,14 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
 	      (* seqs can only match if they are all minus (plus code
-	      allowed) r all context (plus code not allowed in the body).
-	      we could be more permissive if the expansions of the isos are
-	      also all seqs, but this would be hard to check except at top
-	      level, and perhaps not worth checking even in that case.
-	      Overall, the issue is that braces are used where single
-	      statements are required, and something not satisfying these
-	      conditions can cause a single statement to become a
-	      non-single statement after the transformation. *)
+		 allowed) r all context (plus code not allowed in the body).
+		 we could be more permissive if the expansions of the isos are
+		 also all seqs, but this would be hard to check except at top
+		 level, and perhaps not worth checking even in that case.
+		 Overall, the issue is that braces are used where single
+		 statements are required, and something not satisfying these
+		 conditions can cause a single statement to become a
+		 non-single statement after the transformation. *)
 	      if is_minus s or is_pure_context s
 	      then
 		match_dots match_statement is_slist_matcher do_slist_match
@@ -830,13 +844,13 @@ mysterious bug that is obtained with eg int attach(...); *)
 		       (match_statement bodya bodyb)))
 	  | (Ast0.Iterator(nma,_,argsa,_,bodya,_),
 	     Ast0.Iterator(nmb,_,argsb,_,bodyb,_)) ->
-	      if mcode_equal nma nmb
-	      then
-		conjunct_bindings
-		  (match_dots match_expr is_elist_matcher do_elist_match
-		     argsa argsb)
-		  (match_statement bodya bodyb)
-	      else return false
+	       if mcode_equal nma nmb
+	       then
+		 conjunct_bindings
+		   (match_dots match_expr is_elist_matcher do_elist_match
+		      argsa argsb)
+		   (match_statement bodya bodyb)
+	       else return false
 	  | (Ast0.Switch(_,_,expa,_,_,casesa,_),
 	     Ast0.Switch(_,_,expb,_,_,casesb,_)) ->
 	       conjunct_bindings (match_expr expa expb)
@@ -867,12 +881,12 @@ mysterious bug that is obtained with eg int attach(...); *)
 		    List.fold_left
 		      (function prev ->
 			function
-		      | Ast0.WhenNot wc ->
-			  conjunct_bindings prev
-			    (add_dot_binding d (Ast0.DotsStmtTag wc))
-		      | Ast0.WhenAlways wc ->
-			  conjunct_bindings prev
-			    (add_dot_binding d (Ast0.StmtTag wc)))
+			  | Ast0.WhenNot wc ->
+			      conjunct_bindings prev
+				(add_dot_binding d (Ast0.DotsStmtTag wc))
+			  | Ast0.WhenAlways wc ->
+			      conjunct_bindings prev
+				(add_dot_binding d (Ast0.StmtTag wc)))
 		      (return true) wc
 		  else
 		    (Printf.printf
@@ -889,7 +903,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
-
+	    
   (* first should provide a subset of the information in the second *)
   and match_fninfo patterninfo cinfo =
     let patterninfo = List.sort compare patterninfo in
@@ -910,7 +924,7 @@ mysterious bug that is obtained with eg int attach(...); *)
 	  | _ -> failwith "not possible")
       |	_ -> return false in
     loop (patterninfo,cinfo)
-
+      
   and match_case_line pattern c =
     if not(checks_needed) or not(context_required) or is_context c
     then
@@ -926,36 +940,36 @@ mysterious bug that is obtained with eg int attach(...); *)
       |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
       |	_ -> return false
     else return_false (ContextRequired (Ast0.CaseLineTag c)) in
-
+  
   let match_statement_dots x y =
     match_dots match_statement is_slist_matcher do_slist_match x y in
   
   (match_expr, match_decl, match_statement, match_typeC,
    match_statement_dots)
-
+    
 let match_expr dochecks context_required whencode_allowed =
   let (fn,_,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-
+    
 let match_decl dochecks context_required whencode_allowed =
   let (_,fn,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-
+    
 let match_statement dochecks context_required whencode_allowed =
   let (_,_,fn,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-
+    
 let match_typeC dochecks context_required whencode_allowed =
   let (_,_,_,fn,_) = match_maker dochecks context_required whencode_allowed in
   fn
-
+    
 let match_statement_dots dochecks context_required whencode_allowed =
   let (_,_,_,_,fn) = match_maker dochecks context_required whencode_allowed in
   fn
-
+    
 (* --------------------------------------------------------------------- *)
 (* make an entire tree MINUS *)
-
+    
 let make_minus =
   let mcode (term,arity,info,mcodekind) =
     (term,arity,info,
@@ -966,7 +980,7 @@ let make_minus =
 	 | _ -> failwith "make_minus: unexpected befaft")
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind") in
-
+  
   let update_mc mcodekind e =
     match !mcodekind with
       Ast0.CONTEXT(mc) ->
@@ -977,11 +991,11 @@ let make_minus =
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
     | Ast0.PLUS -> failwith "make_minus donothing: unexpected plus mcodekind"
     | _ -> failwith "make_minus donothing: unexpected mcodekind" in
-
+  
   let donothing r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     let e = k e in update_mc mcodekind e; e in
-
+  
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
   (* cases for dots and nests *)
@@ -1004,7 +1018,7 @@ let make_minus =
 			 r.V0.rebuilder_expression_dots expr_dots,
 			 mcode ender,whencode))
     | _ -> donothing r k e in
-
+  
   let declaration r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1012,7 +1026,7 @@ let make_minus =
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
     | _ -> donothing r k e in
-
+  
   let statement r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1029,7 +1043,7 @@ let make_minus =
 	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
 		     mcode ender,whencode))
     | _ -> donothing r k e in
-
+  
   let initialiser r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1037,7 +1051,7 @@ let make_minus =
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
     | _ -> donothing r k e in
-
+  
   let dots r k e =
     let info = Ast0.get_info e in
     let mcodekind = Ast0.get_mcodekind_ref e in
@@ -1062,21 +1076,21 @@ let make_minus =
 		 "%d: make_minus donothingxxx: unexpected mcodekind"
 		 info.Ast0.line_start))
     | _ -> donothing r k e in
-
+  
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
     statement donothing donothing
-
+    
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
-
+    
 (* mcodes will be side effected later with plus code, so we have to copy
-them on instantiating an isomorphism.  One could wonder whether it would
-be better not to use side-effects, but they are convenient for insert_plus
-where is it useful to manipulate a list of the mcodes but side-effect a tree *)
+   them on instantiating an isomorphism.  One could wonder whether it would
+   be better not to use side-effects, but they are convenient for insert_plus
+   where is it useful to manipulate a list of the mcodes but side-effect a tree *)
 (* hmm... Insert_plus is called before Iso_pattern... *)
 let rebuild_mcode start_line =
   let copy_mcodekind = function
@@ -1087,14 +1101,14 @@ let rebuild_mcode start_line =
 	(* this function is used elsewhere where we need to rebuild the
 	   indices, and so we allow PLUS code as well *)
         Ast0.PLUS in
-
+  
   let mcode (term,arity,info,mcodekind) =
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind) in
-
+  
   let copy_one (term,info,index,mcodekind,ty,dots) =
     let info =
       match start_line with
@@ -1102,9 +1116,9 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,info,ref !index,
      ref (copy_mcodekind !mcodekind),ty,dots) in
-
+  
   let donothing r k e = copy_one (k e) in
-
+  
   (* case for control operators (if, etc) *)
   let statement r k e =
     let s = k e in
@@ -1131,20 +1145,20 @@ let rebuild_mcode start_line =
 		 ((info,copy_mcodekind mc),
 		  fninfo,name,lp,params,rp,lbrace,body,rbrace)
 	 | s -> s)) in
-
+  
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
-
+    
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
-rules, then the code that is matched cannot contain whencode, because we
-won't know which dots it goes with. Should worry about nests, but they
-aren't allowed in isomorphisms for the moment. *)
-
+   rules, then the code that is matched cannot contain whencode, because we
+   won't know which dots it goes with. Should worry about nests, but they
+   aren't allowed in isomorphisms for the moment. *)
+    
 let count_edots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1153,15 +1167,15 @@ let count_edots =
   let exprfn r k e =
     match Ast0.unwrap e with
       Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> 1
-  | _ -> 0 in
-
+    | _ -> 0 in
+  
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
-
+    
 let count_idots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1169,14 +1183,14 @@ let count_idots =
   let donothing r k e = k e in
   let initfn r k e =
     match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
-
+  
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
-
+    
 let count_dots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1185,17 +1199,17 @@ let count_dots =
   let stmtfn r k e =
     match Ast0.unwrap e with
       Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> 1
-  | _ -> 0 in
-
+    | _ -> 0 in
+  
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
-
+    
 (* --------------------------------------------------------------------- *)
-
+    
 let lookup name bindings mv_bindings =
   try Common.Left (List.assoc (term name) bindings)
   with
@@ -1290,7 +1304,7 @@ let instantiate bindings mv_bindings =
 
   let exprfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,x,pure) ->
+      Ast0.MetaExpr(name,x,form,pure) ->
 	(rebuild_mcode None).V0.rebuilder_expression
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ExprTag(exp)) -> exp
@@ -1321,17 +1335,7 @@ let instantiate bindings mv_bindings =
 		    Some(List.map renamer types) in
 	      Ast0.rewrap e
 		(Ast0.MetaExpr
-		   (Ast0.set_mcode_data new_mv name,new_types,pure)))
-    | Ast0.MetaConst(name,None,pure) ->
-	(rebuild_mcode None).V0.rebuilder_expression
-	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.ExprTag(exp)) -> exp
-	  | Common.Left(_) -> failwith "not possible 1"
-	  | Common.Right(new_mv) ->
-	      Ast0.rewrap e
-		(Ast0.MetaConst(Ast0.set_mcode_data new_mv name,None,pure)))
-    | Ast0.MetaConst(namea,Some ty,pure) ->
-	failwith "typed metaconst not supported"
+		   (Ast0.set_mcode_data new_mv name,new_types,form,pure)))
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
     | Ast0.Edots(d,_) ->
@@ -1586,6 +1590,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaErrDecl(ar,nm))
   | Ast.MetaExpDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaExpDecl(ar,nm,ty))
+  | Ast.MetaIdExpDecl(ar,nm,ty) ->
+      (nm,function nm -> Ast.MetaIdExpDecl(ar,nm,ty))
   | Ast.MetaExpListDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm))
   | Ast.MetaStmDecl(ar,nm) ->

@@ -17,6 +17,7 @@ module P = Parse_aux
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
+%token TIdExpression
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator
@@ -46,7 +47,7 @@ module P = Parse_aux
                                                   TMetaFunc TMetaLocalFunc
 %token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaExpList
 %token <(string * string) * Ast0_cocci.pure * Type_cocci.typeC list option *
-          Data.clt> TMetaExp TMetaConst
+          Data.clt> TMetaExp TMetaIdExp TMetaConst
 %token TArob TArobArob
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis
@@ -233,7 +234,7 @@ metadec:
 	   ids) }
 
 %inline metakind:
-  TIdentifier
+    TIdentifier
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
       !Data.add_id_meta name pure; tok) }
@@ -261,6 +262,15 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
       !Data.add_exp_meta None name pure; tok) }
+| TIdExpression ty=ioption(meta_exp_type)
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_idexp_meta ty name pure; tok) }
+| TIdExpression m=nonempty_list(TMul)
+    { (fun arity name pure check_meta ->
+      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      let tok = check_meta(Ast.MetaIdExpDecl(arity,name,ty)) in
+      !Data.add_idexp_meta ty name pure; tok) }
 | TExpression Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpListDecl(arity,name)) in
@@ -1129,13 +1139,16 @@ primary_expr(recurser,primary_extra):
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
  | TMetaConst
      { let (nm,pure,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaConst(P.clt2mcode nm clt,ty,pure)) }
+     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.CONST,pure)) }
  | TMetaErr
      { let (nm,pure,clt) = $1 in
      Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,pure)) }
  | TMetaExp
      { let (nm,pure,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,pure)) }
+     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ANY,pure)) }
+ | TMetaIdExp
+     { let (nm,pure,ty,clt) = $1 in
+     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ID,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }

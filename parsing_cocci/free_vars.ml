@@ -69,12 +69,11 @@ let collect_all_refs =
 
   let astfvexpr recursor k e =
     match Ast.unwrap e with
-      Ast.MetaExpr(name,_,Some type_list,_)
-    | Ast.MetaConst(name,_,Some type_list,_) ->
+      Ast.MetaExpr(name,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind [metaid name] types
-    | Ast.MetaConst(name,_,_,_) | Ast.MetaErr(name,_,_)
-    | Ast.MetaExpr(name,_,_,_) | Ast.MetaExprList(name,_,_) -> [metaid name]
+    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_)
+    | Ast.MetaExprList(name,_,_) -> [metaid name]
     | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
     | _ -> k e in
 
@@ -153,14 +152,13 @@ let collect_saved =
   let astfvexpr recursor k e =
     let tymetas =
       match Ast.unwrap e with
-	Ast.MetaConst(name,_,Some type_list,_)
-      |	Ast.MetaExpr(name,_,Some type_list,_) ->
+	Ast.MetaExpr(name,_,Some type_list,_,_) ->
 	  List.fold_left type_collect option_default type_list
       |	_ -> [] in
     let vars =
       match Ast.unwrap e with
-	Ast.MetaConst(name,TC.Saved,_,_) | Ast.MetaErr(name,TC.Saved,_)
-      | Ast.MetaExpr(name,TC.Saved,_,_) | Ast.MetaExprList(name,TC.Saved,_) ->
+	Ast.MetaErr(name,TC.Saved,_) | Ast.MetaExpr(name,TC.Saved,_,_,_)
+      | Ast.MetaExprList(name,TC.Saved,_) ->
 	  [metaid name]
       | _ -> k e in
     bind tymetas vars in
@@ -334,17 +332,13 @@ let classify_variables metavars minirules used_after =
 
   let expression r k e =
     match Ast.unwrap e with
-      Ast.MetaConst(name,_,ty,_) ->
-	let (unitary,inherited) = classify name in
-	let ty = get_option (List.map type_infos) ty in
-	Ast.rewrap e (Ast.MetaConst(name,unitary,ty,inherited))
-    | Ast.MetaErr(name,_,_) ->
+      Ast.MetaErr(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaErr(name,unitary,inherited))
-    | Ast.MetaExpr(name,_,ty,_) ->
+    | Ast.MetaExpr(name,_,ty,form,_) ->
 	let (unitary,inherited) = classify name in
 	let ty = get_option (List.map type_infos) ty in
-	Ast.rewrap e (Ast.MetaExpr(name,unitary,ty,inherited))
+	Ast.rewrap e (Ast.MetaExpr(name,unitary,ty,form,inherited))
     | Ast.MetaExprList(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaExprList(name,unitary,inherited))

@@ -895,11 +895,6 @@ let pp_program_gen pr_elem progelem =
      
 
 
-and pp_cst_gen pr_elem cst = 
-  let (cst, ii) = cst in
-  ii +> List.iter pr_elem
-  
-
 
 (*****************************************************************************)
 

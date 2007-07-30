@@ -140,18 +140,10 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaConst(name,_,typedontcare,_) -> 
-      handle_metavar name  (function
-        | Ast_c.MetaConstVal exp -> 
-            Pretty_print_c.pp_cst_gen pr_elem  exp
-        | _ -> raise Impossible
-      )
-
-
   | Ast.MetaErr(name,_,_) -> 
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,_,_typedontcare,_) -> 
+  | Ast.MetaExpr (name,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
             Pretty_print_c.pp_expression_gen pr_elem  exp

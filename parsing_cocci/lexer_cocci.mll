@@ -148,6 +148,8 @@ let id_tokens lexbuf =
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
   | "expression" when in_meta -> check_arity_context_linetype s; TExpression
+  | "idexpression" when in_meta ->
+      check_arity_context_linetype s; TIdExpression
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
   | "function"  when in_meta ->  check_arity_context_linetype s; TFunction
   | "local" when in_meta ->      check_arity_context_linetype s; TLocal
@@ -255,6 +257,10 @@ let init _ =
   Data.add_exp_meta :=
     (function tyopt -> function name -> function pure ->
       let fn clt = TMetaExp(name,pure,tyopt,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_idexp_meta :=
+    (function tyopt -> function name -> function pure ->
+      let fn clt = TMetaIdExp(name,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function pure ->

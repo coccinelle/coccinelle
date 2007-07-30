@@ -136,9 +136,8 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; typeC ty; string_mcode rp]
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaConst(name,ty,_) -> meta_mcode name
-      | Ast0.MetaErr(name,_) -> meta_mcode name
-      | Ast0.MetaExpr(name,ty,_) -> meta_mcode name
+      | Ast0.MetaErr(name,_)
+      | Ast0.MetaExpr(name,_,_,_)
       | Ast0.MetaExprList(name,_) -> meta_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -625,12 +624,10 @@ let rebuilder = fun
 	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
-	| Ast0.MetaConst(name,ty,pure) ->
-	    Ast0.MetaConst(meta_mcode name,ty,pure)
 	| Ast0.MetaErr(name,pure) ->
 	    Ast0.MetaErr(meta_mcode name,pure)
-	| Ast0.MetaExpr(name,ty,pure) ->
-	    Ast0.MetaExpr(meta_mcode name,ty,pure)
+	| Ast0.MetaExpr(name,ty,form,pure) ->
+	    Ast0.MetaExpr(meta_mcode name,ty,form,pure)
 	| Ast0.MetaExprList(name,pure) ->
 	    Ast0.MetaExprList(meta_mcode name,pure)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)

@@ -83,6 +83,17 @@ let dots between fn d =
       | Ast0.STARS(l) -> print_between between fn l)
 
 (* --------------------------------------------------------------------- *)
+
+let print_types = function
+    None -> ()
+  | Some ty ->
+      print_string "/* ";
+      Format.print_flush();
+      print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
+      Format.print_flush();
+      print_string " */"
+
+(* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let rec ident i =
@@ -147,21 +158,9 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaConst(name,None,_) -> mcode print_meta name
-      | Ast0.MetaConst(name,Some ty,_) ->
-	  mcode print_meta name; print_string "/* ";
-	  Format.print_flush(); (* no idea why this is needed *)
-	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-	  Format.print_flush();
-	  print_string " */"
       | Ast0.MetaErr(name,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,None,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,Some ty,_) ->
-	  mcode print_meta name; print_string "/* ";
-	  Format.print_flush();
-	  print_between (function _ -> print_string ", ") Type_cocci.typeC ty;
-	  Format.print_flush();
-	  print_string " */"
+      | Ast0.MetaExpr(name,ty,_,_) ->
+	  mcode print_meta name; print_types ty
       | Ast0.MetaExprList(name,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) ->

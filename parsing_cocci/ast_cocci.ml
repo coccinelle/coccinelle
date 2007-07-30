@@ -55,6 +55,8 @@ and metavar =
   | MetaErrDecl of arity * meta_name (* name *)
   | MetaExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (* name *)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
@@ -117,11 +119,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaConst      of meta_name mcode * keep_binding *
-	              Type_cocci.typeC list option * inherited
   | MetaErr        of meta_name mcode * keep_binding * inherited
   | MetaExpr       of meta_name mcode * keep_binding *
-	              Type_cocci.typeC list option * inherited
+	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of meta_name mcode * keep_binding *
 	              inherited (* only in arg lists *)
 
@@ -140,6 +140,8 @@ and base_expression =
   | OptExp         of expression
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
+
+and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
@@ -512,6 +514,7 @@ let get_meta_name = function
   | MetaConstDecl(ar,nm,ty) -> nm
   | MetaErrDecl(ar,nm) -> nm
   | MetaExpDecl(ar,nm,ty) -> nm
+  | MetaIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm) -> nm
   | MetaStmDecl(ar,nm) -> nm
   | MetaStmListDecl(ar,nm) -> nm

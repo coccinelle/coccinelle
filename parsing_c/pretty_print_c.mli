@@ -6,9 +6,6 @@ val pp_statement_gen : pr_elem_func -> Ast_c.statement -> unit
 val pp_decl_gen : pr_elem_func -> Ast_c.declaration -> unit
 val pp_init_gen : pr_elem_func -> Ast_c.initialiser -> unit
 
-val pp_cst_gen : 
-  pr_elem_func -> (Ast_c.constant, string) Common.either Ast_c.wrap -> unit
-
 val pp_type_gen : pr_elem_func -> Ast_c.fullType -> unit
 val pp_type_with_ident_gen :
   pr_elem_func -> 
