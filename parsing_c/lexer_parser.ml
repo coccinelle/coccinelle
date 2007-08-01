@@ -26,67 +26,50 @@ let _handle_typedef = ref true
 let enable_typedef ()  = _handle_typedef := true
 let disable_typedef () = _handle_typedef := false
 
-
 let is_enabled_typedef () = !_handle_typedef
 
 
-type typedef = TypeDefI of string | IdentI of string
 
-(* oldsimple:  but slow,  take 2 secondes on some C files 
+
+type identkind = TypeDefI | IdentI
+
+(* Ca marche ce code ? on peut avoir un typedef puis un ident puis
+ * un typedef nested ? oui car Hashtbl (dans scoped_h_env) gere l'historique. 
+ * 
+ * oldsimple:  but slow,  take 2 secondes on some C files 
  * let (typedef: typedef list list ref) = ref [[]]
  *)
-let (_typedef: ((string, typedef) Hashtbl.t) ref) =  ref (Hashtbl.create 100)
-
-let (_scoped_typedef: typedef list list ref) = ref [[]]
-
+let (_typedef : (string, identkind) Common.scoped_h_env ref) = 
+  ref (Common.empty_scoped_h_env ())
+   
 let is_typedef s  = if !_handle_typedef then
-  (match (Common.optionise (fun () -> Hashtbl.find !_typedef s)) with
-  | Some (TypeDefI s2) -> assert (s = s2); true
-  | Some (IdentI s2) ->   assert (s = s2); false
+  (match (Common.optionise (fun () -> Common.lookup_h_env s !_typedef)) with
+  | Some TypeDefI -> true
+  | Some IdentI -> false
   | None -> false
   )
   else false
 
-(* Ca marche ce code ? on peut avoir un typedef puis un ident puis
- * un typedef nested ? oui car hashtbl gere l'historique. 
- *)
-let new_scope() = _scoped_typedef := []::!_scoped_typedef
-let del_scope() = 
-  begin
-    List.hd !_scoped_typedef +> List.iter (function 
-      | ((TypeDefI s)|(IdentI s)) -> Hashtbl.remove !_typedef s);
-    _scoped_typedef := List.tl !_scoped_typedef
-  end
+let new_scope() = Common.new_scope_h _typedef
+let del_scope() = Common.del_scope_h _typedef
 
-let add_typedef  s = 
-  begin 
-    _scoped_typedef := 
-      (TypeDefI s::(List.hd !_scoped_typedef))::(List.tl !_scoped_typedef);
-    Hashtbl.add !_typedef s (TypeDefI s);
-  end
+let add_typedef  s = Common.add_in_scope_h _typedef (s, TypeDefI)
+let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
+
 let add_typedef_root s = 
   if !Flag_parsing_c.add_typedef_root
   then 
-    Hashtbl.add !_typedef s (TypeDefI s)
+    Hashtbl.add !_typedef.scoped_h s TypeDefI
   else add_typedef s (* have far more .failed without this *)
-  
-let add_ident s    = 
-  begin
-    _scoped_typedef := 
-      (IdentI   s::(List.hd !_scoped_typedef))::(List.tl !_scoped_typedef);
-    Hashtbl.add !_typedef s (IdentI s);
-  end
 
 
-let _old_state = ref (Hashtbl.copy !_typedef,!_scoped_typedef)
+let _old_state = ref (Common.clone_scoped_h_env !_typedef)
 
 let save_typedef_state () = 
-  _old_state := (Hashtbl.copy !_typedef,!_scoped_typedef)
+  _old_state := Common.clone_scoped_h_env !_typedef
+
 let restore_typedef_state () = 
-  begin
-    _typedef := fst(!_old_state);
-    _scoped_typedef := snd(!_old_state);
-  end
+  _typedef := !_old_state
   
 
 
@@ -109,8 +92,7 @@ let _lexer_hint = ref (default_hint())
 let lexer_reset_typedef () = 
   begin
   _handle_typedef := true;
-  _typedef := Hashtbl.create 100;
-  _scoped_typedef := [[]];
+  _typedef := Common.empty_scoped_h_env ();
   _lexer_hint := { (default_hint ()) with toplevel = true; } ;
   end
 

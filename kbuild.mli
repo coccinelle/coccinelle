@@ -9,6 +9,7 @@ val parse_kbuild_info : filename -> kbuild_info
 
 
 val generate_naive_kbuild_info : string list -> kbuild_info
+val generate_less_naive_kbuild_info : string list -> kbuild_info
 val check_up_to_date : kbuild_info -> kbuild_info -> unit
 
 (* get the relevant groups from dirs given a kbuild_info *)

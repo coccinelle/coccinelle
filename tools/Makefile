@@ -16,7 +16,7 @@ extract_c_and_res: extract_c_and_res.ml
 	 ../commons/commons.cma -I ../commons \
 	$+
 
-meta_files: maintainers.mli maintainers.ml meta_files.ml
+meta_files: maintainers.mli maintainers.ml meta_files.ml ../kbuild.ml
 	ocamlc -g -dtypes -o $@ str.cma unix.cma \
 	../commons/commons.cma -I ../commons -I ../ \
 	../kbuild.cmo   \

@@ -807,6 +807,8 @@ let once f =
     then begin already := true; f x end
   )
 
+(* cache_file, cf below *)
+
     
 (*****************************************************************************)
 (* Error managment *)
@@ -1374,6 +1376,16 @@ let (list_of_string: string -> char list) =
 let (lines: string -> string list) = fun s -> 
   let rec lines_aux = function
     | [] -> []
+    | [x] -> if x = "" then [] else [x] 
+    | x::xs -> 
+        x::lines_aux xs 
+  in
+  Str.split_delim (Str.regexp "\n") s +> lines_aux
+
+
+let (lines_with_nl: string -> string list) = fun s -> 
+  let rec lines_aux = function
+    | [] -> []
     | [x] -> if x = "" then [] else [x ^ "\n"] (* old: [x] *)
     | x::xs -> 
         let e = x ^ "\n" in
@@ -1490,6 +1502,9 @@ let write_file file s =
 let filesize file = 
   (Unix.stat file).Unix.st_size
 
+let filemtime file = 
+  (Unix.stat file).Unix.st_mtime
+
 
 let lfile_exists filename = 
   try 
@@ -1539,6 +1554,27 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
     then Some (s, stat.Unix.st_size) 
     else None
     )
+
+
+let cache_file file ext_cache f = 
+  if not (lfile_exists file) 
+  then failwith ("can't find: "  ^ file);
+  let file_cache = (file ^ ext_cache) in
+  if lfile_exists file_cache && 
+    filemtime file_cache >= filemtime file
+  then get_value file_cache
+  else begin
+    let res = f () in
+    write_value res file_cache;
+    res
+  end
+
+
+let glob pattern =
+  cmd_to_list ("find " ^ pattern)
+
+
+
   
 (* taken from mlfuse, the predecessor of ocamlfuse *)
 type rwx = [`R|`W|`X] list
@@ -2487,12 +2523,6 @@ let hiter = Hashtbl.iter
 let hfold = Hashtbl.fold
 let hremove k h = Hashtbl.remove h k
 
-let find_hash_set key value_if_not_found h = 
-  try Hashtbl.find h key
-  with Not_found -> 
-    (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
-
-
 let hash_to_list h = 
   Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
   +> List.sort compare 
@@ -2509,6 +2539,13 @@ let hash_of_list xs =
 (*****************************************************************************)
 
 type 'a hashset = ('a, bool) Hashtbl.t 
+
+let find_hash_set key value_if_not_found h = 
+  try Hashtbl.find h key
+  with Not_found -> 
+    (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
+
+
 
 let hash_hashset_add k e h = 
   match optionise (fun () -> Hashtbl.find h k) with
@@ -3089,6 +3126,129 @@ let regression_testing newscore best_score_file =
     );
     write_value newbestscore best_score_file;
     flush stdout; flush stderr;
+  end
+
+(*****************************************************************************)
+(* Scope managment *)
+(*****************************************************************************)
+
+(* could also make a function Common.make_scope_functions that return
+ * the new_scope, del_scope, do_in_scope, add_env. Kind of functor :)
+ *)
+
+type ('a, 'b) scoped_env = ('a, 'b) assoc list
+
+(*
+let rec lookup_env f env = 
+  match env with 
+  | [] -> raise Not_found
+  | []::zs -> lookup_env f zs
+  | (x::xs)::zs -> 
+      match f x with
+      | None -> lookup_env f (xs::zs)
+      | Some y -> y
+
+let member_env_key k env = 
+  try 
+    let _ = lookup_env (fun (k',v) -> if k = k' then Some v else None) env in
+    true
+  with Not_found -> false
+
+*)
+
+let rec lookup_env k env = 
+  match env with 
+  | [] -> raise Not_found
+  | []::zs -> lookup_env k zs
+  | ((k',v)::xs)::zs -> 
+      if k = k'
+      then v 
+      else lookup_env k (xs::zs)
+
+let member_env_key k env = 
+  match optionise (fun () -> lookup_env k env) with
+  | None -> false
+  | Some _ -> true
+
+
+let new_scope scoped_env = scoped_env := []::!scoped_env
+let del_scope scoped_env = scoped_env := List.tl !scoped_env
+
+let do_in_new_scope scoped_env f = 
+  begin
+    new_scope scoped_env;
+    let res = f() in
+    del_scope scoped_env;
+    res
+  end
+  
+let add_in_scope scoped_env def =
+  let (current, older) = uncons !scoped_env in
+  scoped_env := (def::current)::older
+
+
+
+
+
+(* note that ocaml hashtbl store also old value of a binding when add
+ * add a newbinding; that's why del_scope works
+ *)
+
+type ('a, 'b) scoped_h_env = {
+  scoped_h : ('a, 'b) Hashtbl.t;
+  scoped_list : ('a, 'b) assoc list;
+}
+
+let empty_scoped_h_env () = {
+  scoped_h = Hashtbl.create 101;
+  scoped_list = [[]];
+}
+let clone_scoped_h_env x = 
+  { scoped_h = Hashtbl.copy x.scoped_h;
+    scoped_list = x.scoped_list;
+  }
+
+let rec lookup_h_env k env = 
+  Hashtbl.find env.scoped_h k 
+
+let member_h_env_key k env = 
+  match optionise (fun () -> lookup_h_env k env) with
+  | None -> false
+  | Some _ -> true
+
+
+let new_scope_h scoped_env = 
+  scoped_env := {!scoped_env with scoped_list = []::!scoped_env.scoped_list}
+let del_scope_h scoped_env = 
+  begin
+    List.hd !scoped_env.scoped_list +> List.iter (fun (k, v) ->
+      Hashtbl.remove !scoped_env.scoped_h k
+    );
+    scoped_env := {!scoped_env with scoped_list = 
+        List.tl !scoped_env.scoped_list
+    }
+  end
+
+let do_in_new_scope_h scoped_env f = 
+  begin
+    new_scope_h scoped_env;
+    let res = f() in
+    del_scope_h scoped_env;
+    res
+  end
+
+(*  
+let add_in_scope scoped_env def =
+  let (current, older) = uncons !scoped_env in
+  scoped_env := (def::current)::older
+*)
+
+let add_in_scope_h x (k,v) = 
+  begin
+    Hashtbl.add !x.scoped_h k v;
+    x := { !x with scoped_list = 
+        ((k,v)::(List.hd !x.scoped_list))::(List.tl !x.scoped_list);
+    };
   end
 
 (*****************************************************************************)

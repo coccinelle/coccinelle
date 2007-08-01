@@ -8,9 +8,8 @@ val is_enabled_typedef : unit -> bool
 
 
 (* private *)
-type typedef = TypeDefI of string | IdentI of string
-val _typedef : (string, typedef) Hashtbl.t ref
-val _scoped_typedef : typedef list list ref 
+type identkind = TypeDefI | IdentI
+val _typedef : (string, identkind) Common.scoped_h_env ref
 
 val add_ident   : string -> unit
 val add_typedef : string -> unit
@@ -23,11 +22,9 @@ val is_typedef : string -> bool
 
 val lexer_reset_typedef : unit -> unit
 
-val _old_state : ((string, typedef) Hashtbl.t * typedef list list) ref
+val _old_state : (string, identkind) Common.scoped_h_env ref
 val save_typedef_state : unit -> unit
 val restore_typedef_state : unit -> unit
-
-
 
 
 type lexer_hint = { 

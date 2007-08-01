@@ -597,8 +597,8 @@ labeled:
 
 compound: tobrace compound2 tcbrace { $2, [$1; $3]  }
 
-tobrace: TOBrace                     {  new_scope (); $1 }
-tcbrace: TCBrace                     {  del_scope (); $1 }
+tobrace: TOBrace                     {  LP.new_scope (); $1 }
+tcbrace: TCBrace                     {  LP.del_scope (); $1 }
 
 /* old:
 compound2: 
@@ -928,11 +928,11 @@ tocro: TOCro { et "tocro" ();$1 }
 tccro: TCCro { dt "tccro" ();$1 }
 
 topar: TOPar 
-     { new_scope ();et "topar" (); 
+     { LP.new_scope ();et "topar" (); 
        !LP._lexer_hint.parameterDeclaration <- true; $1  
      }
 tcpar: TCPar 
-     { del_scope ();dt "tcpar" (); 
+     { LP.del_scope ();dt "tcpar" (); 
        !LP._lexer_hint.parameterDeclaration <- false; $1  
      }
 
@@ -1344,7 +1344,14 @@ external_declaration:
 
 function_definition: function_def    { fixFunc $1 }
 
-function_def: start_fun compound      { del_scope(); ($1, $2) }
+function_def: start_fun compound      { LP.del_scope(); ($1, $2) }
+
+start_fun: start_fun2                        
+  { LP.new_scope(); 
+    fix_add_params_ident $1; 
+    !LP._lexer_hint.toplevel <- false;  
+    $1 
+  }
 
 start_fun2: decl_spec declaratorfd  
      { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
@@ -1370,13 +1377,6 @@ celem:
 /*----------------------------*/
 /* workarounds */
 /*----------------------------*/
-start_fun: start_fun2                        
-  { new_scope(); 
-    fix_add_params_ident $1; 
-    !LP._lexer_hint.toplevel <- false;  
-    $1 
-  }
-
 declaratorfd: declarator { et "declaratorfd" (); $1 }
 
 

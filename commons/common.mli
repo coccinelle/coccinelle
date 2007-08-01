@@ -245,6 +245,12 @@ val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
 val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
+(* take file from which computation is done, extension, and function
+ * and will compute the function only once and then save result in 
+ * file ^ extension
+ *)
+val cache_file : filename  -> string (* extension *) -> (unit -> 'a) -> 'a
+
 
 val once : ('a -> unit) -> ('a -> unit)
 
@@ -549,6 +555,8 @@ val unlines : string list -> string
 val words : string -> string list
 val unwords : string list -> string
 
+val lines_with_nl : string -> string list
+
 
 (*****************************************************************************)
 (* Process/Files *)
@@ -574,6 +582,7 @@ val read_file : filename -> string
 val write_file : filename -> string -> unit
 
 val filesize : filename -> int
+val filemtime : filename -> float
 
 val lfile_exists : filename -> bool
 
@@ -584,6 +593,8 @@ val readdir_to_dir_list : string -> string list
 val readdir_to_file_list : string -> string list
 val readdir_to_link_list : string -> string list
 val readdir_to_dir_size_list : string -> (string * int) list
+
+val glob : string -> filename list
 
 type rwx = [ `R | `W | `X ] list
 val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
@@ -1154,6 +1165,42 @@ val error_message_short : filename -> (string * int) -> string
  * files and who can make shift.
  *)
 val error_messagebis : filename -> (string * int) -> int -> string
+
+(*****************************************************************************)
+(* Scope managment *)
+(*****************************************************************************)
+
+type ('a, 'b) scoped_env = ('a, 'b) assoc list
+
+val lookup_env : 'a -> ('a, 'b) scoped_env -> 'b
+val member_env_key : 'a -> ('a, 'b) scoped_env -> bool
+
+val new_scope : ('a, 'b) scoped_env ref -> unit
+val del_scope : ('a, 'b) scoped_env ref -> unit
+
+val do_in_new_scope : ('a, 'b) scoped_env ref -> (unit -> unit) -> unit
+  
+val add_in_scope : ('a, 'b) scoped_env ref -> 'a * 'b -> unit
+
+
+
+
+type ('a, 'b) scoped_h_env = {
+  scoped_h : ('a, 'b) Hashtbl.t;
+  scoped_list : ('a, 'b) assoc list;
+}
+val empty_scoped_h_env : unit -> ('a, 'b) scoped_h_env
+val clone_scoped_h_env : ('a, 'b) scoped_h_env -> ('a, 'b) scoped_h_env
+
+val lookup_h_env : 'a -> ('a, 'b) scoped_h_env -> 'b
+val member_h_env_key : 'a -> ('a, 'b) scoped_h_env -> bool
+
+val new_scope_h : ('a, 'b) scoped_h_env ref -> unit
+val del_scope_h : ('a, 'b) scoped_h_env ref -> unit
+
+val do_in_new_scope_h : ('a, 'b) scoped_h_env ref -> (unit -> unit) -> unit
+
+val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
 
 
 (*****************************************************************************)

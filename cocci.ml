@@ -313,8 +313,8 @@ let sp_contain_typed_metavar toplevel_list_list =
  * because they may contain useful type definition or because
  * we may have to modify them
  * 
- * For the moment we base in part our heuristic on the name of the file.
- * serio.c is related to #include <linux/serio.h> 
+ * For the moment we base in part our heuristic on the name of the file, e.g.
+ * serio.c is related we think to #include <linux/serio.h> 
  *)
 
 let includes_to_parse xs = 
@@ -330,11 +330,11 @@ let includes_to_parse xs =
           | Ast_c.NonLocal xs -> 
               if Common.fileprefix (Common.last xs) = Common.fileprefix file 
               then 
-                Some (Filename.concat !Flag_cocci.include_path (Common.join "/" xs))
+                Some (Filename.concat !Flag_cocci.include_path 
+                         (Common.join "/" xs))
               else None
         | Ast_c.Wierd _ -> None
           )
-
       | _ -> None
     )
   )
@@ -875,6 +875,7 @@ let full_engine2 (coccifile, isofile) cfiles =
     else Some isofile
   in
 
+  (* useful opti when use -dir *)
   let (astcocci,free_var_lists,used_after_lists,toks) = 
     Common.memoized _hparse (coccifile, isofile) (fun () -> 
       sp_of_file coccifile isofile)

@@ -47,16 +47,89 @@ let parse_kbuild_info filename =
     Directory (s, groups)
   )
 
-
 let generate_naive_kbuild_info dirs = 
     dirs  +> List.map (fun s -> 
       let files = Common.readdir_to_file_list s in
       let files_ext = files +> List.map Common.dbe_of_filename_safe in
       let cfiles = files_ext +> Common.map_filter 
-        (function Left (d,base, "c") -> Some base | _ -> None) in
+        (function 
+        | Left (d,base, "c") -> 
+            if base =~ ".*\\.mod$" then None
+            else Some base 
+        | _ -> None
+        ) in
       let ys = cfiles +> List.map (fun c -> Group [c ^ ".c"]) in
       Directory (s, ys)
     )
+
+type makefile = 
+  { 
+    obj_dirs : string stack ref;
+    obj_config: (string list) stack ref;
+    obj_objs: (string * (string list)) stack ref;
+  }
+let empty_makefile () =
+ raise Todo
+
+let parse_makefile file = 
+  let xs = Common.cat file in 
+  let s = Common.unlines xs in 
+  let s = Str.global_replace (Str.regexp "\\\\\n") "" s in
+  let xs = Common.lines_with_nl s in
+  let xs = xs +> List.map (Str.global_replace (Str.regexp "#.*") "" ) in
+  let xs = xs +> List.filter (fun s -> not (s =~ "^[ \t]*$")) in
+  let m = empty_makefile () in
+
+  xs +> List.iter (fun s -> 
+    match s with
+    | s when s =~ "obj-\\$(CONFIG_.*)[ \t]*[\\+:]=\\(.*/\\)" -> 
+        pr2_no_nl ("DIR: " ^ s)
+    | s when s =~ "obj-y[ \t]*\\+=\\(.*/\\)" -> 
+        pr2_no_nl ("DIR: " ^ s)
+    | s when s =~ "obj-\\$(CONFIG_.*)[ \t]*[\\+:]=\\(.*\\)" -> 
+        let s = matched1 s in
+        let objs = Common.split "[ \t]+" s in
+        assert(List.for_all (fun s -> thd3 (Common.dbe_of_filename s) = "o")
+                  objs);
+        
+        pr2 ("OBJS: " ^ (join "|" objs))
+
+    | s when s =~ "[a-zA-Z0-9_]+-objs[ \t]*[\\+:]=\\(.*\\)" -> 
+        let s = matched1 s in
+        let objs = Common.split "[ \t]+" s in
+
+        pr2 ("OBJSMODULE: " ^ (join "|" objs))
+
+    | s  -> 
+        pr2_no_nl ("OTHER: " ^ s)
+
+  )
+
+
+let generate_less_naive_kbuild_info dirs = 
+    dirs  +> List.map (fun s -> 
+      let files = Common.readdir_to_file_list s in
+      let files_ext = files +> List.map Common.dbe_of_filename_safe in
+      let cfiles = files_ext +> Common.map_filter 
+        (function 
+        | Left (d,base, "c") -> 
+            if base =~ ".*\\.mod$" then None
+            else Some base 
+        | _ -> None
+        ) in
+      match cfiles with
+      | [] -> Directory (s, [])
+      | _::_ -> 
+          if Common.lfile_exists (Filename.concat s "Makefile")
+          then
+            let _res = parse_makefile (Filename.concat s "Makefile") in
+            let ys = cfiles +> List.map (fun c -> Group [c ^ ".c"]) in
+            Directory (s, ys)
+          else 
+            failwith ("no Makefile found in: " ^ s)
+            
+    )
+
 
 
 (* a = current info file, in general manually extended; b = generated one *)
