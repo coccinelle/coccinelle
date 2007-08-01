@@ -405,7 +405,7 @@ and declaration d =
       close_box(); mcode print_string rp; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
-      mcode print_string stg; fullType ty; typeC id;
+      mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
   | Ast.Ddots(dots,Some whencode) -> 

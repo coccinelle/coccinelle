@@ -1322,6 +1322,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   *)
  | A.TyDecl (ty0, ptvirga), 
    ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
+
    (match A.unwrap ty0, typb0 with
    | A.Type(cv1,ty1), ((qu,il),typb1) ->
 
@@ -1444,16 +1445,47 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
    | A.Typedef (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, None),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
-       failwith "need to do something for typedef"
-       (* something like the following...
+     ((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline)), iivirg) -> 
+
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
-       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
-       storage_optional_allminus allminus stoa (stob, iistob) >>= 
-          (fun stoa (stob, iistob) -> ...)))))
-       *)
+       (match iistob with
+       | [iitypedef] -> 
+           tokenf stoa iitypedef >>= (fun stoa iitypedef -> 
+             return (stoa, [iitypedef])
+           )
+       | _ -> failwith "wierd, have both typedef and inline or nothing";
+       ) >>= (fun stoa iistob -> 
+       (match A.unwrap ida with
+       | A.MetaType(_,_,_) -> 
+
+           let fake_typeb = Ast_c.nQ, ((B.TypeName idb), [iidb]) in
+           fullTypebis ida fake_typeb >>= (fun ida fake_typeb -> 
+             match fake_typeb with
+             | nQ, ((B.TypeName idb), [iidb]) -> 
+                 return (ida, (idb, iidb))
+             | _ -> raise Impossible
+           )
+
+       | A.TypeName sa -> 
+           if (term sa) =$= idb
+           then 
+             tokenf sa iidb >>= (fun sa iidb -> 
+               return (
+                 (A.TypeName sa) +> A.rewrap ida,
+                 (idb, iidb)
+               ))
+             else fail
+       | _ -> raise Impossible
+
+       ) >>= (fun ida (idb, iidb) ->
+         return (
+           (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
+           (((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline)), iivirg),
+            iiptvirgb, iistob)
+         )
+       ))))
+             
        
    | _, ((None, typb, sto), _) -> 
        (* old:   failwith "no variable in this declaration, wierd" *)
