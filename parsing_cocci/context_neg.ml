@@ -185,7 +185,8 @@ let bind c1 c2 =
       Bind(lub(k1,k2),i1@i2,t1@t2,bi1@bi2,bt1@bt2,l1@l2)
 
 
-let option_default = Bind(Neutral,[],[],[],[],[])
+let option_default = (*Bind(Neutral,[],[],[],[],[])*)
+  Recursor(Neutral,[],[],[])
 
 let mcode (_,_,info,mcodekind) =
   let offset = info.Ast0.offset in

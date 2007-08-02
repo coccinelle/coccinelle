@@ -328,9 +328,12 @@ and typeC t =
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
-  | Ast0.StructUnionName(kind,name) ->
+  | Ast0.StructUnionName(kind,Some name) ->
       let name = ident name in
-      mkres t (Ast0.StructUnionName(kind,name)) (promote_mcode kind) name
+      mkres t (Ast0.StructUnionName(kind,Some name)) (promote_mcode kind) name
+  | Ast0.StructUnionName(kind,None) ->
+      let mc = promote_mcode kind in
+      mkres t (Ast0.StructUnionName(kind,None)) mc mc
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       let ty = typeC ty in
       let decls =

@@ -359,7 +359,9 @@ and typeC t =
 		   (Ast.Array(typeC ty,mcode lb,get_option expression size,
 			      mcode rb)))
     | Ast0.StructUnionName(kind,name) ->
-	Ast.Type(None,rewrap t (Ast.StructUnionName(mcode kind,ident name)))
+	Ast.Type(None,
+		 rewrap t
+		   (Ast.StructUnionName(mcode kind,get_option ident name)))
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast.Type(None,
 		 rewrap t
@@ -382,7 +384,7 @@ and base_typeC t =
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
     | Ast0.StructUnionName(kind,name) ->
-	Ast.StructUnionName(mcode kind,ident name)
+	Ast.StructUnionName(mcode kind,get_option ident name)
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast.StructUnionDef(typeC ty,mcode lb,dots declaration decls,mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)

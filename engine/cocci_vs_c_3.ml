@@ -2079,7 +2079,11 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
 
      (* todo: could also match a Struct that has provided a name *)
-    | A.StructUnionName(sua, sa), (B.StructUnionName (sub, sb), ii) -> 
+     (* This is for the case where the SmPL code contains "struct x", without
+	a definition.  In this case, the name field is always present.
+        This case is also called from the case for A.StructUnionDef when
+        a name is present in the C code. *)
+    | A.StructUnionName(sua, Some sa), (B.StructUnionName (sub, sb), ii) -> 
         (* sa is now an ident, not an mcode, old: ... && (term sa) =$= sb *)
         let (ib1, ib2) = tuple_of_list2 ii in
         if equal_structUnion  (term sua) sub 
@@ -2087,7 +2091,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ident DontKnow sa (sb, ib2) >>= (fun sa (sb, ib2) -> 
           tokenf sua ib1 >>= (fun sua ib1 -> 
             return (
-              (A.StructUnionName (sua, sa)) +> A.rewrap ta,
+              (A.StructUnionName (sua, Some sa)) +> A.rewrap ta,
               (B.StructUnionName (sub, sb), [ib1;ib2])
               )))
         else fail
@@ -2096,23 +2100,45 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | A.StructUnionDef(ty, lba, declsa, rba), 
      (B.StructUnion (sub, sbopt, declsb), ii) -> 
 
-        (match sbopt with
-        | None -> 
-            pr2_once "warning: anonymous structDef not handled by ast_cocci";
-            fail
-        | Some sb -> 
-            let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
+       let (iisub, lbb, rbb) = tuple_of_list3 ii in
 
+       let process_type =
+         match sbopt with
+           None ->
+	     (* the following doesn't reconstruct the complete SP code, just
+		the part that matched *)
+	     let rec loop s =
+	       match A.unwrap s with
+		 A.Type(None,ty) ->
+		   (match A.unwrap ty with
+		     A.StructUnionName(sua, None) ->
+		       tokenf sua iisub >>= (fun sua iisub ->
+			 let ty =
+			   A.Type(None,
+				  A.StructUnionName(sua, None) +> A.rewrap ty)
+			     +> A.rewrap s in
+			 return (ty,[iisub]))
+		   | _ -> fail)
+	       | A.DisjType(disjs) ->
+		   disjs +>
+		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
+	       | _ -> fail in
+	     loop ty
+	       
+         | Some sb ->
+             let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
 
-            (* build a StructUnionName from a StructUnion *)
-            let fake_su = B.nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) in
+             (* build a StructUnionName from a StructUnion *)
+             let fake_su = B.nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) in
             
-            fullType ty fake_su >>= (fun ty fake_su -> 
-              match fake_su with
-              | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) -> 
-                  return (ty,  (iisub, iisb))
-              | _ -> raise Impossible
-            ) >>= (fun ty (iisub,iisb) -> 
+             fullType ty fake_su >>= (fun ty fake_su -> 
+               match fake_su with
+               | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) -> 
+                   return (ty,  [iisub; iisb])
+               | _ -> raise Impossible) in
+
+       process_type
+	 >>= (fun ty ii_sub_sb -> 
 
             tokenf lba lbb >>= (fun lba lbb -> 
             tokenf rba rbb >>= (fun rba rbb -> 
@@ -2121,12 +2147,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
               return (
                 (A.StructUnionDef(ty, lba, declsa, rba)) +> A.rewrap ta,
-                (B.StructUnion (sub, sbopt, declsb),[iisub;iisb;lbb;rbb])
+                (B.StructUnion (sub, sbopt, declsb),ii_sub_sb@[lbb;rbb])
               )))))
-        )
-              
-        
-
 
 
    (* todo? handle isomorphisms ? because Unsigned Int can be match on a 

@@ -196,7 +196,7 @@ let combiner bind option_default
 	  function_type (ty,lp1,params,rp1) []
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
       | Ast.StructUnionName(kind,name) ->
-	  bind (struct_mcode kind) (ident name)
+	  bind (struct_mcode kind) (get_option ident name)
       | Ast.StructUnionDef(ty,lb,decls,rb) ->
 	  multibind
 	    [fullType ty; string_mcode lb; declaration_dots decls;
@@ -686,7 +686,7 @@ let rebuilder
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
 	| Ast.StructUnionName(kind,name) ->
-	    Ast.StructUnionName (struct_mcode kind, ident name)
+	    Ast.StructUnionName (struct_mcode kind, get_option ident name)
 	| Ast.StructUnionDef(ty,lb,decls,rb) ->
 	    Ast.StructUnionDef (fullType ty,
 				string_mcode lb, declaration_dots decls,

@@ -249,7 +249,8 @@ and typeC ty =
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
-      mcode structUnion kind; ident name; print_string " "
+      mcode structUnion kind;
+      print_option (function x -> ident x; print_string " ") name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty;
       mcode print_string lb;

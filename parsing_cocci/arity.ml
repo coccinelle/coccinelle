@@ -405,7 +405,7 @@ and top_typeC tgt opt_allowed typ =
 	all_same false opt_allowed tgt (mcode2line kind)
 	  [mcode2arity kind] in
       let kind = mcode kind in
-      let name = ident false false arity name in
+      let name = get_option (ident false false arity) name in
       make_typeC typ tgt arity (Ast0.StructUnionName(kind,name))
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       let arity =

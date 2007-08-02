@@ -223,7 +223,8 @@ and typeC t =
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
-	  mcode U.structUnion kind; ident name; print_string " "
+	  mcode U.structUnion kind;
+	  print_option (function x -> ident x; print_string " ") name
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	  typeC ty; mcode print_string lb;
 	  dots force_newline declaration decls;

@@ -635,8 +635,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Array(tya,_,sizea,_),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		(match_option match_expr sizea sizeb)
-	  | (Ast0.StructUnionName(kinda,namea),
-	     Ast0.StructUnionName(kindb,nameb)) ->
+	  | (Ast0.StructUnionName(kinda,Some namea),
+	     Ast0.StructUnionName(kindb,Some nameb)) ->
 	       if mcode_equal kinda kindb
 	       then match_ident namea nameb
 	       else return false

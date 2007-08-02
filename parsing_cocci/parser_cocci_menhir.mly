@@ -356,9 +356,12 @@ generic_ctype:
      | q=ioption(ctype_qualif) ty=Tlong
          { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.LongType ty, q)) }
      | s=struct_or_union i=ident
-	 { Ast0.wrap(Ast0.StructUnionName(s, i)) }
-     | s=struct_or_union i=ident l=TOBrace d=struct_decl_list r=TCBrace
-	 { Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
+	 { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
+     | s=struct_or_union i=ioption(ident)
+       l=TOBrace d=struct_decl_list r=TCBrace
+	 { (if i = None && !Data.in_iso
+	   then failwith "structures must be named in the iso file");
+           Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
 					 P.clt2mcode "{" l,
 					 d, P.clt2mcode "}" r)) }
      | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace

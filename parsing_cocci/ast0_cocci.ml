@@ -127,7 +127,7 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | StructUnionName of Ast.structUnion mcode * ident (* name *)
+  | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
@@ -440,7 +440,7 @@ let rec ast0_type_to_type ty =
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
-  | StructUnionName(su,tag) ->
+  | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  Type_cocci.StructUnionName(structUnion su,false,unwrap_mcode tag)
@@ -452,6 +452,7 @@ let rec ast0_type_to_type ty =
 	   let (rule,tag) = unwrap_mcode tag in
 	   Type_cocci.StructUnionName(structUnion su,true,rule^tag))
       | _ -> failwith "unexpected struct/union type name")
+  | StructUnionName(su,None) -> failwith "nameless structure - what to do???"
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
@@ -508,9 +509,10 @@ let rec reverse_type ty =
       then
 	(* not right... *)
 	StructUnionName(reverse_structUnion su,
-			wrap(MetaId(ty_rewrap_mcode ("",tag),Impure)))
+			Some(wrap(MetaId(ty_rewrap_mcode ("",tag),Impure))))
       else
-	StructUnionName(reverse_structUnion su, wrap(Id(ty_rewrap_mcode tag)))
+	StructUnionName(reverse_structUnion su,
+			Some (wrap(Id(ty_rewrap_mcode tag))))
   | Type_cocci.TypeName(name) -> TypeName(ty_rewrap_mcode name)
   | Type_cocci.MetaType(name,_,_) ->
       MetaType(ty_rewrap_mcode name,Impure(*not really right*))
