@@ -2100,11 +2100,15 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | A.StructUnionDef(ty, lba, declsa, rba), 
      (B.StructUnion (sub, sbopt, declsb), ii) -> 
 
-       let (iisub, lbb, rbb) = tuple_of_list3 ii in
+       let (ii_sub_sb, lbb, rbb) =
+	 match ii with
+	   [iisub; lbb; rbb] -> (Common.Left iisub,lbb,rbb)
+	 | [iisub; iisb; lbb; rbb] -> (Common.Right (iisub,iisb),lbb,rbb)
+	 | _ -> failwith "list of length 3 or 4 expected" in
 
        let process_type =
-         match sbopt with
-           None ->
+         match (sbopt,ii_sub_sb) with
+           (None,Common.Left iisub) ->
 	     (* the following doesn't reconstruct the complete SP code, just
 		the part that matched *)
 	     let rec loop s =
@@ -2125,8 +2129,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	       | _ -> fail in
 	     loop ty
 	       
-         | Some sb ->
-             let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
+         | (Some sb,Common.Right (iisub,iisb)) ->
 
              (* build a StructUnionName from a StructUnion *)
              let fake_su = B.nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) in
