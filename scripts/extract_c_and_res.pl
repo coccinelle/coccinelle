@@ -141,9 +141,14 @@ foreach my $f (@driverheaders_in_include) {
     $base =~ s/.h$/.c/;
   } else { die "PB: internal error"; }
 
+
+# julia want all .h that were in the patch, not just the headers
+# of our heuristic. Hence the comment.
+
 #  pr2 "$f $base";
-  if(defined($finalcfiles->{$base})) {
-    pr2 "found header of driver in include/: $f of $base";
+#  if(defined($finalcfiles->{$base})) {
+  {
+#    pr2 "found header of driver in include/: $f of $base";
     my $dir = `dirname $f`;
     chomp $dir;
     `mkdir -p $target_dir/$dir`;
