@@ -1,5 +1,7 @@
 open Common
 
+(* used by split_patch *) 
+
 type patch = patchitem list
    and patchitem = File of filename * string (* header line *) * string list
 

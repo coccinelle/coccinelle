@@ -1255,6 +1255,11 @@ gcc_opt_expr:
  | expr        { Some $1 }
  | /* empty */ { None  }
 
+/*
+opt_ptvirg:
+ | TPtVirg { [$1] }
+ | { [] }
+*/
 
 
 /*****************************************************************************/
@@ -1264,17 +1269,22 @@ gcc_opt_expr:
 /* cppext: */
 cpp_directives: 
 
- | TIdent TOPar argument_list TCPar TPtVirg 
-     { MacroTop (fst $1, $3,    [snd $1;$2;$4;$5]) } 
+ | TIdent TOPar argument_list TCPar 
+     { MacroTop (fst $1, $3,    [snd $1;$2;$4]) } 
 
- /* normally useless with parsing_hack because the ident would
+
+ /* old?: normally useless with parsing_hack because the ident would
   * be transformed into a MacroNoPtVirg, except when it's 
   * the last instruction in the file. parsing_hack does not
   * handle well EOF
   *
   * old?: seems dont work
+  * 
+  * if   TIdent TOPar argument_list TCPar opt_ptvirg
+  * then can have ambiguity cos celem allows to derive in TPtVirg only
+  * but wierd that ocamlyacc don't seems to give a good message
+  * for that ambiguity
   */
- | TIdent TOPar argument_list TCPar { EmptyDef [] } 
 
  | TIdent TPtVirg { EmptyDef [snd $1;$2] }
 

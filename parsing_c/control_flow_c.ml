@@ -187,6 +187,8 @@ type node = node1 * string
 
   | Include of inc_file wrap * include_rel_pos option ref
 
+  | MacroTop of string * argument wrap2 list * il 
+
   (* ------------------------ *)
   | Case  of statement * expression wrap
   | Default of statement * unit wrap
@@ -198,6 +200,7 @@ type node = node1 * string
   | CaseRange of statement * (expression * expression) wrap
   | Label of statement * string wrap
   | Goto of statement * string wrap
+
 
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
@@ -295,6 +298,7 @@ let extract_fullstatement node =
 
   | Include _ 
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
+  | MacroTop _
       -> None
 
   | SeqStart (st,_,_) 

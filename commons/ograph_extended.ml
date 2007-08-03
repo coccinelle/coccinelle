@@ -193,9 +193,24 @@ class ['a,'b] ograph_mutable =
   end   
 
 
+(* depth first search *)
+let dfs_iter xi f g =
+  let already = Hashtbl.create 101 in
+  let rec aux_dfs xs = 
+    xs +> List.iter (fun xi -> 
+      if Hashtbl.mem already xi then ()
+      else begin
+        Hashtbl.add already xi true;
+        f xi;
+        let succ = g#successors xi in
+        aux_dfs (succ#tolist +> List.map fst);
+      end
+    ) in
+  aux_dfs [xi]
 
 
-let print_ograph_xxx g filename =
+
+let generate_ograph_xxx g filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     let nodes = g#nodes in
@@ -213,16 +228,21 @@ let print_ograph_xxx g filename =
     pr "}\n" ;
     );
   let _status = 
-    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;" ^ 
-                 "gv " ^ filename ^ ".ps &")
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
+  ()
+
+let launch_gv filename =
+  let _status = Unix.system ("gv " ^ filename ^ ".ps &")
   in
   (* zarb: I need this when I launch the program via eshell, otherwise gv
      do not get the chance to be launched *)
   Unix.sleep 1; 
   ()
 
-let print_ograph_extended g filename = 
-  print_ograph_xxx g filename 
+let print_ograph_extended g filename launchgv = 
+  generate_ograph_xxx g filename;
+  if launchgv then launch_gv filename
 
-let print_ograph_mutable g filename = 
-  print_ograph_xxx g filename 
+let print_ograph_mutable g filename launchgv = 
+  generate_ograph_xxx g filename;
+  if launchgv then launch_gv filename

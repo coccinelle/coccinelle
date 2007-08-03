@@ -538,6 +538,10 @@ and vk_node = fun bigf node ->
 
     | F.Include ((s, ii),h_rel_pos) -> iif ii
 
+    | F.MacroTop (s, args, ii) -> 
+        iif ii;
+        args +> List.iter (fun (e, ii) -> vk_argument bigf e; iif ii)
+
     | F.Ifdef (st, ((),ii)) -> iif ii
 
     | F.Break    (st,((),ii)) -> iif ii
@@ -1091,6 +1095,12 @@ and vk_node_s = fun bigf node ->
 
     | F.Include ((s, ii), h_rel_pos) -> F.Include ((s, iif ii), h_rel_pos)
     | F.Ifdef (st, ((),ii)) -> F.Ifdef (st, ((),iif ii))
+    | F.MacroTop (s, args, ii) -> 
+        F.MacroTop 
+          (s,
+          args +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii),
+          iif ii)
+
 
     | F.MacroStmt (st, ((),ii)) -> F.MacroStmt (st, ((),iif ii))
     | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))

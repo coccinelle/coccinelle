@@ -1769,6 +1769,13 @@ let rec (span: ('a -> bool) -> 'a list -> 'a list * 'a list) =
       else ([], x::xs)
 let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
+let rec groupBy eq l =
+  match l with
+  |  [] -> []
+  | (x::xs) -> 
+      let (xs1,xs2) = List.partition (fun x' -> eq x x') xs in
+      (x::xs1)::(groupBy eq xs2)
+
 
 let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) = 
  fun p -> function
@@ -1925,6 +1932,8 @@ let rec collect_accu f accu = function
   | e::l -> collect_accu f (List.rev_append (f e) accu) l
 
 let collect f l = List.rev (collect_accu f [] l)
+
+(* cf also List.partition *)
 
 let rec fpartition p l =
   let rec part yes no = function
@@ -2559,6 +2568,8 @@ let hash_hashset_add k e h =
 
 let hashset_to_set baseset h = 
  h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs) 
+
+let hashset_to_list h = hash_to_list h +> List.map fst
 
 
 (*****************************************************************************)

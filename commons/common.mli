@@ -674,7 +674,10 @@ val span : ('a -> bool) -> 'a list -> 'a list * 'a list
 val skip_until : ('a list -> bool) -> 'a list -> 'a list
 val skipfirst : 'a -> 'a list -> 'a list
 
+(* cf also List.partition *)
 val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
+
+val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
 
 val splitAt : int -> 'a list -> 'a list * 'a list
 
@@ -984,6 +987,8 @@ type 'a hashset = ('a, bool) Hashtbl.t
 val hash_hashset_add : 'a -> 'b -> ('a, 'b hashset) Hashtbl.t -> unit
 val hashset_to_set : 
  < fromlist : ('a ) list -> 'c; .. > -> ('a, 'b) Hashtbl.t -> 'c
+
+val hashset_to_list : 'a hashset -> 'a list
 
 (*****************************************************************************)
 (* Stack *)

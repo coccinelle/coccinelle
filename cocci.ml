@@ -34,7 +34,7 @@ let sp_of_file file iso    = Parse_cocci.process file iso false
 (* Flow related *)
 (* --------------------------------------------------------------------- *)
 let print_flow flow = 
-  Ograph_extended.print_ograph_mutable flow "/tmp/test.dot" 
+  Ograph_extended.print_ograph_mutable flow "/tmp/test.dot" true
 
 
 let ast_to_flow_with_error_messages2 x =
@@ -944,3 +944,40 @@ let full_engine2 (coccifile, isofile) cfiles =
 
 let full_engine a b = 
   Common.profile_code "full_engine" (fun () -> full_engine2 a b)
+
+(*****************************************************************************)
+(* check duplicate from result of full_engine *)
+(*****************************************************************************)
+
+let check_duplicate_modif xs = 
+  let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs in
+  groups +> Common.map_filter (fun xs -> 
+    match xs with
+    | [] -> raise Impossible
+    | [x] -> Some x
+    | x::xs -> 
+        let (file, res) = x in
+        match res with 
+        | None -> 
+            if not (List.for_all (fun (file2, res2) -> res2 = None) xs)
+            then begin
+              pr2 ("different modification result for " ^ file);
+              None
+            end
+            else Some x
+        | Some res -> 
+            if not(List.for_all (fun (file2, res2) -> 
+              match res2 with
+              | None -> false
+              | Some res2 -> 
+                  let diff = Common.cmd_to_list ("diff -u -b -B "^res^" "^res2)
+                  in
+                  null diff
+            ) xs) then begin
+              pr2 ("different modification result for " ^ file);
+              None
+            end
+            else Some x
+            
+        
+  )

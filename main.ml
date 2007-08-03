@@ -436,8 +436,8 @@ let main () =
        Testing.test_compare_c file1 file2 (* result is in unix code *)
     | [] when !action = "-compare_c_hardcoded" -> 
         Testing.test_compare_c_hardcoded ()
-    | [] when !action = "-xxx" -> 
-        Testing.test_xxx ()
+    | xs when !action = "-xxx" -> 
+        Testing.test_xxx xs
 
     (* --------------------------------------------------------- *)
     (* This is the main entry *)
@@ -479,6 +479,8 @@ let main () =
           +> List.concat
         in
 	Ctlcocci_integration.print_bench();
+
+        let outfiles = Cocci.check_duplicate_modif outfiles in
         
         outfiles +> List.iter (fun (infile, outopt) -> 
           outopt +> do_option (fun outfile -> 

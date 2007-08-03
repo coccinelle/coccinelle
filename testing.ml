@@ -427,7 +427,7 @@ let test_cfg file =
               then flow
               else Ctlcocci_integration.fix_flow_ctl flow
             in
-            Ograph_extended.print_ograph_mutable flow'  ("/tmp/output.dot")
+            Ograph_extended.print_ograph_mutable flow' ("/tmp/output.dot") true
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
@@ -574,404 +574,65 @@ let one_ctl ctls = List.hd (List.hd ctls)
 (* xxx *)
 (*****************************************************************************)
 
-open Ast_c 
-
-type entities = {
-  macros: string hashset; (* object-like or function-like *)
-  variables: string hashset;
-  static_variables: string hashset;
-  functions: string hashset;
-  static_functions: string hashset;
-  structs: string hashset; (* union defs, enum defs, enum values *)
-  typedefs: string hashset;
-}
-
-(* inverted index *)
-type idx_entities = { 
-  idx_macros: (string, (filename hashset)) Hashtbl.t; 
-  idx_variables: (string, (filename hashset)) Hashtbl.t; 
-  idx_functions: (string, (filename hashset)) Hashtbl.t; 
-  idx_structs: (string, (filename hashset)) Hashtbl.t; 
-  idx_typedefs: (string, (filename hashset)) Hashtbl.t; 
-}
-
-let empty_entities () = {
-  macros = Hashtbl.create 101;
-  variables = Hashtbl.create 101;
-  static_variables = Hashtbl.create 101;
-  functions = Hashtbl.create 101;
-  static_functions = Hashtbl.create 101;
-  structs = Hashtbl.create 101;
-  typedefs = Hashtbl.create 101;
-}
-
-let empty_idx_entities () = {
-  idx_macros = Hashtbl.create 101;
-  idx_variables = Hashtbl.create 101;
-  idx_functions = Hashtbl.create 101;
-  idx_structs = Hashtbl.create 101;
-  idx_typedefs = Hashtbl.create 101;
-}
-
-
-let h_to_l h = Common.hash_to_list h +> List.map fst
-
-let print_entities e =
- begin
-(*  e.macros +> h_to_l +> List.iter (fun s -> pr("MACRO: " ^ s)); *)
-  e.variables +> h_to_l +> List.iter (fun s -> pr("VAR: " ^ s));
-  e.static_variables +> h_to_l +> List.iter (fun s -> pr("STATICVAR: " ^ s));
-  e.functions +> h_to_l +> List.iter (fun s -> pr("FUNC: " ^ s));
-  e.static_functions +> h_to_l +> List.iter (fun s -> pr("STATICFUNC: " ^ s));
-  e.structs +> h_to_l +> List.iter (fun s -> pr("STRUCT: "^s));
-  e.typedefs +> h_to_l +> List.iter (fun s -> pr("TYPEDEF: "^s));
- end
-  
-(* look only for toplevel definition *)
-let defined_stuff xs = 
-  let e = empty_entities() in
-  let add h s = Hashtbl.add h  s true in
-
-  (* look only for toplevel definition: don't recurse, don't call k *)
-  let bigf = { Visitor_c.default_visitor_c with
-    Visitor_c.kprogram = (fun (k,bigf) t -> 
-      match t with
-      | Declaration decl -> 
-          (match decl with
-          | DeclList (xs, ii) -> 
-              xs +> List.iter (fun ((var, t, sto), iicomma) -> 
-                Visitor_c.vk_type bigf t;
-                match var, sto with 
-                | None, _ -> ()
-                | Some ((s, ini), ii_s_ini),  (StoTypedef,inline) -> 
-                    add e.typedefs s;
-                | Some ((s, ini), ii_s_ini),  (Sto Static,inline) -> 
-                    (* need add them to do the adjust_need *)
-                    add e.static_variables s;
-
-                | Some ((s, ini), ii_s_ini),  (Sto Extern,inline) -> 
-                    ()
-                | Some ((s, ini), ii_s_ini),  (_,inline) -> 
-                    add e.variables s;
-              );
-          | MacroDecl ((s, args),ii) -> ()
-          )
-
-      | Definition def -> 
-          let ((s, typ, sto, cp), ii) = def in
-          (match sto with
-          | Sto Static, inline ->
-              (* need add them to do the adjust_need *)
-              add e.static_functions s
-          | _ -> add e.functions s
-          )
-
-      | Include includ -> ()
-      | Define ((s,ii), body) -> add e.macros s
-      | MacroTop (s, args, ii) -> ()
-
-      | EmptyDef _ | NotParsedCorrectly _ | FinalDef _ -> ()
-    );
-
-    Visitor_c.ktype = (fun (k, bigf) t -> 
-      match Ast_c.unwrap_typeC t with
-      | StructUnion (su, sopt, fields) -> 
-          sopt +> do_option (fun s -> 
-            add e.structs s;
-          );
-        
-      | _ -> ()
-    );
-
-  } in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
-  e
-
-
-
-
-
-
-(* look only for use of external stuff. Don't consider local vars, 
- * typedefs, structures *)
-let used_stuff xs = 
-
-  let e = empty_entities() in
-  let add h s = Hashtbl.replace h s true in
-
-  let initial_env = [
-    ["NULL";
-     "do_gettimeofday";
-     "le32_to_cpu";
-     "udelay";
-     "printk";
-     (* !!! sometimes considered as VAR :( *)
-     "u8"; "u16"; "u32"; 
-     "s32";
-    ] +> List.map (fun s -> s, true);
-  ]
-  in
-  let regexp_macro =  Str.regexp
-    "^[A-Z_][A-Z_0-9]*$" 
-  in
-
-  let (_env: (string, bool) Common.scoped_env ref) = ref initial_env in
-
-
-  let bigf = { Visitor_c.default_visitor_c with
-
-    (* --------- handling scope of variables --------- *)
-    Visitor_c.kstatement = (fun (k, bigf) st -> 
-      match st with 
-      | Compound statxs, ii -> Common.do_in_new_scope _env (fun () -> k st);
-      | _ -> k st
-    );
-    Visitor_c.kdecl = (fun (k, bigf) d -> 
-      k d; (* to add possible definition in type found in Decl *)
-      (match d with
-      | (DeclList (xs, ii)) -> 
-          xs +> List.iter (fun ((var, t, sto), iicomma) -> 
-            var +> do_option (fun ((s, ini), ii_s_ini) -> 
-              match sto with 
-              | StoTypedef, _inline -> 
-                  (* add_binding (TypeDef (s)) true; *)
-                  ()
-              | _ ->
-                  Common.add_in_scope _env (s, true);
-            );
-          );
-      | _ -> ()
-      );
-    );
-    Visitor_c.kprogram = (fun (k, bigf) elem -> 
-      match elem with
-      | Definition def -> 
-          let (funcs, ((returnt, (paramst, b))), sto, statxs),ii = def in
-          Common.do_in_new_scope _env (fun () -> 
-            paramst +> List.iter (fun (((b, s, t), _),_) -> 
-              match s with 
-              | Some s -> Common.add_in_scope _env (s, true)
-              | None -> pr2 "no type, certainly because Void type ?"
-            );
-            k elem
-          );
-      | Define (s, (defkind, defval)) -> 
-          Common.do_in_new_scope _env (fun () -> 
-            (match defkind with
-            | DefineFunc (params, ii) -> 
-                params +> List.iter (fun ((s,iis), iicomma) -> 
-                  Common.add_in_scope _env (s, true)
-                );
-            | _ -> ()
-            );
-            k elem
-          );
-      | _ -> k elem
-    );
-
-
-    (* --------- and now looking for use --------- *)
-    Visitor_c.kexpr = (fun (k,bigf) x -> 
-      match Ast_c.unwrap_expr x with
-
-      | FunCall (((Ident f, typ), ii), args) -> 
-          if not (Common.member_env_key f !_env)
-          then 
-            if f ==~ regexp_macro
-            then add e.macros f
-            else add e.functions f
-          ;
-          args +> List.iter (fun (x,ii) -> 
-            Visitor_c.vk_argument bigf x
-          );
-      | Ident s -> 
-          if not (Common.member_env_key s !_env)
-          then 
-            if s ==~ regexp_macro
-            then add e.macros s
-            else add e.variables s
-
-      | _ -> k x
-    );
-
-    Visitor_c.ktype = (fun (k,bigf) t -> 
-      match Ast_c.unwrap_typeC t with
-      | StructUnionName (su, s) -> 
-          if not (Common.member_env_key s !_env)
-          then 
-            add e.structs s;
-      | TypeName s -> 
-          if not (Common.member_env_key s !_env)
-          then 
-            add e.typedefs s;
-      | _ -> k t
-    );
-
-  } in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
-  e
-
-let adjust_used_only_external used defined = 
- begin
-  used.variables +> h_to_l +> List.iter (fun s -> 
-    if Hashtbl.mem defined.variables s || 
-       Hashtbl.mem defined.static_variables s || 
-       Hashtbl.mem defined.functions s ||
-       Hashtbl.mem defined.static_functions s
-    then Hashtbl.remove used.variables s);
-  used.functions +> h_to_l +> List.iter (fun s -> 
-    if Hashtbl.mem defined.functions s || 
-       Hashtbl.mem defined.static_functions s
-    then Hashtbl.remove used.functions s);
-  used.structs +> h_to_l +> List.iter (fun s -> 
-    if Hashtbl.mem defined.structs s
-    then Hashtbl.remove used.structs s);
-  used.typedefs +> h_to_l +> List.iter (fun s -> 
-    if Hashtbl.mem defined.typedefs s
-    then Hashtbl.remove used.typedefs s);
- end
-
-
 let cprogram_of_file_cached file = 
   Common.cache_file file ".ast_raw" (fun () -> cprogram_of_file file)
-  
 
-type used_defined = { 
-  used: entities;
-  defined: entities;
-}
-type global_definitions = idx_entities
+let test_xxx xs = 
+  let path = 
+    match xs with
+    | [] -> "/home/pad/kernels/git/linux-2.6/drivers/net"
+    | [x] -> x
+    | _ -> failwith "too much path"
+  in
 
-let mk_global_definitions_index xs = 
-  let idx = empty_idx_entities () in
-  xs +> List.iter (fun (file, {defined = defined}) -> 
-    defined.variables +> h_to_l +> List.iter (fun s -> 
-      Common.hash_hashset_add s file idx.idx_variables;
-    );
-    defined.functions +> h_to_l +> List.iter (fun s -> 
-      Common.hash_hashset_add s file idx.idx_functions;
-    );
-    defined.structs +> h_to_l +> List.iter (fun s -> 
-      Common.hash_hashset_add s file idx.idx_structs;
-    );
-    defined.typedefs +> h_to_l +> List.iter (fun s -> 
-      Common.hash_hashset_add s file idx.idx_typedefs;
-    );
-  );
-  idx
-
-let known_duplicate = ["init_module"; "cleanup_module"] 
-
-let check_no_duplicate_global_definitions idx = 
- begin
-  pr2 "DUPLICATE processing:";
-  idx.idx_functions +> hash_to_list +> List.iter (fun (f, set) -> 
-    let xs = hash_to_list set in
-    if List.length xs <> 1 && not (List.mem f known_duplicate)
-    then 
-      pr2 ("mutliple def for : " ^ f ^ " in " ^ (join " " (List.map fst xs)));
-  );
- end
-  
-  
-
-let build_graph xs dep graphfile = 
-  let g = ref (new Ograph_extended.ograph_mutable)  in
-  let h = Hashtbl.create 101 in
-  let s_to_nodei s = Hashtbl.find h s in
-
-  pr2 "BUILDING graph:";
-  (* build nodes *)
-  xs +> List.iter (fun (file, {used = used}) -> 
-    let xi = !g#add_node (file, Filename.basename file) in
-    Hashtbl.add h file xi;
-  );
-
-  xs +> List.iter (fun (file, {used = used}) -> 
-
-    used.functions +> h_to_l +> List.iter (fun s -> 
-      match Common.optionise (fun () -> Hashtbl.find dep.idx_functions s) with
-      | None -> ()
-      | Some hset -> 
-          hset +> h_to_l +> List.iter (fun file_defined -> 
-            !g#add_arc ((s_to_nodei file, s_to_nodei file_defined), true);
-            let (file, file_defined) = basename file, basename file_defined in
-            pr2 (sprintf "%-20s -- f:%25s --> %s" file s file_defined);
-          );
-    );
-    (* sometime use functions as variable *)
-    used.variables +> h_to_l +> List.iter (fun s -> 
-      match Common.optionise (fun () -> Hashtbl.find dep.idx_functions s) with
-      | None -> ()
-      | Some hset -> 
-          hset +> h_to_l +> List.iter (fun file_defined -> 
-            !g#add_arc ((s_to_nodei file, s_to_nodei file_defined), true);
-            let (file, file_defined) = basename file, basename file_defined in
-            pr2 (sprintf "%-20s -- f:%25s --> %s" file s file_defined);
-          );
-    );
-
-    used.variables +> h_to_l +> List.iter (fun s -> 
-      match Common.optionise (fun () -> Hashtbl.find dep.idx_variables s) with
-      | None -> ()
-      | Some hset -> 
-          hset +> h_to_l +> List.iter (fun file_defined -> 
-            !g#add_arc ((s_to_nodei file, s_to_nodei file_defined), true);
-            let (file, file_defined) = basename file, basename file_defined in
-            pr2 (sprintf "%-20s -- v:%10s --> %s" file s file_defined);
-          );
-    );
-(*
-    used.structs +> h_to_l +> List.iter (fun s -> 
-      match Common.optionise (fun () -> Hashtbl.find dep.idx_structs s) with
-      | None -> ()
-      | Some hset -> 
-          hset +> h_to_l +> List.iter (fun file_defined -> 
-            !g#add_arc ((s_to_nodei file, s_to_nodei file_defined), true);
-          );
-    );
-
-    used.typedefs +> h_to_l +> List.iter (fun s -> 
-      match Common.optionise (fun () -> Hashtbl.find dep.idx_typedefs s) with
-      | None -> ()
-      | Some hset -> 
-          hset +> h_to_l +> List.iter (fun file_defined -> 
-            !g#add_arc ((s_to_nodei file, s_to_nodei file_defined), true);
-          );
-    );
-*)
-
-  );
-  Ograph_extended.print_ograph_mutable !g graphfile
-  
-    
-  
-
-let test_xxx () = 
-  Sys.chdir "/home/pad/kernels/git/linux-2.6";
-  let path="drivers/net" in
-
-  let dirs = Common.cmd_to_list ("find " ^ path ^ " -type d") in
+  let dirs = 
+    Common.cmd_to_list ("find " ^ path ^ " -type d") +> Kbuild.adjust_dirs in
   dirs +> List.iter (fun dir -> 
     
     let c_info = 
       Common.glob (Filename.concat dir "*.[c]")
       +> List.map (fun file -> 
         let x = cprogram_of_file_cached file in
-        let defined = defined_stuff x in
-        let used = used_stuff x in
-        adjust_used_only_external used defined;
-        file, { used = used; defined = defined}
+        let defined = C_info.defined_stuff x in
+        let used = C_info.used_stuff x in
+        let extra = C_info.extra_stuff x in
+        C_info.adjust_used_only_external used defined;
+        file, { C_info.used = used; defined = defined; is_module = extra}
       ) in
-    let global = mk_global_definitions_index c_info in
+    let global = C_info.mk_global_definitions_index c_info in
     c_info +> List.iter (fun (file, used_defined) -> 
       pr2 ("HANDLING : " ^ file);
-      print_entities used_defined.used;
+      C_info.print_entities used_defined.C_info.used;
     );
-    check_no_duplicate_global_definitions global;
-    (*build_graph c_info global (Filename.concat dir "depgraph.dot");*)
-  );
+    C_info.check_no_duplicate_global_definitions global;
+    let g = C_info.build_graph c_info global 
+      (Filename.concat dir "depgraph.dot") in
+    C_info.generate_makefile g (Filename.concat dir "depcocci.dep")
+  )
 
+(*
+let test_yyy () = 
+  Sys.chdir "/home/pad/kernels/git/linux-2.6";
+  let path="drivers/net" in
+
+  let c_info = 
+    Common.cmd_to_list ("find " ^ path ^ " -name \"*.c\" ")
+    +> List.map (fun file -> 
+      let x = cprogram_of_file_cached file in
+      let defined = defined_stuff x in
+      let used = used_stuff x in
+      let extra = extra_stuff x in
+      adjust_used_only_external used defined;
+      file, { used = used; defined = defined; is_module = extra}
+    ) in
+  let global = mk_global_definitions_index c_info in
+  c_info +> List.iter (fun (file, used_defined) -> 
+    pr2 ("HANDLING : " ^ file);
+    print_entities used_defined.used;
+  );
+  check_no_duplicate_global_definitions global
+    (*build_graph c_info global (Filename.concat dir "depgraph.dot");*)
+*)  
 
 
 

@@ -40,7 +40,7 @@ val test_compare_c_hardcoded : unit -> unit
 
 val test_parse_cocci : filename -> unit
 
-val test_xxx : unit -> unit
+val test_xxx : string list -> unit
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

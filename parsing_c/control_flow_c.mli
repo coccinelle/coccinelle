@@ -40,6 +40,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Include of inc_file wrap * include_rel_pos option ref
 
+  | MacroTop of string * argument wrap2 list * il 
+
   (* ------------------------ *)
   | Case      of statement * expression wrap
   | Default   of statement * unit wrap

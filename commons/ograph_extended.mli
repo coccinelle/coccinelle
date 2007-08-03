@@ -51,9 +51,14 @@ object ('o)
   method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
 end
 
+val dfs_iter : 
+  nodei -> (nodei -> unit) -> ('node, 'edge) ograph_mutable -> unit
+
 val print_ograph_extended : 
-  ('node * string, 'edge) ograph_extended -> filename (* output file *) -> unit
+  ('node * string, 'edge) ograph_extended -> filename (* output file *) -> 
+  bool (* launch gv ? *) -> unit
 
 val print_ograph_mutable : 
-  ('node * string, 'edge) ograph_mutable -> filename (* output file *) -> unit
+  ('node * string, 'edge) ograph_mutable -> filename (* output file *) -> 
+  bool (* launch gv ? *) -> unit
 

@@ -11,3 +11,13 @@ open Common
 val full_engine : 
   (filename * filename) -> filename list -> 
   (filename * filename option) list
+
+(* because of the #include "toto.c" and also because we may associate the 
+ * same C file to multiple drivers because they share code, we can
+ * modify multiple times the same file when use -dir. This check 
+ * remove duplicates and check that the modification are consistent 
+ * among the different drivers
+ *)
+
+val check_duplicate_modif : 
+ (filename * filename option) list -> (filename * filename option) list

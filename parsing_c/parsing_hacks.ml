@@ -60,7 +60,9 @@ let msg_typedef s =
       | _ -> false 
       )
     )
-    (fun s -> pr2_cpp ("TYPEDEF: promoting: " ^ s))
+    (fun s -> 
+      pr2_cpp ("TYPEDEF: promoting: " ^ s)
+    )
     s
 
 
@@ -1162,12 +1164,14 @@ let rec find_macro_lineparen xs =
       in
       
       if condition
-      then begin
-        msg_macro_noptvirg s;
-        macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
-        [Parenthised (xxs, info_parens)] +> 
-          iter_token_paren (set_as_comment Ast_c.CppOther);
-      end;
+      then 
+        if col1 = 0 then ()
+        else begin
+          msg_macro_noptvirg s;
+          macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
+          [Parenthised (xxs, info_parens)] +> 
+            iter_token_paren (set_as_comment Ast_c.CppOther);
+        end;
 
       find_macro_lineparen (line2::xs)
         
@@ -1810,8 +1814,11 @@ let lookahead2 next before =
   (* ----------------------------------- *)
 
   (*  (xx) yy *)
-  | (TOPar info::TIdent (s, i1)::TCPar _::(TIdent _|TInt _)::_ , x::_)  
-    when not (TH.is_stuff_taking_parenthized x) -> 
+  | (TOPar info::TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::_ , 
+    x::_)  
+    when not (TH.is_stuff_taking_parenthized x) &&
+      Ast_c.line_of_info i2 = Ast_c.line_of_info i3
+      -> 
 
       msg_typedef s; LP.add_typedef_root s;
       TOPar info

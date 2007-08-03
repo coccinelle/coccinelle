@@ -2993,6 +2993,7 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.CaseRange _  
   | _, F.Asm _
   | _, F.Ifdef _
+  | _, F.MacroTop _
     -> fail2
 
 

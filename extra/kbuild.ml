@@ -15,6 +15,20 @@ let files_of_groups xs =
 
 
 
+let adjust_dirs dirs = 
+  dirs +> Common.map_filter (fun s -> 
+    match s with
+    | s when s =~ "^\\.$" -> None
+    | s when s =~ "^\\./\\.git" -> None
+    | s when s =~ "^\\./\\.tmp_versions" -> None
+    | s when s =~ "^\\./include/config/" -> None
+    | s when s =~ "^\\./usr/include" -> None
+    | s when s =~ "^\\./\\(.*\\)" -> Some (matched1 s)
+    | s -> Some s
+  )
+
+
+
 let unparse_kbuild_info xs filename = 
   Common.with_open_outfile filename (fun (pr_no_nl,chan) -> 
     let pr s = pr_no_nl (s ^ "\n") in
@@ -62,6 +76,27 @@ let generate_naive_kbuild_info dirs =
       Directory (s, ys)
     )
 
+
+
+
+let generate_kbuild_info_from_depcocci dirs outfile = 
+  Common.with_open_outfile outfile (fun (pr_no_nl, chan) -> 
+    dirs  +> List.iter (fun s -> 
+      pr_no_nl (s ^ "\n");
+      let depcocci = Common.cat (Filename.concat s "depcocci.dep") in
+      depcocci +> List.iter (fun s -> pr_no_nl (s ^ "\n"));
+      pr_no_nl "\n";
+    )
+  )
+(*
+    dirs  +> List.map (fun s -> 
+      let groups = depcocci +> List.map (fun s -> Group (Common.split " +" s))
+      in
+      Directory (s, groups)
+    )
+*)
+
+
 type makefile = 
   { 
     obj_dirs : string stack ref;
@@ -69,7 +104,7 @@ type makefile =
     obj_objs: (string * (string list)) stack ref;
   }
 let empty_makefile () =
- raise Todo
+ failwith "empty_makefile"
 
 let parse_makefile file = 
   let xs = Common.cat file in 
@@ -78,7 +113,7 @@ let parse_makefile file =
   let xs = Common.lines_with_nl s in
   let xs = xs +> List.map (Str.global_replace (Str.regexp "#.*") "" ) in
   let xs = xs +> List.filter (fun s -> not (s =~ "^[ \t]*$")) in
-  let m = empty_makefile () in
+  let _m = empty_makefile () in
 
   xs +> List.iter (fun s -> 
     match s with
@@ -191,3 +226,4 @@ let files_in_dirs dirs kbuild_info =
 
 
           
+
