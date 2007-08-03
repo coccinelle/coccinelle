@@ -328,7 +328,9 @@ let includes_to_parse xs =
           | Ast_c.Local xs -> 
               Some (Filename.concat dir (Common.join "/" xs))
           | Ast_c.NonLocal xs -> 
-              if Common.fileprefix (Common.last xs) = Common.fileprefix file 
+              if !Flag_cocci.all_includes ||
+	      Common.fileprefix (Common.last xs) =
+	      Common.fileprefix file
               then 
                 Some (Filename.concat !Flag_cocci.include_path 
                          (Common.join "/" xs))

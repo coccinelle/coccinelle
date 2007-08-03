@@ -103,6 +103,8 @@ let short_options = [
   "-macro_file", Arg.Set_string Config.std_h,
   " <file> (default=" ^ !Config.std_h ^ ")";
 
+  "-all_includes",   Arg.Set Flag_cocci.all_includes,
+  "  causes all available include files to be used";
   "-I",   Arg.Set_string Flag_cocci.include_path,
   "  <dir> where are the Linux headers (optional)";
 
