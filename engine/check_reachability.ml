@@ -55,7 +55,6 @@ let build_modified (n,_,wits) =
    formulas *)
     
 let create_formulas _ =
-  let wrap x = (x,()) in
   Hashtbl.fold
     (function node ->
       function roots ->
@@ -64,25 +63,22 @@ let create_formulas _ =
 	    wrap
 	      (Ast_ctl.EX
 		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in*)
-	  let match_node = wrap (Ast_ctl.Pred(node)) in
+	  let match_node = Ast_ctl.Pred(node) in
 	  let match_roots =
-	    List.map (function n -> wrap (Ast_ctl.Pred(n)))
+	    List.map (function n -> Ast_ctl.Pred(n))
 	      (List.sort compare !roots) in
 	  let roots =
 	    List.fold_left
-	      (function prev -> function cur -> wrap(Ast_ctl.Or(prev,cur)))
+	      (function prev -> function cur -> Ast_ctl.Or(prev,cur))
 	      (List.hd match_roots) (List.tl match_roots) in
 	  (node,
-	   wrap (Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,roots)),
-	   wrap
-	     (Ast_ctl.And
-		(Ast_ctl.NONSTRICT,
-		 wrap (Ast_ctl.Not(roots)),
-		 wrap (Ast_ctl.EX
-			 (Ast_ctl.BACKWARD,
-			  wrap
-			    (Ast_ctl.EU
-			       (Ast_ctl.BACKWARD,roots,match_node)))))))
+	   Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,roots),
+	   Ast_ctl.And
+	     (Ast_ctl.NONSTRICT,
+	      Ast_ctl.Not(roots),
+	      Ast_ctl.EX
+		(Ast_ctl.BACKWARD,
+		 Ast_ctl.EU(Ast_ctl.BACKWARD,roots,match_node))))
 	   (*exef
 	      (wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots))))*)
 	  :: acc)

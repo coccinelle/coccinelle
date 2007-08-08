@@ -10,7 +10,8 @@ currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
     ('a * line * meta_name list (*free vars*) * meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
-       dots_bef_aft * meta_name option (* pos info, try not to duplicate *))
+       dots_bef_aft *
+       meta_name option (* pos info, try not to duplicate *))
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -385,19 +386,19 @@ and base_statement =
   | Disj          of statement dots list
   | Nest          of statement dots *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | Circles       of string mcode (* ooo *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)

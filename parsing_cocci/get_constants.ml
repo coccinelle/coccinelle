@@ -18,15 +18,11 @@ let get_minus_constants bind =
   let option_default = [] in
   let mcode _ _ = option_default in
 
-  let rec union_all = function
-      [] -> []
-    | x::xs -> Common.union_set x (union_all xs) in
-
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all l =
     if List.exists (function [] -> true | _ -> false) l
     then []
-    else union_all l in
+    else Common.union_all l in
 
   (* need special cases for everything with a disj, because the bind above
      would throw away all but the first disj *)
@@ -43,13 +39,14 @@ let get_minus_constants bind =
 		(_,_,Ast.MINUS(_,_)) -> [nm]
 	      |	_ -> []
 	    else [nm])
+    | Ast.OptIdent(_) -> []
     | _ -> k e in
 
   let expression r k e =
     match Ast.unwrap e with
       Ast.RecordAccess(exp,_,fld) | Ast.RecordPtAccess(exp,_,fld) ->
 	bind
-	  (union_all
+	  (Common.union_all
 	     (List.map (function id -> ["."^id;"->"^id])
 		(r.V.combiner_ident fld)))
 	  (r.V.combiner_expression exp)
@@ -57,6 +54,7 @@ let get_minus_constants bind =
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
+    | Ast.OptExp(_) -> []
     | _ -> k e in
 
   let typeC r k e =
@@ -74,6 +72,7 @@ let get_minus_constants bind =
     match Ast.unwrap e with
       Ast.DisjType(types) ->
 	disj_union_all (List.map r.V.combiner_fullType types)
+    | Ast.OptType(_) -> []
     | _ -> k e in
 
   let declaration r k e =
@@ -81,6 +80,22 @@ let get_minus_constants bind =
       Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
+    | Ast.OptDecl(_) -> []
+    | _ -> k e in
+
+  let initialiser r k e =
+    match Ast.unwrap e with
+      Ast.OptIni(_) -> []
+    | _ -> k e in
+
+  let parameter r k e =
+    match Ast.unwrap e with
+      Ast.OptParam(_) -> []
+    | _ -> k e in
+
+  let case r k e =
+    match Ast.unwrap e with
+      Ast.OptCase(_) -> []
     | _ -> k e in
 
   let rule_elem r k e =
@@ -93,14 +108,15 @@ let get_minus_constants bind =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
 	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
+    | Ast.OptStm(_) -> []
     | _ -> k e in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing
-    ident expression fullType typeC donothing donothing declaration
-    rule_elem statement donothing donothing donothing
+    ident expression fullType typeC initialiser parameter declaration
+    rule_elem statement case donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

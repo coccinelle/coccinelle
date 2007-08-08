@@ -2138,7 +2138,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                match fake_su with
                | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) -> 
                    return (ty,  [iisub; iisb])
-               | _ -> raise Impossible) in
+               | _ -> raise Impossible)
+	 | _ -> fail in
 
        process_type
 	 >>= (fun ty ii_sub_sb -> 

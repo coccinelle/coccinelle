@@ -8,14 +8,12 @@ type strict = STRICT | NONSTRICT
 type keep_binding = bool (* true = put in witness tree *)
 
 (* CTL parameterised on basic predicates and metavar's*)
-type ('pred,'mvar,'anno) generic_ctl =
-    ('pred,'mvar,'anno) generic_ctl_bis * 'anno
- and ('pred,'mvar,'anno) generic_ctl_bis = 
+type ('pred,'mvar,'anno) generic_ctl = 
   | False
   | True
   | Pred of 'pred
   | Not of (('pred,'mvar,'anno) generic_ctl)
-  | Exists of 'mvar * (('pred,'mvar,'anno) generic_ctl) * keep_binding
+  | Exists of keep_binding * 'mvar * (('pred,'mvar,'anno) generic_ctl)
   | And of strict * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
@@ -47,40 +45,6 @@ type ('pred,'mvar,'anno) generic_ctl =
   | Ref of string
   | SeqOr of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
-  | Dots of
-      (* dir * (before_after * before_after_guard) * nest * whennots * when *
-	 rest * aftret * truepred * gotopred * goto_match_anywhere *)
-      direction * strict *
-	((('pred,'mvar,'anno) generic_ctl) *
-	   (('pred,'mvar,'anno) generic_ctl)) list *
-	(('pred,'mvar,'anno) generic_ctl) option *
-	(('pred,'mvar,'anno) generic_ctl) list *
-	(('pred,'mvar,'anno) generic_ctl) list *
-	(('pred,'mvar,'anno) generic_ctl) option *
-	(('pred,'mvar,'anno) generic_ctl) *
-	((('mvar option -> (('pred,'mvar,'anno) generic_ctl)) ->
-	  (('pred,'mvar,'anno) generic_ctl)) ->
-	    (('pred,'mvar,'anno) generic_ctl)) *
-	(('pred,'mvar,'anno) generic_ctl) *
-	(('pred,'mvar,'anno) generic_ctl) *
-	(('pred,'mvar,'anno) generic_ctl)
-  | PDots of (* for \+ code *)
-      (* dir * (before_after * before_after_guard) * nest * whennots * when *
-	 rest * aftret * truepred * gotopred * goto_match_anywhere *)
-      direction * strict *
-	((('pred,'mvar,'anno) generic_ctl) *
-	   (('pred,'mvar,'anno) generic_ctl)) list *
-	(('pred,'mvar,'anno) generic_ctl) option *
-	(('pred,'mvar,'anno) generic_ctl) list *
-	(('pred,'mvar,'anno) generic_ctl) list *
-	(('pred,'mvar,'anno) generic_ctl) option *
-	(('pred,'mvar,'anno) generic_ctl) *
-	((('mvar option -> (('pred,'mvar,'anno) generic_ctl)) ->
-	  (('pred,'mvar,'anno) generic_ctl)) ->
-	    (('pred,'mvar,'anno) generic_ctl)) *
-	(('pred,'mvar,'anno) generic_ctl) *
-	(('pred,'mvar,'anno) generic_ctl) *
-	(('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
 
 and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)

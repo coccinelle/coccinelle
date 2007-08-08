@@ -47,8 +47,7 @@ let print_diamond ct = function
     CTL.FORWARD -> ("",ct)
   | CTL.BACKWARD -> ("\\Delta",ct+1)
 
-let rec ctl2c ct pp pv x =
-  match CTL.unwrap x with
+let rec ctl2c ct pp pv = function
     CTL.False -> ("\\msf{false}",5)
   | CTL.True -> ("\\msf{true}",4)
   | CTL.Pred(p,v) ->
@@ -58,7 +57,7 @@ let rec ctl2c ct pp pv x =
   | CTL.Not(f) ->
       let (res,ct) = wrap (ct+1) pp pv f in
       ("\\neg "^res,ct)
-  | CTL.Exists(v,f,_) ->
+  | CTL.Exists(_,v,f) ->
       let (res1,len) = texify(pv v) in
       let ct = ct + len in
       let (res1,ct) = check_ct ct res1 in
@@ -156,20 +155,18 @@ let rec ctl2c ct pp pv x =
   | CTL.Uncheck(f) ->
       let (res,ct) = pathwrap ct pp pv f
       in (res^"^u",ct+1)
-  | CTL.Dots _ -> failwith "unexpected Dots"
-  | CTL.PDots _ -> failwith "unexpected PDots"
 
 and make_var x = ("",x)
 
 and wrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Ref _ | CTL.False | CTL.True | CTL.Pred(_) -> ctl2c ct pp pv x
   | _ ->
       let (res,ct) = ctl2c (ct+1) pp pv x in
       (Printf.sprintf "(%s)" res,ct+1)
 
 and andwrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Ref _ | CTL.And(_,_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -177,7 +174,7 @@ and andwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and orwrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Ref _ | CTL.Or(_,_) | CTL.False | CTL.True | CTL.Pred(_) ->
       ctl2c ct pp pv x
   | _ ->
@@ -185,7 +182,7 @@ and orwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and pathwrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Ref _ | CTL.AX(_,_,_) | CTL.AF(_,_,_) | CTL.AG(_,_,_) | CTL.AU(_,_,_,_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) ->
       ctl2c ct pp pv x
@@ -194,7 +191,7 @@ and pathwrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and existswrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Ref _ | CTL.AX(_,_,_) | CTL.AF(_,_,_) | CTL.AG(_,_,_) | CTL.AU(_,_,_,_)
   | CTL.Pred(_)
   | CTL.EX(_,_) | CTL.EF(_,_) | CTL.EG(_,_) | CTL.EU(_,_,_) | CTL.Exists(_,_,_)
@@ -205,7 +202,7 @@ and existswrap ct pp pv x =
       (Printf.sprintf "(%s)" res,ct+1)
 
 and letwrap ct pp pv x =
-  match CTL.unwrap x with
+  match x with
     CTL.Let(_,_,_) ->
       let (res,ct) = ctl2c (ct+1) pp pv x in (Printf.sprintf "(%s)" res,ct+1)
   | _ -> ctl2c ct pp pv x

@@ -56,6 +56,7 @@ let rec pp_predicate = function
   | After -> pp "After"
   | FallThrough -> pp "FallThrough"
   | Return -> pp "Return"
+  | Enter -> pp "Enter"
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
   | Paren s -> pp "Paren("; pp_meta s; pp ")"

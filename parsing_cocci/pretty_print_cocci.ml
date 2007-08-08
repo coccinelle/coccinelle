@@ -633,7 +633,7 @@ and statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
-  | Ast.Nest(stmt_dots,whn,_) ->
+  | Ast.Nest(stmt_dots,whn,_,_) ->
       print_string arity;
       nest_dots (statement arity)
 	(function _ ->
@@ -642,7 +642,7 @@ and statement arity s =
 	    (whencode (dots force_newline (statement "")) (statement "")) whn;
 	  close_box(); force_newline())
 	stmt_dots
-  | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
+  | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
       print_string arity; mcode print_string d;
       open_box 0;
       print_between force_newline

@@ -83,7 +83,7 @@ let dpdots e =
 
 let sdots s =
   match Ast.unwrap s with
-    Ast.Dots(_,_,_) | Ast.Circles(_,_,_) | Ast.Stars(_,_,_) -> true
+    Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_) | Ast.Stars(_,_,_,_) -> true
   | _ -> false
 
 (* --------------------------------------------------------------------- *)
@@ -530,7 +530,7 @@ let rec unify_statement s1 s2 =
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
-  | (Ast.Nest(s1,_,_),Ast.Nest(s2,_,_)) ->
+  | (Ast.Nest(s1,_,_,_),Ast.Nest(s2,_,_,_)) ->
       unify_dots unify_statement sdots s1 s2
   | (Ast.FunDecl(h1,lb1,d1,s1,rb1),Ast.FunDecl(h2,lb2,d2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
@@ -544,9 +544,9 @@ let rec unify_statement s1 s2 =
   | (Ast.MultiStm(s1),_) -> unify_statement s1 s2 
   | (_,Ast.MultiStm(s2)) -> unify_statement s1 s2 
   (* dots can match against anything.  return true to be safe. *)
-  | (Ast.Dots(_,_,_),_) | (_,Ast.Dots(_,_,_))
-  | (Ast.Circles(_,_,_),_) | (_,Ast.Circles(_,_,_))
-  | (Ast.Stars(_,_,_),_) | (_,Ast.Stars(_,_,_)) -> return true
+  | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_))
+  | (Ast.Circles(_,_,_,_),_) | (_,Ast.Circles(_,_,_,_))
+  | (Ast.Stars(_,_,_,_),_) | (_,Ast.Stars(_,_,_,_)) -> return true
   | (Ast.OptStm(_),_)
   | (Ast.UniqueStm(_),_)
   | (_,Ast.OptStm(_))

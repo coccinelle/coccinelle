@@ -378,19 +378,19 @@ and base_statement =
   | Disj          of statement dots list
   | Nest          of statement dots *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | Circles       of string mcode (* ooo *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | Stars         of string mcode (* *** *) *
 	             (statement dots,statement) whencode list *
-	             dots_whencode list
+	             dots_whencode list * dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
   | MultiStm      of statement (* only allowed in nests *)

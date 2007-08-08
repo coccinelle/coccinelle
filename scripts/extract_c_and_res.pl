@@ -165,11 +165,11 @@ foreach my $f (@driverheaders_in_include) {
 
 # compute other linux headers not in the patch
 
-my @linuxheaders  = `cd $target_dir; grep -E \"#include +\<.*\>\" *.c *.h`;
+my @linuxheaders  = `cd $target_dir; grep -E \"#include +\<[^>]*\>\" *.c *.h`;
 foreach my $line (@linuxheaders) {
   chomp $line;
   #pr2 ($line);
-  if($line =~ /^(.*)?:#include *\<(.*)\>/) {
+  if($line =~ /^(.*)?:#include *\<([^>]*)\>/) {
     my ($_file, $f) = ($1, $2);
 
     my $base = `basename $f`;

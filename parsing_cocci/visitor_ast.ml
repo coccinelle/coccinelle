@@ -408,7 +408,7 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots,whn,_) ->
+      | Ast.Nest(stmt_dots,whn,_,_) ->
 	  bind (statement_dots stmt_dots)
 	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
@@ -417,7 +417,7 @@ let combiner bind option_default
 		      rule_elem rbrace]
       | Ast.Define(header,body) ->
 	  bind (rule_elem header) (statement_dots body)
-      | Ast.Dots(d,whn,_) | Ast.Circles(d,whn,_) | Ast.Stars(d,whn,_) ->
+      | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
 	  bind (string_mcode d)
 	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
@@ -902,24 +902,25 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots,whn,t) ->
+	| Ast.Nest(stmt_dots,whn,bef,aft) ->
 	    Ast.Nest(statement_dots stmt_dots,
-		     List.map (whencode statement_dots statement) whn,t)
+		     List.map (whencode statement_dots statement) whn,bef,aft)
 	| Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls,
 			statement_dots body, rule_elem rbrace)
 	| Ast.Define(header,body) ->
 	    Ast.Define(rule_elem header,statement_dots body)
-	| Ast.Dots(d,whn,t) ->
+	| Ast.Dots(d,whn,bef,aft) ->
 	    Ast.Dots(string_mcode d,
-		     List.map (whencode statement_dots statement) whn, t)
-	| Ast.Circles(d,whn,t) ->
+		     List.map (whencode statement_dots statement) whn,bef,aft)
+	| Ast.Circles(d,whn,bef,aft) ->
 	    Ast.Circles(string_mcode d,
-			List.map (whencode statement_dots statement) whn,t)
-	| Ast.Stars(d,whn,t) ->
+			List.map (whencode statement_dots statement) whn,
+			bef,aft)
+	| Ast.Stars(d,whn,bef,aft) ->
 	    Ast.Stars(string_mcode d,
-		      List.map (whencode statement_dots statement) whn, t)
+		      List.map (whencode statement_dots statement) whn,bef,aft)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
 	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
 	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in

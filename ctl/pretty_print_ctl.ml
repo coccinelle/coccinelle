@@ -31,14 +31,13 @@ let rec (pp_ctl:
    unit) =  
  fun (pp_pred, pp_mvar) inline_let_def ctl -> 
 
-   let rec pp_aux env = fun ctl ->
-     match Ast_ctl.unwrap ctl with
+   let rec pp_aux env = function
        False              -> pp "False"
      | True               -> pp "True"
      | Pred(p)            -> pp_pred p
      | Not(phi)           ->
 	 pp char_not; Common.pp_do_in_box (fun () -> pp_aux env phi)
-     | Exists(v,phi,keep) ->  
+     | Exists(keep,v,phi) ->  
 	 pp "(";
 	 if keep then pp ("Ex ") else pp ("Ex_ ");
 	 pp_mvar v;
@@ -111,9 +110,6 @@ let rec (pp_ctl:
            (* pp ")" *)
      | Uncheck(phi1) ->
 	 pp "Uncheck"; pp_arg_paren env phi1
-
-     | Dots _ -> failwith "should not occur"
-     | PDots _ -> failwith "should not occur"
 
    and pp_dir = function
        FORWARD -> ()

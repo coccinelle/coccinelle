@@ -12,10 +12,6 @@ type formula =
 
 (* --------------------------------------------------------------------- *)
 
-let wrap n ctl = (ctl,n)
-
-(* --------------------------------------------------------------------- *)
-
 let contains_modif =
   let bind x y = x or y in
   let option_default = false in
@@ -41,52 +37,48 @@ let contains_modif =
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let ctl_exists v x keep_wit = wrap 0 (CTL.Exists(v,x,keep_wit))
+let ctl_exists v x keep_wit = CTL.Exists(v,x,keep_wit)
 
 let predmaker guard term =
   let pos = ("","_p") in
-  ctl_exists pos
+  ctl_exists true pos
     (if guard && contains_modif term
     then
       let v = ("","_v") in
-      ctl_exists v
-	(wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Modif v)))
-	true
-    else wrap 0 (CTL.Pred (Lib_engine.Match(term),CTL.Control)))
-    true
+      ctl_exists true v
+	(CTL.Pred (Lib_engine.Match(term),CTL.Modif v))
+    else CTL.Pred (Lib_engine.Match(term),CTL.Control))
 
 (* --------------------------------------------------------------------- *)
 
-let is_true c =
-  match CTL.unwrap c with CTL.True -> true | _ -> false
+let is_true = function CTL.True -> true | _ -> false
 
-let is_false c =
-  match CTL.unwrap c with CTL.False -> true | _ -> false
+let is_false = function CTL.False -> true | _ -> false
 
-let ctl_true       = wrap 0 CTL.True
+let ctl_true       = CTL.True
 
-let ctl_false      = wrap 0 CTL.False
+let ctl_false      = CTL.False
 
 let ctl_and x y    =
   if is_true x then y
-  else if is_true y then x else wrap 0 (CTL.And(CTL.STRICT,x,y))
+  else if is_true y then x else CTL.And(CTL.STRICT,x,y)
 
 let ctl_or x y     =
   if is_false x then y
-  else if is_false y then x else wrap 0 (CTL.Or(x,y))
+  else if is_false y then x else CTL.Or(x,y)
 
-let ctl_seqor x y  = wrap 0 (CTL.SeqOr(x,y))
+let ctl_seqor x y  = CTL.SeqOr(x,y)
 
-let ctl_not x      = wrap 0 (CTL.Not(x))
+let ctl_not x      = CTL.Not(x)
 
 let ctl_ax x       =
-  if is_true x then wrap 0 CTL.True
-  else wrap 0 (CTL.AX(CTL.FORWARD,CTL.STRICT,x))
+  if is_true x then CTL.True
+  else CTL.AX(CTL.FORWARD,CTL.STRICT,x)
 
-let after          = wrap 0 (CTL.Pred(Lib_engine.After, CTL.Control))
-let exit           = wrap 0 (CTL.Pred(Lib_engine.Exit, CTL.Control))
-let truepred       = wrap 0 (CTL.Pred(Lib_engine.TrueBranch, CTL.Control))
-let retpred        = wrap 0 (CTL.Pred(Lib_engine.Return, CTL.Control))
+let after          = CTL.Pred(Lib_engine.After, CTL.Control)
+let exit           = CTL.Pred(Lib_engine.Exit, CTL.Control)
+let truepred       = CTL.Pred(Lib_engine.TrueBranch, CTL.Control)
+let retpred        = CTL.Pred(Lib_engine.Return, CTL.Control)
 
 let string2var x = ("",x)
 
@@ -98,9 +90,8 @@ let get_label_ctr _ =
 
 let ctl_au x seq_after y =
   let lv = get_label_ctr() in
-  let labelpred = wrap 0 (CTL.Pred(Lib_engine.Label lv,CTL.Control)) in
-  let preflabelpred =
-    wrap 0 (CTL.Pred(Lib_engine.PrefixLabel lv,CTL.Control)) in
+  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
+  let preflabelpred = CTL.Pred(Lib_engine.PrefixLabel lv,CTL.Control) in
   let matchgoto = predmaker false (Ast.make_term Ast.Goto) in
   let matchbreak =
     predmaker false
@@ -113,19 +104,17 @@ let ctl_au x seq_after y =
   let stop_early =
     ctl_or after
       (ctl_and (ctl_and truepred labelpred)
-	 (wrap 0
 	 (CTL.AU
 	    (CTL.FORWARD,CTL.STRICT,preflabelpred,
 	     ctl_and preflabelpred
 	       (ctl_or retpred
 		  (ctl_and (ctl_or (ctl_or matchgoto matchbreak) matchcontinue)
-		     (wrap 0
 			(CTL.AG
 			   (CTL.FORWARD,CTL.STRICT,
-			    ctl_not seq_after))))))))) in
-  wrap 0 (CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y stop_early))
+			    ctl_not seq_after))))))) in
+  CTL.AU(CTL.FORWARD,CTL.STRICT,x,ctl_or y stop_early)
 
-let ctl_uncheck x  = wrap 0 (CTL.Uncheck(x))
+let ctl_uncheck x  = CTL.Uncheck(x)
 
 (* --------------------------------------------------------------------- *)
 
@@ -133,7 +122,7 @@ let rec ctl_seq keep_wit a = function
     Past.Seq(elem,seq) ->
       ctl_element keep_wit (ctl_seq keep_wit a seq) elem
   | Past.Empty -> a
-  | Past.SExists(var,seq) -> ctl_exists var (ctl_seq keep_wit a seq) keep_wit
+  | Past.SExists(var,seq) -> ctl_exists keep_wit var (ctl_seq keep_wit a seq)
 
 and ctl_element keep_wit a = function
     Past.Term(term) -> ctl_and (predmaker keep_wit term) (ctl_ax a)
@@ -143,11 +132,11 @@ and ctl_element keep_wit a = function
       let shortest l =
 	List.fold_left ctl_or ctl_false
 	  (List.map (ctl_element false ctl_true) l) in
-      ctl_au (ctl_and (guard_ctl_dots keep_wit dots)
-		(ctl_not (shortest (Common.union_set seq_bef seq_aft))))
+      let s = shortest (Common.union_set seq_bef seq_aft) in
+      ctl_au (ctl_and (guard_ctl_dots keep_wit dots) (ctl_not s))
 	(shortest seq_aft) a
   | Past.EExists(var,elem) ->
-      ctl_exists var (ctl_element keep_wit a elem) keep_wit
+      ctl_exists keep_wit var (ctl_element keep_wit a elem)
 
 (* --------------------------------------------------------------------- *)
 
@@ -157,7 +146,7 @@ and guard_ctl_seq keep_wit = function
       ctl_element keep_wit (guard_ctl_seq keep_wit seq) elem
   | Past.Empty -> ctl_true
   | Past.SExists(var,seq) ->
-      ctl_exists var (guard_ctl_seq keep_wit seq) keep_wit
+      ctl_exists keep_wit var (guard_ctl_seq keep_wit seq)
 
 and guard_ctl_element keep_wit = function
     Past.Term(term) -> predmaker keep_wit term
@@ -172,7 +161,7 @@ and guard_ctl_element keep_wit = function
       ctl_au (ctl_and (guard_ctl_dots keep_wit dots) (ctl_not s))
 	(shortest seq_aft) aft
   | Past.EExists(var,elem) ->
-      ctl_exists var (guard_ctl_element keep_wit elem) keep_wit
+      ctl_exists keep_wit var (guard_ctl_element keep_wit elem)
 
 and guard_ctl_dots keep_wit = function
     Past.Dots -> ctl_true
@@ -184,7 +173,7 @@ and guard_ctl_dots keep_wit = function
 	(guard_ctl_dots keep_wit dots)
 	(ctl_not (ctl_seq false ctl_true seq))
   | Past.DExists(var,dots) ->
-      ctl_exists var (guard_ctl_dots keep_wit dots) keep_wit
+      ctl_exists keep_wit var (guard_ctl_dots keep_wit dots)
 
 (* --------------------------------------------------------------------- *)
 

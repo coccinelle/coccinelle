@@ -17,11 +17,11 @@ let rec stm s =
 	  function cur ->
 	    Past.Or(Past.Seq(prev,Past.Empty),stm_list cur))
 	(Past.Or(stm_list stm1,stm_list stm2)) stmts
-  | Ast.Dots(dots,whencodes,_) ->
+  | Ast.Dots(dots,whencodes,_,_) ->
       (match whencodes with
 	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(Past.Dots,stm_list a),[],[])
       |	_ -> failwith "only one when != supported")
-  | Ast.Nest(stmt_dots,whencodes,_) ->
+  | Ast.Nest(stmt_dots,whencodes,_,_) ->
       let nest = Past.Nest(stm_list stmt_dots) in
       (match whencodes with
 	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(nest,stm_list a),[],[])

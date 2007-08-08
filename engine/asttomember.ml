@@ -107,7 +107,7 @@ let strip =
 
 (* --------------------------------------------------------------------- *)
 
-let disj l1 l2 = Common.union_set l1 l2
+let disj l1 l2 = l1 l2
 
 let rec conj xs ys =
   match (xs,ys) with
@@ -195,13 +195,14 @@ and statement testfn mcode tail stmt : 'a list list =
       else branches
 
   | Ast.Disj(stmt_dots_list) ->
-      List.fold_left
-	(function prev ->
-	  function cur ->
-	    disj (statement_list testfn mcode tail cur) prev)
-	[] stmt_dots_list
+      let processed =
+	List.map (statement_list testfn mcode tail) stmt_dots_list in
+      (* if one branch gives no information, then we have to take anything *)
+      if List.exists (function [] -> true | _ -> false) processed
+      then []
+      else Common.union_all processed
 
-  | Ast.Nest(stmt_dots,whencode,t) ->
+  | Ast.Nest(stmt_dots,whencode,_,_) ->
       (match Ast.unwrap stmt_dots with
 	Ast.DOTS([l]) ->
 	  (match Ast.unwrap l with
@@ -210,7 +211,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	  | _ -> [])
       | _ -> [])
 
-  | Ast.Dots((_,i,d),whencodes,t) -> []
+  | Ast.Dots((_,i,d),whencodes,_,_) -> []
 
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let body_info =
@@ -224,8 +225,7 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.Define(header,body) ->
       conj_one testfn header (statement_list testfn mcode tail body)
 
-  | Ast.OptStm(stm) ->
-      statement testfn mcode tail stm
+  | Ast.OptStm(stm) -> []
 
   | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
       statement testfn mcode tail stm
@@ -247,7 +247,7 @@ and case_line testfn mcode tail case =
     Ast.CaseLine(header,code) ->
       conj_one testfn header (statement_list testfn mcode tail code)
 	  
-  | Ast.OptCase(case) -> failwith "not supported"
+  | Ast.OptCase(case) -> []
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

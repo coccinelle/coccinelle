@@ -1278,7 +1278,8 @@ fun_exp_decl_statement_list:
       /* more hacks */
     { let (mids,code) = t in
     let s =
-      Ast0.wrap(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) in
     [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
   | expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis

@@ -33,13 +33,14 @@ let strip_info =
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
-      failwith "not a possible variable binding"
+      failwith "not a possible variable binding" (*not sure why these are pbs*)
   | (Ast0.DotsInitTag(d1),Ast0.DotsInitTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) ->
-      failwith "not a possible variable binding"
+      (strip_info.V0.rebuilder_statement_dots d1) =
+      (strip_info.V0.rebuilder_statement_dots d2)
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) ->
@@ -81,6 +82,7 @@ type reason =
   | NotPureLength of (string * string)
   | ContextRequired of Ast0.anything
   | NonMatch
+  | Braces of Ast0.statement
 
 let interpret_reason name line reason printer =
   Printf.printf
@@ -100,6 +102,10 @@ let interpret_reason name line reason printer =
       Printf.printf
 	"the following code matched is not uniformly minus or context,\nor contains a disjunction:\n";
       Unparse_ast0.unparse_anything term
+  | Braces(s) ->
+      Printf.printf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n";
+      Unparse_ast0.statement "" s;
+      Format.print_newline()
   | _ -> failwith "not possible"
 
 type 'a either = OK of 'a | Fail of reason
@@ -803,19 +809,27 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
 	      (* seqs can only match if they are all minus (plus code
-		 allowed) r all context (plus code not allowed in the body).
+		 allowed) or all context (plus code not allowed in the body).
 		 we could be more permissive if the expansions of the isos are
 		 also all seqs, but this would be hard to check except at top
 		 level, and perhaps not worth checking even in that case.
 		 Overall, the issue is that braces are used where single
 		 statements are required, and something not satisfying these
 		 conditions can cause a single statement to become a
-		 non-single statement after the transformation. *)
-	      if is_minus s or is_pure_context s
+		 non-single statement after the transformation.
+
+		 example: if { ... -foo(); ... }
+		 if we let the sequence convert to just -foo();
+		 then we produce invalid code.  For some reason,
+		 single_statement can't deal with this case, perhaps because
+		 it starts introducing too many braces?  don't remember the
+		 exact problem...
+	      *)
+	      if not(checks_needed) or is_minus s or is_pure_context s
 	      then
 		match_dots match_statement is_slist_matcher do_slist_match
 		  bodya bodyb
-	      else return false
+	      else return_false (Braces(s))
 	  | (Ast0.ExprStatement(expa,_),Ast0.ExprStatement(expb,_)) ->
 	      match_expr expa expb
 	  | (Ast0.IfThen(_,_,expa,_,branch1a,_),
@@ -1340,6 +1354,49 @@ let instantiate bindings mv_bindings =
 		   (Ast0.set_mcode_data new_mv name,new_types,form,pure)))
     | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,pure) -> failwith "metaexprlist not supported"
+    | Ast0.Unary(exp,unop) ->
+	(match Ast0.unwrap_mcode unop with
+	  Ast.Not ->
+	    (match Ast0.unwrap exp with
+	      Ast0.MetaExpr(name,x,form,pure) ->
+		let res = r.V0.rebuilder_expression exp in
+		let rec negate e (*for rewrapping*) res (*code to process*) =
+		  match Ast0.unwrap res with
+		    Ast0.Binary(e1,op,e2) ->
+		      let reb nop = Ast0.rewrap_mcode op (Ast.Logical(nop)) in
+		      let invop =
+			match Ast0.unwrap_mcode op with
+			  Ast.Logical(Ast.Inf) ->
+			    Ast0.Binary(e1,reb Ast.SupEq,e2)
+			| Ast.Logical(Ast.Sup) ->
+			    Ast0.Binary(e1,reb Ast.InfEq,e2)
+			| Ast.Logical(Ast.InfEq) ->
+			    Ast0.Binary(e1,reb Ast.Sup,e2)
+			| Ast.Logical(Ast.SupEq) ->
+			    Ast0.Binary(e1,reb Ast.Inf,e2)
+			| Ast.Logical(Ast.Eq) ->
+			    Ast0.Binary(e1,reb Ast.NotEq,e2)
+			| Ast.Logical(Ast.NotEq) ->
+			    Ast0.Binary(e1,reb Ast.Eq,e2)
+			| Ast.Logical(Ast.AndLog) ->
+			    Ast0.Binary(negate e1 e1,reb Ast.OrLog,
+					negate e2 e2)
+			| Ast.Logical(Ast.OrLog) ->
+			    Ast0.Binary(negate e1 e1,reb Ast.AndLog,
+					negate e2 e2)
+			| _ -> Ast0.Unary(res,Ast0.rewrap_mcode op Ast.Not) in
+		      Ast0.rewrap e invop
+		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
+		      (* use res because it is the transformed argument *)
+		      let exps = List.map (function e -> negate e e) exps in
+		      Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
+		  | _ ->
+		      (*use e, because this might be the toplevel expression*)
+		      Ast0.rewrap e
+			(Ast0.Unary(res,Ast0.rewrap_mcode unop Ast.Not)) in
+		negate e res
+	    | _ -> k e)
+	| _ -> k e)
     | Ast0.Edots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with

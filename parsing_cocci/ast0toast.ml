@@ -632,7 +632,7 @@ and statement s =
 	     (match whencode with
 	       None -> []
 	     | Some x -> [Ast.WhenNot (statement_dots Ast.Sequencible x)]),
-	     [])
+	     [],[])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in
 	  let whn =
@@ -640,7 +640,7 @@ and statement s =
 	      (whencode (statement_dots Ast.Sequencible)
 		 (statement Ast.NotSequencible))
 	      whn in
-	  Ast.Dots(d,whn,[])
+	  Ast.Dots(d,whn,[],[])
       | Ast0.Circles(d,whn) ->
 	  let d = mcode d in
 	  let whn =
@@ -648,7 +648,7 @@ and statement s =
 	      (whencode (statement_dots Ast.Sequencible)
 		 (statement Ast.NotSequencible))
 	      whn in
-	  Ast.Circles(d,whn,[])
+	  Ast.Circles(d,whn,[],[])
       | Ast0.Stars(d,whn) ->
 	  let d = mcode d in
 	  let whn =
@@ -656,7 +656,7 @@ and statement s =
 	      (whencode (statement_dots Ast.Sequencible)
 		 (statement Ast.NotSequencible))
 	      whn in
-	  Ast.Stars(d,whn,[])
+	  Ast.Stars(d,whn,[],[])
       | Ast0.FunDecl((_,bef),fi,name,lp,params,rp,lbrace,body,rbrace) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in

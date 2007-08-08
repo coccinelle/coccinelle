@@ -10,7 +10,7 @@ type predicate =
   | After (* pointer to the code after an if or while *)
   | FallThrough
   | Return (* any exit from the current function *)
-  | Exit | ErrorExit
+  | Enter | Exit | ErrorExit
   | Paren of Ast_cocci.meta_name
   | Match of Ast_cocci.rule_elem
   | Label of Ast_cocci.meta_name

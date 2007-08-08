@@ -720,7 +720,8 @@ let triples_witness x unchecked not_keep trips =
 	      if anynegwit wit && allnegwit wit (* nonempty negwit list *)
 	      then prev
 	      else
-		failwith "unexpected negative binding with positive witnesses"
+		(print_generic_substitution l; Format.print_newline();
+		failwith "unexpected negative binding with positive witnesses")
 	  | [_] -> (* positive must be alone *)
 	      let new_triple =
 		if unchecked or not_keep
@@ -895,9 +896,6 @@ let satAU dir ((_,_,states) as m) s1 s2 reqst =
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
 ;;
-
-let all_table =
-  (Hashtbl.create(50) : (G.node,('a,'b) triples ref) Hashtbl.t)
 
 
 (* reqst could be the states of s1 *)
@@ -1194,7 +1192,7 @@ let rec satloop unchecked required required_states
     ((grp,label,states) as m) phi env =
   let rec loop unchecked required required_states phi =
     let res =
-    match A.unwrap phi with
+      match phi with
       A.False              -> []
     | A.True               -> triples_top states
     | A.Pred(p)            -> satLabel label required p
@@ -1284,9 +1282,8 @@ let rec satloop unchecked required required_states
     | A.AF(dir,strict,phi)            ->
 	if !Flag_ctl.loop_in_src_code
 	then
-	  let tr = A.rewrap phi A.True in
 	  loop unchecked required required_states
-	    (A.rewrap phi (A.AU(dir,strict,tr,phi)))
+	    (A.AU(dir,strict,A.True,phi))
 	else
 	  let new_required_states = get_reachable dir m required_states in
 	  let res = loop unchecked required new_required_states phi in
@@ -1318,28 +1315,22 @@ let rec satloop unchecked required required_states
     | A.AU(dir,strict,phi1,phi2) ->
 	if !Flag_ctl.loop_in_src_code
 	then
-	  let wrap x = A.rewrap phi x in
 	  let v = new_let () in
 	  let w = new_let () in
-	  let phi1ref = wrap(A.Ref v) in
-	  let phi2ref = wrap(A.Ref w) in
+	  let phi1ref = A.Ref v in
+	  let phi2ref = A.Ref w in
 	  loop unchecked required required_states
-	    (wrap
-	       (A.LetR
-		  (dir,v,phi1,
-		   (wrap
-		      (A.LetR
-			 (dir,w,phi2,
-			  wrap
-			    (A.AW
-			       (dir,strict,
-				wrap
-				  (A.And
-				     (A.NONSTRICT,
-				      wrap(A.EU(dir,wrap(A.Uncheck(phi1ref)),
-						wrap(A.Uncheck(phi2ref)))),
-				      phi1ref)),
-				phi2ref))))))))
+	    (A.LetR
+	       (dir,v,phi1,
+		(A.LetR
+		   (dir,w,phi2,
+		    A.AW
+		      (dir,strict,
+		       A.And
+			 (A.NONSTRICT,
+			  A.EU(dir,A.Uncheck(phi1ref),A.Uncheck(phi2ref)),
+			  phi1ref),
+		       phi2ref)))))
 	else
 	  let new_required_states = get_reachable dir m required_states in
 	  (match loop unchecked required new_required_states phi2 with
@@ -1349,9 +1340,8 @@ let rec satloop unchecked required required_states
 	      let s1 = loop unchecked new_required new_required_states phi1 in
 	      strict_A2 strict satAU satEF dir m s1 s2 new_required_states)
     | A.Implies(phi1,phi2) ->
-	loop unchecked required required_states
-	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
-    | A.Exists (v,phi,keep)     ->
+	loop unchecked required required_states (A.Or(A.Not phi1,phi2))
+    | A.Exists (keep,v,phi)     ->
 	let new_required = drop_required v required in
 	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
@@ -1372,9 +1362,7 @@ let rec satloop unchecked required required_states
 	let res = List.assoc v env in
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
-	else res
-    | A.Dots _ -> failwith "should not occur"
-    | A.PDots _ -> failwith "should not occur" in
+	else res in
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     drop_wits required_states res phi in
   
@@ -1393,7 +1381,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     anno (satloop unchecked required required_states m phi env) []
   else
     let (child,res) =
-      match A.unwrap phi with
+      match phi with
       A.False              -> anno [] []
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
@@ -1514,9 +1502,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     | A.AF(dir,strict,phi1) -> 
 	if !Flag_ctl.loop_in_src_code
 	then
-	  let tr = A.rewrap phi A.True in
 	  satv unchecked required required_states
-	    (A.rewrap phi (A.AU(dir,strict,tr,phi1)))
+	    (A.AU(dir,strict,A.True,phi1))
 	    env
 	else
 	  (let new_required_states = get_reachable dir m required_states in
@@ -1569,33 +1556,27 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     | A.AU(dir,strict,phi1,phi2)      -> 
 	if !Flag_ctl.loop_in_src_code
 	then
-	  let wrap x = A.rewrap phi x in
 	  let v = new_let () in
 	  let w = new_let () in
-	  let phi1ref = wrap(A.Ref v) in
-	  let phi2ref = wrap(A.Ref w) in
+	  let phi1ref = A.Ref v in
+	  let phi2ref = A.Ref w in
 	  Format.print_newline();
 	  Printf.printf "converting AU to AW\n";
 	  Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
 	    false phi;
 	  Format.print_newline();
 	  satv unchecked required required_states
-	    (wrap
-	       (A.LetR
-		  (dir,v,phi1,
-		   (wrap
-		      (A.LetR
-			 (dir,w,phi2,
-			  wrap
-			    (A.AW
-			       (dir,strict,
-				wrap
-				  (A.And
-				     (A.NONSTRICT,
-				      wrap(A.EU(dir,wrap(A.Uncheck(phi1ref)),
-						wrap(A.Uncheck(phi2ref)))),
-				      phi1ref)),
-				phi2ref))))))))
+	    (A.LetR
+	       (dir,v,phi1,
+		(A.LetR
+		   (dir,w,phi2,
+		    A.AW
+		      (dir,strict,
+		       A.And
+			 (A.NONSTRICT,
+			  A.EU(dir,A.Uncheck(phi1ref),A.Uncheck(phi2ref)),
+			  phi1ref),
+		       phi2ref)))))
 	    env
 	else
 	  let new_required_states = get_reachable dir m required_states in
@@ -1613,9 +1594,9 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	      anno res [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	satv unchecked required required_states
-	  (A.rewrap phi (A.Or(A.rewrap phi (A.Not phi1),phi2)))
+	  (A.Or(A.Not phi1,phi2))
 	  env
-    | A.Exists (v,phi1,keep)    -> 
+    | A.Exists (keep,v,phi1)    -> 
 	let new_required = drop_required v required in
 	let (child,res) =
 	  satv unchecked new_required required_states phi1 env in
@@ -1641,9 +1622,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  if unchecked
 	  then List.map (function (s,th,_) -> (s,th,[])) res
 	  else res in
-	anno res []
-    | A.Dots _ -> failwith "should not occur"
-    | A.PDots _ -> failwith "should not occur" in
+	anno res [] in
     let res1 = drop_wits required_states res phi in
     if not(res1 = res) then print_state "after drop_wits" res1;
     (child,res1)
@@ -1674,12 +1653,12 @@ let simpleanno l phi res =
   let pp_dir = function
       A.FORWARD -> ()
     | A.BACKWARD -> pp "^" in
-  match A.unwrap phi with
+  match phi with
     | A.False              -> pp "False"
     | A.True               -> pp "True"
     | A.Pred(p)            -> pp ("Pred" ^ (Dumper.dump p))
     | A.Not(phi)           -> pp "Not"
-    | A.Exists(v,phi,_)    -> pp ("Exists " ^ (Dumper.dump(v)))
+    | A.Exists(_,v,phi)    -> pp ("Exists " ^ (Dumper.dump(v)))
     | A.And(_,phi1,phi2)   -> pp "And"
     | A.AndAny(dir,_,phi1,phi2) -> pp "AndAny"
     | A.Or(phi1,phi2)      -> pp "Or"
@@ -1698,8 +1677,6 @@ let simpleanno l phi res =
     | A.LetR (dir,x,phi1,phi2) -> pp ("LetR"^" "^x); pp_dir dir
     | A.Ref(s)             -> pp ("Ref("^s^")")
     | A.Uncheck(s)         -> pp "Uncheck"
-    | A.Dots _ -> failwith "should not occur"
-    | A.PDots _ -> failwith "should not occur"
 ;;
 
 
@@ -1908,25 +1885,33 @@ let print_bench _ =
 let preprocess label = function
     [] -> true (* no information, try everything *)
   | l ->
+      let verbose_output pred = function
+	  [] ->
+	    Printf.printf "did not find:\n";
+	    P.print_predicate pred; Format.print_newline()
+	| _ ->
+	    Printf.printf "found:\n";
+	    P.print_predicate pred; Format.print_newline();
+	    Printf.printf "but it was not enough\n" in
       let get_any verbose x =
-	try not([] = Hashtbl.find memo_label x)
-	with
-	  Not_found ->
-	    let triples = setify(label x) in
-	    (if verbose && not(triples = [])
-	    then
-	      (Printf.printf "found:\n";
-	       P.print_predicate x; Format.print_newline();
-	       Printf.printf "but it was not enough\n"));
-	    Hashtbl.add memo_label x
-	      (List.map (function (st,th,_) -> (st,th)) triples);
-	    not ([] = triples) in
+	let res =
+	  try Hashtbl.find memo_label x
+	  with
+	    Not_found ->
+	      (let triples = setify(label x) in
+	      let filtered =
+		List.map (function (st,th,_) -> (st,th)) triples in
+	      Hashtbl.add memo_label x filtered;
+	      filtered) in
+	if verbose then verbose_output x res;
+	not([] = res) in
       if List.exists (List.for_all (get_any false)) l
       then true
       else
 	(if !Flag_ctl.verbose_ctl_engine
 	then
-	  List.iter (List.iter (function x -> let _ = get_any true in ())) l;
+	   List.iter (List.iter (function x -> let _ = get_any true x in ()))
+	    l;
 	 false)
 
 let filter_partial_matches trips =
