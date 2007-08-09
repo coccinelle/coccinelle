@@ -496,6 +496,8 @@ let unwrap_mcode (x,_,_) = x
 let get_line (_,l,_,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
 let get_fvs (_,_,fvs,_,_,_,_,_) = fvs
+let set_fvs fvs (x,l,_,fresh,inherited,saved,d,pos) =
+  (x,l,fvs,fresh,inherited,saved,d,pos)
 let get_fresh (_,_,_,fresh,_,_,_,_) = fresh
 let get_inherited (_,_,_,_,inherited,_,_,_) = inherited
 let get_saved (_,_,_,_,_,saved,_,_) = saved

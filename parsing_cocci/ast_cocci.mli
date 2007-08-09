@@ -485,6 +485,7 @@ val unwrap_mcode : 'a mcode -> 'a
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> meta_name list
+val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list

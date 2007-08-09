@@ -340,7 +340,7 @@ let make_match label guard code =
     match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
       (true,_,[]) | (_,true,_) ->
 	predmaker guard (matcher,CTL.Control) label
-    | _ ->
+    | (b1,b2,l) ->
 	CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label)
 
 let make_raw_match label guard code =
@@ -1043,7 +1043,7 @@ let dots_au label s wrapcode x seq_after y =
 			   (ctl_ag s (ctl_not seq_after))))))))) in
   ctl_au s x (ctl_or y stop_early)
 
-let dots_and_nests nest whencodes bef aft dotcode after label
+let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard wrapcode =
   let ctl_and_ns = ctl_and CTL.NONSTRICT in
   (* proces bef_aft *)
@@ -1076,7 +1076,7 @@ let dots_and_nests nest whencodes bef aft dotcode after label
       (None,_) | (_,true) -> CTL.True
     | (Some dotcode,_) -> dotcode in
   (* process nest code, if any *)
-  let nest =
+  let ornest =
     match (nest,guard) with
       (None,_) | (_,true) -> CTL.True
     | (Some nest,false) ->
@@ -1093,9 +1093,34 @@ let dots_and_nests nest whencodes bef aft dotcode after label
 	if !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) in
-  dots_au label (guard_to_strict guard) wrapcode
-    (ctl_and_ns dotcode (ctl_and_ns nest whencodes))
-    aft ender
+  if plus
+  then do_plus_dots label guard wrapcode ornest nest whencodes aft ender
+  else
+    dots_au label (guard_to_strict guard) wrapcode
+      (ctl_and_ns dotcode (ctl_and_ns ornest whencodes))
+      aft ender
+
+and do_plus_dots label guard wrapcode ornest nest whencodes aft ender =
+  (* f(); <... \+ g(); ...> h(); after 
+     becomes:
+        f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
+        E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
+  *)
+  let nest =
+    match nest with
+      Some n -> n
+    | None -> failwith "nest expected" in
+  let v = get_let_ctr() in
+  CTL.LetR
+    (CTL.FORWARD,v,whencodes,
+     ctl_and CTL.NONSTRICT
+       (dots_au label (guard_to_strict guard) wrapcode
+	  (ctl_and CTL.NONSTRICT (CTL.Ref v) ornest) aft ender)
+       (CTL.EU(CTL.FORWARD,CTL.Ref v,
+	       ctl_and CTL.NONSTRICT (CTL.Uncheck nest)
+		 (CTL.AX(CTL.FORWARD,CTL.NONSTRICT,
+			 (dots_au label (guard_to_strict guard) wrapcode
+			    (CTL.Ref v) aft ender))))))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1348,17 +1373,36 @@ and statement stmt after quantified label guard =
       let call stmt_dots =
 	let dots_pattern =
 	  statement_list stmt_dots (a2n after) quantified None true guard in
-	dots_and_nests (Some dots_pattern) whencode bef aft None after label
+	dots_and_nests false
+	  (Some dots_pattern) whencode bef aft None after label
 	  (process_bef_aft quantified None true)
 	  (function x -> statement_list x Tail quantified None true true)
 	  (function x -> statement x Tail quantified None true)
-	  guard (Ast.rewrap stmt) in
+	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)) in
 
       (match Ast.unwrap stmt_dots with
 	Ast.DOTS([l]) ->
 	  (match Ast.unwrap l with
-	    Ast.MultiStm(stm) -> failwith "temporarily no supported"
-	      (*call wrapPDots (Ast.rewrap stmt_dots (Ast.DOTS([stm])))*)
+	    Ast.MultiStm(stm) ->
+	      (* f(); <... \+ g(); ...> h(); after 
+   
+		 becomes:
+   
+		 f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
+		 E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
+   
+		 Unfortunately, this is not really what we want.  We really
+		 want the outer AX to become an EX.  That could perhaps be
+		 done with some postprocessing.  We have taken care of the
+		 AX(PDots ...) case, and hope nothing else can show up. *)
+
+	      dots_and_nests true
+		(Some (statement stm (a2n after) quantified None guard))
+		whencode bef aft None after label
+		(process_bef_aft quantified None true)
+		(function x -> statement_list x Tail quantified None true true)
+		(function x -> statement x Tail quantified None true)
+		guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 	  | _ -> call stmt_dots)
       |	_  -> call stmt_dots)
 
@@ -1370,11 +1414,11 @@ and statement stmt after quantified label guard =
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))
 	| _ -> None in
-      dots_and_nests None whencodes bef aft dot_code after label
+      dots_and_nests false None whencodes bef aft dot_code after label
 	(process_bef_aft quantified None true)
 	(function x -> statement_list x Tail quantified None true true)
 	(function x -> statement x Tail quantified None true)
-	guard (Ast.rewrap stmt)
+	guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
   | Ast.Switch(header,lb,cases,rb) ->
       (match after with
@@ -1510,7 +1554,15 @@ and statement stmt after quantified label guard =
 	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,[],_,_) -> Some (Common.Left stmt_dots)
+	      Ast.Nest(stmt_dots,[],_,_) ->
+		(match Ast.undots stmt_dots with
+		  [s] ->
+		    (match Ast.unwrap s with
+		      Ast.MultiStm(stm) ->
+			(* not sure how to optimize this case *)
+			None
+		    | _ -> Some (Common.Left stmt_dots))
+		| _ -> Some (Common.Left stmt_dots))
 	    | Ast.Dots(_,whencode,_,_) -> Some (Common.Right whencode)
 	    | _ -> None)
 	| _ -> None in
@@ -1622,6 +1674,47 @@ and process_bef_aft quantified label guard = function
       statement_list d Tail quantified label true guard
 
 (* --------------------------------------------------------------------- *)
+(* cleanup: convert AX to EX for pdots.
+Concretely: AX(A[...] & E[...]) becomes AX(A[...]) & EX(E[...])
+This is what we wanted in the first place, but it wasn't possible to make
+because the AX and its argument are not created in the same place.
+Rather clunky... *)
+
+let rec cleanup = function
+    CTL.False    -> CTL.False
+  | CTL.True     -> CTL.True
+  | CTL.Pred(p)  -> CTL.Pred(p)
+  | CTL.Not(phi) -> CTL.Not(cleanup phi)
+  | CTL.Exists(keep,v,phi) -> CTL.Exists(keep,v,cleanup phi)
+  | CTL.AndAny(dir,s,phi1,phi2) ->
+      CTL.AndAny(dir,s,cleanup phi1,cleanup phi2)
+  | CTL.And(s,phi1,phi2)   -> CTL.And(s,cleanup phi1,cleanup phi2)
+  | CTL.Or(phi1,phi2)      -> CTL.Or(cleanup phi1,cleanup phi2)
+  | CTL.SeqOr(phi1,phi2)   -> CTL.SeqOr(cleanup phi1,cleanup phi2)
+  | CTL.Implies(phi1,phi2) -> CTL.Implies(cleanup phi1,cleanup phi2)
+  | CTL.AF(dir,s,phi1) -> CTL.AF(dir,s,cleanup phi1)
+  | CTL.AX(CTL.FORWARD,s,
+	   CTL.Let(v1,e1,
+		   CTL.And(CTL.NONSTRICT,CTL.AU(CTL.FORWARD,s2,e2,e3),
+			   CTL.EU(CTL.FORWARD,e4,e5)))) ->
+    CTL.Let(v1,e1,
+	    CTL.And(CTL.NONSTRICT,
+		    CTL.AX(CTL.FORWARD,s,CTL.AU(CTL.FORWARD,s2,e2,e3)),
+		    CTL.EX(CTL.FORWARD,CTL.EU(CTL.FORWARD,e4,e5))))
+  | CTL.AX(dir,s,phi1) -> CTL.AX(dir,s,cleanup phi1)
+  | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)
+  | CTL.EF(dir,phi1)   -> CTL.EF(dir,cleanup phi1)
+  | CTL.EX(dir,phi1)   -> CTL.EX(dir,cleanup phi1)
+  | CTL.EG(dir,phi1)   -> CTL.EG(dir,cleanup phi1)
+  | CTL.AW(dir,s,phi1,phi2) -> CTL.AW(dir,s,cleanup phi1,cleanup phi2)
+  | CTL.AU(dir,s,phi1,phi2) -> CTL.AU(dir,s,cleanup phi1,cleanup phi2)
+  | CTL.EU(dir,phi1,phi2)   -> CTL.EU(dir,cleanup phi1,cleanup phi2)
+  | CTL.Let (x,phi1,phi2)   -> CTL.Let (x,cleanup phi1,cleanup phi2)
+  | CTL.LetR (dir,x,phi1,phi2) -> CTL.LetR (dir,x,cleanup phi1,cleanup phi2)
+  | CTL.Ref(s) -> CTL.Ref(s)
+  | CTL.Uncheck(phi1) -> CTL.Uncheck(cleanup phi1)
+
+(* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
 let top_level ua t =
@@ -1632,7 +1725,7 @@ let top_level ua t =
   | Ast.DECL(stmt) ->
       let unopt = elim_opt.V.rebuilder_statement stmt in
       let unopt = preprocess_dots_e unopt in
-      statement unopt Tail [] None false
+      cleanup(statement unopt Tail [] None false)
   | Ast.CODE(stmt_dots) ->
       let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
       let unopt = preprocess_dots unopt in
@@ -1645,9 +1738,10 @@ let top_level ua t =
 	    | _ -> false)
 	| _ -> false in
       let res = statement_list unopt Tail [] None false false in
-      if starts_with_dots
-      then make_seq false [enterpred None; res]
-      else res
+      cleanup
+	(if starts_with_dots
+	then make_seq false [enterpred None; res]
+	else res)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
 (* --------------------------------------------------------------------- *)

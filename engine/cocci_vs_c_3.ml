@@ -1798,7 +1798,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
            | true, false -> do_stuff ()
            | true, true -> 
                if !Flag.show_misc 
-               then pr2 "USING optional_qualifier builtin isomorphism";
+               then pr2_once "USING optional_qualifier builtin isomorphism";
                do_stuff()
            )
              
@@ -2222,7 +2222,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
       | true, B.NoSto -> do_minus ()
       | true, _ -> 
           if !Flag.show_misc 
-          then pr2 "USING optional_storage builtin isomorphism";
+          then pr2_once "USING optional_storage builtin isomorphism";
           do_minus()
       )
 
