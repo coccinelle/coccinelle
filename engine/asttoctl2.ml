@@ -416,16 +416,18 @@ let print_bef_aft = function
       Pretty_print_cocci.statement_dots d;
       Format.print_newline()
 
-let rec get_before sl a =
+(* [] can only occur if we are in a disj, where it comes from a ?  In that
+case, we want to use a, which accumulates all of the previous patterns in
+their entirety. *)
+let rec get_before_elem sl a =
   match Ast.unwrap sl with
     Ast.DOTS(x) ->
       let rec loop sl a =
 	match sl with
-	  (*take only real stuff, give [] in the fallthrough case (disj only)*)
-	  [] -> ([],[])
+	  [] -> ([],Common.Right a)
 	| [e] ->
 	    let (e,ea) = get_before_e e a in
-	    ([e],ea)
+	    ([e],Common.Left ea)
 	| e::sl ->
 	    let (e,ea) = get_before_e e a in
 	    let (sl,sla) = loop sl ea in
@@ -434,6 +436,11 @@ let rec get_before sl a =
       (Ast.rewrap sl (Ast.DOTS(l)),a)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
+
+and get_before sl a =
+  match get_before_elem sl a with
+    (term,Common.Left x) -> (term,x)
+  | (term,Common.Right x) -> (term,x)
 
 and get_before_whencode wc =
   List.map
@@ -476,11 +483,18 @@ and get_before_e s a =
 	List.fold_left
 	  (function (dsl,acc_dsl,dsla) ->
 	    function cur ->
-	      let (cur_dsl,cur_dsla) = get_before cur acc_dsl in
+	      let (cur_dsl,cur_dsla) = get_before_elem cur acc_dsl in
 	      (cur_dsl::dsl,(Ast.Other_dots cur_dsl)::acc_dsl,cur_dsla::dsla))
 	  ([],a,[]) stmt_dots_list in
       let dsl = List.rev dsl in
-      (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
+      let dsla =
+	List.fold_left
+	  (function prev ->
+	    function
+		Common.Left x -> Common.union_set x prev
+	      |	Common.Right x -> x)
+	  [] dsla in
+      (Ast.rewrap s (Ast.Disj(dsl)),dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.MetaStmt(_,_,_,_) -> (s,[])
@@ -538,11 +552,7 @@ let rec get_after sl a =
     Ast.DOTS(x) ->
       let rec loop sl =
 	match sl with
-	  (*take only real stuff, give [] in the fallthrough case (disj only)*)
-	  [] -> ([],[])
-	| [e] ->
-	    let (e,ea) = get_after_e e a in
-	    ([e],ea)
+	  [] -> ([],a)
 	| e::sl ->
 	    let (sl,sla) = loop sl in
 	    let (e,ea) = get_after_e e sla in
