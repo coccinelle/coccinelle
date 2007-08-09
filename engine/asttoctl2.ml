@@ -120,6 +120,7 @@ let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
 let enterpred   = predmaker false (Lib_engine.Enter,       CTL.Control)
 let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
 let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
+let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
 let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
@@ -893,7 +894,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after quantified label
     let header = quantify efvs (make_match header) in
     let body =
       make_seq guard
-	[truepred label; recurse body Tail new_quantified label guard] in
+	[inlooppred label; recurse body Tail new_quantified label guard] in
     let after_pred = fallpred label in
     let or_cases after_branch = ctl_or body after_branch in
     end_control_structure bfvs header or_cases after_pred
@@ -1656,7 +1657,7 @@ and do_between_dots stmt term after quantified label guard =
 	let case2 = ctl_and CTL.NONSTRICT (ctl_not (CTL.Ref v)) term in
 	CTL.Let
 	  (v,ctl_or
-	     (ctl_back_ex (truepred label))
+	     (ctl_back_ex (ctl_or (truepred label) (inlooppred label)))
 	     (ctl_back_ex (ctl_back_ex (falsepred label))),
 	   ctl_or case1 case2)	 
     | Ast.NoDots -> term

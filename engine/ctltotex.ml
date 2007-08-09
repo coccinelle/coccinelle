@@ -227,11 +227,13 @@ let make_postlude o = Printf.fprintf o "%s\n" postlude
 let meta2c (_,s) = s
 
 let pred2c = function
-    Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
+    Lib_engine.InLoop -> ("\\msf{InLoop}",6)
+  | Lib_engine.TrueBranch -> ("\\msf{TrueBranch}",10)
   | Lib_engine.FalseBranch -> ("\\msf{FalseBranch}",11)
   | Lib_engine.After -> ("\\msf{After}",5)
   | Lib_engine.FallThrough -> ("\\msf{FallThrough}",11)
   | Lib_engine.Return -> ("\\msf{Return}",6)
+  | Lib_engine.Enter -> ("\\msf{Enter}",5)
   | Lib_engine.Exit -> ("\\msf{Exit}",4)
   | Lib_engine.ErrorExit -> ("\\msf{ErrorExit}",9)
   | Lib_engine.Paren(s) ->
