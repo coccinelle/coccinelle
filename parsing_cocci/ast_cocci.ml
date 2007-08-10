@@ -115,7 +115,8 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       fullType * string mcode (* ) *)
-  | TypeExp        of fullType (*type name used as an expression, only in arg*)
+  | TypeExp        of fullType (*type name used as an expression, only in
+				  arg or #define*)
 
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
@@ -349,9 +350,10 @@ and base_rule_elem =
 	             inherited
   | MetaStmtList  of meta_name mcode * keep_binding * inherited
 
-  | Exp           of expression
-  | TopExp        of expression (* for macros body *)
-  | Ty            of fullType (* only at top level *)
+  | Exp           of expression (* matches a subterm *)
+  | TopExp        of expression (* for macros body, exp at top level,
+				   not subexp *)
+  | Ty            of fullType (* only at SP top level, matches a subterm *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)

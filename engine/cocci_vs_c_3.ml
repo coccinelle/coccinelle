@@ -795,7 +795,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.EComma _, _  
   | A.Ecircles _, _ 
   | A.Estars _, _   
-      -> raise Impossible
+      ->
+	Pretty_print_cocci.expression ea; Format.print_newline();
+	raise Impossible
 
   | A.DisjExpr eas, eb -> 
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
@@ -2597,6 +2599,16 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           A.TopExp ea,
           F.DefineExpr eb
         ))
+         
+  | A.TopExp ea, F.DefineType eb  ->
+      (match A.unwrap ea with
+	A.TypeExp(ft) ->
+	  fullType ft eb >>= (fun ft eb -> 
+            return (
+              A.TopExp (A.rewrap ea (A.TypeExp(ft))),
+              F.DefineType eb
+            ))
+      |	_ -> fail)
          
 
 
