@@ -357,8 +357,8 @@ struct subsystem _name##_subsys = { \
 // ----------------------------------------------------------------------------
 
 // ?
-#define CS_CHECK(fn, ret) \
-  do { last_fn = (fn); if ((last_ret = (ret)) != 0) goto cs_failed; } while (0)
+//#define CS_CHECK(fn, ret) \
+//  do { last_fn = (fn); if ((last_ret = (ret)) != 0) goto cs_failed; } while (0)
 
 
 
