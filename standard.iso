@@ -307,12 +307,15 @@ if (E) S1 else S2 => if (E) S1
 // ---------------------------------------------------------------------------
 // Optional initializers
 // ---------------------------------------------------------------------------
+// this is not safe when the declaration is replaced
+// attempt to indicate that by requiring that Z is context
 Declaration
 @ decl_init @
 type T;
-identifier Z;
+context identifier Z;
+expression E;
 @@
-T Z; => T Z = ...;
+T Z; => T Z = E;
 
 // ---------------------------------------------------------------------------
 // Branch (or compound) isomorphisms
