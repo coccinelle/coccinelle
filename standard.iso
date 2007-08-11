@@ -313,9 +313,8 @@ Declaration
 @ decl_init @
 type T;
 context identifier Z;
-expression E;
 @@
-T Z; => T Z = E;
+T Z; => T Z = ...;
 
 // ---------------------------------------------------------------------------
 // Branch (or compound) isomorphisms
