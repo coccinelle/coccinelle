@@ -5,7 +5,7 @@
 /* this file contains:
  *   - macros found in <.h>
  *   - macros found in .c, macros that cannot be parsed 
- *     in the futur should be autodetected
+ *     in the future should be autodetected
  *     (not so easy to do same for macros in .h cos require to access .h file)
  *   - macros found in ".h" 
  *     but where we cant detect that it will be a "bad macro"

@@ -309,12 +309,27 @@ if (E) S1 else S2 => if (E) S1
 // ---------------------------------------------------------------------------
 // this is not safe when the declaration is replaced
 // attempt to indicate that by requiring that Z is context
+// no optional static/extern for isos
 Declaration
 @ decl_init @
 type T;
 context identifier Z;
 @@
 T Z; => T Z = ...;
+
+Declaration
+@ decl_init @
+type T;
+context identifier Z;
+@@
+extern T Z; => extern T Z = ...;
+
+Declaration
+@ decl_init @
+type T;
+context identifier Z;
+@@
+static T Z; => static T Z = ...;
 
 // ---------------------------------------------------------------------------
 // Branch (or compound) isomorphisms
