@@ -172,6 +172,7 @@ let id_tokens lexbuf =
   | "on" when in_rule_name      -> check_context_linetype s; TOn
   | "ever" when in_rule_name    -> check_context_linetype s; TEver
   | "never" when in_rule_name   -> check_context_linetype s; TNever
+  | "exists" when in_rule_name   -> check_context_linetype s; TExists
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype

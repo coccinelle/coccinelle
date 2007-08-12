@@ -478,10 +478,10 @@ let astfvs metavars bound =
 let collect_astfvs rules =
   let rec loop bound = function
       [] -> []
-    | (metavars,(nm,deps,drops,minirules))::rules ->
+    | (metavars,(nm,rule_info,minirules))::rules ->
 	let bound =
 	  Common.minus_set bound (List.map Ast.get_meta_name metavars) in
-	(nm,deps,drops,
+	(nm,rule_info,
 	 (List.map (astfvs metavars bound).V.rebuilder_top_level minirules))::
 	(loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
@@ -501,7 +501,7 @@ their point of definition. *)
 let collect_top_level_used_after metavar_rule_list =
   let (used_after,used_after_lists) =
     List.fold_right
-      (function (metavar_list,(name,dependencies,drops,rule)) ->
+      (function (metavar_list,(name,rule_info,rule)) ->
 	function (used_after,used_after_lists) ->
 	  let locally_defined = List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
@@ -549,7 +549,7 @@ let collect_local_used_after metavars minirules used_after =
 let collect_used_after metavar_rule_list =
   let used_after_lists = collect_top_level_used_after metavar_rule_list in
   List.map2
-    (function (metavars,(name,dependencies,drops,minirules)) ->
+    (function (metavars,(name,rule_info,minirules)) ->
       function used_after ->
 	collect_local_used_after metavars minirules used_after)
     metavar_rule_list used_after_lists
@@ -563,9 +563,9 @@ let free_vars rules =
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
   let new_rules =
     List.map2
-      (function (mv,(nm,dep,drop,r)) ->
+      (function (mv,(nm,rule_info,r)) ->
 	function ua ->
-	  (nm,dep,drop,classify_variables mv r (List.concat ua)))
+	  (nm,rule_info,classify_variables mv r (List.concat ua)))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
   (*List.iter

@@ -665,6 +665,7 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
+  | Ast.WhenAny -> print_string "   WHEN ANY"
 
 and case_line arity c =
   match Ast.unwrap c with
@@ -732,8 +733,7 @@ let _ =
     | Ast.StatementTag(x) -> statement "" x
     | Ast.CaseLineTag(x) -> case_line "" x
     | Ast.ConstVolTag(x) -> const_vol x
-    | Ast.Token(x,Some info) ->
-	print_string_befaft print_string x info
+    | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
@@ -751,18 +751,18 @@ let rec dep in_and = function
   | Ast.EverDep(s) -> print_string "ever "; print_string s
   | Ast.NeverDep(s) -> print_string "never "; print_string s
   | Ast.AndDep(s1,s2) ->
-      let print_and _ = dep true s1; print_string " && "; dep true s1 in
+      let print_and _ = dep true s1; print_string " && "; dep true s2 in
       if in_and
       then print_and ()
       else (print_string "("; print_and(); print_string ")")
   | Ast.OrDep(s1,s2) ->
-      let print_or _ = dep false s1; print_string " || "; dep false s1 in
+      let print_or _ = dep false s1; print_string " || "; dep false s2 in
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
   | Ast.NoDep -> failwith "not possible"
 
-let unparse (nm,deps,drops,x) =
+let unparse (nm,(deps,drops,exists),x) =
   print_string "@@";
   force_newline();
   print_string nm;

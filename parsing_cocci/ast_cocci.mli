@@ -398,6 +398,7 @@ and base_statement =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
+  | WhenAny
 
 and dots_whencode =
     WParen of rule_elem * meta_name (*pren_var*)
@@ -429,7 +430,8 @@ and base_top_level =
 and top_level = base_top_level wrap
 
 and rule =
-    string * dependency * string list (* dropped isos *) * top_level list
+    string * (dependency * string list (* dropped isos *) * exists) *
+      top_level list
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
@@ -475,9 +477,17 @@ and anything =
   | SgrepStartTag       of string
   | SgrepEndTag         of string
 
+(* --------------------------------------------------------------------- *)
+
+and exists = Exists | Forall
+
+(* --------------------------------------------------------------------- *)
+
 val mkToken : string -> anything
 
 val undots : 'a dots -> 'a list
+
+(* --------------------------------------------------------------------- *)
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a

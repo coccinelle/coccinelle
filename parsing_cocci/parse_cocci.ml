@@ -49,6 +49,7 @@ let token2c (tok,_) =
   | PC.TOn -> "on"
   | PC.TEver -> "ever"
   | PC.TNever -> "never"
+  | PC.TExists -> "exists"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -147,6 +148,7 @@ let token2c (tok,_) =
   | PC.TArob -> "@"
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
+  | PC.TAny(clt) -> "ANY"^(line_type2c clt)
   | PC.TEllipsis(clt) -> "..."^(line_type2c clt)
 (*
   | PC.TCircles(clt)  -> "ooo"^(line_type2c clt)
@@ -240,7 +242,8 @@ let plus_attachable (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
   | PC.TMetaLocalFunc(_,_,clt)
 
-  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
   | PC.TCPar(clt)
@@ -296,7 +299,8 @@ let get_clt (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,clt) 
   | PC.TMetaLocalFunc(_,_,clt)
 
-  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
   | PC.TCPar(clt)
@@ -405,6 +409,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaLocalFunc(a,b,_) -> (PC.TMetaLocalFunc(a,b,clt),x)
 
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
+  | PC.TAny(_) -> (PC.TAny(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
 (*
   | PC.TCircles(_)  -> (PC.TCircles(clt),x)
@@ -498,7 +503,7 @@ let split_token ((tok,_) as t) =
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
-  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever
+  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists
   | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -528,7 +533,7 @@ let split_token ((tok,_) as t) =
   | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TLineEnd(clt)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TLineEnd(clt)
   | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
 
   | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
@@ -755,7 +760,8 @@ let token2line (tok,_) =
   | PC.TMetaLocalFunc(_,_,clt) 
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TOEllipsis(clt) (* | PC.TCEllipsis(clt) | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
@@ -780,17 +786,21 @@ let token2line (tok,_) =
 let rec insert_line_end = function
     [] -> []
   | (((PC.TWhen(clt),q) as x)::xs) ->
-      x::(find_line_end (token2line x) clt q xs)
+      x::(find_line_end true (token2line x) clt q xs)
   | (((PC.TDefine(clt,_),q) as x)::xs)
   | (((PC.TDefineParam(clt,_,_),q) as x)::xs) ->
-      x::(find_line_end (token2line x) clt q xs)
+      x::(find_line_end false (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 
-and find_line_end line clt q = function
+and find_line_end inwhen line clt q = function
     (* don't know what 2nd component should be so just use the info of
        the When.  Also inherit - of when, if any *)
     [] -> [(PC.TLineEnd(clt),q)]
-  | x::xs when token2line x = line -> x :: (find_line_end line clt q xs)
+  | ((PC.TIdent("any",clt),a) as x)::xs when token2line x = line ->
+      (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TIdent("ANY",clt),a) as x)::xs when token2line x = line ->
+      (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
+  | x::xs when token2line x = line -> x :: (find_line_end inwhen line clt q xs)
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
 
 (* ----------------------------------------------------------------------- *)
@@ -1003,12 +1013,12 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     then
       let (_,tokens) = get_tokens [PC.TArob] in
       match parse_one "rule name" parse_fn file tokens with
-	(None,a,b,c) -> (mknm(),a,b,c)
-      |	(Some nm,a,b,c) ->
+	(None,a,b,c,d) -> (mknm(),a,b,c,d)
+      |	(Some nm,a,b,c,d) ->
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
-	  (nm,a,b,c)
-    else (mknm(),Ast_cocci.NoDep,[],[]) in
+	  (nm,a,b,c,d)
+    else (mknm(),Ast_cocci.NoDep,[],[],Ast_cocci.Forall) in
   Data.in_rule_name := false;
   name_res
 
@@ -1029,7 +1039,7 @@ let parse_iso file =
 	    (!Data.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
-	    let (rule_name,_,_,_) =
+	    let (rule_name,_,_,_,_) =
 	      get_rule_name PC.iso_rule_name starts_with_name get_tokens
 		file ("iso file "^file) in
 	    Ast0_cocci.rule_name := rule_name;
@@ -1109,7 +1119,7 @@ let parse file =
 	    parse_one "iso file names" PC.include_main file data in
 	  let rec loop old_metas starts_with_name =
 	    (!Data.init_rule)();
-	    let (rule_name,dependencies,iso,dropiso) =
+	    let (rule_name,dependencies,iso,dropiso,exists) =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
 	    Ast0_cocci.rule_name := rule_name;
@@ -1177,10 +1187,12 @@ let parse file =
 	    then
 	      let (minus_ress,plus_ress) =
 		loop (metavars@old_metas) starts_with_name in
-	      ((minus_res,metavars,(iso,dropiso,dependencies,rule_name))::
+	      ((minus_res,metavars,
+		(iso,dropiso,dependencies,rule_name,exists))::
 	       minus_ress,
 	       (plus_res, metavars)::plus_ress)
-	    else ([(minus_res,metavars,(iso,dropiso,dependencies,rule_name))],
+	    else ([(minus_res,metavars,
+		    (iso,dropiso,dependencies,rule_name,exists))],
 		  [(plus_res, metavars)]) in
 	  (iso_files, loop [] (x = PC.TArob))
       |	_ -> failwith "unexpected code before the first rule\n")
@@ -1202,7 +1214,8 @@ let process file isofile verbose =
   let parsed =
     List.concat
       (List.map2
-	 (function (minus, metavars, (iso,dropiso,dependencies,rule_name)) ->
+	 (function (minus, metavars,
+		    (iso,dropiso,dependencies,rule_name,exists)) ->
 	   function (plus, metavars) ->
 	     let chosen_isos =
 	       parse_iso_files global_isos
@@ -1247,6 +1260,7 @@ let process file isofile verbose =
 	       Function_prototypes.process rule_name dropped_isos minus plus in
 	     (* warning! context_neg side-effects its arguments! *)
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
+	     Type_infer.type_infer p;
 	     (if not !Flag.sgrep_mode2
 	     then Insert_plus.insert_plus m p);
 	     Type_infer.type_infer minus;
@@ -1257,7 +1271,8 @@ let process file isofile verbose =
 	       then minus
 	       else Single_statement.single_statement minus in
 	     let minus_ast =
-	       Ast0toast.ast0toast rule_name dependencies dropped_isos minus in
+	       Ast0toast.ast0toast rule_name dependencies dropped_isos exists
+		 minus in
 	     match function_prototypes with
 	       None -> [(extra_meta@metavars, minus_ast)]
 	     | Some mv_fp ->

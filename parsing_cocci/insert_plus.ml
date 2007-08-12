@@ -1,3 +1,7 @@
+(* The error message "no available token to attach to" often comes in an
+argument list of unbounded length.  In this case, one should move a comma so
+that there is a comma after the + code. *)
+
 (* Start at all of the corresponding BindContext nodes in the minus and
 plus trees, and traverse their children.  We take the same strategy as
 before: collect the list of minus/context nodes/tokens and the list of plus
@@ -478,6 +482,9 @@ line of n is more than one less than the starting line of n+1. *)
 let logstart info = info.Ast0.logical_start
 let logend info = info.Ast0.logical_end
 
+let redo info start finish =
+  {{info with Ast0.logical_start = start} with Ast0.logical_end = finish}
+
 let rec find_neighbors (index,l) :
     int * (Ast0.info * (Ast.anything list list)) list =
   let rec loop = function
@@ -488,16 +495,21 @@ let rec find_neighbors (index,l) :
 	    let finish1 = logend i in
 	    let start2 = logstart i1 in
 	    if finish1 = start2
-	    then ((i,(x::x1::rest_inner))::rest_middle)::rest_outer
+	    then
+	      ((redo i (logstart i) (logend i1),(x::x1::rest_inner))
+	       ::rest_middle)
+	      ::rest_outer
 	    else if finish1 + 1 = start2
 	    then ((i,[x])::(i1,(x1::rest_inner))::rest_middle)::rest_outer
 	    else [(i,[x])]::((i1,(x1::rest_inner))::rest_middle)::rest_outer
 	| _ -> [[(i,[x])]]) (* rest must be [] *) in
   let res =
     List.map
-      (function
-	  ((info,_)::_) as l -> (info,List.map (function (_,x) -> x) l)
-	| _ -> failwith "not possible")
+      (function l ->
+	let (start_info,_) = List.hd l in
+	let (end_info,_) = List.hd (List.rev l) in
+	(redo start_info (logstart start_info) (logend end_info),
+	 List.map (function (_,x) -> x) l))
       (loop l) in
   (index,res)
 
@@ -533,6 +545,8 @@ let less_than_start info1 info2 =
   info1.Ast0.logical_end < info2.Ast0.logical_start
 let less_than_end info1 info2 =
   info1.Ast0.logical_end < info2.Ast0.logical_end
+let greater_than_end info1 info2 =
+  info1.Ast0.logical_start > info2.Ast0.logical_end
 let good_start info = info.Ast0.attachable_start
 let good_end info = info.Ast0.attachable_end
 
@@ -566,83 +580,106 @@ let predecl_code =
 
 let pr = Printf.sprintf
 
-let attachbefore (infop,p) m =
-  let p = List.rev p in
-  let pln = infop.Ast0.logical_start in
-  match m with
-    Ast0.MINUS(replacements) ->
-      (match !replacements with
-	([],ti) ->
-	  replacements := (p,{Ast0.tline_start=pln;Ast0.tline_end=pln})
-      |	(repl,ti) -> replacements := (p@repl,{ti with Ast0.tline_end=pln}))
-  | Ast0.CONTEXT(neighbors) ->
-      let (repl,ti1,ti2) = !neighbors in
-      let new_ti1 = {ti1 with Ast0.tline_end=pln} in
-      (match repl with
-	Ast.BEFORE(bef) -> neighbors := (Ast.BEFORE(p@bef),new_ti1,ti2)
-      |	Ast.AFTER(_) | Ast.BEFOREAFTER(_,_) ->
-	  failwith
-	    (Printf.sprintf "%d: attachbefore: should not occur"
-	       infop.Ast0.line_start)
-      |	Ast.NOTHING ->
-	  neighbors :=
-	    (Ast.BEFORE(p),{new_ti1 with Ast0.tline_start=pln},ti2))
-  | _ -> failwith "not possible for attachbefore"
+let insert thing thinginfo into intoinfo =
+  let get_last l = let l = List.rev l in (List.rev(List.tl l),List.hd l) in
+  let get_first l = (List.hd l,List.tl l) in
+  let thing_start = thinginfo.Ast0.logical_start in
+  let thing_end = thinginfo.Ast0.logical_end in
+  let thing_offset = thinginfo.Ast0.offset in
+  let into_start = intoinfo.Ast0.tline_start in
+  let into_end = intoinfo.Ast0.tline_end in
+  let into_left_offset = intoinfo.Ast0.left_offset in
+  let into_right_offset = intoinfo.Ast0.right_offset in
+  Printf.printf "thing start %d thing end %d into start %d into end %d\n"
+    thing_start thing_end into_start into_end;
+  if thing_end < into_start && thing_start < into_start
+  then (thing@into,
+	{{intoinfo with Ast0.tline_start = thing_start}
+	with Ast0.left_offset = thing_offset})
+  else if thing_end = into_start && thing_offset < into_left_offset
+  then
+    let (prev,last) = get_last thing in
+    let (first,rest) = get_first into in
+    (prev@[last@first]@rest,
+     {{intoinfo with Ast0.tline_start = thing_start}
+     with Ast0.left_offset = thing_offset})
+  else if thing_start > into_end && thing_end > into_end
+  then (into@thing,
+	{{intoinfo with Ast0.tline_end = thing_end}
+	with Ast0.right_offset = thing_offset})
+  else if thing_start = into_end && thing_offset > into_right_offset
+  then
+    let (first,rest) = get_first thing in
+    let (prev,last) = get_last into in
+    (prev@[last@first]@rest,
+     {{intoinfo with Ast0.tline_end = thing_end}
+     with Ast0.right_offset = thing_offset})
+  else
+    begin
+      Printf.printf "thing start %d thing end %d into start %d into end %d\n"
+	thing_start thing_end into_start into_end;
+      Printf.printf "thing offset %d left offset %d right offset %d\n"
+	thing_offset into_left_offset into_right_offset;
+      Pretty_print_cocci.print_anything "" thing;
+      failwith "can't figure out where to put the + code"
+    end
 
-let attachafter (infop,p) m =
-  let p = List.rev p in
-  let pln =  infop.Ast0.logical_start in
-  match m with
+let init thing info =
+  (thing,
+   {Ast0.tline_start = info.Ast0.logical_start;
+     Ast0.tline_end = info.Ast0.logical_end;
+     Ast0.left_offset = info.Ast0.offset;
+     Ast0.right_offset = info.Ast0.offset})
+
+let attachbefore (infop,p) = function
     Ast0.MINUS(replacements) ->
       (match !replacements with
-	([],ti) ->
-	  replacements := (p,{Ast0.tline_start=pln;Ast0.tline_end=pln})
-      |	(repl,ti) -> replacements := (p@repl,{ti with Ast0.tline_end=pln}))
+	([],ti) -> replacements := init p infop
+      |	(repl,ti) -> replacements := insert p infop repl ti)
   | Ast0.CONTEXT(neighbors) ->
       let (repl,ti1,ti2) = !neighbors in
-      let new_ti2 = {ti2 with Ast0.tline_end=pln} in
       (match repl with
 	Ast.BEFORE(bef) ->
-	  neighbors :=
-	    (Ast.BEFOREAFTER(bef,p),ti1,{new_ti2 with Ast0.tline_start=pln})
-      |	Ast.AFTER(aft) -> neighbors := (Ast.AFTER(p@aft),ti1,new_ti2)
-      | Ast.BEFOREAFTER(bef,aft) ->
-	  neighbors := (Ast.BEFOREAFTER(bef,p@aft),ti1,new_ti2)
-      |	Ast.NOTHING ->
-	  neighbors :=
-	    (Ast.AFTER(p),ti1,{new_ti2 with Ast0.tline_start=pln}))
-  | _ -> failwith "not possible for attachafter"
-
-let flip_before = function (* only flip if a CONTEXT node *)
-    Ast0.MINUS(replacements) -> () (* do nothing *)
-  | Ast0.CONTEXT(neighbors) ->
-      let (repl,ti1,ti2) = !neighbors in
-      (match repl with
-	Ast.BEFORE(bef) -> neighbors := (Ast.BEFORE(List.rev bef),ti1,ti2)
-      |	Ast.AFTER(_) | Ast.BEFOREAFTER(_,_) ->
-	  failwith "flip_before: should not occur"
-      |	Ast.NOTHING -> ())
-  | _ -> failwith "not possible for flip_before"
-    
-let flip_after = function (* flip for both CONTEXT and MINUS *)
-    Ast0.MINUS(replacements) ->
-      let (repl,ti) = !replacements in
-      replacements := (List.rev repl,ti)
-  | Ast0.CONTEXT(neighbors) ->
-      let (repl,ti1,ti2) = !neighbors in
-      (match repl with
-	Ast.BEFORE(bef) -> ()
-      |	Ast.AFTER(aft) -> neighbors := (Ast.AFTER(List.rev aft),ti1,ti2)
+	  let (bef,ti1) = insert p infop bef ti1 in
+	  neighbors := (Ast.BEFORE(bef),ti1,ti2)
+      |	Ast.AFTER(aft) -> 
+	  let (bef,ti1) = init p infop in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
       |	Ast.BEFOREAFTER(bef,aft) ->
-	  neighbors := (Ast.BEFOREAFTER(bef,List.rev aft),ti1,ti2)
-      |	Ast.NOTHING -> ())
-  | _ -> failwith "not possible for flip_after"
+	  let (bef,ti1) = insert p infop bef ti1 in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
+      |	Ast.NOTHING ->
+	  let (bef,ti1) = init p infop in
+	  neighbors := (Ast.BEFORE(bef),ti1,ti2))
+  | _ -> failwith "not possible for attachbefore"
+
+let attachafter (infop,p) = function
+    Ast0.MINUS(replacements) ->
+      (match !replacements with
+	([],ti) -> replacements := init p infop
+      |	(repl,ti) -> replacements := insert p infop repl ti)
+  | Ast0.CONTEXT(neighbors) ->
+      let (repl,ti1,ti2) = !neighbors in
+      (match repl with
+	Ast.BEFORE(bef) ->
+	  let (aft,ti2) = init p infop in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
+      |	Ast.AFTER(aft) -> 
+	  let (aft,ti2) = insert p infop aft ti2 in
+	  neighbors := (Ast.AFTER(aft),ti1,ti2)
+      |	Ast.BEFOREAFTER(bef,aft) ->
+	  let (aft,ti2) = insert p infop aft ti2 in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
+      |	Ast.NOTHING ->
+	  let (aft,ti2) = init p infop in
+	  neighbors := (Ast.AFTER(aft),ti1,ti2))
+  | _ -> failwith "not possible for attachbefore"
 
 let attach_all_before ps m =
-  List.iter (function x -> attachbefore x m) ps; flip_before m
+  List.iter (function x -> attachbefore x m) ps
 
 let attach_all_after ps m =
-  List.iter (function x -> attachafter x m) ps; flip_after m
+  List.iter (function x -> attachafter x m) ps
 
 let split_at_end info ps =
   let split_point =  info.Ast0.logical_end in
@@ -650,43 +687,68 @@ let split_at_end info ps =
     (function (info,_) -> info.Ast0.logical_end < split_point)
     ps
 
+let allminus = function
+    Ast0.MINUS(_) -> true
+  | _ -> false
+
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
-    [] -> let _ = flip_before m1 in ()
+    [] -> ()
   | (((infop,_) as p) :: ps) as all ->
-      if less_than_end infop infom1 (* account for trees *)
+      if less_than_start infop infom1 or
+	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then
 	if good_start infom1
 	then (attachbefore p m1; before_m1 x1 x2 rest ps)
 	else
 	  failwith
 	    (pr "%d: no available token to attach to" infop.Ast0.line_start)
-      else (flip_before m1; after_m1 x1 x2 rest all)
+      else after_m1 x1 x2 rest all
 
 and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
-    [] -> let _ = flip_after m1 in ()
+    [] -> ()
   | (((infop,pcode) as p) :: ps) as all ->
-      if less_than_start infop infom2
+      (* if the following is false, then some + code is stuck in the middle
+	 of some context code (m1).  could drop down to the token level.
+	 this might require adjustments in ast0toast as well, when + code on
+	 expressions is dropped down to + code on expressions.  it might
+	 also break some invariants on which iso depends, particularly on
+	 what it can infer from something being CONTEXT with no top-level
+	 modifications.  for the moment, we thus give an error, asking the
+	 user to rewrite the semantic patch. *)
+      if greater_than_end infop infom1
       then
-	if predecl_code pcode && good_end infom1 && decl f1
-	then (attachafter p m1; after_m1 x1 x2 rest ps)
-	else if predecl_code pcode && good_start infom2 && decl f2
-	then (flip_after m1; before_m2 x2 rest all)
-	else if top_code pcode && good_end infom1 && toplevel f1
-	then (attachafter p m1; after_m1 x1 x2 rest ps)
-	else if top_code pcode && good_start infom2 && toplevel f2
-	then (flip_after m1; before_m2 x2 rest all)
-	else if good_end infom1 && favored f1
-	then (attachafter p m1; after_m1 x1 x2 rest ps)
-	else if good_start infom2 && favored f2
-	then (flip_after m1; before_m2 x2 rest all)
-	else if good_end infom1
-	then (attachafter p m1; after_m1 x1 x2 rest ps)
-	else if good_start infom2
-	then (flip_after m1; before_m2 x2 rest all)
-	else
+	if less_than_start infop infom2
+	then
+	  if predecl_code pcode && good_end infom1 && decl f1
+	  then (attachafter p m1; after_m1 x1 x2 rest ps)
+	  else if predecl_code pcode && good_start infom2 && decl f2
+	  then before_m2 x2 rest all
+	  else if top_code pcode && good_end infom1 && toplevel f1
+	  then (attachafter p m1; after_m1 x1 x2 rest ps)
+	  else if top_code pcode && good_start infom2 && toplevel f2
+	  then before_m2 x2 rest all
+	  else if good_end infom1 && favored f1
+	  then (attachafter p m1; after_m1 x1 x2 rest ps)
+	  else if good_start infom2 && favored f2
+	  then before_m2 x2 rest all
+	  else if good_end infom1
+	  then (attachafter p m1; after_m1 x1 x2 rest ps)
+	  else if good_start infom2
+	  then before_m2 x2 rest all
+	  else
+	    failwith
+	      (pr "%d: no available token to attach to" infop.Ast0.line_start)
+	else after_m2 x2 rest all
+      else
+	begin
+	  Printf.printf "between: p start %d p end %d m1 start %d m1 end %d m2 start %d m2 end %d\n"
+	    infop.Ast0.line_start infop.Ast0.line_end
+	    infom1.Ast0.line_start infom1.Ast0.line_end
+	    infom2.Ast0.line_start infom2.Ast0.line_end;
+	  Pretty_print_cocci.print_anything "" pcode;
 	  failwith
-	    (pr "%d: no available token to attach to" infop.Ast0.line_start)
-      else (flip_after m1; after_m2 x2 rest all)
+	    "The semantic patch is structured in a way that may give bad results with isomorphisms.  Please try to rewrite it by moving + code out from -/context terms."
+	end
 
 and before_m2 ((f2,infom2,m2) as x2) rest
     (p : (Ast0.info * Ast.anything list list) list) =
@@ -714,22 +776,38 @@ and after_m2 ((f2,infom2,m2) as x2) rest
   | (m::ms,_) -> after_m1 x2 m ms p
 
 let merge_one : (minus_join_point * Ast0.info * 'a) list *
-    (Ast0.info * Ast.anything list list) list -> unit =
-  function
+    (Ast0.info * Ast.anything list list) list -> unit = function (m,p) ->
+  (*
+  Printf.printf "minus code\n";
+  List.iter
+    (function (_,info,_) ->
+      Printf.printf "start %d end %d\n" info.Ast0.logical_start
+	info.Ast0.logical_end)
+    m;
+  Printf.printf "plus code\n";
+  List.iter
+    (function (info,p) ->
+      Printf.printf "start %d end %d\n" info.Ast0.logical_start
+	info.Ast0.logical_end;
+      Pretty_print_cocci.print_anything "" p;
+      Format.print_newline())
+    p;
+  *)
+  match (m,p) with
     (_,[]) -> ()
   | (m1::m2::restm,p) -> before_m1 m1 m2 restm p
   | ([m],p) -> before_m2 m [] p
   | ([],_) -> failwith "minus tree ran out before the plus tree"
 
 let merge minus_list plus_list =
-(*
+  (*
   Printf.printf "minus list %s\n"
     (String.concat " "
        (List.map (function (x,_) -> string_of_int x) minus_list));
   Printf.printf "plus list %s\n"
     (String.concat " "
        (List.map (function (x,_) -> string_of_int x) plus_list));
-*)
+  *)
   List.iter
     (function (index,minus_info) ->
       let plus_info = List.assoc index plus_list in

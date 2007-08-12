@@ -408,6 +408,9 @@ and base_statement =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
+  (* The following removes the shortest path constraint.  It can be used
+     with other when modifiers *)
+  | WhenAny
 
 (* only used with asttoctl *)
 and dots_whencode =
@@ -440,8 +443,8 @@ and base_top_level =
 and top_level = base_top_level wrap
 
 and rule =
-    string (* name *) * dependency * string list (* dropped isos *) *
-      top_level list
+    string (* name *) * (dependency * string list (* dropped isos *) * exists)
+      * top_level list
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
@@ -486,6 +489,12 @@ and anything =
   | ParamTag            of parameterTypeDef
   | SgrepStartTag       of string
   | SgrepEndTag         of string
+
+(* --------------------------------------------------------------------- *)
+
+and exists = Exists | Forall
+
+(* --------------------------------------------------------------------- *)
 
 let mkToken x = Token (x,None)
 

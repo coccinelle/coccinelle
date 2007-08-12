@@ -39,7 +39,7 @@ let mcodekind brackets fn x info = function
 	else
 	  match brackets with
 	    Some x -> ("[",("]^"^(string_of_int x))) | None -> ("","") in
-      let (plus_streams,_,_) = !plus_streams in
+      let (plus_streams,t1,t2) = !plus_streams in
       U.print_around
 	(function x ->
 	  print_string lb; fn x; print_string rb)
@@ -518,6 +518,7 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast0.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
+  | Ast0.WhenAny -> print_string "   WHEN ANY"
 
 and case_line arity c =
   print_context c

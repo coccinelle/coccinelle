@@ -269,7 +269,7 @@ someone depends on it, and thus we try again with testfn as contains_modif.
 Alternatively, we could check that this rule is mentioned in some
 dependency, but that would be a little more work, and doesn't seem
 worthwhile. *)
-let asttomember (_,_,_,l) used_after =
+let asttomember (_,_,l) used_after =
   let process_one l =
     if debug
     then print_info l;

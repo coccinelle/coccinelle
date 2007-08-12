@@ -902,7 +902,8 @@ let match_maker checks_needed context_required whencode_allowed =
 				(add_dot_binding d (Ast0.DotsStmtTag wc))
 			  | Ast0.WhenAlways wc ->
 			      conjunct_bindings prev
-				(add_dot_binding d (Ast0.StmtTag wc)))
+				(add_dot_binding d (Ast0.StmtTag wc))
+			  | Ast0.WhenAny -> prev)
 		      (return true) wc
 		  else
 		    (Printf.printf
@@ -1531,8 +1532,9 @@ let merge_plus model_mcode e_mcode =
   | Ast0.CONTEXT(mc) ->
       (match e_mcode with
 	Ast0.CONTEXT(emc) ->
-	  let (mba,_,_) = !mc in
-	  let (eba,tb,ta) = !emc in
+	  (* keep the logical line info as in the model *)
+	  let (mba,tb,ta) = !mc in
+	  let (eba,_,_) = !emc in
 	  (* merging may be required when a term is replaced by a subterm *)
 	  let merged =
 	    match (mba,eba) with

@@ -3,7 +3,9 @@
 
 type arity = OPT | UNIQUE | MULTI | NONE
 
-type token_info = { tline_start : int; tline_end : int }
+type token_info =
+    { tline_start : int; tline_end : int;
+      left_offset : int; right_offset : int }
 val default_token_info : token_info
 
 type mcodekind =
@@ -296,6 +298,7 @@ and fninfo =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
+  | WhenAny
 
 and statement = base_statement wrap
 

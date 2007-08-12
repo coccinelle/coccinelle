@@ -545,7 +545,7 @@ let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
     let (astcocci, _,_,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +>
-      List.hd +> (function (_,_,_,x) -> List.hd x) +> (function x ->
+      List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
 	match Ast_cocci.unwrap x with
 	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
 	| _ -> raise Not_found)

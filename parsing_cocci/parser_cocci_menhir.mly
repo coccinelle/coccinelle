@@ -21,7 +21,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator
-%token TUsing TDisable TExtends TDepends TOn TEver TNever
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists
 %token TNothing
 %token<string> TRuleName
 
@@ -51,7 +51,7 @@ module P = Parse_aux
 %token TArob TArobArob
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis
-%token <Data.clt> TWhen TLineEnd
+%token <Data.clt> TWhen TAny TLineEnd
 /*
 %token <Data.clt> TCircles TOCircles TCCircles
 %token <Data.clt> TStars TOStars TCStars
@@ -123,11 +123,13 @@ module P = Parse_aux
 %type <(string,string) Common.either list> include_main
 
 %start iso_rule_name
-%type <string option * Ast_cocci.dependency * string list * string list>
+%type <string option * Ast_cocci.dependency * string list * string list *
+  Ast_cocci.exists>
 iso_rule_name
 
 %start rule_name
-%type <string option * Ast_cocci.dependency * string list * string list>
+%type <string option * Ast_cocci.dependency * string list * string list *
+  Ast_cocci.exists>
 rule_name
 
 %start meta_main
@@ -168,19 +170,19 @@ iso_rule_name:
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (Some n,Ast.NoDep,[],[]) }
+    (Some n,Ast.NoDep,[],[],Ast.Exists (*discarded*)) }
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
-    a=loption(disable) TArob
+    a=loption(disable) e=exists TArob
     { match nm with
       Some nm ->
 	let n = P.id2name nm in
 	(try let _ =  Hashtbl.find Data.all_metadecls n in
 	raise (Semantic_cocci.Semantic ("repeated rule name"))
 	with Not_found -> ());
-	(Some n,d,i,a)
-    | None -> (None,d,i,a) }
+	(Some n,d,i,a,e)
+    | None -> (None,d,i,a,e) }
 
 extends:
   /* empty */                                     { () }
@@ -208,6 +210,10 @@ choose_iso:
 
 disable:
   TDisable separated_nonempty_list(TComma,pure_ident) { List.map P.id2name $2 }
+
+exists:
+  TExists { Ast.Exists }
+|         { Ast.Forall }
 
 include_main:
   list(incl) TArob     { $1 }
@@ -1534,6 +1540,7 @@ dots_when(dotter,when_grammar,simple_when_grammar):
 whens(when_grammar,simple_when_grammar):
     TWhen TNotEq w=when_grammar TLineEnd { Ast0.WhenNot w }
   | TWhen TEq w=simple_when_grammar TLineEnd { Ast0.WhenAlways w }
+  | TWhen TAny TLineEnd { Ast0.WhenAny }
 
 // used in NEST
 no_dot_start_end(grammar,dotter):

@@ -19,9 +19,9 @@ let get_minus_constants bind =
   let mcode _ _ = option_default in
 
   (* if one branch gives no information, then we have to take anything *)
-  let disj_union_all l =
+  let disj_union_all keeper l =
     if List.exists (function [] -> true | _ -> false) l
-    then []
+    then keeper [] (Common.union_all l)
     else Common.union_all l in
 
   (* need special cases for everything with a disj, because the bind above
@@ -53,7 +53,7 @@ let get_minus_constants bind =
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
-	disj_union_all (List.map r.V.combiner_expression exps)
+	disj_union_all bind (List.map r.V.combiner_expression exps)
     | Ast.OptExp(_) -> []
     | _ -> k e in
 
@@ -71,14 +71,14 @@ let get_minus_constants bind =
   let fullType r k e =
     match Ast.unwrap e with
       Ast.DisjType(types) ->
-	disj_union_all (List.map r.V.combiner_fullType types)
+	disj_union_all bind (List.map r.V.combiner_fullType types)
     | Ast.OptType(_) -> []
     | _ -> k e in
 
   let declaration r k e =
     match Ast.unwrap e with
       Ast.DisjDecl(decls) ->
-	disj_union_all (List.map r.V.combiner_declaration decls)
+	disj_union_all bind (List.map r.V.combiner_declaration decls)
     | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
     | Ast.OptDecl(_) -> []
     | _ -> k e in
@@ -101,13 +101,13 @@ let get_minus_constants bind =
   let rule_elem r k e =
     match Ast.unwrap e with
       Ast.DisjRuleElem(res) ->
-	disj_union_all (List.map r.V.combiner_rule_elem res)
+	disj_union_all bind (List.map r.V.combiner_rule_elem res)
     | _ -> k e in
 
   let statement r k e =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
-	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
+	disj_union_all bind (List.map r.V.combiner_statement_dots stmt_dots)
     | Ast.OptStm(_) -> []
     | _ -> k e in
 
@@ -158,7 +158,16 @@ let rule_fn tls in_plus =
       function cur ->
 	let minuses =
 	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
+	let all_minuses =
+	  (get_minus_constants keep_all_bind).V.combiner_top_level cur in
 	let plusses = get_plus_constants.V.combiner_top_level cur in
+	(* the following is for eg -foo(2) +foo(x) then in another rule
+	   -foo(10); don't want to consider that foo is guaranteed to be
+	   created by the rule.  not sure this works completely: what if foo is
+	   in both - and +, but in an or, so the cases aren't related?
+	   not sure this whole thing is a good idea.  how do we know that
+	   something that is only in plus is really freshly created? *)
+	let plusses = Common.minus_set plusses all_minuses in
 	let new_minuses = Common.minus_set minuses in_plus in
 	let new_plusses = Common.union_set plusses in_plus in
 	(Common.union_set new_minuses rest_info, new_plusses))
@@ -168,7 +177,7 @@ let get_constants rules =
   let (info,_) =
     List.fold_left
       (function (rest_info,in_plus) ->
-	function (nm,dep,drop,cur) ->
+	function (nm,rule_info,cur) ->
 	  let (cur_info,cur_plus) = rule_fn cur in_plus in
 	  (Common.union_set cur_info rest_info,cur_plus))
       ([],[]) rules in

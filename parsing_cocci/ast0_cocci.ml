@@ -5,8 +5,11 @@ module Ast = Ast_cocci
 
 type arity = OPT | UNIQUE | MULTI | NONE
 
-type token_info = { tline_start : int; tline_end : int }
-let default_token_info = { tline_start = -1; tline_end = -1 }
+type token_info =
+    { tline_start : int; tline_end : int;
+      left_offset : int; right_offset : int }
+let default_token_info =
+  { tline_start = -1; tline_end = -1; left_offset = -1; right_offset = -1 }
 
 (* MIXED is like CONTEXT, since sometimes MIXED things have to revert to
 CONTEXT - see insert_plus.ml *)
@@ -301,6 +304,7 @@ and fninfo =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
+  | WhenAny
 
 and statement = base_statement wrap
 

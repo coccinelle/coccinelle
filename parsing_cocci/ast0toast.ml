@@ -705,6 +705,7 @@ and statement s =
   and whencode notfn alwaysfn = function
       Ast0.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
+    | Ast0.WhenAny -> Ast.WhenAny
 
   and process_list seqible = function
       [] -> []
@@ -814,6 +815,6 @@ let ast0toast_toplevel x =
   inline_mcodes.V0.combiner_top_level x;
   top_level x
 
-let ast0toast name deps dropped x =
+let ast0toast name deps dropped exists x =
   List.iter inline_mcodes.V0.combiner_top_level x;
-  (name,deps,dropped,List.map top_level x)
+  (name,(deps,dropped,exists),List.map top_level x)

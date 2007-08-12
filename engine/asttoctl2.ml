@@ -3,6 +3,8 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
 
+let exists = ref false
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 module CTL = Ast_ctl
@@ -64,7 +66,7 @@ let ctl_ax s = function
     CTL.True -> CTL.True
   | CTL.False -> CTL.False
   | x ->
-      if !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
+      if !exists
       then CTL.EX(CTL.FORWARD,x)
       else CTL.AX(CTL.FORWARD,s,x)
 
@@ -101,8 +103,7 @@ let ctl_ag s = function
   | x -> CTL.AG(CTL.FORWARD,s,x)
 
 let ctl_au s x y =
-  let sgrep = !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2 in
-  match (x,sgrep) with
+  match (x,!exists) with
     (CTL.True,true) -> CTL.EF(CTL.FORWARD,y)
   | (CTL.True,false) -> CTL.AF(CTL.FORWARD,s,y)
   | (_,true) -> CTL.EU(CTL.FORWARD,x,y)
@@ -447,7 +448,8 @@ and get_before_whencode wc =
   List.map
     (function
 	Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
-      | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w)
+      | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w
+      |	Ast.WhenAny -> Ast.WhenAny)
     wc
 
 and get_before_e s a =
@@ -567,7 +569,8 @@ and get_after_whencode a wc =
   List.map
     (function
 	Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
-      | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w)
+      | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w
+      |	Ast.WhenAny -> Ast.WhenAny)
     wc
 
 and get_after_e s a =
@@ -1031,17 +1034,20 @@ let dots_au label s wrapcode x seq_after y =
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
   let stop_early =
-    ctl_or (aftpred label)
-      (quantify [lv]
-	 (ctl_and CTL.NONSTRICT
-	    (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-	    (ctl_au CTL.NONSTRICT preflabelpred
-	       (ctl_and CTL.NONSTRICT preflabelpred
-		  (ctl_or (retpred None)
-		     (ctl_or matchcontinue
-			(ctl_and CTL.NONSTRICT
-			   (ctl_or matchgoto matchbreak)
-			   (ctl_ag s (ctl_not seq_after))))))))) in
+    if !exists
+    then CTL.False
+    else
+      ctl_or (aftpred label)
+	(quantify [lv]
+	   (ctl_and CTL.NONSTRICT
+	      (ctl_and CTL.NONSTRICT (truepred label) labelpred)
+	      (ctl_au CTL.NONSTRICT preflabelpred
+		 (ctl_and CTL.NONSTRICT preflabelpred
+		    (ctl_or (retpred None)
+		       (ctl_or matchcontinue
+			  (ctl_and CTL.NONSTRICT
+			     (ctl_or matchgoto matchbreak)
+			     (ctl_ag s (ctl_not seq_after))))))))) in
   ctl_au s x (ctl_or y stop_early)
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
@@ -1050,7 +1056,14 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   (* proces bef_aft *)
   let shortest l =
     List.fold_left ctl_or_fl CTL.False (List.map process_bef_aft l) in
-  let bef_aft = shortest (Common.union_set bef aft) (* to be negated *) in
+  let bef_aft = (* to be negated *)
+    try
+      let _ =
+	List.find (function Ast.WhenAny -> true | _ -> false) whencodes in
+      CTL.False
+    with Not_found -> shortest (Common.union_set bef aft) in
+  (* the following is used when we find a goto, etc and consider accepting
+     without finding the rest of the pattern *)
   let aft = shortest aft in
   (* process whencode *)
   let whencodes =
@@ -1061,11 +1074,12 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	      Ast.WhenNot whencodes ->
 		(poswhen,ctl_or (statement_list whencodes) negwhen)
 	    | Ast.WhenAlways stm ->
-		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen))
+		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen)
+	    | Ast.WhenAny -> (poswhen,negwhen))
 	(CTL.True,bef_aft) (List.rev whencodes) in
     let poswhen = ctl_and_ns (label_pred_maker label) poswhen in
     let negwhen =
-      if !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
+      if !exists
       then
         (* add in After, because it's not part of the program *)
 	ctl_or (aftpred label) negwhen
@@ -1088,12 +1102,14 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       After f -> f
     | Guard f -> CTL.Uncheck f
     | End -> CTL.True
-    | Tail ->
+    | Tail -> endpred label
+	  (* was the following, but not clear why sgrep should allow
+	     incomplete patterns
 	let exit = endpred label in
 	let errorexit = exitpred label in
-	if !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
+	if !exists
 	then ctl_or exit errorexit (* end anywhere *)
-	else exit (* end at the real end of the function *) in
+	else exit (* end at the real end of the function *) *) in
   if plus
   then do_plus_dots label guard wrapcode ornest nest whencodes aft ender
   else
@@ -1599,7 +1615,8 @@ and statement stmt after quantified label guard =
 				      let x =
 					statement_list sl Tail new_quantified4
 					  label true true in
-				      ctl_or prev x)
+				      ctl_or prev x
+				  | Ast.WhenAny -> CTL.False)
 			      CTL.False whencode))
 			 (List.fold_left
 			   (function prev ->
@@ -1609,7 +1626,8 @@ and statement stmt after quantified label guard =
 				     statement s Tail new_quantified4
 				       label true in
 				   ctl_and prev x
-			       | Ast.WhenNot(sl) -> prev)
+			       | Ast.WhenNot(sl) -> prev
+			       | Ast.WhenAny -> CTL.True)
 			   CTL.True whencode) in
 		    ctl_au leftarg (make_match stripped_rbrace)]
 	| None ->
@@ -1748,16 +1766,23 @@ let top_level ua t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctl (name,_,_,l) used_after =
+let asttoctl (name,(_,_,exists_flag),l) used_after =
   letctr := 0;
   labelctr := 0;
+  (if exists_flag = Ast.Exists or
+    !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
+  then exists := true
+  else exists := false);
+
   let (l,used_after) =
     List.split
       (List.filter
 	 (function (t,_) ->
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
 	 (List.combine l used_after)) in
-  List.map2 top_level used_after l
+  let res = List.map2 top_level used_after l in
+  exists := false;
+  res
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

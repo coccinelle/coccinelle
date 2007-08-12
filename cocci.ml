@@ -303,7 +303,7 @@ let sp_contain_typed_metavar toplevel_list_list =
   in
   toplevel_list_list +> 
     List.exists
-    (function (nm,deps,drops,rule) ->
+    (function (nm,_,rule) ->
       (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
 
@@ -490,7 +490,7 @@ let prepare_cocci ctls free_var_lists used_after_lists astcocci =
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
 
-      let (rulename, dependencies, dropped_isos, restast) = ast in
+      let (rulename, (dependencies, dropped_isos, _), restast) = ast in
       { 
         ctl = List.hd ctl_toplevel_list;
         ast_rule = ast;
@@ -707,7 +707,12 @@ let rec bigloop2 rs ccs =
 	      begin
 		if !Flag.show_misc
 		then
-		  pr2 ("dependencies for rule "^r.rulename^" not satisfied");
+		  begin
+		    pr2
+		      ("dependencies for rule "^r.rulename^" not satisfied:");
+		    print_dependencies rules_that_have_matched
+		      !rules_that_have_ever_matched r.dependencies
+		  end;
 		(cache,
 		 Common.union_set newes
 		   [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
@@ -804,6 +809,36 @@ and interpret_dependencies local global = function
       (interpret_dependencies local global s1) or
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
+
+and print_dependencies local global =
+  let seen = ref [] in
+  let rec loop = function
+      Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
+	if not (List.mem s !seen)
+	then
+	  begin
+	    if List.mem s local
+	    then pr2 (s^" satisfied")
+	    else pr2 (s^" not satisfied");
+	    seen := s :: !seen
+	  end 
+    | Ast_cocci.EverDep s | Ast_cocci.NeverDep s ->
+	if not (List.mem s !seen)
+	then
+	  begin
+	    if List.mem s global
+	    then pr2 (s^" satisfied")
+	    else pr2 (s^" not satisfied");
+	    seen := s :: !seen
+	  end
+    | Ast_cocci.AndDep(s1,s2) ->
+	print_dependencies local global s1;
+	print_dependencies local global s2
+    | Ast_cocci.OrDep(s1,s2)  ->
+	print_dependencies local global s1;
+	print_dependencies local global s2
+    | Ast_cocci.NoDep -> () in
+  loop
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
