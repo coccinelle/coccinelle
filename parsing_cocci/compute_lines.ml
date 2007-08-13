@@ -304,7 +304,7 @@ and typeC t =
   | Ast0.BaseType(ty,None) as ut ->
       mkres t ut (promote_mcode ty) (promote_mcode ty)
   | Ast0.BaseType(ty,Some sgn) as ut ->
-      mkres t ut (promote_mcode ty) (promote_mcode sgn)
+      mkres t ut (promote_mcode sgn) (promote_mcode ty)
   | Ast0.ImplicitInt(sgn) as ut ->
       mkres t ut (promote_mcode sgn) (promote_mcode sgn)
   | Ast0.Pointer(ty,star) ->

@@ -781,14 +781,16 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   Printf.printf "minus code\n";
   List.iter
     (function (_,info,_) ->
-      Printf.printf "start %d end %d\n" info.Ast0.logical_start
-	info.Ast0.logical_end)
+      Printf.printf "start %d end %d real_start %d real_end %d\n"
+	info.Ast0.logical_start info.Ast0.logical_end
+	info.Ast0.line_start info.Ast0.line_end)
     m;
   Printf.printf "plus code\n";
   List.iter
     (function (info,p) ->
-      Printf.printf "start %d end %d\n" info.Ast0.logical_start
-	info.Ast0.logical_end;
+      Printf.printf "start %d end %d real_start %d real_end %d\n"
+	info.Ast0.logical_start info.Ast0.logical_end
+	info.Ast0.line_end info.Ast0.line_end;
       Pretty_print_cocci.print_anything "" p;
       Format.print_newline())
     p;
