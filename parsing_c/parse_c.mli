@@ -28,7 +28,8 @@ type parsing_stat = {
 
 
 (* This is the main function. It uses globals in Lexer_Parser and 
- * Parsing_hacks.
+ * Parsing_hacks. Especially Parsing_hacks._defs which often comes
+ * from a standard.h macro file.
  *)
 val parse_print_error_heuristic:  
   filename (*cfile*) -> (program2 * parsing_stat)

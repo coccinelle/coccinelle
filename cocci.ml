@@ -22,6 +22,29 @@ let cprogram_of_file file =
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 
+let cprogram_of_file_cached file = 
+  if not !Flag_cocci.use_cache then cprogram_of_file file 
+  else 
+  let need_no_changed_files = 
+    (* should use Sys.argv.(0), would be safer. *)
+    [Config.path ^ "/parsing_c/c_parser.cma";
+     (* we may also depend now on the semantic patch because 
+        the SP may use macro and so we will disable some of the
+        macro expansions from standard.h. 
+     *)
+     !Config.std_h;
+    ] 
+  in
+  let need_no_changed_variables = 
+    (* could add some of the flags of flag_parsing_c.ml *)
+    [] 
+  in
+  Common.cache_computation_robust 
+    file ".ast_raw" 
+    (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
+    (fun () -> cprogram_of_file file)
+
+
 let cfile_of_program program2_with_ppmethod outf = 
   Unparse_c.pp_program program2_with_ppmethod outf
 
@@ -329,8 +352,7 @@ let includes_to_parse xs =
               Some (Filename.concat dir (Common.join "/" xs))
           | Ast_c.NonLocal xs -> 
               if !Flag_cocci.all_includes ||
-	      Common.fileprefix (Common.last xs) =
-	      Common.fileprefix file
+	          Common.fileprefix (Common.last xs) = Common.fileprefix file
               then 
                 Some (Filename.concat !Flag_cocci.include_path 
                          (Common.join "/" xs))
@@ -342,6 +364,52 @@ let includes_to_parse xs =
   )
   +> List.concat
   +> Common.uniq
+
+let rec interpret_dependencies local global = function
+    Ast_cocci.Dep s      -> List.mem s local
+  | Ast_cocci.AntiDep s  -> not (List.mem s local)
+  | Ast_cocci.EverDep s  -> List.mem s global
+  | Ast_cocci.NeverDep s -> not (List.mem s global)
+  | Ast_cocci.AndDep(s1,s2) ->
+      (interpret_dependencies local global s1) &&
+      (interpret_dependencies local global s2)
+  | Ast_cocci.OrDep(s1,s2)  ->
+      (interpret_dependencies local global s1) or
+      (interpret_dependencies local global s2)
+  | Ast_cocci.NoDep -> true
+
+let rec print_dependencies local global =
+  let seen = ref [] in
+  let rec loop = function
+      Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
+	if not (List.mem s !seen)
+	then
+	  begin
+	    if List.mem s local
+	    then pr2 (s^" satisfied")
+	    else pr2 (s^" not satisfied");
+	    seen := s :: !seen
+	  end 
+    | Ast_cocci.EverDep s | Ast_cocci.NeverDep s ->
+	if not (List.mem s !seen)
+	then
+	  begin
+	    if List.mem s global
+	    then pr2 (s^" satisfied")
+	    else pr2 (s^" not satisfied");
+	    seen := s :: !seen
+	  end
+    | Ast_cocci.AndDep(s1,s2) ->
+	print_dependencies local global s1;
+	print_dependencies local global s2
+    | Ast_cocci.OrDep(s1,s2)  ->
+	print_dependencies local global s1;
+	print_dependencies local global s2
+    | Ast_cocci.NoDep -> () in
+  loop
+
+
+
 
 (* --------------------------------------------------------------------- *)
 (* #include relative position in the file *)
@@ -584,7 +652,7 @@ let rebuild_info_c_and_headers ccs =
 
 
 let prepare_c files = 
-  let cprograms = List.map cprogram_of_file files in
+  let cprograms = List.map cprogram_of_file_cached files in
   let includes = includes_to_parse (zip files cprograms) in
 
   (* todo?: may not be good to first have all the headers and then all the c *)
@@ -605,7 +673,7 @@ let prepare_c files =
           None 
         end
         else 
-          let h_cs = cprogram_of_file hpath in
+          let h_cs = cprogram_of_file_cached hpath in
           let info_h_cs = build_info_program h_cs !env in
           env := 
             if null info_h_cs
@@ -797,49 +865,6 @@ let rec bigloop2 rs ccs =
   end);
   !ccs (* return final C asts *)
 
-and interpret_dependencies local global = function
-    Ast_cocci.Dep s      -> List.mem s local
-  | Ast_cocci.AntiDep s  -> not (List.mem s local)
-  | Ast_cocci.EverDep s  -> List.mem s global
-  | Ast_cocci.NeverDep s -> not (List.mem s global)
-  | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_dependencies local global s1) &&
-      (interpret_dependencies local global s2)
-  | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global s1) or
-      (interpret_dependencies local global s2)
-  | Ast_cocci.NoDep -> true
-
-and print_dependencies local global =
-  let seen = ref [] in
-  let rec loop = function
-      Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
-	if not (List.mem s !seen)
-	then
-	  begin
-	    if List.mem s local
-	    then pr2 (s^" satisfied")
-	    else pr2 (s^" not satisfied");
-	    seen := s :: !seen
-	  end 
-    | Ast_cocci.EverDep s | Ast_cocci.NeverDep s ->
-	if not (List.mem s !seen)
-	then
-	  begin
-	    if List.mem s global
-	    then pr2 (s^" satisfied")
-	    else pr2 (s^" not satisfied");
-	    seen := s :: !seen
-	  end
-    | Ast_cocci.AndDep(s1,s2) ->
-	print_dependencies local global s1;
-	print_dependencies local global s2
-    | Ast_cocci.OrDep(s1,s2)  ->
-	print_dependencies local global s1;
-	print_dependencies local global s2
-    | Ast_cocci.NoDep -> () in
-  loop
-
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
 
@@ -984,24 +1009,25 @@ let full_engine a b =
 (* check duplicate from result of full_engine *)
 (*****************************************************************************)
 
-let check_duplicate_modif xs = 
-  let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs in
-  groups +> Common.map_filter (fun xs -> 
+let check_duplicate_modif2 xs = 
+  (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs *)
+  pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+  let groups = Common.group_assoc_bykey_eff xs in
+  groups +> Common.map_filter (fun (file, xs) -> 
     match xs with
     | [] -> raise Impossible
-    | [x] -> Some x
-    | x::xs -> 
-        let (file, res) = x in
+    | [res] -> Some (file, res)
+    | res::xs -> 
         match res with 
         | None -> 
-            if not (List.for_all (fun (file2, res2) -> res2 = None) xs)
+            if not (List.for_all (fun res2 -> res2 = None) xs)
             then begin
               pr2 ("different modification result for " ^ file);
               None
             end
-            else Some x
+            else Some (file, None)
         | Some res -> 
-            if not(List.for_all (fun (file2, res2) -> 
+            if not(List.for_all (fun res2 -> 
               match res2 with
               | None -> false
               | Some res2 -> 
@@ -1012,7 +1038,9 @@ let check_duplicate_modif xs =
               pr2 ("different modification result for " ^ file);
               None
             end
-            else Some x
+            else Some (file, Some res)
             
         
   )
+let check_duplicate_modif a = 
+  Common.profile_code "check_duplicate" (fun () -> check_duplicate_modif2 a)

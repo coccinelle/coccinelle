@@ -245,14 +245,31 @@ val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
 val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
+
+
 (* take file from which computation is done, extension, and function
  * and will compute the function only once and then save result in 
  * file ^ extension
  *)
-val cache_file : filename  -> string (* extension *) -> (unit -> 'a) -> 'a
+val cache_computation : 
+  filename  -> string (* extension *) -> (unit -> 'a) -> 'a
+
+(* a more robust version where describes the dependencies of the 
+ * computation so it will relaunch the computation in 'f' if needed. 
+ *)
+val cache_computation_robust :
+  filename -> 
+  string (* extension for marshalled object *) -> 
+  (filename list * 'x) -> 
+  string (* extension for marshalled dependencies *) -> 
+  (unit -> 'a) -> 
+  'a
+  
 
 
 val once : ('a -> unit) -> ('a -> unit)
+
+(* cf also the timeout function below that are control related too *)
 
 (*****************************************************************************)
 (* Error managment *)
@@ -302,7 +319,7 @@ val (=): int -> int -> bool
 
 
 
-
+(* And now basic types *)
 
 (*****************************************************************************)
 (* Bool *)
@@ -646,7 +663,7 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 
 
-
+(* And now collection like types *)
 
 (*****************************************************************************)
 (* List *)
@@ -678,6 +695,9 @@ val skipfirst : 'a -> 'a list -> 'a list
 val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
+
+(* use hash internally to not be in O(n2) *)
+val group_assoc_bykey_eff : ('a * 'b) list -> ('a * 'b list) list
 
 val splitAt : int -> 'a list -> 'a list * 'a list
 
@@ -964,6 +984,11 @@ val intintmap_string_of_t : 'a -> 'b -> string
 (* Hash *)
 (*****************************************************************************)
 
+(* note that Hashtbl keep old binding to a key so if want a hash
+ * of a list, then can use the Hashtbl as is. use Hashtbl.find_all then
+ * to get the list of bindings
+ *)
+
 val hcreate : unit -> ('a, 'b) Hashtbl.t
 val hadd : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
 val hmem : 'a -> ('a, 'b) Hashtbl.t -> bool
@@ -977,6 +1002,9 @@ val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
+
+
+val hkeys : ('a, 'b) Hashtbl.t -> 'a list 
 
 (*****************************************************************************)
 (* Hash sets *)
@@ -1073,7 +1101,7 @@ val is_singleton : 'a list -> bool
 
 
 
-
+(* And now misc functions *)
 
 (*****************************************************************************)
 (* Geometry (raytracer) *)
@@ -1175,6 +1203,7 @@ val error_messagebis : filename -> (string * int) -> int -> string
 (* Scope managment *)
 (*****************************************************************************)
 
+(* for example of use, see the code used in coccinelle *)
 type ('a, 'b) scoped_env = ('a, 'b) assoc list
 
 val lookup_env : 'a -> ('a, 'b) scoped_env -> 'b
@@ -1190,6 +1219,7 @@ val add_in_scope : ('a, 'b) scoped_env ref -> 'a * 'b -> unit
 
 
 
+(* for example of use, see the code used in coccinelle *)
 type ('a, 'b) scoped_h_env = {
   scoped_h : ('a, 'b) Hashtbl.t;
   scoped_list : ('a, 'b) assoc list;

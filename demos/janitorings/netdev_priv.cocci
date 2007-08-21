@@ -1,9 +1,9 @@
-@ rule1 @
+@ alloc disable plus_comm @
 type T;
-struct net_device *dev;
+expression E;
 @@
 
- dev = 
+(
 (
         alloc_netdev
 | 
@@ -24,6 +24,29 @@ struct net_device *dev;
         alloc_etherdev_mq
 )
    (sizeof(T), ...)
+|
+(
+        alloc_netdev
+| 
+        alloc_etherdev
+|
+        alloc_fcdev
+|
+        alloc_fddidev
+|
+        alloc_hippi_dev
+|
+        alloc_trdev
+|
+        alloc_ltalkdev
+|
+        alloc_irdadev
+| 
+        alloc_etherdev_mq
+)
+   (sizeof(T) + E, ...)
+)
+
 
 // if don't have the iso sizeof(T) => sizeof(E)
 // dev = alloc_netdev(sizeof(*x), ...)
@@ -34,7 +57,7 @@ struct net_device *dev;
 //> alloc_orinocodev
 
 
-@ rule1bis @
+@ danger @
 struct net_device *dev;
 expression E;
 @@
@@ -42,9 +65,18 @@ expression E;
 //+ DANGER
 
 
-@ rule2 depends on rule1 && !rule1bis  @
+//@ danger @
+//struct net_device dev;
+//expression E;
+//@@
+// dev.priv = E
+
+
+
+// TODO wrong !!! can have ((T) a)->field,  on peut pas remover le cast!
+@ rule1 depends on alloc && !danger  @
 struct net_device *dev;
-type rule1.T;
+type alloc.T;
 @@
 
 - (T*) dev->priv
@@ -53,7 +85,7 @@ type rule1.T;
 
 // the iso drop_cast is not enough because T* in the previous rule
 // can not be dropped. It's not a pure T.
-@ rule3 depends on rule1 && !rule1bis @
+@ rule2 depends on alloc && !danger @
 struct net_device *dev;
 @@
 

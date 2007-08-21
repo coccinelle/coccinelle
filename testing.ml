@@ -37,7 +37,6 @@ let testone x compare_with_expected_flag =
           
 
 (* ------------------------------------------------------------------------ *)
-let best_score_file = "/tmp/score_cocci_best.marshalled"
 let timeout_testall = 30
 
 let testall () =
@@ -121,7 +120,8 @@ let testall () =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
-    Common.regression_testing newscore best_score_file;
+    Common.regression_testing newscore 
+      (Filename.concat Config.path "tests/score_cocci_best.marshalled");
 
 
     pr2 "--------------------------------";
@@ -316,8 +316,6 @@ let compare_with_expected outfiles =
 
 let tmpfile = "/tmp/output.c" 
 
-
-
 let test_tokens_c file = 
   if not (file =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
@@ -376,7 +374,8 @@ let test_parse_gen xs dirmode ext =
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
     let ext = if ext = "c" then "" else ext in
     Common.regression_testing newscore 
-      ("/tmp/score_parsing__" ^str ^ def ^ ext ^ ".marshalled")
+      (Filename.concat Config.path 
+       ("parsing_c/tests/score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
   end
         
 
@@ -575,7 +574,7 @@ let one_ctl ctls = List.hd (List.hd ctls)
 (*****************************************************************************)
 
 let cprogram_of_file_cached file = 
-  Common.cache_file file ".ast_raw" (fun () -> cprogram_of_file file)
+  Common.cache_computation file ".ast_raw" (fun () -> cprogram_of_file file)
 
 let test_xxx xs = 
   let path = 

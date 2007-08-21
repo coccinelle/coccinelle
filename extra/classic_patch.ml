@@ -13,7 +13,7 @@ let parse_patch filename =
       assert(a =$= b);
       File (a, s, body)
     end
-    else failwith ("wrong line in patch:" ^ s)
+    else failwith ("wrong line in git diff:" ^ s)
   )
   
 

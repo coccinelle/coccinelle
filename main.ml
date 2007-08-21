@@ -3,6 +3,12 @@ open Common open Commonop
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
+
+(* In addition to flags that can be tweaked via -xxx options, cf the
+ * full list of options in "the spatch options" section, the spatch
+ * program also depends on external files, described in
+ * globals/config.ml *)
+
 let cocci_file = ref ""
 
 let output_file = ref ""
@@ -256,6 +262,9 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "-disable_once",     Arg.Set Common._disable_once, 
     "   to print more messages";
+
+    "-use_cache", Arg.Set Flag_cocci.use_cache, 
+    "   use .ast_raw pre-parsed cached C file";
   ];
 
 
@@ -448,6 +457,7 @@ let main () =
         then failwith "I need a cocci file,  use -sp_file <file>";
 
         let infiles = 
+          Common.profile_code "Main.infiles computation" (fun () -> 
           match !dir, !kbuild_info with
           | false, _ -> [x::xs]
           | true, "" -> 
@@ -460,9 +470,11 @@ let main () =
               let groups = Kbuild.files_in_dirs dirs info in
 
               groups +> List.map (function Kbuild.Group xs -> xs)
+          )
         in
 
         let outfiles = 
+          Common.profile_code "Main.outfiles computation" (fun () -> 
           infiles +> List.map (fun cfiles -> 
             pr2 ("HANDLING: " ^ (join " " cfiles));
             (* Unix.sleep 1; *)
@@ -477,43 +489,47 @@ let main () =
                   else raise e
             ))
           +> List.concat
+          )
         in
-	Ctlcocci_integration.print_bench();
+        Common.profile_code "Main.result analysis" (fun () -> 
 
-        let outfiles = Cocci.check_duplicate_modif outfiles in
-        
-        outfiles +> List.iter (fun (infile, outopt) -> 
-          outopt +> do_option (fun outfile -> 
-            if !inplace_modif
-            then begin
-              Common.command2 ("cp " ^ infile ^ " " ^ infile ^ ".cocci_orig");
-              Common.command2 ("cp " ^ outfile ^ " " ^ infile);
-            end;
-            if !outplace_modif
-            then Common.command2 ("cp " ^outfile^ " " ^ infile ^".cocci_res");
+	  Ctlcocci_integration.print_bench();
 
-            if !output_file = "" 
-            then begin
-              let tmpfile = "/tmp/"^Common.basename infile in
-              pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
-              Common.command2 ("cp "^outfile^" "^tmpfile);
-            end
+          let outfiles = Cocci.check_duplicate_modif outfiles in
+          
+          outfiles +> List.iter (fun (infile, outopt) -> 
+            outopt +> do_option (fun outfile -> 
+              if !inplace_modif
+              then begin
+                Common.command2 ("cp " ^infile ^ " " ^ infile ^ ".cocci_orig");
+                Common.command2 ("cp " ^ outfile ^ " " ^ infile);
+              end;
+              if !outplace_modif
+              then Common.command2 ("cp " ^outfile^ " " ^infile ^".cocci_res");
 
-          ));
-        if !output_file <> "" then
-          (match outfiles with 
-          | [infile, Some outfile] when infile = x && null xs -> 
-              Common.command2 ("cp " ^outfile^ " " ^ !output_file);
-          | [infile, None] when infile = x && null xs -> 
-              Common.command2 ("cp " ^infile^ " " ^ !output_file);
-          | _ -> 
-              failwith 
-                ("-o can not be applied because there is multiple " ^
-                "modified files");
-          );
+              if !output_file = "" 
+              then begin
+                let tmpfile = "/tmp/"^Common.basename infile in
+                pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
+                Common.command2 ("cp "^outfile^" "^tmpfile);
+              end
 
-        if !compare_with_expected
-        then Testing.compare_with_expected outfiles
+            ));
+          if !output_file <> "" then
+            (match outfiles with 
+            | [infile, Some outfile] when infile = x && null xs -> 
+                Common.command2 ("cp " ^outfile^ " " ^ !output_file);
+            | [infile, None] when infile = x && null xs -> 
+                Common.command2 ("cp " ^infile^ " " ^ !output_file);
+            | _ -> 
+                failwith 
+                  ("-o can not be applied because there is multiple " ^
+                      "modified files");
+            );
+          
+          if !compare_with_expected
+          then Testing.compare_with_expected outfiles
+        )
 
     (* --------------------------------------------------------- *)
     (* empty entry *)

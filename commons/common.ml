@@ -1556,11 +1556,11 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
     )
 
 
-let cache_file file ext_cache f = 
-  if not (lfile_exists file) 
+let cache_computation file ext_cache f = 
+  if not (Sys.file_exists file) 
   then failwith ("can't find: "  ^ file);
   let file_cache = (file ^ ext_cache) in
-  if lfile_exists file_cache && 
+  if Sys.file_exists file_cache && 
     filemtime file_cache >= filemtime file
   then get_value file_cache
   else begin
@@ -1568,6 +1568,39 @@ let cache_file file ext_cache f =
     write_value res file_cache;
     res
   end
+
+let cache_computation_robust2 
+ file ext_cache 
+ (need_no_changed_files, need_no_changed_variables) ext_depend
+ f = 
+  if not (Sys.file_exists file) 
+  then failwith ("can't find: "  ^ file);
+
+  let file_cache = (file ^ ext_cache) in
+  let dependencies_cache = (file ^ ext_depend) in
+
+  let dependencies = 
+    (* could do md5sum too *)
+    ((file::need_no_changed_files) +> List.map (fun f -> f, filemtime f), 
+    need_no_changed_variables) 
+  in
+
+  if Sys.file_exists dependencies_cache && 
+     get_value dependencies_cache = dependencies
+  then get_value file_cache
+  else begin 
+    pr2 ("cache computation recompute " ^ file);
+    let res = f () in
+    write_value dependencies dependencies_cache;
+    write_value res file_cache;
+    res
+  end
+
+let cache_computation_robust a b c d e =
+  profile_code "Common.cache_computation_robust" (fun () -> 
+    cache_computation_robust2 a b c d e)
+
+
 
 
 let glob pattern =
@@ -2532,6 +2565,7 @@ let hiter = Hashtbl.iter
 let hfold = Hashtbl.fold
 let hremove k h = Hashtbl.remove h k
 
+
 let hash_to_list h = 
   Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
   +> List.sort compare 
@@ -2542,6 +2576,14 @@ let hash_of_list xs =
     xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
     h
   end
+
+let _  =
+  let h = Hashtbl.create 101 in
+  Hashtbl.add h "toto" 1; 
+  Hashtbl.add h "toto" 1;
+  assert(hash_to_list h = ["toto",1; "toto",1])
+ 
+
 
 (*****************************************************************************)
 (* Hash sets *)
@@ -2570,6 +2612,8 @@ let hashset_to_set baseset h =
  h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs) 
 
 let hashset_to_list h = hash_to_list h +> List.map fst
+
+
 
 
 (*****************************************************************************)
@@ -3087,12 +3131,12 @@ let empty_score () = (Hashtbl.create 101 : score)
 
 let regression_testing newscore best_score_file = 
 
-  let bestscore = 
-    if not (lfile_exists best_score_file)
+  pr2 ("regression file: "^ best_score_file);
+  let (bestscore : score) = 
+    if not (Sys.file_exists best_score_file)
     then write_value (empty_score()) best_score_file;
     get_value best_score_file 
   in
-  
   let newbestscore = empty_score () in
 
   let allres = 
@@ -3261,6 +3305,39 @@ let add_in_scope_h x (k,v) =
         ((k,v)::(List.hd !x.scoped_list))::(List.tl !x.scoped_list);
     };
   end
+
+(*****************************************************************************)
+(* Postlude *)
+(*****************************************************************************)
+(* stuff put here cos of of forward definition limitation of ocaml *)
+
+let hkeys h = 
+  let hkey = Hashtbl.create 101 in
+  h +> Hashtbl.iter (fun k v -> Hashtbl.replace hkey k true);
+  hashset_to_list hkey
+
+
+
+
+let group_assoc_bykey_eff xs = 
+  let h = Hashtbl.create 101 in 
+  xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
+  let keys = hkeys h in
+  keys +> List.map (fun k -> k, Hashtbl.find_all h k)
+  
+
+let test_group_assoc xs = 
+  begin
+    let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
+    let xs = ("0", 2)::xs in
+(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a =$= b)  *)
+    let ys = xs +> group_assoc_bykey_eff 
+    in
+    pr2_gen ys;
+  end
+    
+
+
 
 (*****************************************************************************)
 (* Misc/test *)
