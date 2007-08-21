@@ -2,7 +2,7 @@
 // Prelude
 // ****************************************************************************
 
-/* this file contains:
+/* This file contains:
  *   - macros found in <.h>
  *   - macros found in .c, macros that cannot be parsed 
  *     in the future should be autodetected
@@ -130,7 +130,7 @@
 #define  __openfirmware
 
 // ----------------------------------------------------------------------------
-// String macro
+// String macros
 // ----------------------------------------------------------------------------
 
 /* string macro. normally handle quite well by mu lalr(k), but
@@ -186,7 +186,7 @@
 
 
 // ----------------------------------------------------------------------------
-// Alias keyword 
+// Alias keywords
 // ----------------------------------------------------------------------------
 // pb, false positive, can also be a #define cst and use as 'case CONST:'
 //#define CONST const
@@ -315,7 +315,7 @@ static const struct machine_desc __mach_desc_##_type	\
 
 
 // ----------------------------------------------------------------------------
-// Declare like macro (in structure def), or tricky Declare macro 
+// Declare like macros (in structure def), or tricky Declare macros
 // ----------------------------------------------------------------------------
 
 // include/asm-i386/pci.h
@@ -421,7 +421,7 @@ struct subsystem _name##_subsys = { \
 #define MPI_POINTER *
 
 // ----------------------------------------------------------------------------
-// Initializer array macro 
+// Initializer array macros
 // ----------------------------------------------------------------------------
 
 // drivers/net/wireless/bcm43xx/bcm43xx_wx.c
@@ -637,7 +637,7 @@ do {									\
 
 
 // ----------------------------------------------------------------------------
-// If like macro
+// If-like macros
 // ----------------------------------------------------------------------------
 
 // include/linux/lockd/debug.h

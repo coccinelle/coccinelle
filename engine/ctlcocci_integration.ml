@@ -90,7 +90,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
                   s --> Lib_engine.NormalMetaVal meta
                 ))))
 
-      | Lib_engine.InLoop,      F.TrueNode ->  [nodei, (p,[])]
+      | Lib_engine.InLoop,      F.InLoopNode ->  [nodei, (p,[])]
       | Lib_engine.TrueBranch , F.TrueNode ->  [nodei, (p,[])]
       | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
       | Lib_engine.After,       F.AfterNode -> [nodei, (p,[])]

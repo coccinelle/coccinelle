@@ -141,11 +141,17 @@ module XTRANS = struct
       then Sgrep.process_sgrep s2 mck
       else mck 
     in
+    (match mck, ib.Ast_c.mark with
+    | _,                  Ast_c.AbstractLineTok -> raise Impossible
+    | Ast_cocci.MINUS(_), Ast_c.ExpandedTok -> 
+        failwith ("try to delete an expanded token: " ^ s2.str)
+    | _ -> ()
+    );
 
     match (oldmcode,mck) with
     | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
-    | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
-
+    | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) 
+      ->
         cocciinforef := (mck, tin.binding);
         ib
 
@@ -156,7 +162,6 @@ module XTRANS = struct
           then pr2 "already tagged but with same mcode, so safe";
           ib
         end
-           
         else 
           if !Flag.sgrep_mode2
           then ib (* safe *)
@@ -407,7 +412,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
  fun rule_name dropped_isos xs cflow -> 
 
    let extra = { 
-     optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
+     optional_storage_iso   = not(List.mem "optional_storage" dropped_isos);
      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
      value_format_iso = not(List.mem "value_format" dropped_isos);
      current_rule_name = rule_name;

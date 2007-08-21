@@ -564,7 +564,7 @@ and vk_node = fun bigf node ->
     | (
         F.TopNode|F.EndNode|
         F.ErrorExit|F.Exit|F.Enter|
-        F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
+        F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
         F.Fake
       ) -> ()
 
@@ -1121,7 +1121,7 @@ and vk_node_s = fun bigf node ->
         (
           F.TopNode|F.EndNode|
           F.ErrorExit|F.Exit|F.Enter|
-          F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|
+          F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
           F.Fake
         ) as x) -> x
 

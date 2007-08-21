@@ -691,7 +691,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       let newi = !g +> add_node (WhileHeader (stmt, (e,ii))) lbl "while" in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode  lbl "[whiletrue]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[whiletrue]" in
       (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" in *)
       let newafter = !g +> add_node FallThroughNode lbl "[whilefall]" in
       let newfakeelse = 
@@ -749,7 +749,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       if not is_zero
       then begin
-        let newfakethen = !g +> add_node TrueNode lbl "[dowhiletrue]" in
+        let newfakethen = !g +> add_node InLoopNode lbl "[dowhiletrue]" in
         !g#add_arc ((taili, newfakethen), Direct); 
         !g#add_arc ((newfakethen, doi), Direct); 
       end;
@@ -778,7 +778,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newi = 
         !g+>add_node(ForHeader(stmt,((e1opt,e2opt,e3opt),ii))) lbl "for" in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode  lbl "[fortrue]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
       let newafter = !g +> add_node FallThroughNode lbl "[forfall]" in
       let newfakeelse = 
@@ -806,7 +806,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newi = 
         !g+>add_node(MacroIterHeader(stmt,((s,es),ii))) lbl "foreach" in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode  lbl "[fortrue]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
       let newafter = !g +> add_node FallThroughNode lbl "[foreachfall]" in
       let newfakeelse = 

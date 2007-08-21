@@ -12,7 +12,6 @@ LIBS=commons/commons.cma globals/globals.cma\
      engine/cocciengine.cma popl/popl.cma \
      extra/extra.cma
 
-#MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra tools
 MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra
 INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra
 
@@ -79,6 +78,12 @@ clean::
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
+.PHONY: tools
+
+tools:
+	$(MAKE) -C tools
+clean::
+	$(MAKE) -C tools clean
 
 ##############################################################################
 # Developer rules

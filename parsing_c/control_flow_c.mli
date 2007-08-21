@@ -71,6 +71,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   (* for ctl:  *)
   | TrueNode
   | FalseNode
+  | InLoopNode
   | AfterNode
   | FallThroughNode
   | ErrorExit

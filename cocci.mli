@@ -16,7 +16,7 @@ val full_engine :
  * same C file to multiple drivers because they share code, we can
  * modify multiple times the same file when use -dir. This check 
  * remove duplicates and check that the modification are consistent 
- * among the different drivers
+ * among the different drivers.
  *)
 
 val check_duplicate_modif : 

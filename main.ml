@@ -4,10 +4,11 @@ open Common open Commonop
 (* Flags *)
 (*****************************************************************************)
 
-(* In addition to flags that can be tweaked via -xxx options, cf the
- * full list of options in "the spatch options" section, the spatch
+(* In addition to flags that can be tweaked via -xxx options (cf the
+ * full list of options in "the spatch options" section), the spatch
  * program also depends on external files, described in
- * globals/config.ml *)
+ * globals/config.ml, mainly a standard.h and standard.iso file 
+ *)
 
 let cocci_file = ref ""
 

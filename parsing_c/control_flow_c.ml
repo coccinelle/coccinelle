@@ -230,6 +230,7 @@ type node = node1 * string
   (* for ctl:  *)
   | TrueNode
   | FalseNode
+  | InLoopNode (* almost equivalent to TrueNode but just for loops *)
 
   | AfterNode
   | FallThroughNode
@@ -333,6 +334,7 @@ let extract_fullstatement node =
   | CaseNode _
   | TrueNode
   | FalseNode
+  | InLoopNode
   | AfterNode
   | FallThroughNode
   | ErrorExit

@@ -26,20 +26,26 @@ open Common open Commonop
  * end of a construct. We use fakeInfo for that purpose.
  * To identify those cases I have added a fakestart/fakeend comment.
  * 
- * Concerning the mark, FakeTok are present only in ast and generated 
- * after parsing, OriginTok are both in ast and list of tokens,
- * ExpandedTok are both in ast and list of tokens, AbstractLineTok
- * are neither in ast nor in list of tokens but only in the '+'
- * of the mcode of some tokens.
- * 
  * convention: I often use 'ii' for the name of a list of info. 
  * 
  *)
 
 (* forunparser: *)
 
-type pos = int
-type mark_token = OriginTok | FakeTok | ExpandedTok | AbstractLineTok
+type pos = int (* position *)
+type mark_token = 
+  (* Present both in ast and list of tokens *)
+  | OriginTok 
+  (* Present only in ast and generated after parsing. Used mainly
+   * by Julia, to add stuff at virtual places, beginning of func or decl *)
+  | FakeTok   
+  (* Present both in ast and list of tokens.  *)
+  | ExpandedTok 
+  (* Present neither in ast nor in list of tokens
+   * but only in the '+' of the mcode of some tokens. Those kind of tokens
+   * are used to be able to use '=' to compare big ast portions.
+   *)
+  | AbstractLineTok  
 
 type info = { 
   pinfo : Common.parse_info;
