@@ -22,8 +22,11 @@ let testone x compare_with_expected_flag =
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
     let res = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
-    match res with
-    | [s, Some outfile] when s = cfile -> 
+    match Common.optionise (fun () -> List.assoc cfile res) with
+    | Some (Some outfile) -> 
+        if List.length res > 1 
+        then pr2 ("note that not just " ^ cfile ^ " was modified");
+
         if compare_with_expected_flag
         then 
           Compare_c.compare_default outfile expected_res 
@@ -32,7 +35,9 @@ let testone x compare_with_expected_flag =
         let tmpfile = "/tmp/"^Common.basename cfile in
         pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
         Common.command2 ("cp "^outfile^" "^tmpfile);
-    | _ -> pr2 "no modification on the input file or wrong file"
+
+    | Some None -> pr2 "no modification on the input file"
+    | None -> raise Impossible
   end
           
 
