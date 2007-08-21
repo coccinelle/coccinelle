@@ -325,6 +325,15 @@ let profile_diagnostic () =
   end
 
 
+let report_if_take_time timethreshold s f = 
+  let t = Unix.gettimeofday () in
+  let res = f () in
+  let t' = Unix.gettimeofday () in
+  if (t' -. t  > float_of_int timethreshold) 
+  then pr2 (sprintf "NOTE: this code takes more than: %ds %s" timethreshold s);
+  res
+
+
 (*****************************************************************************)
 (* Test *)
 (*****************************************************************************)

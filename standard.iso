@@ -30,6 +30,18 @@
 // ---------------------------------------------------------------------------
 // They are handled in engine (TODO).
 
+
+// ---------------------------------------------------------------------------
+// Value isomorphisms
+// ---------------------------------------------------------------------------
+
+// There is also equal_c_int in cocci_vs_c to dealing with other 
+// integer decimal/hexadecimal isomorphisms. 
+Expression
+@ zero_multiple_format @
+@@
+ 0 => '\0' => 0x0
+
 // ---------------------------------------------------------------------------
 // Iso-by-absence (optional qualifier, storage, sign, cast) isomorphisms
 // ---------------------------------------------------------------------------

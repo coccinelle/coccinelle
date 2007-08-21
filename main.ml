@@ -477,6 +477,7 @@ let main () =
           Common.profile_code "Main.outfiles computation" (fun () -> 
           infiles +> List.map (fun cfiles -> 
             pr2 ("HANDLING: " ^ (join " " cfiles));
+            Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
             (* Unix.sleep 1; *)
             (try Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
               with 
@@ -487,7 +488,7 @@ let main () =
                     [] (* *)
                   end 
                   else raise e
-            ))
+            )))
           +> List.concat
           )
         in

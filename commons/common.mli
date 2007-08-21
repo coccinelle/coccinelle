@@ -91,6 +91,8 @@ val profile : bool ref
 val profile_code : string -> (unit -> 'a) -> 'a
 val profile_diagnostic : unit -> unit
 
+val report_if_take_time : int -> string -> (unit -> 'a) -> 'a
+
 (*****************************************************************************)
 (* Test *)
 (*****************************************************************************)
