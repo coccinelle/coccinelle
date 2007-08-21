@@ -10,6 +10,7 @@ module F = Control_flow_c
 type xinfo = { 
   optional_storage_iso : bool;
   optional_qualifier_iso : bool;
+  value_format_iso : bool;
   current_rule_name : string; (* used for errors *)
 }
 
@@ -72,6 +73,9 @@ module XTRANS = struct
 
   let optional_qualifier_flag f = fun tin -> 
     f (tin.extra.optional_qualifier_iso) tin
+
+  let value_format_flag f = fun tin -> 
+    f (tin.extra.value_format_iso) tin
 
   let mode = Cocci_vs_c_3.TransformMode
 
@@ -405,6 +409,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
    let extra = { 
      optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
+     value_format_iso = not(List.mem "value_format" dropped_isos);
      current_rule_name = rule_name;
    } in
 

@@ -32,7 +32,7 @@ $(TARGET).byte: $(OBJS) $(LIBS)
 $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
 
-$(TARGET).cma: $(OBJS) $(LIBS)
+$(TARGET).cma: $(OBJS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)

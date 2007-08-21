@@ -9,6 +9,7 @@ open Common open Commonop
 type xinfo = { 
   optional_storage_iso : bool;
   optional_qualifier_iso : bool;
+  value_format_iso : bool;
 }
 
 module XMATCH = struct
@@ -315,6 +316,9 @@ module XMATCH = struct
   let optional_qualifier_flag f = fun tin -> 
     f (tin.extra.optional_qualifier_iso) tin
 
+  let value_format_flag f = fun tin -> 
+    f (tin.extra.value_format_iso) tin
+
 
 end
 
@@ -330,6 +334,7 @@ let match_re_node2 dropped_isos a b binding =
     XMATCH.extra = {
       optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
       optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
+      value_format_iso = not(List.mem "value_format" dropped_isos);
     };
     XMATCH.binding = binding;
   } in

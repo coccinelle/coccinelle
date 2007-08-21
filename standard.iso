@@ -2,6 +2,17 @@
 // Prelude 
 // ****************************************************************************
 
+// Note: some isomorphisms are handled in the engine directly because they
+// require special support. They can not be easily described with a 
+// XX <=> YY. But some of them have names, so they can be disabled, as for
+// any other isomorphism rule. That also means that those names can not
+// be used for regular isomorphism rule. Those reserved rule names are:
+//  - optional_storage
+//  - optional_qualifier
+//  - value_format 
+// See parse_cocci.ml, pattern.ml, transformation.ml.
+
+
 // Note: the order of the rules has some importance. As we don't do a fixpoint,
 // changing the order may impact the result. For instance, if we have
 //
@@ -15,6 +26,7 @@
 // Does the SP matches the C ? 
 //  - Yes if iso2 precedes iso1 in this file, 
 //  - No otherwise.
+
 
 // ****************************************************************************
 // Standard C isomorphisms

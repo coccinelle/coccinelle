@@ -99,7 +99,7 @@ let equal_c_int s1 s2 =
   try 
     int_of_string s1 = int_of_string s2
   with Failure("int_of_string") -> 
-    s1 = s2
+    s1 =$= s2
 
 
 
@@ -387,6 +387,7 @@ module type PARAM =
 
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
 
   end
@@ -566,6 +567,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
    * recurse on the string 
    *)
   | A.Constant (ia1), ((B.Constant (ib) , typ),ii) -> 
+      (* for everything except the String case where can have multi elems *)
       let do1 () = 
         let ib1 = tuple_of_list1 ii in 
         tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
@@ -574,13 +576,23 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             ((B.Constant (ib), typ),[ib1])
           ))
       in
-
       (match term ia1, ib with 
-      | A.Int x, B.Int y when equal_c_int x y -> do1 ()
+      | A.Int x, B.Int y -> 
+            X.value_format_flag (fun use_value_equivalence -> 
+              if use_value_equivalence 
+              then 
+                if equal_c_int x y
+                then do1()
+                else fail
+              else 
+                if x =$= y
+                then do1()
+                else fail
+            )
       | A.Char x, B.Char (y,_) when x =$= y  (* todo: use kind ? *)
-          -> do1 ()
+          -> do1()
       | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
-          -> do1 ()
+          -> do1()
 
       | A.String sa, B.String (sb,_kind) -> 
           (match ii with

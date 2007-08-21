@@ -131,8 +131,10 @@ module type PARAM =
 
     val all_bound : Ast_cocci.meta_name list -> tin -> bool
 
+
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
 
   end
