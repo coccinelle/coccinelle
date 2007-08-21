@@ -400,7 +400,6 @@ let main () =
           (Parse_c.parse_cpp_define_file !Config.std_h)
     ;
 
-    Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
 
@@ -421,6 +420,7 @@ let main () =
         Testing.test_regression_okfailed ()
 
     | x::xs when !test_okfailed -> 
+        (* do its own timeout on Flag_cocci.timeout internally *)
         Testing.test_okfailed !cocci_file (x::xs)
 
     (* --------------------------------------------------------- *)
@@ -478,6 +478,7 @@ let main () =
           Common.profile_code "Main.outfiles computation" (fun () -> 
           infiles +> List.map (fun cfiles -> 
             pr2 ("HANDLING: " ^ (join " " cfiles));
+            Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
             Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
             (* Unix.sleep 1; *)
             (try Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
@@ -489,7 +490,7 @@ let main () =
                     [] (* *)
                   end 
                   else raise e
-            )))
+            ))))
           +> List.concat
           )
         in
@@ -538,7 +539,6 @@ let main () =
     (* --------------------------------------------------------- *)
     | [] -> short_usage()
         
-   )
   ));
   end
 

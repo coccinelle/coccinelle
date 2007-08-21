@@ -1661,14 +1661,16 @@ let (with_open_infile: filename -> ((in_channel) -> 'a) -> 'a) = fun file f ->
 exception Timeout
 
 (* it seems that the toplevel block such signals, even with this explicit
-   command :( 
-let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigalrm]
-*)
+ *  command :( 
+ *  let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigalrm]
+ *)
 
 (* subtil: have to make sure that timeout is not intercepted before here, so 
  * avoid exn handle such as try (...) with _ -> cos timeout will not bubble up
  * enough. In such case, add a case before such as  
  * with Timeout -> raise Timeout | _ -> ... 
+ * 
+ * question: can we have a signal and so exn when in a exn handler ? 
  *)
 let timeout_function timeoutval = fun f -> 
   try 
@@ -1687,13 +1689,15 @@ let timeout_function timeoutval = fun f ->
   | e -> 
      (* subtil: important to disable the alarm before relaunching the exn,
       * otherwise the alarm is still running.
-      * robust?: and if alarm launch after the log (...) ? 
       * 
+      * robust?: and if alarm launched after the log (...) ? 
       * Maybe signals are disabled when process an exception handler ?
       *)
       begin 
         ignore(Unix.alarm 0);
-        (* log ("exn while in transaction (we abort too, even if ...) = " ^ Printexc.to_string e); *)
+        (* log ("exn while in transaction (we abort too, even if ...) = " ^
+           Printexc.to_string e); 
+        *)
         log "exn while in timeout_function";
         raise e
       end
@@ -1729,6 +1733,12 @@ exception UnixExit of int
 let exn_to_real_unixexit f = 
   try f() 
   with UnixExit x -> exit x
+
+
+
+
+
+
 
 (*****************************************************************************)
 (* List *)
