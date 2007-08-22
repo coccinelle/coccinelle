@@ -346,12 +346,14 @@ and statementbis =
  *)
 
 and declaration = 
-  | DeclList of (((string * initialiser option) wrap (* s = *) option) * 
-                 fullType * storage)
-                wrap2 (* , *) list wrap (* ; fakestart sto *)
+  | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
   | MacroDecl of (string * argument wrap2 list) wrap
 
+     and onedecl = 
+       ((string * initialiser option) wrap (* s = *) option) * 
+         fullType * 
+         storage
      and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern

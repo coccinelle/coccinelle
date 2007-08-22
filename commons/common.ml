@@ -1612,8 +1612,11 @@ let cache_computation_robust a b c d e =
 
 
 
+(* dont forget that cmd_to_list call bash and so pattern may contain
+ * '*' symbols that will be expanded, so can do  glob "*.c"
+ *)
 let glob pattern =
-  cmd_to_list ("find " ^ pattern)
+  cmd_to_list ("ls -1 " ^ pattern)
 
 
 

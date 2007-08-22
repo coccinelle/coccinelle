@@ -639,8 +639,14 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
       let newi = !g +> add_node node  lbl "case:" in
 
-      (match xi.ctx with
-      | SwitchInfo (startbrace, switchendi, _braces) -> 
+      (match Common.optionise (fun () -> 
+        (* old: xi.ctx *)
+        (xi.ctx::xi.ctx_stack) +> Common.find_some (function 
+        | SwitchInfo (a, b, c) -> Some (a, b, c)
+        | _ -> None
+        ))
+      with
+      | Some (startbrace, switchendi, _braces) -> 
           (* no need to attach to previous for the first case, cos would be
            * redundant. *)
           starti +> do_option (fun starti -> 
@@ -652,7 +658,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
           !g#add_arc ((startbrace, newcasenodei), Direct);
           !g#add_arc ((newcasenodei, newi), Direct);
-      | _ -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
+      | None -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
       );
       aux_statement (Some newi, xi_lbl) st
       
@@ -875,7 +881,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
            if x = Ast_c.Continue then
              (try 
                let (loopstarti, loopendi, braces) = 
-                 xi.ctx_stack +> find_some (function 
+                 xi.ctx_stack +> Common.find_some (function 
                    | LoopInfo (loopstarti, loopendi, braces) -> 
                        Some (loopstarti, loopendi, braces)
                    | _ -> None

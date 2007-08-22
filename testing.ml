@@ -9,7 +9,6 @@ open Common open Commonop
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
  * 
- * Note that I use standard.iso when, iso_file parameter is empty.
  * If want to test without iso, use -iso_file empty.iso option.
  *)
 let testone x compare_with_expected_flag = 
@@ -25,7 +24,7 @@ let testone x compare_with_expected_flag =
     match Common.optionise (fun () -> List.assoc cfile res) with
     | Some (Some outfile) -> 
         if List.length res > 1 
-        then pr2 ("note that not just " ^ cfile ^ " was modified");
+        then pr2 ("note that not just " ^ cfile ^ " was involved");
 
         if compare_with_expected_flag
         then 
@@ -34,7 +33,7 @@ let testone x compare_with_expected_flag =
           +> pr2;
         let tmpfile = "/tmp/"^Common.basename cfile in
         pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
-        Common.command2 ("cp "^outfile^" "^tmpfile);
+        Common.command2 ("mv "^outfile^" "^tmpfile);
 
     | Some None -> pr2 "no modification on the input file"
     | None -> raise Impossible
@@ -42,16 +41,15 @@ let testone x compare_with_expected_flag =
           
 
 (* ------------------------------------------------------------------------ *)
-let timeout_testall = 30
-
 let testall () =
 
   let newscore  = empty_score () in
 
   let expected_result_files = 
-    Common.readdir_to_file_list "tests/" +> List.filter (fun s -> 
-      s =~ ".*\\.res$" && Common.filesize ("tests/" ^ s) > 0
-    ) +> List.sort compare
+    Common.glob "tests/*.res" 
+    +> List.filter (fun f -> Common.filesize f > 0)
+    +> List.map Filename.basename
+    +> List.sort compare
   in
 
   begin
@@ -62,6 +60,8 @@ let testall () =
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
+
+      let timeout_testall = 30 in
 
       try (
         Common.timeout_function timeout_testall  (fun () -> 
@@ -157,10 +157,8 @@ let delete_previous_result_files infile =
     Common.command2 ("rm -f " ^ infile ^ t_to_s kind)
   )
 
-
+(* quite similar to compare_with_expected  below *)
 let test_okfailed cocci_file cfiles = 
-
-
   cfiles +> List.iter delete_previous_result_files;
 
   (* final_files contain the name of an output file (a .ok or .failed
@@ -205,7 +203,7 @@ let test_okfailed cocci_file cfiles =
               Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
             in
 
-            (* can detele more than the first delete_previous_result_files
+            (* can delete more than the first delete_previous_result_files
              * because here we can have more files than in cfiles, for instance
              * the header files
              *)
@@ -294,26 +292,50 @@ let test_regression_okfailed () =
   end
     
 
-
-
-
-
+(* ------------------------------------------------------------------------ *)
+(* quite similar to test_ok_failed. Maybe could factorize code *)
 let compare_with_expected outfiles =
-  raise Todo
-(*
+  pr2 "";
   outfiles +> List.iter (fun (infile, outopt) -> 
-    let base = Common.fileprefix infile in
-    let expected_res = base ^ ".res" in
-            let (correct, diffxs) = 
-              Compare_c.compare_default generated_file expected_res 
-            in
-            pr2 (Compare_c.compare_result_to_string (correct, diffxs));
-            if (List.length fullxs = 1)
-            then 
-*)
-  
-
-
+    let (dir, base, ext) = Common.dbe_of_filename infile in
+    let expected_suffix   = 
+      match ext with
+      | "c" -> "res"
+      | "h" -> "h.res"
+      | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
+    in
+    let expected_res =  
+      Common.filename_of_dbe  (dir, base, expected_suffix) in
+    let expected_res2 = 
+      Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
+    in
+    
+    match outopt, Common.lfile_exists expected_res with
+    | None, false -> ()
+    | Some outfile, false -> 
+        let s =("PB: input file " ^ infile ^ " modified but no .res") in
+        pr2 s
+    | x, true -> 
+        let outfile = 
+          match x with 
+          | Some outfile -> outfile 
+          | None -> infile 
+        in
+        let diff = Compare_c.compare_default outfile expected_res in
+        let s1 = (Compare_c.compare_result_to_string diff) in
+        if fst diff = Compare_c.Correct
+        then pr2_no_nl (infile ^ " " ^ s1)
+        else 
+          if Common.lfile_exists expected_res2
+          then begin
+            let diff = Compare_c.compare_default outfile expected_res2 in
+            let s2 = Compare_c.compare_result_to_string diff in
+            if fst diff = Compare_c.Correct
+            then pr2 (infile ^ " is spatchOK " ^ s2)
+            else pr2 (infile ^ " is failed " ^ s2)
+          end
+        else pr2 (infile ^ " is failed " ^ s1)
+  )
 
 (*****************************************************************************)
 (* Subsystem testing *)
