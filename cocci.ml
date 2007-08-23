@@ -23,26 +23,8 @@ let cprogram_of_file file =
   program2 
 
 let cprogram_of_file_cached file = 
-  if not !Flag_cocci.use_cache then cprogram_of_file file 
-  else 
-  let need_no_changed_files = 
-    (* should use Sys.argv.(0), would be safer. *)
-    [Config.path ^ "/parsing_c/c_parser.cma";
-     (* we may also depend now on the semantic patch because 
-        the SP may use macro and so we will disable some of the
-        macro expansions from standard.h. 
-     *)
-     !Config.std_h;
-    ] 
-  in
-  let need_no_changed_variables = 
-    (* could add some of the flags of flag_parsing_c.ml *)
-    [] 
-  in
-  Common.cache_computation_robust 
-    file ".ast_raw" 
-    (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
-    (fun () -> cprogram_of_file file)
+  let (program2, _stat) = Parse_c.parse_cache file in
+  program2
 
 
 let cfile_of_program program2_with_ppmethod outf = 

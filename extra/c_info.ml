@@ -3,7 +3,9 @@ open Common open Commonop
 open Ast_c 
 
 
-
+(* used both for storing the entities 'defined' and 'used' in a file, but
+ * depending on the use, some fields may not be used
+ *)
 type entities = {
   macros: string hashset; (* object-like or function-like *)
   variables: string hashset;
@@ -94,7 +96,8 @@ let defined_stuff xs =
           | Sto Static, inline ->
               (* need add them to do the adjust_need *)
               add e.static_functions s
-          | _ -> add e.functions s
+          | _ -> 
+              add e.functions s
           )
 
       | Include includ -> ()
@@ -253,7 +256,7 @@ let used_stuff xs =
 
 
 
-
+(* for the moment, just look if it looks like a linux module file *)
 let extra_stuff xs = 
   let is_module = ref false in
 
@@ -282,19 +285,26 @@ let adjust_used_only_external used defined =
   used.variables +> h_to_l +> List.iter (fun s -> 
     if Hashtbl.mem defined.variables s || 
        Hashtbl.mem defined.static_variables s || 
+       (* sometimes functions are used as variable, when for example 
+        * stored in a pointer variable, so look also for function here.
+        *)
        Hashtbl.mem defined.functions s ||
        Hashtbl.mem defined.static_functions s
-    then Hashtbl.remove used.variables s);
+    then Hashtbl.remove used.variables s
+  );
   used.functions +> h_to_l +> List.iter (fun s -> 
     if Hashtbl.mem defined.functions s || 
        Hashtbl.mem defined.static_functions s
-    then Hashtbl.remove used.functions s);
+    then Hashtbl.remove used.functions s
+  );
   used.structs +> h_to_l +> List.iter (fun s -> 
     if Hashtbl.mem defined.structs s
-    then Hashtbl.remove used.structs s);
+    then Hashtbl.remove used.structs s
+  );
   used.typedefs +> h_to_l +> List.iter (fun s -> 
     if Hashtbl.mem defined.typedefs s
-    then Hashtbl.remove used.typedefs s);
+    then Hashtbl.remove used.typedefs s
+  );
  end
 
 
@@ -325,7 +335,10 @@ let mk_global_definitions_index xs =
   );
   idx
 
-let known_duplicate = ["init_module"; "cleanup_module"] 
+let known_duplicate = 
+  ["init_module"; "cleanup_module";
+   "main";"usage";
+  ] 
 
 let check_no_duplicate_global_definitions idx = 
  begin
@@ -334,7 +347,8 @@ let check_no_duplicate_global_definitions idx =
     let xs = hash_to_list set in
     if List.length xs <> 1 && not (List.mem f known_duplicate)
     then 
-      pr2 ("multiple def for : " ^ f ^ " in " ^ (join " " (List.map fst xs)));
+      pr2 ("multiple def for : " ^ f ^ " in " ^ 
+              (join " " (List.map (fun x -> basename (fst x)) xs)));
   );
  end
   
@@ -436,38 +450,70 @@ let build_graph xs dep graphfile =
   !g
 
 
+
+
+
 let generate_makefile (g: dependencies_graph) file = 
   pr2 "GENERATING makefile";
   with_open_outfile file (fun (pr_no_nl, chan) ->
 
   let nodei_to_file xi = 
     let ((file, cinfo ), s) = (g#nodes#assoc xi) in
-    Filename.basename file
+    file
   in
-  let nodes = g#nodes#tolist  in
-  let modules = nodes +> Common.map_filter (fun x -> 
-    let (nodei, ((file, cinfo ), s)) = x in
-    if cinfo.is_module then Some (nodei, file)
-    else None
-  ) in
-  let all_nodes = nodes +> List.map fst in
+  let all_nodes = g#nodes#tolist +> List.map fst in
   let visited_nodes_h = Hashtbl.create 101 in
+
+  let modules = all_nodes +> List.filter (fun xi -> 
+    let ((file, cinfo), s) = g#nodes#assoc xi in
+    cinfo.is_module
+  ) in
   
-  modules +> List.iter (fun (xi, file) -> 
-    pr2 file;
+  pr_no_nl "  # ---- modules files ---- \n";
+  modules +> List.iter (fun xi -> 
+    pr2 (nodei_to_file xi);
     pr_no_nl " ";
     g +> Ograph_extended.dfs_iter xi (fun yi -> 
-      pr2 ("   " ^ nodei_to_file yi);
-      pr_no_nl (" " ^ nodei_to_file yi);
+      pr2 ("   " ^ (Filename.basename (nodei_to_file yi)));
+      pr_no_nl (" " ^ (Filename.basename (nodei_to_file yi)));
       Hashtbl.add visited_nodes_h yi true;
     );
     pr_no_nl "\n";
   );
   let visited_nodes = Common.hashset_to_list visited_nodes_h in
   let rest = all_nodes $-$ visited_nodes in
-  if not (null rest) then pr_no_nl "  # ---- orphelins ---- \n";
+
+  let startfiles = rest +> List.filter (fun xi -> 
+    (g#predecessors xi)#null
+  ) in
+  pr_no_nl "  # ---- not module starting files ---- \n";
+
+  startfiles +> List.iter (fun xi -> 
+    pr2 (nodei_to_file xi);
+    pr_no_nl " ";
+    g +> Ograph_extended.dfs_iter xi (fun yi -> 
+      pr2 ("   " ^ (Filename.basename (nodei_to_file yi)));
+      pr_no_nl (" " ^ (Filename.basename (nodei_to_file yi)));
+      Hashtbl.add visited_nodes_h yi true;
+    );
+    pr_no_nl "\n";
+  );
+  let visited_nodes = Common.hashset_to_list visited_nodes_h in
+  let rest = rest $-$ visited_nodes in
+  
+  if not (null rest) then pr_no_nl "  # ---- files in cycle ---- \n";
   rest +> List.iter (fun xi -> 
-    pr2 ("orphelin: " ^ nodei_to_file xi);
-    pr_no_nl ("  " ^ nodei_to_file xi ^ "\n");
+    if Hashtbl.mem visited_nodes_h xi then () (* already handled *)
+    else begin
+      pr2 (nodei_to_file xi);
+      pr_no_nl " ";
+      g +> Ograph_extended.dfs_iter xi (fun yi -> 
+        pr2 ("   " ^ (Filename.basename (nodei_to_file yi)));
+        pr_no_nl (" " ^ (Filename.basename (nodei_to_file yi)));
+        Hashtbl.add visited_nodes_h yi true;
+      );
+      pr_no_nl "\n";
+    end
   )
   )
+

@@ -1,6 +1,6 @@
 open Common
 
-(* used my metafiles *)
+(* used my tools/meta_files and tools/split_patch *)
 
 
 (* correspond usually to a kernel_dirs.meta *)

@@ -34,6 +34,11 @@ type parsing_stat = {
 val parse_print_error_heuristic:  
   filename (*cfile*) -> (program2 * parsing_stat)
 
+(* use some .ast_raw memoized version, and take care if obsolete *)
+val parse_cache:
+  filename (*cfile*) -> (program2 * parsing_stat)
+
+
 
 val print_parsing_stat_list: parsing_stat list -> unit
 

@@ -31,4 +31,3 @@ let include_path = ref "include"
 
 let timeout = ref (None : int option)
 
-let use_cache = ref false

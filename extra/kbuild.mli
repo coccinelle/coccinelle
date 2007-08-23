@@ -1,6 +1,6 @@
 open Common
 
-(* used my metafiles *)
+(* used my tools/meta_files *)
 
 
 (* correspond usually to a kernel_files.meta *)

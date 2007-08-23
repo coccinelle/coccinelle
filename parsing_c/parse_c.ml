@@ -812,3 +812,28 @@ let parse_print_error_heuristic2 file =
 
 let parse_print_error_heuristic a  = 
   Common.profile_code "C parsing" (fun () -> parse_print_error_heuristic2 a)
+
+
+
+(* same but faster cos memoize stuff *)
+let parse_cache file = 
+  if not !Flag_parsing_c.use_cache then parse_print_error_heuristic file 
+  else 
+  let need_no_changed_files = 
+    (* should use Sys.argv.(0), would be safer. *)
+    [Config.path ^ "/parsing_c/c_parser.cma";
+     (* we may also depend now on the semantic patch because 
+        the SP may use macro and so we will disable some of the
+        macro expansions from standard.h. 
+     *)
+     !Config.std_h;
+    ] 
+  in
+  let need_no_changed_variables = 
+    (* could add some of the flags of flag_parsing_c.ml *)
+    [] 
+  in
+  Common.cache_computation_robust 
+    file ".ast_raw" 
+    (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
+    (fun () -> parse_print_error_heuristic file)

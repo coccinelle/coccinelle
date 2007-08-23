@@ -264,7 +264,7 @@ let other_options = [
     "-disable_once",     Arg.Set Common._disable_once, 
     "   to print more messages";
 
-    "-use_cache", Arg.Set Flag_cocci.use_cache, 
+    "-use_cache", Arg.Set Flag_parsing_c.use_cache, 
     "   use .ast_raw pre-parsed cached C file";
   ];
 
@@ -447,7 +447,7 @@ let main () =
     | [] when !action = "-compare_c_hardcoded" -> 
         Testing.test_compare_c_hardcoded ()
     | xs when !action = "-xxx" -> 
-        Testing.test_xxx xs
+        Testing.test_xxx xs !dir
 
     (* --------------------------------------------------------- *)
     (* This is the main entry *)
