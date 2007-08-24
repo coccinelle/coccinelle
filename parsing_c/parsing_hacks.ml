@@ -858,8 +858,16 @@ let rec apply_macro_defs xs =
           (* dont apply the macro, perhaps a redefinition *)
           ()
       | Left (), bodymacro -> 
-          set_as_comment Ast_c.CppOther id;
-          id.new_tokens_before <- bodymacro;
+          (* special case when 1-1 substitution, we reuse the token *)
+          (match bodymacro with
+          | [newtok] -> 
+              id.tok <- (newtok +> TH.visitor_info_of_tok (fun _ -> 
+                TH.info_of_tok id.tok))
+
+          | _ -> 
+              set_as_comment Ast_c.CppOther id;
+              id.new_tokens_before <- bodymacro;
+          )
       );
       apply_macro_defs xs
 

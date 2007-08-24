@@ -268,6 +268,9 @@ let test_okfailed cocci_file cfiles =
 
 let test_regression_okfailed () = 
 
+  (* it's  xxx.c.ok *)
+  let chop_ext f = f +> Filename.chop_extension in
+
   let newscore  = Common.empty_score () in
   let oks = 
     Common.cmd_to_list ("find -name \"*.ok\"") 
@@ -280,10 +283,10 @@ let test_regression_okfailed () =
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
     oks +> List.iter (fun s -> 
-      Hashtbl.add newscore (Filename.chop_extension s)  Common.Ok
+      Hashtbl.add newscore (chop_ext s)  Common.Ok
     );
     failed +> List.iter (fun s -> 
-      Hashtbl.add newscore (Filename.chop_extension s) (Common.Pb "fail")
+      Hashtbl.add newscore (chop_ext s) (Common.Pb "fail")
     );
     pr2 "--------------------------------";
     pr2 "regression testing  information";
@@ -581,9 +584,6 @@ let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
     | _ -> failwith "only atomic patterns allowed"
   end
 
-
-
-
 (*
 let flows_of_ast astc = 
   astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
@@ -594,15 +594,12 @@ let one_flow flows =
 let one_ctl ctls = List.hd (List.hd ctls)
 *)
 
-
-
 (*****************************************************************************)
 (* xxx *)
 (*****************************************************************************)
 
 let test_xxx a dir = 
   ()
-
 
 (*
   ignore(Parse_c.parse_cpp_define_file "standard.h")

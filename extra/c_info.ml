@@ -59,6 +59,12 @@ let print_entities e =
   e.typedefs +> h_to_l +> List.iter (fun s -> pr("TYPEDEF: "^s));
   e.include_c +> h_to_l +> List.iter (fun s -> pr("INCLUDEC: "^s));
  end
+
+
+(* the defined_stuff and used_stuff may not be 100% correct. They don't handle
+ * I think every dark corner of the C. It's possible to shadow in so many
+ * ways.
+ *)
   
 (* look only for toplevel definition *)
 let defined_stuff xs = 

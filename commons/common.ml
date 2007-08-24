@@ -1324,7 +1324,10 @@ let adjust_ext_if_needed filename ext =
   else filename
 
 let dbe_of_filename file = 
-  ignore(Filename.chop_extension file); (* raise Invalid_argument if no ext *)
+  (* raise Invalid_argument if no ext, so safe to use later the unsafe
+   * fileprefix and filesuffix functions.
+   *)
+  ignore(Filename.chop_extension file); 
   Filename.dirname file, 
   Filename.basename file +> fileprefix, 
   Filename.basename file +> filesuffix
@@ -1337,7 +1340,10 @@ let dbe_of_filename_safe file =
   with Invalid_argument _ -> 
     Right (Filename.dirname file, Filename.basename file)
 
-
+let replace_ext file oldext newext = 
+  let (d,b,e) = dbe_of_filename file in
+  assert(e = oldext);
+  filename_of_dbe (d,b,newext)
 
 (*****************************************************************************)
 (* Dates *)
@@ -3204,6 +3210,16 @@ let regression_testing newscore best_score_file =
     write_value newbestscore best_score_file;
     flush stdout; flush stderr;
   end
+
+let string_of_score_result v = 
+  match v with 
+  | Ok -> "Ok" 
+  | Pb s -> "Pb: " ^ s
+
+let print_score score = 
+  score +> hash_to_list +> List.iter (fun (k, v) -> 
+    pr2 (sprintf "% s --> %s" k (string_of_score_result v))
+  )
 
 (*****************************************************************************)
 (* Scope managment *)

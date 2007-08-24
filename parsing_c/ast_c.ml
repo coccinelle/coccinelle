@@ -367,6 +367,7 @@ and declaration =
           | InitFieldOld  of string * initialiser
           | InitIndexOld  of expression * initialiser
 
+       (* ex: [2].y = x,  or .y[2]  or .y.x. They can be nested *)
        and designator = designatorbis wrap 
         and designatorbis = 
             | DesignatorField of string 

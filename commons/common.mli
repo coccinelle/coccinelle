@@ -110,7 +110,7 @@ type score = (string (* usually a filename *), score_result) Hashtbl.t
 val empty_score : unit -> score
 val regression_testing : 
   score -> filename (* old score file on disk (usually in /tmp) *) -> unit
-
+val print_score : score -> unit
 
 
 (* quickcheck spirit *)
@@ -554,6 +554,8 @@ val filename_of_dbe : string * string * string -> filename
 val dbe_of_filename_safe : 
   filename -> (string * string * string,  string * string) either
 
+(* ex: replace_ext "toto.c" "c" "var" *)
+val replace_ext: filename -> string -> string -> filename
 
 (*****************************************************************************)
 (* Dates *)
