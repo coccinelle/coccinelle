@@ -1015,15 +1015,20 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 (* Entry point *)
 (*****************************************************************************)
 
-(* Helpers for SpecialDeclMacro *)
-(*
+(* Helpers for SpecialDeclMacro. 
+ * 
+ * TODO? could also ask to julia to force the coccier to define
+ * the toplevel macro statement as in @@ toplevel_declarator MACRO_PARAM;@@
+ * and so I would not need this hack and instead I would to a cleaner
+ * match in cocci_vs_c_3.ml of a A.MacroTop vs B.MacroTop
+ *)
 let specialdeclmacro_to_stmt (s, args, ii) =
   let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
   let ident = (Ast_c.Ident s, Ast_c.noType()), [iis] in
   let f = (Ast_c.FunCall (ident, args), Ast_c.noType()), [iiopar;iicpar] in
   let stmt = Ast_c.ExprStatement (Some f), [iiptvirg] in
   stmt,  (f, [iiptvirg])
-*)
+
 
 
 
@@ -1055,11 +1060,11 @@ let ast_to_control_flow e =
             (Control_flow_c.Include (a,b)), "#include"
         (* todo? still useful ? could consider as Decl instead *)
         | Ast_c.MacroTop (s, args, ii) -> 
-            (*
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
-            *)
+(*
             (Control_flow_c.MacroTop (s, args,ii), "macrotoplevel")
+*)
         | _ -> raise Impossible
       in
       let ei =   !g +> add_node elem    lbl_0 str in

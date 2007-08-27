@@ -107,6 +107,9 @@ let msg_debug_macro s =
 let msg_macro_noptvirg s = 
   pr2_cpp ("MACRO: found macro with param noptvirg: " ^ s)
 
+let msg_macro_toplevel_noptvirg s = 
+  pr2_cpp ("MACRO: found toplevel macro noptvirg: " ^ s)
+
 
 let msg_macro_noptvirg_single s = 
   pr2_cpp ("MACRO: found single-macro noptvirg: " ^ s)
@@ -297,7 +300,7 @@ and mk_parameters extras acc_before_sep  xs =
           pr2 "PB: found synchro point } in paren";
           [List.rev acc_before_sep], List.rev (extras), (x::xs)
 
-      | TCPar _ -> 
+      | TCPar _ | TCParEOL _ -> 
           [List.rev acc_before_sep], List.rev (x::extras), xs
       | TOPar _ | TOParDefine _ -> 
           let body, extrasnest, xs = mk_parameters [x] [] xs in
@@ -414,11 +417,16 @@ let line_of_paren = function
 let rec span_line_paren line = function
   | [] -> [],[]
   | x::xs -> 
-      if line_of_paren x = line 
-      then
-        let (l1, l2) = span_line_paren line xs in
-        (x::l1, l2)
-      else ([], x::xs)
+      (match x with
+      | PToken tok when TH.is_eof tok.tok -> 
+          [], x::xs
+      | _ -> 
+        if line_of_paren x = line 
+        then
+          let (l1, l2) = span_line_paren line xs in
+          (x::l1, l2)
+        else ([], x::xs)
+      )
         
 
 let rec mk_line_parenthised xs = 
@@ -663,7 +671,7 @@ let (count_open_close_stuff_ifdef_clause: ifdef_grouped list -> (int * int)) =
      (match x.tok with
      | TOPar _ | TOParDefine _ -> incr cnt_paren
      | TOBrace _ -> incr cnt_brace
-     | TCPar _ -> decr cnt_paren
+     | TCPar _ | TCParEOL _ -> decr cnt_paren
      | TCBrace _ -> decr cnt_brace
      | _ -> ()
      )
@@ -1008,12 +1016,11 @@ let rec find_macro_lineparen xs =
   (* linuxext: ex: static [const] DEVICE_ATTR(); *)
   | (Line 
         (
-          (PToken ({tok = Tstatic _})::
-           PToken ({tok = TIdent (s,_)} as macro)::
-           Parenthised (xxs,info_parens)::
-           PToken ({tok = TPtVirg _})::
-           _
-          ) 
+          [PToken ({tok = Tstatic _});
+           PToken ({tok = TIdent (s,_)} as macro);
+           Parenthised (xxs,info_parens);
+           PToken ({tok = TPtVirg _});
+          ] 
         ))
     ::xs 
     when (s ==~ regexp_macro) -> 
@@ -1026,13 +1033,12 @@ let rec find_macro_lineparen xs =
   (* the static const case *)
   | (Line 
         (
-          (PToken ({tok = Tstatic _})::
-           PToken ({tok = Tconst _} as const)::
-           PToken ({tok = TIdent (s,_)} as macro)::
-           Parenthised (xxs,info_parens)::
-           PToken ({tok = TPtVirg _})::
-            _
-          ) (* it could also be the same with a TEof en plus a la fin *)
+          [PToken ({tok = Tstatic _});
+           PToken ({tok = Tconst _} as const);
+           PToken ({tok = TIdent (s,_)} as macro);
+           Parenthised (xxs,info_parens);
+           PToken ({tok = TPtVirg _});
+          ] 
             (*as line1*)
 
         ))
@@ -1083,12 +1089,12 @@ let rec find_macro_lineparen xs =
           )))
     ::(Line 
           (
-            (PToken ({tok = TIdent (s,_)} as macro)::
-             Parenthised (xxs,info_parens)::
-             PToken ({tok = TPtVirg _})::
-           _
+            [PToken ({tok = TIdent (s,_)} as macro);
+             Parenthised (xxs,info_parens);
+             PToken ({tok = TPtVirg _});
+            ]
           ) 
-        ))
+        )
     ::xs 
     when (s ==~ regexp_macro) -> 
       msg_declare_macro s;
@@ -1125,8 +1131,53 @@ let rec find_macro_lineparen xs =
 
       find_macro_lineparen (xs)
 
+        
+  (* toplevel macros.
+   * module_init(xxx)
+   * 
+   * Could also transform the TIdent in a TMacroTop but can have false
+   * positive, so easier to just change the TCPar and so just solve
+   * the end-of-stream pb of ocamlyacc
+   *)
+  | (Line 
+        ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as _macro);
+          Parenthised (xxs,info_parens);
+        ] as _line1
+        ))
+    ::xs when col1 = 0
+    -> 
+      let condition = 
+        (* to reduce number of false positive *)
+        (match xs with
+        | (Line (PToken ({col = col2 } as other)::restline2))::_ -> 
+            TH.is_eof other.tok || (col2 = 0 &&
+             (match other.tok with
+             | TOBrace _ -> false (* otherwise would match funcdecl *)
+             | TCBrace _ when ctx <> InFunction -> false
+             | TPtVirg _ 
+             | TDotDot _
+               -> false
+             | tok when TH.is_binary_operator tok -> false
+                 
+             | _ -> true
+             )
+            )
+        | _ -> false
+        )
+      in
+      if condition
+      then begin
+          msg_macro_toplevel_noptvirg s;
+          (* just to avoid the end-of-stream pb of ocamlyacc  *)
+          let tcpar = Common.last info_parens in
+          tcpar.tok <- TCParEOL (TH.info_of_tok tcpar.tok);
+          
+          (*macro.tok <- TMacroTop (s, TH.info_of_tok macro.tok);*)
+          
+        end;
 
-         
+       find_macro_lineparen (xs)
+
 
 
   (* macro with parameters 
@@ -1284,6 +1335,26 @@ let rebuild_tokens_extented toks_ext =
   let tokens = List.rev !_tokens in
   (tokens +> List.map mk_token_extended)
 
+let filter_cpp_stuff xs = 
+  let rec aux xs = 
+    match xs with
+    | [] -> []
+    | x::xs -> 
+        (match x.tok with
+        | tok when TH.is_comment tok -> aux xs
+        (* don't want drop the define, or if drop, have to drop
+         * also its body otherwise the line heuristics may be lost
+         * by not finding the TDefine in column 0 but by finding
+         * a TDefineIdent in a column > 0
+         *)
+        | Parser_c.TDefine _ -> 
+            x::aux xs
+        | tok when TH.is_cpp_instruction tok -> aux xs
+        | _ -> x::aux xs
+        )
+  in
+  aux xs
+          
 
 let fix_tokens_cpp2 tokens = 
 
@@ -1313,9 +1384,8 @@ let fix_tokens_cpp2 tokens =
 
 
     (* macro 1 *)
-    let cleaner = !tokens2 +> List.filter (fun x -> 
-      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-    ) in
+    let cleaner = !tokens2 +> filter_cpp_stuff in
+
     let paren_grouped = mk_parenthised  cleaner in
     apply_macro_defs paren_grouped;
     (* because the before field is used by apply_macro_defs *)
@@ -1333,9 +1403,8 @@ let fix_tokens_cpp2 tokens =
 
 
     (* macro *)
-    let cleaner = !tokens2 +> List.filter (fun x -> 
-      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-    ) in
+    let cleaner = !tokens2 +> filter_cpp_stuff in
+
     let paren_grouped      = mk_parenthised  cleaner in
     let line_paren_grouped = mk_line_parenthised paren_grouped in
     find_string_macro_paren paren_grouped;
@@ -1344,9 +1413,7 @@ let fix_tokens_cpp2 tokens =
 
 
     (* actions *)
-    let cleaner = !tokens2 +> List.filter (fun x -> 
-      not (TH.is_comment x.tok) && not (TH.is_cpp_instruction x.tok)
-    ) in
+    let cleaner = !tokens2 +> filter_cpp_stuff in
     let paren_grouped = mk_parenthised  cleaner in
     find_actions  paren_grouped;
 

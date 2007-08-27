@@ -187,6 +187,7 @@ type node = node1 * string
 
   | Include of inc_file wrap * include_rel_pos option ref
 
+  (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il 
 
   (* ------------------------ *)

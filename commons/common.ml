@@ -3207,6 +3207,7 @@ let regression_testing newscore best_score_file =
               end
           )
     );
+    write_value newbestscore (best_score_file ^ ".old");
     write_value newbestscore best_score_file;
     flush stdout; flush stderr;
   end
@@ -3219,7 +3220,16 @@ let string_of_score_result v =
 let print_score score = 
   score +> hash_to_list +> List.iter (fun (k, v) -> 
     pr2 (sprintf "% s --> %s" k (string_of_score_result v))
-  )
+  );
+  pr2 "--------------------------------";
+  pr2 "total score";
+  pr2 "--------------------------------";
+  let total = hash_to_list score +> List.length in
+  let good  = hash_to_list score +> List.filter 
+    (fun (s, v) -> v = Ok) +> List.length 
+  in
+  pr2 (sprintf "good = %d/%d" good total)
+
 
 (*****************************************************************************)
 (* Scope managment *)

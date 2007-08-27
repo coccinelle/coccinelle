@@ -107,9 +107,9 @@ let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
 
 
 (* stdC: type section, basic integer types (and ritchie)
-   to understand the code, just look at the result (right part of the PM) 
-   and go back
-*)
+ * To understand the code, just look at the result (right part of the PM) 
+ * and go back.
+ *)
 let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
  {storageD = (st,iist); 
   qualifD = (qu,iiq); 
@@ -309,10 +309,12 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 /* appear  after fix_tokens_cpp */
 %token <Ast_c.info>            TMacroStmt
-%token <Ast_c.info>            TMacroString
+%token <Ast_c.info>            TMacroString /* no need value for the moment */
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info>            TMacroDeclConst 
 %token <(string * Ast_c.info)> TMacroIterator
+/* %token <(string * Ast_c.info)> TMacroTop */
+%token <Ast_c.info> TCParEOL   /* appear after parsing_hack */
 
 %token <Ast_c.info> TAction
 
@@ -665,7 +667,7 @@ iteration:
  | TMacroIterator TOPar TCPar statement
      { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
-/* the ';' in the caller will be appended to the infos */
+/* the ';' in the caller grammar rule will be appended to the infos */
 jump: 
  | Tgoto ident  { Goto (fst $2),  [$1;snd $2] } 
  | Tcontinue    { Continue,       [$1] }
@@ -1269,28 +1271,15 @@ opt_ptvirg:
 /* cppext: */
 cpp_directives: 
 
- | TIdent TOPar argument_list TCPar 
-     { MacroTop (fst $1, $3,    [snd $1;$2;$4]) } 
+ | TIdent TOPar argument_list TCPar TPtVirg
+     { MacroTop (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
+ /* TCParEOL to fix the end-of-stream bug of ocamlyacc */
+ | TIdent TOPar argument_list TCParEOL
+     { MacroTop (fst $1, $3,    [snd $1;$2;$4;fakeInfo()]) } 
 
- /* old?: normally useless with parsing_hack because the ident would
-  * be transformed into a MacroNoPtVirg, except when it's 
-  * the last instruction in the file. parsing_hack does not
-  * handle well EOF
-  *
-  * old?: seems dont work
-  * 
-  * if   TIdent TOPar argument_list TCPar opt_ptvirg
-  * then can have ambiguity cos celem allows to derive in TPtVirg only
-  * but wierd that ocamlyacc don't seems to give a good message
-  * for that ambiguity
-  */
-
+  /* ex: EXPORT_NO_SYMBOLS; */
  | TIdent TPtVirg { EmptyDef [snd $1;$2] }
-
-
- | TMacroStmt { EmptyDef [$1] }
-
 
  | TIncludeStart TIncludeFilename 
      { 
@@ -1310,6 +1299,9 @@ cpp_directives:
  | TDefine TIdentDefine define_val TDefEOL 
      { Define ((fst $2, [$1; snd $2;$4]), (DefineVar, $3)) }
 
+ /* The TOParDefine is introduced to avoid ambiguity with previous rule.
+  * A TOParDefine was a TOPar that was just next to the ident.
+  */
  | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
      { Define 
          ((fst $2, [$1; snd $2;$7]), 
@@ -1374,13 +1366,14 @@ celem:
 
  /* can have asm declaration at toplevel */
  | Tasm TOPar asmbody TCPar TPtVirg             { EmptyDef [] } 
-         
+
  /* in ~/kernels/src/linux-2.5.2/drivers/isdn/hisax/isdnl3.c sometimes
   * the function ends with }; instead of just } 
+  * can also remove this rule and report "parse error" pb to morton
   */
-
  | TPtVirg    { EmptyDef [$1] } 
 
+         
  | EOF        { FinalDef $1 } 
 
 

@@ -58,7 +58,11 @@ let is_statement = function
  * Parsing_hacks.lookahead machinery, but it will not work on the
  * "next" tokens. But because the namespace for labels is different
  * from namespace for ident/typedef, we can use the name for a typedef
- * for a label and so dangerous to put Typedefident at true here. *)
+ * for a label and so dangerous to put Typedefident at true here. 
+ * 
+ * Can look in parser_c.output to know what can be at toplevel
+ * at the very beginning.
+ *)
 
 let is_start_of_something = function
   | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _ 
@@ -127,6 +131,8 @@ let info_of_tok = function
   | TMacroDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
   | TMacroIterator             (s,i) -> i
+(*  | TMacroTop             (s,i) -> i *)
+  | TCParEOL (i1) ->     i1
 
   | TAction             (i) -> i
 
@@ -252,6 +258,9 @@ let visitor_info_of_tok f = function
   | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
   | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
   | TMacroIterator               (s,i) -> TMacroIterator             (s,f i)
+(*  | TMacroTop               (s,i) -> TMacroTop             (s,f i) *)
+  | TCParEOL (i) ->     TCParEOL (f i)
+
 
   | TAction               (i) -> TAction             (f i)
 
