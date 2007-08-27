@@ -5,8 +5,8 @@ expression head;
 struct list_head *pos;
 @@
 - for (pos = head.next; pos != &head; pos = pos->next) 
-//+ list_for_each(pos, &head) 
 -  S
+//+ list_for_each(pos, &head) 
 
 
 @@
@@ -16,8 +16,8 @@ expression head;
 struct list_head *pos;
 @@
 - for (pos = head->next; pos != head; pos = pos->next) 
-//+ list_for_each(pos, head) 
 -  S
+//+ list_for_each(pos, head) 
 
 
 

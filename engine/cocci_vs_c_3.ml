@@ -2517,7 +2517,8 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode -> 
+      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
+      | F.InLoopNode -> 
           if X.mode = PatternMode 
           then return default 
           else
@@ -2566,6 +2567,7 @@ let (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
+  | _, F.InLoopNode
     -> fail2
 
   (* really ? diff between pattern.ml and transformation.ml *)

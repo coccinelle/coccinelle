@@ -709,3 +709,20 @@ do {									\
 #define APR_POOL_IMPLEMENT_ACCESSOR(shm)
 
 #define ADD_SUITE(suite) suite;
+
+// ****************************************************************************
+// CISCO vpn client macros 
+// ****************************************************************************
+
+// #define NOREGPARM 
+// #define IN
+// #define OUT
+// #define OPTIONAL
+
+
+// ****************************************************************************
+// for tests-big/ macros, may be obsolete now cos fixed in latest kernel 
+// ****************************************************************************
+
+// rule10
+//#define	 ACPI_MODULE_NAME(x)
