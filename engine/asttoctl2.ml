@@ -734,7 +734,8 @@ let exptymatch l make_match make_guard_match =
 	  CTL.Exists
 	    (false,pos,
 	     ctl_and CTL.NONSTRICT matcher
-	       (ctl_not (List.fold_left ctl_or_fl CTL.False negates))))
+	       (ctl_not
+		  (CTL.Uncheck (List.fold_left ctl_or_fl CTL.False negates)))))
       matches prefixes in
   List.fold_left ctl_or_fl CTL.False (List.rev info)
 
@@ -905,7 +906,8 @@ let forwhile header body ((afvs,_,_,_) as aft) after quantified label
   match (Ast.unwrap body,aft) with
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
-	Ast.MetaStmt(_,Type_cocci.Unitary,_,false) ->
+	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING)),
+		     Type_cocci.Unitary,_,false) ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
