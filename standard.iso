@@ -52,7 +52,7 @@
 Expression
 @ zero_multiple_format @
 @@
- 0 => '\0' => 0x0
+ 0 => '\0'
 
 // ---------------------------------------------------------------------------
 // Iso-by-absence (optional qualifier, storage, sign, cast) isomorphisms
