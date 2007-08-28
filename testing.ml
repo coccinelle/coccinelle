@@ -21,22 +21,26 @@ let testone x compare_with_expected_flag =
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
     let res = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
-    match Common.optionise (fun () -> List.assoc cfile res) with
-    | Some (Some outfile) -> 
-        if List.length res > 1 
-        then pr2 ("note that not just " ^ cfile ^ " was involved");
+    let generated = 
+      match Common.optionise (fun () -> List.assoc cfile res) with
+      | Some (Some outfile) -> 
+          if List.length res > 1 
+          then pr2 ("note that not just " ^ cfile ^ " was involved");
 
-        if compare_with_expected_flag
-        then 
-          Compare_c.compare_default outfile expected_res 
-          +> Compare_c.compare_result_to_string 
-          +> pr2;
-        let tmpfile = "/tmp/"^Common.basename cfile in
-        pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
-        Common.command2 ("mv "^outfile^" "^tmpfile);
-
-    | Some None -> pr2 "no modification on the input file"
-    | None -> raise Impossible
+          let tmpfile = "/tmp/"^Common.basename cfile in
+          pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
+          Common.command2 ("mv "^outfile^" "^tmpfile);
+          outfile
+      | Some None -> 
+          pr2 "no modification on the input file";
+          cfile
+      | None -> raise Impossible
+    in
+    if compare_with_expected_flag
+    then 
+      Compare_c.compare_default generated expected_res 
+      +> Compare_c.compare_result_to_string 
+      +> pr2;
   end
           
 

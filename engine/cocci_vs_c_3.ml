@@ -594,7 +594,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
           -> do1()
 
-      | A.String sa, B.String (sb,_kind) -> 
+      | A.String sa, B.String (sb,_kind) when sa =$= sb ->
           (match ii with
           | [ib1] -> 
             tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
