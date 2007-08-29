@@ -19,7 +19,7 @@ let show_flow_labels = ref true
 
 
 
-let label_strategy_2 = ref true
+let label_strategy_2 = ref false
 
 let ifdef_to_if = ref false
 
