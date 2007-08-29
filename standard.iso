@@ -304,6 +304,32 @@ statement S;
 @@
 if (X) S => if (X != NULL) S <=> if (NULL != X) S
 
+// ****************************************************************************
+// gcc specific isomorphisms 
+// ****************************************************************************
+
+// likely and unlikely are used to give hints to gcc to improve performance.
+
+Expression
+@ unlikely @ 
+expression E; 
+@@
+
+unlikely(E) => E
+
+Expression
+@ likely @ 
+expression E; 
+@@
+
+likely(E) => E
+
+// ****************************************************************************
+// if structure isomorphisms 
+// ****************************************************************************
+
+// these after after the above so that the introduced negation will distribute
+// properly over the argument to likely/unlikely
 
 Statement
 @ neg_if @
@@ -489,27 +515,6 @@ T E;
 @@
 
 sizeof(T) => sizeof(E)
-
-
-// ****************************************************************************
-// gcc specific isomorphisms 
-// ****************************************************************************
-
-// likely and unlikely are used to give hints to gcc to improve performance.
-
-Expression
-@ unlikely @ 
-expression E; 
-@@
-
-unlikely(E) => E
-
-Expression
-@ likely @ 
-expression E; 
-@@
-
-likely(E) => E
 
 
 // ****************************************************************************

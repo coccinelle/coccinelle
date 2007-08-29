@@ -10,6 +10,9 @@ worth it.  The most obvious goal is to distinguish between test expressions
 that have pointer, integer, and boolean type when matching isomorphisms,
 but perhaps other needs will become apparent. *)
 
+(* "functions" that return a boolean value *)
+let bool_functions = ["likely";"unlikely"]
+
 let err wrapped ty s =
   T.typeC ty; Format.print_newline();
   failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
@@ -66,7 +69,16 @@ let rec propagate_types env =
       | Ast0.FunCall(fn,lp,args,rp) ->
 	  (match Ast0.get_type fn with
 	    Some (T.FunctionPointer(ty)) -> Some ty
-	  |  _ -> None)
+	  |  _ ->
+	      (match Ast0.unwrap fn with
+		Ast0.Ident(id) ->
+		  (match Ast0.unwrap id with
+		    Ast0.Id(id) ->
+		      if List.mem (Ast0.unwrap_mcode id) bool_functions
+		      then Some(T.BaseType(T.BoolType,None))
+		      else None
+		  | _ -> None)
+	      |	_ -> None))
       | Ast0.Assignment(exp1,op,exp2) ->
 	  let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 	  Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
