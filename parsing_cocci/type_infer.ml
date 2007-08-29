@@ -48,6 +48,10 @@ let rec propagate_types env =
 	with Not_found -> None)
     | _ -> k i in
 
+  let strip_cv = function
+      Some (T.ConstVol(_,t)) -> Some t
+    | t -> t in
+
   let expression r k e =
     let res = k e in
     let ty =
@@ -103,31 +107,37 @@ let rec propagate_types env =
 	      Some(T.BaseType(T.BoolType,None)))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	  (match Ast0.get_type exp2 with
+	  (match strip_cv (Ast0.get_type exp2) with
 	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
 	  | Some(T.BaseType(T.IntType,None)) -> ()
 	  | Some (T.MetaType(_,_,_)) -> ()
 	  | Some ty -> err exp2 ty "bad type for an array index");
-	  (match Ast0.get_type exp1 with
+	  (match strip_cv (Ast0.get_type exp1) with
 	    None -> None
 	  | Some (T.Array(ty)) -> Some ty
 	  | Some (T.Pointer(ty)) -> Some ty
 	  | Some (T.MetaType(_,_,_)) -> None
 	  | Some x -> err exp1 x "ill-typed array reference")
       | Ast0.RecordAccess(exp,pt,field) ->
-	  (match Ast0.get_type exp with
+	  (match strip_cv (Ast0.get_type exp) with
 	    None -> None
 	  | Some (T.StructUnionName(_,_,_)) -> None
 	  | Some (T.TypeName(_)) -> None
 	  | Some (T.MetaType(_,_,_)) -> None
 	  | Some x -> err exp x "non-structure type in field ref")
       | Ast0.RecordPtAccess(exp,ar,field) ->
-	  (match Ast0.get_type exp with
+	  (match strip_cv (Ast0.get_type exp) with
 	    None -> None
-	  | Some (T.Pointer(T.Unknown)) -> None
-	  | Some (T.Pointer(T.MetaType(_,_,_))) -> None
-	  | Some (T.Pointer(T.TypeName(_))) -> None
-	  | Some (T.Pointer(T.StructUnionName(_,_,_))) -> None
+	  | Some (T.Pointer(t)) ->
+	      (match strip_cv (Some t) with
+	      | Some (T.Unknown) -> None
+	      | Some (T.MetaType(_,_,_)) -> None
+	      | Some (T.TypeName(_)) -> None
+	      | Some (T.StructUnionName(_,_,_)) -> None
+	      | Some x ->
+		  err exp (T.Pointer(t))
+		    "non-structure pointer type in field ref"
+	      |	_ -> failwith "not possible")
 	  | Some (T.MetaType(_,_,_)) -> None
 	  | Some (T.TypeName(_)) -> None
 	  | Some x -> err exp x "non-structure pointer type in field ref")

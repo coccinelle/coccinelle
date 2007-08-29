@@ -442,7 +442,7 @@ E1->fld => E1[E2].fld
 TopLevel
 @ mkinit @
 type T;
-context T E;
+pure context T E;
 identifier I;
 identifier fld;
 expression E1;

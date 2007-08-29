@@ -78,7 +78,7 @@ let dot_term (var1,_,info,_) = ("", var1 ^ (string_of_int info.Ast0.offset))
 
 
 type reason =
-    NotPure of (string * string) * Ast0.anything
+    NotPure of Ast0.pure * (string * string) * Ast0.anything
   | NotPureLength of (string * string)
   | ContextRequired of Ast0.anything
   | NonMatch
@@ -89,9 +89,19 @@ let interpret_reason name line reason printer =
     "warning: iso %s does not match the code below on line %d\n" name line;
   printer(); Format.print_newline();
   match reason with
-    NotPure((_,var),nonpure) ->
+    NotPure(Ast0.Pure,(_,var),nonpure) ->
       Printf.printf
 	"pure metavariable %s is matched against the following nonpure code:\n"
+	var;
+      Unparse_ast0.unparse_anything nonpure
+  | NotPure(Ast0.Context,(_,var),nonpure) ->
+      Printf.printf
+	"context metavariable %s is matched against the following\nnoncontext code:\n"
+	var;
+      Unparse_ast0.unparse_anything nonpure
+  | NotPure(Ast0.PureContext,(_,var),nonpure) ->
+      Printf.printf
+	"pure context metavariable %s is matched against the following\nnonpure or noncontext code:\n"
 	var;
       Unparse_ast0.unparse_anything nonpure
   | NotPureLength((_,var)) ->
@@ -291,7 +301,9 @@ let match_maker checks_needed context_required whencode_allowed =
     let option_default = Ast0.Context in
     let pure_mcodekind = function
 	Ast0.CONTEXT(mc) ->
-	  (match !mc with (Ast.NOTHING,_,_) -> Ast0.Context | _ -> Ast0.Impure)
+	  (match !mc with
+	    (Ast.NOTHING,_,_) -> Ast0.PureContext
+	  | _ -> Ast0.Context)
       | Ast0.MINUS(mc) ->
 	  (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
       | _ -> Ast0.Impure in
@@ -344,21 +356,21 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
-      (true,Ast0.Pure) | (true,Ast0.Context) ->
+      (true,Ast0.Pure) | (true,Ast0.Context) | (true,Ast0.PureContext) ->
 	(match lst with
 	  [x] ->
 	    if (Ast0.lub_pure (is_pure x) pure) = pure
 	    then add_binding name (builder1 lst)
-	    else return_false (NotPure (term name,builder1 lst))
+	    else return_false (NotPure (pure,term name,builder1 lst))
 	| _ -> return_false (NotPureLength (term name)))
     | (false,_) | (_,Ast0.Impure) -> add_binding name (builder2 lst) in
 
   let add_pure_binding name pure is_pure builder x =
     match (checks_needed,pure) with
-      (true,Ast0.Pure) | (true,Ast0.Context) ->
+      (true,Ast0.Pure) | (true,Ast0.Context) | (true,Ast0.PureContext) ->
 	if (Ast0.lub_pure (is_pure x) pure) = pure
 	then add_binding name (builder x)
-	else return_false (NotPure (term name, builder x))
+	else return_false (NotPure (pure,term name, builder x))
     | (false,_) | (_,Ast0.Impure) ->  add_binding name (builder x) in
 
   let do_elist_match builder el lst =

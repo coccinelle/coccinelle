@@ -42,7 +42,7 @@ and dots_bef_aft =
    isomorphism phase only)
    In SP, the only options are impure and context
 *)
-and pure = Impure | Pure | Context (* pure and only context *)
+and pure = Impure | Pure | Context | PureContext (* pure and only context *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -557,8 +557,10 @@ and reverse_const_vol t =
 let lub_pure x y =
   match (x,y) with
     (Impure,_) | (_,Impure) -> Impure
+  | (Pure,Context) | (Context,Pure) -> Impure
   | (Pure,_) | (_,Pure) -> Pure
-  | _ -> Context
+  | (_,Context) | (Context,_) -> Context
+  | _ -> PureContext
 
 (* --------------------------------------------------------------------- *)
 

@@ -761,7 +761,8 @@ let rec bigloop2 rs ccs =
 		    pr2
 		      ("dependencies for rule "^r.rulename^" not satisfied:");
 		    print_dependencies rules_that_have_matched
-		      !rules_that_have_ever_matched r.dependencies
+		      !rules_that_have_ever_matched r.dependencies;
+		    show_or_not_binding "in environment" e
 		  end;
 		(cache,
 		 Common.union_set newes

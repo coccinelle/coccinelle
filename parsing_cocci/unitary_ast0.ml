@@ -112,9 +112,12 @@ let update_unitary unitary =
   let mcode x = x in
   
   let is_unitary name =
-    if List.mem (Ast0.unwrap_mcode name) unitary
-    then Ast0.Context
-    else Ast0.Impure in
+    match (List.mem (Ast0.unwrap_mcode name) unitary,
+	   Ast0.get_mcode_mcodekind name) with
+      (true,Ast0.CONTEXT(mc)) -> Ast0.PureContext
+    | (true,_) -> Ast0.Pure
+    | (false,Ast0.CONTEXT(mc)) -> Ast0.Context
+    | (false,_) -> Ast0.Impure in
 
   let ident r k i =
     match Ast0.unwrap i with

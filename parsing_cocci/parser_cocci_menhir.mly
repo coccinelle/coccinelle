@@ -160,9 +160,11 @@ iso_meta_main: m=metadec { m "" }
 *****************************************************************************/
 
 pure:
-  TPure       { Ast0.Pure }
-| TContext    { Ast0.Context }
-| /* empty */ { Ast0.Impure }
+  TPure          { Ast0.Pure }
+| TContext       { Ast0.Context }
+| TPure TContext { Ast0.PureContext }
+| TContext TPure { Ast0.PureContext }
+| /* empty */    { Ast0.Impure }
 
 iso_rule_name:
   nm=pure_ident TArob

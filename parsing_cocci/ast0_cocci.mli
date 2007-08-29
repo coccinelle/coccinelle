@@ -36,7 +36,7 @@ and dots_bef_aft =
    metavariables
    for SP metavariables, true if the metavariable is unitary (valid up to
    isomorphism phase only) *)
-and pure = Impure | Pure | Context (* pure and only context *)
+and pure = Impure | Pure | Context | PureContext (* pure and only context *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
