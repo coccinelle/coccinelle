@@ -250,6 +250,8 @@ let other_options = [
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
+    "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
+    " ";
     "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";
     "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
        "disallow an expresion pattern from matching a term and its subterm"
@@ -573,8 +575,10 @@ let _ =
         Common.pp_do_in_zero_box (fun () -> 
           main ();
           Ctlcocci_integration.print_bench();
-          Common.profile_diagnostic ();
         ))
-       (fun()-> if not !save_tmp_files then Common.erase_temp_files ())
+       (fun()-> 
+         Common.profile_diagnostic ();
+         if not !save_tmp_files then Common.erase_temp_files ();
+       )
     )
       

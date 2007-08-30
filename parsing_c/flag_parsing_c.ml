@@ -23,7 +23,7 @@ let label_strategy_2 = ref false
 
 let ifdef_to_if = ref false
 
-
+let if0_passing = ref true
 
 let add_typedef_root = ref false
 

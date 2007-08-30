@@ -1379,7 +1379,8 @@ let fix_tokens_cpp2 tokens =
     ) in
     let ifdef_grouped = mk_ifdef cleaner in
     find_ifdef_funheaders ifdef_grouped;
-    find_ifdef_zero       ifdef_grouped;
+    if !Flag_parsing_c.if0_passing 
+    then find_ifdef_zero       ifdef_grouped;
     find_ifdef_mid        ifdef_grouped;
 
 
