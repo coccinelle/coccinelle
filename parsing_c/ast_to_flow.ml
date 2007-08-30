@@ -43,14 +43,6 @@ exception Error of error
 (* Helpers *)
 (*****************************************************************************)
 
-let mk_node node labels nodestr =
-  let nodestr = 
-    if !Flag_parsing_c.show_flow_labels
-    then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
-    else nodestr
-  in
-  ((node, labels), nodestr)
-
 let add_node node labels nodestr g = 
    g#add_node (mk_node node labels nodestr)
 let add_arc_opt (starti, nodei) g = 
@@ -1119,6 +1111,35 @@ let ast_to_control_flow e =
       
 
   | _ -> None
+
+
+(*****************************************************************************)
+(* CFG loop annotation *)
+(*****************************************************************************)
+
+let annotate_loop_nodes g =
+  let firsti = Control_flow_c.first_node g in
+
+  (* just for opti a little *)
+  let already = Hashtbl.create 101 in 
+
+  g +> Ograph_extended.dfs_iter_with_path firsti (fun xi path -> 
+    Hashtbl.add already xi true;
+    let succ = g#successors xi in
+    let succ = succ#tolist in
+    succ +> List.iter (fun (yi,_edge) -> 
+      if Hashtbl.mem already yi && List.mem yi (xi::path)
+      then
+        let node = g#nodes#find yi in
+        let ((node2, nodeinfo), nodestr) = node in
+        let node' = ((node2, {nodeinfo with is_loop = true}), (nodestr ^ "*")) 
+        in
+        g#replace_node (yi, node');
+    );
+  );
+
+
+  g
 
 
 (*****************************************************************************)

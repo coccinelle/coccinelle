@@ -1,8 +1,12 @@
 open Ast_c
 
 type node = node1 * string (* For debugging. Used by print_graph *)
- and node1 = node2 * int list (* Labels. Trick used for CTL engine *)
- and node2 =
+  and node1 = node2 * nodeinfo 
+   and nodeinfo = {
+      labels: int list;  (* Labels. Trick used for CTL engine *)
+      is_loop: bool;
+    }
+  and node2 =
   | TopNode 
   | EndNode
 
@@ -85,6 +89,9 @@ val rewrap : node -> node2 -> node
 
 val extract_labels : node -> int list
 val extract_fullstatement : node -> Ast_c.statement option
+val extract_is_loop : node -> bool
+
+val mk_node: node2 -> int list -> string -> node
 
 val first_node : cflow -> Ograph_extended.nodei
 val find_node : (node2 -> bool) -> cflow -> Ograph_extended.nodei

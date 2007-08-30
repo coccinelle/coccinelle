@@ -200,8 +200,7 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
     if (!g#predecessors nodei)#null 
     then begin
-      let fakei = !g#add_node ((F.Fake,[]), "DEADCODELOOP") 
-      in
+      let fakei = !g#add_node (F.mk_node F.Fake [] "DEADCODELOOP") in
       !g#add_arc ((fakei, nodei), F.Direct);
       !g#add_arc ((fakei, fakei), F.Direct);
     end

@@ -209,6 +209,24 @@ let dfs_iter xi f g =
   aux_dfs [xi]
 
 
+let dfs_iter_with_path xi f g = 
+  let already = Hashtbl.create 101 in
+  let rec aux_dfs path xi = 
+    if Hashtbl.mem already xi then ()
+    else begin
+      Hashtbl.add already xi true;
+      f xi path;
+      let succ = g#successors xi in
+      let succ' = succ#tolist +> List.map fst in
+      succ' +> List.iter (fun yi -> 
+          aux_dfs (xi::path) yi
+      );
+      end
+  in
+  aux_dfs [] xi
+  
+    
+
 
 let generate_ograph_xxx g filename =
   with_open_outfile filename (fun (pr,_) ->

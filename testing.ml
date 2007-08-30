@@ -455,6 +455,8 @@ let test_cfg file =
           let flow = Ast_to_flow.ast_to_control_flow e in
           flow +> do_option (fun flow -> 
             Ast_to_flow.deadcode_detection flow;
+            let flow = Ast_to_flow.annotate_loop_nodes flow in
+
             let flow' = 
               if !Flag_cocci.show_before_fixed_flow 
               then flow

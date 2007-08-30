@@ -76,7 +76,11 @@ open Ast_c
  * not work.
  *)
 type node = node1 * string  
-  and node1 = node2 * int list 
+  and node1 = node2 * nodeinfo 
+    and nodeinfo = {
+      labels: int list;
+      is_loop: bool;
+    }
     and node2 =
 
   (* for CTL to work, we need that some nodes loop over itself. We
@@ -244,9 +248,18 @@ type cflow = (node, edge) Ograph_extended.ograph_mutable
 
 
 (* ------------------------------------------------------------------------ *)
-let unwrap ((node, labels), nodestr) = node
-let rewrap ((_node, labels), nodestr) node = (node, labels), nodestr
-let extract_labels ((node, labels), nodestr) = labels
+let unwrap ((node, info), nodestr) = node
+let rewrap ((_node, info), nodestr) node = (node, info), nodestr
+let extract_labels ((node, info), nodestr) = info.labels
+let extract_is_loop ((node, info), nodestr) = info.is_loop 
+
+let mk_node node labels nodestr =
+  let nodestr = 
+    if !Flag_parsing_c.show_flow_labels
+    then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
+    else nodestr
+  in
+  ((node, {labels = labels;is_loop=false;}), nodestr)
 
 
 (* ------------------------------------------------------------------------ *)

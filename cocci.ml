@@ -574,6 +574,8 @@ let build_info_program cprogram env =
       fullstring = fullstr;
 
       flow = ast_to_flow_with_error_messages c +> map_option (fun flow -> 
+        let flow = Ast_to_flow.annotate_loop_nodes flow in
+
         (* remove the fake nodes for julia *)
         let fixed_flow = CCI.fix_flow_ctl flow in
 
