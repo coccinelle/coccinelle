@@ -15,9 +15,11 @@ module type GRAPH =
   sig 
     type node 
     type cfg 
-    val predecessors : cfg -> node -> node list 
-    val successors   : cfg -> node -> node list 
-    val print_node: node -> unit
+    val predecessors:     cfg -> node -> node list
+    val successors:       cfg -> node -> node list
+    val extract_is_loop : cfg -> node -> bool
+    val print_node :      node -> unit
+    val size :            cfg -> int
   end
 
 module OGRAPHEXT_GRAPH :

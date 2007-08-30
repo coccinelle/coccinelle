@@ -1716,7 +1716,7 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	    ecount dcount icount rest in
 	(match matcher true (context_required e) wc pattern e init_env with
 	  Fail(reason) ->
-	    if reason = NonMatch
+	    if reason = NonMatch || not !Flag_parsing_cocci.show_iso_failures
 	    then ()
 	    else
 	      (match matcher false false wc pattern e init_env with

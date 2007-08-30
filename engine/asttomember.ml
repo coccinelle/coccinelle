@@ -73,7 +73,7 @@ let print_info = function
 	  Printf.printf "one set of required things %d:\n"
 	    (List.length disj);
 	  List.iter
-	    (function thing ->
+	    (function (_,thing) ->
 	      Printf.printf "%s\n"
 		(Pretty_print_cocci.rule_elem_to_string thing))
 	    disj;)
@@ -128,15 +128,15 @@ let rec conj xs ys =
 	      prev ys)
 	[] xs
 
-let conj_wrapped x l = conj [List.map strip x] l
+let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
 let rule_elem re =
   match Ast.unwrap re with
-    Ast.DisjRuleElem(res) -> List.map (function x -> [strip x]) res
-  | _ -> [[strip re]]
+    Ast.DisjRuleElem(res) -> [[(List.length res,strip re)]]
+  | _ -> [[(1,strip re)]]
 
 let conj_one testfn x l =
   if testfn x
@@ -269,11 +269,20 @@ someone depends on it, and thus we try again with testfn as contains_modif.
 Alternatively, we could check that this rule is mentioned in some
 dependency, but that would be a little more work, and doesn't seem
 worthwhile. *)
+
+(* lists are sorted such that smaller DisjRuleElem are first, because they
+are cheaper to test *)
 let asttomember (_,_,l) used_after =
-  let process_one l =
+  let process_one (l : (int * Ast_cocci.rule_elem) list list) =
     if debug
     then print_info l;
-    List.map (List.map (function x -> (Lib_engine.Match(x),CTL.Control))) l in
+    List.map
+      (function info ->
+	let info =
+	  List.sort (function (n1,_) -> function (n2,_) -> compare n1 n2)
+	    info in
+	List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
+      l in
   List.map2
     (function min -> function max ->
       match min with

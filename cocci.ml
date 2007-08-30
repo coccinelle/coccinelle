@@ -33,7 +33,9 @@ let cfile_of_program program2_with_ppmethod outf =
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
-let sp_of_file file iso    = Parse_cocci.process file iso false
+let sp_of_file2 file iso   = Parse_cocci.process file iso false
+let sp_of_file file iso    = 
+  Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
 (* --------------------------------------------------------------------- *)
 (* Flow related *)
@@ -746,6 +748,7 @@ let rec bigloop2 rs ccs =
 
   (* looping over the rules *)
   rs +> List.iter (fun r -> 
+    Common.profile_code r.rulename (fun () -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
     (* looping over the environments *)
@@ -841,7 +844,7 @@ let rec bigloop2 rs ccs =
 
     if !(r.was_matched)
     then Common.push2 r.rulename rules_that_have_ever_matched
-  ); (* end iter rs *)
+  )); (* end iter rs *)
 
   (if !Flag.sgrep_mode2
   then begin

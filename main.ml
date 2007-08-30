@@ -56,6 +56,7 @@ let quiet_profile = (
     Flag_cocci.show_binding_in_out;
 
     Flag_parsing_cocci.show_SP;
+    Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
     Flag_engine.debug_engine;
     Flag_engine.debug_unparsing;

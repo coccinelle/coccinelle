@@ -113,7 +113,10 @@ module CFG =
           Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
+    let extract_is_loop cfg n =
+      Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (string_of_int i)
+    let size cfg = cfg#nodes#length
   end
 
 module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)

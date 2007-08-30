@@ -3,5 +3,5 @@ each matched term *)
 
 let sgrep_mode = ref false
 
-
 let show_SP = ref false
+let show_iso_failures = ref true

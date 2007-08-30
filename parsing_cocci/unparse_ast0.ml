@@ -445,13 +445,13 @@ and statement arity s =
 	  print_string arity; mcode print_string ret; print_string " ";
 	  expression exp; mcode print_string sem
       | Ast0.MetaStmt(name,pure) ->
-	  print_string arity; mcode print_meta name;
+	  print_string arity; mcode print_meta name;(*
 	  print_string "^";
 	  (match pure with
 	    Ast0.Pure -> print_string "pure"
 	  | Ast0.Impure -> print_string "impure"
 	  | Ast0.Context -> print_string "context"
-	  | Ast0.PureContext -> print_string "pure_context")
+	  | Ast0.PureContext -> print_string "pure_context")*)
       | Ast0.MetaStmtList(name,_) ->
 	  print_string arity;  mcode print_meta name
       | Ast0.Disj(_,statement_dots_list,_,_) ->

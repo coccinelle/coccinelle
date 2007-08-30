@@ -71,9 +71,11 @@ module type GRAPH =
   sig
     type node
     type cfg
-    val predecessors: cfg -> node -> node list
-    val successors:    cfg -> node -> node list
-    val print_node : node -> unit
+    val predecessors:     cfg -> node -> node list
+    val successors:       cfg -> node -> node list
+    val extract_is_loop : cfg -> node -> bool
+    val print_node :      node -> unit
+    val size :            cfg -> int
   end
 ;;
 
@@ -214,6 +216,8 @@ let rec fix eq f x =
 (* Fix point calculation on set-valued functions *)
 let setfix f x = (fix subseteq f x) (*if new is a subset of old, stop*)
 let setgfix f x = (fix supseteq f x) (*if new is a supset of old, stop*)
+
+let get_states l = nub (List.map (function (s,_,_) -> s) l)
 
 (* ********************************************************************** *)
 (* Module: CTL_ENGINE                                                     *)
@@ -488,6 +492,7 @@ let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 (* conj opt doesn't work ((1,[],{{x=3}}) v (1,[],{{x=4}})) & (1,[],{{x=4}}) =
 (1,[],{{x=3},{x=4}}), not (1,[],{{x=4}}) *)
 let triples_conj trips trips' =
+  Common.profile_code "triples_conj" (fun () -> 
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT
     then
@@ -511,7 +516,7 @@ let triples_conj trips trips' =
 		| _       -> rest)
 	      else rest)
 	  rest trips')
-    shared trips
+    shared trips)
 ;;
 
 (* *************************** *)
@@ -629,6 +634,7 @@ let print_compl_state str (n,p) =
   print_state "pos" p
 
 let triples_complement states (trips : ('pred, 'anno) triples) =
+  Common.profile_code "triples_complement" (fun () -> 
   if trips = []
   then map (function st -> (st,top_subst,top_wit)) states
   else
@@ -652,19 +658,24 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
     let rec outer_loop = function
 	[x] -> x
       | l -> outer_loop (inner_loop l) in
-    cleanup (outer_loop all_negated)
+    cleanup (outer_loop all_negated))
 
 (* ********************************** *)
 (* END OF NEGATION (NegState style)   *)
 (* ********************************** *)
-      
+
+let something_dropped = ref true
+
 let triples_union trips trips' =
   (*unionBy compare eq_trip trips trips';;*)
   (* returns -1 is t1 > t2, 1 if t2 >= t1, and 0 otherwise *)
-    if !pNEW_INFO_OPT
-    then
+  Common.profile_code "triples_union" (fun () -> 
+  if !pNEW_INFO_OPT
+  then
+    begin
+      something_dropped := false;
       if trips = trips'
-      then trips
+      then (something_dropped := true; trips)
       else
 	let subsumes (s1,th1,wit1) (s2,th2,wit2) =
 	  if s1 = s2
@@ -686,14 +697,16 @@ let triples_union trips trips' =
 	    [] -> [x]
 	  | (y::ys) as all ->
 	      match subsumes x y with
-		1 -> all
+		1 -> (something_dropped := true; all)
 	      | (-1) -> second_loop x ys
 	      | _ -> y::(second_loop x ys) in
 	first_loop trips trips'
-    else unionBy compare eq_trip trips trips'
+    end
+  else unionBy compare eq_trip trips trips')
 
 
 let triples_witness x unchecked not_keep trips =
+  Common.profile_code "triples_witness" (fun () -> 
   let anyneg = (* if any is neg, then all are *)
     List.exists (function A.NegSubst _ -> true | A.Subst _ -> false) in
   let anynegwit = (* if any is neg, then all are *)
@@ -736,7 +749,7 @@ let triples_witness x unchecked not_keep trips =
       [] trips in
   if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
   then setify res
-  else List.rev res
+  else List.rev res)
 ;;
 
 
@@ -750,6 +763,17 @@ let triples_witness x unchecked not_keep trips =
 (* ************************************* *)
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
+
+let exists_pre_loop dir (grp,_,_) y reqst =
+  let check s =
+    match reqst with None -> true | Some reqst -> List.mem s reqst in
+  let exp (s,th,wit) =
+    List.exists
+      (function s' -> check s' && G.extract_is_loop grp s')
+      (match dir with
+	A.FORWARD -> G.predecessors grp s
+      | A.BACKWARD -> G.successors grp s) in
+  List.exists exp y
 
 let rec pre_exist dir (grp,_,_) y reqst =
   let check s =
@@ -816,7 +840,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
   if s1 = []
   then s2
   else
-    let ctr = ref 0 in
+    (*let ctr = ref 0 in*)
     if !pNEW_INFO_OPT
     then
       let rec f y new_info =
@@ -866,35 +890,48 @@ let satEF dir m s2 reqst =
       let pre = pre_exist dir m y reqst in
       triples_union s2 pre in
     setfix f s2
+
+type ('pred,'anno) auok =
+    AUok of ('pred,'anno) triples | AUfailed of ('pred,'anno) triples
       
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
-let satAU dir ((_,_,states) as m) s1 s2 reqst =
+let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
+  Common.profile_code "AU" (fun () -> 
   inc satAU_calls;
   if s1 = []
-  then s2
+  then AUok s2
   else
     (*let ctr = ref 0 in*)
     if !pNEW_INFO_OPT
     then
-    let rec f y newinfo =
-      match newinfo with
-	[] -> y
-      | new_info ->
-	  (*ctr := !ctr + 1;
-	  print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
-	  let first = triples_conj s1 (pre_forall dir m new_info y reqst) in
-	  let res = triples_union first y in
-	  let new_info = setdiff res y in
-	  (*Printf.printf "iter %d res %d new_info %d\n"
-	  !ctr (List.length res) (List.length new_info);
-	  flush stdout;*)
-	  f res new_info in
-    f s2 s2
+      let rec f y newinfo =
+	match newinfo with
+	  [] -> AUok y
+	| new_info ->
+	    (*ctr := !ctr + 1;
+	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	    if exists_pre_loop dir m new_info reqst
+	    then AUfailed y
+	    else
+	      match triples_conj s1 (pre_forall dir m new_info y reqst) with
+		[] -> AUok y
+	      |	first ->
+		  let res = triples_union first y in
+		  let new_info =
+		    if not !something_dropped
+		    then first
+		    else setdiff res y in
+		  (*Printf.printf
+		    "iter %d res %d new_info %d\n"
+		    !ctr (List.length res) (List.length new_info);
+		  flush stdout;*)
+		  f res new_info in
+      f s2 s2
     else
       let f y =
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
-      setfix f s2
+      AUok (setfix f s2))
 ;;
 
 
@@ -942,8 +979,8 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
       (*let ctr = ref 0 in*)
       let f y =
 	(*ctr := !ctr + 1;
-	Printf.printf "iter %d y %d\n" !ctr (List.length y);*)
-	flush stdout;
+	Printf.printf "iter %d y %d\n" !ctr (List.length y);
+	flush stdout;*)
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
@@ -1029,6 +1066,19 @@ let strict_A2 strict op failop dir ((_,_,states) as m) trips trips'
     triples_union res fail
   else res
       
+let strict_A2au strict op failop dir ((_,_,states) as m) trips trips'
+    required_states = 
+  match op dir m trips trips' required_states with
+    AUok res ->
+      if !Flag_ctl.partial_match && strict = A.STRICT
+      then
+	let states = mkstates states required_states in
+	let fail =
+	  filter_conj states res (failop dir m trips' required_states) in
+	AUok (triples_union res fail)
+      else AUok res
+  | AUfailed res -> AUfailed res
+      
 (* ********************* *)
 (* Environment functions *)
 (* ********************* *)
@@ -1039,6 +1089,7 @@ let drop_wits required_states s phi =
   | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
 
 let extend_required trips required =
+  Common.profile_code "extend_required" (fun () -> 
   if !pREQUIRED_ENV_OPT
   then
     let envs =
@@ -1058,7 +1109,7 @@ let extend_required trips required =
 		  None -> rest | Some th -> add th rest)
 	    rest required)
       [] envs)
-  else required
+  else required)
 	
 let drop_required v required =
   if !pREQUIRED_ENV_OPT
@@ -1077,7 +1128,8 @@ let memo_label =
   (Hashtbl.create(50) : (P.t, (G.node * substitution) list) Hashtbl.t)
 
 let satLabel label required p =
-  let triples =
+  Common.profile_code "satLabel" (fun () -> 
+    let triples =
     if !pSATLABEL_MEMO_OPT
     then
       try
@@ -1100,7 +1152,7 @@ let satLabel label required p =
 	  then t::rest
 	  else rest)
       [] triples)
-  else triples
+  else triples)
 
 let get_required_states l =
   if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match
@@ -1156,6 +1208,7 @@ let reachsatEF dir (grp,_,_) s2 =
   List.rev(f s2 s2) (* put root first *)
 
 let get_reachable dir m required_states =
+  Common.profile_code "get_reachable" (fun () -> 
   match required_states with
     None -> None
   | Some states ->
@@ -1174,7 +1227,7 @@ let get_reachable dir m required_states =
 		       Hashtbl.add reachable_table (cur,dir) states;
 		       states)
 		   rest)
-	   [] states)
+	   [] states))
 
 let ctr = ref 0
 let new_var _ =
@@ -1228,7 +1281,8 @@ let rec satloop unchecked required required_states
 	    with
 	      (false,[]) -> []
 	    | (_,phi2res) ->
-		strict_triples_conj strict (mkstates states required_states)
+		strict_triples_conj strict
+		  (mkstates states required_states)
 		  phi1res phi2res))
     | A.AndAny(dir,strict,phi1,phi2)     ->
 	(* phi2 can appear anywhere that is reachable *)
@@ -1313,32 +1367,28 @@ let rec satloop unchecked required required_states
 	    let s1 = loop unchecked new_required new_required_states phi1 in
 	    strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.AU(dir,strict,phi1,phi2) ->
-	if !Flag_ctl.loop_in_src_code
-	then
-	  let v = new_let () in
-	  let w = new_let () in
-	  let phi1ref = A.Ref v in
-	  let phi2ref = A.Ref w in
-	  loop unchecked required required_states
-	    (A.LetR
-	       (dir,v,phi1,
-		(A.LetR
-		   (dir,w,phi2,
-		    A.AW
-		      (dir,strict,
-		       A.And
-			 (A.NONSTRICT,
-			  A.EU(dir,A.Uncheck(phi1ref),A.Uncheck(phi2ref)),
-			  phi1ref),
-		       phi2ref)))))
-	else
-	  let new_required_states = get_reachable dir m required_states in
-	  (match loop unchecked required new_required_states phi2 with
-	    [] -> []
-	  | s2 ->
-	      let new_required = extend_required s2 required in
-	      let s1 = loop unchecked new_required new_required_states phi1 in
-	      strict_A2 strict satAU satEF dir m s1 s2 new_required_states)
+	(*Printf.printf "using AU\n";*)
+	let new_required_states = get_reachable dir m required_states in
+	(match loop unchecked required new_required_states phi2 with
+	  [] -> []
+	| s2 ->
+	    let new_required = extend_required s2 required in
+	    let s1 = loop unchecked new_required new_required_states phi1 in
+	    let res =
+	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states in
+	    match res with
+	      AUok res -> res
+	    | AUfailed tmp_res ->
+		(* found a loop, have to try AW *)
+		(* the formula is
+		   A[E[phi1 U phi2] & phi1 W phi2]
+		   the and is nonstrict *)
+		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
+		(*Printf.printf "using AW\n";*)
+		let s1 =
+		  triples_conj (satEU dir m s1 tmp_res new_required_states)
+		    s1 in
+		strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states (A.Or(A.Not phi1,phi2))
     | A.Exists (keep,v,phi)     ->
@@ -1433,7 +1483,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    | (_,(child2,res2)) ->
 		Printf.printf "and\n"; flush stdout;
 		let res =
-		  strict_triples_conj strict (mkstates states required_states)
+		  strict_triples_conj strict
+		    (mkstates states required_states)
 		    res1 res2 in
 		anno res [child1; child2]))
     | A.AndAny(dir,strict,phi1,phi2)     ->
@@ -1589,8 +1640,10 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		satv unchecked new_required new_required_states phi1 env in
 	      Printf.printf "AU %b\n" unchecked; flush stdout;
 	      let res =
-		strict_A2 strict satAU satEF dir m res1 res2
-		  new_required_states in
+		match strict_A2au strict satAU satEF dir m res1 res2
+		    new_required_states with
+		  AUok res -> res
+		| _ -> failwith "not possible: AU" in
 	      anno res [child1; child2])
     | A.Implies(phi1,phi2) -> 
 	satv unchecked required required_states
@@ -1882,9 +1935,10 @@ let print_bench _ =
 (* ---------------------------------------------------------------------- *)
 (* preprocessing: ignore irrelevant functions *)
 
-let preprocess label = function
+let preprocess (cfg,_,_) label = function
     [] -> true (* no information, try everything *)
   | l ->
+      let sz = G.size cfg in
       let verbose_output pred = function
 	  [] ->
 	    Printf.printf "did not find:\n";
@@ -1898,14 +1952,19 @@ let preprocess label = function
 	  try Hashtbl.find memo_label x
 	  with
 	    Not_found ->
-	      (let triples = setify(label x) in
+	      (let triples = label x in
 	      let filtered =
 		List.map (function (st,th,_) -> (st,th)) triples in
 	      Hashtbl.add memo_label x filtered;
 	      filtered) in
 	if verbose then verbose_output x res;
 	not([] = res) in
-      if List.exists (List.for_all (get_any false)) l
+      let get_all l =
+	(* don't bother testing when there are more patterns than nodes *)
+	if List.length l > sz-2
+	then false
+	else List.for_all (get_any false) l in
+      if List.exists get_all l
       then true
       else
 	(if !Flag_ctl.verbose_ctl_engine
@@ -1930,7 +1989,7 @@ let sat m phi reqopt =
   Hashtbl.clear reachable_table;
   Hashtbl.clear memo_label;
   let (x,label,states) = m in
-  if (!Flag_ctl.bench > 0) or (preprocess label reqopt)
+  if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
   then
     let m = (x,label,List.sort compare states) in
     let res =

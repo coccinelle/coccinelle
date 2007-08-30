@@ -270,14 +270,16 @@ module ENV =
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
   end
 
-
 module CFG = 
   struct
     type node = int
     type cfg = (F.node, F.edge) Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
+    let extract_is_loop cfg n =
+      Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (i_to_s i)
+    let size cfg = cfg#nodes#length
   end
 
 
