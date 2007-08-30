@@ -350,16 +350,21 @@ module type PARAM =
     val tokenf : ('a A.mcode, B.info) matcher
     val tokenf_mck : (A.mcodekind, B.info) matcher
 
-    val distrf_e : (A.meta_name A.mcode, B.expression) matcher
+    val distrf_e : 
+      (A.meta_name A.mcode, B.expression) matcher
     val distrf_args : 
       (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
-    val distrf_type : (A.meta_name A.mcode, Ast_c.fullType) matcher
+    val distrf_type : 
+      (A.meta_name A.mcode, Ast_c.fullType) matcher
     val distrf_params : 
       (A.meta_name A.mcode,
        (Ast_c.parameterType, Ast_c.il) either list) matcher
     val distrf_param : 
       (A.meta_name A.mcode, Ast_c.parameterType) matcher
-    val distrf_node : (A.meta_name A.mcode, Control_flow_c.node) matcher
+    val distrf_ini : 
+      (A.meta_name A.mcode, Ast_c.initialiser) matcher
+    val distrf_node : 
+      (A.meta_name A.mcode, Control_flow_c.node) matcher
 
     val distrf_define_params : 
       (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list)
@@ -1534,14 +1539,29 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
   =  fun ia ib -> 
     X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
-    
-    | (A.InitExpr expa,(B.InitExpr expb, ii)) -> 
-        assert (null ii);
-        expression expa expb >>= (fun expa expb -> 
-          return (
-            (A.InitExpr expa) +> A.rewrap ia,
-            (B.InitExpr expb, ii)
-          ))
+
+    | (A.InitExpr expa, ib) -> 
+        (match A.unwrap expa, ib with
+        | A.Edots (mcode, None), ib    -> 
+            X.distrf_ini (dots2metavar mcode) ib >>= (fun mcode ib -> 
+              return (
+                A.InitExpr 
+                  (A.Edots (metavar2dots mcode, None) +> A.rewrap expa) 
+                    +>  A.rewrap ia,
+                ib
+               ))
+
+        | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
+
+        | _, (B.InitExpr expb, ii) -> 
+            assert (null ii);
+            expression expa expb >>= (fun expa expb -> 
+              return (
+                (A.InitExpr expa) +> A.rewrap ia,
+                (B.InitExpr expb, ii)
+              ))
+        | _ -> fail
+        )
 
     | (A.InitList (ia1, ias, ia2, []), (B.InitList ibs, ii)) -> 
         (match ii with 

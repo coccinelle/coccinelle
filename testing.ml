@@ -30,7 +30,7 @@ let testone x compare_with_expected_flag =
           let tmpfile = "/tmp/"^Common.basename cfile in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
-          outfile
+          tmpfile
       | Some None -> 
           pr2 "no modification on the input file";
           cfile

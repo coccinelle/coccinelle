@@ -210,6 +210,7 @@ module XMATCH = struct
   let distrf_type = distrf (Lib_parsing_c.ii_of_type)
   let distrf_param = distrf (Lib_parsing_c.ii_of_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params)
+  let distrf_ini   = distrf (Lib_parsing_c.ii_of_ini)
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
   let distrf_struct_fields   = distrf (Lib_parsing_c.ii_of_struct_fields)
   let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
