@@ -265,7 +265,8 @@ let pp_program2 xs outfile  =
 
 
         | Parser_c.TCommentMisc _ 
-        | Parser_c.TCommentCpp _
+        | Parser_c.TCommentCpp (Ast_c.CppDirective, _)
+        | Parser_c.TCommentCpp (Ast_c.CppOther, _)
             -> pr str
         | x -> error_cant_have x
       );

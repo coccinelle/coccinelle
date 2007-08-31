@@ -849,8 +849,8 @@ let rec apply_macro_defs xs =
            * are all TCommentCpp
            *)
           [Parenthised (xxs, info_parens)] +> 
-            iter_token_paren (set_as_comment Ast_c.CppOther);
-          set_as_comment Ast_c.CppOther id;
+            iter_token_paren (set_as_comment Ast_c.CppMacro);
+          set_as_comment Ast_c.CppMacro id;
 
            
 
@@ -873,7 +873,7 @@ let rec apply_macro_defs xs =
                 TH.info_of_tok id.tok))
 
           | _ -> 
-              set_as_comment Ast_c.CppOther id;
+              set_as_comment Ast_c.CppMacro id;
               id.new_tokens_before <- bodymacro;
           )
       );
@@ -955,7 +955,7 @@ let rec find_macro_paren xs =
       pr2_cpp ("MACRO: string-macro with params : " ^ s);
       id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppOther);
+        iter_token_paren (set_as_comment Ast_c.CppMacro);
       find_macro_paren xs
 
   (* after case *)
@@ -966,7 +966,7 @@ let rec find_macro_paren xs =
       pr2_cpp ("MACRO: string-macro with params : " ^ s);
       id.tok <- TMacroString (TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppOther);
+        iter_token_paren (set_as_comment Ast_c.CppMacro);
       find_macro_paren xs
 
 
@@ -1229,7 +1229,7 @@ let rec find_macro_lineparen xs =
           msg_macro_noptvirg s;
           macro.tok <- TMacroStmt (TH.info_of_tok macro.tok);
           [Parenthised (xxs, info_parens)] +> 
-            iter_token_paren (set_as_comment Ast_c.CppOther);
+            iter_token_paren (set_as_comment Ast_c.CppMacro);
         end;
 
       find_macro_lineparen (line2::xs)

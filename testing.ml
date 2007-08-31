@@ -540,6 +540,10 @@ let test_compare_c_hardcoded () =
 (*****************************************************************************)
 
 let cprogram_of_file file = 
+  (* useful only when called from toplevel *)
+  Parsing_hacks._defs := Common.hash_of_list
+    (Parse_c.parse_cpp_define_file !Config.std_h);
+
   let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
   program2 
 

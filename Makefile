@@ -95,7 +95,13 @@ test: $(TARGET)
 	./$(TARGET) -testall
 
 testparsing:
-	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests/
+	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests
+#	./$(TARGET) -D standard.h -parse_c -dir tests/
+# -parse_c big-files/
+# pb_parsing/ 
+# pb_parsing_ecoop/
+
+
 
 PARSECMD=./spatch -D standard.h -filter_define_error -filter_classic_passed \
 	  -dir
