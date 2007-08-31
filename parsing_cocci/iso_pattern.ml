@@ -1714,8 +1714,6 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	let wc =
 	  whencode_allowed prev_ecount prev_icount prev_dcount
 	    ecount dcount icount rest in
-	printer pattern; Format.print_newline();
-	printer e; Format.print_newline();
 	(match matcher true (context_required e) wc pattern e init_env with
 	  Fail(reason) ->
 	    if reason = NonMatch || not !Flag_parsing_cocci.show_iso_failures
