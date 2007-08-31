@@ -909,7 +909,8 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	  [] -> AUok y
 	| new_info ->
 	    (*ctr := !ctr + 1;
-	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
+	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;
+	    flush stdout;*)
 	    if exists_pre_loop dir m new_info reqst
 	    then AUfailed y
 	    else
@@ -1088,40 +1089,70 @@ let drop_wits required_states s phi =
     None -> s
   | Some states -> List.filter (function (s,_,_) -> List.mem s states) s
 
+
+let print_required required =
+  List.iter
+    (function l ->
+      Format.print_string "{";
+      List.iter
+	(function reqd ->
+	  print_generic_substitution reqd; Format.print_newline())
+	l;
+      Format.print_string "}";
+      Format.print_newline())
+    required
+
+exception Too_long
+
 let extend_required trips required =
   Common.profile_code "extend_required" (fun () -> 
   if !pREQUIRED_ENV_OPT
   then
+    (* make it a set *)
     let envs =
       List.fold_left
 	(function rest ->
 	  function (_,t,_) -> if List.mem t rest then rest else t::rest)
 	[] trips in
-    if List.length envs > 10 then required else
-    (let add x y = if List.mem x y then y else x::y in
-    foldl
-      (function rest ->
-	function t ->
-	  foldl
-	    (function rest ->
-	      function r ->
-		match conj_subst t r with
-		  None -> rest | Some th -> add th rest)
-	    rest required)
-      [] envs)
+    let envs = if List.mem [] envs then [] else envs in
+    match (envs,required) with
+      ([],_) -> required
+    | (envs,hd::tl) ->
+	(try
+	  let hdln = List.length hd + 5 (* let it grow a little bit *) in
+	  let (_,merged) =
+	    let add x (ln,y) =
+	      if List.mem x y
+	      then (ln,y)
+	      else if ln + 1 > hdln then raise Too_long else (ln+1,x::y) in
+	    foldl
+	      (function rest ->
+		function t ->
+		  foldl
+		    (function rest ->
+		      function r ->
+			match conj_subst t r with
+			  None -> rest | Some th -> add th rest)
+		    rest hd)
+	      (0,[]) envs in
+	  merged :: tl
+	with Too_long -> envs :: required)
+    | (envs,_) -> envs :: required
   else required)
 	
 let drop_required v required =
   if !pREQUIRED_ENV_OPT
   then
+    let res =
     inner_setify
-      (List.map (List.filter (function sub -> not(dom_sub sub = v))) required)
+      (List.map
+	 (function l ->
+	   inner_setify
+	     (List.map (List.filter (function sub -> not(dom_sub sub = v))) l))
+	 required) in
+    (* check whether an entry has become useless *)
+    List.filter (function l -> not (List.exists (function x -> x = []) l)) res
   else required
-
-let print_required required =
-  List.iter
-    (function reqd -> print_generic_substitution reqd; Format.print_newline())
-    required
 
 (* no idea how to write this function ... *)
 let memo_label =
@@ -1144,14 +1175,15 @@ let satLabel label required p =
     else setify(label p) in
   if !pREQUIRED_ENV_OPT
   then
-    (foldl
+    foldl
       (function rest ->
 	function ((s,th,_) as t) ->
-	  if List.exists (function th' -> not(conj_subst th th' = None))
+	  if List.for_all
+	      (List.exists (function th' -> not(conj_subst th th' = None)))
 	      required
 	  then t::rest
 	  else rest)
-      [] triples)
+      [] triples
   else triples)
 
 let get_required_states l =
@@ -1367,7 +1399,6 @@ let rec satloop unchecked required required_states
 	    let s1 = loop unchecked new_required new_required_states phi1 in
 	    strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.AU(dir,strict,phi1,phi2) ->
-	(*Printf.printf "using AU\n";*)
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
 	  [] -> []
@@ -1384,7 +1415,6 @@ let rec satloop unchecked required required_states
 		   A[E[phi1 U phi2] & phi1 W phi2]
 		   the and is nonstrict *)
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
-		(*Printf.printf "using AW\n";*)
 		let s1 =
 		  triples_conj (satEU dir m s1 tmp_res new_required_states)
 		    s1 in
@@ -1591,6 +1621,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    Printf.printf "EU\n"; flush stdout;
 	    anno (satEU dir m res1 res2 new_required_states) [child1; child2])
     | A.AW(dir,strict,phi1,phi2)      -> 
+	failwith "should not be used" (*
 	  let new_required_states = get_reachable dir m required_states in
 	  (match satv unchecked required new_required_states phi2 env with
 	    (child2,[]) ->
@@ -1603,48 +1634,36 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	      let res =
 		strict_A2 strict satAW satEF dir m res1 res2
 		  new_required_states in
-	      anno res [child1; child2])
+	      anno res [child1; child2]) *)
     | A.AU(dir,strict,phi1,phi2)      -> 
-	if !Flag_ctl.loop_in_src_code
-	then
-	  let v = new_let () in
-	  let w = new_let () in
-	  let phi1ref = A.Ref v in
-	  let phi2ref = A.Ref w in
-	  Format.print_newline();
-	  Printf.printf "converting AU to AW\n";
-	  Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
-	    false phi;
-	  Format.print_newline();
-	  satv unchecked required required_states
-	    (A.LetR
-	       (dir,v,phi1,
-		(A.LetR
-		   (dir,w,phi2,
-		    A.AW
-		      (dir,strict,
-		       A.And
-			 (A.NONSTRICT,
-			  A.EU(dir,A.Uncheck(phi1ref),A.Uncheck(phi2ref)),
-			  phi1ref),
-		       phi2ref)))))
-	    env
-	else
-	  let new_required_states = get_reachable dir m required_states in
-	  (match satv unchecked required new_required_states phi2 env with
-	    (child2,[]) ->
-	      Printf.printf "AU %b\n" unchecked; flush stdout; anno [] [child2]
-	  | (child2,res2) ->
-	      let new_required = extend_required res2 required in
-	      let (child1,res1) =
-		satv unchecked new_required new_required_states phi1 env in
-	      Printf.printf "AU %b\n" unchecked; flush stdout;
-	      let res =
-		match strict_A2au strict satAU satEF dir m res1 res2
-		    new_required_states with
-		  AUok res -> res
-		| _ -> failwith "not possible: AU" in
-	      anno res [child1; child2])
+	let new_required_states = get_reachable dir m required_states in
+	(match satv unchecked required new_required_states phi2 env with
+	  (child2,[]) ->
+	    Printf.printf "AU\n"; flush stdout; anno [] [child2]
+	| (child2,s2) ->
+	    let new_required = extend_required s2 required in
+	    let (child1,s1) =
+	      satv unchecked new_required new_required_states phi1 env in
+	    Printf.printf "AU\n"; flush stdout;
+	    let res =
+	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states in
+	    (match res with
+	      AUok res ->
+		anno res [child1; child2]
+	    | AUfailed tmp_res ->
+		(* found a loop, have to try AW *)
+		(* the formula is
+		   A[E[phi1 U phi2] & phi1 W phi2]
+		   the and is nonstrict *)
+		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
+		Printf.printf "AW\n"; flush stdout;
+		let s1 =
+		  triples_conj (satEU dir m s1 tmp_res new_required_states)
+		    s1 in
+		let res =
+		  strict_A2 strict satAW satEF dir m s1 s2
+		    new_required_states in
+		anno res [child1; child2]))
     | A.Implies(phi1,phi2) -> 
 	satv unchecked required required_states
 	  (A.Or(A.Not phi1,phi2))
@@ -1683,14 +1702,14 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 ;;
 
 let sat_verbose annotate maxlvl lvl m phi =
-  sat_verbose_loop false [[]] None annotate maxlvl lvl m phi []
+  sat_verbose_loop false [] None annotate maxlvl lvl m phi []
 
 (* Type for annotations collected in a tree *)
 type ('a) witAnnoTree = WitAnno of ('a * ('a witAnnoTree) list);;
 
 let sat_annotree annotate m phi =
   let tree_anno l phi res chld = WitAnno(annotate l phi res,chld) in
-    sat_verbose_loop false [[]] None tree_anno (-1) 0 m phi []
+    sat_verbose_loop false [] None tree_anno (-1) 0 m phi []
 ;;
 
 (*
@@ -2000,7 +2019,7 @@ let sat m phi reqopt =
 	then bench_sat m fn
 	else fn()
       else
-	let fn _ = satloop false [[]] None m phi [] in
+	let fn _ = satloop false [] None m phi [] in
 	if !Flag_ctl.bench > 0
 	then bench_sat m fn
 	else fn() in
