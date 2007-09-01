@@ -211,6 +211,7 @@ let id_tokens lexbuf =
   | "sizeof" ->     TSizeof   linetype
 
   | "Expression"     -> TIsoExpression
+  | "ArgExpression"  -> TIsoArgExpression
   | "Statement"      -> TIsoStatement
   | "Declaration"    -> TIsoDeclaration
   | "Type"           -> TIsoType

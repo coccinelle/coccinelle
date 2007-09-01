@@ -91,7 +91,7 @@ module P = Parse_aux
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
-%token TIsoTopLevel
+%token TIsoTopLevel TIsoArgExpression
 
 %token TInvalid
 
@@ -499,7 +499,8 @@ includes:
 	match body with
 	  [e] ->
 	    (match Ast0.unwrap e with
-	      Ast0.Exp(e1) -> [Ast0.rewrap e (Ast0.TopExp(e1))]
+	      Ast0.Exp(e1) ->
+		[Ast0.rewrap e (Ast0.TopExp(Ast0.set_arg_exp (e1)))]
 	    | _ -> body)
 	| _ -> body in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
@@ -1039,11 +1040,12 @@ assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }
   | unary_expr(r,pe) TAssign assign_expr(r,pe)
       { let (op,clt) = $2 in
-      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,$3)) }
+      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
+				Ast0.set_arg_exp $3)) }
   | unary_expr(r,pe) TEq assign_expr(r,pe)
       { Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,$3)) }
+	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3)) }
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
@@ -1135,7 +1137,8 @@ postfix_expr(r,pe):
  | postfix_expr(r,pe) TDec
      { Ast0.wrap(Ast0.Postfix ($1, P.clt2mcode Ast.Dec $2)) }
  | postfix_expr(r,pe) TOPar eexpr_list_option TCPar
-     { Ast0.wrap(Ast0.FunCall($1,P.clt2mcode "(" $2,$3,
+     { Ast0.wrap(Ast0.FunCall($1,P.clt2mcode "(" $2,
+			      $3,
 			      P.clt2mcode ")" $4)) }
 
 primary_expr(recurser,primary_extra):
@@ -1257,18 +1260,18 @@ pure_decl_statement_list:
 /* as above, but allows a single expression - for "or" case */
 exp_decl_statement_list:
     TNothing { [] } /* only in + code, between dots */
-  | expr                                    { [Ast0.wrap(Ast0.Exp($1))] }
+  | expr { [Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     exp_decl_statement_list
       /* HACK!!! */
-    { (Ast0.wrap(Ast0.Exp($1)))::
+    { (Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))::
       (Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
 			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
 			  P.clt2mcode "...>" $4, None)))::
       $5 }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
       /* HACK!!! */
-    { [(Ast0.wrap(Ast0.Exp($1)));
+    { [(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))));
 	(Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
 			     Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
 			     P.clt2mcode "...>" $4, None)))] }
@@ -1289,11 +1292,11 @@ fun_exp_decl_statement_list:
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) in
     [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
-  | expr                 { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1))))] }
+  | expr { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))))] }
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
     fun_exp_decl_statement_list
       /* HACK!!! */
-    { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::
+    { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))))::
       (Ast0.wrap
 	 (Ast0.OTHER
 	    (Ast0.wrap
@@ -1304,7 +1307,7 @@ fun_exp_decl_statement_list:
 
   | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
       /* HACK!!! */
-    { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))));
+    { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))));
       (Ast0.wrap
 	 (Ast0.OTHER
 	    (Ast0.wrap
@@ -1412,12 +1415,12 @@ eexpr_list:
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
     dexpr
-      { $1 }
+      { Ast0.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,pure,clt) = $1 in
       Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,pure)) }
   | generic_ctype
-      { Ast0.wrap(Ast0.TypeExp($1)) }
+      { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 
 eexpr_list_start:
     aexpr { [$1] }
@@ -1558,6 +1561,8 @@ no_dot_start_end(grammar,dotter):
 iso_main:
   TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
     { P.iso_adjust (function x -> Ast0.ExprTag x) e1 el }
+| TIsoArgExpression e1=dexpr el=list(iso(dexpr)) EOF
+    { P.iso_adjust (function x -> Ast0.ArgExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF

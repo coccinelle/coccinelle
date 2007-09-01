@@ -65,7 +65,7 @@ let mcodekind brackets fn x info = function
 let mcode fn (x,_,info,mc) =
   mcodekind (Some info.Ast0.line_start)(*None*) fn x info mc
 
-let print_context (_,info,i,mc,ty,_) fn =
+let print_context (_,info,i,mc,ty,_,_) fn =
   mcodekind (Some info.Ast0.line_start) fn () info !mc
 
 let print_meta (_,name) = print_string name
@@ -580,7 +580,7 @@ let unparse_anything x =
       case_dots d
   | Ast0.IdentTag(d) ->
       ident d
-  | Ast0.ExprTag(d) ->
+  | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) ->
       expression d
   | Ast0.TypeCTag(d) ->
       typeC d

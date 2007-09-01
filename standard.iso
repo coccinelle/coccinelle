@@ -44,17 +44,6 @@
 
 
 // ---------------------------------------------------------------------------
-// Value isomorphisms
-// ---------------------------------------------------------------------------
-
-// There is also equal_c_int in cocci_vs_c to dealing with other 
-// integer decimal/hexadecimal isomorphisms. 
-Expression
-@ zero_multiple_format @
-@@
- 0 => '\0'
-
-// ---------------------------------------------------------------------------
 // Iso-by-absence (optional qualifier, storage, sign, cast) isomorphisms
 // ---------------------------------------------------------------------------
 // Some of them are handled in cocci_vs_c. Some of them handled here.
@@ -303,6 +292,19 @@ expression *X;
 statement S;
 @@
 if (X) S => if (X != NULL) S <=> if (NULL != X) S
+
+// ---------------------------------------------------------------------------
+// Value isomorphisms
+// ---------------------------------------------------------------------------
+
+// There is also equal_c_int in cocci_vs_c to dealing with other 
+// integer decimal/hexadecimal isomorphisms. 
+// an argexpression applies only at top level, in the argument of a
+// function call, or on the right-hand side of an assignment
+ArgExpression
+@ zero_multiple_format @
+@@
+ 0 => '\0'
 
 // ****************************************************************************
 // gcc specific isomorphisms 

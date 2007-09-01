@@ -121,29 +121,19 @@ module CFG =
 
 module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)
 
-let tested =
-  (Hashtbl.create(25) :
-     ((int,unit,unit) Ast_ctl.generic_ctl, Ograph_extended.nodei list)
-     Hashtbl.t)
-
 let test_formula state formula cfg =
-  try
-    let seen_before = Hashtbl.find tested formula in
-    List.mem state seen_before
-  with Not_found ->
     let label pred = [(pred,[],[])] in
     let verbose = !Flag_ctl.verbose_ctl_engine in
     let pm = !Flag_ctl.partial_match in
     Flag_ctl.verbose_ctl_engine := false;
     Flag_ctl.partial_match := false;
     let res =
-      ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist) formula
+      ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist)
+	(CTL.And(CTL.NONSTRICT,CTL.Pred(state),formula))
 	[[state]] in
     Flag_ctl.verbose_ctl_engine := verbose;
     Flag_ctl.partial_match := pm;
-    let res = List.map (function (st,_,_) -> st) res in
-    Hashtbl.add tested formula res;
-    List.mem state res
+    match res with [] -> false | _ -> true
 
 (* ---------------------------------------------------------------- *)
 (* Entry point *)
@@ -164,7 +154,6 @@ type ('a,'b,'c,'d,'e) triples =
 
 let check_reachability triples cfg =
   Hashtbl.clear modified;
-  Hashtbl.clear tested;
   List.iter build_modified triples;
   let formulas = create_formulas() in
   List.iter

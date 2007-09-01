@@ -519,6 +519,36 @@ let triples_conj trips trips' =
     shared trips)
 ;;
 
+exception AW
+
+let triples_conj_AW trips trips' =
+  Common.profile_code "triples_conj" (fun () -> 
+  let (trips,shared,trips') =
+    if false && !pTRIPLES_CONJ_OPT
+    then
+      let (shared,trips) =
+	List.partition (function t -> List.mem t trips') trips in
+      let trips' =
+	List.filter (function t -> not(List.mem t shared)) trips' in
+      (trips,shared,trips')
+    else (trips,[],trips') in
+  foldl (* returns a set - setify inlined *)
+    (function rest ->
+      function (s1,th1,wit1) ->
+	foldl
+	  (function rest ->
+	    function (s2,th2,wit2) ->
+	      if (s1 = s2) then
+		(match (conj_subst th1 th2) with
+		  Some th ->
+		    let t = (s1,th,union_wit wit1 wit2) in
+		    if List.mem t rest then rest else t::rest
+		| _ -> raise AW)
+	      else rest)
+	  rest trips')
+    shared trips)
+;;
+
 (* *************************** *)
 (* NEGATION (NegState style)   *)
 (* *************************** *)
@@ -764,17 +794,6 @@ let triples_witness x unchecked not_keep trips =
 (* The SAT algorithm and special helpers *)
 (* ************************************* *)
 
-let exists_pre_loop dir (grp,_,_) y reqst =
-  let check s =
-    match reqst with None -> true | Some reqst -> List.mem s reqst in
-  let exp (s,th,wit) =
-    List.exists
-      (function s' -> check s' && G.extract_is_loop grp s')
-      (match dir with
-	A.FORWARD -> G.predecessors grp s
-      | A.BACKWARD -> G.successors grp s) in
-  List.exists exp y
-
 let rec pre_exist dir (grp,_,_) y reqst =
   let check s =
     match reqst with None -> true | Some reqst -> List.mem s reqst in
@@ -805,6 +824,7 @@ let pre_forall dir (grp,_,states) y all reqst =
       (setify
 	 (concatmap
 	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
+  (* would a hash table be more efficient? *)
   let all = List.sort state_compare all in
   let rec up_nodes child s = function
       [] -> []
@@ -827,6 +847,44 @@ let pre_forall dir (grp,_,states) y all reqst =
   match neighbor_triples with
     [] -> []
   | _ -> foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples)
+	
+let pre_forall_AW dir (grp,_,states) y all reqst =
+  let check s =
+    match reqst with
+      None -> true | Some reqst -> List.mem s reqst in
+  let pred =
+    match dir with
+      A.FORWARD -> G.predecessors | A.BACKWARD -> G.successors in
+  let succ =
+    match dir with
+      A.FORWARD -> G.successors | A.BACKWARD -> G.predecessors in
+  let neighbors =
+    List.map
+      (function p -> (p,succ grp p))
+      (setify
+	 (concatmap
+	    (function (s,_,_) -> List.filter check (pred grp s)) y)) in
+  (* would a hash table be more efficient? *)
+  let all = List.sort state_compare all in
+  let rec up_nodes child s = function
+      [] -> []
+    | (s1,th,wit)::xs ->
+	(match compare s1 child with
+	  -1 -> up_nodes child s xs
+	| 0 -> (s,th,wit)::(up_nodes child s xs)
+	| _ -> []) in
+  let neighbor_triples =
+    List.fold_left
+      (function rest ->
+	function (s,children) ->
+	  (List.map
+	     (function child ->
+	       match up_nodes child s all with [] -> raise AW | l -> l)
+	     children) :: rest)
+      [] neighbors in
+  match neighbor_triples with
+    [] -> []
+  | _ -> foldl1 (@) (List.map (foldl1 triples_conj_AW) neighbor_triples)
 	
 (* drop_negwits will call setify *)
 let satEX dir m s reqst = pre_exist dir m s reqst;;
@@ -891,9 +949,10 @@ let satEF dir m s2 reqst =
       triples_union s2 pre in
     setfix f s2
 
+
 type ('pred,'anno) auok =
     AUok of ('pred,'anno) triples | AUfailed of ('pred,'anno) triples
-      
+
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
   Common.profile_code "AU" (fun () -> 
@@ -902,6 +961,10 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
   then AUok s2
   else
     (*let ctr = ref 0 in*)
+    let pre_forall =
+      if !Flag_ctl.loop_in_src_code
+      then pre_forall_AW
+      else pre_forall in
     if !pNEW_INFO_OPT
     then
       let rec f y newinfo =
@@ -911,22 +974,25 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	    (*ctr := !ctr + 1;
 	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;
 	    flush stdout;*)
-	    if exists_pre_loop dir m new_info reqst
-	    then AUfailed y
-	    else
-	      match triples_conj s1 (pre_forall dir m new_info y reqst) with
-		[] -> AUok y
-	      |	first ->
-		  let res = triples_union first y in
-		  let new_info =
-		    if not !something_dropped
-		    then first
-		    else setdiff res y in
+	    let pre =
+	      try Some (pre_forall dir m new_info y reqst)
+	      with AW -> None in
+	    match pre with
+	      None -> AUfailed y
+	    | Some pre ->
+		match triples_conj s1 pre with
+		  [] -> AUok y
+		| first ->
+		    let res = triples_union first y in
+		    let new_info =
+		      if not !something_dropped
+		      then first
+		      else setdiff res y in
 		  (*Printf.printf
-		    "iter %d res %d new_info %d\n"
-		    !ctr (List.length res) (List.length new_info);
-		  flush stdout;*)
-		  f res new_info in
+		     "iter %d res %d new_info %d\n"
+		     !ctr (List.length res) (List.length new_info);
+		     flush stdout;*)
+		    f res new_info in
       f s2 s2
     else
       let f y =
@@ -1399,6 +1465,7 @@ let rec satloop unchecked required required_states
 	    let s1 = loop unchecked new_required new_required_states phi1 in
 	    strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.AU(dir,strict,phi1,phi2) ->
+	(*Printf.printf "using AU\n"; flush stdout;*)
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
 	  [] -> []
@@ -1415,6 +1482,7 @@ let rec satloop unchecked required required_states
 		   A[E[phi1 U phi2] & phi1 W phi2]
 		   the and is nonstrict *)
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
+		(*Printf.printf "using AW\n"; flush stdout;*)
 		let s1 =
 		  triples_conj (satEU dir m s1 tmp_res new_required_states)
 		    s1 in
@@ -1656,14 +1724,12 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		   A[E[phi1 U phi2] & phi1 W phi2]
 		   the and is nonstrict *)
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
-		Printf.printf "AW\n"; flush stdout;
-		let s1 =
-		  triples_conj (satEU dir m s1 tmp_res new_required_states)
-		    s1 in
-		let res =
-		  strict_A2 strict satAW satEF dir m s1 s2
-		    new_required_states in
-		anno res [child1; child2]))
+	      Printf.printf "AW\n"; flush stdout;
+	      let s1 =
+		triples_conj (satEU dir m s1 tmp_res new_required_states) s1 in
+	      let res =
+		strict_A2 strict satAW satEF dir m s1 s2 new_required_states in
+	      anno res [child1; child2]))
     | A.Implies(phi1,phi2) -> 
 	satv unchecked required required_states
 	  (A.Or(A.Not phi1,phi2))
@@ -2010,6 +2076,9 @@ let sat m phi reqopt =
   let (x,label,states) = m in
   if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
   then
+    ((* to drop when Yoann initialized this flag *)
+    if List.exists (G.extract_is_loop x) states
+    then Flag_ctl.loop_in_src_code := true;
     let m = (x,label,List.sort compare states) in
     let res =
       if(!Flag_ctl.verbose_ctl_engine)
@@ -2025,7 +2094,7 @@ let sat m phi reqopt =
 	else fn() in
     let res = filter_partial_matches res in
     (*print_state "final result" res;*)
-    res
+    res)
   else
     (if !Flag_ctl.verbose_ctl_engine
     then Common.pr2 "missing something required";

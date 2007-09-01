@@ -32,6 +32,7 @@ type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
       * dots_bef_aft (* only for statements *)
+      * bool (* true if "arg_exp", only for exprs *)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -340,6 +341,7 @@ type anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | ArgExprTag of expression
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
@@ -379,15 +381,16 @@ let default_befaft _ =
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
-let wrap x = (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots)
+let wrap x =
+  (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots,false)
 let context_wrap x =
-  (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots)
-let unwrap (x,_,_,_,_,_) = x
+  (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots,false)
+let unwrap (x,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
-let rewrap (_,info,index,mcodekind,ty,dots) x =
-  (x,info,index,mcodekind,ty,dots)
+let rewrap (_,info,index,mcodekind,ty,dots,arg) x =
+  (x,info,index,mcodekind,ty,dots,arg)
 let rewrap_mcode (_,arity,info,mcodekind) x = (x,arity,info,mcodekind)
-let copywrap (_,info,index,mcodekind,ty,dots) x =
+let copywrap (_,info,index,mcodekind,ty,dots,arg) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;
      logical_start = info.logical_start; logical_end = info.logical_end;
@@ -397,20 +400,22 @@ let copywrap (_,info,index,mcodekind,ty,dots) x =
      column = info.column; offset = info.offset;
      strings_before = info.strings_before;
      strings_after = info.strings_after },
-   ref !index,ref !mcodekind,ref !ty,dots)
-let get_info (_,info,_,_,_,_) = info
-let get_line (_,info,_,_,_,_) = info.line_start
-let get_line_end (_,info,_,_,_,_) = info.line_end
-let get_index (_,_,index,_,_,_) = !index
-let set_index (_,_,index,_,_,_) i = index := i
-let get_mcodekind (_,_,_,mcodekind,_,_) = !mcodekind
+   ref !index,ref !mcodekind,ref !ty,dots,arg)
+let get_info (_,info,_,_,_,_,_) = info
+let get_line (_,info,_,_,_,_,_) = info.line_start
+let get_line_end (_,info,_,_,_,_,_) = info.line_end
+let get_index (_,_,index,_,_,_,_) = !index
+let set_index (_,_,index,_,_,_,_) i = index := i
+let get_mcodekind (_,_,_,mcodekind,_,_,_) = !mcodekind
 let get_mcode_mcodekind (_,_,_,mcodekind) = mcodekind
-let get_mcodekind_ref (_,_,_,mcodekind,_,_) = mcodekind
-let set_mcodekind (_,_,_,mcodekind,_,_) mk = mcodekind := mk
-let set_type (_,_,_,_,ty,_) t = ty := t
-let get_type (_,_,_,_,ty,_) = !ty
-let get_dots_bef_aft (_,_,_,_,_,d) = d
-let set_dots_bef_aft (a,b,c,d,e,_) dots_bef_aft = (a,b,c,d,e,dots_bef_aft)
+let get_mcodekind_ref (_,_,_,mcodekind,_,_,_) = mcodekind
+let set_mcodekind (_,_,_,mcodekind,_,_,_) mk = mcodekind := mk
+let set_type (_,_,_,_,ty,_,_) t = ty := t
+let get_type (_,_,_,_,ty,_,_) = !ty
+let get_dots_bef_aft (_,_,_,_,_,d,_) = d
+let set_dots_bef_aft (a,b,c,d,e,_,f) dots_bef_aft = (a,b,c,d,e,dots_bef_aft,f)
+let get_arg_exp (_,_,_,_,_,_,d) = d
+let set_arg_exp (a,b,c,d,e,f,_) = (a,b,c,d,e,f,true)
 let set_mcode_data data (_,ar,info,mc) = (data,ar,info,mc)
 
 (* --------------------------------------------------------------------- *)

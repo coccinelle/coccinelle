@@ -27,7 +27,7 @@ type info = { line_start : int; line_end : int;
 type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
-      * dots_bef_aft
+      * dots_bef_aft * bool (* true if "arg_exp", only for exprs *)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -334,6 +334,7 @@ type anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
+  | ArgExprTag of expression
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
@@ -388,6 +389,8 @@ val set_type : 'a wrap -> Type_cocci.typeC option -> unit
 val get_type : 'a wrap -> Type_cocci.typeC option
 val set_dots_bef_aft : statement -> dots_bef_aft -> statement
 val get_dots_bef_aft : 'a wrap -> dots_bef_aft
+val set_arg_exp : expression -> expression
+val get_arg_exp : expression -> bool
 val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 

@@ -22,8 +22,9 @@ type isomorphism =
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
-    let (term,info,index,mc,ty,dots) = k e in
-    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots) in
+    let (term,info,index,mc,ty,dots,arg) = k e in
+    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots,
+     false) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
@@ -50,6 +51,8 @@ let anything_equal = function
   | (Ast0.ExprTag(d1),Ast0.ExprTag(d2)) ->
       (strip_info.V0.rebuilder_expression d1) =
       (strip_info.V0.rebuilder_expression d2)
+  | (Ast0.ArgExprTag(_),_) | (_,Ast0.ArgExprTag(_)) ->
+      failwith "not possible - only in isos1"
   | (Ast0.TypeCTag(d1),Ast0.TypeCTag(d2)) ->
       (strip_info.V0.rebuilder_typeC d1) =
       (strip_info.V0.rebuilder_typeC d2)
@@ -1138,13 +1141,13 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind) in
   
-  let copy_one (term,info,index,mcodekind,ty,dots) =
+  let copy_one (term,info,index,mcodekind,ty,dots,arg) =
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
     (term,info,ref !index,
-     ref (copy_mcodekind !mcodekind),ty,dots) in
+     ref (copy_mcodekind !mcodekind),ty,dots,arg) in
   
   let donothing r k e = copy_one (k e) in
   
@@ -1814,26 +1817,28 @@ let transform_type (metavars,alts,name) e =
 
 
 let transform_expr (metavars,alts,name) e =
-  match alts with
-    (Ast0.ExprTag(_)::_)::_ ->
+  let process _ =
       (* start line is given to any leaves in the iso code *)
-      let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
-      let alts =
-	List.map
-	  (List.map
-	     (function
-		 Ast0.ExprTag(p) ->
-		   (p,count_edots.V0.combiner_expression p,
-		    count_idots.V0.combiner_expression p,
-		    count_dots.V0.combiner_expression p)
-	       | _ -> failwith "invalid alt"))
-	  alts in
-      mkdisj match_expr metavars alts
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_expression) e
-	make_disj_expr make_minus.V0.rebuilder_expression
-	(rebuild_mcode start_line).V0.rebuilder_expression
-	name Unparse_ast0.expression extra_copy_other_plus
+    let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+    let alts =
+      List.map
+	(List.map
+	   (function
+	       Ast0.ExprTag(p) | Ast0.ArgExprTag(p) ->
+		 (p,count_edots.V0.combiner_expression p,
+		  count_idots.V0.combiner_expression p,
+		  count_dots.V0.combiner_expression p)
+	     | _ -> failwith "invalid alt"))
+	alts in
+    mkdisj match_expr metavars alts
+      (function b -> function mv_b ->
+	(instantiate b mv_b).V0.rebuilder_expression) e
+      make_disj_expr make_minus.V0.rebuilder_expression
+      (rebuild_mcode start_line).V0.rebuilder_expression
+      name Unparse_ast0.expression extra_copy_other_plus in
+  match alts with
+    (Ast0.ExprTag(_)::_)::_ -> process()
+  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process()
   | _ -> ([],e)
 
 let transform_decl (metavars,alts,name) e =
@@ -1999,6 +2004,7 @@ let rewrap_anything = function
       Ast0.DotsCaseTag(rewrap.V0.rebuilder_case_line_dots d)
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
+  | Ast0.ArgExprTag(d) -> Ast0.ArgExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)
   | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.V0.rebuilder_initialiser d)
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)

@@ -7,8 +7,8 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
-let mkres (_,_,index,mcodekind,ty,d) e
-    (_,lstart,_,_,_,_) (_,lend,_,_,_,_) =
+let mkres (_,_,index,mcodekind,ty,d,arg) e
+    (_,lstart,_,_,_,_,_) (_,lend,_,_,_,_,_) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
       Ast0.line_end = lend.Ast0.line_end;
@@ -22,10 +22,10 @@ let mkres (_,_,index,mcodekind,ty,d) e
       Ast0.offset = lstart.Ast0.offset;
       (* only for tokens, not inherited upwards *)
       Ast0.strings_before = []; Ast0.strings_after = []} in
-  (e,info,index,mcodekind,ty,d)
+  (e,info,index,mcodekind,ty,d,arg)
 
-let mkmultires (_,_,index,mcodekind,ty,d) e
-    (_,lstart,_,_,_,_) (_,lend,_,_,_,_)
+let mkmultires (_,_,index,mcodekind,ty,d,arg) e
+    (_,lstart,_,_,_,_,_) (_,lend,_,_,_,_,_)
     (astart,start_mcodes) (aend,end_mcodes) =
   let info =
     { Ast0.line_start = lstart.Ast0.line_start;
@@ -40,7 +40,7 @@ let mkmultires (_,_,index,mcodekind,ty,d) e
       Ast0.offset = lstart.Ast0.offset;
       (* only for tokens, not inherited upwards *)
       Ast0.strings_before = []; Ast0.strings_after = [] } in
-  (e,info,index,mcodekind,ty,d)
+  (e,info,index,mcodekind,ty,d,arg)
 
 (* --------------------------------------------------------------------- *)
     
@@ -56,7 +56,7 @@ let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false)
 
 let promote_mcode_plus_one (_,_,info,mcodekind) =
   let new_info =
@@ -66,7 +66,7 @@ let promote_mcode_plus_one (_,_,info,mcodekind) =
       Ast0.line_end = info.Ast0.line_end + 1;
       Ast0.logical_end = info.Ast0.logical_end + 1;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false)
 
 let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
@@ -76,7 +76,7 @@ let promote_to_statement stm mcodekind =
       Ast0.line_start = info.Ast0.line_end;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false)
 
 let promote_to_statement_start stm mcodekind =
   let info = Ast0.get_info stm in
@@ -86,7 +86,7 @@ let promote_to_statement_start stm mcodekind =
       Ast0.line_end = info.Ast0.line_start;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false)
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =
@@ -125,9 +125,10 @@ let dot_list is_dots fn = function
 	get_node backward
 	  (function x -> (x.Ast0.attachable_end,x.Ast0.mcode_end)) in
       let (first_code,first_info,first_index,first_mcodekind,first_ty,
-	   first_d) =
+	   first_d,first_arg) =
 	List.hd forward in
-      let (last_code,last_info,last_index,last_mcodekind,last_ty,last_d) =
+      let (last_code,last_info,last_index,last_mcodekind,last_ty,
+	   last_d,last_arg) =
 	List.hd backward in
       let first_info =
 	{ first_info with
@@ -138,9 +139,11 @@ let dot_list is_dots fn = function
 	  Ast0.attachable_end = last_attachable;
 	  Ast0.mcode_end = last_mcode } in
       let first =
-	(first_code,first_info,first_index,first_mcodekind,first_ty,first_d) in
+	(first_code,first_info,first_index,first_mcodekind,first_ty,first_d,
+	 first_d) in
       let last =
-	(last_code,last_info,last_index,last_mcodekind,last_ty,last_d) in
+	(last_code,last_info,last_index,last_mcodekind,last_ty,last_d,
+	 last_arg) in
       (forward,first,last)
       
 let dots is_dots prev fn d =
@@ -148,11 +151,11 @@ let dots is_dots prev fn d =
     (Some prev,Ast0.DOTS([])) ->
       mkres d (Ast0.DOTS []) prev prev
   | (None,Ast0.DOTS([])) ->
-      let (_,_,index,mcodekind,ty,dots) = d in
+      let (_,_,index,mcodekind,ty,dots,arg) = d in
       (Ast0.DOTS [],
        {(Ast0.get_info d)
        with Ast0.attachable_start = false; Ast0.attachable_end = false},
-       index,mcodekind,ty,dots)
+       index,mcodekind,ty,dots,arg)
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend
@@ -549,7 +552,7 @@ let rec statement s =
       mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
   | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
       let exp = expression exp in
-      let (_,lend,_,_,_,_) as branch = statement branch in
+      let branch = statement branch in
       let right = promote_to_statement branch aft in
       mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
 	(promote_mcode iff) right
