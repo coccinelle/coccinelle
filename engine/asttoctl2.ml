@@ -260,6 +260,8 @@ Here the inner <... b ...> should not go past foo.  But foo is not the
 it in the case where the body of the outer nest ends in something other
 than dots or a nest. *)
 
+(* what is the difference between tail and end??? *)
+
 type after = After of formula | Guard of formula | Tail | End
 
 let a2n = function After x -> Guard x | a -> a
@@ -1021,7 +1023,7 @@ let svar_minus_or_no_add_after s label quantified d ast
 (* --------------------------------------------------------------------- *)
 (* dots and nests *)
 
-let dots_au label s wrapcode x seq_after y =
+let dots_au toend label s wrapcode x seq_after y =
   let lv = get_label_ctr() in
   let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
   let preflabelpred = label_pred_maker (Some lv) in
@@ -1038,6 +1040,8 @@ let dots_au label s wrapcode x seq_after y =
   let stop_early =
     if !exists
     then CTL.False
+    else if toend
+    then CTL.Or(aftpred label,exitpred label)
     else
       ctl_or (aftpred label)
 	(quantify [lv]
@@ -1113,13 +1117,15 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) *) in
   if plus
-  then do_plus_dots label guard wrapcode ornest nest whencodes aft ender
+  then
+    do_plus_dots (after = Tail) label guard wrapcode ornest nest whencodes
+      aft ender
   else
-    dots_au label (guard_to_strict guard) wrapcode
+    dots_au (after = Tail) label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest whencodes))
       aft ender
 
-and do_plus_dots label guard wrapcode ornest nest whencodes aft ender =
+and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =
   (* f(); <... \+ g(); ...> h(); after 
      becomes:
         f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
@@ -1133,12 +1139,12 @@ and do_plus_dots label guard wrapcode ornest nest whencodes aft ender =
   CTL.LetR
     (CTL.FORWARD,v,whencodes,
      ctl_and CTL.NONSTRICT
-       (dots_au label (guard_to_strict guard) wrapcode
+       (dots_au toend label (guard_to_strict guard) wrapcode
 	  (ctl_and CTL.NONSTRICT (CTL.Ref v) ornest) aft ender)
        (CTL.EU(CTL.FORWARD,CTL.Ref v,
 	       ctl_and CTL.NONSTRICT (CTL.Uncheck nest)
 		 (CTL.AX(CTL.FORWARD,CTL.NONSTRICT,
-			 (dots_au label (guard_to_strict guard) wrapcode
+			 (dots_au toend label (guard_to_strict guard) wrapcode
 			    (CTL.Ref v) aft ender))))))
 
 (* --------------------------------------------------------------------- *)

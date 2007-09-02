@@ -863,7 +863,7 @@ and bigloop a b =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c = 
  indent_do (fun () -> 
-
+(*    show_or_not_celem "trying" c.ast_c;*)
   let (trans_info, returned_any_states, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
