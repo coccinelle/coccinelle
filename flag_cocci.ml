@@ -20,7 +20,7 @@ let show_transinfo = ref true
 let show_binding_in_out = ref false
 
 
-
+let unparse_c2 = ref true
 
 let windows = ref false
 

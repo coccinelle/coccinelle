@@ -28,7 +28,10 @@ let cprogram_of_file_cached file =
 
 
 let cfile_of_program program2_with_ppmethod outf = 
-  Unparse_c.pp_program program2_with_ppmethod outf
+  if !Flag_cocci.unparse_c2
+  then Unparse_c2.pp_program program2_with_ppmethod outf
+  else Unparse_c.pp_program program2_with_ppmethod outf
+    
 
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)

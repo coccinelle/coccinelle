@@ -482,7 +482,7 @@ let test_parse_unparse infile =
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
   in
-  Unparse_c.pp_program program2_with_ppmethod tmpfile;
+  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile)
 
 

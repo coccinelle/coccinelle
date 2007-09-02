@@ -6,15 +6,14 @@ type pr_elem_func = Ast_c.info -> unit
 
 (*****************************************************************************)
 
-(* This module is used by unparse_c, but because unparse_c have also the
- * list of tokens, pretty_print_c could be useless (except that the ast_c
- * have some fake tokens not present in the list of tokens so it's still
- * useful). But this module is also useful to unparse C when you don't
- * have the ordered list of tokens separately, or tokens without 
- * position information, for instance when you want to pretty print
- * some piece of C that was generated, or abstract-lined piece of code, 
- * etc.
- *)
+(* This module is used by unparse_c, but because unparse_c have also
+ * the list of tokens, pretty_print_c could be useless in the futur
+ * (except that the ast_c have some fake tokens not present in the list
+ * of tokens so it's still useful). But this module is also useful to
+ * unparse C when you don't have the ordered list of tokens separately,
+ * or tokens without position information, for instance when you want
+ * to pretty print some piece of C that was generated, or some
+ * abstract-lined piece of code, etc. *)
 
 let rec pp_expression_gen pr_elem = 
   (* subtil: dont try to shorten the def of pp_statement by omitting e,

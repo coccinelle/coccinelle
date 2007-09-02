@@ -5,11 +5,7 @@ open Ast_c
 module TH = Token_helpers
 
 (*****************************************************************************)
-(* todo: take care of priority. For instance A => A+A, and if had B*A,
- * we dont want to generate B*A+A, we must insert some extra () (but
- * not always, only if necessary) src: rene
- * 
- * note: if add instruction, then try keep same indentation. So need introduce
+(* note: if add instruction, then try keep same indentation. So need introduce
  * some spacings. Done via the semi global _current_tabbing variable. *)
 (*****************************************************************************)
 
