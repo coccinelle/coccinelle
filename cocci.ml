@@ -277,19 +277,15 @@ let check_macro_in_sp_and_adjust tokens =
   )
 
 
-let contain_loop top = 
-  let res = ref false in
-  top +> Visitor_c.vk_program { Visitor_c.default_visitor_c with
-   Visitor_c.kstatement = (fun (k, bigf) stat -> 
-     match stat with 
-     | Ast_c.Iteration _, ii
-     (* overapproximation cos a goto doesn't always lead to a loop *)
-     | Ast_c.Jump (Ast_c.Goto _), ii -> 
-         res := true
-     | st -> k st
-     )
-     };
-  !res
+let contain_loop gopt = 
+  match gopt with
+  | Some g -> 
+      g#nodes#tolist +> List.exists (fun (xi, node) -> 
+        Control_flow_c.extract_is_loop node
+      )
+  | None -> true (* means nothing, if no g then will not model check *)
+
+
 
 let sp_contain_typed_metavar toplevel_list_list = 
   let bind x y = x or y in
@@ -573,12 +569,8 @@ let build_info_program cprogram env =
   zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
     let (fullstr, tokens) = parseinfo in
 
-    {
-      ast_c = c; (* contain refs so can be modified *)
-      tokens_c =  tokens;
-      fullstring = fullstr;
-
-      flow = ast_to_flow_with_error_messages c +> map_option (fun flow -> 
+    let flow = 
+      ast_to_flow_with_error_messages c +> Common.map_option (fun flow -> 
         let flow = Ast_to_flow.annotate_loop_nodes flow in
 
         (* remove the fake nodes for julia *)
@@ -588,9 +580,17 @@ let build_info_program cprogram env =
         if !Flag_cocci.show_before_fixed_flow then print_flow flow;
 
         fixed_flow
-      );
+      )
+    in
 
-      contain_loop = contain_loop c;
+    {
+      ast_c = c; (* contain refs so can be modified *)
+      tokens_c =  tokens;
+      fullstring = fullstr;
+
+      flow = flow;
+
+      contain_loop = contain_loop flow;
   
       env_typing_before = enva;
       env_typing_after = envb;
