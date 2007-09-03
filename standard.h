@@ -361,6 +361,8 @@ struct subsystem _name##_subsys = { \
 //  do { last_fn = (fn); if ((last_ret = (ret)) != 0) goto cs_failed; } while (0)
 
 
+// bt2/hci_bcsp.c
+#define BCSP_CRC_INIT(x) x = 0xffff
 
 
 // sound/oss/cs46xx_wrapper-24.h
