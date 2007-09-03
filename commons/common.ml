@@ -297,10 +297,11 @@ let profile_code category f =
   then f() 
   else begin
   let t = Unix.gettimeofday () in
-  let res = 
-    try Some (f ())
-    with Timeout -> None
+  let res, prefix = 
+    try Some (f ()), ""
+    with Timeout -> None, "*"
   in
+  let category = prefix ^ category in (* add a '*' to indicate timeout func *)
   let t' = Unix.gettimeofday () in
   let (xtime, xcount) = 
     (try Hashtbl.find !_profile_table category
