@@ -35,6 +35,9 @@ open Commonop
    let (+>) o f = f o
 *)
 
+exception Timeout
+
+
 let rec (do_n: int -> (unit -> unit) -> unit) = fun i f ->
   if i = 0 then () else (f(); do_n (i-1) f)
 let rec (foldn: ('a -> int -> 'a) -> 'a -> int -> 'a) = fun f acc i ->
@@ -294,7 +297,10 @@ let profile_code category f =
   then f() 
   else begin
   let t = Unix.gettimeofday () in
-  let res = f () in
+  let res = 
+    try Some (f ())
+    with Timeout -> None
+  in
   let t' = Unix.gettimeofday () in
   let (xtime, xcount) = 
     (try Hashtbl.find !_profile_table category
@@ -306,7 +312,10 @@ let profile_code category f =
     ) in
   xtime := !xtime +. (t' -. t);
   xcount := !xcount + 1;
-  res
+  (match res with
+  | Some res -> res
+  | None -> raise Timeout
+  );
   end
 
 (* todo: also put  % ? also add % to see if coherent numbers *)
@@ -1667,7 +1676,9 @@ let (with_open_infile: filename -> ((in_channel) -> 'a) -> 'a) = fun file f ->
     (fun e -> close_in chan)
 
 
-exception Timeout
+(* now in prelude
+   exception Timeout
+*)
 
 (* it seems that the toplevel block such signals, even with this explicit
  *  command :( 

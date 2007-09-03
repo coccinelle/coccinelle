@@ -805,15 +805,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
   | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
-  
+
+  (* only in arg lists or in define body *)  
+  | A.TypeExp _, _ -> fail
+
   (* only in arg lists *)
   | A.MetaExprList _, _   
-  | A.TypeExp _, _ 
   | A.EComma _, _  
   | A.Ecircles _, _ 
   | A.Estars _, _   
       ->
-	Pretty_print_cocci.expression ea; Format.print_newline();
 	raise Impossible
 
   | A.DisjExpr eas, eb -> 

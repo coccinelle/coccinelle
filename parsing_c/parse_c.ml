@@ -366,6 +366,12 @@ let expression_of_string = parse_gen Parser_c.expr
 
 
 
+(*****************************************************************************)
+(* Consistency checking *)
+(*****************************************************************************)
+
+let consistency_checking x = 
+  x
 
 (*****************************************************************************)
 (* Error recovery *)
@@ -807,6 +813,7 @@ let parse_print_error_heuristic2 file =
     )
   in
   let v = loop() in
+  let v = consistency_checking v in
   (v, stat)
 
 
