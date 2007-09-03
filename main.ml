@@ -257,7 +257,7 @@ let other_options = [
     " ";
     "-unparse_c2",   Arg.Set Flag_cocci.unparse_c2, 
     " ";
-    "-add_typedef_root",   Arg.Set Flag_parsing_c.add_typedef_root, " ";
+    "-noadd_typedef_root",   Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
        "disallow an expresion pattern from matching a term and its subterm"
   ];

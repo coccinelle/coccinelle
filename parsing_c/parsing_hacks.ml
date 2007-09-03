@@ -1771,7 +1771,7 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
     when not_struct_enum before && !LP._lexer_hint.parameterDeclaration -> 
 
-      msg_typedef s; Lexer_parser.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1861,7 +1861,7 @@ let lookahead2 next before =
       when s ==~ regexp_typedef && not_struct_enum before 
         (* struct user_info_t sometimes *) 
         -> 
-      msg_typedef s;  LP.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** yy *)  (* wrong ? *)

@@ -101,6 +101,13 @@
     "signed" "unsigned" 
     ))
 
+(defconst cocci-iso-keywords-list
+  '("Expression" "Statement" "Type" 
+    "Declaration" "TopLevel" "ArgExpression"
+    ))
+
+
+
 (defconst c-preprocessor-directives-list
   '("define" "undef"
     "if" "ifdef" "elif" "else" "endif" "ifndef"
@@ -192,12 +199,9 @@
    ; used in iso files
    ("<=>" . 'font-lock-keyword-face)
    ("=>" . 'font-lock-keyword-face)
-   ("Expression"  . 'cocci-special-face)
-   ("Statement"   . 'cocci-special-face)
-   ("Declaration" . 'cocci-special-face)
-   ("Type"  . 'cocci-special-face)
-   ("TopLevel"  . 'cocci-special-face)
 
+   (,(concat "\\b\\(" (regexp-opt cocci-iso-keywords-list) "\\)\\b") . 
+     'cocci-special-face)
 
    ("\\<[0-9]+\\>" . 'cocci-number-face)
 
