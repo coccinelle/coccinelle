@@ -387,7 +387,7 @@ extern T Z; => extern T Z = ...;
 Declaration
 @ const_extern_decl_init @
 type T;
-context identifier Z;
+identifier Z;
 constant C;
 @@
 extern T Z; => extern T Z = C;
@@ -402,7 +402,7 @@ static T Z; => static T Z = ...;
 Declaration
 @ const_static_decl_init @
 type T;
-context identifier Z;
+identifier Z;
 constant C;
 @@
 static T Z; => static T Z = C;
