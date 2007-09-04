@@ -372,6 +372,14 @@ T Z; => T Z = ...;
 Declaration
 @ decl_init @
 type T;
+identifier Z;
+constant C;
+@@
+T Z; => T Z = C;
+
+Declaration
+@ decl_init @
+type T;
 context identifier Z;
 @@
 extern T Z; => extern T Z = ...;
