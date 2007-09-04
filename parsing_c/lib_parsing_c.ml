@@ -13,7 +13,8 @@ open Common
 
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with
-    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i)
+    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i);
+    
   }
 
 let al_expr      = Visitor_c.vk_expr_s      strip_info_visitor 

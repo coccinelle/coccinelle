@@ -526,20 +526,25 @@ let rec (annotate_program2 :
 
     );
     Visitor_c.kdecl = (fun (k, bigf) d -> 
-      k d; (* to add possible definition in type found in Decl *)
       (match d with
       | (DeclList (xs, ii)) -> 
           xs +> List.iter (fun ((var, t, sto), iicomma) -> 
-        
+
+            (* to add possible definition in type found in Decl *)
+            Visitor_c.vk_type bigf t;
+            
             var +> do_option (fun ((s, ini), ii_s_ini) -> 
               match sto with 
               | StoTypedef, _inline -> 
                   add_binding (TypeDef (s,Lib.al_type t)) true;
               | _ -> 
                   add_binding (VarOrFunc (s, Lib.al_type t)) true;
+                  (* int x = sizeof(x) is legal so need process ini *)
+                  ini +> Common.do_option (fun ini -> 
+                    Visitor_c.vk_ini bigf ini);
             );
           );
-      | _ -> ()
+      | _ -> k d
       );
         
     );

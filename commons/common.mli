@@ -1003,6 +1003,8 @@ val hfold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) Hashtbl.t -> 'c -> 'c
 val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 
+val hfind_default : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
+
 val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t

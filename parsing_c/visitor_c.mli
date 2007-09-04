@@ -53,6 +53,7 @@ type visitor_c_s = {
   kprogram_s   : toplevel inout * visitor_c_s -> toplevel inout;
   knode_s      : 
     Control_flow_c.node inout * visitor_c_s -> Control_flow_c.node    inout;
+  kdefineval_s : (define_val inout * visitor_c_s) -> define_val inout;
   kinfo_s      : info           inout * visitor_c_s -> info           inout;
   }
 

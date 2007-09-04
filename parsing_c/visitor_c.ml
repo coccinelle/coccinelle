@@ -648,6 +648,8 @@ type visitor_c_s = {
   kprogram_s: (toplevel inout * visitor_c_s) -> toplevel inout;
   knode_s: (F.node inout * visitor_c_s) -> F.node inout;
 
+  kdefineval_s: (define_val inout * visitor_c_s) -> define_val inout;
+
   kinfo_s: (info inout * visitor_c_s) -> info inout;
  } 
 
@@ -661,6 +663,7 @@ let default_visitor_c_s =
     kprogram_s   = (fun (k,_) p  -> k p);
     knode_s      = (fun (k,_) n  -> k n);
     kinfo_s      = (fun (k,_) i  -> k i);
+    kdefineval_s = (fun (k,_) x  -> k x);
   } 
 
 let rec vk_expr_s = fun bigf expr ->
@@ -974,7 +977,6 @@ and vk_def_s = fun bigf d ->
 and vk_program_s = fun bigf p -> 
   let f = bigf.kprogram_s in
   let iif ii = vk_ii_s bigf ii in
-  let iif ii =  iif ii in
   let rec k p = 
     match p with
     | Declaration decl -> Declaration (vk_decl_s bigf decl)
@@ -1010,16 +1012,20 @@ and vk_define_kind_s  = fun bigf defkind ->
 
 
 and vk_define_val_s = fun bigf x -> 
+  let f = bigf.kdefineval_s in
   let iif ii = vk_ii_s bigf ii in
-  match x with
-  | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
-  | DefineStmt st -> DefineStmt (vk_statement_s bigf st)
-  | DefineDoWhileZero (st,ii) -> 
-      DefineDoWhileZero (vk_statement_s bigf st, iif ii)
-  | DefineFunction def -> DefineFunction (vk_def_s bigf def)
-  | DefineType ty -> DefineType (vk_type_s bigf ty)
-  | DefineText (s, ii) -> DefineText (s, iif ii)
-  | DefineEmpty -> DefineEmpty
+  let rec k x = 
+    match x with
+    | DefineExpr e  -> DefineExpr (vk_expr_s bigf e)
+    | DefineStmt st -> DefineStmt (vk_statement_s bigf st)
+    | DefineDoWhileZero (st,ii) -> 
+        DefineDoWhileZero (vk_statement_s bigf st, iif ii)
+    | DefineFunction def -> DefineFunction (vk_def_s bigf def)
+    | DefineType ty -> DefineType (vk_type_s bigf ty)
+    | DefineText (s, ii) -> DefineText (s, iif ii)
+    | DefineEmpty -> DefineEmpty
+  in
+  f (k, bigf) x
   
 
 and vk_info_s = fun bigf info -> 

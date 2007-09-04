@@ -2624,6 +2624,11 @@ let _  =
   assert(hash_to_list h = ["toto",1; "toto",1])
  
 
+let hfind_default key value_if_not_found h = 
+  try Hashtbl.find h key
+  with Not_found -> 
+    (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
+
 
 (*****************************************************************************)
 (* Hash sets *)

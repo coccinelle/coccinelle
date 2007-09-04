@@ -370,10 +370,149 @@ let expression_of_string = parse_gen Parser_c.expr
 (* Consistency checking *)
 (*****************************************************************************)
 
+type class_ident = 
+  | CIdent (* can be var, func, field, tag, enum constant *)
+  | CTypedef
+
+let str_of_class_ident = function
+  | CIdent -> "Ident"
+  | CTypedef -> "Typedef"
+
+(*
+  | CMacro
+  | CMacroString
+  | CMacroStmt
+  | CMacroDecl
+  | CMacroIterator
+  | CAttr
+
+(* but take care that must still be able to use '=' *)
+type context = InFunction | InEnum | InStruct | InInitializer | InParams
+type class_token = 
+  | CIdent of class_ident
+
+  | CComment 
+  | CSpace
+  | CCommentCpp of cppkind
+  | CCommentMisc
+  | CCppDirective
+
+  | COPar
+  | CCPar
+  | COBrace
+  | CCBrace
+
+  | CSymbol
+  | CReservedKwd (type | decl | qualif | flow | misc | attr)
+*)
+
+let consistency_checking2 xs = 
+
+  (* first phase, gather data *)
+  let stat = Hashtbl.create 101 in 
+
+  (* default value for hash *)
+  let v1 () = Hashtbl.create 101 in
+  let v2 () = ref 0 in
+
+  let bigf = { Visitor_c.default_visitor_c with
+
+    Visitor_c.kexpr = (fun (k,bigf) x -> 
+      match Ast_c.unwrap_expr x with
+      | Ast_c.Ident s -> 
+          stat +> 
+            Common.hfind_default s v1 +> Common.hfind_default CIdent v2 +> 
+            (fun aref -> incr aref)
+
+      | _ -> k x
+    );
+    Visitor_c.ktype = (fun (k,bigf) t -> 
+      match Ast_c.unwrap_typeC t with
+      | Ast_c.TypeName s -> 
+          stat +> 
+            Common.hfind_default s v1 +> Common.hfind_default CTypedef v2 +> 
+            (fun aref -> incr aref)
+
+      | _ -> k t
+    );
+  } 
+  in
+  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
 
 
-let consistency_checking x = 
-  x
+  let ident_to_type = ref [] in
+  
+
+  (* second phase, analyze data *)
+  stat +> Hashtbl.iter (fun k v -> 
+    let xs = Common.hash_to_list v in
+    if List.length xs >= 2
+    then begin 
+      pr2 ("CONFLICT:" ^ k);
+      let sorted = xs +> List.sort (fun (ka,va) (kb,vb) -> 
+        if !va = !vb then
+          (match ka, kb with
+          | CTypedef, _ -> 1 (* first is smaller *)
+          | _, CTypedef -> -1
+          | _ -> 0
+          )
+        else compare !va !vb
+      ) in
+      let sorted = List.rev sorted in
+      match sorted with
+      | [CTypedef, i1;CIdent, i2] -> 
+          pr2 ("transforming some ident in typedef");
+          push2 k ident_to_type;
+      | _ -> 
+          pr2 ("TODO:other transforming?");
+      
+    end
+  );
+
+  (* third phase, update ast *)
+  if (null !ident_to_type)
+  then xs 
+  else 
+    let bigf = { Visitor_c.default_visitor_c_s with
+      Visitor_c.kdefineval_s = (fun (k,bigf) x -> 
+        match x with
+        | Ast_c.DefineExpr e -> 
+            (match e with
+            | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
+                let t = (Ast_c.nQ, (Ast_c.TypeName s, ii)) in
+                Ast_c.DefineType t
+            | _ -> k x
+            )
+        | _ -> k x
+      );
+      Visitor_c.kexpr_s = (fun (k, bigf) x -> 
+        match x with
+        | (Ast_c.SizeOfExpr e, tref), isizeof -> 
+            let i1 = tuple_of_list1 isizeof in
+            (match e with
+            | (Ast_c.ParenExpr e, _), iiparen -> 
+                (match e with
+                | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
+                    let (i2, i3) = tuple_of_list2 iiparen in
+                    let t = (Ast_c.nQ, (Ast_c.TypeName s, ii)) in
+                    (Ast_c.SizeOfType t, tref), [i1;i2;i3]
+                      
+                | _ -> k x
+                )
+            | _ -> k x
+            )
+        | _ -> k x
+      );
+    } in
+    xs +> List.map (fun (p, info_item) -> 
+      Visitor_c.vk_program_s bigf p, info_item
+    )
+
+
+let consistency_checking a  = 
+  Common.profile_code "C consistencycheck" (fun () -> consistency_checking2 a)
+
+
 
 (*****************************************************************************)
 (* Error recovery *)
