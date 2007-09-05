@@ -26,14 +26,34 @@ let rec lub_type t1 t2 =
   | (Some t,None) -> t1
   | (Some t1,Some t2) ->
       let rec loop = function
-	  (T.Unknown,_) -> t2
-	| (_,T.Unknown) -> t1
+	  (T.Unknown,t2) -> t2
+	| (t1,T.Unknown) -> t1
 	| (T.ConstVol(cv1,ty1),T.ConstVol(cv2,ty2)) when cv1 = cv2 ->
 	    T.ConstVol(cv1,loop(ty1,ty2))
-	| (T.Pointer(ty1),T.Pointer(ty2)) -> T.Pointer(loop(ty1,ty2))
+	| (T.Pointer(ty1),T.Pointer(ty2)) ->
+	    T.Pointer(loop(ty1,ty2))
 	| (T.Array(ty1),T.Array(ty2)) -> T.Array(loop(ty1,ty2))
-	| (_,_) -> t1 in (* arbitrarily pick the first, assume type correct *)
+	| (t1,_) -> t1 in (* arbitrarily pick the first, assume type correct *)
       Some (loop (t1,t2))
+
+let lub_envs envs =
+  List.fold_left
+    (function acc ->
+      function env ->
+	List.fold_left
+	  (function acc ->
+	    function (var,ty) ->
+	      let (relevant,irrelevant) =
+		List.partition (function (x,_) -> x = var) acc in
+	      match relevant with
+		[] -> (var,ty)::acc
+	      |	[(x,ty1)] ->
+		  (match lub_type (Some ty) (Some ty1) with
+		    Some new_ty -> (var,new_ty)::irrelevant
+		  | None -> irrelevant)
+	      |	_ -> failwith "bad type environment")
+	  acc env)
+    [] envs
 
 let rec propagate_types env =
   let option_default = None in
@@ -202,15 +222,15 @@ let rec propagate_types env =
      list, which is required by C, but not actually required by the cocci
      parser *)
   let rec process_statement_list acc = function
-      [] -> ()
-    | (s::ss) as all_s ->
+      [] -> acc
+    | (s::ss) ->
 	(match Ast0.unwrap s with
 	  Ast0.Decl(_,decl) ->
 	    let rec process_decl decl =
 	      match Ast0.unwrap decl with
 		Ast0.Init(_,ty,id,_,exp,_) ->
 		  let _ =
-		    (propagate_types (acc@env)).V0.combiner_initialiser exp in
+		    (propagate_types acc).V0.combiner_initialiser exp in
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(_,ty,id,_) ->
 		  [(strip id,Ast0.ast0_type_to_type ty)]
@@ -223,16 +243,24 @@ let rec propagate_types env =
 	      | Ast0.OptDecl(decl) -> process_decl decl
 	      | Ast0.UniqueDecl(decl) -> process_decl decl
 	      | Ast0.MultiDecl(decl) -> process_decl decl in
-	    process_statement_list ((process_decl decl)@acc) ss
-	| Ast0.Dots(_,_) -> process_statement_list acc ss
+	    let new_acc = (process_decl decl)@acc in
+	    process_statement_list new_acc ss
+	| Ast0.Dots(_,wc) -> process_statement_list acc ss
+	| Ast0.Disj(_,statement_dots_list,_,_) ->
+	    let new_acc =
+	      lub_envs
+		(List.map
+		   (function x -> process_statement_list acc (Ast0.undots x))
+		   statement_dots_list) in
+	    process_statement_list new_acc ss
 	| _ ->
-	    let recursor = (propagate_types acc).V0.combiner_statement in
-	    List.iter (function s -> let _ = recursor s in ()) all_s) in
+	    let _ = (propagate_types acc).V0.combiner_statement s in
+	    process_statement_list acc ss) in
 
   let statement_dots r k d =
     match Ast0.unwrap d with
       Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	process_statement_list env l; option_default in
+	let _ = process_statement_list env l in option_default in
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->

@@ -349,6 +349,7 @@ type anything =
   | StmtTag of statement
   | CaseLineTag of case_line
   | TopTag of top_level
+  | AnyTag
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x

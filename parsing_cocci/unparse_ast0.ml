@@ -114,6 +114,7 @@ let rec ident i =
 let print_string_box s = print_string s; open_box 0
 
 let rec expression e =
+  print_option Type_cocci.typeC (Ast0.get_type e);
   print_context e
     (function _ ->
       match Ast0.unwrap e with
@@ -595,7 +596,8 @@ let unparse_anything x =
   | Ast0.CaseLineTag(d) ->
       case_line "" d
   | Ast0.TopTag(d) ->
-      top_level d);
+      top_level d
+  | Ast0.AnyTag -> print_string "any");
   quiet := q;
   print_newline()
 

@@ -30,6 +30,7 @@ let set_mcodekind x mcodekind =
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.AnyTag -> failwith "anytag only within iso phase"
 
 let set_index x index =
   match x with
@@ -49,6 +50,7 @@ let set_index x index =
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
+  | Ast0.AnyTag -> failwith "anytag only within iso phase"
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
@@ -67,6 +69,7 @@ let get_index = function
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.TopTag(d) -> Index.top_level d
+  | Ast0.AnyTag -> failwith "anytag only within iso phase"
 
 (* --------------------------------------------------------------------- *)
 (* Collect the line numbers of the plus code.  This is used for disjunctions.
@@ -658,6 +661,8 @@ let root_equal e1 e2 =
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
+  | (Ast0.AnyTag,_) | (_,Ast0.AnyTag) ->
+      failwith "anytag only within iso phase"
   | _ -> false
 
 let default_context _ =

@@ -342,6 +342,7 @@ type anything =
   | StmtTag of statement
   | CaseLineTag of case_line
   | TopTag of top_level
+  | AnyTag (* only for when code, in iso phase *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything
