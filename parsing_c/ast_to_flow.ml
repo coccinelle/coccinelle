@@ -586,6 +586,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
        let res = 
          (match finalthen with
          | Some finalthen -> 
+             let afteri = !g +> add_node AfterNode lbl "[after]" in
+             !g#add_arc ((newswitchi, afteri),  Direct);
+             !g#add_arc ((afteri, newendswitch), Direct);
+
              !g#add_arc ((finalthen, newendswitch), Direct);
              Some newendswitch
          | None -> 
@@ -595,8 +599,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                  !g#del_node newendswitch;
                  None
              end
-             else Some newendswitch
-                 
+             else begin
+               let afteri = !g +> add_node AfterNode lbl "[after]" in
+               !g#add_arc ((newswitchi, afteri),  Direct);
+               !g#add_arc ((afteri, newendswitch), Direct);
+
+               Some newendswitch
+             end
          )
        in
        res

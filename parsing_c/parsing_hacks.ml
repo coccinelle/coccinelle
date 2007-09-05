@@ -1643,7 +1643,7 @@ let lookahead2 next before =
   match (next, before) with
 
   (*-------------------------------------------------------------*)
-  (* typedef inference *)
+  (* typedef inference, parse_typedef_fix3 *)
   (*-------------------------------------------------------------*)
   (* xx xx *)
   | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2

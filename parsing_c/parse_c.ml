@@ -406,6 +406,7 @@ type class_token =
   | CReservedKwd (type | decl | qualif | flow | misc | attr)
 *)
 
+(* parse_typedef_fix4 *)
 let consistency_checking2 xs = 
 
   (* first phase, gather data *)

@@ -1,4 +1,10 @@
+// ex 2.1
 @@
+//identifier V;
+//identifier cputime; // V1
+//identifier ovalue; // V2
+////struct itimerval* ovalue; // V2 // cant in this SP because not needed.
+//identifier k; //V3
 @@
 
 int do_setitimer(int which, struct itimerval *value, 
@@ -9,14 +15,15 @@ int do_setitimer(int which, struct itimerval *value,
    int k;
    if (ovalue && (k = do_getitimer(which, ovalue)) < 0)
      return k;
+<...
    switch (which) {
      case ITIMER_VIRTUAL:
        cputime = timeval_to_cputime(&value->it_value);
       if (cputime_eq(cputime, cputime_zero))
 	  cputime = jiffies_to_cputime(1);
        current->it_virt_value = cputime;
-       cputime = timeval_to_cputime(&value->it_interval);
--       current->it_virt_incr = cputime;
+-       cputime = timeval_to_cputime(&value->it_interval);
+       current->it_virt_incr = cputime;
        break;
      case ITIMER_PROF:
        cputime = timeval_to_cputime(&value->it_value);
@@ -26,8 +33,9 @@ int do_setitimer(int which, struct itimerval *value,
          cputime = timeval_to_cputime(&value->it_interval);
          current->it_prof_incr = cputime;
          break;
-       default:
+     default:
          return -EINVAL;
    }
+...>
    return 0;
 }
