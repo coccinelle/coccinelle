@@ -586,9 +586,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
        let res = 
          (match finalthen with
          | Some finalthen -> 
+(*
              let afteri = !g +> add_node AfterNode lbl "[after]" in
              !g#add_arc ((newswitchi, afteri),  Direct);
              !g#add_arc ((afteri, newendswitch), Direct);
+*)
 
              !g#add_arc ((finalthen, newendswitch), Direct);
              Some newendswitch
@@ -600,9 +602,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                  None
              end
              else begin
+(*
                let afteri = !g +> add_node AfterNode lbl "[after]" in
                !g#add_arc ((newswitchi, afteri),  Direct);
                !g#add_arc ((afteri, newendswitch), Direct);
+*)
 
                Some newendswitch
              end
@@ -1086,7 +1090,11 @@ let ast_to_control_flow e =
           !g#add_arc ((ei, endi) ,Direct);
 
       | Ast_c.DefineStmt st -> 
-          let info = initial_info in
+          let info = { initial_info with
+            labels_assoc = compute_labels_and_create_them st;
+          } 
+          in
+
           let lasti = aux_statement (Some headeri , info) st in
           lasti +> do_option (fun lasti -> 
             (* todo? if don't have a lasti ? no EndNode ? CTL will work ? *)
