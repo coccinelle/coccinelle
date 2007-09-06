@@ -143,6 +143,7 @@ and base_expression =
   | UniqueExp      of expression
   | MultiExp       of expression (* only allowed in nests *)
 
+(* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap

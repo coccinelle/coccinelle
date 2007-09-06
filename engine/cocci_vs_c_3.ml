@@ -2349,14 +2349,19 @@ and compatible_type a b =
       else fail
 
   | Type_cocci.ConstVol (qua, a), (qub, b) -> 
-      if 
-        (match qua with 
-        | Type_cocci.Const -> (fst qub).B.const
-        | Type_cocci.Volatile -> (fst qub).B.volatile
-        )
-      then 
-        compatible_type a (qub, b)
-      else fail
+      if (fst qub).B.const && (fst qub).B.volatile 
+      then begin pr2 ("warning: the type is both const & volatile but cocci " ^
+                      "does not handle that");
+          fail
+      end
+      else 
+        if 
+          (match qua with 
+          | Type_cocci.Const -> (fst qub).B.const
+          | Type_cocci.Volatile -> (fst qub).B.volatile
+          )
+        then compatible_type a (Ast_c.nQ, b)
+        else fail
 
   | Type_cocci.MetaType        (ida,keep,inherited), typb -> 
       
