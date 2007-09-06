@@ -83,18 +83,18 @@ type node = node1 * string
     }
     and node2 =
 
-  (* for CTL to work, we need that some nodes loop over itself. We
+  (* For CTL to work, we need that some nodes loop over itself. We
    * need that every nodes have a successor. Julia also want to go back
-   * indifinitely. So must tag some nodes as the beginning and end of
-   * the graph so that some fix_ctl function can correctly find those
-   * nodes
+   * indefinitely. So must tag some nodes as the beginning and end of
+   * the graph so that some fix_ctl function can easily find those
+   * nodes.
    * 
-   * if have a function, then no need for EndNode; Exit and ErrorExit
-   * would play that role.
+   * If have a function, then no need for EndNode; Exit and ErrorExit
+   * will play that role.
    * 
    * When everything we analyze was a function there was no pb. We used
    * FunHeader as a Topnode and Exit for EndNode but now that we also
-   * analyse #define body, we need those nodes.
+   * analyse #define body, so we need those nodes.
    *)
    | TopNode 
    | EndNode 

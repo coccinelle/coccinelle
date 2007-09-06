@@ -166,12 +166,14 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   let topi = F.first_node !g in
   !g#add_arc ((topi, topi), F.Direct);
 
+  (* for the #define CFG who have no Exit but have at least a EndNode *)
   (try 
       let endi  = F.find_node (fun x -> x = F.EndNode) !g in
       !g#add_arc ((endi, endi), F.Direct);
     with Not_found -> ()
   );
 
+  (* for the regular functions *)
   (try 
     let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
     let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
