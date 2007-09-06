@@ -83,7 +83,7 @@
     "struct" "union"
     "static" "const" "volatile"
     "break" "continue"
-    "switch"
+    "switch" "case"
     ))
 
 (defconst cocci-declaration-keywords-list 
