@@ -1446,9 +1446,6 @@ and statement stmt after quantified label guard =
 	guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
   | Ast.Switch(header,lb,cases,rb) ->
-      (match after with
-	After(_) -> failwith "pattern code after switch not supported"
-      |	_ -> ());
       let header_fvs = Ast.get_fvs header in
       let lb_fvs = Ast.get_fvs lb in
       let case_fvs = List.map Ast.get_fvs cases in
@@ -1533,16 +1530,22 @@ and statement stmt after quantified label guard =
 	    cases
 	then function x -> x
 	else function x -> ctl_or (fallpred label) x in
-      quantify b1fvs
-	(make_seq
-	   [switch_header;
-	     default_required
-	       (quantify b2fvs
-		  (make_seq
-		     [ctl_and lb
-			 (List.fold_left ctl_and CTL.True
-			    (List.map ctl_ex case_headers));
-		       List.fold_left ctl_or_fl no_header case_code]))])
+      let after_pred = aftpred label in
+      let body after_branch =
+	ctl_or
+	  (default_required
+	     (quantify b2fvs
+		(make_seq
+		   [ctl_and lb
+		       (List.fold_left ctl_and CTL.True
+			  (List.map ctl_ex case_headers));
+		     List.fold_left ctl_or_fl no_header case_code])))
+	  after_branch in
+      end_control_structure b1fvs switch_header body
+	after_pred (Some(ctl_ex after_pred)) None
+	(* fake aft; attaching to close brace not yet supported *)
+	([],[],[],Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))
+	after label guard
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
