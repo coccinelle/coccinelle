@@ -259,7 +259,9 @@ let other_options = [
     " ";
     "-noadd_typedef_root",   Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
-       "disallow an expresion pattern from matching a term and its subterm"
+       "disallow an expresion pattern from matching a term and its subterm";
+    "-disable_worth_trying_opt", Arg.Clear Flag_cocci.worth_trying_opt,
+    "  ";
   ];
 
   "misc options",

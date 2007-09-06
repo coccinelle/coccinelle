@@ -941,7 +941,7 @@ let full_engine2 (coccifile, isofile) cfiles =
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
-  if not (worth_trying cfiles toks)
+  if not (worth_trying cfiles toks) && !Flag_cocci.worth_trying_opt
   then begin 
     pr2 ("not worth trying:" ^ Common.join " " cfiles);
     cfiles +> List.map (fun s -> s, None)

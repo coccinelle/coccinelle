@@ -31,3 +31,4 @@ let include_path = ref "include"
 
 let timeout = ref (None : int option)
 
+let worth_trying_opt = ref true
