@@ -124,6 +124,25 @@ let get_minus_constants bind =
 
 (* ------------------------------------------------------------------------ *)
 
+let get_all_minus_constants =
+  let donothing r k e = k e in
+  let bind = Common.union_set in
+  let option_default = [] in
+  let mcode r (x,_,mcodekind) =
+    match mcodekind with
+      Ast.MINUS(_,_) -> [x]
+    | _ -> [] in
+  let other r (x,_,mcodekind) = [] in
+
+  V.combiner bind option_default
+    other mcode other other other other other other other other other other
+    other
+
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
+(* ------------------------------------------------------------------------ *)
+
 let get_plus_constants =
   let donothing r k e = k e in
   let bind = Common.union_set in
@@ -162,8 +181,7 @@ let rule_fn tls in_plus =
       function cur ->
 	let minuses =
 	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
-	let all_minuses =
-	  (get_minus_constants keep_all_bind).V.combiner_top_level cur in
+	let all_minuses = get_all_minus_constants.V.combiner_top_level cur in
 	let plusses = get_plus_constants.V.combiner_top_level cur in
 	(* the following is for eg -foo(2) +foo(x) then in another rule
 	   -foo(10); don't want to consider that foo is guaranteed to be
