@@ -164,7 +164,13 @@ let expand_mcode toks =
   let add_elem t minus = 
     match t with
     | Fake1 info -> 
-        push2 (Fake2) toks_out;
+        let str = Ast_c.str_of_info info in
+        if str = ""
+        then push2 (Fake2) toks_out
+        (* perhaps the fake ',' *)
+        else push2 (C2 str) toks_out
+          
+  
     | T1 tok -> 
         (* no tag on expandedTok ! *)
         assert(not (TH.mark_of_tok tok = ExpandedTok && 
