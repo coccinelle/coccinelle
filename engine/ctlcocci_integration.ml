@@ -95,7 +95,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.FalseBranch, F.FalseNode -> [nodei, (p,[])]
       | Lib_engine.After,       F.AfterNode -> [nodei, (p,[])]
       | Lib_engine.FallThrough, F.FallThroughNode -> [nodei,(p,[])]
-      | Lib_engine.Enter,       F.Enter ->     [nodei, (p,[])]
+      | Lib_engine.Enter,       F.TopNode ->     [nodei, (p,[])]
       | Lib_engine.Exit,        F.Exit ->      [nodei, (p,[])]
       | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
 

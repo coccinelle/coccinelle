@@ -1767,7 +1767,9 @@ let top_level ua t =
       let res = statement_list unopt Tail [] None false false in
       cleanup
 	(if starts_with_dots
-	then make_seq false [enterpred None; res]
+	then
+	  (* EX because there is a loop on enter/top *)
+	  ctl_and CTL.NONSTRICT (enterpred None) (ctl_ex res)
 	else res)
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 
