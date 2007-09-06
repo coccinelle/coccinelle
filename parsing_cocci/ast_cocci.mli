@@ -492,6 +492,7 @@ val undots : 'a dots -> 'a list
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
+val get_mcodekind : 'a mcode -> mcodekind
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> meta_name list

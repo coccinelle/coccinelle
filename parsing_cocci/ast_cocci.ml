@@ -504,6 +504,7 @@ let rewrap (_,l,fvs,fresh,inherited,saved,d,pos) x =
   (x,l,fvs,fresh,inherited,saved,d,pos)
 let unwrap (x,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
+let get_mcodekind (_,_,x) = x
 let get_line (_,l,_,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
 let get_fvs (_,_,fvs,_,_,_,_,_) = fvs

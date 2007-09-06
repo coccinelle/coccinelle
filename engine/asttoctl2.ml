@@ -1541,11 +1541,13 @@ and statement stmt after quantified label guard =
 			  (List.map ctl_ex case_headers));
 		     List.fold_left ctl_or_fl no_header case_code])))
 	  after_branch in
+      let aft =
+	(rb_fvs,Ast.get_fresh rb,Ast.get_inherited rb,
+	match Ast.unwrap rb with
+	  Ast.SeqEnd(rb) -> Ast.get_mcodekind rb
+	| _ -> failwith "not possible") in
       end_control_structure b1fvs switch_header body
-	after_pred (Some(ctl_ex after_pred)) None
-	(* fake aft; attaching to close brace not yet supported *)
-	([],[],[],Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))
-	after label guard
+	after_pred (Some(ctl_ex after_pred)) None aft after label guard
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
