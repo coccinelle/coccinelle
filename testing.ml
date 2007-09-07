@@ -199,7 +199,8 @@ let test_okfailed cocci_file cfiles =
               match ext with
               | "c" -> "res"
               | "h" -> "h.res"
-              | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
+              | s -> pr2 ("WIERD: not a .c or .h :" ^ base ^ "." ^ s);
+                     "" (* no extension, will compare to same file *)
             in
             let expected_res =  
               Common.filename_of_dbe  (dir, base, expected_suffix) in
@@ -211,7 +212,7 @@ let test_okfailed cocci_file cfiles =
              * because here we can have more files than in cfiles, for instance
              * the header files
              *)
-          delete_previous_result_files infile;
+            delete_previous_result_files infile;
           
           match outopt, Common.lfile_exists expected_res with
           | None, false -> 
