@@ -356,7 +356,8 @@ struct subsystem _name##_subsys = { \
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-// ?
+// pb: if use this macro then we will not transform the argument of CS_CHECK
+// in some rules. 
 //#define CS_CHECK(fn, ret) \
 //  do { last_fn = (fn); if ((last_ret = (ret)) != 0) goto cs_failed; } while (0)
 

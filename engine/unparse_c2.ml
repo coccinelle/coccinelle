@@ -22,12 +22,14 @@ type token1 =
  * type.
  *)
 type token2 = 
-  | T2 of Parser_c.token * bool (* minus *)
+  | T2 of Parser_c.token * bool (* minus *) * 
+          int option (* orig index, abstracting away comments and space *)
   | Fake2
   | Cocci2 of string
   | C2 of string
 
 
+(* not used yet *)
 type token3 = 
   | T3 of Parser_c.token
   | Cocci3 of string
@@ -38,6 +40,7 @@ type token3 =
 type token_extended = {
   tok2 : token2;
   str  : string;
+  idx: int option; (* to know if 2 tokens were consecutive in orig file *)
   mutable new_tokens_before : token2 list;
   mutable remove : bool;
 }
@@ -53,7 +56,7 @@ let info_of_token1 t =
   | T1 tok -> TH.info_of_tok tok
 
 let str_of_token2 = function
-  | T2 (t,_) -> TH.str_of_tok t
+  | T2 (t,_,_) -> TH.str_of_tok t
   | Fake2 -> ""
   | Cocci2 s | C2 s -> s
 
@@ -64,8 +67,14 @@ let str_of_token3 = function
 
 
 let mk_token_extended x = 
+  let origidx = 
+    match x with
+    | T2 (_,_, idx) -> idx 
+    | _ -> None
+  in
   { tok2 = x; 
     str = str_of_token2 x;
+    idx = origidx;
     new_tokens_before = [];
     remove = false;
   }
@@ -161,6 +170,8 @@ let get_fakeInfo_and_tokens celem toks =
 let expand_mcode toks = 
   let toks_out = ref [] in
 
+  let index = ref 0 in
+
   let add_elem t minus = 
     match t with
     | Fake1 info -> 
@@ -179,7 +190,17 @@ let expand_mcode toks =
         let tok' = tok +> TH.visitor_info_of_tok (fun i -> 
           { i with cocci_tag = ref Ast_c.emptyAnnot; }
         ) in
-        push2 (T2 (tok', minus)) toks_out
+
+        let optindex = 
+          if TH.mark_of_tok tok = OriginTok && not (TH.is_real_comment tok)
+          then begin
+              incr index;
+              Some !index
+          end
+          else None
+        in
+
+        push2 (T2 (tok', minus, optindex)) toks_out
   in
 
   let expand_info t = 
@@ -231,7 +252,7 @@ let expand_mcode toks =
 (*****************************************************************************)
 
 let is_minusable_comment = function
-  | T2 (t,b) -> 
+  | T2 (t,_b,_i) -> 
       (match t with
       | Parser_c.TCommentSpace _ 
       | Parser_c.TComment _ 
@@ -250,7 +271,7 @@ let is_minusable_comment = function
   | _ -> false 
 
 let set_minus_comment = function
-  | T2 (t,false) -> 
+  | T2 (t,false,idx) -> 
       let str = TH.str_of_tok t in
       (match t with
       | Parser_c.TCommentSpace _ -> ()
@@ -262,7 +283,7 @@ let set_minus_comment = function
           pr2 ("ERASING_COMMENTS: " ^ str)
       | _ -> raise Impossible
       );
-      T2 (t, true)
+      T2 (t, true, idx)
   | _ -> raise Impossible
       
 
@@ -270,7 +291,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   (* get rid of exampled and fake tok *)
   let xs = xs +> Common.exclude (function 
-    | T2 (t,_) when TH.mark_of_tok t = ExpandedTok -> true
+    | T2 (t,_,_) when TH.mark_of_tok t = ExpandedTok -> true
     | Fake2 -> true
 
     | _ -> false
@@ -280,19 +301,20 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let rec adjust_between_minus xs = 
     match xs with
     | [] -> []
-    | (T2 (t1,true))::xs -> 
+    | (T2 (t1,true,idx1))::xs -> 
 
         let (between_comments, rest) = Common.span is_minusable_comment xs in
         (match rest with
-        | [] -> [(T2 (t1, true))]
+        | [] -> [(T2 (t1, true,idx1))]
 
-        | (T2 (t2, true))::rest -> 
+        | (T2 (t2, true,idx2))::rest -> 
 
-             (T2 (t1, true))::
+             (T2 (t1, true,idx1))::
                (List.map set_minus_comment between_comments @
-               adjust_between_minus ((T2 (t2, true))::rest))
+               adjust_between_minus ((T2 (t2, true, idx2))::rest))
         | x::xs -> 
-             (T2 (t1, true))::(between_comments @ adjust_between_minus (x::xs))
+             (T2 (t1, true, idx1))::
+               (between_comments @ adjust_between_minus (x::xs))
         )
 
     | x::xs -> 
@@ -302,7 +324,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let xs = adjust_between_minus xs in
 
   let xs = xs +> Common.exclude (function
-    | T2 (t,true) -> true
+    | T2 (t,true,_) -> true
     | _ -> false
   ) in
   xs
@@ -359,7 +381,7 @@ let rec adjust_indentation xs =
     | [] ->  []
     | x::xs -> 
         (match x with
-        | T2 (Parser_c.TCommentSpace s, _) ->
+        | T2 (Parser_c.TCommentSpace s, _, _) ->
             str_of_token2 x +> new_tabbing +> Common.do_option (fun s -> 
               _current_tabbing := s);
             x::aux xs
@@ -375,6 +397,21 @@ let rec adjust_indentation xs =
 
 let rec find_paren_comma = function
   | [] -> ()
+
+  (* do nothing if was like this in original file *)
+  | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
+    ::xs when p2 = p1 + 1 -> 
+      find_paren_comma (x2::xs)
+
+  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
+    ::xs when p2 = p1 + 1 -> 
+      find_paren_comma (x2::xs)
+
+  | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)
+    ::xs when p2 = p1 + 1 -> 
+      find_paren_comma (x2::xs)
+
+  (* otherwise yes can adjust *)
   | ({ str = "(" } as _x1)::({ str = ","} as x2)::xs -> 
       x2.remove <- true;
       find_paren_comma (x2::xs)
@@ -392,8 +429,9 @@ let rec find_paren_comma = function
 
 let fix_tokens toks = 
   let toks = toks +> List.map mk_token_extended in
+
   let cleaner = toks +> Common.exclude (function
-    | {tok2 = T2 (t,_)} -> TH.is_comment t
+    | {tok2 = T2 (t,_,_)} -> TH.is_real_comment t (* I want the ifdef *)
     | _ -> false
   ) in
   find_paren_comma cleaner;
@@ -414,7 +452,7 @@ let kind_of_token2 = function
   | Fake2 -> KFake
   | Cocci2 _ -> KCocci
   | C2 _ -> KC
-  | T2 (t,_) -> 
+  | T2 (t,_,_) -> 
       (match TH.mark_of_tok t with
       | ExpandedTok -> KExpanded
       | OriginTok -> KOrigin
