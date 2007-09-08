@@ -150,7 +150,12 @@ let get_fakeInfo_and_tokens celem toks =
           info =*= TH.info_of_tok tok) 
         in
         assert(info = TH.info_of_tok x);
-        assert(before +> List.for_all (TH.is_comment));
+        (*old: assert(before +> List.for_all (TH.is_comment)); *)
+        before +> List.iter (fun x -> 
+          if not (TH.is_comment x)
+          then pr2 ("WIERD: not a comment:" ^ TH.str_of_tok x)
+          (* case such as  int asm d3("x"); not yet in ast *)
+        );
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
         push2 (T1 x) toks_out;
         toks_in := after;

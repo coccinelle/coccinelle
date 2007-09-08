@@ -423,6 +423,12 @@ struct subsystem _name##_subsys = { \
 // in .h
 #define MPI_POINTER *
 
+// mega4/soc.c mega4/socal.c
+// cause false typedef inference if let soc_printk
+#define soc_printk printk
+#define socal_printk printk
+
+
 // ----------------------------------------------------------------------------
 // Initializer array macros
 // ----------------------------------------------------------------------------

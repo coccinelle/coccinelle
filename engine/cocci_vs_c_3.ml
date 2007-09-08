@@ -1338,7 +1338,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  match A.unwrap decla, declb with
 
  (* kind of typedef iso, we must unfold, it's for the case 
-  *  T { }; that we want to match agains typedef struct { } xx_t;
+  *  T { }; that we want to match against typedef struct { } xx_t;
   *)
  | A.TyDecl (ty0, ptvirga), 
    ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
