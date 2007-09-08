@@ -448,7 +448,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.TypeExp(_),Ast0.TypeExp(_)) -> true
   | (Ast0.MetaErr(name1,_),Ast0.MetaErr(name2,_))
   | (Ast0.MetaExpr(name1,_,_,_),Ast0.MetaExpr(name2,_,_,_))
-  | (Ast0.MetaExprList(name1,_),Ast0.MetaExprList(name2,_)) ->
+  | (Ast0.MetaExprList(name1,_,_),Ast0.MetaExprList(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
@@ -541,7 +541,7 @@ let equal_parameterTypeDef p1 p2 =
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
   | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
   | (Ast0.MetaParam(name1,_),Ast0.MetaParam(name2,_))
-  | (Ast0.MetaParamList(name1,_),Ast0.MetaParamList(name2,_)) ->
+  | (Ast0.MetaParamList(name1,_,_),Ast0.MetaParamList(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.PComma(cm1),Ast0.PComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Pdots(dots1),Ast0.Pdots(dots2))

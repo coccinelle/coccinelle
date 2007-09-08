@@ -136,7 +136,7 @@ let rec expression context old_metas table minus e =
 	tys;
       check_table table minus name
   | Ast0.MetaExpr(name,_,_,_) | Ast0.MetaErr(name,_)
-  | Ast0.MetaExprList(name,_) ->
+  | Ast0.MetaExprList(name,_,_) ->
       check_table table minus name
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression ID old_metas table minus) exps
@@ -257,7 +257,7 @@ and parameterTypeDef old_metas table minus param =
       typeC old_metas table minus ty
   | Ast0.MetaParam(name,_) ->
       check_table table minus name
-  | Ast0.MetaParamList(name,_) ->
+  | Ast0.MetaParamList(name,_,_) ->
       check_table table minus name
   | _ -> () (* no metavariable subterms *)
 

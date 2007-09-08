@@ -49,8 +49,9 @@ and metavar =
     MetaIdDecl of arity * meta_name (* name *)
   | MetaFreshIdDecl of arity * meta_name (* name *)
   | MetaTypeDecl of arity * meta_name (* name *)
+  | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
-  | MetaParamListDecl of arity * meta_name (* name *)
+  | MetaParamListDecl of arity * meta_name (* name *) * meta_name (* len *)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaErrDecl of arity * meta_name (* name *)
@@ -58,7 +59,7 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
-  | MetaExpListDecl of arity * meta_name (* name *)
+  | MetaExpListDecl of arity * meta_name (* name *) * meta_name (* len *)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -124,7 +125,7 @@ and base_expression =
   | MetaErr        of meta_name mcode * keep_binding * inherited
   | MetaExpr       of meta_name mcode * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
-  | MetaExprList   of meta_name mcode * keep_binding *
+  | MetaExprList   of meta_name mcode * meta_name * keep_binding *
 	              inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -268,7 +269,7 @@ and base_parameterTypeDef =
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * keep_binding * inherited
+  | MetaParamList of meta_name mcode * meta_name * keep_binding * inherited
 
   | PComma        of string mcode
 
@@ -527,13 +528,14 @@ let get_meta_name = function
     MetaIdDecl(ar,nm) -> nm
   | MetaFreshIdDecl(ar,nm) -> nm
   | MetaTypeDecl(ar,nm) -> nm
+  | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
-  | MetaParamListDecl(ar,nm) -> nm
+  | MetaParamListDecl(ar,nm,nm1) -> nm
   | MetaConstDecl(ar,nm,ty) -> nm
   | MetaErrDecl(ar,nm) -> nm
   | MetaExpDecl(ar,nm,ty) -> nm
   | MetaIdExpDecl(ar,nm,ty) -> nm
-  | MetaExpListDecl(ar,nm) -> nm
+  | MetaExpListDecl(ar,nm,nm1) -> nm
   | MetaStmDecl(ar,nm) -> nm
   | MetaStmListDecl(ar,nm) -> nm
   | MetaFuncDecl(ar,nm) -> nm

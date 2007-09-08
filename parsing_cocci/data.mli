@@ -13,37 +13,39 @@ val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 val clear_meta: (unit -> unit) ref
 
 val add_id_meta:
-    ((string * string) -> Ast0_cocci.pure -> unit) ref
+    (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_type_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_param_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_paramlist_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_paramlist_meta:
+    (Ast_cocci.meta_name -> Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_const_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0_cocci.pure ->
+    (Type_cocci.typeC list option -> Ast_cocci.meta_name -> Ast0_cocci.pure ->
       unit) ref
 
-val add_err_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_err_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_exp_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0_cocci.pure ->
+    (Type_cocci.typeC list option -> Ast_cocci.meta_name -> Ast0_cocci.pure ->
       unit) ref
 
 val add_idexp_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0_cocci.pure ->
+    (Type_cocci.typeC list option -> Ast_cocci.meta_name -> Ast0_cocci.pure ->
       unit) ref
 
-val add_explist_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_explist_meta:
+    (Ast_cocci.meta_name -> Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_stm_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_stm_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_stmlist_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_stmlist_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_func_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_func_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_local_func_meta: ((string * string) -> Ast0_cocci.pure -> unit) ref
+val add_local_func_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_type_name: (string -> unit) ref
 

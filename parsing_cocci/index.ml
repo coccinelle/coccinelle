@@ -83,7 +83,7 @@ let expression e =
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.MetaErr(name,_) -> [32]
   | Ast0.MetaExpr(name,ty,_,_) -> [33]
-  | Ast0.MetaExprList(name,_) -> [34]
+  | Ast0.MetaExprList(name,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
   | Ast0.NestExpr(_,expr_dots,_,_) -> [37]
@@ -144,7 +144,7 @@ let parameterTypeDef p =
     Ast0.VoidParam(ty) -> [59]
   | Ast0.Param(ty,id) -> [60]
   | Ast0.MetaParam(name,_) -> [61]
-  | Ast0.MetaParamList(name,_) -> [62]
+  | Ast0.MetaParamList(name,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]
   | Ast0.Pdots(dots) -> [64]
   | Ast0.Pcircles(dots) -> [65]

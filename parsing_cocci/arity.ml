@@ -288,10 +288,10 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_exp expr tgt arity (Ast0.MetaExpr(name,ty,form,pure))
-  | Ast0.MetaExprList(name,pure) ->
+  | Ast0.MetaExprList(name,lenname,pure) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExprList(name,pure))
+      make_exp expr tgt arity (Ast0.MetaExprList(name,lenname,pure))
   | Ast0.EComma(cm)         ->
       let arity = exp_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -627,10 +627,10 @@ and parameterTypeDef tgt param =
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_param param tgt arity (Ast0.MetaParam(name,pure))
-  | Ast0.MetaParamList(name,pure) ->
+  | Ast0.MetaParamList(name,lenname,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_param param tgt arity (Ast0.MetaParamList(name,pure))
+      make_param param tgt arity (Ast0.MetaParamList(name,lenname,pure))
   | Ast0.PComma(cm) ->
       let arity = param_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in

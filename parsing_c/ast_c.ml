@@ -464,6 +464,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaLocalFuncVal of string
   | MetaExprVal      of expression (* a "clean expr" *)
   | MetaExprListVal  of argument wrap2 list
+  | MetaListlenVal   of int
   | MetaTypeVal      of fullType
   | MetaStmtVal      of statement
   | MetaParamVal     of parameterType

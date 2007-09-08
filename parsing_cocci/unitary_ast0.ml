@@ -64,7 +64,7 @@ let get_free checker t =
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
-    | Ast0.MetaExprList(name,_) -> checker name
+    | Ast0.MetaExprList(name,_,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_expression expr_list)
     | _ -> k e in
@@ -78,7 +78,7 @@ let get_free checker t =
   
   let parameter r k p =
     match Ast0.unwrap p with
-      Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_) -> checker name
+      Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_,_) -> checker name
     | _ -> k p in
   
   let declaration r k d =
@@ -135,8 +135,8 @@ let update_unitary unitary =
 	Ast0.rewrap e (Ast0.MetaErr(name,is_unitary name))
     | Ast0.MetaExpr(name,ty,form,_) ->
 	Ast0.rewrap e (Ast0.MetaExpr(name,ty,form,is_unitary name))
-    | Ast0.MetaExprList(name,_) ->
-	Ast0.rewrap e (Ast0.MetaExprList(name,is_unitary name))
+    | Ast0.MetaExprList(name,lenname,_) ->
+	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,is_unitary name))
     | _ -> k e in
   
   let typeC r k t =
@@ -149,8 +149,8 @@ let update_unitary unitary =
     match Ast0.unwrap p with
       Ast0.MetaParam(name,_) ->
 	Ast0.rewrap p (Ast0.MetaParam(name,is_unitary name))
-    | Ast0.MetaParamList(name,_) ->
-	Ast0.rewrap p (Ast0.MetaParamList(name,is_unitary name))
+    | Ast0.MetaParamList(name,lenname,_) ->
+	Ast0.rewrap p (Ast0.MetaParamList(name,lenname,is_unitary name))
     | _ -> k p in
   
   let statement r k s =

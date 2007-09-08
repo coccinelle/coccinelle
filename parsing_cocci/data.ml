@@ -1,4 +1,5 @@
 module Ast0 = Ast0_cocci
+module Ast = Ast_cocci
 
 (* Things that need to be seen by the lexer and parser. *)
 
@@ -13,55 +14,57 @@ type line_type =
   | CONTEXT | UNIQUE | OPT | MULTI
 
 let all_metadecls =
-  (Hashtbl.create(100) : (string, Ast_cocci.metavar list) Hashtbl.t)
+  (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)
 
 let clear_meta: (unit -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_id_meta:
-    ((string * string) -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_type_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_param_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_paramlist_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_paramlist_meta:
+    (Ast.meta_name -> Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_const_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit)
+    (Type_cocci.typeC list option -> Ast.meta_name -> Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_err_meta: ((string * string) -> Ast0.pure -> unit) ref =
+let add_err_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_exp_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit)
+    (Type_cocci.typeC list option -> Ast.meta_name -> Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_idexp_meta:
-    (Type_cocci.typeC list option -> (string * string) -> Ast0.pure -> unit)
+    (Type_cocci.typeC list option -> Ast.meta_name -> Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_explist_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_explist_meta:
+    (Ast.meta_name -> Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_stm_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_stmlist_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_stmlist_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_func_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_func_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_local_func_meta: ((string * string) -> Ast0.pure -> unit) ref = 
+let add_local_func_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_type_name: (string -> unit) ref = 

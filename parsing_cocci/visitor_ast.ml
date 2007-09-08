@@ -142,7 +142,7 @@ let combiner bind option_default
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.MetaErr(name,_,_)
       | Ast.MetaExpr(name,_,_,_,_)
-      | Ast.MetaExprList(name,_,_) -> meta_mcode name
+      | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
       | Ast.NestExpr(expr_dots,whencode) ->
@@ -282,7 +282,7 @@ let combiner bind option_default
       | Ast.Param(ty,Some id) -> named_type ty id
       | Ast.Param(ty,None) -> fullType ty
       | Ast.MetaParam(name,_,_) -> meta_mcode name
-      | Ast.MetaParamList(name,_,_) -> meta_mcode name
+      | Ast.MetaParamList(name,_,_,_) -> meta_mcode name
       | Ast.PComma(cm) -> string_mcode cm
       | Ast.Pdots(dots) -> string_mcode dots
       | Ast.Pcircles(dots) -> string_mcode dots
@@ -637,8 +637,8 @@ let rebuilder
 	    Ast.MetaErr(meta_mcode name,keep,inherited)
 	| Ast.MetaExpr(name,keep,ty,form,inherited) ->
 	    Ast.MetaExpr(meta_mcode name,keep,ty,form,inherited)
-	| Ast.MetaExprList(name,keep,inherited) ->
-	    Ast.MetaExprList(meta_mcode name,keep,inherited)
+	| Ast.MetaExprList(name,lenname,keep,inherited) ->
+	    Ast.MetaExprList(meta_mcode name,lenname,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
 	| Ast.NestExpr(expr_dots,whencode) ->
@@ -761,8 +761,8 @@ let rebuilder
 	| Ast.Param(ty,id) -> Ast.Param(fullType ty, get_option ident id)
 	| Ast.MetaParam(name,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,keep,inherited)
-	| Ast.MetaParamList(name,keep,inherited) ->
-	    Ast.MetaParamList(meta_mcode name,keep,inherited)
+	| Ast.MetaParamList(name,lenname,keep,inherited) ->
+	    Ast.MetaParamList(meta_mcode name,lenname,keep,inherited)
 	| Ast.PComma(cm) -> Ast.PComma(string_mcode cm)
 	| Ast.Pdots(dots) -> Ast.Pdots(string_mcode dots)
 	| Ast.Pcircles(dots) -> Ast.Pcircles(string_mcode dots)

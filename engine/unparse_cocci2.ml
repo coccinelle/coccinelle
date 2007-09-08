@@ -150,7 +150,7 @@ let rec expression e =
         | _ -> raise Impossible
       )
 
-  | Ast.MetaExprList (name,_,_) -> 
+  | Ast.MetaExprList (name,_,_,_) -> 
       failwith "not handling MetaExprList"
       
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -391,7 +391,7 @@ and parameterTypeDef p =
 
   | Ast.MetaParam(name,_,_) -> 
       failwith "not handling MetaParam"
-  | Ast.MetaParamList(name,_,_) -> 
+  | Ast.MetaParamList(name,_,_,_) -> 
       failwith "not handling MetaParamList"
 
   | Ast.PComma(cm) -> mcode print_string cm; print_space()

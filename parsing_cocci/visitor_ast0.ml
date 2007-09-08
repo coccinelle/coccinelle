@@ -138,7 +138,7 @@ let combiner bind option_default
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.MetaErr(name,_)
       | Ast0.MetaExpr(name,_,_,_)
-      | Ast0.MetaExprList(name,_) -> meta_mcode name
+      | Ast0.MetaExprList(name,_,_) -> meta_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	  (match expr_list with
@@ -301,7 +301,7 @@ let combiner bind option_default
       | Ast0.Param(ty,Some id) -> named_type ty id
       | Ast0.Param(ty,None) -> typeC ty
       | Ast0.MetaParam(name,_) -> meta_mcode name
-      | Ast0.MetaParamList(name,_) -> meta_mcode name
+      | Ast0.MetaParamList(name,_,_) -> meta_mcode name
       | Ast0.PComma(cm) -> string_mcode cm
       | Ast0.Pdots(dots) -> string_mcode dots
       | Ast0.Pcircles(dots) -> string_mcode dots
@@ -632,8 +632,8 @@ let rebuilder = fun
 	    Ast0.MetaErr(meta_mcode name,pure)
 	| Ast0.MetaExpr(name,ty,form,pure) ->
 	    Ast0.MetaExpr(meta_mcode name,ty,form,pure)
-	| Ast0.MetaExprList(name,pure) ->
-	    Ast0.MetaExprList(meta_mcode name,pure)
+	| Ast0.MetaExprList(name,lenname,pure) ->
+	    Ast0.MetaExprList(meta_mcode name,lenname,pure)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
@@ -754,8 +754,8 @@ let rebuilder = fun
 	| Ast0.Param(ty,id) -> Ast0.Param(typeC ty, get_option ident id)
 	| Ast0.MetaParam(name,pure) ->
 	    Ast0.MetaParam(meta_mcode name,pure)
-	| Ast0.MetaParamList(name,pure) ->
-	    Ast0.MetaParamList(meta_mcode name,pure)
+	| Ast0.MetaParamList(name,lenname,pure) ->
+	    Ast0.MetaParamList(meta_mcode name,lenname,pure)
 	| Ast0.PComma(cm) -> Ast0.PComma(string_mcode cm)
 	| Ast0.Pdots(dots) -> Ast0.Pdots(string_mcode dots)
 	| Ast0.Pcircles(dots) -> Ast0.Pcircles(string_mcode dots)

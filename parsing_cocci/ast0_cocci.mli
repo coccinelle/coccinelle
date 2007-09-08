@@ -54,9 +54,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of (string * string) mcode * pure
-  | MetaFunc      of (string * string) mcode * pure
-  | MetaLocalFunc of (string * string) mcode * pure
+  | MetaId        of Ast_cocci.meta_name mcode * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
   | MultiIdent    of ident (* only allowed in nests *)
@@ -90,10 +90,11 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
-  | MetaErr        of (string * string) mcode * pure
-  | MetaExpr       of (string * string) mcode *
+  | MetaErr        of Ast_cocci.meta_name mcode * pure
+  | MetaExpr       of Ast_cocci.meta_name mcode *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
-  | MetaExprList   of (string * string) mcode(*only in arglists*) * pure
+  | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
+	              Ast_cocci.meta_name * pure
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
@@ -128,7 +129,7 @@ and base_typeC =
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
-  | MetaType        of (string * string) mcode * pure
+  | MetaType        of Ast_cocci.meta_name mcode * pure
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
@@ -193,8 +194,8 @@ and initialiser_list = initialiser dots
 and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
-  | MetaParam     of (string * string) mcode * pure
-  | MetaParamList of (string * string) mcode * pure
+  | MetaParam     of Ast_cocci.meta_name mcode * pure
+  | MetaParamList of Ast_cocci.meta_name mcode * Ast_cocci.meta_name * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -262,8 +263,9 @@ and base_statement =
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
-  | MetaStmt      of (string * string) mcode * pure
-  | MetaStmtList  of (string * string) mcode (*only in statement lists*) * pure
+  | MetaStmt      of Ast_cocci.meta_name mcode * pure
+  | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
+	             pure
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)

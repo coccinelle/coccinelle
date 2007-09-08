@@ -162,7 +162,7 @@ let rec expression e =
       | Ast0.MetaErr(name,_) -> mcode print_meta name
       | Ast0.MetaExpr(name,ty,_,_) ->
 	  mcode print_meta name; print_types ty
-      | Ast0.MetaExprList(name,_) -> mcode print_meta name
+      | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  print_string "\n("; force_newline();
@@ -355,7 +355,7 @@ and parameterTypeDef p =
       | Ast0.Param(ty,Some id) -> print_named_type ty id
       |	Ast0.Param(ty,None) -> typeC ty
       | Ast0.MetaParam(name,_) -> mcode print_meta name
-      | Ast0.MetaParamList(name,_) -> mcode print_meta name
+      | Ast0.MetaParamList(name,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
       | Ast0.Pdots(dots) -> mcode print_string dots
       | Ast0.Pcircles(dots) -> mcode print_string dots

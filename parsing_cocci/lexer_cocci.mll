@@ -246,8 +246,8 @@ let init _ =
       let fn clt = TMetaParam(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_paramlist_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaParamList(name,pure,clt) in
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaParamList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_const_meta :=
     (function tyopt -> function name -> function pure -> 
@@ -266,8 +266,8 @@ let init _ =
       let fn clt = TMetaIdExp(name,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaExpList(name,pure,clt) in
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaExpList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->

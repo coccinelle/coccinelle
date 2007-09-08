@@ -25,6 +25,7 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaParamVal     params -> pp "<<param>>"
   | Ast_c.MetaParamListVal params -> pp "<<paramlist>>"
+  | Ast_c.MetaListlenVal n -> pp (string_of_int n)
   | Ast_c.MetaPosVal (pos1, pos2) -> 
       pp (Common.sprintf ("pos(%d,%d)") pos1 pos2)
 

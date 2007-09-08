@@ -252,7 +252,7 @@ let rec expression e =
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
-  | Ast0.MetaExprList(name,_) as ue ->
+  | Ast0.MetaExprList(name,_,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) ->
       let cm = bad_mcode cm in
@@ -502,7 +502,7 @@ and parameterTypeDef p =
       let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
   | Ast0.MetaParam(name,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
-  | Ast0.MetaParamList(name,_) as up ->
+  | Ast0.MetaParamList(name,_,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.PComma(cm) ->
       let cm = bad_mcode cm in

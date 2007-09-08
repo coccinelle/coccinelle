@@ -167,6 +167,13 @@ let check_meta tok =
       raise
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
+  | Ast.MetaListlenDecl((rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaListlenDecl(_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
@@ -181,9 +188,9 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaParamListDecl(Ast.NONE,(rule,name)) ->
+  | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
-	Ast.MetaParamListDecl(_,_) -> ()
+	Ast.MetaParamListDecl(_,_,_) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -209,9 +216,9 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaExpListDecl(Ast.NONE,(rule,name)) ->
+  | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
-	Ast.MetaExpListDecl(_,_) -> ()
+	Ast.MetaExpListDecl(_,_,_) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -254,6 +261,31 @@ let check_meta tok =
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
+
+let create_metadec ar ispure kindfn ids current_rule =
+  List.concat
+    (List.map
+       (function (rule,nm) ->
+	 let (rule,checker) =
+	   match rule with
+	     None -> ((current_rule,nm),function x -> [Common.Left x])
+	   | Some rule ->
+	       ((rule,nm),
+		function x -> check_meta x; [Common.Right x]) in
+	 kindfn ar rule ispure checker)
+       ids)
+
+let create_len_metadec ar ispure kindfn lenid ids current_rule =
+  let lendec =
+    create_metadec Ast.NONE Ast0.Impure
+      (fun _ name _ check_meta -> check_meta(Ast.MetaListlenDecl(name)))
+      [lenid] current_rule in
+  let lenname =
+    match lendec with
+      [Common.Left (Ast.MetaListlenDecl(x))] -> x
+    | [Common.Right (Ast.MetaListlenDecl(x))] -> x
+    | _ -> failwith "unexpected length declaration" in
+  lendec@(create_metadec ar ispure (kindfn lenname) ids current_rule)
 
 (* ---------------------------------------------------------------------- *)
 

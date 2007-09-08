@@ -38,15 +38,18 @@ module P = Parse_aux
 %token <Data.clt> TSizeof
 %token <Data.clt> TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
-%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
-%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaErr
-%token <(string * string) * Ast0_cocci.pure * Data.clt>
-                                                  TMetaParam TMetaParamList
-%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
-%token <(string * string) * Ast0_cocci.pure * Data.clt>
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaErr
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
+                                                  TMetaParam
+%token <Ast_cocci.meta_name * Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
+                                                  TMetaParamList
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
                                                   TMetaFunc TMetaLocalFunc
-%token <(string * string) * Ast0_cocci.pure * Data.clt> TMetaExpList
-%token <(string * string) * Ast0_cocci.pure * Type_cocci.typeC list option *
+%token <Ast_cocci.meta_name * Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
+                                                  TMetaExpList
+%token <Ast_cocci.meta_name * Ast0_cocci.pure * Type_cocci.typeC list option *
           Data.clt> TMetaExp TMetaIdExp TMetaConst
 %token TArob TArobArob
 
@@ -228,18 +231,23 @@ incl:
 metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
-    { function current_rule ->
-      List.concat
-	(List.map
-	   (function (rule,nm) ->
-	     let (rule,checker) =
-	       match rule with
-		 None -> ((current_rule,nm),function x -> [Common.Left x])
-	       | Some rule ->
-		   ((rule,nm),
-		    function x -> P.check_meta x; [Common.Right x]) in
-	     kindfn ar rule ispure checker)
-	   ids) }
+    { P.create_metadec ar ispure kindfn ids }
+| ar=arity ispure=pure
+    TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaParamListDecl(arity,name,lenname)) in
+	  !Data.add_paramlist_meta name lenname pure; tok)
+	id ids }
+| ar=arity ispure=pure
+    TExpression Tlist TOCro id=pure_ident_or_meta_ident TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
+	  !Data.add_paramlist_meta name lenname pure; tok)
+	id ids }
 
 %inline metakind:
     TIdentifier
@@ -258,10 +266,6 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
       !Data.add_param_meta name pure; tok) }
-| TParameter Tlist
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaParamListDecl(arity,name)) in
-      !Data.add_paramlist_meta name pure; tok)} 
 | TError
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
@@ -279,10 +283,6 @@ metadec:
       let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
       let tok = check_meta(Ast.MetaIdExpDecl(arity,name,ty)) in
       !Data.add_idexp_meta ty name pure; tok) }
-| TExpression Tlist
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaExpListDecl(arity,name)) in
-      !Data.add_explist_meta name pure; tok) }
 | TExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta ->
       let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
@@ -1240,8 +1240,8 @@ decl_list_start(decl):
 one_dec(decl):
   decl  { $1 }
 | TMetaParamList
-    { let (nm,pure,clt) = $1 in
-    Ast0.wrap(Ast0.MetaParamList(P.clt2mcode nm clt,pure)) }
+    { let (nm,lenname,pure,clt) = $1 in
+    Ast0.wrap(Ast0.MetaParamList(P.clt2mcode nm clt,lenname,pure)) }
  
 comma_decls(dotter,decl):
   TComma dotter
@@ -1417,8 +1417,8 @@ aexpr:
     dexpr
       { Ast0.set_arg_exp $1 }
   | TMetaExpList
-      { let (nm,pure,clt) = $1 in
-      Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,pure)) }
+      { let (nm,lenname,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,lenname,pure)) }
   | generic_ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 

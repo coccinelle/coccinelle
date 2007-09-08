@@ -144,13 +144,13 @@ let rec expression e =
       failwith "metaErr not handled"
 
   | Ast.MetaExpr (name,_,_typedontcare,_formdontcare,_) ->
-      handle_metavar name  (function
+      handle_metavar name (function
         | Ast_c.MetaExprVal exp -> 
             Pretty_print_c.pp_expression_gen pr_elem  exp
         | _ -> raise Impossible
       )
 
-  | Ast.MetaExprList (name,_,_) -> 
+  | Ast.MetaExprList (name,_,_,_) -> 
       failwith "not handling MetaExprList"
       
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
@@ -391,7 +391,7 @@ and parameterTypeDef p =
 
   | Ast.MetaParam(name,_,_) -> 
       failwith "not handling MetaParam"
-  | Ast.MetaParamList(name,_,_) -> 
+  | Ast.MetaParamList(name,_,_,_) -> 
       failwith "not handling MetaParamList"
 
   | Ast.PComma(cm) -> mcode print_string cm; print_space()

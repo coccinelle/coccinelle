@@ -125,7 +125,8 @@ and strip =
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
 	   Ast0.MetaParam(nm,pure) -> Ast0.MetaParam(nm,Ast0.Pure)
-	 | Ast0.MetaParamList(nm,pure) -> Ast0.MetaParamList(nm,Ast0.Pure)
+	 | Ast0.MetaParamList(nm,lenname,pure) ->
+	     Ast0.MetaParamList(nm,lenname,Ast0.Pure)
 	 | e -> e)) in
 
   V0.rebuilder

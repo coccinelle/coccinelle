@@ -244,6 +244,7 @@ module XMATCH = struct
           | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
               Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b
 
+          | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =*= b
           | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
               failwith "not handling MetaExprListVal"
           | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
@@ -273,6 +274,7 @@ module XMATCH = struct
                 Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
             | Ast_c.MetaTypeVal a -> 
                 Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
+            | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
             | Ast_c.MetaExprListVal a ->  
                 failwith "not handling MetaExprListVal"
             | Ast_c.MetaParamVal a ->     

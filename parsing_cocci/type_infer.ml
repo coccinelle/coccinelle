@@ -180,7 +180,7 @@ let rec propagate_types env =
       | Ast0.MetaErr(name,_) -> None
       | Ast0.MetaExpr(name,Some [ty],_,_) -> Some ty
       | Ast0.MetaExpr(name,ty,_,_) -> None
-      | Ast0.MetaExprList(name,_) -> None
+      | Ast0.MetaExprList(name,_,_) -> None
       | Ast0.EComma(cm) -> None
       | Ast0.DisjExpr(_,exp_list,_,_) ->
 	  let types = List.map Ast0.get_type exp_list in
