@@ -173,6 +173,10 @@ let regexp_typedef = Str.regexp
   ".*_t$"
 
 
+let false_typedef = [
+  "printk";
+  ]
+
 type define_body = (unit,string list) either * Parser_c.token list
 
 let (_defs : (string, define_body) Hashtbl.t ref)  = 
@@ -1622,6 +1626,7 @@ let rec is_really_foreach xs =
   is_foreach_aux xs +> fst
 
 
+let ok_typedef s = not (List.mem s false_typedef)
 
 
 
@@ -1647,6 +1652,7 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   (* xx xx *)
   | (TIdent(s,i1)::TIdent(s2,i2)::_ , _) when not_struct_enum before && s = s2
+      && ok_typedef s
       (* (take_safe 1 !passed_tok <> [TOPar]) ->  *)
     -> 
       (* parse_typedef_fix3:
@@ -1665,7 +1671,9 @@ let lookahead2 next before =
       TypedefIdent (s, i1)
 
   (* xx yy *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before ->
+  | (TIdent (s, i1)::TIdent (s2, i2)::_  , _) when not_struct_enum before 
+      && ok_typedef s
+        ->
          (* && not_annot s2 BUT lead to false positive*)
 
       msg_typedef s; LP.add_typedef_root s;
@@ -1673,7 +1681,9 @@ let lookahead2 next before =
 
 
   (* xx inline *)
-  | (TIdent (s, i1)::Tinline i2::_  , _) when not_struct_enum before -> 
+  | (TIdent (s, i1)::Tinline i2::_  , _) when not_struct_enum before 
+      && ok_typedef s
+      -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1681,7 +1691,8 @@ let lookahead2 next before =
   (* [,(] xx [,)] AND param decl *)
   | (TIdent (s, i1)::(TComma _|TCPar _)::_ , (TComma _ |TOPar _)::_ )
     when not_struct_enum before && !LP._lexer_hint.parameterDeclaration
-    -> 
+      && ok_typedef s
+      -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1690,6 +1701,7 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      && ok_typedef s
     -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1700,6 +1712,7 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::TMul _::(TComma _|TCPar _)::_ , (*(TComma _|TOPar _)::*)_ )
     when not_struct_enum before
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      && ok_typedef s
     -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1708,16 +1721,20 @@ let lookahead2 next before =
 
   (* xx const *   USELESS because of next rule ? *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _)::TMul _::_ , _ ) 
-      when not_struct_enum before ->
+      when not_struct_enum before 
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      && ok_typedef s
+      ->
 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
   
   (* xx const *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _)::_ , _ ) 
-      when not_struct_enum before ->
+      when not_struct_enum before 
+      && ok_typedef s
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      ->
 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1725,7 +1742,9 @@ let lookahead2 next before =
 
   (* xx * const *)
   | (TIdent (s, i1)::TMul _::(Tconst _ | Tvolatile _)::_ , _ ) 
-      when not_struct_enum before ->
+      when not_struct_enum before 
+      && ok_typedef s
+      ->
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 
       msg_typedef s; LP.add_typedef_root s;
@@ -1733,7 +1752,8 @@ let lookahead2 next before =
 
 
   (* ( const xx)  *)
-  | (TIdent (s, i1)::TCPar _::_,  (Tconst _ | Tvolatile _)::TOPar _::_) -> 
+  | (TIdent (s, i1)::TCPar _::_,  (Tconst _ | Tvolatile _)::TOPar _::_) when
+      ok_typedef s ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
       
@@ -1742,6 +1762,7 @@ let lookahead2 next before =
   (* ( xx ) [sizeof, ~] *)
   | (TIdent (s, i1)::TCPar _::(Tsizeof _|TTilde _)::_ , TOPar _::_ )
     when not_struct_enum before
+      && ok_typedef s
     -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1749,6 +1770,7 @@ let lookahead2 next before =
   (* [(,] xx [   AND parameterdeclaration *)
   | (TIdent (s, i1)::TOCro _::_, (TComma _ |TOPar _)::_)
       when !LP._lexer_hint.parameterDeclaration
+      && ok_typedef s
      -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1760,7 +1782,9 @@ let lookahead2 next before =
 
   (* static xx * yy  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , 
-     (Tregister _|Tstatic _  |Tvolatile _|Tconst _)::_) -> 
+     (Tregister _|Tstatic _  |Tvolatile _|Tconst _)::_) when
+      ok_typedef s 
+        ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
@@ -1769,7 +1793,9 @@ let lookahead2 next before =
 
   (*  xx * yy,      AND  in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
-    when not_struct_enum before && !LP._lexer_hint.parameterDeclaration -> 
+    when not_struct_enum before && !LP._lexer_hint.parameterDeclaration 
+      && ok_typedef s 
+      -> 
 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1785,14 +1811,18 @@ let lookahead2 next before =
 
   (*  xx * yy ,     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , _)
-    when not_struct_enum before && !LP._lexer_hint.toplevel  -> 
+    when not_struct_enum before && !LP._lexer_hint.toplevel  
+      && ok_typedef s 
+      -> 
 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx * yy (     AND in Toplevel  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOPar _::_ , _)
-    when not_struct_enum before  && !LP._lexer_hint.toplevel -> 
+    when not_struct_enum before  && !LP._lexer_hint.toplevel 
+      && ok_typedef s 
+      ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
         
@@ -1801,6 +1831,7 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TOCro _::_ , _)
     when not_struct_enum before && 
       (!LP._lexer_hint.structDefinition > 0 || !LP._lexer_hint.toplevel)
+      && ok_typedef s 
       -> 
       msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1808,6 +1839,7 @@ let lookahead2 next before =
   (* u16: 10; in struct *)
   | (TIdent (s, i1)::TDotDot _::_ , (TOBrace _ | TPtVirg _)::_)
     when (!LP._lexer_hint.structDefinition > 0 || !LP._lexer_hint.toplevel)
+      && ok_typedef s 
       -> 
       msg_typedef s;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1829,21 +1861,27 @@ let lookahead2 next before =
 
   (*  xx * yy =  *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TEq _::_ , _)
-    when not_struct_enum before -> 
+    when not_struct_enum before 
+      && ok_typedef s 
+      ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (*  xx * yy)      AND in paramdecl *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TCPar _::_ , _)
-      when not_struct_enum before && !LP._lexer_hint.parameterDeclaration -> 
+      when not_struct_enum before && !LP._lexer_hint.parameterDeclaration
+      && ok_typedef s 
+        ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
           
 
   (*  xx * yy; *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TPtVirg _::_ , 
-     (TOBrace _| TPtVirg _)::_)  when not_struct_enum before ->
+     (TOBrace _| TPtVirg _)::_)  when not_struct_enum before 
+      && ok_typedef s 
+        ->
       msg_typedef s;  LP.add_typedef_root s;
       pr2 ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s);
       TypedefIdent (s, i1)
@@ -1851,7 +1889,9 @@ let lookahead2 next before =
 
   (*  xx * yy,  and ';' before xx *) (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::TComma _::_ , 
-     (TOBrace _| TPtVirg _)::_) ->
+     (TOBrace _| TPtVirg _)::_) when
+      ok_typedef s 
+    ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1860,28 +1900,35 @@ let lookahead2 next before =
   | (TIdent (s, i1)::TMul _::TIdent (s2, i2)::_ , _)  
       when s ==~ regexp_typedef && not_struct_enum before 
         (* struct user_info_t sometimes *) 
+      && ok_typedef s 
         -> 
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** yy *)  (* wrong ? *)
   | (TIdent (s, i1)::TMul _::TMul _::TIdent (s2, i2)::_ , _)
-    when not_struct_enum before -> 
+    when not_struct_enum before
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      && ok_typedef s 
+      ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx *** yy *)
   | (TIdent (s, i1)::TMul _::TMul _::TMul _::TIdent (s2, i2)::_ , _)
-    when not_struct_enum before -> 
+    when not_struct_enum before 
+      && ok_typedef s 
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** ) *)
   | (TIdent (s, i1)::TMul _::TMul _::TCPar _::_ , _)
-    when not_struct_enum before -> 
+    when not_struct_enum before  
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
+      && ok_typedef s 
+      ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1894,6 +1941,7 @@ let lookahead2 next before =
     x::_)  
     when not (TH.is_stuff_taking_parenthized x) &&
       Ast_c.line_of_info i2 = Ast_c.line_of_info i3
+      && ok_typedef s 
       -> 
 
       msg_typedef s; LP.add_typedef_root s;
@@ -1902,18 +1950,23 @@ let lookahead2 next before =
 
   (*  (xx) (    yy) *)
   | (TOPar info::TIdent (s, i1)::TCPar _::TOPar _::_ , x::_)  
-    when not (TH.is_stuff_taking_parenthized x)  -> 
+    when not (TH.is_stuff_taking_parenthized x)  
+      && ok_typedef s 
+        ->
       msg_typedef s; LP.add_typedef_root s;
       TOPar info
 
   (*  (xx * ) yy *)
-  | (TOPar info::TIdent (s, i1)::TMul _::TCPar _::TIdent (s2, i2)::_ , _) -> 
+  | (TOPar info::TIdent (s, i1)::TMul _::TCPar _::TIdent (s2, i2)::_ , _) when 
+      ok_typedef s 
+        -> 
       msg_typedef s; LP.add_typedef_root s;
       TOPar info
 
   (* (xx){ ... }  constructor *)
   | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::x::_)  
       when (*s ==~ regexp_typedef && *) not (TH.is_stuff_taking_parenthized x) 
+      && ok_typedef s 
         ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
@@ -1927,7 +1980,9 @@ let lookahead2 next before =
          *)
    (* x ( *y )(params),  function pointer *)
   | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOPar _::_,  _) 
-      when not_struct_enum before -> 
+      when not_struct_enum before
+      && ok_typedef s 
+        ->
       msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
@@ -1937,7 +1992,8 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   | ((TIfdef ii |TIfdefelse ii |TIfdefelif ii |TEndif ii |TIfdefbool (_,ii))
         as x)
-    ::_, _ -> 
+    ::_, _ 
+      -> 
       if not !Flag_parsing_c.ifdef_to_if 
       then TCommentCpp (Ast_c.CppDirective, ii)
       else 
@@ -1954,10 +2010,12 @@ let lookahead2 next before =
     * to count the '('. Because this can be expensive, we do that only
     * when the token contains "for_each". 
     *)
-  | (TIdent (s, i1)::TOPar _::rest, _) when not !LP._lexer_hint.toplevel -> 
+  | (TIdent (s, i1)::TOPar _::rest, _) when not !LP._lexer_hint.toplevel  
       (* otherwise a function such as static void loopback_enable(int i) { 
        * will be considered as a loop 
        *)
+        ->
+
  
       if s ==~ regexp_foreach && 
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)
