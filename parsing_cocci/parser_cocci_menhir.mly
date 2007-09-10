@@ -581,7 +581,7 @@ define_param_list_option: define_param_list { $1 }
 
 funproto:
   s=ioption(storage) t=ctype
-  id=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
+  id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { Ast0.wrap
 	  (Ast0.UnInit
 	     (s,
@@ -590,7 +590,7 @@ funproto:
 				   P.clt2mcode "(" lp, d, P.clt2mcode ")" rp)),
 	      id, P.clt2mcode ";" pt)) }
 | s=ioption(storage) t=Tvoid
-  id=func_ident lp=TOPar d=decl_list(decl) rp=TCPar pt=TPtVirg
+  id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
     { let t = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
       Ast0.wrap
         (Ast0.UnInit
