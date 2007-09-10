@@ -291,7 +291,10 @@ let profile = ref false
 let _profile_table = ref (Hashtbl.create 100)
 let profile_start category = failwith "todo"
 let profile_end category = failwith "todo"
-  
+
+(* subtil: don't forget to give all argumens to f, otherwise partial app
+ * and will profile nothing 
+ *)  
 let profile_code category f = 
   if not !profile 
   then f() 

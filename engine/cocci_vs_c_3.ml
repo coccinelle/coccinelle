@@ -493,7 +493,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      
         | Some tas, tbs -> 
             tas +> List.fold_left (fun acc ta ->  
-              acc >||> (
+              acc >|+|> (
               tbs +> List.fold_left (fun acc tb -> 
                 acc >|+|> (
                 compatible_type ta tb
@@ -2361,7 +2361,7 @@ and compatible_type a b =
       then ok
       else fail
 
-  | Type_cocci.ConstVol (qua, a), (qub, b) -> 
+  | Type_cocci.ConstVol (qua, a),      (qub, b) -> 
       if (fst qub).B.const && (fst qub).B.volatile 
       then begin pr2 ("warning: the type is both const & volatile but cocci " ^
                       "does not handle that");
@@ -2376,7 +2376,7 @@ and compatible_type a b =
         then compatible_type a (Ast_c.nQ, b)
         else fail
 
-  | Type_cocci.MetaType        (ida,keep,inherited), typb -> 
+  | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
       
       X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  
         ok

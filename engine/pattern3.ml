@@ -44,7 +44,7 @@ module XMATCH = struct
    * version3:
    *    type ('a, 'b) matcher =  'a -> 'b -> binding -> binding list
    *
-   * Then by defining the correct combinators, can have quite pretty code (that 
+   * Then by defining the correct combinators, can have quite pretty code (that
    * looks like the clean code of version0).
    * 
    * opti: return a lazy list of possible matchs ?
@@ -77,8 +77,17 @@ module XMATCH = struct
   (* Je compare les bindings retournés par les differentes branches.
    * Si la deuxieme branche amene a des bindings qui sont deja presents
    * dans la premiere branche, alors je ne les accepte pas.
+   * 
+   * update: still useful now that julia better handle Exp directly via
+   * ctl tricks using positions ?
    *)
   let (>|+|>) m1 m2 = fun tin -> 
+(* CHOICE
+      let xs = m1 tin in
+      if null xs
+      then m2 tin
+      else xs
+*)
     let res1 = m1 tin in
     let res2 = m2 tin in
     let list_bindings_already = List.map snd res1 in
@@ -88,18 +97,19 @@ module XMATCH = struct
           (list_bindings_already +> List.exists (fun already -> 
             Lib_engine.equal_binding binding already))
       ))
+
           
      
       
   let (>||>) m1 m2 = fun tin ->
-    if true then (* CHOICE *)
-      (* opti? use set instead of list *)
-      m1 tin ++ m2 tin
-    else 
+(* CHOICE
       let xs = m1 tin in
       if null xs
       then m2 tin
       else xs
+*)
+    (* opti? use set instead of list *)
+    m1 tin ++ m2 tin
 
 
   let return res = fun tin -> 
@@ -335,9 +345,9 @@ let match_re_node2 dropped_isos a b binding =
 
   let tin = { 
     XMATCH.extra = {
-      optional_storage_iso = not(List.mem "optional_storage" dropped_isos);
+      optional_storage_iso   = not(List.mem "optional_storage"   dropped_isos);
       optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
-      value_format_iso = not(List.mem "value_format" dropped_isos);
+      value_format_iso       = not(List.mem "value_format"       dropped_isos);
     };
     XMATCH.binding = binding;
   } in
@@ -346,19 +356,9 @@ let match_re_node2 dropped_isos a b binding =
   (* take only the tagged-SP, the 'a' *)
   +> List.map (fun ((a,_b), binding) -> a, binding)
 
-(* subtil: 3 args, otherwise profile nothing *)
+
 let match_re_node a b c d = 
   Common.profile_code "Pattern3.match_re_node" 
     (fun () -> match_re_node2 a b c d)
-
-
-
-
-(*
-let match_declaration a b binding = 
-  MATCH.declaration a b binding 
-  (* take only the tagged-SP, the 'a' *)
-  +> List.map (fun ((a,_b), binding) -> a, binding)
-*)
     
 

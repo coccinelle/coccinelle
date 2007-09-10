@@ -69,6 +69,7 @@ let pr2 s =
  * Because we dont want that a variable shadow a struct definition, because
  * they are still in 2 different namespace. But could for typedef,
  * because VarOrFunc and Typedef are in the same namespace.
+ * But could do a record as in c_info.ml
  *)
 
 
