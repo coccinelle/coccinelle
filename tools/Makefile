@@ -8,6 +8,9 @@ all.opt: $(PROGS)
 gitgrep: gitgrep.ml
 	ocamlopt -o gitgrep str.cmxa gitgrep.ml
 
+gitsort: gitsort.ml
+	ocamlopt -o gitsort str.cmxa gitsort.ml
+
 
 SYSLIBS = str.cma unix.cma 
 
