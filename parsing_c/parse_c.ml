@@ -429,7 +429,7 @@ let consistency_checking2 xs =
     );
     Visitor_c.ktype = (fun (k,bigf) t -> 
       match Ast_c.unwrap_typeC t with
-      | Ast_c.TypeName s -> 
+      | Ast_c.TypeName (s,_typ) -> 
           stat +> 
             Common.hfind_default s v1 +> Common.hfind_default CTypedef v2 +> 
             (fun aref -> incr aref)
@@ -480,7 +480,9 @@ let consistency_checking2 xs =
         | Ast_c.DefineExpr e -> 
             (match e with
             | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
-                let t = (Ast_c.nQ, (Ast_c.TypeName s, ii)) in
+                let t = (Ast_c.nQ, 
+                        (Ast_c.TypeName  (s, Ast_c.noTypedefDef()), ii)) in
+
                 Ast_c.DefineType t
             | _ -> k x
             )
@@ -495,7 +497,8 @@ let consistency_checking2 xs =
                 (match e with
                 | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
                     let (i2, i3) = tuple_of_list2 iiparen in
-                    let t = (Ast_c.nQ, (Ast_c.TypeName s, ii)) in
+                    let t = (Ast_c.nQ, 
+                            (Ast_c.TypeName  (s, Ast_c.noTypedefDef()), ii)) in
                     (Ast_c.SizeOfType t, tref), [i1;i2;i3]
                       
                 | _ -> k x

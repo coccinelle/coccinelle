@@ -252,7 +252,8 @@ module XMATCH = struct
           | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
               Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
           | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
-              Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b
+              (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
+              Equality_c.eq_type a b
 
           | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =*= b
           | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 

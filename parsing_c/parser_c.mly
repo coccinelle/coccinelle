@@ -788,7 +788,7 @@ type_spec2:
   * parse_typedef_fix2: this is not enough, and you must use 
   * parse_typedef_fix2 to fully manage typedef problems in grammar.
   */                            
- | TypedefIdent         { Right3 (TypeName (fst $1)), [snd $1]}
+ | TypedefIdent   { Right3 (TypeName (fst $1,Ast_c.noTypedefDef())), [snd $1]}
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name  TCPar  { Right3 (TypeOfType ($3)), [$1;$2;$4] }
@@ -1316,7 +1316,7 @@ define_val:
  | expr      { DefineExpr $1 }
  | statement { DefineStmt $1 }
  | decl      { DefineStmt (Decl $1, []) }
- | TypedefIdent { DefineType (nQ, (TypeName (fst $1), [snd $1])) }
+ | TypedefIdent { DefineType (nQ,(TypeName(fst $1,noTypedefDef()),[snd $1]))}
  | function_definition { DefineFunction $1 }
 
  | Tdo statement Twhile TOPar TInt TCPar 

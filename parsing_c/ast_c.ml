@@ -101,7 +101,7 @@ and typeCbis =
   | EnumName        of string
   | StructUnionName of structUnion * string 
 
-  | TypeName   of string
+  | TypeName   of string * fullType option (* semantic: filled later *)
  
   | ParenType of fullType (* forunparser: *)
 
@@ -173,7 +173,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
 (* ------------------------------------------------------------------------- *)
-and expression = (expressionbis * fullType list ref (* semantic: *)) wrap
+and expression = (expressionbis * fullType option ref (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
@@ -495,8 +495,9 @@ let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
-let noType () = ref [] (* old: None *)
+let noType () = ref None (* old: None, old: [] *)
 let noInstr = (ExprStatement (None), [])
+let noTypedefDef () = None
 
 let emptyMetavarsBinding = ([]: metavars_binding)
 let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NoPos,Ast_cocci.NOTHING),
@@ -527,9 +528,9 @@ let unwrap = fst
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
-let get_types_expr ((unwrap_e, typ), iie) = !typ
-let set_types_expr ((unwrap_e, oldtyps), iie) newtyps =
-  oldtyps := newtyps
+let get_type_expr ((unwrap_e, typ), iie) = !typ
+let set_type_expr ((unwrap_e, oldtyp), iie) newtyp =
+  oldtyp := newtyp
   (* old: (unwrap_e, newtyp), iie *)
 
 

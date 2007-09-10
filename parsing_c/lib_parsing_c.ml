@@ -14,6 +14,22 @@ open Common
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i);
+
+    Visitor_c.kexpr_s = (fun (k,_) e -> 
+      let (e', _),ii' = k e in
+      (e', Ast_c.noType()), ii'
+    );
+
+(*
+    Visitor_c.ktype_s = (fun (k,_) ft -> 
+      let ft' = k ft in
+      match Ast_c.unwrap_typeC ft' with
+      | Ast_c.TypeName (s,_typ) -> 
+          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | _ -> ft'
+
+    );
+*)
     
   }
 

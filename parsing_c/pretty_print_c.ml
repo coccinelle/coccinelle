@@ -99,13 +99,7 @@ let rec pp_expression_gen pr_elem =
     if !Flag_parsing_c.pretty_print_type_info
     then begin
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
-      Common.print_between (fun () -> 
-        pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str " | ");
-      )
-        (fun x -> 
-          pp_type_gen pr_elem x;
-        )
-        !typ;
+      !typ +> Common.do_option (fun x -> pp_type_gen pr_elem x);
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
 
@@ -455,7 +449,7 @@ and (pp_base_type_gen:
             assert (List.length iis = 2);
             print_sto_qu_ty (sto, qu, iis);
 
-        | (TypeName (s), iis) -> 
+        | (TypeName (s,_typ), iis) -> 
             assert (List.length iis = 1);  
             print_sto_qu_ty (sto, qu, iis);
 
@@ -501,7 +495,7 @@ and (pp_type_with_ident_rest_gen:
       | (StructUnion (_, sopt, fields),iis)   -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
-      | (TypeName (s), iis)                     -> print_ident ident
+      | (TypeName (s,_typ), iis)                     -> print_ident ident
       | (TypeOfExpr (e), iis)                     -> print_ident ident
       | (TypeOfType (e), iis)                     -> print_ident ident
 
@@ -590,7 +584,7 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
       | (StructUnion (_, sopt, fields),iis)  -> ()    
       | (StructUnionName (s, structunion), iis) -> ()    
       | (EnumName  s, iis) -> ()    
-      | (TypeName (s), iis) -> ()
+      | (TypeName (s,_typ), iis) -> ()
       | x -> raise Impossible
     in
     pp_type_left
@@ -647,7 +641,7 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
       | (StructUnion (_, sopt, fields),iis)-> ()      
       | (StructUnionName (s, structunion), iis) -> ()    
       | (EnumName  s, iis) -> ()    
-      | (TypeName (s), iis) -> ()
+      | (TypeName (s,_typ), iis) -> ()
       | x -> raise Impossible
     in 
     pp_type_right

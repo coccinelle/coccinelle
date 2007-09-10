@@ -137,7 +137,8 @@ let rec vk_expr = fun bigf expr ->
   let iif ii = vk_ii bigf ii in
 
   let rec exprf e = bigf.kexpr (k,bigf) e
-  and k ((e,typ), ii) = 
+  (* dont go in _typ *)
+  and k ((e,_typ), ii) = 
     iif ii;
     match e with
     | Ident (s) -> ()
@@ -309,7 +310,8 @@ and vk_type = fun bigf t ->
     | StructUnionName (s, structunion) -> ()
     | EnumName  s -> ()
 
-    | TypeName (s) -> ()
+    (* dont go in _typ *)
+    | TypeName (s, _typ) -> ()
 
     | ParenType t -> typef t
     | TypeOfExpr e -> vk_expr bigf e
@@ -854,7 +856,7 @@ and vk_type_s = fun bigf t ->
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
       | EnumName  s -> EnumName  s
-      | TypeName s -> TypeName s
+      | TypeName (s, typ) -> TypeName (s, typ)
 
       | ParenType t -> ParenType (typef t)
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)

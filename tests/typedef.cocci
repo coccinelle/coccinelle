@@ -8,7 +8,7 @@ T {
 - dev_link_t link;
 + struct pcmcia_device *p_dev;
   ...
-}
+};
 
 @ rule2 extends rule1 @
 T *s;

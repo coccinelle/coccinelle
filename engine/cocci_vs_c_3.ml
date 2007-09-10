@@ -300,6 +300,24 @@ and unsplit_initialiser_bis comma_before = function
       (x, [comma_before])::xs,  lastcomma
 
 
+
+
+(*---------------------------------------------------------------------------*)
+(* coupling: same in type_annotater_c.ml *)
+let structdef_to_struct_name ty = 
+  match ty with 
+  | qu, (B.StructUnion (su, sopt, fields), iis) -> 
+      (match sopt,iis with
+      | Some s , [i1;i2;i3;i4] -> 
+          qu, (B.StructUnionName (su, s), [i1;i2])
+      | None, _ -> 
+          ty
+          
+      | x -> raise Impossible
+      )
+  | _ -> raise Impossible
+
+
 (*****************************************************************************)
 (* Functor parameter combinators *)
 (*****************************************************************************)
@@ -483,64 +501,59 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
       if form_ok
       then
-
 	(match opttypa, !opttypb with
         | None, _ -> return ((),())
-        | Some _, [] -> 
+        | Some _, None -> 
             pr2_once ("I don't have the type information. Certainly a pb in " ^
                       "annotate_typer.ml");
             fail
 	      
-        | Some tas, tbs -> 
+        | Some tas, Some tb -> 
             tas +> List.fold_left (fun acc ta ->  
               acc >|+|> (
-              tbs +> List.fold_left (fun acc tb -> 
-                acc >|+|> (
                 compatible_type ta tb
                   )
-                  ) acc
-		)) fail
-	      ) >>= (fun () () ->
+		) fail
+	 ) >>= (fun () () ->
 		
 		
-      (* get binding, assert =*=,  distribute info in ida *)
-		X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>=
-		(fun _s v ->
-        (* todo: now that we have tagged SP, useless to check if what is
+         (* get binding, assert =*=,  distribute info in ida *)
+	 X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>=
+	  (fun _s v ->
+          (* todo: now that we have tagged SP, useless to check if what is
            * in env match what is in C because the tag on ida will detect
            * it also sooner or later
-        *)
-		  
-		  match v with
-        (* the expa is 'abstract-lined' so should not be the base of 
-           *  futur processing. Just here to check. Then use expb! 
-        *)
-		  | Ast_c.MetaExprVal expa -> 
-		      if (Lib_parsing_c.al_expr expa =*=
-			  Lib_parsing_c.al_expr expb)
-		      then 
-			X.distrf_e ida expb >>= (fun ida expb -> 
-			  return (
-			  A.MetaExpr (ida,keep,opttypa,form,inherited)+>
-			  A.rewrap ea,
-			  expb
-			    ))
-		      else fail
-		  | _ -> raise Impossible
-			))
+           *)
+	    match v with
+            (* the expa is 'abstract-lined' so should not be the base of 
+             *  futur processing. Just here to check. Then use expb! 
+             *)
+	    | Ast_c.MetaExprVal expa -> 
+		if (Lib_parsing_c.al_expr expa =*=
+		    Lib_parsing_c.al_expr expb)
+		then 
+		  X.distrf_e ida expb >>= (fun ida expb -> 
+		    return (
+		      A.MetaExpr (ida,keep,opttypa,form,inherited)+>
+			A.rewrap ea,
+		      expb
+		    ))
+		else fail
+	    | _ -> raise Impossible
+	  ))
       else fail
 	  
   (* old: 
-     * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
-     *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
-     * but bug! because if have not tagged SP, then transform without doing
-     * any checks. Hopefully now have tagged SP technique.
-  *)
+   * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
+   *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+   * but bug! because if have not tagged SP, then transform without doing
+   * any checks. Hopefully now have tagged SP technique.
+   *)
 	  
 	  
   (* old: | A.Edots _, _ -> raise Impossible. In fact now can also have
-     * the Edots inside normal expression, not just in arg lists. in
-     * 'x[...];' less: in if(<... x ... y ...>) *)
+   * the Edots inside normal expression, not just in arg lists. in
+   * 'x[...];' less: in if(<... x ... y ...>) *)
   | A.Edots (mcode, None), expb    -> 
       X.distrf_e (dots2metavar mcode) expb >>= (fun mcode expb -> 
         return (
@@ -1351,7 +1364,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  match A.unwrap decla, declb with
 
  (* kind of typedef iso, we must unfold, it's for the case 
-  *  T { }; that we want to match against typedef struct { } xx_t;
+  * T { }; that we want to match against typedef struct { } xx_t;
   *)
  | A.TyDecl (ty0, ptvirga), 
    ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
@@ -1384,7 +1397,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (match A.unwrap ty3 with
            | A.MetaType(ida,keep, inherited) -> 
 
-             let fake_typeb = Ast_c.nQ, ((B.TypeName idb), [iidb]) in
+             let typedefdef = 
+               structdef_to_struct_name
+                 (Lib_parsing_c.al_type 
+                     (Ast_c.nQ, (B.StructUnion (sub, sbopt, declsb), ii)))
+             in
+             let fake_typeb = 
+               Ast_c.nQ,((B.TypeName (idb, Some typedefdef)), [iidb]) 
+             in
              fullType ty2 fake_typeb >>= (fun ty2 fake_typeb -> 
                    
              tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
@@ -1403,7 +1423,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                
 
                match fake_typeb with 
-               | _nQ, ((B.TypeName idb), [iidb]) -> 
+               | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
 
                    return (
                      (A.TyDecl (ty0, ptvirga)) +> A.rewrap decla,
@@ -1492,10 +1512,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        (match A.unwrap ida with
        | A.MetaType(_,_,_) -> 
 
-           let fake_typeb = Ast_c.nQ, ((B.TypeName idb), [iidb]) in
+           let fake_typeb = 
+             Ast_c.nQ, ((B.TypeName (idb, Ast_c.noTypedefDef())), [iidb]) 
+           in
            fullTypebis ida fake_typeb >>= (fun ida fake_typeb -> 
              match fake_typeb with
-             | nQ, ((B.TypeName idb), [iidb]) -> 
+             | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
                  return (ida, (idb, iidb))
              | _ -> raise Impossible
            )
@@ -2207,14 +2229,14 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     * uint in the C code. But some CEs consists in renaming some types,
     * so we don't want apply isomorphisms every time. 
     *) 
-    | A.TypeName sa,  (B.TypeName sb, ii) ->
+    | A.TypeName sa,  (B.TypeName (sb,typb), ii) ->
         let (isb) = tuple_of_list1 ii in
         if (term sa) =$= sb
         then 
           tokenf sa isb >>= (fun sa isb -> 
           return (
             (A.TypeName sa) +> A.rewrap ta,
-            (B.TypeName sb, [isb])
+            (B.TypeName (sb,typb), [isb])
           ))
         else fail
 
@@ -2356,7 +2378,8 @@ and compatible_type a b =
       if equal_structUnion_type_cocci sua sub && sa = sb
       then ok
       else fail
-  | Type_cocci.TypeName sa, (qub, (B.TypeName sb, ii)) -> 
+
+  | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
       if sa = sb 
       then ok
       else fail
@@ -2381,6 +2404,13 @@ and compatible_type a b =
       X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  
         ok
       )
+
+  (* subtil: must be after the MetaType case *)
+  | a, (qub, (B.TypeName (sb,Some b), ii)) -> 
+      (* kind of typedef iso *)
+      compatible_type a b
+
+
 
 
 

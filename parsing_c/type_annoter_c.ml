@@ -213,7 +213,7 @@ let rec type_unfold_one_step ty env =
          ty
       )
       
-  | TypeName s -> 
+  | TypeName (s,_typ) -> 
       (try 
           let (t', env') = lookup_typedef s env in
           type_unfold_one_step t' env'
@@ -229,7 +229,7 @@ let rec type_unfold_one_step ty env =
 
 
 
-let (find_type_field: 
+let (type_field: 
   string -> (Ast_c.structUnion * Ast_c.structType) -> Ast_c.fullType) = 
   fun fld (su, fields) -> 
     fields +> Common.find_some (fun x -> 
@@ -264,56 +264,38 @@ let structdef_to_struct_name ty =
   | _ -> raise Impossible
 
 
-let rec type_variations_step ty env = 
+
+let rec typedef_fix ty env = 
 
   match Ast_c.unwrap_typeC ty with 
   | BaseType x  -> ty
-      
-  | Pointer t -> 
-      Pointer (type_variations_step t env)  +> Ast_c.rewrap_typeC ty
-  | Array (e, t) -> 
-      Array (e, type_variations_step t env) +> Ast_c.rewrap_typeC ty
-      
-  | StructUnion (su, sopt, fields) -> 
-      structdef_to_struct_name ty
-         
-      
-  | FunctionType t -> 
-      (FunctionType t) (* todo ? *) +> Ast_c.rewrap_typeC ty
+  | Pointer t -> Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
+  | Array (e, t) -> Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
+  | StructUnion (su, sopt, fields) -> structdef_to_struct_name ty
+  | FunctionType ft -> 
+      (FunctionType ft) (* todo ? *) +> Ast_c.rewrap_typeC ty
   | Enum  (s, enumt) -> 
       (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
   | EnumName s -> 
       (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
 
-  (* we prefer StructUnionName to StructUnion when it comes to typed 
-   *  metavariable 
-   *)
+  (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
   | StructUnionName (su, s) -> ty
       
-  | TypeName s -> 
+  | TypeName (s, _typ) -> 
       (try 
           let (t', env') = lookup_typedef s env in
-          t' (* maybe a TypeName too, but fixpoint will catch it next time *)
-        with Not_found -> 
+          TypeName (s, Some (typedef_fix t' env)) +> Ast_c.rewrap_typeC ty
+       with Not_found -> 
           ty
       )
       
-  | ParenType t -> type_variations_step t env
+  | ParenType t -> typedef_fix t env
   | TypeOfExpr e -> 
       pr2_once ("Type_annoter: not handling typeof");
       ty
 
-  | TypeOfType t -> type_variations_step t env
- 
-
-let type_variations_typedef ty env = 
-  (* fix point *)
-  let rec aux ty xs = 
-    let ty' = type_variations_step ty env in
-    if List.mem ty' xs then xs
-    else aux ty' (ty'::xs) 
-  in
-  List.rev (aux ty [ty])
+  | TypeOfType t -> typedef_fix t env
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style *)
@@ -382,22 +364,13 @@ let add_binding namedef warning =
 let type_of_s s = 
   Lib.al_type (Parse_c.type_of_string s)
 
+let noTypeHere = None 
 
-let noTypeHere = [] 
-
-(* it assumes that the first type is the "original" one *)
-let do_with_types f xs =
-  match xs with 
-  | [] -> []
-  | x::xs -> 
-      f x 
-(*
-  xs +> List.fold_left (fun acc e -> 
-    f e @ acc 
-  ) noTypeHere
-*)
-
-  
+let do_with_type f t = 
+  match t with
+  | None -> None
+  | Some t -> 
+      f t
 
   
 (*****************************************************************************)
@@ -421,12 +394,12 @@ let rec (annotate_program2 :
       let ty = 
         match Ast_c.unwrap_expr expr with
         (* todo: should analyse the 's' for int to know if unsigned or not *)
-        | Constant (String (s,kind)) ->  [type_of_s "char *"]
-        | Constant (Char   (s,kind)) ->  [type_of_s "char"]
-        | Constant (Int (s)) ->          [type_of_s "int"]
+        | Constant (String (s,kind)) ->  Some (type_of_s "char *")
+        | Constant (Char   (s,kind)) ->  Some (type_of_s "char")
+        | Constant (Int (s)) ->          Some (type_of_s "int")
         | Constant (Float (s,kind)) -> 
             let iinull = [] in
-            [(Ast_c.nQ, (BaseType (FloatType kind), iinull))]
+            Some (Ast_c.nQ, (BaseType (FloatType kind), iinull))
 
         (* don't want a warning on the Ident that are a FunCall *)
         | FunCall (((Ident f, typ), ii), args) -> 
@@ -438,7 +411,7 @@ let rec (annotate_program2 :
         | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
           | Some (typ,_nextenv) -> 
-              type_variations_typedef typ !_scoped_env 
+              Some (typedef_fix typ !_scoped_env)
           | None  -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
               then 
@@ -451,23 +424,22 @@ let rec (annotate_program2 :
           )
         | Unary (e, DeRef)  
         | ArrayAccess (e, _) ->
-          (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
+          (Ast_c.get_type_expr e) +> do_with_type (fun t -> 
             (* todo: maybe not good env !! *)
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | Pointer x  
             | Array (_, x) -> 
-                type_variations_typedef x !_scoped_env
+                Some (typedef_fix x !_scoped_env)
             | _ -> noTypeHere
           )
 
         | RecordAccess  (e, fld) ->  
-          (Ast_c.get_types_expr e) +> do_with_types (fun t -> 
+          (Ast_c.get_type_expr e) +> do_with_type (fun t -> 
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | StructUnion (su, sopt, fields) -> 
                 (try 
-                  (* todo: type_variations_typedef ? which env ? *)
-                    type_variations_typedef 
-                      (find_type_field fld (su, fields)) !_scoped_env
+                  (* todo: which env ? *)
+                  Some (typedef_fix (type_field fld (su, fields)) !_scoped_env)
                 with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
@@ -475,23 +447,20 @@ let rec (annotate_program2 :
                      "'");
                   noTypeHere
                 )
-                      
-                        
             | _ -> noTypeHere
           )
 
         | RecordPtAccess (e, fld) -> 
-          (Ast_c.get_types_expr e) +> do_with_types (fun t ->
+          (Ast_c.get_type_expr e) +> do_with_type (fun t ->
           match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with 
           | Pointer (t) -> 
               (match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) 
-                with
+               with
               | StructUnion (su, sopt, fields) -> 
                 (try 
-                  (* todo: type_variations_typedef ? which env ? *)
-                  type_variations_typedef 
-                    (find_type_field fld (su, fields)) !_scoped_env
-                  with Not_found -> 
+                  (* todo: which env ? *)
+                  Some (typedef_fix (type_field fld (su, fields)) !_scoped_env)
+                 with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
                      " struct '"^(match sopt with Some s -> s |_ -> "<anon>")^
@@ -504,19 +473,18 @@ let rec (annotate_program2 :
           | _ -> noTypeHere
           )
         | Cast (t, e) -> 
-          (* todo: type_variations_typedef ? *)
-          (* todo: add_types_expr [t] e ? *)
-          type_variations_typedef (Lib.al_type t) !_scoped_env
+            (* todo: add_types_expr [t] e ? *)
+            Some (typedef_fix (Lib.al_type t) !_scoped_env)
 
          (* todo: check e2 ? *)
         | Assignment (e1, op, e2) -> 
-            Ast_c.get_types_expr e1
-
-        | ParenExpr e -> Ast_c.get_types_expr e
+            Ast_c.get_type_expr e1
+        | ParenExpr e -> 
+            Ast_c.get_type_expr e
 
         | _ -> noTypeHere
       in
-      Ast_c.set_types_expr expr ty
+      Ast_c.set_type_expr expr ty
       
     );
 
@@ -572,10 +540,8 @@ let rec (annotate_program2 :
                 iifunc1, iifunc2
             | _ -> raise Impossible
           in
+          let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
 
-          let typ' = 
-            Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) 
-          in
           add_binding (VarOrFunc (funcs, typ')) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 
@@ -585,7 +551,6 @@ let rec (annotate_program2 :
             );
             k elem
           );
-
       | _ -> k elem
     );
   } 

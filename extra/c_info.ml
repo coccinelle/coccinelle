@@ -248,7 +248,7 @@ let used_stuff xs =
           if not (Common.member_env_key s !_env)
           then 
             add e.structs s;
-      | TypeName s -> 
+      | TypeName (s,_typ) -> 
           if not (Common.member_env_key s !_env)
           then 
             add e.typedefs s;
