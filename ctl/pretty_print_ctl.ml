@@ -110,6 +110,8 @@ let rec (pp_ctl:
            (* pp ")" *)
      | Uncheck(phi1) ->
 	 pp "Uncheck"; pp_arg_paren env phi1
+     | InnerAnd(phi1) ->
+	 pp "InnerAnd("; pp_arg_paren env phi1
 
    and pp_dir = function
        FORWARD -> ()

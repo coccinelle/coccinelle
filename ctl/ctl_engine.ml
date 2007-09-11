@@ -1087,6 +1087,31 @@ let satEG dir ((_,_,states) as m) s reqst =
     triples_conj y pre in
   setgfix f s
 
+(* **************************************************************** *)
+(* Inner And - a way of dealing with multiple matches within a node *)
+(* **************************************************************** *)
+(* applied to the result of matching a node.  collect witnesses when the
+states and environments are the same *)
+
+let inner_and trips =
+  let rec loop = function
+      [] -> ([],[])
+    | (s,th,w)::trips ->
+	let (cur,acc) = loop trips in
+	(match cur with
+	  (s',_,_)::_ when s = s' ->
+	    let rec loop' = function
+		[] -> [(s,th,w)]
+	      |	((_,th',w') as t')::ts' ->
+		  (match conj_subst th th' with
+		    Some th'' -> (s,th'',union_wit w w')::ts'
+		  | None -> t'::(loop' ts')) in
+	    (loop' cur,acc)
+	| _ -> ([(s,th,w)],cur@acc)) in
+  let (cur,acc) =
+    loop (List.sort state_compare trips) (* is this sort needed? *) in
+  cur@acc
+
 (* *************** *)
 (* Partial matches *)
 (* *************** *)
@@ -1417,6 +1442,8 @@ let rec satloop unchecked required required_states
 		| _ ->
 		    failwith
 		      "only one result allowed for the left arg of AndAny")))
+    | A.InnerAnd(phi) ->
+	inner_and(loop unchecked required required_states phi)
     | A.EX(dir,phi)      ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
@@ -1627,6 +1654,10 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		| _ ->
 		    failwith
 		      "only one result allowed for the left arg of AndAny")))
+    | A.InnerAnd(phi1) ->
+	let (child1,res1) = satv unchecked required required_states phi1 env in
+	Printf.printf "uncheck\n"; flush stdout;
+	anno (inner_and res1) [child1]
     | A.EX(dir,phi1)       -> 
 	let new_required_states =
 	  get_children_required_states dir m required_states in
@@ -1815,6 +1846,7 @@ let simpleanno l phi res =
     | A.LetR (dir,x,phi1,phi2) -> pp ("LetR"^" "^x); pp_dir dir
     | A.Ref(s)             -> pp ("Ref("^s^")")
     | A.Uncheck(s)         -> pp "Uncheck"
+    | A.InnerAnd(s)         -> pp "InnerAnd"
 ;;
 
 

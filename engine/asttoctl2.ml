@@ -739,7 +739,7 @@ let exptymatch l make_match make_guard_match =
 	       (ctl_not
 		  (CTL.Uncheck (List.fold_left ctl_or_fl CTL.False negates)))))
       matches prefixes in
-  List.fold_left ctl_or_fl CTL.False (List.rev info)
+  CTL.InnerAnd(List.fold_left ctl_or_fl CTL.False (List.rev info))
 
 (* code might be a DisjRuleElem, in which case we break it apart
    code might contain an Exp or Ty
@@ -1210,6 +1210,10 @@ and statement stmt after quantified label guard =
 	  let term =
 	    match Ast.unwrap ast with
 	      Ast.DisjRuleElem(res) -> do_re_matches label guard res quantified
+	    | Ast.Exp(_) | Ast.Ty(_) ->
+		let stmt_fvs = Ast.get_fvs stmt in
+		let fvs = get_unquantified quantified stmt_fvs in
+		CTL.InnerAnd(quantify fvs (make_match ast))
 	    | _ ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
@@ -1745,6 +1749,7 @@ let rec cleanup = function
   | CTL.LetR (dir,x,phi1,phi2) -> CTL.LetR (dir,x,cleanup phi1,cleanup phi2)
   | CTL.Ref(s) -> CTL.Ref(s)
   | CTL.Uncheck(phi1) -> CTL.Uncheck(cleanup phi1)
+  | CTL.InnerAnd(phi1) -> CTL.InnerAnd(cleanup phi1)
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

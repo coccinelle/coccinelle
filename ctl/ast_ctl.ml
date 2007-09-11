@@ -46,6 +46,7 @@ type ('pred,'mvar,'anno) generic_ctl =
   | SeqOr of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
+  | InnerAnd of (('pred,'mvar,'anno) generic_ctl)
 
 and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)
 
