@@ -41,9 +41,36 @@ let save_tmp_files = ref false
 (* pair of  (list of flags to set true, list of flags to set false *)
 let quiet_profile = (
   [
+  ],
+  [
+    Flag_cocci.show_diff;
+
+    Flag.show_misc;
+
+    Flag_cocci.show_c;
+    Flag_cocci.show_cocci;
+    Flag_cocci.show_flow;
+    Flag_cocci.show_before_fixed_flow;
+    Flag_cocci.show_ctl_tex;
+    Flag_cocci.show_ctl_text;
+    Flag_cocci.show_transinfo;
+    Flag_cocci.show_binding_in_out;
+
+    Flag_parsing_cocci.show_SP;
+    Flag_parsing_cocci.show_iso_failures;
+    Flag_ctl.verbose_ctl_engine;
+    Flag_engine.debug_engine;
+    Flag_engine.debug_unparsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_parsing;
+  ])
+
+let pad_profile = (
+  [
     Flag_cocci.show_diff;
   ],
   [
+
     Flag.show_misc;
 
     Flag_cocci.show_c;
@@ -169,6 +196,7 @@ let other_options = [
   "most useful show options", 
   "",
   [
+    "-show_diff"           , Arg.Set Flag_cocci.show_diff, " ";
     "-no_show_diff"           , Arg.Clear Flag_cocci.show_diff, " ";
     "-show_flow"              , Arg.Set Flag_cocci.show_flow,        " ";
     "-no_show_ctl_text"       , Arg.Clear Flag_cocci.show_ctl_text,  " ";
@@ -226,6 +254,13 @@ let other_options = [
       List.iter (fun x -> x := false) set_to_false;
       List.iter (fun x -> x := true) set_to_true;
     ), " ";
+
+    "-pad",   Arg.Unit (fun () -> 
+      let (set_to_true, set_to_false) = pad_profile in
+      List.iter (fun x -> x := false) set_to_false;
+      List.iter (fun x -> x := true) set_to_true;
+    ), " ";
+
   ];
 
   "bench options",

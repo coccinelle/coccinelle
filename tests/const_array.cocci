@@ -8,8 +8,8 @@ T[] E;
 
 @@
 type T;
-const T[] E;
+const T*[] E;
 @@
 
-- sizeof(E)/sizeof(T)
+- sizeof(E)/sizeof(T*)
 + ARRAY_SIZE(E)
