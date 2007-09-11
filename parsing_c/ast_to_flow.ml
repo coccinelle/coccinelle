@@ -1090,8 +1090,16 @@ let ast_to_control_flow e =
           !g#add_arc ((ei, endi) ,Direct);
 
       | Ast_c.DefineStmt st -> 
+
+          (* can have some return; inside the statement *)
+          let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
+          let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
+          let goto_labels = compute_labels_and_create_them st in
+
           let info = { initial_info with
-            labels_assoc = compute_labels_and_create_them st;
+            labels_assoc = goto_labels;
+            exiti      = Some exiti;
+            errorexiti = Some errorexiti;
           } 
           in
 

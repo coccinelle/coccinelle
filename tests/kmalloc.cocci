@@ -1,6 +1,7 @@
 @@
 expression x;
 expression E1,E2;
+type T;
 @@
 
   x =
