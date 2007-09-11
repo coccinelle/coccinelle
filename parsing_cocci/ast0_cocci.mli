@@ -71,7 +71,8 @@ and base_expression =
   | Constant       of Ast_cocci.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast_cocci.assignOp mcode * expression
+  | Assignment     of expression * Ast_cocci.assignOp mcode * expression *
+	              bool (* true if it can match an initialization *)
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * Ast_cocci.fixOp mcode

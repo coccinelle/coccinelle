@@ -203,10 +203,10 @@ let rec expression e =
       let fn = expression fn in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       mkres e (Ast0.FunCall(fn,lp,args,rp)) fn (promote_mcode rp)
-  | Ast0.Assignment(left,op,right) ->
+  | Ast0.Assignment(left,op,right,simple) ->
       let left = expression left in
       let right = expression right in
-      mkres e (Ast0.Assignment(left,op,right)) left right
+      mkres e (Ast0.Assignment(left,op,right,simple)) left right
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       let exp1 = expression exp1 in
       let exp2 = get_option expression exp2 in

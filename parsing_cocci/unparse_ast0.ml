@@ -2,7 +2,7 @@ open Format
 module Ast0 = Ast0_cocci
 module U = Pretty_print_cocci
 
-let quiet = ref true (* true = no decoration on - context, etc *)
+let quiet = ref false (* true = no decoration on - context, etc *)
 
 let start_block str =
   force_newline(); print_string "  "; open_box 0
@@ -124,7 +124,7 @@ let rec expression e =
 	  expression fn; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
-      | Ast0.Assignment(left,op,right) ->
+      | Ast0.Assignment(left,op,right,_) ->
 	  expression left; print_string " "; mcode U.assignOp op;
 	  print_string " "; expression right
       | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->

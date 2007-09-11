@@ -1041,11 +1041,11 @@ assign_expr(r,pe):
   | unary_expr(r,pe) TAssign assign_expr(r,pe)
       { let (op,clt) = $2 in
       Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
-				Ast0.set_arg_exp $3)) }
+				Ast0.set_arg_exp $3,false)) }
   | unary_expr(r,pe) TEq assign_expr(r,pe)
       { Ast0.wrap
 	  (Ast0.Assignment
-	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3)) }
+	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }

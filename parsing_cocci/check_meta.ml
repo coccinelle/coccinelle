@@ -95,7 +95,7 @@ let rec expression context old_metas table minus e =
   | Ast0.FunCall(fn,lp,args,rp) ->
       expression FN old_metas table minus fn;
       dots (expression ID old_metas table minus) args
-  | Ast0.Assignment(left,op,right) ->
+  | Ast0.Assignment(left,op,right,_) ->
       expression context old_metas table minus left;
       expression ID old_metas table minus right
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->

@@ -15,7 +15,10 @@ let rec adding_something s =
     Ast0.MINUS(mc) ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(_)]],tinfo) -> false
+	([[Ast.StatementTag(s)]],_) ->
+	  (match Ast.unwrap s with
+	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
+	  | _ -> false)
       |	(_,_) -> true)
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
@@ -23,7 +26,7 @@ let rec adding_something s =
   | Ast0.MIXED(_) -> not(contains_only_minus.V0.combiner_statement s)
   | _ -> failwith "unexpected plus code"
 
-(* needs a special case when there is a Disj or an empty DOTS *)
+(* why do we need this; MINUS should mean the same thing *)
 and contains_only_minus =
   let bind x y = x && y in
   let option_default = true in
@@ -78,6 +81,8 @@ and contains_only_minus =
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
 
+
+(* needs a special case when there is a Disj or an empty DOTS *)
 (* ---------------------------------------------------------------------- *)
 
 (*

@@ -198,12 +198,12 @@ let rec top_expression in_nest opt_allowed tgt expr =
       let args = dots (expression false arity) args in
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.FunCall(fn,lp,args,rp))
-  | Ast0.Assignment(left,op,right) ->
+  | Ast0.Assignment(left,op,right,simple) ->
       let arity = exp_same (mcode2line op) [mcode2arity op] in
       let left = expression false arity left in
       let op = mcode op in
       let right = expression false arity right in
-      make_exp expr tgt arity (Ast0.Assignment(left,op,right))
+      make_exp expr tgt arity (Ast0.Assignment(left,op,right,simple))
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       let arity =
 	exp_same (mcode2line why) [mcode2arity why; mcode2arity colon] in

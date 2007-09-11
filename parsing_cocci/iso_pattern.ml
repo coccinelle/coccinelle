@@ -207,61 +207,33 @@ let is_context e =
     Ast0.CONTEXT(cell) -> true
   | _ -> false
 
-(* needs a special case when there is a Disj or an empty DOTS *)
-let is_pure_context =
-  let bind x y = x && y in
-  let option_default = true in
-  let mcodekind = function
-      Ast0.MINUS(mc) -> false
-    | Ast0.CONTEXT(mc) ->
-	(match !mc with
-	  (Ast.NOTHING,_,_) -> true
-	| _ -> false)
-    | _ -> false in
-  let mcode (_,_,_,mc) = mcodekind mc in
-
-  let donothing r k e = mcodekind (Ast0.get_mcodekind e) && k e in
-
-  let dots r k e =
-    match Ast0.unwrap e with
-      Ast0.DOTS([]) | Ast0.CIRCLES([]) | Ast0.STARS([]) -> true
-    | _ -> k e in
-
-  let expression r k e =
-    mcodekind (Ast0.get_mcodekind e) &&
-    match Ast0.unwrap e with
-      Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	List.for_all r.V0.combiner_expression expr_list
-    | _ -> k e in
-
-  let declaration r k e =
-    mcodekind (Ast0.get_mcodekind e) &&
-    match Ast0.unwrap e with
-      Ast0.DisjDecl(starter,decls,mids,ender) ->
-	List.for_all r.V0.combiner_declaration decls
-    | _ -> k e in
-
-  let typeC r k e =
-    mcodekind (Ast0.get_mcodekind e) &&
-    match Ast0.unwrap e with
-      Ast0.DisjType(starter,types,mids,ender) ->
-	List.for_all r.V0.combiner_typeC types
-    | _ -> k e in
-
-  let statement r k e =
-    mcodekind (Ast0.get_mcodekind e) &&
-    match Ast0.unwrap e with
-      Ast0.Disj(starter,statement_dots_list,mids,ender) ->
-	List.for_all r.V0.combiner_statement_dots statement_dots_list
-    | _ -> k e in
-
-  let res = V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
-    dots dots dots dots dots dots
-    donothing expression typeC donothing donothing declaration
-    statement donothing donothing in
-  res.V0.combiner_statement
+(* needs a special case when there is a Disj or an empty DOTS
+   the following stops at the statement level, and gives true if one
+   statement is replaced by another *)
+let rec is_pure_context s =
+  match Ast0.get_mcodekind s with
+    Ast0.CONTEXT(mc) ->
+      (match !mc with
+	(Ast.NOTHING,_,_) -> true
+      |	_ -> false)
+  | Ast0.MINUS(mc) ->
+      (match !mc with
+	(* do better for the common case of replacing a stmt by another one *)
+	([[Ast.StatementTag(s)]],_) ->
+	  (match Ast.unwrap s with
+	    Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
+	  | _ -> true)
+      |	(_,_) -> false)
+  | _ ->
+      (match Ast0.unwrap s with
+	Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+	  List.for_all
+	    (function x ->
+	      match Ast0.undots x with
+		[s] -> is_pure_context s
+	      |	_ -> false (* could we do better? *))
+	    statement_dots_list
+      |	_ -> false)
 
 let is_minus e =
   match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
@@ -540,8 +512,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_bindings (match_expr fna fnb)
 		(match_dots match_expr is_elist_matcher do_elist_match
 		   argsa argsb)
-	  | (Ast0.Assignment(lefta,opa,righta),
-	     Ast0.Assignment(leftb,opb,rightb)) ->
+	  | (Ast0.Assignment(lefta,opa,righta,_),
+	     Ast0.Assignment(leftb,opb,rightb,_)) ->
 	       if mcode_equal opa opb
 	       then
 		 conjunct_bindings (match_expr lefta leftb)
@@ -845,7 +817,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		 it starts introducing too many braces?  don't remember the
 		 exact problem...
 	      *)
-	      if not(checks_needed) or is_minus s or is_pure_context s
+	      if not(checks_needed) or is_minus s or 
+		(is_context s &&
+		 List.for_all is_pure_context (Ast0.undots bodyb))
 	      then
 		match_dots match_statement is_slist_matcher do_slist_match
 		  bodya bodyb

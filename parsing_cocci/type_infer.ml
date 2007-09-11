@@ -99,7 +99,7 @@ let rec propagate_types env =
 		      else None
 		  | _ -> None)
 	      |	_ -> None))
-      | Ast0.Assignment(exp1,op,exp2) ->
+      | Ast0.Assignment(exp1,op,exp2,_) ->
 	  let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 	  Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
       | Ast0.CondExpr(exp1,why,Some exp2,colon,exp3) ->

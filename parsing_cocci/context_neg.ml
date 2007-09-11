@@ -423,7 +423,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.Constant(const1),Ast0.Constant(const2)) -> equal_mcode const1 const2
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
-  | (Ast0.Assignment(_,op1,_),Ast0.Assignment(_,op2,_)) ->
+  | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->
       equal_mcode op1 op2
   | (Ast0.CondExpr(_,why1,_,colon1,_),Ast0.CondExpr(_,why2,_,colon2,_)) ->
       equal_mcode why1 why2 && equal_mcode colon1 colon2

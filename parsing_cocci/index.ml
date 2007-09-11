@@ -67,7 +67,7 @@ let expression e =
     Ast0.Ident(id) -> [17]
   | Ast0.Constant(const) -> [18]
   | Ast0.FunCall(fn,lp,args,rp) -> [19]
-  | Ast0.Assignment(left,op,right) -> [20]
+  | Ast0.Assignment(left,op,right,simple) -> [20]
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) -> [21]
   | Ast0.Postfix(exp,op) -> [22]
   | Ast0.Infix(exp,op) -> [23]

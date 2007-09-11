@@ -106,7 +106,7 @@ let combiner bind option_default
 	  multibind
 	    [expression fn; string_mcode lp; expression_dots args;
 	      string_mcode rp]
-      | Ast0.Assignment(left,op,right) ->
+      | Ast0.Assignment(left,op,right,_) ->
 	  multibind [expression left; assign_mcode op; expression right]
       | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	  multibind
@@ -599,8 +599,9 @@ let rebuilder = fun
 	| Ast0.FunCall(fn,lp,args,rp) ->
 	    Ast0.FunCall(expression fn,string_mcode lp,expression_dots args,
 			 string_mcode rp)
-	| Ast0.Assignment(left,op,right) ->
-	    Ast0.Assignment(expression left,assign_mcode op,expression right)
+	| Ast0.Assignment(left,op,right,simple) ->
+	    Ast0.Assignment(expression left,assign_mcode op,expression right,
+			    simple)
 	| Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	    Ast0.CondExpr(expression exp1, string_mcode why,
 			  get_option expression exp2, string_mcode colon,

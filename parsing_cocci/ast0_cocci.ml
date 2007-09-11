@@ -78,7 +78,8 @@ and base_expression =
   | Constant       of Ast.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * Ast.assignOp mcode * expression
+  | Assignment     of expression * Ast.assignOp mcode * expression *
+	              bool (* true if it can match an initialization *)
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * Ast.fixOp mcode
