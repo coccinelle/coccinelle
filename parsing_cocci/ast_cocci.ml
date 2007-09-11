@@ -100,7 +100,8 @@ and base_expression =
   | Constant       of constant mcode
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
-  | Assignment     of expression * assignOp mcode * expression
+  | Assignment     of expression * assignOp mcode * expression *
+	              bool (* true if it can match an initialization *)
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * fixOp mcode

@@ -106,7 +106,7 @@ let rec expression e =
       expression fn; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
-  | Ast.Assignment(left,op,right) ->
+  | Ast.Assignment(left,op,right,_) ->
       expression left; print_string " "; mcode assignOp op;
       print_string " "; expression right
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->

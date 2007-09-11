@@ -52,10 +52,10 @@ let rec disjexp e =
       disjmult2 (disjexp fn) (disjdots disjexp args)
 	(function fn -> function args ->
 	  Ast.rewrap e (Ast.FunCall(fn,lp,args,rp)))
-  | Ast.Assignment(left,op,right) ->
+  | Ast.Assignment(left,op,right,simple) ->
       disjmult2 (disjexp left) (disjexp right)
 	(function left -> function right ->
-	  Ast.rewrap e (Ast.Assignment(left,op,right)))
+	  Ast.rewrap e (Ast.Assignment(left,op,right,simple)))
   | Ast.CondExpr(exp1,why,Some exp2,colon,exp3) ->
       let res = disjmult disjexp [exp1;exp2;exp3] in
       List.map

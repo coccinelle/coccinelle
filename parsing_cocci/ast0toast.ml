@@ -267,7 +267,8 @@ let rec expression e =
 	let rp = mcode rp in
 	Ast.FunCall(fn,lp,args,rp)
     | Ast0.Assignment(left,op,right) ->
-	Ast.Assignment(expression left,mcode op,expression right)
+	let simple = simple_assignment left op right in
+	Ast.Assignment(expression left,mcode op,expression right,simple)
     | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	let exp1 = expression exp1 in
 	let why = mcode why in
@@ -325,6 +326,9 @@ let rec expression e =
     | Ast0.MultiExp(exp) -> Ast.MultiExp(expression exp))
 
 and expression_dots ed = dots expression ed
+
+(* returns true if the assignment can match an initialization *)
+and simple_assignment left op right = false
   
 (* --------------------------------------------------------------------- *)
 (* Types *)

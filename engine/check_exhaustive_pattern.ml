@@ -78,7 +78,7 @@ let dumb_astcocci_expr = function
  | A.Constant (A.Int sa,_,_) -> ()
  | A.Constant (A.Float sa,_,_) -> ()
  | A.FunCall (ea1, _, eas, _) -> ()
- | A.Assignment (ea1, opa, ea2) -> ()
+ | A.Assignment (ea1, opa, ea2, _) -> ()
  | A.CondExpr (ea1,_,ea2opt,_,ea3) -> ()
  | A.Postfix (ea, opa) -> ()
  | A.Infix (ea, opa) -> ()

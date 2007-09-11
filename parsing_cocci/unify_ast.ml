@@ -118,7 +118,7 @@ let rec unify_expression e1 e2 =
       conjunct_bindings
 	(unify_expression f1 f2)
 	(unify_dots unify_expression edots args1 args2)
-  | (Ast.Assignment(l1,op1,r1),Ast.Assignment(l2,op2,r2)) ->
+  | (Ast.Assignment(l1,op1,r1,_),Ast.Assignment(l2,op2,r2,_)) ->
       if unify_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false

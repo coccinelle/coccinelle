@@ -651,7 +651,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
 
-  | A.Assignment (ea1, opa, ea2), ((B.Assignment (eb1, opb, eb2), typ),ii) -> 
+  | A.Assignment (ea1, opa, ea2, simple),
+      ((B.Assignment (eb1, opb, eb2), typ),ii) -> 
       let (opbi) = tuple_of_list1 ii in
       if equal_assignOp (term opa) opb 
       then
@@ -659,7 +660,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         expression ea2 eb2 >>= (fun ea2 eb2 -> 
         tokenf opa opbi >>= (fun opa opbi -> 
           return (
-            ((A.Assignment (ea1, opa, ea2))) +> wa,
+            ((A.Assignment (ea1, opa, ea2, simple))) +> wa,
             ((B.Assignment (eb1, opb, eb2), typ), [opbi])
         ))))
       else fail
