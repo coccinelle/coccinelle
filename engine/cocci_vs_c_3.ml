@@ -2740,14 +2740,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | A.Exp exp, nodeb -> 
 
+      (* kind of iso, initialisation vs affectation *)
       let node = 
         match A.unwrap exp, nodeb with
         | A.Assignment (ea, op, eb, true), F.Decl decl -> 
             initialisation_to_affectation decl +> F.rewrap node
         | _ -> node
       in
-
-
 
 
      (* Now keep fullstatement inside the control flow node, 
@@ -2767,16 +2766,16 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         | None -> expression
         | Some pos -> 
             (fun ea eb -> 
-              let maxmin = 
+              let (max,min) = 
                 Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
               let keep = Type_cocci.Unitary in
               let inherited = false in
-              X.envf keep inherited (pos, B.MetaPosVal maxmin) >>= (fun _s v ->
+              X.envf keep inherited (pos, B.MetaPosVal (min,max)) >>= 
+               (fun _s v ->
                 match v with
                 | B.MetaPosVal posa -> 
-                    if posa =*= maxmin 
-                    then
-                      expression ea eb
+                    if posa =*= (min,max)
+                    then expression ea eb
                     else fail 
                 | _ -> raise Impossible
               )

@@ -465,7 +465,8 @@ return ...; => return;
 // ---------------------------------------------------------------------------
 // Affectation/initialisation isomorphism
 // ---------------------------------------------------------------------------
-// 'X = Y'  should also match  'type X = Y';  (TODO)
+// They are handled in engine.
+// 'X = Y'  should also match  'type X = Y'; 
 
 // ---------------------------------------------------------------------------
 // Parenthesis isomorphisms
