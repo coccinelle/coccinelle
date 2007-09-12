@@ -201,7 +201,7 @@ let get_constants rules =
       (function (rest_info,in_plus) ->
 	function (nm,rule_info,cur) ->
 	  let (cur_info,cur_plus) = rule_fn cur in_plus in
-	  (Common.union_set cur_info rest_info,cur_plus))
+	  (cur_info::rest_info,cur_plus))
       ([],[]) rules in
-  info
+  List.rev info
 

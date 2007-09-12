@@ -239,6 +239,10 @@ let show_or_not_binding a b  =
 (*****************************************************************************)
 
 let worth_trying cfiles tokens = 
+  (* drop the following line for a list of list by rules.  since we don't
+     allow multiple minirules, all the tokens within a rule should be in
+     a single CFG entity *)
+  let tokens = Common.union_all tokens in
   if not !Flag_cocci.windows && not (null tokens)
   then
    (* could also modify the code in get_constants.ml *)
@@ -267,6 +271,9 @@ let worth_trying cfiles tokens =
   else true
 
 let check_macro_in_sp_and_adjust tokens = 
+  (* drop the following line for a list of list by rules, if that is desired
+     here *)
+  let tokens = Common.union_all tokens in
   tokens +> List.iter (fun s -> 
     if Hashtbl.mem !Parsing_hacks._defs s
     then begin

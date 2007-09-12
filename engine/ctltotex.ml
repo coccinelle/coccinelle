@@ -155,6 +155,9 @@ let rec ctl2c ct pp pv = function
   | CTL.Uncheck(f) ->
       let (res,ct) = pathwrap ct pp pv f
       in (res^"^u",ct+1)
+  | CTL.InnerAnd(f) ->
+      let (res,ct) = pathwrap ct pp pv f
+      in ("("^res^")^{innerAnd}",ct+10)
 
 and make_var x = ("",x)
 
