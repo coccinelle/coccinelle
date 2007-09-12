@@ -9,8 +9,6 @@ module F = Control_flow_c
 (* Wrappers *)
 (*****************************************************************************)
 
- 
-
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
@@ -41,6 +39,8 @@ type include_requirement =
   | IncludeMcodeBefore
   | IncludeMcodeAfter 
   | IncludeNothing
+
+
         
 (* todo? put in semantic_c.ml *)
 type info_ident = 
@@ -346,6 +346,10 @@ let initialisation_to_affectation decl =
           )
       | x::xs -> 
           pr2 "TODO: initialisation_to_affectation for multi vars";
+          (* todo? do a fold_left and generate 'x = a, y = b' etc, use
+           * the Sequence expression operator of C and make an 
+           * ExprStatement from that.
+           *)
           F.Decl decl
       )
 
@@ -513,6 +517,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.MetaExpr (ida,keep,opttypa,form,inherited),
     (((expr, opttypb), ii) as expb) ->
 
+      (* old: before have a MetaConst. Now we factorize and use 'form' to 
+       * differentiate between different cases *)
       let form_ok =
 	match (form,expr) with
 	  (A.ANY,_) -> true
@@ -545,11 +551,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      
         | Some tas, Some tb -> 
             tas +> List.fold_left (fun acc ta ->  
-              acc >|+|> (
-                compatible_type ta tb
-                  )
-		) fail
-	 ) >>= (fun () () ->
+              acc >|+|> compatible_type ta tb) fail
+	) 
+        >>= (fun () () ->
 		
 		
          (* get binding, assert =*=,  distribute info in ida *)
@@ -561,7 +565,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
            *)
 	    match v with
             (* the expa is 'abstract-lined' so should not be the base of 
-             *  futur processing. Just here to check. Then use expb! 
+             * futur processing. Just here to check. Then use expb! 
              *)
 	    | Ast_c.MetaExprVal expa -> 
 		if (Lib_parsing_c.al_expr expa =*=
@@ -581,14 +585,18 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   (* old: 
    * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
    *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
+   * 
    * but bug! because if have not tagged SP, then transform without doing
    * any checks. Hopefully now have tagged SP technique.
    *)
 	  
 	  
-  (* old: | A.Edots _, _ -> raise Impossible. In fact now can also have
-   * the Edots inside normal expression, not just in arg lists. in
-   * 'x[...];' less: in if(<... x ... y ...>) *)
+  (* old: 
+   * | A.Edots _, _ -> raise Impossible. 
+   * 
+   * In fact now can also have the Edots inside normal expression, not 
+   * just in arg lists. in 'x[...];' less: in if(<... x ... y ...>) 
+   *)
   | A.Edots (mcode, None), expb    -> 
       X.distrf_e (dots2metavar mcode) expb >>= (fun mcode expb -> 
         return (
@@ -631,17 +639,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       in
       (match term ia1, ib with 
       | A.Int x, B.Int y -> 
-            X.value_format_flag (fun use_value_equivalence -> 
-              if use_value_equivalence 
-              then 
-                if equal_c_int x y
-                then do1()
-                else fail
-              else 
-                if x =$= y
-                then do1()
-                else fail
-            )
+          X.value_format_flag (fun use_value_equivalence -> 
+            if use_value_equivalence 
+            then 
+              if equal_c_int x y
+              then do1()
+              else fail
+            else 
+              if x =$= y
+              then do1()
+            else fail
+          )
       | A.Char x, B.Char (y,_) when x =$= y  (* todo: use kind ? *)
           -> do1()
       | A.Float x, B.Float (y,_) when x =$= y (* todo: use floatType ? *)
@@ -999,7 +1007,10 @@ and arguments_bis = fun eas ebs ->
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
 
-              (* allow '...', and maybe its associated ',' to match nothing *)
+              (* allow '...', and maybe its associated ',' to match nothing.
+               * for the associated ',' see below how we handle the EComma
+               * to match nothing.
+               *)
               (if startxs = []
               then
                 if mcode_contain_plus (mcodekind mcode)
@@ -1039,11 +1050,10 @@ and arguments_bis = fun eas ebs ->
               )
             ))
       | A.EComma ia1, ebs -> 
-          (* allow ',' to maching nothing *)
+          (* allow ',' to maching nothing. optional comma trick *)
           if mcode_contain_plus (mcodekind ia1)
           then fail
-          else 
-            (arguments_bis eas ebs) (* try optional comma trick *)
+          else arguments_bis eas ebs
 
       | A.MetaExprList (ida, (lenname, leninherited), keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
@@ -1175,10 +1185,10 @@ and parameters_bis eas ebs =
           ))
 
       | A.PComma ia1, ebs -> 
+          (* try optional comma trick *)
           if mcode_contain_plus (mcodekind ia1)
           then fail
-          else 
-            (parameters_bis eas ebs) (* try optional comma trick *)
+          else parameters_bis eas ebs
 
 
       | A.MetaParamList (ida, (lenname, leninherited), keep, inherited), ys -> 
@@ -1225,8 +1235,7 @@ and parameters_bis eas ebs =
                     fullType ta tb >>= (fun ta tb -> 
                       return (
                         [(A.VoidParam ta) +> A.rewrap ea],
-                        [Left 
-                            ((hasreg, idbopt, tb), ii_b_s)]
+                        [Left ((hasreg, idbopt, tb), ii_b_s)]
                       ))
                 | _ -> fail
               else fail

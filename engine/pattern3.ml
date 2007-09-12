@@ -225,6 +225,7 @@ module XMATCH = struct
   let distrf_struct_fields   = distrf (Lib_parsing_c.ii_of_struct_fields)
   let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
   let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)
+
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
@@ -255,7 +256,7 @@ module XMATCH = struct
               (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
               Equality_c.eq_type a b
 
-          | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =*= b
+          | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
           | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
               failwith "not handling MetaExprListVal"
           | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 

@@ -1,6 +1,3 @@
-
-type mode = PatternMode | TransformMode
-
 (*****************************************************************************)
 (* Cocci vs C *)
 (*****************************************************************************)
@@ -12,7 +9,7 @@ type mode = PatternMode | TransformMode
  * actions on the tokens. So, the common code is in this module
  * and the module specific actions are in pattern.ml and transformation.ml.
  * 
- * We could have use a visitor approach as in visitor_c but I prefer
+ * We could have used a visitor approach as in visitor_c but I prefer
  * this time to use a functor. The specific actions are passed
  * via a module to the functor.
  * 
@@ -29,6 +26,12 @@ type mode = PatternMode | TransformMode
 (*****************************************************************************)
 (* The parameter of the functor (the specific actions) *)
 (*****************************************************************************)
+
+(* should be used as less as possible. Most of the time the code in
+ * cocci_vs_c should be the same if we pattern or transform *)
+type mode = PatternMode | TransformMode
+
+
 
 module type PARAM =
   sig
