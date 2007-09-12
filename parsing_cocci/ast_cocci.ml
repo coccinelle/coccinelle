@@ -128,8 +128,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * keep_binding * inherited
   | MetaExpr       of meta_name mcode * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
-  | MetaExprList   of meta_name mcode * meta_name * keep_binding *
-	              inherited (* name *) * inherited (* metaname *)
+  | MetaExprList   of meta_name mcode * (meta_name * inherited (* lenname *)) *
+                      keep_binding * inherited (* name *)
                       (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -273,8 +273,8 @@ and base_parameterTypeDef =
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * meta_name * keep_binding *
-	             inherited (* name *) * inherited (* lenname *)
+  | MetaParamList of meta_name mcode * (meta_name * inherited (* lenname *)) *
+	             keep_binding * inherited (* name *)
 
   | PComma        of string mcode
 

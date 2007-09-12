@@ -1045,7 +1045,7 @@ and arguments_bis = fun eas ebs ->
           else 
             (arguments_bis eas ebs) (* try optional comma trick *)
 
-      | A.MetaExprList (ida, lenname, keep, inherited, leninherited), ys -> 
+      | A.MetaExprList (ida, (lenname, leninherited), keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             let startxs' = Ast_c.unsplit_comma startxs in
@@ -1070,7 +1070,7 @@ and arguments_bis = fun eas ebs ->
                   arguments_bis eas endxs >>= (fun eas endxs -> 
                     return (
                       (A.MetaExprList
-			 (ida,lenname,keep,inherited,leninherited)) +>
+			 (ida,(lenname,leninherited),keep,inherited)) +>
 		        A.rewrap ea::eas,
                       startxs ++ endxs
                     ))
@@ -1181,7 +1181,7 @@ and parameters_bis eas ebs =
             (parameters_bis eas ebs) (* try optional comma trick *)
 
 
-      | A.MetaParamList (ida, lenname, keep, inherited, leninherited), ys -> 
+      | A.MetaParamList (ida, (lenname, leninherited), keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             let startxs' = Ast_c.unsplit_comma startxs in
@@ -1205,7 +1205,7 @@ and parameters_bis eas ebs =
                   parameters_bis eas endxs >>= (fun eas endxs -> 
                     return (
                       (A.MetaParamList
-			 (ida,lenname,keep,inherited,leninherited)) +>
+			 (ida,(lenname,leninherited),keep,inherited)) +>
 		         A.rewrap ea::eas,
                       startxs ++ endxs
                     ))
