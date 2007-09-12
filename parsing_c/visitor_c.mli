@@ -75,11 +75,16 @@ val vk_args_splitted_s :
   (argument, il) Common.either list -> 
   (argument, il) Common.either list
 
+val vk_params_s : 
+  visitor_c_s -> 
+  parameterType wrap2 list -> parameterType wrap2 list
 
 val vk_params_splitted_s : 
   visitor_c_s -> 
   (parameterType, il) Common.either list -> 
   (parameterType, il) Common.either list
+
+
 
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
 

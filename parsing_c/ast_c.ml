@@ -462,19 +462,23 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaIdVal        of string
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
+
   | MetaExprVal      of expression (* a "clean expr" *)
   | MetaExprListVal  of argument wrap2 list
-  | MetaListlenVal   of int
-  | MetaTypeVal      of fullType
-  | MetaStmtVal      of statement
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list
+
+  | MetaTypeVal      of fullType
+  | MetaStmtVal      of statement
+
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
    * because don't need to have the value for a position in the env of
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
    * variables accessible via SmPL whereas the position can be one day
    * so I think it's better to put MetaPosVal here *)
   | MetaPosVal       of (pos * pos) (* min, max *)
+  | MetaListlenVal   of int
+
 
 
 (*****************************************************************************)
@@ -499,9 +503,11 @@ let noType () = ref None (* old: None, old: [] *)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
 
-let emptyMetavarsBinding = ([]: metavars_binding)
-let emptyAnnot = (Ast_cocci.CONTEXT(Ast_cocci.NoPos,Ast_cocci.NOTHING),
-                 emptyMetavarsBinding)
+let emptyMetavarsBinding = 
+  ([]: metavars_binding)
+let emptyAnnot = 
+  (Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING),
+  emptyMetavarsBinding)
 
 
 let noRelPos () = ref (None: include_rel_pos option)
@@ -543,11 +549,11 @@ let rewrap_str s ii =
 let rewrap_mark mark ii =  
   {ii with mark = mark}
 
-let pos_of_info  ii = ii.pinfo.Common.charpos
+let pos_of_info   ii = ii.pinfo.Common.charpos
 let line_of_info  ii = ii.pinfo.Common.line
-let str_of_info  ii = ii.pinfo.Common.str
-let file_of_info ii = ii.pinfo.Common.file
-let mark_of_info ii = ii.mark
+let str_of_info   ii = ii.pinfo.Common.str
+let file_of_info  ii = ii.pinfo.Common.file
+let mark_of_info  ii = ii.mark
 let mcode_of_info ii  = fst (!(ii.cocci_tag))
 
 (* todo: use virtual pos ? *)

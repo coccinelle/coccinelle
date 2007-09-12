@@ -1151,7 +1151,7 @@ and parameters_bis eas ebs =
               then
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
-                  (* failwith "I have no token that I could accroche myself on" *)
+                (* failwith "I have no token that I could accroche myself on"*)
                 else return (dots2metavar mcode, [])
               else 
                 (match Common.last startxs with
@@ -1161,13 +1161,13 @@ and parameters_bis eas ebs =
                 )
               ) >>= (fun mcode startxs ->
 		let mcode = metavar2dots mcode in
-              parameters_bis eas endxs >>= (fun eas endxs -> 
-                return (
-                  (A.Pdots (mcode) +> A.rewrap ea) ::eas,
-                  startxs ++ endxs
-                )))
-              )
-            ) fail 
+                parameters_bis eas endxs >>= (fun eas endxs -> 
+                  return (
+                    (A.Pdots (mcode) +> A.rewrap ea) ::eas,
+                    startxs ++ endxs
+                  )))
+            )
+          ) fail 
 
       | A.PComma ia1, Right ii::ebs -> 
           let ib1 = tuple_of_list1 ii in
@@ -1189,25 +1189,44 @@ and parameters_bis eas ebs =
       | A.MetaParamList (ida, (lenname, leninherited), keep, inherited), ys -> 
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-            let startxs' = Ast_c.unsplit_comma startxs in
             acc >||> (
+              let ok =
+                if startxs = []
+                then
+                  if mcode_contain_plus (mcodekind ida)
+                  then false 
+               (* failwith "I have no token that I could accroche myself on" *)
+                  else true
+                else 
+                  (match Common.last startxs with
+                  | Right _ -> false
+                  | Left _ -> true
+                  )
+              in
+              if not ok
+              then fail
+              else 
+                let startxs' = Ast_c.unsplit_comma startxs in
+                let len = List.length  startxs' in
 
-	      (* need to integrate the following somehow
-              X.envf keep inherited
-		(lenname, Ast_c.MetaListlenVal (List.length startxs')) *)
-
-              X.envf keep inherited (term ida, Ast_c.MetaParamListVal startxs')
-              (fun () -> X.distrf_params ida (Ast_c.split_comma startxs'))
-              >>= (fun ida startxs -> 
+                X.envf keep leninherited
+		  (lenname, Ast_c.MetaListlenVal (len)) (fun () -> 
+                X.envf keep inherited 
+                  (term ida, Ast_c.MetaParamListVal startxs') (fun () -> 
+                    if startxs = []
+                    then return (ida, [])
+                    else X.distrf_params ida (Ast_c.split_comma startxs')
+                  )
+                >>= (fun ida startxs -> 
                   parameters_bis eas endxs >>= (fun eas endxs -> 
                     return (
                       (A.MetaParamList
-			 (ida,(lenname,leninherited),keep,inherited)) +>
-		         A.rewrap ea::eas,
+			  (ida,(lenname,leninherited),keep,inherited)) +>
+		        A.rewrap ea::eas,
                       startxs ++ endxs
                     ))
                   )
-                )
+                ))
             ) fail 
 
 

@@ -259,7 +259,8 @@ module XMATCH = struct
             | Ast_c.MetaParamVal a ->     
                 failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a -> 
-                failwith "not handling MetaParamListVal"
+                Ast_c.MetaParamListVal (Lib_parsing_c.al_params a)
+
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
             ) 
           in

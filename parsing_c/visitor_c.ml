@@ -5,12 +5,12 @@ open Ast_c
 module F = Control_flow_c
 
 (*****************************************************************************)
-(* Functions to visit both the Ast and the CFG *)
+(* Functions to visit the Ast, and now also the CFG nodes *)
 (*****************************************************************************)
 
 
 (* Visitor based on continuation. Cleaner than the one based on mutable 
- * pointer functions. src: based on a (vague) idea from remy douence.
+ * pointer functions. src: based on a (vague) idea from Remy Douence.
  * 
  * 
  * 
@@ -117,7 +117,7 @@ type visitor_c =
 
    (* CFG *)
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
-   (* Ast *)
+   (* AST *)
    kprogram: (toplevel -> unit) * visitor_c -> toplevel -> unit;
  } 
 
@@ -1157,6 +1157,10 @@ let vk_params_splitted_s = fun bigf args_splitted ->
   | Left arg -> Left (vk_param_s bigf arg)
   | Right ii -> Right (iif ii)
   )
+
+let vk_params_s = fun bigf args -> 
+  let iif ii = vk_ii_s bigf ii in
+  args +> List.map (fun (p,ii) -> vk_param_s bigf p, iif ii)
 
 let vk_define_params_splitted_s = fun bigf args_splitted -> 
   let iif ii = vk_ii_s bigf ii in
