@@ -832,7 +832,7 @@ let rec bigloop2 rs ccs =
 		  end
 		else
 		(* combine the new bindings with the old ones, and
-		   specialize to the ysed_after_list *)
+		   specialize to the used_after_list *)
 		  let new_bindings_to_add =
 		    new_bindings +>
 		    List.map
@@ -846,21 +846,22 @@ let rec bigloop2 rs ccs =
 	      ((relevant_bindings,new_bindings)::cache,
 	       Common.union_set new_e newes))
 	([],[]) !es in (* end iter es *)
+    if !(r.was_matched)
+    then Common.push2 r.rulename rules_that_have_ever_matched;
+
     es := newes;
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs;
 
-    if !(r.was_matched)
-    then Common.push2 r.rulename rules_that_have_ever_matched
   )); (* end iter rs *)
 
-  (if !Flag.sgrep_mode2
+  if !Flag.sgrep_mode2
   then begin
     Flag_parsing_c.verbose_parsing := false;
     ccs := rebuild_info_c_and_headers !ccs
-  end);
+  end;
   !ccs (* return final C asts *)
 
 and bigloop a b = 
@@ -873,7 +874,7 @@ and bigloop a b =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c = 
  indent_do (fun () -> 
-(*    show_or_not_celem "trying" c.ast_c;*)
+  (* show_or_not_celem "trying" c.ast_c; *)
   let (trans_info, returned_any_states, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
