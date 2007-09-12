@@ -2742,7 +2742,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
       let node = 
         match A.unwrap exp, nodeb with
-        | A.Assignment (ea, op, eb, _true), F.Decl decl -> 
+        | A.Assignment (ea, op, eb, true), F.Decl decl -> 
             initialisation_to_affectation decl +> F.rewrap node
         | _ -> node
       in

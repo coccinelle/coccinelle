@@ -1272,7 +1272,7 @@ let process file isofile verbose =
 	       if !Flag.sgrep_mode2
 	       then minus
 	       else Single_statement.single_statement minus in
-	     let minus = (*PAD:Simple_assignments.simple_assignments*) minus in
+	     let minus = Simple_assignments.simple_assignments minus in
 	     let minus_ast =
 	       Ast0toast.ast0toast rule_name dependencies dropped_isos exists
 		 minus in
